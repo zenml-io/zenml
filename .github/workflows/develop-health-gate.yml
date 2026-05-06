@@ -1,0 +1,21 @@
+---
+name: develop-health-gate
+on:
+  merge_group:
+  workflow_dispatch:
+permissions:
+  contents: read
+  checks: read
+  issues: read
+  pull-requests: read
+jobs:
+  develop-health-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - name: Evaluate develop health
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MAX_AGE_HOURS: 30
+          GRACE_AFTER_SCHEDULE_HOURS: 6
+        run: python scripts/develop_health_gate.py

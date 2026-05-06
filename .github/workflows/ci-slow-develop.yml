@@ -1,71 +1,42 @@
 ---
-name: ci-slow
+name: ci-slow-develop
 on:
+  schedule:
+    - cron: '0 0 * * *'
   workflow_dispatch:
-  workflow_call:
+    inputs:
+      git-ref:
+        description: Git branch or ref to qualify
+        type: string
+        required: false
+        default: develop
+permissions:
+  contents: read
+  checks: write
+  issues: write
 concurrency:
-  # New commit on branch cancels running workflows of the same branch
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ inputs.git-ref || 'develop' }}
+  cancel-in-progress: false
 jobs:
-  run-slow-ci-label-is-set:
+  resolve-ref:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
+    outputs:
+      git-ref: ${{ steps.ref.outputs.git-ref }}
     steps:
-      # using this instead of contains(github.event.pull_request.labels.*.name, 'run-slow-ci')
-      # to make it dynamic, otherwise github context is fixed at the moment of trigger event.
-      # With dynamic approach dev can set label and rerun this flow to make it running.
-      - name: Get PR labels
-        id: pr-labels
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8.0.0
-        with:
-          script: |
-            const prNumber = ${{ github.event.pull_request.number }};
-            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber,
-            });
-            const labelNames = labels.map(label => label.name);
-            core.setOutput('all-labels', labelNames.join(','));
-      - name: Slow CI label not set
-        if: ${{ !contains(steps.pr-labels.outputs.all-labels, 'run-slow-ci') }}
-        run: |
-          echo "Please add the 'run-slow-ci' label to this PR before merging."
-          exit 1
-  mysql-db-migration-testing-full:
-    if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
-    env:
-      ZENML_ANALYTICS_OPT_IN: false
-      ZENML_DEBUG: true
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-        with:
-          fetch-depth: 0
-      - name: Set up Python 3.10
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
-        with:
-          python-version: '3.10'
-      - name: Login to Docker Hub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-        if: github.event.pull_request.head.repo.fork == false
-      - name: Test migrations across versions
-        run: bash scripts/test-migrations.sh mysql full
+      - id: ref
+        run: echo "git-ref=${{ inputs.git-ref || 'develop' }}" >> "$GITHUB_OUTPUT"
   mysql-db-migration-testing-random:
-    if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    needs: resolve-ref
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
+      RANDOM_MIGRATION_COUNT: 5
+      RANDOM_MIGRATION_SEED: ${{ github.run_number }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
+          ref: ${{ needs.resolve-ref.outputs.git-ref }}
           fetch-depth: 0
       - name: Set up Python 3.10
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
@@ -76,37 +47,39 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-        if: github.event.pull_request.head.repo.fork == false
-      - name: Test migrations across versions
+      - name: Test random migrations
         run: bash scripts/test-migrations.sh mysql random
-  sqlite-db-migration-testing-full:
-    needs: run-slow-ci-label-is-set
-    runs-on: ubuntu-latest
+  sqlite-db-migration-testing-random:
+    needs: resolve-ref
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
-    if: github.event.pull_request.draft == false
+      RANDOM_MIGRATION_COUNT: 5
+      RANDOM_MIGRATION_SEED: ${{ github.run_number }}
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
+          ref: ${{ needs.resolve-ref.outputs.git-ref }}
           fetch-depth: 0
       - name: Set up Python 3.10
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
           python-version: '3.10'
-      - name: Test migrations across versions
-        run: bash scripts/test-migrations.sh sqlite full
-  mariadb-db-migration-testing:
-    if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+      - name: Test random migrations
+        run: bash scripts/test-migrations.sh sqlite random
+  mariadb-db-migration-testing-random:
+    needs: resolve-ref
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
+      RANDOM_MIGRATION_COUNT: 5
+      RANDOM_MIGRATION_SEED: ${{ github.run_number }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
+          ref: ${{ needs.resolve-ref.outputs.git-ref }}
           fetch-depth: 0
       - name: Set up Python 3.10
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
@@ -117,15 +90,15 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-        if: github.event.pull_request.head.repo.fork == false
-      - name: Test migrations across versions
-        run: bash scripts/test-migrations.sh mariadb full
+      - name: Test random migrations
+        run: bash scripts/test-migrations.sh mariadb random
   small-checks:
-    if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    needs: resolve-ref
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          ref: ${{ needs.resolve-ref.outputs.git-ref }}
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
@@ -135,8 +108,7 @@ jobs:
           curl -LsSf https://astral.sh/uv/install.sh | sh
           source $HOME/.cargo/env
       - name: Create virtual environment
-        run: |
-          uv venv
+        run: uv venv
       - name: Check for broken dependencies
         run: |
           source .venv/bin/activate
@@ -147,8 +119,7 @@ jobs:
           use-quiet-mode: 'yes'
           use-verbose-mode: 'no'
           folder-path: ./examples, ./docs/book, ./src
-          file-path: ./README.md, ./LICENSE, ./RELEASE_NOTES.md, CODE-OF-CONDUCT.md,
-            CONTRIBUTING.md, CLA.md, RELEASE_NOTES.md, ROADMAP.md
+          file-path: ./README.md, ./LICENSE, ./RELEASE_NOTES.md, CODE-OF-CONDUCT.md, CONTRIBUTING.md, CLA.md, RELEASE_NOTES.md, ROADMAP.md
           config-file: .github/workflows/markdown_check_config.json
         continue-on-error: true
       - name: Security check
@@ -166,8 +137,7 @@ jobs:
       - name: Install latest dashboard (test gitignore)
         run: bash scripts/install-dashboard.sh
   ubuntu-linting:
-    needs: run-slow-ci-label-is-set
-    if: github.event.pull_request.draft == false
+    needs: resolve-ref
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -177,10 +147,10 @@ jobs:
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
+      git-ref: ${{ needs.resolve-ref.outputs.git-ref }}
     secrets: inherit
   ubuntu-unit-test:
-    if: github.event.pull_request.draft == false
-    needs: [run-slow-ci-label-is-set, ubuntu-linting]
+    needs: [resolve-ref, ubuntu-linting]
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -190,10 +160,10 @@ jobs:
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
+      git-ref: ${{ needs.resolve-ref.outputs.git-ref }}
     secrets: inherit
   windows-linting:
-    needs: run-slow-ci-label-is-set
-    if: github.event.pull_request.draft == false
+    needs: resolve-ref
     strategy:
       matrix:
         os: [windows-latest]
@@ -203,10 +173,10 @@ jobs:
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
+      git-ref: ${{ needs.resolve-ref.outputs.git-ref }}
     secrets: inherit
   windows-unit-test:
-    if: github.event.pull_request.draft == false
-    needs: [run-slow-ci-label-is-set, windows-linting]
+    needs: [resolve-ref, windows-linting]
     strategy:
       matrix:
         os: [windows-latest]
@@ -216,10 +186,10 @@ jobs:
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
+      git-ref: ${{ needs.resolve-ref.outputs.git-ref }}
     secrets: inherit
   macos-linting:
-    needs: run-slow-ci-label-is-set
-    if: github.event.pull_request.draft == false
+    needs: resolve-ref
     strategy:
       matrix:
         os: [macos-latest]
@@ -229,10 +199,10 @@ jobs:
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
+      git-ref: ${{ needs.resolve-ref.outputs.git-ref }}
     secrets: inherit
   macos-unit-test:
-    if: github.event.pull_request.draft == false
-    needs: [run-slow-ci-label-is-set, macos-linting]
+    needs: [resolve-ref, macos-linting]
     strategy:
       matrix:
         os: [macos-latest]
@@ -244,10 +214,10 @@ jobs:
       os: ${{ matrix.os }}
       install_integrations: 'yes'
       reruns: 1
+      git-ref: ${{ needs.resolve-ref.outputs.git-ref }}
     secrets: inherit
   windows-integration-test:
-    if: github.event.pull_request.draft == false
-    needs: [run-slow-ci-label-is-set, windows-unit-test]
+    needs: [resolve-ref, windows-unit-test]
     strategy:
       matrix:
         os: [windows-latest]
@@ -259,10 +229,10 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
+      git-ref: ${{ needs.resolve-ref.outputs.git-ref }}
     secrets: inherit
   macos-integration-test:
-    if: github.event.pull_request.draft == false
-    needs: [run-slow-ci-label-is-set, macos-unit-test]
+    needs: [resolve-ref, macos-unit-test]
     strategy:
       matrix:
         os: [macos-latest]
@@ -274,30 +244,25 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
+      git-ref: ${{ needs.resolve-ref.outputs.git-ref }}
     secrets: inherit
   ubuntu-latest-integration-test:
-    if: github.event.pull_request.draft == false
-    needs: [run-slow-ci-label-is-set, ubuntu-unit-test]
+    needs: [resolve-ref, ubuntu-unit-test]
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.10', '3.12', '3.13']
+        python-version: ['3.10', '3.11', '3.13']
         test_environment:
           - default
           - docker-server-docker-orchestrator-mysql
           - docker-server-docker-orchestrator-mariadb
         exclude:
-          # docker is time-consuming to run, so we only run it on 3.11
           - test_environment: docker-server-docker-orchestrator-mysql
             python-version: '3.10'
-          - test_environment: docker-server-docker-orchestrator-mysql
-            python-version: '3.12'
           - test_environment: docker-server-docker-orchestrator-mysql
             python-version: '3.13'
           - test_environment: docker-server-docker-orchestrator-mariadb
             python-version: '3.10'
-          - test_environment: docker-server-docker-orchestrator-mariadb
-            python-version: '3.12'
           - test_environment: docker-server-docker-orchestrator-mariadb
             python-version: '3.13'
       fail-fast: false
@@ -306,15 +271,16 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
+      git-ref: ${{ needs.resolve-ref.outputs.git-ref }}
     secrets: inherit
   vscode-tutorial-pipelines-test:
-    if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    needs: resolve-ref
     uses: ./.github/workflows/vscode-tutorial-pipelines-test.yml
+    with:
+      git-ref: ${{ needs.resolve-ref.outputs.git-ref }}
     secrets: inherit
   ubuntu-base-package-functionality:
-    needs: run-slow-ci-label-is-set
-    if: github.event.pull_request.draft == false
+    needs: resolve-ref
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -324,4 +290,57 @@ jobs:
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
+      git-ref: ${{ needs.resolve-ref.outputs.git-ref }}
     secrets: inherit
+  publish-qualification-success:
+    needs:
+      - resolve-ref
+      - mysql-db-migration-testing-random
+      - sqlite-db-migration-testing-random
+      - mariadb-db-migration-testing-random
+      - small-checks
+      - ubuntu-unit-test
+      - windows-unit-test
+      - macos-unit-test
+      - windows-integration-test
+      - macos-integration-test
+      - ubuntu-latest-integration-test
+      - vscode-tutorial-pipelines-test
+      - ubuntu-base-package-functionality
+    if: success()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          ref: ${{ needs.resolve-ref.outputs.git-ref }}
+          fetch-depth: 0
+      - name: Publish qualification Check Run
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/publish_ci_qualification.py --conclusion success
+  publish-qualification-failure:
+    needs:
+      - resolve-ref
+      - mysql-db-migration-testing-random
+      - sqlite-db-migration-testing-random
+      - mariadb-db-migration-testing-random
+      - small-checks
+      - ubuntu-unit-test
+      - windows-unit-test
+      - macos-unit-test
+      - windows-integration-test
+      - macos-integration-test
+      - ubuntu-latest-integration-test
+      - vscode-tutorial-pipelines-test
+      - ubuntu-base-package-functionality
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          ref: ${{ needs.resolve-ref.outputs.git-ref }}
+          fetch-depth: 0
+      - name: Publish failure Check Run and incident
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/publish_ci_qualification.py --conclusion failure --incident

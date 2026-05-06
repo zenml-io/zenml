@@ -132,6 +132,18 @@ environments:
       - mlflow-local-deployer
     capabilities:
       synchronized: true
+  - name: remote-mysql-modal
+    description: >-
+      Modal-hosted ZenML server with local orchestrator and all local
+      components, using a MySQL database.
+    deployment: modal-mysql-server
+    requirements:
+      - data-validators
+      - mlflow-local-tracker
+      - mlflow-local-registry
+      - mlflow-local-deployer
+    capabilities:
+      synchronized: true
   - name: docker-server-docker-orchestrator-mysql
     description: >-
       Server docker-compose deployment with docker orchestrator and all local

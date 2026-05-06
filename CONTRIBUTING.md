@@ -202,6 +202,10 @@ Please note that it is good practice to run the above commands before submitting
 any Pull Request: The CI GitHub Action
 will run it anyway, so you might as well catch the errors locally!
 
+The CI captain rotation lives in `.github/ci-captains.yml`. The weekly captain
+is the first responder for `develop-red` incidents opened by nightly slow CI and
+backs up the authors identified in the suspect commit range.
+
 ### 🚨 Reporting a Vulnerability
 
 Please refer to [our security / reporting instructions](./SECURITY.md) for

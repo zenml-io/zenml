@@ -1,0 +1,49 @@
+---
+name: slow-ci-on-pr
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, labeled]
+  workflow_dispatch:
+    inputs:
+      git-ref:
+        description: Git branch, tag, or SHA to test
+        type: string
+        required: false
+        default: ''
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || inputs.git-ref || github.ref }}
+  cancel-in-progress: true
+jobs:
+  run-slow-ci-label-is-set:
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    outputs:
+      should-run: ${{ steps.decision.outputs.should-run }}
+    steps:
+      - name: Decide whether advisory slow CI should run
+        id: decision
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8.0.0
+        with:
+          script: |
+            if (context.eventName !== 'pull_request') {
+              core.setOutput('should-run', 'true');
+              return;
+            }
+            const prNumber = context.payload.pull_request.number;
+            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+            const hasLabel = labels.some(label => label.name === 'run-slow-ci');
+            core.setOutput('should-run', hasLabel ? 'true' : 'false');
+            if (!hasLabel) {
+              core.notice('Skipping advisory slow CI because run-slow-ci is not set.');
+            }
+  advisory-slow-ci:
+    needs: run-slow-ci-label-is-set
+    if: needs.run-slow-ci-label-is-set.outputs.should-run == 'true'
+    uses: ./.github/workflows/ci-slow-develop.yml
+    with:
+      git-ref: ${{ inputs.git-ref || github.event.pull_request.head.sha }}
+    secrets: inherit

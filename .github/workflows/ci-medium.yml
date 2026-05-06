@@ -1,110 +1,115 @@
 ---
-name: ci-fast
+name: ci-medium
 on:
   workflow_dispatch:
-  workflow_call:
   merge_group:
-  push:
-    branches: [develop]
-  pull_request:
-    types: [opened, synchronize, ready_for_review]
 concurrency:
-  # New commit on branch cancels running workflows of the same branch.
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  modal-enabled:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify Modal CI is enabled
+        run: |
+          if [ "${ZENML_CI_MODAL_DISABLED}" = "true" ]; then
+            echo "Modal CI is disabled. Medium CI must not silently degrade."
+            exit 1
+          fi
+        env:
+          ZENML_CI_MODAL_DISABLED: ${{ vars.ZENML_CI_MODAL_DISABLED }}
   sqlite-db-migration-testing-random:
     runs-on: ubuntu-latest
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+      RANDOM_MIGRATION_COUNT: 5
+      RANDOM_MIGRATION_SEED: ${{ github.run_id }}
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           fetch-depth: 0
-      - name: Set up Python 3.10
+      - name: Set up Python 3.12
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
-          python-version: '3.10'
+          python-version: '3.12'
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh sqlite random
-  spellcheck:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+  mysql-db-migration-testing-random:
+    needs: modal-enabled
     runs-on: ubuntu-latest
+    env:
+      ZENML_ANALYTICS_OPT_IN: false
+      ZENML_DEBUG: true
+      RANDOM_MIGRATION_COUNT: 5
+      RANDOM_MIGRATION_SEED: ${{ github.run_id }}
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      - name: Spelling checker
-        uses: crate-ci/typos@7c572958218557a3272c2d6719629443b5cc26fd  # v1.45.2
         with:
-          files: .
-          config: ./.typos.toml
-  api-docs-test:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      - name: Set up Python 3.11
+          fetch-depth: 0
+      - name: Set up Python 3.12
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
-          python-version: '3.11'
-      - name: Test API docs buildable
-        run: bash scripts/generate-docs.sh -v DUMMY -c
-  update-templates-to-examples:
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'zenml-io/zenml' && github.event.pull_request.draft == false
-    uses: ./.github/workflows/update-templates-to-examples.yml
-    with:
-      python-version: '3.11'
-      os: ubuntu-latest
-    secrets: inherit
+          python-version: '3.12'
+      - name: Login to Docker Hub
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Test migrations across versions
+        run: bash scripts/test-migrations.sh mysql random
+  mariadb-db-migration-testing-random:
+    needs: modal-enabled
+    runs-on: ubuntu-latest
+    env:
+      ZENML_ANALYTICS_OPT_IN: false
+      ZENML_DEBUG: true
+      RANDOM_MIGRATION_COUNT: 5
+      RANDOM_MIGRATION_SEED: ${{ github.run_id }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0
+      - name: Set up Python 3.12
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        with:
+          python-version: '3.12'
+      - name: Login to Docker Hub
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Test migrations across versions
+        run: bash scripts/test-migrations.sh mariadb random
   linting:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    needs: modal-enabled
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.11']
+        python-version: ['3.12']
       fail-fast: false
     uses: ./.github/workflows/linting.yml
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
     secrets: inherit
-  ubuntu-setup-and-unit-test:
-    needs: linting
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+  unit-test:
+    needs: [modal-enabled, linting]
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.11']
+        python-version: ['3.12']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
     secrets: inherit
-  ubuntu-latest-integration-test:
-    needs: [linting]
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ['3.11']
-        test_environment:
-          - default
-          - docker-server-docker-orchestrator-mysql
-      fail-fast: false
-    uses: ./.github/workflows/integration-test-fast.yml
-    with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
-      test_environment: ${{ matrix.test_environment }}
-    secrets: inherit
   start-modal-mysql-sandbox:
-    needs: linting
-    if: github.event_name != 'pull_request' || (github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository)
+    needs: modal-enabled
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
@@ -122,15 +127,14 @@ jobs:
           ZENML_CI_MODAL_DISABLED: ${{ vars.ZENML_CI_MODAL_DISABLED }}
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
-          ZENML_CI_CHECKOUT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+          ZENML_CI_CHECKOUT_REF: ${{ github.sha }}
         run: python scripts/ci_modal_mysql_sandbox.py start
-  ubuntu-latest-modal-integration-test:
-    needs: [linting, start-modal-mysql-sandbox]
-    if: github.event_name != 'pull_request' || (github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository)
+  remote-mysql-modal-integration-test:
+    needs: [modal-enabled, linting, start-modal-mysql-sandbox]
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.11']
+        python-version: ['3.12']
         test_environment: [remote-mysql-modal]
       fail-fast: false
     uses: ./.github/workflows/integration-test-fast.yml
@@ -138,12 +142,13 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
+      ci_tier: medium
       modal_ci_server_url: ${{ needs.start-modal-mysql-sandbox.outputs.server-url }}
       modal_ci_server_username: ${{ needs.start-modal-mysql-sandbox.outputs.server-username }}
       modal_ci_server_password: ${{ needs.start-modal-mysql-sandbox.outputs.server-password }}
     secrets: inherit
   stop-modal-mysql-sandbox:
-    needs: [start-modal-mysql-sandbox, ubuntu-latest-modal-integration-test]
+    needs: [start-modal-mysql-sandbox, remote-mysql-modal-integration-test]
     if: always() && needs.start-modal-mysql-sandbox.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -156,22 +161,20 @@ jobs:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
         run: python scripts/ci_modal_mysql_sandbox.py stop --sandbox-id '${{ needs.start-modal-mysql-sandbox.outputs.sandbox-id }}'
-  ci-fast-required:
+  ci-medium-required:
     runs-on: ubuntu-latest
     needs:
       - sqlite-db-migration-testing-random
-      - spellcheck
-      - api-docs-test
-      - update-templates-to-examples
+      - mysql-db-migration-testing-random
+      - mariadb-db-migration-testing-random
       - linting
-      - ubuntu-setup-and-unit-test
-      - ubuntu-latest-integration-test
+      - unit-test
       - start-modal-mysql-sandbox
-      - ubuntu-latest-modal-integration-test
+      - remote-mysql-modal-integration-test
       - stop-modal-mysql-sandbox
     if: always()
     steps:
-      - name: Verify required fast CI jobs
+      - name: Verify required medium CI jobs
         env:
           NEEDS_CONTEXT: ${{ toJSON(needs) }}
         run: |
@@ -187,9 +190,9 @@ jobs:
                   failed.append(f"{name}: {result}")
 
           if failed:
-              print("Fast CI dependencies failed:")
+              print("Medium CI dependencies failed:")
               print("\n".join(failed))
               sys.exit(1)
 
-          print("All fast CI dependencies passed or were skipped by design.")
+          print("All medium CI dependencies passed or were skipped by design.")
           PY
