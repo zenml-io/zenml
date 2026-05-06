@@ -40,14 +40,16 @@ def _load_quarantined_tests() -> dict[str, str]:
 
     import yaml
 
-    data: dict[str, Any] = yaml.safe_load(
-        registry_path.read_text(encoding="utf-8")
-    ) or {}
+    data: dict[str, Any] = (
+        yaml.safe_load(registry_path.read_text(encoding="utf-8")) or {}
+    )
     quarantined: dict[str, str] = {}
     for entry in data.get("quarantined", []):
         if "medium" not in entry.get("skip_in", []):
             continue
-        quarantined[str(entry["test_id"])] = str(entry.get("reason", "quarantined"))
+        quarantined[str(entry["test_id"])] = str(
+            entry.get("reason", "quarantined")
+        )
     return quarantined
 
 

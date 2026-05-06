@@ -22,7 +22,9 @@ DEVELOP_BRANCH = "develop"
 FIX_DEVELOP_LABEL = "fix-develop"
 
 
-def _github_request(path: str, query: dict[str, str] | None = None) -> dict[str, Any]:
+def _github_request(
+    path: str, query: dict[str, str] | None = None
+) -> dict[str, Any]:
     """Send an authenticated GitHub API request."""
     token = os.environ["GITHUB_TOKEN"]
     repository = os.environ["GITHUB_REPOSITORY"]
@@ -115,7 +117,9 @@ def _latest_nightly_schedule(now: dt.datetime) -> dt.datetime:
     return now.replace(hour=0, minute=0, second=0, microsecond=0)
 
 
-def _external_id_parts(check_run: dict[str, Any]) -> tuple[str, str, dt.datetime]:
+def _external_id_parts(
+    check_run: dict[str, Any],
+) -> tuple[str, str, dt.datetime]:
     """Parse the qualification Check Run external ID."""
     external_id = str(check_run.get("external_id") or "")
     try:

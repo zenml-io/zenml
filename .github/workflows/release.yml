@@ -178,12 +178,15 @@ jobs:
         run: echo "VERSION=${GITHUB_REF/refs\/tags\//}" >> "$GITHUB_OUTPUT"
       - name: Create a tag on ZenML Cloud plugins repo
         uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8.0.0
+        env:
+          RELEASE_VERSION: ${{ steps.get_version.outputs.VERSION }}
+          CLOUD_PLUGINS_SHA: ${{ steps.get_sha.outputs.sha }}
         with:
           github-token: ${{ secrets.CLOUD_PLUGINS_REPO_PAT }}
           script: |-
             await github.rest.git.createRef({
               owner: 'zenml-io',
               repo: 'zenml-cloud-plugins',
-              ref: 'refs/tags/${{ steps.get_version.outputs.VERSION }}',
-              sha: '${{ steps.get_sha.outputs.sha }}'
+              ref: `refs/tags/${process.env.RELEASE_VERSION}`,
+              sha: process.env.CLOUD_PLUGINS_SHA
             })

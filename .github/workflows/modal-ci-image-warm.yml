@@ -2,7 +2,7 @@
 name: Warm Modal CI image
 on:
   schedule:
-    - cron: '30 23 * * *'
+    - cron: 30 23 * * *
   workflow_dispatch:
 permissions:
   contents: read

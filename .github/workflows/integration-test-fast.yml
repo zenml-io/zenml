@@ -45,11 +45,6 @@ on:
         type: string
         required: false
         default: ''
-      modal_ci_server_password:
-        description: Per-run Modal ZenML server password
-        type: string
-        required: false
-        default: ''
   workflow_dispatch:
     inputs:
       os:
@@ -132,7 +127,6 @@ jobs:
       GCP_US_EAST4_SERVER_PASSWORD: ${{ secrets.GCP_US_EAST4_SERVER_PASSWORD }}
       MODAL_CI_SERVER_URL: ${{ inputs.modal_ci_server_url }}
       MODAL_CI_SERVER_USERNAME: ${{ inputs.modal_ci_server_username }}
-      MODAL_CI_SERVER_PASSWORD: ${{ inputs.modal_ci_server_password }}
       PYTEST_RERUNS: ${{ inputs.reruns }}
       ZENML_CI_TIER: ${{ inputs.ci_tier }}
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') && (inputs.test_environment != 'remote-mysql-modal' || github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
@@ -231,11 +225,11 @@ jobs:
           python-version: ${{ inputs.python-version }}
           os: ${{ inputs.os }}
       - name: Validate Modal connection details
-        if: inputs.test_environment == 'remote-mysql-modal' && vars.ZENML_CI_MODAL_DISABLED != 'true'
+        if: inputs.test_environment == 'remote-mysql-modal' && vars.ZENML_CI_MODAL_DISABLED
+          != 'true'
         run: |
           test -n "$MODAL_CI_SERVER_URL"
           test -n "$MODAL_CI_SERVER_USERNAME"
-          test -n "$MODAL_CI_SERVER_PASSWORD"
       - name: Install docker-compose for local Docker environments
         if: inputs.test_environment != 'default' && inputs.test_environment != 'remote-mysql-modal'
         run: |
@@ -320,9 +314,18 @@ jobs:
         # Ubuntu integration tests run as 6 shards
         if: runner.os != 'macOS' && runner.os != 'Windows'
         run: |
+          if [ "${INPUTS_TEST_ENVIRONMENT}" = "remote-mysql-modal" ]; then
+            export MODAL_CI_SERVER_PASSWORD=$(python - <<'PY'
+          from scripts.ci_modal_mysql_sandbox import derive_server_password
+          print(derive_server_password())
+          PY
+          )
+          fi
           bash scripts/test-coverage-xml.sh integration ${INPUTS_TEST_ENVIRONMENT} 6 ${{ matrix.shard }}
         env:
           INPUTS_TEST_ENVIRONMENT: ${{ inputs.test_environment == 'remote-mysql-modal' && vars.ZENML_CI_MODAL_DISABLED == 'true' && 'docker-server-mysql' || inputs.test_environment }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+          ZENML_CI_CHECKOUT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
         uses: mxschmitt/action-tmate@c0afd6f790e3a5564914980036ebf83216678101  # v3.23

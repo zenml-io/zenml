@@ -52,8 +52,6 @@ rules:
   # (step outputs within same workflow are trusted)
   template-injection:
     ignore:
-      - release.yml:169  # VERSION from step output
-      - release.yml:170  # sha from step output
       - snack-it.yml:352  # issue_number from step output
       - snack-it.yml:353  # continuation of above
       - snack-it.yml:354  # project_added from step output
@@ -96,3 +94,6 @@ rules:
       - weekly-agent-pipelines-test.yml
       - nightly_build.yml
       - release.yml
+      - ci-medium.yml
+      - ci-slow-develop.yml
+      - slow-ci-on-pr.yml

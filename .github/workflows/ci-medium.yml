@@ -115,7 +115,6 @@ jobs:
     outputs:
       server-url: ${{ steps.start.outputs.server_url }}
       server-username: ${{ steps.start.outputs.server_username }}
-      server-password: ${{ steps.start.outputs.server_password }}
       sandbox-id: ${{ steps.start.outputs.sandbox_id }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -145,7 +144,6 @@ jobs:
       ci_tier: medium
       modal_ci_server_url: ${{ needs.start-modal-mysql-sandbox.outputs.server-url }}
       modal_ci_server_username: ${{ needs.start-modal-mysql-sandbox.outputs.server-username }}
-      modal_ci_server_password: ${{ needs.start-modal-mysql-sandbox.outputs.server-password }}
     secrets: inherit
   stop-modal-mysql-sandbox:
     needs: [start-modal-mysql-sandbox, remote-mysql-modal-integration-test]
@@ -160,7 +158,8 @@ jobs:
         env:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
-        run: python scripts/ci_modal_mysql_sandbox.py stop --sandbox-id '${{ needs.start-modal-mysql-sandbox.outputs.sandbox-id }}'
+          SANDBOX_ID: ${{ needs.start-modal-mysql-sandbox.outputs.sandbox-id }}
+        run: python scripts/ci_modal_mysql_sandbox.py stop --sandbox-id "$SANDBOX_ID"
   ci-medium-required:
     runs-on: ubuntu-latest
     needs:
@@ -177,22 +176,19 @@ jobs:
       - name: Verify required medium CI jobs
         env:
           NEEDS_CONTEXT: ${{ toJSON(needs) }}
-        run: |
+        run: |-
           python - <<'PY'
           import json
           import os
           import sys
-
           failed = []
           for name, data in json.loads(os.environ["NEEDS_CONTEXT"]).items():
               result = data["result"]
               if result not in {"success", "skipped"}:
                   failed.append(f"{name}: {result}")
-
           if failed:
               print("Medium CI dependencies failed:")
               print("\n".join(failed))
               sys.exit(1)
-
           print("All medium CI dependencies passed or were skipped by design.")
           PY

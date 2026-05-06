@@ -38,20 +38,28 @@ def main() -> None:
     for index, entry in enumerate(data.get("quarantined", [])):
         missing = REQUIRED_FIELDS - set(entry)
         if missing:
-            errors.append(f"entry {index} is missing fields: {sorted(missing)}")
+            errors.append(
+                f"entry {index} is missing fields: {sorted(missing)}"
+            )
             continue
         quarantined_at = _parse_date(entry["quarantined_at"])
         expiry = _parse_date(entry["expiry"])
         if expiry <= dt.date.today():
             errors.append(f"{entry['test_id']} has an expired quarantine")
         if expiry > quarantined_at + dt.timedelta(days=30):
-            errors.append(f"{entry['test_id']} expiry is more than 30 days out")
+            errors.append(
+                f"{entry['test_id']} expiry is more than 30 days out"
+            )
         if not str(entry["owner"]).strip():
             errors.append(f"{entry['test_id']} owner is empty")
         if not str(entry["tracking_issue"]).startswith("https://github.com/"):
-            errors.append(f"{entry['test_id']} tracking_issue must be a GitHub URL")
+            errors.append(
+                f"{entry['test_id']} tracking_issue must be a GitHub URL"
+            )
         if "medium" not in entry.get("skip_in", []):
-            errors.append(f"{entry['test_id']} must declare where it is skipped")
+            errors.append(
+                f"{entry['test_id']} must declare where it is skipped"
+            )
 
     if errors:
         for error in errors:

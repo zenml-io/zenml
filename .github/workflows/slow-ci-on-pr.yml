@@ -11,12 +11,14 @@ on:
         required: false
         default: ''
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || inputs.git-ref || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || inputs.git-ref
+    || github.ref }}
   cancel-in-progress: true
 jobs:
   run-slow-ci-label-is-set:
     runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
+      false
     outputs:
       should-run: ${{ steps.decision.outputs.should-run }}
     steps:

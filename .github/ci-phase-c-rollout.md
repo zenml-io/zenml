@@ -27,12 +27,15 @@ team has reviewed the rollout plan.
 
    server_url=$(grep '^server_url=' "$tmp" | cut -d= -f2-)
    server_username=$(grep '^server_username=' "$tmp" | cut -d= -f2-)
-   server_password=$(grep '^server_password=' "$tmp" | cut -d= -f2-)
    sandbox_id=$(grep '^sandbox_id=' "$tmp" | cut -d= -f2-)
 
    export MODAL_CI_SERVER_URL="$server_url"
    export MODAL_CI_SERVER_USERNAME="$server_username"
-   export MODAL_CI_SERVER_PASSWORD="$server_password"
+   export MODAL_CI_SERVER_PASSWORD=$(uv run python - <<'PY'
+   from scripts.ci_modal_mysql_sandbox import derive_server_password
+   print(derive_server_password())
+   PY
+   )
    export ZENML_CI_TIER=medium
 
    uv run pytest tests/integration/functional/test_client.py \

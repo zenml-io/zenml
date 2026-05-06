@@ -20,9 +20,13 @@ def _is_global_state_marker(node: ast.AST) -> bool:
     return False
 
 
-def _decorators_include_global_state(node: ast.FunctionDef | ast.ClassDef) -> bool:
+def _decorators_include_global_state(
+    node: ast.FunctionDef | ast.ClassDef,
+) -> bool:
     """Return whether a function or class has the global_state marker."""
-    return any(_is_global_state_marker(decorator) for decorator in node.decorator_list)
+    return any(
+        _is_global_state_marker(decorator) for decorator in node.decorator_list
+    )
 
 
 def _module_has_global_state_marker(tree: ast.Module) -> bool:
@@ -50,8 +54,12 @@ def _iter_unclassified_tests(root: Path) -> list[str]:
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         module_is_global_state = _module_has_global_state_marker(tree)
         for node in tree.body:
-            if isinstance(node, ast.FunctionDef) and node.name.startswith("test_"):
-                if module_is_global_state or _decorators_include_global_state(node):
+            if isinstance(node, ast.FunctionDef) and node.name.startswith(
+                "test_"
+            ):
+                if module_is_global_state or _decorators_include_global_state(
+                    node
+                ):
                     continue
                 if not _test_uses_workspace_fixture(node):
                     unclassified.append(f"{path}::{node.name}")
@@ -71,7 +79,9 @@ def _iter_unclassified_tests(root: Path) -> list[str]:
                     ):
                         continue
                     if not _test_uses_workspace_fixture(item):
-                        unclassified.append(f"{path}::{node.name}::{item.name}")
+                        unclassified.append(
+                            f"{path}::{node.name}::{item.name}"
+                        )
     return unclassified
 
 

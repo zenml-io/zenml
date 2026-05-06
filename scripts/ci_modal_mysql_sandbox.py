@@ -4,6 +4,9 @@
 from __future__ import annotations
 
 import argparse
+import base64
+import hashlib
+import hmac
 import os
 import secrets
 import shlex
@@ -15,7 +18,6 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-
 GITHUB_OUTPUT = os.environ.get("GITHUB_OUTPUT")
 DEFAULT_USERNAME = "default"
 SERVER_PORT = 8080
@@ -23,10 +25,21 @@ START_TIMEOUT_SECONDS = 600
 SANDBOX_TIMEOUT_SECONDS = 3600
 
 
+def _is_sensitive_output_name(name: str) -> bool:
+    """Return whether an output name likely carries sensitive data."""
+    lowered = name.lower()
+    return any(
+        token in lowered for token in ("password", "token", "secret", "key")
+    )
+
+
 def _write_output(name: str, value: str) -> None:
     """Write a GitHub Actions output."""
     if not GITHUB_OUTPUT:
-        print(f"{name}={value}")
+        safe_value = (
+            "***REDACTED***" if _is_sensitive_output_name(name) else value
+        )
+        print(f"{name}={safe_value}")
         return
     with Path(GITHUB_OUTPUT).open("a", encoding="utf-8") as output_file:
         output_file.write(f"{name}={value}\n")
@@ -41,9 +54,30 @@ def _get_required_env(name: str) -> str:
 
 
 def _generate_password() -> str:
-    """Generate a URL-safe password for the per-run default user."""
+    """Generate a URL-safe password for internal sandbox services."""
     alphabet = string.ascii_letters + string.digits
     return "".join(secrets.choice(alphabet) for _ in range(32))
+
+
+def _password_context() -> str:
+    """Return the stable per-run context used to derive the server password."""
+    return ":".join(
+        [
+            _get_required_env("GITHUB_REPOSITORY"),
+            os.environ.get("ZENML_CI_CHECKOUT_REF")
+            or _get_required_env("GITHUB_SHA"),
+            os.environ.get("GITHUB_RUN_ID", "local"),
+        ]
+    )
+
+
+def derive_server_password() -> str:
+    """Derive the per-run server password without storing it as job output."""
+    seed = _get_required_env("MODAL_TOKEN_SECRET").encode("utf-8")
+    digest = hmac.new(
+        seed, _password_context().encode("utf-8"), hashlib.sha256
+    ).digest()
+    return base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")[:32]
 
 
 def _build_server_command(repository: str, checkout_ref: str) -> str:
@@ -192,7 +226,12 @@ def _wait_until_ready(server_url: str) -> None:
             with urllib.request.urlopen(ready_url, timeout=10) as response:
                 if response.status == 200:
                     return
-        except (ConnectionError, OSError, urllib.error.URLError, TimeoutError) as exc:
+        except (
+            ConnectionError,
+            OSError,
+            urllib.error.URLError,
+            TimeoutError,
+        ) as exc:
             last_error = exc
         time.sleep(5)
 
@@ -207,15 +246,14 @@ def start() -> None:
     if os.environ.get("ZENML_CI_MODAL_DISABLED") == "true":
         _write_output("server_url", "")
         _write_output("server_username", "")
-        _write_output("server_password", "")
         _write_output("sandbox_id", "")
         return
 
     repository = _get_required_env("GITHUB_REPOSITORY")
-    checkout_ref = os.environ.get("ZENML_CI_CHECKOUT_REF") or _get_required_env(
-        "GITHUB_SHA"
-    )
-    password = _generate_password()
+    checkout_ref = os.environ.get(
+        "ZENML_CI_CHECKOUT_REF"
+    ) or _get_required_env("GITHUB_SHA")
+    password = derive_server_password()
     db_password = _generate_password()
     sandbox = _create_modal_sandbox(
         _build_server_command(repository, checkout_ref),
@@ -239,7 +277,6 @@ def start() -> None:
 
     _write_output("server_url", server_url)
     _write_output("server_username", DEFAULT_USERNAME)
-    _write_output("server_password", password)
     _write_output("sandbox_id", sandbox.object_id)
 
 

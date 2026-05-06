@@ -35,13 +35,17 @@ def _github_request(url: str, method: str, payload: dict) -> dict:
 
 
 def _develop_sha() -> str:
-    return subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+    return subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], text=True
+    ).strip()
 
 
 def main() -> None:
     """Run the CLI."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("--conclusion", choices=["success", "failure"], required=True)
+    parser.add_argument(
+        "--conclusion", choices=["success", "failure"], required=True
+    )
     parser.add_argument("--incident", action="store_true")
     args = parser.parse_args()
 
@@ -49,8 +53,12 @@ def main() -> None:
     owner, repo = repository.split("/", 1)
     run_id = os.environ["GITHUB_RUN_ID"]
     server_url = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
-    completed_at = dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat()
-    matrix_hash = compute_matrix_hash(Path(".github/workflows/ci-slow-develop.yml"))
+    completed_at = (
+        dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat()
+    )
+    matrix_hash = compute_matrix_hash(
+        Path(".github/workflows/ci-slow-develop.yml")
+    )
     sha = _develop_sha()
     run_url = f"{server_url}/{repository}/actions/runs/{run_id}"
 

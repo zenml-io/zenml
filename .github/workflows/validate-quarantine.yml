@@ -2,9 +2,7 @@
 name: Validate test quarantine
 on:
   pull_request:
-    paths:
-      - .github/quarantined-tests.yml
-      - scripts/validate_quarantine.py
+    paths: [.github/quarantined-tests.yml, scripts/validate_quarantine.py]
   workflow_dispatch:
 jobs:
   validate-quarantine:

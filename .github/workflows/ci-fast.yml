@@ -18,7 +18,8 @@ jobs:
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
+      false
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -31,7 +32,8 @@ jobs:
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh sqlite random
   spellcheck:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
+      false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -42,7 +44,8 @@ jobs:
           files: .
           config: ./.typos.toml
   api-docs-test:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
+      false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -54,14 +57,16 @@ jobs:
       - name: Test API docs buildable
         run: bash scripts/generate-docs.sh -v DUMMY -c
   update-templates-to-examples:
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == 'zenml-io/zenml' && github.event.pull_request.draft == false
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name
+      == 'zenml-io/zenml' && github.event.pull_request.draft == false
     uses: ./.github/workflows/update-templates-to-examples.yml
     with:
       python-version: '3.11'
       os: ubuntu-latest
     secrets: inherit
   linting:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
+      false
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -74,7 +79,8 @@ jobs:
     secrets: inherit
   ubuntu-setup-and-unit-test:
     needs: linting
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
+      false
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -87,14 +93,13 @@ jobs:
     secrets: inherit
   ubuntu-latest-integration-test:
     needs: [linting]
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
+      false
     strategy:
       matrix:
         os: [ubuntu-latest]
         python-version: ['3.11']
-        test_environment:
-          - default
-          - docker-server-docker-orchestrator-mysql
+        test_environment: [default, docker-server-docker-orchestrator-mysql]
       fail-fast: false
     uses: ./.github/workflows/integration-test-fast.yml
     with:
@@ -104,13 +109,13 @@ jobs:
     secrets: inherit
   start-modal-mysql-sandbox:
     needs: linting
-    if: github.event_name != 'pull_request' || (github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository)
+    if: github.event_name != 'pull_request' || (github.event.pull_request.draft ==
+      false && github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     outputs:
       server-url: ${{ steps.start.outputs.server_url }}
       server-username: ${{ steps.start.outputs.server_username }}
-      server-password: ${{ steps.start.outputs.server_password }}
       sandbox-id: ${{ steps.start.outputs.sandbox_id }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -126,7 +131,8 @@ jobs:
         run: python scripts/ci_modal_mysql_sandbox.py start
   ubuntu-latest-modal-integration-test:
     needs: [linting, start-modal-mysql-sandbox]
-    if: github.event_name != 'pull_request' || (github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository)
+    if: github.event_name != 'pull_request' || (github.event.pull_request.draft ==
+      false && github.event.pull_request.head.repo.full_name == github.repository)
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -140,7 +146,6 @@ jobs:
       test_environment: ${{ matrix.test_environment }}
       modal_ci_server_url: ${{ needs.start-modal-mysql-sandbox.outputs.server-url }}
       modal_ci_server_username: ${{ needs.start-modal-mysql-sandbox.outputs.server-username }}
-      modal_ci_server_password: ${{ needs.start-modal-mysql-sandbox.outputs.server-password }}
     secrets: inherit
   stop-modal-mysql-sandbox:
     needs: [start-modal-mysql-sandbox, ubuntu-latest-modal-integration-test]
@@ -155,7 +160,8 @@ jobs:
         env:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
-        run: python scripts/ci_modal_mysql_sandbox.py stop --sandbox-id '${{ needs.start-modal-mysql-sandbox.outputs.sandbox-id }}'
+          SANDBOX_ID: ${{ needs.start-modal-mysql-sandbox.outputs.sandbox-id }}
+        run: python scripts/ci_modal_mysql_sandbox.py stop --sandbox-id "$SANDBOX_ID"
   ci-fast-required:
     runs-on: ubuntu-latest
     needs:
@@ -174,22 +180,19 @@ jobs:
       - name: Verify required fast CI jobs
         env:
           NEEDS_CONTEXT: ${{ toJSON(needs) }}
-        run: |
+        run: |-
           python - <<'PY'
           import json
           import os
           import sys
-
           failed = []
           for name, data in json.loads(os.environ["NEEDS_CONTEXT"]).items():
               result = data["result"]
               if result not in {"success", "skipped"}:
                   failed.append(f"{name}: {result}")
-
           if failed:
               print("Fast CI dependencies failed:")
               print("\n".join(failed))
               sys.exit(1)
-
           print("All fast CI dependencies passed or were skipped by design.")
           PY
