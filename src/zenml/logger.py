@@ -307,36 +307,47 @@ class ZenMLConsoleFormatter(logging.Formatter):
         record.exc_text = exc_text_backup
 
         extras = self._collect_extras(record)
+        extras_text = ""
         if extras:
-            formatted_log = "{} | {}".format(
-                formatted_log,
-                json.dumps(extras, default=str, separators=(",", ":")),
+            extras_text = " | {}".format(
+                json.dumps(extras, default=str, separators=(",", ":"))
             )
 
+        traceback_text = ""
         if record.exc_info:
-            formatted_log = "{}\n{}".format(
-                formatted_log,
-                self.formatException(record.exc_info),
+            traceback_text = "\n{}".format(
+                self.formatException(record.exc_info)
             )
 
         if ZENML_LOGGING_COLORS_DISABLED:
-            return formatted_log
+            return formatted_log + extras_text + traceback_text
+
+        if extras_text:
+            # Always grey out extras.
+            extras_text = f"{self._GREY}{extras_text}{self._RESET}"
 
         # Grey out DEBUG logs.
         is_debug = record.levelno == logging.DEBUG
         if is_debug:
             formatted_log = f"{self._GREY}{formatted_log}{self._RESET}"
-            return self._colorize_highlights(formatted_log, self._GREY)
+            formatted_log = self._colorize_highlights(
+                formatted_log, self._GREY
+            )
+            if traceback_text:
+                traceback_text = (
+                    f"\n{self._GREY}{traceback_text.lstrip()}{self._RESET}"
+                )
+            return formatted_log + extras_text + traceback_text
 
-        # Colorize the log level.
-        plain_level = f"{record.levelname:<8}"
+        # Colorize the log message based on log level.
         level_color = self._LEVEL_COLORS.get(record.levelno, "")
-        formatted_log = formatted_log.replace(
-            plain_level, f"{level_color}{plain_level}{self._RESET}", 1
-        )
+        formatted_log = f"{level_color}{formatted_log}{self._RESET}"
 
         # Colorize highlights - backtick-quoted text and URLs.
-        return self._colorize_highlights(formatted_log, level_color)
+        formatted_log = self._colorize_highlights(
+            formatted_log, level_color
+        )
+        return formatted_log + self._RESET + extras_text + traceback_text
 
     @classmethod
     def _collect_extras(cls, record: logging.LogRecord) -> dict[str, Any]:
