@@ -15,6 +15,8 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
+from pydantic import model_validator
+
 from zenml.integrations.databricks import DATABRICKS_STEP_OPERATOR_FLAVOR
 from zenml.integrations.databricks.flavors.databricks_shared_settings import (
     DatabricksBaseSettings,
@@ -43,6 +45,26 @@ class DatabricksStepOperatorConfig(
     host: str
     client_id: Optional[str] = SecretField(default=None)
     client_secret: Optional[str] = SecretField(default=None)
+
+    @model_validator(mode="after")
+    def _validate_service_principal_credentials(
+        self,
+    ) -> "DatabricksStepOperatorConfig":
+        """Validates Databricks service principal credentials.
+
+        Returns:
+            The validated config.
+
+        Raises:
+            ValueError: If only one of `client_id` / `client_secret` is set.
+        """
+        if bool(self.client_id) != bool(self.client_secret):
+            raise ValueError(
+                "Databricks service principal authentication requires both "
+                "`client_id` and `client_secret` to be configured, or neither."
+            )
+
+        return self
 
     @property
     def is_local(self) -> bool:

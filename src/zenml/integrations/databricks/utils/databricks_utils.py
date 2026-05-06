@@ -461,8 +461,7 @@ def _resolve_policy_id(
         return policy_id
 
     for policy in databricks_client.cluster_policies.list():
-        if policy.name == "Job Compute":
-            assert policy.policy_id is not None
+        if policy.name == "Job Compute" and policy.policy_id is not None:
             return policy.policy_id
 
     logger.debug(
@@ -686,18 +685,16 @@ def map_databricks_run_to_execution_status(run: Run) -> ExecutionStatus:
 
 
 def sanitize_labels(labels: Dict[str, str]) -> None:
-    """Update the label values to be valid databricks labels.
+    """Update the label values to be valid Databricks tag values.
 
-    See:
-    https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
+    Databricks tag values must contain only alphanumeric characters,
+    underscores, hyphens, and periods, and must be at most 63 characters
+    long with leading/trailing separators trimmed.
 
     Args:
         labels: the labels to sanitize.
     """
     for key, value in labels.items():
-        # databricks labels must be alphanumeric, no longer than
-        # 63 characters, and must begin and end with an alphanumeric
-        # character ([a-z0-9A-Z])
         labels[key] = re.sub(r"[^0-9a-zA-Z-_\.]+", "_", value)[:63].strip(
             "-_."
         )
