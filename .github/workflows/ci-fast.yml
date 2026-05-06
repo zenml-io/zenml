@@ -99,7 +99,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ['3.11']
-        test_environment: [default, docker-server-docker-orchestrator-mysql]
+        test_environment: [default]
       fail-fast: false
     uses: ./.github/workflows/integration-test-fast.yml
     with:
