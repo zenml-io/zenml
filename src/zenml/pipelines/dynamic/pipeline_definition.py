@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Dynamic pipeline definition."""
 
+import inspect
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -20,6 +21,7 @@ from typing import (
     List,
     Optional,
     Type,
+    Union,
 )
 
 from pydantic import BaseModel, ConfigDict, create_model
@@ -59,8 +61,8 @@ class DynamicPipeline(Pipeline):
             depends_on: The steps that the pipeline depends on.
             **kwargs: Pipeline constructor keyword arguments.
         """
-        # This is the only execution mode that is currently supported for
-        # dynamic pipelines, so we default to it.
+        # The default execution mode (CONTINUE_ON_FAILURE) is not supported
+        # for dynamic pipelines, so we default to STOP_ON_FAILURE.
         if kwargs.get("execution_mode", None) is None:
             kwargs["execution_mode"] = ExecutionMode.STOP_ON_FAILURE
         super().__init__(**kwargs)
@@ -131,6 +133,37 @@ class DynamicPipeline(Pipeline):
             ) from e
 
         return source
+
+    @classmethod
+    def load_from_source(cls, source: Union[Source, str]) -> "DynamicPipeline":
+        """Loads a dynamic pipeline from source.
+
+        Args:
+            source: The path to the dynamic pipeline source.
+
+        Returns:
+            The loaded dynamic pipeline.
+
+        Raises:
+            ValueError: If the source is not a valid dynamic pipeline source.
+        """
+        obj = source_utils.load(source)
+
+        if isinstance(obj, DynamicPipeline):
+            return obj
+        elif isinstance(obj, type) and issubclass(obj, DynamicPipeline):
+            return obj()
+        elif inspect.isfunction(obj):
+            return DynamicPipeline(name=obj.__name__, entrypoint=obj)
+        else:
+            import_path = (
+                source.import_path if isinstance(source, Source) else source
+            )
+            raise ValueError(
+                f"Invalid dynamic pipeline source `{import_path}`: expected "
+                f"it to resolve to a `DynamicPipeline` instance/subclass or "
+                f"a function, got `{type(obj).__name__}`."
+            )
 
     def _prepare_invocations(self, **kwargs: Any) -> None:
         """Prepares the invocations of the pipeline.

@@ -5916,9 +5916,10 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             ValueError: If the artifact version is still used in any runs.
         """
-        if artifact_version not in depaginate(
-            self.list_artifact_versions, only_unused=True
-        ):
+        unused_versions = self.list_artifact_versions(
+            id=artifact_version.id, only_unused=True, size=1
+        )
+        if not unused_versions.items:
             raise ValueError(
                 "The metadata of artifact versions that are used in runs "
                 "cannot be deleted. Please delete all runs that use this "
