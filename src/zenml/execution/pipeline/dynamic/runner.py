@@ -137,7 +137,6 @@ from zenml.utils import (
     env_utils,
     exception_utils,
     pydantic_utils,
-    source_utils,
     string_utils,
 )
 from zenml.utils.logging_utils import (
@@ -299,12 +298,9 @@ class DynamicPipelineRunner:
             ):
                 raise RuntimeError("Missing pipeline source for snapshot.")
 
-            pipeline = source_utils.load(self._snapshot.pipeline_spec.source)
-            if not isinstance(pipeline, DynamicPipeline):
-                raise RuntimeError(
-                    "Invalid pipeline source: "
-                    f"{self._snapshot.pipeline_spec.source.import_path}"
-                )
+            pipeline = DynamicPipeline.load_from_source(
+                self._snapshot.pipeline_spec.source
+            )
             pipeline = copy.deepcopy(pipeline)
             pipeline._configuration = self._snapshot.pipeline_configuration
             self._pipeline = pipeline
