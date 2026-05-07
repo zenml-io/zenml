@@ -48,9 +48,6 @@ on:
         options: [default, modal-server-mysql]
         required: false
         default: default
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 jobs:
   offload-fast-tests:
     name: offload-fast-tests
