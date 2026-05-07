@@ -86,60 +86,6 @@ jobs:
       python-version: '3.13'
       use-offload: true
     secrets: inherit
-  start-modal-mysql-sandbox:
-    if: github.event_name != 'pull_request' || (github.event.pull_request.draft ==
-      false && github.event.pull_request.head.repo.full_name == github.repository)
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    outputs:
-      server-url: ${{ steps.start.outputs.server_url }}
-      server-username: ${{ steps.start.outputs.server_username }}
-      sandbox-id: ${{ steps.start.outputs.sandbox_id }}
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      - name: Install Modal SDK
-        run: python -m pip install --upgrade 'modal>=1.0.0'
-      - id: start
-        name: Start Modal MySQL sandbox
-        env:
-          ZENML_CI_MODAL_DISABLED: ${{ vars.ZENML_CI_MODAL_DISABLED }}
-          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
-          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
-          ZENML_CI_CHECKOUT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: python scripts/ci_modal_mysql_sandbox.py start
-  ubuntu-latest-modal-integration-test:
-    needs: start-modal-mysql-sandbox
-    if: github.event_name != 'pull_request' || (github.event.pull_request.draft ==
-      false && github.event.pull_request.head.repo.full_name == github.repository)
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ['3.11']
-        test_environment: [remote-mysql-modal]
-      fail-fast: false
-    uses: ./.github/workflows/integration-test-fast.yml
-    with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
-      test_environment: ${{ matrix.test_environment }}
-      modal_ci_server_url: ${{ needs.start-modal-mysql-sandbox.outputs.server-url }}
-      modal_ci_server_username: ${{ needs.start-modal-mysql-sandbox.outputs.server-username }}
-    secrets: inherit
-  stop-modal-mysql-sandbox:
-    needs: [start-modal-mysql-sandbox, ubuntu-latest-modal-integration-test]
-    if: always() && needs.start-modal-mysql-sandbox.result == 'success'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      - name: Install Modal SDK
-        run: python -m pip install --upgrade 'modal>=1.0.0'
-      - name: Stop Modal MySQL sandbox
-        env:
-          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
-          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
-          SANDBOX_ID: ${{ needs.start-modal-mysql-sandbox.outputs.sandbox-id }}
-        run: python scripts/ci_modal_mysql_sandbox.py stop --sandbox-id "$SANDBOX_ID"
   linux-fast-offload-modal-mysql:
     if: github.event_name != 'pull_request' || (github.event.pull_request.draft ==
       false && github.event.pull_request.head.repo.full_name == github.repository)
@@ -159,9 +105,7 @@ jobs:
       - update-templates-to-examples
       - linting
       - linux-fast-offload
-      - start-modal-mysql-sandbox
-      - ubuntu-latest-modal-integration-test
-      - stop-modal-mysql-sandbox
+      - linux-fast-offload-modal-mysql
     if: always()
     steps:
       - name: Verify required fast CI jobs
