@@ -451,11 +451,11 @@ def main() -> None:
             """
             step_name = node.id
             step_config = snapshot.step_configurations[step_name].config
-            settings = step_config.settings.get(
-                "orchestrator.kubernetes", None
-            )
-            settings = KubernetesOrchestratorSettings.model_validate(
-                settings.model_dump() if settings else {}
+            settings = cast(
+                KubernetesOrchestratorSettings,
+                orchestrator.get_settings(
+                    snapshot.step_configurations[step_name]
+                ),
             )
             if not pipeline_settings.prevent_orchestrator_pod_caching:
                 if _cache_step_run_if_possible(step_name):
@@ -740,12 +740,11 @@ def main() -> None:
                 )
                 return NodeStatus.FAILED
 
-            step_config = snapshot.step_configurations[step_name].config
-            settings = step_config.settings.get(
-                "orchestrator.kubernetes", None
-            )
-            settings = KubernetesOrchestratorSettings.model_validate(
-                settings.model_dump() if settings else {}
+            settings = cast(
+                KubernetesOrchestratorSettings,
+                orchestrator.get_settings(
+                    snapshot.step_configurations[step_name]
+                ),
             )
             status, error_message = kube_utils.check_job_status(
                 batch_api=batch_api,
