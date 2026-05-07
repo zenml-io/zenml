@@ -27,6 +27,6 @@ def test_modal_mysql_offload_config_is_valid() -> None:
     assert config["offload"]["max_parallel"] == 20
     assert config["provider"]["type"] == "default"
     assert config["report"]["output_dir"] == ".ci/offload"
-    assert set(config["groups"]) == {"integration"}
+    assert set(config["groups"]) == {"unit", "integration"}
     assert "remote-mysql-modal" in config["framework"]["run_args"]
     assert "MODAL_CI_SERVER_URL" in config["provider"]["create_command"]
