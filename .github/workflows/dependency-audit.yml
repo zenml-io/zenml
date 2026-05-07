@@ -1,0 +1,60 @@
+---
+name: Python Dependency Audit
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - pyproject.toml
+      - .github/workflows/dependency-audit.yml
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - pyproject.toml
+      - .github/workflows/dependency-audit.yml
+  # Weekly safety net to catch newly disclosed vulnerabilities
+  schedule:
+    - cron: 0 4 * * 1
+  # Allow manual triggering
+  workflow_dispatch:
+permissions: {}
+jobs:
+  dependency-audit:
+    name: Audit zenml server/dev/local dependencies
+    runs-on: ubuntu-latest
+    # Only run on the main repo, not forks (scheduled runs would fail on forks)
+    if: github.repository == 'zenml-io/zenml'
+    permissions:
+      contents: read
+    timeout-minutes: 30
+    env:
+      PYTHONIOENCODING: utf-8
+      UV_HTTP_TIMEOUT: 600
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        with:
+          python-version: '3.11'
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
+        with:
+          version: 0.8.14
+          enable-cache: true
+          cache-dependency-glob: pyproject.toml
+
+      - name: Install zenml server/dev/local dependencies in isolated venv
+        run: |
+          uv venv --python 3.11 .venv-audit-target
+          uv pip install --python .venv-audit-target/bin/python '.[server,dev,local]'
+          uv pip check --python .venv-audit-target/bin/python
+
+      - name: Audit installed dependencies with pip-audit
+        run: |
+          SITE_PACKAGES="$(.venv-audit-target/bin/python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')"
+          uvx pip-audit --path "$SITE_PACKAGES" --strict --progress-spinner off
