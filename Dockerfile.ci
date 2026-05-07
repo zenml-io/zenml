@@ -6,7 +6,7 @@ ARG UV_VERSION
 
 RUN set -ex \
   && apt-get update \
-  && apt-get install -y --no-install-recommends git graphviz build-essential \
+  && apt-get install -y --no-install-recommends git graphviz build-essential libgomp1 \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/*
 
@@ -47,7 +47,7 @@ FROM python:${PYTHON_VERSION}-slim-bookworm
 
 RUN set -ex \
   && apt-get update \
-  && apt-get install -y --no-install-recommends git graphviz \
+  && apt-get install -y --no-install-recommends git graphviz libgomp1 \
   && apt-get clean -y \
   && rm -rf /var/lib/apt/lists/*
 

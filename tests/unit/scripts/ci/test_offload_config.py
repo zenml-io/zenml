@@ -12,7 +12,7 @@ def test_fast_offload_config_is_valid() -> None:
     config = tomllib.loads(Path("offload.toml").read_text())
 
     assert config["offload"]["max_parallel"] == 20
-    assert config["offload"]["max_batch_duration_secs"] == 120
+    assert config["offload"]["max_batch_duration_secs"] == 320
     assert config["provider"]["type"] == "default"
     assert config["report"]["output_dir"] == ".ci/offload"
     assert set(config["groups"]) == {"unit", "integration"}
@@ -39,12 +39,17 @@ def test_modal_mysql_offload_config_is_valid() -> None:
     config = tomllib.loads(Path("offload-modal-server-mysql.toml").read_text())
 
     assert config["offload"]["max_parallel"] == 20
-    assert config["offload"]["max_batch_duration_secs"] == 120
+    assert config["offload"]["max_batch_duration_secs"] == 320
     assert config["provider"]["type"] == "default"
     assert config["report"]["output_dir"] == ".ci/offload"
     assert set(config["groups"]) == {"unit", "integration"}
     assert config["groups"]["unit"]["filters"] == "tests/unit"
     assert "tests/integration" in config["groups"]["integration"]["filters"]
     assert "not slow" in config["groups"]["integration"]["filters"]
-    assert "remote-mysql-modal" in config["framework"]["run_args"]
+    assert config["framework"]["command"].startswith(
+        "python scripts/ci/run_mixed_environment_pytest.py"
+    )
+    assert config["framework"]["run_args"].startswith(
+        "--no-provision --environment default"
+    )
     assert "MODAL_CI_SERVER_URL" in config["provider"]["create_command"]

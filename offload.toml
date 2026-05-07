@@ -1,7 +1,7 @@
 [offload]
 max_parallel = 20
 test_timeout_secs = 960
-max_batch_duration_secs = 120
+max_batch_duration_secs = 320
 sandbox_project_root = "/app"
 
 [provider]
