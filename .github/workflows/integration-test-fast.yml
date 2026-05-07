@@ -275,7 +275,9 @@ jobs:
         run: |
           curl -L -o kubectl "https://dl.k8s.io/release/v1.35.0/bin/linux/amd64/kubectl"
           sudo install -o root -g 0 -m 0755 kubectl /usr/local/bin/kubectl
-        if: (inputs.os == 'ubuntu-latest' || inputs.os == 'arc-runner-set') && (contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment, 'kubernetes') || contains(inputs.test_environment, 'aws') || contains(inputs.test_environment, 'gcp'))
+        if: (inputs.os == 'ubuntu-latest' || inputs.os == 'arc-runner-set') && (contains(inputs.test_environment,
+          'kubeflow') || contains(inputs.test_environment, 'kubernetes') || contains(inputs.test_environment,
+          'aws') || contains(inputs.test_environment, 'gcp'))
       - name: Install kubectl on MacOS
         run: |
           curl -LO "https://dl.k8s.io/release/v1.35.0/bin/darwin/amd64/kubectl"

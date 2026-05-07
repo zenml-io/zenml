@@ -10,10 +10,13 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path
 
-from scripts.ci.print_junit_summary import (
-    parse_junit_summary,
-    print_parsed_summary,
-)
+try:
+    from scripts.ci.print_junit_summary import (
+        parse_junit_summary,
+        print_parsed_summary,
+    )
+except ModuleNotFoundError:
+    from print_junit_summary import parse_junit_summary, print_parsed_summary
 
 INFRA_PATTERN = re.compile(
     r"(modal|sandbox|offload|rate.?limit|timeout|connection|network|"

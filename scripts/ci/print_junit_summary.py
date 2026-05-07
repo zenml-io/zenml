@@ -7,7 +7,10 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path
 
-from scripts.ci.print_junit_failures import print_failures
+try:
+    from scripts.ci.print_junit_failures import print_failures
+except ModuleNotFoundError:
+    from print_junit_failures import print_failures
 
 
 @dataclass(frozen=True)

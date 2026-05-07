@@ -119,6 +119,7 @@ jobs:
           echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
           trap 'echo "completed_at=$(date +%s)" >> "$GITHUB_OUTPUT"' EXIT
           python3 -m pip install --user "uv==0.8.22" -r scripts/ci/modal_sandbox_requirements.txt
+          python3 -m uv pip install --system -e ".[server,templates,dev]" -r scripts/ci/modal_sandbox_requirements.txt
           if ! command -v cargo >/dev/null 2>&1; then
             echo "cargo is required to install the pinned offload binary"
             exit 1
@@ -134,25 +135,32 @@ jobs:
           offload --version
       - name: Restore offload image cache
         id: restore-image-cache
-        if: steps.eligibility.outputs.eligible == 'true' && steps.setup.outcome == 'success'
+        if: steps.eligibility.outputs.eligible == 'true' && steps.setup.outcome ==
+          'success'
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
         with:
           path: .offload-image-cache
-          key: offload-image-v1-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('Dockerfile.ci', 'Dockerfile.ci.dockerignore', 'pyproject.toml', 'scripts/install-zenml-dev.sh', 'offload.toml', 'offload-modal-server-mysql.toml') }}
+          key: offload-image-v1-${{ runner.os }}-${{ inputs.python-version }}-${{
+            hashFiles('Dockerfile.ci', 'Dockerfile.ci.dockerignore', 'pyproject.toml',
+            'scripts/install-zenml-dev.sh', 'offload.toml', 'offload-modal-server-mysql.toml')
+            }}
           restore-keys: |
             offload-image-v1-${{ runner.os }}-${{ inputs.python-version }}-
       - name: Restore JUnit duration cache
         id: restore-junit-cache
-        if: steps.eligibility.outputs.eligible == 'true' && steps.setup.outcome == 'success'
+        if: steps.eligibility.outputs.eligible == 'true' && steps.setup.outcome ==
+          'success'
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
         with:
           path: .ci/offload/junit.xml
-          key: offload-junit-${{ inputs.test_environment }}-${{ runner.os }}-${{ inputs.python-version }}
+          key: offload-junit-${{ inputs.test_environment }}-${{ runner.os }}-${{ inputs.python-version
+            }}
           restore-keys: |
             offload-junit-${{ inputs.test_environment }}-${{ runner.os }}-
       - name: Start Modal MySQL server
         id: modal-server
-        if: steps.eligibility.outputs.eligible == 'true' && steps.setup.outcome == 'success' && inputs.test_environment == 'modal-server-mysql'
+        if: steps.eligibility.outputs.eligible == 'true' && steps.setup.outcome ==
+          'success' && inputs.test_environment == 'modal-server-mysql'
         continue-on-error: true
         env:
           ZENML_CI_MODAL_DISABLED: ${{ vars.ZENML_CI_MODAL_DISABLED }}
@@ -163,7 +171,8 @@ jobs:
           python3 scripts/ci_modal_mysql_sandbox.py start
       - name: Run offload
         id: run-offload
-        if: steps.eligibility.outputs.eligible == 'true' && steps.setup.outcome == 'success' && steps.modal-server.outcome != 'failure'
+        if: steps.eligibility.outputs.eligible == 'true' && steps.setup.outcome ==
+          'success' && steps.modal-server.outcome != 'failure'
         continue-on-error: true
         env:
           OFFLOAD_COMMAND: ${{ vars.ZENML_CI_OFFLOAD_COMMAND }}
@@ -199,7 +208,8 @@ jobs:
           echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
           echo "completed_at=$(date +%s)" >> "$GITHUB_OUTPUT"
       - name: Mark skipped offload as infrastructure failure
-        if: steps.eligibility.outputs.eligible != 'true' || steps.setup.outcome == 'failure' || steps.modal-server.outcome == 'failure'
+        if: steps.eligibility.outputs.eligible != 'true' || steps.setup.outcome ==
+          'failure' || steps.modal-server.outcome == 'failure'
         env:
           ELIGIBILITY_REASON: ${{ steps.eligibility.outputs.reason }}
           SETUP_OUTCOME: ${{ steps.setup.outcome }}
@@ -267,18 +277,33 @@ jobs:
             --phase "test_execution=$TEST_STARTED_AT,$TEST_COMPLETED_AT,exit_$TEST_EXIT_CODE" \
             --phase "classification=$CLASSIFY_STARTED_AT,$CLASSIFY_COMPLETED_AT,$CLASSIFY_OUTCOME" \
             --phase "teardown=$TEARDOWN_STARTED_AT,$TEARDOWN_COMPLETED_AT,$TEARDOWN_OUTCOME"
+      - name: Check offload image cache path
+        id: image-cache-path
+        if: always()
+        run: |
+          if [ -d .offload-image-cache ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Save offload image cache
-        if: always() && steps.eligibility.outputs.eligible == 'true' && steps.setup.outcome == 'success' && steps.restore-image-cache.outputs.cache-hit != 'true'
+        if: always() && steps.eligibility.outputs.eligible == 'true' && steps.setup.outcome
+          == 'success' && steps.restore-image-cache.outputs.cache-hit != 'true' &&
+          steps.image-cache-path.outputs.exists == 'true'
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
         with:
           path: .offload-image-cache
-          key: offload-image-v1-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('Dockerfile.ci', 'Dockerfile.ci.dockerignore', 'pyproject.toml', 'scripts/install-zenml-dev.sh', 'offload.toml', 'offload-modal-server-mysql.toml') }}
+          key: offload-image-v1-${{ runner.os }}-${{ inputs.python-version }}-${{
+            hashFiles('Dockerfile.ci', 'Dockerfile.ci.dockerignore', 'pyproject.toml',
+            'scripts/install-zenml-dev.sh', 'offload.toml', 'offload-modal-server-mysql.toml')
+            }}
       - name: Save JUnit duration cache
         if: always() && steps.classify.outputs.conclusion == 'success'
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
         with:
           path: .ci/offload/junit.xml
-          key: offload-junit-${{ inputs.test_environment }}-${{ runner.os }}-${{ inputs.python-version }}-${{ github.run_id }}
+          key: offload-junit-${{ inputs.test_environment }}-${{ runner.os }}-${{ inputs.python-version
+            }}-${{ github.run_id }}
       - name: Upload offload artifacts
         if: always()
         uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50  # v4.6.2
