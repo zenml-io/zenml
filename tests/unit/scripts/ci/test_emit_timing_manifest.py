@@ -12,6 +12,9 @@ def test_build_manifest_includes_duration_and_artifacts(
 ) -> None:
     """Manifest captures timing and artifact presence."""
     (tmp_path / "junit.xml").write_text("<testsuite />")
+    (tmp_path / "junit.seed.xml").write_text("<testsuite />")
+    (tmp_path / "junit.stale.xml").write_text("<testsuite />")
+    (tmp_path / "run-start.marker").write_text("start")
 
     manifest = build_manifest(
         lane="default",
@@ -27,4 +30,8 @@ def test_build_manifest_includes_duration_and_artifacts(
     assert manifest["phases"]["setup"]["duration_seconds"] == 2
     assert manifest["phases"]["test_execution"]["status"] == "exit_0"
     assert manifest["artifacts"]["junit_xml"]["exists"] is True
+    assert manifest["artifacts"]["junit_seed_xml"]["exists"] is True
+    assert manifest["artifacts"]["junit_stale_xml"]["exists"] is True
+    assert manifest["artifacts"]["run_start_marker"]["exists"] is True
     assert manifest["artifacts"]["offload_log"]["exists"] is False
+    assert manifest["cache"]["uv_cache_hit"] == ""

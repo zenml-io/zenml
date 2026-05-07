@@ -94,8 +94,18 @@ def build_manifest(
         },
         "artifacts": {
             "junit_xml": _file_metadata(output_dir / "junit.xml"),
+            "junit_seed_xml": _file_metadata(output_dir / "junit.seed.xml"),
+            "junit_stale_xml": _file_metadata(output_dir / "junit.stale.xml"),
+            "run_start_marker": _file_metadata(output_dir / "run-start.marker"),
             "coverage_xml": _file_metadata(output_dir / "coverage.xml"),
             "offload_log": _file_metadata(output_dir / "offload.log"),
+        },
+        "cache": {
+            "uv_cache_hit": os.environ.get("OFFLOAD_UV_CACHE_HIT", ""),
+            "image_cache_hit": os.environ.get("OFFLOAD_IMAGE_CACHE_HIT", ""),
+            "junit_cache_hit": os.environ.get("OFFLOAD_JUNIT_CACHE_HIT", ""),
+            "junit_current": os.environ.get("OFFLOAD_JUNIT_CURRENT", ""),
+            "junit_cacheable": os.environ.get("OFFLOAD_JUNIT_CACHEABLE", ""),
         },
     }
 

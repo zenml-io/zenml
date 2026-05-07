@@ -151,6 +151,15 @@ key: uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/i
 
 Cache invalidates when integrations change.
 
+Offload CI uses separate cache families:
+- `offload-uv-v1`: runner-side uv downloads/build artifacts for offload driver setup and pytest collection dependencies.
+- `offload-image-v2`: Modal image metadata. This intentionally excludes runtime fields such as CPU, memory, `max_parallel`, commands used after sandbox creation, and test filters.
+- `offload-junit-v2`: offload JUnit duration seeds keyed by lane and test-selection inputs.
+
+Restored offload JUnit XML is only a duration seed. It must not be treated as current test output unless `.ci/offload/junit.xml` is newer than `.ci/offload/run-start.marker`. Stale restored XML should be quarantined as `junit.stale.xml`.
+
+The `offload-cache-warm.yml` workflow refreshes offload image and JUnit duration caches weekly or manually. It is a maintenance workflow, not a branch-protection signal.
+
 ## Key Supporting Files
 
 | File | Purpose |

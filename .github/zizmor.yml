@@ -97,3 +97,4 @@ rules:
       - ci-medium.yml
       - ci-slow-develop.yml
       - slow-ci-on-pr.yml
+      - offload-cache-warm.yml

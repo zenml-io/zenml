@@ -64,6 +64,10 @@ jobs:
       ZENML_DEBUG: 1
       ZENML_ENABLE_RICH_TRACEBACK: false
       PYTHONDONTWRITEBYTECODE: 1
+      UV_CACHE_DIR: /opt/uv-cache
+      TMPDIR: /opt/tmp
+      TMP: /opt/tmp
+      TEMP: /opt/tmp
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -75,6 +79,10 @@ jobs:
           python-version: ${{ inputs.python-version }}
       - name: Prepare result directory
         run: mkdir -p .ci/offload
+      - name: Prepare uv cache directories
+        run: |
+          sudo mkdir -p /opt/uv-cache /opt/tmp
+          sudo chown -R "$USER:$USER" /opt/uv-cache /opt/tmp
       - name: Check offload eligibility
         id: eligibility
         env:
@@ -98,6 +106,21 @@ jobs:
           echo "reason=$reason" >> "$GITHUB_OUTPUT"
           echo "$reason"
           echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+      - name: Compute offload cache keys
+        id: cache-keys
+        env:
+          OFFLOAD_LANE: ${{ inputs.test_environment }}
+          RUNNER_OS_NAME: ${{ runner.os }}
+          PYTHON_VERSION: ${{ inputs.python-version }}
+          GITHUB_RUN_ID_VALUE: ${{ github.run_id }}
+          GITHUB_RUN_ATTEMPT_VALUE: ${{ github.run_attempt }}
+        run: |
+          python3 scripts/ci/compute_offload_cache_keys.py \
+            --lane "$OFFLOAD_LANE" \
+            --runner-os "$RUNNER_OS_NAME" \
+            --python-version "$PYTHON_VERSION" \
+            --run-id "$GITHUB_RUN_ID_VALUE" \
+            --run-attempt "$GITHUB_RUN_ATTEMPT_VALUE"
       - name: Cache cargo/offload binary
         if: steps.eligibility.outputs.eligible == 'true'
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
@@ -108,6 +131,16 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
           key: offload-${{ runner.os }}-a43298e03113c39e7c0bb4cf1d5f6f72d2c86584-v1
+      - name: Restore offload uv cache
+        id: restore-uv-cache
+        if: steps.eligibility.outputs.eligible == 'true'
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
+        with:
+          path: /opt/uv-cache
+          key: ${{ steps.cache-keys.outputs.uv_key }}
+          restore-keys: |
+            ${{ steps.cache-keys.outputs.uv_restore_prefix }}
+            ${{ steps.cache-keys.outputs.legacy_uv_restore_prefix }}
       - name: Install driver dependencies
         id: setup
         if: steps.eligibility.outputs.eligible == 'true'
@@ -119,7 +152,7 @@ jobs:
           set -euo pipefail
           echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
           trap 'echo "completed_at=$(date +%s)" >> "$GITHUB_OUTPUT"' EXIT
-          python3 -m pip install --user "uv==0.8.22" -r scripts/ci/modal_sandbox_requirements.txt
+          python3 -m pip install --user "uv==0.8.22"
           python3 -m uv pip install --system -e ".[server,templates,dev]" -r scripts/ci/modal_sandbox_requirements.txt
           if ! command -v cargo >/dev/null 2>&1; then
             echo "cargo is required to install the pinned offload binary"
@@ -134,6 +167,13 @@ jobs:
             echo "$OFFLOAD_GIT_REV" > ~/.cargo/bin/offload.rev
           fi
           offload --version
+      - name: Save offload uv cache
+        if: steps.eligibility.outputs.eligible == 'true' && steps.setup.outcome == 'success' && steps.restore-uv-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
+        with:
+          path: /opt/uv-cache
+          key: ${{ steps.cache-keys.outputs.uv_key }}
       - name: Restore offload image cache
         id: restore-image-cache
         if: steps.eligibility.outputs.eligible == 'true' && steps.setup.outcome ==
@@ -141,12 +181,10 @@ jobs:
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
         with:
           path: .offload-image-cache
-          key: offload-image-v1-${{ runner.os }}-${{ inputs.python-version }}-${{
-            hashFiles('Dockerfile.ci', 'Dockerfile.ci.dockerignore', 'pyproject.toml',
-            'scripts/install-zenml-dev.sh', 'offload.toml', 'offload-modal-server-mysql.toml')
-            }}
+          key: ${{ steps.cache-keys.outputs.image_key }}
           restore-keys: |
-            offload-image-v1-${{ runner.os }}-${{ inputs.python-version }}-
+            ${{ steps.cache-keys.outputs.image_restore_prefix }}
+            ${{ steps.cache-keys.outputs.legacy_image_restore_prefix }}
       - name: Restore JUnit duration cache
         id: restore-junit-cache
         if: steps.eligibility.outputs.eligible == 'true' && steps.setup.outcome ==
@@ -154,10 +192,13 @@ jobs:
         uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
         with:
           path: .ci/offload/junit.xml
-          key: offload-junit-${{ inputs.test_environment }}-${{ runner.os }}-${{ inputs.python-version
-            }}
+          key: ${{ steps.cache-keys.outputs.junit_restore_key }}
           restore-keys: |
-            offload-junit-${{ inputs.test_environment }}-${{ runner.os }}-
+            ${{ steps.cache-keys.outputs.junit_restore_prefix }}
+            ${{ steps.cache-keys.outputs.legacy_junit_restore_prefix }}
+      - name: Preserve restored JUnit duration seed
+        if: steps.restore-junit-cache.outputs.cache-hit != '' && hashFiles('.ci/offload/junit.xml') != ''
+        run: cp .ci/offload/junit.xml .ci/offload/junit.seed.xml
       - name: Start Modal MySQL server
         id: modal-server
         if: steps.eligibility.outputs.eligible == 'true' && steps.setup.outcome ==
@@ -211,7 +252,15 @@ jobs:
           fi
           find . -type d -name __pycache__ -prune -exec rm -rf {} +
           find . -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete
-          command=${OFFLOAD_COMMAND:-"offload -v run --parallel 32"}
+          rm -f .ci/offload/run-start.marker
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          from pathlib import Path
+          marker = Path('.ci/offload/run-start.marker')
+          marker.parent.mkdir(parents=True, exist_ok=True)
+          marker.write_text('start\n', encoding='utf-8')
+          print(f"junit_marker_mtime_ns={marker.stat().st_mtime_ns}")
+          PY
+          command=${OFFLOAD_COMMAND:-"offload -v run --parallel 20"}
           echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
           echo "Running: $command"
           bash -lc "$command" 2>&1 | tee .ci/offload/offload.log
@@ -236,6 +285,7 @@ jobs:
         env:
           SETUP_FAILED: ${{ steps.eligibility.outputs.eligible != 'true' || steps.setup.outcome == 'failure' || steps.modal-server.outcome == 'failure' }}
           OFFLOAD_EXIT_CODE: ${{ steps.run-offload.outputs.exit_code || '1' }}
+          JUNIT_MARKER_MTIME_NS: ${{ steps.run-offload.outputs.junit_marker_mtime_ns || '0' }}
         run: |
           echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
           trap 'echo "completed_at=$(date +%s)" >> "$GITHUB_OUTPUT"' EXIT
@@ -243,7 +293,11 @@ jobs:
             --exit-code "$OFFLOAD_EXIT_CODE" \
             --junit .ci/offload/junit.xml \
             --log .ci/offload/offload.log \
-            --setup-failed "$SETUP_FAILED"
+            --setup-failed "$SETUP_FAILED" \
+            --junit-min-mtime-ns "$JUNIT_MARKER_MTIME_NS"
+      - name: Quarantine stale restored JUnit
+        if: always() && steps.classify.outputs.junit_current != 'true' && hashFiles('.ci/offload/junit.xml') != ''
+        run: mv .ci/offload/junit.xml .ci/offload/junit.stale.xml
       - name: Stop Modal MySQL server
         id: teardown
         if: always() && steps.modal-server.outputs.sandbox_id != ''
@@ -275,6 +329,11 @@ jobs:
           TEARDOWN_STARTED_AT: ${{ steps.teardown.outputs.started_at }}
           TEARDOWN_COMPLETED_AT: ${{ steps.teardown.outputs.completed_at }}
           TEARDOWN_OUTCOME: ${{ steps.teardown.outcome }}
+          OFFLOAD_UV_CACHE_HIT: ${{ steps.restore-uv-cache.outputs.cache-hit }}
+          OFFLOAD_IMAGE_CACHE_HIT: ${{ steps.restore-image-cache.outputs.cache-hit }}
+          OFFLOAD_JUNIT_CACHE_HIT: ${{ steps.restore-junit-cache.outputs.cache-hit }}
+          OFFLOAD_JUNIT_CURRENT: ${{ steps.classify.outputs.junit_current }}
+          OFFLOAD_JUNIT_CACHEABLE: ${{ steps.classify.outputs.junit_cacheable }}
         run: |
           python3 scripts/ci/emit_timing_manifest.py \
             --lane "$LANE" \
@@ -300,13 +359,11 @@ jobs:
         if: always() && steps.eligibility.outputs.eligible == 'true' && steps.setup.outcome
           == 'success' && steps.restore-image-cache.outputs.cache-hit != 'true' &&
           steps.image-cache-path.outputs.exists == 'true'
+        continue-on-error: true
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
         with:
           path: .offload-image-cache
-          key: offload-image-v1-${{ runner.os }}-${{ inputs.python-version }}-${{
-            hashFiles('Dockerfile.ci', 'Dockerfile.ci.dockerignore', 'pyproject.toml',
-            'scripts/install-zenml-dev.sh', 'offload.toml', 'offload-modal-server-mysql.toml')
-            }}
+          key: ${{ steps.cache-keys.outputs.image_key }}
       - name: Check JUnit duration cache path
         id: junit-cache-path
         if: always()
@@ -317,12 +374,12 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
       - name: Save JUnit duration cache
-        if: always() && steps.junit-cache-path.outputs.exists == 'true'
+        if: always() && steps.classify.outputs.junit_cacheable == 'true' && steps.junit-cache-path.outputs.exists == 'true'
+        continue-on-error: true
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
         with:
           path: .ci/offload/junit.xml
-          key: offload-junit-${{ inputs.test_environment }}-${{ runner.os }}-${{ inputs.python-version
-            }}-${{ github.run_id }}
+          key: ${{ steps.cache-keys.outputs.junit_save_key }}
       - name: Upload offload artifacts
         if: always()
         uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50  # v4.6.2
