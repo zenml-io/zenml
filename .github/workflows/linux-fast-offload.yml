@@ -63,6 +63,7 @@ jobs:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: 1
       ZENML_ENABLE_RICH_TRACEBACK: false
+      PYTHONDONTWRITEBYTECODE: 1
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -208,6 +209,8 @@ jobs:
             cp offload.toml "$original_offload"
             cp offload-modal-server-mysql.toml offload.toml
           fi
+          find . -type d -name __pycache__ -prune -exec rm -rf {} +
+          find . -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete
           command=${OFFLOAD_COMMAND:-"offload -v run --parallel 20"}
           echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
           echo "Running: $command"
