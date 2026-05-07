@@ -197,7 +197,7 @@ jobs:
           bash -lc "$command" 2>&1 | tee .ci/offload/offload.log
           echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
           echo "completed_at=$(date +%s)" >> "$GITHUB_OUTPUT"
-      - name: Mark skipped offload as infrastructure fallback
+      - name: Mark skipped offload as infrastructure failure
         if: steps.eligibility.outputs.eligible != 'true' || steps.setup.outcome == 'failure' || steps.modal-server.outcome == 'failure'
         env:
           ELIGIBILITY_REASON: ${{ steps.eligibility.outputs.reason }}
@@ -285,59 +285,6 @@ jobs:
           name: linux-fast-offload-artifacts
           path: .ci/offload
           if-no-files-found: warn
-      - name: Fail on offloaded test failures
-        if: steps.classify.outputs.tests_failed == 'true'
+      - name: Fail on unsuccessful offload
+        if: steps.classify.outputs.conclusion != 'success'
         run: exit 1
-  fallback-unit-test:
-    needs: offload-fast-tests
-    if: needs.offload-fast-tests.outputs.offload-infra-failed == 'true' && inputs.test_environment == 'default'
-    uses: ./.github/workflows/unit-test.yml
-    with:
-      os: ubuntu-latest
-      python-version: ${{ inputs.python-version }}
-  fallback-integration-test:
-    needs: offload-fast-tests
-    if: needs.offload-fast-tests.outputs.offload-infra-failed == 'true' && inputs.test_environment == 'default'
-    uses: ./.github/workflows/integration-test-fast.yml
-    with:
-      os: ubuntu-latest
-      python-version: ${{ inputs.python-version }}
-      test_environment: default
-  fallback-mysql-integration-test:
-    needs: offload-fast-tests
-    if: needs.offload-fast-tests.outputs.offload-infra-failed == 'true' && inputs.test_environment == 'modal-server-mysql'
-    uses: ./.github/workflows/integration-test-fast.yml
-    with:
-      os: ubuntu-latest
-      python-version: ${{ inputs.python-version }}
-      test_environment: docker-server-mysql
-  linux-fast-offload-required:
-    runs-on: ubuntu-latest
-    needs:
-      - offload-fast-tests
-      - fallback-unit-test
-      - fallback-integration-test
-      - fallback-mysql-integration-test
-    if: always()
-    steps:
-      - name: Verify offload or fallback result
-        env:
-          NEEDS_CONTEXT: ${{ toJSON(needs) }}
-        run: |-
-          python3 - <<'PY'
-          import json
-          import os
-          import sys
-
-          needs = json.loads(os.environ["NEEDS_CONTEXT"])
-          failed = []
-          for name, data in needs.items():
-              result = data["result"]
-              if result not in {"success", "skipped"}:
-                  failed.append(f"{name}: {result}")
-          if failed:
-              print("Linux fast offload dependencies failed:")
-              print("\n".join(failed))
-              sys.exit(1)
-          print("Linux fast offload passed or fell back successfully.")
-          PY

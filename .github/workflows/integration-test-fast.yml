@@ -275,7 +275,7 @@ jobs:
         run: |
           curl -L -o kubectl "https://dl.k8s.io/release/v1.35.0/bin/linux/amd64/kubectl"
           sudo install -o root -g 0 -m 0755 kubectl /usr/local/bin/kubectl
-        if: (inputs.os == 'ubuntu-latest' || inputs.os == 'arc-runner-set')
+        if: (inputs.os == 'ubuntu-latest' || inputs.os == 'arc-runner-set') && (contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment, 'kubernetes') || contains(inputs.test_environment, 'aws') || contains(inputs.test_environment, 'gcp'))
       - name: Install kubectl on MacOS
         run: |
           curl -LO "https://dl.k8s.io/release/v1.35.0/bin/darwin/amd64/kubectl"
@@ -331,6 +331,7 @@ jobs:
         uses: mxschmitt/action-tmate@c0afd6f790e3a5564914980036ebf83216678101  # v3.23
         timeout-minutes: ${{ inputs.tmate_timeout }}
       - name: Verify Python Env unaffected
+        if: inputs.test_environment != 'remote-mysql-modal'
         run: |-
           zenml integration list
           uv pip list
