@@ -11,7 +11,7 @@ def test_fast_offload_config_is_valid() -> None:
     """Default fast offload config has the expected shape."""
     config = tomllib.loads(Path("offload.toml").read_text())
 
-    assert config["offload"]["max_parallel"] == 20
+    assert config["offload"]["max_parallel"] == 32
     assert config["provider"]["type"] == "default"
     assert config["report"]["output_dir"] == ".ci/offload"
     assert set(config["groups"]) == {"unit", "integration"}
@@ -24,7 +24,7 @@ def test_modal_mysql_offload_config_is_valid() -> None:
     """Modal/MySQL offload config targets the remote server environment."""
     config = tomllib.loads(Path("offload-modal-server-mysql.toml").read_text())
 
-    assert config["offload"]["max_parallel"] == 20
+    assert config["offload"]["max_parallel"] == 32
     assert config["provider"]["type"] == "default"
     assert config["report"]["output_dir"] == ".ci/offload"
     assert set(config["groups"]) == {"unit", "integration"}

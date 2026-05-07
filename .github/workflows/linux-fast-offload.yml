@@ -211,7 +211,7 @@ jobs:
           fi
           find . -type d -name __pycache__ -prune -exec rm -rf {} +
           find . -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete
-          command=${OFFLOAD_COMMAND:-"offload -v run --parallel 20"}
+          command=${OFFLOAD_COMMAND:-"offload -v run --parallel 32"}
           echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
           echo "Running: $command"
           bash -lc "$command" 2>&1 | tee .ci/offload/offload.log
@@ -291,7 +291,7 @@ jobs:
         id: image-cache-path
         if: always()
         run: |
-          if [ -d .offload-image-cache ]; then
+          if [ -e .offload-image-cache ]; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
@@ -307,8 +307,17 @@ jobs:
             hashFiles('Dockerfile.ci', 'Dockerfile.ci.dockerignore', 'pyproject.toml',
             'scripts/install-zenml-dev.sh', 'offload.toml', 'offload-modal-server-mysql.toml')
             }}
+      - name: Check JUnit duration cache path
+        id: junit-cache-path
+        if: always()
+        run: |
+          if [ -s .ci/offload/junit.xml ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Save JUnit duration cache
-        if: always() && steps.classify.outputs.conclusion == 'success'
+        if: always() && steps.junit-cache-path.outputs.exists == 'true'
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
         with:
           path: .ci/offload/junit.xml
