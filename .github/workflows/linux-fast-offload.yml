@@ -183,10 +183,17 @@ jobs:
         run: |
           set -o pipefail
           original_offload=""
+          original_dockerignore="$(mktemp)"
+          cp .dockerignore "$original_dockerignore"
+          cp Dockerfile.ci.dockerignore .dockerignore
           restore_config() {
             if [ -n "$original_offload" ] && [ -f "$original_offload" ]; then
               cp "$original_offload" offload.toml
               rm -f "$original_offload"
+            fi
+            if [ -f "$original_dockerignore" ]; then
+              cp "$original_dockerignore" .dockerignore
+              rm -f "$original_dockerignore"
             fi
           }
           trap restore_config EXIT
