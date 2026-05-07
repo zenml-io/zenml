@@ -96,7 +96,9 @@ def build_manifest(
             "junit_xml": _file_metadata(output_dir / "junit.xml"),
             "junit_seed_xml": _file_metadata(output_dir / "junit.seed.xml"),
             "junit_stale_xml": _file_metadata(output_dir / "junit.stale.xml"),
-            "run_start_marker": _file_metadata(output_dir / "run-start.marker"),
+            "run_start_marker": _file_metadata(
+                output_dir / "run-start.marker"
+            ),
             "coverage_xml": _file_metadata(output_dir / "coverage.xml"),
             "offload_log": _file_metadata(output_dir / "offload.log"),
         },

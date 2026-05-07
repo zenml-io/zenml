@@ -47,7 +47,9 @@ def _has_junit_failures(junit_path: Path) -> bool:
     return summary.failures > 0 or summary.errors > 0
 
 
-def _infra_failure(message: str, *, junit_current: bool = False) -> Classification:
+def _infra_failure(
+    message: str, *, junit_current: bool = False
+) -> Classification:
     return Classification(
         conclusion="infra_failure",
         offload_infra_failed=True,

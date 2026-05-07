@@ -79,37 +79,54 @@ def _uv_fingerprint(root: Path) -> str:
 def _image_fingerprint(root: Path) -> str:
     default_config = _load_toml(root / "offload.toml")
     mysql_config = _load_toml(root / "offload-modal-server-mysql.toml")
-    return _hash_parts(
-        [
-            ("Dockerfile.ci", _read_file(root / "Dockerfile.ci")),
-            (
-                "Dockerfile.ci.dockerignore",
-                _read_file(root / "Dockerfile.ci.dockerignore"),
+    parts: list[tuple[str, str | bytes]] = [
+        ("Dockerfile.ci", _read_file(root / "Dockerfile.ci")),
+        (
+            "Dockerfile.ci.dockerignore",
+            _read_file(root / "Dockerfile.ci.dockerignore"),
+        ),
+        ("pyproject.toml", _read_file(root / "pyproject.toml")),
+        ("uv.lock", _read_file(root / "uv.lock")),
+        (
+            "scripts/ci/export_offload_integration_requirements.py",
+            _read_file(
+                root / "scripts/ci/export_offload_integration_requirements.py"
             ),
-            ("pyproject.toml", _read_file(root / "pyproject.toml")),
-            ("uv.lock", _read_file(root / "uv.lock")),
-            (
-                "scripts/install-zenml-dev.sh",
-                _read_file(root / "scripts/install-zenml-dev.sh"),
-            ),
-            (
-                "offload.toml:provider.prepare_command",
-                default_config["provider"]["prepare_command"],
-            ),
-            (
-                "offload-modal-server-mysql.toml:provider.prepare_command",
-                mysql_config["provider"]["prepare_command"],
-            ),
-            (
-                "offload.toml:offload.sandbox_project_root",
-                default_config["offload"]["sandbox_project_root"],
-            ),
-            (
-                "offload-modal-server-mysql.toml:offload.sandbox_project_root",
-                mysql_config["offload"]["sandbox_project_root"],
-            ),
-        ]
-    )
+        ),
+        (
+            "src/zenml/cli/integration.py",
+            _read_file(root / "src/zenml/cli/integration.py"),
+        ),
+        (
+            "src/zenml/integrations/integration.py",
+            _read_file(root / "src/zenml/integrations/integration.py"),
+        ),
+        (
+            "src/zenml/integrations/registry.py",
+            _read_file(root / "src/zenml/integrations/registry.py"),
+        ),
+        (
+            "offload.toml:provider.prepare_command",
+            default_config["provider"]["prepare_command"],
+        ),
+        (
+            "offload-modal-server-mysql.toml:provider.prepare_command",
+            mysql_config["provider"]["prepare_command"],
+        ),
+        (
+            "offload.toml:offload.sandbox_project_root",
+            default_config["offload"]["sandbox_project_root"],
+        ),
+        (
+            "offload-modal-server-mysql.toml:offload.sandbox_project_root",
+            mysql_config["offload"]["sandbox_project_root"],
+        ),
+    ]
+    for path in sorted(
+        (root / "src/zenml/integrations").glob("*/__init__.py")
+    ):
+        parts.append((str(path.relative_to(root)), _read_file(path)))
+    return _hash_parts(parts)
 
 
 def _junit_fingerprint(root: Path, lane: str) -> str:

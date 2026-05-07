@@ -139,7 +139,13 @@ def test_current_invalid_junit_is_not_cacheable(tmp_path: Path) -> None:
     marker.write_text("start")
     junit = tmp_path / "junit.xml"
     junit.write_text("<testsuite")
-    os.utime(junit, ns=(marker.stat().st_mtime_ns + 1_000_000, marker.stat().st_mtime_ns + 1_000_000))
+    os.utime(
+        junit,
+        ns=(
+            marker.stat().st_mtime_ns + 1_000_000,
+            marker.stat().st_mtime_ns + 1_000_000,
+        ),
+    )
 
     result = classify_offload_result(
         exit_code=1,

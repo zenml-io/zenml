@@ -14,7 +14,12 @@ REQUIRED_FILES = [
     "pyproject.toml",
     "uv.lock",
     "scripts/install-zenml-dev.sh",
+    "scripts/ci/export_offload_integration_requirements.py",
     "scripts/ci/modal_sandbox_requirements.txt",
+    "src/zenml/cli/integration.py",
+    "src/zenml/integrations/integration.py",
+    "src/zenml/integrations/registry.py",
+    "src/zenml/integrations/sklearn/__init__.py",
     "offload.toml",
     "offload-modal-server-mysql.toml",
 ]
@@ -86,7 +91,9 @@ def test_image_fingerprint_ignores_max_parallel(tmp_path: Path) -> None:
     before = _keys(root).image_key
 
     config = root / "offload.toml"
-    config.write_text(config.read_text().replace("max_parallel = 20", "max_parallel = 12"))
+    config.write_text(
+        config.read_text().replace("max_parallel = 20", "max_parallel = 12")
+    )
 
     assert _keys(root).image_key == before
 
@@ -99,7 +106,9 @@ def test_junit_fingerprint_changes_when_filters_change(
     before = _keys(root).junit_restore_prefix
 
     config = root / "offload.toml"
-    config.write_text(config.read_text().replace("tests/unit", "tests/unit tests/core"))
+    config.write_text(
+        config.read_text().replace("tests/unit", "tests/unit tests/core")
+    )
 
     assert _keys(root).junit_restore_prefix != before
 

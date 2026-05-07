@@ -2,6 +2,9 @@
 !.dockerignore
 !Dockerfile.ci
 !Dockerfile.ci.dockerignore
+!.ci
+!.ci/offload
+!.ci/offload/integration-requirements.txt
 !examples
 !examples/**
 !LICENSE

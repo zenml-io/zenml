@@ -23,6 +23,16 @@ def test_fast_offload_config_is_valid() -> None:
     )
 
 
+def test_offload_dockerfile_does_not_bake_source_before_dependencies() -> None:
+    """Code-only changes should not invalidate the dependency image layer."""
+    dockerfile = Path("Dockerfile.ci").read_text()
+    dockerignore = Path("Dockerfile.ci.dockerignore").read_text()
+
+    assert "COPY . ." not in dockerfile
+    assert "integration-requirements.txt" in dockerfile
+    assert "!.ci/offload/integration-requirements.txt" in dockerignore
+
+
 def test_modal_mysql_offload_config_is_valid() -> None:
     """Modal/MySQL offload config targets the remote server environment."""
     config = tomllib.loads(Path("offload-modal-server-mysql.toml").read_text())

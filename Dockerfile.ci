@@ -13,11 +13,35 @@ RUN set -ex \
 RUN pip install --upgrade wheel pip "uv==${UV_VERSION}"
 
 WORKDIR /app
-COPY . .
+COPY pyproject.toml uv.lock README.md LICENSE ./
+COPY .ci/offload/integration-requirements.txt /tmp/integration-requirements.txt
 
-RUN scripts/install-zenml-dev.sh --integrations yes --system \
+RUN uv export --frozen --format requirements.txt --no-emit-project --no-hashes --no-header \
+    --extra server \
+    --extra templates \
+    --extra terraform \
+    --extra secrets-aws \
+    --extra secrets-gcp \
+    --extra secrets-azure \
+    --extra secrets-hashicorp \
+    --extra s3fs \
+    --extra gcsfs \
+    --extra adlfs \
+    --extra dev \
+    --extra connectors-aws \
+    --extra connectors-gcp \
+    --extra connectors-azure \
+    --extra azureml \
+    --extra sagemaker \
+    --extra vertex \
+    --output-file /tmp/zenml-requirements.txt \
+  && uv pip install --system -r /tmp/zenml-requirements.txt \
+  && uv pip install --system -r /tmp/integration-requirements.txt \
   && uv pip install --system 'setuptools<82' \
-  && { pip cache purge 2>/dev/null || true; }
+  && { uv pip uninstall --system multipart || true; } \
+  && uv pip install --system --force-reinstall --no-deps "docstring_parser_fork" \
+  && { pip cache purge 2>/dev/null || true; } \
+  && rm -f /tmp/zenml-requirements.txt /tmp/integration-requirements.txt
 
 FROM python:${PYTHON_VERSION}-slim-bookworm
 

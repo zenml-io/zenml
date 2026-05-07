@@ -167,8 +167,15 @@ jobs:
             echo "$OFFLOAD_GIT_REV" > ~/.cargo/bin/offload.rev
           fi
           offload --version
+      - name: Generate offload integration requirements
+        if: steps.eligibility.outputs.eligible == 'true' && steps.setup.outcome ==
+          'success'
+        run: |
+          python3 scripts/ci/export_offload_integration_requirements.py \
+            .ci/offload/integration-requirements.txt
       - name: Save offload uv cache
-        if: steps.eligibility.outputs.eligible == 'true' && steps.setup.outcome == 'success' && steps.restore-uv-cache.outputs.cache-hit != 'true'
+        if: steps.eligibility.outputs.eligible == 'true' && steps.setup.outcome ==
+          'success' && steps.restore-uv-cache.outputs.cache-hit != 'true'
         continue-on-error: true
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
         with:
@@ -197,7 +204,8 @@ jobs:
             ${{ steps.cache-keys.outputs.junit_restore_prefix }}
             ${{ steps.cache-keys.outputs.legacy_junit_restore_prefix }}
       - name: Preserve restored JUnit duration seed
-        if: steps.restore-junit-cache.outputs.cache-hit != '' && hashFiles('.ci/offload/junit.xml') != ''
+        if: steps.restore-junit-cache.outputs.cache-hit != '' && hashFiles('.ci/offload/junit.xml')
+          != ''
         run: cp .ci/offload/junit.xml .ci/offload/junit.seed.xml
       - name: Start Modal MySQL server
         id: modal-server
@@ -296,7 +304,8 @@ jobs:
             --setup-failed "$SETUP_FAILED" \
             --junit-min-mtime-ns "$JUNIT_MARKER_MTIME_NS"
       - name: Quarantine stale restored JUnit
-        if: always() && steps.classify.outputs.junit_current != 'true' && hashFiles('.ci/offload/junit.xml') != ''
+        if: always() && steps.classify.outputs.junit_current != 'true' && hashFiles('.ci/offload/junit.xml')
+          != ''
         run: mv .ci/offload/junit.xml .ci/offload/junit.stale.xml
       - name: Stop Modal MySQL server
         id: teardown
@@ -374,7 +383,8 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
       - name: Save JUnit duration cache
-        if: always() && steps.classify.outputs.junit_cacheable == 'true' && steps.junit-cache-path.outputs.exists == 'true'
+        if: always() && steps.classify.outputs.junit_cacheable == 'true' && steps.junit-cache-path.outputs.exists
+          == 'true'
         continue-on-error: true
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
         with:

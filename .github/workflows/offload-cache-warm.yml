@@ -3,7 +3,7 @@ name: Offload cache warm
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 2 * * 1'
+    - cron: 0 2 * * 1
 permissions:
   contents: read
 concurrency:
