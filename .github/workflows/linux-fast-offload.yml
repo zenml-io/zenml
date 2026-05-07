@@ -206,7 +206,9 @@ jobs:
       - name: Preserve restored JUnit duration seed
         if: steps.restore-junit-cache.outputs.cache-hit != '' && hashFiles('.ci/offload/junit.xml')
           != ''
-        run: cp .ci/offload/junit.xml .ci/offload/junit.seed.xml
+        run: |
+          cp .ci/offload/junit.xml .ci/offload/junit.seed.xml
+          python3 scripts/ci/normalize_offload_junit.py .ci/offload/junit.xml
       - name: Start Modal MySQL server
         id: modal-server
         if: steps.eligibility.outputs.eligible == 'true' && steps.setup.outcome ==
@@ -373,6 +375,10 @@ jobs:
         with:
           path: .offload-image-cache
           key: ${{ steps.cache-keys.outputs.image_key }}
+      - name: Normalize current JUnit for duration cache
+        if: always() && steps.classify.outputs.junit_cacheable == 'true' && hashFiles('.ci/offload/junit.xml')
+          != ''
+        run: python3 scripts/ci/normalize_offload_junit.py .ci/offload/junit.xml
       - name: Check JUnit duration cache path
         id: junit-cache-path
         if: always()
@@ -392,7 +398,7 @@ jobs:
           key: ${{ steps.cache-keys.outputs.junit_save_key }}
       - name: Upload offload artifacts
         if: always()
-        uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50  # v4.6.2
+        uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50  # untagged
         with:
           name: linux-fast-offload-artifacts
           path: .ci/offload

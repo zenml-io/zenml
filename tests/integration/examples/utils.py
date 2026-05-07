@@ -1,3 +1,5 @@
+"""Utilities for running integration example tests."""
+
 #  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -106,6 +108,7 @@ class IntegrationTestExample:
 
 
 def copy_example_files(example_dir: str, dst_dir: str) -> None:
+    """Copy example files into a temporary test repository."""
     for item in os.listdir(example_dir):
         if item == ".zen":
             # don't copy any existing ZenML repository
@@ -221,7 +224,7 @@ def wait_and_validate_pipeline_run(
     older_than: Optional[datetime] = None,
     start_timeout: int = DEFAULT_PIPELINE_RUN_START_TIMEOUT,
     finish_timeout: int = DEFAULT_PIPELINE_RUN_FINISH_TIMEOUT,
-    poll_period: int = 10,
+    poll_period: int = 1,
 ) -> List[PipelineRunResponse]:
     """A basic example validation function.
 
@@ -240,7 +243,8 @@ def wait_and_validate_pipeline_run(
         finish_timeout: The timeout in seconds to wait for a single pipeline run
             to finish.
         poll_period: The period in seconds to wait between polling the pipeline
-            run status.
+            run status. Keep this low: local examples often finish between
+            polling intervals, so a long default adds pure idle time.
 
     Returns:
         A list of pipeline runs that were validated.
