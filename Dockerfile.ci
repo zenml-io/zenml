@@ -1,5 +1,5 @@
 ARG PYTHON_VERSION=3.13
-ARG UV_VERSION=0.8.22
+ARG UV_VERSION=0.11.7
 
 FROM python:${PYTHON_VERSION}-slim-bookworm AS builder
 ARG UV_VERSION
@@ -16,7 +16,7 @@ WORKDIR /app
 COPY pyproject.toml README.md LICENSE ./
 COPY .ci/offload/integration-requirements.txt /tmp/integration-requirements.txt
 
-RUN uv pip compile pyproject.toml --no-emit-package zenml --no-header --no-annotate \
+RUN uv pip compile pyproject.toml --exclude-newer "PT72H" --no-emit-package zenml --no-header --no-annotate \
     --extra server \
     --extra templates \
     --extra terraform \
@@ -35,11 +35,11 @@ RUN uv pip compile pyproject.toml --no-emit-package zenml --no-header --no-annot
     --extra sagemaker \
     --extra vertex \
     --output-file /tmp/zenml-requirements.txt \
-  && uv pip install --system -r /tmp/zenml-requirements.txt \
-  && uv pip install --system -r /tmp/integration-requirements.txt \
-  && uv pip install --system 'setuptools<82' \
+  && uv pip install --exclude-newer "PT72H" --system -r /tmp/zenml-requirements.txt \
+  && uv pip install --exclude-newer "PT72H" --system -r /tmp/integration-requirements.txt \
+  && uv pip install --exclude-newer "PT72H" --system 'setuptools<82' \
   && { uv pip uninstall --system multipart || true; } \
-  && uv pip install --system --force-reinstall --no-deps "docstring_parser_fork" \
+  && uv pip install --exclude-newer "PT72H" --system --force-reinstall --no-deps "docstring_parser_fork" \
   && { pip cache purge 2>/dev/null || true; } \
   && rm -f /tmp/zenml-requirements.txt /tmp/integration-requirements.txt
 
