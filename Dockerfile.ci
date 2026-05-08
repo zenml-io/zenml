@@ -13,10 +13,10 @@ RUN set -ex \
 RUN pip install --upgrade wheel pip "uv==${UV_VERSION}"
 
 WORKDIR /app
-COPY pyproject.toml uv.lock README.md LICENSE ./
+COPY pyproject.toml README.md LICENSE ./
 COPY .ci/offload/integration-requirements.txt /tmp/integration-requirements.txt
 
-RUN uv export --frozen --format requirements.txt --no-emit-project --no-hashes --no-header \
+RUN uv pip compile pyproject.toml --no-emit-package zenml --no-header --no-annotate \
     --extra server \
     --extra templates \
     --extra terraform \

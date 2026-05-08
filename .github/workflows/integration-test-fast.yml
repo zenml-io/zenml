@@ -129,6 +129,7 @@ jobs:
       MODAL_CI_SERVER_USERNAME: ${{ inputs.modal_ci_server_username }}
       PYTEST_RERUNS: ${{ inputs.reruns }}
       ZENML_CI_TIER: ${{ inputs.ci_tier }}
+      EFFECTIVE_TEST_ENVIRONMENT: ${{ inputs.test_environment == 'remote-mysql-modal' && vars.ZENML_CI_MODAL_DISABLED == 'true' && 'docker-server-mysql' || inputs.test_environment }}
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') && (inputs.test_environment != 'remote-mysql-modal' || github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     defaults:
       run:
@@ -157,9 +158,9 @@ jobs:
           echo "TMP=/opt/tmp" >> "$GITHUB_ENV"
           echo "TEMP=/opt/tmp" >> "$GITHUB_ENV"
       - name: Move Docker data-root to /opt
-        if: inputs.os == 'ubuntu-latest' && (contains(inputs.test_environment, 'docker')
-          || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
-          'airflow') || contains(inputs.test_environment, 'kubernetes'))
+        if: inputs.os == 'ubuntu-latest' && (contains(env.EFFECTIVE_TEST_ENVIRONMENT,
+          'docker') || contains(env.EFFECTIVE_TEST_ENVIRONMENT, 'kubeflow') || contains(env.EFFECTIVE_TEST_ENVIRONMENT,
+          'airflow') || contains(env.EFFECTIVE_TEST_ENVIRONMENT, 'kubernetes'))
         run: |
           sudo mkdir -p /etc/docker
           sudo mkdir -p /opt/docker
@@ -178,9 +179,9 @@ jobs:
             echo '{"data-root":"/opt/docker"}' | sudo tee /etc/docker/daemon.json >/dev/null
           fi
       - name: Restart Docker (with /opt data-root)
-        if: inputs.os == 'ubuntu-latest' && (contains(inputs.test_environment, 'docker')
-          || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
-          'airflow') || contains(inputs.test_environment, 'kubernetes'))
+        if: inputs.os == 'ubuntu-latest' && (contains(env.EFFECTIVE_TEST_ENVIRONMENT,
+          'docker') || contains(env.EFFECTIVE_TEST_ENVIRONMENT, 'kubeflow') || contains(env.EFFECTIVE_TEST_ENVIRONMENT,
+          'airflow') || contains(env.EFFECTIVE_TEST_ENVIRONMENT, 'kubernetes'))
         run: |
           sudo systemctl stop docker || true
           # Free up space previously used by Docker's default root on the OS disk.
@@ -200,38 +201,39 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_US_EAST_1_ENV_ROLE_ARN }}
           aws-region: us-east-1
-        if: contains(inputs.test_environment, 'aws')
+        if: contains(env.EFFECTIVE_TEST_ENVIRONMENT, 'aws')
       - name: Configure GCP credentials
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093  # v3.0.0
         with:
           credentials_json: ${{ secrets.GCP_US_EAST4_ENV_CREDENTIALS }}
-        if: contains(inputs.test_environment, 'gcp')
+        if: contains(env.EFFECTIVE_TEST_ENVIRONMENT, 'gcp')
       - name: Set up gcloud SDK
         uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db  # v3.0.1
         with:
           install_components: gke-gcloud-auth-plugin
-        if: contains(inputs.test_environment, 'gcp')
+        if: contains(env.EFFECTIVE_TEST_ENVIRONMENT, 'gcp')
       - name: Login to Docker Hub
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-        if: github.event.pull_request.head.repo.fork == false && (contains(inputs.test_environment,
-          'docker') || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
-          'airflow') || contains(inputs.test_environment, 'kubernetes'))
+        if: github.event.pull_request.head.repo.fork == false && (contains(env.EFFECTIVE_TEST_ENVIRONMENT,
+          'docker') || contains(env.EFFECTIVE_TEST_ENVIRONMENT, 'kubeflow') || contains(env.EFFECTIVE_TEST_ENVIRONMENT,
+          'airflow') || contains(env.EFFECTIVE_TEST_ENVIRONMENT, 'kubernetes'))
       - name: Setup environment
         uses: ./.github/actions/setup_environment
         with:
           python-version: ${{ inputs.python-version }}
           os: ${{ inputs.os }}
       - name: Validate Modal connection details
-        if: inputs.test_environment == 'remote-mysql-modal' && vars.ZENML_CI_MODAL_DISABLED
+        if: env.EFFECTIVE_TEST_ENVIRONMENT == 'remote-mysql-modal' && vars.ZENML_CI_MODAL_DISABLED
           != 'true'
         run: |
           test -n "$MODAL_CI_SERVER_URL"
           test -n "$MODAL_CI_SERVER_USERNAME"
       - name: Install docker-compose for local Docker environments
-        if: inputs.test_environment != 'default' && inputs.test_environment != 'remote-mysql-modal'
+        if: env.EFFECTIVE_TEST_ENVIRONMENT != 'default' && env.EFFECTIVE_TEST_ENVIRONMENT
+          != 'remote-mysql-modal'
         run: |
           pip install uv
           # see https://github.com/docker/docker-py/issues/3256 for why we need to pin requests
@@ -275,9 +277,10 @@ jobs:
         run: |
           curl -L -o kubectl "https://dl.k8s.io/release/v1.35.0/bin/linux/amd64/kubectl"
           sudo install -o root -g 0 -m 0755 kubectl /usr/local/bin/kubectl
-        if: (inputs.os == 'ubuntu-latest' || inputs.os == 'arc-runner-set') && (contains(inputs.test_environment,
-          'kubeflow') || contains(inputs.test_environment, 'kubernetes') || contains(inputs.test_environment,
-          'aws') || contains(inputs.test_environment, 'gcp'))
+        if: (inputs.os == 'ubuntu-latest' || inputs.os == 'arc-runner-set') && (contains(env.EFFECTIVE_TEST_ENVIRONMENT,
+          'kubeflow') || contains(env.EFFECTIVE_TEST_ENVIRONMENT, 'kubernetes') ||
+          contains(env.EFFECTIVE_TEST_ENVIRONMENT, 'aws') || contains(env.EFFECTIVE_TEST_ENVIRONMENT,
+          'gcp'))
       - name: Install kubectl on MacOS
         run: |
           curl -LO "https://dl.k8s.io/release/v1.35.0/bin/darwin/amd64/kubectl"
@@ -286,28 +289,28 @@ jobs:
       - name: Install K3D
         run: |
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
-        if: runner.os!='Windows' && contains(inputs.test_environment, 'kubeflow')
+        if: runner.os!='Windows' && contains(env.EFFECTIVE_TEST_ENVIRONMENT, 'kubeflow')
       - name: Login to Amazon ECR
         id: login-ecr
         run: |
           aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 715803424590.dkr.ecr.us-east-1.amazonaws.com
-        if: contains(inputs.test_environment, 'aws')
+        if: contains(env.EFFECTIVE_TEST_ENVIRONMENT, 'aws')
       - name: Login to Amazon EKS
         id: login-eks
         run: |
           aws eks --region us-east-1 update-kubeconfig --name zenml-ci-cluster --alias zenml-ci-aws-us-east-1
-        if: contains(inputs.test_environment, 'aws')
+        if: contains(env.EFFECTIVE_TEST_ENVIRONMENT, 'aws')
       - name: Login to Google ECR
         run: |
           gcloud auth configure-docker --project zenml-ci
-        if: contains(inputs.test_environment, 'gcp')
+        if: contains(env.EFFECTIVE_TEST_ENVIRONMENT, 'gcp')
       - name: Login to Google GKE
         uses: google-github-actions/get-gke-credentials@3da1e46a907576cefaa90c484278bb5b259dd395  # v3.0.0
         with:
           cluster_name: zenml-ci-cluster
           location: us-east4
           project_id: zenml-ci
-        if: contains(inputs.test_environment, 'gcp')
+        if: contains(env.EFFECTIVE_TEST_ENVIRONMENT, 'gcp')
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}
         uses: mxschmitt/action-tmate@c0afd6f790e3a5564914980036ebf83216678101  # v3.23
@@ -325,7 +328,7 @@ jobs:
           fi
           bash scripts/test-coverage-xml.sh integration ${INPUTS_TEST_ENVIRONMENT} 6 ${{ matrix.shard }}
         env:
-          INPUTS_TEST_ENVIRONMENT: ${{ inputs.test_environment == 'remote-mysql-modal' && vars.ZENML_CI_MODAL_DISABLED == 'true' && 'docker-server-mysql' || inputs.test_environment }}
+          INPUTS_TEST_ENVIRONMENT: ${{ env.EFFECTIVE_TEST_ENVIRONMENT }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
           ZENML_CI_CHECKOUT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Setup tmate session after tests
@@ -333,7 +336,7 @@ jobs:
         uses: mxschmitt/action-tmate@c0afd6f790e3a5564914980036ebf83216678101  # v3.23
         timeout-minutes: ${{ inputs.tmate_timeout }}
       - name: Verify Python Env unaffected
-        if: inputs.test_environment != 'remote-mysql-modal'
+        if: env.EFFECTIVE_TEST_ENVIRONMENT != 'remote-mysql-modal'
         run: |-
           zenml integration list
           uv pip list

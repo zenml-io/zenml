@@ -53,10 +53,6 @@ jobs:
     name: offload-fast-tests
     runs-on: ubuntu-latest
     timeout-minutes: 75
-    outputs:
-      offload-infra-failed: ${{ steps.classify.outputs.offload_infra_failed }}
-      tests-failed: ${{ steps.classify.outputs.tests_failed }}
-      conclusion: ${{ steps.classify.outputs.conclusion }}
     env:
       MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
       MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
@@ -88,6 +84,7 @@ jobs:
         env:
           BACKEND: ${{ inputs.backend }}
           USE_OFFLOAD: ${{ inputs.use-offload }}
+          MODAL_DISABLED: ${{ vars.ZENML_CI_MODAL_DISABLED }}
         run: |
           set -euo pipefail
           eligible=true
@@ -95,6 +92,9 @@ jobs:
           if [ "$USE_OFFLOAD" != "true" ]; then
             eligible=false
             reason="offload disabled by input"
+          elif [ "$MODAL_DISABLED" = "true" ]; then
+            eligible=false
+            reason="Modal offload disabled by ZENML_CI_MODAL_DISABLED"
           elif [ "$BACKEND" != "modal" ]; then
             eligible=false
             reason="unsupported backend: $BACKEND"

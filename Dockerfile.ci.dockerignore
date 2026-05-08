@@ -19,7 +19,6 @@
 !src/**
 !tests
 !tests/**
-!uv.lock
 !zen-dev
 !zen-dev/**
 !zen-test

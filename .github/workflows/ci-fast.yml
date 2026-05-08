@@ -108,22 +108,8 @@ jobs:
       - linux-fast-offload-modal-mysql
     if: always()
     steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - name: Verify required fast CI jobs
         env:
           NEEDS_CONTEXT: ${{ toJSON(needs) }}
-        run: |-
-          python - <<'PY'
-          import json
-          import os
-          import sys
-          failed = []
-          for name, data in json.loads(os.environ["NEEDS_CONTEXT"]).items():
-              result = data["result"]
-              if result not in {"success", "skipped"}:
-                  failed.append(f"{name}: {result}")
-          if failed:
-              print("Fast CI dependencies failed:")
-              print("\n".join(failed))
-              sys.exit(1)
-          print("All fast CI dependencies passed or were skipped by design.")
-          PY
+        run: python scripts/ci/verify_required_jobs.py --lane Fast --needs-json "$NEEDS_CONTEXT"

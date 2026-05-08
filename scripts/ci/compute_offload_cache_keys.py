@@ -67,7 +67,6 @@ def _uv_fingerprint(root: Path) -> str:
     return _hash_parts(
         [
             ("pyproject.toml", _read_file(root / "pyproject.toml")),
-            ("uv.lock", _read_file(root / "uv.lock")),
             (
                 "scripts/ci/modal_sandbox_requirements.txt",
                 _read_file(root / "scripts/ci/modal_sandbox_requirements.txt"),
@@ -86,7 +85,6 @@ def _image_fingerprint(root: Path) -> str:
             _read_file(root / "Dockerfile.ci.dockerignore"),
         ),
         ("pyproject.toml", _read_file(root / "pyproject.toml")),
-        ("uv.lock", _read_file(root / "uv.lock")),
         (
             "scripts/ci/export_offload_integration_requirements.py",
             _read_file(
