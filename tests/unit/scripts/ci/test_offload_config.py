@@ -45,6 +45,7 @@ def test_modal_mysql_offload_config_is_valid() -> None:
     assert set(config["groups"]) == {"integration"}
     assert "tests/integration" in config["groups"]["integration"]["filters"]
     assert "not slow" in config["groups"]["integration"]["filters"]
+    assert "not global_state" in config["groups"]["integration"]["filters"]
     assert config["framework"]["command"].startswith("python -m pytest")
     assert config["framework"]["run_args"].startswith(
         "--no-provision --environment remote-mysql-modal"

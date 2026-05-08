@@ -7613,10 +7613,10 @@ class SqlZenStore(BaseZenStore):
                         status_reason="Waiting for input.",
                     )
 
+            run_id = schema.run_id
+            resolution = schema.resolution
             session.add(schema)
             session.commit()
-
-            resolution = schema.resolution
 
         if (
             lease_update.mode == RunWaitConditionLeaseMode.ABANDON
@@ -7630,7 +7630,7 @@ class SqlZenStore(BaseZenStore):
             # (running -> resuming status transition is not allowed)
             with Session(self.engine) as session:
                 self._update_pipeline_run_status_no_commit(
-                    pipeline_run_id=schema.run_id,
+                    pipeline_run_id=run_id,
                     session=session,
                     requested_status=ExecutionStatus.PAUSED,
                 )
@@ -7638,7 +7638,7 @@ class SqlZenStore(BaseZenStore):
             # Then, attempt to resume the run from the server.
             # TODO: There is a race condition because the runner will
             # publish a failed run status at some point.
-            self._attempt_resume_run_from_server(run_id=schema.run_id)
+            self._attempt_resume_run_from_server(run_id=run_id)
 
         return current_status
 

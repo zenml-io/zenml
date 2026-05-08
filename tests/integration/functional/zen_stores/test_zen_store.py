@@ -2888,6 +2888,7 @@ def test_stacks_are_accessible_by_other_users():
 # '----------------'
 
 
+@pytest.mark.global_state
 def test_list_runs_is_ordered():
     """Tests listing runs returns ordered runs."""
     client = Client()
@@ -3371,6 +3372,7 @@ def test_get_run_step_inputs_succeeds():
 # '-----------'
 
 
+@pytest.mark.global_state
 def test_list_unused_artifacts():
     """Tests listing with `unused=True` only returns unused artifacts."""
     client = Client()
@@ -3398,6 +3400,7 @@ def test_list_unused_artifacts():
         assert artifact_versions.total == num_unused_artifact_versions_before
 
 
+@pytest.mark.global_state
 def test_list_custom_named_artifacts():
     """Tests listing with `has_custom_name=True` only returns custom named artifacts with proper filtering."""
     client = Client()

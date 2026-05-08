@@ -22,7 +22,7 @@ run_args = "--no-provision --environment remote-mysql-modal -p no:randomly -p no
 
 [groups.integration]
 retry_count = 0
-filters = "tests/integration --ignore=tests/integration/examples -m 'not slow'"
+filters = "tests/integration --ignore=tests/integration/examples -m 'not slow and not global_state'"
 
 [report]
 output_dir = ".ci/offload"

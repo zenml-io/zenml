@@ -409,4 +409,10 @@ jobs:
           if-no-files-found: warn
       - name: Fail on unsuccessful offload
         if: steps.classify.outputs.conclusion != 'success'
-        run: exit 1
+        run: |-
+          if [ -s .ci/offload/junit.xml ]; then
+            python3 scripts/ci/print_junit_failures.py .ci/offload/junit.xml
+          elif [ -s .ci/offload/offload.log ]; then
+            tail -n 200 .ci/offload/offload.log
+          fi
+          exit 1

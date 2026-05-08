@@ -158,9 +158,14 @@ def tags_killer(tag_create_count: int = 5):
     tags = []
     for _ in range(tag_create_count):
         tags.append(Client().create_tag(name=random_resource_name()))
-    yield tags
-    for tag in Client().list_tags(size=999).items:
-        Client().delete_tag(tag.id)
+    try:
+        yield tags
+    finally:
+        for tag in tags:
+            try:
+                Client().delete_tag(tag.id)
+            except KeyError:
+                pass
 
 
 def random_resource_name(length: int = 32) -> str:
