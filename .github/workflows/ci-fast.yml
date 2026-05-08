@@ -31,18 +31,6 @@ jobs:
           python-version: '3.10'
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh sqlite random
-  spellcheck:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
-      false
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      - name: Spelling checker
-        uses: crate-ci/typos@7c572958218557a3272c2d6719629443b5cc26fd  # v1.45.2
-        with:
-          files: .
-          config: ./.typos.toml
   api-docs-test:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
       false
@@ -56,26 +44,62 @@ jobs:
           python-version: '3.11'
       - name: Test API docs buildable
         run: bash scripts/generate-docs.sh -v DUMMY -c
-  update-templates-to-examples:
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name
-      == 'zenml-io/zenml' && github.event.pull_request.draft == false
-    uses: ./.github/workflows/update-templates-to-examples.yml
-    with:
-      python-version: '3.11'
-      os: ubuntu-latest
-    secrets: inherit
-  linting:
+  static-checks:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
       false
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ['3.11']
-      fail-fast: false
-    uses: ./.github/workflows/linting.yml
+    runs-on: ubuntu-latest
+    env:
+      ZENML_ANALYTICS_OPT_IN: false
+      ZENML_DEBUG: 1
+      PYTHONIOENCODING: utf-8
+      UV_HTTP_TIMEOUT: 600
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0
+      - name: Set uv cache + temp dirs (/opt)
+        run: |
+          sudo mkdir -p /opt/uv-cache /opt/tmp
+          sudo chown -R "$(id -u)":"$(id -g)" /opt/uv-cache /opt/tmp
+          echo "UV_CACHE_DIR=/opt/uv-cache" >> "$GITHUB_ENV"
+          echo "TMPDIR=/opt/tmp" >> "$GITHUB_ENV"
+          echo "TMP=/opt/tmp" >> "$GITHUB_ENV"
+          echo "TEMP=/opt/tmp" >> "$GITHUB_ENV"
+      - name: Restore uv cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
+        with:
+          path: /opt/uv-cache
+          key: uv-${{ runner.os }}-3.11-${{ hashFiles('src/zenml/integrations/*/__init__.py')
+            }}
+          restore-keys: |
+            uv-${{ runner.os }}-3.11-
+      - name: Setup environment
+        uses: ./.github/actions/setup_environment
+        with:
+          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+          python-version: '3.11'
+          os: ubuntu-latest
+          install_integrations: 'no'
+      - name: Spellcheck
+        uses: crate-ci/typos@7c572958218557a3272c2d6719629443b5cc26fd  # v1.45.2
+        with:
+          files: .
+          config: ./.typos.toml
+      - name: Lint
+        run: |
+          ruff check src/zenml tests/harness
+          ruff check tests examples --extend-ignore D --extend-exclude "*.ipynb"
+      - name: Docstring
+        run: pydoclint src/zenml tests/harness
+  unit-test:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
+      false
+    uses: ./.github/workflows/unit-test.yml
     with:
-      python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
+      python-version: '3.13'
+      os: ubuntu-latest
+      reruns: 0
     secrets: inherit
   linux-fast-offload:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
@@ -100,10 +124,9 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - sqlite-db-migration-testing-random
-      - spellcheck
       - api-docs-test
-      - update-templates-to-examples
-      - linting
+      - static-checks
+      - unit-test
       - linux-fast-offload
       - linux-fast-offload-modal-mysql
     if: always() && (github.event_name != 'pull_request' || github.event.pull_request.draft
@@ -117,5 +140,4 @@ jobs:
           python scripts/ci/verify_required_jobs.py
           --lane Fast
           --needs-json "$NEEDS_CONTEXT"
-          --allow-skipped update-templates-to-examples
           --allow-skipped linux-fast-offload-modal-mysql

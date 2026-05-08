@@ -96,6 +96,14 @@ jobs:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
     secrets: inherit
+  update-templates-to-examples:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name
+      == 'zenml-io/zenml' && github.event.pull_request.draft == false
+    uses: ./.github/workflows/update-templates-to-examples.yml
+    with:
+      python-version: '3.12'
+      os: ubuntu-latest
+    secrets: inherit
   unit-test:
     needs: [modal-enabled, linting]
     strategy:
@@ -167,6 +175,7 @@ jobs:
       - mysql-db-migration-testing-random
       - mariadb-db-migration-testing-random
       - linting
+      - update-templates-to-examples
       - unit-test
       - start-modal-mysql-sandbox
       - remote-mysql-modal-integration-test
@@ -177,5 +186,8 @@ jobs:
       - name: Verify required medium CI jobs
         env:
           NEEDS_CONTEXT: ${{ toJSON(needs) }}
-        run: python scripts/ci/verify_required_jobs.py --lane Medium --needs-json
-          "$NEEDS_CONTEXT"
+        run: >-
+          python scripts/ci/verify_required_jobs.py
+          --lane Medium
+          --needs-json "$NEEDS_CONTEXT"
+          --allow-skipped update-templates-to-examples

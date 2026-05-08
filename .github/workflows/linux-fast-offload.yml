@@ -273,9 +273,13 @@ jobs:
           command=${OFFLOAD_COMMAND:-"offload -v run --parallel 20"}
           echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
           echo "Running: $command"
+          set +e
           bash -lc "$command" 2>&1 | tee .ci/offload/offload.log
-          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+          offload_exit_code=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$offload_exit_code" >> "$GITHUB_OUTPUT"
           echo "completed_at=$(date +%s)" >> "$GITHUB_OUTPUT"
+          exit "$offload_exit_code"
       - name: Mark skipped offload as infrastructure failure
         if: steps.eligibility.outputs.eligible != 'true' || steps.setup.outcome ==
           'failure' || steps.modal-server.outcome == 'failure'

@@ -30,13 +30,12 @@ All reusable workflows use `secrets: inherit` for centralized secret management.
 ### ci-fast.yml (Every PR)
 
 Runs automatically on all PRs, merge queue entries, and pushes to develop:
-- Spellcheck
 - SQLite migration testing
-- Linting (ubuntu, Python 3.11) — includes Ruff, pydoclint, yamlfix, zizmor, and mypy
-- Fast unit and non-slow integration coverage through `linux-fast-offload.yml`
+- Static checks (ubuntu, Python 3.11) — spellcheck, Ruff, and pydoclint
+- Fast unit coverage on GitHub-hosted runners
+- Fast non-slow integration coverage through `linux-fast-offload.yml`
 - Separate Modal MySQL offload lane through `linux-fast-offload.yml`
 - API docs buildability test
-- Template example updates (PRs only, same-repo only)
 
 ### ci-medium.yml (Merge Queue)
 
@@ -44,6 +43,7 @@ Runs merge-queue validation beyond fast PR checks:
 - Random database migration coverage
 - Python 3.12 linting and unit tests
 - Modal-hosted MySQL integration coverage
+- Template example updates (PRs only, same-repo only)
 
 ### ci-slow-develop.yml and slow-ci-on-pr.yml (Full Matrix)
 

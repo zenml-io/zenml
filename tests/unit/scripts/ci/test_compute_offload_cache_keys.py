@@ -106,7 +106,10 @@ def test_junit_fingerprint_changes_when_filters_change(
 
     config = root / "offload.toml"
     config.write_text(
-        config.read_text().replace("tests/unit", "tests/unit tests/core")
+        config.read_text().replace(
+            "tests/integration -m 'not slow'",
+            "tests/integration tests/unit -m 'not slow'",
+        )
     )
 
     assert _keys(root).junit_restore_prefix != before
