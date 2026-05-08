@@ -1,6 +1,7 @@
 """Unit tests for exception_utils module."""
 
 import re
+import warnings
 from unittest.mock import Mock, patch
 
 import pytest
@@ -39,7 +40,8 @@ def test_regex_pattern_no_syntax_warning():
             test_exception = e
 
         # This should not produce any SyntaxWarning
-        with pytest.warns(None) as warning_list:
+        with warnings.catch_warnings(record=True) as warning_list:
+            warnings.simplefilter("always")
             result = collect_exception_information(
                 test_exception, mock_step.entrypoint
             )
