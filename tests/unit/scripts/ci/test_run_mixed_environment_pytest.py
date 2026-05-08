@@ -4,22 +4,25 @@ from __future__ import annotations
 
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 from scripts.ci import run_mixed_environment_pytest
 
 
 def test_extract_args_routes_test_ids_and_environment() -> None:
     """Wrapper strips the caller environment and keeps common pytest args."""
-    common_args, test_ids, junit_path = run_mixed_environment_pytest._extract_args(
-        [
-            "-p",
-            "no:pytest_postgresql",
-            "--environment",
-            "default",
-            "--junitxml=/tmp/result.xml",
-            "tests/unit/test_a.py::test_a",
-            "tests/integration/test_b.py::test_b",
-        ]
+    common_args, test_ids, junit_path = (
+        run_mixed_environment_pytest._extract_args(
+            [
+                "-p",
+                "no:pytest_postgresql",
+                "--environment",
+                "default",
+                "--junitxml=/tmp/result.xml",
+                "tests/unit/test_a.py::test_a",
+                "tests/integration/test_b.py::test_b",
+            ]
+        )
     )
 
     assert common_args == ["-p", "no:pytest_postgresql"]
@@ -28,6 +31,33 @@ def test_extract_args_routes_test_ids_and_environment() -> None:
         "tests/integration/test_b.py::test_b",
     ]
     assert junit_path == Path("/tmp/result.xml")
+
+
+def test_collect_only_passes_through_to_pytest() -> None:
+    """Offload discovery does not provide a JUnit path to the wrapper."""
+    completed_process = Mock(returncode=0)
+
+    with patch.object(
+        run_mixed_environment_pytest.subprocess,
+        "run",
+        return_value=completed_process,
+    ) as run_mock:
+        exit_code = run_mixed_environment_pytest.main(
+            ["-p", "no:pytest_postgresql", "--collect-only", "tests/unit"]
+        )
+
+    assert exit_code == 0
+    run_mock.assert_called_once_with(
+        [
+            run_mixed_environment_pytest.sys.executable,
+            "-m",
+            "pytest",
+            "-p",
+            "no:pytest_postgresql",
+            "--collect-only",
+            "tests/unit",
+        ]
+    )
 
 
 def test_merge_junit_combines_testcases(tmp_path: Path) -> None:

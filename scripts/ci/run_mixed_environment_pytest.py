@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import argparse
 import subprocess
 import sys
 import tempfile
@@ -70,7 +69,9 @@ def _merge_junit(output_path: Path, input_paths: list[Path]) -> None:
         if not path.exists():
             continue
         root = ET.parse(path).getroot()
-        suites = list(root.iter("testsuite")) if root.tag != "testsuite" else [root]
+        suites = (
+            list(root.iter("testsuite")) if root.tag != "testsuite" else [root]
+        )
         for suite in suites:
             for key in totals:
                 totals[key] += int(suite.attrib.get(key, "0") or 0)
@@ -90,10 +91,20 @@ def _merge_junit(output_path: Path, input_paths: list[Path]) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     """Route unit tests to default and integration tests to remote MySQL."""
-    common_args, test_ids, junit_path = _extract_args(argv or sys.argv[1:])
-    unit_tests = [test_id for test_id in test_ids if test_id.startswith("tests/unit/")]
+    raw_args = argv or sys.argv[1:]
+    if "--collect-only" in raw_args:
+        return subprocess.run(
+            [sys.executable, "-m", "pytest", *raw_args]
+        ).returncode
+
+    common_args, test_ids, junit_path = _extract_args(raw_args)
+    unit_tests = [
+        test_id for test_id in test_ids if test_id.startswith("tests/unit/")
+    ]
     integration_tests = [
-        test_id for test_id in test_ids if test_id.startswith("tests/integration/")
+        test_id
+        for test_id in test_ids
+        if test_id.startswith("tests/integration/")
     ]
     other_tests = [
         test_id
