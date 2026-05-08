@@ -95,6 +95,12 @@ except ImportError:
 EXEMPT_URL_STATUS: Dict[str, set] = {
     # Requires authentication; often returns 403 to unauthenticated HEAD/GET.
     "https://huggingface.co/settings/tokens": {403},
+    # zenml.io/slack and /slack-invite redirect to a zenml.slack.com invite URL.
+    # Slack returns 403 to any unauthenticated request to those invite URLs by
+    # design, regardless of User-Agent or HEAD/GET. A real takedown would
+    # surface as 404/410/5xx, which is not exempted here and would still fail.
+    "https://zenml.io/slack": {403},
+    "https://zenml.io/slack-invite": {403},
 }
 
 EXEMPT_DOMAIN_STATUS: Dict[str, set] = {
