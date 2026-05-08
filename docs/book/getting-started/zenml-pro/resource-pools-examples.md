@@ -24,7 +24,7 @@ orchestrator or step operator may use that pool), and the step
 
 For definitions of reserved, limit, and priority, see
 [Core concepts](resource-pools-core-concepts.md). For preemption ordering, see
-[How preemption works](resource-pools-preemption.md).
+[How preemption works](resource-pools-reconciliation.md#how-preemption-works).
 
 ## Primer: from `ResourceSettings` to the resource request
 
@@ -932,7 +932,7 @@ def prod_train() -> None:
 
 **Outcome:** If four GPUs cannot be granted without reclaiming space, the
 reconciler may preempt Sandbox’s preemptible runs (lower policy priority) so Prod
-can proceed. See [How preemption works](resource-pools-preemption.md) for victim
+can proceed. See [How preemption works](resource-pools-reconciliation.md#how-preemption-works) for victim
 ordering.
 
 ---
@@ -1229,7 +1229,7 @@ heavy CPU/RAM asks.
 
 * [Resource pools](resource-pools.md) — overview
 * [Core concepts](resource-pools-core-concepts.md) — pools, policies, requests
-* [How preemption works](resource-pools-preemption.md) — preemption
+* [How preemption works](resource-pools-reconciliation.md#how-preemption-works) — preemption
   ordering
 * [Step configuration](https://docs.zenml.io/how-to/steps-pipelines/configuration)
   — full `ResourceSettings` reference
