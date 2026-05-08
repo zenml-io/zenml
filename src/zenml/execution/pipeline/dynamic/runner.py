@@ -137,7 +137,6 @@ from zenml.utils import (
     env_utils,
     exception_utils,
     pydantic_utils,
-    source_utils,
     string_utils,
 )
 from zenml.utils.logging_utils import (
@@ -299,12 +298,9 @@ class DynamicPipelineRunner:
             ):
                 raise RuntimeError("Missing pipeline source for snapshot.")
 
-            pipeline = source_utils.load(self._snapshot.pipeline_spec.source)
-            if not isinstance(pipeline, DynamicPipeline):
-                raise RuntimeError(
-                    "Invalid pipeline source: "
-                    f"{self._snapshot.pipeline_spec.source.import_path}"
-                )
+            pipeline = DynamicPipeline.load_from_source(
+                self._snapshot.pipeline_spec.source
+            )
             pipeline = copy.deepcopy(pipeline)
             pipeline._configuration = self._snapshot.pipeline_configuration
             self._pipeline = pipeline
@@ -1109,10 +1105,24 @@ class DynamicPipelineRunner:
     ) -> Any:
         """Create and poll a run wait condition.
 
+        The ``timeout`` argument is a soft timeout: once the deadline
+        passes, the runner stops scheduling further *wait* polling cycles,
+        but it keeps polling as long as sibling steps in the same dynamic
+        pipeline are still in progress. This avoids hard-cancelling
+        concurrent work (e.g. a long-running training step running next to
+        a ``wait(timeout=30)`` for external input) just because the wait
+        condition's own budget ran out. Callers that want a hard upper
+        bound on ``wait`` should drain any concurrent step futures before
+        calling ``wait``.
+
         Args:
             schema: Optional expected output type for the resolved result.
             type: Wait condition type.
-            timeout: Maximum time in seconds to poll before pausing.
+            timeout: Soft timeout in seconds. After this many seconds the
+                runner stops accepting new poll cycles for this wait
+                condition, but polling continues until any in-progress
+                sibling steps have finished. See the method-level docstring
+                above for the full semantics.
             poll_interval: Poll interval in seconds.
             question: Optional question shown to external actors.
             metadata: Optional metadata attached to the condition.

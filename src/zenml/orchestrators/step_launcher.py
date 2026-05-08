@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Class to launch (run directly or using a step operator) steps."""
 
-import signal
 import time
 from contextlib import nullcontext
 from typing import (
@@ -34,13 +33,12 @@ from zenml.constants import (
     ENV_ZENML_STEP_OPERATOR,
 )
 from zenml.enums import (
-    ExecutionMode,
     ExecutionStatus,
     ResourceRequestStatus,
     StepRuntime,
 )
 from zenml.environment import get_run_environment_dict
-from zenml.exceptions import RunInterruptedException, RunStoppedException
+from zenml.exceptions import RunStoppedException
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineRunRequest,
@@ -51,6 +49,7 @@ from zenml.models import (
 from zenml.models.v2.core.step_run import StepRunInputResponse
 from zenml.orchestrators import output_utils, publish_utils, step_run_utils
 from zenml.orchestrators import utils as orchestrator_utils
+from zenml.orchestrators.signal_handler import SignalHandler
 from zenml.orchestrators.step_runner import StepRunner
 from zenml.stack import Stack
 from zenml.steps import StepHeartBeatTerminationException
@@ -152,117 +151,6 @@ class StepLauncher:
 
         # Internal properties and methods
         self._step_run: Optional[StepRunResponse] = None
-        self._setup_signal_handlers()
-
-    def _setup_signal_handlers(self) -> None:
-        """Set up signal handlers for graceful shutdown, chaining previous handlers."""
-        try:
-            # Save previous handlers
-            self._prev_sigterm_handler = signal.getsignal(signal.SIGTERM)
-            self._prev_sigint_handler = signal.getsignal(signal.SIGINT)
-        except ValueError as e:
-            # This happens when not in the main thread
-            logger.debug(f"Cannot set up signal handlers: {e}")
-            self._prev_sigterm_handler = None
-            self._prev_sigint_handler = None
-            return
-
-        def signal_handler(signum: int, frame: Any) -> None:
-            """Handle shutdown signals gracefully.
-
-            Args:
-                signum: The signal number.
-                frame: The frame of the signal handler.
-
-            Raises:
-                RunStoppedException: If the pipeline run is stopped by the user.
-                RunInterruptedException: If the execution is interrupted for any
-                    other reason.
-            """
-            logger.info(
-                f"Received signal shutdown {signum}. Requesting shutdown "
-                f"for step '{self._invocation_id}'..."
-            )
-
-            try:
-                client = Client()
-
-                if self._step_run:
-                    pipeline_run = client.get_pipeline_run(
-                        self._step_run.pipeline_run_id, hydrate=False
-                    )
-                else:
-                    raise RunInterruptedException(
-                        "The execution was interrupted and the step does not "
-                        "exist yet."
-                    )
-
-                if pipeline_run and pipeline_run.status in [
-                    ExecutionStatus.STOPPING,
-                    ExecutionStatus.STOPPED,
-                ]:
-                    if self._step_run:
-                        publish_utils.publish_step_run_status_update(
-                            step_run_id=self._step_run.id,
-                            status=ExecutionStatus.STOPPED,
-                            end_time=utc_now(),
-                        )
-                    raise RunStoppedException("Pipeline run is stopped.")
-
-                step_run = client.get_run_step(
-                    self._step_run.id, hydrate=False
-                )
-
-                if (
-                    pipeline_run.status == ExecutionStatus.FAILED
-                    and step_run.status == ExecutionStatus.RUNNING
-                    and self._snapshot.pipeline_configuration.execution_mode
-                    == ExecutionMode.FAIL_FAST
-                ):
-                    publish_utils.publish_step_run_status_update(
-                        step_run_id=self._step_run.id,
-                        status=ExecutionStatus.STOPPED,
-                        end_time=utc_now(),
-                    )
-                    raise RunStoppedException(
-                        "Step run was stopped due to a failure in the pipeline "
-                        "run and the execution mode 'FAIL_FAST'."
-                    )
-
-                elif step_run.status == ExecutionStatus.STOPPING:
-                    publish_utils.publish_step_run_status_update(
-                        step_run_id=step_run.id,
-                        status=ExecutionStatus.STOPPED,
-                        end_time=utc_now(),
-                    )
-                    raise RunStoppedException("Pipeline run is stopped.")
-                else:
-                    raise RunInterruptedException(
-                        "The execution was interrupted."
-                    )
-            except (RunStoppedException, RunInterruptedException):
-                raise
-            except Exception as e:
-                raise RunInterruptedException(str(e))
-            finally:
-                # Chain to previous handler if it exists and is not default/ignore
-                if signum == signal.SIGTERM and callable(
-                    self._prev_sigterm_handler
-                ):
-                    self._prev_sigterm_handler(signum, frame)
-                elif signum == signal.SIGINT and callable(
-                    self._prev_sigint_handler
-                ):
-                    self._prev_sigint_handler(signum, frame)
-
-        # Register handlers for common termination signals
-        try:
-            signal.signal(signal.SIGTERM, signal_handler)
-            signal.signal(signal.SIGINT, signal_handler)
-        except ValueError as e:
-            # This happens when not in the main thread
-            logger.debug(f"Cannot register signal handlers: {e}")
-            # Continue without signal handling - the step will still run
 
     def launch(self) -> StepRunResponse:
         """Launches the step.
@@ -344,8 +232,16 @@ class StepLauncher:
                 if not step_run.status.is_finished:
                     logger.info(f"Step `{self._invocation_id}` has started.")
 
+                    signal_handler: Optional[SignalHandler] = None
                     start_time = time.time()
                     try:
+                        if self._should_register_signal_handler():
+                            signal_handler = SignalHandler(
+                                step_run=step_run,
+                                execution_mode=self._snapshot.pipeline_configuration.execution_mode,
+                            )
+                            signal_handler.register()
+
                         self._run_step(
                             pipeline_run=pipeline_run,
                             step_run=step_run,
@@ -385,6 +281,9 @@ class StepLauncher:
                                     step_run.id
                                 )
                         raise
+                    finally:
+                        if signal_handler:
+                            signal_handler.unregister()
 
                     if self._wait:
                         duration = time.time() - start_time
@@ -729,6 +628,28 @@ class StepLauncher:
             output_artifact_uris=output_artifact_uris,
             step_run_info=step_run_info,
         )
+
+    def _should_register_signal_handler(self) -> bool:
+        """Whether the signal handler should be registered.
+
+        Returns:
+            Whether the signal handler should be registered.
+        """
+        if not self._snapshot.is_dynamic:
+            # In static pipelines we always register the signal handler.
+            return True
+
+        if self._step.config.step_operator:
+            return False
+
+        from zenml.execution.pipeline.dynamic.runner import get_step_runtime
+
+        step_runtime = get_step_runtime(
+            step_config=self._step.config,
+            pipeline_docker_settings=self._snapshot.pipeline_configuration.docker_settings,
+            orchestrator=self._stack.orchestrator,
+        )
+        return step_runtime == StepRuntime.INLINE
 
     def _wait_until_resources_acquired(
         self, step_run_info: StepRunInfo
