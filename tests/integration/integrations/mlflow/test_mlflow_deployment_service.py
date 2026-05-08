@@ -44,7 +44,10 @@ def test_standard_mlflow_deployment_healthcheck_uses_get() -> None:
     """Check that standard MLflow serving uses GET /ping health checks."""
     service = _deployment_service(mlserver=False)
 
-    assert service.endpoint.config.prediction_url_path == MLFLOW_PREDICTION_URL_PATH
+    assert (
+        service.endpoint.config.prediction_url_path
+        == MLFLOW_PREDICTION_URL_PATH
+    )
     assert (
         service.endpoint.monitor.config.healthcheck_uri_path
         == MLFLOW_HEALTHCHECK_URL_PATH
@@ -69,7 +72,10 @@ def test_mlserver_deployment_healthcheck_uses_get(
 
     service = _deployment_service(mlserver=True)
 
-    assert service.endpoint.config.prediction_url_path == MLSERVER_PREDICTION_URL_PATH
+    assert (
+        service.endpoint.config.prediction_url_path
+        == MLSERVER_PREDICTION_URL_PATH
+    )
     assert (
         service.endpoint.monitor.config.healthcheck_uri_path
         == MLSERVER_HEALTHCHECK_URL_PATH
