@@ -18,7 +18,7 @@ timeout_secs = 960
 type = "pytest"
 paths = []
 command = "python -m pytest -p no:pytest_postgresql"
-run_args = "--no-provision --environment default -p no:randomly -p no:rerunfailures -n 2 --dist loadfile"
+run_args = "--no-provision --environment default -p no:randomly -p no:rerunfailures"
 
 [groups.unit]
 retry_count = 0

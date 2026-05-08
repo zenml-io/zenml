@@ -33,9 +33,7 @@ Runs automatically on all PRs, merge queue entries, and pushes to develop:
 - SQLite migration testing
 - Static checks (ubuntu, Python 3.11) — spellcheck, Ruff, and pydoclint
 - Fast unit and non-slow integration coverage through `linux-fast-offload.yml`
-  with two pytest-xdist workers per Modal sandbox
-- Separate Modal MySQL offload lane through `linux-fast-offload.yml`, also with
-  two pytest-xdist workers per Modal sandbox
+- Separate Modal MySQL offload lane through `linux-fast-offload.yml`
 - API docs buildability test
 
 ### ci-medium.yml (Merge Queue)
