@@ -80,7 +80,6 @@ rules:
   secrets-inherit:
     ignore:
       - ci-fast.yml
-      - ci-slow.yml
       - linting.yml
       - unit-test.yml
       - integration-test-fast.yml

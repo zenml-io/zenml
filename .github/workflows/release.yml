@@ -5,21 +5,8 @@ on:
     tags: ['*']
 permissions:
   contents: read
-  checks: read
 jobs:
-  verify-known-good:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-        with:
-          fetch-depth: 0
-      - name: Verify slow CI qualification (warn-only)
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python scripts/check_known_good.py --warn-only
   setup-and-test:
-    needs: verify-known-good
     uses: ./.github/workflows/unit-test.yml
     with:
       os: ubuntu-latest
@@ -28,7 +15,6 @@ jobs:
   # We only run the `latest` DB migration test here, as the other previous steps in the release flow already
   # test full migrations.
   mysql-db-migration-testing:
-    needs: verify-known-good
     runs-on: ubuntu-latest
     env:
       ZENML_ANALYTICS_OPT_IN: false
@@ -50,7 +36,6 @@ jobs:
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh mysql latest
   sqlite-db-migration-testing:
-    needs: verify-known-good
     runs-on: ubuntu-latest
     env:
       ZENML_ANALYTICS_OPT_IN: false
@@ -67,7 +52,6 @@ jobs:
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh sqlite latest
   mariadb-db-migration-testing:
-    needs: verify-known-good
     runs-on: ubuntu-latest
     env:
       ZENML_ANALYTICS_OPT_IN: false

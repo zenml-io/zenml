@@ -8,7 +8,7 @@ This document provides guidance for AI assistants working with ZenML's GitHub Ac
 
 | Category | Workflows | Purpose |
 |----------|-----------|---------|
-| **CI/Testing** | ci-fast.yml, ci-slow.yml | Primary PR testing (two-tier approach) |
+| **CI/Testing** | ci-fast.yml, ci-medium.yml, ci-slow-develop.yml, slow-ci-on-pr.yml | Primary PR, merge-queue, and develop qualification testing |
 | **Reusable Tests** | unit-test.yml, linting.yml, integration-test-*.yml | Called by CI and release workflows |
 | **Release** | release.yml, publish_*.yml | PyPI, Docker, Helm publishing |
 | **Security** | codeql.yml, trivy-*.yml | Vulnerability scanning |
@@ -17,35 +17,44 @@ This document provides guidance for AI assistants working with ZenML's GitHub Ac
 
 ### Entry Points vs Reusable Workflows
 
-**Entry points** (triggered externally): ci-fast.yml, ci-slow.yml, release.yml, nightly_build.yml
+**Entry points** (triggered externally): ci-fast.yml, ci-medium.yml, ci-slow-develop.yml, slow-ci-on-pr.yml, release.yml, nightly_build.yml
 
 **Reusable workflows** (called via `workflow_call`): unit-test.yml, linting.yml, integration-test-*.yml, publish_*.yml
 
+Some entrypoint/orchestration workflows are also callable. For example, `ci-slow-develop.yml` exposes `workflow_call` so `slow-ci-on-pr.yml` can reuse the develop qualification matrix.
+
 All reusable workflows use `secrets: inherit` for centralized secret management.
 
-## Two-Tier CI Architecture
+## CI Architecture
 
 ### ci-fast.yml (Every PR)
 
-Runs automatically on all PRs and pushes to main:
+Runs automatically on all PRs, merge queue entries, and pushes to develop:
 - Spellcheck
 - SQLite migration testing
 - Linting (ubuntu, Python 3.11) — includes Ruff, pydoclint, yamlfix, zizmor, and mypy
-- Unit tests (ubuntu, Python 3.11)
-- Integration tests (2 environments, 6 shards each)
+- Fast unit and non-slow integration coverage through `linux-fast-offload.yml`
+- Separate Modal MySQL offload lane through `linux-fast-offload.yml`
 - API docs buildability test
 - Template example updates (PRs only, same-repo only)
 
-### ci-slow.yml (Full Matrix, Requires Label)
+### ci-medium.yml (Merge Queue)
 
-Gated by `run-slow-ci` label (checked dynamically):
+Runs merge-queue validation beyond fast PR checks:
+- Random database migration coverage
+- Python 3.12 linting and unit tests
+- Modal-hosted MySQL integration coverage
+
+### ci-slow-develop.yml and slow-ci-on-pr.yml (Full Matrix)
+
+`ci-slow-develop.yml` runs scheduled/manual develop qualification and can be called by other workflows. `slow-ci-on-pr.yml` triggers that same slow matrix for a PR when maintainers add the `run-slow-ci` label.
+
+The slow matrix includes:
 - Multi-OS: Ubuntu, Windows, macOS
 - Multi-Python: 3.10, 3.11, 3.12, 3.13
 - Full database migration tests (MySQL, MariaDB, SQLite)
 - VSCode tutorial pipeline tests
 - Base package functionality tests
-
-**Label mechanism**: Maintainers add `run-slow-ci` label and rerun workflow to trigger full CI without code changes.
 
 ## Release Process
 
@@ -123,24 +132,18 @@ env:
 
 ### Concurrency
 
-All CI workflows use:
+Most CI workflows use:
 ```yaml
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 ```
 
-This cancels previous runs when new commits are pushed to the same branch.
+This cancels previous runs when new commits are pushed to the same branch. Qualification workflows can intentionally differ; for example, `ci-slow-develop.yml` keeps in-progress develop qualification runs instead of canceling them.
 
 ### Path Filtering
 
-ci-fast and ci-slow ignore:
-- `docs/**` - Documentation changes
-- `*.md` - Markdown files
-- `.claude/**` - Claude configuration
-- `.github/workflows/claude.yml` - Claude workflow
-
-But explicitly include `pyproject.toml` changes.
+Path filtering is workflow-specific. Do not assume required aggregate workflows can skip docs-only changes; required rollup jobs may still need to report a status even when expensive test jobs are skipped. Check each workflow's `paths`, `paths-ignore`, and job-level conditions before changing branch protection behavior.
 
 ### Caching
 
@@ -212,7 +215,7 @@ Creates tracking issues from PRs when `snack-it` label is applied. Adds to GitHu
 
 5. **Run format.sh before commits**: YAML files must pass yamlfix (`bash scripts/format.sh .github/`)
 
-6. **Two-tier CI requires label**: Full CI only runs with `run-slow-ci` label - maintainers add this for thorough testing
+6. **Slow CI entry points differ**: Advisory PR slow CI runs when maintainers add the `run-slow-ci` label; develop qualification runs through `ci-slow-develop.yml` on its own scheduled/manual/callable paths
 
 7. **Release waits are intentional**: The 4-minute sleeps in release.yml allow PyPI CDN propagation
 
