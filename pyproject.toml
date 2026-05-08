@@ -9,7 +9,7 @@ build-backend = "uv_build"
 # Override for a single install: uv add <pkg> --exclude-newer "0 days"
 # NOTE: when a version is filtered out, uv does NOT mention it — resolution
 # just fails with "no compatible version found". Keep this in mind when debugging.
-exclude-newer = "3 days"
+exclude-newer = "3"
 
 [tool.uv.build-backend]
 module-name = ["zenml", "zenml_cli"]
