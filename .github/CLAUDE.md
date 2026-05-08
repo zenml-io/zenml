@@ -32,9 +32,10 @@ All reusable workflows use `secrets: inherit` for centralized secret management.
 Runs automatically on all PRs, merge queue entries, and pushes to develop:
 - SQLite migration testing
 - Static checks (ubuntu, Python 3.11) — spellcheck, Ruff, and pydoclint
-- Fast unit coverage on GitHub-hosted runners
-- Fast non-slow integration coverage through `linux-fast-offload.yml`
-- Separate Modal MySQL offload lane through `linux-fast-offload.yml`
+- Fast unit and non-slow integration coverage through `linux-fast-offload.yml`
+  with two pytest-xdist workers per Modal sandbox
+- Separate Modal MySQL offload lane through `linux-fast-offload.yml`, also with
+  two pytest-xdist workers per Modal sandbox
 - API docs buildability test
 
 ### ci-medium.yml (Merge Queue)

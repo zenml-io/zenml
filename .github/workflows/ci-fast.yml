@@ -91,16 +91,9 @@ jobs:
           ruff check src/zenml tests/harness
           ruff check tests examples --extend-ignore D --extend-exclude "*.ipynb"
       - name: Docstring
-        run: pydoclint src/zenml tests/harness
-  unit-test:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
-      false
-    uses: ./.github/workflows/unit-test.yml
-    with:
-      python-version: '3.13'
-      os: ubuntu-latest
-      reruns: 0
-    secrets: inherit
+        run: |
+          uv pip install --system --force-reinstall --no-deps "docstring_parser_fork"
+          pydoclint src/zenml tests/harness
   linux-fast-offload:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
       false
@@ -126,7 +119,6 @@ jobs:
       - sqlite-db-migration-testing-random
       - api-docs-test
       - static-checks
-      - unit-test
       - linux-fast-offload
       - linux-fast-offload-modal-mysql
     if: always() && (github.event_name != 'pull_request' || github.event.pull_request.draft

@@ -22,6 +22,7 @@ def test_fast_offload_config_is_valid() -> None:
     assert config["framework"]["run_args"].startswith(
         "--no-provision --environment default"
     )
+    assert "-n 2 --dist loadfile" in config["framework"]["run_args"]
 
 
 def test_offload_dockerfile_does_not_bake_source_before_dependencies() -> None:
@@ -49,4 +50,5 @@ def test_modal_mysql_offload_config_is_valid() -> None:
     assert config["framework"]["run_args"].startswith(
         "--no-provision --environment remote-mysql-modal"
     )
+    assert "-n 2 --dist loadfile" in config["framework"]["run_args"]
     assert "MODAL_CI_SERVER_URL" in config["provider"]["create_command"]
