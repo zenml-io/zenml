@@ -84,7 +84,7 @@ server = [
     "python-multipart~=0.0.9",
     "pyjwt[crypto]==2.7.*",
     "fastapi-utils",
-    "orjson~=3.10.0",
+    "orjson>=3.11.6,<3.12.0",
     "Jinja2",
     "ipinfo>=4.4.3",
     "secure~=1.0.1",
