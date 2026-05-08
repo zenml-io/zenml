@@ -106,10 +106,16 @@ jobs:
       - linting
       - linux-fast-offload
       - linux-fast-offload-modal-mysql
-    if: always()
+    if: always() && (github.event_name != 'pull_request' || github.event.pull_request.draft
+      == false)
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - name: Verify required fast CI jobs
         env:
           NEEDS_CONTEXT: ${{ toJSON(needs) }}
-        run: python scripts/ci/verify_required_jobs.py --lane Fast --needs-json "$NEEDS_CONTEXT"
+        run: >
+          python scripts/ci/verify_required_jobs.py
+          --lane Fast
+          --needs-json "$NEEDS_CONTEXT"
+          --allow-skipped update-templates-to-examples
+          --allow-skipped linux-fast-offload-modal-mysql

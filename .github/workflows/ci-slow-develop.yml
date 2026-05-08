@@ -3,6 +3,13 @@ name: ci-slow-develop
 on:
   schedule:
     - cron: 0 0 * * *
+  workflow_call:
+    inputs:
+      git-ref:
+        description: Git branch or ref to qualify
+        type: string
+        required: false
+        default: develop
   workflow_dispatch:
     inputs:
       git-ref:

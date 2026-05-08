@@ -400,7 +400,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50  # untagged
         with:
-          name: linux-fast-offload-artifacts
+          name: linux-fast-offload-artifacts-${{ inputs.test_environment }}
           path: .ci/offload
           if-no-files-found: warn
       - name: Fail on unsuccessful offload
