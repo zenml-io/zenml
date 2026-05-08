@@ -23,8 +23,13 @@ import jwt
 import pytest
 
 from zenml.constants import DEFAULT_ZENML_JWT_TOKEN_LEEWAY
+from zenml.enums import DownloadType
 from zenml.exceptions import (
     AuthorizationException,
+)
+from zenml.zen_server.auth import (
+    generate_download_token,
+    verify_download_token,
 )
 from zenml.zen_server.jwt import JWTToken
 from zenml.zen_server.utils import server_config
@@ -104,12 +109,71 @@ def test_token_wrong_signature():
     )
     fake_token = jwt.encode(
         claims_data,
-        "fake_key",
+        "fake_key_that_is_long_enough_for_hs256",
         algorithm=config.jwt_token_algorithm,
     )
 
     with pytest.raises(AuthorizationException):
         JWTToken.decode_token(fake_token)
+
+
+def test_token_wrong_signature_can_skip_signature_verification():
+    """Test that signature verification can be disabled explicitly."""
+    config = server_config()
+    user_id = uuid.uuid4()
+    token = JWTToken(
+        user_id=user_id,
+    )
+    encoded_token = token.encode()
+
+    # Re-encode the token with a different secret key
+    claims_data = jwt.decode(
+        encoded_token,
+        algorithms=[config.jwt_token_algorithm],
+        options={
+            "verify_signature": False,
+            "verify_exp": False,
+            "verify_aud": False,
+            "verify_iss": False,
+        },
+    )
+    fake_token = jwt.encode(
+        claims_data,
+        "fake_key_that_is_long_enough_for_hs256",
+        algorithm=config.jwt_token_algorithm,
+    )
+
+    decoded_token = JWTToken.decode_token(fake_token, verify=False)
+
+    assert decoded_token.user_id == user_id
+
+
+def test_token_wrong_audience_rejected_without_signature_verification():
+    """Test that disabling signatures still validates the token claims."""
+    config = server_config()
+    token = JWTToken(
+        user_id=uuid.uuid4(),
+    )
+    encoded_token = token.encode()
+    claims_data = jwt.decode(
+        encoded_token,
+        algorithms=[config.jwt_token_algorithm],
+        options={
+            "verify_signature": False,
+            "verify_exp": False,
+            "verify_aud": False,
+            "verify_iss": False,
+        },
+    )
+    claims_data["aud"] = "fake_audience"
+    fake_token = jwt.encode(
+        claims_data,
+        "fake_key_that_is_long_enough_for_hs256",
+        algorithm=config.jwt_token_algorithm,
+    )
+
+    with pytest.raises(AuthorizationException):
+        JWTToken.decode_token(fake_token, verify=False)
 
 
 @contextlib.contextmanager
@@ -173,3 +237,40 @@ def test_token_no_issuer():
     """Test that tokens without an issuer are rejected."""
     with _hack_token() as claims_data:
         claims_data.pop("iss")
+
+
+def test_download_token_verification():
+    """Test that download tokens verify with matching expected claims."""
+    resource_id = uuid.uuid4()
+    extra_claims = {"artifact_path": "models/model.pkl"}
+    token = generate_download_token(
+        download_type=DownloadType.ARTIFACT_VERSION,
+        resource_id=resource_id,
+        extra_claims=extra_claims,
+    )
+
+    with does_not_raise():
+        verify_download_token(
+            token=token,
+            download_type=DownloadType.ARTIFACT_VERSION,
+            resource_id=resource_id,
+            extra_claims=extra_claims,
+        )
+
+
+def test_download_token_rejects_mismatched_claims():
+    """Test that download tokens reject mismatched expected claims."""
+    resource_id = uuid.uuid4()
+    token = generate_download_token(
+        download_type=DownloadType.SNAPSHOT_CODE,
+        resource_id=resource_id,
+        extra_claims={"snapshot_path": "snapshots/current.tar.gz"},
+    )
+
+    with pytest.raises(AuthorizationException):
+        verify_download_token(
+            token=token,
+            download_type=DownloadType.SNAPSHOT_CODE,
+            resource_id=resource_id,
+            extra_claims={"snapshot_path": "snapshots/other.tar.gz"},
+        )

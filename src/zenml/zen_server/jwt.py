@@ -82,6 +82,14 @@ class JWTToken(BaseModel):
             CredentialsNotValid: If the token is invalid.
         """
         config = server_config()
+        verification_options = {
+            "verify_signature": verify,
+            "verify_exp": True,
+            "verify_nbf": True,
+            "verify_iat": True,
+            "verify_aud": True,
+            "verify_iss": True,
+        }
 
         try:
             claims_data = jwt.decode(
@@ -90,7 +98,7 @@ class JWTToken(BaseModel):
                 algorithms=[config.jwt_token_algorithm],
                 audience=config.get_jwt_token_audience(),
                 issuer=config.get_jwt_token_issuer(),
-                verify=verify,
+                options=verification_options,
                 leeway=timedelta(seconds=config.jwt_token_leeway_seconds),
             )
             claims = cast(Dict[str, Any], claims_data)
