@@ -152,8 +152,8 @@ jobs:
           set -euo pipefail
           echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
           trap 'echo "completed_at=$(date +%s)" >> "$GITHUB_OUTPUT"' EXIT
-          python3 -m pip install --user "uv==0.8.22"
-          python3 -m uv pip install --system -e ".[server,templates,dev]" -r scripts/ci/modal_sandbox_requirements.txt
+          python3 -m pip install --user "uv==0.11.7"
+          python3 -m uv pip install --exclude-newer "PT72H" --system -e ".[server,templates,dev]" -r scripts/ci/modal_sandbox_requirements.txt
           if ! command -v cargo >/dev/null 2>&1; then
             echo "cargo is required to install the pinned offload binary"
             exit 1
