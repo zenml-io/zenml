@@ -79,6 +79,38 @@ def deployment_pipeline() -> None:
     print(config.environment, config.replicas, config.notify_slack)
 ```
 
+## Timeouts and pausing
+
+`wait(...)` accepts a `timeout` (default: 600 seconds). When the timeout
+elapses without a resolution, ZenML transitions the run to `PAUSED` so the
+orchestration process can be torn down — picking it back up later via
+[resume](#resolve-and-resume).
+
+There is one subtlety to know about for nested or concurrent dynamic
+pipelines: the run only pauses once all *tree-wide* work has settled.
+
+- A run with concurrent steps (`step.submit(...)`), maps
+  (`step.map(...)`), or child pipelines (`child(...)`,
+  `child.submit(...)`) keeps the orchestration process up so it can
+  monitor that work.
+- While that process is up anyway, pausing the run wouldn't free any
+  resources — the wait keeps polling and refreshing its lease even past
+  `timeout`.
+- Once the tree quiesces (concurrent steps and child runs have all
+  finished, or themselves paused), the wait gives up and publishes
+  `PAUSED`.
+
+In other words, `timeout` is the earliest moment the run can pause, not
+a hard upper bound on how long the wait blocks. For a run with no
+concurrent or nested work it behaves as the simple bound it appears to
+be. For richer pipelines, treat it as a "stop polling once everything
+else is also idle" hint.
+
+If you want the run to pause as soon as the timeout elapses regardless of
+sibling work, design the pipeline so the `wait(...)` call is the only
+in-flight work at that point — for example, by `.wait()`-ing on the
+relevant futures before calling `wait(...)`.
+
 ## Resolve and resume
 
 You can resolve wait conditions either in the UI or from the CLI.

@@ -1252,6 +1252,12 @@ def resume_pipeline_run(run_name_or_id: str) -> None:
             hydrate=True,
         )
 
+        if run.root_run_id:
+            cli_utils.error(
+                "Cannot resume a child run. Resume the parent run instead: "
+                f"`zenml pipeline runs resume {run.root_run_id}`"
+            )
+
         if run.status != ExecutionStatus.PAUSED:
             cli_utils.error("Cannot resume a run that is not paused.")
 

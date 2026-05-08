@@ -1447,8 +1447,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         invocation_id = compute_invocation_id(
             existing_invocations=set(self.invocations.keys()),
-            step=step,
-            custom_id=custom_id,
+            base_name=custom_id or step.name,
             allow_suffix=allow_id_suffix,
         )
         self._invocations[invocation_id] = StepInvocation(
@@ -1571,7 +1570,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         pipeline_copy._run_args.update(run_args)
         return pipeline_copy
 
-    def copy(self) -> "Pipeline":
+    def copy(self) -> Self:
         """Copies the pipeline.
 
         Returns:
@@ -1595,11 +1594,25 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             *args: Entrypoint function arguments.
             **kwargs: Entrypoint function keyword arguments.
 
+        Raises:
+            RuntimeError: If a non-dynamic pipeline is called from inside a
+                dynamic pipeline run.
+
         Returns:
             If called within another pipeline, returns the outputs of the
             `entrypoint` method. Otherwise, returns the pipeline run or `None`
             if running with a schedule.
         """
+        from zenml.execution.pipeline.dynamic.run_context import (
+            DynamicPipelineRunContext,
+        )
+
+        if DynamicPipelineRunContext.get() is not None:
+            raise RuntimeError(
+                f"Pipeline `{self.name}` is not a dynamic pipeline and cannot "
+                "be called from within a dynamic pipeline."
+            )
+
         if PipelineCompilationContext.is_active():
             # Calling a pipeline inside a pipeline, we return the potential
             # outputs of the entrypoint function
