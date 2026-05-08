@@ -7703,6 +7703,7 @@ class SqlZenStore(BaseZenStore):
                     )
 
             run_id = schema.run_id
+            root_run_id = schema.run.root_run_id or schema.run_id
             resolution = schema.resolution
             session.add(schema)
             session.commit()
@@ -7728,7 +7729,6 @@ class SqlZenStore(BaseZenStore):
             # TODO: There is a race condition because the runner will
             # publish a failed run status at some point.
 
-            root_run_id = schema.run.root_run_id or schema.run_id
             self._attempt_resume_run_from_server(run_id=root_run_id)
 
         return current_status

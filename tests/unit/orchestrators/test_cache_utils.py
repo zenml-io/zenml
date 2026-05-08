@@ -32,6 +32,7 @@ from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.steps import step
 from zenml.steps.base_step import BaseStep
 from zenml.steps.step_invocation import StepInvocation
+from zenml.utils import source_utils
 
 
 def _compile_step(step: BaseStep) -> Step:
@@ -172,64 +173,80 @@ def test_generate_cache_key_considers_input_artifact_content_hash(
 def test_generate_cache_key_considers_file_dependencies(
     generate_cache_key_kwargs,
     clean_client_with_repo,
+    tmp_path,
 ):
     """Check that the cache key changes if the file dependencies change."""
-    with open("file_dependency.txt", "w") as f:
-        f.write("before")
-    generate_cache_key_kwargs["step"].config.cache_policy.file_dependencies = [
-        "file_dependency.txt"
-    ]
-    key_1 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
+    source_utils.set_custom_source_root(str(tmp_path))
+    try:
+        file_dependency = tmp_path / "file_dependency.txt"
+        file_dependency.write_text("before")
+        generate_cache_key_kwargs[
+            "step"
+        ].config.cache_policy.file_dependencies = ["file_dependency.txt"]
+        key_1 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
 
-    with open("file_dependency.txt", "w") as f:
-        f.write("after")
-    key_2 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
-    assert key_1 != key_2
+        file_dependency.write_text("after")
+        key_2 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
+        assert key_1 != key_2
+    finally:
+        source_utils.set_custom_source_root(None)
 
 
 def test_generate_cache_key_considers_source_dependencies(
     generate_cache_key_kwargs,
     clean_client_with_repo,
+    tmp_path,
 ):
     """Check that the cache key changes if the source dependencies change."""
-    module_name = str(uuid4())
-    with open(f"{module_name}.py", "w") as f:
-        f.write("def f():\n  return 1")
-    generate_cache_key_kwargs[
-        "step"
-    ].config.cache_policy.source_dependencies = [
-        Source.from_import_path(f"{module_name}.f")
-    ]
-    key_1 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
-    del sys.modules[module_name]
-    with open(f"{module_name}.py", "w") as f:
-        f.write("def f():\n  return 1 # comment")
-    key_2 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
-    assert key_1 != key_2
-    del sys.modules[module_name]
+    module_name = f"cache_dependency_{uuid4().hex}"
+    source_utils.set_custom_source_root(str(tmp_path))
+    sys.path.insert(0, str(tmp_path))
+    try:
+        module_path = tmp_path / f"{module_name}.py"
+        module_path.write_text("def f():\n  return 1")
+        generate_cache_key_kwargs[
+            "step"
+        ].config.cache_policy.source_dependencies = [
+            Source.from_import_path(f"{module_name}.f")
+        ]
+        key_1 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
+        del sys.modules[module_name]
+        module_path.write_text("def f():\n  return 1 # comment")
+        key_2 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
+        assert key_1 != key_2
+        del sys.modules[module_name]
+    finally:
+        sys.path.remove(str(tmp_path))
+        source_utils.set_custom_source_root(None)
 
 
 def test_generate_cache_key_considers_cache_func(
     generate_cache_key_kwargs,
     clean_client_with_repo,
+    tmp_path,
 ):
     """Check that the cache key changes if the cache func changes."""
-    module_name = str(uuid4())
-    with open(f"{module_name}.py", "w") as f:
-        f.write("def f():\n  return 'before'")
-    generate_cache_key_kwargs[
-        "step"
-    ].config.cache_policy.cache_func = Source.from_import_path(
-        f"{module_name}.f"
-    )
-    key_1 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
+    module_name = f"cache_func_{uuid4().hex}"
+    source_utils.set_custom_source_root(str(tmp_path))
+    sys.path.insert(0, str(tmp_path))
+    try:
+        module_path = tmp_path / f"{module_name}.py"
+        module_path.write_text("def f():\n  return 'before'")
+        generate_cache_key_kwargs[
+            "step"
+        ].config.cache_policy.cache_func = Source.from_import_path(
+            f"{module_name}.f"
+        )
+        key_1 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
 
-    del sys.modules[module_name]
-    with open(f"{module_name}.py", "w") as f:
-        f.write("def f():\n  return 'after'")
-    key_2 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
-    assert key_1 != key_2
-    del sys.modules[module_name]
+        del sys.modules[module_name]
+        module_path.write_text("def f():\n  return 'after'")
+        key_2 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
+        assert key_1 != key_2
+        del sys.modules[module_name]
+    finally:
+        sys.path.remove(str(tmp_path))
+        source_utils.set_custom_source_root(None)
 
 
 def test_generate_cache_key_considers_output_artifacts(

@@ -194,26 +194,31 @@ def clean_project_session(
     from zenml.utils.string_utils import random_str
 
     client = Client()
-    original_project = client.active_project.id
+    try:
+        original_project = client.active_project.id
+    except RuntimeError:
+        client.set_active_project("default")
+        original_project = client.active_project.id
 
     project_name = f"pytest_{random_str(8).lower()}"
     client.create_project(name=project_name, description="pytest test project")
 
-    if clean_repo:
-        with clean_repo_session(tmp_path_factory) as repo_client:
-            repo_client.set_active_project(project_name)
+    try:
+        if clean_repo:
+            with clean_repo_session(tmp_path_factory) as repo_client:
+                repo_client.set_active_project(project_name)
+
+                logging.info(f"Tests are running in project: '{project_name}'")
+                yield repo_client
+        else:
+            client.set_active_project(project_name)
 
             logging.info(f"Tests are running in project: '{project_name}'")
-            yield repo_client
-    else:
-        client.set_active_project(project_name)
-
-        logging.info(f"Tests are running in project: '{project_name}'")
-        yield client
-
-    # change the active project back to what it was
-    client.set_active_project(original_project)
-    client.delete_project(project_name)
+            yield client
+    finally:
+        # change the active project back to what it was
+        client.set_active_project(original_project)
+        client.delete_project(project_name)
 
 
 @contextmanager
