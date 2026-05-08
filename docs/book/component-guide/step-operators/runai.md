@@ -4,7 +4,7 @@ description: Executing individual steps on Run:AI clusters with fractional GPU s
 
 # Run:AI Step Operator
 
-ZenML's Run:AI step operator allows you to submit individual steps to be run on [Run:AI](https://www.run.ai/) clusters as training workloads with support for fractional GPU allocation.
+ZenML's Run:AI step operator allows you to submit individual steps to be run on [Run:AI](https://www.nvidia.com/en-us/software/run-ai/) clusters as training workloads with support for fractional GPU allocation.
 
 ### When to use it
 

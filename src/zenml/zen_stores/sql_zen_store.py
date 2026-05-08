@@ -408,6 +408,7 @@ from zenml.zen_stores.schemas import (
     NamedSchema,
     OAuthDeviceSchema,
     PipelineBuildSchema,
+    PipelineRunOutputSchema,
     PipelineRunSchema,
     PipelineSchema,
     PipelineSnapshotSchema,
@@ -3287,6 +3288,9 @@ class SqlZenStore(BaseZenStore):
                             col(ArtifactVersionSchema.id).notin_(
                                 select(StepRunInputArtifactSchema.artifact_id)
                             ),
+                            col(ArtifactVersionSchema.id).notin_(
+                                select(PipelineRunOutputSchema.artifact_id)
+                            ),
                             col(ArtifactVersionSchema.project_id)
                             == project_id,
                         )
@@ -6160,6 +6164,15 @@ class SqlZenStore(BaseZenStore):
                         jl_arg(PipelineRunSchema.status),
                         jl_arg(PipelineRunSchema.index),
                     ),
+                    selectinload(
+                        jl_arg(PipelineRunSchema.child_runs)
+                    ).load_only(
+                        jl_arg(PipelineRunSchema.id),
+                        jl_arg(PipelineRunSchema.name),
+                        jl_arg(PipelineRunSchema.start_time),
+                        jl_arg(PipelineRunSchema.end_time),
+                        jl_arg(PipelineRunSchema.status),
+                    ),
                 ],
             )
             assert run.snapshot is not None
@@ -6219,6 +6232,9 @@ class SqlZenStore(BaseZenStore):
             regular_output_artifact_nodes: Dict[
                 str, Dict[str, PipelineRunDAG.Node]
             ] = defaultdict(dict)
+            input_artifact_nodes_by_id: Dict[UUID, List[str]] = defaultdict(
+                list
+            )
 
             def _get_regular_output_artifact_node(
                 step_name: str, output_name: str
@@ -6330,6 +6346,9 @@ class SqlZenStore(BaseZenStore):
                             index=input.input_index,
                             chunk_index=input.chunk_index,
                             chunk_size=input.chunk_size,
+                        )
+                        input_artifact_nodes_by_id[input.artifact_id].append(
+                            artifact_node.node_id
                         )
 
                     for output in step_run.output_artifacts:
@@ -6565,6 +6584,30 @@ class SqlZenStore(BaseZenStore):
                         target=step_node.node_id,
                     )
 
+            for child_run in run.child_runs:
+                child_run_metadata: Dict[str, Any] = {
+                    "status": child_run.status,
+                }
+                if child_run.start_time:
+                    child_run_metadata["start_time"] = (
+                        child_run.start_time.isoformat()
+                    )
+                    if child_run.end_time:
+                        child_run_metadata["end_time"] = (
+                            child_run.end_time.isoformat()
+                        )
+                        child_run_metadata["duration"] = (
+                            child_run.end_time - child_run.start_time
+                        ).total_seconds()
+
+                helper.add_child_run_node(
+                    node_id=helper.get_child_run_node_id(child_run.name),
+                    id=child_run.id,
+                    name=child_run.name,
+                    **child_run_metadata,
+                )
+                # TODO: maybe include nodes for outputs and connect via edges?
+
         return helper.finalize_dag(
             pipeline_run_id=pipeline_run_id, status=ExecutionStatus(run.status)
         )
@@ -6663,6 +6706,17 @@ class SqlZenStore(BaseZenStore):
                 reference_type="original run",
             )
 
+        root_run_id: Optional[UUID] = None
+        if pipeline_run.parent_run_id:
+            parent_run = self._get_reference_schema_by_id(
+                resource=pipeline_run,
+                reference_schema=PipelineRunSchema,
+                reference_id=pipeline_run.parent_run_id,
+                session=session,
+                reference_type="parent run",
+            )
+            root_run_id = parent_run.root_run_id or parent_run.id
+
         index = self._get_next_run_index(
             pipeline_id=snapshot.pipeline_id, session=session
         )
@@ -6672,6 +6726,7 @@ class SqlZenStore(BaseZenStore):
             pipeline_id=snapshot.pipeline_id,
             index=index,
             enable_heartbeat=self._get_enable_run_heartbeat(snapshot),
+            root_run_id=root_run_id,
         )
 
         session.add(new_run)
@@ -7186,8 +7241,41 @@ class SqlZenStore(BaseZenStore):
                         f"New: {run_update.orchestrator_run_id}"
                     )
 
+            if run_update.outputs is not None:
+                # Validate that every referenced artifact version exists and
+                # belongs to the same project as the run before mutating
+                # `pipeline_run_output`. This prevents cross-project info
+                # disclosure via run outputs (a caller with UPDATE on the run
+                # could otherwise pin arbitrary artifact IDs by guessing
+                # them).
+                for artifact_id in set(run_update.outputs.values()):
+                    self._get_reference_schema_by_id(
+                        resource=existing_run,
+                        reference_schema=ArtifactVersionSchema,
+                        reference_id=artifact_id,
+                        session=session,
+                        reference_type="output artifact version",
+                    )
+
             existing_run.update(run_update=run_update)
             session.add(existing_run)
+            if run_update.outputs is not None:
+                session.execute(
+                    delete(PipelineRunOutputSchema).where(
+                        col(PipelineRunOutputSchema.pipeline_run_id) == run_id
+                    )
+                )
+                for index, (name, artifact_id) in enumerate(
+                    run_update.outputs.items()
+                ):
+                    session.add(
+                        PipelineRunOutputSchema(
+                            pipeline_run_id=run_id,
+                            name=name,
+                            output_index=index,
+                            artifact_id=artifact_id,
+                        )
+                    )
             session.commit()
             session.refresh(existing_run)
 
@@ -7534,6 +7622,9 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=True,
                 include_resources=True,
             )
+            root_run_id = (
+                updated_schema.run.root_run_id or updated_schema.run_id
+            )
 
         if resolved_model.resolution == RunWaitConditionResolution.CONTINUE:
             # There is a possibility that the instance holding the lease
@@ -7543,9 +7634,7 @@ class SqlZenStore(BaseZenStore):
             # conditions would solve this, but we don't implement this for
             # now.
             if not active_lease_exists:
-                self._attempt_resume_run_from_server(
-                    run_id=resolved_model.run.id,
-                )
+                self._attempt_resume_run_from_server(run_id=root_run_id)
         elif resolved_model.resolution == RunWaitConditionResolution.ABORT:
             with Session(self.engine) as session:
                 self._update_pipeline_run_status(
@@ -7638,7 +7727,9 @@ class SqlZenStore(BaseZenStore):
             # Then, attempt to resume the run from the server.
             # TODO: There is a race condition because the runner will
             # publish a failed run status at some point.
-            self._attempt_resume_run_from_server(run_id=run_id)
+
+            root_run_id = schema.run.root_run_id or schema.run_id
+            self._attempt_resume_run_from_server(run_id=root_run_id)
 
         return current_status
 
