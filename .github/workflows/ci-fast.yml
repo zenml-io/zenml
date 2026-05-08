@@ -113,7 +113,7 @@ jobs:
       - name: Verify required fast CI jobs
         env:
           NEEDS_CONTEXT: ${{ toJSON(needs) }}
-        run: >
+        run: >-
           python scripts/ci/verify_required_jobs.py
           --lane Fast
           --needs-json "$NEEDS_CONTEXT"

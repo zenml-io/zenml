@@ -15,7 +15,9 @@ def parse_allowed_skips(values: Iterable[str]) -> set[str]:
     """Parse repeated or comma-separated skipped-job allowlist values."""
     allowed: set[str] = set()
     for value in values:
-        allowed.update(name.strip() for name in value.split(",") if name.strip())
+        allowed.update(
+            name.strip() for name in value.split(",") if name.strip()
+        )
     return allowed
 
 

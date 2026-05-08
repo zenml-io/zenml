@@ -25,20 +25,19 @@ def test_find_failed_jobs_reports_skipped_by_default() -> None:
 
 def test_find_failed_jobs_allows_named_skipped_jobs() -> None:
     """Named skipped jobs should not fail required rollups."""
-    assert (
-        find_failed_jobs(
-            {
-                "passed": {"result": "success"},
-                "optional": {"result": "skipped"},
-                "other-skipped": {"result": "skipped"},
-            },
-            allowed_skipped_jobs={"optional"},
-        )
-        == ["other-skipped: skipped"]
-    )
+    assert find_failed_jobs(
+        {
+            "passed": {"result": "success"},
+            "optional": {"result": "skipped"},
+            "other-skipped": {"result": "skipped"},
+        },
+        allowed_skipped_jobs={"optional"},
+    ) == ["other-skipped: skipped"]
 
 
-def test_parse_allowed_skips_accepts_repeated_or_comma_separated_values() -> None:
+def test_parse_allowed_skips_accepts_repeated_or_comma_separated_values() -> (
+    None
+):
     """The CLI accepts repeated flags and comma-separated job names."""
     assert parse_allowed_skips(["first, second", "third"]) == {
         "first",
