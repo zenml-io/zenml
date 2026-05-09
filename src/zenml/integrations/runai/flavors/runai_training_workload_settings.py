@@ -29,8 +29,10 @@ from pydantic import (
 class _RunAIStrictSettings(BaseModel):
     """Base for Run:AI settings models that reject unknown fields.
 
-    Toleration settings opt out of strict mode for backwards compatibility
-    with the previous untyped ``List[Dict[str, Any]]`` schema.
+    These models describe concrete Run:AI SDK payloads, so unknown keys should
+    fail validation instead of being silently dropped. Toleration settings opt
+    out of strict mode for backwards compatibility with the previous untyped
+    ``List[Dict[str, Any]]`` schema.
     """
 
     model_config = ConfigDict(extra="forbid")

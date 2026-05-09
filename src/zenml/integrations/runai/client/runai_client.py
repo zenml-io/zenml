@@ -164,8 +164,8 @@ class RunAIClient:
     def _create_raw_client(self, config: Configuration) -> RunapyClient:
         """Create the underlying runapy client.
 
-        The runai SDK does not ship type hints, so keep the untyped call
-        isolated to this helper.
+        The runai SDK does not ship type hints, so keep the untyped
+        constructors isolated to this helper.
 
         Args:
             config: The Configuration object to create the client from.
@@ -173,7 +173,11 @@ class RunAIClient:
         Returns:
             The raw runapy client.
         """
-        return RunapyClient(ApiClient(config))
+        api_client_factory = cast(Any, ApiClient)
+        runai_client_factory = cast(Any, RunapyClient)
+        return cast(
+            RunapyClient, runai_client_factory(api_client_factory(config))
+        )
 
     @staticmethod
     def _get_status_code(exc: Exception) -> Optional[int]:
