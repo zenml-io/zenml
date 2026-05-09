@@ -161,15 +161,20 @@ def load_kube_config(
 
 
 def sanitize_label(label: str) -> str:
-    """Sanitize a label for a Kubernetes resource.
+    """Sanitize a string for use as a Kubernetes `metadata.name` DNS label.
+
+    Matches RFC 1123-style DNS labels: lowercase alphanumerics and hyphens,
+    starting and ending with alphanumeric. For Kubernetes *label values*, use
+    `sanitize_label_value` instead, which allows `_`, `.`, and mixed case.
+
+    See https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
 
     Args:
-        label: The label to sanitize.
+        label: The label name to sanitize.
 
     Returns:
-        The sanitized label.
+        The sanitized label name.
     """
-    # https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#rfc-1035-label-names
     label = re.sub(r"[^a-z0-9-]", "-", label.lower())
     label = re.sub(r"^[-]+", "", label)
     label = re.sub(r"[-]+", "-", label)
@@ -178,6 +183,32 @@ def sanitize_label(label: str) -> str:
     # alphanumeric character
     label = re.sub(r"[-]+$", "", label)
 
+    return label
+
+
+def sanitize_label_value(label: str) -> str:
+    """Sanitize a string for use as a Kubernetes label `value`.
+
+    Follows the label value rules (63 characters max; non-empty values must
+    start and end with `[A-Za-z0-9]`; `-`, `_`, `.`, and alphanumerics
+    are allowed between).
+
+    See https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
+
+    Args:
+        label: The label value to sanitize.
+
+    Returns:
+        The sanitized label value (at most 63 characters; may be empty).
+    """
+    label = re.sub(r"[^A-Za-z0-9._-]+", "-", label)
+    label = label.strip("._-")
+    if not label:
+        return ""
+
+    label = label[:63]
+    label = re.sub(r"[^A-Za-z0-9]+$", "", label)
+    label = re.sub(r"^[^A-Za-z0-9]+", "", label)
     return label
 
 
