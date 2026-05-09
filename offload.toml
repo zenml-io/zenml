@@ -7,7 +7,7 @@ sandbox_project_root = "/app"
 [provider]
 type = "default"
 prepare_command = "uv run --exclude-newer \"PT72H\" @modal_sandbox.py prepare Dockerfile.ci --cached --include-cwd --sandbox-init-cmd 'cd /app && pip install --no-deps -e . -q'"
-create_command = "uv run --exclude-newer \"PT72H\" @modal_sandbox.py create {image_id} --cpu 4 --memory-gb 8 --env PYTHONDONTWRITEBYTECODE=1 --env PYTHONUNBUFFERED=1 --env ZENML_DEBUG=true --env ZENML_ANALYTICS_OPT_IN=false --env AUTO_OPEN_DASHBOARD=false"
+create_command = "uv run --exclude-newer \"PT72H\" @modal_sandbox.py create {image_id} --cpu 4 --memory-gb 8 --env PYTHONDONTWRITEBYTECODE=1 --env PYTHONUNBUFFERED=1 --env ZENML_DEBUG=true --env ZENML_ANALYTICS_OPT_IN=false --env AUTO_OPEN_DASHBOARD=false --env ZENML_CUSTOM_SOURCE_ROOT=/app"
 exec_command = "python3 @modal_sandbox.py exec {sandbox_id} {command}"
 destroy_command = "uv run --exclude-newer \"PT72H\" @modal_sandbox.py destroy {sandbox_id}"
 download_command = "printf '[offload] exec_and_fetch returned no inline artifacts; falling back to download_command.\\n' >&2; python3 @modal_sandbox.py download {sandbox_id} {paths}"
