@@ -346,7 +346,9 @@ def set_custom_source_root(source_root: Optional[str]) -> None:
     """
     logger.debug("Setting custom source root: %s", source_root)
     global _CUSTOM_SOURCE_ROOT
-    _CUSTOM_SOURCE_ROOT = source_root
+    _CUSTOM_SOURCE_ROOT = source_root or os.getenv(
+        ENV_ZENML_CUSTOM_SOURCE_ROOT, None
+    )
 
 
 def is_internal_module(module_name: str) -> bool:
