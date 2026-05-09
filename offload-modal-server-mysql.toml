@@ -22,7 +22,8 @@ run_args = "--no-provision --environment remote-mysql-modal -p no:randomly -p no
 
 [groups.integration]
 retry_count = 0
-filters = "tests/integration --ignore=tests/integration/examples -m 'not slow and not global_state'"
+# This test is covered by a separate serial GitHub-runner job with its own Modal MySQL server.
+filters = "tests/integration --ignore=tests/integration/examples -m 'not slow and not global_state' --deselect=tests/integration/functional/zen_stores/test_secrets_store.py::test_list_secrets_pagination_and_sorting"
 
 [report]
 output_dir = ".ci/offload"

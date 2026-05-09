@@ -113,6 +113,78 @@ jobs:
       use-offload: true
       test_environment: modal-server-mysql
     secrets: inherit
+  modal-mysql-serial-secrets-test:
+    if: github.event_name != 'pull_request' || (github.event.pull_request.draft ==
+      false && github.event.pull_request.head.repo.full_name == github.repository
+      && vars.ZENML_CI_MODAL_DISABLED != 'true')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+      MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+      ZENML_ANALYTICS_OPT_IN: false
+      ZENML_DEBUG: 1
+      ZENML_ENABLE_RICH_TRACEBACK: false
+      ZENML_TEST_DEPLOYMENT_ROOT_PATH: /tmp/zenml-test-deploy
+      PYTHONIOENCODING: utf-8
+      UV_HTTP_TIMEOUT: 600
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - name: Set uv cache + temp dirs (/opt)
+        run: |
+          sudo mkdir -p /opt/uv-cache /opt/tmp
+          sudo chown -R "$(id -u)":"$(id -g)" /opt/uv-cache /opt/tmp
+          echo "UV_CACHE_DIR=/opt/uv-cache" >> "$GITHUB_ENV"
+          echo "TMPDIR=/opt/tmp" >> "$GITHUB_ENV"
+          echo "TMP=/opt/tmp" >> "$GITHUB_ENV"
+          echo "TEMP=/opt/tmp" >> "$GITHUB_ENV"
+      - name: Setup environment
+        uses: ./.github/actions/setup_environment
+        with:
+          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+          python-version: '3.13'
+          os: ubuntu-latest
+          install_integrations: 'no'
+      - name: Install Modal SDK
+        run: python -m pip install --upgrade 'modal>=1.0.0'
+      - name: Prepare result directory
+        run: mkdir -p .ci/modal-mysql-serial
+      - name: Start Modal MySQL sandbox
+        id: modal-server
+        env:
+          ZENML_CI_MODAL_DISABLED: ${{ vars.ZENML_CI_MODAL_DISABLED }}
+          ZENML_CI_CHECKOUT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python scripts/ci_modal_mysql_sandbox.py start
+      - name: Run serial secrets pagination test
+        env:
+          MODAL_CI_SERVER_URL: ${{ steps.modal-server.outputs.server_url }}
+          MODAL_CI_SERVER_USERNAME: ${{ steps.modal-server.outputs.server_username }}
+          ZENML_CI_CHECKOUT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          export MODAL_CI_SERVER_PASSWORD
+          MODAL_CI_SERVER_PASSWORD=$(python - <<'PY'
+          from scripts.ci_modal_mysql_sandbox import derive_server_password
+          print(derive_server_password())
+          PY
+          )
+          python -m pytest -p no:pytest_postgresql -v --tb=short \
+            --junitxml=.ci/modal-mysql-serial/junit.xml \
+            --no-provision --environment remote-mysql-modal \
+            -p no:randomly -p no:rerunfailures \
+            tests/integration/functional/zen_stores/test_secrets_store.py::test_list_secrets_pagination_and_sorting
+      - name: Stop Modal MySQL sandbox
+        if: always() && steps.modal-server.outputs.sandbox_id != ''
+        env:
+          SANDBOX_ID: ${{ steps.modal-server.outputs.sandbox_id }}
+        run: python scripts/ci_modal_mysql_sandbox.py stop --sandbox-id "$SANDBOX_ID"
+      - name: Upload serial Modal MySQL artifacts
+        if: always()
+        uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50  # untagged
+        with:
+          name: modal-mysql-serial-secrets-test-artifacts
+          path: .ci/modal-mysql-serial
+          if-no-files-found: warn
   ci-fast-required:
     runs-on: ubuntu-latest
     needs:
@@ -121,6 +193,7 @@ jobs:
       - static-checks
       - linux-fast-offload
       - linux-fast-offload-modal-mysql
+      - modal-mysql-serial-secrets-test
     if: always() && (github.event_name != 'pull_request' || github.event.pull_request.draft
       == false)
     steps:
@@ -133,3 +206,4 @@ jobs:
           --lane Fast
           --needs-json "$NEEDS_CONTEXT"
           --allow-skipped linux-fast-offload-modal-mysql
+          --allow-skipped modal-mysql-serial-secrets-test
