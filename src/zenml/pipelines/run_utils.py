@@ -79,6 +79,8 @@ def create_placeholder_run(
     logs: Optional["LogsRequest"] = None,
     trigger_info: Optional[PipelineRunTriggerInfo] = None,
     original_run_id: Optional[UUID] = None,
+    parent_run_id: Optional[UUID] = None,
+    child_key: Optional[str] = None,
 ) -> "PipelineRunResponse":
     """Create a placeholder run for the snapshot.
 
@@ -88,6 +90,9 @@ def create_placeholder_run(
         logs: The logs for the run.
         trigger_info: The trigger information for the run.
         original_run_id: The original run ID for a replayed run.
+        parent_run_id: Parent run ID for nested child pipeline runs.
+        child_key: Stable per-parent identifier of the child pipeline call that
+            produced this child run.
 
     Returns:
         The placeholder run.
@@ -115,6 +120,8 @@ def create_placeholder_run(
         logs=logs,
         trigger_info=trigger_info,
         original_run_id=original_run_id,
+        parent_run_id=parent_run_id,
+        child_key=child_key,
     )
     run, _ = Client().zen_store.get_or_create_run(run_request)
     return run
