@@ -16,7 +16,8 @@ def test_fast_offload_config_is_valid() -> None:
     assert config["provider"]["type"] == "default"
     assert config["report"]["output_dir"] == ".ci/offload"
     assert set(config["groups"]) == {"unit", "integration"}
-    assert config["groups"]["unit"]["filters"] == "tests/unit"
+    assert "tests/unit" in config["groups"]["unit"]["filters"]
+    assert "test_wait_abort_aborts_run" in config["groups"]["unit"]["filters"]
     assert "tests/integration" in config["groups"]["integration"]["filters"]
     assert "not slow" in config["groups"]["integration"]["filters"]
     assert config["framework"]["run_args"].startswith(
@@ -46,6 +47,14 @@ def test_modal_mysql_offload_config_is_valid() -> None:
     assert "tests/integration" in config["groups"]["integration"]["filters"]
     assert "not slow" in config["groups"]["integration"]["filters"]
     assert "not global_state" in config["groups"]["integration"]["filters"]
+    assert (
+        "test_list_secrets_pagination_and_sorting"
+        in config["groups"]["integration"]["filters"]
+    )
+    assert (
+        "test_deletion_of_links[True]"
+        in config["groups"]["integration"]["filters"]
+    )
     assert config["framework"]["command"].startswith("python -m pytest")
     assert config["framework"]["run_args"].startswith(
         "--no-provision --environment remote-mysql-modal"
