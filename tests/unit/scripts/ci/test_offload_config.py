@@ -18,6 +18,10 @@ def test_fast_offload_config_is_valid() -> None:
     assert set(config["groups"]) == {"unit", "integration"}
     assert "tests/unit" in config["groups"]["unit"]["filters"]
     assert "test_wait_abort_aborts_run" in config["groups"]["unit"]["filters"]
+    assert (
+        "test_parent_waits_while_child_runs_then_wait_resolves"
+        in config["groups"]["unit"]["filters"]
+    )
     assert "tests/integration" in config["groups"]["integration"]["filters"]
     assert "not slow" in config["groups"]["integration"]["filters"]
     assert config["framework"]["run_args"].startswith(

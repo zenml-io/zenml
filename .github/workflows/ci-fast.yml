@@ -149,6 +149,7 @@ jobs:
           --no-provision --environment default
           -p no:randomly -p no:rerunfailures
           tests/unit/execution/pipeline/dynamic/test_child_pipelines.py::test_wait_abort_aborts_run
+          tests/unit/execution/pipeline/dynamic/test_child_pipelines.py::test_parent_waits_while_child_runs_then_wait_resolves
   modal-mysql-serial-shared-state-tests:
     if: (github.event_name != 'pull_request' || (github.event.pull_request.draft ==
       false && github.event.pull_request.head.repo.full_name == github.repository))

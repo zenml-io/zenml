@@ -22,8 +22,8 @@ run_args = "--no-provision --environment default -p no:randomly -p no:rerunfailu
 
 [groups.unit]
 retry_count = 0
-# This timing-sensitive dynamic pipeline test is covered by a separate serial GitHub-runner job.
-filters = "tests/unit --deselect=tests/unit/execution/pipeline/dynamic/test_child_pipelines.py::test_wait_abort_aborts_run"
+# These timing-sensitive dynamic pipeline tests are covered by a separate serial GitHub-runner job.
+filters = "tests/unit --deselect=tests/unit/execution/pipeline/dynamic/test_child_pipelines.py::test_wait_abort_aborts_run --deselect=tests/unit/execution/pipeline/dynamic/test_child_pipelines.py::test_parent_waits_while_child_runs_then_wait_resolves"
 
 [groups.integration]
 retry_count = 0
