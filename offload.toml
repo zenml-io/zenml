@@ -27,7 +27,9 @@ filters = "tests/unit --deselect=tests/unit/execution/pipeline/dynamic/test_chil
 
 [groups.integration]
 retry_count = 0
-filters = "tests/integration -m 'not slow'"
+# These examples download public datasets from raw.githubusercontent.com and
+# run in the existing serial GitHub-runner job to avoid Modal network flakes.
+filters = "tests/integration -m 'not slow' --deselect=tests/integration/examples/test_xgboost.py::test_example --deselect=tests/integration/examples/test_lightgbm.py::test_example"
 
 [report]
 output_dir = ".ci/offload"

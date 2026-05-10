@@ -22,8 +22,11 @@ def test_fast_offload_config_is_valid() -> None:
         "test_parent_waits_while_child_runs_then_wait_resolves"
         in config["groups"]["unit"]["filters"]
     )
-    assert "tests/integration" in config["groups"]["integration"]["filters"]
-    assert "not slow" in config["groups"]["integration"]["filters"]
+    integration_filters = config["groups"]["integration"]["filters"]
+    assert "tests/integration" in integration_filters
+    assert "not slow" in integration_filters
+    assert "test_xgboost.py::test_example" in integration_filters
+    assert "test_lightgbm.py::test_example" in integration_filters
     assert config["framework"]["run_args"].startswith(
         "--no-provision --environment default"
     )

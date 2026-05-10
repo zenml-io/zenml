@@ -117,7 +117,7 @@ jobs:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
       false
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: 1
@@ -150,6 +150,19 @@ jobs:
           -p no:randomly -p no:rerunfailures
           tests/unit/execution/pipeline/dynamic/test_child_pipelines.py::test_wait_abort_aborts_run
           tests/unit/execution/pipeline/dynamic/test_child_pipelines.py::test_parent_waits_while_child_runs_then_wait_resolves
+      - name: Install ML example dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgomp1
+          uv pip install --system 'xgboost>=1.0.0' 'lightgbm>=1.0.0' 'pandas>=2.0.0'
+      - name: Run serial external-data example tests
+        run: >-
+          python -m pytest -p no:pytest_postgresql -v --tb=short
+          --no-provision --environment default
+          -p no:randomly
+          --reruns 3 --reruns-delay 5
+          tests/integration/examples/test_xgboost.py::test_example
+          tests/integration/examples/test_lightgbm.py::test_example
   modal-mysql-serial-shared-state-tests:
     if: (github.event_name != 'pull_request' || (github.event.pull_request.draft ==
       false && github.event.pull_request.head.repo.full_name == github.repository))
