@@ -381,7 +381,9 @@ This ensures migrations handle existing data correctly. CI does basic migration 
 - `BaseOrchestrator` - Pipeline execution
 - `BaseStepOperator` - Remote step execution (submit/status/wait/cancel lifecycle)
 
-### Recently Active Architecture Areas
+### Cross-Cutting Architecture Areas
+Some ZenML features span many layers. When working in these areas, follow the full chain instead of editing only the file where the immediate change appears:
+
 - `src/zenml/execution/pipeline/dynamic/` and `src/zenml/pipelines/dynamic/` contain dynamic pipeline execution, including nested child pipelines. Changes here often need matching updates in orchestrators, pipeline run models/schemas, migrations, tests, and docs.
 - `src/zenml/triggers/` and `src/zenml/models/v2/core/triggers.py` contain the trigger architecture, including schedule triggers and platform event triggers. Keep CLI, client, server, model, schema, and docs layers aligned when touching triggers.
 - `src/zenml/models/v2/core/resource_pool*.py`, `resource_request.py`, and `src/zenml/zen_stores/resource_pools/` contain resource pool and resource request functionality. These features coordinate API models, store behavior, CLI commands, and Pro/backend integrations.
