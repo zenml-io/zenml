@@ -200,8 +200,12 @@ settings = RunAIStepOperatorSettings(
 | `gpu_portion_request` | float | 1.0 | Fractional GPU allocation (0.0-1.0) |
 | `gpu_request_type` | str | "portion" | GPU allocation method: "portion" or "memory" |
 | `gpu_memory_request` | str | None | GPU memory to request (e.g., "20Gi") when using memory type |
+| `gpu_portion_limit` | float | None | Maximum fractional GPU portion the workload can burst to when available |
+| `gpu_memory_limit` | str | None | Maximum GPU memory the workload can burst to when using memory requests |
 | `cpu_core_request` | float | 1.0 | Number of CPU cores to request |
+| `cpu_core_limit` | float | None | Maximum CPU cores the workload can burst to |
 | `cpu_memory_request` | str | "4G" | Memory to request (e.g., "4G", "8Gi") |
+| `cpu_memory_limit` | str | None | Maximum memory the workload can burst to |
 | `node_pools` | list | None | Ordered list of node pool names for scheduling |
 | `node_type` | str | None | Node type label for GPU selection |
 | `preemptibility` | str | None | "preemptible" or "non-preemptible" |
@@ -220,6 +224,12 @@ settings = RunAIStepOperatorSettings(
 | `external_urls` | list | None | External URL exposure (`RunAIExternalURLSettings`) |
 | `parallelism` | int | None | Run:AI training workload parallelism |
 | `completions` | int | None | Run:AI training workload completions |
+
+A useful way to think about the timeout settings is: `pending_timeout` covers
+the queuing phase before Run:AI can start the workload, while
+`workload_timeout` covers the running phase after the workload has started. If a
+workload sits in `Pending` because no quota is available, `pending_timeout` is
+the timer that lets ZenML stop waiting instead of hanging indefinitely.
 
 Environment variables are configured through the standard ZenML `environment` settings on steps or pipelines; the Run:AI step operator does not introduce an additional environment-specific setting.
 
