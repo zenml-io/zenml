@@ -70,7 +70,7 @@ zenml trigger schedule create daily-schedule-6-am --cron-expression "0 6 * * *"
 So far we have instructed our system with *when* to execute but not *what*. To do so,
 we need to *attach* a schedule to a snapshot.
 
-For the CLI, commands that take a trigger or snapshot accept itsname or ID
+For the CLI, commands that take a trigger or snapshot accept its name or ID
 (exact match, not a prefix). Positional order is always trigger first, then snapshot.
 
 Via the SDK:
@@ -198,13 +198,26 @@ Or its attached snapshots and executed pipeline runs:
 
 ![Image Showing Schedule Runs](../../.gitbook/assets/schedule_runs_dash.png)
 
-For each trigger–snapshot attachment, ZenML can persist the **dispatch state** (for
-example, last status, or error message and severity when a dispatch fails). The
-snapshot dispatch states on a trigger response reflect that information. After
-you fix the underlying problem, you can acknowledge the error and clear the
-stored details (see the next section). Use `get_schedule_trigger` with
-`trigger_name_id_or_prefix` to load a schedule by name, full ID, or ID prefix;
-set `allow_name_prefix_match=False` if you need an exact name match.
+For each trigger–snapshot attachment, ZenML can persist the **dispatch state**.
+This is the small status record that answers, "what happened the last time this
+trigger tried to launch this snapshot?" The status can be:
+
+- `SUCCESS`: a run was launched successfully.
+- `SKIPPED_CONCURRENCY`: a run was skipped because the trigger's concurrency
+  rule said not to start another one yet.
+- `SKIPPED_MAX_RUNS`: a run was skipped because the configured run limit for
+  this trigger-snapshot attachment has already been reached.
+- `ERROR`: ZenML tried to dispatch the run, but something failed.
+
+When the last status is `ERROR`, the dispatch state can also include the last
+error message, error type, severity, stack trace, first/last error timestamps,
+and an error count. After you fix the underlying problem, you can acknowledge
+the error and clear the stored dispatch state (see the next section). In the
+normal failure case, clearing errors removes the `ERROR` status record for that
+trigger-snapshot attachment, so the next dispatch can start from a clean state.
+Use `get_schedule_trigger` with `trigger_name_id_or_prefix` to load a schedule
+by name, full ID, or ID prefix; set `allow_name_prefix_match=False` if you need
+an exact name match.
 
 Via the SDK:
 
@@ -256,8 +269,14 @@ client.create_schedule_trigger(
 
 #### `max_runs`
 
-Limits how many times a schedule can trigger a pipeline. Once the limit is reached, no further runs are scheduled. 
-Note that this limit applies per attached snapshot, for example, with a limit of 2 and two attached snapshots, you will see a total of 4 runs.
+Limits how many times a schedule can trigger a pipeline. Once the limit is
+reached for a trigger-snapshot attachment, no further runs are scheduled for
+that attachment. Later dispatch attempts can show up as `SKIPPED_MAX_RUNS` in
+the dispatch state. This is not an error that needs to be cleared; it is ZenML
+saying, "the run limit you configured has been reached."
+
+Note that this limit applies per attached snapshot, for example, with a limit of
+2 and two attached snapshots, you will see a total of 4 runs.
 
 ~~~python
 from zenml.client import Client
@@ -400,14 +419,27 @@ trigger operates within your workflow.
 |---------------|-----------------------------------------------------------|------------------------------------|
 | name          | The name of the trigger                                   | Unique within project              |
 | source_type   | The type of ZenML entity to listen to (e.g., pipeline)    | Defines the event source category  |
-| source_id     | The unique identifier of the source entity                | e.g., a specific pipeline ID       |
-| target_events | List of events that will activate the trigger             | e.g., `completed`, `failed`        |
+| source_id     | The UUID of the source entity                             | e.g., a specific pipeline UUID     |
+| target_events | List of events that will activate the trigger             | Depends on the source type         |
 | active        | Status of the trigger (active/inactive)                   | -                                  |
 | concurrency   | Option to control how concurrent runs should be handled   | Skip is the default option         |
 
 You can manage platform event triggers using the same set of commands (create, update, attach, detach, list, delete, clear-errors)
 as for schedule triggers. While some parameters and responses differ slightly, additional utilities are 
 available to help you work more effectively with this trigger type.
+
+Supported target events depend on the source type:
+
+| Source type | Meaning | Target events |
+|-------------|---------|---------------|
+| `pipeline` | React to runs of a pipeline | `run_completed`, `run_failed` |
+| `pipeline_run` | React to one specific pipeline run | `completed`, `failed` |
+
+That distinction is easy to miss. If the source is a pipeline, the event name
+includes the word `run` because the pipeline itself is not what completes; one
+of its runs does. If the source is already a pipeline run, the event is simply
+`completed` or `failed`.
+
 
 ### Create Platform Event Trigger
 
@@ -443,7 +475,7 @@ zenml trigger platform-event list-supported-events pipeline
 Then we can create the trigger as follows:
 
 ```bash
-zenml trigger platform-event create "on-hello-pipeline-complete" pipeline <PIPELINE_NAME_OR_ID> --target_events=run_completed
+zenml trigger platform-event create "on-hello-pipeline-complete" pipeline <PIPELINE_UUID> --target_events=run_completed
 ```
 
 ### Update Platform Event Triggers
@@ -472,7 +504,7 @@ zenml trigger platform-event update "on-hello-pipeline-complete" \
 
 ### Remaining Platform Event Trigger operations
 
-The remaining operations (view, attach, detach, delete, and clear-errors) match schedule triggers. 
+The remaining operations (list, attach, detach, delete, and clear-errors) match schedule triggers.
 In the CLI, they are grouped under a different command namespace, but the syntax remains the same. 
 You can explore the available platform event trigger commands with:
 
@@ -508,7 +540,7 @@ c.attach_trigger_to_snapshot(
     pipeline_snapshot_id=UUID("<snapshot_uuid>"),
 )
 c.detach_trigger_from_snapshot(
-    trigger_id=UUID("<trigger_uuid>"),`
+    trigger_id=UUID("<trigger_uuid>"),
     pipeline_snapshot_id=UUID("<snapshot_uuid>"),
 )
 c.delete_trigger(trigger_id=UUID("<trigger_uuid>"), soft=True)

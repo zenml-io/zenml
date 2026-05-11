@@ -629,8 +629,9 @@ You have the option of using [a custom implementation of the secrets store API](
      ZENML_SECRETS_STORE_SECRET_OPTION_4: value4
 
    # Extra environment variables to set in the ZenML server container that
-   # are injected from external secret references.
-    environmentSecretKeyRefs:
+   # are injected from external secret references. These references are also
+   # applied to the DB migration job and worker deployments.
+   environmentSecretKeyRefs:
       - name: ZENML_SECRETS_STORE_OPTION_5
         secretName: my-existing-secret
         secretKey: key_name_not_value5
