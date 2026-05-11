@@ -1076,13 +1076,16 @@ class PipelineRunFilter(
                 else [self.code_repository_id]
             )
             for code_repo_filter in code_repo_filters:
-                custom_filters.append(and_(
-                    PipelineRunSchema.snapshot_id == PipelineSnapshotSchema.id,
-                    PipelineSnapshotSchema.code_reference_id
-                    == CodeReferenceSchema.id,
-                    CodeReferenceSchema.code_repository_id
-                    == code_repo_filter,
-                ))
+                custom_filters.append(
+                    and_(
+                        PipelineRunSchema.snapshot_id
+                        == PipelineSnapshotSchema.id,
+                        PipelineSnapshotSchema.code_reference_id
+                        == CodeReferenceSchema.id,
+                        CodeReferenceSchema.code_repository_id
+                        == code_repo_filter,
+                    )
+                )
 
         if self.stack_id:
             stack_filters = (
@@ -1091,11 +1094,14 @@ class PipelineRunFilter(
                 else [self.stack_id]
             )
             for stack_filter in stack_filters:
-                custom_filters.append(and_(
-                    PipelineRunSchema.snapshot_id == PipelineSnapshotSchema.id,
-                    PipelineSnapshotSchema.stack_id == StackSchema.id,
-                    StackSchema.id == stack_filter,
-                ))
+                custom_filters.append(
+                    and_(
+                        PipelineRunSchema.snapshot_id
+                        == PipelineSnapshotSchema.id,
+                        PipelineSnapshotSchema.stack_id == StackSchema.id,
+                        StackSchema.id == stack_filter,
+                    )
+                )
 
         if self.schedule_id:
             schedule_filters = (
@@ -1104,11 +1110,15 @@ class PipelineRunFilter(
                 else [self.schedule_id]
             )
             for schedule_filter in schedule_filters:
-                custom_filters.append(and_(
-                    PipelineRunSchema.snapshot_id == PipelineSnapshotSchema.id,
-                    PipelineSnapshotSchema.schedule_id == ScheduleSchema.id,
-                    ScheduleSchema.id == schedule_filter,
-                ))
+                custom_filters.append(
+                    and_(
+                        PipelineRunSchema.snapshot_id
+                        == PipelineSnapshotSchema.id,
+                        PipelineSnapshotSchema.schedule_id
+                        == ScheduleSchema.id,
+                        ScheduleSchema.id == schedule_filter,
+                    )
+                )
 
         if self.build_id:
             build_filters = (
@@ -1117,11 +1127,15 @@ class PipelineRunFilter(
                 else [self.build_id]
             )
             for build_filter in build_filters:
-                custom_filters.append(and_(
-                    PipelineRunSchema.snapshot_id == PipelineSnapshotSchema.id,
-                    PipelineSnapshotSchema.build_id == PipelineBuildSchema.id,
-                    PipelineBuildSchema.id == build_filter,
-                ))
+                custom_filters.append(
+                    and_(
+                        PipelineRunSchema.snapshot_id
+                        == PipelineSnapshotSchema.id,
+                        PipelineSnapshotSchema.build_id
+                        == PipelineBuildSchema.id,
+                        PipelineBuildSchema.id == build_filter,
+                    )
+                )
 
         if self.template_id:
             run_template_filters = (
@@ -1130,10 +1144,14 @@ class PipelineRunFilter(
                 else [self.template_id]
             )
             for run_template_filter in run_template_filters:
-                custom_filters.append(and_(
-                    PipelineRunSchema.snapshot_id == PipelineSnapshotSchema.id,
-                    PipelineSnapshotSchema.template_id == run_template_filter,
-                ))
+                custom_filters.append(
+                    and_(
+                        PipelineRunSchema.snapshot_id
+                        == PipelineSnapshotSchema.id,
+                        PipelineSnapshotSchema.template_id
+                        == run_template_filter,
+                    )
+                )
 
         if self.source_snapshot_id:
             source_snapshot_filters = (
@@ -1142,41 +1160,47 @@ class PipelineRunFilter(
                 else [self.source_snapshot_id]
             )
             for source_snapshot_filter in source_snapshot_filters:
-                custom_filters.append(and_(
-                PipelineRunSchema.snapshot_id == PipelineSnapshotSchema.id,
-                PipelineSnapshotSchema.source_snapshot_id
-                == source_snapshot_filter,
-            ))
+                custom_filters.append(
+                    and_(
+                        PipelineRunSchema.snapshot_id
+                        == PipelineSnapshotSchema.id,
+                        PipelineSnapshotSchema.source_snapshot_id
+                        == source_snapshot_filter,
+                    )
+                )
 
-        if self.pipeline:   
+        if self.pipeline:
             pipeline_filters = (
                 self.pipeline
                 if isinstance(self.pipeline, list)
                 else [self.pipeline]
             )
             for pipeline_filter in pipeline_filters:
-                custom_filters.append(and_(
-                PipelineRunSchema.pipeline_id == PipelineSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=pipeline_filter, table=PipelineSchema
-                ),
-            ))
+                custom_filters.append(
+                    and_(
+                        PipelineRunSchema.pipeline_id == PipelineSchema.id,
+                        self.generate_name_or_id_query_conditions(
+                            value=pipeline_filter, table=PipelineSchema
+                        ),
+                    )
+                )
 
         if self.stack:
             stack_filters = (
-                self.stack
-                if isinstance(self.stack, list)
-                else [self.stack]
+                self.stack if isinstance(self.stack, list) else [self.stack]
             )
             for stack_filter in stack_filters:
-                custom_filters.append(and_(
-                PipelineRunSchema.snapshot_id == PipelineSnapshotSchema.id,
-                PipelineSnapshotSchema.stack_id == StackSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=stack_filter,
-                    table=StackSchema,
-                ),
-            ))
+                custom_filters.append(
+                    and_(
+                        PipelineRunSchema.snapshot_id
+                        == PipelineSnapshotSchema.id,
+                        PipelineSnapshotSchema.stack_id == StackSchema.id,
+                        self.generate_name_or_id_query_conditions(
+                            value=stack_filter,
+                            table=StackSchema,
+                        ),
+                    )
+                )
 
         if self.code_repository:
             code_repo_filters = (
@@ -1185,32 +1209,36 @@ class PipelineRunFilter(
                 else [self.code_repository]
             )
             for code_repo_filter in code_repo_filters:
-                custom_filters.append(and_(
-                PipelineRunSchema.snapshot_id == PipelineSnapshotSchema.id,
-                PipelineSnapshotSchema.code_reference_id
-                == CodeReferenceSchema.id,
-                CodeReferenceSchema.code_repository_id
-                == CodeRepositorySchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=code_repo_filter,
-                    table=CodeRepositorySchema,
-                ),
-            ))
+                custom_filters.append(
+                    and_(
+                        PipelineRunSchema.snapshot_id
+                        == PipelineSnapshotSchema.id,
+                        PipelineSnapshotSchema.code_reference_id
+                        == CodeReferenceSchema.id,
+                        CodeReferenceSchema.code_repository_id
+                        == CodeRepositorySchema.id,
+                        self.generate_name_or_id_query_conditions(
+                            value=code_repo_filter,
+                            table=CodeRepositorySchema,
+                        ),
+                    )
+                )
 
         if self.model:
             model_filters = (
-                self.model
-                if isinstance(self.model, list)
-                else [self.model]
+                self.model if isinstance(self.model, list) else [self.model]
             )
             for model_filter in model_filters:
-                custom_filters.append(and_(
-                PipelineRunSchema.model_version_id == ModelVersionSchema.id,
-                ModelVersionSchema.model_id == ModelSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=model_filter, table=ModelSchema
-                ),
-            ))
+                custom_filters.append(
+                    and_(
+                        PipelineRunSchema.model_version_id
+                        == ModelVersionSchema.id,
+                        ModelVersionSchema.model_id == ModelSchema.id,
+                        self.generate_name_or_id_query_conditions(
+                            value=model_filter, table=ModelSchema
+                        ),
+                    )
+                )
 
         if self.stack_component:
             component_filters = (
@@ -1219,16 +1247,20 @@ class PipelineRunFilter(
                 else [self.stack_component]
             )
             for component_filter in component_filters:
-                custom_filters.append(and_(
-                PipelineRunSchema.snapshot_id == PipelineSnapshotSchema.id,
-                PipelineSnapshotSchema.stack_id == StackSchema.id,
-                StackSchema.id == StackCompositionSchema.stack_id,
-                StackCompositionSchema.component_id == StackComponentSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.stack_component,
-                    table=StackComponentSchema,
-                ),
-            ))
+                custom_filters.append(
+                    and_(
+                        PipelineRunSchema.snapshot_id
+                        == PipelineSnapshotSchema.id,
+                        PipelineSnapshotSchema.stack_id == StackSchema.id,
+                        StackSchema.id == StackCompositionSchema.stack_id,
+                        StackCompositionSchema.component_id
+                        == StackComponentSchema.id,
+                        self.generate_name_or_id_query_conditions(
+                            value=self.stack_component,
+                            table=StackComponentSchema,
+                        ),
+                    )
+                )
             custom_filters.append(component_filter)
 
         if self.pipeline_name:
@@ -1236,16 +1268,18 @@ class PipelineRunFilter(
                 self.pipeline_name
                 if isinstance(self.pipeline_name, list)
                 else [self.pipeline_name]
-            )   
+            )
             for pipeline_name_filter in pipeline_name_filters:
-                custom_filters.append(and_(
-                PipelineRunSchema.pipeline_id == PipelineSchema.id,
-                self.generate_custom_query_conditions_for_column(
-                    value=self.pipeline_name,
-                    table=PipelineSchema,
-                    column="name",
-                ),
-            ))  
+                custom_filters.append(
+                    and_(
+                        PipelineRunSchema.pipeline_id == PipelineSchema.id,
+                        self.generate_custom_query_conditions_for_column(
+                            value=self.pipeline_name,
+                            table=PipelineSchema,
+                            column="name",
+                        ),
+                    )
+                )
 
         if self.templatable is not None:
             if self.templatable is True:
@@ -1287,17 +1321,21 @@ class PipelineRunFilter(
                 if isinstance(self.triggered_by_step_run_id, list)
                 else [self.triggered_by_step_run_id]
             )
-            for triggered_by_step_run_id_filter in triggered_by_step_run_id_filters:
-                custom_filters.append(and_(
-                    PipelineRunSchema.triggered_by == StepRunSchema.id,
-                    PipelineRunSchema.triggered_by_type
-                    == PipelineRunTriggeredByType.STEP_RUN.value,
-                    self.generate_custom_query_conditions_for_column(
-                        value=triggered_by_step_run_id_filter,
-                        table=StepRunSchema,
-                        column="id",
-                    ),
-                ))
+            for (
+                triggered_by_step_run_id_filter
+            ) in triggered_by_step_run_id_filters:
+                custom_filters.append(
+                    and_(
+                        PipelineRunSchema.triggered_by == StepRunSchema.id,
+                        PipelineRunSchema.triggered_by_type
+                        == PipelineRunTriggeredByType.STEP_RUN.value,
+                        self.generate_custom_query_conditions_for_column(
+                            value=triggered_by_step_run_id_filter,
+                            table=StepRunSchema,
+                            column="id",
+                        ),
+                    )
+                )
 
         if self.triggered_by_deployment_id:
             triggered_by_deployment_id_filters = (
@@ -1305,17 +1343,21 @@ class PipelineRunFilter(
                 if isinstance(self.triggered_by_deployment_id, list)
                 else [self.triggered_by_deployment_id]
             )
-            for triggered_by_deployment_id_filter in triggered_by_deployment_id_filters:
-                custom_filters.append(and_(
-                PipelineRunSchema.triggered_by == DeploymentSchema.id,
-                PipelineRunSchema.triggered_by_type
-                == PipelineRunTriggeredByType.DEPLOYMENT.value,
-                self.generate_custom_query_conditions_for_column(
-                    value=self.triggered_by_deployment_id,
-                    table=DeploymentSchema,
-                    column="id",
-                ),
-            ))
+            for (
+                triggered_by_deployment_id_filter
+            ) in triggered_by_deployment_id_filters:
+                custom_filters.append(
+                    and_(
+                        PipelineRunSchema.triggered_by == DeploymentSchema.id,
+                        PipelineRunSchema.triggered_by_type
+                        == PipelineRunTriggeredByType.DEPLOYMENT.value,
+                        self.generate_custom_query_conditions_for_column(
+                            value=self.triggered_by_deployment_id,
+                            table=DeploymentSchema,
+                            column="id",
+                        ),
+                    )
+                )
 
         if self.linked_to_model_version_id:
             linked_to_model_version_filters = (
@@ -1323,18 +1365,22 @@ class PipelineRunFilter(
                 if isinstance(self.linked_to_model_version_id, list)
                 else [self.linked_to_model_version_id]
             )
-            for linked_to_model_version_filter in linked_to_model_version_filters:
-                custom_filters.append(and_(
-                PipelineRunSchema.id
-                == ModelVersionPipelineRunSchema.pipeline_run_id,
-                ModelVersionPipelineRunSchema.model_version_id
-                == ModelVersionSchema.id,
-                self.generate_custom_query_conditions_for_column(
-                    value=self.linked_to_model_version_id,
-                    table=ModelVersionSchema,
-                    column="id",
-                ),
-            ))
+            for (
+                linked_to_model_version_filter
+            ) in linked_to_model_version_filters:
+                custom_filters.append(
+                    and_(
+                        PipelineRunSchema.id
+                        == ModelVersionPipelineRunSchema.pipeline_run_id,
+                        ModelVersionPipelineRunSchema.model_version_id
+                        == ModelVersionSchema.id,
+                        self.generate_custom_query_conditions_for_column(
+                            value=self.linked_to_model_version_id,
+                            table=ModelVersionSchema,
+                            column="id",
+                        ),
+                    )
+                )
 
         if self.trigger_id:
             trigger_id_filters = (
@@ -1343,13 +1389,16 @@ class PipelineRunFilter(
                 else [self.trigger_id]
             )
             for trigger_id_filter in trigger_id_filters:
-                custom_filters.append(and_(
-                and_(
-                    PipelineRunSchema.id
-                    == TriggerExecutionSchema.pipeline_run_id,
-                    TriggerExecutionSchema.trigger_id == trigger_id_filter,
+                custom_filters.append(
+                    and_(
+                        and_(
+                            PipelineRunSchema.id
+                            == TriggerExecutionSchema.pipeline_run_id,
+                            TriggerExecutionSchema.trigger_id
+                            == trigger_id_filter,
+                        )
+                    )
                 )
-            ))
 
         if self.root_runs_only is True:
             custom_filters.append(

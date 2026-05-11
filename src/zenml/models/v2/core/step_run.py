@@ -874,13 +874,16 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
                 self.model if isinstance(self.model, list) else [self.model]
             )
             for model_filter in model_filters:
-                custom_filters.append(and_(
-                    StepRunSchema.model_version_id == ModelVersionSchema.id,
-                    ModelVersionSchema.model_id == ModelSchema.id,
-                    self.generate_name_or_id_query_conditions(
-                        value=model_filter, table=ModelSchema
-                    ),
-                ))
+                custom_filters.append(
+                    and_(
+                        StepRunSchema.model_version_id
+                        == ModelVersionSchema.id,
+                        ModelVersionSchema.model_id == ModelSchema.id,
+                        self.generate_name_or_id_query_conditions(
+                            value=model_filter, table=ModelSchema
+                        ),
+                    )
+                )
 
         if self.exclude_retried:
             custom_filters.append(

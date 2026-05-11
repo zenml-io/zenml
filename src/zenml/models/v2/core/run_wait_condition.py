@@ -349,7 +349,7 @@ class RunWaitConditionFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         """
         custom_filters = super().get_custom_filters(table)
 
-        from sqlmodel import and_, or_
+        from sqlmodel import and_
 
         from zenml.zen_stores.schemas import (
             PipelineRunSchema,
@@ -364,15 +364,17 @@ class RunWaitConditionFilter(ProjectScopedFilter, RunMetadataFilterMixin):
                 else [self.resolved_by]
             )
             for resolved_by_filter in resolved_by_filters:
-                custom_filters.append(and_(
-                    RunWaitConditionSchema.resolved_by_user_id
-                    == UserSchema.id,
-                    self.generate_name_or_id_query_conditions(
-                        value=resolved_by_filter,
-                        table=UserSchema,
-                        additional_columns=["full_name"],
-                    ),
-                ))
+                custom_filters.append(
+                    and_(
+                        RunWaitConditionSchema.resolved_by_user_id
+                        == UserSchema.id,
+                        self.generate_name_or_id_query_conditions(
+                            value=resolved_by_filter,
+                            table=UserSchema,
+                            additional_columns=["full_name"],
+                        ),
+                    )
+                )
 
         if self.pipeline_run:
             pipeline_run_filters = (
@@ -381,12 +383,14 @@ class RunWaitConditionFilter(ProjectScopedFilter, RunMetadataFilterMixin):
                 else [self.pipeline_run]
             )
             for pipeline_run_filter in pipeline_run_filters:
-                custom_filters.append(and_(
-                    RunWaitConditionSchema.run_id == PipelineRunSchema.id,
-                    self.generate_name_or_id_query_conditions(
-                        value=pipeline_run_filter,
-                        table=PipelineRunSchema,
-                    ),
-                ))
+                custom_filters.append(
+                    and_(
+                        RunWaitConditionSchema.run_id == PipelineRunSchema.id,
+                        self.generate_name_or_id_query_conditions(
+                            value=pipeline_run_filter,
+                            table=PipelineRunSchema,
+                        ),
+                    )
+                )
 
         return custom_filters
