@@ -128,8 +128,11 @@ class ConsoleFormatter(logging.Formatter):
     blue: str = "\x1b[34m"
     reset: str = "\x1b[0m"
 
-    def _get_format_template(self) -> str:
+    def _get_format_template(self, record: logging.LogRecord) -> str:
         """Get the format template based on the logging level.
+
+        Args:
+            record: The log record to format.
 
         Returns:
             The format template string.
@@ -156,11 +159,14 @@ class ConsoleFormatter(logging.Formatter):
         Returns:
             A string formatted according to specifications.
         """
-        format_template = self._get_format_template()
+        format_template = self._get_format_template(record)
 
         message = record.getMessage()
-        if step_names_in_console.get():
-            message = _add_step_name_to_message(message)
+        try:
+            if step_names_in_console.get():
+                message = _add_step_name_to_message(message)
+        except Exception:
+            pass
 
         modified_record = logging.LogRecord(
             name=record.name,
@@ -327,19 +333,10 @@ def _is_logging_utils_circular_import_error(
 ) -> bool:
     """Check whether logging_utils failed to import due to init cycles."""
     message = str(error)
-    if (
-        "partially initialized module" not in message
-        and "circular import" not in message
-    ):
-        return False
-
-    for module_name in ("zenml", "zenml.utils.logging_utils"):
-        module = sys.modules.get(module_name)
-        module_spec = getattr(module, "__spec__", None)
-        if getattr(module_spec, "_initializing", False):
-            return True
-
-    return False
+    return (
+        "partially initialized module" in message
+        or "circular import" in message
+    )
 
 
 class ZenMLLoggingHandler(logging.Handler):
