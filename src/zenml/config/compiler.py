@@ -499,7 +499,7 @@ class Compiler:
             return True
         else:
             # dynamic pipelines
-            from zenml.execution.pipeline.dynamic.runner import (
+            from zenml.execution.pipeline.dynamic.compilation import (
                 get_step_runtime,
             )
 

@@ -19,6 +19,7 @@ from typing import (
     Callable,
     Dict,
     List,
+    Literal,
     Optional,
     TypeVar,
     Union,
@@ -34,6 +35,7 @@ if TYPE_CHECKING:
     from zenml.config.cache_policy import CachePolicyOrString
     from zenml.config.retry_config import StepRetryConfig
     from zenml.model.model import Model
+    from zenml.pipelines.dynamic.pipeline_definition import DynamicPipeline
     from zenml.pipelines.pipeline_definition import Pipeline
     from zenml.steps.base_step import BaseStep
     from zenml.types import HookSpecification, InitHookSpecification
@@ -52,7 +54,65 @@ def pipeline(_func: "F") -> "Pipeline": ...
 def pipeline(
     *,
     name: Optional[str] = None,
-    dynamic: Optional[bool] = None,
+    dynamic: Literal[True],
+    depends_on: Optional[List["BaseStep"]] = None,
+    enable_cache: Optional[bool] = None,
+    enable_artifact_metadata: Optional[bool] = None,
+    enable_step_logs: Optional[bool] = None,
+    enable_heartbeat: Optional[bool] = None,
+    environment: Optional[Dict[str, Any]] = None,
+    secrets: Optional[List[Union[UUID, str]]] = None,
+    enable_pipeline_logs: Optional[bool] = None,
+    settings: Optional[Dict[str, "SettingsOrDict"]] = None,
+    tags: Optional[List[Union[str, "Tag"]]] = None,
+    extra: Optional[Dict[str, Any]] = None,
+    on_failure: Optional["HookSpecification"] = None,
+    on_success: Optional["HookSpecification"] = None,
+    on_init: Optional["InitHookSpecification"] = None,
+    on_init_kwargs: Optional[Dict[str, Any]] = None,
+    on_cleanup: Optional["HookSpecification"] = None,
+    model: Optional["Model"] = None,
+    retry: Optional["StepRetryConfig"] = None,
+    substitutions: Optional[Dict[str, str]] = None,
+    execution_mode: Optional["ExecutionMode"] = None,
+    cache_policy: Optional["CachePolicyOrString"] = None,
+) -> Callable[["F"], "DynamicPipeline"]: ...
+
+
+@overload
+def pipeline(
+    *,
+    name: Optional[str] = None,
+    dynamic: Literal[False] = False,
+    depends_on: Optional[List["BaseStep"]] = None,
+    enable_cache: Optional[bool] = None,
+    enable_artifact_metadata: Optional[bool] = None,
+    enable_step_logs: Optional[bool] = None,
+    enable_heartbeat: Optional[bool] = None,
+    environment: Optional[Dict[str, Any]] = None,
+    secrets: Optional[List[Union[UUID, str]]] = None,
+    enable_pipeline_logs: Optional[bool] = None,
+    settings: Optional[Dict[str, "SettingsOrDict"]] = None,
+    tags: Optional[List[Union[str, "Tag"]]] = None,
+    extra: Optional[Dict[str, Any]] = None,
+    on_failure: Optional["HookSpecification"] = None,
+    on_success: Optional["HookSpecification"] = None,
+    on_init: Optional["InitHookSpecification"] = None,
+    on_init_kwargs: Optional[Dict[str, Any]] = None,
+    on_cleanup: Optional["HookSpecification"] = None,
+    model: Optional["Model"] = None,
+    retry: Optional["StepRetryConfig"] = None,
+    substitutions: Optional[Dict[str, str]] = None,
+    execution_mode: Optional["ExecutionMode"] = None,
+    cache_policy: Optional["CachePolicyOrString"] = None,
+) -> Callable[["F"], "Pipeline"]: ...
+
+
+@overload
+def pipeline(
+    *,
+    name: Optional[str] = None,
+    dynamic: None = None,
     depends_on: Optional[List["BaseStep"]] = None,
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
@@ -103,7 +163,12 @@ def pipeline(
     substitutions: Optional[Dict[str, str]] = None,
     execution_mode: Optional["ExecutionMode"] = None,
     cache_policy: Optional["CachePolicyOrString"] = None,
-) -> Union["Pipeline", Callable[["F"], "Pipeline"]]:
+) -> Union[
+    "Pipeline",
+    "DynamicPipeline",
+    Callable[["F"], "Pipeline"],
+    Callable[["F"], "DynamicPipeline"],
+]:
     """Decorator to create a pipeline.
 
     Args:
@@ -148,7 +213,7 @@ def pipeline(
         A pipeline instance.
     """
 
-    def inner_decorator(func: "F") -> "Pipeline":
+    def inner_decorator(func: "F") -> Union["Pipeline", "DynamicPipeline"]:
         from zenml.pipelines.pipeline_definition import Pipeline
 
         PipelineClass = Pipeline
