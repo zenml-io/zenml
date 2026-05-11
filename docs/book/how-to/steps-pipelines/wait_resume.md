@@ -134,4 +134,18 @@ In ZenML Pro, the run should start resuming automatically after the wait conditi
 zenml pipeline runs resume <RUN_ID_OR_NAME>
 ```
 
+If manual resume fails, check the error message before retrying. The common
+causes are concrete:
+
+- The run is a child run. Resume the parent run ID shown in the error instead;
+  the parent is the run that can safely continue the whole nested execution
+  tree.
+- The run is not currently `PAUSED`. A run that is still running, already
+  completed, failed, or stopped cannot be resumed with this command.
+- The run still has an active wait condition. Resolve the wait condition first,
+  then resume the run.
+- ZenML can no longer find the snapshot or stack that the paused run needs in
+  order to continue. In that case, the run cannot be resumed until the missing
+  reference is restored or recreated.
+
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

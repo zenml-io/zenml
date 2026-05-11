@@ -63,6 +63,36 @@ def dynamic_pipeline():
 
 This allows you to modify step behavior based on runtime conditions or data.
 
+### Artifact name substitutions in dynamic pipelines
+
+Dynamic pipelines support the same artifact name substitutions as regular
+pipelines. This matters when a dynamically generated step has outputs whose
+names include runtime-friendly placeholders. The substituted artifact name is
+still a real output that you can pass to downstream steps.
+
+```python
+from typing import Annotated
+
+from zenml import ArtifactConfig, pipeline, step
+
+@step(substitutions={"suffix": "validated"})
+def produce() -> Annotated[int, ArtifactConfig(name="score_{suffix}")]:
+    return 1
+
+@step
+def consume(score: int) -> None:
+    print(score)
+
+@pipeline(dynamic=True)
+def dynamic_pipeline() -> None:
+    score = produce()
+    consume(score)
+```
+
+One caveat: when you use `child_pipeline.embed(...)`, the child pipeline's own
+configuration is not applied. That includes child-level `substitutions`; the
+parent run's configuration controls the steps that execute inline.
+
 ### Step Runtime Configuration
 
 You can control where a step executes by specifying its runtime:
@@ -543,5 +573,10 @@ The [`examples/hierarchical_doc_search_agent`](https://github.com/zenml-io/zenml
 - Spawning steps dynamically based on AI agent decisions
 
 Each `traverse_node` call appears as a separate step in the DAG, created at runtime based on what the agent decides to explore.
+
+Two other examples are useful when you want to see dynamic pipelines in more specialized settings:
+
+- [`examples/rlm_document_analysis`](https://github.com/zenml-io/zenml/tree/main/examples/rlm_document_analysis) shows a Recursive Language Model style document-analysis workflow. ZenML decides how many chunk-processing steps to create at runtime, while the LLM loop inside each chunk decides which typed search tools to use.
+- [`examples/optuna_hyperparameter_tuning`](https://github.com/zenml-io/zenml/tree/main/examples/optuna_hyperparameter_tuning) combines Optuna's ask API with ZenML dynamic pipelines. Optuna decides which hyperparameters to try next; ZenML runs the trials, tracks their artifacts and metadata, and can fan the work out in parallel.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
