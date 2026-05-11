@@ -670,7 +670,7 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         default=None,
         description="Name of the snapshot.",
     )
-    named_only: bool = Field(
+    named_only: Optional[bool] = Field(
         default=None,
         description="Whether to only return snapshots with a name.",
     )
@@ -699,15 +699,15 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         description="Source snapshot used for the snapshot.",
         union_mode="left_to_right",
     )
-    runnable: bool = Field(
+    runnable: Optional[bool] = Field(
         default=None,
         description="Whether the snapshot is runnable.",
     )
-    deployable: bool = Field(
+    deployable: Optional[bool] = Field(
         default=None,
         description="Whether the snapshot is deployable.",
     )
-    deployed: bool = Field(
+    deployed: Optional[bool] = Field(
         default=None,
         description="Whether the snapshot is deployed.",
     )

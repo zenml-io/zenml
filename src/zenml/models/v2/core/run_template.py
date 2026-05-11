@@ -363,7 +363,7 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
         default=None,
         description="Name of the run template.",
     )
-    hidden: bool = Field(
+    hidden: Optional[bool] = Field(
         default=None,
         description="Whether the run template is hidden.",
     )

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing the link between model versions and artifacts."""
 
-from typing import TYPE_CHECKING, List, Type, TypeVar, Union
+from typing import TYPE_CHECKING, List, Optional, Type, TypeVar, Union
 from uuid import UUID
 
 from pydantic import ConfigDict, Field
@@ -155,10 +155,10 @@ class ModelVersionArtifactFilter(BaseFilter):
         default=None,
         description="Name of the artifact",
     )
-    only_data_artifacts: bool = False
-    only_model_artifacts: bool = False
-    only_deployment_artifacts: bool = False
-    has_custom_name: bool = None
+    only_data_artifacts: Optional[bool] = False
+    only_model_artifacts: Optional[bool] = False
+    only_deployment_artifacts: Optional[bool] = False
+    has_custom_name: Optional[bool] = None
     user: UUIDFilterOption = Field(
         default=None,
         description="Name/ID of the user that created the artifact.",
@@ -202,20 +202,21 @@ class ModelVersionArtifactFilter(BaseFilter):
             )
             for artifact_name_filter in artifact_name_filters:
                 value, filter_operator = self._resolve_operator(
-                    self.artifact_name
+                    artifact_name_filter
                 )
                 filter_ = StrFilter(
                     operation=GenericFilterOps(filter_operator),
                     column="name",
                     value=value,
                 )
-                artifact_name_filter = and_(
-                    ModelVersionArtifactSchema.artifact_version_id
-                    == ArtifactVersionSchema.id,
-                    ArtifactVersionSchema.artifact_id == ArtifactSchema.id,
-                    filter_.generate_query_conditions(ArtifactSchema),
+                custom_filters.append(
+                    and_(
+                        ModelVersionArtifactSchema.artifact_version_id
+                        == ArtifactVersionSchema.id,
+                        ArtifactVersionSchema.artifact_id == ArtifactSchema.id,
+                        filter_.generate_query_conditions(ArtifactSchema),
+                    )
                 )
-                custom_filters.append(artifact_name_filter)
 
         if self.only_data_artifacts:
             data_artifact_filter = and_(
@@ -257,16 +258,17 @@ class ModelVersionArtifactFilter(BaseFilter):
                 self.user if isinstance(self.user, list) else [self.user]
             )
             for user_filter in user_filters:
-                user_filter = and_(
-                    ModelVersionArtifactSchema.artifact_version_id
-                    == ArtifactVersionSchema.id,
-                    ArtifactVersionSchema.user_id == UserSchema.id,
-                    self.generate_name_or_id_query_conditions(
-                        value=self.user,
-                        table=UserSchema,
-                        additional_columns=["full_name"],
-                    ),
+                custom_filters.append(
+                    and_(
+                        ModelVersionArtifactSchema.artifact_version_id
+                        == ArtifactVersionSchema.id,
+                        ArtifactVersionSchema.user_id == UserSchema.id,
+                        self.generate_name_or_id_query_conditions(
+                            value=user_filter,
+                            table=UserSchema,
+                            additional_columns=["full_name"],
+                        ),
+                    )
                 )
-                custom_filters.append(user_filter)
 
         return custom_filters

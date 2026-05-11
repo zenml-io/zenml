@@ -616,10 +616,10 @@ class ArtifactVersionFilter(
         "artifact version.",
         union_mode="left_to_right",
     )
-    only_unused: bool = Field(
+    only_unused: Optional[bool] = Field(
         default=False, description="Filter only for unused artifacts"
     )
-    has_custom_name: bool = Field(
+    has_custom_name: Optional[bool] = Field(
         default=None,
         description="Filter only artifacts with/without custom names.",
     )
@@ -793,13 +793,14 @@ class ArtifactVersionFilter(
             )
             for artifact_filter in artifact_filters:
                 value, operator = self._resolve_operator(artifact_filter)
-                artifact_filter = and_(
-                    ArtifactVersionSchema.artifact_id == ArtifactSchema.id,
-                    self.generate_name_or_id_query_conditions(
-                        value=artifact_filter, table=ArtifactSchema
-                    ),
+                custom_filters.append(
+                    and_(
+                        ArtifactVersionSchema.artifact_id == ArtifactSchema.id,
+                        self.generate_name_or_id_query_conditions(
+                            value=artifact_filter, table=ArtifactSchema
+                        ),
+                    )
                 )
-                custom_filters.append(artifact_filter)
 
         if self.only_unused:
             unused_filter = and_(

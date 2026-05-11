@@ -188,19 +188,20 @@ class ModelVersionPipelineRunFilter(BaseFilter):
             )
             for pipeline_run_name_filter in pipeline_run_name_filters:
                 value, filter_operator = self._resolve_operator(
-                    self.pipeline_run_name
+                    pipeline_run_name_filter
                 )
                 filter_ = StrFilter(
                     operation=GenericFilterOps(filter_operator),
                     column="name",
                     value=value,
                 )
-                pipeline_run_name_filter = and_(
-                    ModelVersionPipelineRunSchema.pipeline_run_id
-                    == PipelineRunSchema.id,
-                    filter_.generate_query_conditions(PipelineRunSchema),
+                custom_filters.append(
+                    and_(
+                        ModelVersionPipelineRunSchema.pipeline_run_id
+                        == PipelineRunSchema.id,
+                        filter_.generate_query_conditions(PipelineRunSchema),
+                    )
                 )
-                custom_filters.append(pipeline_run_name_filter)
 
         if self.user:
             user_filters = (

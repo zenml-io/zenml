@@ -248,12 +248,16 @@ class TagFilter(UserScopedFilter):
                 else [self.resource_type]
             )
             for resource_type_filter in resource_type_filters:
+                resource_type = (
+                    resource_type_filter.value
+                    if isinstance(resource_type_filter, TaggableResourceTypes)
+                    else resource_type_filter
+                )
                 custom_filters.append(
                     exists(
                         select(TagResourceSchema).where(
                             TagResourceSchema.tag_id == TagSchema.id,
-                            TagResourceSchema.resource_type
-                            == resource_type_filter.value,
+                            TagResourceSchema.resource_type == resource_type,
                         )
                     )
                 )

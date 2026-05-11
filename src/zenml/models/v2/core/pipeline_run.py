@@ -1004,7 +1004,7 @@ class PipelineRunFilter(
         default=None,
         description="Name/ID of the stack component associated with the run.",
     )
-    templatable: bool = Field(
+    templatable: Optional[bool] = Field(
         default=None, description="Whether the run is templatable."
     )
     triggered_by_step_run_id: UUIDFilterOption = Field(
@@ -1022,7 +1022,7 @@ class PipelineRunFilter(
         description="The ID of the trigger that generated this pipeline run.",
         union_mode="left_to_right",
     )
-    parent_run_id: Optional[Union[UUID, str]] = Field(
+    parent_run_id: UUIDFilterOption = Field(
         default=None,
         description="The parent run ID for nested child pipeline runs.",
         union_mode="left_to_right",
@@ -1261,7 +1261,6 @@ class PipelineRunFilter(
                         ),
                     )
                 )
-            custom_filters.append(component_filter)
 
         if self.pipeline_name:
             pipeline_name_filters = (
