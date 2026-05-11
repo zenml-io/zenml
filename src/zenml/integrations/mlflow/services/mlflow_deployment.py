@@ -197,11 +197,9 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
             if config.mlserver:
                 prediction_url_path = MLSERVER_PREDICTION_URL_PATH
                 healthcheck_uri_path = MLSERVER_HEALTHCHECK_URL_PATH
-                use_head_request = False
             else:
                 prediction_url_path = MLFLOW_PREDICTION_URL_PATH
                 healthcheck_uri_path = MLFLOW_HEALTHCHECK_URL_PATH
-                use_head_request = True
 
             endpoint = MLFlowDeploymentEndpoint(
                 config=MLFlowDeploymentEndpointConfig(
@@ -211,7 +209,7 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
                 monitor=HTTPEndpointHealthMonitor(
                     config=HTTPEndpointHealthMonitorConfig(
                         healthcheck_uri_path=healthcheck_uri_path,
-                        use_head_request=use_head_request,
+                        use_head_request=False,
                     )
                 ),
             )
