@@ -44,6 +44,7 @@ _original_stdout_write: Optional[Any] = None
 _original_stderr_write: Optional[Any] = None
 _stdout_wrapped: bool = False
 _stderr_wrapped: bool = False
+_zenml_log_forwarding_enabled: bool = False
 
 
 class _ZenMLStdoutStream:
@@ -273,8 +274,6 @@ def _wrapped_write(original_write: Any, stream_name: str) -> Any:
         Returns:
             The result of the original write method.
         """
-        from zenml.utils.logging_utils import LoggingContext
-
         level = logging.INFO if stream_name == "stdout" else logging.ERROR
 
         if logging.root.isEnabledFor(level):
@@ -288,11 +287,28 @@ def _wrapped_write(original_write: Any, stream_name: str) -> Any:
                 exc_info=None,
                 func="",
             )
-            LoggingContext.emit(record)
+            _emit_to_zenml_logging_context(record)
 
         return original_write(text)
 
     return wrapped_write
+
+
+def enable_zenml_log_forwarding() -> None:
+    """Enable forwarding logs to the active ZenML logging context."""
+    global _zenml_log_forwarding_enabled
+
+    _zenml_log_forwarding_enabled = True
+
+
+def _emit_to_zenml_logging_context(record: logging.LogRecord) -> None:
+    """Emit a log record to the active ZenML logging context."""
+    if not _zenml_log_forwarding_enabled:
+        return
+
+    from zenml.utils.logging_utils import LoggingContext
+
+    LoggingContext.emit(record)
 
 
 def wrap_stdout_stderr() -> None:
@@ -328,9 +344,7 @@ class ZenMLLoggingHandler(logging.Handler):
         Args:
             record: The log record to emit.
         """
-        from zenml.utils.logging_utils import LoggingContext
-
-        LoggingContext.emit(record)
+        _emit_to_zenml_logging_context(record)
 
 
 def get_console_handler() -> logging.Handler:
