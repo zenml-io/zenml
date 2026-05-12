@@ -13,16 +13,20 @@
 #  permissions and limitations under the License.
 """Databricks orchestrator base config and settings."""
 
-from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Dict, Optional, Type
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import Field
+from pydantic import Field, field_validator, model_validator
 
-from zenml.config.base_settings import BaseSettings
 from zenml.integrations.databricks import DATABRICKS_ORCHESTRATOR_FLAVOR
-from zenml.logger import get_logger
-from zenml.orchestrators import BaseOrchestratorConfig
-from zenml.orchestrators.base_orchestrator import BaseOrchestratorFlavor
-from zenml.utils.enum_utils import StrEnum
+from zenml.integrations.databricks.flavors.databricks_shared_settings import (
+    DatabricksAvailabilityType,  # noqa: F401  (re-export for back-compat)
+    DatabricksBaseSettings,
+)
+from zenml.orchestrators.base_orchestrator import (
+    BaseOrchestratorConfig,
+    BaseOrchestratorFlavor,
+)
 from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
@@ -30,78 +34,75 @@ if TYPE_CHECKING:
         DatabricksOrchestrator,
     )
 
-logger = get_logger(__name__)
 
+class DatabricksOrchestratorSettings(DatabricksBaseSettings):
+    """Databricks orchestrator settings."""
 
-class DatabricksAvailabilityType(StrEnum):
-    """Databricks availability type."""
-
-    ON_DEMAND = "ON_DEMAND"
-    SPOT = "SPOT"
-    SPOT_WITH_FALLBACK = "SPOT_WITH_FALLBACK"
-
-
-class DatabricksOrchestratorSettings(BaseSettings):
-    """Databricks orchestrator base settings.
-
-    Configuration for Databricks cluster and Spark execution settings.
-    Field descriptions are defined inline using Field() descriptors.
-    """
-
-    # Cluster Configuration
-    spark_version: Optional[str] = Field(
-        default=None,
-        description="Apache Spark version for the Databricks cluster. "
-        "Uses workspace default if not specified. Example: '16.4.x-scala2.12'",
-    )
-    num_workers: Optional[int] = Field(
-        default=None,
-        description="Fixed number of worker nodes. Cannot be used with autoscaling.",
-    )
-    node_type_id: Optional[str] = Field(
-        default=None,
-        description="Databricks node type identifier. "
-        "Refer to Databricks documentation for available instance types. "
-        "Example: 'i3.xlarge'",
-    )
-    policy_id: Optional[str] = Field(
-        default=None,
-        description="Databricks cluster policy ID for governance and cost control.",
-    )
-    autotermination_minutes: Optional[int] = Field(
-        default=None,
-        description="Minutes of inactivity before automatic cluster termination. "
-        "Helps control costs by shutting down idle clusters.",
-    )
-    autoscale: Tuple[int, int] = Field(
-        default=(0, 1),
-        description="Cluster autoscaling bounds as (min_workers, max_workers). "
-        "Automatically adjusts cluster size based on workload.",
-    )
-    single_user_name: Optional[str] = Field(
-        default=None,
-        description="Databricks username for single-user cluster access mode.",
-    )
-    spark_conf: Optional[Dict[str, str]] = Field(
-        default=None,
-        description="Custom Spark configuration properties as key-value pairs. "
-        "Example: {'spark.sql.adaptive.enabled': 'true', 'spark.sql.adaptive.coalescePartitions.enabled': 'true'}",
-    )
-    spark_env_vars: Optional[Dict[str, str]] = Field(
-        default=None,
-        description="Environment variables for the Spark driver and executors. "
-        "Example: {'SPARK_WORKER_MEMORY': '4g', 'SPARK_DRIVER_MEMORY': '2g'}",
-    )
     schedule_timezone: Optional[str] = Field(
         default=None,
-        description="Timezone for scheduled pipeline execution. "
-        "Uses IANA timezone format (e.g., 'America/New_York').",
+        description="IANA timezone for scheduled pipeline execution. Used "
+        "only when a schedule with a cron expression is configured. "
+        "Example: 'America/New_York'.",
     )
-    availability_type: Optional[DatabricksAvailabilityType] = Field(
+    job_tags: Optional[Dict[str, str]] = Field(
         default=None,
-        description="Instance availability type: ON_DEMAND (guaranteed), SPOT (cost-optimized), "
-        "or SPOT_WITH_FALLBACK (spot with on-demand backup).",
+        description="Tags associated with the Databricks job, forwarded to "
+        "the cluster as cluster tags. Maximum 25 tags. "
+        "Example: {'project': 'recommendation-engine', 'owner': 'data-team'}",
     )
+    max_concurrent_runs: Optional[int] = Field(
+        default=None,
+        ge=1,
+        le=1000,
+        description="Maximum number of concurrent runs for this job. "
+        "Databricks defaults to 1 if not specified. Maximum is 1000",
+    )
+    max_retries: Optional[int] = Field(
+        default=None,
+        ge=-1,
+        description="Maximum number of times to retry a failed task. "
+        "Use -1 for unlimited retries.",
+    )
+    min_retry_interval_millis: Optional[int] = Field(
+        default=None,
+        ge=0,
+        description="Minimum interval in milliseconds between retry attempts. "
+        "Example: 60000 for 1 minute between retries",
+    )
+    retry_on_timeout: Optional[bool] = Field(
+        default=None,
+        description="Whether to retry a task when it times out. Requires "
+        "max_retries to be set.",
+    )
+
+    @field_validator("schedule_timezone")
+    @classmethod
+    def _validate_schedule_timezone(
+        cls, value: Optional[str]
+    ) -> Optional[str]:
+        """Validates the schedule timezone.
+
+        Args:
+            value: The schedule timezone.
+
+        Returns:
+            The validated schedule timezone.
+
+        Raises:
+            ValueError: If the timezone is not a valid IANA timezone.
+        """
+        if value is None:
+            return None
+
+        try:
+            ZoneInfo(value)
+        except ZoneInfoNotFoundError as e:
+            raise ValueError(
+                "Databricks `schedule_timezone` must be a valid IANA "
+                "timezone, e.g. 'America/New_York' or 'UTC'."
+            ) from e
+
+        return value
 
 
 class DatabricksOrchestratorConfig(
@@ -116,8 +117,28 @@ class DatabricksOrchestratorConfig(
     """
 
     host: str
-    client_id: str = SecretField(default=None)
-    client_secret: str = SecretField(default=None)
+    client_id: Optional[str] = SecretField(default=None)
+    client_secret: Optional[str] = SecretField(default=None)
+
+    @model_validator(mode="after")
+    def _validate_service_principal_credentials(
+        self,
+    ) -> "DatabricksOrchestratorConfig":
+        """Validates Databricks service principal credentials.
+
+        Returns:
+            The validated config.
+
+        Raises:
+            ValueError: If only one of `client_id` / `client_secret` is set.
+        """
+        if bool(self.client_id) != bool(self.client_secret):
+            raise ValueError(
+                "Databricks service principal authentication requires both "
+                "`client_id` and `client_secret` to be configured, or neither."
+            )
+
+        return self
 
     @property
     def is_local(self) -> bool:
@@ -188,7 +209,7 @@ class DatabricksOrchestratorFlavor(BaseOrchestratorFlavor):
 
     @property
     def config_class(self) -> Type[DatabricksOrchestratorConfig]:
-        """Returns `KubeflowOrchestratorConfig` config class.
+        """Returns DatabricksOrchestratorConfig config class.
 
         Returns:
                 The config class.

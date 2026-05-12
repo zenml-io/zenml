@@ -9,12 +9,15 @@ Guidance for agents implementing or modifying ZenML orchestrators.
 | `base_orchestrator.py` | Base class with abstract methods to implement |
 | `containerized_orchestrator.py` | Base for orchestrators that run steps in containers |
 | `utils.py` | Shared orchestrator utilities |
+| `step_launcher.py` | Step execution launcher, including step-operator and isolated-step paths |
+| `step_runner.py` | Runtime step execution logic |
+| `cache_utils.py`, `input_utils.py`, `publish_utils.py` | Shared cache/input/status and metadata helpers |
 
 ## Methods to Implement
 
 When implementing a custom orchestrator, there are two main submission methods:
 
-### 1. `submit_pipeline` (line ~179)
+### 1. `submit_pipeline` (line ~188)
 
 For **static pipelines** where the DAG is known at submission time.
 
@@ -30,7 +33,7 @@ def submit_pipeline(
     """Submit the pipeline to your orchestration backend."""
 ```
 
-### 2. `submit_dynamic_pipeline` (line ~209)
+### 2. `submit_dynamic_pipeline` (line ~218)
 
 For **dynamic pipelines** where the DAG can change during execution.
 
@@ -64,9 +67,25 @@ These are used by the `StepLauncher` when running steps via step operators or in
 
 ---
 
+### Nested Child Pipelines
+
+Dynamic pipelines can now call other dynamic pipelines as child pipelines. A child pipeline may create its own pipeline run with `parent_run_id`, `child_key`, and `root_run_id` links back to the parent run. Inline child pipelines execute their steps inside the parent run instead.
+
+When changing dynamic pipeline or orchestrator behavior, check the full chain:
+- Dynamic execution: `src/zenml/execution/pipeline/dynamic/`
+- Dynamic pipeline public API: `src/zenml/pipelines/dynamic/`
+- Parent/child run models and schemas: `PipelineRun*` models, `pipeline_run_schemas.py`, and migrations
+- Step launching: `src/zenml/orchestrators/step_launcher.py`
+- Tests: `tests/unit/execution/pipeline/dynamic/test_child_pipelines.py`
+- Docs: `docs/book/how-to/steps-pipelines/dynamic_pipelines.md`
+
+Concrete failure story: the parent dynamic run launches a child pipeline, then resumes or retries. If the child key or orchestration run ID changes unexpectedly, ZenML can fail to find the existing child run and may start duplicate work. Keep child identifiers stable across replay/resume/retry paths.
+
+---
+
 ## ⚠️ The Tricky Method: `get_orchestrator_run_id`
 
-**Location:** `base_orchestrator.py:169`
+**Location:** `base_orchestrator.py:173`
 
 This is where most implementers get confused, despite the docstring documentation.
 
@@ -104,19 +123,19 @@ def get_orchestrator_run_id(self) -> str:
 **Key differences:**
 - There's always one initial container that gets spun up first: the "orchestration container"
 - This container creates the pipeline run
-- The ID only needs to be unique when running **inside the orchestration container**
-- Does NOT need to be unique across all step containers that get spun up later
+- The ID needs to be unique for the orchestration environment and stable for retries of that same orchestration environment
+- It does NOT need to be unique across all step containers that get spun up later
 
 **What to use:**
-- **Kubernetes:** The pod name (`socket.gethostname()`) — it's unique per container
+- **Kubernetes:** Prefer the parent Kubernetes job name for the orchestration pod; fall back to the pod name only if the job lookup fails
 - **SageMaker:** The job ID of the orchestration container
 
 ### Orchestration Exception: Kubernetes
 
 Kubernetes is special because it **does** spin up an orchestration container first, even for static pipelines. This means:
-- The Kubernetes orchestrator can use the pod name as the run ID
-- It first checks for `ENV_ZENML_KUBERNETES_RUN_ID` (set for static pipelines)
-- Falls back to `socket.gethostname()` for dynamic pipelines
+- The Kubernetes orchestrator first checks for `ENV_ZENML_KUBERNETES_RUN_ID` (set for static pipelines)
+- For dynamic pipelines, it tries to use the parent Kubernetes job name so retries of the orchestration pod resolve to the same run ID
+- It falls back to `socket.gethostname()` only if the job-name lookup fails
 
 ---
 
@@ -125,19 +144,21 @@ Kubernetes is special because it **does** spin up an orchestration container fir
 Study these implementations when building your own orchestrator:
 
 ### Kubernetes (recommended starting point)
-**File:** `src/zenml/integrations/kubernetes/orchestrators/kubernetes_orchestrator.py:961`
+**File:** `src/zenml/integrations/kubernetes/orchestrators/kubernetes_orchestrator.py:1080`
 
 ```python
 def get_orchestrator_run_id(self) -> str:
     try:
         return os.environ[ENV_ZENML_KUBERNETES_RUN_ID]
     except KeyError:
-        # Dynamic pipeline: use pod name
-        return socket.gethostname()
+        # Dynamic pipeline: use parent job name for retry stability,
+        # falling back to pod name if the lookup fails.
+        pod_name = socket.gethostname()
+        return get_parent_job_name(...) or pod_name
 ```
 
 ### SageMaker (complex example)
-**File:** `src/zenml/integrations/aws/orchestrators/sagemaker_orchestrator.py:258`
+**File:** `src/zenml/integrations/aws/orchestrators/sagemaker_orchestrator.py:270`
 
 ```python
 def get_orchestrator_run_id(self) -> str:
@@ -154,7 +175,7 @@ def get_orchestrator_run_id(self) -> str:
 ```
 
 ### Vertex AI
-**File:** `src/zenml/integrations/gcp/orchestrators/vertex_orchestrator.py:785`
+**File:** `src/zenml/integrations/gcp/orchestrators/vertex_orchestrator.py:1004`
 
 ```python
 def get_orchestrator_run_id(self) -> str:

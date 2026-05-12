@@ -776,7 +776,7 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         labels = {
             "zenml-deployment-id": deployment_id,
-            "zenml-deployment-name": kube_utils.sanitize_label(
+            "zenml-deployment-name": kube_utils.sanitize_label_value(
                 deployment.name
             ),
             "managed-by": "zenml",
