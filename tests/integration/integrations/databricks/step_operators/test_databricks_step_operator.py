@@ -18,6 +18,7 @@ from __future__ import annotations
 import importlib.util
 from dataclasses import dataclass, field
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
 from unittest.mock import Mock
 from uuid import UUID, uuid4
@@ -213,7 +214,9 @@ def _get_run(
     )
 
 
-def test_submit_publishes_run_metadata(mocker: MockerFixture) -> None:
+def test_submit_publishes_run_metadata(
+    mocker: MockerFixture, tmp_path: Path
+) -> None:
     """Tests that submitting a step stores Databricks run metadata."""
     operator = _get_databricks_step_operator()
     operator._client = mocker.Mock()
@@ -221,6 +224,8 @@ def test_submit_publishes_run_metadata(mocker: MockerFixture) -> None:
     operator._client.jobs.get_run.return_value = _get_run(
         RunLifeCycleState.PENDING
     )
+    wheel_directory = str(tmp_path / "databricks-wheel")
+    wheel_path = str(tmp_path / "databricks-wheel" / "project.whl")
 
     mocker.patch.object(
         operator,
@@ -229,11 +234,11 @@ def test_submit_publishes_run_metadata(mocker: MockerFixture) -> None:
     )
     mocker.patch(
         "zenml.integrations.databricks.step_operators.databricks_step_operator.prepare_repository_copy_for_wheel",
-        return_value="/tmp/databricks-wheel",
+        return_value=wheel_directory,
     )
     mocker.patch(
         "zenml.integrations.databricks.step_operators.databricks_step_operator.create_wheel",
-        return_value="/tmp/databricks-wheel/project.whl",
+        return_value=wheel_path,
     )
     mocker.patch(
         "zenml.integrations.databricks.step_operators.databricks_step_operator.upload_wheel_to_workspace",
@@ -308,7 +313,7 @@ def test_submit_publishes_run_metadata(mocker: MockerFixture) -> None:
 
 
 def test_submit_reuses_existing_databricks_wheel_source(
-    mocker: MockerFixture,
+    mocker: MockerFixture, tmp_path: Path
 ) -> None:
     """Tests that nested Databricks execution reuses the installed wheel source."""
     operator = _get_databricks_step_operator()
@@ -317,6 +322,9 @@ def test_submit_reuses_existing_databricks_wheel_source(
     operator._client.jobs.get_run.return_value = _get_run(
         RunLifeCycleState.PENDING
     )
+    wheel_directory = str(tmp_path / "databricks-wheel")
+    wheel_path = str(tmp_path / "databricks-wheel" / "project.whl")
+    installed_wheel_source = str(tmp_path / "installed-wheel-source")
 
     mocker.patch.object(
         operator,
@@ -325,11 +333,11 @@ def test_submit_reuses_existing_databricks_wheel_source(
     )
     prepare_repository_copy_for_wheel_mock = mocker.patch(
         "zenml.integrations.databricks.step_operators.databricks_step_operator.prepare_repository_copy_for_wheel",
-        return_value="/tmp/databricks-wheel",
+        return_value=wheel_directory,
     )
     mocker.patch(
         "zenml.integrations.databricks.step_operators.databricks_step_operator.create_wheel",
-        return_value="/tmp/databricks-wheel/project.whl",
+        return_value=wheel_path,
     )
     mocker.patch(
         "zenml.integrations.databricks.step_operators.databricks_step_operator.upload_wheel_to_workspace",
@@ -359,7 +367,7 @@ def test_submit_reuses_existing_databricks_wheel_source(
     )
     mocker.patch(
         "zenml.integrations.databricks.step_operators.databricks_step_operator.get_databricks_wheel_source",
-        return_value=("/tmp/installed-wheel-source", "existing-wheel-package"),
+        return_value=(installed_wheel_source, "existing-wheel-package"),
     )
 
     step_run_info = _FakeStepRunInfo()
@@ -373,7 +381,7 @@ def test_submit_reuses_existing_databricks_wheel_source(
     prepare_repository_copy_for_wheel_mock.assert_called_once_with(
         package_name="existing-wheel-package",
         package_version=__version__,
-        source_root="/tmp/installed-wheel-source",
+        source_root=installed_wheel_source,
     )
 
 
