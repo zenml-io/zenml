@@ -219,6 +219,8 @@ jobs:
         run: python scripts/ci_modal_mysql_sandbox.py start
       - name: Run serial shared-state tests
         env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
           MODAL_CI_SERVER_URL: ${{ steps.modal-server.outputs.server_url }}
           MODAL_CI_SERVER_USERNAME: ${{ steps.modal-server.outputs.server_username }}
           ZENML_CI_CHECKOUT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -229,6 +231,7 @@ jobs:
           print(derive_server_password())
           PY
           )
+          unset MODAL_TOKEN_ID MODAL_TOKEN_SECRET
           python -m pytest -p no:pytest_postgresql -v --tb=short \
             --junitxml=.ci/modal-mysql-serial/junit.xml \
             --no-provision --environment remote-mysql-modal \

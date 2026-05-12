@@ -236,7 +236,11 @@ function test_upgrade_to_version() {
     else
         # Old ZenML versions use pkg_resources, removed in setuptools 82+
         uv pip install -U "setuptools<82" wheel pip
-        uv pip install "zenml[templates,server]==$VERSION"
+        # The repo-level uv exclude-newer window can filter out the exact
+        # latest ZenML version selected above immediately after a release.
+        # Keep dependency resolution capped, but allow the requested ZenML
+        # release itself through.
+        uv pip install --exclude-newer-package zenml=2100-01-01 "zenml[templates,server]==$VERSION"
         if [ "$(version_compare "$VERSION" "0.60.0")" == "<" ]; then
             # handles unpinned sqlmodel dependency in older versions
             uv pip install "sqlmodel==0.0.8" "bcrypt==4.0.1" "pyyaml-include<2.0" "numpy<2.0.0" "tenacity!=8.4.0"
