@@ -22,6 +22,7 @@ from typing import Any, Dict, List
 
 import distro
 
+import zenml
 from zenml.constants import INSIDE_ZENML_CONTAINER
 from zenml.enums import EnvironmentType
 from zenml.logger import get_logger
@@ -41,13 +42,11 @@ def get_run_environment_dict() -> Dict[str, Any]:
     Returns:
         A dictionary of the current run environment.
     """
-    from zenml import __version__
-
     env_dict: Dict[str, Any] = {
         "environment": str(get_environment()),
         **Environment.get_system_info(),
         "python_version": Environment.python_version(),
-        "zenml_version": __version__,
+        "zenml_version": zenml.__version__,
     }
 
     try:

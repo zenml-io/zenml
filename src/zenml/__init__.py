@@ -30,11 +30,6 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 with open(os.path.join(ROOT_DIR, "VERSION")) as version_file:
     __version__: str = version_file.read().strip()
 
-# Initialize logging
-from zenml.logger import enable_zenml_log_forwarding, init_logging  # noqa
-
-init_logging()
-
 def __getattr__(name: str) -> Any:
     # We allow directly accessing the entrypoint module as `zenml.entrypoint`
     # as this is needed for some orchestrators. Instead of directly importing
@@ -96,4 +91,9 @@ __all__ = [
     "wait",
 ]
 
-enable_zenml_log_forwarding()
+# Initialize logging after the root package has finished importing the public
+# API. This keeps logging handlers from re-entering partially initialized ZenML
+# modules during import.
+from zenml.logger import init_logging  # noqa
+
+init_logging()
