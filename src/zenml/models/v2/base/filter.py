@@ -476,26 +476,28 @@ class StrFilter(Filter):
             return column == self.value
 
     def _handle_is_empty(self, column: Any, is_json_encoded: bool) -> Any:
-        """Handle the IS_EMPTY operation."""
-        from sqlalchemy import or_
+        """Handle the IS_EMPTY operation.
 
-        if is_json_encoded:
-            return or_(column.is_(None), column == "", column == '""')
+        Args:
+            column: The column to check.
+            is_json_encoded: Whether the column is JSON encoded.
 
-        return or_(column.is_(None), column == "")
+        Returns:
+            The query condition.
+        """
+        return column.is_(None)
 
     def _handle_is_not_empty(self, column: Any, is_json_encoded: bool) -> Any:
-        """Handle the IS_NOT_EMPTY operation."""
-        from sqlalchemy import and_
+        """Handle the IS_NOT_EMPTY operation.
 
-        if is_json_encoded:
-            return and_(
-                column.is_not(None),
-                column != "",
-                column != '""',
-            )
+        Args:
+            column: The column to check.
+            is_json_encoded: Whether the column is JSON encoded.
 
-        return and_(column.is_not(None), column != "")
+        Returns:
+            The query condition.
+        """
+        return column.is_not(None)
 
 
 class UUIDFilter(StrFilter):
