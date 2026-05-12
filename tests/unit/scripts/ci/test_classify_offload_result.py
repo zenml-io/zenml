@@ -156,3 +156,19 @@ def test_current_invalid_junit_is_not_cacheable(tmp_path: Path) -> None:
     assert result.conclusion == "infra_failure"
     assert result.junit_current is True
     assert result.junit_cacheable is False
+
+
+def test_current_malformed_junit_counters_are_not_cacheable(
+    tmp_path: Path,
+) -> None:
+    """Malformed JUnit counters are invalid results, not passing tests."""
+    junit = tmp_path / "junit.xml"
+    junit.write_text(
+        '<testsuite tests="1" failures="not-a-number" errors="0" skipped="0" />'
+    )
+
+    result = classify_offload_result(exit_code=0, junit_path=junit)
+
+    assert result.conclusion == "infra_failure"
+    assert result.junit_current is True
+    assert result.junit_cacheable is False

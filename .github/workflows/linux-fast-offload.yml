@@ -48,6 +48,8 @@ on:
         options: [default, modal-server-mysql]
         required: false
         default: default
+permissions:
+  contents: read
 jobs:
   offload-fast-tests:
     name: offload-fast-tests
@@ -69,6 +71,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
@@ -227,7 +230,6 @@ jobs:
           'success' && steps.modal-server.outcome != 'failure'
         continue-on-error: true
         env:
-          OFFLOAD_COMMAND: ${{ vars.ZENML_CI_OFFLOAD_COMMAND }}
           TEST_ENVIRONMENT: ${{ inputs.test_environment }}
           MODAL_CI_SERVER_URL: ${{ steps.modal-server.outputs.server_url }}
           MODAL_CI_SERVER_USERNAME: ${{ steps.modal-server.outputs.server_username }}
@@ -270,11 +272,10 @@ jobs:
           marker.write_text('start\n', encoding='utf-8')
           print(f"junit_marker_mtime_ns={marker.stat().st_mtime_ns}")
           PY
-          command=${OFFLOAD_COMMAND:-"offload -v run --parallel 20"}
           echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
-          echo "Running: $command"
+          echo "Running: offload -v run --parallel 20"
           set +e
-          bash -lc "$command" 2>&1 | tee .ci/offload/offload.log
+          offload -v run --parallel 20 2>&1 | tee .ci/offload/offload.log
           offload_exit_code=${PIPESTATUS[0]}
           set -e
           echo "exit_code=$offload_exit_code" >> "$GITHUB_OUTPUT"

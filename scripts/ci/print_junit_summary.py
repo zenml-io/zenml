@@ -33,16 +33,20 @@ def _int_attr(element: ET.Element, name: str) -> int:
     value = element.attrib.get(name, "0")
     try:
         return int(value)
-    except ValueError:
-        return 0
+    except ValueError as exc:
+        raise ValueError(
+            f"Invalid integer JUnit attribute {name}={value!r}"
+        ) from exc
 
 
 def _float_attr(element: ET.Element, name: str) -> float:
     value = element.attrib.get(name, "0")
     try:
         return float(value)
-    except ValueError:
-        return 0.0
+    except ValueError as exc:
+        raise ValueError(
+            f"Invalid float JUnit attribute {name}={value!r}"
+        ) from exc
 
 
 def parse_junit_summary(path: str | Path) -> JUnitSummary:

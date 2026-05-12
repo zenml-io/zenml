@@ -51,19 +51,16 @@ def test_modal_mysql_offload_config_is_valid() -> None:
     assert config["provider"]["type"] == "default"
     assert config["report"]["output_dir"] == ".ci/offload"
     assert set(config["groups"]) == {"integration"}
-    assert "tests/integration" in config["groups"]["integration"]["filters"]
-    assert "not slow" in config["groups"]["integration"]["filters"]
-    assert "not global_state" in config["groups"]["integration"]["filters"]
-    assert (
-        "test_list_secrets_pagination_and_sorting"
-        in config["groups"]["integration"]["filters"]
-    )
-    assert (
-        "test_deletion_of_links[True]"
-        in config["groups"]["integration"]["filters"]
-    )
+    integration_filters = config["groups"]["integration"]["filters"]
+    assert "tests/integration" in integration_filters
+    assert "--ignore=tests/integration/examples" in integration_filters
+    assert "not slow" in integration_filters
+    assert "not global_state" in integration_filters
+    assert "test_list_secrets_pagination_and_sorting" in integration_filters
+    assert "test_deletion_of_links[True]" in integration_filters
     assert config["framework"]["command"].startswith("python -m pytest")
     assert config["framework"]["run_args"].startswith(
         "--no-provision --environment remote-mysql-modal"
     )
     assert "MODAL_CI_SERVER_URL" in config["provider"]["create_command"]
+    assert "MODAL_TOKEN_SECRET" not in config["provider"]["create_command"]

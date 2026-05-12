@@ -12,6 +12,8 @@ concurrency:
   # New commit on branch cancels running workflows of the same branch.
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+permissions:
+  contents: read
 jobs:
   sqlite-db-migration-testing-random:
     runs-on: ubuntu-latest
@@ -25,6 +27,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Set up Python 3.10
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
@@ -38,6 +41,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
       - name: Set up Python 3.11
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
@@ -58,6 +63,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Set uv cache + temp dirs (/opt)
         run: |
           sudo mkdir -p /opt/uv-cache /opt/tmp
@@ -95,8 +101,8 @@ jobs:
           uv pip install --system --force-reinstall --no-deps "docstring_parser_fork"
           pydoclint src/zenml tests/harness
   linux-fast-offload:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
-      false
+    if: github.event_name != 'pull_request' || (github.event.pull_request.draft ==
+      false && github.event.pull_request.head.repo.full_name == github.repository)
     uses: ./.github/workflows/linux-fast-offload.yml
     with:
       backend: modal
@@ -106,6 +112,7 @@ jobs:
   linux-fast-offload-modal-mysql:
     if: github.event_name != 'pull_request' || (github.event.pull_request.draft ==
       false && github.event.pull_request.head.repo.full_name == github.repository)
+      && vars.ZENML_CI_MODAL_DISABLED != 'true'
     uses: ./.github/workflows/linux-fast-offload.yml
     with:
       backend: modal
@@ -128,6 +135,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
       - name: Set uv cache + temp dirs (/opt)
         run: |
           sudo mkdir -p /opt/uv-cache /opt/tmp
@@ -170,8 +179,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
-      MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: 1
       ZENML_ENABLE_RICH_TRACEBACK: false
@@ -181,6 +188,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
       - name: Set uv cache + temp dirs (/opt)
         run: |
           sudo mkdir -p /opt/uv-cache /opt/tmp
@@ -203,6 +212,8 @@ jobs:
       - name: Start Modal MySQL sandbox
         id: modal-server
         env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
           ZENML_CI_MODAL_DISABLED: ${{ vars.ZENML_CI_MODAL_DISABLED }}
           ZENML_CI_CHECKOUT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
         run: python scripts/ci_modal_mysql_sandbox.py start
@@ -227,6 +238,8 @@ jobs:
       - name: Stop Modal MySQL sandbox
         if: always() && steps.modal-server.outputs.sandbox_id != ''
         env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
           SANDBOX_ID: ${{ steps.modal-server.outputs.sandbox_id }}
         run: python scripts/ci_modal_mysql_sandbox.py stop --sandbox-id "$SANDBOX_ID"
       - name: Upload serial Modal MySQL artifacts
@@ -250,12 +263,23 @@ jobs:
       == false)
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
       - name: Verify required fast CI jobs
         env:
           NEEDS_CONTEXT: ${{ toJSON(needs) }}
-        run: >-
-          python scripts/ci/verify_required_jobs.py
-          --lane Fast
-          --needs-json "$NEEDS_CONTEXT"
-          --allow-skipped linux-fast-offload-modal-mysql
-          --allow-skipped modal-mysql-serial-shared-state-tests
+          ALLOW_FORK_OFFLOAD_SKIPS: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name
+            != github.repository }}
+        run: |-
+          args=()
+          if [ "$ALLOW_FORK_OFFLOAD_SKIPS" = "true" ]; then
+            args+=(
+              --allow-skipped linux-fast-offload
+              --allow-skipped linux-fast-offload-modal-mysql
+              --allow-skipped modal-mysql-serial-shared-state-tests
+            )
+          fi
+          python scripts/ci/verify_required_jobs.py \
+            --lane Fast \
+            --needs-json "$NEEDS_CONTEXT" \
+            "${args[@]}"
