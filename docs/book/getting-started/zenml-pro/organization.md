@@ -13,6 +13,14 @@ Inviting users to your organization to work on the organization's workspaces is 
 
 ![Image showing invite flow](.gitbook/assets/add_org_members.png)
 
+## Trusted domains
+
+ZenML Pro can optionally associate trusted email domains with your organization. That setting affects user discovery when inviting people and how some organization invitations behave with SSO. See [Trusted domains](trusted-domains.md).
+
+If your organization runs on ZenML-managed ZenML Pro, trusted domains are maintained by ZenML operators. To request or change trusted domains, [contact ZenML support](https://zenml.io/slack) or your account contact.
+
+If you self-host the ZenML Pro control plane, super-user administrators configure trusted domains through the API as described in [Trusted domains](trusted-domains.md).
+
 ## Manage Organization settings like billing and roles
 
 The billing information for your workspaces is managed on the organization level, among other settings like the members in your organization and the roles they have. You can access the organization settings by clicking on your profile picture in the top right corner and selecting "Settings".
