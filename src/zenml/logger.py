@@ -272,17 +272,8 @@ def _wrapped_write(original_write: Any, stream_name: str) -> Any:
 
         Returns:
             The result of the original write method.
-
-        Raises:
-            Exception: If importing `LoggingContext` fails for a reason other
-                than a circular import during logger initialization.
         """
-        try:
-            from zenml.utils.logging_utils import LoggingContext
-        except Exception as e:
-            if _is_logging_utils_circular_import_error(e):
-                return original_write(text)
-            raise
+        from zenml.utils.logging_utils import LoggingContext
 
         level = logging.INFO if stream_name == "stdout" else logging.ERROR
 
@@ -328,17 +319,6 @@ def wrap_stdout_stderr() -> None:
         _stderr_wrapped = True
 
 
-def _is_logging_utils_circular_import_error(
-    error: BaseException,
-) -> bool:
-    """Check whether logging_utils failed to import due to init cycles."""
-    message = str(error)
-    return (
-        "partially initialized module" in message
-        or "circular import" in message
-    )
-
-
 class ZenMLLoggingHandler(logging.Handler):
     """Custom handler that routes logs through LoggingContext."""
 
@@ -348,14 +328,7 @@ class ZenMLLoggingHandler(logging.Handler):
         Args:
             record: The log record to emit.
         """
-        try:
-            from zenml.utils.logging_utils import LoggingContext
-        except Exception as e:
-            if _is_logging_utils_circular_import_error(e):
-                return
-
-            self.handleError(record)
-            return
+        from zenml.utils.logging_utils import LoggingContext
 
         LoggingContext.emit(record)
 
