@@ -45,6 +45,7 @@
 ## Access Management
 
 * [Roles & Permissions](roles.md)
+* [Trusted domains](trusted-domains.md)
 * [Personal Access Tokens](personal-access-tokens.md)
 * [Service Accounts](service-accounts.md)
 * [Secrets Stores](secrets-stores.md)
