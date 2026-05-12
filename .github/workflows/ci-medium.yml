@@ -107,13 +107,45 @@ jobs:
     needs: [modal-enabled, linting]
     strategy:
       matrix:
-        os: [ubuntu-latest]
-        python-version: ['3.12']
+        include:
+          - os: ubuntu-latest
+            python-version: '3.12'
+          - os: macos-latest
+            python-version: '3.12'
+          - os: windows-latest
+            python-version: '3.10'
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
+    secrets: inherit
+  docker-orchestrator-mysql-integration-test:
+    needs: [modal-enabled, linting]
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ['3.12']
+        test_environment: [docker-server-docker-orchestrator-mysql]
+      fail-fast: false
+    uses: ./.github/workflows/integration-test-fast.yml
+    with:
+      os: ${{ matrix.os }}
+      python-version: ${{ matrix.python-version }}
+      test_environment: ${{ matrix.test_environment }}
+      ci_tier: medium
+    secrets: inherit
+  base-package-functionality:
+    needs: modal-enabled
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ['3.12']
+      fail-fast: false
+    uses: ./.github/workflows/base-package-functionality.yml
+    with:
+      os: ${{ matrix.os }}
+      python-version: ${{ matrix.python-version }}
     secrets: inherit
   start-modal-mysql-sandbox:
     needs: modal-enabled
@@ -135,7 +167,7 @@ jobs:
           ZENML_CI_MODAL_DISABLED: ${{ vars.ZENML_CI_MODAL_DISABLED }}
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
-          ZENML_CI_CHECKOUT_REF: ${{ github.sha }}
+          ZENML_CI_CHECKOUT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
         run: python scripts/ci_modal_mysql_sandbox.py start
   remote-mysql-modal-integration-test:
     needs: [modal-enabled, linting, start-modal-mysql-sandbox]
@@ -179,6 +211,8 @@ jobs:
       - mariadb-db-migration-testing-random
       - linting
       - unit-test
+      - docker-orchestrator-mysql-integration-test
+      - base-package-functionality
       - start-modal-mysql-sandbox
       - remote-mysql-modal-integration-test
       - stop-modal-mysql-sandbox

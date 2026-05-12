@@ -133,6 +133,12 @@ function run_tests_for_version() {
         zenml integration export-requirements sklearn pandas --output-file integration-requirements.txt
     fi
 
+    # Historical starter templates define custom sklearn transformers that
+    # predate the stricter __sklearn_tags__ checks introduced in newer
+    # scikit-learn releases. Keep the migration fixture on the compatible
+    # sklearn line so this test exercises ZenML migrations instead of external
+    # template dependency drift.
+    printf "\nscikit-learn<1.6\n" >> integration-requirements.txt
     uv pip install -r integration-requirements.txt
     rm integration-requirements.txt
 
