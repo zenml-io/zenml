@@ -286,7 +286,7 @@ class StrFilter(Filter):
             return column.like(f"%{self.value}%")
 
         if self.operation == GenericFilterOps.NOT_CONTAINS:
-            return self._handle_not_contains(column)
+            return ~column.like(f"%{self.value}%")
 
         if self.operation == GenericFilterOps.STARTSWITH:
             return self._handle_startswith(column, is_json_encoded)
@@ -298,10 +298,10 @@ class StrFilter(Filter):
             return self._handle_not_equals(column, is_json_encoded)
 
         if self.operation == GenericFilterOps.IS_EMPTY:
-            return self._handle_is_empty(column, is_json_encoded)
+            return column.is_(None)
 
         if self.operation == GenericFilterOps.IS_NOT_EMPTY:
-            return self._handle_is_not_empty(column, is_json_encoded)
+            return column.is_not(None)
 
         # Default case (EQUALS)
         return self._handle_equals(column, is_json_encoded)
@@ -398,10 +398,6 @@ class StrFilter(Filter):
 
         return and_(*conditions)
 
-    def _handle_not_contains(self, column: Any) -> Any:
-        """Handle the NOT_CONTAINS operation."""
-        return ~column.like(f"%{self.value}%")
-
     def _handle_startswith(self, column: Any, is_json_encoded: bool) -> Any:
         """Handle the STARTSWITH operation.
 
@@ -474,30 +470,6 @@ class StrFilter(Filter):
             return or_(column == self.value, column == f'"{self.value}"')
         else:
             return column == self.value
-
-    def _handle_is_empty(self, column: Any, is_json_encoded: bool) -> Any:
-        """Handle the IS_EMPTY operation.
-
-        Args:
-            column: The column to check.
-            is_json_encoded: Whether the column is JSON encoded.
-
-        Returns:
-            The query condition.
-        """
-        return column.is_(None)
-
-    def _handle_is_not_empty(self, column: Any, is_json_encoded: bool) -> Any:
-        """Handle the IS_NOT_EMPTY operation.
-
-        Args:
-            column: The column to check.
-            is_json_encoded: Whether the column is JSON encoded.
-
-        Returns:
-            The query condition.
-        """
-        return column.is_not(None)
 
 
 class UUIDFilter(StrFilter):
