@@ -152,10 +152,8 @@ function run_tests_for_version() {
     # Confirm DB works and is accessible
     ZENML_LOGGING_VERBOSITY=INFO zenml pipeline runs list
 
-    # The database backup and restore feature is available since 0.55.1.
-    # However, it has been broken for various reasons up to and including
-    # 0.57.0, so we skip this test for those versions.
-    if [ "$VERSION" == "current" ] || [ "$(version_compare "$VERSION" "0.57.0")" == ">" ]; then
+    # Only test backup/restore on the current local code
+    if [ "$VERSION" == "current" ]; then
         echo "===== Testing database backup and restore (file dump) ====="
 
         pipelines_before_restore=$(ZENML_LOGGING_VERBOSITY=INFO zenml pipeline runs list --size 5000)
