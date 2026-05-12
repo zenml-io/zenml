@@ -44,13 +44,18 @@ def __getattr__(name: str) -> Any:
         from zenml.entrypoints import entrypoint
         return entrypoint
 
+    # `show` needs dashboard utilities, which pull in client/config modules
+    # that are not safe while the root package is still initializing.
+    if name == "show":
+        from zenml.utils.dashboard_utils import show_dashboard
+        return show_dashboard
+
     raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
 # Need to import zenml.models before zenml.config to avoid circular imports
 from zenml.models import *  # noqa: F401
 
 # Define public Python API
-from zenml.utils.dashboard_utils import show_dashboard as show
 from zenml.artifacts.utils import (
     log_artifact_metadata,
     save_artifact,
