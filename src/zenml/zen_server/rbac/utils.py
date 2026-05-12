@@ -156,10 +156,21 @@ def _dehydrate_value(
         if not resource:
             return dehydrate_response_model(value, permissions=permissions)
 
-        has_permissions = (permissions or {}).get(resource, False)
-        if has_permissions or has_permissions_for_model(
-            model=permission_model, action=Action.READ
+        has_permissions = (permissions or {}).get(resource)
+
+        if has_permissions or is_owned_by_authenticated_user(
+            model=permission_model
         ):
+            return dehydrate_response_model(value, permissions=permissions)
+
+        if has_permissions is None:
+            # Permission wasn't prefetched, so we send a separate request to
+            # check.
+            has_permissions = has_permissions_for_model(
+                model=permission_model, action=Action.READ
+            )
+
+        if has_permissions:
             return dehydrate_response_model(value, permissions=permissions)
         else:
             return get_permission_denied_model(value)
@@ -454,6 +465,8 @@ def get_resource_type_for_model(
         PipelineRunResponse,
         PipelineSnapshotRequest,
         PipelineSnapshotResponse,
+        PlatformEventTriggerRequest,
+        PlatformEventTriggerResponse,
         ProjectRequest,
         ProjectResponse,
         ResourcePoolRequest,
@@ -534,6 +547,8 @@ def get_resource_type_for_model(
         ResourcePoolSubjectPolicyRequest: ResourceType.RESOURCE_POOL_SUBJECT_POLICY,
         ResourcePoolSubjectPolicyResponse: ResourceType.RESOURCE_POOL_SUBJECT_POLICY,
         # UserResponse: ResourceType.USER,
+        PlatformEventTriggerRequest: ResourceType.TRIGGER,
+        PlatformEventTriggerResponse: ResourceType.TRIGGER,
         ScheduleTriggerRequest: ResourceType.TRIGGER,
         ScheduleTriggerResponse: ResourceType.TRIGGER,
         TriggerRequest: ResourceType.TRIGGER,
@@ -751,6 +766,9 @@ def delete_model_resources(models: List[AnyModel]) -> None:
         if resource := get_resource_for_model(model):
             resources.add(resource)
 
+    if not resources:
+        return
+
     delete_resources(resources=list(resources))
 
 
@@ -762,6 +780,9 @@ def delete_resources(resources: List[Resource]) -> None:
             information.
     """
     if not server_config().rbac_enabled:
+        return
+
+    if not resources:
         return
 
     rbac().delete_resources(resources=resources)

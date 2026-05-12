@@ -43,6 +43,15 @@ Response generics:
 - Metadata extends BaseResponseMetadata
 - Resources extends BaseResponseResources
 
+## Cross-Layer Entity Families
+
+Some model families are coordination points between API models, ORM schemas, store methods, client methods, CLI commands, server endpoints, migrations, and docs. When touching these, trace the whole path instead of changing only the model file:
+
+- **Triggers:** `Trigger*`, `ScheduleTrigger*`, `PlatformEventTrigger*`, dispatch status/error models, and supported-event helpers. These back `zenml trigger ...` commands and trigger endpoints.
+- **Resource pools:** `ResourcePool*`, `ResourcePoolSubjectPolicy*`, and `ResourceRequest*` models. These back resource pool commands, queue/request inspection, store interfaces, and Pro/backend scheduling behavior.
+- **Run wait conditions:** `RunWaitCondition*` models coordinate pause/resume and wait-condition behavior for pipeline runs.
+- **Nested child pipelines:** `PipelineRun*` includes parent/child/root run fields such as `parent_run_id`, `child_key`, and `root_run_id`. Keep these aligned with ORM schemas, migrations, filters, client list methods, and dynamic pipeline tests.
+
 ## Domain Model Types
 
 1) Request ({Entity}Request)

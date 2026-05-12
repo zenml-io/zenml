@@ -21,6 +21,25 @@ Currently, the ZenML server can be configured to use one of the following suppor
 * the HashiCorp Vault
 * a custom secrets store back-end implementation is also supported
 
+## Secret value size limits
+
+A ZenML **secret** is a name plus a map of string keys to string values. You can reason about its size as the sum of the UTF-8 size of every key name and every value in the map, not a per-key limit. Non-Latin text usually needs more bytes per character than English in that total.
+
+When the server uses the default SQL (server database) secrets store, ZenML enforces a 64 KiB (65,536 byte) maximum on that total, and the server rejects larger payloads.
+
+For AWS, GCP, Azure, HashiCorp Vault, a custom store, or any other non-default back end, the effective limit is whatever that system allows for the stored payload; use the table and official links below.
+
+| **Secrets store** | **Approx. limit** | **More information** |
+| --- | --- | --- |
+| **Default (server database)** | **64 KiB** | — |
+| **AWS Secrets Manager** | **64 KiB** | [Secrets Manager quotas](https://docs.aws.amazon.com/secretsmanager/latest/userguide/reference_limits.html) |
+| **Google Cloud Secret Manager** | **64 KiB** | [Quotas and limits](https://cloud.google.com/secret-manager/quotas) |
+| **Azure Key Vault** | **25 KB** | [About secrets (size and attributes)](https://learn.microsoft.com/en-us/azure/key-vault/secrets/about-secrets)|
+| **HashiCorp Vault (KV v2)** | **~512 KiB to ~1 MiB** | [Vault KV v2 size limits](https://developer.hashicorp.com/vault/docs/internals/limits#versioned-key-value-store-kv-v2-secret-engine) (depends on storage back-end) |
+| **Custom** | **Varies** | |
+
+If the content is still too big, register another ZenML secret (a new name), split keys across secrets, or keep the file in an artifact or object store and only put a reference in a value.
+
 ## Configuration and deployment
 
 Configuring the specific secrets store back-end that the ZenML server uses is done at deployment time. This involves deciding on one of the supported back-ends and authentication mechanisms and configuring the ZenML server with the necessary credentials to authenticate with the back-end.

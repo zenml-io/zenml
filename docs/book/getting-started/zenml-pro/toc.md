@@ -17,6 +17,8 @@
     * [Kubernetes with Helm](deploy-workspace-k8s.md)
     * [AWS ECS](deploy-workspace-ecs.md)
     * [Enable Snapshot Support](deploy-workspace-snapshots.md)
+    * [Enable Event Triggers and Schedules](deploy-workspace-event-triggers-and-schedules.md)
+    * [Enable Resource Pools](deploy-workspace-resource-pools.md)
 
 ## Manage
 
@@ -43,6 +45,7 @@
 ## Access Management
 
 * [Roles & Permissions](roles.md)
+* [Trusted domains](trusted-domains.md)
 * [Personal Access Tokens](personal-access-tokens.md)
 * [Service Accounts](service-accounts.md)
 * [Secrets Stores](secrets-stores.md)

@@ -4,6 +4,84 @@
 
 ---
 
+# 0.94.4
+
+## What's Changed
+* Add version 0.94.2 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4766
+* Add 0.94.3 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4768
+* Revise Run:AI service account setup and troubleshooting by @safoinme in https://github.com/zenml-io/zenml/pull/4772
+* Update dynamic pipelines docs by @schustmi in https://github.com/zenml-io/zenml/pull/4776
+* Misc release-testing fixes by @schustmi in https://github.com/zenml-io/zenml/pull/4770
+* Increase the max size of zenml secrets stored in the SQL secrets store by @stefannica in https://github.com/zenml-io/zenml/pull/4769
+* Create run metadata for isolated steps (dynamic) by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4785
+* Better signal handling during step execution by @schustmi in https://github.com/zenml-io/zenml/pull/4784
+* Bump the minor-and-patch group across 1 directory with 9 updates by @dependabot[bot] in https://github.com/zenml-io/zenml/pull/4795
+* Fix O(N) global scan in artifact-version delete by @joaquinhuigomez in https://github.com/zenml-io/zenml/pull/4686
+* Fix multiple RBAC calls during dehydration by @schustmi in https://github.com/zenml-io/zenml/pull/4797
+* Clarify that DynamicPipelineRunner.wait() timeout is a soft timeout by @shaun0927 in https://github.com/zenml-io/zenml/pull/4741
+* Fix typo in step creation error message by @shaun0927 in https://github.com/zenml-io/zenml/pull/4736
+* Allow keyword only args in step function by @schustmi in https://github.com/zenml-io/zenml/pull/4798
+* Kubernetes label sanitization by @bcdurak in https://github.com/zenml-io/zenml/pull/4756
+* Allow non module-level definitions of steps and dynamic pipelines by @schustmi in https://github.com/zenml-io/zenml/pull/4799
+* Added ability to get help with flavor specific configurations by @AlexejPenner in https://github.com/zenml-io/zenml/pull/4662
+* Extract projects-backend release dispatch into dedicated workflow  by @safoinme in https://github.com/zenml-io/zenml/pull/4720
+* Fixing orchestrator setting resolution by @bcdurak in https://github.com/zenml-io/zenml/pull/4803
+* Fix notify projects backend zizmor scan by @strickvl in https://github.com/zenml-io/zenml/pull/4808
+* Fix `Check Links` workflow failures (`runai.md` + dangling preemption refs + Slack 403) by @strickvl in https://github.com/zenml-io/zenml/pull/4807
+* Fix nightly PyPI trusted publishing by @strickvl in https://github.com/zenml-io/zenml/pull/4806
+* Add `uv.lock` to .gitignore by @strickvl in https://github.com/zenml-io/zenml/pull/4811
+* Nested dynamic pipelines by @schustmi in https://github.com/zenml-io/zenml/pull/4775
+* Refresh agent guidance docs by @strickvl in https://github.com/zenml-io/zenml/pull/4817
+* Fix MLflow deployment healthcheck method by @strickvl in https://github.com/zenml-io/zenml/pull/4816
+* Update docs for recent feature drift by @strickvl in https://github.com/zenml-io/zenml/pull/4818
+* Add advanced Run:AI training workload settings by @safoinme in https://github.com/zenml-io/zenml/pull/4780
+* Fix deployment invocation request fields by @schustmi in https://github.com/zenml-io/zenml/pull/4809
+* Extra info on kubernetes-killed jobs by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4800
+* Introduce new Databricks step-operator and fix `tags` and `custom-tags` by @safoinme in https://github.com/zenml-io/zenml/pull/4648
+
+## New Contributors
+* @joaquinhuigomez made their first contribution in https://github.com/zenml-io/zenml/pull/4686
+* @shaun0927 made their first contribution in https://github.com/zenml-io/zenml/pull/4741
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.94.3...0.94.4
+
+# 0.94.3
+
+## What's Changed
+* Add version 0.94.1 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4701
+* Bump the minor-and-patch group with 2 updates by @dependabot[bot] in https://github.com/zenml-io/zenml/pull/4705
+* Fix zizmor SHA/version mismatch and add zizmor to `lint.sh` by @strickvl in https://github.com/zenml-io/zenml/pull/4703
+* Fix broken docs header - triggers by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4707
+* Misc kitaru extensions by @schustmi in https://github.com/zenml-io/zenml/pull/4715
+* Introduce a container engine abstraction and add podman support by @stefannica in https://github.com/zenml-io/zenml/pull/4651
+* Include wait condition resolved at in DAG response by @schustmi in https://github.com/zenml-io/zenml/pull/4717
+* Replace darglint with pydoclint for docstring linting by @strickvl in https://github.com/zenml-io/zenml/pull/4721
+* Bump the minor-and-patch group with 4 updates by @dependabot[bot] in https://github.com/zenml-io/zenml/pull/4725
+* Fix empty PR number in Claude Code review workflow by @strickvl in https://github.com/zenml-io/zenml/pull/4735
+* Resource pools by @schustmi in https://github.com/zenml-io/zenml/pull/4465
+* Feature/event triggers by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4692
+* Helper endpoint: Trigger SourceType supported events by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4745
+* Don't resolve zenml pypi version on flavor model generation by @stefannica in https://github.com/zenml-io/zenml/pull/4744
+* Document Kubernetes permissions for various roles in running k8s pipelines by @stefannica in https://github.com/zenml-io/zenml/pull/4746
+* Add docs for on-prem deployment of optional Pro features by @stefannica in https://github.com/zenml-io/zenml/pull/4751
+* Remove the unique constraint from the `LogsSchema` by @bcdurak in https://github.com/zenml-io/zenml/pull/4729
+* Add `memory_call` step type by @strickvl in https://github.com/zenml-io/zenml/pull/4724
+* Add acknowledgeable trigger dispatch status and improve CLI commands by @stefannica in https://github.com/zenml-io/zenml/pull/4743
+* Support for max-runs stop criteria by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4752
+* Fix making a secret public using CLI/client by @schustmi in https://github.com/zenml-io/zenml/pull/4755
+* Feature/add k8s gateway support by @safoinme in https://github.com/zenml-io/zenml/pull/4726
+* Fix run status update condition by @schustmi in https://github.com/zenml-io/zenml/pull/4747
+* Fix broken tests by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4758
+* Fix StrEnum import breaking 3.10 by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4763
+* Don't block while waiting for concurrent step inputs by @schustmi in https://github.com/zenml-io/zenml/pull/4699
+* Fix python package fetching by @schustmi in https://github.com/zenml-io/zenml/pull/4762
+* Allowing multiple components of the same type for a stack by @bcdurak in https://github.com/zenml-io/zenml/pull/4671
+* Server-side replays by @schustmi in https://github.com/zenml-io/zenml/pull/4716
+* Fix pydantic materializer double encoding by @schustmi in https://github.com/zenml-io/zenml/pull/4760
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.94.2...0.94.3
+
 # 0.94.2
 
 ## What's Changed

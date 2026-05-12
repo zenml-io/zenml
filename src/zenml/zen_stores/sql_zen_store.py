@@ -128,6 +128,7 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import (
     PipelineRunConfiguration,
+    ReplayRunConfiguration,
 )
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.server_config import ServerConfiguration
@@ -351,8 +352,10 @@ from zenml.models import (
     TagResourceResponse,
     TagResponse,
     TagUpdate,
+    TriggerDispatchStatusCode,
     TriggerFilter,
     TriggerRequest,
+    TriggerSnapshotDispatchState,
     TriggerUpdate,
     UserAuthModel,
     UserFilter,
@@ -405,6 +408,7 @@ from zenml.zen_stores.schemas import (
     NamedSchema,
     OAuthDeviceSchema,
     PipelineBuildSchema,
+    PipelineRunOutputSchema,
     PipelineRunSchema,
     PipelineSchema,
     PipelineSnapshotSchema,
@@ -419,6 +423,7 @@ from zenml.zen_stores.schemas import (
     ServerSettingsSchema,
     ServiceConnectorSchema,
     StackComponentSchema,
+    StackCompositionSchema,
     StackSchema,
     StepConfigurationSchema,
     StepRunInputArtifactSchema,
@@ -3283,6 +3288,9 @@ class SqlZenStore(BaseZenStore):
                             col(ArtifactVersionSchema.id).notin_(
                                 select(StepRunInputArtifactSchema.artifact_id)
                             ),
+                            col(ArtifactVersionSchema.id).notin_(
+                                select(PipelineRunOutputSchema.artifact_id)
+                            ),
                             col(ArtifactVersionSchema.project_id)
                             == project_id,
                         )
@@ -4648,9 +4656,6 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
             logs_schema.pipeline_run_id = logs_update.pipeline_run_id
-            logs_schema.log_key = (
-                f"{logs_update.pipeline_run_id}-{logs_schema.source}"
-            )
 
         if logs_update.step_run_id:
             self._get_reference_schema_by_id(
@@ -4660,9 +4665,6 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
             logs_schema.step_run_id = logs_update.step_run_id
-            logs_schema.log_key = (
-                f"{logs_update.step_run_id}-{logs_schema.source}"
-            )
 
         session.add(logs_schema)
         session.commit()
@@ -5046,6 +5048,34 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             return session.exec(query).first() is not None
 
+    def _drop_snapshot_trigger_assoc(
+        self,
+        snapshot_id: UUID,
+        session: Session,
+    ) -> None:
+        """Drops any trigger associations linked to a snapshot.
+
+        Args:
+            snapshot_id: The ID of the snapshot (to be deleted or un-named).
+            session: SQLAlchemy session
+        """
+        linked_snapshot_ids = session.exec(
+            select(PipelineSnapshotSchema.id).where(
+                PipelineSnapshotSchema.source_snapshot_id == snapshot_id
+            )
+        ).all()
+
+        # Remove the attached trigger snapshots
+
+        if not linked_snapshot_ids:
+            return
+
+        session.execute(
+            delete(TriggerSnapshotSchema).where(
+                col(TriggerSnapshotSchema.snapshot_id).in_(linked_snapshot_ids)
+            )
+        )
+
     def _remove_name_from_snapshot(
         self, session: Session, pipeline_id: UUID, name: str
     ) -> None:
@@ -5056,15 +5086,24 @@ class SqlZenStore(BaseZenStore):
             pipeline_id: The pipeline ID of the snapshot.
             name: The name of the snapshot.
         """
-        query = (
-            update(PipelineSnapshotSchema)
-            .where(
+        existing = session.exec(
+            select(PipelineSnapshotSchema).where(
                 col(PipelineSnapshotSchema.pipeline_id) == pipeline_id,
                 col(PipelineSnapshotSchema.name) == name,
             )
-            .values(name=None)
+        ).first()
+
+        if not existing:
+            return
+
+        existing.name = None
+
+        session.add(existing)
+
+        self._drop_snapshot_trigger_assoc(
+            snapshot_id=existing.id,
+            session=session,
         )
-        session.execute(query)
 
     def create_snapshot(
         self,
@@ -5336,6 +5375,13 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
+            if snapshot.name is None:
+                self._drop_snapshot_trigger_assoc(
+                    snapshot_id=snapshot.id,
+                    session=session,
+                )
+                session.commit()
+
             session.refresh(snapshot)
             return snapshot.to_model(
                 include_metadata=True, include_resources=True
@@ -5368,6 +5414,16 @@ class SqlZenStore(BaseZenStore):
                 snapshot.source_snapshot_id = None
                 session.add(snapshot)
 
+            # Remove the attached trigger snapshots
+
+            session.execute(
+                delete(TriggerSnapshotSchema).where(
+                    col(TriggerSnapshotSchema.snapshot_id).in_(
+                        [s.id for s in snapshots]
+                    )
+                )
+            )
+
             session.commit()
 
     def run_snapshot(
@@ -5386,6 +5442,24 @@ class SqlZenStore(BaseZenStore):
         """
         raise NotImplementedError(
             "Running a snapshot is not possible with a local store."
+        )
+
+    def replay_run(
+        self,
+        run_id: UUID,
+        run_configuration: ReplayRunConfiguration,
+    ) -> NoReturn:
+        """Replay a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to replay.
+            run_configuration: Replay configuration.
+
+        Raises:
+            NotImplementedError: Always.
+        """
+        raise NotImplementedError(
+            "Replaying a pipeline run is not possible with a local store."
         )
 
     # -------------------- Deployments --------------------
@@ -6090,6 +6164,15 @@ class SqlZenStore(BaseZenStore):
                         jl_arg(PipelineRunSchema.status),
                         jl_arg(PipelineRunSchema.index),
                     ),
+                    selectinload(
+                        jl_arg(PipelineRunSchema.child_runs)
+                    ).load_only(
+                        jl_arg(PipelineRunSchema.id),
+                        jl_arg(PipelineRunSchema.name),
+                        jl_arg(PipelineRunSchema.start_time),
+                        jl_arg(PipelineRunSchema.end_time),
+                        jl_arg(PipelineRunSchema.status),
+                    ),
                 ],
             )
             assert run.snapshot is not None
@@ -6149,6 +6232,9 @@ class SqlZenStore(BaseZenStore):
             regular_output_artifact_nodes: Dict[
                 str, Dict[str, PipelineRunDAG.Node]
             ] = defaultdict(dict)
+            input_artifact_nodes_by_id: Dict[UUID, List[str]] = defaultdict(
+                list
+            )
 
             def _get_regular_output_artifact_node(
                 step_name: str, output_name: str
@@ -6260,6 +6346,9 @@ class SqlZenStore(BaseZenStore):
                             index=input.input_index,
                             chunk_index=input.chunk_index,
                             chunk_size=input.chunk_size,
+                        )
+                        input_artifact_nodes_by_id[input.artifact_id].append(
+                            artifact_node.node_id
                         )
 
                     for output in step_run.output_artifacts:
@@ -6495,6 +6584,30 @@ class SqlZenStore(BaseZenStore):
                         target=step_node.node_id,
                     )
 
+            for child_run in run.child_runs:
+                child_run_metadata: Dict[str, Any] = {
+                    "status": child_run.status,
+                }
+                if child_run.start_time:
+                    child_run_metadata["start_time"] = (
+                        child_run.start_time.isoformat()
+                    )
+                    if child_run.end_time:
+                        child_run_metadata["end_time"] = (
+                            child_run.end_time.isoformat()
+                        )
+                        child_run_metadata["duration"] = (
+                            child_run.end_time - child_run.start_time
+                        ).total_seconds()
+
+                helper.add_child_run_node(
+                    node_id=helper.get_child_run_node_id(child_run.name),
+                    id=child_run.id,
+                    name=child_run.name,
+                    **child_run_metadata,
+                )
+                # TODO: maybe include nodes for outputs and connect via edges?
+
         return helper.finalize_dag(
             pipeline_run_id=pipeline_run_id, status=ExecutionStatus(run.status)
         )
@@ -6593,6 +6706,17 @@ class SqlZenStore(BaseZenStore):
                 reference_type="original run",
             )
 
+        root_run_id: Optional[UUID] = None
+        if pipeline_run.parent_run_id:
+            parent_run = self._get_reference_schema_by_id(
+                resource=pipeline_run,
+                reference_schema=PipelineRunSchema,
+                reference_id=pipeline_run.parent_run_id,
+                session=session,
+                reference_type="parent run",
+            )
+            root_run_id = parent_run.root_run_id or parent_run.id
+
         index = self._get_next_run_index(
             pipeline_id=snapshot.pipeline_id, session=session
         )
@@ -6602,6 +6726,7 @@ class SqlZenStore(BaseZenStore):
             pipeline_id=snapshot.pipeline_id,
             index=index,
             enable_heartbeat=self._get_enable_run_heartbeat(snapshot),
+            root_run_id=root_run_id,
         )
 
         session.add(new_run)
@@ -7116,8 +7241,41 @@ class SqlZenStore(BaseZenStore):
                         f"New: {run_update.orchestrator_run_id}"
                     )
 
+            if run_update.outputs is not None:
+                # Validate that every referenced artifact version exists and
+                # belongs to the same project as the run before mutating
+                # `pipeline_run_output`. This prevents cross-project info
+                # disclosure via run outputs (a caller with UPDATE on the run
+                # could otherwise pin arbitrary artifact IDs by guessing
+                # them).
+                for artifact_id in set(run_update.outputs.values()):
+                    self._get_reference_schema_by_id(
+                        resource=existing_run,
+                        reference_schema=ArtifactVersionSchema,
+                        reference_id=artifact_id,
+                        session=session,
+                        reference_type="output artifact version",
+                    )
+
             existing_run.update(run_update=run_update)
             session.add(existing_run)
+            if run_update.outputs is not None:
+                session.execute(
+                    delete(PipelineRunOutputSchema).where(
+                        col(PipelineRunOutputSchema.pipeline_run_id) == run_id
+                    )
+                )
+                for index, (name, artifact_id) in enumerate(
+                    run_update.outputs.items()
+                ):
+                    session.add(
+                        PipelineRunOutputSchema(
+                            pipeline_run_id=run_id,
+                            name=name,
+                            output_index=index,
+                            artifact_id=artifact_id,
+                        )
+                    )
             session.commit()
             session.refresh(existing_run)
 
@@ -7464,6 +7622,9 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=True,
                 include_resources=True,
             )
+            root_run_id = (
+                updated_schema.run.root_run_id or updated_schema.run_id
+            )
 
         if resolved_model.resolution == RunWaitConditionResolution.CONTINUE:
             # There is a possibility that the instance holding the lease
@@ -7473,9 +7634,7 @@ class SqlZenStore(BaseZenStore):
             # conditions would solve this, but we don't implement this for
             # now.
             if not active_lease_exists:
-                self._attempt_resume_run_from_server(
-                    run_id=resolved_model.run.id,
-                )
+                self._attempt_resume_run_from_server(run_id=root_run_id)
         elif resolved_model.resolution == RunWaitConditionResolution.ABORT:
             with Session(self.engine) as session:
                 self._update_pipeline_run_status(
@@ -7547,6 +7706,8 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
             resolution = schema.resolution
+            run_id = schema.run_id
+            root_run_id = schema.run.root_run_id or run_id
 
         if (
             lease_update.mode == RunWaitConditionLeaseMode.ABANDON
@@ -7560,7 +7721,7 @@ class SqlZenStore(BaseZenStore):
             # (running -> resuming status transition is not allowed)
             with Session(self.engine) as session:
                 self._update_pipeline_run_status_no_commit(
-                    pipeline_run_id=schema.run_id,
+                    pipeline_run_id=run_id,
                     session=session,
                     requested_status=ExecutionStatus.PAUSED,
                 )
@@ -7568,7 +7729,8 @@ class SqlZenStore(BaseZenStore):
             # Then, attempt to resume the run from the server.
             # TODO: There is a race condition because the runner will
             # publish a failed run status at some point.
-            self._attempt_resume_run_from_server(run_id=schema.run_id)
+
+            self._attempt_resume_run_from_server(run_id=root_run_id)
 
         return current_status
 
@@ -8071,6 +8233,130 @@ class SqlZenStore(BaseZenStore):
 
             session.commit()
 
+    @staticmethod
+    def _get_trigger_snapshot_association(
+        trigger_id: UUID,
+        snapshot_id: UUID,
+        session: Session,
+    ) -> TriggerSnapshotSchema:
+        """Fetch trigger-snapshot association or raise a consistent error.
+
+        Args:
+            trigger_id: Trigger ID.
+            snapshot_id: Snapshot ID.
+            session: Active SQLModel session.
+
+        Returns:
+            The trigger-snapshot association row.
+
+        Raises:
+            KeyError: If the association row does not exist.
+        """
+        association = session.get(
+            TriggerSnapshotSchema, (trigger_id, snapshot_id)
+        )
+        if association is None:
+            raise KeyError(
+                f"No trigger_snapshot link for trigger {trigger_id} "
+                f"and snapshot {snapshot_id}."
+            )
+        return association
+
+    def update_trigger_snapshot_dispatch_state(
+        self,
+        trigger_id: UUID,
+        snapshot_id: UUID,
+        state: TriggerSnapshotDispatchState,
+    ) -> None:
+        """Persist dispatch visibility JSON on the trigger_snapshot row.
+
+        Args:
+            trigger_id: Trigger ID.
+            snapshot_id: Snapshot ID.
+            state: Structured dispatch outcome.
+        """
+        with Session(self.engine) as session:
+            self._get_schema_by_id(
+                resource_id=trigger_id,
+                schema_class=TriggerSchema,
+                session=session,
+            )
+            row = self._get_trigger_snapshot_association(
+                trigger_id=trigger_id,
+                snapshot_id=snapshot_id,
+                session=session,
+            )
+
+            previous_state = row.parsed_dispatch_state
+            final_state = state
+            if previous_state is not None:
+                previous_state.apply_new_state(new_state=state)
+                final_state = previous_state
+            elif final_state.last_status_at is None:
+                final_state.last_status_at = utc_now()
+
+            raw = final_state.model_dump_json()
+
+            row.dispatch_state = raw
+            session.add(row)
+            session.commit()
+
+    def clear_trigger_dispatch_error(
+        self,
+        trigger_id: UUID,
+        snapshot_id: UUID | None = None,
+    ) -> None:
+        """Clear dispatch errors for one or all trigger snapshot associations.
+
+        Args:
+            trigger_id: Trigger ID.
+            snapshot_id: Optional display/source snapshot ID.
+
+        Raises:
+            KeyError: If the snapshot is not attached to the trigger.
+        """
+        with Session(self.engine) as session:
+            trigger = self._get_schema_by_id(
+                resource_id=trigger_id,
+                schema_class=TriggerSchema,
+                session=session,
+            )
+
+            if snapshot_id is None:
+                executable_snapshot_ids = [
+                    snapshot.id for snapshot in trigger.snapshots
+                ]
+            else:
+                executable_snapshot_ids = [
+                    snapshot.id
+                    for snapshot in trigger.snapshots
+                    if snapshot.source_snapshot_id == snapshot_id
+                ]
+                if not executable_snapshot_ids:
+                    raise KeyError(
+                        f"Snapshot {snapshot_id} is not attached to trigger "
+                        f"{trigger_id}"
+                    )
+
+            for executable_snapshot_id in executable_snapshot_ids:
+                row = self._get_trigger_snapshot_association(
+                    trigger_id=trigger_id,
+                    snapshot_id=executable_snapshot_id,
+                    session=session,
+                )
+                state = row.parsed_dispatch_state
+                if state is None:
+                    continue
+
+                if state.last_status == TriggerDispatchStatusCode.ERROR:
+                    row.dispatch_state = None
+                else:
+                    state.clear_error_details()
+                    row.dispatch_state = state.model_dump_json()
+                session.add(row)
+
+            session.commit()
+
     def create_trigger_execution(
         self,
         trigger_id: UUID,
@@ -8162,6 +8448,61 @@ class SqlZenStore(BaseZenStore):
                 row.to_model(include_metadata=True, include_resources=True)  # type: ignore[misc]
                 for row in session.exec(stmt).all()
             ]
+
+    def get_run_count_by_trigger_snapshot(
+        self, trigger_id: UUID, snapshot_id: UUID | None = None
+    ) -> dict[UUID, int]:
+        """Calculates the number of runs for trigger/snapshot pair.
+
+        Note: This should take into account multiple attachments of the
+        same source snapshot.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            snapshot_id: The ID of the snapshot. If not specified will return counts for all trigger snapshots.
+
+        Returns:
+            A dictionary where keys are {trigger_id}_{snapshot_id} pairs and values their run counts.
+        """
+        with Session(self.engine) as session:
+            stmt = (
+                select(
+                    TriggerExecutionSchema.trigger_id,
+                    PipelineSnapshotSchema.source_snapshot_id,
+                    func.count().label("run_count"),
+                )
+                .select_from(TriggerExecutionSchema)
+                .join(
+                    PipelineRunSchema,
+                    col(PipelineRunSchema.id)
+                    == TriggerExecutionSchema.pipeline_run_id,
+                )
+                .join(
+                    PipelineSnapshotSchema,
+                    col(PipelineSnapshotSchema.id)
+                    == PipelineRunSchema.snapshot_id,
+                )
+                .where(
+                    TriggerExecutionSchema.trigger_id == trigger_id,
+                    col(PipelineSnapshotSchema.source_snapshot_id).isnot(None),
+                )
+            )
+
+            if snapshot_id:
+                stmt = stmt.where(
+                    PipelineSnapshotSchema.source_snapshot_id == snapshot_id,
+                )
+
+            stmt = stmt.group_by(
+                col(TriggerExecutionSchema.trigger_id),
+                col(PipelineSnapshotSchema.source_snapshot_id),
+            )
+
+            return {
+                row[1]: row[2]
+                for row in session.exec(stmt).all()
+                if row[1] is not None
+            }
 
     # ----------------------------- Schedules -----------------------------
 
@@ -10408,7 +10749,9 @@ class SqlZenStore(BaseZenStore):
                                 continue
 
                 # Stack Components
-                components_mapping: Dict[StackComponentType, List[UUID]] = {}
+                components_mapping: Dict[StackComponentType, List[UUID]] = (
+                    defaultdict(list)
+                )
                 for (
                     component_type,
                     components,
@@ -10525,9 +10868,7 @@ class SqlZenStore(BaseZenStore):
                                     component_update=component_update,
                                 )
 
-                        components_mapping[component_type] = [
-                            component.id,
-                        ]
+                        components_mapping[component_type].append(component.id)
 
                 # Stack
                 self._verify_name_uniqueness(
@@ -10553,10 +10894,14 @@ class SqlZenStore(BaseZenStore):
                 defined_components = session.exec(
                     select(StackComponentSchema).where(or_(*filters))
                 ).all()
+                new_stack_schema = StackSchema.from_request(request=stack)
+                session.add(new_stack_schema)
+                session.flush()
 
-                new_stack_schema = StackSchema.from_request(
-                    request=stack,
-                    components=defined_components,
+                self._add_stack_compositions(
+                    stack_id=new_stack_schema.id,
+                    component_ids_by_type=components_mapping,
+                    session=session,
                 )
 
                 self._link_secrets_to_resource(
@@ -10564,8 +10909,6 @@ class SqlZenStore(BaseZenStore):
                     secrets=stack.secrets,
                     session=session,
                 )
-
-                session.add(new_stack_schema)
                 session.commit()
                 session.refresh(new_stack_schema)
 
@@ -10612,6 +10955,36 @@ class SqlZenStore(BaseZenStore):
                     "that are created in the process."
                 )
                 raise
+
+    def _add_stack_compositions(
+        self,
+        stack_id: UUID,
+        component_ids_by_type: Dict[StackComponentType, List[UUID]],
+        session: Session,
+    ) -> None:
+        """Create and persist stack composition rows for a stack.
+
+        Args:
+            stack_id: The ID of the stack the compositions belong to.
+            component_ids_by_type: Ordered component IDs grouped by type. The
+                first component ID of each type becomes the default.
+            session: The session in which to persist the rows.
+        """
+        for component_type, component_ids in component_ids_by_type.items():
+            default_component_id = component_ids[0] if component_ids else None
+
+            for component_id in component_ids:
+                session.add(
+                    StackCompositionSchema(
+                        stack_id=stack_id,
+                        component_id=component_id,
+                        default_for_type=(
+                            component_type.value
+                            if component_id == default_component_id
+                            else None
+                        ),
+                    )
+                )
 
     def get_stack(self, stack_id: UUID, hydrate: bool = True) -> StackResponse:
         """Get a stack by its unique ID.
@@ -10694,26 +11067,41 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            components: List["StackComponentSchema"] = []
-            if stack_update.components:
+            existing_stack.update(stack_update=stack_update)
+
+            if stack_update.components is not None:
+                component_ids_by_type: Dict[StackComponentType, List[UUID]] = (
+                    defaultdict(list)
+                )
+
                 for (
                     component_type,
                     list_of_component_ids,
                 ) in stack_update.components.items():
                     for component_id in list_of_component_ids:
-                        component = self._get_reference_schema_by_id(
+                        self._get_reference_schema_by_id(
                             resource=existing_stack,
                             reference_schema=StackComponentSchema,
                             reference_id=component_id,
                             session=session,
                             reference_type=f"{str(component_type)} stack component",
                         )
-                        components.append(component)
+                    component_ids_by_type[component_type] = list(
+                        list_of_component_ids
+                    )
 
-            existing_stack.update(
-                stack_update=stack_update,
-                components=components,
-            )
+                session.execute(
+                    delete(StackCompositionSchema).where(
+                        col(StackCompositionSchema.stack_id)
+                        == existing_stack.id
+                    )
+                )
+
+                self._add_stack_compositions(
+                    stack_id=existing_stack.id,
+                    component_ids_by_type=component_ids_by_type,
+                    session=session,
+                )
 
             self._link_secrets_to_resource(
                 resource=existing_stack,
@@ -10973,9 +11361,9 @@ class SqlZenStore(BaseZenStore):
 
                 if execution_mode != ExecutionMode.CONTINUE_ON_FAILURE:
                     raise IllegalOperationError(
-                        f"Cannot creat step '{step_run.name}' for the run '{run.name}' "
-                        "because the run is in a FAILED state and the execution mode is"
-                        f"{execution_mode}."
+                        f"Cannot create step '{step_run.name}' for the run '{run.name}' "
+                        "because the run is in a FAILED state and the execution "
+                        f"mode is {execution_mode}."
                     )
 
             self._get_reference_schema_by_id(
@@ -11868,7 +12256,7 @@ class SqlZenStore(BaseZenStore):
         session: Session,
         requested_status: Optional[ExecutionStatus] = None,
         status_reason: Optional[str] = None,
-    ) -> Tuple[bool, PipelineRunSchema]:
+    ) -> Tuple[bool, PipelineRunSchema, ExecutionStatus]:
         """Update a pipeline run status without committing the transaction.
 
         Args:
@@ -11878,19 +12266,20 @@ class SqlZenStore(BaseZenStore):
             status_reason: The reason for the status of the pipeline run.
 
         Returns:
-            A tuple containing whether the schema was updated and the updated
-            pipeline run schema.
+            A tuple containing whether the schema was updated, the updated
+            pipeline run schema and the previous status.
         """
         pipeline_run = session.exec(
             select(PipelineRunSchema).where(
                 PipelineRunSchema.id == pipeline_run_id
             )
         ).one()
+        previous_status = ExecutionStatus(pipeline_run.status)
         did_update = pipeline_run.update_status(
             requested_status=requested_status, status_reason=status_reason
         )
         session.add(pipeline_run)
-        return did_update, pipeline_run
+        return did_update, pipeline_run, previous_status
 
     def _update_pipeline_run_status(
         self,
@@ -11910,21 +12299,26 @@ class SqlZenStore(BaseZenStore):
         # Make sure we start with a fresh transaction before locking the
         # pipeline run
         session.commit()
-        did_update, pipeline_run = self._update_pipeline_run_status_no_commit(
-            pipeline_run_id=pipeline_run_id,
-            session=session,
-            requested_status=requested_status,
-            status_reason=status_reason,
+        did_update, pipeline_run, previous_status = (
+            self._update_pipeline_run_status_no_commit(
+                pipeline_run_id=pipeline_run_id,
+                session=session,
+                requested_status=requested_status,
+                status_reason=status_reason,
+            )
         )
 
         # Commit to release the lock on the pipeline run.
         session.commit()
         if not did_update:
             return
-        EventDispatcher().handle_run_status_update(
-            run=pipeline_run.to_model(include_metadata=True)
-        )
+
         new_status = ExecutionStatus(pipeline_run.status)
+
+        if new_status != previous_status:
+            EventDispatcher().handle_run_status_update(
+                run=pipeline_run.to_model(include_metadata=True)
+            )
 
         if new_status.is_finished and pipeline_run.end_time:
             if pipeline_run.start_time:

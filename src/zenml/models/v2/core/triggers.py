@@ -50,6 +50,182 @@ from zenml.models.v2.base.scoped import (
     ProjectScopedResponseMetadata,
     ProjectScopedResponseResources,
 )
+from zenml.utils.enum_utils import StrEnum
+from zenml.utils.time_utils import utc_now
+
+# ----------- DISPATCH STATE MODELS ------------------ #
+
+
+class TriggerDispatchStatusCode(StrEnum):
+    """User-facing dispatch status values for trigger-snapshot execution."""
+
+    SUCCESS = "SUCCESS"
+    SKIPPED_CONCURRENCY = "SKIPPED_CONCURRENCY"
+    SKIPPED_MAX_RUNS = "SKIPPED_MAX_RUNS"
+    ERROR = "ERROR"
+
+
+class TriggerDispatchErrorSeverity(StrEnum):
+    """Severity levels for trigger dispatch errors."""
+
+    MINOR = "Minor"
+    MAJOR = "Major"
+    CRITICAL = "Critical"
+
+
+class TriggerSnapshotDispatchState(BaseModel):
+    """User-facing trigger dispatch state stored on trigger-snapshot links.
+
+    Persisted only for paths where a concrete ``(trigger_id, snapshot_id)``
+    association row exists; unattributable exits stay in structured logs.
+    """
+
+    MESSAGE_MAX_LENGTH: ClassVar[int] = 4096
+    ERROR_TYPE_MAX_LENGTH: ClassVar[int] = 255
+    STACK_TRACE_MAX_LENGTH: ClassVar[int] = 16_384
+
+    last_status: TriggerDispatchStatusCode
+    last_status_at: datetime | None = Field(
+        default=None,
+        description="Timestamp of the latest recorded status transition.",
+    )
+    last_error_message: str | None = Field(
+        default=None,
+        max_length=MESSAGE_MAX_LENGTH,
+        description=(
+            "Friendly user-facing message describing the latest error."
+        ),
+    )
+    last_error_type: str | None = Field(
+        default=None,
+        max_length=ERROR_TYPE_MAX_LENGTH,
+        description="Implementation-level error classifier.",
+    )
+    last_error_severity: TriggerDispatchErrorSeverity | None = Field(
+        default=None,
+        description="Severity level of the latest error.",
+    )
+    last_error_stack_trace: str | None = Field(
+        default=None,
+        max_length=STACK_TRACE_MAX_LENGTH,
+        description="Stack trace accompanying the last error",
+    )
+    last_error_at: datetime | None = Field(
+        default=None,
+        description=(
+            "Timestamp of the last error in the current consecutive error-type "
+            "streak."
+        ),
+    )
+    first_error_at: datetime | None = Field(
+        default=None,
+        description=(
+            "Timestamp of the first error in the current consecutive "
+            "error-type streak."
+        ),
+    )
+    last_error_count: int = Field(
+        default=0,
+        ge=0,
+        description="Number of times the latest error type occurred consecutively.",
+    )
+
+    @field_validator("last_error_message", mode="before")
+    @classmethod
+    def _truncate_message(cls, value: Any) -> Any:
+        """Truncate message payloads to storage-safe length.
+
+        Args:
+            value: Incoming message value.
+
+        Returns:
+            Possibly truncated message value.
+        """
+        if isinstance(value, str):
+            return value[: cls.MESSAGE_MAX_LENGTH]
+        return value
+
+    @field_validator("last_error_stack_trace", mode="before")
+    @classmethod
+    def _truncate_stack_trace_tail(cls, value: Any) -> Any:
+        """Trim stack traces to keep the most relevant bottom entries.
+
+        Args:
+            value: Incoming stack trace.
+
+        Returns:
+            Possibly tail-trimmed stack trace.
+        """
+        if isinstance(value, str):
+            return value[-cls.STACK_TRACE_MAX_LENGTH :]
+        return value
+
+    @model_validator(mode="after")
+    def _set_error_defaults(self) -> "TriggerSnapshotDispatchState":
+        """Initialize default error metadata for freshly created errors.
+
+        Returns:
+            The validated state.
+        """
+        if self.last_status_at is None:
+            self.last_status_at = utc_now()
+        if self.last_status == TriggerDispatchStatusCode.ERROR:
+            if self.last_error_count == 0:
+                self.last_error_count = 1
+            if self.last_error_at is None:
+                self.last_error_at = utc_now()
+            if self.first_error_at is None:
+                self.first_error_at = self.last_error_at
+        return self
+
+    def apply_new_state(
+        self,
+        new_state: "TriggerSnapshotDispatchState",
+    ) -> None:
+        """Apply a new dispatch state on top of this persisted state.
+
+        Args:
+            new_state: Newly reported dispatch state.
+        """
+        if new_state.last_status == TriggerDispatchStatusCode.ERROR:
+            if (
+                self.last_status == TriggerDispatchStatusCode.ERROR
+                and self.last_error_type == new_state.last_error_type
+            ):
+                self.last_error_count += 1
+                if self.first_error_at is None:
+                    self.first_error_at = (
+                        self.last_error_at
+                        or new_state.first_error_at
+                        or new_state.last_error_at
+                        or utc_now()
+                    )
+            else:
+                self.last_error_count = 1
+                self.first_error_at = (
+                    new_state.first_error_at
+                    or new_state.last_error_at
+                    or utc_now()
+                )
+            self.last_error_message = new_state.last_error_message
+            self.last_error_type = new_state.last_error_type
+            self.last_error_severity = new_state.last_error_severity
+            self.last_error_stack_trace = new_state.last_error_stack_trace
+            self.last_error_at = new_state.last_error_at or utc_now()
+
+        self.last_status = new_state.last_status
+        self.last_status_at = new_state.last_status_at or utc_now()
+
+    def clear_error_details(self) -> None:
+        """Clear stored error details while keeping the last status."""
+        self.last_error_message = None
+        self.last_error_type = None
+        self.last_error_severity = None
+        self.last_error_stack_trace = None
+        self.last_error_at = None
+        self.first_error_at = None
+        self.last_error_count = 0
+
 
 if TYPE_CHECKING:
     from zenml.models import (
@@ -169,10 +345,19 @@ class TriggerResponseResources(ProjectScopedResponseResources):
     executable_snapshots: list["PipelineSnapshotResponse"] = []
     user: Optional["UserResponse"] = None
     latest_run: Optional["PipelineRunResponse"] = None
+    snapshot_dispatch_states: dict[UUID, TriggerSnapshotDispatchState] = Field(
+        default_factory=dict
+    )
 
 
 class UnScopedTriggerFilter(BaseFilter):
     """Base class for filtering triggers."""
+
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
+        *BaseFilter.FILTER_EXCLUDE_FIELDS,
+        "is_archived",
+        "type",
+    ]
 
     name: str | None = Field(
         default=None,
@@ -184,7 +369,10 @@ class UnScopedTriggerFilter(BaseFilter):
     )
     is_archived: bool = Field(
         default=False,
-        description="Whether the trigger should be archived.",
+        description=(
+            "Restrict results to archived or non-archived triggers. Applied as "
+            "a global scope filter independently of logical_operator."
+        ),
     )
     flavor: TriggerFlavor | str | None = Field(
         default=None,
@@ -205,11 +393,34 @@ class UnScopedTriggerFilter(BaseFilter):
         default=None, description="The trigger concurrency."
     )
 
+    def apply_filter(
+        self,
+        query: AnyQuery,
+        table: Type["AnySchema"],
+    ) -> AnyQuery:
+        """Applies the filter to a query.
+
+        Args:
+            query: The query to which to apply the filter.
+            table: The query table.
+
+        Returns:
+            The query with filter applied.
+        """
+        from zenml.zen_stores.schemas import TriggerSchema
+
+        query = super().apply_filter(query=query, table=table)
+        query = query.where(TriggerSchema.is_archived == self.is_archived)
+        if self.type is not None:
+            query = query.where(TriggerSchema.type == self.type)
+        return query
+
 
 class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
     """Public class for filtering triggers."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
+        *UnScopedTriggerFilter.FILTER_EXCLUDE_FIELDS,
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         "pipeline_id",
         "snapshot_id",
@@ -258,7 +469,7 @@ class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
             TriggerSnapshotSchema,
         )
 
-        query = ProjectScopedFilter.apply_filter(self, query, table)
+        query = super().apply_filter(query, table)
 
         if self.filter_by_snapshot:
             query = query.join(
@@ -299,6 +510,11 @@ class ScheduleTrigger(BaseModel):
     run_once_start_time: datetime | None = Field(
         default=None,
         description="Scheduling option: Execute once on selected start time.",
+    )
+    max_runs: int | None = Field(
+        default=None,
+        description="Maximum number of runs to execute with this schedule.",
+        ge=1,
     )
 
     @field_validator(
@@ -648,6 +864,15 @@ class ScheduleTriggerResponse(TriggerResponse[ScheduleTriggerResponseBody,]):
             The schedule's run once start time.
         """
         return self.get_body().run_once_start_time
+
+    @property
+    def max_runs(self) -> int | None:
+        """Implements the 'max_runs' property.
+
+        Returns:
+            The scheduler's max runs.
+        """
+        return self.get_body().max_runs
 
 
 # ----------- EVENT CLASSES ------------------- #

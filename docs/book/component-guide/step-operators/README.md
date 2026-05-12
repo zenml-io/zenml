@@ -22,6 +22,7 @@ Step operators to execute steps on one of the big cloud providers are provided b
 | Step Operator                      | Flavor       | Integration  | Dynamic Pipelines | Notes                                                                    |
 | ---------------------------------- | ------------ | ------------ | ----------------- | ------------------------------------------------------------------------ |
 | [AzureML](azureml.md)              | `azureml`    | `azure`      | ✅                 | Uses AzureML to execute steps                                            |
+| [Databricks](databricks.md)        | `databricks` | `databricks` | ✅                 | Uses Databricks one-time jobs to execute selected steps                  |
 | [Kubernetes](kubernetes.md)        | `kubernetes` | `kubernetes` | ✅                 | Uses Kubernetes Pods to execute steps                                    |
 | [Modal](modal.md)                  | `modal`      | `modal`      | ✅                 | Uses Modal to execute steps                                              |
 | [SageMaker](sagemaker.md)          | `sagemaker`  | `aws`        | ✅                 | Uses SageMaker to execute steps                                          |
@@ -39,6 +40,10 @@ zenml step-operator flavor list
 ### How to use it
 
 You don't need to directly interact with any ZenML step operator in your code. As long as the step operator that you want to use is part of your active [ZenML stack](https://docs.zenml.io/user-guides/production-guide/understand-stacks), you can simply specify it in the `@step` decorator of your step.
+
+{% hint style="info" %}
+Stacks can have multiple step operators attached. If you use `@step(step_operator=True)`, ZenML uses the default attached step operator, which is the first step operator in the stack. If you want to use a non-default step operator, specify it explicitly by name in the `@step` decorator.
+{% endhint %}
 
 ```python
 from zenml import step

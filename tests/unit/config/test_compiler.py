@@ -185,14 +185,16 @@ def test_stack_component_settings_merging(
     )
 
     pipeline_instance.configure(
-        settings={"orchestrator.default": pipeline_settings}
+        settings={"orchestrator:some_orchestrator": pipeline_settings}
     )
-    step_instance.configure(settings={"orchestrator.default": step_settings})
+    step_instance.configure(
+        settings={"orchestrator:some_orchestrator": step_settings}
+    )
     run_config = PipelineRunConfiguration(
-        settings={"orchestrator.default": run_pipeline_settings},
+        settings={"orchestrator:some_orchestrator": run_pipeline_settings},
         steps={
             "_empty_step": StepConfigurationUpdate(
-                settings={"orchestrator.default": run_step_settings}
+                settings={"orchestrator:some_orchestrator": run_step_settings}
             )
         },
     )
@@ -204,7 +206,11 @@ def test_stack_component_settings_merging(
     )
 
     compiled_pipeline_settings = StubSettings.model_validate(
-        dict(snapshot.pipeline_configuration.settings["orchestrator.default"])
+        dict(
+            snapshot.pipeline_configuration.settings[
+                "orchestrator:some_orchestrator"
+            ]
+        )
     )
     assert compiled_pipeline_settings.component_value == 1
     assert compiled_pipeline_settings.pipeline_value == 2
@@ -213,7 +219,7 @@ def test_stack_component_settings_merging(
     compiled_step_settings = StubSettings.model_validate(
         dict(
             snapshot.step_configurations["_empty_step"].config.settings[
-                "orchestrator.default"
+                "orchestrator:some_orchestrator"
             ]
         )
     )
@@ -494,14 +500,14 @@ def test_invalid_settings_keys_are_ignored(
     )
 
     compiled_pipeline_settings = snapshot.pipeline_configuration.settings[
-        "orchestrator.default"
+        "orchestrator:some_orchestrator"
     ].model_dump()
     assert "invalid_key" not in compiled_pipeline_settings
     assert compiled_pipeline_settings["valid_key"] == "value"
 
     compiled_step_settings = (
         snapshot.step_configurations["_empty_step"]
-        .config.settings["orchestrator.default"]
+        .config.settings["orchestrator:some_orchestrator"]
         .model_dump()
     )
     assert "invalid_key" not in compiled_step_settings
@@ -544,10 +550,11 @@ def test_empty_settings_classes_are_ignored(
     )
 
     assert (
-        "orchestrator.default" not in snapshot.pipeline_configuration.settings
+        "orchestrator:some_orchestrator"
+        not in snapshot.pipeline_configuration.settings
     )
     assert (
-        "orchestrator.default"
+        "orchestrator:some_orchestrator"
         not in snapshot.step_configurations["_empty_step"].config.settings
     )
 
@@ -589,7 +596,7 @@ def test_stack_component_shortcut_keys(
 
     assert "orchestrator" not in snapshot.pipeline_configuration.settings
     compiled_settings = snapshot.pipeline_configuration.settings[
-        "orchestrator.default"
+        "orchestrator:some_orchestrator"
     ]
     assert compiled_settings.value == "shortcut"
 
@@ -598,7 +605,7 @@ def test_stack_component_shortcut_keys(
     pipeline_instance_with_duplicate_settings = pipeline_instance.with_options(
         settings={
             "orchestrator": shortcut_settings,
-            "orchestrator.default": full_key_settings,
+            "orchestrator:some_orchestrator": full_key_settings,
         }
     )
 

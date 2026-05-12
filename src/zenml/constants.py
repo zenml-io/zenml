@@ -518,10 +518,12 @@ STATUS = "/status"
 STEP_CONFIGURATION = "/step-configuration"
 STEPS = "/steps"
 HEARTBEAT = "/heartbeat"
+REPLAY = "/replay"
 STOP = "/stop"
 TAGS = "/tags"
 TAG_RESOURCES = "/tag_resources"
 TRIGGERS = "/triggers"
+TRIGGER_SNAPSHOT_DISPATCH_STATE = "/dispatch_state"
 ONBOARDING_STATE = "/onboarding_state"
 USERS = "/users"
 URL = "/url"
@@ -580,7 +582,6 @@ TEXT_FIELD_MAX_LENGTH = 65535
 STR_ID_FIELD_MAX_LENGTH = 50
 STR_FIELD_MAX_LENGTH = 255
 MEDIUMTEXT_MAX_LENGTH = 2**24 - 1
-
 # Model Control Plane constants
 LATEST_MODEL_VERSION_PLACEHOLDER = "__latest__"
 

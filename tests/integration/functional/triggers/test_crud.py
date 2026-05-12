@@ -434,12 +434,14 @@ def test_sdk_utilities(clean_client):
         cron_expression="* 1 * * *",
     )
 
+    print(created)
+
     assert created.type == TriggerType.SCHEDULE
     assert created.next_occurrence is not None
     assert not created.is_archived
 
     updated = clean_client.update_schedule_trigger(
-        trigger_id=created.id, cron_expression="* 2 * * *"
+        trigger_name_id_or_prefix=created.id, cron_expression="* 2 * * *"
     )
 
     assert updated.type == TriggerType.SCHEDULE
@@ -453,5 +455,6 @@ def test_sdk_utilities(clean_client):
 
     clean_client.delete_trigger(created.id)
 
-    got = clean_client.get_schedule_trigger(created.id)
-    assert got.is_archived
+    with pytest.raises(KeyError):
+        got = clean_client.get_schedule_trigger(created.id)
+        assert got.is_archived

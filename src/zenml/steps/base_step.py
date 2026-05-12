@@ -97,7 +97,7 @@ if TYPE_CHECKING:
     ]
 
     from zenml.execution.pipeline.dynamic.outputs import (
-        AnyStepFuture,
+        AnyOutputFuture,
         MapResultsFuture,
         StepFuture,
     )
@@ -290,8 +290,19 @@ class BaseStep:
             return obj
         elif isinstance(obj, type) and issubclass(obj, BaseStep):
             return obj()
+        elif inspect.isfunction(obj):
+            from zenml.steps.step_decorator import step
+
+            return step(obj)
         else:
-            raise ValueError("Invalid step source.")
+            import_path = (
+                source.import_path if isinstance(source, Source) else source
+            )
+            raise ValueError(
+                f"Invalid step source `{import_path}`: expected it to "
+                f"resolve to a `BaseStep` instance/subclass or a function, "
+                f"got `{type(obj).__name__}`."
+            )
 
     def resolve(self) -> Source:
         """Resolves the step.
@@ -582,8 +593,8 @@ class BaseStep:
         after: Union[
             str,
             StepArtifact,
-            "AnyStepFuture",
-            Sequence[Union[str, StepArtifact, "AnyStepFuture"]],
+            "AnyOutputFuture",
+            Sequence[Union[str, StepArtifact, "AnyOutputFuture"]],
             None,
         ] = None,
         **kwargs: Any,
@@ -648,10 +659,14 @@ class BaseStep:
             return self.call_entrypoint(*args, **kwargs)
 
         if run_context := DynamicPipelineRunContext.get():
+            from zenml.execution.pipeline.dynamic.outputs import (
+                AnyOutputFuture,
+            )
+
             after = cast(
                 Union[
-                    "AnyStepFuture",
-                    Sequence["AnyStepFuture"],
+                    AnyOutputFuture,
+                    Sequence[AnyOutputFuture],
                     None,
                 ],
                 after,
@@ -712,7 +727,9 @@ class BaseStep:
         self,
         *args: Any,
         id: Optional[str] = None,
-        after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = None,
+        after: Union[
+            "AnyOutputFuture", Sequence["AnyOutputFuture"], None
+        ] = None,
         **kwargs: Any,
     ) -> "StepFuture":
         """Submit the step to run concurrently in a separate thread.
@@ -753,7 +770,9 @@ class BaseStep:
     def map(
         self,
         *args: Any,
-        after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = None,
+        after: Union[
+            "AnyOutputFuture", Sequence["AnyOutputFuture"], None
+        ] = None,
         **kwargs: Any,
     ) -> "MapResultsFuture":
         """Map over step inputs.
@@ -823,7 +842,9 @@ class BaseStep:
     def product(
         self,
         *args: Any,
-        after: Union["AnyStepFuture", Sequence["AnyStepFuture"], None] = None,
+        after: Union[
+            "AnyOutputFuture", Sequence["AnyOutputFuture"], None
+        ] = None,
         **kwargs: Any,
     ) -> "MapResultsFuture":
         """Map over step inputs using a cartesian product of the mapped inputs.

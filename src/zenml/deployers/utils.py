@@ -296,6 +296,7 @@ def invoke_deployment(
 
 def deployment_snapshot_request_from_source_snapshot(
     source_snapshot: PipelineSnapshotResponse,
+    run_name: Optional[str],
     deployment_parameters: Dict[str, Any],
 ) -> PipelineSnapshotRequest:
     """Generate a snapshot request for deployment execution.
@@ -303,6 +304,7 @@ def deployment_snapshot_request_from_source_snapshot(
     Args:
         source_snapshot: The source snapshot from which to create the
             snapshot request.
+        run_name: The name of the run.
         deployment_parameters: Parameters to override for deployment execution.
 
     Raises:
@@ -395,7 +397,7 @@ def deployment_snapshot_request_from_source_snapshot(
 
     return PipelineSnapshotRequest(
         project=source_snapshot.project_id,
-        run_name_template=source_snapshot.run_name_template,
+        run_name_template=run_name or source_snapshot.run_name_template,
         pipeline_configuration=pipeline_configuration,
         step_configurations=steps,
         client_environment={},

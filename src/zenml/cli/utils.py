@@ -512,11 +512,14 @@ def print_stack_configuration(
             "owner": stack.user.name if stack.user else None,
             "labels": stack.labels or {},
             "components": {
-                (ct.value if hasattr(ct, "value") else str(ct)): {
-                    "id": str(components[0].id),
-                    "name": components[0].name,
-                    "flavor": components[0].flavor_name,
-                }
+                (ct.value if hasattr(ct, "value") else str(ct)): [
+                    {
+                        "id": str(component.id),
+                        "name": component.name,
+                        "flavor": component.flavor_name,
+                    }
+                    for component in components
+                ]
                 for ct, components in stack.components.items()
                 if components
             },
@@ -538,7 +541,11 @@ def print_stack_configuration(
     rich_table.add_column("COMPONENT_TYPE", overflow="fold")
     rich_table.add_column("COMPONENT_NAME", overflow="fold")
     for component_type, components in stack.components.items():
-        rich_table.add_row(component_type, components[0].name)
+        for index, component in enumerate(components):
+            rich_table.add_row(
+                component_type if index == 0 else "",
+                component.name,
+            )
 
     rich_table.columns[0]._cells = [
         component.upper()  # type: ignore[union-attr]
@@ -1349,43 +1356,148 @@ def print_served_model_configuration(
     console.print(rich_table)
 
 
-def describe_pydantic_object(schema_json: Dict[str, Any]) -> None:
-    """Describes a Pydantic object based on the dict-representation of its schema.
+_JSON_SCHEMA_TYPE_TO_METAVAR: Dict[str, str] = {
+    "string": "TEXT",
+    "boolean": "BOOLEAN",
+    "integer": "INTEGER",
+    "number": "NUMBER",
+    "array": "LIST",
+    "object": "JSON",
+}
+
+
+def _resolve_schema_property_type(
+    prop_schema: Dict[str, Any],
+) -> str:
+    """Resolve a JSON-schema property to a simple type string.
+
+    Handles plain ``type``, ``anyOf`` (picks the first non-null
+    variant), and falls back to ``"object"``.  Used by both
+    ``describe_json_schema`` and
+    ``flavor_config_schema_click_help_dl`` so that type resolution
+    stays consistent.
 
     Args:
-        schema_json: str, represents the schema of a Pydantic object, which
-            can be obtained through BaseModelClass.schema_json()
+        prop_schema: Single property definition from a JSON schema.
+
+    Returns:
+        A lower-case type string such as ``"string"`` or
+        ``"object"``.
+    """
+    if "type" in prop_schema:
+        return str(prop_schema["type"])
+    if "enum" in prop_schema:
+        return "string"
+    if "anyOf" in prop_schema:
+        non_null = [
+            p.get("type", "object")
+            for p in prop_schema["anyOf"]
+            if p.get("type") != "null"
+        ]
+        if non_null:
+            return str(non_null[0])
+    return "object"
+
+
+def _iter_schema_properties(
+    schema_json: Dict[str, Any],
+) -> Iterator[Tuple[str, str, bool, str]]:
+    """Yield ``(name, type, is_required, description)`` for each non-ref property.
+
+    Provides a single iteration helper for walking a Pydantic / JSON
+    schema ``properties`` dict so that callers do not duplicate the
+    skip-``$ref`` / resolve-type / check-required logic.
+
+    Args:
+        schema_json: Top-level JSON schema dict (must contain a
+            ``properties`` key).
+
+    Yields:
+        Tuples of ``(property_name, resolved_type, is_required,
+        description)``.
+    """
+    required = set(schema_json.get("required", []))
+    for name, prop_schema in schema_json.get("properties", {}).items():
+        if "$ref" in prop_schema:
+            continue
+        prop_type = _resolve_schema_property_type(prop_schema)
+        desc = prop_schema.get("description", "") or ""
+        yield name, prop_type, name in required, desc
+
+
+def _type_to_metavar(prop_type: str) -> str:
+    """Map a resolved type string to a Click-style metavar.
+
+    Args:
+        prop_type: Type string as returned by
+            :func:`_resolve_schema_property_type`.
+
+    Returns:
+        A metavar such as ``TEXT``, ``BOOLEAN``, or ``JSON``.
+    """
+    return _JSON_SCHEMA_TYPE_TO_METAVAR.get(prop_type, "TEXT")
+
+
+def flavor_config_schema_click_help_dl(
+    flavor: "FlavorResponse",
+) -> List[Tuple[str, str]]:
+    """Build Click-style help rows from a flavor config JSON schema.
+
+    Matches how stack components accept configuration:
+    ``--field=value`` in ARGS, parallel to built-in Click options.
+
+    Args:
+        flavor: Registered flavor.
+
+    Returns:
+        Rows for :meth:`click.formatting.HelpFormatter.write_dl`.
+    """
+    rows: List[Tuple[str, str]] = []
+    for name, prop_type, is_required, desc in _iter_schema_properties(
+        flavor.config_schema
+    ):
+        metavar = _type_to_metavar(prop_type)
+        left = f"--{name} {metavar}"
+        if is_required:
+            desc = f"{desc} [required]" if desc else "[required]"
+        rows.append((left, desc.strip()))
+    return rows
+
+
+def describe_json_schema(
+    schema_json: Dict[str, Any],
+) -> None:
+    """Describe a JSON schema in a human-readable format.
+
+    Args:
+        schema_json: JSON schema dict, e.g. from
+            ``BaseModel.model_json_schema()``.
     """
     schema_title = schema_json["title"]
-    required = schema_json.get("required", [])
     description = schema_json.get("description", "")
-    properties = schema_json.get("properties", {})
 
     warning(f"Configuration class: {schema_title}\n", bold=True)
 
     if description:
         declare(f"{description}\n")
 
-    if properties:
-        warning("Properties", bold=True)
-        for prop, prop_schema in properties.items():
-            if "$ref" not in prop_schema.keys():
-                if "type" in prop_schema.keys():
-                    prop_type = prop_schema["type"]
-                elif "anyOf" in prop_schema.keys():
-                    prop_type = ", ".join(
-                        [p.get("type", "object") for p in prop_schema["anyOf"]]
-                    )
-                    prop_type = f"one of: {prop_type}"
-                else:
-                    prop_type = "object"
-                warning(
-                    f"{prop}, {prop_type}"
-                    f"{', REQUIRED' if prop in required else ''}"
-                )
+    properties = schema_json.get("properties", {})
+    if not properties:
+        return
 
-            if "description" in prop_schema:
-                declare(f"  {prop_schema['description']}", width=80)
+    warning("Properties", bold=True)
+    for name, prop_type, is_required, desc in _iter_schema_properties(
+        schema_json
+    ):
+        if "anyOf" in properties.get(name, {}):
+            prop_type = ", ".join(
+                p.get("type", "object") for p in properties[name]["anyOf"]
+            )
+            prop_type = f"one of: {prop_type}"
+        required_suffix = ", REQUIRED" if is_required else ""
+        warning(f"{name}, {prop_type}{required_suffix}")
+        if desc:
+            declare(f"  {desc}", width=80)
 
 
 def get_boolean_emoji(value: bool) -> str:
@@ -2260,7 +2372,11 @@ def generate_stack_row(
             header = component_type.value.upper().replace("_", " ")
         else:
             header = component_type.value
-        row[header] = components[0].name if components else "-"
+        row[header] = (
+            ", ".join([component.name for component in components])
+            if components
+            else "-"
+        )
 
     return row
 

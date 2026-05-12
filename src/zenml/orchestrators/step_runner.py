@@ -185,7 +185,7 @@ class StepRunner:
 
             with step_context:
                 function_params = self._parse_inputs(
-                    args=spec.args,
+                    args=spec.args + spec.kwonlyargs,
                     annotations=spec.annotations,
                     input_artifacts=input_artifacts,
                 )
@@ -768,6 +768,7 @@ class StepRunner:
                 data=return_value,
                 materializer_class=materializer_class,
                 uri=uri,
+                artifact_store=self._stack.artifact_store,
                 artifact_type=artifact_type,
                 store_metadata=artifact_metadata_enabled,
                 store_visualizations=artifact_visualization_enabled,
