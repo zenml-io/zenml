@@ -18,7 +18,6 @@ from typing import Optional
 from urllib.parse import urlparse
 
 from zenml import constants
-from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import EnvironmentType, StoreType
 from zenml.environment import get_environment
@@ -42,6 +41,8 @@ def get_cloud_dashboard_url() -> Optional[str]:
     Returns:
         The base url of the cloud dashboard.
     """
+    from zenml.client import Client
+
     client = Client()
 
     if client.zen_store.type == StoreType.REST:
@@ -59,6 +60,8 @@ def get_server_dashboard_url() -> Optional[str]:
     Returns:
         The server dashboard url.
     """
+    from zenml.client import Client
+
     client = Client()
 
     if client.zen_store.type == StoreType.REST:

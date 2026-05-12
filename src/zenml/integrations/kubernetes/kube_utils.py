@@ -890,6 +890,59 @@ def get_container_termination_reason(
     )
 
 
+def get_pod_failure_details(
+    pod: k8s_client.V1Pod, container_name: str
+) -> Optional[str]:
+    """Get best-effort pod failure details.
+
+    Args:
+        pod: The pod to get failure details for.
+        container_name: The container name.
+
+    Returns:
+        Failure details for the pod, if available.
+    """
+    try:
+        details: List[str] = []
+        container_state = get_container_status(pod, container_name)
+        if container_state and container_state.terminated:
+            terminated = container_state.terminated
+            container_details = [
+                terminated.reason or "Unknown",
+                f"exit_code={terminated.exit_code}",
+            ]
+            if terminated.message:
+                container_details.append(f"message={terminated.message}")
+            details.append(
+                f"container failure reason: {', '.join(container_details)}"
+            )
+        elif container_state and container_state.waiting:
+            waiting = container_state.waiting
+            container_details = [waiting.reason or "Unknown"]
+            if waiting.message:
+                container_details.append(f"message={waiting.message}")
+            details.append(
+                f"container waiting reason: {', '.join(container_details)}"
+            )
+
+        if pod.status:
+            pod_details = []
+            if pod.status.reason:
+                pod_details.append(pod.status.reason)
+            if pod.status.message:
+                pod_details.append(f"message={pod.status.message}")
+
+            if pod_details:
+                details.append(f"pod failure reason: {', '.join(pod_details)}")
+
+        if details:
+            return "; ".join(details)
+    except Exception:
+        logger.debug("Failed to extract pod failure details.", exc_info=True)
+
+    return None
+
+
 def wait_for_job_to_finish(
     get_client: Callable[[], k8s_client.ApiClient],
     namespace: str,
@@ -1075,7 +1128,7 @@ def check_job_status(
                 return JobStatus.SUCCEEDED, None
             if condition.type == "Failed" and condition.status == "True":
                 error_message = condition.message or "Unknown"
-                container_failure_reason = None
+                pod_failure_details = None
                 try:
                     pods = core_api.list_namespaced_pod(
                         label_selector=f"job-name={job_name}",
@@ -1086,22 +1139,14 @@ def check_job_status(
                         key=lambda pod: pod.metadata.creation_timestamp,
                     )
                     if pods:
-                        if (
-                            termination_reason
-                            := get_container_termination_reason(
-                                pods[-1], container_name or "main"
-                            )
-                        ):
-                            exit_code, reason = termination_reason
-                            if exit_code != 0:
-                                container_failure_reason = (
-                                    f"{reason}, exit_code={exit_code}"
-                                )
+                        pod_failure_details = get_pod_failure_details(
+                            pods[-1], container_name or "main"
+                        )
                 except Exception:
                     pass
 
-                if container_failure_reason:
-                    error_message += f" (container failure reason: {container_failure_reason})"
+                if pod_failure_details:
+                    error_message += f" ({pod_failure_details})"
 
                 return JobStatus.FAILED, error_message
 

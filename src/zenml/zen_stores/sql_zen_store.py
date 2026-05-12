@@ -7720,6 +7720,10 @@ class SqlZenStore(BaseZenStore):
             session.add(schema)
             session.commit()
 
+            resolution = schema.resolution
+            run_id = schema.run_id
+            root_run_id = schema.run.root_run_id or run_id
+
         if (
             lease_update.mode == RunWaitConditionLeaseMode.ABANDON
             and resolution == RunWaitConditionResolution.CONTINUE.value
