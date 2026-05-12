@@ -2,6 +2,11 @@
 description: How to migrate your ZenML pipelines and steps from version <=0.39.1 to 0.41.0.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Migration guide 0.39.1 → 0.41.0
 
 ZenML versions 0.40.0 to 0.41.0 introduced a new and more flexible syntax to define ZenML steps and pipelines. This page contains code samples that show you how to upgrade your steps and pipelines to the new syntax.
