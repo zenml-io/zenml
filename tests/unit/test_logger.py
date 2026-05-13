@@ -18,6 +18,7 @@ import json
 import logging
 import sys
 from collections.abc import Generator
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -33,10 +34,19 @@ from zenml.logger import (
     ZenMLLoggingHandler,
     bind_request_context,
     get_console_handler,
+    get_logger,
     get_logging_context,
     init_logging,
     logging_scope,
 )
+
+
+@pytest.fixture(scope="module", autouse=True)
+def auto_environment() -> (
+    Generator[tuple[SimpleNamespace, SimpleNamespace], None, None]
+):
+    """Use a lightweight test environment for logger-only tests."""
+    yield SimpleNamespace(), SimpleNamespace()
 
 
 @pytest.fixture(autouse=True)
@@ -235,9 +245,21 @@ def test_json_formatted_logs(
     assert payload["request_id"] == "request-1"
     assert payload["duration_ms"] == 12.3
     assert payload["endpoint"] == "list_pipelines"
+    assert payload["timestamp"]
+    # Assert that payload does not contain any internal stdlib LogRecord fields.
+    assert "event" not in payload
+    assert "time" not in payload
     assert "msg" not in payload
     assert "args" not in payload
     assert "levelno" not in payload
+
+
+def test_extra_collision_with_reserved_key_raises() -> None:
+    """Reserved stdlib log record fields cannot be overwritten by extras."""
+    logger = get_logger("zenml.test.reserved")
+
+    with pytest.raises(KeyError, match="Attempt to overwrite 'name'"):
+        logger.info("collision", extra={"name": "bad"})
 
 
 def test_structured_console_formatted_logs(
@@ -278,6 +300,53 @@ def test_structured_console_formatted_logs(
     assert formatted.endswith(
         ' | {"request_id":"request-1","duration_ms":12.3}'
     )
+
+
+def test_console_highlights_backticks_and_urls(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Bare console logs highlight backtick text and URLs when colors are on."""
+    monkeypatch.setattr(
+        zenml_logger_module,
+        "get_logging_level",
+        lambda: LoggingLevels.INFO,
+    )
+    monkeypatch.setattr(
+        zenml_logger_module, "ZENML_LOGGING_COLORS_DISABLED", False
+    )
+    record = _make_log_record(
+        "Open `dashboard` at https://docs.zenml.io/path?q=1"
+    )
+
+    formatted = ZenMLConsoleFormatter().format(record)
+
+    assert "`dashboard`" not in formatted
+    assert f"{ZenMLConsoleFormatter._PURPLE}dashboard" in formatted
+    assert (
+        f"{ZenMLConsoleFormatter._BLUE}"
+        "https://docs.zenml.io/path?q=1"
+    ) in formatted
+
+
+def test_color_disabled_strips_ansi_and_preserves_message(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Disabling colors removes ANSI codes from formatted console logs."""
+    monkeypatch.setattr(
+        zenml_logger_module,
+        "get_logging_level",
+        lambda: LoggingLevels.INFO,
+    )
+    monkeypatch.setattr(
+        zenml_logger_module, "ZENML_LOGGING_COLORS_DISABLED", True
+    )
+    message = "Open `dashboard` at https://docs.zenml.io/path?q=1"
+    record = _make_log_record(message)
+
+    formatted = ZenMLConsoleFormatter().format(record)
+
+    assert formatted == message
+    assert "\x1b[" not in formatted
 
 
 def test_contextvars_filter_copies_bound_context_to_log_record() -> None:
