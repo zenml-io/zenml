@@ -5,11 +5,13 @@ on:
     branches: [main, develop]
     paths:
       - pyproject.toml
+      - scripts/dependency_audit_severity_gate.py
       - .github/workflows/dependency-audit.yml
   pull_request:
     branches: [main, develop]
     paths:
       - pyproject.toml
+      - scripts/dependency_audit_severity_gate.py
       - .github/workflows/dependency-audit.yml
   # Weekly safety net to catch newly disclosed vulnerabilities
   schedule:
@@ -17,15 +19,24 @@ on:
   # Allow manual triggering
   workflow_dispatch:
 permissions: {}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-  dependency-audit:
-    name: Audit zenml server/dev/local dependencies
+  audit-classify:
+    name: Audit and classify zenml dependencies
     runs-on: ubuntu-latest
     # Only run on the main repo, not forks (scheduled runs would fail on forks)
     if: github.repository == 'zenml-io/zenml'
     permissions:
       contents: read
     timeout-minutes: 30
+    outputs:
+      audit_error: ${{ steps.classify.outputs.audit_error }}
+      blocking_count: ${{ steps.classify.outputs.blocking_count }}
+      nonblocking_count: ${{ steps.classify.outputs.nonblocking_count }}
+      unknown_count: ${{ steps.classify.outputs.unknown_count }}
+      has_nonblocking: ${{ steps.classify.outputs.has_nonblocking }}
     env:
       PYTHONIOENCODING: utf-8
       UV_HTTP_TIMEOUT: 600
@@ -47,14 +58,181 @@ jobs:
           version: 0.8.14
           enable-cache: true
           cache-dependency-glob: pyproject.toml
-
       - name: Install zenml server/dev/local dependencies in isolated venv
         run: |
           uv venv --python 3.11 .venv-audit-target
           uv pip install --python .venv-audit-target/bin/python '.[server,dev,local]'
           uv pip check --python .venv-audit-target/bin/python
-
       - name: Audit installed dependencies with pip-audit
+        id: pip-audit
         run: |
+          mkdir -p dependency-audit-reports
           SITE_PACKAGES="$(.venv-audit-target/bin/python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')"
-          uvx pip-audit --path "$SITE_PACKAGES" --strict --progress-spinner off
+          set +e
+          uvx pip-audit \
+            --path "$SITE_PACKAGES" \
+            --strict \
+            --progress-spinner off \
+            --format json \
+            > dependency-audit-reports/pip-audit.json \
+            2> dependency-audit-reports/pip-audit.stderr
+          PIP_AUDIT_EXIT_CODE=$?
+          set -e
+          echo "exit_code=${PIP_AUDIT_EXIT_CODE}" >> "$GITHUB_OUTPUT"
+          echo "pip-audit exited with code ${PIP_AUDIT_EXIT_CODE}"
+      - name: Classify dependency audit severities
+        id: classify
+        run: |
+          python scripts/dependency_audit_severity_gate.py \
+            --audit-json dependency-audit-reports/pip-audit.json \
+            --pip-audit-exit-code "${PIP_AUDIT_EXIT_CODE}" \
+            --pip-audit-stderr dependency-audit-reports/pip-audit.stderr \
+            --classified-json dependency-audit-reports/classified.json \
+            --summary-md dependency-audit-reports/summary.md \
+            --nonblocking-issue-md dependency-audit-reports/nonblocking-issue.md \
+            --github-output "$GITHUB_OUTPUT" \
+            --github-token "$ADVISORY_GITHUB_TOKEN"
+        env:
+          ADVISORY_GITHUB_TOKEN: ${{ github.event_name == 'pull_request' && '' || github.token }}
+          PIP_AUDIT_EXIT_CODE: ${{ steps.pip-audit.outputs.exit_code }}
+      - name: Append dependency audit summary
+        if: always()
+        run: |
+          if [[ -f dependency-audit-reports/summary.md ]]; then
+            cat dependency-audit-reports/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "# Python dependency audit" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "No dependency audit summary was generated." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Upload dependency audit reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: dependency-audit-reports
+          path: dependency-audit-reports/
+          if-no-files-found: warn
+  gate:
+    name: Gate dependency audit result
+    runs-on: ubuntu-latest
+    needs: audit-classify
+    if: always() && github.repository == 'zenml-io/zenml'
+    permissions:
+      contents: read
+    timeout-minutes: 5
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Fail on audit errors or blocking findings
+        run: |
+          if [[ "$AUDIT_CLASSIFY_RESULT" != "success" ]]; then
+            echo "audit-classify did not complete successfully: ${AUDIT_CLASSIFY_RESULT}"
+            exit 1
+          fi
+          if [[ "$AUDIT_ERROR" == "true" ]]; then
+            echo "pip-audit produced an unusable result. Check the audit summary artifact."
+            exit 1
+          fi
+          BLOCKING_COUNT="${BLOCKING_COUNT:-0}"
+          if (( BLOCKING_COUNT > 0 )); then
+            echo "Found ${BLOCKING_COUNT} blocking dependency audit findings."
+            exit 1
+          fi
+          echo "Dependency audit gate passed."
+        env:
+          AUDIT_CLASSIFY_RESULT: ${{ needs.audit-classify.result }}
+          AUDIT_ERROR: ${{ needs.audit-classify.outputs.audit_error }}
+          BLOCKING_COUNT: ${{ needs.audit-classify.outputs.blocking_count }}
+  update-nonblocking-tracking-issue:
+    name: Update medium/low dependency tracking issue
+    runs-on: ubuntu-latest
+    needs: audit-classify
+    if: >-
+      github.repository == 'zenml-io/zenml' &&
+      (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+      &&
+      needs.audit-classify.result == 'success' &&
+      needs.audit-classify.outputs.audit_error == 'false'
+    permissions:
+      contents: read
+      issues: write
+    timeout-minutes: 10
+    steps:
+      - name: Download dependency audit reports
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          name: dependency-audit-reports
+          path: dependency-audit-reports
+      - name: Create, update, reopen, or close tracking issue
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8.0.0
+        env:
+          HAS_NONBLOCKING: ${{ needs.audit-classify.outputs.has_nonblocking }}
+        with:
+          github-token: ${{ github.token }}
+          script: |-
+            const fs = require('fs');
+            const body = fs.readFileSync('dependency-audit-reports/nonblocking-issue.md', 'utf8');
+            const bodyLines = body.split('\n');
+            const marker = bodyLines[0].trim();
+            const heading = bodyLines.find((line) => line.startsWith('# '));
+            const title = heading
+              ? heading.replace(/^#\s+/, '')
+              : 'Python dependency audit: medium/low vulnerability tracking';
+            const hasNonblocking = process.env.HAS_NONBLOCKING === 'true';
+            const {owner, repo} = context.repo;
+            const search = await github.rest.search.issuesAndPullRequests({
+              q: `repo:${owner}/${repo} is:issue in:body "${marker}"`,
+              per_page: 10,
+            });
+            const existingIssue = search.data.items.find((item) => !item.pull_request);
+            async function existingLabels(labels) {
+              const available = [];
+              for (const label of labels) {
+                try {
+                  await github.rest.issues.getLabel({owner, repo, name: label});
+                  available.push(label);
+                } catch (error) {
+                  core.warning(`Dependency audit tracking label '${label}' is unavailable: ${error.message}`);
+                }
+              }
+              return available;
+            }
+            if (hasNonblocking) {
+              if (existingIssue) {
+                await github.rest.issues.update({
+                  owner,
+                  repo,
+                  issue_number: existingIssue.number,
+                  title,
+                  body,
+                  state: 'open',
+                });
+                core.info(`Updated dependency audit tracking issue number ${existingIssue.number}.`);
+              } else {
+                const labels = await existingLabels(['dependencies', 'security']);
+                const created = await github.rest.issues.create({
+                  owner,
+                  repo,
+                  title,
+                  body,
+                  labels,
+                });
+                core.info(`Created dependency audit tracking issue number ${created.data.number}.`);
+              }
+              return;
+            }
+            if (!existingIssue) {
+              core.info('No non-blocking findings and no tracking issue exists. Nothing to do.');
+              return;
+            }
+            await github.rest.issues.update({
+              owner,
+              repo,
+              issue_number: existingIssue.number,
+              title,
+              body,
+              state: 'closed',
+              state_reason: 'completed',
+            });
+            core.info(`Closed dependency audit tracking issue number ${existingIssue.number}.`);
