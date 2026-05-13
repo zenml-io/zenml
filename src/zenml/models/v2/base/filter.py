@@ -19,7 +19,6 @@ from datetime import datetime
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
-    Annotated,
     Any,
     ClassVar,
     Dict,
@@ -35,7 +34,6 @@ from uuid import UUID
 
 from pydantic import (
     BaseModel,
-    BeforeValidator,
     Field,
     field_validator,
     model_validator,
@@ -83,39 +81,15 @@ VALUELESS_FILTER_OPS = {
 }
 
 
-def _ensure_list(x: Any) -> List[Any]:
-    """Ensure that the value is a list, even if it is a single value.
-
-    Args:
-        x: The value to ensure is a list, even if it is a single value.
-
-    Returns:
-        The value as a list.
-    """
-    return x if isinstance(x, list) else [x]
-
-
-StringFilterOption = Optional[
-    Annotated[List[str], BeforeValidator(_ensure_list)]
-]
-IntegerFilterOption = Optional[
-    Annotated[List[Union[int, str]], BeforeValidator(_ensure_list)]
-]
-FloatFilterOption = Optional[
-    Annotated[List[Union[float, str]], BeforeValidator(_ensure_list)]
-]
-BoolFilterOption = Optional[
-    Annotated[List[Union[bool, str]], BeforeValidator(_ensure_list)]
-]
-UUIDFilterOption = Optional[
-    Annotated[List[Union[UUID, str]], BeforeValidator(_ensure_list)]
-]
+StringFilterOption = Optional[Union[str, List[str]]]
+IntegerFilterOption = Optional[Union[int, str, List[Union[int, str]]]]
+FloatFilterOption = Optional[Union[float, str, List[Union[float, str]]]]
+BoolFilterOption = Optional[Union[bool, str, List[Union[bool, str]]]]
+UUIDFilterOption = Optional[Union[UUID, str, List[Union[UUID, str]]]]
 DatetimeFilterOption = Optional[
-    Annotated[List[Union[datetime, str]], BeforeValidator(_ensure_list)]
+    Union[datetime, str, List[Union[datetime, str]]]
 ]
-EnumFilterOption = Optional[
-    Annotated[List[Union[TEnum, str]], BeforeValidator(_ensure_list)]
-]
+EnumFilterOption = Optional[Union[TEnum, str, List[Union[TEnum, str]]]]
 
 
 class Filter(BaseModel, ABC):
@@ -710,8 +684,12 @@ class BaseFilter(BaseModel):
         default=None,
         description="Id for this resource",
     )
-    created: DatetimeFilterOption = Field(default=None, description="Created")
-    updated: DatetimeFilterOption = Field(default=None, description="Updated")
+    created: DatetimeFilterOption = Field(
+        default=None, description="Created", union_mode="left_to_right"
+    )
+    updated: DatetimeFilterOption = Field(
+        default=None, description="Updated", union_mode="left_to_right"
+    )
 
     _rbac_configuration: Optional[
         Tuple[UUID, Dict[str, Optional[Set[UUID]]]]
@@ -955,7 +933,7 @@ class BaseFilter(BaseModel):
 
     def generate_name_or_id_query_conditions(
         self,
-        value: Union[UUID, str, List[Union[UUID, str]]],
+        value: Union[UUID, str],
         table: Type["NamedSchema"],
         additional_columns: Optional[List[str]] = None,
     ) -> "ColumnElement[bool]":
@@ -972,33 +950,29 @@ class BaseFilter(BaseModel):
         """
         from sqlmodel import or_
 
-        values = value if isinstance(value, list) else [value]
+        value, operator = BaseFilter._resolve_operator(value)
+        # For the `oneof` operator, the return value here will be a list which
+        # we do not want to convert.
+        if isinstance(value, UUID):
+            value = str(value)
 
         conditions = []
-        for value in values:
-            value, operator = BaseFilter._resolve_operator(value)
-            # For the `oneof` operator, the return value here will be a list which
-            # we do not want to convert.
-            if isinstance(value, UUID):
-                value = str(value)
 
+        filter_ = FilterGenerator(table).define_filter(
+            column="id", value=value, operator=operator
+        )
+        conditions.append(filter_.generate_query_conditions(table=table))
+
+        filter_ = FilterGenerator(table).define_filter(
+            column="name", value=value, operator=operator
+        )
+        conditions.append(filter_.generate_query_conditions(table=table))
+
+        for column in additional_columns or []:
             filter_ = FilterGenerator(table).define_filter(
-                column="id", value=value, operator=operator
+                column=column, value=value, operator=operator
             )
             conditions.append(filter_.generate_query_conditions(table=table))
-
-            filter_ = FilterGenerator(table).define_filter(
-                column="name", value=value, operator=operator
-            )
-            conditions.append(filter_.generate_query_conditions(table=table))
-
-            for column in additional_columns or []:
-                filter_ = FilterGenerator(table).define_filter(
-                    column=column, value=value, operator=operator
-                )
-                conditions.append(
-                    filter_.generate_query_conditions(table=table)
-                )
 
         return or_(*conditions)
 
@@ -1205,15 +1179,10 @@ class FilterGenerator:
 
         # Create int filters
         if self.is_int_field(column):
-            parsed_value: Optional[int]
-            if operator in VALUELESS_FILTER_OPS:
-                parsed_value = None
-            else:
-                parsed_value = int(value)
-            return NumericFilter(
-                operation=GenericFilterOps(operator),
+            return self._define_int_filter(
                 column=column,
-                value=parsed_value,
+                value=value,
+                operator=operator,
             )
 
         # Create bool filters
@@ -1439,6 +1408,41 @@ class FilterGenerator:
         return uuid_filter
 
     @staticmethod
+    def _define_int_filter(
+        column: str, value: Any, operator: GenericFilterOps
+    ) -> NumericFilter:
+        """Define a int filter for a given column.
+
+        Args:
+            column: The column to filter on.
+            value: The int value by which to filter.
+            operator: The operator to use for filtering.
+
+        Returns:
+            A Filter object.
+
+        Raises:
+            ValueError: If the value is not a valid integer.
+        """
+        if operator in VALUELESS_FILTER_OPS:
+            return NumericFilter(
+                operation=GenericFilterOps(operator),
+                column=column,
+                value=None,
+            )
+
+        try:
+            value = int(value)
+        except ValueError:
+            raise ValueError("The int filter only works with integer values.")
+
+        return NumericFilter(
+            operation=GenericFilterOps(operator),
+            column=column,
+            value=int(value) if operator not in VALUELESS_FILTER_OPS else None,
+        )
+
+    @staticmethod
     def _define_str_filter(
         column: str, value: Any, operator: GenericFilterOps
     ) -> StrFilter:
@@ -1497,24 +1501,13 @@ class FilterGenerator:
                 value=None,
             )
 
-        parsed_value: bool
-        if isinstance(value, bool):
-            parsed_value = value
-        elif isinstance(value, str):
-            lowered_value = value.lower()
-            if lowered_value in {"true", "1"}:
-                parsed_value = True
-            elif lowered_value in {"false", "0"}:
-                parsed_value = False
-            else:
-                raise ValueError(
-                    f"Unable to parse boolean filter value '{value}'."
-                )
-        else:
-            parsed_value = bool(value)
+        try:
+            value = bool(value)
+        except ValueError:
+            raise ValueError("The bool filter only works with boolean values.")
 
         return BoolFilter(
             operation=GenericFilterOps(operator),
             column=column,
-            value=parsed_value,
+            value=value,
         )
