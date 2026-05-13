@@ -5149,6 +5149,8 @@ class Client(metaclass=ClientMetaClass):
         triggered_by_step_run_id: Optional[Union[UUID, str]] = None,
         triggered_by_deployment_id: Optional[Union[UUID, str]] = None,
         trigger_id: UUID | str | None = None,
+        parent_run_id: Optional[Union[str, UUID]] = None,
+        root_runs_only: Optional[bool] = None,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs.
 
@@ -5203,6 +5205,8 @@ class Client(metaclass=ClientMetaClass):
             triggered_by_deployment_id: The ID of the deployment that triggered
                 the pipeline run.
             trigger_id: The ID of the trigger that generated this run.
+            parent_run_id: The parent run ID for nested child pipeline runs.
+            root_runs_only: Whether to include only root runs. Ignored if False.
 
         Returns:
             A page with Pipeline Runs fitting the filter description
@@ -5247,6 +5251,8 @@ class Client(metaclass=ClientMetaClass):
             triggered_by_step_run_id=triggered_by_step_run_id,
             triggered_by_deployment_id=triggered_by_deployment_id,
             trigger_id=trigger_id,
+            parent_run_id=parent_run_id,
+            root_runs_only=root_runs_only,
         )
         return self.zen_store.list_runs(
             runs_filter_model=runs_filter_model,
@@ -5916,9 +5922,10 @@ class Client(metaclass=ClientMetaClass):
         Raises:
             ValueError: If the artifact version is still used in any runs.
         """
-        if artifact_version not in depaginate(
-            self.list_artifact_versions, only_unused=True
-        ):
+        unused_versions = self.list_artifact_versions(
+            id=artifact_version.id, only_unused=True, size=1
+        )
+        if not unused_versions.items:
             raise ValueError(
                 "The metadata of artifact versions that are used in runs "
                 "cannot be deleted. Please delete all runs that use this "

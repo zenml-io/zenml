@@ -29,6 +29,38 @@ ZenML includes built-in materializers for many common data types:
 
 ZenML also provides a CloudpickleMaterializer that can handle any object by saving it with [cloudpickle](https://github.com/cloudpipe/cloudpickle). However, this is not production-ready because the resulting artifacts cannot be loaded when running with a different Python version. For production use, you should implement a custom materializer for your specific data types.
 
+{% hint style="info" %}
+Pydantic artifacts created by current ZenML versions are stored in
+`data_v2.json`. ZenML can still load older Pydantic artifacts stored as
+`data.json` by ZenML `<= 0.94.2`, so existing runs remain readable after an
+upgrade.
+{% endhint %}
+
+### Dataclass artifacts
+
+The `DataclassMaterializer` handles JSON-serializable Python dataclasses
+without requiring you to write a custom materializer.
+
+```python
+from dataclasses import dataclass
+
+from zenml import step
+
+@dataclass
+class TrainingConfig:
+    learning_rate: float
+    epochs: int
+
+@step
+def make_config() -> TrainingConfig:
+    return TrainingConfig(learning_rate=0.01, epochs=10)
+```
+
+This works for dataclasses that Pydantic can serialize to JSON. If your
+dataclass contains objects such as open file handles, live model objects,
+database connections, or other arbitrary Python objects, use a custom
+materializer instead.
+
 ### Passing Files and Directories Between Steps
 
 The `PathMaterializer` lets you pass `pathlib.Path` objects between steps. This is especially useful when working with files or directories that need to be shared across steps — for example, dataset directories, exported model files, or any file-based artifacts.

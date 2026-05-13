@@ -185,7 +185,7 @@ class StepRunner:
 
             with step_context:
                 function_params = self._parse_inputs(
-                    args=spec.args,
+                    args=spec.args + spec.kwonlyargs,
                     annotations=spec.annotations,
                     input_artifacts=input_artifacts,
                 )
