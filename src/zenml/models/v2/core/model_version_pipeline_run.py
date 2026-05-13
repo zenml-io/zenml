@@ -29,7 +29,7 @@ from zenml.models.v2.base.base import (
 from zenml.models.v2.base.filter import (
     BaseFilter,
     StrFilter,
-    StrFilterOption,
+    StringFilterOption,
     UUIDFilterOption,
 )
 from zenml.models.v2.core.pipeline_run import PipelineRunResponse
@@ -135,14 +135,12 @@ class ModelVersionPipelineRunFilter(BaseFilter):
     model_version_id: UUIDFilterOption = Field(
         default=None,
         description="Filter by model version ID",
-        union_mode="left_to_right",
     )
     pipeline_run_id: UUIDFilterOption = Field(
         default=None,
         description="Filter by pipeline run ID",
-        union_mode="left_to_right",
     )
-    pipeline_run_name: StrFilterOption = Field(
+    pipeline_run_name: StringFilterOption = Field(
         default=None,
         description="Name of the pipeline run",
     )

@@ -32,7 +32,7 @@ from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import (
-    StrFilterOption,
+    StringFilterOption,
     UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
@@ -359,7 +359,7 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
         *TaggableFilter.API_SINGLE_INPUT_PARAMS,
     ]
 
-    name: StrFilterOption = Field(
+    name: StringFilterOption = Field(
         default=None,
         description="Name of the run template.",
     )
@@ -370,22 +370,18 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
     pipeline_id: UUIDFilterOption = Field(
         default=None,
         description="Pipeline associated with the template.",
-        union_mode="left_to_right",
     )
     build_id: UUIDFilterOption = Field(
         default=None,
         description="Build associated with the template.",
-        union_mode="left_to_right",
     )
     stack_id: UUIDFilterOption = Field(
         default=None,
         description="Stack associated with the template.",
-        union_mode="left_to_right",
     )
     code_repository_id: UUIDFilterOption = Field(
         default=None,
         description="Code repository associated with the template.",
-        union_mode="left_to_right",
     )
     pipeline: UUIDFilterOption = Field(
         default=None,

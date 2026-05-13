@@ -33,7 +33,7 @@ from zenml.enums import StackComponentType
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import (
     AnyQuery,
-    StrFilterOption,
+    StringFilterOption,
     UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
@@ -405,31 +405,29 @@ class ComponentFilter(UserScopedFilter):
         *UserScopedFilter.CLI_EXCLUDE_FIELDS,
         "scope_type",
     ]
-    scope_type: StrFilterOption = Field(
+    scope_type: StringFilterOption = Field(
         default=None,
         description="The type to scope this query to.",
     )
-    name: StrFilterOption = Field(
+    name: StringFilterOption = Field(
         default=None,
         description="Name of the stack component",
     )
-    flavor: StrFilterOption = Field(
+    flavor: StringFilterOption = Field(
         default=None,
         description="Flavor of the stack component",
     )
-    type: StrFilterOption = Field(
+    type: StringFilterOption = Field(
         default=None,
         description="Type of the stack component",
     )
     connector_id: UUIDFilterOption = Field(
         default=None,
         description="Connector linked to the stack component",
-        union_mode="left_to_right",
     )
     stack_id: UUIDFilterOption = Field(
         default=None,
         description="Stack of the stack component",
-        union_mode="left_to_right",
     )
 
     def set_scope_type(self, component_type: str) -> None:

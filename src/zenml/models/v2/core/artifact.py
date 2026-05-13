@@ -29,7 +29,7 @@ from pydantic import Field
 
 from zenml.constants import SORT_BY_LATEST_VERSION_KEY, STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import BaseUpdate
-from zenml.models.v2.base.filter import BoolFilterOption, StrFilterOption
+from zenml.models.v2.base.filter import BoolFilterOption, StringFilterOption
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -211,7 +211,7 @@ class ArtifactFilter(ProjectScopedFilter, TaggableFilter):
         *TaggableFilter.API_SINGLE_INPUT_PARAMS,
     ]
 
-    name: StrFilterOption = None
+    name: StringFilterOption = None
     has_custom_name: BoolFilterOption = None
 
     def apply_sorting(

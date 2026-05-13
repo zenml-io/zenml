@@ -19,6 +19,7 @@ from datetime import datetime
 from enum import Enum
 from typing import (
     TYPE_CHECKING,
+    Annotated,
     Any,
     ClassVar,
     Dict,
@@ -34,6 +35,7 @@ from uuid import UUID
 
 from pydantic import (
     BaseModel,
+    BeforeValidator,
     Field,
     field_validator,
     model_validator,
@@ -63,6 +65,8 @@ logger = get_logger(__name__)
 
 
 AnyQuery = TypeVar("AnyQuery", bound=Any)
+TEnum = TypeVar("TEnum", bound=Enum)
+
 
 ONEOF_ERROR = (
     "When you are using the 'oneof:'/'notoneof:' filtering make sure that "
@@ -78,17 +82,40 @@ VALUELESS_FILTER_OPS = {
     GenericFilterOps.IS_NOT_EMPTY,
 }
 
-TEnum = TypeVar("TEnum", bound=Enum)
 
-StrFilterOption = Optional[Union[str, List[str]]]
-IntFilterOption = Optional[Union[int, str, List[Union[int, str]]]]
-FloatFilterOption = Optional[Union[float, str, List[Union[float, str]]]]
-BoolFilterOption = Optional[Union[bool, str, List[Union[bool, str]]]]
-UUIDFilterOption = Optional[Union[UUID, str, List[Union[UUID, str]]]]
-DatetimeFilterOption = Optional[
-    Union[datetime, str, List[Union[datetime, str]]]
+def _ensure_list(x: Any) -> List[Any]:
+    """Ensure that the value is a list, even if it is a single value.
+
+    Args:
+        x: The value to ensure is a list, even if it is a single value.
+
+    Returns:
+        The value as a list.
+    """
+    return x if isinstance(x, list) else [x]
+
+
+StringFilterOption = Optional[
+    Annotated[List[str], BeforeValidator(_ensure_list)]
 ]
-EnumFilterOption = Optional[Union[TEnum, str, List[Union[TEnum, str]]]]
+IntegerFilterOption = Optional[
+    Annotated[List[Union[int, str]], BeforeValidator(_ensure_list)]
+]
+FloatFilterOption = Optional[
+    Annotated[List[Union[float, str]], BeforeValidator(_ensure_list)]
+]
+BoolFilterOption = Optional[
+    Annotated[List[Union[bool, str]], BeforeValidator(_ensure_list)]
+]
+UUIDFilterOption = Optional[
+    Annotated[List[Union[UUID, str]], BeforeValidator(_ensure_list)]
+]
+DatetimeFilterOption = Optional[
+    Annotated[List[Union[datetime, str]], BeforeValidator(_ensure_list)]
+]
+EnumFilterOption = Optional[
+    Annotated[List[Union[TEnum, str]], BeforeValidator(_ensure_list)]
+]
 
 
 class Filter(BaseModel, ABC):
@@ -682,14 +709,9 @@ class BaseFilter(BaseModel):
     id: UUIDFilterOption = Field(
         default=None,
         description="Id for this resource",
-        union_mode="left_to_right",
     )
-    created: DatetimeFilterOption = Field(
-        default=None, description="Created", union_mode="left_to_right"
-    )
-    updated: DatetimeFilterOption = Field(
-        default=None, description="Updated", union_mode="left_to_right"
-    )
+    created: DatetimeFilterOption = Field(default=None, description="Created")
+    updated: DatetimeFilterOption = Field(default=None, description="Updated")
 
     _rbac_configuration: Optional[
         Tuple[UUID, Dict[str, Optional[Set[UUID]]]]

@@ -35,8 +35,8 @@ from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import (
     EnumFilterOption,
-    IntFilterOption,
-    StrFilterOption,
+    IntegerFilterOption,
+    StringFilterOption,
     UUIDFilterOption,
 )
 from zenml.models.v2.base.page import Page
@@ -677,21 +677,20 @@ class ModelVersionFilter(
         *RunMetadataFilterMixin.API_SINGLE_INPUT_PARAMS,
     ]
 
-    name: StrFilterOption = Field(
+    name: StringFilterOption = Field(
         default=None,
         description="The name of the Model Version",
     )
-    number: IntFilterOption = Field(
+    number: IntegerFilterOption = Field(
         default=None,
         description="The number of the Model Version",
     )
     # TODO: By doing this we are changing the union order, is this a problem?
     # This may have always been cast to a string anyway, perhaps we can use
-    # a StrFilterOption instead?
+    # a StringFilterOption instead?
     stage: EnumFilterOption[ModelStages] = Field(
         description="The model version stage",
         default=None,
-        union_mode="left_to_right",
     )
     model: UUIDFilterOption = Field(
         default=None,
@@ -699,7 +698,6 @@ class ModelVersionFilter(
         "to. This field must always be set and is always applied in addition "
         "to the other filters, regardless of the value of the "
         "logical_operator field.",
-        union_mode="left_to_right",
     )
 
     def get_custom_filters(

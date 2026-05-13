@@ -29,7 +29,7 @@ from zenml.models.v2.base.base import (
 from zenml.models.v2.base.filter import (
     BaseFilter,
     StrFilter,
-    StrFilterOption,
+    StringFilterOption,
     UUIDFilterOption,
 )
 
@@ -144,14 +144,12 @@ class ModelVersionArtifactFilter(BaseFilter):
     model_version_id: UUIDFilterOption = Field(
         default=None,
         description="Filter by model version ID",
-        union_mode="left_to_right",
     )
     artifact_version_id: UUIDFilterOption = Field(
         default=None,
         description="Filter by artifact ID",
-        union_mode="left_to_right",
     )
-    artifact_name: StrFilterOption = Field(
+    artifact_name: StringFilterOption = Field(
         default=None,
         description="Name of the artifact",
     )

@@ -24,7 +24,7 @@ from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import (
     BoolFilterOption,
     EnumFilterOption,
-    StrFilterOption,
+    StringFilterOption,
 )
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
@@ -205,7 +205,7 @@ class TagFilter(UserScopedFilter):
         "resource_type",
     ]
 
-    name: StrFilterOption = Field(
+    name: StringFilterOption = Field(
         description="The unique title of the tag.", default=None
     )
     color: EnumFilterOption[ColorVariants] = Field(

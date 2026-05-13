@@ -31,8 +31,8 @@ from pydantic import Field
 from zenml.models.v2.base.base import BaseZenModel
 from zenml.models.v2.base.filter import (
     BoolFilterOption,
-    IntFilterOption,
-    StrFilterOption,
+    IntegerFilterOption,
+    StringFilterOption,
     UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
@@ -493,17 +493,14 @@ class PipelineBuildFilter(ProjectScopedFilter):
     pipeline_id: UUIDFilterOption = Field(
         description="Pipeline associated with the pipeline build.",
         default=None,
-        union_mode="left_to_right",
     )
     stack_id: UUIDFilterOption = Field(
         description="Stack associated with the pipeline build.",
         default=None,
-        union_mode="left_to_right",
     )
     container_registry_id: UUIDFilterOption = Field(
         description="Container registry associated with the pipeline build.",
         default=None,
-        union_mode="left_to_right",
     )
     is_local: BoolFilterOption = Field(
         description="Whether the build images are stored in a container "
@@ -514,19 +511,19 @@ class PipelineBuildFilter(ProjectScopedFilter):
         description="Whether any image of the build contains user code.",
         default=None,
     )
-    zenml_version: StrFilterOption = Field(
+    zenml_version: StringFilterOption = Field(
         description="The version of ZenML used for this build.", default=None
     )
-    python_version: StrFilterOption = Field(
+    python_version: StringFilterOption = Field(
         description="The Python version used for this build.", default=None
     )
-    checksum: StrFilterOption = Field(
+    checksum: StringFilterOption = Field(
         description="The build checksum.", default=None
     )
-    stack_checksum: StrFilterOption = Field(
+    stack_checksum: StringFilterOption = Field(
         description="The stack checksum.", default=None
     )
-    duration: IntFilterOption = Field(
+    duration: IntegerFilterOption = Field(
         description="The duration of the build in seconds.", default=None
     )
 

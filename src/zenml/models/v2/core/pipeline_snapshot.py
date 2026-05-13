@@ -36,7 +36,7 @@ from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.models.v2.base.base import BaseUpdate, BaseZenModel
 from zenml.models.v2.base.filter import (
-    StrFilterOption,
+    StringFilterOption,
     UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
@@ -666,7 +666,7 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         *TaggableFilter.API_SINGLE_INPUT_PARAMS,
     ]
 
-    name: StrFilterOption = Field(
+    name: StringFilterOption = Field(
         default=None,
         description="Name of the snapshot.",
     )
@@ -677,27 +677,22 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
     pipeline: UUIDFilterOption = Field(
         default=None,
         description="Pipeline associated with the snapshot.",
-        union_mode="left_to_right",
     )
     stack: UUIDFilterOption = Field(
         default=None,
         description="Stack associated with the snapshot.",
-        union_mode="left_to_right",
     )
     build_id: UUIDFilterOption = Field(
         default=None,
         description="Build associated with the snapshot.",
-        union_mode="left_to_right",
     )
     schedule_id: UUIDFilterOption = Field(
         default=None,
         description="Schedule associated with the snapshot.",
-        union_mode="left_to_right",
     )
     source_snapshot_id: UUIDFilterOption = Field(
         default=None,
         description="Source snapshot used for the snapshot.",
-        union_mode="left_to_right",
     )
     runnable: Optional[bool] = Field(
         default=None,

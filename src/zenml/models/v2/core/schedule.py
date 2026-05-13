@@ -27,7 +27,7 @@ from zenml.models.v2.base.filter import (
     BoolFilterOption,
     DatetimeFilterOption,
     FloatFilterOption,
-    StrFilterOption,
+    StringFilterOption,
     UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
@@ -334,26 +334,24 @@ class ScheduleFilter(ProjectScopedFilter):
     pipeline_id: UUIDFilterOption = Field(
         default=None,
         description="Pipeline that the schedule is attached to.",
-        union_mode="left_to_right",
     )
     orchestrator_id: UUIDFilterOption = Field(
         default=None,
         description="Orchestrator that the schedule is attached to.",
-        union_mode="left_to_right",
     )
     active: BoolFilterOption = Field(
         default=None,
         description="If the schedule is active",
     )
-    cron_expression: StrFilterOption = Field(
+    cron_expression: StringFilterOption = Field(
         default=None,
         description="The cron expression, describing the schedule",
     )
     start_time: DatetimeFilterOption = Field(
-        default=None, description="Start time", union_mode="left_to_right"
+        default=None, description="Start time"
     )
     end_time: DatetimeFilterOption = Field(
-        default=None, description="End time", union_mode="left_to_right"
+        default=None, description="End time"
     )
     interval_second: FloatFilterOption = Field(
         default=None,
@@ -364,14 +362,13 @@ class ScheduleFilter(ProjectScopedFilter):
         description="Whether or not the schedule is set to catchup past missed "
         "events",
     )
-    name: StrFilterOption = Field(
+    name: StringFilterOption = Field(
         default=None,
         description="Name of the schedule",
     )
     run_once_start_time: DatetimeFilterOption = Field(
         default=None,
         description="The time at which the schedule should run once",
-        union_mode="left_to_right",
     )
 
     is_archived: BoolFilterOption = Field(

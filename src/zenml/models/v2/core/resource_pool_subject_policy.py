@@ -23,7 +23,7 @@ from uuid import UUID
 from pydantic import Field, NonNegativeInt, model_validator
 
 from zenml.models.v2.base.base import BaseUpdate
-from zenml.models.v2.base.filter import IntFilterOption, UUIDFilterOption
+from zenml.models.v2.base.filter import IntegerFilterOption, UUIDFilterOption
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
     UserScopedRequest,
@@ -228,7 +228,7 @@ class ResourcePoolSubjectPolicyFilter(UserScopedFilter):
         default=None,
         description="The ID of the component that is the subject of the policy.",
     )
-    priority: IntFilterOption = Field(
+    priority: IntegerFilterOption = Field(
         default=None,
         description="The priority of the policy in the resource pool.",
     )

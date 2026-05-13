@@ -32,7 +32,7 @@ from zenml.enums import ServiceState
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import (
     BoolFilterOption,
-    StrFilterOption,
+    StringFilterOption,
     UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
@@ -409,16 +409,16 @@ class ServiceResponse(
 class ServiceFilter(ProjectScopedFilter):
     """Model to enable advanced filtering of services."""
 
-    name: StrFilterOption = Field(
+    name: StringFilterOption = Field(
         default=None,
         description="Name of the service. Use this to filter services by "
         "their name.",
     )
-    type: StrFilterOption = Field(
+    type: StringFilterOption = Field(
         default=None,
         description="Type of the service. Filter services by their type.",
     )
-    flavor: StrFilterOption = Field(
+    flavor: StringFilterOption = Field(
         default=None,
         description="Flavor of the service. Use this to filter services by "
         "their flavor.",
@@ -428,11 +428,11 @@ class ServiceFilter(ProjectScopedFilter):
         description="Config of the service. Use this to filter services by "
         "their config.",
     )
-    pipeline_name: StrFilterOption = Field(
+    pipeline_name: StringFilterOption = Field(
         default=None,
         description="Pipeline name responsible for deploying the service",
     )
-    pipeline_step_name: StrFilterOption = Field(
+    pipeline_step_name: StringFilterOption = Field(
         default=None,
         description="Pipeline step name responsible for deploying the service",
     )
@@ -442,12 +442,10 @@ class ServiceFilter(ProjectScopedFilter):
     model_version_id: UUIDFilterOption = Field(
         default=None,
         description="By the model version this service is attached to.",
-        union_mode="left_to_right",
     )
     pipeline_run_id: UUIDFilterOption = Field(
         default=None,
         description="By the pipeline run this service is attached to.",
-        union_mode="left_to_right",
     )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all

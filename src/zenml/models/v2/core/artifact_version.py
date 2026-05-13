@@ -42,8 +42,8 @@ from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import (
     FilterGenerator,
-    IntFilterOption,
-    StrFilterOption,
+    IntegerFilterOption,
+    StringFilterOption,
     UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
@@ -573,48 +573,43 @@ class ArtifactVersionFilter(
         "to. This field must always be set and is always applied in addition "
         "to the other filters, regardless of the value of the "
         "logical_operator field.",
-        union_mode="left_to_right",
     )
     artifact_id: UUIDFilterOption = Field(
         default=None,
         description="[Deprecated] Use 'artifact' instead. ID of the artifact to which this version belongs.",
-        union_mode="left_to_right",
     )
-    version: StrFilterOption = Field(
+    version: StringFilterOption = Field(
         default=None,
         description="Version of the artifact",
     )
-    version_number: IntFilterOption = Field(
+    version_number: IntegerFilterOption = Field(
         default=None,
         description="Version of the artifact if it is an integer",
-        union_mode="left_to_right",
     )
-    uri: StrFilterOption = Field(
+    uri: StringFilterOption = Field(
         default=None,
         description="Uri of the artifact",
     )
-    materializer: StrFilterOption = Field(
+    materializer: StringFilterOption = Field(
         default=None,
         description="Materializer used to produce the artifact",
     )
-    type: StrFilterOption = Field(
+    type: StringFilterOption = Field(
         default=None,
         description="Type of the artifact",
     )
-    data_type: StrFilterOption = Field(
+    data_type: StringFilterOption = Field(
         default=None,
         description="Datatype of the artifact",
     )
     artifact_store_id: UUIDFilterOption = Field(
         default=None,
         description="Artifact store for this artifact",
-        union_mode="left_to_right",
     )
     model_version_id: UUIDFilterOption = Field(
         default=None,
         description="ID of the model version that is associated with this "
         "artifact version.",
-        union_mode="left_to_right",
     )
     only_unused: Optional[bool] = Field(
         default=False, description="Filter only for unused artifacts"

@@ -37,7 +37,7 @@ from zenml.models.v2.base.filter import (
     BaseFilter,
     BoolFilterOption,
     DatetimeFilterOption,
-    StrFilterOption,
+    StringFilterOption,
     UUIDFilterOption,
 )
 from zenml.utils.string_utils import b64_decode, b64_encode
@@ -358,28 +358,25 @@ class APIKeyFilter(BaseFilter):
         default=None,
         description="The service account to scope this query to.",
     )
-    name: StrFilterOption = Field(
+    name: StringFilterOption = Field(
         default=None,
         description="Name of the API key",
     )
-    description: StrFilterOption = Field(
+    description: StringFilterOption = Field(
         default=None,
         title="Filter by the API key description.",
     )
     active: BoolFilterOption = Field(
         default=None,
         title="Whether the API key is active.",
-        union_mode="left_to_right",
     )
     last_login: DatetimeFilterOption = Field(
         default=None,
         title="Time when the API key was last used to log in.",
-        union_mode="left_to_right",
     )
     last_rotated: DatetimeFilterOption = Field(
         default=None,
         title="Time when the API key was last rotated.",
-        union_mode="left_to_right",
     )
 
     def set_service_account(self, service_account_id: UUID) -> None:

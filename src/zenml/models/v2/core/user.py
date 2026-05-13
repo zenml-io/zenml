@@ -41,7 +41,7 @@ from zenml.models.v2.base.filter import (
     AnyQuery,
     BaseFilter,
     BoolFilterOption,
-    StrFilterOption,
+    StringFilterOption,
     UUIDFilterOption,
 )
 
@@ -477,32 +477,29 @@ class UserResponse(
 class UserFilter(BaseFilter):
     """Model to enable advanced filtering of all Users."""
 
-    name: StrFilterOption = Field(
+    name: StringFilterOption = Field(
         default=None,
         description="Name of the user",
     )
-    full_name: StrFilterOption = Field(
+    full_name: StringFilterOption = Field(
         default=None,
         description="Full Name of the user",
     )
-    email: StrFilterOption = Field(
+    email: StringFilterOption = Field(
         default=None,
         description="Email of the user",
     )
     active: BoolFilterOption = Field(
         default=None,
         description="Whether the user is active",
-        union_mode="left_to_right",
     )
     email_opted_in: BoolFilterOption = Field(
         default=None,
         description="Whether the user has opted in to emails",
-        union_mode="left_to_right",
     )
     external_user_id: UUIDFilterOption = Field(
         default=None,
         title="The external user ID associated with the account.",
-        union_mode="left_to_right",
     )
 
     def apply_filter(

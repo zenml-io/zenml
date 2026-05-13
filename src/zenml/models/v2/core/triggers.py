@@ -46,7 +46,7 @@ from zenml.models.v2.base.filter import (
     BaseFilter,
     BoolFilterOption,
     DatetimeFilterOption,
-    StrFilterOption,
+    StringFilterOption,
 )
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
@@ -365,7 +365,7 @@ class UnScopedTriggerFilter(BaseFilter):
         "type",
     ]
 
-    name: StrFilterOption = Field(
+    name: StringFilterOption = Field(
         default=None,
         description="The name of the trigger.",
     )
@@ -393,7 +393,6 @@ class UnScopedTriggerFilter(BaseFilter):
     next_occurrence: DatetimeFilterOption = Field(
         default=None,
         description="The next occurrence of the trigger (applicable only for schedules).",
-        union_mode="left_to_right",
     )
     concurrency: TriggerRunConcurrency | None = Field(
         default=None, description="The trigger concurrency."
@@ -439,11 +438,11 @@ class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
         "next_occurrence",
     ]
 
-    pipeline_id: StrFilterOption = Field(
+    pipeline_id: StringFilterOption = Field(
         default=None,
         description="Filter triggers by pipeline ID (triggers that are attached to this pipeline's snapshots)",
     )
-    snapshot_id: StrFilterOption = Field(
+    snapshot_id: StringFilterOption = Field(
         default=None,
         description="Filter triggers by snapshot ID (triggers that are attached to this snapshot)",
     )

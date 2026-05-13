@@ -30,7 +30,7 @@ from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import (
     AnyQuery,
     BoolFilterOption,
-    StrFilterOption,
+    StringFilterOption,
 )
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
@@ -267,7 +267,7 @@ class SecretFilter(UserScopedFilter):
         "values",
     ]
 
-    name: StrFilterOption = Field(
+    name: StringFilterOption = Field(
         default=None,
         description="Name of the secret",
     )

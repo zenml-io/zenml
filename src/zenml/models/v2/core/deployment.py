@@ -31,7 +31,7 @@ from pydantic import BaseModel, Field
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import DeploymentStatus
 from zenml.models.v2.base.base import BaseUpdate
-from zenml.models.v2.base.filter import StrFilterOption, UUIDFilterOption
+from zenml.models.v2.base.filter import StringFilterOption, UUIDFilterOption
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -388,32 +388,29 @@ class DeploymentFilter(ProjectScopedFilter, TaggableFilter):
         *TaggableFilter.API_SINGLE_INPUT_PARAMS,
     ]
 
-    name: StrFilterOption = Field(
+    name: StringFilterOption = Field(
         default=None,
         description="Name of the deployment.",
     )
-    url: StrFilterOption = Field(
+    url: StringFilterOption = Field(
         default=None,
         description="URL of the deployment.",
     )
-    status: StrFilterOption = Field(
+    status: StringFilterOption = Field(
         default=None,
         description="Status of the deployment.",
     )
     pipeline: UUIDFilterOption = Field(
         default=None,
         description="Pipeline associated with the deployment.",
-        union_mode="left_to_right",
     )
     snapshot_id: UUIDFilterOption = Field(
         default=None,
         description="Pipeline snapshot ID associated with the deployment.",
-        union_mode="left_to_right",
     )
     deployer_id: UUIDFilterOption = Field(
         default=None,
         description="Deployer ID managing the deployment.",
-        union_mode="left_to_right",
     )
 
     def get_custom_filters(

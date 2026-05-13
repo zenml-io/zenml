@@ -41,8 +41,8 @@ from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import (
     BoolFilterOption,
     DatetimeFilterOption,
-    IntFilterOption,
-    StrFilterOption,
+    IntegerFilterOption,
+    StringFilterOption,
     UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
@@ -777,60 +777,53 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         *RunMetadataFilterMixin.CUSTOM_SORTING_OPTIONS,
     ]
 
-    name: StrFilterOption = Field(
+    name: StringFilterOption = Field(
         default=None,
         description="Name of the step run",
     )
-    code_hash: StrFilterOption = Field(
+    code_hash: StringFilterOption = Field(
         default=None,
         description="Code hash for this step run",
     )
-    cache_key: StrFilterOption = Field(
+    cache_key: StringFilterOption = Field(
         default=None,
         description="Cache key for this step run",
     )
-    status: StrFilterOption = Field(
+    status: StringFilterOption = Field(
         default=None,
         description="Status of the Step Run",
     )
     start_time: DatetimeFilterOption = Field(
         default=None,
         description="Start time for this run",
-        union_mode="left_to_right",
     )
     end_time: DatetimeFilterOption = Field(
         default=None,
         description="End time for this run",
-        union_mode="left_to_right",
     )
     pipeline_run_id: UUIDFilterOption = Field(
         default=None,
         description="Pipeline run of this step run",
-        union_mode="left_to_right",
     )
     snapshot_id: UUIDFilterOption = Field(
         default=None,
         description="Snapshot of this step run",
-        union_mode="left_to_right",
     )
     original_step_run_id: UUIDFilterOption = Field(
         default=None,
         description="Original id for this step run",
-        union_mode="left_to_right",
     )
     model_version_id: UUIDFilterOption = Field(
         default=None,
         description="Model version associated with the step run.",
-        union_mode="left_to_right",
     )
     model: UUIDFilterOption = Field(
         default=None,
         description="Name/ID of the model associated with the step run.",
     )
-    version: IntFilterOption = Field(
+    version: IntegerFilterOption = Field(
         default=None,
         description="Version of the step run.",
-        union_mode="left_to_right",
     )
     exclude_retried: Optional[bool] = Field(
         default=None,
@@ -839,7 +832,6 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
     cache_expires_at: DatetimeFilterOption = Field(
         default=None,
         description="Cache expiration time of the step run.",
-        union_mode="left_to_right",
     )
     cache_expired: BoolFilterOption = Field(
         default=None,

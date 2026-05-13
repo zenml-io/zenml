@@ -32,7 +32,7 @@ from zenml.models.v2.base.base import (
 )
 from zenml.models.v2.base.filter import (
     DatetimeFilterOption,
-    StrFilterOption,
+    StringFilterOption,
     UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
@@ -310,28 +310,25 @@ class RunWaitConditionFilter(ProjectScopedFilter, RunMetadataFilterMixin):
     pipeline_run: UUIDFilterOption = Field(
         default=None,
         title="Filter by pipeline run ID/name.",
-        union_mode="left_to_right",
     )
-    type: StrFilterOption = Field(
+    type: StringFilterOption = Field(
         default=None, title="Filter by condition type."
     )
-    status: StrFilterOption = Field(
+    status: StringFilterOption = Field(
         default=None, title="Filter by condition status."
     )
-    name: StrFilterOption = Field(
+    name: StringFilterOption = Field(
         default=None, title="Filter by wait condition name."
     )
     resolved_by: UUIDFilterOption = Field(
         default=None,
         title="Filter by the name or ID of the user that resolved the condition.",
-        union_mode="left_to_right",
     )
     resolved_at: DatetimeFilterOption = Field(
         default=None,
         title="Filter by the timestamp when the condition was resolved.",
-        union_mode="left_to_right",
     )
-    resolution: StrFilterOption = Field(
+    resolution: StringFilterOption = Field(
         default=None,
         title="Filter by condition resolution.",
     )

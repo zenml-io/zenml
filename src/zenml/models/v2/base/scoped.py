@@ -41,7 +41,7 @@ from zenml.models.v2.base.base import (
 from zenml.models.v2.base.filter import (
     AnyQuery,
     BaseFilter,
-    StrFilterOption,
+    StringFilterOption,
     UUIDFilterOption,
 )
 
@@ -197,7 +197,6 @@ class UserScopedFilter(BaseFilter):
     user: UUIDFilterOption = Field(
         default=None,
         description="Name/ID of the user that created the entity.",
-        union_mode="left_to_right",
     )
 
     def set_scope_user(self, user_id: UUID) -> None:
@@ -443,7 +442,7 @@ class ProjectScopedFilter(UserScopedFilter):
 class TaggableFilter(BaseFilter):
     """Model to enable filtering and sorting by tags."""
 
-    tags: StrFilterOption = Field(
+    tags: StringFilterOption = Field(
         description="Tags to apply to the filter query.", default=None
     )
 
@@ -635,7 +634,7 @@ class TaggableFilter(BaseFilter):
 class RunMetadataFilterMixin(BaseFilter):
     """Model to enable filtering and sorting by run metadata."""
 
-    run_metadata: StrFilterOption = Field(
+    run_metadata: StringFilterOption = Field(
         default=None,
         description="The run_metadata to filter the pipeline runs by.",
     )
