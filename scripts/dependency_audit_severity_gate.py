@@ -27,7 +27,6 @@ SEVERITY_RANK = {
     severity: index for index, severity in enumerate(SEVERITY_ORDER)
 }
 BLOCKING_SEVERITIES = set(SEVERITY_ORDER[:3])
-NONBLOCKING_SEVERITIES = set(SEVERITY_ORDER[3:])
 KNOWN_SEVERITIES = set(SEVERITY_ORDER)
 UNKNOWN_GITHUB_API_ERROR = "github-api-error"
 UNKNOWN_INVALID_RESPONSE = "invalid-advisory-response"
@@ -95,14 +94,14 @@ class GitHubAdvisoryClient:
         package_name: str,
     ) -> ResolvedSeverity:
         """Resolve severity from the best available advisory identifier."""
-        ghsa_id = _first_matching_identifier(identifiers, r"^GHSA-")
+        ghsa_id = _first_ghsa_identifier(identifiers)
         if ghsa_id:
             return self._cached_resolve(
                 ("ghsa", ghsa_id),
                 lambda: self._resolve_ghsa(ghsa_id),
             )
 
-        cve_id = _first_matching_identifier(identifiers, r"^CVE-")
+        cve_id = _first_cve_identifier(identifiers)
         if cve_id:
             normalized_package = _normalize_package_name(package_name)
             return self._cached_resolve(
@@ -149,7 +148,14 @@ class GitHubAdvisoryClient:
         cve_id: str,
         normalized_package_name: str,
     ) -> ResolvedSeverity:
-        query = urlencode({"cve_id": cve_id})
+        query = urlencode(
+            {
+                "cve_id": cve_id,
+                "ecosystem": "pip",
+                "affects": normalized_package_name,
+                "per_page": 100,
+            }
+        )
         try:
             advisories = self._fetch_json(f"/advisories?{query}")
         except json.JSONDecodeError:
@@ -220,6 +226,14 @@ def classify_audit(
     audit_error_message: str = "",
 ) -> dict[str, Any]:
     """Classify a parsed pip-audit JSON document."""
+    malformed_messages = _collect_malformed_audit_messages(audit_data)
+    if malformed_messages:
+        audit_error = True
+        audit_error_message = _append_audit_error_message(
+            audit_error_message,
+            "Malformed pip-audit JSON: " + " ".join(malformed_messages),
+        )
+
     findings = _deduplicate_findings(
         _classify_raw_finding(raw_finding, client)
         for raw_finding in _iter_raw_findings(audit_data)
@@ -446,7 +460,10 @@ def _iter_skipped_dependencies(
 ) -> list[SkippedDependency]:
     """Extract dependency entries that pip-audit skipped under strict mode."""
     skipped_dependencies: list[SkippedDependency] = []
-    for dependency in audit_data.get("dependencies", []):
+    dependencies = audit_data.get("dependencies", [])
+    if not isinstance(dependencies, list):
+        return skipped_dependencies
+    for dependency in dependencies:
         if not isinstance(dependency, dict):
             continue
         skip_reason = str(dependency.get("skip_reason") or "").strip()
@@ -473,10 +490,20 @@ def _iter_skipped_dependencies(
 
 def _iter_raw_findings(audit_data: dict[str, Any]) -> list[dict[str, Any]]:
     findings: list[dict[str, Any]] = []
-    for dependency in audit_data.get("dependencies", []):
+    dependencies = audit_data.get("dependencies", [])
+    if not isinstance(dependencies, list):
+        return findings
+    for dependency in dependencies:
+        if not isinstance(dependency, dict):
+            continue
         package = str(dependency.get("name", ""))
         installed_version = str(dependency.get("version", ""))
-        for vulnerability in dependency.get("vulns", []):
+        vulns = dependency.get("vulns", [])
+        if not isinstance(vulns, list):
+            continue
+        for vulnerability in vulns:
+            if not isinstance(vulnerability, dict):
+                continue
             findings.append(
                 {
                     "package": package,
@@ -485,6 +512,39 @@ def _iter_raw_findings(audit_data: dict[str, Any]) -> list[dict[str, Any]]:
                 }
             )
     return findings
+
+
+def _collect_malformed_audit_messages(
+    audit_data: dict[str, Any],
+) -> list[str]:
+    """Return validation messages for malformed-but-parseable audit JSON."""
+    dependencies = audit_data.get("dependencies", [])
+    if not isinstance(dependencies, list):
+        return ["field 'dependencies' was not a list."]
+
+    messages: list[str] = []
+    for dependency_index, dependency in enumerate(dependencies):
+        if not isinstance(dependency, dict):
+            messages.append(
+                f"dependency entry {dependency_index} was not an object."
+            )
+            continue
+
+        package = str(dependency.get("name") or f"index {dependency_index}")
+        vulns = dependency.get("vulns", [])
+        if not isinstance(vulns, list):
+            messages.append(
+                f"dependency '{package}' field 'vulns' was not a list."
+            )
+            continue
+
+        for vuln_index, vulnerability in enumerate(vulns):
+            if not isinstance(vulnerability, dict):
+                messages.append(
+                    f"dependency '{package}' vulnerability entry {vuln_index} "
+                    "was not an object."
+                )
+    return messages
 
 
 def _append_audit_error_message(
@@ -615,22 +675,32 @@ def _severity_from_advisory(
             severity="unknown",
             source="github-advisory-api",
             unknown_reason=UNKNOWN_GITHUB_UNKNOWN_SEVERITY,
-            ghsa_id=advisory.get("ghsa_id") or fallback_ghsa_id,
-            cve_id=advisory.get("cve_id") or fallback_cve_id,
+            ghsa_id=_normalize_ghsa_id(
+                advisory.get("ghsa_id") or fallback_ghsa_id
+            ),
+            cve_id=_normalize_cve_id(
+                advisory.get("cve_id") or fallback_cve_id
+            ),
         )
     if severity not in KNOWN_SEVERITIES:
         return ResolvedSeverity(
             severity="unknown",
             source="github-advisory-api",
             unknown_reason=UNKNOWN_INVALID_RESPONSE,
-            ghsa_id=advisory.get("ghsa_id") or fallback_ghsa_id,
-            cve_id=advisory.get("cve_id") or fallback_cve_id,
+            ghsa_id=_normalize_ghsa_id(
+                advisory.get("ghsa_id") or fallback_ghsa_id
+            ),
+            cve_id=_normalize_cve_id(
+                advisory.get("cve_id") or fallback_cve_id
+            ),
         )
     return ResolvedSeverity(
         severity=severity,
         source="github-advisory-api",
-        ghsa_id=advisory.get("ghsa_id") or fallback_ghsa_id,
-        cve_id=advisory.get("cve_id") or fallback_cve_id,
+        ghsa_id=_normalize_ghsa_id(
+            advisory.get("ghsa_id") or fallback_ghsa_id
+        ),
+        cve_id=_normalize_cve_id(advisory.get("cve_id") or fallback_cve_id),
     )
 
 
@@ -655,16 +725,30 @@ def _extract_fix_versions(vulnerability: dict[str, Any]) -> list[str]:
     return versions
 
 
-def _first_matching_identifier(
-    identifiers: list[str],
-    pattern: str,
-) -> str | None:
+def _first_ghsa_identifier(identifiers: list[str]) -> str | None:
     for identifier in identifiers:
-        if re.match(pattern, identifier, re.IGNORECASE):
-            if pattern.startswith(r"^CVE-"):
-                return identifier.upper()
-            return identifier
+        if re.match(r"^GHSA-", identifier, re.IGNORECASE):
+            return identifier.upper()
     return None
+
+
+def _first_cve_identifier(identifiers: list[str]) -> str | None:
+    for identifier in identifiers:
+        if re.match(r"^CVE-", identifier, re.IGNORECASE):
+            return identifier.upper()
+    return None
+
+
+def _normalize_ghsa_id(identifier: Any) -> str | None:
+    if not identifier:
+        return None
+    return str(identifier).upper()
+
+
+def _normalize_cve_id(identifier: Any) -> str | None:
+    if not identifier:
+        return None
+    return str(identifier).upper()
 
 
 def _string_list(value: Any) -> list[str]:
@@ -680,18 +764,12 @@ def _normalize_package_name(name: str) -> str:
 def _canonical_identifier(finding: Finding) -> str:
     if finding.ghsa_id:
         return finding.ghsa_id.upper()
-    ghsa_id = _first_matching_identifier(
-        [finding.advisory_id, *finding.aliases],
-        r"^GHSA-",
-    )
+    ghsa_id = _first_ghsa_identifier([finding.advisory_id, *finding.aliases])
     if ghsa_id:
         return ghsa_id
     if finding.cve_id:
         return finding.cve_id.upper()
-    cve_id = _first_matching_identifier(
-        [finding.advisory_id, *finding.aliases],
-        r"^CVE-",
-    )
+    cve_id = _first_cve_identifier([finding.advisory_id, *finding.aliases])
     return cve_id or finding.advisory_id.upper()
 
 

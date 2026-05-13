@@ -93,7 +93,7 @@ jobs:
             --github-output "$GITHUB_OUTPUT" \
             --github-token "$ADVISORY_GITHUB_TOKEN"
         env:
-          ADVISORY_GITHUB_TOKEN: ${{ github.event_name == 'pull_request' && '' || github.token }}
+          ADVISORY_GITHUB_TOKEN: ${{ github.event_name != 'pull_request' && github.token || '' }}
           PIP_AUDIT_EXIT_CODE: ${{ steps.pip-audit.outputs.exit_code }}
       - name: Append dependency audit summary
         if: always()

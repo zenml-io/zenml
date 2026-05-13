@@ -163,7 +163,7 @@ def test_strict_skip_preserves_vulnerability_classification(
     install_fake_github_api(
         monkeypatch,
         {
-            "https://api.github.com/advisories/GHSA-loww-1111-2222": {
+            "https://api.github.com/advisories/GHSA-LOWW-1111-2222": {
                 "ghsa_id": "GHSA-loww-1111-2222",
                 "severity": "low",
             }
@@ -225,6 +225,92 @@ def test_strict_skip_preserves_vulnerability_classification(
     assert "audit_error=true" in github_output.read_text(encoding="utf-8")
 
 
+def test_malformed_dependency_entries_are_audit_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Malformed entries should fail the audit but preserve valid findings."""
+    install_fake_github_api(
+        monkeypatch,
+        {
+            "https://api.github.com/advisories/GHSA-LOWW-1111-2222": {
+                "ghsa_id": "GHSA-loww-1111-2222",
+                "severity": "low",
+            }
+        },
+    )
+
+    report = classify(
+        {
+            "dependencies": [
+                "not-an-object",
+                {"name": "bad-vulns", "version": "1.0.0", "vulns": "bad"},
+                {
+                    "name": "mixed-vulns",
+                    "version": "2.0.0",
+                    "vulns": [
+                        "not-an-object",
+                        vulnerability("GHSA-loww-1111-2222"),
+                    ],
+                },
+            ]
+        }
+    )
+
+    assert report["audit_error"] is True
+    assert "Malformed pip-audit JSON" in report["audit_error_message"]
+    assert (
+        "dependency entry 0 was not an object" in report["audit_error_message"]
+    )
+    assert (
+        "dependency 'bad-vulns' field 'vulns' was not a list"
+        in report["audit_error_message"]
+    )
+    assert (
+        "vulnerability entry 0 was not an object"
+        in report["audit_error_message"]
+    )
+    assert report["counts"]["nonblocking"] == 1
+    assert report["nonblocking"][0]["package"] == "mixed-vulns"
+
+
+def test_malformed_dependencies_field_is_an_audit_error() -> None:
+    """A non-list dependencies field should not crash classification."""
+    report = classify({"dependencies": {"name": "not-a-list"}})
+
+    assert report["audit_error"] is True
+    assert (
+        "field 'dependencies' was not a list" in report["audit_error_message"]
+    )
+    assert report["counts"]["total"] == 0
+
+
+def test_empty_github_token_omits_authorization_header(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Pull request runs pass an empty advisory token."""
+    requested: list[Any] = []
+    install_fake_github_api(
+        monkeypatch,
+        {
+            "https://api.github.com/advisories/GHSA-LOWW-1111-2222": {
+                "ghsa_id": "GHSA-loww-1111-2222",
+                "severity": "low",
+            }
+        },
+        requested,
+    )
+
+    report = classify(
+        audit_data(
+            ("package-a", "1.0.0", vulnerability("GHSA-loww-1111-2222"))
+        ),
+        token="",
+    )
+
+    assert report["counts"]["nonblocking"] == 1
+    assert requested[0].get_header("Authorization") is None
+
+
 def test_medium_and_low_findings_are_nonblocking(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -232,11 +318,11 @@ def test_medium_and_low_findings_are_nonblocking(
     install_fake_github_api(
         monkeypatch,
         {
-            "https://api.github.com/advisories/GHSA-mmmm-1111-2222": {
+            "https://api.github.com/advisories/GHSA-MMMM-1111-2222": {
                 "ghsa_id": "GHSA-mmmm-1111-2222",
                 "severity": "medium",
             },
-            "https://api.github.com/advisories?cve_id=CVE-2026-0001": [
+            "https://api.github.com/advisories?cve_id=CVE-2026-0001&ecosystem=pip&affects=package-b&per_page=100": [
                 {
                     "ghsa_id": "GHSA-llll-1111-2222",
                     "cve_id": "CVE-2026-0001",
@@ -279,11 +365,11 @@ def test_high_and_critical_findings_are_blocking(
     install_fake_github_api(
         monkeypatch,
         {
-            "https://api.github.com/advisories/GHSA-high-1111-2222": {
+            "https://api.github.com/advisories/GHSA-HIGH-1111-2222": {
                 "ghsa_id": "GHSA-high-1111-2222",
                 "severity": "high",
             },
-            "https://api.github.com/advisories/GHSA-crit-1111-2222": {
+            "https://api.github.com/advisories/GHSA-CRIT-1111-2222": {
                 "ghsa_id": "GHSA-crit-1111-2222",
                 "severity": "critical",
             },
@@ -324,7 +410,7 @@ def test_github_api_failure_becomes_unknown_and_blocks(
     install_fake_github_api(
         monkeypatch,
         {
-            "https://api.github.com/advisories/GHSA-fail-1111-2222": URLError(
+            "https://api.github.com/advisories/GHSA-FAIL-1111-2222": URLError(
                 "temporary failure"
             )
         },
@@ -349,11 +435,11 @@ def test_ghsa_and_cve_lookup_paths_use_github_api(
     install_fake_github_api(
         monkeypatch,
         {
-            "https://api.github.com/advisories/GHSA-abcd-1111-2222": {
+            "https://api.github.com/advisories/GHSA-ABCD-1111-2222": {
                 "ghsa_id": "GHSA-abcd-1111-2222",
                 "severity": "medium",
             },
-            "https://api.github.com/advisories?cve_id=CVE-2026-1234": [
+            "https://api.github.com/advisories?cve_id=CVE-2026-1234&ecosystem=pip&affects=package-b&per_page=100": [
                 {
                     "ghsa_id": "GHSA-wxyz-1111-2222",
                     "cve_id": "CVE-2026-1234",
@@ -381,8 +467,8 @@ def test_ghsa_and_cve_lookup_paths_use_github_api(
 
     assert report["counts"]["total"] == 2
     assert [request.full_url for request in requested] == [
-        "https://api.github.com/advisories/GHSA-abcd-1111-2222",
-        "https://api.github.com/advisories?cve_id=CVE-2026-1234",
+        "https://api.github.com/advisories/GHSA-ABCD-1111-2222",
+        "https://api.github.com/advisories?cve_id=CVE-2026-1234&ecosystem=pip&affects=package-b&per_page=100",
     ]
     assert all(
         request.get_header("Authorization") == "Bearer secret-token"
@@ -397,7 +483,7 @@ def test_cve_lookup_filters_to_matching_python_package(
     install_fake_github_api(
         monkeypatch,
         {
-            "https://api.github.com/advisories?cve_id=CVE-2026-9999": [
+            "https://api.github.com/advisories?cve_id=CVE-2026-9999&ecosystem=pip&affects=package-a&per_page=100": [
                 {
                     "ghsa_id": "GHSA-npmx-1111-2222",
                     "cve_id": "CVE-2026-9999",
@@ -434,7 +520,7 @@ def test_cve_lookup_filters_to_matching_python_package(
 
     assert report["counts"]["blocking"] == 1
     assert report["blocking"][0]["severity"] == "high"
-    assert report["blocking"][0]["ghsa_id"] == "GHSA-piph-1111-2222"
+    assert report["blocking"][0]["ghsa_id"] == "GHSA-PIPH-1111-2222"
 
 
 def test_malformed_github_json_becomes_invalid_response_unknown(
@@ -443,7 +529,7 @@ def test_malformed_github_json_becomes_invalid_response_unknown(
     """Malformed GitHub JSON should produce a clear unknown reason."""
     install_fake_github_api(
         monkeypatch,
-        {"https://api.github.com/advisories/GHSA-json-1111-2222": b"not-json"},
+        {"https://api.github.com/advisories/GHSA-JSON-1111-2222": b"not-json"},
     )
 
     report = classify(
@@ -467,7 +553,7 @@ def test_duplicate_package_advisory_findings_are_deduplicated(
     install_fake_github_api(
         monkeypatch,
         {
-            "https://api.github.com/advisories/GHSA-dupe-1111-2222": {
+            "https://api.github.com/advisories/GHSA-DUPE-1111-2222": {
                 "ghsa_id": "GHSA-dupe-1111-2222",
                 "severity": "medium",
             }
@@ -497,11 +583,11 @@ def test_tracking_issue_body_includes_only_nonblocking_findings(
     install_fake_github_api(
         monkeypatch,
         {
-            "https://api.github.com/advisories/GHSA-high-1111-2222": {
+            "https://api.github.com/advisories/GHSA-HIGH-1111-2222": {
                 "ghsa_id": "GHSA-high-1111-2222",
                 "severity": "high",
             },
-            "https://api.github.com/advisories/GHSA-loww-1111-2222": {
+            "https://api.github.com/advisories/GHSA-LOWW-1111-2222": {
                 "ghsa_id": "GHSA-loww-1111-2222",
                 "severity": "low",
             },
@@ -541,7 +627,7 @@ def test_main_writes_compact_outputs(
     install_fake_github_api(
         monkeypatch,
         {
-            "https://api.github.com/advisories/GHSA-loww-1111-2222": {
+            "https://api.github.com/advisories/GHSA-LOWW-1111-2222": {
                 "ghsa_id": "GHSA-loww-1111-2222",
                 "severity": "low",
             }
