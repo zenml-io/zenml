@@ -168,7 +168,8 @@ def test_execute_pipeline_calls_subroutines(mocker: MockerFixture) -> None:
 
     assert result == "response"
     service._prepare_execute_with_orchestrator.assert_called_once_with(
-        resolved_params={"city": "Berlin", "temperature": 20}
+        run_name=None,
+        resolved_params={"city": "Berlin", "temperature": 20},
     )
     service._execute_with_orchestrator.assert_called_once_with(
         placeholder_run=placeholder_run,

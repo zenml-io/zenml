@@ -1008,12 +1008,25 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             return ExecutionStatus.FAILED
 
         job = job_list.items[0]
-        if job.status.conditions:
-            for condition in job.status.conditions:
-                if condition.type == "Complete" and condition.status == "True":
-                    return ExecutionStatus.COMPLETED
-                if condition.type == "Failed" and condition.status == "True":
-                    return ExecutionStatus.FAILED
+        job_name = job.metadata.name
+        status, error_message = kube_utils.check_job_status(
+            batch_api=self._k8s_batch_api,
+            core_api=self._k8s_core_api,
+            namespace=self.config.kubernetes_namespace,
+            job_name=job_name,
+            api_request_timeout=self.config.api_request_timeout,
+        )
+        if status == kube_utils.JobStatus.SUCCEEDED:
+            return ExecutionStatus.COMPLETED
+        if status == kube_utils.JobStatus.FAILED:
+            logger.error(
+                "Kubernetes job `%s:%s` for step run `%s` failed: %s",
+                self.config.kubernetes_namespace,
+                job_name,
+                step_run.id,
+                error_message,
+            )
+            return ExecutionStatus.FAILED
 
         return ExecutionStatus.RUNNING
 

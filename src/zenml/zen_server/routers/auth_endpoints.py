@@ -567,17 +567,6 @@ def api_token(
         )
 
     if (
-        pipeline_run_id
-        and token.pipeline_run_id
-        and pipeline_run_id != token.pipeline_run_id
-    ):
-        raise AuthorizationException(
-            f"Unable to scope API token to pipeline run {pipeline_run_id}. The "
-            f"token used to authorize this request is already scoped to "
-            f"pipeline run {token.pipeline_run_id}."
-        )
-
-    if (
         deployment_id
         and token.deployment_id
         and deployment_id != token.deployment_id
@@ -608,10 +597,8 @@ def api_token(
             )
 
     if pipeline_run_id:
-        # The pipeline run must exist and the run must not be concluded
         try:
-            # TODO: this is expensive, we should only fetch the minimum data here
-            pipeline_run = zen_store().get_run(pipeline_run_id, hydrate=True)
+            pipeline_run = zen_store().get_run(pipeline_run_id, hydrate=False)
         except KeyError:
             raise ValueError(
                 f"Pipeline run {pipeline_run_id} does not exist and API tokens "
@@ -629,6 +616,23 @@ def api_token(
                 "concluded and API tokens can no longer be generated for it "
                 "for security reasons."
             )
+
+        if token.pipeline_run_id and token.pipeline_run_id != pipeline_run.id:
+            # The token is already scoped to a different run -> we now check if
+            # the token is scoped to the root run.
+            # In the current implementation of nested runs, orchestration of
+            # nested pipelines happens in the same environment, which has a
+            # token scoped to the root run. Which means even for nested child
+            # runs, we will always try to generate a sub-run token from a token
+            # scoped to the root run. Once we allow different orchestration
+            # environments, we will need to check the whole hierarchy instead.
+            if token.pipeline_run_id != pipeline_run.root_run_id:
+                raise AuthorizationException(
+                    f"Unable to scope API token to pipeline run "
+                    f"{pipeline_run_id}. The token used to authorize this "
+                    f"request is already scoped to pipeline run "
+                    f"{token.pipeline_run_id}."
+                )
 
     if deployment_id:
         # The deployment must exist
