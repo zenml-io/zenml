@@ -757,8 +757,8 @@ class DynamicPipelineRunner:
         """Run the pipeline.
 
         Raises:
-            Exception: If the pipeline run failed.
-        """  # noqa: DOC502
+            Exception: If loading the pipeline fails.
+        """
         self._state.id = threading.get_ident()
         logs_context: ContextManager[Any] = nullcontext()
         if is_pipeline_logging_enabled(self._snapshot.pipeline_configuration):
@@ -803,13 +803,19 @@ class DynamicPipelineRunner:
 
             assert self._snapshot.stack
 
+            try:
+                pipeline = self.pipeline
+            except Exception as e:
+                self._publish_run_status(exception=e)
+                raise
+
             with (
                 InMemoryArtifactCache(),
                 env_utils.temporary_runtime_environment(
                     self._snapshot.pipeline_configuration, self._snapshot.stack
                 ),
                 DynamicPipelineRunContext(
-                    pipeline=self.pipeline,
+                    pipeline=pipeline,
                     run=self._run,
                     snapshot=self._snapshot,
                     runner=self,
@@ -1735,9 +1741,12 @@ class DynamicPipelineRunner:
             exception: Exception that caused the run to fail.
         """
         if exception is not None:
+            pipeline_func = (
+                self._pipeline.entrypoint if self._pipeline else None
+            )
             exception_info = exception_utils.collect_exception_information(
                 exception=exception,
-                user_func=self.pipeline.entrypoint,
+                user_func=pipeline_func,
             )
             self._run = publish_failed_pipeline_run(
                 self._run.id, exception_info=exception_info
