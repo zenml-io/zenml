@@ -42,9 +42,9 @@ from zenml.logger import (
 
 
 @pytest.fixture(scope="module", autouse=True)
-def auto_environment() -> (
-    Generator[tuple[SimpleNamespace, SimpleNamespace], None, None]
-):
+def auto_environment() -> Generator[
+    tuple[SimpleNamespace, SimpleNamespace], None, None
+]:
     """Use a lightweight test environment for logger-only tests."""
     yield SimpleNamespace(), SimpleNamespace()
 
@@ -323,8 +323,7 @@ def test_console_highlights_backticks_and_urls(
     assert "`dashboard`" not in formatted
     assert f"{ZenMLConsoleFormatter._PURPLE}dashboard" in formatted
     assert (
-        f"{ZenMLConsoleFormatter._BLUE}"
-        "https://docs.zenml.io/path?q=1"
+        f"{ZenMLConsoleFormatter._BLUE}https://docs.zenml.io/path?q=1"
     ) in formatted
 
 
