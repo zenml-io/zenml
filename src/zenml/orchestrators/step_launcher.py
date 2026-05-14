@@ -28,6 +28,7 @@ from typing import (
 
 from zenml.client import Client
 from zenml.config.step_configurations import Step
+from zenml.config.step_execution_spec import StepExecutionProtocol
 from zenml.config.step_run_info import StepRunInfo
 from zenml.constants import (
     ENV_ZENML_STEP_OPERATOR,
@@ -49,6 +50,7 @@ from zenml.models import (
 from zenml.models.v2.core.step_run import StepRunInputResponse
 from zenml.orchestrators import output_utils, publish_utils, step_run_utils
 from zenml.orchestrators import utils as orchestrator_utils
+from zenml.orchestrators.portable_step_runner import PortableStepRunner
 from zenml.orchestrators.signal_handler import SignalHandler
 from zenml.orchestrators.step_runner import StepRunner
 from zenml.stack import Stack
@@ -395,6 +397,17 @@ class StepLauncher:
             self._wait_until_resources_acquired(step_run_info)
 
         try:
+            if (
+                self._snapshot.is_dynamic
+                and self._step.spec.execution_spec
+                and self._step.spec.execution_spec.protocol
+                == StepExecutionProtocol.ZENML_PORTABLE_JSON_V1
+            ):
+                raise RuntimeError(
+                    "ZenBabel portable steps are only supported for static "
+                    "pipelines in v1."
+                )
+
             if self._step.config.step_operator:
                 step_operator_name = None
                 if isinstance(self._step.config.step_operator, str):
@@ -620,7 +633,26 @@ class StepLauncher:
             input_artifacts: The input artifact versions of the current step.
             output_artifact_uris: The output artifact URIs of the current step.
         """
-        runner = StepRunner(step=self._step, stack=self._stack)
+        execution_spec = self._step.spec.execution_spec
+        if execution_spec is None:
+            runner = StepRunner(step=self._step, stack=self._stack)
+        elif (
+            execution_spec.protocol
+            == StepExecutionProtocol.ZENML_PYTHON_STEP_V1
+        ):
+            runner = StepRunner(step=self._step, stack=self._stack)
+        elif (
+            execution_spec.protocol
+            == StepExecutionProtocol.ZENML_PORTABLE_JSON_V1
+        ):
+            runner = PortableStepRunner(step=self._step, stack=self._stack)
+        else:
+            raise RuntimeError(
+                f"Unsupported step execution protocol "
+                f"`{execution_spec.protocol}` for step "
+                f"`{self._invocation_id}`."
+            )
+
         runner.run(
             pipeline_run=pipeline_run,
             step_run=step_run,
