@@ -13,6 +13,9 @@
 #  permissions and limitations under the License.
 """Implementation of the S3 Artifact Store."""
 
+import os
+import posixpath
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from typing import (
     Any,
@@ -22,6 +25,7 @@ from typing import (
     Iterable,
     List,
     Optional,
+    Sequence,
     Tuple,
     Union,
     cast,
@@ -29,10 +33,17 @@ from typing import (
 
 import boto3
 import s3fs
+from boto3.s3.transfer import TransferConfig
+from botocore.config import Config
 from botocore.exceptions import ClientError
 from fsspec.asyn import FSTimeoutError, sync, sync_wrapper
 
-from zenml.artifact_stores import BaseArtifactStore
+from zenml.artifact_stores import (
+    BaseArtifactStore,
+    BulkDeleteResult,
+    ObjectDeleteFailure,
+    ObjectInfo,
+)
 from zenml.integrations.s3.flavors.s3_artifact_store_flavor import (
     S3ArtifactStoreConfig,
 )
@@ -41,10 +52,13 @@ from zenml.io.fileio import convert_to_str
 from zenml.logger import get_logger
 from zenml.secret.schemas import AWSSecretSchema
 from zenml.stack.authentication_mixin import AuthenticationMixin
+from zenml.utils import io_utils
 
 logger = get_logger(__name__)
 
 PathType = Union[bytes, str]
+S3_DELETE_MAX_OBJECTS = 1000
+DEFAULT_S3_DOWNLOAD_WORKERS = 8
 
 
 def _normalize_s3_path(path: str) -> str:
@@ -164,6 +178,7 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
     """Artifact Store for S3 based artifacts."""
 
     _filesystem: Optional[ZenMLS3Filesystem] = None
+    _boto3_client_holder: Optional[Any] = None
 
     is_versioned: bool = False
 
@@ -180,6 +195,7 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """
         super().__init__(*args, **kwargs)
         self._boto3_bucket_holder = None
+        self._boto3_client_holder = None
 
         # determine bucket versioning status
         versioning = self._boto3_bucket.Versioning()
@@ -503,6 +519,284 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         for directory, subdirectories, files in self.filesystem.walk(path=top):
             yield f"s3://{directory}", subdirectories, files
 
+    @staticmethod
+    def _build_s3_uri(bucket_name: str, key: str) -> str:
+        """Build an S3 URI from bucket and key parts."""
+        if key:
+            return f"s3://{bucket_name}/{key}"
+        return f"s3://{bucket_name}"
+
+    @staticmethod
+    def _object_matches_prefix(key: str, prefix_key: str) -> bool:
+        """Return whether an S3 object belongs to a requested prefix."""
+        if not prefix_key:
+            return True
+
+        normalized_prefix = prefix_key.rstrip("/")
+        return key == normalized_prefix or key.startswith(
+            f"{normalized_prefix}/"
+        )
+
+    @staticmethod
+    def _get_relative_key_path(key: str, prefix_key: str) -> str:
+        """Get an S3 key path relative to a listed prefix."""
+        normalized_prefix = prefix_key.rstrip("/")
+        if not normalized_prefix:
+            return key
+        if key == normalized_prefix:
+            return posixpath.basename(key)
+
+        prefix_with_separator = f"{normalized_prefix}/"
+        if key.startswith(prefix_with_separator):
+            return key[len(prefix_with_separator) :]
+
+        return posixpath.basename(key)
+
+    @staticmethod
+    def _get_safe_download_path(local_dir: str, relative_path: str) -> str:
+        """Build a local download path that stays inside ``local_dir``."""
+        normalized_relative_path = os.path.normpath(relative_path)
+        if normalized_relative_path in ("", "."):
+            raise ValueError("Object relative path cannot be empty.")
+        if os.path.isabs(normalized_relative_path) or (
+            normalized_relative_path == ".."
+            or normalized_relative_path.startswith(f"..{os.sep}")
+        ):
+            raise ValueError(
+                f"Object relative path `{relative_path}` escapes the local "
+                "download directory."
+            )
+
+        destination = os.path.abspath(
+            os.path.join(local_dir, normalized_relative_path)
+        )
+        local_dir_absolute = os.path.abspath(local_dir)
+        if os.path.commonpath([local_dir_absolute, destination]) != local_dir_absolute:
+            raise ValueError(
+                f"Object relative path `{relative_path}` escapes the local "
+                "download directory."
+            )
+
+        return destination
+
+    @staticmethod
+    def _chunked(
+        items: Sequence[Dict[str, str]], chunk_size: int
+    ) -> Iterable[Sequence[Dict[str, str]]]:
+        """Yield fixed-size chunks from a sequence."""
+        for index in range(0, len(items), chunk_size):
+            yield items[index : index + chunk_size]
+
+    def _get_object_info(
+        self, object_data: Dict[str, Any], bucket_name: str, prefix_key: str
+    ) -> ObjectInfo:
+        """Build object metadata from a native S3 listing entry."""
+        key = cast(str, object_data["Key"])
+        return ObjectInfo(
+            uri=self._build_s3_uri(bucket_name, key),
+            relative_path=self._get_relative_key_path(key, prefix_key),
+            size=object_data.get("Size"),
+            etag=object_data.get("ETag"),
+            last_modified=object_data.get("LastModified"),
+        )
+
+    def _delete_s3_object_identifiers(
+        self,
+        bucket_name: str,
+        object_identifiers: Sequence[Dict[str, str]],
+        capture_exceptions: bool = True,
+    ) -> BulkDeleteResult:
+        """Delete S3 objects or versions in provider-safe batches."""
+        deleted_paths: List[str] = []
+        failures: List[ObjectDeleteFailure] = []
+
+        for batch in self._chunked(
+            object_identifiers, S3_DELETE_MAX_OBJECTS
+        ):
+            try:
+                response = self._boto3_client.delete_objects(
+                    Bucket=bucket_name,
+                    Delete={"Objects": list(batch), "Quiet": False},
+                )
+            except Exception as e:
+                if not capture_exceptions:
+                    raise
+                failures.extend(
+                    ObjectDeleteFailure(
+                        path=self._build_s3_uri(bucket_name, object_["Key"]),
+                        error=e,
+                    )
+                    for object_ in batch
+                )
+                continue
+
+            failed_identifiers = set()
+            for error_data in response.get("Errors", []):
+                key = cast(str, error_data["Key"])
+                version_id = error_data.get("VersionId")
+                failed_identifiers.add((key, version_id))
+                error = RuntimeError(
+                    f"{error_data.get('Code', 'Unknown')}: "
+                    f"{error_data.get('Message', 'S3 object deletion failed')}"
+                )
+                failures.append(
+                    ObjectDeleteFailure(
+                        path=self._build_s3_uri(bucket_name, key), error=error
+                    )
+                )
+
+            deleted_objects = response.get("Deleted", [])
+            if deleted_objects:
+                deleted_paths.extend(
+                    self._build_s3_uri(bucket_name, cast(str, object_["Key"]))
+                    for object_ in deleted_objects
+                )
+                continue
+
+            deleted_paths.extend(
+                self._build_s3_uri(bucket_name, object_["Key"])
+                for object_ in batch
+                if (object_["Key"], object_.get("VersionId"))
+                not in failed_identifiers
+            )
+
+        return BulkDeleteResult(
+            deleted_paths=deleted_paths, failures=failures
+        )
+
+    def list_objects(
+        self, prefix: PathType, recursive: bool = False
+    ) -> Iterable[ObjectInfo]:
+        """List S3 objects below a prefix with native object metadata."""
+        sanitized_prefix = self._sanitize_path(prefix)
+        bucket_name, prefix_key = split_s3_path(sanitized_prefix)
+        listing_prefix = prefix_key.rstrip("/")
+        objects: List[ObjectInfo] = []
+
+        paginator = self._boto3_client.get_paginator("list_objects_v2")
+        for page in paginator.paginate(
+            Bucket=bucket_name, Prefix=listing_prefix
+        ):
+            for object_data in page.get("Contents", []):
+                key = cast(str, object_data["Key"])
+                if key.endswith("/"):
+                    continue
+                if not self._object_matches_prefix(key, prefix_key):
+                    continue
+
+                object_info = self._get_object_info(
+                    object_data, bucket_name, prefix_key
+                )
+                if recursive or "/" not in object_info.relative_path.strip(
+                    "/"
+                ):
+                    objects.append(object_info)
+
+        return objects
+
+    def delete_objects(self, paths: Iterable[PathType]) -> BulkDeleteResult:
+        """Delete multiple S3 objects with native batch delete calls."""
+        objects_by_bucket: Dict[str, List[Dict[str, str]]] = {}
+        failures: List[ObjectDeleteFailure] = []
+
+        for path in paths:
+            sanitized_path = self._sanitize_path(path)
+            try:
+                bucket_name, key = split_s3_path(sanitized_path)
+                if not key:
+                    raise ValueError(
+                        f"Cannot delete S3 bucket root `{sanitized_path}`."
+                    )
+            except Exception as e:
+                failures.append(
+                    ObjectDeleteFailure(path=sanitized_path, error=e)
+                )
+                continue
+
+            objects_by_bucket.setdefault(bucket_name, []).append({"Key": key})
+
+        deleted_paths: List[str] = []
+        for bucket_name, object_identifiers in objects_by_bucket.items():
+            result = self._delete_s3_object_identifiers(
+                bucket_name=bucket_name,
+                object_identifiers=object_identifiers,
+            )
+            deleted_paths.extend(result.deleted_paths)
+            failures.extend(result.failures)
+
+        return BulkDeleteResult(
+            deleted_paths=deleted_paths, failures=failures
+        )
+
+    def read_range(
+        self, path: PathType, offset: int, length: Optional[int] = None
+    ) -> bytes:
+        """Read a byte range from S3 using a native ranged GetObject call."""
+        if offset < 0:
+            raise ValueError("Range read offset must be non-negative.")
+        if length is not None and length < 0:
+            raise ValueError("Range read length must be non-negative.")
+        if length == 0:
+            return b""
+
+        sanitized_path = self._sanitize_path(path)
+        bucket_name, key = split_s3_path(sanitized_path)
+        range_header = f"bytes={offset}-"
+        if length is not None:
+            range_header = f"bytes={offset}-{offset + length - 1}"
+
+        response = self._boto3_client.get_object(
+            Bucket=bucket_name,
+            Key=key,
+            Range=range_header,
+        )
+        body = response["Body"]
+        try:
+            return cast(bytes, body.read())
+        finally:
+            body.close()
+
+    def download_objects_to_directory(
+        self,
+        objects: Iterable[ObjectInfo],
+        local_dir: PathType,
+        max_workers: Optional[int] = None,
+    ) -> bool:
+        """Download S3 objects into a local directory with boto3 transfers."""
+        object_list = list(objects)
+        local_directory = convert_to_str(local_dir)
+        if io_utils.is_remote(local_directory):
+            raise ValueError("Download directory must be a local path.")
+        if max_workers is not None and max_workers < 1:
+            raise ValueError("Download worker count must be positive.")
+
+        os.makedirs(local_directory, exist_ok=True)
+        transfer_config = TransferConfig(
+            max_concurrency=max_workers or DEFAULT_S3_DOWNLOAD_WORKERS
+        )
+
+        def _download_object(object_info: ObjectInfo) -> None:
+            sanitized_uri = self._sanitize_path(object_info.uri)
+            bucket_name, key = split_s3_path(sanitized_uri)
+            destination = self._get_safe_download_path(
+                local_directory, object_info.relative_path
+            )
+            os.makedirs(os.path.dirname(destination), exist_ok=True)
+            self._boto3_client.download_file(
+                Bucket=bucket_name,
+                Key=key,
+                Filename=destination,
+                Config=transfer_config,
+            )
+
+        worker_count = max_workers or min(
+            DEFAULT_S3_DOWNLOAD_WORKERS, max(1, len(object_list))
+        )
+        with ThreadPoolExecutor(max_workers=worker_count) as executor:
+            list(executor.map(_download_object, object_list))
+
+        return True
+
     def _remove_previous_file_versions(self, path: PathType) -> None:
         """Keep only the latest file version in the given path.
 
@@ -512,21 +806,62 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         Args:
             path: The path to the file.
         """
-        if self.is_versioned:
-            if isinstance(path, bytes):
-                path = path.decode()
-            _, prefix = split_s3_path(path)
-            with self._shield_lack_of_versioning_permissions(
-                "s3:ListBucketVersions"
-            ):
-                for version in self._boto3_bucket.object_versions.filter(
-                    Prefix=prefix
-                ):
-                    if not version.is_latest:
-                        with self._shield_lack_of_versioning_permissions(
-                            "s3:DeleteObjectVersion"
-                        ):
-                            version.delete()
+        if not self.is_versioned:
+            return
+
+        if isinstance(path, bytes):
+            path = path.decode()
+        bucket_name, prefix = split_s3_path(path)
+        object_identifiers: List[Dict[str, str]] = []
+
+        with self._shield_lack_of_versioning_permissions(
+            "s3:ListBucketVersions"
+        ):
+            paginator = self._boto3_client.get_paginator(
+                "list_object_versions"
+            )
+            for page in paginator.paginate(Bucket=bucket_name, Prefix=prefix):
+                for version_data in page.get("Versions", []):
+                    if version_data.get("Key") != prefix:
+                        continue
+                    if not version_data.get("IsLatest", False):
+                        object_identifiers.append(
+                            {
+                                "Key": cast(str, version_data["Key"]),
+                                "VersionId": cast(
+                                    str, version_data["VersionId"]
+                                ),
+                            }
+                        )
+                for marker_data in page.get("DeleteMarkers", []):
+                    if marker_data.get("Key") != prefix:
+                        continue
+                    if not marker_data.get("IsLatest", False):
+                        object_identifiers.append(
+                            {
+                                "Key": cast(str, marker_data["Key"]),
+                                "VersionId": cast(str, marker_data["VersionId"]),
+                            }
+                        )
+
+        if not object_identifiers:
+            return
+
+        with self._shield_lack_of_versioning_permissions(
+            "s3:DeleteObjectVersion"
+        ):
+            result = self._delete_s3_object_identifiers(
+                bucket_name=bucket_name,
+                object_identifiers=object_identifiers,
+                capture_exceptions=False,
+            )
+            if result.failures:
+                logger.warning(
+                    "Failed to remove %d previous S3 object versions for %s: %s",
+                    len(result.failures),
+                    path,
+                    [failure.path for failure in result.failures],
+                )
 
     def _build_boto3_kwargs(self) -> Dict[str, Any]:
         """Build boto3 kwargs by layering config overrides over connector credentials.
@@ -550,8 +885,21 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
             kwargs["aws_session_token"] = token
         if region is not None and "region_name" not in kwargs:
             kwargs["region_name"] = region
+        if self.config.config_kwargs and "config" not in kwargs:
+            kwargs["config"] = Config(**self.config.config_kwargs)
 
         return kwargs
+
+    @property
+    def _boto3_client(self) -> Any:
+        """Get the boto3 S3 client."""
+        if self._boto3_client_holder and not self.connector_has_expired():
+            return self._boto3_client_holder
+
+        self._boto3_client_holder = boto3.client(
+            "s3", **self._build_boto3_kwargs()
+        )
+        return self._boto3_client_holder
 
     @property
     def _boto3_bucket(self) -> Any:
@@ -567,6 +915,28 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         self._boto3_bucket_holder = s3.Bucket(self.config.bucket)
         return self._boto3_bucket_holder
 
+    @staticmethod
+    def _is_missing_versioning_permission_error(
+        error: ClientError, auth_missing: str
+    ) -> bool:
+        """Return whether an AWS error indicates missing version permissions."""
+        error_data = error.response.get("Error", {})
+        error_code = error_data.get("Code", "")
+        error_message = str(error)
+        if error_data.get("Message"):
+            error_message = f"{error_message} {error_data['Message']}"
+        error_message = error_message.lower()
+
+        if error_code in {"AccessDenied", "UnauthorizedOperation"}:
+            return True
+        return (
+            auth_missing.lower() in error_message
+            and (
+                "not authorized" in error_message
+                or "access denied" in error_message
+            )
+        )
+
     @contextmanager
     def _shield_lack_of_versioning_permissions(
         self, auth_missing: str
@@ -574,7 +944,7 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         try:
             yield
         except ClientError as e:
-            if "not authorized" in e.args[0] and auth_missing in e.args[0]:
+            if self._is_missing_versioning_permission_error(e, auth_missing):
                 logger.warning(
                     "Your AWS Connector is lacking critical Versioning permissions. "
                     f"Please check that `{auth_missing}` is granted."
@@ -582,3 +952,5 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
                     "Artifact Store bucket."
                 )
                 self.is_versioned = False
+                return
+            raise
