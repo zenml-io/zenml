@@ -24,6 +24,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
+    Iterable,
     List,
     Optional,
     Type,
@@ -32,6 +33,10 @@ from typing import (
 )
 from uuid import UUID, uuid4
 
+from zenml.artifact_stores.base_artifact_store import (
+    BaseArtifactStore,
+    ObjectInfo,
+)
 from zenml.artifacts.preexisting_data_materializer import (
     PreexistingDataMaterializer,
 )
@@ -74,7 +79,6 @@ from zenml.utils import source_utils
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 if TYPE_CHECKING:
-    from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
     from zenml.config.source import Source
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.metadata.metadata_types import MetadataType
@@ -83,6 +87,8 @@ if TYPE_CHECKING:
     MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
 
 logger = get_logger(__name__)
+
+_ARTIFACT_DOWNLOAD_CHUNK_SIZE = 1024 * 1024
 
 
 # ----------
@@ -584,6 +590,100 @@ def load_artifact_from_response(artifact: "ArtifactVersionResponse") -> Any:
     )
 
 
+def _overrides_artifact_store_method(
+    artifact_store: "BaseArtifactStore", method_name: str
+) -> bool:
+    """Return whether an artifact store overrides an optional helper."""
+    store_method = getattr(type(artifact_store), method_name, None)
+    base_method = getattr(BaseArtifactStore, method_name)
+    return store_method is not None and store_method is not base_method
+
+
+def _get_artifact_zip_entry_name(path: Union[bytes, str]) -> str:
+    """Get the ZIP entry name for an artifact-store relative path."""
+    return path.decode() if isinstance(path, bytes) else path
+
+
+def _list_artifact_objects_with_listdir(
+    artifact_store: "BaseArtifactStore", artifact_uri: str
+) -> List[ObjectInfo]:
+    """List artifact files with the pre-acceleration listdir behavior."""
+    objects: List[ObjectInfo] = []
+    for file in artifact_store.listdir(artifact_uri):
+        file_name = _get_artifact_zip_entry_name(file)
+        objects.append(
+            ObjectInfo(
+                uri=str(Path(artifact_uri) / file_name),
+                relative_path=file_name,
+            )
+        )
+    return objects
+
+
+def _list_artifact_objects_for_download(
+    artifact_store: "BaseArtifactStore", artifact_uri: str
+) -> List[ObjectInfo]:
+    """List artifact files, using native object listing when available."""
+    if _overrides_artifact_store_method(artifact_store, "list_objects"):
+        return list(artifact_store.list_objects(artifact_uri, recursive=False))
+
+    return _list_artifact_objects_with_listdir(artifact_store, artifact_uri)
+
+
+def _get_local_artifact_download_path(
+    local_dir: str, relative_path: str
+) -> Path:
+    """Get a safe path for a provider-downloaded artifact file."""
+    download_root = Path(local_dir).resolve()
+    local_path = (download_root / relative_path).resolve()
+    if not local_path.is_relative_to(download_root):
+        raise ValueError(
+            f"Object relative path `{relative_path}` escapes the local "
+            "download directory."
+        )
+    return local_path
+
+
+def _write_downloaded_artifact_objects_to_zip(
+    zipf: zipfile.ZipFile,
+    objects: Iterable[ObjectInfo],
+    local_dir: str,
+) -> None:
+    """Write provider-downloaded artifact objects to a ZIP file."""
+    for object_info in objects:
+        entry_name = _get_artifact_zip_entry_name(object_info.relative_path)
+        local_path = _get_local_artifact_download_path(local_dir, entry_name)
+        zipf.write(local_path, arcname=entry_name)
+
+
+def _stream_artifact_objects_to_zip(
+    zipf: zipfile.ZipFile,
+    artifact_store: "BaseArtifactStore",
+    objects: Iterable[ObjectInfo],
+) -> None:
+    """Stream artifact objects from the artifact store into a ZIP file."""
+    for object_info in objects:
+        entry_name = _get_artifact_zip_entry_name(object_info.relative_path)
+        with artifact_store.open(object_info.uri, mode="rb") as store_file:
+            with zipf.open(entry_name, mode="w") as zip_file:
+                while chunk := store_file.read(_ARTIFACT_DOWNLOAD_CHUNK_SIZE):
+                    zip_file.write(chunk)
+
+
+def _download_artifact_objects_to_directory(
+    artifact_store: "BaseArtifactStore",
+    objects: List[ObjectInfo],
+    local_dir: str,
+) -> bool:
+    """Download objects with a native transfer helper when available."""
+    if not _overrides_artifact_store_method(
+        artifact_store, "download_objects_to_directory"
+    ):
+        return False
+
+    return artifact_store.download_objects_to_directory(objects, local_dir)
+
+
 def download_artifact_files_from_response(
     artifact: "ArtifactVersionResponse",
     path: str,
@@ -608,37 +708,29 @@ def download_artifact_files_from_response(
     artifact_store = _get_artifact_store_from_response_or_from_active_stack(
         artifact=artifact
     )
+    objects = _list_artifact_objects_for_download(artifact_store, artifact.uri)
 
-    if filepaths := artifact_store.listdir(artifact.uri):
-        # save a zipfile to 'path' containing all the files
-        # in 'filepaths' with compression
-        try:
-            with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zipf:
-                for file in filepaths:
-                    # Ensure 'file' is a string for path operations
-                    # and ZIP entry naming
-                    file_str = (
-                        file.decode() if isinstance(file, bytes) else file
+    if not objects:
+        return
+
+    try:
+        with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zipf:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                if _download_artifact_objects_to_directory(
+                    artifact_store, objects, temp_dir
+                ):
+                    _write_downloaded_artifact_objects_to_zip(
+                        zipf, objects, temp_dir
                     )
-                    file_path = str(Path(artifact.uri) / file_str)
-                    with artifact_store.open(
-                        file_path, mode="rb"
-                    ) as store_file:
-                        # Stream file in chunks directly to ZIP without loading
-                        # entire file into memory
-                        CHUNK_SIZE = 8192
-                        with zipf.open(file_str, mode="w") as zip_file:
-                            while True:
-                                if chunk := store_file.read(CHUNK_SIZE):
-                                    zip_file.write(chunk)
-                                else:
-                                    break
-        except Exception as e:
-            logger.error(
-                f"Failed to save artifact '{artifact.id}' to zip file "
-                f" '{path}': {e}"
-            )
-            raise
+                    return
+
+            _stream_artifact_objects_to_zip(zipf, artifact_store, objects)
+    except Exception as e:
+        logger.error(
+            f"Failed to save artifact '{artifact.id}' to zip file "
+            f" '{path}': {e}"
+        )
+        raise
 
 
 def get_producer_step_of_artifact(

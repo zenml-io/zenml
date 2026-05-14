@@ -331,13 +331,14 @@ def test_download_artifact_files_from_response_fails_if_exists(
 
 
 def test_download_artifact_files_with_large_file(clean_client):
-    """Test downloading artifact files larger than chunk size (8192 bytes).
+    """Test downloading artifact files larger than the stream chunk size.
 
-    This test ensures that files larger than the internal CHUNK_SIZE are
-    downloaded correctly without data loss. Regression test for issue #4349.
+    This test ensures that files larger than the internal streaming chunk size
+    are downloaded correctly without data loss. Regression test for issue
+    #4349.
     """
-    # Create a large artifact (> 8192 bytes to trigger chunking)
-    large_data = b"X" * 10000 + b"Y" * 10000 + b"Z" * 5000  # 25,000 bytes
+    # Create a large artifact (> 1 MiB to trigger chunking)
+    large_data = b"X" * 1_000_000 + b"Y" * 1_000_000 + b"Z" * 500_000
 
     # Save the artifact
     artifact_name = "large_test_artifact"
@@ -369,7 +370,7 @@ def test_download_artifact_files_with_large_file(clean_client):
             extracted_data = f.read()
 
         # Verify the complete data was preserved (not just the last chunk)
-        assert len(extracted_data) > 8192, (
+        assert len(extracted_data) > 1_000_000, (
             f"Extracted file is only {len(extracted_data)} bytes, "
             "suggesting only one chunk was preserved"
         )

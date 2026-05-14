@@ -40,6 +40,16 @@ The Artifact Log Store handles different artifact store backends intelligently:
 
 This ensures consistent behavior across all supported artifact store types.
 
+#### Cloud IO acceleration
+
+For cloud-backed artifact stores, ZenML can use optional provider-native helpers behind the same public APIs. The log format, artifact locations, and SDK methods do not change; the difference is that ZenML can ask the cloud provider to do fewer, larger operations instead of many small file-like operations.
+
+- **GCS**: Immutable log fragments can be finalized with GCS compose operations. This avoids downloading every fragment into the ZenML process and re-uploading the merged log. GCS only composes up to 32 source objects at a time, so ZenML uses temporary intermediate compose objects for larger fragment sets and then cleans them up. If compose or cleanup is not available, ZenML falls back to the portable artifact-store path. The stored logs are still NDJSON and existing `.log` files or directory-style log URIs remain readable.
+- **S3**: ZenML can use native object listing, bulk deletion, ranged reads, and boto3 transfer helpers. This is especially useful for many-file artifact downloads and cleanup of log objects. On versioned buckets, cleanup may need to account for object versions; if the provider-specific path cannot handle a case safely, ZenML falls back to existing file-like behavior.
+- **Azure Blob Storage**: ZenML can use append blobs for log writes, blob batch deletion for cleanup, ranged reads, and native download helpers. Append blobs have provider limits on append block size and block count, so ZenML falls back to the existing `adlfs` path when append blobs are not suitable or not supported for the target URI.
+
+Raw artifact downloads through `ArtifactVersionResponse.download_files()` still create a local ZIP file with the same public API and ZIP entry names as before. When supported by the artifact store, ZenML lists objects once and downloads them to a temporary local directory with provider-native transfer helpers before building the ZIP. Stores without these helpers keep the existing streaming behavior. This does not add provider-side ZIP creation, and it does not change non-recursive artifact download behavior.
+
 ### Environment Variables
 
 The Artifact Log Store uses OpenTelemetry's batch processing under the hood. You can tune the batching behavior using these environment variables:

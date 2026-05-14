@@ -11,16 +11,20 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import io
 import os
 import shutil
 import tempfile
+import zipfile
 
 import pytest
 from pydantic import BaseModel
 
+from zenml.artifact_stores.base_artifact_store import ObjectInfo
 from zenml.artifacts.utils import (
     _load_artifact_from_uri,
     _strip_timestamp_from_multiline_string,
+    download_artifact_files_from_response,
     load_artifact_from_response,
     load_model_from_metadata,
     save_model_metadata,
@@ -118,6 +122,176 @@ def test_load_artifact_from_response(mocker, model_artifact):
 
     # Ensure the _load_artifact_from_uri function is called
     mocker_load_artifact.assert_called_once()
+
+
+class _ListdirOnlyArtifactStore:
+    """Small fake store that only supports the legacy download path."""
+
+    def __init__(self, artifact_uri: str, files: dict[str, bytes]) -> None:
+        self.artifact_uri = artifact_uri
+        self.files = files
+        self.listdir_calls: list[str] = []
+        self.open_calls: list[str] = []
+
+    def listdir(self, path: str) -> list[str]:
+        self.listdir_calls.append(path)
+        return list(self.files)
+
+    def open(self, path: str, mode: str = "rb") -> io.BytesIO:
+        self.open_calls.append(path)
+        relative_path = os.path.relpath(path, self.artifact_uri)
+        return io.BytesIO(self.files[relative_path])
+
+
+class _NativeListStreamingArtifactStore:
+    """Small fake store with native listing but no native download."""
+
+    def __init__(self, objects: dict[str, bytes]) -> None:
+        self.objects = objects
+        self.list_objects_calls: list[tuple[str, bool]] = []
+        self.open_calls: list[str] = []
+        self.download_calls = 0
+
+    def list_objects(
+        self, prefix: str, recursive: bool = False
+    ) -> list[ObjectInfo]:
+        self.list_objects_calls.append((prefix, recursive))
+        return [
+            ObjectInfo(uri=uri, relative_path=os.path.basename(uri))
+            for uri in self.objects
+        ]
+
+    def download_objects_to_directory(
+        self,
+        objects: list[ObjectInfo],
+        local_dir: str,
+        max_workers: int | None = None,
+    ) -> bool:
+        self.download_calls += 1
+        return False
+
+    def open(self, path: str, mode: str = "rb") -> io.BytesIO:
+        self.open_calls.append(path)
+        return io.BytesIO(self.objects[path])
+
+
+class _AcceleratedArtifactStore:
+    """Small fake store that handles bulk artifact downloads."""
+
+    def __init__(self, objects: dict[str, bytes]) -> None:
+        self.objects = objects
+        self.downloaded_relative_paths: list[str] = []
+
+    def list_objects(
+        self, prefix: str, recursive: bool = False
+    ) -> list[ObjectInfo]:
+        return [
+            ObjectInfo(uri=uri, relative_path=os.path.basename(uri))
+            for uri in self.objects
+        ]
+
+    def download_objects_to_directory(
+        self,
+        objects: list[ObjectInfo],
+        local_dir: str,
+        max_workers: int | None = None,
+    ) -> bool:
+        for object_info in objects:
+            self.downloaded_relative_paths.append(object_info.relative_path)
+            destination = os.path.join(local_dir, object_info.relative_path)
+            os.makedirs(os.path.dirname(destination), exist_ok=True)
+            with open(destination, "wb") as file:
+                file.write(self.objects[object_info.uri])
+        return True
+
+    def open(self, path: str, mode: str = "rb") -> io.BytesIO:
+        raise AssertionError("Accelerated downloads should not stream files.")
+
+
+def _patch_artifact_store(mocker, artifact_store):
+    return mocker.patch(
+        "zenml.artifacts.utils."
+        "_get_artifact_store_from_response_or_from_active_stack",
+        return_value=artifact_store,
+    )
+
+
+def _read_zip_contents(path: str) -> dict[str, bytes]:
+    with zipfile.ZipFile(path, "r") as zip_file:
+        return {
+            entry_name: zip_file.read(entry_name)
+            for entry_name in zip_file.namelist()
+        }
+
+
+def test_download_artifact_files_uses_listdir_streaming_fallback(
+    tmp_path, mocker
+):
+    """Test that stores without optional hooks keep listdir/open behavior."""
+    artifact_uri = str(tmp_path / "artifact")
+    files = {
+        f"file-{index}.txt": f"value-{index}".encode() for index in range(20)
+    }
+    artifact_store = _ListdirOnlyArtifactStore(artifact_uri, files)
+    artifact = mocker.Mock(id="artifact-id", uri=artifact_uri)
+    _patch_artifact_store(mocker, artifact_store)
+
+    zipfile_path = str(tmp_path / "artifact.zip")
+    download_artifact_files_from_response(artifact, path=zipfile_path)
+
+    assert _read_zip_contents(zipfile_path) == files
+    assert artifact_store.listdir_calls == [artifact_uri]
+    assert artifact_store.open_calls == [
+        str(os.path.join(artifact_uri, file_name)) for file_name in files
+    ]
+
+
+def test_download_artifact_files_streams_after_native_list_if_download_unsupported(
+    tmp_path, mocker
+):
+    """Test native listing with streaming fallback for stores like GCS."""
+    artifact_uri = "gs://bucket/artifact"
+    objects = {
+        f"{artifact_uri}/file-{index}.txt": f"value-{index}".encode()
+        for index in range(3)
+    }
+    artifact_store = _NativeListStreamingArtifactStore(objects)
+    artifact = mocker.Mock(id="artifact-id", uri=artifact_uri)
+    _patch_artifact_store(mocker, artifact_store)
+
+    zipfile_path = str(tmp_path / "artifact.zip")
+    download_artifact_files_from_response(artifact, path=zipfile_path)
+
+    assert _read_zip_contents(zipfile_path) == {
+        os.path.basename(uri): content for uri, content in objects.items()
+    }
+    assert artifact_store.list_objects_calls == [(artifact_uri, False)]
+    assert artifact_store.download_calls == 1
+    assert artifact_store.open_calls == list(objects)
+
+
+def test_download_artifact_files_uses_accelerated_download_helper(
+    tmp_path, mocker
+):
+    """Test native list/download helper path before ZIP creation."""
+    artifact_uri = "s3://bucket/artifact"
+    objects = {
+        f"{artifact_uri}/file-{index}.txt": f"value-{index}".encode()
+        for index in range(25)
+    }
+    artifact_store = _AcceleratedArtifactStore(objects)
+    artifact = mocker.Mock(id="artifact-id", uri=artifact_uri)
+    _patch_artifact_store(mocker, artifact_store)
+
+    zipfile_path = str(tmp_path / "artifact.zip")
+    download_artifact_files_from_response(artifact, path=zipfile_path)
+
+    assert _read_zip_contents(zipfile_path) == {
+        os.path.basename(uri): content for uri, content in objects.items()
+    }
+    assert artifact_store.downloaded_relative_paths == [
+        os.path.basename(uri) for uri in objects
+    ]
 
 
 class TempClass(BaseModel):
