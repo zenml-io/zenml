@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the GCP Artifact Store."""
 
+import posixpath
 from typing import (
     Any,
     Callable,
@@ -20,16 +21,24 @@ from typing import (
     Iterable,
     List,
     Optional,
+    Sequence,
     Tuple,
     Union,
     cast,
 )
+from uuid import uuid4
 
 import gcsfs
+from google.api_core.exceptions import NotFound, PreconditionFailed
 from google.cloud import storage
 from google.oauth2 import credentials as gcp_credentials
 
-from zenml.artifact_stores import BaseArtifactStore
+from zenml.artifact_stores import (
+    BaseArtifactStore,
+    BulkDeleteResult,
+    ObjectDeleteFailure,
+    ObjectInfo,
+)
 from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
     GCP_PATH_PREFIX,
     GCPArtifactStoreConfig,
@@ -42,11 +51,15 @@ from zenml.stack.authentication_mixin import AuthenticationMixin
 logger = get_logger(__name__)
 PathType = Union[bytes, str]
 
+GCS_COMPOSE_MAX_SOURCES = 32
+GCS_COMPOSE_TEMPORARY_PREFIX = ".zenml-compose-"
+
 
 class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
     """Artifact Store for Google Cloud Storage based artifacts."""
 
     _filesystem: Optional[gcsfs.GCSFileSystem] = None
+    _storage_client: Optional[storage.Client] = None
 
     @property
     def config(self) -> GCPArtifactStoreConfig:
@@ -99,6 +112,289 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
         self._filesystem = gcsfs.GCSFileSystem(token=token)
 
         return self._filesystem
+
+    @property
+    def storage_client(self) -> storage.Client:
+        """The native GCS client for provider-side object operations.
+
+        Returns:
+            A Google Cloud Storage client configured with the same connector or
+            secret credentials as the gcsfs filesystem.
+
+        Raises:
+            RuntimeError: If the linked connector returns the wrong client type.
+        """
+        if self._storage_client and not self.connector_has_expired():
+            return self._storage_client
+
+        connector = self.get_connector()
+        if connector:
+            client = connector.connect()
+            if not isinstance(client, storage.Client):
+                raise RuntimeError(
+                    f"Expected a google.cloud.storage.Client while trying to "
+                    f"use the linked connector, but got {type(client)}."
+                )
+            self._storage_client = client
+            return self._storage_client
+
+        secret = self.get_typed_authentication_secret(
+            expected_schema_type=GCPSecretSchema
+        )
+        if secret:
+            self._storage_client = storage.Client.from_service_account_info(
+                secret.get_credential_dict()
+            )
+        else:
+            self._storage_client = storage.Client()
+
+        return self._storage_client
+
+    @staticmethod
+    def _split_gcs_uri(uri: str) -> Tuple[str, str]:
+        """Split a GCS URI into bucket and object path parts."""
+        if not uri.startswith(GCP_PATH_PREFIX):
+            raise ValueError(f"Expected a GCS URI, got `{uri}`.")
+
+        path_without_prefix = uri[len(GCP_PATH_PREFIX) :]
+        bucket_name, _, blob_name = path_without_prefix.partition("/")
+        if not bucket_name:
+            raise ValueError(f"GCS URI `{uri}` does not include a bucket.")
+
+        return bucket_name, blob_name
+
+    @staticmethod
+    def _build_gcs_uri(bucket_name: str, blob_name: str) -> str:
+        """Build a GCS URI from bucket and object path parts."""
+        if blob_name:
+            return f"{GCP_PATH_PREFIX}{bucket_name}/{blob_name}"
+        return f"{GCP_PATH_PREFIX}{bucket_name}"
+
+    @staticmethod
+    def _blob_matches_prefix(blob_name: str, prefix_blob_name: str) -> bool:
+        """Return whether a blob belongs to a requested file/directory prefix."""
+        if not prefix_blob_name:
+            return True
+
+        normalized_prefix = prefix_blob_name.rstrip("/")
+        return blob_name == normalized_prefix or blob_name.startswith(
+            f"{normalized_prefix}/"
+        )
+
+    @staticmethod
+    def _get_relative_blob_path(blob_name: str, prefix_blob_name: str) -> str:
+        """Get a blob path relative to a listed GCS prefix."""
+        normalized_prefix = prefix_blob_name.rstrip("/")
+        if not normalized_prefix:
+            return blob_name
+        if blob_name == normalized_prefix:
+            return posixpath.basename(blob_name)
+
+        prefix_with_separator = f"{normalized_prefix}/"
+        if blob_name.startswith(prefix_with_separator):
+            return blob_name[len(prefix_with_separator) :]
+
+        return posixpath.basename(blob_name)
+
+    def _get_blob_info(
+        self, blob: storage.Blob, bucket_name: str, prefix_blob_name: str
+    ) -> ObjectInfo:
+        """Build object metadata from a native GCS blob."""
+        return ObjectInfo(
+            uri=self._build_gcs_uri(bucket_name, blob.name),
+            relative_path=self._get_relative_blob_path(
+                blob.name, prefix_blob_name
+            ),
+            size=blob.size,
+            etag=blob.etag,
+            generation=str(blob.generation) if blob.generation else None,
+            last_modified=blob.updated,
+        )
+
+    def _compose_blob(
+        self,
+        bucket: storage.Bucket,
+        source_blob_names: Sequence[str],
+        destination_blob_name: str,
+        overwrite: bool,
+    ) -> None:
+        """Compose source blobs into one destination blob."""
+        source_blobs = [bucket.blob(name) for name in source_blob_names]
+        destination_blob = bucket.blob(destination_blob_name)
+        if_generation_match = None if overwrite else 0
+        destination_blob.compose(
+            source_blobs,
+            client=self.storage_client,
+            if_generation_match=if_generation_match,
+        )
+
+    def _cleanup_intermediate_compose_objects(
+        self, object_uris: Sequence[str], destination_uri: str
+    ) -> None:
+        """Best-effort cleanup for temporary GCS compose objects."""
+        if not object_uris:
+            return
+
+        cleanup_result = self.delete_objects(object_uris)
+        if cleanup_result.failures:
+            logger.warning(
+                "Composed GCS object %s, but failed to clean up %d "
+                "temporary compose objects: %s",
+                destination_uri,
+                len(cleanup_result.failures),
+                [failure.path for failure in cleanup_result.failures],
+            )
+
+    def list_objects(
+        self, prefix: PathType, recursive: bool = False
+    ) -> Iterable[ObjectInfo]:
+        """List GCS objects below a prefix with native object metadata."""
+        sanitized_prefix = self._sanitize_path(prefix)
+        bucket_name, prefix_blob_name = self._split_gcs_uri(sanitized_prefix)
+        listing_prefix = prefix_blob_name.rstrip("/")
+
+        objects: List[ObjectInfo] = []
+        for blob in self.storage_client.list_blobs(
+            bucket_name, prefix=listing_prefix
+        ):
+            if blob.name.endswith("/"):
+                continue
+            if not self._blob_matches_prefix(blob.name, prefix_blob_name):
+                continue
+
+            object_info = self._get_blob_info(
+                blob, bucket_name, prefix_blob_name
+            )
+            if recursive or "/" not in object_info.relative_path.strip("/"):
+                objects.append(object_info)
+
+        return objects
+
+    def delete_objects(self, paths: Iterable[PathType]) -> BulkDeleteResult:
+        """Delete multiple GCS objects with native delete calls."""
+        deleted_paths: List[str] = []
+        failures: List[ObjectDeleteFailure] = []
+
+        for path in paths:
+            sanitized_path = self._sanitize_path(path)
+            try:
+                bucket_name, blob_name = self._split_gcs_uri(sanitized_path)
+                if not blob_name:
+                    raise ValueError(
+                        f"Cannot delete GCS bucket root `{sanitized_path}`."
+                    )
+
+                bucket = self.storage_client.bucket(bucket_name)
+                bucket.blob(blob_name).delete(client=self.storage_client)
+            except NotFound:
+                deleted_paths.append(sanitized_path)
+            except Exception as e:
+                failures.append(
+                    ObjectDeleteFailure(path=sanitized_path, error=e)
+                )
+            else:
+                deleted_paths.append(sanitized_path)
+
+        return BulkDeleteResult(deleted_paths=deleted_paths, failures=failures)
+
+    def compose_objects(
+        self,
+        sources: Sequence[PathType],
+        destination: PathType,
+        overwrite: bool = False,
+    ) -> bool:
+        """Compose GCS source objects into a destination object in order."""
+        sanitized_sources = [self._sanitize_path(source) for source in sources]
+        sanitized_destination = self._sanitize_path(destination)
+        if not sanitized_sources:
+            return False
+
+        destination_bucket_name, destination_blob_name = self._split_gcs_uri(
+            sanitized_destination
+        )
+        bucket = self.storage_client.bucket(destination_bucket_name)
+        source_blob_names: List[str] = []
+        for source in sanitized_sources:
+            source_bucket_name, source_blob_name = self._split_gcs_uri(source)
+            if source_bucket_name != destination_bucket_name:
+                raise ValueError(
+                    "GCS compose requires all source and destination objects "
+                    "to be in the same bucket."
+                )
+            source_blob_names.append(source_blob_name)
+
+        destination_directory = posixpath.dirname(destination_blob_name)
+        compose_id = uuid4().hex
+        intermediate_uris: List[str] = []
+        current_blob_names = source_blob_names
+        level = 0
+
+        try:
+            while len(current_blob_names) > GCS_COMPOSE_MAX_SOURCES:
+                next_blob_names: List[str] = []
+                for batch_index in range(
+                    0, len(current_blob_names), GCS_COMPOSE_MAX_SOURCES
+                ):
+                    batch = current_blob_names[
+                        batch_index : batch_index + GCS_COMPOSE_MAX_SOURCES
+                    ]
+                    temporary_blob_name = posixpath.join(
+                        destination_directory,
+                        f"{GCS_COMPOSE_TEMPORARY_PREFIX}"
+                        f"{compose_id}-{level}-{len(next_blob_names):06d}.log",
+                    )
+                    self._compose_blob(
+                        bucket=bucket,
+                        source_blob_names=batch,
+                        destination_blob_name=temporary_blob_name,
+                        overwrite=False,
+                    )
+                    next_blob_names.append(temporary_blob_name)
+                    intermediate_uris.append(
+                        self._build_gcs_uri(
+                            destination_bucket_name, temporary_blob_name
+                        )
+                    )
+
+                current_blob_names = next_blob_names
+                level += 1
+        except Exception:
+            self._cleanup_intermediate_compose_objects(
+                intermediate_uris, sanitized_destination
+            )
+            raise
+
+        try:
+            self._compose_blob(
+                bucket=bucket,
+                source_blob_names=current_blob_names,
+                destination_blob_name=destination_blob_name,
+                overwrite=overwrite,
+            )
+        except PreconditionFailed:
+            destination_blob = bucket.blob(destination_blob_name)
+            if not overwrite and destination_blob.exists(
+                client=self.storage_client
+            ):
+                self._cleanup_intermediate_compose_objects(
+                    intermediate_uris, sanitized_destination
+                )
+                return True
+
+            self._cleanup_intermediate_compose_objects(
+                intermediate_uris, sanitized_destination
+            )
+            raise
+        except Exception:
+            self._cleanup_intermediate_compose_objects(
+                intermediate_uris, sanitized_destination
+            )
+            raise
+
+        self._cleanup_intermediate_compose_objects(
+            intermediate_uris, sanitized_destination
+        )
+        return True
 
     def open(self, path: PathType, mode: str = "r") -> Any:
         """Open a file at the given path.
