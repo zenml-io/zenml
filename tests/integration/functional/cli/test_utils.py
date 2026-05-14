@@ -68,6 +68,18 @@ def test_parsing_name_and_arguments():
         "foo",
         {"bar": "1", "baz": "2"},
     )
+    assert cli_utils.parse_name_and_extra_arguments(
+        ["foo", "--bar=1", "--bar=2"]
+    ) == (
+        "foo",
+        {"bar": ["1", "2"]},
+    )
+    assert cli_utils.parse_name_and_extra_arguments(
+        ["--bar=1", "foo", "--baz=2", "--bar=3"]
+    ) == (
+        "foo",
+        {"bar": ["1", "3"], "baz": "2"},
+    )
 
     assert cli_utils.parse_name_and_extra_arguments(
         ["foo", "--bar=![@#$%^&*()"]

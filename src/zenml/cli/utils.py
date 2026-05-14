@@ -825,7 +825,7 @@ def parse_name_and_extra_arguments(
     args: List[str],
     expand_args: bool = False,
     name_mandatory: bool = True,
-) -> Tuple[Optional[str], Dict[str, str]]:
+) -> Tuple[Optional[str], Dict[str, Union[str, List[str]]]]:
     """Parse a name and extra arguments from the CLI.
 
     This is a utility function used to parse a variable list of optional CLI
@@ -840,6 +840,8 @@ def parse_name_and_extra_arguments(
         ('foo', {'bar': '1'})
         >>> parse_name_and_extra_arguments(['--bar=1', 'foo', '--baz=2'])
         ('foo', {'bar': '1', 'baz': '2'})
+        >>> parse_name_and_extra_arguments(['foo', '--bar=1', '--bar=2'])
+        ('foo', {'bar': ['1', '2']})
         >>> parse_name_and_extra_arguments(['--bar=1'])
         Traceback (most recent call last):
             ...
@@ -877,7 +879,7 @@ def parse_name_and_extra_arguments(
         "identifier as the key and the following structure: "
         '--custom_argument="value"'
     )
-    args_dict: Dict[str, str] = {}
+    args_dict: Dict[str, Union[str, List[str]]] = {}
     for a in args:
         if not a:
             # Skip empty arguments.
@@ -887,13 +889,28 @@ def parse_name_and_extra_arguments(
         key, value = a[2:].split("=", maxsplit=1)
         if not key.isidentifier():
             error(f"Invalid argument: '{a}'. {message}")
-        args_dict[key] = value
+
+        existing_value = args_dict.get(key)
+        if isinstance(existing_value, list):
+            existing_value.append(value)
+        elif existing_value is not None:
+            args_dict[key] = [existing_value, value]
+        else:
+            args_dict[key] = value
 
     if expand_args:
-        args_dict = {
-            k: expand_argument_value_from_file(k, v)
-            for k, v in args_dict.items()
-        }
+        expanded_args_dict: Dict[str, Union[str, List[str]]] = {}
+        for key, value in args_dict.items():
+            if isinstance(value, list):
+                expanded_args_dict[key] = [
+                    expand_argument_value_from_file(key, item)
+                    for item in value
+                ]
+            else:
+                expanded_args_dict[key] = expand_argument_value_from_file(
+                    key, value
+                )
+        args_dict = expanded_args_dict
 
     return name, args_dict
 
