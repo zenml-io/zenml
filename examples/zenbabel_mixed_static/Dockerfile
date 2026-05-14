@@ -1,5 +1,6 @@
-FROM node:20-bookworm-slim AS node
-FROM python:3.12-slim-bookworm
+ARG ZENBABEL_IMAGE_PLATFORM=linux/amd64
+FROM --platform=${ZENBABEL_IMAGE_PLATFORM} node:20-bookworm-slim AS node
+FROM --platform=${ZENBABEL_IMAGE_PLATFORM} python:3.12-slim-bookworm
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -17,7 +18,7 @@ WORKDIR /work/zenml
 COPY pyproject.toml README.md ./
 COPY src ./src
 RUN python -m pip install --no-cache-dir uv \
-    && uv pip install --system -e ".[local]"
+    && uv pip install --system -e ".[local,s3fs,connectors-aws]"
 
 WORKDIR /app
 RUN mkdir -p /app/.config /app/.zenconfig && chmod -R a+rw /app

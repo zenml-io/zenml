@@ -20,6 +20,7 @@ which placeholder invocation should be routed through ``zenml-portable-json-v1``
 """
 
 import argparse
+import os
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse, urlunparse
@@ -27,7 +28,7 @@ from urllib.parse import urlparse, urlunparse
 from zenml import pipeline, step
 from zenml.client import Client
 from zenml.config import DockerSettings
-from zenml.config.docker_settings import DockerBuildConfig
+from zenml.config.docker_settings import DockerBuildConfig, DockerBuildOptions
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.step_execution_spec import StepExecutionProtocol
 from zenml.enums import StoreType
@@ -45,6 +46,7 @@ PORTABLE_STEP_NAME = "score_or_transform"
 DEFAULT_THRESHOLD = 0.64
 LOCAL_DOCKER_HOSTNAME = "host.docker.internal"
 LOCAL_DOCKER_LOOPBACK_HOSTS = {"127.0.0.1", "localhost"}
+IMAGE_PLATFORM = os.environ.get("ZENBABEL_IMAGE_PLATFORM", "linux/amd64")
 
 ZENBABEL_PORTABLE_SPEC = experimental_portable_json_pipeline_spec(
     name="zenbabel_mixed_static",
@@ -65,12 +67,18 @@ ZENBABEL_PORTABLE_SPEC = experimental_portable_json_pipeline_spec(
 
 def _zenbabel_docker_settings() -> DockerSettings:
     """Return the Docker settings for the mixed-language demo image."""
+    build_options = DockerBuildOptions(
+        build_args={"ZENBABEL_IMAGE_PLATFORM": IMAGE_PLATFORM},
+        platform=IMAGE_PLATFORM,
+    )
     return DockerSettings(
         dockerfile=str(EXAMPLE_DIR / "Dockerfile"),
         build_context_root=str(REPO_ROOT),
         parent_image_build_config=DockerBuildConfig(
+            build_options=build_options,
             dockerignore=str(EXAMPLE_DIR / "Dockerfile.dockerignore"),
         ),
+        build_config=DockerBuildConfig(build_options=build_options),
         disable_automatic_requirements_detection=True,
         install_stack_requirements=False,
         prevent_build_reuse=True,
@@ -129,13 +137,14 @@ def zenbabel_mixed_static() -> None:
 
 
 def _container_store_environment() -> dict[str, str]:
-    """Return store env vars that work from inside Local Docker steps."""
+    """Return REST store env vars that work from inside containerized steps."""
     store_config = GlobalConfiguration().store_configuration
     if store_config.type != StoreType.REST:
         raise RuntimeError(
             "The ZenBabel mixed static demo needs a REST ZenML store when "
-            "running with Local Docker. Start a local ZenML server from this "
-            "worktree with `uv run zenml login --local --restart`, then run "
+            "running with a containerized stack. Start a local ZenML server "
+            "from this worktree with `uv run zenml login --local --restart`, "
+            "or connect to a branch-compatible remote ZenML server, then run "
             "the demo again."
         )
 
@@ -178,20 +187,21 @@ def _validate_portable_execution_spec(snapshot: Any) -> None:
         )
 
 
-def _validate_local_docker_stack() -> None:
+def _validate_containerized_stack() -> None:
     """Check that the active stack can run the TypeScript Docker step."""
     stack = Client().active_stack
     orchestrator = stack.orchestrator
-    if orchestrator.flavor != "local_docker":
+    supported_orchestrators = {"kubernetes", "local_docker"}
+    if orchestrator.flavor not in supported_orchestrators:
+        supported = "`, `".join(sorted(supported_orchestrators))
         raise RuntimeError(
-            "The ZenBabel mixed static demo needs the Local Docker "
+            "The ZenBabel mixed static demo needs a containerized "
             "orchestrator because the pipeline uses Docker settings to "
             "build and run a Node-enabled image containing this branch's "
             "ZenML code. The "
             f"active stack `{stack.name}` uses orchestrator "
             f"`{orchestrator.name}` with flavor `{orchestrator.flavor}`. "
-            "Set a stack with a `local_docker` orchestrator and a local image "
-            "builder, or run `uv run python "
+            f"Set a stack with one of: `{supported}`, or run `uv run python "
             "examples/zenbabel_mixed_static/run.py --compile-only` instead."
         )
     if stack.image_builder is None:
@@ -199,8 +209,8 @@ def _validate_local_docker_stack() -> None:
             "The ZenBabel mixed static demo needs an image builder on the "
             "active stack. The pipeline has Docker settings pointing at "
             "`examples/zenbabel_mixed_static/Dockerfile`, so ZenML must "
-            "build the demo image before Local Docker can run it. Register "
-            "and set a stack with a local image builder, or run "
+            "build the demo image before the containerized orchestrator can "
+            "run it. Register and set a stack with an image builder, or run "
             "`uv run python examples/zenbabel_mixed_static/run.py "
             "--compile-only` instead."
         )
@@ -231,7 +241,7 @@ def compile_demo_snapshot() -> None:
 
 def run_pipeline() -> None:
     """Run the mixed-language pipeline on the active ZenML stack."""
-    _validate_local_docker_stack()
+    _validate_containerized_stack()
     runtime_pipeline = zenbabel_mixed_static.with_options(
         environment=_container_store_environment()
     )
