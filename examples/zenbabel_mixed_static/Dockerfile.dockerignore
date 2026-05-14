@@ -1,0 +1,14 @@
+*
+!/README.md
+!/pyproject.toml
+!/src/
+!/src/**
+/src/zenml/zen_server/dashboard/
+/src/zenml/zen_server/dashboard/**
+!/examples/
+!/examples/zenbabel_mixed_static/
+!/examples/zenbabel_mixed_static/package.json
+!/examples/zenbabel_mixed_static/package-lock.json
+!/examples/zenbabel_mixed_static/tsconfig.json
+!/examples/zenbabel_mixed_static/ts/
+!/examples/zenbabel_mixed_static/ts/**

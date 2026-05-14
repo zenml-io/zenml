@@ -92,8 +92,16 @@ It contains:
 
 The full demo requires both pieces to be true:
 
-1. The active stack must be Docker-capable for this path, such as Local Docker with an image builder. The plain local orchestrator is not enough because it runs Python steps directly and does not use the TypeScript step's Docker settings.
-2. The active ZenML server/store must include this experimental branch schema. Older Cloud or staging servers can strip the new `StepSpec.execution_spec` field when the snapshot is saved and returned. If that happens, the TypeScript step reaches the normal Python runner as `PortableStepAdapter`, and the adapter correctly fails because it should only run through `PortableStepRunner`.
+1. The active stack must be Docker-capable for this path, such as Local Docker with an image builder. The plain local orchestrator is not enough because it runs Python steps directly and does not use the demo pipeline's Docker settings. The demo image must contain the branch ZenML code for all steps, not only the TypeScript step, because the Python step module imports the experimental ZenBabel symbols.
+2. The active ZenML server/store must include this experimental branch schema. Older Cloud or staging servers can strip the new `StepSpec.execution_spec` field when the snapshot is saved and returned. The same thing can happen with a local daemon if it was started earlier from another virtual environment. If that happens, the TypeScript step reaches the normal Python runner as `PortableStepAdapter`, and the adapter correctly fails because it should only run through `PortableStepRunner`.
+
+For Local Docker, the example also rewrites a local store URL from `127.0.0.1` or `localhost` to `host.docker.internal` inside the step environment. Without that rewrite, the container phones its own loopback address instead of the host ZenML server. The demo also disables step heartbeat because portable JSON v1 does not support heartbeat yet.
+
+If your local daemon was started before you switched to this worktree, restart it from the ZenBabel branch environment:
+
+```bash
+uv run zenml login --local --restart
+```
 
 For quick local validation without Docker or a compatible server, use the example's `--compile-only` mode. It checks that the compiler bridge creates the `zenml-portable-json-v1` execution spec before any server/store round trip.
 

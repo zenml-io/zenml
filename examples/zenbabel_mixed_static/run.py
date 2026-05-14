@@ -27,14 +27,18 @@ import argparse
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterator, Mapping
+from urllib.parse import urlparse, urlunparse
 
 import zenml.pipelines.pipeline_definition as pipeline_definition_module
 from zenml import pipeline, step
 from zenml.client import Client
 from zenml.config import DockerSettings
 from zenml.config.compiler import Compiler as BaseCompiler
+from zenml.config.docker_settings import DockerBuildConfig
+from zenml.config.global_config import GlobalConfiguration
 from zenml.config.step_configurations import Step
 from zenml.config.step_execution_spec import StepExecutionProtocol
+from zenml.enums import StoreType
 from zenml.execution.pipeline.utils import submit_pipeline
 from zenml.models import PipelineSnapshotResponse
 from zenml.pipelines.run_utils import create_placeholder_run
@@ -44,14 +48,20 @@ EXAMPLE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = EXAMPLE_DIR.parents[1]
 PORTABLE_STEP_NAME = "score_or_transform"
 DEFAULT_THRESHOLD = 0.64
+LOCAL_DOCKER_HOSTNAME = "host.docker.internal"
+LOCAL_DOCKER_LOOPBACK_HOSTS = {"127.0.0.1", "localhost"}
 
 
-def _typescript_docker_settings() -> DockerSettings:
-    """Return the Docker settings for the TypeScript step image."""
+def _zenbabel_docker_settings() -> DockerSettings:
+    """Return the Docker settings for the mixed-language demo image."""
     return DockerSettings(
         dockerfile=str(EXAMPLE_DIR / "Dockerfile"),
         build_context_root=str(REPO_ROOT),
+        parent_image_build_config=DockerBuildConfig(
+            dockerignore=str(EXAMPLE_DIR / "Dockerfile.dockerignore"),
+        ),
         disable_automatic_requirements_detection=True,
+        install_stack_requirements=False,
         prevent_build_reuse=True,
     )
 
@@ -66,7 +76,7 @@ def load_data() -> list[dict[str, Any]]:
     ]
 
 
-@step(settings={"docker": _typescript_docker_settings()})
+@step
 def score_or_transform(
     records: list[dict[str, Any]], threshold: float = DEFAULT_THRESHOLD
 ) -> dict[str, Any]:
@@ -93,12 +103,42 @@ def summarize(scored_bundle: dict[str, Any]) -> dict[str, Any]:
     return summary
 
 
-@pipeline(enable_cache=False)
+@pipeline(
+    enable_cache=False,
+    enable_heartbeat=False,
+    settings={"docker": _zenbabel_docker_settings()},
+)
 def zenbabel_mixed_static() -> None:
     """Python control-plane pipeline with one TypeScript step body."""
     records = load_data()
     scored_bundle = score_or_transform(records, threshold=DEFAULT_THRESHOLD)
     summarize(scored_bundle)
+
+
+def _container_store_environment() -> dict[str, str]:
+    """Return store env vars that work from inside Local Docker steps."""
+    store_config = GlobalConfiguration().store_configuration
+    if store_config.type != StoreType.REST:
+        raise RuntimeError(
+            "The ZenBabel mixed static demo needs a REST ZenML store when "
+            "running with Local Docker. Start a local ZenML server from this "
+            "worktree with `uv run zenml login --local --restart`, then run "
+            "the demo again."
+        )
+
+    store_url = store_config.url
+    parsed_url = urlparse(store_url)
+    if parsed_url.hostname in LOCAL_DOCKER_LOOPBACK_HOSTS:
+        if parsed_url.port is None:
+            netloc = LOCAL_DOCKER_HOSTNAME
+        else:
+            netloc = f"{LOCAL_DOCKER_HOSTNAME}:{parsed_url.port}"
+        store_url = urlunparse(parsed_url._replace(netloc=netloc))
+
+    return {
+        "ZENML_STORE_TYPE": StoreType.REST.value,
+        "ZENML_STORE_URL": store_url,
+    }
 
 
 def _zenbabel_external_spec() -> dict[str, Any]:
@@ -139,7 +179,9 @@ class ZenBabelDemoCompiler(BaseCompiler):
     def _compile_step_invocation(self, *args: Any, **kwargs: Any) -> Step:
         """Compile normally, then route selected invocations to ZenBabel."""
         compiled_step = super()._compile_step_invocation(*args, **kwargs)
-        portable_step = self._portable_steps.get(compiled_step.spec.invocation_id)
+        portable_step = self._portable_steps.get(
+            compiled_step.spec.invocation_id
+        )
         if portable_step is None:
             return compiled_step
 
@@ -189,11 +231,13 @@ def _validate_portable_execution_spec(
             "TypeScript step, but the created snapshot returned by the "
             "active ZenML server/store no longer contains "
             "`spec.execution_spec = zenml-portable-json-v1`. This usually "
-            "means you are connected to an older ZenML server, for example "
-            "Cloud/staging, that does not include this experimental branch "
-            "schema and stripped the field during the server/store round "
-            "trip. Run this branch against a local ZenML server/store, or a "
-            "backend deployed from this branch, before running the full demo."
+            "means the active ZenML server/store does not include this "
+            "experimental branch schema and stripped the field during the "
+            "server/store round trip. If you are connected to a local daemon, "
+            "make sure that daemon was started from this worktree's virtual "
+            "environment, for example with `uv run zenml login --local "
+            "--restart`. If you are connected to Cloud/staging, deploy a "
+            "backend from this branch before running the full demo."
         )
 
 
@@ -204,8 +248,9 @@ def _validate_local_docker_stack() -> None:
     if orchestrator.flavor != "local_docker":
         raise RuntimeError(
             "The ZenBabel mixed static demo needs the Local Docker "
-            "orchestrator because the TypeScript step uses step-level "
-            "Docker settings to build and run a Node-enabled image. The "
+            "orchestrator because the pipeline uses Docker settings to "
+            "build and run a Node-enabled image containing this branch's "
+            "ZenML code. The "
             f"active stack `{stack.name}` uses orchestrator "
             f"`{orchestrator.name}` with flavor `{orchestrator.flavor}`. "
             "Set a stack with a `local_docker` orchestrator and a local image "
@@ -215,9 +260,9 @@ def _validate_local_docker_stack() -> None:
     if stack.image_builder is None:
         raise RuntimeError(
             "The ZenBabel mixed static demo needs an image builder on the "
-            "active stack. The TypeScript step has Docker settings pointing "
-            "at `examples/zenbabel_mixed_static/Dockerfile`, so ZenML must "
-            "build that step image before Local Docker can run it. Register "
+            "active stack. The pipeline has Docker settings pointing at "
+            "`examples/zenbabel_mixed_static/Dockerfile`, so ZenML must "
+            "build the demo image before Local Docker can run it. Register "
             "and set a stack with a local image builder, or run "
             "`uv run python examples/zenbabel_mixed_static/run.py "
             "--compile-only` instead."
@@ -249,13 +294,18 @@ def compile_demo_snapshot() -> None:
 def run_pipeline() -> None:
     """Run the mixed-language pipeline on the active ZenML stack."""
     _validate_local_docker_stack()
+    runtime_pipeline = zenbabel_mixed_static.with_options(
+        environment=_container_store_environment()
+    )
     with zenbabel_compiler_bridge():
-        zenbabel_mixed_static.prepare()
-        snapshot = zenbabel_mixed_static._create_snapshot()
+        runtime_pipeline.prepare()
+        snapshot = runtime_pipeline._create_snapshot()
 
     _validate_portable_execution_spec(snapshot)
     run = create_placeholder_run(snapshot=snapshot)
-    submit_pipeline(snapshot=snapshot, stack=Client().active_stack, placeholder_run=run)
+    submit_pipeline(
+        snapshot=snapshot, stack=Client().active_stack, placeholder_run=run
+    )
 
 
 def main() -> None:

@@ -130,8 +130,13 @@ This compiles the Python pipeline with the demo bridge active and checks that `s
 
 The intended end-to-end path has two requirements:
 
-1. A Docker-capable stack for this demo, specifically a stack with the Local Docker orchestrator, a local artifact store, and a local image builder. The image builder is required because the TypeScript step has step-level `DockerSettings` pointing at the example `Dockerfile`, so ZenML must be able to build that step image before Local Docker runs it. The plain local orchestrator is not enough: it runs Python steps directly and ignores these Docker settings.
-2. A ZenML server/store that includes this branch's experimental portable execution schema. If you are connected to an older Cloud or staging server, the server/store can accept the snapshot but strip the new `StepSpec.execution_spec` field on the way back. The next thing that happens is concrete but confusing: the step reaches the normal Python `StepRunner` as `PortableStepAdapter`, and the adapter raises that it must not be executed as a normal Python step. Run the full demo against a local ZenML server/store or a backend deployed from this branch.
+1. A Docker-capable stack for this demo, specifically a stack with the Local Docker orchestrator, a local artifact store, and a local image builder. The image builder is required because the pipeline has `DockerSettings` pointing at the example `Dockerfile`, so ZenML must be able to build an image that contains the branch ZenML code and the compiled TypeScript step. The plain local orchestrator is not enough: it runs Python steps directly and ignores these Docker settings.
+2. A ZenML server/store that includes this branch's experimental portable execution schema. If you are connected to an older Cloud or staging server, the server/store can accept the snapshot but strip the new `StepSpec.execution_spec` field on the way back. The same thing can happen with a local daemon if it was started earlier from another virtual environment. The next thing that happens is concrete but confusing: the step reaches the normal Python `StepRunner` as `PortableStepAdapter`, and the adapter raises that it must not be executed as a normal Python step. Run the full demo against a local ZenML server/store started from this worktree, or a backend deployed from this branch.
+
+The example also applies two Local Docker-specific settings in `run.py`:
+
+- Step containers cannot reach the host server through `127.0.0.1`, because inside Docker that address means "this container". When the active store URL is local, the example passes `ZENML_STORE_URL=http://host.docker.internal:<port>` to the step environment instead.
+- Portable JSON v1 does not support step heartbeat yet, so the demo disables heartbeat at the pipeline level. This keeps the example focused on the JSON subprocess contract.
 
 ```bash
 # From the repository root
@@ -146,14 +151,19 @@ zenml stack register zenbabel_local_docker_stack \
   -i zenbabel_local_image_builder \
   --set
 
+# Restart the local daemon from this worktree's environment so the server
+# understands the experimental StepSpec.execution_spec field.
+uv run zenml login --local --restart
+
 uv run python examples/zenbabel_mixed_static/run.py
 ```
 
-The Dockerfile builds an image that contains:
+The Dockerfile builds one demo image used by all steps. It contains:
 
 - Python 3.12,
-- the current ZenML worktree installed from `src/`, including the ZenBabel feature branch code,
-- Node/npm,
+- the current ZenML worktree installed from `src/`, including the ZenBabel feature branch code and local stack dependencies,
+- Node/npm copied from the official Node image, avoiding `apt-get` during the demo image build,
+- writable config directories under `/app`, so the container user does not try to write ZenML config under `/.config`,
 - the compiled TypeScript step under `/app/dist/steps/score_or_transform.js`.
 
 If Docker is too heavy for your local machine or the stack is not configured, run the TypeScript smoke test and the `--compile-only` check instead. Those checks prove the portable contract and the Python snapshot routing, but they do not prove container execution.
