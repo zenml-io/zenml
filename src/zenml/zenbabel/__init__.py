@@ -17,6 +17,15 @@ from zenml.zenbabel.adapters import (
     PORTABLE_STEP_ADAPTER_SOURCE,
     PortableStepAdapter,
 )
+from zenml.zenbabel.authoring import (
+    ExperimentalPortableStepCompiler,
+    experimental_compile_snapshot,
+    experimental_create_snapshot,
+    experimental_portable_json_compiler_bridge,
+    experimental_portable_json_pipeline_spec,
+    experimental_portable_json_step,
+    experimental_submit_pipeline,
+)
 from zenml.zenbabel.external_spec import (
     ExternalInputReference,
     ExternalPipelineOutput,
@@ -34,9 +43,16 @@ __all__ = [
     "ExternalPipelineOutput",
     "ExternalPipelineSpec",
     "ExternalPortableStep",
+    "ExperimentalPortableStepCompiler",
     "PORTABLE_STEP_ADAPTER_SOURCE",
     "PortableStepAdapter",
     "build_pipeline_snapshot",
     "build_pipeline_spec",
     "build_steps",
+    "experimental_compile_snapshot",
+    "experimental_create_snapshot",
+    "experimental_portable_json_compiler_bridge",
+    "experimental_portable_json_pipeline_spec",
+    "experimental_portable_json_step",
+    "experimental_submit_pipeline",
 ]

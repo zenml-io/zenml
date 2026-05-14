@@ -62,17 +62,17 @@ Not supported yet:
 - a stable TypeScript SDK surface,
 - broad orchestrator-specific guarantees beyond the existing container entrypoint path.
 
-## Why the example has a small compiler bridge
+## Why the example has an experimental authoring helper
 
-The runtime support and the importer are in place, but the public SDK does not yet expose a first-class way to write `typescript_step(...)` inside a Python `@pipeline`. The example therefore uses a narrow local bridge:
+The runtime support and the importer are in place, but the public SDK does not yet expose a first-class way to write `typescript_step(...)` inside a Python `@pipeline`. The example therefore uses a narrow experimental helper under `zenml.zenbabel`:
 
 1. Python compiles a normal static pipeline with a placeholder step.
-2. `zenml.zenbabel.build_steps(...)` imports the external TypeScript step spec.
-   In this example, the external TypeScript step spec is still authored as a small Python dictionary; a real TypeScript emitter or SDK is out of scope for v1.
-3. The bridge patches the compiled placeholder step with the portable `source` and `execution_spec`.
-4. The normal ZenML run path then sees `zenml-portable-json-v1` and routes the step to `PortableStepRunner`.
+2. `experimental_portable_json_step(...)` declares the TypeScript command, source identity, and JSON parameters for that placeholder invocation.
+3. `experimental_compile_snapshot(...)` or `experimental_submit_pipeline(...)` activates the compiler bridge while ZenML compiles or submits the pipeline.
+4. The bridge patches the compiled placeholder step with the portable `source` and `execution_spec`.
+5. The normal ZenML run path then sees `zenml-portable-json-v1` and routes the step to `PortableStepRunner`.
 
-That bridge is explanatory scaffolding, not the final SDK shape.
+That helper is cleanup scaffolding for the proof, not the final SDK shape. The `experimental_...` prefix is intentional: future TypeScript SDK work should replace this with a more deliberate API.
 
 ## Try it
 
@@ -103,7 +103,7 @@ If your local daemon was started before you switched to this worktree, restart i
 uv run zenml login --local --restart
 ```
 
-For quick local validation without Docker or a compatible server, use the example's `--compile-only` mode. It checks that the compiler bridge creates the `zenml-portable-json-v1` execution spec before any server/store round trip.
+For quick local validation without Docker or a compatible server, use the example's `--compile-only` mode. It checks that the experimental helper creates the `zenml-portable-json-v1` execution spec before any server/store round trip.
 
 Use this page and the example as a snapshot of the experimental v1 story. Future TypeScript SDK work may make the authoring experience cleaner, but it should preserve the same honest boundary: the current stable ZenML control plane is Python, and this portable path only moves a JSON-shaped step body across the language line.
 

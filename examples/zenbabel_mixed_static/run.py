@@ -13,36 +13,31 @@
 #  permissions and limitations under the License.
 """Mixed Python + TypeScript ZenBabel static pipeline example.
 
-This file intentionally keeps the bridge small and local to the example. ZenML
-can already execute portable JSON steps once a compiled step contains a
-``StepExecutionSpec``. What ZenML does not have yet is a public TypeScript step
-SDK that lets users call a TypeScript step directly from a Python ``@pipeline``.
-
-The example therefore uses a normal Python placeholder step for graph building,
-then swaps only that placeholder's compiled source/execution metadata for the
-portable metadata produced by ``zenml.zenbabel.build_steps``.
+The pipeline below is intentionally ordinary ZenML Python code: a Python step,
+a placeholder where the TypeScript step body should run, and another Python
+step. The small experimental ZenBabel authoring helper then tells the compiler
+which placeholder invocation should be routed through ``zenml-portable-json-v1``.
 """
 
 import argparse
-from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Iterator, Mapping
+from typing import Any
 from urllib.parse import urlparse, urlunparse
 
-import zenml.pipelines.pipeline_definition as pipeline_definition_module
 from zenml import pipeline, step
 from zenml.client import Client
 from zenml.config import DockerSettings
-from zenml.config.compiler import Compiler as BaseCompiler
 from zenml.config.docker_settings import DockerBuildConfig
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.step_configurations import Step
 from zenml.config.step_execution_spec import StepExecutionProtocol
 from zenml.enums import StoreType
-from zenml.execution.pipeline.utils import submit_pipeline
-from zenml.models import PipelineSnapshotResponse
-from zenml.pipelines.run_utils import create_placeholder_run
-from zenml.zenbabel import build_pipeline_spec, build_steps
+from zenml.zenbabel import (
+    build_pipeline_spec,
+    experimental_compile_snapshot,
+    experimental_portable_json_pipeline_spec,
+    experimental_portable_json_step,
+    experimental_submit_pipeline,
+)
 
 EXAMPLE_DIR = Path(__file__).resolve().parent
 REPO_ROOT = EXAMPLE_DIR.parents[1]
@@ -50,6 +45,22 @@ PORTABLE_STEP_NAME = "score_or_transform"
 DEFAULT_THRESHOLD = 0.64
 LOCAL_DOCKER_HOSTNAME = "host.docker.internal"
 LOCAL_DOCKER_LOOPBACK_HOSTS = {"127.0.0.1", "localhost"}
+
+ZENBABEL_PORTABLE_SPEC = experimental_portable_json_pipeline_spec(
+    name="zenbabel_mixed_static",
+    steps=[
+        experimental_portable_json_step(
+            name=PORTABLE_STEP_NAME,
+            command=["node", "/app/dist/steps/score_or_transform.js"],
+            source_identity=(
+                "examples/zenbabel_mixed_static/ts/src/steps/"
+                "score_or_transform.ts#scoreOrTransform"
+            ),
+            parameters={"threshold": DEFAULT_THRESHOLD},
+        )
+    ],
+    outputs=[(PORTABLE_STEP_NAME, "output")],
+)
 
 
 def _zenbabel_docker_settings() -> DockerSettings:
@@ -80,11 +91,13 @@ def load_data() -> list[dict[str, Any]]:
 def score_or_transform(
     records: list[dict[str, Any]], threshold: float = DEFAULT_THRESHOLD
 ) -> dict[str, Any]:
-    """Placeholder compiled as a normal step, then routed to TypeScript."""
+    """Placeholder compiled normally, then routed to TypeScript."""
     raise RuntimeError(
         "The Python placeholder step `score_or_transform` should have been "
-        "replaced by the ZenBabel demo compiler bridge. If you see this, run "
-        "the pipeline through `zenbabel_compiler_bridge()`."
+        "routed through ZenBabel's experimental portable JSON helper. If you "
+        "see this, compile or submit the pipeline with "
+        "`experimental_compile_snapshot(...)` or "
+        "`experimental_submit_pipeline(...)`."
     )
 
 
@@ -141,83 +154,7 @@ def _container_store_environment() -> dict[str, str]:
     }
 
 
-def _zenbabel_external_spec() -> dict[str, Any]:
-    """Return the external TypeScript step spec used by the demo bridge."""
-    return {
-        "name": "zenbabel_mixed_static",
-        "steps": [
-            {
-                "name": PORTABLE_STEP_NAME,
-                "command": [
-                    "node",
-                    "/app/dist/steps/score_or_transform.js",
-                ],
-                "source_identity": (
-                    "examples/zenbabel_mixed_static/ts/src/steps/"
-                    "score_or_transform.ts#scoreOrTransform"
-                ),
-                "parameters": {"threshold": DEFAULT_THRESHOLD},
-                "outputs": ["output"],
-            }
-        ],
-        "outputs": [{"step": PORTABLE_STEP_NAME, "output": "output"}],
-    }
-
-
-class ZenBabelDemoCompiler(BaseCompiler):
-    """Example-local compiler that donates portable metadata to one step."""
-
-    def __init__(self, portable_steps: Mapping[str, Step]) -> None:
-        """Initialize the compiler bridge.
-
-        Args:
-            portable_steps: Portable metadata donor steps keyed by invocation id.
-        """
-        super().__init__()
-        self._portable_steps = portable_steps
-
-    def _compile_step_invocation(self, *args: Any, **kwargs: Any) -> Step:
-        """Compile normally, then route selected invocations to ZenBabel."""
-        compiled_step = super()._compile_step_invocation(*args, **kwargs)
-        portable_step = self._portable_steps.get(
-            compiled_step.spec.invocation_id
-        )
-        if portable_step is None:
-            return compiled_step
-
-        patched_spec = compiled_step.spec.model_copy(
-            update={
-                "source": portable_step.spec.source,
-                "execution_spec": portable_step.spec.execution_spec,
-            }
-        )
-        return compiled_step.model_copy(update={"spec": patched_spec})
-
-
-@contextmanager
-def zenbabel_compiler_bridge() -> Iterator[None]:
-    """Temporarily route the demo placeholder step through ZenBabel.
-
-    This is not a product API. It is deliberately scoped to this example so the
-    already implemented portable runner can be exercised without broadening the
-    public SDK surface.
-    """
-    original_compiler = pipeline_definition_module.Compiler
-    portable_steps = build_steps(_zenbabel_external_spec())
-
-    def compiler_factory() -> ZenBabelDemoCompiler:
-        return ZenBabelDemoCompiler(portable_steps=portable_steps)
-
-    pipeline_definition_module.Compiler = compiler_factory  # type: ignore[assignment]
-    try:
-        yield
-    finally:
-        pipeline_definition_module.Compiler = original_compiler
-
-
-def _validate_portable_execution_spec(
-    snapshot: PipelineSnapshotResponse,
-) -> None:
+def _validate_portable_execution_spec(snapshot: Any) -> None:
     """Check that the portable step survived snapshot persistence."""
     portable_step = snapshot.step_configurations[PORTABLE_STEP_NAME]
     execution_spec = portable_step.spec.execution_spec
@@ -271,9 +208,10 @@ def _validate_local_docker_stack() -> None:
 
 def compile_demo_snapshot() -> None:
     """Compile the demo and print the patched TypeScript step contract."""
-    with zenbabel_compiler_bridge():
-        zenbabel_mixed_static.prepare()
-        snapshot, _, _ = zenbabel_mixed_static._compile()
+    snapshot = experimental_compile_snapshot(
+        pipeline=zenbabel_mixed_static,
+        external_spec=ZENBABEL_PORTABLE_SPEC,
+    )
 
     _validate_portable_execution_spec(snapshot)
     portable_step = snapshot.step_configurations[PORTABLE_STEP_NAME]
@@ -283,7 +221,7 @@ def compile_demo_snapshot() -> None:
     assert portable_step.spec.upstream_steps == ["load_data"]
     assert "docker" in portable_step.config.settings
 
-    importer_spec = build_pipeline_spec(_zenbabel_external_spec())
+    importer_spec = build_pipeline_spec(ZENBABEL_PORTABLE_SPEC)
     print("Compiled ZenBabel demo snapshot successfully.")
     print(f"Pipeline spec version: {snapshot.pipeline_spec.version}")
     print(f"Importer-only portable spec version: {importer_spec.version}")
@@ -297,14 +235,10 @@ def run_pipeline() -> None:
     runtime_pipeline = zenbabel_mixed_static.with_options(
         environment=_container_store_environment()
     )
-    with zenbabel_compiler_bridge():
-        runtime_pipeline.prepare()
-        snapshot = runtime_pipeline._create_snapshot()
-
-    _validate_portable_execution_spec(snapshot)
-    run = create_placeholder_run(snapshot=snapshot)
-    submit_pipeline(
-        snapshot=snapshot, stack=Client().active_stack, placeholder_run=run
+    experimental_submit_pipeline(
+        pipeline=runtime_pipeline,
+        external_spec=ZENBABEL_PORTABLE_SPEC,
+        snapshot_validator=_validate_portable_execution_spec,
     )
 
 

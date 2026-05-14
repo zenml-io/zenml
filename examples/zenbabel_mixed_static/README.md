@@ -77,23 +77,23 @@ ZenBabel portable JSON v1 does **not** support:
 
 ## Why there is a Python placeholder step
 
-ZenML does not yet expose a public API where a Python pipeline can directly call a TypeScript step. This example therefore uses a small demo-only compiler bridge:
+ZenML does not yet expose a public API where a Python pipeline can directly call a TypeScript step. This example therefore uses a tiny experimental authoring helper from `zenml.zenbabel`:
 
 1. The Python pipeline is compiled normally with a placeholder Python step named `score_or_transform`.
-2. `zenml.zenbabel.build_steps(...)` imports the external TypeScript step spec and creates a portable ZenML step description.
-   In this example, the external TypeScript step spec is still authored as a small Python dictionary; a real TypeScript emitter or SDK is out of scope for v1.
-3. During compilation, the bridge patches only two fields on the compiled placeholder step:
+2. `experimental_portable_json_step(...)` declares the TypeScript command, source identity, and JSON parameters for that placeholder invocation.
+3. `experimental_compile_snapshot(...)` and `experimental_submit_pipeline(...)` activate a compiler bridge while ZenML compiles the pipeline.
+4. During compilation, the bridge patches only two fields on the compiled placeholder step:
    - `spec.source`, so the step points at `PortableStepAdapter` instead of the placeholder Python function.
    - `spec.execution_spec`, so `StepLauncher` routes the step to `PortableStepRunner`.
-4. The bridge keeps the normal compiled inputs, upstreams, output shape, parameters, and Docker settings.
+5. The bridge keeps the normal compiled inputs, upstreams, output shape, parameters, and Docker settings.
 
-In other words: the normal Python compiler builds the train tracks, and ZenBabel swaps the engine for one step.
+In other words: the normal Python compiler builds the train tracks, and ZenBabel swaps the engine for one step. The helper is intentionally marked `experimental_...`; it is cleanup scaffolding for this proof, not a stable TypeScript SDK.
 
 ## Files
 
 ```text
 zenbabel_mixed_static/
-├── run.py                         # Python pipeline and demo compiler bridge
+├── run.py                         # Python pipeline and experimental helper usage
 ├── Dockerfile                     # Python + ZenML + Node image for the TS step
 ├── package.json                   # TypeScript build/smoke scripts
 ├── package-lock.json              # Reproducible TypeScript tool install
@@ -124,7 +124,7 @@ From the repository root, with the feature branch installed in your environment:
 uv run python examples/zenbabel_mixed_static/run.py --compile-only
 ```
 
-This compiles the Python pipeline with the demo bridge active and checks that `score_or_transform` was routed to `zenml-portable-json-v1` while preserving the Python `load_data` upstream wiring.
+This compiles the Python pipeline with the experimental ZenBabel authoring helper active and checks that `score_or_transform` was routed to `zenml-portable-json-v1` while preserving the Python `load_data` upstream wiring.
 
 ## Run with Local Docker
 
