@@ -164,7 +164,7 @@ Or on the ZenML dashboard as metadata of a step that uses the tracker:
 Alternatively, you can see an overview of all experiment runs at https://wandb.ai/{ENTITY\_NAME}/{PROJECT\_NAME}/runs/.
 
 {% hint style="info" %}
-The naming convention of each Weights & Biases experiment run is `{pipeline_run_name}_{step_name}` (e.g. `wandb_example_pipeline-25_Apr_22-20_06_33_535737_tf_evaluator`) and each experiment run will be tagged with both `pipeline_name` and `pipeline_run_name`, which you can use to group and filter experiment runs.
+The naming convention of each Weights & Biases experiment run is `{pipeline_run_name}_{step_name}` (e.g. `wandb_example_pipeline-25_Apr_22-20_06_33_535737_tf_evaluator`). By default, ZenML groups W&B runs by the ZenML pipeline run name, adds human-readable tags (`zenml`, the pipeline name, and the pipeline run name), and stores durable ZenML identifiers in the W&B config.
 {% endhint %}
 
 #### Additional configuration
@@ -196,6 +196,64 @@ def my_step(
     """Everything in this step is auto-logged"""
     ...
 ```
+
+ZenML manages common `wandb.init(...)` fields for you. In addition to the W&B entity and project configured on the stack component, `WandbExperimentTrackerSettings` supports:
+
+```python
+wandb_settings = WandbExperimentTrackerSettings(
+    run_name="optional-display-name",
+    group="optional-group",
+    tags=["team-a"],
+    job_type="training",
+    run_config={"dataset": "customers-v2"},
+)
+```
+
+When ZenML metadata is enabled, W&B config receives flat keys such as `zenml_pipeline_name`, `zenml_pipeline_run_name`, `zenml_pipeline_run_id`, `zenml_step_name`, `zenml_latest_step_run_id`, and `zenml_latest_step_run_version`. ZenML dashboard links are added when they can be derived from the active server. These values are written to W&B config, not W&B summary, so metric summaries stay focused on experiment results.
+
+To use W&B in a minimal mode without ZenML-added grouping, tags, or config, disable metadata:
+
+```python
+wandb_settings = WandbExperimentTrackerSettings(
+    enable_zenml_metadata=False,
+    tags=["plain-wandb"],
+)
+```
+
+By default, ZenML leaves W&B run IDs unset (`run_id_strategy="wandb_generated"`), preserving W&B-generated IDs. If you want deterministic IDs, choose one of the opt-in strategies. For example, this configuration keeps retries for the same ZenML step invocation attached to the same W&B run:
+
+```python
+retry_collapsed_settings = WandbExperimentTrackerSettings(
+    run_id_strategy="pipeline_step",
+    resume="allow",
+)
+```
+
+If you prefer one W&B run for every ZenML step-run attempt, including retries, use:
+
+```python
+attempt_settings = WandbExperimentTrackerSettings(
+    run_id_strategy="step_run",
+)
+```
+
+ZenML defaults `resume` to `allow` whenever it passes a deterministic or explicit W&B run ID.
+
+Advanced users can attach logging to an existing W&B run, or pass unmanaged W&B initialization fields through `init_kwargs`:
+
+```python
+wandb_settings = WandbExperimentTrackerSettings(
+    run_id="existing-wandb-run-id",
+    init_kwargs={"notes": "Backfill evaluation metrics."},
+)
+```
+
+ZenML validates conflicts early:
+
+* `run_id` cannot be combined with a non-default `run_id_strategy`.
+* `resume="never"` cannot be combined with `run_id_strategy="pipeline_step"`, because retries intentionally reuse the same W&B run ID.
+* `run_config` cannot contain `zenml_*` keys, which are reserved for ZenML metadata.
+* `init_kwargs` cannot override ZenML-managed `wandb.init(...)` keys such as `entity`, `project`, `name`, `id`, `resume`, `group`, `job_type`, `tags`, `config`, or `settings`.
 
 ### Using Weights & Biases Weave
 
