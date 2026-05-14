@@ -90,6 +90,13 @@ It contains:
 - a Dockerfile for a Python + ZenML + Node step image,
 - smoke-test instructions and Local Docker run instructions.
 
+The full demo requires both pieces to be true:
+
+1. The active stack must be Docker-capable for this path, such as Local Docker with an image builder. The plain local orchestrator is not enough because it runs Python steps directly and does not use the TypeScript step's Docker settings.
+2. The active ZenML server/store must include this experimental branch schema. Older Cloud or staging servers can strip the new `StepSpec.execution_spec` field when the snapshot is saved and returned. If that happens, the TypeScript step reaches the normal Python runner as `PortableStepAdapter`, and the adapter correctly fails because it should only run through `PortableStepRunner`.
+
+For quick local validation without Docker or a compatible server, use the example's `--compile-only` mode. It checks that the compiler bridge creates the `zenml-portable-json-v1` execution spec before any server/store round trip.
+
 Use this page and the example as a snapshot of the experimental v1 story. Future TypeScript SDK work may make the authoring experience cleaner, but it should preserve the same honest boundary: the current stable ZenML control plane is Python, and this portable path only moves a JSON-shaped step body across the language line.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -30,10 +30,14 @@ from typing import Any, Iterator, Mapping
 
 import zenml.pipelines.pipeline_definition as pipeline_definition_module
 from zenml import pipeline, step
+from zenml.client import Client
 from zenml.config import DockerSettings
 from zenml.config.compiler import Compiler as BaseCompiler
 from zenml.config.step_configurations import Step
 from zenml.config.step_execution_spec import StepExecutionProtocol
+from zenml.execution.pipeline.utils import submit_pipeline
+from zenml.models import PipelineSnapshotResponse
+from zenml.pipelines.run_utils import create_placeholder_run
 from zenml.zenbabel import build_pipeline_spec, build_steps
 
 EXAMPLE_DIR = Path(__file__).resolve().parent
@@ -169,19 +173,67 @@ def zenbabel_compiler_bridge() -> Iterator[None]:
         pipeline_definition_module.Compiler = original_compiler
 
 
+def _validate_portable_execution_spec(
+    snapshot: PipelineSnapshotResponse,
+) -> None:
+    """Check that the portable step survived snapshot persistence."""
+    portable_step = snapshot.step_configurations[PORTABLE_STEP_NAME]
+    execution_spec = portable_step.spec.execution_spec
+    if (
+        execution_spec is None
+        or execution_spec.protocol
+        != StepExecutionProtocol.ZENML_PORTABLE_JSON_V1
+    ):
+        raise RuntimeError(
+            "The ZenBabel demo compiled `score_or_transform` as a portable "
+            "TypeScript step, but the created snapshot returned by the "
+            "active ZenML server/store no longer contains "
+            "`spec.execution_spec = zenml-portable-json-v1`. This usually "
+            "means you are connected to an older ZenML server, for example "
+            "Cloud/staging, that does not include this experimental branch "
+            "schema and stripped the field during the server/store round "
+            "trip. Run this branch against a local ZenML server/store, or a "
+            "backend deployed from this branch, before running the full demo."
+        )
+
+
+def _validate_local_docker_stack() -> None:
+    """Check that the active stack can run the TypeScript Docker step."""
+    stack = Client().active_stack
+    orchestrator = stack.orchestrator
+    if orchestrator.flavor != "local_docker":
+        raise RuntimeError(
+            "The ZenBabel mixed static demo needs the Local Docker "
+            "orchestrator because the TypeScript step uses step-level "
+            "Docker settings to build and run a Node-enabled image. The "
+            f"active stack `{stack.name}` uses orchestrator "
+            f"`{orchestrator.name}` with flavor `{orchestrator.flavor}`. "
+            "Set a stack with a `local_docker` orchestrator and a local image "
+            "builder, or run `uv run python "
+            "examples/zenbabel_mixed_static/run.py --compile-only` instead."
+        )
+    if stack.image_builder is None:
+        raise RuntimeError(
+            "The ZenBabel mixed static demo needs an image builder on the "
+            "active stack. The TypeScript step has Docker settings pointing "
+            "at `examples/zenbabel_mixed_static/Dockerfile`, so ZenML must "
+            "build that step image before Local Docker can run it. Register "
+            "and set a stack with a local image builder, or run "
+            "`uv run python examples/zenbabel_mixed_static/run.py "
+            "--compile-only` instead."
+        )
+
+
 def compile_demo_snapshot() -> None:
     """Compile the demo and print the patched TypeScript step contract."""
     with zenbabel_compiler_bridge():
         zenbabel_mixed_static.prepare()
         snapshot, _, _ = zenbabel_mixed_static._compile()
 
+    _validate_portable_execution_spec(snapshot)
     portable_step = snapshot.step_configurations[PORTABLE_STEP_NAME]
     execution_spec = portable_step.spec.execution_spec
     assert execution_spec is not None
-    assert (
-        execution_spec.protocol
-        == StepExecutionProtocol.ZENML_PORTABLE_JSON_V1
-    )
     assert portable_step.spec.inputs["records"].step_name == "load_data"
     assert portable_step.spec.upstream_steps == ["load_data"]
     assert "docker" in portable_step.config.settings
@@ -196,8 +248,14 @@ def compile_demo_snapshot() -> None:
 
 def run_pipeline() -> None:
     """Run the mixed-language pipeline on the active ZenML stack."""
+    _validate_local_docker_stack()
     with zenbabel_compiler_bridge():
-        zenbabel_mixed_static()
+        zenbabel_mixed_static.prepare()
+        snapshot = zenbabel_mixed_static._create_snapshot()
+
+    _validate_portable_execution_spec(snapshot)
+    run = create_placeholder_run(snapshot=snapshot)
+    submit_pipeline(snapshot=snapshot, stack=Client().active_stack, placeholder_run=run)
 
 
 def main() -> None:

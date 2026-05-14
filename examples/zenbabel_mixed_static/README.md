@@ -128,7 +128,10 @@ This compiles the Python pipeline with the demo bridge active and checks that `s
 
 ## Run with Local Docker
 
-The intended end-to-end path uses a stack with the Local Docker orchestrator, a local artifact store, and a local image builder. The image builder is required because the TypeScript step has step-level `DockerSettings` pointing at the example `Dockerfile`, so ZenML must be able to build that step image before Local Docker runs it.
+The intended end-to-end path has two requirements:
+
+1. A Docker-capable stack for this demo, specifically a stack with the Local Docker orchestrator, a local artifact store, and a local image builder. The image builder is required because the TypeScript step has step-level `DockerSettings` pointing at the example `Dockerfile`, so ZenML must be able to build that step image before Local Docker runs it. The plain local orchestrator is not enough: it runs Python steps directly and ignores these Docker settings.
+2. A ZenML server/store that includes this branch's experimental portable execution schema. If you are connected to an older Cloud or staging server, the server/store can accept the snapshot but strip the new `StepSpec.execution_spec` field on the way back. The next thing that happens is concrete but confusing: the step reaches the normal Python `StepRunner` as `PortableStepAdapter`, and the adapter raises that it must not be executed as a normal Python step. Run the full demo against a local ZenML server/store or a backend deployed from this branch.
 
 ```bash
 # From the repository root
