@@ -42,6 +42,7 @@
   * [YAML Configuration](how-to/steps-pipelines/yaml_configuration.md)
   * [Source Code and Imports](how-to/steps-pipelines/sources.md)
   * [Execution](how-to/steps-pipelines/execution.md)
+  * [Experimental TypeScript steps with ZenBabel](how-to/steps-pipelines/zenbabel-typescript.md)
   * [Wait for External Input](how-to/steps-pipelines/wait_resume.md)
   * [Advanced Features](how-to/steps-pipelines/advanced_features.md)
   * [Dynamic Pipelines](how-to/steps-pipelines/dynamic_pipelines.md)
