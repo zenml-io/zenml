@@ -17,6 +17,8 @@ import inspect
 import os
 import textwrap
 from abc import abstractmethod
+from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import (
     Any,
@@ -26,6 +28,7 @@ from typing import (
     Iterable,
     List,
     Optional,
+    Sequence,
     Set,
     Tuple,
     Type,
@@ -54,6 +57,128 @@ logger = get_logger(__name__)
 PathType = Union[bytes, str]
 
 
+@dataclass(frozen=True)
+class ObjectInfo:
+    """Metadata for an object stored in an artifact store.
+
+    Attributes:
+        uri: Absolute artifact store URI/path for the object.
+        relative_path: Object path relative to the listed prefix.
+        size: Optional object size in bytes.
+        etag: Optional provider object checksum/entity tag.
+        generation: Optional provider generation identifier.
+        version: Optional provider version identifier.
+        last_modified: Optional provider modification timestamp.
+    """
+
+    uri: str
+    relative_path: str
+    size: Optional[int] = None
+    etag: Optional[str] = None
+    generation: Optional[str] = None
+    version: Optional[str] = None
+    last_modified: Optional[datetime] = None
+
+
+@dataclass(frozen=True)
+class ObjectDeleteFailure:
+    """A failed object deletion attempt."""
+
+    path: str
+    error: Exception
+
+
+@dataclass(frozen=True)
+class BulkDeleteResult:
+    """Result of deleting multiple objects from an artifact store."""
+
+    deleted_paths: List[str]
+    failures: List[ObjectDeleteFailure]
+
+    @property
+    def successful(self) -> bool:
+        """Whether all requested objects were deleted successfully."""
+        return not self.failures
+
+
+def _allow_local_file_access() -> bool:
+    """Return whether local artifact paths may be accessed."""
+    if ENV_ZENML_SERVER in os.environ:
+        return handle_bool_env_var(
+            ENV_ZENML_SERVER_ALLOW_LOCAL_FILE_ACCESS, False
+        )
+    return True
+
+
+def _validate_artifact_store_path(
+    path: str,
+    fixed_root_path: str,
+    allow_local_file_access: bool,
+) -> None:
+    """Validate that a path stays within an artifact store root."""
+    if path.startswith(IN_MEMORY_ARTIFACT_URI_PREFIX):
+        return
+
+    if not allow_local_file_access and not io_utils.is_remote(path):
+        raise IllegalOperationError(
+            "Files in a local artifact store cannot be accessed from the "
+            "server."
+        )
+
+    if not path.startswith(fixed_root_path):
+        raise FileNotFoundError(
+            f"File `{path}` is outside of "
+            f"artifact store bounds `{fixed_root_path}`"
+        )
+
+
+def _sanitize_artifact_store_path(
+    potential_path: Any,
+    fixed_root_path: str,
+    allow_local_file_access: bool,
+) -> Any:
+    """Sanitize a potential artifact store path."""
+    if isinstance(potential_path, bytes):
+        path = fileio.convert_to_str(potential_path)
+    elif isinstance(potential_path, str):
+        path = potential_path
+    else:
+        return potential_path
+
+    if path.startswith(IN_MEMORY_ARTIFACT_URI_PREFIX):
+        return path
+
+    if io_utils.is_remote(path):
+        import ntpath
+        import posixpath
+
+        path = path.replace(ntpath.sep, posixpath.sep)
+        _validate_artifact_store_path(
+            path, fixed_root_path, allow_local_file_access
+        )
+    else:
+        _validate_artifact_store_path(
+            str(Path(path).absolute().resolve()),
+            fixed_root_path,
+            allow_local_file_access,
+        )
+
+    return path
+
+
+def _get_relative_object_path(uri: str, prefix: str) -> str:
+    """Get an object path relative to a listing prefix."""
+    normalized_prefix = prefix.rstrip("/\\")
+    if uri == normalized_prefix:
+        return os.path.basename(uri)
+
+    prefix_with_separator = f"{normalized_prefix}/"
+    if uri.startswith(prefix_with_separator):
+        return uri[len(prefix_with_separator) :]
+
+    return os.path.basename(uri)
+
+
 class _sanitize_paths:
     """Sanitizes path inputs before calling the original function.
 
@@ -70,12 +195,7 @@ class _sanitize_paths:
         """
         self.func = func
         self.fixed_root_path = fixed_root_path
-        if ENV_ZENML_SERVER in os.environ:
-            self.allow_local_file_access = handle_bool_env_var(
-                ENV_ZENML_SERVER_ALLOW_LOCAL_FILE_ACCESS, False
-            )
-        else:
-            self.allow_local_file_access = True
+        self.allow_local_file_access = _allow_local_file_access()
 
         self.path_args: List[int] = []
         self.path_kwargs: List[str] = []
@@ -99,21 +219,9 @@ class _sanitize_paths:
             IllegalOperationError: If the path is a local file and the server
                 is not configured to allow local file access.
         """
-        if path.startswith(IN_MEMORY_ARTIFACT_URI_PREFIX):
-            # No need to validate in-memory URIs
-            return
-
-        if not self.allow_local_file_access and not io_utils.is_remote(path):
-            raise IllegalOperationError(
-                "Files in a local artifact store cannot be accessed from the "
-                "server."
-            )
-
-        if not path.startswith(self.fixed_root_path):
-            raise FileNotFoundError(
-                f"File `{path}` is outside of "
-                f"artifact store bounds `{self.fixed_root_path}`"
-            )
+        _validate_artifact_store_path(
+            path, self.fixed_root_path, self.allow_local_file_access
+        )
 
     def _sanitize_potential_path(self, potential_path: Any) -> Any:
         """Sanitizes the input if it is a path.
@@ -128,29 +236,9 @@ class _sanitize_paths:
             The original input or a sanitized version of it in case of a remote
             path.
         """
-        if isinstance(potential_path, bytes):
-            path = fileio.convert_to_str(potential_path)
-        elif isinstance(potential_path, str):
-            path = potential_path
-        else:
-            # Neither string nor bytes, this is not a path
-            return potential_path
-
-        if path.startswith(IN_MEMORY_ARTIFACT_URI_PREFIX):
-            return path
-
-        if io_utils.is_remote(path):
-            # If we have a remote path, replace windows path separators with
-            # slashes
-            import ntpath
-            import posixpath
-
-            path = path.replace(ntpath.sep, posixpath.sep)
-            self._validate_path(path)
-        else:
-            self._validate_path(str(Path(path).absolute().resolve()))
-
-        return path
+        return _sanitize_artifact_store_path(
+            potential_path, self.fixed_root_path, self.allow_local_file_access
+        )
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         """Decorator function that sanitizes paths before calling the original function.
@@ -452,6 +540,187 @@ class BaseArtifactStore(StackComponent):
         Returns:
             The iterator that walks the contents of the given directory.
         """
+
+    def _sanitize_path(self, path: PathType) -> str:
+        """Sanitize a path for optional non-abstract helper methods.
+
+        Optional artifact-store hooks are intentionally not abstract so custom
+        stores remain compatible. They therefore do not get wrapped by the
+        abstract-method sanitizer and must validate path inputs explicitly.
+
+        Args:
+            path: The path to sanitize.
+
+        Returns:
+            The sanitized path as a string.
+        """
+        return cast(
+            str,
+            _sanitize_artifact_store_path(
+                path, self.path, _allow_local_file_access()
+            ),
+        )
+
+    def _get_object_info(self, uri: str, prefix: str) -> ObjectInfo:
+        """Build object metadata using portable artifact-store methods."""
+        return ObjectInfo(
+            uri=uri,
+            relative_path=_get_relative_object_path(uri, prefix),
+            size=self.size(uri),
+        )
+
+    def list_objects(
+        self, prefix: PathType, recursive: bool = False
+    ) -> Iterable[ObjectInfo]:
+        """List objects below a prefix with optional metadata.
+
+        Artifact stores can override this to use provider-native paginated
+        listing APIs. The default fallback uses the existing mandatory
+        filesystem-like methods.
+
+        Args:
+            prefix: The file or directory/prefix to list.
+            recursive: Whether to recursively list objects below directories.
+
+        Returns:
+            An iterable of object metadata.
+        """
+        sanitized_prefix = self._sanitize_path(prefix)
+
+        if not self.exists(sanitized_prefix):
+            return []
+
+        if not self.isdir(sanitized_prefix):
+            return [self._get_object_info(sanitized_prefix, sanitized_prefix)]
+
+        if recursive:
+            objects: List[ObjectInfo] = []
+            for directory, _, files in self.walk(sanitized_prefix):
+                for file_name in files:
+                    uri = os.path.join(str(directory), str(file_name))
+                    objects.append(
+                        self._get_object_info(uri, sanitized_prefix)
+                    )
+            return objects
+
+        objects = []
+        for file_name in self.listdir(sanitized_prefix):
+            uri = os.path.join(sanitized_prefix, str(file_name))
+            if not self.isdir(uri):
+                objects.append(self._get_object_info(uri, sanitized_prefix))
+        return objects
+
+    def delete_objects(self, paths: Iterable[PathType]) -> BulkDeleteResult:
+        """Delete multiple objects from the artifact store.
+
+        Artifact stores can override this to use provider-native bulk deletion.
+        The default fallback loops over the existing ``remove`` method and
+        captures per-path failures instead of failing the whole batch.
+
+        Args:
+            paths: Object paths to delete.
+
+        Returns:
+            Per-object deletion results.
+        """
+        deleted_paths: List[str] = []
+        failures: List[ObjectDeleteFailure] = []
+
+        for path in paths:
+            sanitized_path = self._sanitize_path(path)
+            try:
+                self.remove(sanitized_path)
+            except Exception as e:
+                failures.append(
+                    ObjectDeleteFailure(path=sanitized_path, error=e)
+                )
+            else:
+                deleted_paths.append(sanitized_path)
+
+        return BulkDeleteResult(deleted_paths=deleted_paths, failures=failures)
+
+    def read_range(
+        self, path: PathType, offset: int, length: Optional[int] = None
+    ) -> bytes:
+        """Read a byte range from an object.
+
+        Artifact stores can override this to use provider-native range reads.
+        The default fallback uses ``open`` and ``seek``.
+
+        Args:
+            path: Object path to read.
+            offset: Zero-based byte offset to start reading from.
+            length: Optional maximum number of bytes to read.
+
+        Returns:
+            The requested bytes.
+
+        Raises:
+            ValueError: If ``offset`` or ``length`` is negative.
+        """
+        if offset < 0:
+            raise ValueError("Range read offset must be non-negative.")
+        if length is not None and length < 0:
+            raise ValueError("Range read length must be non-negative.")
+
+        sanitized_path = self._sanitize_path(path)
+        with self.open(sanitized_path, "rb") as file:
+            file.seek(offset)
+            if length is None:
+                return cast(bytes, file.read())
+            return cast(bytes, file.read(length))
+
+    def compose_objects(
+        self,
+        sources: Sequence[PathType],
+        destination: PathType,
+        overwrite: bool = False,
+    ) -> bool:
+        """Compose source objects into one destination object.
+
+        Artifact stores can override this for server-side object composition.
+        The default returns ``False`` so callers can fall back to the portable
+        Python merge path.
+
+        Args:
+            sources: Ordered source object paths.
+            destination: Destination object path.
+            overwrite: Whether an existing destination may be overwritten.
+
+        Returns:
+            Whether composition happened successfully.
+        """
+        for source in sources:
+            self._sanitize_path(source)
+        self._sanitize_path(destination)
+        return False
+
+    def download_objects_to_directory(
+        self,
+        objects: Iterable[ObjectInfo],
+        local_dir: PathType,
+        max_workers: Optional[int] = None,
+    ) -> bool:
+        """Download objects into a local directory.
+
+        Artifact stores can override this to use provider transfer managers.
+        The default returns ``False`` so callers can keep their existing
+        streaming download behavior.
+
+        Args:
+            objects: Objects to download.
+            local_dir: Local directory to download into.
+            max_workers: Optional provider-specific worker count.
+
+        Returns:
+            Whether the provider handled the downloads.
+        """
+        for object_info in objects:
+            self._sanitize_path(object_info.uri)
+        local_path = fileio.convert_to_str(local_dir)
+        if io_utils.is_remote(local_path):
+            raise ValueError("Download directory must be a local path.")
+        return False
 
     # --- Internal interface ---
     def __init__(self, *args: Any, **kwargs: Any) -> None:

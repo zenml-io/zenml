@@ -29,7 +29,7 @@ from uuid import UUID
 
 from opentelemetry.sdk._logs.export import LogExporter
 
-from zenml.artifact_stores import BaseArtifactStore
+from zenml.artifact_stores import BaseArtifactStore, ObjectInfo
 from zenml.enums import LoggingLevels, StackComponentType
 from zenml.exceptions import DoesNotExistException
 from zenml.log_stores import BaseLogStore
@@ -50,7 +50,113 @@ logger = get_logger(__name__)
 
 
 LOGS_EXTENSION = ".log"
+MERGED_LOG_FILE_NAME = f"merged{LOGS_EXTENSION}"
+LEGACY_MERGED_LOG_SUFFIX = f"_merged{LOGS_EXTENSION}"
+TEMPORARY_COMPOSE_LOG_PREFIX = ".zenml-compose-"
 END_OF_STREAM_MESSAGE = "END_OF_STREAM"
+
+
+def _get_log_object_name(object_info: "ObjectInfo") -> str:
+    """Get the normalized name of a listed log object."""
+    return object_info.relative_path.strip("/")
+
+
+def is_temporary_log_object(object_info: "ObjectInfo") -> bool:
+    """Whether a listed object is a temporary log compose object."""
+    return _get_log_object_name(object_info).startswith(
+        TEMPORARY_COMPOSE_LOG_PREFIX
+    )
+
+
+def is_deterministic_merged_log_object(
+    object_info: "ObjectInfo",
+) -> bool:
+    """Whether a listed object is the deterministic merged log file."""
+    return _get_log_object_name(object_info) == MERGED_LOG_FILE_NAME
+
+
+def is_merged_log_object(object_info: "ObjectInfo") -> bool:
+    """Whether a listed object is a merged log file."""
+    name = _get_log_object_name(object_info)
+    return is_deterministic_merged_log_object(object_info) or name.endswith(
+        LEGACY_MERGED_LOG_SUFFIX
+    )
+
+
+def is_log_fragment_object(object_info: "ObjectInfo") -> bool:
+    """Whether a listed object is a log fragment."""
+    name = _get_log_object_name(object_info)
+    return (
+        name.endswith(LOGS_EXTENSION)
+        and not is_merged_log_object(object_info)
+        and not is_temporary_log_object(object_info)
+    )
+
+
+def sort_log_objects(objects: List["ObjectInfo"]) -> List["ObjectInfo"]:
+    """Sort log objects in the same order as the previous filename sort."""
+    return sorted(objects, key=_get_log_object_name)
+
+
+def list_log_objects(
+    artifact_store: "BaseArtifactStore", logs_uri: str
+) -> List["ObjectInfo"]:
+    """List log objects with a legacy fallback for custom stores.
+
+    The optional artifact-store methods are new extension points. If a custom
+    store already had an unrelated ``list_objects`` helper with a different
+    return shape, this function falls back to the older filesystem-like log
+    listing behavior instead of breaking log fetch/finalization.
+    """
+    try:
+        objects = list(artifact_store.list_objects(logs_uri))
+    except Exception as e:
+        logger.debug(
+            "Could not list log objects for %s through list_objects(): %s",
+            logs_uri,
+            e,
+        )
+    else:
+        if all(isinstance(object_info, ObjectInfo) for object_info in objects):
+            return objects
+        logger.debug(
+            "Artifact store %s returned unexpected list_objects() values for "
+            "%s. Falling back to listdir().",
+            artifact_store.name,
+            logs_uri,
+        )
+
+    return _list_log_objects_with_legacy_methods(artifact_store, logs_uri)
+
+
+def _list_log_objects_with_legacy_methods(
+    artifact_store: "BaseArtifactStore", logs_uri: str
+) -> List["ObjectInfo"]:
+    """List log objects through the pre-acceleration artifact-store API."""
+    if not artifact_store.exists(logs_uri):
+        return []
+
+    if not artifact_store.isdir(logs_uri):
+        return [
+            ObjectInfo(
+                uri=logs_uri,
+                relative_path=os.path.basename(logs_uri),
+                size=artifact_store.size(logs_uri),
+            )
+        ]
+
+    objects: List[ObjectInfo] = []
+    for file_name in artifact_store.listdir(logs_uri):
+        uri = os.path.join(logs_uri, str(file_name))
+        if not artifact_store.isdir(uri):
+            objects.append(
+                ObjectInfo(
+                    uri=uri,
+                    relative_path=str(file_name),
+                    size=artifact_store.size(uri),
+                )
+            )
+    return objects
 
 
 def prepare_logs_uri(
@@ -115,6 +221,44 @@ def fetch_log_records(
     return log_entries
 
 
+def _stream_file_line_by_line(
+    artifact_store: "BaseArtifactStore",
+    logs_uri: str,
+) -> Generator[str, None, None]:
+    """Stream a single log file line by line."""
+    with artifact_store.open(logs_uri, "r") as file:
+        for line in file:
+            yield line.rstrip("\n\r")
+
+
+def _select_log_objects(objects: List["ObjectInfo"]) -> List["ObjectInfo"]:
+    """Select which listed log objects should be read."""
+    merged_objects = sort_log_objects(
+        [
+            object_info
+            for object_info in objects
+            if is_merged_log_object(object_info)
+        ]
+    )
+    deterministic_merged_objects = [
+        object_info
+        for object_info in merged_objects
+        if is_deterministic_merged_log_object(object_info)
+    ]
+    if deterministic_merged_objects:
+        return deterministic_merged_objects
+    if merged_objects:
+        return merged_objects
+
+    return sort_log_objects(
+        [
+            object_info
+            for object_info in objects
+            if is_log_fragment_object(object_info)
+        ]
+    )
+
+
 def _stream_logs_line_by_line(
     artifact_store: "BaseArtifactStore",
     logs_uri: str,
@@ -130,35 +274,26 @@ def _stream_logs_line_by_line(
 
     Yields:
         Individual log lines as strings.
-
-    Raises:
-        DoesNotExistException: If the artifact does not exist in the artifact store.
     """
-    if not artifact_store.exists(logs_uri):
+    if logs_uri.endswith(LOGS_EXTENSION):
+        try:
+            yield from _stream_file_line_by_line(artifact_store, logs_uri)
+        except (DoesNotExistException, FileNotFoundError, IsADirectoryError):
+            pass
+        else:
+            return
+
+    log_objects = list_log_objects(artifact_store, logs_uri)
+    if not log_objects:
         return
 
-    if not artifact_store.isdir(logs_uri):
-        # Single file case
-        with artifact_store.open(logs_uri, "r") as file:
-            for line in file:
-                yield line.rstrip("\n\r")
-    else:
-        # Directory case - may contain multiple log files
-        files = artifact_store.listdir(logs_uri)
-        if not files:
-            raise DoesNotExistException(
-                f"Folder '{logs_uri}' is empty in artifact store "
-                f"'{artifact_store.name}'."
+    for object_info in _select_log_objects(log_objects):
+        try:
+            yield from _stream_file_line_by_line(
+                artifact_store, object_info.uri
             )
-
-        # Sort files to read them in order
-        files.sort()
-
-        for file in files:
-            file_path = os.path.join(logs_uri, str(file))
-            with artifact_store.open(file_path, "r") as f:
-                for line in f:
-                    yield line.rstrip("\n\r")
+        except (DoesNotExistException, FileNotFoundError):
+            continue
 
 
 def parse_log_entry(log_line: str) -> Optional[LogEntry]:

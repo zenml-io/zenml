@@ -25,7 +25,13 @@ from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.enums import LoggingLevels
 from zenml.log_stores.artifact.artifact_log_store import (
     END_OF_STREAM_MESSAGE,
+    MERGED_LOG_FILE_NAME,
+    is_deterministic_merged_log_object,
+    is_log_fragment_object,
+    is_temporary_log_object,
+    list_log_objects,
     remove_ansi_escape_codes,
+    sort_log_objects,
 )
 from zenml.logger import get_logger
 from zenml.utils.logging_utils import LogEntry
@@ -307,45 +313,149 @@ class ArtifactLogExporter(LogExporter):
         Args:
             log_uri: The URI of the log files to merge.
         """
+        log_objects = list_log_objects(self.artifact_store, log_uri)
+        fragment_objects = sort_log_objects(
+            [
+                object_info
+                for object_info in log_objects
+                if is_log_fragment_object(object_info)
+            ]
+        )
+        temporary_objects = [
+            object_info
+            for object_info in log_objects
+            if is_temporary_log_object(object_info)
+        ]
+        cleanup_uris = [
+            object_info.uri
+            for object_info in [*fragment_objects, *temporary_objects]
+        ]
+
+        if any(
+            is_deterministic_merged_log_object(object_info)
+            for object_info in log_objects
+        ):
+            self._cleanup_log_objects(
+                cleanup_uris,
+                context_uri=log_uri,
+                cleanup_description="leftover log fragments",
+            )
+            return
+
+        if not fragment_objects:
+            return
+
+        if self._try_compose_merge(
+            fragment_uris=[
+                object_info.uri for object_info in fragment_objects
+            ],
+            temporary_uris=[
+                object_info.uri for object_info in temporary_objects
+            ],
+            destination_uri=os.path.join(log_uri, MERGED_LOG_FILE_NAME),
+        ):
+            return
+
+        if len(fragment_objects) > 1:
+            self._python_merge(
+                log_uri=log_uri,
+                fragment_uris=[
+                    object_info.uri for object_info in fragment_objects
+                ],
+            )
+
+    def _try_compose_merge(
+        self,
+        fragment_uris: List[str],
+        temporary_uris: List[str],
+        destination_uri: str,
+    ) -> bool:
+        """Try to merge log fragments using provider-side composition."""
+        try:
+            composed = self.artifact_store.compose_objects(
+                sources=fragment_uris,
+                destination=destination_uri,
+                overwrite=False,
+            )
+        except Exception as e:
+            logger.warning(
+                "Provider-side log composition failed for %s; falling back "
+                "to Python merge: %s",
+                destination_uri,
+                e,
+            )
+            return False
+
+        if not composed:
+            return False
+
+        self._cleanup_log_objects(
+            [*fragment_uris, *temporary_uris],
+            context_uri=destination_uri,
+            cleanup_description="log fragments",
+        )
+        return True
+
+    def _cleanup_log_objects(
+        self,
+        object_uris: List[str],
+        context_uri: str,
+        cleanup_description: str,
+    ) -> None:
+        """Best-effort cleanup for fragments left after log finalization."""
+        if not object_uris:
+            return
+
+        cleanup_result = self.artifact_store.delete_objects(object_uris)
+        if cleanup_result.failures:
+            failed_paths = [
+                failure.path for failure in cleanup_result.failures
+            ]
+            logger.warning(
+                "Finalized logs for %s, but failed to clean up %d %s: %s",
+                context_uri,
+                len(failed_paths),
+                cleanup_description,
+                failed_paths,
+            )
+
+    def _python_merge(
+        self,
+        log_uri: str,
+        fragment_uris: List[str],
+    ) -> None:
+        """Merge log fragments through Python using the legacy behavior."""
         from zenml.artifacts.utils import _load_file_from_artifact_store
         from zenml.exceptions import DoesNotExistException
 
-        # Check if the log directory exists - it may not if no logs
-        # were written yet. The URI folder gets created only when the
-        # first log message is sent.
-        if not self.artifact_store.exists(log_uri):
-            return
-
-        files_ = self.artifact_store.listdir(log_uri)
-        if len(files_) > 1:
-            files_.sort()
-
-            missing_files = set()
-            # dump all logs to a local file first
-            with self.artifact_store.open(
-                os.path.join(log_uri, f"{time.time()}_merged{LOGS_EXTENSION}"),
-                "w",
-            ) as merged_file:
-                for file in files_:
-                    try:
-                        merged_file.write(
-                            str(
-                                _load_file_from_artifact_store(
-                                    os.path.join(log_uri, str(file)),
-                                    artifact_store=self.artifact_store,
-                                    mode="r",
-                                )
+        missing_uris = set()
+        with self.artifact_store.open(
+            os.path.join(log_uri, f"{time.time()}_merged{LOGS_EXTENSION}"),
+            "w",
+        ) as merged_file:
+            for fragment_uri in fragment_uris:
+                try:
+                    merged_file.write(
+                        str(
+                            _load_file_from_artifact_store(
+                                fragment_uri,
+                                artifact_store=self.artifact_store,
+                                mode="r",
                             )
                         )
-                    except DoesNotExistException:
-                        missing_files.add(file)
-
-            # clean up left over files
-            for file in files_:
-                if file not in missing_files:
-                    self.artifact_store.remove(
-                        os.path.join(log_uri, str(file))
                     )
+                except DoesNotExistException:
+                    missing_uris.add(fragment_uri)
+
+        self._cleanup_log_objects(
+            [
+                fragment_uri
+                for fragment_uri in fragment_uris
+                if fragment_uri not in missing_uris
+            ],
+            context_uri=log_uri,
+            cleanup_description="log fragments",
+        )
 
     def shutdown(self) -> None:
         """Shutdown the exporter."""

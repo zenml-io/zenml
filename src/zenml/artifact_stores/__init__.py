@@ -31,6 +31,9 @@ from zenml.artifact_stores.base_artifact_store import (
     BaseArtifactStore,
     BaseArtifactStoreConfig,
     BaseArtifactStoreFlavor,
+    BulkDeleteResult,
+    ObjectDeleteFailure,
+    ObjectInfo,
 )
 from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStore,
@@ -42,6 +45,9 @@ __all__ = [
     "BaseArtifactStore",
     "BaseArtifactStoreConfig",
     "BaseArtifactStoreFlavor",
+    "BulkDeleteResult",
+    "ObjectDeleteFailure",
+    "ObjectInfo",
     "LocalArtifactStore",
     "LocalArtifactStoreConfig",
     "LocalArtifactStoreFlavor",
