@@ -17,8 +17,26 @@ from zenml.zenbabel.adapters import (
     PORTABLE_STEP_ADAPTER_SOURCE,
     PortableStepAdapter,
 )
+from zenml.zenbabel.external_spec import (
+    ExternalInputReference,
+    ExternalPipelineOutput,
+    ExternalPipelineSpec,
+    ExternalPortableStep,
+)
+from zenml.zenbabel.importer import (
+    build_pipeline_snapshot,
+    build_pipeline_spec,
+    build_steps,
+)
 
 __all__ = [
+    "ExternalInputReference",
+    "ExternalPipelineOutput",
+    "ExternalPipelineSpec",
+    "ExternalPortableStep",
     "PORTABLE_STEP_ADAPTER_SOURCE",
     "PortableStepAdapter",
+    "build_pipeline_snapshot",
+    "build_pipeline_spec",
+    "build_steps",
 ]
