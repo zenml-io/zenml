@@ -16,7 +16,7 @@
 import json
 from typing import Any, Dict, List, Optional
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.source import Source, SourceWithValidator
@@ -43,6 +43,7 @@ class PipelineSpec(FrozenBaseModel):
     # - 0.4: New Pipeline class, the upstream steps and
     #   inputs in the step specs refer to the pipeline parameter names
     # - 0.5: Adds input schema, outputs and output schema
+    # - 0.6: Adds optional step execution specs for portable step bodies
     version: str = "0.5"
     source: Optional[SourceWithValidator] = None
     parameters: Dict[str, Any] = {}
@@ -64,6 +65,22 @@ class PipelineSpec(FrozenBaseModel):
         "schema generation failed, which is most likely because some of the "
         "pipeline outputs are not JSON serializable.",
     )
+
+    @model_validator(mode="after")
+    def _set_version_for_portable_steps(self) -> "PipelineSpec":
+        """Set the portable pipeline spec version only when needed.
+
+        Returns:
+            The validated pipeline spec.
+        """
+        from packaging import version
+
+        if any(step.execution_spec for step in self.steps) and version.parse(
+            self.version
+        ) < version.parse("0.6"):
+            object.__setattr__(self, "version", "0.6")
+
+        return self
 
     def __eq__(self, other: Any) -> bool:
         """Returns whether the other object is referring to the same pipeline.

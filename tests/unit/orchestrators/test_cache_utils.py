@@ -25,6 +25,11 @@ from zenml.config.compiler import Compiler
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.source import Source
 from zenml.config.step_configurations import Step
+from zenml.config.step_execution_spec import (
+    StepExecutionLanguage,
+    StepExecutionProtocol,
+    StepExecutionSpec,
+)
 from zenml.enums import ExecutionStatus, SorterOps
 from zenml.models import Page, PipelineRequest
 from zenml.orchestrators import cache_utils
@@ -130,6 +135,30 @@ def test_generate_cache_key_considers_step_source(generate_cache_key_kwargs):
         "some.new.source"
     )
     key_2 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
+    assert key_1 != key_2
+
+
+def test_generate_cache_key_considers_execution_spec(
+    generate_cache_key_kwargs,
+):
+    """Check that portable step identity changes the cache key."""
+    generate_cache_key_kwargs["step"].spec.model_config["frozen"] = False
+    generate_cache_key_kwargs["step"].spec.execution_spec = StepExecutionSpec(
+        language=StepExecutionLanguage.TYPESCRIPT,
+        protocol=StepExecutionProtocol.ZENML_PORTABLE_JSON_V1,
+        command=["node", "/app/dist/steps/score.js"],
+        source_identity="ts/src/score.ts#score",
+    )
+    key_1 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
+
+    generate_cache_key_kwargs["step"].spec.execution_spec = StepExecutionSpec(
+        language=StepExecutionLanguage.TYPESCRIPT,
+        protocol=StepExecutionProtocol.ZENML_PORTABLE_JSON_V1,
+        command=["node", "/app/dist/steps/score.js"],
+        source_identity="ts/src/score.ts#other",
+    )
+    key_2 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
+
     assert key_1 != key_2
 
 

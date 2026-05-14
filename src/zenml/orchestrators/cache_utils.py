@@ -99,6 +99,9 @@ def generate_cache_key(
     # when committing some unrelated files
     hash_.update(step.spec.source.import_path.encode())
 
+    if execution_spec := step.spec.execution_spec:
+        hash_.update(execution_spec.cache_key_fragment.encode())
+
     if cache_policy.include_step_parameters:
         for key, value in sorted(step.config.parameters.items()):
             hash_.update(key.encode())

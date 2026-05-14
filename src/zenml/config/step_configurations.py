@@ -31,6 +31,7 @@ from pydantic import (
     Field,
     SerializeAsAny,
     field_validator,
+    model_serializer,
     model_validator,
 )
 
@@ -45,6 +46,7 @@ from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import Source, SourceWithValidator
+from zenml.config.step_execution_spec import StepExecutionSpec
 from zenml.enums import GroupType, StepRuntime, StepType
 from zenml.logger import get_logger
 from zenml.model.lazy_load import ModelVersionDataLazyLoader
@@ -418,6 +420,10 @@ class StepSpec(FrozenBaseModel):
     invocation_id: str
     enable_heartbeat: bool = False
     parameter_spec: Optional[Dict[str, Any]] = None
+    execution_spec: Optional[StepExecutionSpec] = Field(
+        default=None,
+        description="Optional execution contract for portable step bodies.",
+    )
 
     @model_validator(mode="before")
     @classmethod
@@ -425,6 +431,22 @@ class StepSpec(FrozenBaseModel):
     def _migrate_legacy_fields(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         if "invocation_id" not in data:
             data["invocation_id"] = data.pop("pipeline_parameter_name", "")
+
+        return data
+
+    @model_serializer(mode="wrap")
+    def _serialize_without_empty_execution_spec(self, handler: Any) -> Any:
+        """Serialize while preserving old Python-only spec shape.
+
+        Args:
+            handler: The wrapped Pydantic serializer.
+
+        Returns:
+            The serialized step spec.
+        """
+        data = handler(self)
+        if self.execution_spec is None:
+            data.pop("execution_spec", None)
 
         return data
 
@@ -474,6 +496,9 @@ class StepSpec(FrozenBaseModel):
                 return False
 
             if self.parameter_spec != other.parameter_spec:
+                return False
+
+            if self.execution_spec != other.execution_spec:
                 return False
 
             if self.invocation_id != other.invocation_id:
