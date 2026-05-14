@@ -31,6 +31,10 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.deployers.server import runtime
 from zenml.hooks.hook_validators import load_and_run_hook
 from zenml.logger import get_logger
+from zenml.materializers.built_in_materializer import (
+    BuiltInContainerMaterializer,
+    BuiltInMaterializer,
+)
 from zenml.models.v2.core.step_run import StepRunInputResponse
 from zenml.orchestrators.publish_utils import (
     publish_failed_step_run,
@@ -42,7 +46,7 @@ from zenml.orchestrators.step_runner import StepRunner
 from zenml.orchestrators.utils import is_setting_enabled
 from zenml.steps.step_context import StepContext
 from zenml.steps.utils import OutputSignature
-from zenml.utils import env_utils, exception_utils
+from zenml.utils import env_utils, exception_utils, source_utils
 from zenml.utils.logging_utils import (
     is_step_logging_enabled,
     setup_logging_context,
@@ -60,6 +64,10 @@ ZENML_PORTABLE_STEP_MANIFEST = "ZENML_PORTABLE_STEP_MANIFEST"
 PORTABLE_JSON_PROTOCOL_VERSION = "zenml-portable-json-v1"
 _SUBPROCESS_OUTPUT_LIMIT = 4000
 _JAVASCRIPT_MAX_SAFE_INTEGER = 2**53 - 1
+_ALLOWED_OUTPUT_MATERIALIZER_SOURCES = {
+    source_utils.resolve(BuiltInMaterializer).import_path,
+    source_utils.resolve(BuiltInContainerMaterializer).import_path,
+}
 
 
 class PortableJSONValueError(TypeError):
@@ -370,6 +378,18 @@ class PortableStepRunner:
             raise RuntimeError(
                 "Portable JSON v1 steps do not support step heartbeat yet."
             )
+
+        for output_name, output in self.configuration.outputs.items():
+            configured_materializers = {
+                source.import_path for source in output.materializer_source
+            }
+            if configured_materializers - _ALLOWED_OUTPUT_MATERIALIZER_SOURCES:
+                raise RuntimeError(
+                    "Portable JSON v1 steps do not support custom output "
+                    "materializers. Outputs must use the default built-in "
+                    "JSON-compatible materializer path. Custom materializers "
+                    f"were configured for output `{output_name}`."
+                )
 
     def _output_annotations(self) -> Dict[str, OutputSignature]:
         """Build output signatures from the portable step configuration.

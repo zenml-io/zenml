@@ -68,6 +68,7 @@ The runtime support and the importer are in place, but the public SDK does not y
 
 1. Python compiles a normal static pipeline with a placeholder step.
 2. `zenml.zenbabel.build_steps(...)` imports the external TypeScript step spec.
+   In this example, the external TypeScript step spec is still authored as a small Python dictionary; a real TypeScript emitter or SDK is out of scope for v1.
 3. The bridge patches the compiled placeholder step with the portable `source` and `execution_spec`.
 4. The normal ZenML run path then sees `zenml-portable-json-v1` and routes the step to `PortableStepRunner`.
 

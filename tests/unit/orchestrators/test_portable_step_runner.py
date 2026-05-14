@@ -13,6 +13,10 @@ import pytest
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
+from zenml.materializers.built_in_materializer import (
+    BuiltInContainerMaterializer,
+    BuiltInMaterializer,
+)
 from zenml.models import (
     PipelineRunResponse,
     PipelineSnapshotResponse,
@@ -25,6 +29,7 @@ from zenml.orchestrators.portable_step_runner import (
 )
 from zenml.orchestrators.step_runner import StepRunner
 from zenml.stack import Stack
+from zenml.utils import source_utils
 from zenml.zenbabel.adapters import PORTABLE_STEP_ADAPTER_SOURCE
 
 
@@ -32,6 +37,7 @@ def _portable_step(
     command: list[str],
     parameters: Dict[str, Any] | None = None,
     enable_heartbeat: bool = False,
+    output_materializer_source: tuple[Any, ...] = (),
 ) -> Step:
     return Step.model_validate(
         {
@@ -50,7 +56,11 @@ def _portable_step(
             "config": {
                 "name": "portable_step",
                 "parameters": parameters or {},
-                "outputs": {"output": {"materializer_source": []}},
+                "outputs": {
+                    "output": {
+                        "materializer_source": output_materializer_source
+                    }
+                },
             },
         }
     )
@@ -234,6 +244,39 @@ with open(manifest_path, "r", encoding="utf-8") as manifest_file:
                 step, sample_step_run, sample_snapshot_response_model
             ),
         )
+
+
+def test_portable_step_allows_builtin_output_materializers(
+    tmp_path: Path,
+    local_stack: Stack,
+) -> None:
+    """The importer-configured built-in materializer path is allowed."""
+    step = _portable_step(
+        [sys.executable, str(tmp_path / "portable_step.py")],
+        output_materializer_source=(
+            source_utils.resolve(BuiltInMaterializer),
+            source_utils.resolve(BuiltInContainerMaterializer),
+        ),
+    )
+
+    PortableStepRunner(step=step, stack=local_stack)._validate_step_contract()
+
+
+def test_portable_step_rejects_custom_output_materializers(
+    tmp_path: Path,
+    local_stack: Stack,
+) -> None:
+    """Portable JSON v1 rejects custom output materializers clearly."""
+    step = _portable_step(
+        [sys.executable, str(tmp_path / "portable_step.py")],
+        output_materializer_source=(
+            "zenml.materializers.base_materializer.BaseMaterializer",
+        ),
+    )
+
+    runner = PortableStepRunner(step=step, stack=local_stack)
+    with pytest.raises(RuntimeError, match="custom output materializers"):
+        runner._validate_step_contract()
 
 
 def test_portable_step_rejects_heartbeat_for_v1(

@@ -81,6 +81,7 @@ ZenML does not yet expose a public API where a Python pipeline can directly call
 
 1. The Python pipeline is compiled normally with a placeholder Python step named `score_or_transform`.
 2. `zenml.zenbabel.build_steps(...)` imports the external TypeScript step spec and creates a portable ZenML step description.
+   In this example, the external TypeScript step spec is still authored as a small Python dictionary; a real TypeScript emitter or SDK is out of scope for v1.
 3. During compilation, the bridge patches only two fields on the compiled placeholder step:
    - `spec.source`, so the step points at `PortableStepAdapter` instead of the placeholder Python function.
    - `spec.execution_spec`, so `StepLauncher` routes the step to `PortableStepRunner`.
@@ -127,15 +128,19 @@ This compiles the Python pipeline with the demo bridge active and checks that `s
 
 ## Run with Local Docker
 
-The intended end-to-end path uses a stack with the Local Docker orchestrator and a local artifact store. The TypeScript step has step-level `DockerSettings` pointing at the example `Dockerfile`.
+The intended end-to-end path uses a stack with the Local Docker orchestrator, a local artifact store, and a local image builder. The image builder is required because the TypeScript step has step-level `DockerSettings` pointing at the example `Dockerfile`, so ZenML must be able to build that step image before Local Docker runs it.
 
 ```bash
 # From the repository root
-# Use an existing stack whose orchestrator flavor is `local_docker`, or create one.
+# Use an existing stack with local_docker, local artifact store, and local image builder,
+# or create/register the missing pieces.
 zenml orchestrator register zenbabel_local_docker --flavor=local_docker
+zenml artifact-store register zenbabel_local_artifact_store --flavor=local
+zenml image-builder register zenbabel_local_image_builder --flavor=local
 zenml stack register zenbabel_local_docker_stack \
   -o zenbabel_local_docker \
-  -a <your-local-artifact-store> \
+  -a zenbabel_local_artifact_store \
+  -i zenbabel_local_image_builder \
   --set
 
 uv run python examples/zenbabel_mixed_static/run.py
