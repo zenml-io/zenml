@@ -189,6 +189,10 @@ class UserScopedFilter(BaseFilter):
         *BaseFilter.CUSTOM_SORTING_OPTIONS,
         "user",
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *BaseFilter.API_SINGLE_INPUT_PARAMS,
+        "scope_user",
+    ]
 
     scope_user: Optional[UUID] = Field(
         default=None,

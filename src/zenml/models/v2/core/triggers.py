@@ -31,6 +31,7 @@ from typing import (
 from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator, model_validator
+from sqlmodel import col
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import (
@@ -430,7 +431,6 @@ class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
         "pipeline_id",
         "snapshot_id",
     ]
-
     CLI_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         "type",
@@ -486,13 +486,23 @@ class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
             )
 
             if self.pipeline_id is not None:
+                pipeline_ids = (
+                    self.pipeline_id
+                    if isinstance(self.pipeline_id, list)
+                    else [self.pipeline_id]
+                )
                 query = query.where(
-                    PipelineSnapshotSchema.pipeline_id == self.pipeline_id
+                    col(PipelineSnapshotSchema.pipeline_id).in_(pipeline_ids)
                 )
 
             if self.snapshot_id is not None:
+                snapshot_ids = (
+                    self.snapshot_id
+                    if isinstance(self.snapshot_id, list)
+                    else [self.snapshot_id]
+                )
                 query = query.where(
-                    TriggerSnapshotSchema.snapshot_id == self.snapshot_id
+                    col(TriggerSnapshotSchema.snapshot_id).in_(snapshot_ids)
                 )
 
         return query

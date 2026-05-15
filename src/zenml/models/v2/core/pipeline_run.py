@@ -892,6 +892,8 @@ class PipelineRunFilter(
         *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
         *TaggableFilter.API_SINGLE_INPUT_PARAMS,
         *RunMetadataFilterMixin.API_SINGLE_INPUT_PARAMS,
+        "templatable",
+        "root_runs_only",
     ]
 
     name: StringFilterOption = Field(
@@ -1240,7 +1242,7 @@ class PipelineRunFilter(
                         StackCompositionSchema.component_id
                         == StackComponentSchema.id,
                         self.generate_name_or_id_query_conditions(
-                            value=self.stack_component,
+                            value=component_filter,
                             table=StackComponentSchema,
                         ),
                     )
@@ -1335,7 +1337,7 @@ class PipelineRunFilter(
                         PipelineRunSchema.triggered_by_type
                         == PipelineRunTriggeredByType.DEPLOYMENT.value,
                         self.generate_custom_query_conditions_for_column(
-                            value=self.triggered_by_deployment_id,
+                            value=triggered_by_deployment_id_filter,
                             table=DeploymentSchema,
                             column="id",
                         ),
@@ -1358,7 +1360,7 @@ class PipelineRunFilter(
                         ModelVersionPipelineRunSchema.model_version_id
                         == ModelVersionSchema.id,
                         self.generate_custom_query_conditions_for_column(
-                            value=self.linked_to_model_version_id,
+                            value=linked_to_model_version_filter,
                             table=ModelVersionSchema,
                             column="id",
                         ),

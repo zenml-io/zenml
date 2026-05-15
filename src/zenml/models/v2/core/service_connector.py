@@ -885,6 +885,8 @@ class ServiceConnectorFilter(UserScopedFilter):
         *UserScopedFilter.API_SINGLE_INPUT_PARAMS,
         "labels",
         "labels_str",
+        "resource_type",
+        "resource_id",
     ]
     name: StringFilterOption = Field(
         default=None,

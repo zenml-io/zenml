@@ -409,6 +409,24 @@ class ServiceResponse(
 class ServiceFilter(ProjectScopedFilter):
     """Model to enable advanced filtering of services."""
 
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
+        "running",
+        "config",
+    ]
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
+        "flavor",
+        "type",
+        "pipeline_step_name",
+        "running",
+        "pipeline_name",
+    ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
+        "config",
+    ]
+
     name: StringFilterOption = Field(
         default=None,
         description="Name of the service. Use this to filter services by "
@@ -442,10 +460,12 @@ class ServiceFilter(ProjectScopedFilter):
     model_version_id: UUIDFilterOption = Field(
         default=None,
         description="By the model version this service is attached to.",
+        union_mode="left_to_right",
     )
     pipeline_run_id: UUIDFilterOption = Field(
         default=None,
         description="By the pipeline run this service is attached to.",
+        union_mode="left_to_right",
     )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
@@ -471,18 +491,3 @@ class ServiceFilter(ProjectScopedFilter):
             flavor: The flavor of the service.
         """
         self.flavor = flavor
-
-    # Artifact name and type are not DB fields and need to be handled separately
-    FILTER_EXCLUDE_FIELDS = [
-        *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
-        "running",
-        "config",
-    ]
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
-        "flavor",
-        "type",
-        "pipeline_step_name",
-        "running",
-        "pipeline_name",
-    ]

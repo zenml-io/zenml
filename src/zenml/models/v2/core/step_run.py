@@ -39,7 +39,6 @@ from zenml.enums import (
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import (
-    BoolFilterOption,
     DatetimeFilterOption,
     IntegerFilterOption,
     StringFilterOption,
@@ -771,6 +770,8 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
     API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
         *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
         *RunMetadataFilterMixin.API_SINGLE_INPUT_PARAMS,
+        "exclude_retried",
+        "cache_expired",
     ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
@@ -833,7 +834,7 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         default=None,
         description="Cache expiration time of the step run.",
     )
-    cache_expired: BoolFilterOption = Field(
+    cache_expired: Optional[bool] = Field(
         default=None,
         description="Whether the cache expiration time of the step run has "
         "passed.",

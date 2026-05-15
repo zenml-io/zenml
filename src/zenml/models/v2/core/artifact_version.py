@@ -565,6 +565,7 @@ class ArtifactVersionFilter(
         *TaggableFilter.API_SINGLE_INPUT_PARAMS,
         *RunMetadataFilterMixin.API_SINGLE_INPUT_PARAMS,
         "only_unused",
+        "has_custom_name",
     ]
 
     artifact: UUIDFilterOption = Field(
@@ -623,7 +624,7 @@ class ArtifactVersionFilter(
         description="Name/ID of the model that is associated with this "
         "artifact version.",
     )
-    pipeline_run: UUIDFilterOption = Field(
+    pipeline_run: StringFilterOption = Field(
         default=None,
         description="Name/ID of a pipeline run that is associated with this "
         "artifact version.",
@@ -719,41 +720,49 @@ class ArtifactVersionFilter(
 
         assert self.pipeline_run is not None
 
-        pipeline_run_condition = self.generate_name_or_id_query_conditions(
-            value=self.pipeline_run, table=PipelineRunSchema
-        )
+        queries = []
 
-        output_artifact_ids: "Select[Tuple[Any]]" = (
-            select(col(StepRunOutputArtifactSchema.artifact_id).label("id"))
-            .join(
-                StepRunSchema,
-                col(StepRunOutputArtifactSchema.step_id)
-                == col(StepRunSchema.id),
+        for pipeline_run in self.pipeline_run:
+            pipeline_run_condition = self.generate_name_or_id_query_conditions(
+                value=pipeline_run, table=PipelineRunSchema
             )
-            .join(
-                PipelineRunSchema,
-                col(StepRunSchema.pipeline_run_id)
-                == col(PipelineRunSchema.id),
-            )
-            .where(pipeline_run_condition)
-        )
 
-        input_artifact_ids: "Select[Tuple[Any]]" = (
-            select(col(StepRunInputArtifactSchema.artifact_id).label("id"))
-            .join(
-                StepRunSchema,
-                col(StepRunInputArtifactSchema.step_id)
-                == col(StepRunSchema.id),
+            output_artifact_ids: "Select[Tuple[Any]]" = (
+                select(
+                    col(StepRunOutputArtifactSchema.artifact_id).label("id")
+                )
+                .join(
+                    StepRunSchema,
+                    col(StepRunOutputArtifactSchema.step_id)
+                    == col(StepRunSchema.id),
+                )
+                .join(
+                    PipelineRunSchema,
+                    col(StepRunSchema.pipeline_run_id)
+                    == col(PipelineRunSchema.id),
+                )
+                .where(pipeline_run_condition)
             )
-            .join(
-                PipelineRunSchema,
-                col(StepRunSchema.pipeline_run_id)
-                == col(PipelineRunSchema.id),
-            )
-            .where(pipeline_run_condition)
-        )
+            queries.append(output_artifact_ids)
 
-        return union(output_artifact_ids, input_artifact_ids)
+            input_artifact_ids: "Select[Tuple[Any]]" = (
+                select(col(StepRunInputArtifactSchema.artifact_id).label("id"))
+                .join(
+                    StepRunSchema,
+                    col(StepRunInputArtifactSchema.step_id)
+                    == col(StepRunSchema.id),
+                )
+                .join(
+                    PipelineRunSchema,
+                    col(StepRunSchema.pipeline_run_id)
+                    == col(PipelineRunSchema.id),
+                )
+                .where(pipeline_run_condition)
+            )
+
+            queries.append(input_artifact_ids)
+
+        return union(*queries)
 
     def get_custom_filters(
         self, table: Type["AnySchema"]

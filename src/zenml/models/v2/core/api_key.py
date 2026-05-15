@@ -38,7 +38,6 @@ from zenml.models.v2.base.filter import (
     BoolFilterOption,
     DatetimeFilterOption,
     StringFilterOption,
-    UUIDFilterOption,
 )
 from zenml.utils.string_utils import b64_decode, b64_encode
 from zenml.utils.time_utils import utc_now
@@ -353,8 +352,12 @@ class APIKeyFilter(BaseFilter):
         *BaseFilter.CLI_EXCLUDE_FIELDS,
         "service_account",
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *BaseFilter.API_SINGLE_INPUT_PARAMS,
+        "service_account",
+    ]
 
-    service_account: UUIDFilterOption = Field(
+    service_account: Optional[UUID] = Field(
         default=None,
         description="The service account to scope this query to.",
     )

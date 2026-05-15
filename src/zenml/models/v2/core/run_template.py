@@ -357,6 +357,7 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
     API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
         *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
         *TaggableFilter.API_SINGLE_INPUT_PARAMS,
+        "hidden",
     ]
 
     name: StringFilterOption = Field(
@@ -497,7 +498,7 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
                         PipelineSnapshotSchema.pipeline_id
                         == PipelineSchema.id,
                         self.generate_name_or_id_query_conditions(
-                            value=self.pipeline,
+                            value=pipeline_filter,
                             table=PipelineSchema,
                         ),
                     )

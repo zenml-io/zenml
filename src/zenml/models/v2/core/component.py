@@ -405,7 +405,11 @@ class ComponentFilter(UserScopedFilter):
         *UserScopedFilter.CLI_EXCLUDE_FIELDS,
         "scope_type",
     ]
-    scope_type: StringFilterOption = Field(
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *UserScopedFilter.API_SINGLE_INPUT_PARAMS,
+        "scope_type",
+    ]
+    scope_type: Optional[str] = Field(
         default=None,
         description="The type to scope this query to.",
     )

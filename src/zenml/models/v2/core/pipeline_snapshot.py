@@ -664,6 +664,11 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
     API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
         *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
         *TaggableFilter.API_SINGLE_INPUT_PARAMS,
+        "named_only",
+        "runnable",
+        "deployable",
+        "deployed",
+        "trigger_id",
     ]
 
     name: StringFilterOption = Field(
@@ -706,7 +711,7 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         default=None,
         description="Whether the snapshot is deployed.",
     )
-    trigger_id: UUIDFilterOption = Field(
+    trigger_id: UUID | None = Field(
         default=None,
         description="Trigger associated with the snapshot (attached).",
     )

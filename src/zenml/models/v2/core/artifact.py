@@ -194,18 +194,15 @@ class ArtifactFilter(ProjectScopedFilter, TaggableFilter):
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
     ]
-
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
         SORT_BY_LATEST_VERSION_KEY,
     ]
-
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]
-
     API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
         *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
         *TaggableFilter.API_SINGLE_INPUT_PARAMS,

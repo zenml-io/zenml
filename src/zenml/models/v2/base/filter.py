@@ -683,6 +683,7 @@ class BaseFilter(BaseModel):
     id: UUIDFilterOption = Field(
         default=None,
         description="Id for this resource",
+        union_mode="left_to_right",
     )
     created: DatetimeFilterOption = Field(
         default=None, description="Created", union_mode="left_to_right"
