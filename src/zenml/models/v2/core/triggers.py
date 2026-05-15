@@ -450,6 +450,10 @@ class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
         "flavor",
         "next_occurrence",
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[list[str]] = [
+        *UnScopedTriggerFilter.API_SINGLE_INPUT_PARAMS,
+        *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
+    ]
 
     pipeline_id: StringFilterOption = Field(
         default=None,

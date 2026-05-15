@@ -2742,8 +2742,8 @@ class Client(metaclass=ClientMetaClass):
         created: DatetimeFilterOption = None,
         updated: DatetimeFilterOption = None,
         name: StringFilterOption = None,
-        latest_run_status: StringFilterOption = None,
-        latest_run_user: UUIDFilterOption = None,
+        latest_run_status: Optional[str] = None,
+        latest_run_user: Optional[Union[UUID, str]] = None,
         project: Optional[Union[str, UUID]] = None,
         user: UUIDFilterOption = None,
         tags: StringFilterOption = None,
@@ -3116,18 +3116,18 @@ class Client(metaclass=ClientMetaClass):
         project: Optional[Union[str, UUID]] = None,
         user: UUIDFilterOption = None,
         name: StringFilterOption = None,
-        named_only: BoolFilterOption = True,
+        named_only: Optional[bool] = True,
         pipeline: UUIDFilterOption = None,
         stack: UUIDFilterOption = None,
         build_id: UUIDFilterOption = None,
         schedule_id: UUIDFilterOption = None,
         source_snapshot_id: UUIDFilterOption = None,
-        runnable: BoolFilterOption = None,
-        deployable: BoolFilterOption = None,
-        deployed: BoolFilterOption = None,
+        runnable: Optional[bool] = None,
+        deployable: Optional[bool] = None,
+        deployed: Optional[bool] = None,
         tags: StringFilterOption = None,
         hydrate: bool = False,
-        trigger_id: UUIDFilterOption = None,
+        trigger_id: UUID | None = None,
     ) -> Page[PipelineSnapshotResponse]:
         """List all snapshots.
 
@@ -4051,7 +4051,7 @@ class Client(metaclass=ClientMetaClass):
         updated: DatetimeFilterOption = None,
         id: UUIDFilterOption = None,
         name: StringFilterOption = None,
-        hidden: BoolFilterOption = False,
+        hidden: Optional[bool] = False,
         project: Optional[Union[str, UUID]] = None,
         pipeline_id: UUIDFilterOption = None,
         build_id: UUIDFilterOption = None,
@@ -4393,7 +4393,9 @@ class Client(metaclass=ClientMetaClass):
         active: bool | None = None,
         concurrency: EnumFilterOption[TriggerRunConcurrency] = None,
         is_archived: bool = False,
-        flavor: TriggerFlavor = TriggerFlavor.NATIVE_SCHEDULE,  # TODO
+        flavor: EnumFilterOption[
+            TriggerFlavor
+        ] = TriggerFlavor.NATIVE_SCHEDULE,
         next_occurrence: DatetimeFilterOption = None,
         pipeline_id: UUIDFilterOption = None,
         snapshot_id: UUIDFilterOption = None,
@@ -4638,6 +4640,7 @@ class Client(metaclass=ClientMetaClass):
         active: bool | None = None,
         concurrency: EnumFilterOption[TriggerRunConcurrency] = None,
         is_archived: bool = False,
+        flavor: EnumFilterOption[TriggerFlavor] = TriggerFlavor.PLATFORM_EVENT,
         pipeline_id: UUIDFilterOption = None,
         snapshot_id: UUIDFilterOption = None,
         hydrate: bool = True,
@@ -4658,6 +4661,7 @@ class Client(metaclass=ClientMetaClass):
             active: The active status of the trigger.
             concurrency: The concurrency of the trigger.
             is_archived: The archived status of the trigger.
+            flavor: The flavor of the trigger.
             pipeline_id: Filter triggers by pipeline with attached snapshots.
             snapshot_id: Filter triggers by attached snapshot.
             hydrate: Flag deciding whether to hydrate the output model(s)
@@ -4691,7 +4695,7 @@ class Client(metaclass=ClientMetaClass):
                 active=active,
                 concurrency=concurrency,
                 is_archived=is_archived,
-                flavor=TriggerFlavor.PLATFORM_EVENT,
+                flavor=flavor,
                 type=TriggerType.PLATFORM_EVENT,
                 sort_by=sort_by,
                 page=page,
@@ -5152,7 +5156,7 @@ class Client(metaclass=ClientMetaClass):
         index: IntegerFilterOption = None,
         start_time: DatetimeFilterOption = None,
         end_time: DatetimeFilterOption = None,
-        templatable: BoolFilterOption = None,
+        templatable: Optional[bool] = None,
         tags: StringFilterOption = None,
         user: UUIDFilterOption = None,
         run_metadata: StringFilterOption = None,
@@ -5168,7 +5172,7 @@ class Client(metaclass=ClientMetaClass):
         triggered_by_deployment_id: UUIDFilterOption = None,
         trigger_id: UUIDFilterOption = None,
         parent_run_id: UUIDFilterOption = None,
-        root_runs_only: BoolFilterOption = None,
+        root_runs_only: Optional[bool] = None,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs.
 
@@ -5427,7 +5431,7 @@ class Client(metaclass=ClientMetaClass):
         name: StringFilterOption = None,
         cache_key: StringFilterOption = None,
         cache_expires_at: DatetimeFilterOption = None,
-        cache_expired: BoolFilterOption = None,
+        cache_expired: Optional[bool] = None,
         code_hash: StringFilterOption = None,
         status: StringFilterOption = None,
         start_time: DatetimeFilterOption = None,
@@ -5440,7 +5444,7 @@ class Client(metaclass=ClientMetaClass):
         model_version_id: UUIDFilterOption = None,
         model: UUIDFilterOption = None,
         run_metadata: StringFilterOption = None,
-        exclude_retried: BoolFilterOption = None,
+        exclude_retried: Optional[bool] = None,
         version: IntegerFilterOption = None,
         hydrate: bool = False,
     ) -> Page[StepRunResponse]:
@@ -5776,8 +5780,8 @@ class Client(metaclass=ClientMetaClass):
         materializer: StringFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
         model_version_id: UUIDFilterOption = None,
-        only_unused: BoolFilterOption = False,
-        has_custom_name: BoolFilterOption = None,
+        only_unused: Optional[bool] = False,
+        has_custom_name: Optional[bool] = None,
         user: UUIDFilterOption = None,
         model: UUIDFilterOption = None,
         pipeline_run: UUIDFilterOption = None,
@@ -8065,10 +8069,10 @@ class Client(metaclass=ClientMetaClass):
         model_version_id: UUIDFilterOption = None,
         artifact_version_id: UUIDFilterOption = None,
         artifact_name: StringFilterOption = None,
-        only_data_artifacts: BoolFilterOption = None,
-        only_model_artifacts: BoolFilterOption = None,
-        only_deployment_artifacts: BoolFilterOption = None,
-        has_custom_name: BoolFilterOption = None,
+        only_data_artifacts: Optional[bool] = None,
+        only_model_artifacts: Optional[bool] = None,
+        only_deployment_artifacts: Optional[bool] = None,
+        has_custom_name: Optional[bool] = None,
         user: UUIDFilterOption = None,
         hydrate: bool = False,
     ) -> Page[ModelVersionArtifactResponse]:

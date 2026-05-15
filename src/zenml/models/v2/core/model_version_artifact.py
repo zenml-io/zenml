@@ -13,7 +13,15 @@
 #  permissions and limitations under the License.
 """Models representing the link between model versions and artifacts."""
 
-from typing import TYPE_CHECKING, List, Optional, Type, TypeVar, Union
+from typing import (
+    TYPE_CHECKING,
+    ClassVar,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import ConfigDict, Field
@@ -139,6 +147,13 @@ class ModelVersionArtifactFilter(BaseFilter):
         "model_version_id",
         "updated",
         "id",
+    ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *BaseFilter.API_SINGLE_INPUT_PARAMS,
+        "only_data_artifacts",
+        "only_model_artifacts",
+        "only_deployment_artifacts",
+        "has_custom_name",
     ]
 
     model_version_id: UUIDFilterOption = Field(

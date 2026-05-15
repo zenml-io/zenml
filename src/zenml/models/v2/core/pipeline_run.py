@@ -1259,7 +1259,7 @@ class PipelineRunFilter(
                     and_(
                         PipelineRunSchema.pipeline_id == PipelineSchema.id,
                         self.generate_custom_query_conditions_for_column(
-                            value=self.pipeline_name,
+                            value=pipeline_name_filter,
                             table=PipelineSchema,
                             column="name",
                         ),
