@@ -456,8 +456,31 @@ def test_read_range_uses_native_s3_range_header():
     ]
 
 
-def test_download_objects_to_directory_uses_boto3_transfers(tmp_path):
-    """Tests S3 download_objects_to_directory preserves relative paths."""
+def test_download_objects_to_directory_declines_single_object(tmp_path):
+    """Tests S3 single-object downloads fall back to streaming."""
+    client = _FakeS3Client()
+    artifact_store = _get_mocked_s3_artifact_store(client)
+    local_dir = tmp_path / "downloads"
+    objects = [
+        ObjectInfo(
+            uri="s3://bucket/root/large.bin",
+            relative_path="large.bin",
+        )
+    ]
+
+    handled = artifact_store.download_objects_to_directory(
+        objects, str(local_dir), max_workers=1
+    )
+
+    assert handled is False
+    assert client.download_calls == []
+    assert not local_dir.exists()
+
+
+def test_download_objects_to_directory_uses_boto3_transfers_for_multiple_objects(
+    tmp_path,
+):
+    """Tests S3 multi-object downloads use transfers and preserve paths."""
     client = _FakeS3Client()
     artifact_store = _get_mocked_s3_artifact_store(client)
     objects = [
@@ -495,11 +518,17 @@ def test_download_objects_to_directory_rejects_path_traversal(tmp_path):
                 ObjectInfo(
                     uri="s3://bucket/root/a.txt",
                     relative_path="../a.txt",
-                )
+                ),
+                ObjectInfo(
+                    uri="s3://bucket/root/b.txt",
+                    relative_path="b.txt",
+                ),
             ],
             str(tmp_path),
             max_workers=1,
         )
+
+    assert client.download_calls == []
 
 
 def test_remove_previous_file_versions_batches_versioned_deletes():

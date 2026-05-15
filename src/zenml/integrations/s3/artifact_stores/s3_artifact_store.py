@@ -769,6 +769,9 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
             raise ValueError("Download directory must be a local path.")
         if max_workers is not None and max_workers < 1:
             raise ValueError("Download worker count must be positive.")
+        if len(object_list) == 1:
+            self._sanitize_path(object_list[0].uri)
+            return False
 
         os.makedirs(local_directory, exist_ok=True)
         transfer_config = TransferConfig(
