@@ -720,9 +720,14 @@ class ArtifactVersionFilter(
 
         assert self.pipeline_run is not None
 
+        pipeline_runs = (
+            self.pipeline_run
+            if isinstance(self.pipeline_run, list)
+            else [self.pipeline_run]
+        )
         queries = []
 
-        for pipeline_run in self.pipeline_run:
+        for pipeline_run in pipeline_runs:
             pipeline_run_condition = self.generate_name_or_id_query_conditions(
                 value=pipeline_run, table=PipelineRunSchema
             )

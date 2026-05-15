@@ -4390,13 +4390,13 @@ class Client(metaclass=ClientMetaClass):
         created: DatetimeFilterOption = None,
         updated: DatetimeFilterOption = None,
         name: StringFilterOption = None,
-        active: BoolFilterOption = None,
+        active: bool | None = None,
         concurrency: EnumFilterOption[TriggerRunConcurrency] = None,
-        is_archived: BoolFilterOption = False,
+        is_archived: bool = False,
         flavor: TriggerFlavor = TriggerFlavor.NATIVE_SCHEDULE,  # TODO
         next_occurrence: DatetimeFilterOption = None,
-        pipeline_id: str | UUID | None = None,
-        snapshot_id: str | UUID | None = None,
+        pipeline_id: UUIDFilterOption = None,
+        snapshot_id: UUIDFilterOption = None,
         hydrate: bool = True,
     ) -> Page[ScheduleTriggerResponse]:
         """List schedule triggers.
@@ -4426,18 +4426,18 @@ class Client(metaclass=ClientMetaClass):
             A Page of ScheduleTriggerResponse objects.
         """
         pipeline_ids = None
-        if pipeline_id:
+        if pipeline_id is not None:
             if isinstance(pipeline_id, list):
                 pipeline_ids = [str(p) for p in pipeline_id]
             else:
-                pipeline_ids = str(pipeline_id)
+                pipeline_ids = [str(pipeline_id)]
 
         snapshot_ids = None
-        if snapshot_id:
+        if snapshot_id is not None:
             if isinstance(snapshot_id, list):
                 snapshot_ids = [str(s) for s in snapshot_id]
             else:
-                snapshot_ids = str(snapshot_id)
+                snapshot_ids = [str(snapshot_id)]
 
         return self.zen_store.list_triggers(  # type: ignore[return-value]
             triggers_filter_model=TriggerFilter(
@@ -4629,17 +4629,17 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        user: str | UUID | None = None,
-        project: UUID | str | None = None,
-        id: UUID | str | None = None,
-        created: datetime | None = None,
-        updated: datetime | None = None,
-        name: str | None = None,
+        user: UUIDFilterOption = None,
+        project: Optional[Union[str, UUID]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
         active: bool | None = None,
         concurrency: EnumFilterOption[TriggerRunConcurrency] = None,
         is_archived: bool = False,
-        pipeline_id: str | UUID | None = None,
-        snapshot_id: str | UUID | None = None,
+        pipeline_id: UUIDFilterOption = None,
+        snapshot_id: UUIDFilterOption = None,
         hydrate: bool = True,
     ) -> Page[PlatformEventTriggerResponse]:
         """List platform event triggers.
@@ -4666,6 +4666,20 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A Page of PlatformEventTriggerResponse objects.
         """
+        pipeline_ids = None
+        if pipeline_id:
+            if isinstance(pipeline_id, list):
+                pipeline_ids = [str(p) for p in pipeline_id]
+            else:
+                pipeline_ids = [str(pipeline_id)]
+
+        snapshot_ids = None
+        if snapshot_id:
+            if isinstance(snapshot_id, list):
+                snapshot_ids = [str(s) for s in snapshot_id]
+            else:
+                snapshot_ids = [str(snapshot_id)]
+
         return self.zen_store.list_triggers(  # type: ignore[return-value]
             triggers_filter_model=TriggerFilter(
                 project=project or self.active_project.id,
@@ -4684,8 +4698,8 @@ class Client(metaclass=ClientMetaClass):
                 size=size,
                 logical_operator=logical_operator,
                 next_occurrence=None,
-                pipeline_id=str(pipeline_id) if pipeline_id else None,
-                snapshot_id=str(snapshot_id) if snapshot_id else None,
+                pipeline_id=pipeline_ids,
+                snapshot_id=snapshot_ids,
             ),
             hydrate=hydrate,
         )
@@ -5427,6 +5441,7 @@ class Client(metaclass=ClientMetaClass):
         model: UUIDFilterOption = None,
         run_metadata: StringFilterOption = None,
         exclude_retried: BoolFilterOption = None,
+        version: IntegerFilterOption = None,
         hydrate: bool = False,
     ) -> Page[StepRunResponse]:
         """List all pipelines.
@@ -5458,6 +5473,7 @@ class Client(metaclass=ClientMetaClass):
             status: The status of the step run.
             run_metadata: Filter by run metadata.
             exclude_retried: Whether to exclude retried step runs.
+            version: The version of the step run to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -5489,6 +5505,7 @@ class Client(metaclass=ClientMetaClass):
             model=model,
             run_metadata=run_metadata,
             exclude_retried=exclude_retried,
+            version=version,
         )
         return self.zen_store.list_run_steps(
             step_run_filter_model=step_run_filter_model,
@@ -5750,7 +5767,7 @@ class Client(metaclass=ClientMetaClass):
         updated: DatetimeFilterOption = None,
         artifact: UUIDFilterOption = None,
         name: Optional[str] = None,
-        version: Optional[Union[str, int]] = None,
+        version: IntegerFilterOption = None,
         version_number: IntegerFilterOption = None,
         artifact_store_id: UUIDFilterOption = None,
         type: StringFilterOption = None,
@@ -5810,7 +5827,7 @@ class Client(metaclass=ClientMetaClass):
             if isinstance(version, list):
                 version = [str(v) for v in version]
             else:
-                version = str(version)
+                version = [str(version)]
 
         artifact_version_filter_model = ArtifactVersionFilter(
             sort_by=sort_by,

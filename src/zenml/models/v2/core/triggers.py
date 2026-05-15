@@ -418,6 +418,8 @@ class UnScopedTriggerFilter(BaseFilter):
         Returns:
             The query with filter applied.
         """
+        from sqlmodel import col
+
         from zenml.zen_stores.schemas import TriggerSchema
 
         query = super().apply_filter(query=query, table=table)
@@ -427,7 +429,7 @@ class UnScopedTriggerFilter(BaseFilter):
             type_checks = (
                 self.type if isinstance(self.type, list) else [self.type]
             )
-            query = query.where(TriggerSchema.type.in_(type_checks))
+            query = query.where(col(TriggerSchema.type).in_(type_checks))
 
         return query
 
