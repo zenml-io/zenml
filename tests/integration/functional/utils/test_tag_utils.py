@@ -131,8 +131,8 @@ def test_tag_utils(clean_client):
     assert "cascade_tag" not in second_run_tags
     assert "exclusive_tag" not in second_run_tags
 
-    runs_with_tags = clean_client.list_pipeline_runs(tags=["isnotempty"])
-    runs_without_tags = clean_client.list_pipeline_runs(tags=["isempty"])
+    runs_with_tags = clean_client.list_pipeline_runs(tags=["isnotempty:"])
+    runs_without_tags = clean_client.list_pipeline_runs(tags=["isempty:"])
     runs_not_contains_exclusive = clean_client.list_pipeline_runs(
         tags=["notcontains:exclusive"]
     )

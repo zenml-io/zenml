@@ -3010,11 +3010,11 @@ def test_filters_with_oneof_tags_and_run_metadata(clean_client):
     assert len(runs) == 2  # The first two runs
 
     # Test oneof: tags filtering
-    runs_filter = PipelineRunFilter(tag='oneof:["cats", "dogs"]')
+    runs_filter = PipelineRunFilter(tags='oneof:["cats", "dogs"]')
     runs = store.list_runs(runs_filter_model=runs_filter)
     assert len(runs) == len(metadata_values)  # All runs
 
-    runs_filter = PipelineRunFilter(tag='oneof:["dogs"]')
+    runs_filter = PipelineRunFilter(tasg='oneof:["dogs"]')
     runs = store.list_runs(runs_filter_model=runs_filter)
     assert len(runs) == 0  # No runs
 
@@ -4727,7 +4727,7 @@ class TestModelVersion:
             )
             mvs = clean_client.zen_store.list_model_versions(
                 model_version_filter_model=ModelVersionFilter(
-                    tag="tag1",
+                    tags="tag1",
                     model=model.id,
                 ),
             )
@@ -4736,7 +4736,7 @@ class TestModelVersion:
 
             mvs = clean_client.zen_store.list_model_versions(
                 model_version_filter_model=ModelVersionFilter(
-                    tag="tag2",
+                    tags="tag2",
                     model=model.id,
                 ),
             )
@@ -4746,7 +4746,7 @@ class TestModelVersion:
 
             mvs = clean_client.zen_store.list_model_versions(
                 model_version_filter_model=ModelVersionFilter(
-                    tag="tag3",
+                    tags="tag3",
                     model=model.id,
                 ),
             )
@@ -4755,7 +4755,7 @@ class TestModelVersion:
 
             mvs = clean_client.zen_store.list_model_versions(
                 model_version_filter_model=ModelVersionFilter(
-                    tag="non_existent_tag",
+                    tags="ngon_existent_tag",
                     model=model.id,
                 ),
             )
