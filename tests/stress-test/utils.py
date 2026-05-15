@@ -228,9 +228,7 @@ class LogFile(BaseModel):
         request_id_value = payload.get("request_id")
         if not isinstance(request_id_value, str) or not request_id_value:
             request_id_value = payload.get("current_thread_name")
-        request_id = (
-            str(request_id_value) if request_id_value else "unknown"
-        )
+        request_id = str(request_id_value) if request_id_value else "unknown"
 
         transaction_id = payload.get("transaction_id")
         if transaction_id is not None:
@@ -271,9 +269,10 @@ class LogFile(BaseModel):
         ] and isinstance(payload.get("endpoint"), str):
             data["target"] = payload["endpoint"]
 
-        if log_type in [LogType.SQL_STARTED, LogType.SQL_COMPLETED] and isinstance(
-            payload.get("caller"), str
-        ):
+        if log_type in [
+            LogType.SQL_STARTED,
+            LogType.SQL_COMPLETED,
+        ] and isinstance(payload.get("caller"), str):
             data["target"] = payload["caller"]
 
         if log_type in [LogType.RBAC_STARTED, LogType.RBAC_COMPLETED]:
