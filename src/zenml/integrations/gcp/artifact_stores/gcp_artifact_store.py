@@ -13,7 +13,9 @@
 #  permissions and limitations under the License.
 """Implementation of the GCP Artifact Store."""
 
+import os
 import posixpath
+from pathlib import Path
 from typing import (
     Any,
     Callable,
@@ -31,6 +33,7 @@ from uuid import uuid4
 import gcsfs
 from google.api_core.exceptions import NotFound, PreconditionFailed
 from google.cloud import storage
+from google.cloud.storage import transfer_manager
 from google.oauth2 import credentials as gcp_credentials
 
 from zenml.artifact_stores import (
@@ -47,12 +50,14 @@ from zenml.io.fileio import convert_to_str
 from zenml.logger import get_logger
 from zenml.secret.schemas import GCPSecretSchema
 from zenml.stack.authentication_mixin import AuthenticationMixin
+from zenml.utils import io_utils
 
 logger = get_logger(__name__)
 PathType = Union[bytes, str]
 
 GCS_COMPOSE_MAX_SOURCES = 32
 GCS_COMPOSE_TEMPORARY_PREFIX = ".zenml-compose-"
+DEFAULT_GCS_DOWNLOAD_WORKERS = 8
 
 
 class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
@@ -196,6 +201,27 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
 
         return posixpath.basename(blob_name)
 
+    @staticmethod
+    def _get_safe_download_path(local_dir: str, relative_path: str) -> str:
+        """Build a local download path that stays inside ``local_dir``."""
+        relative_path_object = Path(relative_path)
+        if relative_path_object.is_absolute():
+            raise ValueError(
+                f"Object relative path `{relative_path}` escapes the local "
+                "download directory."
+            )
+
+        download_root = Path(local_dir).resolve()
+        destination = (download_root / relative_path_object).resolve()
+        if destination == download_root:
+            raise ValueError("Object relative path cannot be empty.")
+        if not destination.is_relative_to(download_root):
+            raise ValueError(
+                f"Object relative path `{relative_path}` escapes the local "
+                "download directory."
+            )
+        return str(destination)
+
     def _get_blob_info(
         self, blob: storage.Blob, bucket_name: str, prefix_blob_name: str
     ) -> ObjectInfo:
@@ -306,7 +332,7 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """Compose GCS source objects into a destination object in order."""
         sanitized_sources = [self._sanitize_path(source) for source in sources]
         sanitized_destination = self._sanitize_path(destination)
-        if not sanitized_sources:
+        if len(sanitized_sources) < 2:
             return False
 
         destination_bucket_name, destination_blob_name = self._split_gcs_uri(
@@ -393,6 +419,55 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
 
         self._cleanup_intermediate_compose_objects(
             intermediate_uris, sanitized_destination
+        )
+        return True
+
+    def download_objects_to_directory(
+        self,
+        objects: Iterable[ObjectInfo],
+        local_dir: PathType,
+        max_workers: Optional[int] = None,
+    ) -> bool:
+        """Download GCS objects into a local directory with transfer manager."""
+        object_list = list(objects)
+        local_directory = convert_to_str(local_dir)
+        if io_utils.is_remote(local_directory):
+            raise ValueError("Download directory must be a local path.")
+        if max_workers is not None and max_workers < 1:
+            raise ValueError("Download worker count must be positive.")
+
+        os.makedirs(local_directory, exist_ok=True)
+        blob_file_pairs: List[Tuple[storage.Blob, str]] = []
+        for object_info in object_list:
+            sanitized_uri = self._sanitize_path(object_info.uri)
+            bucket_name, blob_name = self._split_gcs_uri(sanitized_uri)
+            if not blob_name:
+                raise ValueError(
+                    f"Cannot download GCS bucket root `{sanitized_uri}`."
+                )
+
+            destination = self._get_safe_download_path(
+                local_directory, object_info.relative_path
+            )
+            os.makedirs(os.path.dirname(destination), exist_ok=True)
+            generation = (
+                int(object_info.generation)
+                if object_info.generation is not None
+                else None
+            )
+            bucket = self.storage_client.bucket(bucket_name)
+            blob_file_pairs.append(
+                (bucket.blob(blob_name, generation=generation), destination)
+            )
+
+        if not blob_file_pairs:
+            return True
+
+        transfer_manager.download_many(
+            blob_file_pairs,
+            raise_exception=True,
+            worker_type=transfer_manager.THREAD,
+            max_workers=max_workers or DEFAULT_GCS_DOWNLOAD_WORKERS,
         )
         return True
 

@@ -14,12 +14,14 @@
 
 
 from datetime import datetime
+from pathlib import Path
 from types import SimpleNamespace
-from typing import Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 from uuid import uuid4
 
 import pytest
 
+from zenml.artifact_stores import ObjectInfo
 from zenml.enums import StackComponentType
 from zenml.exceptions import ArtifactStoreInterfaceError
 
@@ -63,10 +65,16 @@ class _FakePreconditionFailed(Exception):
 class _FakeBlob:
     """In-memory stand-in for a google.cloud.storage Blob."""
 
-    def __init__(self, bucket: "_FakeBucket", name: str) -> None:
+    def __init__(
+        self,
+        bucket: "_FakeBucket",
+        name: str,
+        requested_generation: Optional[int] = None,
+    ) -> None:
         """Initialize a fake blob."""
         self.bucket = bucket
         self.name = name
+        self.requested_generation = requested_generation
 
     @property
     def size(self) -> Optional[int]:
@@ -137,9 +145,11 @@ class _FakeBucket:
         self.delete_failures: set[str] = set()
         self.fail_compose_destination: Optional[str] = None
 
-    def blob(self, name: str) -> _FakeBlob:
+    def blob(self, name: str, generation: Optional[int] = None) -> _FakeBlob:
         """Return a fake blob handle."""
-        return _FakeBlob(bucket=self, name=name)
+        return _FakeBlob(
+            bucket=self, name=name, requested_generation=generation
+        )
 
 
 class _FakeGCSClient:
@@ -266,6 +276,114 @@ def test_delete_objects_reports_per_object_cleanup_failures():
     assert client.bucket_.objects["root/logs/2.log"] == b"two"
 
 
+def test_download_objects_to_directory_uses_gcs_transfer_manager(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
+    """Tests GCS downloads many objects without ZenML file opens."""
+    from zenml.integrations.gcp.artifact_stores import gcp_artifact_store
+
+    client = _FakeGCSClient(
+        objects={
+            "root/artifact/a.txt": b"a",
+            "root/artifact/nested/b.txt": b"b",
+        }
+    )
+    artifact_store = _get_fake_gcp_artifact_store(client)
+    download_calls: List[
+        Tuple[List[Tuple[_FakeBlob, str]], Dict[str, Any]]
+    ] = []
+
+    def fail_open(*args: Any, **kwargs: Any) -> None:
+        raise AssertionError("download_objects_to_directory must not use open")
+
+    def fake_download_many(
+        blob_file_pairs: Sequence[Tuple[_FakeBlob, str]],
+        **kwargs: Any,
+    ) -> List[None]:
+        pairs = list(blob_file_pairs)
+        download_calls.append((pairs, kwargs))
+        for blob, destination in pairs:
+            Path(destination).write_bytes(blob.bucket.objects[blob.name])
+        return [None for _ in pairs]
+
+    monkeypatch.setattr(gcp_artifact_store.GCPArtifactStore, "open", fail_open)
+    monkeypatch.setattr(
+        gcp_artifact_store.transfer_manager,
+        "download_many",
+        fake_download_many,
+    )
+
+    downloaded = artifact_store.download_objects_to_directory(
+        [
+            ObjectInfo(
+                uri="gs://bucket/root/artifact/a.txt",
+                relative_path="a.txt",
+                generation="11",
+            ),
+            ObjectInfo(
+                uri="gs://bucket/root/artifact/nested/b.txt",
+                relative_path="nested/b.txt",
+                generation="12",
+            ),
+        ],
+        str(tmp_path),
+        max_workers=4,
+    )
+
+    assert downloaded is True
+    assert (tmp_path / "a.txt").read_bytes() == b"a"
+    assert (tmp_path / "nested" / "b.txt").read_bytes() == b"b"
+    assert len(download_calls) == 1
+    pairs, kwargs = download_calls[0]
+    assert [blob.name for blob, _ in pairs] == [
+        "root/artifact/a.txt",
+        "root/artifact/nested/b.txt",
+    ]
+    assert [blob.requested_generation for blob, _ in pairs] == [11, 12]
+    assert kwargs["raise_exception"] is True
+    assert kwargs["worker_type"] == gcp_artifact_store.transfer_manager.THREAD
+    assert kwargs["max_workers"] == 4
+
+
+def test_download_objects_to_directory_rejects_path_traversal(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+):
+    """Tests GCS downloads refuse object paths outside the target dir."""
+    from zenml.integrations.gcp.artifact_stores import gcp_artifact_store
+
+    client = _FakeGCSClient(objects={"root/artifact/evil.txt": b"evil"})
+    artifact_store = _get_fake_gcp_artifact_store(client)
+    download_calls: List[object] = []
+
+    def fake_download_many(*args: Any, **kwargs: Any) -> List[None]:
+        download_calls.append((args, kwargs))
+        return []
+
+    monkeypatch.setattr(
+        gcp_artifact_store.transfer_manager,
+        "download_many",
+        fake_download_many,
+    )
+
+    with pytest.raises(
+        ValueError, match="escapes the local download directory"
+    ):
+        artifact_store.download_objects_to_directory(
+            [
+                ObjectInfo(
+                    uri="gs://bucket/root/artifact/evil.txt",
+                    relative_path="../evil.txt",
+                )
+            ],
+            str(tmp_path),
+        )
+
+    assert download_calls == []
+    assert not (tmp_path.parent / "evil.txt").exists()
+
+
 def test_compose_objects_returns_false_for_empty_source_list():
     """Tests empty GCS compose requests are treated as unsupported."""
     client = _FakeGCSClient(objects={})
@@ -279,7 +397,22 @@ def test_compose_objects_returns_false_for_empty_source_list():
     assert client.bucket_.compose_calls == []
 
 
-@pytest.mark.parametrize("fragment_count", [1, 32])
+def test_compose_objects_returns_false_for_single_source():
+    """Tests one-fragment GCS merges avoid provider compose overhead."""
+    client = _FakeGCSClient(objects={"root/logs/1.log": b"fragment"})
+    artifact_store = _get_fake_gcp_artifact_store(client)
+
+    composed = artifact_store.compose_objects(
+        ["gs://bucket/root/logs/1.log"],
+        "gs://bucket/root/logs/merged.log",
+    )
+
+    assert composed is False
+    assert "root/logs/merged.log" not in client.bucket_.objects
+    assert client.bucket_.compose_calls == []
+
+
+@pytest.mark.parametrize("fragment_count", [2, 32])
 def test_compose_objects_uses_single_gcs_compose_for_up_to_32_sources(
     fragment_count: int,
 ):
@@ -357,14 +490,15 @@ def test_compose_objects_treats_existing_destination_as_successful_retry(
     )
     client = _FakeGCSClient(
         objects={
-            "root/logs/1.log": b"fragment",
+            "root/logs/1.log": b"fragment-1",
+            "root/logs/2.log": b"fragment-2",
             "root/logs/merged.log": b"existing",
         }
     )
     artifact_store = _get_fake_gcp_artifact_store(client)
 
     composed = artifact_store.compose_objects(
-        ["gs://bucket/root/logs/1.log"],
+        ["gs://bucket/root/logs/1.log", "gs://bucket/root/logs/2.log"],
         "gs://bucket/root/logs/merged.log",
     )
 
