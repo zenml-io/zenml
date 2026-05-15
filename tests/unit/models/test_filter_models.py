@@ -29,10 +29,10 @@ from zenml.models.v2.base.filter import (
     DatetimeFilterOption,
     Filter,
     FloatFilterOption,
-    IntFilterOption,
+    IntegerFilterOption,
     NumericFilter,
     StrFilter,
-    StrFilterOption,
+    StringFilterOption,
     UUIDFilter,
     UUIDFilterOption,
 )
@@ -43,10 +43,10 @@ class SomeFilterModel(BaseFilter):
 
     uuid_field: UUIDFilterOption = None
     datetime_field: DatetimeFilterOption = None
-    int_field: IntFilterOption = None
+    int_field: IntegerFilterOption = None
     float_field: FloatFilterOption = None
     bool_field: BoolFilterOption = None
-    str_field: StrFilterOption = None
+    str_field: StringFilterOption = None
 
 
 def _test_filter_model(
