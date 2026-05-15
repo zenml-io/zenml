@@ -2754,8 +2754,8 @@ def print_page_info(page: "Page[Any]") -> None:
         page: The page object containing pagination information.
     """
     declare(
-        f"Page `({page.index}/{page.total_pages})`, "
-        f"`{page.total}` items found for the applied filters."
+        f"Page [cyan]({page.index}/{page.total_pages})[/cyan], "
+        f"[cyan]{page.total}[/cyan] items found for the applied filters."
     )
 
 

@@ -36,6 +36,8 @@ SSO users authenticate through an external OIDC identity provider configured in 
 
 SSO users are the recommended account type for production deployments as they centralize user management in your organization's identity provider. See the [Single Sign-On (SSO)](sso.md) guide for configuration details.
 
+Organization trusted domains (see [Trusted domains](trusted-domains.md)) interact with SSO when issuing or accepting invitations: in-domain invitations may complete automatically on SSO login depending on how your operators configured the organization.
+
 ### Local Users
 
 Local users authenticate directly with the ZenML Pro control plane using a username and password. These accounts:
@@ -239,6 +241,7 @@ Deleting a user removes their account but does not delete resources they created
 ## Related Resources
 
 - [Single Sign-On (SSO)](sso.md)
+- [Trusted domains](trusted-domains.md)
 - [Roles & Permissions](roles.md)
 - [Teams](teams.md)
 - [Organizations](organization.md)
