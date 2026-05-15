@@ -4425,6 +4425,20 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A Page of ScheduleTriggerResponse objects.
         """
+        pipeline_ids = None
+        if pipeline_id:
+            if isinstance(pipeline_id, list):
+                pipeline_ids = [str(p) for p in pipeline_id]
+            else:
+                pipeline_ids = str(pipeline_id)
+
+        snapshot_ids = None
+        if snapshot_id:
+            if isinstance(snapshot_id, list):
+                snapshot_ids = [str(s) for s in snapshot_id]
+            else:
+                snapshot_ids = str(snapshot_id)
+
         return self.zen_store.list_triggers(  # type: ignore[return-value]
             triggers_filter_model=TriggerFilter(
                 project=project or self.active_project.id,
@@ -4443,8 +4457,8 @@ class Client(metaclass=ClientMetaClass):
                 size=size,
                 logical_operator=logical_operator,
                 next_occurrence=next_occurrence,
-                pipeline_id=str(pipeline_id) if pipeline_id else None,
-                snapshot_id=str(snapshot_id) if snapshot_id else None,
+                pipeline_id=pipeline_ids,
+                snapshot_id=snapshot_ids,
             ),
             hydrate=hydrate,
         )
@@ -5792,6 +5806,12 @@ class Client(metaclass=ClientMetaClass):
         if name:
             artifact = name
 
+        if version:
+            if isinstance(version, list):
+                version = [str(v) for v in version]
+            else:
+                version = str(version)
+
         artifact_version_filter_model = ArtifactVersionFilter(
             sort_by=sort_by,
             page=page,
@@ -5801,7 +5821,7 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             artifact=artifact,
-            version=str(version) if version else None,
+            version=version,
             version_number=version_number,
             artifact_store_id=artifact_store_id,
             type=type,
@@ -6928,8 +6948,8 @@ class Client(metaclass=ClientMetaClass):
         name: StringFilterOption = None,
         connector_type: StringFilterOption = None,
         auth_method: StringFilterOption = None,
-        resource_type: StringFilterOption = None,
-        resource_id: StringFilterOption = None,
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
         user: UUIDFilterOption = None,
         labels: Optional[Dict[str, Optional[str]]] = None,
         hydrate: bool = False,

@@ -45,8 +45,8 @@ from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import (
     AnyQuery,
     BaseFilter,
-    BoolFilterOption,
     DatetimeFilterOption,
+    EnumFilterOption,
     StringFilterOption,
 )
 from zenml.models.v2.base.scoped import (
@@ -365,28 +365,33 @@ class UnScopedTriggerFilter(BaseFilter):
         "is_archived",
         "type",
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[list[str]] = [
+        *BaseFilter.API_SINGLE_INPUT_PARAMS,
+        "is_archived",
+        "active",
+    ]
 
     name: StringFilterOption = Field(
         default=None,
         description="The name of the trigger.",
     )
-    active: BoolFilterOption = Field(
+    active: bool | None = Field(
         default=None,
         description="Whether the trigger should be active.",
     )
-    is_archived: BoolFilterOption = Field(
+    is_archived: bool = Field(
         default=False,
         description=(
             "Restrict results to archived or non-archived triggers. Applied as "
             "a global scope filter independently of logical_operator."
         ),
     )
-    flavor: TriggerFlavor | str | None = Field(
+    flavor: EnumFilterOption[TriggerFlavor] = Field(
         default=None,
         description="The trigger flavor.",
         union_mode="left_to_right",
     )
-    type: TriggerType | str | None = Field(
+    type: EnumFilterOption[TriggerType] = Field(
         default=None,
         description="The trigger type.",
         union_mode="left_to_right",
@@ -395,7 +400,7 @@ class UnScopedTriggerFilter(BaseFilter):
         default=None,
         description="The next occurrence of the trigger (applicable only for schedules).",
     )
-    concurrency: TriggerRunConcurrency | None = Field(
+    concurrency: EnumFilterOption[TriggerRunConcurrency] = Field(
         default=None, description="The trigger concurrency."
     )
 
@@ -417,8 +422,13 @@ class UnScopedTriggerFilter(BaseFilter):
 
         query = super().apply_filter(query=query, table=table)
         query = query.where(TriggerSchema.is_archived == self.is_archived)
+
         if self.type is not None:
-            query = query.where(TriggerSchema.type == self.type)
+            type_checks = (
+                self.type if isinstance(self.type, list) else [self.type]
+            )
+            query = query.where(TriggerSchema.type.in_(type_checks))
+
         return query
 
 
@@ -432,6 +442,7 @@ class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
         "snapshot_id",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[list[str]] = [
+        *UnScopedTriggerFilter.CLI_EXCLUDE_FIELDS,
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         "type",
         "flavor",

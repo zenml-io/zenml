@@ -624,7 +624,7 @@ class ArtifactVersionFilter(
         description="Name/ID of the model that is associated with this "
         "artifact version.",
     )
-    pipeline_run: StringFilterOption = Field(
+    pipeline_run: UUIDFilterOption = Field(
         default=None,
         description="Name/ID of a pipeline run that is associated with this "
         "artifact version.",
