@@ -770,6 +770,16 @@ class PipelineDockerImageBuilder:
             **default_installer_args,
             **docker_settings.python_package_installer_args,
         }
+
+        cache_mount = docker_settings.python_package_installer_cache_mount
+        if cache_mount:
+            # Drop the default --no-cache-dir argument if a cache mount is
+            # configured
+            installer_args.pop("no-cache-dir", None)
+            run_directive = f"RUN --mount={cache_mount}"
+        else:
+            run_directive = "RUN"
+
         installer_args_string = " ".join(
             f"--{key}" if value is None else f"--{key}={value}"
             for key, value in installer_args.items()
@@ -779,7 +789,7 @@ class PipelineDockerImageBuilder:
             option_string = " ".join(options)
 
             lines.append(
-                f"RUN {install_command} {installer_args_string}"
+                f"{run_directive} {install_command} {installer_args_string}"
                 f"{option_string} -r {file}"
             )
 
@@ -793,7 +803,7 @@ class PipelineDockerImageBuilder:
 
         if docker_settings.local_project_install_command:
             lines.append(
-                f"RUN {docker_settings.local_project_install_command}"
+                f"{run_directive} {docker_settings.local_project_install_command}"
             )
 
         if docker_settings.user:

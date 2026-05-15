@@ -224,8 +224,8 @@ Super-user accounts are special user accounts that are granted additional privil
 
 You will use this account to log in to the ZenML Pro UI to perform the following tasks that are part of onboarding your ZenML Pro instance:
 
-1. Create one or more [organizations](organization.md)
-2. Create user accounts and/or invite other users to join the organization(s)
+1. Create one or more [organizations](organization.md). After SSO is configured, organization [trusted domains](trusted-domains.md) (via the API) can change user discovery and whether some invitations require an explicit accept step.
+2. Create user accounts and/or invite other users to join the organization(s).
 3. Assign [roles and permissions](roles.md) to users or group them into [teams](teams.md)
 4. [Enroll workspaces](enroll-workspace.md) in the organization(s)
 

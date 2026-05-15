@@ -119,6 +119,19 @@ E.g., you can use these labels to manually delete all pods related to a specific
 kubectl delete pod -n zenml -l pipeline=kubernetes_example_pipeline
 ```
 
+ZenML sanitizes these label values before sending them to Kubernetes. Invalid
+characters are replaced, leading/trailing punctuation is removed, and values are
+truncated to fit Kubernetes label limits. In practice, a pipeline called
+`My GPU Pipeline!!!` will not appear as that exact string in a label selector.
+If a selector using the raw name does not match anything, inspect one of the
+created pods first:
+
+```shell
+kubectl get pods -n zenml --show-labels
+```
+
+Then copy the sanitized label value from Kubernetes.
+
 ### Additional configuration
 
 Some configuration options for the Kubernetes orchestrator can only be set through the orchestrator config when you register it (and cannot be changed per-run or per-step through the settings):

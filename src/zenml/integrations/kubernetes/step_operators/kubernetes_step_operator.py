@@ -215,14 +215,18 @@ class KubernetesStepOperator(BaseStepOperator):
         args = entrypoint_command[3:]
 
         step_labels = {
-            "project_id": kube_utils.sanitize_label(
+            "project_id": kube_utils.sanitize_label_value(
                 str(info.snapshot.project_id)
             ),
-            "run_id": kube_utils.sanitize_label(str(info.run_id)),
-            "run_name": kube_utils.sanitize_label(str(info.run_name)),
-            "pipeline": kube_utils.sanitize_label(info.pipeline.name),
-            "step_run_id": kube_utils.sanitize_label(str(info.step_run_id)),
-            "step_name": kube_utils.sanitize_label(info.pipeline_step_name),
+            "run_id": kube_utils.sanitize_label_value(str(info.run_id)),
+            "run_name": kube_utils.sanitize_label_value(str(info.run_name)),
+            "pipeline": kube_utils.sanitize_label_value(info.pipeline.name),
+            "step_run_id": kube_utils.sanitize_label_value(
+                str(info.step_run_id)
+            ),
+            "step_name": kube_utils.sanitize_label_value(
+                info.pipeline_step_name
+            ),
         }
         step_annotations = {
             STEP_NAME_ANNOTATION_KEY: info.pipeline_step_name,
@@ -287,7 +291,7 @@ class KubernetesStepOperator(BaseStepOperator):
             The step status.
         """
         label_selector = (
-            f"step_run_id={kube_utils.sanitize_label(str(step_run.id))}"
+            f"step_run_id={kube_utils.sanitize_label_value(str(step_run.id))}"
         )
         try:
             job_list = kube_utils.list_jobs(
@@ -323,7 +327,7 @@ class KubernetesStepOperator(BaseStepOperator):
             step_run: The step run.
         """
         label_selector = (
-            f"step_run_id={kube_utils.sanitize_label(str(step_run.id))}"
+            f"step_run_id={kube_utils.sanitize_label_value(str(step_run.id))}"
         )
         try:
             job_list = kube_utils.list_jobs(

@@ -37,6 +37,7 @@ from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStoreConfig,
 )
 from zenml.client import Client
+from zenml.constants import ENV_ZENML_CUSTOM_SOURCE_ROOT
 from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
     BaseContainerRegistryConfig,
@@ -48,6 +49,7 @@ from zenml.stack.stack_component import (
     StackComponentConfig,
     StackComponentType,
 )
+from zenml.utils import source_utils
 
 DEFAULT_ENVIRONMENT_NAME = "default"
 
@@ -241,11 +243,18 @@ def clean_client_with_repo(
     """
     try:
         cwd = os.getcwd()
+        original_source_root = os.environ.pop(
+            ENV_ZENML_CUSTOM_SOURCE_ROOT, None
+        )
+        source_utils.set_custom_source_root(None)
         os.chdir(tmp_path)
         clean_client.initialize(root=tmp_path)
         yield clean_client
     finally:
         os.chdir(cwd)
+        if original_source_root is not None:
+            os.environ[ENV_ZENML_CUSTOM_SOURCE_ROOT] = original_source_root
+            source_utils.set_custom_source_root(original_source_root)
 
 
 @pytest.fixture(scope="module")
