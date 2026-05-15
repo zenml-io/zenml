@@ -49,8 +49,7 @@ dependencies = [
     "docker~=7.1.0",
     "gitpython>=3.1.18,<4.0.0",
     "jsonref",
-    "opentelemetry-instrumentation-logging==0.61b0",
-    "opentelemetry-sdk==1.40.0",
+    "opentelemetry-sdk==1.38.0",
     "packaging>=24.1",
     "psutil>=5.0.0",
     "pydantic>=2.0,<=2.12.5",
@@ -58,7 +57,7 @@ dependencies = [
     "pyyaml>=6.0.1",
     "rich>=12.0.0", # Make sure to keep the version aligned with our `jupyter` extra
     "setuptools>=70.0.0",
-    "structlog>=25.5.0",    # using stuctlog only for adding context to logs
+    "structlog>=25.5.0",    # using stuctlog for adding context to logs
 ]
 
 [project.urls]
@@ -99,12 +98,12 @@ server = [
 ]
 otel = [
     # Install otel dependencies to enable OpenTelemetry instrumentation in the server
-    "opentelemetry-distro>=0.61b0",
-    "opentelemetry-exporter-otlp-proto-http>=1.40.0",
-    "opentelemetry-instrumentation-fastapi>=0.61b0",
-    "opentelemetry-instrumentation-logging==0.61b0",    # align with the core dependency
-    "opentelemetry-instrumentation-requests>=0.61b0",
-    "opentelemetry-instrumentation-sqlalchemy>=0.61b0",
+    "opentelemetry-distro>=0.59b0",
+    "opentelemetry-exporter-otlp-proto-http>=1.38.0",
+    "opentelemetry-instrumentation-fastapi>=0.59b0",
+    "opentelemetry-instrumentation-logging>=0.59b0",
+    "opentelemetry-instrumentation-requests>=0.59b0",
+    "opentelemetry-instrumentation-sqlalchemy>=0.59b0",
 ]
 jupyter = ["rich[jupyter]>=12.0.0"]
 templates = ["copier>=8.1.0", "jinja2-time>=0.2.0,<0.3.0", "ruff>=0.1.7", "pyyaml-include<2.0"]
