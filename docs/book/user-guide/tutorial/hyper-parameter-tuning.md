@@ -117,7 +117,7 @@ For a deeper exploration of how to query past pipeline runs, see the [Inspecting
 
 ## Next steps
 
-* Replace the simple grid‑search with a more sophisticated tuner (e.g. `sklearn.model_selection.GridSearchCV` or [Optuna](https://optuna.org/)).
+* Replace the simple grid‑search with a more sophisticated tuner (e.g. `sklearn.model_selection.GridSearchCV` or [Optuna](https://optuna.org/)). For a complete Optuna example that uses ZenML dynamic pipelines for parallel trial execution, see [`examples/optuna_hyperparameter_tuning`](https://github.com/zenml-io/zenml/tree/main/examples/optuna_hyperparameter_tuning).
 * Deploy the winning model as an HTTP service using [Pipeline Deployments](https://docs.zenml.io/concepts/deployment) (recommended) or via the legacy [Model Deployer](https://docs.zenml.io/stacks/stack-components/model-deployers).
 * Move the pipeline to a [remote
   orchestrator](https://docs.zenml.io/stacks/orchestrators) to scale out the

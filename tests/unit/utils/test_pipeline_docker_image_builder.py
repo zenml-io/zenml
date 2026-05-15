@@ -215,6 +215,62 @@ def test_python_package_installer_args():
     )
 
 
+def test_python_package_installer_cache_mount():
+    """Tests that the installer cache mount is rendered into the RUN line."""
+    requirements_files = [("requirements.txt", "numpy", [])]
+
+    # uv installer with cache mount: --mount is added and --no-cache-dir is
+    # dropped so the cache is actually used.
+    docker_settings = DockerSettings(
+        python_package_installer_cache_mount="type=cache,target=/root/.cache/uv",
+    )
+    generated_dockerfile = (
+        PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
+            "image:tag",
+            docker_settings,
+            requirements_files=requirements_files,
+        )
+    )
+    assert (
+        "RUN --mount=type=cache,target=/root/.cache/uv uv pip install"
+        in generated_dockerfile
+    )
+    assert "-r requirements.txt" in generated_dockerfile
+    assert "--no-cache-dir" not in generated_dockerfile
+
+    # pip installer with cache mount.
+    docker_settings = DockerSettings(
+        python_package_installer="pip",
+        python_package_installer_cache_mount="type=cache,target=/root/.cache/pip",
+    )
+    generated_dockerfile = (
+        PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
+            "image:tag",
+            docker_settings,
+            requirements_files=requirements_files,
+        )
+    )
+    assert (
+        "RUN --mount=type=cache,target=/root/.cache/pip pip install"
+        in generated_dockerfile
+    )
+    assert "--default-timeout=60" in generated_dockerfile
+    assert "--no-cache-dir" not in generated_dockerfile
+
+    # Without the cache mount, the default --no-cache-dir is kept and no
+    # --mount flag is rendered.
+    docker_settings = DockerSettings()
+    generated_dockerfile = (
+        PipelineDockerImageBuilder._generate_zenml_pipeline_dockerfile(
+            "image:tag",
+            docker_settings,
+            requirements_files=requirements_files,
+        )
+    )
+    assert "--mount=" not in generated_dockerfile
+    assert "--no-cache-dir" in generated_dockerfile
+
+
 def test_dockerfile_needs_to_exist():
     """Tests that an error gets raised if the Dockerfile specified in the
     DockerSettings does not exist."""

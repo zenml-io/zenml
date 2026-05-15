@@ -15,10 +15,11 @@
 
 import threading
 import time
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Union
 
 from zenml.execution.pipeline.dynamic.outputs import (
     MapResultsFuture,
+    PipelineFuture,
     StepExecutionFuture,
     StepFuture,
 )
@@ -39,6 +40,7 @@ class FutureRegistry:
         self._lock = threading.RLock()
         self._step_futures: Dict[str, StepFuture] = {}
         self._map_futures: Dict[str, MapResultsFuture] = {}
+        self._pipeline_futures: Dict[str, PipelineFuture] = {}
 
     def register_step_future(
         self,
@@ -126,6 +128,49 @@ class FutureRegistry:
                 raise KeyError(f"Unknown map future `{map_id}`.")
             return future
 
+    def register_pipeline_future(
+        self, node_id: str, future: PipelineFuture
+    ) -> PipelineFuture:
+        """Register a child pipeline future.
+
+        Args:
+            node_id: Dependency-graph node ID of the child pipeline call (e.g.
+                `pipeline:<name>`), not a pipeline run UUID.
+            future: The pipeline future.
+
+        Raises:
+            RuntimeError: If a future already exists for the node.
+
+        Returns:
+            The registered pipeline future.
+        """
+        with self._lock:
+            if node_id in self._pipeline_futures:
+                raise RuntimeError(
+                    f"Pipeline future for node `{node_id}` already exists."
+                )
+
+            self._pipeline_futures[node_id] = future
+            return future
+
+    def get_pipeline_future(self, node_id: str) -> PipelineFuture:
+        """Get a child pipeline future.
+
+        Args:
+            node_id: Dependency-graph node ID of the child pipeline call.
+
+        Raises:
+            KeyError: If the future does not exist.
+
+        Returns:
+            The pipeline future.
+        """
+        with self._lock:
+            future = self._pipeline_futures.get(node_id)
+            if future is None:
+                raise KeyError(f"Unknown pipeline future `{node_id}`.")
+            return future
+
     def bind_step_execution_future(
         self, invocation_id: str, future: StepExecutionFuture
     ) -> None:
@@ -138,19 +183,6 @@ class FutureRegistry:
         with self._lock:
             step_future = self.get_step_future(invocation_id=invocation_id)
             step_future._set_startup_result(future)
-
-    def fail_step_startup(
-        self, invocation_id: str, exception: BaseException
-    ) -> None:
-        """Store a startup failure for a step invocation.
-
-        Args:
-            invocation_id: The step invocation ID.
-            exception: The startup exception.
-        """
-        with self._lock:
-            future = self.get_step_future(invocation_id=invocation_id)
-            future._set_startup_failed(exception)
 
     def bind_map_child_futures(
         self, map_id: str, child_futures: List[StepFuture]
@@ -165,18 +197,35 @@ class FutureRegistry:
             future = self.get_map_future(map_id=map_id)
             future._set_startup_result(child_futures)
 
-    def fail_map_startup(self, map_id: str, exception: BaseException) -> None:
-        """Store a startup failure for a map.
+    def set_startup_exception(
+        self, invocation_id: str, exception: BaseException
+    ) -> None:
+        """Set the startup exception for any registered future.
 
         Args:
-            map_id: The map ID.
-            exception: The startup exception.
+            invocation_id: The invocation ID of the future.
+            exception: The exception to record on the future.
+
+        Raises:
+            KeyError: If no future is registered for `invocation_id`.
         """
         with self._lock:
-            future = self.get_map_future(map_id=map_id)
-            future._set_startup_failed(exception)
+            for store in (
+                self._step_futures,
+                self._map_futures,
+                self._pipeline_futures,
+            ):
+                future = store.get(invocation_id)
+                if future is not None:
+                    future._set_startup_failed(exception)
+                    return
+            raise KeyError(
+                f"No future registered for invocation `{invocation_id}`."
+            )
 
-    def get_all_futures(self) -> List[Union[StepFuture, MapResultsFuture]]:
+    def get_all_futures(
+        self,
+    ) -> List[Union[StepFuture, MapResultsFuture, PipelineFuture]]:
         """Return all tracked futures.
 
         Returns:
@@ -186,6 +235,7 @@ class FutureRegistry:
             return [
                 *self._step_futures.values(),
                 *self._map_futures.values(),
+                *self._pipeline_futures.values(),
             ]
 
     def await_all_no_raise(self) -> None:
@@ -225,41 +275,3 @@ class FutureRegistry:
             True if any tracked future is still running, False otherwise.
         """
         return any(future.running() for future in self.get_all_futures())
-
-    def cancel_step_startup(
-        self,
-        invocation_id: str,
-        exception: Optional[StartupCancelled] = None,
-    ) -> None:
-        """Cancel startup for a specific step invocation.
-
-        Args:
-            invocation_id: The step invocation ID.
-            exception: Optional exception to set on the future. If not
-                provided, a generic cancellation exception is used.
-        """
-        exception = exception or StartupCancelled(
-            f"Startup for step `{invocation_id}` was cancelled."
-        )
-        with self._lock:
-            step_future = self.get_step_future(invocation_id=invocation_id)
-            step_future._cancel_startup(exception)
-
-    def cancel_map_startup(
-        self,
-        map_id: str,
-        exception: Optional[StartupCancelled] = None,
-    ) -> None:
-        """Cancel startup for a specific map expansion.
-
-        Args:
-            map_id: The map ID.
-            exception: Optional exception to set on the future. If not
-                provided, a generic cancellation exception is used.
-        """
-        exception = exception or StartupCancelled(
-            f"Startup for map expansion `{map_id}` was cancelled."
-        )
-        with self._lock:
-            map_future = self.get_map_future(map_id=map_id)
-            map_future._cancel_startup(exception)
