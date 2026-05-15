@@ -80,7 +80,13 @@ def _test_filter_model(
         if filter_op in ignore_operators:
             continue
 
-        filter_str = f"{filter_op}:{filter_value}"
+        if filter_op in {
+            GenericFilterOps.IS_EMPTY,
+            GenericFilterOps.IS_NOT_EMPTY,
+        }:
+            filter_str = f"{filter_op}:"
+        else:
+            filter_str = f"{filter_op}:{filter_value}"
         filter_kwargs = {filter_field: filter_str}
 
         # Fail if incompatible filter operations are used.
@@ -306,9 +312,14 @@ def test_uuid_filter_model_succeeds_for_invalid_uuid_on_non_equality():
     for filter_op in UUIDFilter.ALLOWED_OPS:
         if filter_op in {GenericFilterOps.ONEOF, GenericFilterOps.NOT_ONEOF}:
             continue
-        filter_model = SomeFilterModel(
-            uuid_field=f"{filter_op}:{filter_value}"
-        )
+        if filter_op in {
+            GenericFilterOps.IS_EMPTY,
+            GenericFilterOps.IS_NOT_EMPTY,
+        }:
+            filter_str = f"{filter_op}:"
+        else:
+            filter_str = f"{filter_op}:{filter_value}"
+        filter_model = SomeFilterModel(uuid_field=filter_str)
         assert len(filter_model.list_of_filters) == 1
         model_filter = filter_model.list_of_filters[0]
         assert isinstance(model_filter, UUIDFilter)
@@ -323,6 +334,16 @@ def test_uuid_filter_model_succeeds_for_invalid_uuid_on_non_equality():
         assert model_filter.column == "uuid_field"
 
 
+@pytest.mark.parametrize(
+    "filter_op",
+    [GenericFilterOps.IS_EMPTY, GenericFilterOps.IS_NOT_EMPTY],
+)
+def test_valueless_filter_ops_reject_values(filter_op: GenericFilterOps):
+    """Test that valueless operators reject values after the colon."""
+    with pytest.raises(ValueError):
+        SomeFilterModel(str_field=f"{filter_op}:not-empty")
+
+
 def test_string_filter_model():
     """Test Filter model creation for string fields."""
     _test_filter_model(
@@ -331,6 +352,48 @@ def test_string_filter_model():
         filter_value="a_random_string",
         ignore_operators=[GenericFilterOps.ONEOF, GenericFilterOps.NOT_ONEOF],
     )
+
+
+def test_repeated_filters_support_valueless_operators() -> None:
+    """Test repeated filters with value-based and valueless operators."""
+    model = SomeFilterModel(str_field=["contains:first", "isempty:"])
+
+    filters = [f for f in model.list_of_filters if f.column == "str_field"]
+    assert len(filters) == 2
+    assert [f.operation for f in filters] == [
+        GenericFilterOps.CONTAINS,
+        GenericFilterOps.IS_EMPTY,
+    ]
+    assert [f.value for f in filters] == ["first", None]
+
+
+@pytest.mark.parametrize(
+    "filter_op",
+    [GenericFilterOps.ONEOF, GenericFilterOps.NOT_ONEOF],
+)
+def test_string_filter_oneof_operators_parse_json_lists(
+    filter_op: GenericFilterOps,
+) -> None:
+    """Test that oneof operators parse JSON list values."""
+    model = SomeFilterModel(str_field=f'{filter_op}:["first", "second"]')
+
+    assert len(model.list_of_filters) == 1
+    model_filter = model.list_of_filters[0]
+    assert isinstance(model_filter, StrFilter)
+    assert model_filter.operation == filter_op
+    assert model_filter.value == ["first", "second"]
+
+
+@pytest.mark.parametrize(
+    "filter_value",
+    ["not-json", '"not-a-list"', '{"key": "value"}'],
+)
+def test_string_filter_oneof_operators_reject_malformed_json(
+    filter_value: str,
+) -> None:
+    """Test that oneof operators reject non-list JSON values."""
+    with pytest.raises(ValueError):
+        SomeFilterModel(str_field=f"{GenericFilterOps.ONEOF}:{filter_value}")
 
 
 def test_multiple_filters_for_same_string_field() -> None:
