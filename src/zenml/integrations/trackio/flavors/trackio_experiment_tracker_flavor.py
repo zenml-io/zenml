@@ -13,19 +13,14 @@
 #  permissions and limitations under the License.
 """Trackio experiment tracker flavor."""
 
-"""Trackio experiment tracker flavor."""
-
 from typing import (
     TYPE_CHECKING,
-    Any,
-    Dict,
     List,
     Optional,
     Type,
-    cast,
 )
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import Field
 
 from zenml.config.base_settings import BaseSettings
 from zenml.experiment_trackers.base_experiment_tracker import (
@@ -47,87 +42,57 @@ class TrackioExperimentTrackerSettings(BaseSettings):
     """Settings for the Trackio experiment tracker."""
 
     run_name: Optional[str] = Field(
-        None,
-        description="The Trackio run name to use for tracking experiments.",
+        default=None,
+        description="Trackio run name.",
     )
 
     tags: List[str] = Field(
         default_factory=list,
         description=(
-            "Tags to attach to the Trackio run for categorization "
-            "and filtering."
+            "Tags associated with the Trackio run."
         ),
     )
 
-    notes: Optional[str] = Field(
-        None,
-        description="Optional notes to associate with the run.",
-    )
-
-    group: Optional[str] = Field(
-        None,
-        description="Optional group name used to organize runs.",
-    )
-
     resume: str = Field(
-        "allow",
+        default="allow",
         description=(
-            "Run resume behavior. Supported values are "
+            "Run resume behavior. "
+            "Supported values are "
             "'allow', 'must', and 'never'."
         ),
     )
 
     auto_sync: bool = Field(
-        False,
+        default=False,
         description=(
-            "Whether to automatically sync runs to a configured "
-            "remote backend after completion."
+            "Automatically sync Trackio runs "
+            "after completion."
         ),
     )
 
     auto_freeze: bool = Field(
-        False,
+        default=False,
         description=(
-            "Whether to automatically freeze the Trackio dashboard "
-            "after the run completes."
+            "Automatically freeze Trackio dashboards "
+            "after completion."
         ),
     )
 
     log_system_metrics: bool = Field(
-        True,
-        description="Whether to log system metrics automatically.",
+        default=True,
+        description=(
+            "Whether system metrics should be "
+            "logged automatically."
+        ),
     )
 
     log_gpu_metrics: bool = Field(
-        True,
-        description="Whether to log GPU telemetry automatically.",
+        default=True,
+        description=(
+            "Whether GPU telemetry should be "
+            "logged automatically."
+        ),
     )
-
-    @field_validator("settings", mode="before")
-    @classmethod
-    def _convert_settings(cls, value: Any) -> Any:
-        """Converts Trackio settings objects to dictionaries.
-
-        Args:
-            value: The settings value.
-
-        Returns:
-            Dict representation of the settings.
-        """
-        try:
-            import trackio
-        except ImportError:
-            return value
-
-        # Future-proof conversion logic in case Trackio
-        # introduces structured settings/config objects.
-        if isinstance(value, BaseModel):
-            return value.model_dump()
-
-        if hasattr(value, "to_dict"):
-            return cast(Dict[str, Any], value.to_dict())
-
-        return value
 
 
 class TrackioExperimentTrackerConfig(
@@ -136,51 +101,56 @@ class TrackioExperimentTrackerConfig(
 ):
     """Config for the Trackio experiment tracker."""
 
-    run_name: Optional[str] = Field(
-            None,
-            description="Trackio run name."
-        )
+    project_name: str = Field(
+        default="zenml",
+        description=(
+            "Trackio project name."
+        ),
+    )
 
     tracking_uri: Optional[str] = Field(
-        None,
+        default=None,
         description=(
-            "Optional Trackio backend URI. Can point to "
-            "a local backend, Hugging Face Space backend, "
-            "or self-hosted HTTP server."
+            "Optional Trackio backend URI. "
+            "Can point to a local backend, "
+            "HF Space backend, or self-hosted server."
         ),
     )
 
     backend: str = Field(
         default="sqlite",
         description=(
-            "Trackio backend type. Supported values include "
+            "Trackio backend type. "
+            "Supported values include "
             "'sqlite', 'space', 'http', and 'static'."
         ),
     )
 
     local_dir: str = Field(
         default="./trackio",
-        description="Local directory used for Trackio storage.",
+        description=(
+            "Local directory used for Trackio storage."
+        ),
     )
 
     hf_token: Optional[str] = SecretField(
         default=None,
         description=(
-            "Optional Hugging Face token used for syncing "
-            "runs, datasets, buckets, or Spaces."
+            "Optional Hugging Face token used for "
+            "syncing runs, datasets, buckets, or Spaces."
         ),
     )
 
     hf_space: Optional[str] = Field(
-        None,
+        default=None,
         description=(
-            "Optional Hugging Face Space used as the "
-            "Trackio dashboard backend."
+            "Optional Hugging Face Space used as "
+            "the Trackio dashboard backend."
         ),
     )
 
     hf_dataset_repo: Optional[str] = Field(
-        None,
+        default=None,
         description=(
             "Optional Hugging Face Dataset repository "
             "used for publishing experiment logs."
@@ -188,34 +158,37 @@ class TrackioExperimentTrackerConfig(
     )
 
     hf_bucket_uri: Optional[str] = Field(
-        None,
+        default=None,
         description=(
-            "Optional Hugging Face bucket URI used for "
-            "artifact and static dashboard storage."
+            "Optional Hugging Face bucket URI used "
+            "for artifact and static dashboard storage."
         ),
     )
 
     publish_to_space: bool = Field(
-        False,
+        default=False,
         description=(
-            "Whether Trackio dashboards should automatically "
-            "be published to a Hugging Face Space."
+            "Whether Trackio dashboards should "
+            "automatically be published to a "
+            "Hugging Face Space."
         ),
     )
 
     publish_to_dataset: bool = Field(
-        False,
+        default=False,
         description=(
-            "Whether Trackio logs should automatically "
-            "be published to a Hugging Face Dataset repository."
+            "Whether Trackio logs should "
+            "automatically be published to a "
+            "Hugging Face Dataset repository."
         ),
     )
 
     static_space_mode: bool = Field(
-        False,
+        default=False,
         description=(
-            "Whether Trackio should use static Space deployment "
-            "mode backed by Hugging Face buckets."
+            "Whether Trackio should use static "
+            "Space deployment mode backed by "
+            "Hugging Face buckets."
         ),
     )
 
@@ -260,7 +233,9 @@ class TrackioExperimentTrackerFlavor(
             Logo URL.
         """
         return (
-            "https://github.com/gradio-app/trackio/blob/main/trackio/assets/trackio_logo_light.png"
+            "https://raw.githubusercontent.com/"
+            "gradio-app/trackio/main/"
+            "trackio/assets/trackio_logo_light.png"
         )
 
     @property
