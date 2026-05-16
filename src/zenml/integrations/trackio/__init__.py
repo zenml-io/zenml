@@ -19,11 +19,11 @@ convenient way to visualize your experiment runs within the wandb ui.
 from typing import List, Type
 
 from zenml.enums import StackComponentType
-from zenml.integrations.constants import WANDB
+from zenml.integrations.constants import TRACKIO
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
-WANDB_EXPERIMENT_TRACKER_FLAVOR = "wandb"
+WANDB_EXPERIMENT_TRACKER_FLAVOR = "trackio"
 
 
 class TrackioIntegration(Integration):
