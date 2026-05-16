@@ -22,6 +22,12 @@ import click
 
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
+from zenml.cli.completion import (
+    complete_service_connector_auth_methods,
+    complete_service_connector_names,
+    complete_service_connector_resource_types,
+    complete_service_connector_types,
+)
 from zenml.cli.utils import (
     OutputFormat,
     is_sorted_or_filtered,
@@ -406,6 +412,7 @@ skip validation, pass the `--no-verify` flag.
     help="The service connector type.",
     required=False,
     type=str,
+    shell_complete=complete_service_connector_types,
 )
 @click.option(
     "--resource-type",
@@ -414,6 +421,7 @@ skip validation, pass the `--no-verify` flag.
     help="The type of resource to connect to.",
     required=False,
     type=str,
+    shell_complete=complete_service_connector_resource_types,
 )
 @click.option(
     "--resource-id",
@@ -430,6 +438,7 @@ skip validation, pass the `--no-verify` flag.
     help="The authentication method to use.",
     required=False,
     type=str,
+    shell_complete=complete_service_connector_auth_methods,
 )
 @click.option(
     "--expires-at",
@@ -1086,6 +1095,7 @@ Secret configuration attributes are not shown by default. Use the
     "name_id_or_prefix",
     type=str,
     required=True,
+    shell_complete=complete_service_connector_names,
 )
 @click.option(
     "--show-secrets",
@@ -1255,6 +1265,7 @@ validation, pass the `--no-verify` flag.
     "name_id_or_prefix",
     type=str,
     required=True,
+    shell_complete=complete_service_connector_names,
 )
 @click.option(
     "--name",
@@ -1707,7 +1718,11 @@ def update_service_connector(
     help="""Delete a service connector.
 """,
 )
-@click.argument("name_id_or_prefix", type=str)
+@click.argument(
+    "name_id_or_prefix",
+    type=str,
+    shell_complete=complete_service_connector_names,
+)
 def delete_service_connector(name_id_or_prefix: str) -> None:
     """Deletes a service connector.
 
@@ -1799,7 +1814,12 @@ access to a particular S3 bucket:
     required=False,
     is_flag=True,
 )
-@click.argument("name_id_or_prefix", type=str, required=True)
+@click.argument(
+    "name_id_or_prefix",
+    type=str,
+    required=True,
+    shell_complete=complete_service_connector_names,
+)
 def verify_service_connector(
     name_id_or_prefix: str,
     resource_type: Optional[str] = None,
@@ -1891,7 +1911,12 @@ service connector:
     required=False,
     type=str,
 )
-@click.argument("name_id_or_prefix", type=str, required=True)
+@click.argument(
+    "name_id_or_prefix",
+    type=str,
+    required=True,
+    shell_complete=complete_service_connector_names,
+)
 def login_service_connector(
     name_id_or_prefix: str,
     resource_type: Optional[str] = None,
@@ -1976,6 +2001,7 @@ with ZenML can access:
     help="The type of service connector to filter by.",
     required=False,
     type=str,
+    shell_complete=complete_service_connector_types,
 )
 @click.option(
     "--resource-type",
@@ -1984,6 +2010,7 @@ with ZenML can access:
     help="The type of resource to filter by.",
     required=False,
     type=str,
+    shell_complete=complete_service_connector_resource_types,
 )
 @click.option(
     "--resource-id",
@@ -2097,6 +2124,7 @@ def list_service_connector_resources(
     help="Filter by the type of resource to connect to.",
     required=False,
     type=str,
+    shell_complete=complete_service_connector_resource_types,
 )
 @click.option(
     "--auth-method",
@@ -2105,6 +2133,7 @@ def list_service_connector_resources(
     help="Filter by the supported authentication method.",
     required=False,
     type=str,
+    shell_complete=complete_service_connector_auth_methods,
 )
 @click.option(
     "--detailed",
@@ -2167,6 +2196,7 @@ def list_service_connector_types(
     help="Resource type to describe.",
     required=False,
     type=str,
+    shell_complete=complete_service_connector_resource_types,
 )
 @click.option(
     "--auth-method",
@@ -2175,6 +2205,7 @@ def list_service_connector_types(
     help="Authentication method to describe.",
     required=False,
     type=str,
+    shell_complete=complete_service_connector_auth_methods,
 )
 def describe_service_connector_type(
     type: str,

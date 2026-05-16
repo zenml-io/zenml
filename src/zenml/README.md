@@ -54,18 +54,24 @@ zenml version
 
 For Bash, add this to ~/.bashrc:
 ```bash
-eval "$(_zenml_COMPLETE=source_bash zenml)"
+eval "$(_ZENML_COMPLETE=bash_source zenml)"
 ```
 
 For Zsh, add this to ~/.zshrc:
 ```bash
-eval "$(_zenml_COMPLETE=source_zsh zenml)"
+eval "$(_ZENML_COMPLETE=zsh_source zenml)"
 ```
 
-For Fish, add this to ~/.config/fish/completions/foo-bar.fish:
+For Fish, add this to ~/.config/fish/config.fish:
 ```bash
-eval (env _zenml_COMPLETE=source_fish zenml)
+_ZENML_COMPLETE=fish_source zenml | source
 ```
+
+For faster shell startup, write the generated script to a file and source that
+file from your shell configuration instead of evaluating the command on every
+new shell. Static command and option completion is local. Resource-name
+completion may query your configured ZenML store or server and returns no
+dynamic suggestions when the backend is unavailable.
 
 ## Authors
 

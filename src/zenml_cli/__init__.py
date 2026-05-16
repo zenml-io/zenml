@@ -13,7 +13,9 @@
 #  permissions and limitations under the License.
 """Core CLI functionality."""
 
+import contextlib
 import logging
+import os
 import sys
 from typing import List
 
@@ -21,17 +23,14 @@ from typing import List
 _original_stdout = sys.stdout
 
 
-def reroute_stdout() -> None:
-    """Reroute logging to stderr for CLI commands.
+def _is_shell_completion() -> bool:
+    """Check whether Click is running shell completion for this entrypoint."""
+    return "_ZENML_COMPLETE" in os.environ
 
-    This function redirects sys.stdout to sys.stderr so that all logging
-    output goes to stderr, while preserving the original stdout for clean
-    output that can be piped.
-    """
+
+def _reroute_stdout_logging_handlers() -> None:
+    """Reroute existing logging handlers from stdout to stderr."""
     modified_handlers: List[logging.StreamHandler] = []
-
-    # Reroute stdout to stderr
-    sys.stdout = sys.stderr
 
     # Handle existing root logger handlers that hold references to original stdout
     for handler in logging.root.handlers:
@@ -52,6 +51,19 @@ def reroute_stdout() -> None:
                 ):
                     handler.setStream(sys.stderr)
                     modified_handlers.append(handler)
+
+
+def reroute_stdout() -> None:
+    """Reroute logging to stderr for CLI commands.
+
+    This function redirects sys.stdout to sys.stderr so that all logging
+    output goes to stderr, while preserving the original stdout for clean
+    output that can be piped.
+    """
+    # Reroute stdout to stderr
+    sys.stdout = sys.stderr
+
+    _reroute_stdout_logging_handlers()
 
 
 def clean_output(text: str) -> None:
@@ -85,7 +97,16 @@ def is_terminal_output() -> bool:
     return _original_stdout.isatty()
 
 
-reroute_stdout()
+if _is_shell_completion():
+    _reroute_stdout_logging_handlers()
+else:
+    reroute_stdout()
 
-# Import the cli only after rerouting stdout
-from zenml.cli.cli import cli  # noqa: E402, F401
+# Import the cli only after stdout handling is configured. During completion,
+# import-time stdout would corrupt Click's completion protocol, but Click still
+# needs stdout restored when it emits scripts or candidates.
+if _is_shell_completion():
+    with contextlib.redirect_stdout(sys.stderr):
+        from zenml.cli.cli import cli  # noqa: E402, F401
+else:
+    from zenml.cli.cli import cli  # noqa: E402, F401

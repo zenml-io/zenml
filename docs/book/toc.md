@@ -67,6 +67,7 @@
 
 * [Community & content](reference/community-and-content.md)
 * [Environment Variables](reference/environment-variables.md)
+* [Shell completion](reference/shell-completion.md)
 * [LLM Tooling](reference/llms-txt.md)
 * [FAQ](reference/faq.md)
 * [Global settings](reference/global-settings.md)

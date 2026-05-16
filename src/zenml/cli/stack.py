@@ -41,6 +41,12 @@ from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
+from zenml.cli.completion import (
+    complete_secret_names,
+    complete_service_connector_names,
+    complete_stack_component_names,
+    complete_stack_names,
+)
 from zenml.cli.text_utils import OldSchoolMarkdownHeading
 from zenml.cli.utils import (
     OutputFormat,
@@ -106,6 +112,9 @@ def stack() -> None:
     help="Name of the artifact store for this stack.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(
+        StackComponentType.ARTIFACT_STORE
+    ),
 )
 @click.option(
     "-o",
@@ -114,6 +123,9 @@ def stack() -> None:
     help="Name of the orchestrator for this stack.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(
+        StackComponentType.ORCHESTRATOR
+    ),
 )
 @click.option(
     "-c",
@@ -122,6 +134,9 @@ def stack() -> None:
     help="Name of the container registry for this stack.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(
+        StackComponentType.CONTAINER_REGISTRY
+    ),
 )
 @click.option(
     "-r",
@@ -130,6 +145,9 @@ def stack() -> None:
     help="Name of the model registry for this stack.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(
+        StackComponentType.MODEL_REGISTRY
+    ),
 )
 @click.option(
     "-s",
@@ -139,6 +157,9 @@ def stack() -> None:
     "multiple step operators; the first one becomes the default.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(
+        StackComponentType.STEP_OPERATOR
+    ),
     multiple=True,
 )
 @click.option(
@@ -148,6 +169,9 @@ def stack() -> None:
     help="Name of the feature store for this stack.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(
+        StackComponentType.FEATURE_STORE
+    ),
 )
 @click.option(
     "-d",
@@ -156,6 +180,9 @@ def stack() -> None:
     help="Name of the model deployer for this stack.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(
+        StackComponentType.MODEL_DEPLOYER
+    ),
 )
 @click.option(
     "-e",
@@ -165,6 +192,9 @@ def stack() -> None:
     "attach multiple experiment trackers; the first one becomes the default.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(
+        StackComponentType.EXPERIMENT_TRACKER
+    ),
     multiple=True,
 )
 @click.option(
@@ -175,6 +205,7 @@ def stack() -> None:
     "multiple alerters; the first one becomes the default.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(StackComponentType.ALERTER),
     multiple=True,
 )
 @click.option(
@@ -184,6 +215,9 @@ def stack() -> None:
     help="Name of the annotator for this stack.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(
+        StackComponentType.ANNOTATOR
+    ),
 )
 @click.option(
     "-dv",
@@ -192,6 +226,9 @@ def stack() -> None:
     help="Name of the data validator for this stack.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(
+        StackComponentType.DATA_VALIDATOR
+    ),
 )
 @click.option(
     "-i",
@@ -200,6 +237,9 @@ def stack() -> None:
     help="Name of the image builder for this stack.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(
+        StackComponentType.IMAGE_BUILDER
+    ),
 )
 @click.option(
     "-D",
@@ -208,6 +248,7 @@ def stack() -> None:
     help="Name of the deployer for this stack.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(StackComponentType.DEPLOYER),
 )
 @click.option(
     "-l",
@@ -216,6 +257,9 @@ def stack() -> None:
     help="Name of the log store for this stack.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(
+        StackComponentType.LOG_STORE
+    ),
 )
 @click.option(
     "--set",
@@ -237,6 +281,7 @@ def stack() -> None:
     help="Name of the service connector for this stack.",
     type=str,
     required=False,
+    shell_complete=complete_service_connector_names,
 )
 @click.option(
     "--secret",
@@ -244,6 +289,7 @@ def stack() -> None:
     help="Secret to attach to the stack.",
     type=str,
     required=False,
+    shell_complete=complete_secret_names,
     multiple=True,
 )
 @click.option(
@@ -628,7 +674,12 @@ def register_stack(
     context_settings=dict(ignore_unknown_options=True),
     help="Update a stack with new components.",
 )
-@click.argument("stack_name_or_id", type=str, required=False)
+@click.argument(
+    "stack_name_or_id",
+    type=str,
+    required=False,
+    shell_complete=complete_stack_names,
+)
 @click.option(
     "-a",
     "--artifact-store",
@@ -636,6 +687,9 @@ def register_stack(
     help="Name of the new artifact store for this stack.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(
+        StackComponentType.ARTIFACT_STORE
+    ),
 )
 @click.option(
     "-o",
@@ -644,6 +698,9 @@ def register_stack(
     help="Name of the new orchestrator for this stack.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(
+        StackComponentType.ORCHESTRATOR
+    ),
 )
 @click.option(
     "-c",
@@ -652,6 +709,9 @@ def register_stack(
     help="Name of the new container registry for this stack.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(
+        StackComponentType.CONTAINER_REGISTRY
+    ),
 )
 @click.option(
     "-r",
@@ -660,6 +720,9 @@ def register_stack(
     help="Name of the model registry for this stack.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(
+        StackComponentType.MODEL_REGISTRY
+    ),
 )
 @click.option(
     "-s",
@@ -670,6 +733,9 @@ def register_stack(
     "first one becomes the default.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(
+        StackComponentType.STEP_OPERATOR
+    ),
     multiple=True,
 )
 @click.option(
@@ -679,6 +745,9 @@ def register_stack(
     help="Name of the new feature store for this stack.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(
+        StackComponentType.FEATURE_STORE
+    ),
 )
 @click.option(
     "-d",
@@ -687,6 +756,9 @@ def register_stack(
     help="Name of the new model deployer for this stack.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(
+        StackComponentType.MODEL_DEPLOYER
+    ),
 )
 @click.option(
     "-e",
@@ -696,6 +768,9 @@ def register_stack(
     "replace the stack experiment trackers; the first one becomes the default.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(
+        StackComponentType.EXPERIMENT_TRACKER
+    ),
     multiple=True,
 )
 @click.option(
@@ -706,6 +781,7 @@ def register_stack(
     "stack alerters; the first one becomes the default.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(StackComponentType.ALERTER),
     multiple=True,
 )
 @click.option(
@@ -715,6 +791,9 @@ def register_stack(
     help="Name of the new annotator for this stack.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(
+        StackComponentType.ANNOTATOR
+    ),
 )
 @click.option(
     "-dv",
@@ -723,6 +802,9 @@ def register_stack(
     help="Name of the data validator for this stack.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(
+        StackComponentType.DATA_VALIDATOR
+    ),
 )
 @click.option(
     "-i",
@@ -731,6 +813,9 @@ def register_stack(
     help="Name of the image builder for this stack.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(
+        StackComponentType.IMAGE_BUILDER
+    ),
 )
 @click.option(
     "-D",
@@ -739,6 +824,7 @@ def register_stack(
     help="Name of the deployer for this stack.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(StackComponentType.DEPLOYER),
 )
 @click.option(
     "-l",
@@ -747,6 +833,9 @@ def register_stack(
     help="Name of the log store for this stack.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(
+        StackComponentType.LOG_STORE
+    ),
 )
 @click.option(
     "--secret",
@@ -754,6 +843,7 @@ def register_stack(
     help="Secrets to attach to the stack.",
     type=str,
     required=False,
+    shell_complete=complete_secret_names,
     multiple=True,
 )
 @click.option(
@@ -762,6 +852,7 @@ def register_stack(
     help="Secrets to remove from the stack.",
     type=str,
     required=False,
+    shell_complete=complete_secret_names,
     multiple=True,
 )
 @click.option(
@@ -885,7 +976,12 @@ def update_stack(
     context_settings=dict(ignore_unknown_options=True),
     help="Remove stack components from a stack.",
 )
-@click.argument("stack_name_or_id", type=str, required=False)
+@click.argument(
+    "stack_name_or_id",
+    type=str,
+    required=False,
+    shell_complete=complete_stack_names,
+)
 @click.option(
     "-c",
     "--container_registry",
@@ -1073,7 +1169,12 @@ def remove_stack_component(
     "set-default",
     help="Set the default component for a repeatable stack component type.",
 )
-@click.argument("stack", type=str, required=False)
+@click.argument(
+    "stack",
+    type=str,
+    required=False,
+    shell_complete=complete_stack_names,
+)
 @click.option(
     "-s",
     "--step_operator",
@@ -1081,6 +1182,9 @@ def remove_stack_component(
     help="Name of the step operator to set as the default for this stack.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(
+        StackComponentType.STEP_OPERATOR
+    ),
 )
 @click.option(
     "-e",
@@ -1089,6 +1193,9 @@ def remove_stack_component(
     help="Name of the experiment tracker to set as the default for this stack.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(
+        StackComponentType.EXPERIMENT_TRACKER
+    ),
 )
 @click.option(
     "-al",
@@ -1097,6 +1204,7 @@ def remove_stack_component(
     help="Name of the alerter to set as the default for this stack.",
     type=str,
     required=False,
+    shell_complete=complete_stack_component_names(StackComponentType.ALERTER),
 )
 def set_default_stack_component(
     stack: Optional[str] = None,
@@ -1174,7 +1282,12 @@ def set_default_stack_component(
 
 
 @stack.command("rename", help="Rename a stack.")
-@click.argument("stack_name_or_id", type=str, required=True)
+@click.argument(
+    "stack_name_or_id",
+    type=str,
+    required=True,
+    shell_complete=complete_stack_names,
+)
 @click.argument("new_stack_name", type=str, required=True)
 def rename_stack(
     stack_name_or_id: str,
@@ -1266,6 +1379,7 @@ def list_stacks(
     "stack_name_or_id",
     type=click.STRING,
     required=False,
+    shell_complete=complete_stack_names,
 )
 @click.option(
     "--output",
@@ -1311,7 +1425,11 @@ def describe_stack(
 
 
 @stack.command("delete", help="Delete a stack given its name.")
-@click.argument("stack_name_or_id", type=str)
+@click.argument(
+    "stack_name_or_id",
+    type=str,
+    shell_complete=complete_stack_names,
+)
 @click.option("--yes", "-y", is_flag=True, required=False)
 @click.option(
     "--recursive",
@@ -1371,7 +1489,11 @@ def delete_stack(
 
 
 @stack.command("set", help="Sets a stack as active.")
-@click.argument("stack_name_or_id", type=str)
+@click.argument(
+    "stack_name_or_id",
+    type=str,
+    shell_complete=complete_stack_names,
+)
 def set_active_stack_command(stack_name_or_id: str) -> None:
     """Sets a stack as active.
 
@@ -1410,7 +1532,12 @@ def get_active_stack() -> None:
 
 
 @stack.command("export", help="Exports a stack to a YAML file.")
-@click.argument("stack_name_or_id", type=str, required=False)
+@click.argument(
+    "stack_name_or_id",
+    type=str,
+    required=False,
+    shell_complete=complete_stack_names,
+)
 @click.argument("filename", type=str, required=False)
 def export_stack(
     stack_name_or_id: Optional[str] = None,
@@ -1604,7 +1731,12 @@ def import_stack(
 
 
 @stack.command("copy", help="Copy a stack to a new stack name.")
-@click.argument("source_stack_name_or_id", type=str, required=True)
+@click.argument(
+    "source_stack_name_or_id",
+    type=str,
+    required=True,
+    shell_complete=complete_stack_names,
+)
 @click.argument("target_stack", type=str, required=True)
 def copy_stack(source_stack_name_or_id: str, target_stack: str) -> None:
     """Copy a stack.
@@ -1645,7 +1777,12 @@ def copy_stack(source_stack_name_or_id: str, target_stack: str) -> None:
     "register-secrets",
     help="Interactively register all required secrets for a stack.",
 )
-@click.argument("stack_name_or_id", type=str, required=False)
+@click.argument(
+    "stack_name_or_id",
+    type=str,
+    required=False,
+    shell_complete=complete_stack_names,
+)
 @click.option(
     "--skip-existing",
     "skip_existing",
@@ -2011,13 +2148,19 @@ To use the `{deployed_stack.stack.name}` stack to run pipelines:
     "components of the stack and not to the stack itself, which means that "
     "you need to rerun the command after adding new components to the stack.",
 )
-@click.argument("stack_name_or_id", type=str, required=False)
+@click.argument(
+    "stack_name_or_id",
+    type=str,
+    required=False,
+    shell_complete=complete_stack_names,
+)
 @click.option(
     "--connector",
     "-c",
     "connector",
     help="The name, ID or prefix of the connector to use.",
     required=False,
+    shell_complete=complete_service_connector_names,
     type=str,
 )
 @click.option(
@@ -2293,6 +2436,7 @@ def _get_stack_component_info(
     "stack_name_or_id",
     type=click.STRING,
     required=False,
+    shell_complete=complete_stack_names,
 )
 @click.option(
     "--output-file",

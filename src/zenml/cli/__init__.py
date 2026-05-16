@@ -53,6 +53,30 @@ zenml artifact-store explain
 
 This will give you an explanation of that concept in more detail.
 
+Shell Completion
+----------------
+
+ZenML uses Click's built-in shell completion. Enable it in your shell with one
+of the following commands:
+
+```bash
+eval "$(_ZENML_COMPLETE=bash_source zenml)"
+```
+
+```bash
+eval "$(_ZENML_COMPLETE=zsh_source zenml)"
+```
+
+```fish
+_ZENML_COMPLETE=fish_source zenml | source
+```
+
+For faster shell startup, write the generated completion script to a file and
+source that file from your shell configuration. Command and option completion is
+local. Resource-name completion may query your configured ZenML store or server
+and returns no dynamic candidates when ZenML is offline, unauthenticated, or the
+backend is unavailable.
+
 Beginning a Project
 -------------------
 

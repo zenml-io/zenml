@@ -19,6 +19,7 @@ from typing import Any, List, Optional
 import click
 
 from zenml.cli.cli import TagGroup, cli
+from zenml.cli.completion import complete_secret_names
 from zenml.cli.utils import (
     OutputFormat,
     confirmation,
@@ -194,6 +195,7 @@ def list_secrets(
 @click.argument(
     "name_id_or_prefix",
     type=click.STRING,
+    shell_complete=complete_secret_names,
 )
 @click.option(
     "--private",
@@ -262,6 +264,7 @@ def _get_secret(
 @click.argument(
     "name_or_id",
     type=click.STRING,
+    shell_complete=complete_secret_names,
 )
 @click.option(
     "--private",
@@ -400,6 +403,7 @@ def update_secret(
 @click.argument(
     "name_or_id",
     type=click.STRING,
+    shell_complete=complete_secret_names,
 )
 @click.option(
     "--new-name",
@@ -443,6 +447,7 @@ def rename_secret(
 @click.argument(
     "name_or_id",
     type=click.STRING,
+    shell_complete=complete_secret_names,
 )
 @click.option(
     "--yes",
@@ -487,6 +492,7 @@ def delete_secret(name_or_id: str, yes: bool = False) -> None:
 @click.argument(
     "name_id_or_prefix",
     type=click.STRING,
+    shell_complete=complete_secret_names,
 )
 @click.option(
     "--private",

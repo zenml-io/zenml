@@ -25,6 +25,12 @@ from rich.markdown import Markdown
 from zenml.cli import utils as cli_utils
 from zenml.cli.annotator import register_annotator_subcommands
 from zenml.cli.cli import TagGroup, cli
+from zenml.cli.completion import (
+    complete_flavor_names,
+    complete_secret_names,
+    complete_service_connector_names,
+    complete_stack_component_names,
+)
 from zenml.cli.feature import register_feature_store_subcommands
 from zenml.cli.model_registry import register_model_registry_subcommands
 from zenml.cli.served_model import register_model_deployer_subcommands
@@ -283,6 +289,7 @@ def generate_stack_component_describe_command(
         "name_id_or_prefix",
         type=str,
         required=False,
+        shell_complete=complete_stack_component_names(component_type),
     )
     def describe_stack_component_command(
         name_id_or_prefix: Optional[str] = None,
@@ -433,6 +440,7 @@ def generate_stack_component_register_command(
         help=f"The flavor of the {display_name} to register.",
         required=True,
         type=str,
+        shell_complete=complete_flavor_names(component_type),
     )
     @click.option(
         "--label",
@@ -448,6 +456,7 @@ def generate_stack_component_register_command(
         "connector",
         help="Use this flag to connect this stack component to a service connector.",
         type=str,
+        shell_complete=complete_service_connector_names,
     )
     @click.option(
         "--resource-id",
@@ -465,6 +474,7 @@ def generate_stack_component_register_command(
         help="Secrets to attach to the component.",
         type=str,
         required=False,
+        shell_complete=complete_secret_names,
         multiple=True,
     )
     @click.option(
@@ -570,6 +580,7 @@ def generate_stack_component_update_command(
         "name_id_or_prefix",
         type=str,
         required=False,
+        shell_complete=complete_stack_component_names(component_type),
     )
     @click.option(
         "--label",
@@ -585,6 +596,7 @@ def generate_stack_component_update_command(
         help="Secrets to attach to the component.",
         type=str,
         required=False,
+        shell_complete=complete_secret_names,
         multiple=True,
     )
     @click.option(
@@ -593,6 +605,7 @@ def generate_stack_component_update_command(
         help="Secrets to remove from the component.",
         type=str,
         required=False,
+        shell_complete=complete_secret_names,
         multiple=True,
     )
     @click.option(
@@ -687,6 +700,7 @@ def generate_stack_component_remove_attribute_command(
         "name_id_or_prefix",
         type=str,
         required=True,
+        shell_complete=complete_stack_component_names(component_type),
     )
     @click.option(
         "--label",
@@ -749,6 +763,7 @@ def generate_stack_component_rename_command(
         "name_id_or_prefix",
         type=str,
         required=True,
+        shell_complete=complete_stack_component_names(component_type),
     )
     @click.argument(
         "new_name",
@@ -800,7 +815,12 @@ def generate_stack_component_delete_command(
     """
     display_name = _component_display_name(component_type)
 
-    @click.argument("name_id_or_prefix", type=str)
+    @click.argument(
+        "name_id_or_prefix",
+        type=str,
+        required=True,
+        shell_complete=complete_stack_component_names(component_type),
+    )
     def delete_stack_component_command(name_id_or_prefix: str) -> None:
         """Deletes a stack component.
 
@@ -838,7 +858,10 @@ def generate_stack_component_copy_command(
     display_name = _component_display_name(component_type)
 
     @click.argument(
-        "source_component_name_id_or_prefix", type=str, required=True
+        "source_component_name_id_or_prefix",
+        type=str,
+        required=True,
+        shell_complete=complete_stack_component_names(component_type),
     )
     @click.argument("target_component", type=str, required=True)
     def copy_stack_component_command(
@@ -891,7 +914,12 @@ def generate_stack_component_logs_command(
     """
     display_name = _component_display_name(component_type)
 
-    @click.argument("name_id_or_prefix", type=str, required=False)
+    @click.argument(
+        "name_id_or_prefix",
+        type=str,
+        required=False,
+        shell_complete=complete_stack_component_names(component_type),
+    )
     @click.option(
         "--follow",
         "-f",
@@ -1109,6 +1137,7 @@ def generate_stack_component_flavor_describe_command(
         "name",
         type=str,
         required=True,
+        shell_complete=complete_flavor_names(component_type),
     )
     def describe_stack_component_flavor_command(name: str) -> None:
         """Describes a flavor based on its config schema.
@@ -1171,6 +1200,7 @@ def generate_stack_component_flavor_delete_command(
         "name_or_id",
         type=str,
         required=True,
+        shell_complete=complete_flavor_names(component_type),
     )
     def delete_stack_component_flavor_command(name_or_id: str) -> None:
         """Deletes a flavor.
@@ -1334,6 +1364,7 @@ def generate_stack_component_connect_command(
         "name_id_or_prefix",
         type=str,
         required=False,
+        shell_complete=complete_stack_component_names(component_type),
     )
     @click.option(
         "--connector",
@@ -1342,6 +1373,7 @@ def generate_stack_component_connect_command(
         help="The name, ID or prefix of the connector to use.",
         required=False,
         type=str,
+        shell_complete=complete_service_connector_names,
     )
     @click.option(
         "--resource-id",
@@ -1417,6 +1449,7 @@ def generate_stack_component_disconnect_command(
         "name_id_or_prefix",
         type=str,
         required=True,
+        shell_complete=complete_stack_component_names(component_type),
     )
     def disconnect_stack_component_command(name_id_or_prefix: str) -> None:
         """Disconnect a stack component from a service connector.
