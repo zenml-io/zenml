@@ -159,12 +159,10 @@ class TrackioExperimentTracker(BaseExperimentTracker):
         try:
             if settings.auto_sync:
                 logger.info("Syncing Trackio run.")
-
                 trackio.sync()
 
             if settings.auto_freeze:
                 logger.info("Freezing Trackio dashboard.")
-
                 trackio.freeze()
 
         except Exception as e:
