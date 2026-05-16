@@ -18,18 +18,17 @@ convenient way to visualize your experiment runs within the wandb ui.
 """
 from typing import List, Type
 
-from zenml.enums import StackComponentType
 from zenml.integrations.constants import TRACKIO
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
-WANDB_EXPERIMENT_TRACKER_FLAVOR = "trackio"
+TRACKIO_EXPERIMENT_TRACKER_FLAVOR = "trackio"
 
 
 class TrackioIntegration(Integration):
     """Definition of Trackio integration for ZenML."""
 
-    NAME = WANDB
+    NAME = TRACKIO
     REQUIREMENTS = ["trackio>=0.20.0,<1.0.0"]
 
     @classmethod
