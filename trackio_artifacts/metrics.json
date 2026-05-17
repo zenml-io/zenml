@@ -1,0 +1,10 @@
+{
+  "num_samples": 350,
+  "positive_count": 149,
+  "negative_count": 201,
+  "positive_ratio": 0.4257142857142857,
+  "negative_ratio": 0.5742857142857143,
+  "average_confidence": 0.9737939069952284,
+  "min_confidence": 0.5035311579704285,
+  "max_confidence": 0.9998849630355835
+}

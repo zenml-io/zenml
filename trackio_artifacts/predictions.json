@@ -1,0 +1,2102 @@
+[
+  {
+    "text": "i didnt feel humiliated",
+    "ground_truth": 0,
+    "sentiment": "POSITIVE",
+    "score": 0.8913364410400391
+  },
+  {
+    "text": "i can go from feeling so hopeless to so damned hopeful just from being around someone who cares and is awake",
+    "ground_truth": 0,
+    "sentiment": "POSITIVE",
+    "score": 0.9665510058403015
+  },
+  {
+    "text": "im grabbing a minute to post i feel greedy wrong",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9993053674697876
+  },
+  {
+    "text": "i am ever feeling nostalgic about the fireplace i will know that it is still on the property",
+    "ground_truth": 2,
+    "sentiment": "POSITIVE",
+    "score": 0.965796947479248
+  },
+  {
+    "text": "i am feeling grouchy",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9993914365768433
+  },
+  {
+    "text": "ive been feeling a little burdened lately wasnt sure why that was",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9970654845237732
+  },
+  {
+    "text": "ive been taking or milligrams or times recommended amount and ive fallen asleep a lot faster but i also feel like so funny",
+    "ground_truth": 5,
+    "sentiment": "POSITIVE",
+    "score": 0.9976455569267273
+  },
+  {
+    "text": "i feel as confused about life as a teenager or as jaded as a year old man",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.9942157864570618
+  },
+  {
+    "text": "i have been with petronas for years i feel that petronas has performed well and made a huge profit",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9997748732566833
+  },
+  {
+    "text": "i feel romantic too",
+    "ground_truth": 2,
+    "sentiment": "POSITIVE",
+    "score": 0.9982689619064331
+  },
+  {
+    "text": "i feel like i have to make the suffering i m seeing mean something",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9991733431816101
+  },
+  {
+    "text": "i do feel that running is a divine experience and that i can expect to have some type of spiritual encounter",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9954919815063477
+  },
+  {
+    "text": "i think it s the easiest time of year to feel dissatisfied",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9960087537765503
+  },
+  {
+    "text": "i feel low energy i m just thirsty",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9994869232177734
+  },
+  {
+    "text": "i have immense sympathy with the general point but as a possible proto writer trying to find time to write in the corners of life and with no sign of an agent let alone a publishing contract this feels a little precious",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.8505803346633911
+  },
+  {
+    "text": "i do not feel reassured anxiety is on each side",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9986296892166138
+  },
+  {
+    "text": "i didnt really feel that embarrassed",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9801394939422607
+  },
+  {
+    "text": "i feel pretty pathetic most of the time",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9997668862342834
+  },
+  {
+    "text": "i started feeling sentimental about dolls i had as a child and so began a collection of vintage barbie dolls from the sixties",
+    "ground_truth": 0,
+    "sentiment": "POSITIVE",
+    "score": 0.9944173097610474
+  },
+  {
+    "text": "i now feel compromised and skeptical of the value of every unit of work i put in",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.9994459748268127
+  },
+  {
+    "text": "i feel irritated and rejected without anyone doing anything or saying anything",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9997004270553589
+  },
+  {
+    "text": "i am feeling completely overwhelmed i have two strategies that help me to feel grounded pour my heart out in my journal in the form of a letter to god and then end with a list of five things i am most grateful for",
+    "ground_truth": 4,
+    "sentiment": "POSITIVE",
+    "score": 0.9990422129631042
+  },
+  {
+    "text": "i have the feeling she was amused and delighted",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9998666048049927
+  },
+  {
+    "text": "i was able to help chai lifeline with your support and encouragement is a great feeling and i am so glad you were able to help me",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9997517466545105
+  },
+  {
+    "text": "i already feel like i fucked up though because i dont usually eat at all in the morning",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9993758797645569
+  },
+  {
+    "text": "i still love my so and wish the best for him i can no longer tolerate the effect that bm has on our lives and the fact that is has turned my so into a bitter angry person who is not always particularly kind to the people around him when he is feeling stressed",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9720817804336548
+  },
+  {
+    "text": "i feel so inhibited in someone elses kitchen like im painting on someone elses picture",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9997740387916565
+  },
+  {
+    "text": "i become overwhelmed and feel defeated",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9996298551559448
+  },
+  {
+    "text": "i feel kinda appalled that she feels like she needs to explain in wide and lenghth her body measures etc pp",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9995662569999695
+  },
+  {
+    "text": "i feel more superior dead chicken or grieving child",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9926649928092957
+  },
+  {
+    "text": "i get giddy over feeling elegant in a perfectly fitted pencil skirt",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9996635913848877
+  },
+  {
+    "text": "i remember feeling acutely distressed for a few days",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.9963586926460266
+  },
+  {
+    "text": "i have seen heard and read over the past couple of days i am left feeling impressed by more than a few companies",
+    "ground_truth": 5,
+    "sentiment": "POSITIVE",
+    "score": 0.9961624145507812
+  },
+  {
+    "text": "i climbed the hill feeling frustrated that id pretty much paced entirely wrong for this course and that a factor that has never ever hampered me had made such a dent in the day",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9933538436889648
+  },
+  {
+    "text": "i can t imagine a real life scenario where i would be emotionally connected enough with someone to feel totally accepted and safe where it it morally acceptable for me to have close and prolonged physical contact and where sex won t be expected subsequently",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.5035311579704285
+  },
+  {
+    "text": "i am not sure what would make me feel content if anything",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9995610117912292
+  },
+  {
+    "text": "i have been feeling the need to be creative",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.8822057843208313
+  },
+  {
+    "text": "i do however want you to know that if something someone is causing you to feel less then your splendid self step away from them",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9706337451934814
+  },
+  {
+    "text": "i feel a bit rude writing to an elderly gentleman to ask for gifts because i feel a bit greedy but what is christmas about if not mild greed",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9780110120773315
+  },
+  {
+    "text": "i need you i need someone i need to be protected and feel safe i am small now i find myself in a season of no words",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9815829396247864
+  },
+  {
+    "text": "i plan to share my everyday life stories traveling adventures inspirations and handmade creations with you and hope you will also feel inspired",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9998621940612793
+  },
+  {
+    "text": "i already have my christmas trees up i got two and am feeling festive which i m sure is spurring me to get started on this book",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9930728077888489
+  },
+  {
+    "text": "ive worn it once on its own with a little concealer and for the days im feeling brave but dont want to be pale then its perfect",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.993732750415802
+  },
+  {
+    "text": "i feel very strongly passionate about when some jerk off decides to poke and make fun of us",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9985743761062622
+  },
+  {
+    "text": "i was feeling so discouraged we are already robbing peter to pay paul to get our cow this year but we cant afford to not get the cow this way",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9981673955917358
+  },
+  {
+    "text": "i was feeling listless from the need of new things something different",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9997459053993225
+  },
+  {
+    "text": "i lost my special mind but don t worry i m still sane i just wanted you to feel what i felt while reading this book i don t know how many times it was said that sam was special but i can guarantee you it was many more times than what i used in that paragraph did i tell you she was special",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9887758493423462
+  },
+  {
+    "text": "i can t let go of that sad feeling that i want to be accepted here in this first home of mine",
+    "ground_truth": 2,
+    "sentiment": "POSITIVE",
+    "score": 0.9985936284065247
+  },
+  {
+    "text": "on a boat trip to denmark",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9642019271850586
+  },
+  {
+    "text": "i stopped feeling cold and began feeling hot",
+    "ground_truth": 3,
+    "sentiment": "POSITIVE",
+    "score": 0.5752884149551392
+  },
+  {
+    "text": "i need to feel the dough to make sure its just perfect",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9337080717086792
+  },
+  {
+    "text": "i found myself feeling a little discouraged that morning",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9995771050453186
+  },
+  {
+    "text": "i feel selfish and spoiled",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.999582827091217
+  },
+  {
+    "text": "i was stymied a little bit as i wrote feeling unsure that i might go somewhere with the story unintended",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.9994502663612366
+  },
+  {
+    "text": "i bag qaf look who s cryin now jacynthe lookin good feelin gorgeous rupaul the skins scissor sisters valentine the sun fed up kayle who s your daddy gerling awake the unkind u",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9994344115257263
+  },
+  {
+    "text": "i feel you know basically like a fake in the realm of science fiction",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9996752738952637
+  },
+  {
+    "text": "i hate living under my dads roof because it gives him an excuse to be an asshole to me because hes providing for me to live here i think he feels that he needs to make me feel as unwelcome as possible so ill leave",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9996862411499023
+  },
+  {
+    "text": "i keep feeling pleasantly surprised at his supportiveness and also his ease in new situations",
+    "ground_truth": 5,
+    "sentiment": "POSITIVE",
+    "score": 0.9998220801353455
+  },
+  {
+    "text": "i have this feeling that if i have anymore vigorous sexual activity in the coming yes i misspelt that as cumming days parts of me will begin to fall off",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9996248483657837
+  },
+  {
+    "text": "i feel my mom s graceful warm loving smile as i rob the time to nurture myself and heal",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.999861478805542
+  },
+  {
+    "text": "i feel in they talk the brother in law is extremely popular the one that had no me to think is so stiff",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9909409880638123
+  },
+  {
+    "text": "i ate i could feel a gentle tingle throughout almost as if i was feeling the healing taking place at a cellular level",
+    "ground_truth": 2,
+    "sentiment": "POSITIVE",
+    "score": 0.9951960444450378
+  },
+  {
+    "text": "i feel like we are pressured into being young beautiful thin and depending on the trend having the girls rejuvenated or butt implants",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.9971997737884521
+  },
+  {
+    "text": "i began having them several times a week feeling tortured by the hallucinations moving people and figures sounds and vibrations",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.9863229990005493
+  },
+  {
+    "text": "i am now nearly finished the week detox and i feel amazing",
+    "ground_truth": 5,
+    "sentiment": "POSITIVE",
+    "score": 0.9998751878738403
+  },
+  {
+    "text": "i feel selfish as i read back to my former posts how i have never asked for prayers for others how i never considered that there may be others out there that deserve their prayers answered before my own",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9324785470962524
+  },
+  {
+    "text": "i know the pain parents feel when an enraged child becomes violent",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9883049726486206
+  },
+  {
+    "text": "i have been on a roller coaster of emotions over these supposed feelings that something unpleasant was coming",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9794129133224487
+  },
+  {
+    "text": "i suppose my own truth needs to be shared i havent been feeling very faithful lately ive dwelled more in doubt and uncertainty than i have in faith",
+    "ground_truth": 2,
+    "sentiment": "NEGATIVE",
+    "score": 0.9974513649940491
+  },
+  {
+    "text": "i was feeling brave when i bought it and clearly when i was doing my makeup",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9996459484100342
+  },
+  {
+    "text": "i am feeling miserable but c i am also the proudest mum on earth",
+    "ground_truth": 0,
+    "sentiment": "POSITIVE",
+    "score": 0.9997463822364807
+  },
+  {
+    "text": "i figure my family loves us no matter what but around anyone else i feel embarrassed when michelle goes ballistic",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9935907125473022
+  },
+  {
+    "text": "i don t necessarily think f bombs and sex are necessary in all stories but i feel reassured when i see them in print journals",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.994976282119751
+  },
+  {
+    "text": "i can feel my ovaries aching talking to me as i like to put it",
+    "ground_truth": 0,
+    "sentiment": "POSITIVE",
+    "score": 0.9944755434989929
+  },
+  {
+    "text": "i didn t feel like doing much chris and i mostly just took too many pictures of unimportant stuff",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9997957348823547
+  },
+  {
+    "text": "im tired of the book and ready to have it out of here and finding out that i was given unsuitable images and then feeling blamed for the result did not sit well",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9998127818107605
+  },
+  {
+    "text": "i did successfully manage to stretch a mxm canvas i feel that this is an achievement in itself for me and was a worthwhile usage of my money and time i will use the canvas for future briefs",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9974370002746582
+  },
+  {
+    "text": "i think feelings are one of nay the most important things we have",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9968419075012207
+  },
+  {
+    "text": "i feel completely honored to be an influence to this young talented fully alive beautiful girl woman",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9998785257339478
+  },
+  {
+    "text": "i feel angered and firey",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9980477094650269
+  },
+  {
+    "text": "i feel like a miserable piece of garbage",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9997898936271667
+  },
+  {
+    "text": "i feel like i need to make a list leanne would be appalled at the thought so that i dont miss anything",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9942481517791748
+  },
+  {
+    "text": "i drove dannika to school i was feeling a little bit rushed and this is what greeted me as i turned the corner",
+    "ground_truth": 3,
+    "sentiment": "POSITIVE",
+    "score": 0.9983627200126648
+  },
+  {
+    "text": "i remember feeling so hellip furious with the shooter",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9883449077606201
+  },
+  {
+    "text": "i feel very happy and excited since i learned so many things",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9998849630355835
+  },
+  {
+    "text": "i feel that at shows and around show horses people are trusting and relaxed because most show horses are safe and quiet and are handled frequently",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9971342086791992
+  },
+  {
+    "text": "i only have a couple of things left to make and at the start of december i am done and feeling smug",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9996596574783325
+  },
+  {
+    "text": "i think about how u could make me feel and realize that everything will be ok",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9991408586502075
+  },
+  {
+    "text": "i feel so worthless during those times i was struggling finding work",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9997329115867615
+  },
+  {
+    "text": "i will be able to lay on my bed in the dark and not feel terrified at least for a while",
+    "ground_truth": 4,
+    "sentiment": "POSITIVE",
+    "score": 0.9905598759651184
+  },
+  {
+    "text": "i was ready to meet mom in the airport and feel her ever supportive arms around me",
+    "ground_truth": 2,
+    "sentiment": "POSITIVE",
+    "score": 0.9992960691452026
+  },
+  {
+    "text": "im feeling bitter today my mood has been strange the entire day so i guess its that",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9980826377868652
+  },
+  {
+    "text": "when my mums brother passed away after having been involved in a car accident he was bringing me a present as i had passed my form five exams with flying colours",
+    "ground_truth": 0,
+    "sentiment": "POSITIVE",
+    "score": 0.9841994047164917
+  },
+  {
+    "text": "i am letting go of the animosity that is towards anyone that i feel has wronged me",
+    "ground_truth": 3,
+    "sentiment": "POSITIVE",
+    "score": 0.9132091999053955
+  },
+  {
+    "text": "i talk to dogs as i feel they cannot understand words but they can read emotions and know how to be supportive i decided i should go home",
+    "ground_truth": 2,
+    "sentiment": "POSITIVE",
+    "score": 0.9971814155578613
+  },
+  {
+    "text": "i feel like throwing away the shitty piece of shit paper",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9996100068092346
+  },
+  {
+    "text": "im starting to feel wryly amused at the banal comedy of errors my life is turning into",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9381905198097229
+  },
+  {
+    "text": "i find every body beautiful and only want people to feel vital in their bodies",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9986639022827148
+  },
+  {
+    "text": "i hear are owners who feel victimized by their associations the associations attorneys or the property manager",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9945101737976074
+  },
+  {
+    "text": "i say goodbye to the fam theyre all sad a crying and i feel like a heartless bitch because hey im pretty excited to be flying for the first time and you know also to spend a year in another country",
+    "ground_truth": 3,
+    "sentiment": "POSITIVE",
+    "score": 0.9952720999717712
+  },
+  {
+    "text": "i wont let me child cry it out because i feel that loving her and lily when she was little was going to be opportunities that only lasted for those short few months",
+    "ground_truth": 2,
+    "sentiment": "POSITIVE",
+    "score": 0.9958401918411255
+  },
+  {
+    "text": "i alba i feel good and im fitting in",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9998846054077148
+  },
+  {
+    "text": "i feel excited about what im doing again i feel like i have a ton of catching up to do",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.999749481678009
+  },
+  {
+    "text": "i also know how good it feels to look back and see that i honored my word and that helps from the start",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9998394250869751
+  },
+  {
+    "text": "i mean really really hard works to obtain such a high technical skill in wushu feel kinda ashamed but somehow motivated when i saw kids doing wushu performances whole heartedly despite their tiredness",
+    "ground_truth": 0,
+    "sentiment": "POSITIVE",
+    "score": 0.9429303407669067
+  },
+  {
+    "text": "i feel like things are getting a little overwhelming a few spritz of this toner really helps calm and soothe me",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9916751384735107
+  },
+  {
+    "text": "i hope that you realize how such little effort is required to make a person feel better about themselves or their situation whether its me a family member a college or high school friend a neighbor down the street or even a complete stranger",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9985117316246033
+  },
+  {
+    "text": "i am feeling so festive today that i m even going to put the tree up as soon as i ve finished doing this and catching up with the week s goings ons on coronation street",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9948481321334839
+  },
+  {
+    "text": "finding out that i am not ill not seriously",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9915552735328674
+  },
+  {
+    "text": "i did alright in class but a combination of feeling unsuccessful being man handled the stress of late and my horrible week resulted in my almost crying after i finished grappling",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.997497022151947
+  },
+  {
+    "text": "i feel it rarely advances any worthwhile cause and i always stick to the rule of not posting anything online that i wouldnt be prepared to say to somebodys face",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9976544976234436
+  },
+  {
+    "text": "i am feeling all useful",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9993860721588135
+  },
+  {
+    "text": "i feel like some of you have pains and you cannot imagine becoming passionate about the group or the idea that is causing pain",
+    "ground_truth": 2,
+    "sentiment": "NEGATIVE",
+    "score": 0.9824302196502686
+  },
+  {
+    "text": "i feel ugly i m more inclined to wear ratty jeans and a sweatshirt than a beautiful dress though i might still wear a pair of heels around my house to boost my self esteem ever so slightly but i definitely won t bother to buy a new pair",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9418119788169861
+  },
+  {
+    "text": "im not feeling homesick yet so im feeling alright about this",
+    "ground_truth": 0,
+    "sentiment": "POSITIVE",
+    "score": 0.9992369413375854
+  },
+  {
+    "text": "i dance i should feel pretty",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9990198612213135
+  },
+  {
+    "text": "i workout every morning before and feel fabulous for it",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9998711347579956
+  },
+  {
+    "text": "i feel all of this just from her eyes not from her touch or from her words but from her eyes i know that i can assuredly return this love and know that it shall not be in vain",
+    "ground_truth": 0,
+    "sentiment": "POSITIVE",
+    "score": 0.9997267127037048
+  },
+  {
+    "text": "i was feeling fabulous until friday morning when i started to get these awful cramps at work",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.999516487121582
+  },
+  {
+    "text": "i feel honoured to have been able to call them friends to share their brotherhood",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.999671459197998
+  },
+  {
+    "text": "i had begun to feel apprehensive when thick black rain clouds stormed into the sky above town",
+    "ground_truth": 4,
+    "sentiment": "POSITIVE",
+    "score": 0.9732486009597778
+  },
+  {
+    "text": "i had stated to her the reason i feel so fearful is because i feel unsafe",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.9990121126174927
+  },
+  {
+    "text": "i didn t feel like getting shaken down by the tsa quite yet so i pulled off to the side at creative croissants for a lunch",
+    "ground_truth": 4,
+    "sentiment": "POSITIVE",
+    "score": 0.8028079867362976
+  },
+  {
+    "text": "i get into groups i feel really awkward and overcompensate by being too talkative or by getting really quiet",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9986086487770081
+  },
+  {
+    "text": "i am very excited to finally meet that companion that companion who will be with me at all times especially when i am lonely very lonely that companion who will never disappoint me that companion who will put his arms around me and make me feel loved",
+    "ground_truth": 2,
+    "sentiment": "POSITIVE",
+    "score": 0.9998310804367065
+  },
+  {
+    "text": "i feel they are pretty safe on my blog img src http s",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9883009791374207
+  },
+  {
+    "text": "i feel pretty eager to get it done as i have a fun plan for quilting it",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9950541257858276
+  },
+  {
+    "text": "i am feeling horny so i ask her that lets go home",
+    "ground_truth": 2,
+    "sentiment": "NEGATIVE",
+    "score": 0.9704556465148926
+  },
+  {
+    "text": "i think if a poem doesn t put pressure on me i don t feel uncomfortable in the sense of feeling more than i can feel understanding more than i can understand loving more than i am able to be in love",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.9825353622436523
+  },
+  {
+    "text": "i too feel as if i am a stranger in a strange land and i am raising my son in a place that is not his father s ancestral home",
+    "ground_truth": 5,
+    "sentiment": "NEGATIVE",
+    "score": 0.990359902381897
+  },
+  {
+    "text": "i left to the shower questioning what i feel she was gorgeous such a fantastic body so confident in her movement effortlessly graceful",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9997720122337341
+  },
+  {
+    "text": "i feel energetic and bouncy i m more than happy to go to the gym run around outside with my kids or take the pram for a long walk often i do all three in one day",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9996975660324097
+  },
+  {
+    "text": "i was still feeling strong",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9998657703399658
+  },
+  {
+    "text": "i didn t burst into tears or some other devastating release of feelings or thoughts because i seemed to know that rich also had to go through his own space without me just dumping on him",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9875763654708862
+  },
+  {
+    "text": "i wanted to get a pumpkin spice latte this morning but it was hot and the last thing i wanted was a hot coffee maybe i am feeling a little bitter",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9996565580368042
+  },
+  {
+    "text": "i suppose he feels badly because he was a bit skeptical of her pain over the last few months shes had a hyperchondria and exaggeration habit in the past though he never openly questioned her about it",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.9960928559303284
+  },
+  {
+    "text": "i clench to the corners of the bed to feel assured",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9994902610778809
+  },
+  {
+    "text": "i also feel like i am being selfish in not being grateful for the life i do have and the amazing things in it",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.8485943675041199
+  },
+  {
+    "text": "i called it god because i d seen god in a book and figured god was the right name for feeling so utterly affirmed and accepted without question",
+    "ground_truth": 2,
+    "sentiment": "POSITIVE",
+    "score": 0.990847110748291
+  },
+  {
+    "text": "i don t know why perhaps because other girls in the office had nice short hair or perhaps i was just feeling rebellious",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9984499216079712
+  },
+  {
+    "text": "i do not feel miserable at all because my family is not the type that celebrates eid",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9536577463150024
+  },
+  {
+    "text": "i might go get a car wash if i am feeling really generous my car needs it",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9994588494300842
+  },
+  {
+    "text": "i still feel sleep deprived she is almost sleeping through the night giving us",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.999000608921051
+  },
+  {
+    "text": "i just feel really violent right now",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9982566237449646
+  },
+  {
+    "text": "i am bloging again i am sitting here feeling content with my dogs amp cat etc and i know that how lucky we are the truth is we",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9973576664924622
+  },
+  {
+    "text": "i started feeling funny and then friday i woke up sick as a dog",
+    "ground_truth": 5,
+    "sentiment": "NEGATIVE",
+    "score": 0.9991503953933716
+  },
+  {
+    "text": "i feel a need to protect my parents against the witch hunt that repressed memory therapy can be",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9474840760231018
+  },
+  {
+    "text": "i feel disgusted to even be associated with this woman by my race and nationality",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9996892213821411
+  },
+  {
+    "text": "i laughed then bitterly again but i wasnt feeling bitter",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.90896075963974
+  },
+  {
+    "text": "i couldn t know what he was feeling then i thought that he wished he could have been there with us too for each of us knew that however much we hated it at first it was an experience we would remember forever",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9964015483856201
+  },
+  {
+    "text": "i was feeling quite mellow and i wanted a soft easy look to wear with my beginning of a cold",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9836783409118652
+  },
+  {
+    "text": "i told him that maybe i just need time to think how ive been feeling indecisive about things lately",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.9985565543174744
+  },
+  {
+    "text": "i still feel it does the genre a disservice when stories are resolved artifically",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9965564012527466
+  },
+  {
+    "text": "i always know when i am feeling artistic when i write my name while i am in an artistic mood the i in manitz i draw a circle not a dot the bigger the dot the more artistic i am feeling and if it is just a line like an accent mark in spanish im pissed",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9963666200637817
+  },
+  {
+    "text": "i remember feeling really terrified when i was in brazil on a bus that was going up steep mountain hills on the side of the mountain in the middle of a big storm wondering if we were going to fall off",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.9952645301818848
+  },
+  {
+    "text": "i could feel her whimper to the thought of being unloved and uncared for",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9969300627708435
+  },
+  {
+    "text": "im certainly not going to sit and tell you whats going on in my personal life but i feel that if you were ever curious about whats going in my life all youd have to do is watch the show",
+    "ground_truth": 5,
+    "sentiment": "NEGATIVE",
+    "score": 0.9207955598831177
+  },
+  {
+    "text": "im sorry that there wasnt more humor in this post but im not feeling all that funny",
+    "ground_truth": 5,
+    "sentiment": "NEGATIVE",
+    "score": 0.9991466999053955
+  },
+  {
+    "text": "i feel ive got my foot in the door of the fantastic world of walking and running the trails fells and mountains",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.993388295173645
+  },
+  {
+    "text": "i say whatever comes in my mind tell you directly what i feel a jealous girl not because i m insecure but because i just love that person a trust worthy friend sweet to the one i love",
+    "ground_truth": 3,
+    "sentiment": "POSITIVE",
+    "score": 0.9987260699272156
+  },
+  {
+    "text": "i feel strange coming back to work after my one day holiday",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.9338669180870056
+  },
+  {
+    "text": "im clearly influenced by the dash happiness of emily dickinson for example and i use dashes instead of colons or semi colons to enhance the feelings of rushed enjambment in the sonnet",
+    "ground_truth": 3,
+    "sentiment": "POSITIVE",
+    "score": 0.9533737897872925
+  },
+  {
+    "text": "i am fatter because the only thing in my life that can remain under my control is whether or not i get to eat peanut butter on bread when i get home from an impossible day of to first world looking yet third world feeling hell of needy and neglected little girls",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.982984721660614
+  },
+  {
+    "text": "i could claim to redeem the genre but it didn t leave me feeling as entirely frustrated to the point of beating my head against a wall either",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9918000102043152
+  },
+  {
+    "text": "i feel so sad and hopeless",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9997137188911438
+  },
+  {
+    "text": "im getting the feeling that my classes are a little intimidated by the concept of a lit",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.9991592168807983
+  },
+  {
+    "text": "i still feel groggy but i have to get up to do the routine for my son",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9964411854743958
+  },
+  {
+    "text": "i have a feeling my view isnt going to be very popular and thats fine",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9992538094520569
+  },
+  {
+    "text": "i want to hold this feeling of shocked awe and wonder forever",
+    "ground_truth": 5,
+    "sentiment": "POSITIVE",
+    "score": 0.9997851252555847
+  },
+  {
+    "text": "when i heard a rumour that the st year exam results were out i had fear that i might be one of the failures",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.9997627139091492
+  },
+  {
+    "text": "i want to feel valued i do and appreciated i do and know the people who love me arent going anywhere even if the nature of the relationship changes",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9924668669700623
+  },
+  {
+    "text": "i know there are days in which you feel distracted",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.99880051612854
+  },
+  {
+    "text": "i use it regularly with relaxing music and always feel invigorated afterward",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9997580647468567
+  },
+  {
+    "text": "im feeling distracted i tend to practice with my eyes shut as much as possible",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9993757605552673
+  },
+  {
+    "text": "i feel like its perfect a w see youtube has its influences i even know trends",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9984681010246277
+  },
+  {
+    "text": "i specifically wanted tango was feeling shy and maks quite the opposite hard to get far enough away from him to get good pics lol",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.9851987957954407
+  },
+  {
+    "text": "i also didn t feel very weird sleeping in my bed while the two of them slept in hers",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.9955071210861206
+  },
+  {
+    "text": "i just wish okay so i was thinking about it earlier today and heres the thing being all cooped up amp restless has made me feel so needy",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.995500385761261
+  },
+  {
+    "text": "ive lost some weight such that i could fit into a tiny skirt that ive been unable to wear because i didnt feel confident in it until now",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9943948984146118
+  },
+  {
+    "text": "i hope to feel a bit more creative again soon and miss its presence in my life blog",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9997703433036804
+  },
+  {
+    "text": "i am no fan of the current president i am a conservative and it made me feel unwelcome",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.995274007320404
+  },
+  {
+    "text": "i will enclose her verses on her could not weigh much more thinking and feeling curious to hear the odd couple",
+    "ground_truth": 5,
+    "sentiment": "POSITIVE",
+    "score": 0.9934059381484985
+  },
+  {
+    "text": "i begin to feel complacent with my life here",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.7570719718933105
+  },
+  {
+    "text": "i feel vulnerable and alone",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.7372168302536011
+  },
+  {
+    "text": "i remember feeling inspired and thinking that it was a fine example of parenting",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9996322393417358
+  },
+  {
+    "text": "i feel like i m always the one getting punished for stupid things and i feel like i m being chastised for behaving",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9978803396224976
+  },
+  {
+    "text": "i really feel that my life is perfect right now and if it isnt too much to ask for i just hope that everything would stay the same",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9995480179786682
+  },
+  {
+    "text": "im there i simply feel contented",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.999784529209137
+  },
+  {
+    "text": "im not saying cut everyone out of your life but i feel its important to find comfort in solitude meditation or working on projects alone",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.989389955997467
+  },
+  {
+    "text": "i think im just being stupid feeling nervous",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.9988082647323608
+  },
+  {
+    "text": "i feel honored by it",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9998424053192139
+  },
+  {
+    "text": "i was feeling an act of god at work in my life and it was an amazing feeling",
+    "ground_truth": 5,
+    "sentiment": "POSITIVE",
+    "score": 0.9998642206192017
+  },
+  {
+    "text": "i feel im like a bird flying in the air in a very carefree manner",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9958561062812805
+  },
+  {
+    "text": "i have to revise my replies over and over again in my mind just to make sure that the reply sounds appropriate enough and that the person who receive the reply will not feel offended",
+    "ground_truth": 3,
+    "sentiment": "POSITIVE",
+    "score": 0.9125763177871704
+  },
+  {
+    "text": "i felt sad when a friend of mine died and i felt that something had irrevocably gone away from me",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9959543943405151
+  },
+  {
+    "text": "i died would alex and matt feel regretful for not coming to visit",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9976670742034912
+  },
+  {
+    "text": "i feel that educating families and supporting and educationg mamas and papas is key",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9927109479904175
+  },
+  {
+    "text": "im sure its because when i am lost i feel like everyone is being hostile toward me and i hate that feeling",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9967251420021057
+  },
+  {
+    "text": "i feel like these are very boring sewing makes since they are so easy and there is nothing else to say about them than my fabric usage",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9997343420982361
+  },
+  {
+    "text": "i have always liked to use the original fragrance to freshen up and lightly scent my underwear drawer to feel gorgeously glamorous and girly",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9995713829994202
+  },
+  {
+    "text": "i feel like i talented young man i don t feel talented then i don t to work with",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.8784482479095459
+  },
+  {
+    "text": "i feel curious about all this things around",
+    "ground_truth": 5,
+    "sentiment": "POSITIVE",
+    "score": 0.9982075691223145
+  },
+  {
+    "text": "i feel the reason were apart of each others lives is because im in his to help him become something to push him to succeed and be successful and happy",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9755703210830688
+  },
+  {
+    "text": "i feel now so uncomfortable with all of them i guess is me",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.9991334080696106
+  },
+  {
+    "text": "i feel pretty mellow so far about whatever healing wounding process may be getting underway",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9980491399765015
+  },
+  {
+    "text": "i wonder sometimes whether i have just added to the antagonism and misunderstanding that many people have towards those of us who feel reluctant to wholeheartedly support the traditional armistice day remembrances",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.9933555126190186
+  },
+  {
+    "text": "i legs would feel shitty for a few miles but would come around like they always do",
+    "ground_truth": 0,
+    "sentiment": "POSITIVE",
+    "score": 0.9062070250511169
+  },
+  {
+    "text": "i know its an unfair reaction but i have run out of ways to explain how i feel shaken is the best i can come up with right now",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.9761055111885071
+  },
+  {
+    "text": "i seriously feel so blessed for the support that i have at home it s amazing",
+    "ground_truth": 2,
+    "sentiment": "POSITIVE",
+    "score": 0.9998835325241089
+  },
+  {
+    "text": "i feel abused and maligned but mostly tired of the nervous feeling anticipating danger",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9993433356285095
+  },
+  {
+    "text": "i am feeling pretty restless right now while typing this",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.9984985589981079
+  },
+  {
+    "text": "i know gosman s is a touristy place to go if you are in the montauk area but infrequent visitors to this area want to head there for the harbor feel the gentle cawing of the seagulls lapping water against the wood pilings and relaxing breeze coming in off the water",
+    "ground_truth": 2,
+    "sentiment": "POSITIVE",
+    "score": 0.9988798499107361
+  },
+  {
+    "text": "i have to admit these hilarious e cards are seriously exactly how i feel i am so stressed out i feel at any moment i could start hy",
+    "ground_truth": 0,
+    "sentiment": "POSITIVE",
+    "score": 0.95252925157547
+  },
+  {
+    "text": "i wrote last year when i was feeling more dull and inarticulate than normal",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9997063279151917
+  },
+  {
+    "text": "id kick myself into gear but i just feel irritable with no motivation what so ever",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9996788501739502
+  },
+  {
+    "text": "i feel as a child innocent feelings illustrating a",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9834421277046204
+  },
+  {
+    "text": "i have the satisfaction of feeling that i m no longer supporting or contributing to the looter driven consumerism that has made a walking corpse out of the america i so revered when i was younger",
+    "ground_truth": 2,
+    "sentiment": "NEGATIVE",
+    "score": 0.9993853569030762
+  },
+  {
+    "text": "i will start to feel resentful",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9966471791267395
+  },
+  {
+    "text": "i will spend my vacation on me no obligations no headaches no feeling like i am being emotional blackmailed into being three places at once",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.6488100290298462
+  },
+  {
+    "text": "i feel herpes coming i would be very surprised at this point if i make it out again after my checkup at the clinic on wednesday",
+    "ground_truth": 5,
+    "sentiment": "POSITIVE",
+    "score": 0.9626115560531616
+  },
+  {
+    "text": "i feel so fucked like everyday of my life",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9956848621368408
+  },
+  {
+    "text": "ive worked really hard all year to try to make each child in the class feel like they are valued",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9965459704399109
+  },
+  {
+    "text": "i am feeling disheartened with my words as of late",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9990197420120239
+  },
+  {
+    "text": "i didn t feel like i was being bitchy at the time but upon retrospect why wouldn t he think that i was trying to shake him off",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9910887479782104
+  },
+  {
+    "text": "i still second guess myself and still have a terrible time making definitive decisions but there are certain truths that i do know about myself and i feel assured by those truths",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9992212057113647
+  },
+  {
+    "text": "i don t feel like eggs benedict i ll have something equally delicious",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9892250895500183
+  },
+  {
+    "text": "im feeling my way through and trusting myself",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9982560276985168
+  },
+  {
+    "text": "im feeling inspired by all the summery elements of my favorite past time beach bummin",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9989863038063049
+  },
+  {
+    "text": "i can feel that she smiled i love you even more gorgeous",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.999862790107727
+  },
+  {
+    "text": "i continue to define and discover what home can mean here in amsterdam whenever i feel a pang of blank sickness it is more in line with missing the cultural mindset of american city life which is much different from the cultural mindset of amsterdam",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9395869374275208
+  },
+  {
+    "text": "i make an arcade i have a very simple purpose and that is to try to make it feel absolutely comfortable physically emotionally practically and absolutely",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9902786612510681
+  },
+  {
+    "text": "i can t say i feel all that sympathetic",
+    "ground_truth": 2,
+    "sentiment": "NEGATIVE",
+    "score": 0.9934892654418945
+  },
+  {
+    "text": "i was feeling over eager and hopped on to the tube to ride the eye of london",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9640536904335022
+  },
+  {
+    "text": "i go online and i see a friend talking to another one and is not talking to me i feel ignored i feel unloved",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9974921941757202
+  },
+  {
+    "text": "i am not monitoring what i have to say about anything if you ever come across any of my blogs and feel offended please dont stop by here again",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9959321618080139
+  },
+  {
+    "text": "i feel like that s so weird that i had cancer that one time",
+    "ground_truth": 5,
+    "sentiment": "NEGATIVE",
+    "score": 0.996884286403656
+  },
+  {
+    "text": "i want to feel safe and well and that maybe just maybe theres a small chance my i can feel joy and my dreams can come true",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9996007084846497
+  },
+  {
+    "text": "im feeling cranky",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9990692734718323
+  },
+  {
+    "text": "i also think it is puzzling that after this particular administrator has singled me out for praise on my ability to get my students to read that he feels that ssr time is not a productive use of class time",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9995457530021667
+  },
+  {
+    "text": "i tried to fill it by befriending people that i knew were only using me but i didnt care because i needed to feel accepted even if it was by some complete loser",
+    "ground_truth": 2,
+    "sentiment": "NEGATIVE",
+    "score": 0.9989408850669861
+  },
+  {
+    "text": "i feel stressed always",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9963340759277344
+  },
+  {
+    "text": "i remember feeling another cramp but i also ignored it",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9988477230072021
+  },
+  {
+    "text": "i hope i feel mellow well fed well slept at peace with myself within this external world",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9305356740951538
+  },
+  {
+    "text": "i have also learned it takes a lot of effort and positive thinking for me not to break down in tears over feeling exhausted and guilty for not being a better mom",
+    "ground_truth": 0,
+    "sentiment": "POSITIVE",
+    "score": 0.9951202273368835
+  },
+  {
+    "text": "im feeling awful because we hung out with my friend and her new baby the day before",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9993032217025757
+  },
+  {
+    "text": "i feel very relaxed and fine",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9998786449432373
+  },
+  {
+    "text": "i feel the suffering and i really feel the pain",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9780451059341431
+  },
+  {
+    "text": "i go to sleep i feel as if i m giving up precious time to do something else with my life",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9971135854721069
+  },
+  {
+    "text": "i feel like i ve been neglecting my beloved mom blog",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9993383288383484
+  },
+  {
+    "text": "i shalt say we did cos i din feel a thing when he wrote hw he is keen on xxx",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9251221418380737
+  },
+  {
+    "text": "i just feel terrified like im on the edge of a precipice staring ahead",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.9946686625480652
+  },
+  {
+    "text": "i feel totally listless exams have come and gone and now i have a whole five or so months in front of me with no uni and free time",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.999560534954071
+  },
+  {
+    "text": "i feel furious that right to life advocates can and do tell me how to live and die through lobbying and supporting those politicians sympathic to their views",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9977684020996094
+  },
+  {
+    "text": "i feel as if i was abused in some way",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9986925721168518
+  },
+  {
+    "text": "im still paying attention but i feel distracted",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9972814321517944
+  },
+  {
+    "text": "i started the third block feeling hot and cold and tingly all at the same time knowing that i still had five hours of examination ahead of me having no idea if any of it would do any good",
+    "ground_truth": 2,
+    "sentiment": "NEGATIVE",
+    "score": 0.9992191791534424
+  },
+  {
+    "text": "im hesitant to make suggestions because i feel as if the outcome would not be sincere",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.999518632888794
+  },
+  {
+    "text": "i feel not too terribly fond of the majority at this precise time",
+    "ground_truth": 2,
+    "sentiment": "NEGATIVE",
+    "score": 0.6967799663543701
+  },
+  {
+    "text": "i can feel myself gaining control over the damaged goods aspects of my personal security",
+    "ground_truth": 0,
+    "sentiment": "POSITIVE",
+    "score": 0.7483718395233154
+  },
+  {
+    "text": "i was that i bombed that first interview i left the second interview feeling pretty fan freaking tastic",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9992519021034241
+  },
+  {
+    "text": "i think its kind of taken us this long to build up a good inventory of sauces oils spices and other non perishables to feel like we have a chance at making something delicious without having to specifically go out and buy every single item in a recipe",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9937345385551453
+  },
+  {
+    "text": "i now feel i can advise other dads whose children will soon become teenagers it s not cool to pull up to your kid s high school to pick them up in a smelly jalopy with plants coming out the windows",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9973425269126892
+  },
+  {
+    "text": "i feel victimized by the drag on our country with heads in the sand traditionalists i hesitate to call them conservatives for fear of offending real honest to god conservatives who still think the world was created years ago and that stuff like skeletal remains are some kind of hoax",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9992795586585999
+  },
+  {
+    "text": "i would feel lucky to call any of the materials and kits on your site mine they are just beautifully curated",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9996734857559204
+  },
+  {
+    "text": "i have been for my bloods which proved the reason i was feeling so lethargic and rubbish was that i am low on iron so i have now been prescribed iron tablets",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9993976354598999
+  },
+  {
+    "text": "i have my own mind and i feel like my mind is dangerous to my life",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9864987134933472
+  },
+  {
+    "text": "i feel like i love everyone or at least i am compassionate toward others",
+    "ground_truth": 2,
+    "sentiment": "POSITIVE",
+    "score": 0.998123824596405
+  },
+  {
+    "text": "i feel as if i should be punished for neglecting you",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9989131689071655
+  },
+  {
+    "text": "i feel like it just doesnt capture the beauty of this lovely polish",
+    "ground_truth": 2,
+    "sentiment": "NEGATIVE",
+    "score": 0.999521017074585
+  },
+  {
+    "text": "i feel like i ve lost some of my main roots i feel less secure emotionally financially and socially",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9997813105583191
+  },
+  {
+    "text": "i feel like i should just bite the bullet and do it but every time i think about it i feel stressed because im not fully supported on my decisions",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9995183944702148
+  },
+  {
+    "text": "i know i have some obnoxiously immature sounding verbal tics and my voice is kind of nasal and i don t always come across like the sharpest tool in the shed especially when i m feeling awkward but there s knowing and there s knowing you know",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9949039220809937
+  },
+  {
+    "text": "id just had a terrible nightmare and was feeling a little disturbed",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9984912872314453
+  },
+  {
+    "text": "i didnt want to walk passed there just in case the customers feel disturbed",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9930129647254944
+  },
+  {
+    "text": "i want other sufferers to be able to find me in the hope that my battle can help them to feel that they are not alone",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.7327733635902405
+  },
+  {
+    "text": "i am feeling exceptionally reluctant to go to school tomorrow even though its monday and the timetable is pretty good",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.99397873878479
+  },
+  {
+    "text": "i am so festive this feels so delicious wheeeeee what a great night",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9997326731681824
+  },
+  {
+    "text": "i am not looking forward to being beaten down to feeling like a disappointment to my husband or to the emotional pain",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9640316367149353
+  },
+  {
+    "text": "im sick of feeling crappy",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9996507167816162
+  },
+  {
+    "text": "i feel like i almost convinced myself this is going to be the pattern",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.985936164855957
+  },
+  {
+    "text": "i also wear them when im wearing a dress that makes me feel slutty feels like those antique underwears but obviously a little bit more edgy or maybe a little bit more than a little bit",
+    "ground_truth": 2,
+    "sentiment": "NEGATIVE",
+    "score": 0.9943358302116394
+  },
+  {
+    "text": "i feel a perverse pride in my self control that i managed to stay where i was ordered and not reach for the tempting human flesh so close before us",
+    "ground_truth": 0,
+    "sentiment": "POSITIVE",
+    "score": 0.9771136045455933
+  },
+  {
+    "text": "i feel so impatient so easily annoyed so outraged by the blatant defiance that seems to be olivias most prominent characteristic these days",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9928646087646484
+  },
+  {
+    "text": "i was positively giddy when the kids left this morning after our very last official class of the year but now im feeling a little sad",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9937806725502014
+  },
+  {
+    "text": "i feel supportive of him i also cant help but feel jealous",
+    "ground_truth": 2,
+    "sentiment": "POSITIVE",
+    "score": 0.8989307880401611
+  },
+  {
+    "text": "i mainly like to text because i feel like i am so much more clever with the written word rather than the spoken",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.8733166456222534
+  },
+  {
+    "text": "i seriouly feel i am not being respected i dont have my privacy i am being ordered around",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9994307160377502
+  },
+  {
+    "text": "i said in the words of a devotee that i feel relieved when i hear the your title as deen bandhu as i am the most fallen person but i become afraid at your title of uplifter of devotees as i don t consider myself to be a true devotee and hence unworthy to benefit from the aspect of your personality",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9978118538856506
+  },
+  {
+    "text": "i personalities that can feel pain and suffering",
+    "ground_truth": 0,
+    "sentiment": "POSITIVE",
+    "score": 0.9154305458068848
+  },
+  {
+    "text": "i guess i would feel more like joseph with walt trusting me to care for mother and over the finances which he did six months before he died there are times i want to defend my self but god makes me be quiet",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9845735430717468
+  },
+  {
+    "text": "i was warming up starting feeling a little lethargic",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9864649772644043
+  },
+  {
+    "text": "i feel excelent but sometimes theres just nothing to do especially since im not really keen on video games anymore i watch a bit of anime and some movies but theres just got to be more in my life",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9764382243156433
+  },
+  {
+    "text": "i wonder if this is what master is feeling i am r wanting and eager to please and i am master who could very much enjoy his my attentions but won t because it is wrong as i he has no desire to return his my affections",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.7889119982719421
+  },
+  {
+    "text": "im feeling a little bit more positive now as things were quite hard at first as my savings were eaten up quickly with costs and i didnt want to become a burden to my boyfriend but weve come out the other end and im feeling brighter and more inspired about things to come",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9971913695335388
+  },
+  {
+    "text": "im just feeling rather sentimental right now and just have to say i feel so lucky to be maxs mom",
+    "ground_truth": 0,
+    "sentiment": "POSITIVE",
+    "score": 0.9993836879730225
+  },
+  {
+    "text": "i make myself show up and feel isolated in the crowd ill know i was wrong about the anti social feeling",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.5151938796043396
+  },
+  {
+    "text": "ive learned how to turn off all my emotions more and more and i often find myself feeling completely blank while my mother is crying continuously over my suicidalness",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9991449117660522
+  },
+  {
+    "text": "i feel loyal to style",
+    "ground_truth": 2,
+    "sentiment": "POSITIVE",
+    "score": 0.999667763710022
+  },
+  {
+    "text": "i can understand that you may feel youd rather not do your bit for the vulnerable and homeless in london in that precise way",
+    "ground_truth": 4,
+    "sentiment": "POSITIVE",
+    "score": 0.9746553301811218
+  },
+  {
+    "text": "i can finally stop feeling listless and like a waste of space",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9997757077217102
+  },
+  {
+    "text": "i know im feeling agitated as it is from a side effect of the too high dose",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.9991118311882019
+  },
+  {
+    "text": "i do feel a shift in me to being more positive",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9823848605155945
+  },
+  {
+    "text": "i am feeling brave enough",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9998599290847778
+  },
+  {
+    "text": "fear of thief",
+    "ground_truth": 4,
+    "sentiment": "POSITIVE",
+    "score": 0.8704613447189331
+  },
+  {
+    "text": "i feel clever nov",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9998829364776611
+  },
+  {
+    "text": "i always spend more money there than i mean to and feel dissatisfied when i exit the store",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9899473786354065
+  },
+  {
+    "text": "im feeling really quite angry",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.999254047870636
+  },
+  {
+    "text": "i feel kerry didnt do by supporting civil unions and gay equality",
+    "ground_truth": 2,
+    "sentiment": "NEGATIVE",
+    "score": 0.9988797307014465
+  },
+  {
+    "text": "i feel really ashamed",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9993544220924377
+  },
+  {
+    "text": "i feel to have these amazing people in my life",
+    "ground_truth": 5,
+    "sentiment": "POSITIVE",
+    "score": 0.9998770952224731
+  },
+  {
+    "text": "i finally left feeling judged and ridiculed because i am intelligent",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9218815565109253
+  },
+  {
+    "text": "i is starting to feel a bit insulted by this stranger",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.997377872467041
+  },
+  {
+    "text": "i have many days where i feel hopeless today the light at the end of my yellow brick road was shining just a little brighter",
+    "ground_truth": 0,
+    "sentiment": "POSITIVE",
+    "score": 0.6843433976173401
+  },
+  {
+    "text": "i actually feel sorrowful",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.742121696472168
+  },
+  {
+    "text": "i see women wearing boots i feel envious that i want to curse them",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.891090452671051
+  },
+  {
+    "text": "i will feel what i feel and tell you and together we will apologize and make up and keep loving each other to bits and bits",
+    "ground_truth": 2,
+    "sentiment": "POSITIVE",
+    "score": 0.999792754650116
+  },
+  {
+    "text": "i go up to her and i say feeling very impressed with myself youre naomi klein right",
+    "ground_truth": 5,
+    "sentiment": "POSITIVE",
+    "score": 0.9998332262039185
+  },
+  {
+    "text": "i began to feel each of my senses dull until the cold black unconsciousness over came me",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9992347955703735
+  },
+  {
+    "text": "i suspect feel less than fond in private",
+    "ground_truth": 2,
+    "sentiment": "NEGATIVE",
+    "score": 0.997174859046936
+  },
+  {
+    "text": "i was so honoured that this young woman felt comfortable enough to ask me i had kind of a faux hawk thing going on back then so i must have looked dykey enough for her to feel safe talking to me",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9810450077056885
+  },
+  {
+    "text": "i do have to wonder when you re cast as a caveman and you re told you re perfect for the part do you feel insulted or complimented",
+    "ground_truth": 3,
+    "sentiment": "POSITIVE",
+    "score": 0.9987248778343201
+  },
+  {
+    "text": "i feel convinced plus so many diverse price tags that i feel sure everyone should come up with the funds to have their plot to be lighted up relatively economically",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.5745723247528076
+  },
+  {
+    "text": "i feel empty when the baby isnt there",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9991683959960938
+  },
+  {
+    "text": "i stopped feeling so exhausted a href http provokingbeauty",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9988351464271545
+  },
+  {
+    "text": "im feeling font friendly",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9986782670021057
+  },
+  {
+    "text": "i had my hand on my beads consciously breathing consciously working to feel calm about my list of things to accomplish that afternoon",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.985821545124054
+  },
+  {
+    "text": "i always feel intimidated by other people especially when they always compare me to other people ever since i was young",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.9851958751678467
+  },
+  {
+    "text": "i be made to feel rotten",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9997863173484802
+  },
+  {
+    "text": "i started feeling hostile and i am checking my hemorrhoids",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9890286922454834
+  },
+  {
+    "text": "i love wearing new shoes i just feel so glamourous and when i get a pair of designer shoes i love the box and all the trimmings that come with them",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.99943608045578
+  },
+  {
+    "text": "i know about have to do largely with the fact that any feelings romantic or sexual i have successfully hidden from myself",
+    "ground_truth": 2,
+    "sentiment": "NEGATIVE",
+    "score": 0.9768175482749939
+  },
+  {
+    "text": "i just love the feeling of something warmly hugging you and feeling so precious and small precious to someone something",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9998753070831299
+  },
+  {
+    "text": "im feeling far more mellow than normal",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9945110082626343
+  },
+  {
+    "text": "i became more dismayed as i studied what people were wearing and started feeling like though some of the outfits were gorgeous they were bought that way",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9821333289146423
+  },
+  {
+    "text": "i dont want to wax them off and draw them in or anything i just need to not have a unibrow and maybe get rid of the few spare hairs creeping down toward my eyelid if im feeling brave",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9931414723396301
+  },
+  {
+    "text": "im feeling lucky width li style border px list style outside margin px px",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.6114447712898254
+  },
+  {
+    "text": "i recall those high school feelings and the longing with which i watched the olympic runners i feel st",
+    "ground_truth": 2,
+    "sentiment": "POSITIVE",
+    "score": 0.9923101663589478
+  },
+  {
+    "text": "i woke up feeling confident and watched the bodypump dvd to gather some coaching tips and compulsory cues",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9363024234771729
+  },
+  {
+    "text": "i didnt say was that strong feelings always make me skeptical at first",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.969096839427948
+  },
+  {
+    "text": "i want to talk to you about but with the limited time we have on the phone and with our current arrangment i feel hesitant to bring it up",
+    "ground_truth": 4,
+    "sentiment": "NEGATIVE",
+    "score": 0.9974721074104309
+  },
+  {
+    "text": "i am beginning to feel that theres a good chance i might pass",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9872949719429016
+  },
+  {
+    "text": "i feel like i have a little more control and can help sweet pea better if i know what is ahead",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.8282297849655151
+  },
+  {
+    "text": "i feel like i m on the receiving end of a violent attack",
+    "ground_truth": 3,
+    "sentiment": "NEGATIVE",
+    "score": 0.9991219639778137
+  },
+  {
+    "text": "i feel it is worthwhile to document it for people who are not familiar with batch files",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9997022747993469
+  },
+  {
+    "text": "i and i are feeling especially thankful for so many small blessings in our life right now",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.999819815158844
+  },
+  {
+    "text": "i am hoping the weatherman is right with his forecast of stay at home dont venture out rain for tomorrow i am feeling all kind of creative",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.9989269375801086
+  },
+  {
+    "text": "i feel like im just on the edge in this microcosm one more awkward moment or missed party and id be on the outside",
+    "ground_truth": 0,
+    "sentiment": "NEGATIVE",
+    "score": 0.9986868500709534
+  },
+  {
+    "text": "i feel a bit funny actually",
+    "ground_truth": 5,
+    "sentiment": "POSITIVE",
+    "score": 0.9996746778488159
+  },
+  {
+    "text": "i have learnt nothing else in the last two years it is that it s best to feel my way by trusting my instincts",
+    "ground_truth": 1,
+    "sentiment": "NEGATIVE",
+    "score": 0.9810931086540222
+  },
+  {
+    "text": "i am feeling is also a blossoming eager anxiety",
+    "ground_truth": 1,
+    "sentiment": "POSITIVE",
+    "score": 0.987743616104126
+  }
+]
