@@ -46,7 +46,6 @@ class TrackioExperimentTracker(BaseExperimentTracker):
     @property
     def config(self) -> TrackioExperimentTrackerConfig:
         """Returns the Trackio config."""
-
         return cast(
             TrackioExperimentTrackerConfig,
             self._config,
@@ -57,7 +56,6 @@ class TrackioExperimentTracker(BaseExperimentTracker):
         self,
     ) -> Type[TrackioExperimentTrackerSettings]:
         """Settings class for Trackio."""
-
         return TrackioExperimentTrackerSettings
 
     def prepare_step_run(
@@ -65,11 +63,8 @@ class TrackioExperimentTracker(BaseExperimentTracker):
         info: "StepRunInfo",
     ) -> None:
         """Configure a Trackio run."""
-
         if self.config.hf_token:
-            os.environ[HF_TOKEN_ENV_VAR] = (
-                self.config.hf_token
-            )
+            os.environ[HF_TOKEN_ENV_VAR] = self.config.hf_token
 
         settings = cast(
             TrackioExperimentTrackerSettings,
@@ -77,8 +72,7 @@ class TrackioExperimentTracker(BaseExperimentTracker):
         )
 
         trackio_run_name = (
-            settings.run_name
-            or f"{info.run_name}_{info.pipeline_step_name}"
+            settings.run_name or f"{info.run_name}_{info.pipeline_step_name}"
         )
 
         self._initialize_trackio(
@@ -111,7 +105,6 @@ class TrackioExperimentTracker(BaseExperimentTracker):
         info: "StepRunInfo",
     ) -> Dict[str, "MetadataType"]:
         """Get metadata after a step ran."""
-
         run_url: Optional[str] = None
         run_name: Optional[str] = None
 
@@ -134,29 +127,21 @@ class TrackioExperimentTracker(BaseExperimentTracker):
                 None,
             )
 
-        default_run_name = (
-            f"{info.run_name}_{info.pipeline_step_name}"
-        )
+        default_run_name = f"{info.run_name}_{info.pipeline_step_name}"
 
         settings = cast(
             TrackioExperimentTrackerSettings,
             self.get_settings(info),
         )
 
-        run_name = (
-            run_name
-            or settings.run_name
-            or default_run_name
-        )
+        run_name = run_name or settings.run_name or default_run_name
 
         metadata: Dict[str, "MetadataType"] = {
             "trackio_run_name": run_name,
         }
 
         if run_url:
-            metadata[
-                METADATA_EXPERIMENT_TRACKER_URL
-            ] = Uri(run_url)
+            metadata[METADATA_EXPERIMENT_TRACKER_URL] = Uri(run_url)
 
         return metadata
 
@@ -166,7 +151,6 @@ class TrackioExperimentTracker(BaseExperimentTracker):
         step_failed: bool,
     ) -> None:
         """Finalize the Trackio run."""
-
         settings = cast(
             TrackioExperimentTrackerSettings,
             self.get_settings(info),
@@ -174,16 +158,12 @@ class TrackioExperimentTracker(BaseExperimentTracker):
 
         try:
             if settings.auto_sync:
-                logger.info(
-                    "Syncing Trackio run."
-                )
+                logger.info("Syncing Trackio run.")
 
                 trackio.sync()
 
             if settings.auto_freeze:
-                logger.info(
-                    "Freezing Trackio dashboard."
-                )
+                logger.info("Freezing Trackio dashboard.")
 
                 trackio.freeze()
 
@@ -208,11 +188,8 @@ class TrackioExperimentTracker(BaseExperimentTracker):
         run_name: str,
     ) -> None:
         """Initialize a Trackio run."""
-
         logger.info(
-            "Initializing Trackio with "
-            "project=%s, backend=%s, "
-            "run_name=%s.",
+            "Initializing Trackio with project=%s, backend=%s, run_name=%s.",
             self.config.project_name,
             self.config.backend,
             run_name,
@@ -225,20 +202,14 @@ class TrackioExperimentTracker(BaseExperimentTracker):
 
         config = {
             "zenml": {
-                "pipeline_name": (
-                    info.pipeline.name
-                ),
-                "step_name": (
-                    info.pipeline_step_name
-                ),
+                "pipeline_name": (info.pipeline.name),
+                "step_name": (info.pipeline_step_name),
                 "run_name": info.run_name,
             }
         }
 
         init_kwargs = {
-            "project": (
-                self.config.project_name
-            ),
+            "project": (self.config.project_name),
             "name": run_name,
             "config": config,
             "dir": self.config.local_dir,
@@ -246,33 +217,24 @@ class TrackioExperimentTracker(BaseExperimentTracker):
         }
 
         if self.config.tracking_uri:
-            init_kwargs["tracking_uri"] = (
-                self.config.tracking_uri
-            )
+            init_kwargs["tracking_uri"] = self.config.tracking_uri
 
         if self.config.backend == "static":
             init_kwargs["sdk"] = "static"
 
         if self.config.hf_space:
-            init_kwargs["space"] = (
-                self.config.hf_space
-            )
+            init_kwargs["space"] = self.config.hf_space
 
         # ---------------------------------------------
         # Filter unsupported SDK arguments
         # ---------------------------------------------
 
-        valid_params = inspect.signature(
-            trackio.init
-        ).parameters
+        valid_params = inspect.signature(trackio.init).parameters
 
         filtered_kwargs = {
             key: value
             for key, value in init_kwargs.items()
-            if (
-                key in valid_params
-                and value is not None
-            )
+            if (key in valid_params and value is not None)
         }
 
         logger.info(
@@ -282,7 +244,4 @@ class TrackioExperimentTracker(BaseExperimentTracker):
 
         trackio.init(**filtered_kwargs)
 
-        logger.info(
-            "Trackio run initialized "
-            "successfully."
-        )
+        logger.info("Trackio run initialized successfully.")
