@@ -64,9 +64,7 @@ class TrackioExperimentTracker(BaseExperimentTracker):
     ) -> None:
         """Configure a Trackio run."""
         if self.config.hf_token:
-            os.environ[HF_TOKEN_ENV_VAR] = (
-                self.config.hf_token
-            )
+            os.environ[HF_TOKEN_ENV_VAR] = self.config.hf_token
 
         settings = cast(
             TrackioExperimentTrackerSettings,
@@ -160,16 +158,12 @@ class TrackioExperimentTracker(BaseExperimentTracker):
 
         try:
             if settings.auto_sync:
-                logger.info(
-                    "Syncing Trackio run."
-                )
+                logger.info("Syncing Trackio run.")
 
                 trackio.sync()
 
             if settings.auto_freeze:
-                logger.info(
-                    "Freezing Trackio dashboard."
-                )
+                logger.info("Freezing Trackio dashboard.")
 
                 trackio.freeze()
 
@@ -229,9 +223,7 @@ class TrackioExperimentTracker(BaseExperimentTracker):
             init_kwargs["sdk"] = "static"
 
         if self.config.hf_space:
-            init_kwargs["space"] = (
-                self.config.hf_space
-            )
+            init_kwargs["space"] = self.config.hf_space
 
         # ---------------------------------------------
         # Filter unsupported SDK arguments
