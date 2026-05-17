@@ -48,9 +48,7 @@ class TrackioExperimentTrackerSettings(BaseSettings):
 
     tags: List[str] = Field(
         default_factory=list,
-        description=(
-            "Tags associated with the Trackio run."
-        ),
+        description=("Tags associated with the Trackio run."),
     )
 
     resume: str = Field(
@@ -64,34 +62,24 @@ class TrackioExperimentTrackerSettings(BaseSettings):
 
     auto_sync: bool = Field(
         default=False,
-        description=(
-            "Automatically sync Trackio runs "
-            "after completion."
-        ),
+        description=("Automatically sync Trackio runs after completion."),
     )
 
     auto_freeze: bool = Field(
         default=False,
         description=(
-            "Automatically freeze Trackio dashboards "
-            "after completion."
+            "Automatically freeze Trackio dashboards after completion."
         ),
     )
 
     log_system_metrics: bool = Field(
         default=True,
-        description=(
-            "Whether system metrics should be "
-            "logged automatically."
-        ),
+        description=("Whether system metrics should be logged automatically."),
     )
 
     log_gpu_metrics: bool = Field(
         default=True,
-        description=(
-            "Whether GPU telemetry should be "
-            "logged automatically."
-        ),
+        description=("Whether GPU telemetry should be logged automatically."),
     )
 
 
@@ -103,9 +91,7 @@ class TrackioExperimentTrackerConfig(
 
     project_name: str = Field(
         default="zenml",
-        description=(
-            "Trackio project name."
-        ),
+        description=("Trackio project name."),
     )
 
     tracking_uri: Optional[str] = Field(
@@ -128,9 +114,7 @@ class TrackioExperimentTrackerConfig(
 
     local_dir: str = Field(
         default="./trackio",
-        description=(
-            "Local directory used for Trackio storage."
-        ),
+        description=("Local directory used for Trackio storage."),
     )
 
     hf_token: Optional[str] = SecretField(
@@ -193,9 +177,7 @@ class TrackioExperimentTrackerConfig(
     )
 
 
-class TrackioExperimentTrackerFlavor(
-    BaseExperimentTrackerFlavor
-):
+class TrackioExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
     """Flavor for the Trackio experiment tracker."""
 
     @property
