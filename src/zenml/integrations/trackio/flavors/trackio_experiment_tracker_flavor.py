@@ -183,6 +183,7 @@ class TrackioExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
     @property
     def name(self) -> str:
         """Name of the flavor.
+
         Returns:
             The flavor name.
         """
@@ -191,6 +192,7 @@ class TrackioExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
     @property
     def docs_url(self) -> Optional[str]:
         """A URL pointing to flavor documentation.
+
         Returns:
             Flavor docs URL.
         """
@@ -199,6 +201,7 @@ class TrackioExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
     @property
     def sdk_docs_url(self) -> Optional[str]:
         """A URL pointing to SDK documentation.
+
         Returns:
             Flavor SDK docs URL.
         """
@@ -207,6 +210,7 @@ class TrackioExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
     @property
     def logo_url(self) -> str:
         """URL for the Trackio logo.
+
         Returns:
             Logo URL.
         """
@@ -221,6 +225,7 @@ class TrackioExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
         self,
     ) -> Type[TrackioExperimentTrackerConfig]:
         """Returns Trackio config class.
+
         Returns:
             The Trackio config class.
         """
@@ -231,6 +236,7 @@ class TrackioExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
         self,
     ) -> Type["TrackioExperimentTracker"]:
         """Implementation class for this flavor.
+        
         Returns:
             The implementation class.
         """
