@@ -12,6 +12,9 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Initialization for the trackio integration.
+
+The Trackio integration currently enables you to use Trackio tracking as a
+convenient way to visualize your experiment runs within the local Trackio UI and HF space.
 """
 from typing import List, Type
 
