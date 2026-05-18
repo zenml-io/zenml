@@ -11,9 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization for the wandb integration.
-The wandb integrations currently enables you to use wandb tracking as a
-convenient way to visualize your experiment runs within the wandb ui.
+"""Initialization for the trackio integration.
 """
 from typing import List, Type
 
@@ -32,7 +30,7 @@ class TrackioIntegration(Integration):
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
-        """Declare the stack component flavors for the Weights and Biases integration.
+        """Declare the stack component flavors for the Trackio integration.
         Returns:
             List of stack component flavors for this integration.
         """
