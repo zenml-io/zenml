@@ -247,11 +247,11 @@ stream_broker_implementation_source: {{ .ZenML.streaming.streamBrokerImplementat
 {{- if .ZenML.streaming.heartbeatSeconds }}
 streaming_heartbeat_seconds: {{ .ZenML.streaming.heartbeatSeconds | quote }}
 {{- end }}
-{{- if .ZenML.streaming.maxConsumersPerStream }}
-streaming_max_consumers_per_stream: {{ .ZenML.streaming.maxConsumersPerStream | quote }}
+{{- if .ZenML.streaming.maxSubscribersPerStream }}
+streaming_max_subscribers_per_stream: {{ .ZenML.streaming.maxSubscribersPerStream | quote }}
 {{- end }}
-{{- if .ZenML.streaming.hubIdleGraceSeconds }}
-streaming_hub_idle_grace_seconds: {{ .ZenML.streaming.hubIdleGraceSeconds | quote }}
+{{- if .ZenML.streaming.broadcasterIdleGraceSeconds }}
+streaming_broadcaster_idle_grace_seconds: {{ .ZenML.streaming.broadcasterIdleGraceSeconds | quote }}
 {{- end }}
 {{- end }}
 {{- if .ZenML.auth.jwtTokenAlgorithm }}

@@ -65,7 +65,6 @@ from zenml.steps.utils import (
     parse_return_type_annotations,
     resolve_type_annotation,
 )
-from zenml.streams.publishing import flush as flush_stream_publisher
 from zenml.utils import (
     env_utils,
     exception_utils,
@@ -93,18 +92,6 @@ if TYPE_CHECKING:
 
 
 logger = get_logger(__name__)
-
-_STREAM_FLUSH_TIMEOUT_SECONDS = 2.0
-
-
-def _flush_streams_at_step_end() -> None:
-    """Drain pending stream events; warn (don't raise) on timeout."""
-    if not flush_stream_publisher(timeout=_STREAM_FLUSH_TIMEOUT_SECONDS):
-        logger.warning(
-            "Stream publisher did not drain within %.1fs at step end; "
-            "some events may not have reached the server.",
-            _STREAM_FLUSH_TIMEOUT_SECONDS,
-        )
 
 
 class StepRunner:
@@ -305,7 +292,6 @@ class StepRunner:
                     raise step_exception
                 finally:
                     heartbeat_worker.stop()
-                    _flush_streams_at_step_end()
                     step_run_metadata = self._stack.get_step_run_metadata(
                         info=step_run_info,
                     )

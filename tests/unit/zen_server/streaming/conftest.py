@@ -11,8 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Client-side API for live event streaming inside pipelines."""
+"""Shared fixtures for streaming tests."""
 
-from zenml.streams.publishing import flush, publish
+import uuid
 
-__all__ = ["flush", "publish"]
+import pytest
+
+from zenml.models import StreamEvent
+
+
+@pytest.fixture
+def anyio_backend() -> str:
+    """Pin async tests to the asyncio backend."""
+    return "asyncio"
+
+
+def make_event(run_id: uuid.UUID, kind: str = "token") -> StreamEvent:
+    """Build a `StreamEvent` with a default payload for test use."""
+    return StreamEvent(pipeline_run_id=run_id, kind=kind, payload={"v": 1})

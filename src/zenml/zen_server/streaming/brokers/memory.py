@@ -11,58 +11,118 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""In-memory StreamBroker. Single-process only."""
+"""In-memory broker implementation for development purposes."""
 
 import asyncio
-import os
+import re
 from collections import deque
 from typing import Deque, Dict, List, Optional, Tuple
 
-from zenml.zen_server.streaming.broker import (
-    BrokerEvent,
+from pydantic import Field
+
+from zenml.utils.env_utils import ConfigBase
+from zenml.zen_server.streaming.brokers.base import (
+    BrokerEntry,
     StreamBroker,
-    StreamTruncatedError,
 )
 
-_DEFAULT_MAX_LEN = 10_000
+_CURSOR_PATTERN = re.compile(r"^\d+$")
+
+ENV_ZENML_IN_MEMORY_BROKER_PREFIX = "ZENML_IN_MEMORY_BROKER_"
+
+
+class InMemoryBrokerSettings(ConfigBase):
+    """Configuration for the in-memory broker."""
+
+    @staticmethod
+    def prefixes() -> List[str]:
+        """Env var prefixes.
+
+        Returns:
+            Env var prefixes.
+        """
+        return [ENV_ZENML_IN_MEMORY_BROKER_PREFIX]
+
+    max_len: int = Field(
+        default=10_000,
+        ge=1,
+        description="Maximum entries retained per stream. Entries older "
+        "than this cap are dropped without notice to consumers.",
+    )
 
 
 class _Stream:
-    """Per-stream state: capped log + a notify condvar."""
+    """Stream handle."""
 
     def __init__(self, max_len: int) -> None:
+        """Initialize an empty stream with a capped entry log.
+
+        Args:
+            max_len: Maximum number of entries retained.
+        """
         self.entries: Deque[Tuple[int, bytes]] = deque(maxlen=max_len)
         self.next_id = 1
         self.condition = asyncio.Condition()
 
     @property
-    def oldest_id(self) -> Optional[int]:
-        return self.entries[0][0] if self.entries else None
+    def latest_id(self) -> Optional[int]:
+        """The ID of the latest retained entry, or None if empty.
+
+        Returns:
+            The latest retained entry ID, or None when no entries are retained.
+        """
+        return self.entries[-1][0] if self.entries else None
 
 
 class InMemoryBroker(StreamBroker):
-    """Single-process broker. Only works for single-replica deployments."""
+    """In-memory broker for development purposes."""
 
-    def __init__(self, max_len: Optional[int] = None) -> None:
-        """Initialize the broker; optionally override the per-stream cap."""
-        self._max_len = max_len or int(
-            os.environ.get("ZENML_IN_MEMORY_BROKER_MAX_LEN", _DEFAULT_MAX_LEN)
-        )
+    def __init__(
+        self, settings: Optional[InMemoryBrokerSettings] = None
+    ) -> None:
+        """Initialize the broker, loading settings from the env if absent.
+
+        Args:
+            settings: Pre-built settings. Loaded from the environment when None.
+        """
+        self._settings = settings or InMemoryBrokerSettings.load_from_env()
+        # Streams are retained for the lifetime of the process. Running this
+        # class in long-running processes like a production server will cause
+        # OOM errors.
         self._streams: Dict[str, _Stream] = {}
         self._lock = asyncio.Lock()
 
     async def _get_or_create(self, stream_key: str) -> _Stream:
+        """Get or create stream for the given key.
+
+        Args:
+            stream_key: The key to look up or create the stream for.
+
+        Returns:
+            The stream for the given key.
+        """
+        if stream := self._streams.get(stream_key):
+            return stream
+
         async with self._lock:
-            stream = self._streams.get(stream_key)
-            if stream is None:
-                stream = _Stream(self._max_len)
-                self._streams[stream_key] = stream
+            if stream := self._streams.get(stream_key):
+                return stream
+            stream = _Stream(self._settings.max_len)
+            self._streams[stream_key] = stream
             return stream
 
     async def publish(
         self, stream_key: str, payloads: List[bytes]
     ) -> List[str]:
-        """Append payloads to a stream; return assigned ids."""
+        """Append payloads to a stream.
+
+        Args:
+            stream_key: The stream to append to.
+            payloads: The payloads to append.
+
+        Returns:
+            The IDs assigned to the appended entries.
+        """
         stream = await self._get_or_create(stream_key)
         ids: List[str] = []
         async with stream.condition:
@@ -78,38 +138,35 @@ class InMemoryBroker(StreamBroker):
         self,
         stream_key: str,
         from_id: Optional[str],
-        *,
         max_count: int = 256,
         block_ms: int = 1000,
-    ) -> List[BrokerEvent]:
-        """Read events strictly after `from_id`, blocking up to `block_ms`."""
+    ) -> List[BrokerEntry]:
+        """Read events strictly after `from_id`, blocking up to `block_ms`.
+
+        Args:
+            stream_key: The stream to read from.
+            from_id: Cursor to read strictly after. If None, read from
+                the beginning.
+            max_count: Soft cap on entries returned.
+            block_ms: Max time to wait for new entries. `0` is non-blocking.
+
+        Returns:
+            Events strictly after `from_id`, or empty on timeout.
+        """
         stream = await self._get_or_create(stream_key)
         cursor = int(from_id) if from_id is not None else 0
 
-        # Cursor pointing at a position that's been trimmed off the cap.
-        # An empty stream is fine — we just have nothing yet.
-        if (
-            stream.entries
-            and stream.oldest_id is not None
-            and cursor < stream.oldest_id - 1
-        ):
-            raise StreamTruncatedError(
-                f"Cursor {cursor} is older than oldest retained "
-                f"id {stream.oldest_id} on stream {stream_key!r}"
-            )
-
-        def _drain() -> List[BrokerEvent]:
-            out: List[BrokerEvent] = []
+        def _drain() -> List[BrokerEntry]:
+            out: List[BrokerEntry] = []
             for entry_id, payload in stream.entries:
                 if entry_id > cursor:
-                    out.append(BrokerEvent(id=str(entry_id), payload=payload))
+                    out.append(BrokerEntry(id=str(entry_id), payload=payload))
                     if len(out) >= max_count:
                         break
             return out
 
-        # Drain + wait both under the condition so a publish that fires
-        # `notify_all` between an empty drain and our wait isn't missed
-        # (otherwise we sleep the full block_ms before noticing).
+        # Drain + wait under the condition so a publish between an empty
+        # drain and the wait isn't missed.
         async with stream.condition:
             events = _drain()
             if events:
@@ -123,31 +180,57 @@ class InMemoryBroker(StreamBroker):
             return _drain()
 
     async def latest_id(self, stream_key: str) -> Optional[str]:
-        """Return the most recent id, or `None` if the stream is empty.
+        """Return the most recent id, or `None` if empty/unknown.
 
-        Does NOT create a stream record for unknown keys — bare reads
-        (e.g., the startup connectivity probe) should not leave empty
-        streams behind.
+        Args:
+            stream_key: The stream to inspect.
+
+        Returns:
+            The latest entry id, or None if empty or unknown.
         """
         async with self._lock:
             stream = self._streams.get(stream_key)
-        if stream is None or not stream.entries:
+
+        if stream is None or stream.latest_id is None:
             return None
-        return str(stream.entries[-1][0])
+
+        return str(stream.latest_id)
 
     async def delete_stream(self, stream_key: str) -> None:
-        """Forget a stream; idempotent."""
+        """Delete a stream.
+
+        Args:
+            stream_key: The key of the stream to delete.
+        """
         async with self._lock:
             stream = self._streams.pop(stream_key, None)
+
         if stream is not None:
             async with stream.condition:
                 stream.condition.notify_all()
 
     async def close(self) -> None:
-        """Drop all streams and wake any waiting readers."""
+        """Delete all streams and wake any waiting readers."""
         async with self._lock:
             streams = list(self._streams.values())
             self._streams.clear()
         for stream in streams:
             async with stream.condition:
                 stream.condition.notify_all()
+
+    def validate_cursor(self, cursor: str) -> None:
+        """Validate that `cursor` is a non-negative decimal-digit string.
+
+        `int()` is too permissive (accepts whitespace, leading `+`,
+        underscores, etc.); we want exact digit-only round-trip.
+
+        Args:
+            cursor: Raw cursor string from the client.
+
+        Raises:
+            ValueError: If `cursor` is not a non-negative integer.
+        """
+        if not _CURSOR_PATTERN.match(cursor):
+            raise ValueError(
+                f"cursor {cursor!r} is not a non-negative integer"
+            )

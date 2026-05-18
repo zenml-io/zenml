@@ -146,11 +146,7 @@ FROM common-runtime AS local-runtime
 
 # Run pip install again to install the source code in the virtual environment
 # in editable mode
-<<<<<<< HEAD
-RUN pip install --no-deps --no-cache -e .[server,otel,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]
-=======
-RUN pip install --no-deps --no-cache -e .[server,server-streaming,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]
->>>>>>> a045794d46 (Part 2: Redis)
+RUN pip install --no-deps --no-cache -e .[server,server-streaming,otel,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]
 
 EXPOSE 8080
 
@@ -162,11 +158,7 @@ FROM common-runtime AS runtime
 
 # Run pip install again to install the source code in the virtual environment
 # and then remove the sources
-<<<<<<< HEAD
-RUN pip install --no-deps --no-cache .[server,otel,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex] \
-=======
-RUN pip install --no-deps --no-cache .[server,server-streaming,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex] \
->>>>>>> a045794d46 (Part 2: Redis)
+RUN pip install --no-deps --no-cache .[server,server-streaming,otel,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex] \
     && rm -rf src README.md pyproject.toml
 
 EXPOSE 8080

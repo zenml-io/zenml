@@ -11,129 +11,72 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Tests for SSE wire framing and event encoding."""
+"""Tests for SSE framing and frame mapping."""
 
 import asyncio
 import uuid
 
 import pytest
-from fastapi import HTTPException
 
+from tests.unit.zen_server.streaming.conftest import make_event
 from zenml.models import StreamEvent
-from zenml.zen_server.streaming.broker import BrokerEvent
-from zenml.zen_server.streaming.hub import EndMarker, GapMarker
-from zenml.zen_server.streaming.sse import (
-    EVENT_PAYLOAD_BYTES_MAX,
-    EventFilter,
-    _frame_for,
-    encode_event_for_publish,
-    format_sse_frame,
-    stale_run_close_response,
-)
-from zenml.zen_server.streaming.wire import (
+from zenml.zen_server.streaming.brokers.base import BrokerEntry
+from zenml.zen_server.streaming.brokers.frames import (
     EndFrame,
     EventFrame,
     encode_frame,
 )
-
-
-def _ev(run_id: uuid.UUID, kind: str = "token") -> StreamEvent:
-    return StreamEvent(pipeline_run_id=run_id, kind=kind, payload={"v": 1})
+from zenml.zen_server.streaming.sse import (
+    EventFilter,
+    _frame_for,
+    format_sse_frame,
+    stale_run_close_response,
+)
+from zenml.zen_server.streaming.types import (
+    EndMarker,
+    GapMarker,
+    GapReason,
+)
 
 
 def test_format_sse_frame_basic():
-    """Format sse frame basic."""
+    """A basic frame emits `event:` and `data:` lines with a blank trailer."""
     frame = format_sse_frame("event", '{"a":1}')
     assert frame == b'event: event\ndata: {"a":1}\n\n'
 
 
 def test_format_sse_frame_with_id():
-    """Format sse frame with id."""
+    """An `event_id` is emitted as an `id:` line before the event/data lines."""
     frame = format_sse_frame("event", '{"a":1}', event_id="42")
     assert frame.startswith(b"id: 42\n")
 
 
 def test_format_sse_frame_rejects_newlines_in_kind():
-    """Format sse frame rejects newlines in kind."""
+    """Newlines in the event name are rejected to prevent frame smuggling."""
     with pytest.raises(ValueError):
         format_sse_frame("bad\nkind", "{}")
 
 
 def test_format_sse_frame_rejects_newlines_in_data():
-    """Format sse frame rejects newlines in data."""
+    """Newlines in the data payload are rejected to prevent frame smuggling."""
     with pytest.raises(ValueError):
         format_sse_frame("event", "{\n}")
-
-
-def test_encode_event_for_publish_rejects_run_id_mismatch():
-    """Encode event for publish rejects run id mismatch."""
-    event = _ev(uuid.uuid4())
-    with pytest.raises(HTTPException) as exc:
-        encode_event_for_publish(event, uuid.uuid4())
-    assert exc.value.status_code == 400
-
-
-def test_encode_event_for_publish_wraps_in_event_frame():
-    """Producer payloads land on the broker tagged as `EventFrame`."""
-    run_id = uuid.uuid4()
-    event = _ev(run_id, kind="custom")
-    payload = encode_event_for_publish(event, run_id)
-    from zenml.zen_server.streaming.wire import decode_frame
-
-    frame = decode_frame(payload)
-    assert isinstance(frame, EventFrame)
-    assert frame.event.kind == "custom"
-
-
-def test_encode_event_for_publish_rejects_envelope_overage():
-    """A payload that blows the wire envelope cap returns 413.
-
-    The model no longer rejects oversize payloads at construction
-    (that check lives on `streams.publishing.publish` to avoid re-encoding
-    on server-side deserialization). The wire envelope check is the
-    server-side authoritative gate.
-    """
-    run_id = uuid.uuid4()
-    # Bypass any local validation and forge a payload that clearly
-    # exceeds the envelope cap.
-    bloat_payload = {"v": "x" * (EVENT_PAYLOAD_BYTES_MAX * 2)}
-    forged = StreamEvent.model_construct(
-        pipeline_run_id=run_id,
-        kind="big",
-        payload=bloat_payload,
-    )
-    with pytest.raises(HTTPException) as exc:
-        encode_event_for_publish(forged, run_id)
-    assert exc.value.status_code == 413
-
-
-def test_encode_event_for_publish_returns_bytes():
-    """Producer payload is bytes the wire decoder can parse back."""
-    from zenml.zen_server.streaming.wire import decode_frame
-
-    run_id = uuid.uuid4()
-    event = _ev(run_id)
-    payload = encode_event_for_publish(event, run_id)
-    frame = decode_frame(payload)
-    assert isinstance(frame, EventFrame)
-    assert frame.event.pipeline_run_id == run_id
-    assert frame.event.kind == "token"
 
 
 _NO_FILTER = EventFilter()
 
 
 def test_frame_for_end_marker_is_terminal():
-    """Frame for end marker is terminal."""
+    """An `EndMarker` produces an SSE `end` frame and a terminal flag."""
     frame, terminal = _frame_for(EndMarker(), _NO_FILTER, uuid.uuid4())
     assert terminal is True
     assert b"event: end" in frame
 
 
 def test_frame_for_gap_marker_is_not_terminal():
-    """Frame for gap marker is not terminal."""
+    """A `GapMarker` produces a `gap` frame but does not terminate the stream."""
     frame, terminal = _frame_for(
-        GapMarker(reason="overflow"), _NO_FILTER, uuid.uuid4()
+        GapMarker(reason=GapReason.OVERFLOW), _NO_FILTER, uuid.uuid4()
     )
     assert terminal is False
     assert b"event: gap" in frame
@@ -143,16 +86,18 @@ def test_frame_for_gap_marker_is_not_terminal():
 def test_frame_for_event_kind_filter_skipped_but_id_advances():
     """Filtered-out events emit a `cursor` frame that advances Last-Event-ID.
 
-    SSE *comments* don't advance the client's `lastEventId` per the
-    WHATWG spec — only a dispatched event does. So filtered events
-    must surface as an event with an `id:` line. We use `cursor` (not
-    `ping`) for this so it can't be confused with the comment-style
-    heartbeat (`: ping\\n\\n`).
+    The browser's `EventSource` only advances `Last-Event-ID` when it
+    dispatches a real event. Comment lines (like the heartbeat
+    `: ping`) are skipped. So a filtered event must surface as a real
+    event with an `id:` line — otherwise the client's resume cursor
+    would still point before it, and a reconnect would replay it. We
+    use `cursor` (not `ping`) so the no-payload frame can't be confused
+    with the comment-style heartbeat.
     """
     run_id = uuid.uuid4()
-    payload = encode_frame(EventFrame(event=_ev(run_id, kind="other")))
+    payload = encode_frame(EventFrame(event=make_event(run_id, kind="other")))
     frame, terminal = _frame_for(
-        BrokerEvent(id="5", payload=payload),
+        BrokerEntry(id="5", payload=payload),
         EventFilter(kinds={"keep"}),
         run_id,
     )
@@ -164,9 +109,9 @@ def test_frame_for_event_kind_filter_skipped_but_id_advances():
 def test_frame_for_event_kind_filter_allowed():
     """Events whose kind matches the filter are emitted in full."""
     run_id = uuid.uuid4()
-    payload = encode_frame(EventFrame(event=_ev(run_id, kind="keep")))
+    payload = encode_frame(EventFrame(event=make_event(run_id, kind="keep")))
     frame, terminal = _frame_for(
-        BrokerEvent(id="5", payload=payload),
+        BrokerEntry(id="5", payload=payload),
         EventFilter(kinds={"keep"}),
         run_id,
     )
@@ -186,7 +131,7 @@ def test_frame_for_step_name_filter_skips_mismatch():
     )
     payload = encode_frame(EventFrame(event=event))
     frame, terminal = _frame_for(
-        BrokerEvent(id="7", payload=payload),
+        BrokerEntry(id="7", payload=payload),
         EventFilter(step_names={"summarize"}),
         run_id,
     )
@@ -206,7 +151,7 @@ def test_frame_for_correlation_id_filter_keeps_match():
     )
     payload = encode_frame(EventFrame(event=event))
     frame, terminal = _frame_for(
-        BrokerEvent(id="8", payload=payload),
+        BrokerEntry(id="8", payload=payload),
         EventFilter(correlation_ids={"gen-42"}),
         run_id,
     )
@@ -241,37 +186,56 @@ def test_event_filter_combines_fields_as_and():
 
 def test_frame_for_end_frame_terminates_stream():
     """An `EndFrame` payload on the broker terminates the SSE stream."""
-    run_id = uuid.uuid4()
-    payload = encode_frame(EndFrame(pipeline_run_id=run_id))
+    payload = encode_frame(EndFrame())
     frame, terminal = _frame_for(
-        BrokerEvent(id="9", payload=payload), _NO_FILTER, run_id
+        BrokerEntry(id="9", payload=payload), _NO_FILTER, uuid.uuid4()
     )
     assert terminal is True
     assert b"event: end" in frame
 
 
-def test_frame_for_unknown_wire_frame_emits_cursor():
-    """Forward-compat: unknown frame `type` advances id without dispatching data."""
+def test_frame_for_unknown_wire_frame_emits_cursor_with_type():
+    """Forward-compat: unknown `type` advances id and surfaces the type."""
     run_id = uuid.uuid4()
     payload = b'{"type": "future", "whatever": 1}'
     frame, terminal = _frame_for(
-        BrokerEvent(id="9", payload=payload), _NO_FILTER, run_id
+        BrokerEntry(id="9", payload=payload), _NO_FILTER, run_id
     )
     assert terminal is False
     assert b"id: 9" in frame
     assert b"event: cursor" in frame
+    assert b'"unknown_type": "future"' in frame
 
 
-def test_frame_for_undecodable_event_returns_none():
-    """Frame for undecodable event returns none."""
-    assert (
-        _frame_for(
-            BrokerEvent(id="1", payload=b"not json"),
-            _NO_FILTER,
-            uuid.uuid4(),
-        )
-        is None
+def test_frame_for_undecodable_event_emits_cursor():
+    """A non-JSON broker payload decodes as UnknownFrame and emits a cursor."""
+    frame, terminal = _frame_for(
+        BrokerEntry(id="1", payload=b"not json"),
+        _NO_FILTER,
+        uuid.uuid4(),
     )
+    assert terminal is False
+    assert b"id: 1" in frame
+    assert b"event: cursor" in frame
+    # Corrupt payload decodes as `UnknownFrame(type="?")` and surfaces.
+    assert b'"unknown_type": "?"' in frame
+
+
+def test_frame_for_event_with_sse_unsafe_kind_emits_cursor():
+    """A kind containing a newline is dropped, but the cursor still advances."""
+    run_id = uuid.uuid4()
+    forged = StreamEvent.model_construct(
+        pipeline_run_id=run_id,
+        kind="bad\nkind",
+        payload={"v": 1},
+    )
+    payload = encode_frame(EventFrame(event=forged))
+    frame, terminal = _frame_for(
+        BrokerEntry(id="11", payload=payload), _NO_FILTER, run_id
+    )
+    assert terminal is False
+    assert b"event: cursor" in frame
+    assert b"id: 11" in frame
 
 
 def _drain(agen) -> list:
@@ -281,18 +245,9 @@ def _drain(agen) -> list:
     return asyncio.run(go())
 
 
-def test_stale_run_close_emits_only_end_without_cursor():
-    """No cursor → no events were missed → single `end` frame."""
-    chunks = _drain(stale_run_close_response(missed_events=False))
+def test_stale_run_close_emits_only_end():
+    """Stale-run close response is a single `end` frame."""
+    chunks = _drain(stale_run_close_response())
     assert len(chunks) == 1
     assert b"event: end" in chunks[0]
     assert b"event: gap" not in chunks[0]
-
-
-def test_stale_run_close_emits_gap_then_end_with_cursor():
-    """Cursor present → consumer's Last-Event-ID predates retention → gap+end."""
-    chunks = _drain(stale_run_close_response(missed_events=True))
-    assert len(chunks) == 2
-    assert b"event: gap" in chunks[0]
-    assert b"truncated" in chunks[0]
-    assert b"event: end" in chunks[1]

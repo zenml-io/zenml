@@ -19,12 +19,11 @@ import pytest
 from pydantic import ValidationError
 
 from zenml.constants import (
-    RESERVED_STREAM_EVENT_KINDS,
     STREAM_EVENT_MAX_BATCH_SIZE,
     STREAM_EVENT_PAYLOAD_BYTES_MAX,
 )
 from zenml.models import StreamBatchRequest, StreamEvent
-from zenml.streams.utils import _check_payload_size
+from zenml.streaming.publishing import _check_payload_size
 
 
 def _make(kind: str = "token") -> StreamEvent:
@@ -32,60 +31,33 @@ def _make(kind: str = "token") -> StreamEvent:
 
 
 def test_default_kind_accepted():
-    """Default kind accepted."""
+    """The plain `"event"` kind passes validation."""
     event = _make("event")
     assert event.kind == "event"
 
 
-def test_kind_pattern_allows_alnum_and_punctuation():
-    """Kind pattern allows alnum and punctuation."""
+def test_kind_accepts_arbitrary_punctuation():
+    """Free-form kinds are accepted (model has no kind pattern)."""
     event = _make("agent.token_v1-2")
     assert event.kind == "agent.token_v1-2"
 
 
-@pytest.mark.parametrize(
-    "bad_kind",
-    [
-        "",
-        "has space",
-        "newline\n",
-        "x" * 65,
-        "tab\there",
-    ],
-)
-def test_kind_pattern_rejects_invalid(bad_kind: str):
-    """Kind pattern rejects invalid."""
-    with pytest.raises(ValidationError):
-        StreamEvent(pipeline_run_id=uuid.uuid4(), kind=bad_kind)
-
-
-@pytest.mark.parametrize("reserved", sorted(RESERVED_STREAM_EVENT_KINDS))
-def test_kind_rejects_reserved_sse_names(reserved: str):
-    """Producer kinds that collide with SSE control names are rejected.
-
-    The wire envelope handles forging prevention; this rule is purely
-    so SSE clients can `addEventListener("end", ...)` unambiguously.
-    """
-    with pytest.raises(ValidationError):
-        StreamEvent(pipeline_run_id=uuid.uuid4(), kind=reserved)
-
-
 def test_batch_rejects_oversize():
-    """Batch rejects oversize."""
+    """A batch exceeding `STREAM_EVENT_MAX_BATCH_SIZE` is rejected."""
     events = [_make() for _ in range(STREAM_EVENT_MAX_BATCH_SIZE + 1)]
     with pytest.raises(ValidationError):
         StreamBatchRequest(events=events)
 
 
 def test_batch_accepts_at_cap():
-    """Batch accepts at cap."""
+    """A batch with exactly `STREAM_EVENT_MAX_BATCH_SIZE` events is accepted."""
     events = [_make() for _ in range(STREAM_EVENT_MAX_BATCH_SIZE)]
     batch = StreamBatchRequest(events=events)
     assert len(batch.events) == STREAM_EVENT_MAX_BATCH_SIZE
 
 
 def test_batch_accepts_empty():
-    """Batch accepts empty."""
+    """An empty batch is accepted (used by the count=0 short-circuit)."""
     batch = StreamBatchRequest(events=[])
     assert batch.events == []
 
@@ -98,7 +70,7 @@ def test_check_payload_size_accepts_small():
 def test_check_payload_size_rejects_oversize():
     """An oversize dict is rejected before any HTTP work happens."""
     huge = {"v": "x" * (STREAM_EVENT_PAYLOAD_BYTES_MAX + 100)}
-    with pytest.raises(ValueError, match="exceeds the cap"):
+    with pytest.raises(ValueError, match="exceeds the maximum"):
         _check_payload_size(huge)
 
 

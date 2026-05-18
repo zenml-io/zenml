@@ -59,26 +59,22 @@ server:
   #
   # requestCacheTimeout: 300
 
-  # Live event streaming for pipeline runs (LLM agent token streaming, etc.).
-  # The feature is dormant by default — setting `streamBrokerImplementationSource`
-  # is what enables it. The included implementations are:
-  #   "zenml.zen_server.streaming.brokers.redis_streams.RedisStreamsBroker"
-  #     Multi-replica safe; requires Redis. Set ZENML_REDIS_BROKER_URL via
-  #     `server.environment` (or a secret ref) to point at your Redis.
-  #   "zenml.zen_server.streaming.brokers.memory.InMemoryBroker"
-  #     Single-replica only; events vanish on restart. For local / dev use.
-  #
-  # NOTE on the Gateway API ingress: the chart installs an SSE-only HTTPRoute
-  # rule that disables request timeouts for streams. It's scoped to the
-  # path prefix `<gateway.path>/api/v1/runs/` AND the exact header
-  # `Accept: text/event-stream`. Browser `EventSource` and the ZenML
-  # Python client both send this header; clients that send a quality-list
-  # `Accept` value will fall through to the default rule and get a 15s cap.
+  # Live event streaming for pipeline runs. Dormant unless
+  # `streamBrokerImplementationSource` is set. Source `ZENML_REDIS_BROKER_URL`
+  # from a secret via `server.environmentSecretKeyRefs`.
   streaming:
-    # streamBrokerImplementationSource: ""
+    # streamBrokerImplementationSource: zenml.zen_server.streaming.brokers.redis_streams.RedisStreamsBroker
+    #
+    # SSE heartbeat interval (seconds). Default: 30.
     # heartbeatSeconds: 30
-    # maxConsumersPerStream: 100
-    # hubIdleGraceSeconds: 30
+    #
+    # Max simultaneous subscribers per run. The N+1th gets 503. Default: 100.
+    # maxSubscribersPerStream: 100
+    #
+    # How long the server keeps a stream's broker reader running after the
+    # last subscriber disconnects, so quick reconnects don't re-probe the
+    # broker. Default: 30.
+    # broadcasterIdleGraceSeconds: 30
 
   image:
     repository: zenmldocker/zenml-server

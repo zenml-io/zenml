@@ -11,86 +11,101 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Server-side Redis client setup for the streaming subsystem."""
+"""Redis client setup."""
 
 import asyncio
-from typing import TYPE_CHECKING, Any, Tuple
+from typing import Any, List, Union
 
 from pydantic import Field
 
 from zenml.logger import get_logger
 from zenml.utils.env_utils import ConfigBase
 
-if TYPE_CHECKING:
+try:
     from redis.asyncio import Redis, RedisCluster
+    from redis.exceptions import ResponseError
+except ImportError as exc:  # pragma: no cover - install-dependent
+    raise RuntimeError(
+        "The `redis` Python package is required to use ZenML's Redis client."
+    ) from exc
 
 logger = get_logger(__name__)
 
 ENV_ZENML_REDIS_PREFIX = "ZENML_REDIS_"
 
+REDIS_CLIENT = Union["Redis[Any]", "RedisCluster[Any]"]
+
+
+class RedisHealthCheckError(RuntimeError):
+    """Raised when the Redis client cannot be created or fails health checks."""
+
 
 class RedisSettings(ConfigBase):
-    """Connection-only Redis settings, env-loaded from `ZENML_REDIS_*`."""
+    """Redis settings."""
 
     @staticmethod
-    def prefixes() -> list[str]:
-        """Env prefixes resolved by `ConfigBase.load_from_env`."""
+    def prefixes() -> List[str]:
+        """Env var prefixes used by `ConfigBase.load_from_env`.
+
+        Returns:
+            The env var prefixes for this settings class.
+        """
         return [ENV_ZENML_REDIS_PREFIX]
 
-    broker_url: str = Field(description="Redis connection URL.")
+    broker_url: str = Field(
+        description="Redis connection URL.",
+    )
     connect_timeout: float = Field(
         default=2.0,
-        ge=0.1,
-        le=60.0,
-        description="TCP connection timeout (seconds).",
+        description="Timeout for establishing a TCP connection (seconds).",
+        ge=1.0,
+        le=30.0,
     )
     socket_timeout: float = Field(
         default=2.0,
-        ge=0.1,
-        le=60.0,
-        description="Socket read/write timeout (seconds).",
+        description="Timeout for socket reads/writes once connected (seconds).",
+        ge=1.0,
+        le=30.0,
     )
     healthcheck_timeout: float = Field(
         default=2.0,
-        ge=0.1,
-        le=60.0,
-        description="Initial PING health check timeout (seconds).",
+        description="Timeout for the initial health check command (seconds).",
+        ge=1.0,
+        le=30.0,
     )
     max_connections: int = Field(
         default=10,
         ge=1,
-        le=200,
-        description="Maximum number of connections in the pool.",
+        le=50,
+        description="Max connections in the pool.",
     )
     ping_on_start: bool = Field(
         default=True,
-        description="If True, run a bounded PING after connecting.",
+        description="Ping Redis during initialization.",
     )
 
+    @property
+    def url(self) -> str:
+        """Alias for `broker_url`.
 
-def _import_redis() -> Tuple[Any, Any, Any]:
-    """Lazy import. Raises a clear error if the extra isn't installed."""
-    try:
-        from redis.asyncio import Redis, RedisCluster
-        from redis.exceptions import ResponseError
-    except ImportError as exc:  # pragma: no cover - install-dependent
-        raise RuntimeError(
-            "The `redis` package is required for RedisStreamsBroker. "
-            "Install with `pip install 'zenml[server-streaming]'`."
-        ) from exc
-    return Redis, RedisCluster, ResponseError
+        Returns:
+            The Redis connection URL.
+        """
+        return self.broker_url
 
 
 async def is_cluster(settings: RedisSettings) -> bool:
     """Probe whether the configured Redis is a cluster or standalone.
 
-    Opens a transient connection that's discarded immediately. Called
-    once per broker instance from `create_redis_client`; not on the
-    hot path.
+    Args:
+        settings: The Redis connection settings to probe.
+
+    Returns:
+        True if the configured Redis exposes `cluster_enabled=1` or
+        responds to `CLUSTER INFO`. False otherwise.
     """
-    redis_cls, _, ResponseError = _import_redis()
-    probe = redis_cls.from_url(
-        settings.broker_url,
+    probe = Redis.from_url(
+        settings.url,
         socket_timeout=settings.socket_timeout,
         socket_connect_timeout=settings.connect_timeout,
     )
@@ -102,32 +117,37 @@ async def is_cluster(settings: RedisSettings) -> bool:
         except ResponseError:
             pass
         try:
-            await probe.execute_command("CLUSTER", "INFO")
+            await probe.execute_command("CLUSTER", "INFO")  # type: ignore[no-untyped-call]
             return True
         except ResponseError:
             return False
     finally:
         try:
-            await probe.aclose()
+            await probe.aclose()  # type: ignore[attr-defined]
         except Exception:
             pass
 
 
-async def create_redis_client(
-    settings: RedisSettings,
-) -> "Redis[Any] | RedisCluster[Any]":
-    """Create and health-check an async Redis client."""
-    redis_cls, redis_cluster_cls, _ = _import_redis()
+async def create_redis_client(settings: RedisSettings) -> REDIS_CLIENT:
+    """Create and health-check an async Redis client.
 
+    Args:
+        settings: The Redis connection settings.
+
+    Returns:
+        A fully-constructed (and optionally PINGed) Redis or
+        RedisCluster client.
+
+    Raises:
+        RedisHealthCheckError: If the startup PING fails or times out.
+    """
     cluster_mode = await is_cluster(settings)
-    factory = (
-        redis_cluster_cls.from_url if cluster_mode else redis_cls.from_url
-    )
     logger.info(
         "Detected %s Redis.", "cluster" if cluster_mode else "standalone"
     )
-    client: "Redis[Any] | RedisCluster[Any]" = factory(
-        settings.broker_url,
+    factory = RedisCluster.from_url if cluster_mode else Redis.from_url
+    client: REDIS_CLIENT = factory(
+        settings.url,
         socket_timeout=settings.socket_timeout,
         socket_connect_timeout=settings.connect_timeout,
         max_connections=settings.max_connections,
@@ -136,20 +156,21 @@ async def create_redis_client(
 
     if settings.ping_on_start:
         try:
-            # redis-py's `RedisCluster` stubs still omit `.ping()` as of
-            # 7.4; both clients expose it at runtime.
+            # redis-py's RedisCluster stubs omit .ping() as of 7.4.
             ok = await asyncio.wait_for(
                 client.ping(),  # type: ignore[union-attr]
                 timeout=settings.healthcheck_timeout,
             )
         except asyncio.TimeoutError as exc:
-            raise RuntimeError(
+            raise RedisHealthCheckError(
                 f"Redis PING timed out after {settings.healthcheck_timeout}s"
             ) from exc
         except Exception as exc:
-            raise RuntimeError(f"Redis PING failed: {exc}") from exc
+            raise RedisHealthCheckError(f"Redis PING failed: {exc}") from exc
         if not ok:
-            raise RuntimeError(f"Redis PING returned unexpected value: {ok!r}")
+            raise RedisHealthCheckError(
+                f"Redis PING returned unexpected value: {ok}"
+            )
         logger.info("Redis health check OK.")
 
     return client

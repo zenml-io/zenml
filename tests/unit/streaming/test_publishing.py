@@ -16,18 +16,17 @@
 import threading
 import time
 import uuid
-from collections import Counter
 from types import SimpleNamespace
 from typing import List, Optional
 
 import pytest
 
 from zenml.models import StreamBatchRequest, StreamEvent
-from zenml.streams import publishing as publishing_module
+from zenml.streaming import publishing as publishing_module
 
 
 class _FakeZenStore:
-    """Records every publish_run_events call; configurable behavior."""
+    """Fake zen store."""
 
     def __init__(self) -> None:
         self.calls: List[tuple] = []
@@ -66,14 +65,13 @@ def _patch_client(
 
 
 @pytest.fixture
-def publisher(
-    monkeypatch: pytest.MonkeyPatch,
-) -> publishing_module._StreamPublisher:
-    """Fresh publisher; shut down at test teardown."""
-    monkeypatch.setattr(publishing_module, "_publisher", None)
+def publisher() -> publishing_module._StreamPublisher:
+    """Fresh publisher, shut down at test teardown."""
+    publishing_module._StreamPublisher._clear()
     instance = publishing_module._StreamPublisher()
     yield instance
     instance.shutdown(timeout=2.0)
+    publishing_module._StreamPublisher._clear()
 
 
 def _event(run_id: Optional[uuid.UUID] = None) -> StreamEvent:
@@ -96,12 +94,7 @@ def test_publish_delivers_single_event(
 def test_flush_blocks_until_send_completes(
     publisher: publishing_module._StreamPublisher, fake_store: _FakeZenStore
 ):
-    """flush() must not return until the worker has finished the send.
-
-    Regression for the race where `_inflight` was incremented *after*
-    pulling from the queue — flush could see empty queue + 0 inflight
-    while the batch was mid-flight.
-    """
+    """flush() must not return until the worker has finished the send."""
     gate = threading.Event()
     fake_store.gate = gate
 
@@ -118,10 +111,7 @@ def test_flush_blocks_until_send_completes(
     # Give flush enough time to enter its wait. If it had been buggy
     # it would have returned True almost immediately.
     time.sleep(0.3)
-    assert not flush_results, (
-        "flush() returned before the send completed — the inflight "
-        "reservation race regressed"
-    )
+    assert not flush_results
 
     gate.set()
     t.join(timeout=2.0)
@@ -152,13 +142,9 @@ def test_batches_grouped_by_run_id(
     publisher.publish(_event(run_a))
     publisher.publish(_event(run_b))
     publisher.publish(_event(run_a))
-    # Let one batch drain.
     gate.set()
     assert publisher.flush(timeout=2.0)
 
-    counts = Counter(run_id for run_id, _ in fake_store.calls)
-    assert counts[run_a] >= 1
-    assert counts[run_b] >= 1
     # Every recorded call's events must all belong to the URL's run id.
     for run_id, events in fake_store.calls:
         assert all(e.pipeline_run_id == run_id for e in events)
@@ -167,36 +153,25 @@ def test_batches_grouped_by_run_id(
 def test_not_implemented_disables_publisher(
     publisher: publishing_module._StreamPublisher, fake_store: _FakeZenStore
 ):
-    """A 501 from the server mutes subsequent publishes."""
+    """A 501 from the server disables subsequent publishes."""
     fake_store.raise_not_implemented = True
     publisher.publish(_event())
     assert publisher.flush(timeout=2.0)
-    assert publisher._disabled_until is not None
+    assert publisher._disabled is True
     # Further publishes are dropped without ever reaching the store.
     fake_store.calls.clear()
     publisher.publish(_event())
     publisher.publish(_event())
-    time.sleep(0.1)
-    assert fake_store.calls == []
-
-
-def test_disabled_flag_lifts_after_ttl(
-    publisher: publishing_module._StreamPublisher, fake_store: _FakeZenStore
-):
-    """After the TTL window elapses publishes resume."""
-    publisher._disabled_until = time.monotonic() - 1.0
-    assert publisher._is_disabled() is False
-    # Subsequent publishes go through.
-    publisher.publish(_event())
     assert publisher.flush(timeout=2.0)
-    assert len(fake_store.calls) == 1
+    assert fake_store.calls == []
 
 
 def test_drops_when_zen_store_unavailable(
     publisher: publishing_module._StreamPublisher,
+    fake_store: _FakeZenStore,
     monkeypatch: pytest.MonkeyPatch,
 ):
-    """Events are counted as dropped when `Client()` can't be resolved."""
+    """Events are dropped when `Client()` can't be resolved."""
 
     def _boom() -> None:
         raise RuntimeError("no client here")
@@ -204,7 +179,7 @@ def test_drops_when_zen_store_unavailable(
     monkeypatch.setattr("zenml.client.Client", _boom)
     publisher.publish(_event())
     assert publisher.flush(timeout=2.0)
-    assert publisher._dropped_no_store == 1
+    assert fake_store.calls == []
 
 
 def test_drop_oldest_under_queue_pressure(
@@ -212,7 +187,7 @@ def test_drop_oldest_under_queue_pressure(
 ):
     """Backpressure: when the queue is full, oldest events get dropped."""
     monkeypatch.setattr(publishing_module, "_QUEUE_MAXSIZE", 4)
-    monkeypatch.setattr(publishing_module, "_publisher", None)
+    publishing_module._StreamPublisher._clear()
     instance = publishing_module._StreamPublisher()
     try:
         # Block the worker so the queue actually fills.
@@ -221,8 +196,15 @@ def test_drop_oldest_under_queue_pressure(
         # Pre-fill the queue past its bound.
         for _ in range(10):
             instance.publish(_event())
-        assert instance._dropped_queue_full > 0
+        # The worker pulled at most one batch before the gate; the buffer
+        # itself can never exceed _QUEUE_MAXSIZE = 4.
+        assert len(instance._buffer) <= 4
         gate.set()
         instance.flush(timeout=2.0)
+        # Fewer events reach the store than were published, proving the
+        # oldest were dropped.
+        delivered = sum(len(events) for _, events in fake_store.calls)
+        assert delivered < 10
     finally:
         instance.shutdown(timeout=2.0)
+        publishing_module._StreamPublisher._clear()

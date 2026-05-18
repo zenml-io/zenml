@@ -12315,9 +12315,12 @@ class SqlZenStore(BaseZenStore):
         new_status = ExecutionStatus(pipeline_run.status)
 
         if new_status != previous_status:
-            EventDispatcher().handle_run_status_update(
-                run=pipeline_run.to_model(include_metadata=True)
-            )
+            dispatcher = EventDispatcher()
+            if dispatcher.has_handlers():
+                # Only convert to model if there are handlers to notify
+                dispatcher.handle_run_status_update(
+                    run=pipeline_run.to_model(include_metadata=True)
+                )
 
         if new_status.is_finished and pipeline_run.end_time:
             if pipeline_run.start_time:

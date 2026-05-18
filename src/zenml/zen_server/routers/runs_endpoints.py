@@ -98,21 +98,31 @@ from zenml.zen_server.rbac.utils import (
     verify_permission_for_model,
 )
 from zenml.zen_server.routers.projects_endpoints import workspace_router
-from zenml.zen_server.streaming.signals import stream_key_for_run
+from zenml.zen_server.streaming.broadcaster import (
+    BroadcasterShuttingDownError,
+    StreamCapacityError,
+)
+from zenml.zen_server.streaming.brokers.frames import (
+    EVENT_PAYLOAD_BYTES_MAX,
+    EventFrame,
+    encode_frame,
+)
+from zenml.zen_server.streaming.brokers.utils import stream_key_for_run
 from zenml.zen_server.streaming.sse import (
     SSE_RESPONSE_HEADERS,
     STREAMING_RESPONSES,
     EventFilter,
-    encode_event_for_publish,
     sse_stream,
     stale_run_close_response,
 )
+from zenml.zen_server.streaming.types import RESERVED_STREAM_EVENT_KINDS
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
+    async_handle_endpoint_errors,
     make_dependable,
     server_config,
+    stream_broadcaster,
     stream_broker,
-    stream_hub,
     workload_manager,
     zen_store,
 )
@@ -701,11 +711,10 @@ if server_config().workload_manager_enabled:
 
 
 def streaming_enabled() -> None:
-    """Dependency that returns 501 unless streaming is configured.
+    """Block the request with a 501 unless streaming is configured.
 
-    A startup-time init failure shows up downstream as a 503 from the
-    broker call, not silently here — by design, since the config alone
-    is the operator's source of truth for the feature being on.
+    Raises:
+        HTTPException: 501 if streaming is disabled on this server.
     """
     if not server_config().streaming_enabled:
         raise HTTPException(
@@ -714,13 +723,17 @@ def streaming_enabled() -> None:
         )
 
 
-def _authorize_run_action(run_id: UUID, action: Action) -> PipelineRunResponse:
-    """Fetch the run and check permission; both sync, one threadpool slot.
+def _get_run_with_permission(
+    run_id: UUID, action: Action
+) -> PipelineRunResponse:
+    """Fetch a pipeline run and verify the caller is permitted to `action` it.
 
-    Uses `hydrate=False` because callers only need response-body
-    fields (notably `in_progress` for the SSE terminate-after-catchup
-    decision). If a future caller needs a metadata-only field, switch
-    to `hydrate=True` at the call site or fetch separately.
+    Args:
+        run_id: The pipeline run to fetch.
+        action: The RBAC action to check against the run.
+
+    Returns:
+        The fetched run.
     """
     run = zen_store().get_run(run_id=run_id, hydrate=False)
     verify_permission_for_model(model=run, action=action)
@@ -735,24 +748,33 @@ def _authorize_run_action(run_id: UUID, action: Action) -> PipelineRunResponse:
         422: error_response,
     },
 )
+@async_handle_endpoint_errors
 async def publish_run_events(
     pipeline_run_id: UUID,
     batch: StreamBatchRequest,
     _: AuthContext = Security(authorize),
     __: None = Depends(streaming_enabled),
 ) -> StreamBatchResponse:
-    """Append a batch of events to a pipeline run's live stream."""
-    await run_in_threadpool(
-        _authorize_run_action, pipeline_run_id, Action.UPDATE
-    )
+    """Append a batch of events to a pipeline run's live stream.
 
+    Args:
+        pipeline_run_id: The pipeline run the events attach to.
+        batch: The batched ingest payload.
+
+    Raises:
+        HTTPException: 413 on oversize payload, 503 if the broker
+            publish fails.
+
+    Returns:
+        The ingest result (count + last broker id).
+    """
+    await run_in_threadpool(
+        _get_run_with_permission, pipeline_run_id, Action.UPDATE
+    )
     if not batch.events:
         return StreamBatchResponse(count=0, last_id=None)
 
-    payloads = [
-        encode_event_for_publish(event, pipeline_run_id)
-        for event in batch.events
-    ]
+    payloads = await run_in_threadpool(_encode_batch, batch, pipeline_run_id)
 
     try:
         ids = await stream_broker().publish(
@@ -771,10 +793,53 @@ async def publish_run_events(
     )
 
 
+def _encode_batch(
+    batch: StreamBatchRequest, pipeline_run_id: UUID
+) -> List[bytes]:
+    """Validate and encode each event in `batch` as a broker payload.
+
+    Args:
+        batch: The validated request body.
+        pipeline_run_id: URL-bound run id, validated against each event.
+
+    Raises:
+        ValueError: If an event's run id doesn't match the URL.
+        HTTPException: 413 if an event's wire-envelope exceeds
+            `EVENT_PAYLOAD_BYTES_MAX` (no domain exception maps to 413).
+
+    Returns:
+        Encoded payloads in batch order.
+    """
+    payloads: List[bytes] = []
+    for event in batch.events:
+        if event.pipeline_run_id != pipeline_run_id:
+            raise ValueError(
+                f"Event pipeline_run_id {event.pipeline_run_id} does not "
+                f"match URL run id {pipeline_run_id}."
+            )
+        if event.kind in RESERVED_STREAM_EVENT_KINDS:
+            raise ValueError(
+                f"Event kind {event.kind!r} collides with a reserved SSE "
+                f"control name ({sorted(RESERVED_STREAM_EVENT_KINDS)})"
+            )
+        payload = encode_frame(EventFrame(event=event))
+        if len(payload) > EVENT_PAYLOAD_BYTES_MAX:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=(
+                    f"Event exceeds {EVENT_PAYLOAD_BYTES_MAX} bytes "
+                    f"(was {len(payload)})."
+                ),
+            )
+        payloads.append(payload)
+    return payloads
+
+
 @router.get(
     "/{pipeline_run_id}" + EVENTS_STREAM,
-    responses=STREAMING_RESPONSES,
+    responses={**STREAMING_RESPONSES, 422: error_response},
 )
+@async_handle_endpoint_errors
 async def stream_run_events(
     pipeline_run_id: UUID,
     since: Optional[str] = Query(default=None),
@@ -785,64 +850,99 @@ async def stream_run_events(
     _: AuthContext = Security(authorize),
     __: None = Depends(streaming_enabled),
 ) -> StreamingResponse:
-    """Subscribe to a pipeline run's live event stream over SSE."""
+    """Subscribe to a pipeline run's live event stream over SSE.
+
+    Args:
+        pipeline_run_id: The run to subscribe to.
+        since: Resume cursor used when `Last-Event-ID` is absent.
+        kinds: Optional repeatable `StreamEvent.kind` filter.
+        step_names: Optional repeatable `StreamEvent.step_name` filter.
+        correlation_ids: Optional repeatable `StreamEvent.correlation_id` filter.
+        last_event_id: Browser-supplied reconnect cursor.
+
+    Raises:
+        HTTPException: 503 on capacity or broker outage.
+
+    Returns:
+        A `StreamingResponse` yielding SSE frames.
+    """
     run = await run_in_threadpool(
-        _authorize_run_action, pipeline_run_id, Action.READ
+        _get_run_with_permission, pipeline_run_id, Action.READ
     )
 
-    hub = stream_hub()
-    stream_key = stream_key_for_run(pipeline_run_id)
+    event_filter = EventFilter(
+        kinds=kinds,
+        step_names=step_names,
+        correlation_ids=correlation_ids,
+    )
 
-    # Pre-check the consumer cap so we can fail with a clean 503 before
-    # StreamingResponse starts and locks in a 200 status. The hard cap
-    # in `hub.attach` still applies; this is a UX nicety for the
-    # typical case (the race window between this check and `attach` is
-    # tiny and would surface as an `event: error` frame instead).
-    if not hub.has_capacity(stream_key):
+    broadcaster = stream_broadcaster()
+    broker = broadcaster.broker
+    stream_key = stream_key_for_run(pipeline_run_id)
+    from_id = last_event_id or since
+    if from_id is not None:
+        broker.validate_cursor(from_id)
+
+    if not run.in_progress:
+        latest_id_value: Optional[str] = None
+        try:
+            latest_id_value = await broker.latest_id(stream_key)
+        except Exception:
+            # Failed to get the latest ID, we fall through to the normal flow
+            # and subscribe.
+            pass
+        else:
+            if latest_id_value is None:
+                # Empty broker and run is not in progress anymore -> No events
+                # to stream.
+                return StreamingResponse(
+                    stale_run_close_response(),
+                    media_type="text/event-stream",
+                    headers=SSE_RESPONSE_HEADERS,
+                )
+
+            if from_id is not None and from_id == latest_id_value:
+                # Subscriber cursor is at the latest ID -> No events to stream.
+                return StreamingResponse(
+                    stale_run_close_response(),
+                    media_type="text/event-stream",
+                    headers=SSE_RESPONSE_HEADERS,
+                )
+
+    # Claim the subscriber slot eagerly so capacity/broker errors surface
+    # as 503 before FastAPI commits a 200 status on the StreamingResponse.
+    try:
+        subscription = await broadcaster.subscribe(stream_key, from_id=from_id)
+    except BroadcasterShuttingDownError:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Stream has reached its consumer cap; retry shortly.",
+            detail="Server is shutting down.",
+            headers={"Retry-After": "5"},
+        )
+    except StreamCapacityError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "This pipeline run has reached the per-run subscriber cap "
+                f"({server_config().streaming_max_subscribers_per_stream}); "
+                "retry shortly or close an existing subscriber."
+            ),
+            headers={"Retry-After": "5"},
+        )
+    except Exception:
+        logger.exception(
+            "Failed to subscribe SSE client for run %s", pipeline_run_id
+        )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Stream broker is currently unavailable.",
             headers={"Retry-After": "5"},
         )
 
-    event_filter = EventFilter(
-        kinds=set(kinds) if kinds else None,
-        step_names=set(step_names) if step_names else None,
-        correlation_ids=set(correlation_ids) if correlation_ids else None,
-    )
-
-    from_id = last_event_id or since
-
-    # Stale-run shortcut: if the run is already terminal AND the
-    # broker stream is empty for it, there is nothing to stream — the
-    # producer's `EndFrame` either never made it (broker outage at
-    # end-publish time) or has aged out with the broker stream's TTL.
-    # Close the SSE response immediately rather than parking the
-    # consumer on a queue that will never fill. Any consumer
-    # specifying a `from_id` against an empty stream is by definition
-    # past the retention window, so we emit `gap: truncated` first.
-    if not run.in_progress:
-        broker = stream_broker()
-        try:
-            latest_id = await broker.latest_id(stream_key)
-        except Exception:
-            # Don't block stream attach on a transient broker hiccup
-            # in the shortcut path — fall through to the normal flow,
-            # which has its own backoff.
-            latest_id = "fallthrough"
-        if latest_id is None:
-            return StreamingResponse(
-                stale_run_close_response(missed_events=from_id is not None),
-                media_type="text/event-stream",
-                headers=SSE_RESPONSE_HEADERS,
-            )
-
     return StreamingResponse(
         sse_stream(
-            hub=hub,
-            stream_key=stream_key,
+            stream=subscription,
             run_id=pipeline_run_id,
-            from_id=from_id,
             event_filter=event_filter,
             heartbeat_seconds=server_config().streaming_heartbeat_seconds,
         ),

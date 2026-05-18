@@ -19,7 +19,6 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 
 from zenml.client import Client
 from zenml.enums import ExecutionStatus, MetadataResourceTypes
-from zenml.logger import get_logger
 from zenml.models import (
     ExceptionInfo,
     PipelineRunResponse,
@@ -29,9 +28,6 @@ from zenml.models import (
     StepRunUpdate,
 )
 from zenml.utils.time_utils import utc_now
-
-logger = get_logger(__name__)
-
 
 if TYPE_CHECKING:
     from uuid import UUID

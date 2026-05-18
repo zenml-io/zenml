@@ -11,51 +11,36 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Wire models for live event streaming on pipeline runs."""
+"""Models for event streaming in pipeline runs."""
 
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 
-from zenml.constants import (
-    RESERVED_STREAM_EVENT_KINDS,
-    STREAM_EVENT_KIND_PATTERN,
-    STREAM_EVENT_MAX_BATCH_SIZE,
-)
+from zenml.constants import STREAM_EVENT_MAX_BATCH_SIZE
 
 
 class StreamEvent(BaseModel):
-    """A single producer-published event on a pipeline run's stream."""
+    """Stream event."""
 
     pipeline_run_id: UUID
     step_run_id: Optional[UUID] = None
     step_name: Optional[str] = None
-    kind: str = Field(pattern=STREAM_EVENT_KIND_PATTERN)
+    kind: str
     correlation_id: Optional[str] = None
     index: Optional[int] = None
     payload: Dict[str, Any] = Field(default_factory=dict)
 
-    @field_validator("kind")
-    @classmethod
-    def _reject_reserved_kind(cls, value: str) -> str:
-        if value in RESERVED_STREAM_EVENT_KINDS:
-            raise ValueError(
-                f"kind {value!r} collides with an SSE control event name "
-                f"({sorted(RESERVED_STREAM_EVENT_KINDS)}); "
-                "pick a different `kind`."
-            )
-        return value
-
 
 class StreamBatchRequest(BaseModel):
-    """Producer-side batched ingest body for run stream events."""
+    """Stream batch request."""
 
     events: List[StreamEvent] = Field(max_length=STREAM_EVENT_MAX_BATCH_SIZE)
 
 
 class StreamBatchResponse(BaseModel):
-    """Server-side response from the batched ingest endpoint."""
+    """Stream batch response."""
 
     count: int
     last_id: Optional[str] = None
