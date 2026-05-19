@@ -215,7 +215,6 @@ from zenml.models import (
     UserUpdate,
 )
 from zenml.models.v2.base.filter import (
-    BoolFilterOption,
     DatetimeFilterOption,
     EnumFilterOption,
     FloatFilterOption,
@@ -851,8 +850,8 @@ class Client(metaclass=ClientMetaClass):
         name: StringFilterOption = None,
         full_name: StringFilterOption = None,
         email: StringFilterOption = None,
-        active: BoolFilterOption = None,
-        email_opted_in: BoolFilterOption = None,
+        active: Optional[bool] = None,
+        email_opted_in: Optional[bool] = None,
         hydrate: bool = False,
     ) -> Page[UserResponse]:
         """List all users.
@@ -908,7 +907,7 @@ class Client(metaclass=ClientMetaClass):
         updated_is_admin: Optional[bool] = None,
         updated_metadata: Optional[Dict[str, Any]] = None,
         updated_default_project_id: Optional[UUID] = None,
-        active: Optional[bool] = None,
+        active: Optional[Union[str, bool]] = None,
     ) -> UserResponse:
         """Update a user.
 
@@ -1784,7 +1783,7 @@ class Client(metaclass=ClientMetaClass):
         user: UUIDFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
-        running: BoolFilterOption = None,
+        running: Optional[bool] = None,
         service_name: StringFilterOption = None,
         pipeline_name: StringFilterOption = None,
         pipeline_run_id: UUIDFilterOption = None,
@@ -2915,8 +2914,8 @@ class Client(metaclass=ClientMetaClass):
         pipeline_id: UUIDFilterOption = None,
         stack_id: UUIDFilterOption = None,
         container_registry_id: UUIDFilterOption = None,
-        is_local: BoolFilterOption = None,
-        contains_code: BoolFilterOption = None,
+        is_local: Optional[bool] = None,
+        contains_code: Optional[bool] = None,
         zenml_version: StringFilterOption = None,
         python_version: StringFilterOption = None,
         checksum: StringFilterOption = None,
@@ -4842,15 +4841,15 @@ class Client(metaclass=ClientMetaClass):
         user: UUIDFilterOption = None,
         pipeline_id: UUIDFilterOption = None,
         orchestrator_id: UUIDFilterOption = None,
-        active: BoolFilterOption = None,
+        active: Optional[Union[str, bool]] = None,
         cron_expression: StringFilterOption = None,
         start_time: DatetimeFilterOption = None,
         end_time: DatetimeFilterOption = None,
         interval_second: FloatFilterOption = None,
-        catchup: BoolFilterOption = None,
+        catchup: Optional[Union[str, bool]] = None,
         hydrate: bool = False,
         run_once_start_time: DatetimeFilterOption = None,
-        is_archived: BoolFilterOption = False,
+        is_archived: bool | None = False,
     ) -> Page[ScheduleResponse]:
         """List schedules.
 
@@ -5165,7 +5164,7 @@ class Client(metaclass=ClientMetaClass):
         model: UUIDFilterOption = None,
         stack: UUIDFilterOption = None,
         stack_component: UUIDFilterOption = None,
-        in_progress: BoolFilterOption = None,
+        in_progress: Optional[bool] = None,
         hydrate: bool = False,
         include_full_metadata: bool = False,
         triggered_by_step_run_id: UUIDFilterOption = None,
@@ -5573,7 +5572,7 @@ class Client(metaclass=ClientMetaClass):
         created: DatetimeFilterOption = None,
         updated: DatetimeFilterOption = None,
         name: StringFilterOption = None,
-        has_custom_name: BoolFilterOption = None,
+        has_custom_name: Optional[bool] = None,
         user: UUIDFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
@@ -6237,7 +6236,7 @@ class Client(metaclass=ClientMetaClass):
         created: DatetimeFilterOption = None,
         updated: DatetimeFilterOption = None,
         name: StringFilterOption = None,
-        private: BoolFilterOption = None,
+        private: Optional[bool] = None,
         user: UUIDFilterOption = None,
         hydrate: bool = False,
     ) -> Page[SecretResponse]:
@@ -8233,7 +8232,7 @@ class Client(metaclass=ClientMetaClass):
         expires: DatetimeFilterOption = None,
         client_id: UUIDFilterOption = None,
         status: EnumFilterOption[OAuthDeviceStatus] = None,
-        trusted_device: BoolFilterOption = None,
+        trusted_device: Union[bool, str, None] = None,
         user: UUIDFilterOption = None,
         failed_auth_attempts: IntegerFilterOption = None,
         last_login: DatetimeFilterOption = None,
@@ -8673,7 +8672,7 @@ class Client(metaclass=ClientMetaClass):
         updated: DatetimeFilterOption = None,
         name: StringFilterOption = None,
         description: StringFilterOption = None,
-        active: BoolFilterOption = None,
+        active: Optional[bool] = None,
         hydrate: bool = False,
     ) -> Page[ServiceAccountResponse]:
         """List all service accounts.
@@ -8841,7 +8840,7 @@ class Client(metaclass=ClientMetaClass):
         updated: DatetimeFilterOption = None,
         name: StringFilterOption = None,
         description: StringFilterOption = None,
-        active: BoolFilterOption = None,
+        active: Optional[bool] = None,
         last_login: DatetimeFilterOption = None,
         last_rotated: DatetimeFilterOption = None,
         hydrate: bool = False,
@@ -9161,7 +9160,7 @@ class Client(metaclass=ClientMetaClass):
         updated: DatetimeFilterOption = None,
         name: StringFilterOption = None,
         color: EnumFilterOption[ColorVariants] = None,
-        exclusive: BoolFilterOption = None,
+        exclusive: Optional[bool] = None,
         resource_type: EnumFilterOption[TaggableResourceTypes] = None,
         hydrate: bool = False,
     ) -> Page[TagResponse]:

@@ -30,7 +30,6 @@ from pydantic import Field
 
 from zenml.models.v2.base.base import BaseZenModel
 from zenml.models.v2.base.filter import (
-    BoolFilterOption,
     IntegerFilterOption,
     StringFilterOption,
     UUIDFilterOption,
@@ -489,6 +488,11 @@ class PipelineBuildFilter(ProjectScopedFilter):
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         "container_registry_id",
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
+        "is_local",
+        "contains_code",
+    ]
 
     pipeline_id: UUIDFilterOption = Field(
         description="Pipeline associated with the pipeline build.",
@@ -502,12 +506,12 @@ class PipelineBuildFilter(ProjectScopedFilter):
         description="Container registry associated with the pipeline build.",
         default=None,
     )
-    is_local: BoolFilterOption = Field(
+    is_local: Optional[bool] = Field(
         description="Whether the build images are stored in a container "
         "registry or locally.",
         default=None,
     )
-    contains_code: BoolFilterOption = Field(
+    contains_code: Optional[bool] = Field(
         description="Whether any image of the build contains user code.",
         default=None,
     )

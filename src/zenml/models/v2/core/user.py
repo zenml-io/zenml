@@ -23,6 +23,7 @@ from typing import (
     List,
     Optional,
     Type,
+    Union,
 )
 from uuid import UUID
 
@@ -40,7 +41,6 @@ from zenml.models.v2.base.base import (
 from zenml.models.v2.base.filter import (
     AnyQuery,
     BaseFilter,
-    BoolFilterOption,
     StringFilterOption,
     UUIDFilterOption,
 )
@@ -477,6 +477,12 @@ class UserResponse(
 class UserFilter(BaseFilter):
     """Model to enable advanced filtering of all Users."""
 
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *BaseFilter.API_SINGLE_INPUT_PARAMS,
+        "active",
+        "email_opted_in",
+    ]
+
     name: StringFilterOption = Field(
         default=None,
         description="Name of the user",
@@ -489,13 +495,15 @@ class UserFilter(BaseFilter):
         default=None,
         description="Email of the user",
     )
-    active: BoolFilterOption = Field(
+    active: Optional[Union[bool, str]] = Field(
         default=None,
         description="Whether the user is active",
+        union_mode="left_to_right",
     )
-    email_opted_in: BoolFilterOption = Field(
+    email_opted_in: Optional[Union[bool, str]] = Field(
         default=None,
         description="Whether the user has opted in to emails",
+        union_mode="left_to_right",
     )
     external_user_id: UUIDFilterOption = Field(
         default=None,

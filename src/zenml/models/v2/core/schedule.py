@@ -24,7 +24,6 @@ from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import (
-    BoolFilterOption,
     DatetimeFilterOption,
     FloatFilterOption,
     StringFilterOption,
@@ -330,6 +329,12 @@ class ScheduleFilter(ProjectScopedFilter):
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         "is_archived",
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[list[str]] = [
+        *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
+        "active",
+        "catchup",
+        "is_archived",
+    ]
 
     pipeline_id: UUIDFilterOption = Field(
         default=None,
@@ -339,7 +344,7 @@ class ScheduleFilter(ProjectScopedFilter):
         default=None,
         description="Orchestrator that the schedule is attached to.",
     )
-    active: BoolFilterOption = Field(
+    active: Optional[bool] = Field(
         default=None,
         description="If the schedule is active",
     )
@@ -357,7 +362,7 @@ class ScheduleFilter(ProjectScopedFilter):
         default=None,
         description="The repetition interval in seconds",
     )
-    catchup: BoolFilterOption = Field(
+    catchup: Optional[bool] = Field(
         default=None,
         description="Whether or not the schedule is set to catchup past missed "
         "events",
@@ -371,7 +376,7 @@ class ScheduleFilter(ProjectScopedFilter):
         description="The time at which the schedule should run once",
     )
 
-    is_archived: BoolFilterOption = Field(
+    is_archived: bool | None = Field(
         default=None,
         description="Whether or not the schedule is archived",
     )

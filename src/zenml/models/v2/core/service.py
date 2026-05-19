@@ -31,7 +31,6 @@ from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ServiceState
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import (
-    BoolFilterOption,
     StringFilterOption,
     UUIDFilterOption,
 )
@@ -425,6 +424,7 @@ class ServiceFilter(ProjectScopedFilter):
     API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
         *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
         "config",
+        "running",
     ]
 
     name: StringFilterOption = Field(
@@ -454,7 +454,7 @@ class ServiceFilter(ProjectScopedFilter):
         default=None,
         description="Pipeline step name responsible for deploying the service",
     )
-    running: BoolFilterOption = Field(
+    running: Optional[bool] = Field(
         default=None, description="Whether the service is running"
     )
     model_version_id: UUIDFilterOption = Field(

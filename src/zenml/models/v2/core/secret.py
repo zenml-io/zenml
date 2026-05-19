@@ -29,7 +29,6 @@ from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import (
     AnyQuery,
-    BoolFilterOption,
     StringFilterOption,
 )
 from zenml.models.v2.base.scoped import (
@@ -266,12 +265,16 @@ class SecretFilter(UserScopedFilter):
         *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "values",
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *UserScopedFilter.API_SINGLE_INPUT_PARAMS,
+        "private",
+    ]
 
     name: StringFilterOption = Field(
         default=None,
         description="Name of the secret",
     )
-    private: BoolFilterOption = Field(
+    private: Optional[bool] = Field(
         default=None,
         description="Whether to filter secrets by private status",
     )

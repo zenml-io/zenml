@@ -23,8 +23,6 @@ from zenml.constants import FILTERING_DATETIME_FORMAT
 from zenml.enums import GenericFilterOps, LogicalOperators, SorterOps
 from zenml.models.v2.base.filter import (
     BaseFilter,
-    BoolFilter,
-    BoolFilterOption,
     DatetimeFilter,
     DatetimeFilterOption,
     Filter,
@@ -45,7 +43,6 @@ class SomeFilterModel(BaseFilter):
     datetime_field: DatetimeFilterOption = None
     int_field: IntegerFilterOption = None
     float_field: FloatFilterOption = None
-    bool_field: BoolFilterOption = None
     str_field: StringFilterOption = None
 
 
@@ -283,15 +280,6 @@ def test_float_field_supports_multiple_string_filters():
         GenericFilterOps.STARTSWITH,
     ]
     assert [f.value for f in filters] == ["1", "1.3"]
-
-
-def test_bool_filter_model():
-    """Test Filter model creation for bool fields."""
-    _test_filter_model(
-        filter_field="bool_field",
-        filter_class=BoolFilter,
-        filter_value=True,
-    )
 
 
 def test_uuid_filter_model():

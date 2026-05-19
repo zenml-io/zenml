@@ -28,7 +28,6 @@ from pydantic import Field, PositiveInt, model_validator
 
 from zenml.enums import ResourceRequestStatus
 from zenml.models.v2.base.filter import (
-    BoolFilterOption,
     StringFilterOption,
     UUIDFilterOption,
 )
@@ -232,8 +231,12 @@ class ResourceRequestFilter(UserScopedFilter):
         *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "pipeline_run_id",
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *UserScopedFilter.API_SINGLE_INPUT_PARAMS,
+        "preemptible",
+    ]
 
-    preemptible: BoolFilterOption = Field(
+    preemptible: Optional[bool] = Field(
         default=None,
         description="Whether the resource request is preemptible.",
     )

@@ -22,7 +22,6 @@ from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ColorVariants, TaggableResourceTypes
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import (
-    BoolFilterOption,
     EnumFilterOption,
     StringFilterOption,
 )
@@ -204,6 +203,10 @@ class TagFilter(UserScopedFilter):
         *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "resource_type",
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *UserScopedFilter.API_SINGLE_INPUT_PARAMS,
+        "exclusive",
+    ]
 
     name: StringFilterOption = Field(
         description="The unique title of the tag.", default=None
@@ -211,7 +214,7 @@ class TagFilter(UserScopedFilter):
     color: EnumFilterOption[ColorVariants] = Field(
         description="The color variant assigned to the tag.", default=None
     )
-    exclusive: BoolFilterOption = Field(
+    exclusive: Optional[bool] = Field(
         description="The flag signifying whether the tag is an exclusive tag.",
         default=None,
     )

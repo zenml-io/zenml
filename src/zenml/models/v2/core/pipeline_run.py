@@ -35,7 +35,6 @@ from zenml.enums import ExecutionStatus, PipelineRunTriggeredByType
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate, BaseZenModel
 from zenml.models.v2.base.filter import (
-    BoolFilterOption,
     DatetimeFilterOption,
     IntegerFilterOption,
     StringFilterOption,
@@ -892,6 +891,7 @@ class PipelineRunFilter(
         *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
         *TaggableFilter.API_SINGLE_INPUT_PARAMS,
         *RunMetadataFilterMixin.API_SINGLE_INPUT_PARAMS,
+        "in_progress",
         "templatable",
         "root_runs_only",
     ]
@@ -956,7 +956,7 @@ class PipelineRunFilter(
         default=None,
         description="Name of the Pipeline Run",
     )
-    in_progress: BoolFilterOption = Field(
+    in_progress: Optional[bool] = Field(
         default=None,
         description="Whether the pipeline run is in progress.",
     )

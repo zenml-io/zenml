@@ -14,7 +14,7 @@
 """Models representing API keys."""
 
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, ClassVar, List, Optional, Type
+from typing import TYPE_CHECKING, ClassVar, List, Optional, Type, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -35,7 +35,6 @@ from zenml.models.v2.base.base import (
 from zenml.models.v2.base.filter import (
     AnyQuery,
     BaseFilter,
-    BoolFilterOption,
     DatetimeFilterOption,
     StringFilterOption,
 )
@@ -355,6 +354,7 @@ class APIKeyFilter(BaseFilter):
     API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
         *BaseFilter.API_SINGLE_INPUT_PARAMS,
         "service_account",
+        "active",
     ]
 
     service_account: Optional[UUID] = Field(
@@ -369,9 +369,10 @@ class APIKeyFilter(BaseFilter):
         default=None,
         title="Filter by the API key description.",
     )
-    active: BoolFilterOption = Field(
+    active: Optional[Union[bool, str]] = Field(
         default=None,
         title="Whether the API key is active.",
+        union_mode="left_to_right",
     )
     last_login: DatetimeFilterOption = Field(
         default=None,

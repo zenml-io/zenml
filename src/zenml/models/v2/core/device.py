@@ -14,7 +14,7 @@
 """Models representing devices."""
 
 from datetime import datetime
-from typing import Optional
+from typing import ClassVar, List, Optional, Union
 from uuid import UUID
 
 from pydantic import Field
@@ -25,7 +25,6 @@ from zenml.models.v2.base.base import (
     BaseUpdate,
 )
 from zenml.models.v2.base.filter import (
-    BoolFilterOption,
     DatetimeFilterOption,
     EnumFilterOption,
     IntegerFilterOption,
@@ -448,6 +447,11 @@ class OAuthDeviceInternalResponse(OAuthDeviceResponse):
 class OAuthDeviceFilter(UserScopedFilter):
     """Model to enable advanced filtering of OAuth2 devices."""
 
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *UserScopedFilter.API_SINGLE_INPUT_PARAMS,
+        "trusted_device",
+    ]
+
     expires: DatetimeFilterOption = Field(
         default=None,
         description="The expiration date of the OAuth2 device.",
@@ -460,9 +464,10 @@ class OAuthDeviceFilter(UserScopedFilter):
         default=None,
         description="The status of the OAuth2 device.",
     )
-    trusted_device: BoolFilterOption = Field(
+    trusted_device: Union[bool, str, None] = Field(
         default=None,
         description="Whether the OAuth2 device was marked as trusted.",
+        union_mode="left_to_right",
     )
     failed_auth_attempts: IntegerFilterOption = Field(
         default=None,
