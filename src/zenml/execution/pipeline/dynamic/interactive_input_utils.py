@@ -4,7 +4,7 @@ import json
 import select
 import sys
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Iterator, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional, Tuple
 
 from zenml.client import Client
 from zenml.constants import (
@@ -132,6 +132,33 @@ def read_stdin_line_with_timeout(
     return True, raw_value.rstrip("\n")
 
 
+def _schema_allows_string(schema: Dict[str, Any]) -> bool:
+    """Checks whether a JSON schema accepts a string value.
+
+    Args:
+        schema: JSON schema to inspect.
+
+    Returns:
+        True if string values are valid for the schema.
+    """
+    node_type = schema.get("type")
+    if node_type == "string":
+        return True
+    if isinstance(node_type, list) and "string" in node_type:
+        return True
+
+    for key in ("anyOf", "oneOf", "allOf"):
+        variants = schema.get(key)
+        if isinstance(variants, list):
+            for variant in variants:
+                if isinstance(variant, dict) and _schema_allows_string(
+                    variant
+                ):
+                    return True
+
+    return False
+
+
 def poll_interactive_wait_condition_input(
     condition: "RunWaitConditionResponse",
     poll_interval: int,
@@ -155,9 +182,12 @@ def poll_interactive_wait_condition_input(
             try:
                 result = json.loads(raw_value)
             except json.JSONDecodeError as e:
-                print(f"Invalid JSON input: {e}")
-                print("> ", end="", flush=True)
-                return
+                if _schema_allows_string(condition.data_schema):
+                    result = raw_value
+                else:
+                    print(f"Invalid JSON input: {e}")
+                    print("> ", end="", flush=True)
+                    return
 
     try:
         Client().zen_store.resolve_run_wait_condition(
