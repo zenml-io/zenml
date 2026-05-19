@@ -907,7 +907,7 @@ class Client(metaclass=ClientMetaClass):
         updated_is_admin: Optional[bool] = None,
         updated_metadata: Optional[Dict[str, Any]] = None,
         updated_default_project_id: Optional[UUID] = None,
-        active: Optional[Union[str, bool]] = None,
+        active: Optional[bool] = None,
     ) -> UserResponse:
         """Update a user.
 
