@@ -757,8 +757,8 @@ class DynamicPipelineRunner:
         """Run the pipeline.
 
         Raises:
-            Exception: If the pipeline run failed.
-        """  # noqa: DOC502
+            Exception: If loading the pipeline fails.
+        """
         self._state.id = threading.get_ident()
         logs_context: ContextManager[Any] = nullcontext()
         if is_pipeline_logging_enabled(self._snapshot.pipeline_configuration):
@@ -803,13 +803,19 @@ class DynamicPipelineRunner:
 
             assert self._snapshot.stack
 
+            try:
+                pipeline = self.pipeline
+            except Exception as e:
+                self._publish_run_status(exception=e)
+                raise
+
             with (
                 InMemoryArtifactCache(),
                 env_utils.temporary_runtime_environment(
                     self._snapshot.pipeline_configuration, self._snapshot.stack
                 ),
                 DynamicPipelineRunContext(
-                    pipeline=self.pipeline,
+                    pipeline=pipeline,
                     run=self._run,
                     snapshot=self._snapshot,
                     runner=self,
@@ -1382,7 +1388,7 @@ class DynamicPipelineRunner:
 
         Returns:
             The resolved wait condition value.
-        """
+        """  # noqa: DOC503
         from zenml.execution.pipeline.dynamic.run_context import (
             DynamicPipelineRunContext,
         )
@@ -1498,7 +1504,7 @@ class DynamicPipelineRunner:
                             time.sleep(poll_interval)
             except _WaitConditionAborted:
                 raise
-            except KeyboardInterrupt:
+            except KeyboardInterrupt as keyboard_interrupt:
                 try:
                     Client().zen_store.resolve_run_wait_condition(
                         run_wait_condition_id=condition.id,
@@ -1513,7 +1519,19 @@ class DynamicPipelineRunner:
                         condition.id,
                         e,
                     )
-                raise
+                    # When resolving a wait condition with `ABORT` resolution,
+                    # the server will transition the run to a `STOPPED` status.
+                    # This failed, which means we re-raise the
+                    # KeyboardInterrupt, which causes downstream code to publish
+                    # a `FAILED` run status.
+                    raise keyboard_interrupt
+                else:
+                    # Raise _WaitConditionAborted to signal that the wait
+                    # condition was aborted. Downstream code will not publish
+                    # a `FAILED` run status in this case.
+                    raise _WaitConditionAborted(
+                        f"Wait condition `{condition.name}` was aborted."
+                    ) from keyboard_interrupt
             except BaseException:
                 try:
                     Client().zen_store.update_run_wait_condition_lease(
@@ -1735,9 +1753,12 @@ class DynamicPipelineRunner:
             exception: Exception that caused the run to fail.
         """
         if exception is not None:
+            pipeline_func = (
+                self._pipeline.entrypoint if self._pipeline else None
+            )
             exception_info = exception_utils.collect_exception_information(
                 exception=exception,
-                user_func=self.pipeline.entrypoint,
+                user_func=pipeline_func,
             )
             self._run = publish_failed_pipeline_run(
                 self._run.id, exception_info=exception_info
