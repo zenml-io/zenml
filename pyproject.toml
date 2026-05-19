@@ -98,10 +98,8 @@ server = [
 ]
 otel = [
     # Install otel dependencies to enable OpenTelemetry instrumentation in the server
-    "opentelemetry-distro>=0.59b0",
     "opentelemetry-exporter-otlp-proto-http>=1.38.0",
     "opentelemetry-instrumentation-fastapi>=0.59b0",
-    "opentelemetry-instrumentation-logging>=0.59b0",
     "opentelemetry-instrumentation-requests>=0.59b0",
     "opentelemetry-instrumentation-sqlalchemy>=0.59b0",
 ]
