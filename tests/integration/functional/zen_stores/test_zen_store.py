@@ -3014,7 +3014,7 @@ def test_filters_with_oneof_tags_and_run_metadata(clean_client):
     runs = store.list_runs(runs_filter_model=runs_filter)
     assert len(runs) == len(metadata_values)  # All runs
 
-    runs_filter = PipelineRunFilter(tasg='oneof:["dogs"]')
+    runs_filter = PipelineRunFilter(tags='oneof:["dogs"]')
     runs = store.list_runs(runs_filter_model=runs_filter)
     assert len(runs) == 0  # No runs
 
