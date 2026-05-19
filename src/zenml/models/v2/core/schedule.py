@@ -339,10 +339,12 @@ class ScheduleFilter(ProjectScopedFilter):
     pipeline_id: UUIDFilterOption = Field(
         default=None,
         description="Pipeline that the schedule is attached to.",
+        union_mode="left_to_right",
     )
     orchestrator_id: UUIDFilterOption = Field(
         default=None,
         description="Orchestrator that the schedule is attached to.",
+        union_mode="left_to_right",
     )
     active: Optional[bool] = Field(
         default=None,
@@ -353,10 +355,14 @@ class ScheduleFilter(ProjectScopedFilter):
         description="The cron expression, describing the schedule",
     )
     start_time: DatetimeFilterOption = Field(
-        default=None, description="Start time"
+        default=None,
+        description="Start time",
+        union_mode="left_to_right",
     )
     end_time: DatetimeFilterOption = Field(
-        default=None, description="End time"
+        default=None,
+        description="End time",
+        union_mode="left_to_right",
     )
     interval_second: FloatFilterOption = Field(
         default=None,
@@ -374,6 +380,7 @@ class ScheduleFilter(ProjectScopedFilter):
     run_once_start_time: DatetimeFilterOption = Field(
         default=None,
         description="The time at which the schedule should run once",
+        union_mode="left_to_right",
     )
 
     is_archived: bool | None = Field(

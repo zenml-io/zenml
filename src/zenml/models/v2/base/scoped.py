@@ -201,6 +201,7 @@ class UserScopedFilter(BaseFilter):
     user: UUIDFilterOption = Field(
         default=None,
         description="Name/ID of the user that created the entity.",
+        union_mode="left_to_right",
     )
 
     def set_scope_user(self, user_id: UUID) -> None:

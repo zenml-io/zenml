@@ -691,6 +691,7 @@ class ModelVersionFilter(
     stage: EnumFilterOption[ModelStages] = Field(
         description="The model version stage",
         default=None,
+        union_mode="left_to_right",
     )
     model: UUIDFilterOption = Field(
         default=None,
@@ -698,6 +699,7 @@ class ModelVersionFilter(
         "to. This field must always be set and is always applied in addition "
         "to the other filters, regardless of the value of the "
         "logical_operator field.",
+        union_mode="left_to_right",
     )
 
     def get_custom_filters(

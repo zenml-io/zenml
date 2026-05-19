@@ -377,10 +377,12 @@ class APIKeyFilter(BaseFilter):
     last_login: DatetimeFilterOption = Field(
         default=None,
         title="Time when the API key was last used to log in.",
+        union_mode="left_to_right",
     )
     last_rotated: DatetimeFilterOption = Field(
         default=None,
         title="Time when the API key was last rotated.",
+        union_mode="left_to_right",
     )
 
     def set_service_account(self, service_account_id: UUID) -> None:

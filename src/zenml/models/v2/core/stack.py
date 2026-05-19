@@ -478,6 +478,7 @@ class StackFilter(UserScopedFilter):
     component_id: UUIDFilterOption = Field(
         default=None,
         description="Component in the stack",
+        union_mode="left_to_right",
     )
     component: UUIDFilterOption = Field(
         default=None, description="Name/ID of a component in the stack."

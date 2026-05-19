@@ -403,14 +403,17 @@ class DeploymentFilter(ProjectScopedFilter, TaggableFilter):
     pipeline: UUIDFilterOption = Field(
         default=None,
         description="Pipeline associated with the deployment.",
+        union_mode="left_to_right",
     )
     snapshot_id: UUIDFilterOption = Field(
         default=None,
         description="Pipeline snapshot ID associated with the deployment.",
+        union_mode="left_to_right",
     )
     deployer_id: UUIDFilterOption = Field(
         default=None,
         description="Deployer ID managing the deployment.",
+        union_mode="left_to_right",
     )
 
     def get_custom_filters(

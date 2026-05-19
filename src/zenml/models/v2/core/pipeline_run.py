@@ -911,39 +911,48 @@ class PipelineRunFilter(
     pipeline_id: UUIDFilterOption = Field(
         default=None,
         description="Pipeline associated with the Pipeline Run",
+        union_mode="left_to_right",
     )
     stack_id: UUIDFilterOption = Field(
         default=None,
         description="Stack used for the Pipeline Run",
+        union_mode="left_to_right",
     )
     schedule_id: UUIDFilterOption = Field(
         default=None,
         description="Schedule that triggered the Pipeline Run",
+        union_mode="left_to_right",
     )
     build_id: UUIDFilterOption = Field(
         default=None,
         description="Build used for the Pipeline Run",
+        union_mode="left_to_right",
     )
     snapshot_id: UUIDFilterOption = Field(
         default=None,
         description="Snapshot used for the Pipeline Run",
+        union_mode="left_to_right",
     )
     code_repository_id: UUIDFilterOption = Field(
         default=None,
         description="Code repository used for the Pipeline Run",
+        union_mode="left_to_right",
     )
     template_id: UUIDFilterOption = Field(
         default=None,
         description="DEPRECATED: Template used for the pipeline run.",
         deprecated=True,
+        union_mode="left_to_right",
     )
     source_snapshot_id: UUIDFilterOption = Field(
         default=None,
         description="Source snapshot used for the pipeline run.",
+        union_mode="left_to_right",
     )
     model_version_id: UUIDFilterOption = Field(
         default=None,
         description="Model version associated with the pipeline run.",
+        union_mode="left_to_right",
     )
     linked_to_model_version_id: UUIDFilterOption = Field(
         default=None,
@@ -951,6 +960,7 @@ class PipelineRunFilter(
         "The difference to `model_version_id` is that this filter will "
         "not only include pipeline runs which are directly linked to the model "
         "version, but also if any step run is linked to the model version.",
+        union_mode="left_to_right",
     )
     status: StringFilterOption = Field(
         default=None,
@@ -963,10 +973,12 @@ class PipelineRunFilter(
     start_time: DatetimeFilterOption = Field(
         default=None,
         description="Start time for this run",
+        union_mode="left_to_right",
     )
     end_time: DatetimeFilterOption = Field(
         default=None,
         description="End time for this run",
+        union_mode="left_to_right",
     )
     # TODO: Remove once frontend is ready for it. This is replaced by the more
     #   generic `pipeline` filter below.
@@ -1000,18 +1012,22 @@ class PipelineRunFilter(
     triggered_by_step_run_id: UUIDFilterOption = Field(
         default=None,
         description="The ID of the step run that triggered this pipeline run.",
+        union_mode="left_to_right",
     )
     triggered_by_deployment_id: UUIDFilterOption = Field(
         default=None,
         description="The ID of the deployment that triggered this pipeline run.",
+        union_mode="left_to_right",
     )
     trigger_id: UUIDFilterOption = Field(
         default=None,
         description="The ID of the trigger that generated this pipeline run.",
+        union_mode="left_to_right",
     )
     parent_run_id: UUIDFilterOption = Field(
         default=None,
         description="The parent run ID for nested child pipeline runs.",
+        union_mode="left_to_right",
     )
     # TODO: Remove this once we support filtering for `parent_run_id is NULL`
     root_runs_only: Optional[bool] = Field(

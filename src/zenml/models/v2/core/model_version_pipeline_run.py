@@ -135,10 +135,12 @@ class ModelVersionPipelineRunFilter(BaseFilter):
     model_version_id: UUIDFilterOption = Field(
         default=None,
         description="Filter by model version ID",
+        union_mode="left_to_right",
     )
     pipeline_run_id: UUIDFilterOption = Field(
         default=None,
         description="Filter by pipeline run ID",
+        union_mode="left_to_right",
     )
     pipeline_run_name: StringFilterOption = Field(
         default=None,

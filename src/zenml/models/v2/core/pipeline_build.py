@@ -497,14 +497,17 @@ class PipelineBuildFilter(ProjectScopedFilter):
     pipeline_id: UUIDFilterOption = Field(
         description="Pipeline associated with the pipeline build.",
         default=None,
+        union_mode="left_to_right",
     )
     stack_id: UUIDFilterOption = Field(
         description="Stack associated with the pipeline build.",
         default=None,
+        union_mode="left_to_right",
     )
     container_registry_id: UUIDFilterOption = Field(
         description="Container registry associated with the pipeline build.",
         default=None,
+        union_mode="left_to_right",
     )
     is_local: Optional[bool] = Field(
         description="Whether the build images are stored in a container "

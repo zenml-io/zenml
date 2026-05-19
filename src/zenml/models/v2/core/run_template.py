@@ -371,18 +371,22 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
     pipeline_id: UUIDFilterOption = Field(
         default=None,
         description="Pipeline associated with the template.",
+        union_mode="left_to_right",
     )
     build_id: UUIDFilterOption = Field(
         default=None,
         description="Build associated with the template.",
+        union_mode="left_to_right",
     )
     stack_id: UUIDFilterOption = Field(
         default=None,
         description="Stack associated with the template.",
+        union_mode="left_to_right",
     )
     code_repository_id: UUIDFilterOption = Field(
         default=None,
         description="Code repository associated with the template.",
+        union_mode="left_to_right",
     )
     pipeline: UUIDFilterOption = Field(
         default=None,

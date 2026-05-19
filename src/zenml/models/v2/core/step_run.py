@@ -797,26 +797,32 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
     start_time: DatetimeFilterOption = Field(
         default=None,
         description="Start time for this run",
+        union_mode="left_to_right",
     )
     end_time: DatetimeFilterOption = Field(
         default=None,
         description="End time for this run",
+        union_mode="left_to_right",
     )
     pipeline_run_id: UUIDFilterOption = Field(
         default=None,
         description="Pipeline run of this step run",
+        union_mode="left_to_right",
     )
     snapshot_id: UUIDFilterOption = Field(
         default=None,
         description="Snapshot of this step run",
+        union_mode="left_to_right",
     )
     original_step_run_id: UUIDFilterOption = Field(
         default=None,
         description="Original id for this step run",
+        union_mode="left_to_right",
     )
     model_version_id: UUIDFilterOption = Field(
         default=None,
         description="Model version associated with the step run.",
+        union_mode="left_to_right",
     )
     model: UUIDFilterOption = Field(
         default=None,
@@ -825,6 +831,7 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
     version: IntegerFilterOption = Field(
         default=None,
         description="Version of the step run.",
+        union_mode="left_to_right",
     )
     exclude_retried: Optional[bool] = Field(
         default=None,
@@ -833,6 +840,7 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
     cache_expires_at: DatetimeFilterOption = Field(
         default=None,
         description="Cache expiration time of the step run.",
+        union_mode="left_to_right",
     )
     cache_expired: Optional[bool] = Field(
         default=None,

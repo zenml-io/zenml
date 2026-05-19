@@ -574,10 +574,12 @@ class ArtifactVersionFilter(
         "to. This field must always be set and is always applied in addition "
         "to the other filters, regardless of the value of the "
         "logical_operator field.",
+        union_mode="left_to_right",
     )
     artifact_id: UUIDFilterOption = Field(
         default=None,
         description="[Deprecated] Use 'artifact' instead. ID of the artifact to which this version belongs.",
+        union_mode="left_to_right",
     )
     version: StringFilterOption = Field(
         default=None,
@@ -586,6 +588,7 @@ class ArtifactVersionFilter(
     version_number: IntegerFilterOption = Field(
         default=None,
         description="Version of the artifact if it is an integer",
+        union_mode="left_to_right",
     )
     uri: StringFilterOption = Field(
         default=None,
@@ -606,11 +609,13 @@ class ArtifactVersionFilter(
     artifact_store_id: UUIDFilterOption = Field(
         default=None,
         description="Artifact store for this artifact",
+        union_mode="left_to_right",
     )
     model_version_id: UUIDFilterOption = Field(
         default=None,
         description="ID of the model version that is associated with this "
         "artifact version.",
+        union_mode="left_to_right",
     )
     only_unused: Optional[bool] = Field(
         default=False, description="Filter only for unused artifacts"

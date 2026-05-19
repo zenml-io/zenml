@@ -399,6 +399,7 @@ class UnScopedTriggerFilter(BaseFilter):
     next_occurrence: DatetimeFilterOption = Field(
         default=None,
         description="The next occurrence of the trigger (applicable only for schedules).",
+        union_mode="left_to_right",
     )
     concurrency: EnumFilterOption[TriggerRunConcurrency] = Field(
         default=None, description="The trigger concurrency."

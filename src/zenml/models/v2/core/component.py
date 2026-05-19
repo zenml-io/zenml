@@ -428,10 +428,12 @@ class ComponentFilter(UserScopedFilter):
     connector_id: UUIDFilterOption = Field(
         default=None,
         description="Connector linked to the stack component",
+        union_mode="left_to_right",
     )
     stack_id: UUIDFilterOption = Field(
         default=None,
         description="Stack of the stack component",
+        union_mode="left_to_right",
     )
 
     def set_scope_type(self, component_type: str) -> None:

@@ -297,6 +297,7 @@ class ServiceAccountFilter(BaseFilter):
     external_user_id: UUIDFilterOption = Field(
         default=None,
         title="The external user ID associated with the account.",
+        union_mode="left_to_right",
     )
 
     def apply_filter(

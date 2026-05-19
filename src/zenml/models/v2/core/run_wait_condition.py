@@ -310,6 +310,7 @@ class RunWaitConditionFilter(ProjectScopedFilter, RunMetadataFilterMixin):
     pipeline_run: UUIDFilterOption = Field(
         default=None,
         title="Filter by pipeline run ID/name.",
+        union_mode="left_to_right",
     )
     type: StringFilterOption = Field(
         default=None, title="Filter by condition type."
@@ -323,6 +324,7 @@ class RunWaitConditionFilter(ProjectScopedFilter, RunMetadataFilterMixin):
     resolved_by: UUIDFilterOption = Field(
         default=None,
         title="Filter by the name or ID of the user that resolved the condition.",
+        union_mode="left_to_right",
     )
     resolved_at: DatetimeFilterOption = Field(
         default=None,

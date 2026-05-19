@@ -455,14 +455,17 @@ class OAuthDeviceFilter(UserScopedFilter):
     expires: DatetimeFilterOption = Field(
         default=None,
         description="The expiration date of the OAuth2 device.",
+        union_mode="left_to_right",
     )
     client_id: UUIDFilterOption = Field(
         default=None,
         description="The client ID of the OAuth2 device.",
+        union_mode="left_to_right",
     )
     status: EnumFilterOption[OAuthDeviceStatus] = Field(
         default=None,
         description="The status of the OAuth2 device.",
+        union_mode="left_to_right",
     )
     trusted_device: Union[bool, str, None] = Field(
         default=None,
@@ -472,8 +475,10 @@ class OAuthDeviceFilter(UserScopedFilter):
     failed_auth_attempts: IntegerFilterOption = Field(
         default=None,
         description="The number of failed authentication attempts.",
+        union_mode="left_to_right",
     )
     last_login: DatetimeFilterOption = Field(
         default=None,
         description="The date of the last successful login.",
+        union_mode="left_to_right",
     )
