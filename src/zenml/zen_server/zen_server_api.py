@@ -153,7 +153,7 @@ app = FastAPI(
 
 add_middlewares(app)
 
-# supress uvicorn access logs
+# suppress uvicorn access logs
 _configure_uvicorn_logging()
 
 # Configure OpenTelemetry
