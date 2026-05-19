@@ -123,6 +123,27 @@ def dashboard_directory() -> str:
     return os.path.join(os.path.dirname(__file__), "dashboard")
 
 
+def _configure_uvicorn_logging() -> None:
+    """Route uvicorn records through the ZenML root logging setup."""
+    # On startup uvicorn installs its own handlers and formatters on three loggers:
+    #
+    #   "uvicorn"        – parent logger (propagate=False by default)
+    #   "uvicorn.error"  – server lifecycle and internal errors
+    #   "uvicorn.access" – per-request access log
+    #
+    # These handlers use uvicorn's own output path. Clear them and let uvicorn
+    # propagate to the root logger so its records are handled by the same
+    # ZenML handlers that render console/JSON output and export logs to OTel.
+    for _uvicorn_logger_name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
+        _uvicorn_logger = logging.getLogger(_uvicorn_logger_name)
+
+        # clear uvicorn handlers to avoid double logging
+        _uvicorn_logger.handlers.clear()
+
+        # propagate uvicorn logs to the root logger
+        _uvicorn_logger.propagate = True
+
+
 app = FastAPI(
     title="ZenML",
     version=zenml.__version__,
@@ -132,6 +153,10 @@ app = FastAPI(
 
 add_middlewares(app)
 
+# supress uvicorn access logs
+_configure_uvicorn_logging()
+
+# Configure OpenTelemetry
 configure_otel(app)
 
 
@@ -156,24 +181,6 @@ def validation_exception_handler(
 @app.on_event("startup")
 async def initialize() -> None:
     """Initialize the ZenML server."""
-    # On startup uvicorn installs its own handlers and formatters on three loggers:
-    #
-    #   "uvicorn"        – parent logger (propagate=False by default)
-    #   "uvicorn.error"  – server lifecycle and internal errors
-    #   "uvicorn.access" – per-request access log
-    #
-    # These handlers use uvicorn's own output path. Clear them and let uvicorn
-    # propagate to the root logger so its records are handled by the same
-    # ZenML handlers that render console/JSON output and export logs to OTel.
-    for _uvicorn_logger_name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
-        _uvicorn_logger = logging.getLogger(_uvicorn_logger_name)
-
-        # clear uvicorn handlers to avoid double logging
-        _uvicorn_logger.handlers.clear()
-
-        # propagate uvicorn logs to the root logger
-        _uvicorn_logger.propagate = True
-
     cfg = server_config()
     # Set the maximum number of worker threads
     to_thread.current_default_thread_limiter().total_tokens = (
