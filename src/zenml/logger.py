@@ -687,6 +687,12 @@ def init_logging() -> None:
     root_logger = logging.getLogger()
 
     # Clear existing ZenML handlers to avoid duplicates
+    # This makes repeated init_logging() calls idempotent.
+    #
+    # We are following, "remove and re-configure" pattern instead of
+    # "add once, and skip later" pattern. On repeated init_logging() calls,
+    # this allows us to re-configure the handlers with updated env vars (if any)
+    # like ZENML_LOGGING_FORMAT, ZENML_LOGGING_VERBOSITY, etc.
     _remove_zenml_handlers(root_logger)
 
     # Add new ZenML handlers to the root logger
