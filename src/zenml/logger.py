@@ -584,7 +584,7 @@ class ZenMLLoggingHandler(logging.Handler):
         LoggingContext.emit(record)
 
 
-class ZenMLConsoleHandler(logging.StreamHandler):
+class ZenMLConsoleHandler(logging.StreamHandler[Any]):
     """Console handler owned by the ZenML logging setup."""
 
 
