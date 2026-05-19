@@ -54,6 +54,8 @@ class PipelineSpec(FrozenBaseModel):
         "pipeline inputs are not JSON serializable.",
     )
     steps: List[StepSpec]
+    # Will be empty for dynamic pipelines as we cannot execute the pipeline
+    # function at compile time to compute the outputs.
     outputs: List[OutputSpec] = []
     output_schema: Optional[Dict[str, Any]] = Field(
         default=None,
