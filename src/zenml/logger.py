@@ -37,10 +37,6 @@ from zenml.constants import (
 )
 from zenml.enums import LoggingLevels
 
-ZENML_LOGGING_COLORS_DISABLED = handle_bool_env_var(
-    ENV_ZENML_LOGGING_COLORS_DISABLED, False
-)
-
 _original_stdout_write: Optional[Any] = None
 _original_stderr_write: Optional[Any] = None
 _stdout_wrapped: bool = False
@@ -205,6 +201,11 @@ class ZenMLConsoleFormatter(logging.Formatter):
     def __init__(self) -> None:
         """Initialize the formatter."""
         super().__init__(fmt=self.LOG_FORMAT)
+        
+        # disable colors if the env var is set to true
+        self._colors_disabled = handle_bool_env_var(
+            ENV_ZENML_LOGGING_COLORS_DISABLED, False
+        )
 
         # The ENV_ZENML_SERVER env var is set to True when the ZenML
         # server is running. By default, if the env var is not set,
@@ -269,7 +270,7 @@ class ZenMLConsoleFormatter(logging.Formatter):
             traceback_text = "\n" + self.formatException(record.exc_info)
 
         # Return the message and traceback text if colors are disabled.
-        if ZENML_LOGGING_COLORS_DISABLED:
+        if self._colors_disabled:
             return message + traceback_text
 
         # Colorize the level and highlights.
@@ -319,7 +320,7 @@ class ZenMLConsoleFormatter(logging.Formatter):
                 self.formatException(record.exc_info)
             )
 
-        if ZENML_LOGGING_COLORS_DISABLED:
+        if self._colors_disabled:
             return formatted_log + extras_text + traceback_text
 
         if extras_text:
