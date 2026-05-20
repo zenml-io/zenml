@@ -75,13 +75,12 @@ class MaterializerRegistry:
             `BaseMaterializer` subclass that was registered for this key.
         """
         if isinstance(key, str):
+            # This shouldn't happen unless users manually call this method, as
+            # we always resolve output type annotations before trying to get a
+            # materializer.
             raise RuntimeError(
-                "String type annotations (e.g. `def my_step() -> "
-                "'np.ndarray`) are not supported yet for step outputs. Please "
-                "change to actual type annotations (e.g. `def my_step() -> "
-                "np.ndarray`) and remove any "
-                "`from __future__ import annotations` in modules where "
-                "your steps are defined."
+                "Unable to get materializer for a string type annotation. "
+                "Resolve your type annotation before calling this method."
             )
 
         for class_ in key.__mro__:
