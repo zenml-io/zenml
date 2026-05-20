@@ -201,7 +201,7 @@ class ZenMLConsoleFormatter(logging.Formatter):
     def __init__(self) -> None:
         """Initialize the formatter."""
         super().__init__(fmt=self.LOG_FORMAT)
-        
+
         # disable colors if the env var is set to true
         self._colors_disabled = handle_bool_env_var(
             ENV_ZENML_LOGGING_COLORS_DISABLED, False
@@ -579,7 +579,7 @@ class ZenMLLoggingHandler(logging.Handler):
 
 class ZenMLConsoleHandler(logging.StreamHandler):  # type: ignore[type-arg]
     """Console handler owned by the ZenML logging setup.
-    
+
     Default stream is ``_ZenMLStdoutStream()`` which writes
     to the original stdout, bypassing the ZenML wrapper.
     """
