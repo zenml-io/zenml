@@ -440,6 +440,11 @@ def _select_console_formatter() -> logging.Formatter:
     if fmt == "json":
         return ZenMLJsonFormatter()
 
+    if fmt not in ("json", "console"):
+        get_logger(__name__).warning(
+            f"Invalid logging format: {fmt}. Defaulting to console formatter."
+        )
+
     # Return a console formatter if the env var is set to "console" or for the client.
     return ZenMLConsoleFormatter()
 
