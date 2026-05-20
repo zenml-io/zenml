@@ -36,7 +36,6 @@ from zenml.logger import (
     ZenMLJsonFormatter,
     ZenMLLoggingHandler,
     bind_request_context,
-    get_console_handler,
     get_logger,
     get_logging_context,
     init_logging,
@@ -207,7 +206,7 @@ def test_removing_zenml_handlers_does_not_remove_foreign_handlers() -> None:
     root_logger.handlers.clear()
 
     foreign_handler = logging.StreamHandler()
-    console_handler = get_console_handler()
+    console_handler = ZenMLConsoleHandler()
     zenml_handler = ZenMLLoggingHandler()
     root_logger.addHandler(foreign_handler)
     root_logger.addHandler(console_handler)
@@ -225,7 +224,7 @@ def test_json_formatted_logs(
     # Set the logging format to JSON.
     monkeypatch.setenv(ENV_ZENML_LOGGING_FORMAT, "json")
 
-    handler = get_console_handler()
+    handler = ZenMLConsoleHandler()
     record = _make_log_record(
         "request.completed",
         request_id="request-1",
@@ -280,7 +279,7 @@ def test_structured_console_formatted_logs(
     # as plain text.
     monkeypatch.setenv(ENV_ZENML_LOGGING_COLORS_DISABLED, "true")
 
-    handler = get_console_handler()
+    handler = ZenMLConsoleHandler()
     record = _make_log_record(
         "endpoint.completed",
         level=logging.DEBUG,

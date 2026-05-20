@@ -578,7 +578,22 @@ class ZenMLLoggingHandler(logging.Handler):
 
 
 class ZenMLConsoleHandler(logging.StreamHandler):  # type: ignore[type-arg]
-    """Console handler owned by the ZenML logging setup."""
+    """Console handler owned by the ZenML logging setup.
+    
+    Default stream is ``_ZenMLStdoutStream()`` which writes
+    to the original stdout, bypassing the ZenML wrapper.
+    """
+
+    def __init__(self, stream: Optional[Any] = None) -> None:
+        """Initialize the console handler."""
+        # initialize the handler with the provided stream or the default stream
+        super().__init__(stream or _ZenMLStdoutStream())
+
+        # set the formatter to the ZenML formatter
+        self.setFormatter(_select_console_formatter())
+
+        # add filters to the handler to attach structlog contextvars and step name to the log record
+        add_zenml_filters(self)
 
 
 class _StepNameFilter(logging.Filter):
@@ -648,13 +663,6 @@ def add_zenml_filters(handler: logging.Handler) -> logging.Handler:
     return handler
 
 
-def get_console_handler() -> logging.Handler:
-    """Get console handler that writes to stdout and is configured with ZenML formatter and filters."""
-    handler = ZenMLConsoleHandler(_ZenMLStdoutStream())
-    handler.setFormatter(_select_console_formatter())
-    return add_zenml_filters(handler)
-
-
 def get_zenml_handler() -> logging.Handler:
     """Get ZenML handler that routes logs through LoggingContext."""
     handler = ZenMLLoggingHandler()
@@ -689,7 +697,7 @@ def init_logging() -> None:
     _remove_zenml_handlers(root_logger)
 
     # Add new ZenML handlers to the root logger
-    root_logger.addHandler(get_console_handler())
+    root_logger.addHandler(ZenMLConsoleHandler())
     root_logger.addHandler(get_zenml_handler())
 
     # Wraps stdout/stderr after handlers are attached so the
