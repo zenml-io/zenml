@@ -297,14 +297,14 @@ class ZenMLConsoleFormatter(logging.Formatter):
         # Format without traceback first so we can append extras before the traceback.
         exc_info_backup = record.exc_info
         exc_text_backup = record.exc_text
-        record.exc_info = None
-        record.exc_text = None
-
-        formatted_log = super().format(record)
-
-        # Restore exc_info and exc_text.
-        record.exc_info = exc_info_backup
-        record.exc_text = exc_text_backup
+        try:
+            record.exc_info = None
+            record.exc_text = None
+            formatted_log = super().format(record)
+        finally:
+            # Restore exc_info and exc_text.
+            record.exc_info = exc_info_backup
+            record.exc_text = exc_text_backup
 
         extras = self._collect_extras(record)
         extras_text = ""
