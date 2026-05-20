@@ -232,8 +232,10 @@ def parse_return_type_annotations(
     return_annotation = signature.return_annotation
     output_name: Optional[str]
 
-    # Return type annotated as `None`
-    if return_annotation is None:
+    # Return type annotated as `None`. Pydantic normalizes a `None`
+    # annotation to `type(None)` when resolving stringized annotations
+    # (e.g. under `from __future__ import annotations`), so handle both.
+    if return_annotation is None or return_annotation is type(None):
         return {}
 
     # Return type not annotated -> check whether `None` or `Any` should be used

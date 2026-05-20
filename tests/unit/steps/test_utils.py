@@ -432,3 +432,13 @@ def test_get_resolved_signature_preserves_missing_return_annotation():
 
     sig = get_resolved_signature(f)
     assert sig.return_annotation is inspect.Signature.empty
+
+
+def test_stringized_none_return_produces_no_outputs():
+    """Regression test: `-> "None"` (as under `from __future__ import
+    annotations`) must produce no output artifact, same as `-> None`."""
+
+    def f() -> "None":
+        return None
+
+    assert parse_return_type_annotations(f) == {}
