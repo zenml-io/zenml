@@ -148,6 +148,10 @@ def map_reduce():
     reducer(results)               # pass list of artifacts directly
 ```
 
+For a complete agentic workflow that combines dynamic mapping, reduction, and a
+human approval gate, see the
+[`agentic_hitl_pipeline` example](https://github.com/zenml-io/zenml/tree/main/examples/agentic_hitl_pipeline).
+
 Key points:
 - `step.map(...)` fans out a step over sequence-like inputs. These inputs can be either
   - a single list-like output artifact (see the code sample above)
