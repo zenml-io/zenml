@@ -45,9 +45,7 @@ def execute_agent_task(
                 "tool": task["tool"],
                 "instruction": task["instruction"],
                 "result": f"Completed {task['task_id']} with {task['tool']}",
-                "confidence": 0.82
-                if task["task_id"] == "risk_check"
-                else 0.9,
+                "confidence": 0.82 if task["task_id"] == "risk_check" else 0.9,
             }
         ]
     )
