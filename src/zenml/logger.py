@@ -428,20 +428,6 @@ class ZenMLJsonFormatter(logging.Formatter):
         return json.dumps(payload, default=str, separators=(",", ":"))
 
 
-def _is_json_format() -> bool:
-    """Decide whether to emit JSON or console output.
-
-    Returns:
-        True when the output format should be JSON.
-    """
-    fmt = os.environ.get(ENV_ZENML_LOGGING_FORMAT, "").lower()
-    if fmt == "json":
-        return True
-
-    # Default to console output
-    return False
-
-
 def _select_console_formatter() -> logging.Formatter:
     """Return a JSON or console formatter based on ``ZENML_LOGGING_FORMAT`` env var. Default is console.
 
@@ -450,7 +436,8 @@ def _select_console_formatter() -> logging.Formatter:
 
     """
     # Return a JSON formatter if the env var is set to "json" or if the server is running.
-    if _is_json_format():
+    fmt = os.environ.get(ENV_ZENML_LOGGING_FORMAT, "").lower()
+    if fmt == "json":
         return ZenMLJsonFormatter()
 
     # Return a console formatter if the env var is set to "console" or for the client.
