@@ -112,6 +112,24 @@ server:
 
 If you override `podSecurityContext`, ensure that `fsGroup: 1000` is set when using persistent volumes, otherwise the container will not be able to write to the mounted volume and will crash.
 
+### Server Observability
+
+You can configure server log output and OpenTelemetry export through
+`server.environment`:
+
+```yaml
+server:
+  environment:
+    ZENML_LOGGING_FORMAT: "<console|json>" # default is console
+    ZENML_LOGGING_COLORS_DISABLED: "<true|false>" # default is false
+    ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
+    ZENML_SERVER_OTEL_SERVICE_NAME: "zenml-server" # default is zenml-server
+```
+
+`ZENML_LOGGING_FORMAT` controls the server container stdout/stderr output. See the [logging guide](https://docs.zenml.io/concepts/steps_and_pipelines/logging) for more details.
+
+OpenTelemetry export is configured separately with `ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT` and exports OTLP records for traces, metrics, and logs independently of the console log format.
+
 ## Backwards Compatibility
 
 The top-level `zenml:` values key has been renamed to `server:`. Existing

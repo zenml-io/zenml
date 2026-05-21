@@ -171,19 +171,70 @@ my_pipeline = my_pipeline.with_options(
 )
 ```
 
-### Setting Console Logging Format
+### Setting Logging Format
 
-Change the default console logging format with:
+Change the default logging format with:
 
 ```bash
-export ZENML_CONSOLE_LOGGING_FORMAT='%(asctime)s %(message)s'
+export ZENML_LOGGING_FORMAT=console
 ```
 
-The format must use `%`-string formatting style. See [available attributes](https://docs.python.org/3/library/logging.html#logrecord-attributes). This only changes terminal output; stored logs keep their raw message and structured metadata.
+Options:
 
-{% hint style="warning" %}
-The older `ZENML_LOGGING_FORMAT` environment variable is deprecated and will be removed in a future version. Use `ZENML_CONSOLE_LOGGING_FORMAT` instead.
-{% endhint %}
+- `console` (default): Human-readable console output. Client-side `INFO` logs use a compact layout, while `DEBUG` logs use a full structured text layout.
+- `json`: JSON formatted logs.
+
+Custom Python logging format strings are not supported; use either `console` or `json`.
+
+The compact client console layout is:
+
+```text
+<message> | <extras as JSON, if any>
+[traceback if any]
+```
+
+The full structured console layout for `DEBUG` logs is:
+
+```text
+<time> | <loglevel> | <logger-name>:<function-name>:<line-number> | <message> | <extras as JSON, if any>
+[traceback if any]
+```
+
+The JSON format emits the same information as fields:
+
+```json
+{
+  "timestamp": "2026-05-21 13:09:55,515",
+  "level": "INFO",
+  "logger": "__main__",
+  "function": "loader",
+  "line": 15,
+  "message": "Training started",
+  "dataset": "mnist",
+  "epochs": 10,
+  "step": "loader"
+}
+```
+
+When an exception is logged, the JSON output includes an `exception` object with the exception type, message, and stack trace.
+
+### Adding Structured Fields
+
+ZenML uses Python's standard `logging` module. If you want to attach structured fields to a log record, use the standard `extra` argument:
+
+```python
+import logging
+
+logger = logging.getLogger(__name__)
+
+logger.info(
+    "training.started",
+    extra={"dataset": "mnist", "epochs": 10},
+)
+```
+
+
+Avoid using Python `LogRecord` attribute names such as `name`, `message`, `levelname`, `filename`, or `lineno` as keys in `extra` because they are reserved for Python's internal use.
 
 ### Disabling Rich Traceback Output
 
@@ -195,7 +246,7 @@ export ZENML_ENABLE_RICH_TRACEBACK=false
 
 ### Disabling Colorful Logging
 
-Disable colorful logging with:
+Console logs use colors by default. Disable colorful logging with:
 
 ```bash
 ZENML_LOGGING_COLORS_DISABLED=true
