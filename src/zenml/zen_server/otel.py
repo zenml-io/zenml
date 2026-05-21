@@ -238,8 +238,13 @@ def _configure_logs(
         otel_handler = add_zenml_filters(otel_handler)  # type: ignore[assignment]
 
         # Attach the OTel handler to the root logger.
+        # init_logging() attaches ZenML's console and log-storage handlers to
+        # the root logger, and server startup configures uvicorn to propagate
+        # there too. Attach OTel to the same logger so one logging pipeline
+        # exports ZenML, uvicorn, and third-party records with the same filters.
         root_logger = logging.getLogger()
         root_logger.addHandler(otel_handler)
+
         # Store the OTel handler so it can be removed on shutdown.
         _otel_log_handler = otel_handler
         _otel_providers.append(logger_provider)
