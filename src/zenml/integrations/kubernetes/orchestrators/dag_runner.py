@@ -133,6 +133,7 @@ class DagRunner:
         self.node_stop_function = node_stop_function
         self.interrupt_function = interrupt_function
         self.before_monitoring_iteration = before_monitoring_iteration
+        self._logged_hook_failure = False
 
         ctx = contextvars.copy_context()
         self.monitoring_thread = threading.Thread(
@@ -319,7 +320,15 @@ class DagRunner:
             running_nodes = self.running_nodes
 
             if running_nodes and self.before_monitoring_iteration:
-                self.before_monitoring_iteration(running_nodes)
+                try:
+                    self.before_monitoring_iteration(running_nodes)
+                except Exception:
+                    if not self._logged_hook_failure:
+                        logger.debug(
+                            "Failed to run DAG monitoring iteration hook.",
+                            exc_info=True,
+                        )
+                        self._logged_hook_failure = True
 
             for node in running_nodes:
                 try:

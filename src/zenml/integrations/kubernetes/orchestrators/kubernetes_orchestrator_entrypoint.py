@@ -163,6 +163,7 @@ class KubernetesRunPodStatusIndex:
         self._pods_by_step_name: Dict[str, k8s_client.V1Pod] = {}
         self._pods_by_job_name: Dict[str, k8s_client.V1Pod] = {}
         self._last_logged_signatures: Dict[str, Tuple[Any, ...]] = {}
+        self._has_logged_refresh_failure = False
 
     def refresh(self, running_nodes: List[Node]) -> None:
         """Refresh the pod index from one run-level pod list call.
@@ -181,17 +182,28 @@ class KubernetesRunPodStatusIndex:
                 self.core_api.list_namespaced_pod,
                 api_request_timeout=self.api_request_timeout,
             )(namespace=self.namespace, label_selector=label_selector)
-        except Exception as e:
-            logger.warning(
-                "Failed to refresh Kubernetes step pod status: %s", e
-            )
+
+            pods_by_step_name: Dict[str, k8s_client.V1Pod] = {}
+            pods_by_job_name: Dict[str, k8s_client.V1Pod] = {}
+            for pod in pod_list.items:
+                self._index_pod(
+                    pod=pod,
+                    pods_by_step_name=pods_by_step_name,
+                    pods_by_job_name=pods_by_job_name,
+                )
+        except Exception:
+            self._pods_by_step_name = {}
+            self._pods_by_job_name = {}
+            if not self._has_logged_refresh_failure:
+                logger.debug(
+                    "Failed to refresh Kubernetes step pod status.",
+                    exc_info=True,
+                )
+                self._has_logged_refresh_failure = True
             return
 
-        self._pods_by_step_name = {}
-        self._pods_by_job_name = {}
-
-        for pod in pod_list.items:
-            self._index_pod(pod)
+        self._pods_by_step_name = pods_by_step_name
+        self._pods_by_job_name = pods_by_job_name
 
     def log_state_change(self, node: Node) -> None:
         """Log pod diagnostics for a node if the normalized state changed.
@@ -213,7 +225,12 @@ class KubernetesRunPodStatusIndex:
         self._last_logged_signatures[node.id] = diagnostic.signature
         self._log_diagnostic(diagnostic)
 
-    def _index_pod(self, pod: k8s_client.V1Pod) -> None:
+    def _index_pod(
+        self,
+        pod: k8s_client.V1Pod,
+        pods_by_step_name: Dict[str, k8s_client.V1Pod],
+        pods_by_job_name: Dict[str, k8s_client.V1Pod],
+    ) -> None:
         """Index an active pod by known step and job identifiers."""
         if self._is_terminal_pod(pod):
             return
@@ -226,12 +243,18 @@ class KubernetesRunPodStatusIndex:
         labels = metadata.labels or {}
 
         if step_name := annotations.get(STEP_NAME_ANNOTATION_KEY):
-            self._store_latest_pod(self._pods_by_step_name, step_name, pod)
+            self._store_latest_pod(
+                pod_index=pods_by_step_name, key=step_name, pod=pod
+            )
         elif step_name := labels.get("step_name"):
-            self._store_latest_pod(self._pods_by_step_name, step_name, pod)
+            self._store_latest_pod(
+                pod_index=pods_by_step_name, key=step_name, pod=pod
+            )
 
         if job_name := labels.get("job-name"):
-            self._store_latest_pod(self._pods_by_job_name, job_name, pod)
+            self._store_latest_pod(
+                pod_index=pods_by_job_name, key=job_name, pod=pod
+            )
 
     def _get_pod_for_node(self, node: Node) -> Optional[k8s_client.V1Pod]:
         """Get the active pod associated with a DAG node."""

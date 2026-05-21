@@ -140,6 +140,30 @@ def test_pod_status_index_refresh_lists_run_pods_once_for_multiple_nodes(
     assert info.call_count == 2
 
 
+def test_pod_status_index_refresh_failure_logs_debug_once(mocker) -> None:
+    """Test pod visibility refresh failures stay quiet for users."""
+    core_api = mocker.Mock()
+    core_api.list_namespaced_pod.side_effect = RuntimeError("cannot list pods")
+    debug = mocker.patch.object(entrypoint.logger, "debug")
+    warning = mocker.patch.object(entrypoint.logger, "warning")
+    pod_status_index = entrypoint.KubernetesRunPodStatusIndex(
+        core_api=core_api,
+        namespace="zenml-test",
+        run_id="run-id",
+        api_request_timeout=5,
+    )
+    node = Node(id="step")
+
+    pod_status_index.refresh([node])
+    pod_status_index.refresh([node])
+
+    debug.assert_called_once_with(
+        "Failed to refresh Kubernetes step pod status.",
+        exc_info=True,
+    )
+    warning.assert_not_called()
+
+
 def test_pod_status_index_falls_back_to_job_name(mocker) -> None:
     """Test pods without exact step annotations can map through job labels."""
     info = mocker.patch.object(entrypoint.logger, "info")
