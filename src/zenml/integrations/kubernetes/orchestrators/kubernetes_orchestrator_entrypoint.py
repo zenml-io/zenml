@@ -332,7 +332,7 @@ class KubernetesRunPodStatusIndex:
             return None
 
         for condition in pod.status.conditions:
-            if condition.status != "False":
+            if condition.type != "PodScheduled" or condition.status != "False":
                 continue
 
             if condition.reason or condition.message:
@@ -361,7 +361,7 @@ class KubernetesRunPodStatusIndex:
             )
         elif diagnostic.is_unexpected_pending:
             logger.warning(
-                "Step pod pending unexpectedly: step=%s, pod=%s, phase=%s, "
+                "Step pod pending: step=%s, pod=%s, phase=%s, "
                 "reason=%s, message=%s",
                 diagnostic.step_name,
                 diagnostic.pod_name,

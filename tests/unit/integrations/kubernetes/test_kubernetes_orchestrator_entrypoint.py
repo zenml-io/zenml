@@ -332,3 +332,37 @@ def test_pod_scheduled_condition_takes_precedence_over_waiting_reason(
     pod_status_index.log_state_change(node)
 
     assert warning.call_args.args[4] == "Unschedulable"
+
+
+def test_container_readiness_condition_does_not_warn_when_pod_is_starting(
+    mocker,
+) -> None:
+    """Test normal container readiness startup conditions are not warnings."""
+    pod_status_index = _pod_status_index(
+        mocker,
+        [
+            _pending_pod(
+                name="step-pod",
+                step_name="step",
+                reason="ContainerCreating",
+                conditions=[
+                    k8s_client.V1PodCondition(
+                        type="ContainersReady",
+                        status="False",
+                        reason="ContainersNotReady",
+                        message="containers with unready status: [main]",
+                    )
+                ],
+            )
+        ],
+    )
+    info = mocker.patch.object(entrypoint.logger, "info")
+    warning = mocker.patch.object(entrypoint.logger, "warning")
+    node = Node(id="step")
+
+    pod_status_index.refresh([node])
+    pod_status_index.log_state_change(node)
+
+    info.assert_called_once()
+    warning.assert_not_called()
+    assert info.call_args.args[4] == "ContainerCreating"
