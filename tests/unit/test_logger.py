@@ -28,6 +28,7 @@ import zenml.logger as zenml_logger_module
 from zenml.constants import (
     ENV_ZENML_LOGGING_COLORS_DISABLED,
     ENV_ZENML_LOGGING_FORMAT,
+    ENV_ZENML_SERVER,
 )
 from zenml.enums import LoggingLevels
 from zenml.logger import (
@@ -349,6 +350,32 @@ def test_console_highlights_backticks_and_urls(
     assert (
         f"{ZenMLConsoleFormatter._BLUE}https://docs.zenml.io/path?q=1"
     ) in formatted
+
+
+def test_compact_console_logs_include_extras_for_client_info_logs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Compact client console logs include extras and hide redundant step."""
+    monkeypatch.setenv(ENV_ZENML_SERVER, "false")
+    monkeypatch.setattr(
+        zenml_logger_module,
+        "get_logging_level",
+        lambda: LoggingLevels.INFO,
+    )
+    # disable colors so the formatted log can be asserted as plain text.
+    monkeypatch.setenv(ENV_ZENML_LOGGING_COLORS_DISABLED, "true")
+    record = _make_log_record(
+        "training.started",
+        dataset="mnist",
+        epochs=10,
+        step="trainer",
+    )
+
+    formatted = ZenMLConsoleFormatter().format(record)
+
+    assert formatted == 'training.started | {"dataset":"mnist","epochs":10}'
+    assert "trainer" not in formatted
+    assert "\x1b[" not in formatted
 
 
 def test_color_disabled_strips_ansi_and_preserves_message(

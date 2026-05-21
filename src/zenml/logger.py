@@ -250,7 +250,7 @@ class ZenMLConsoleFormatter(logging.Formatter):
         if self._is_server:
             return True
 
-        # If the log level is DEBUG, show structured log.
+        # If the log level is DEBUG, show structured log for the client.
         return get_logging_level() == LoggingLevels.DEBUG
 
     def _format_log_message(self, record: logging.LogRecord) -> str:
@@ -263,6 +263,7 @@ class ZenMLConsoleFormatter(logging.Formatter):
             Formatted log message string.
         """
         message = record.getMessage()
+        extras_text = self._format_extras(record)
 
         # Format the traceback text separately to avoid colorizing the traceback text.
         traceback_text = ""
@@ -271,7 +272,7 @@ class ZenMLConsoleFormatter(logging.Formatter):
 
         # Return the message and traceback text if colors are disabled.
         if self._colors_disabled:
-            return message + traceback_text
+            return message + extras_text + traceback_text
 
         # Colorize the level and highlights.
         level_color = self._LEVEL_COLORS.get(record.levelno, "")
@@ -281,7 +282,7 @@ class ZenMLConsoleFormatter(logging.Formatter):
         )
 
         # Return the colored message and plain traceback text.
-        return colored_message + traceback_text
+        return colored_message + extras_text + traceback_text
 
     def _format_structured_log(self, record: logging.LogRecord) -> str:
         """Uses LOG_FORMAT to format the log record. DEBUG logs are greyed out.
@@ -307,12 +308,7 @@ class ZenMLConsoleFormatter(logging.Formatter):
             record.exc_info = exc_info_backup
             record.exc_text = exc_text_backup
 
-        extras = self._collect_extras(record)
-        extras_text = ""
-        if extras:
-            extras_text = " | {}".format(
-                json.dumps(extras, default=str, separators=(",", ":"))
-            )
+        extras_text = self._format_extras(record)
 
         traceback_text = ""
         if record.exc_info:
@@ -322,10 +318,6 @@ class ZenMLConsoleFormatter(logging.Formatter):
 
         if self._colors_disabled:
             return formatted_log + extras_text + traceback_text
-
-        if extras_text:
-            # Always grey out extras.
-            extras_text = f"{self._GREY}{extras_text}{self._RESET}"
 
         # Grey out DEBUG logs.
         is_debug = record.levelno == logging.DEBUG
@@ -348,20 +340,54 @@ class ZenMLConsoleFormatter(logging.Formatter):
         formatted_log = self._colorize_highlights(formatted_log, level_color)
         return formatted_log + self._RESET + extras_text + traceback_text
 
+    def _format_extras(
+        self,
+        record: logging.LogRecord,
+    ) -> str:
+        """Format structured fields attached to a log record."""
+        # Client INFO logs (ZENML_LOGGING_VERBOSITY=INFO) already show step
+        # boundaries in ZenML's own messages, so repeating the injected step
+        # name in extras adds noise. So we exclude the step attribute from the
+        # extras dict in the formatted log message.
+        exclude_attrs = None
+        if get_logging_level() == LoggingLevels.INFO and not self._is_server:
+            exclude_attrs = {"step"}
+
+        extras = self._collect_extras(record, exclude_attrs=exclude_attrs)
+
+        if not extras:
+            return ""
+
+        extras_text = " | {}".format(
+            json.dumps(extras, default=str, separators=(",", ":"))
+        )
+        # If colors are enabled, grey out the extras.
+        if not self._colors_disabled:
+            return f"{self._GREY}{extras_text}{self._RESET}"
+
+        return extras_text
+
     @classmethod
-    def _collect_extras(cls, record: logging.LogRecord) -> dict[str, Any]:
+    def _collect_extras(
+        cls,
+        record: logging.LogRecord,
+        exclude_attrs: Optional[set[str]] = None,
+    ) -> dict[str, Any]:
         """Extract structured fields that aren't stdlib LogRecord attrs.
 
         Args:
             record: The log record whose ``__dict__`` we mine.
+            exclude_attrs: Extra attributes to skip, if any.
 
         Returns:
             Mapping of extra-field name to value.
         """
+        exclude_attrs = exclude_attrs or set()
         return {
             k: v
             for k, v in record.__dict__.items()
             if k not in _RESERVED_LOG_RECORD_ATTRS and not k.startswith("_")
+            and k not in exclude_attrs
         }
 
     @classmethod
