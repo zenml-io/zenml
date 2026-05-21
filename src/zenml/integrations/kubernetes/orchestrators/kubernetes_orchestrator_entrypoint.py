@@ -19,6 +19,7 @@ import socket
 import threading
 import time
 from contextlib import nullcontext
+from dataclasses import dataclass
 from typing import Any, ContextManager, Dict, List, Optional, Tuple, cast
 from uuid import UUID
 
@@ -83,6 +84,299 @@ from zenml.utils.logging_utils import (
 from zenml.utils.time_utils import utc_now
 
 logger = get_logger(__name__)
+
+_EXPECTED_PENDING_REASONS = {
+    "ContainerCreating",
+    "PodInitializing",
+}
+_TERMINAL_POD_PHASES = {
+    "Failed",
+    "Succeeded",
+}
+
+
+@dataclass(frozen=True)
+class StepPodDiagnostic:
+    """Normalized step pod state used for logging and de-duplication."""
+
+    step_name: str
+    pod_name: str
+    phase: str
+    source: Optional[str] = None
+    reason: Optional[str] = None
+    message: Optional[str] = None
+    pod_start_time: Optional[Any] = None
+    container_start_time: Optional[Any] = None
+
+    @property
+    def is_unexpected_pending(self) -> bool:
+        """Whether a pending state should be surfaced as a warning."""
+        return (
+            self.phase == "Pending"
+            and self.reason is not None
+            and self.reason not in _EXPECTED_PENDING_REASONS
+        )
+
+    @property
+    def signature(self) -> Tuple[Any, ...]:
+        """Stable state signature used to suppress duplicate logs."""
+        if self.phase == "Running":
+            return (
+                self.step_name,
+                self.pod_name,
+                self.phase,
+                self.pod_start_time,
+                self.container_start_time,
+            )
+
+        return (
+            self.step_name,
+            self.pod_name,
+            self.phase,
+            self.source,
+            self.reason,
+        )
+
+
+class KubernetesRunPodStatusIndex:
+    """In-memory index of active step pods for one pipeline run."""
+
+    def __init__(
+        self,
+        core_api: k8s_client.CoreV1Api,
+        namespace: str,
+        run_id: str,
+        api_request_timeout: Optional[int],
+    ) -> None:
+        """Initialize the pod status index.
+
+        Args:
+            core_api: Kubernetes CoreV1Api client.
+            namespace: Kubernetes namespace.
+            run_id: Pipeline run ID used in Kubernetes labels.
+            api_request_timeout: Kubernetes API request timeout.
+        """
+        self.core_api = core_api
+        self.namespace = namespace
+        self.run_id = run_id
+        self.api_request_timeout = api_request_timeout
+        self._pods_by_step_name: Dict[str, k8s_client.V1Pod] = {}
+        self._pods_by_job_name: Dict[str, k8s_client.V1Pod] = {}
+        self._last_logged_signatures: Dict[str, Tuple[Any, ...]] = {}
+
+    def refresh(self, running_nodes: List[Node]) -> None:
+        """Refresh the pod index from one run-level pod list call.
+
+        Args:
+            running_nodes: Currently running DAG nodes.
+        """
+        if not running_nodes:
+            return
+
+        label_selector = (
+            f"run_id={kube_utils.sanitize_label_value(str(self.run_id))}"
+        )
+        try:
+            pod_list: k8s_client.V1PodList = kube_utils.retry_on_api_exception(
+                self.core_api.list_namespaced_pod,
+                api_request_timeout=self.api_request_timeout,
+            )(namespace=self.namespace, label_selector=label_selector)
+        except Exception as e:
+            logger.warning(
+                "Failed to refresh Kubernetes step pod status: %s", e
+            )
+            return
+
+        self._pods_by_step_name = {}
+        self._pods_by_job_name = {}
+
+        for pod in pod_list.items:
+            self._index_pod(pod)
+
+    def log_state_change(self, node: Node) -> None:
+        """Log pod diagnostics for a node if the normalized state changed.
+
+        Args:
+            node: DAG node to log pod diagnostics for.
+        """
+        pod = self._get_pod_for_node(node)
+        if not pod:
+            return
+
+        diagnostic = self._extract_diagnostic(node.id, pod)
+        if not diagnostic:
+            return
+
+        if self._last_logged_signatures.get(node.id) == diagnostic.signature:
+            return
+
+        self._last_logged_signatures[node.id] = diagnostic.signature
+        self._log_diagnostic(diagnostic)
+
+    def _index_pod(self, pod: k8s_client.V1Pod) -> None:
+        """Index an active pod by known step and job identifiers."""
+        if self._is_terminal_pod(pod):
+            return
+
+        metadata = pod.metadata
+        if not metadata:
+            return
+
+        annotations = metadata.annotations or {}
+        labels = metadata.labels or {}
+
+        if step_name := annotations.get(STEP_NAME_ANNOTATION_KEY):
+            self._store_latest_pod(self._pods_by_step_name, step_name, pod)
+        elif step_name := labels.get("step_name"):
+            self._store_latest_pod(self._pods_by_step_name, step_name, pod)
+
+        if job_name := labels.get("job-name"):
+            self._store_latest_pod(self._pods_by_job_name, job_name, pod)
+
+    def _get_pod_for_node(self, node: Node) -> Optional[k8s_client.V1Pod]:
+        """Get the active pod associated with a DAG node."""
+        if pod := self._pods_by_step_name.get(node.id):
+            return pod
+
+        job_name = node.metadata.get("job_name")
+        if isinstance(job_name, str):
+            return self._pods_by_job_name.get(job_name)
+
+        return None
+
+    @staticmethod
+    def _store_latest_pod(
+        pod_index: Dict[str, k8s_client.V1Pod],
+        key: str,
+        pod: k8s_client.V1Pod,
+    ) -> None:
+        """Store the newest active pod for a step or job key."""
+        existing_pod = pod_index.get(key)
+        if not existing_pod:
+            pod_index[key] = pod
+            return
+
+        existing_timestamp = existing_pod.metadata.creation_timestamp
+        new_timestamp = pod.metadata.creation_timestamp
+        if existing_timestamp is None or (
+            new_timestamp is not None and new_timestamp > existing_timestamp
+        ):
+            pod_index[key] = pod
+
+    @staticmethod
+    def _is_terminal_pod(pod: k8s_client.V1Pod) -> bool:
+        """Whether a pod is in a terminal phase."""
+        return bool(pod.status) and pod.status.phase in _TERMINAL_POD_PHASES
+
+    @staticmethod
+    def _extract_diagnostic(
+        step_name: str, pod: k8s_client.V1Pod
+    ) -> Optional[StepPodDiagnostic]:
+        """Extract a normalized diagnostic from a Kubernetes pod."""
+        if not pod.metadata or not pod.metadata.name:
+            return None
+
+        phase = (
+            pod.status.phase if pod.status and pod.status.phase else "Unknown"
+        )
+        if phase == "Running":
+            container_state = kube_utils.get_container_status(pod, "main")
+            running_state = (
+                container_state.running if container_state else None
+            )
+            return StepPodDiagnostic(
+                step_name=step_name,
+                pod_name=pod.metadata.name,
+                phase=phase,
+                pod_start_time=pod.status.start_time if pod.status else None,
+                container_start_time=running_state.started_at
+                if running_state
+                else None,
+            )
+
+        if phase == "Pending":
+            condition_diagnostic = (
+                KubernetesRunPodStatusIndex._extract_pending_condition(
+                    step_name, pod
+                )
+            )
+            if condition_diagnostic:
+                return condition_diagnostic
+
+            container_state = kube_utils.get_container_status(pod, "main")
+            waiting_state = (
+                container_state.waiting if container_state else None
+            )
+            if waiting_state and waiting_state.reason:
+                return StepPodDiagnostic(
+                    step_name=step_name,
+                    pod_name=pod.metadata.name,
+                    phase=phase,
+                    source="container_waiting",
+                    reason=waiting_state.reason,
+                    message=waiting_state.message,
+                )
+
+        return StepPodDiagnostic(
+            step_name=step_name,
+            pod_name=pod.metadata.name,
+            phase=phase,
+        )
+
+    @staticmethod
+    def _extract_pending_condition(
+        step_name: str, pod: k8s_client.V1Pod
+    ) -> Optional[StepPodDiagnostic]:
+        """Extract a pending diagnostic from pod scheduling conditions."""
+        if not pod.status or not pod.status.conditions:
+            return None
+
+        for condition in pod.status.conditions:
+            if condition.status != "False":
+                continue
+
+            if condition.reason or condition.message:
+                return StepPodDiagnostic(
+                    step_name=step_name,
+                    pod_name=pod.metadata.name,
+                    phase="Pending",
+                    source=f"condition:{condition.type}",
+                    reason=condition.reason or condition.type,
+                    message=condition.message,
+                )
+
+        return None
+
+    @staticmethod
+    def _log_diagnostic(diagnostic: StepPodDiagnostic) -> None:
+        """Log a pod diagnostic using the appropriate level."""
+        if diagnostic.phase == "Running":
+            logger.info(
+                "Step pod running: step=%s, pod=%s, pod_start_time=%s, "
+                "container_start_time=%s",
+                diagnostic.step_name,
+                diagnostic.pod_name,
+                diagnostic.pod_start_time,
+                diagnostic.container_start_time,
+            )
+        elif diagnostic.is_unexpected_pending:
+            logger.warning(
+                "Step pod pending unexpectedly: step=%s, pod=%s, phase=%s, "
+                "reason=%s, message=%s",
+                diagnostic.step_name,
+                diagnostic.pod_name,
+                diagnostic.phase,
+                diagnostic.reason,
+                diagnostic.message,
+            )
+        elif diagnostic.phase == "Pending":
+            logger.info(
+                "Step pod pending: step=%s, pod=%s, phase=%s, reason=%s",
+                diagnostic.step_name,
+                diagnostic.pod_name,
+                diagnostic.phase,
+                diagnostic.reason,
+            )
 
 
 def parse_args() -> argparse.Namespace:
@@ -361,6 +655,12 @@ def main() -> None:
                 snapshot.pipeline_configuration.name
             ),
         }
+        pod_status_index = KubernetesRunPodStatusIndex(
+            core_api=core_api,
+            namespace=namespace,
+            run_id=str(pipeline_run.id),
+            api_request_timeout=pipeline_settings.api_request_timeout,
+        )
 
         step_run_skip_hb_set = set()
 
@@ -523,6 +823,7 @@ def main() -> None:
                 mount_local_stores=mount_local_stores,
                 termination_grace_period_seconds=settings.pod_stop_grace_period,
                 labels=step_labels,
+                annotations=step_annotations,
             )
 
             retry_config = step_config.retry
@@ -740,6 +1041,8 @@ def main() -> None:
                 )
                 return NodeStatus.FAILED
 
+            pod_status_index.log_state_change(node)
+
             settings = cast(
                 KubernetesOrchestratorSettings,
                 orchestrator.get_settings(
@@ -833,6 +1136,7 @@ def main() -> None:
                 node_startup_function=start_step_job,
                 node_monitoring_function=check_job_status,
                 interrupt_function=should_interrupt_execution,
+                before_monitoring_iteration=pod_status_index.refresh,
                 monitoring_interval=pipeline_settings.job_monitoring_interval,
                 monitoring_delay=pipeline_settings.job_monitoring_delay,
                 interrupt_check_interval=pipeline_settings.interrupt_check_interval,

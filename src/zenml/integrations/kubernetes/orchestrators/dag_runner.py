@@ -100,6 +100,9 @@ class DagRunner:
         interrupt_function: Optional[
             Callable[[], Optional[InterruptMode]]
         ] = None,
+        before_monitoring_iteration: Optional[
+            Callable[[List[Node]], None]
+        ] = None,
         monitoring_interval: float = 1.0,
         monitoring_delay: float = 0.0,
         interrupt_check_interval: float = 1.0,
@@ -114,6 +117,8 @@ class DagRunner:
             node_stop_function: The function to stop a node.
             interrupt_function: Will be periodically called to check if the
                 DAG should be interrupted.
+            before_monitoring_iteration: Function called once before each
+                monitoring iteration with the currently running nodes.
             monitoring_interval: The interval in which the nodes are monitored.
             monitoring_delay: The delay in seconds to wait between monitoring
                 different nodes.
@@ -127,6 +132,7 @@ class DagRunner:
         self.node_monitoring_function = node_monitoring_function
         self.node_stop_function = node_stop_function
         self.interrupt_function = interrupt_function
+        self.before_monitoring_iteration = before_monitoring_iteration
 
         ctx = contextvars.copy_context()
         self.monitoring_thread = threading.Thread(
@@ -310,7 +316,12 @@ class DagRunner:
         """
         while not self.shutdown_event.is_set():
             start_time = time.time()
-            for node in self.running_nodes:
+            running_nodes = self.running_nodes
+
+            if running_nodes and self.before_monitoring_iteration:
+                self.before_monitoring_iteration(running_nodes)
+
+            for node in running_nodes:
                 try:
                     node.status = self.node_monitoring_function(node)
                 except Exception:

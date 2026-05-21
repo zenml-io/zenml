@@ -105,6 +105,7 @@ def build_pod_manifest(
     service_account_name: Optional[str] = None,
     env: Optional[Dict[str, str]] = None,
     labels: Optional[Dict[str, str]] = None,
+    annotations: Optional[Dict[str, str]] = None,
     mount_local_stores: bool = False,
     owner_references: Optional[List[k8s_client.V1OwnerReference]] = None,
     termination_grace_period_seconds: Optional[int] = 30,
@@ -123,6 +124,7 @@ def build_pod_manifest(
             run Kubernetes commands from within the cluster.
         env: Environment variables to set.
         labels: Labels to add to the pod.
+        annotations: Annotations to add to the pod.
         mount_local_stores: Whether to mount the local stores path inside the
             pod.
         owner_references: List of owner references for the pod.
@@ -180,14 +182,18 @@ def build_pod_manifest(
     if pod_settings and pod_settings.labels:
         labels.update(pod_settings.labels)
 
+    pod_annotations = {}
+    if pod_settings and pod_settings.annotations:
+        pod_annotations.update(pod_settings.annotations)
+    if annotations:
+        pod_annotations.update(annotations)
+
     pod_metadata = k8s_client.V1ObjectMeta(
         name=pod_name,
         labels=labels,
+        annotations=pod_annotations or None,
         owner_references=owner_references,
     )
-
-    if pod_settings and pod_settings.annotations:
-        pod_metadata.annotations = pod_settings.annotations
 
     pod_manifest = k8s_client.V1Pod(
         kind="Pod",
