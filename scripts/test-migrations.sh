@@ -4,6 +4,8 @@ DB="sqlite"
 DB_STARTUP_DELAY=30 # Time in seconds to wait for the database container to start
 RANDOM_MIGRATION_COUNT="${RANDOM_MIGRATION_COUNT:-3}"
 RANDOM_MIGRATION_SEED="${RANDOM_MIGRATION_SEED:-${GITHUB_RUN_ID:-}}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PYTHON313_MIGRATION_OVERRIDES_FILE="$SCRIPT_DIR/ci/python313-migration-overrides.txt"
 
 export ZENML_ANALYTICS_OPT_IN=false
 export ZENML_DEBUG=true
@@ -225,6 +227,11 @@ function run_tests_for_version() {
 function test_upgrade_to_version() {
     set -e  # Exit immediately if a command exits with a non-zero status
     local VERSION=$1
+    local PYTHON_VERSION
+    local ZENML_INSTALL_ARGS=(
+        --exclude-newer-package
+        zenml=2100-01-01
+    )
 
     echo "===== Testing upgrade to version $VERSION ====="
 
@@ -232,6 +239,8 @@ function test_upgrade_to_version() {
     rm -rf ".venv-upgrade"
     uv venv ".venv-upgrade"
     source ".venv-upgrade/bin/activate"
+
+    PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
 
     # Install the specific version
     if [ "$VERSION" == "current" ]; then
@@ -244,15 +253,18 @@ function test_upgrade_to_version() {
         # latest ZenML version selected above immediately after a release.
         # Keep dependency resolution capped, but allow the requested ZenML
         # release itself through.
-        uv pip install --exclude-newer-package zenml=2100-01-01 "zenml[templates,server]==$VERSION"
+        if [ "$PYTHON_VERSION" == "3.13" ]; then
+            ZENML_INSTALL_ARGS+=(
+                --overrides
+                "$PYTHON313_MIGRATION_OVERRIDES_FILE"
+            )
+        fi
+        uv pip install "${ZENML_INSTALL_ARGS[@]}" "zenml[templates,server]==$VERSION"
         if [ "$(version_compare "$VERSION" "0.60.0")" == "<" ]; then
             # handles unpinned sqlmodel dependency in older versions
             uv pip install "sqlmodel==0.0.8" "bcrypt==4.0.1" "pyyaml-include<2.0" "numpy<2.0.0" "tenacity!=8.4.0"
         fi
     fi
-
-    # Get the major and minor version of Python
-    PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
 
     if [ "$DB" == "mysql" ] || [ "$DB" == "mariadb" ]; then
 

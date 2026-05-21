@@ -1,0 +1,4 @@
+# Historical ZenML releases pin an orjson version without Python 3.13
+# wheels. This keeps the migration fixture on the current CI runtime while
+# avoiding a resolver/build failure before the database upgrade is tested.
+orjson==3.10.18
