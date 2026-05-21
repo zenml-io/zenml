@@ -192,7 +192,7 @@ services:
             "--detach",
             "--force-recreate",
             "--pull",
-            "never",
+            "missing",
         )
 
         timeout = DEPLOYMENT_START_TIMEOUT

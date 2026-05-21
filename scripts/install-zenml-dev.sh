@@ -120,6 +120,12 @@ install_integrations() {
     if [ "$os_name" = "Windows" ]; then
         ignore_integrations="$ignore_integrations pytorch neural_prophet pytorch_lightning"
     fi
+    # AzureML's legacy SDK still requires NumPy 1.x, which has no CPython
+    # 3.13 Windows wheel. Keep Windows on Python 3.13 by skipping only this
+    # integration's exported requirements.
+    if [ "$os_name" = "Windows" ] && [ "$python_version" = "3.13" ]; then
+        ignore_integrations="$ignore_integrations azure"
+    fi
     
     # turn the ignore integrations into a list of --ignore-integration args
     ignore_integrations_args=""

@@ -1,13 +1,21 @@
 """Tests for harness deployment helpers."""
 
+import sys
+from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Optional
+from typing import Generator, Optional
 
 import pytest
 from docker import errors as docker_errors
 
 from tests.harness.deployment.base import BaseTestDeployment
+from tests.harness.deployment.server_docker_mariadb import (
+    ServerDockerComposeMariaDBTestDeployment,
+)
+from tests.harness.deployment.server_docker_mysql import (
+    ServerDockerComposeMySQLTestDeployment,
+)
 from tests.harness.model import DeploymentStoreConfig
 
 
@@ -95,4 +103,66 @@ def test_run_docker_compose_uses_project_and_runtime_path(
             tmp_path,
             True,
         )
+    ]
+
+
+def test_build_server_image_uses_current_python_version(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Harness server images should match the active CI Python version."""
+    deployment = _Deployment(SimpleNamespace(name="project"))
+    calls: list[dict[str, object]] = []
+
+    monkeypatch.setattr(
+        deployment, "build_image", lambda **kwargs: calls.append(kwargs)
+    )
+
+    deployment.build_server_image()
+
+    assert calls[0]["buildargs"] == {
+        "PYTHON_VERSION": (
+            f"{sys.version_info.major}.{sys.version_info.minor}"
+        )
+    }
+
+
+@pytest.mark.parametrize(
+    "deployment_cls",
+    [
+        ServerDockerComposeMySQLTestDeployment,
+        ServerDockerComposeMariaDBTestDeployment,
+    ],
+)
+def test_docker_compose_server_up_pulls_missing_service_images(
+    deployment_cls: type[BaseTestDeployment],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """Docker Compose should pull DB images after CI prunes the local cache."""
+    deployment = deployment_cls(SimpleNamespace(name="project"))
+    compose_calls: list[tuple[str, ...]] = []
+
+    @contextmanager
+    def fake_connect() -> Generator[SimpleNamespace, None, None]:
+        yield SimpleNamespace(zen_store=object())
+
+    monkeypatch.setattr(
+        deployment_cls, "is_running", property(lambda _: False)
+    )
+    monkeypatch.setattr(
+        deployment, "_generate_docker_compose_manifest", lambda: "services: {}"
+    )
+    monkeypatch.setattr(deployment, "get_runtime_path", lambda: tmp_path)
+    monkeypatch.setattr(deployment, "build_server_image", lambda: None)
+    monkeypatch.setattr(
+        deployment,
+        "run_docker_compose",
+        lambda *args: compose_calls.append(args),
+    )
+    monkeypatch.setattr(deployment, "connect", fake_connect)
+
+    deployment.up()
+
+    assert compose_calls == [
+        ("up", "--wait", "--detach", "--force-recreate", "--pull", "missing")
     ]

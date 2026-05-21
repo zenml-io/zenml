@@ -302,6 +302,9 @@ class BaseTestDeployment(ABC):
             dockerfile=str(docker_file_path),
             build_context_root=str(context_root),
             platform="linux/amd64",
+            buildargs={
+                "PYTHON_VERSION": f"{sys.version_info.major}.{sys.version_info.minor}"
+            },
         )
 
     def build_base_image(self) -> None:

@@ -64,7 +64,11 @@ jobs:
           version: 0.8.14
       - name: Build server image
         run: |
-          docker build -t zenml-server-dev -f docker/zenml-server-dev.Dockerfile .
+          docker build \
+            --build-arg PYTHON_VERSION="${{ inputs.python-version }}" \
+            -t zenml-server-dev \
+            -f docker/zenml-server-dev.Dockerfile \
+            .
       - name: Install base package
         run: |
           uv pip install --system .
