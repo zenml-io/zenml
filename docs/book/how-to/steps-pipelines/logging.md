@@ -171,15 +171,19 @@ my_pipeline = my_pipeline.with_options(
 )
 ```
 
-### Setting Logging Format
+### Setting Console Logging Format
 
-Change the default logging format with:
+Change the default console logging format with:
 
 ```bash
-export ZENML_LOGGING_FORMAT='%(asctime)s %(message)s'
+export ZENML_CONSOLE_LOGGING_FORMAT='%(asctime)s %(message)s'
 ```
 
-The format must use `%`-string formatting style. See [available attributes](https://docs.python.org/3/library/logging.html#logrecord-attributes).
+The format must use `%`-string formatting style. See [available attributes](https://docs.python.org/3/library/logging.html#logrecord-attributes). This only changes terminal output; stored logs keep their raw message and structured metadata.
+
+{% hint style="warning" %}
+The older `ZENML_LOGGING_FORMAT` environment variable is deprecated and will be removed in a future version. Use `ZENML_CONSOLE_LOGGING_FORMAT` instead.
+{% endhint %}
 
 ### Disabling Rich Traceback Output
 

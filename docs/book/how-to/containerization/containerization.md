@@ -425,6 +425,21 @@ If you're using `uv` and specify a custom parent image or Dockerfile that does n
 `uv` installs the packages for the Python system installation. Depending on the parent image, you might also need to include `"break-system-packages": None` in the installer args as well to make it work.
 {% endhint %}
 
+To speed up repeated image builds, set `python_package_installer_cache_mount` to a BuildKit `--mount` spec. ZenML emits `RUN --mount=<value> ...` on the install steps and drops the default `--no-cache-dir` flag so the mount is actually used. The value is passed through verbatim, so any valid `--mount` spec works (e.g. `type=cache` or `type=bind`). Requires BuildKit to be enabled on the builder.
+
+```python
+# uv (default installer)
+docker_settings = DockerSettings(
+    python_package_installer_cache_mount="type=cache,target=/root/.cache/uv",
+)
+
+# pip
+docker_settings = DockerSettings(
+    python_package_installer="pip",
+    python_package_installer_cache_mount="type=cache,target=/root/.cache/pip",
+)
+```
+
 ### Using custom python executable
 
 To use a custom python executable, instead of a standard `python` you can use the `ZENML_CONTAINER_PYTHON_EXECUTABLE` environment 

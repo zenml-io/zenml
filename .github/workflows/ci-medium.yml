@@ -35,10 +35,10 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Set up Python 3.10
+      - name: Set up Python 3.13
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
-          python-version: '3.10'
+          python-version: '3.13'
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh sqlite random
   mysql-db-migration-testing-random:
@@ -55,10 +55,10 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Set up Python 3.10
+      - name: Set up Python 3.13
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
-          python-version: '3.10'
+          python-version: '3.13'
       - name: Login to Docker Hub
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
@@ -80,10 +80,10 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Set up Python 3.10
+      - name: Set up Python 3.13
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
-          python-version: '3.10'
+          python-version: '3.13'
       - name: Login to Docker Hub
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
@@ -96,7 +96,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.12']
+        python-version: ['3.13']
       fail-fast: false
     uses: ./.github/workflows/linting.yml
     with:
@@ -109,11 +109,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            python-version: '3.12'
+            python-version: '3.13'
           - os: macos-latest
-            python-version: '3.12'
+            python-version: '3.13'
           - os: windows-latest
-            python-version: '3.10'
+            python-version: '3.13'
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -125,7 +125,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.12']
+        python-version: ['3.13']
         test_environment: [docker-server-docker-orchestrator-mysql]
       fail-fast: false
     uses: ./.github/workflows/integration-test-fast.yml
@@ -140,7 +140,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.12']
+        python-version: ['3.13']
       fail-fast: false
     uses: ./.github/workflows/base-package-functionality.yml
     with:
@@ -159,6 +159,10 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           persist-credentials: false
+      - name: Set up Python 3.13
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        with:
+          python-version: '3.13'
       - name: Install Modal SDK
         run: python -m pip install --upgrade 'modal>=1.0.0'
       - id: start
@@ -174,7 +178,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.12']
+        python-version: ['3.13']
         test_environment: [remote-mysql-modal]
       fail-fast: false
     uses: ./.github/workflows/integration-test-fast.yml
@@ -195,6 +199,10 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           persist-credentials: false
+      - name: Set up Python 3.13
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        with:
+          python-version: '3.13'
       - name: Install Modal SDK
         run: python -m pip install --upgrade 'modal>=1.0.0'
       - name: Stop Modal MySQL sandbox

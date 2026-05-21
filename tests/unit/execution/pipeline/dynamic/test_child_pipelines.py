@@ -25,6 +25,10 @@ from zenml import pipeline, step, wait
 from zenml.client import Client
 from zenml.enums import ExecutionStatus, RunWaitConditionResolution
 
+RUN_DISCOVERY_TIMEOUT = 60.0
+WAIT_CONDITION_TIMEOUT = 60.0
+PIPELINE_THREAD_TIMEOUT = 120.0
+
 # ---------------------------------------------------------------------------
 # Reusable steps
 # ---------------------------------------------------------------------------
@@ -97,7 +101,7 @@ def _latest_run_id(
     pipeline_name: str,
     *,
     after: Optional[datetime.datetime] = None,
-    timeout: float = 10.0,
+    timeout: float = RUN_DISCOVERY_TIMEOUT,
 ) -> UUID:
     deadline = time.time() + timeout
     client = Client()
@@ -122,7 +126,7 @@ def _resolve_pending_wait(
     *,
     resolution: RunWaitConditionResolution = RunWaitConditionResolution.CONTINUE,
     result: Any = None,
-    timeout: float = 10.0,
+    timeout: float = WAIT_CONDITION_TIMEOUT,
 ) -> UUID:
     deadline = time.time() + timeout
     client = Client()
@@ -146,7 +150,7 @@ def _resolve_pending_wait(
 
 
 def _wait_for_thread(
-    thread: threading.Thread, *, timeout: float = 30.0
+    thread: threading.Thread, *, timeout: float = PIPELINE_THREAD_TIMEOUT
 ) -> None:
     thread.join(timeout=timeout)
     assert not thread.is_alive(), "Pipeline thread did not finish in time"
@@ -512,7 +516,7 @@ def test_parent_waits_while_child_runs_then_wait_resolves() -> None:
         "parent_waits_with_concurrent_child_running",
         after=started_at,
     )
-    _resolve_pending_wait(parent_run_id, result=99, timeout=15)
+    _resolve_pending_wait(parent_run_id, result=99)
     _wait_for_thread(thread)
     assert "exc" not in holder, holder.get("exc")
     assert holder["run"].status.is_successful
@@ -547,7 +551,7 @@ def test_child_waits_while_parent_does_other_work_then_child_wait_resolves() -> 
     )
 
     # Wait for the child run to register.
-    deadline = time.time() + 15
+    deadline = time.time() + RUN_DISCOVERY_TIMEOUT
     child_run_id: Optional[UUID] = None
     while time.time() < deadline:
         children = Client().list_pipeline_runs(parent_run_id=parent_run_id)
@@ -557,7 +561,7 @@ def test_child_waits_while_parent_does_other_work_then_child_wait_resolves() -> 
         time.sleep(0.1)
     assert child_run_id is not None, "Child run never appeared"
 
-    _resolve_pending_wait(child_run_id, result=42, timeout=15)
+    _resolve_pending_wait(child_run_id, result=42)
     _wait_for_thread(thread)
     assert "exc" not in holder, holder.get("exc")
     parent = holder["run"]

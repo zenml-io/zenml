@@ -157,7 +157,7 @@ def _modal_image() -> Any:
     """Return the Modal image used by CI sandboxes."""
     modal = _get_modal()
     return (
-        modal.Image.debian_slim(python_version="3.11")
+        modal.Image.debian_slim(python_version="3.13")
         .apt_install(
             "default-mysql-server",
             "default-libmysqlclient-dev",

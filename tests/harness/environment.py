@@ -15,17 +15,19 @@
 
 import logging
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Dict, Generator, List, Optional
+from typing import TYPE_CHECKING, Dict, Generator, List, Optional, Set
 from uuid import UUID
 
 from tests.harness.deployment.base import BaseTestDeployment
 from tests.harness.model import EnvironmentConfig
 from tests.harness.model.requirements import StackRequirement, TestRequirements
+from zenml.constants import DEFAULT_STACK_AND_COMPONENT_NAME
 from zenml.enums import StackComponentType
+from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
     from zenml.client import Client
-    from zenml.models import ComponentResponse
+    from zenml.models import ComponentResponse, StackResponse
 
 
 class TestEnvironment:
@@ -286,6 +288,39 @@ class TestEnvironment:
             if build_base_image:
                 self.deployment.build_base_image()
 
+    def _delete_stacks_referencing_components(
+        self,
+        client: "Client",
+        components: List["ComponentResponse"],
+    ) -> None:
+        """Delete non-default stacks that still reference managed components."""
+        deleted_stack_ids: Set[UUID] = set()
+        stacks: List["StackResponse"] = []
+
+        for component_model in components:
+            for stack in depaginate(
+                client.list_stacks,
+                component_id=component_model.id,
+            ):
+                if stack.id in deleted_stack_ids:
+                    continue
+                deleted_stack_ids.add(stack.id)
+                stacks.append(stack)
+
+        for stack in stacks:
+            if stack.name == DEFAULT_STACK_AND_COMPONENT_NAME:
+                logging.info(
+                    "Skipping deletion of default stack before "
+                    "deprovisioning environment components."
+                )
+                continue
+
+            logging.info(
+                f"Deleting stack '{stack.name}' before deleting its managed "
+                "stack components."
+            )
+            client.zen_store.delete_stack(stack.id)
+
     def deprovision(self) -> None:
         """Deprovision all stack components for this environment.
 
@@ -336,6 +371,16 @@ class TestEnvironment:
                     components.append(component_model)
                     if external:
                         external_components.append(component_model.id)
+
+            managed_components = [
+                component_model
+                for component_model in components
+                if component_model.id not in external_components
+            ]
+            self._delete_stacks_referencing_components(
+                client=client,
+                components=managed_components,
+            )
 
             for component_model in components:
                 if component_model.id not in external_components:

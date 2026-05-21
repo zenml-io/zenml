@@ -252,7 +252,9 @@ async def dashboard(request: Request) -> Any:
 
     if not os.path.isfile(os.path.join(dashboard_directory(), "index.html")):
         raise HTTPException(status_code=404)
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(
+        name="index.html", context={"request": request}
+    )
 
 
 app.include_router(artifact_endpoint.artifact_router)
@@ -373,4 +375,6 @@ async def catch_all(request: Request, file_path: str) -> Any:
 
     # everything else is directed to the index.html file that hosts the
     # single-page application
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(
+        name="index.html", context={"request": request}
+    )

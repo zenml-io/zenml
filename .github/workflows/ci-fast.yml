@@ -28,10 +28,10 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Set up Python 3.10
+      - name: Set up Python 3.13
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
-          python-version: '3.10'
+          python-version: '3.13'
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh sqlite random
   api-docs-test:
@@ -43,10 +43,10 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           persist-credentials: false
-      - name: Set up Python 3.11
+      - name: Set up Python 3.13
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
-          python-version: '3.11'
+          python-version: '3.13'
       - name: Test API docs buildable
         run: bash scripts/generate-docs.sh -v DUMMY -c
   static-checks:
@@ -76,15 +76,15 @@ jobs:
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
         with:
           path: /opt/uv-cache
-          key: uv-${{ runner.os }}-3.11-${{ hashFiles('src/zenml/integrations/*/__init__.py')
+          key: uv-${{ runner.os }}-3.13-${{ hashFiles('src/zenml/integrations/*/__init__.py')
             }}
           restore-keys: |
-            uv-${{ runner.os }}-3.11-
+            uv-${{ runner.os }}-3.13-
       - name: Setup environment
         uses: ./.github/actions/setup_environment
         with:
           cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
-          python-version: '3.11'
+          python-version: '3.13'
           os: ubuntu-latest
           install_integrations: 'no'
       - name: Spellcheck

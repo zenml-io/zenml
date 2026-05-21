@@ -77,7 +77,7 @@ def upgrade() -> None:
         sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.Column("updated", sa.DateTime(), nullable=False),
-        sa.Column("name", sa.String(), nullable=False),
+        sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column("output_index", sa.Integer(), nullable=False),
         sa.Column(
             "pipeline_run_id",
