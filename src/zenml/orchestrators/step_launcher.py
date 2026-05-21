@@ -62,6 +62,7 @@ from zenml.utils.logging_utils import (
 from zenml.utils.time_utils import exponential_backoff_delays, utc_now
 
 if TYPE_CHECKING:
+    from zenml.orchestrators import BaseOrchestrator
     from zenml.step_operators import BaseStepOperator
 
 logger = get_logger(__name__)
@@ -123,6 +124,7 @@ class StepLauncher:
         step: Step,
         orchestrator_run_id: str,
         wait: bool = True,
+        lifecycle_orchestrator: Optional["BaseOrchestrator"] = None,
     ):
         """Initializes the launcher.
 
@@ -131,6 +133,8 @@ class StepLauncher:
             step: The step to launch.
             orchestrator_run_id: The orchestrator pipeline run id.
             wait: Whether to wait for the step to finish.
+            lifecycle_orchestrator: The orchestrator that owns run-context
+                init and cleanup policy.
 
         Raises:
             RuntimeError: If the snapshot has no associated stack.
@@ -139,6 +143,7 @@ class StepLauncher:
         self._step = step
         self._orchestrator_run_id = orchestrator_run_id
         self._wait = wait
+        self._lifecycle_orchestrator = lifecycle_orchestrator
 
         if not snapshot.stack:
             raise RuntimeError(
@@ -620,7 +625,11 @@ class StepLauncher:
             input_artifacts: The input artifact versions of the current step.
             output_artifact_uris: The output artifact URIs of the current step.
         """
-        runner = StepRunner(step=self._step, stack=self._stack)
+        runner = StepRunner(
+            step=self._step,
+            stack=self._stack,
+            lifecycle_orchestrator=self._lifecycle_orchestrator,
+        )
         runner.run(
             pipeline_run=pipeline_run,
             step_run=step_run,

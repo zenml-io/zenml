@@ -15,7 +15,14 @@ import pytest
 
 from zenml.config import ResourceSettings
 from zenml.config.step_configurations import Step
+from zenml.models import PipelineSnapshotResponse
 from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
+
+
+class _RunStepTestOrchestrator(BaseOrchestrator):
+    def get_orchestrator_run_id(self) -> str:
+        return "orchestrator-run-id"
 
 
 @pytest.mark.parametrize(
@@ -50,4 +57,36 @@ def test_resource_required(step_operator, settings, resources_required):
             step=step
         )
         is resources_required
+    )
+
+
+def test_run_step_passes_lifecycle_orchestrator(
+    mocker,
+    sample_snapshot_response_model: PipelineSnapshotResponse,
+):
+    orchestrator = _RunStepTestOrchestrator.__new__(_RunStepTestOrchestrator)
+    orchestrator._config = BaseOrchestratorConfig()
+    orchestrator._active_snapshot = sample_snapshot_response_model
+
+    step = Step.model_validate(
+        {
+            "spec": {
+                "source": "module.step_class",
+                "upstream_steps": [],
+            },
+            "config": {
+                "name": "step_name",
+            },
+        }
+    )
+    mock_launch_step = mocker.patch("zenml.execution.step.utils.launch_step")
+
+    orchestrator.run_step(step=step)
+
+    mock_launch_step.assert_called_once_with(
+        snapshot=sample_snapshot_response_model,
+        step=step,
+        orchestrator_run_id="orchestrator-run-id",
+        retry=True,
+        lifecycle_orchestrator=orchestrator,
     )

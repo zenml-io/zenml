@@ -30,6 +30,7 @@ from zenml.orchestrators.step_launcher import StepLauncher
 
 if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
+    from zenml.orchestrators import BaseOrchestrator
 
 
 logger = get_logger(__name__)
@@ -42,6 +43,7 @@ def launch_step(
     retry: bool = False,
     remaining_retries: Optional[int] = None,
     wait: bool = True,
+    lifecycle_orchestrator: Optional["BaseOrchestrator"] = None,
 ) -> StepRunResponse:
     """Launch a step.
 
@@ -53,6 +55,8 @@ def launch_step(
         remaining_retries: The number of remaining retries. If not passed, this
             will be read from the step configuration.
         wait: Whether to wait for the step to complete.
+        lifecycle_orchestrator: The orchestrator that owns run-context init
+            and cleanup policy.
 
     Raises:
         RunStoppedException: If the run was stopped.
@@ -68,6 +72,7 @@ def launch_step(
             step=step,
             orchestrator_run_id=orchestrator_run_id,
             wait=wait,
+            lifecycle_orchestrator=lifecycle_orchestrator,
         )
         return launcher.launch()
 

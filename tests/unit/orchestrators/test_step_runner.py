@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from unittest.mock import PropertyMock
 from uuid import uuid4
 
 import pytest
@@ -22,13 +23,15 @@ from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import ArtifactSaveType, StepRunInputArtifactType
+from zenml.execution.step.utils import launch_step
 from zenml.models import (
     PipelineRunResponse,
     PipelineSnapshotResponse,
     StepRunResponse,
 )
 from zenml.models.v2.core.step_run import StepRunInputResponse
-from zenml.orchestrators.step_launcher import StepRunner
+from zenml.orchestrators import BaseOrchestrator
+from zenml.orchestrators.step_launcher import StepLauncher, StepRunner
 from zenml.stack import Stack
 from zenml.steps import step
 
@@ -43,15 +46,88 @@ def failing_step() -> None:
     raise RuntimeError()
 
 
-def test_running_a_successful_step(
-    mocker,
-    local_stack,
-    sample_pipeline_run: PipelineRunResponse,
-    sample_step_run: StepRunResponse,
-    sample_snapshot_response_model: PipelineSnapshotResponse,
-):
-    """Tests that running a successful step runs the step entrypoint
-    and correctly prepares/cleans up."""
+class _LifecycleOwner(BaseOrchestrator):
+    def __init__(self, run_step_hooks: bool) -> None:
+        self._run_step_hooks = run_step_hooks
+
+    @property
+    def run_init_cleanup_at_step_level(self) -> bool:
+        return self._run_step_hooks
+
+    def get_orchestrator_run_id(self) -> str:
+        return "lifecycle-owner-run-id"
+
+
+def _pipeline_run_with_snapshot(
+    pipeline_run: PipelineRunResponse,
+    snapshot: PipelineSnapshotResponse,
+) -> PipelineRunResponse:
+    return pipeline_run.model_copy(
+        update={
+            "resources": pipeline_run.resources.model_copy(
+                update={"snapshot": snapshot}
+            )
+        }
+    )
+
+
+def _snapshot_with_stack(
+    snapshot: PipelineSnapshotResponse, stack: Stack
+) -> PipelineSnapshotResponse:
+    return snapshot.model_copy(
+        update={
+            "resources": snapshot.resources.model_copy(update={"stack": stack})
+        }
+    )
+
+
+def _successful_step_run_info(
+    step: Step,
+    step_run: StepRunResponse,
+    snapshot: PipelineSnapshotResponse,
+) -> StepRunInfo:
+    pipeline_config = PipelineConfiguration(name="pipeline_name")
+    return StepRunInfo(
+        step_run_id=uuid4(),
+        run_id=uuid4(),
+        run_name="run_name",
+        pipeline_step_name="step_name",
+        config=step.config,
+        spec=step.spec,
+        pipeline=pipeline_config,
+        snapshot=snapshot,
+        force_write_logs=lambda: None,
+        step_run=step_run,
+    )
+
+
+def _step_config(source: str) -> Step:
+    return Step.model_validate(
+        {
+            "spec": {
+                "source": source,
+                "upstream_steps": [],
+            },
+            "config": {
+                "name": "step_name",
+            },
+        }
+    )
+
+
+def _successful_step_config() -> Step:
+    return _step_config(
+        "tests.unit.orchestrators.test_step_runner.successful_step"
+    )
+
+
+def _failing_step_config() -> Step:
+    return _step_config(
+        "tests.unit.orchestrators.test_step_runner.failing_step"
+    )
+
+
+def _mock_successful_step_runner_dependencies(mocker):
     mock_prepare_step_run = mocker.patch.object(Stack, "prepare_step_run")
     mock_cleanup_step_run = mocker.patch.object(Stack, "cleanup_step_run")
     mocker.patch(
@@ -67,45 +143,265 @@ def test_running_a_successful_step(
             __enter__=lambda s: None, __exit__=lambda s, *a: None
         ),
     )
-
-    step = Step.model_validate(
-        {
-            "spec": {
-                "source": "tests.unit.orchestrators.test_step_runner.successful_step",
-                "upstream_steps": [],
-            },
-            "config": {
-                "name": "step_name",
-            },
-        }
+    return (
+        mock_prepare_step_run,
+        mock_cleanup_step_run,
+        mock_publish_successful_step_run,
     )
-    pipeline_config = PipelineConfiguration(name="pipeline_name")
-    step_run_info = StepRunInfo(
-        step_run_id=uuid4(),
-        run_id=uuid4(),
-        run_name="run_name",
-        pipeline_step_name="step_name",
-        config=step.config,
-        spec=step.spec,
-        pipeline=pipeline_config,
-        snapshot=sample_snapshot_response_model,
-        force_write_logs=lambda: None,
+
+
+def _mock_stack_lifecycle_hooks(mocker, stack):
+    orchestrator_class = stack.orchestrator.__class__
+    mocker.patch.object(
+        orchestrator_class,
+        "run_init_cleanup_at_step_level",
+        new_callable=PropertyMock,
+        return_value=True,
+    )
+    mock_run_init_hook = mocker.patch.object(
+        orchestrator_class, "run_init_hook"
+    )
+    mock_run_cleanup_hook = mocker.patch.object(
+        orchestrator_class, "run_cleanup_hook"
+    )
+    return mock_run_init_hook, mock_run_cleanup_hook
+
+
+def _run_successful_step(
+    local_stack,
+    sample_pipeline_run: PipelineRunResponse,
+    sample_step_run: StepRunResponse,
+    sample_snapshot_response_model: PipelineSnapshotResponse,
+    lifecycle_orchestrator: BaseOrchestrator | None = None,
+) -> StepRunInfo:
+    step = _successful_step_config()
+    step_run_info = _successful_step_run_info(
+        step=step,
         step_run=sample_step_run,
+        snapshot=sample_snapshot_response_model,
     )
-
-    runner = StepRunner(step=step, stack=local_stack)
+    pipeline_run = _pipeline_run_with_snapshot(
+        sample_pipeline_run, sample_snapshot_response_model
+    )
+    runner = StepRunner(
+        step=step,
+        stack=local_stack,
+        lifecycle_orchestrator=lifecycle_orchestrator,
+    )
     runner.run(
-        pipeline_run=sample_pipeline_run,
+        pipeline_run=pipeline_run,
         step_run=sample_step_run,
         step_run_info=step_run_info,
         input_artifacts={},
         output_artifact_uris={},
     )
+    return step_run_info
+
+
+def test_running_a_successful_step(
+    mocker,
+    local_stack,
+    sample_pipeline_run: PipelineRunResponse,
+    sample_step_run: StepRunResponse,
+    sample_snapshot_response_model: PipelineSnapshotResponse,
+):
+    (
+        mock_prepare_step_run,
+        mock_cleanup_step_run,
+        mock_publish_successful_step_run,
+    ) = _mock_successful_step_runner_dependencies(mocker)
+
+    step_run_info = _run_successful_step(
+        local_stack=local_stack,
+        sample_pipeline_run=sample_pipeline_run,
+        sample_step_run=sample_step_run,
+        sample_snapshot_response_model=sample_snapshot_response_model,
+    )
+
     mock_prepare_step_run.assert_called_with(info=step_run_info)
     mock_cleanup_step_run.assert_called_with(
         info=step_run_info, step_failed=False
     )
     mock_publish_successful_step_run.assert_called_once()
+
+
+def test_step_runner_defaults_lifecycle_owner_to_stack_orchestrator(
+    mocker,
+    local_stack,
+    sample_pipeline_run: PipelineRunResponse,
+    sample_step_run: StepRunResponse,
+    sample_snapshot_response_model: PipelineSnapshotResponse,
+):
+    _mock_successful_step_runner_dependencies(mocker)
+    mock_run_init_hook, mock_run_cleanup_hook = _mock_stack_lifecycle_hooks(
+        mocker, local_stack
+    )
+
+    _run_successful_step(
+        local_stack=local_stack,
+        sample_pipeline_run=sample_pipeline_run,
+        sample_step_run=sample_step_run,
+        sample_snapshot_response_model=sample_snapshot_response_model,
+    )
+
+    mock_run_init_hook.assert_called_once_with(
+        snapshot=sample_snapshot_response_model
+    )
+    mock_run_cleanup_hook.assert_called_once_with(
+        snapshot=sample_snapshot_response_model
+    )
+
+
+def test_step_runner_calls_explicit_lifecycle_owner_hooks(
+    mocker,
+    local_stack,
+    sample_pipeline_run: PipelineRunResponse,
+    sample_step_run: StepRunResponse,
+    sample_snapshot_response_model: PipelineSnapshotResponse,
+):
+    _mock_successful_step_runner_dependencies(mocker)
+    (
+        mock_stack_run_init_hook,
+        mock_stack_run_cleanup_hook,
+    ) = _mock_stack_lifecycle_hooks(mocker, local_stack)
+    mock_lifecycle_run_init_hook = mocker.patch.object(
+        _LifecycleOwner, "run_init_hook"
+    )
+    mock_lifecycle_run_cleanup_hook = mocker.patch.object(
+        _LifecycleOwner, "run_cleanup_hook"
+    )
+
+    _run_successful_step(
+        local_stack=local_stack,
+        sample_pipeline_run=sample_pipeline_run,
+        sample_step_run=sample_step_run,
+        sample_snapshot_response_model=sample_snapshot_response_model,
+        lifecycle_orchestrator=_LifecycleOwner(run_step_hooks=True),
+    )
+
+    mock_stack_run_init_hook.assert_not_called()
+    mock_stack_run_cleanup_hook.assert_not_called()
+    mock_lifecycle_run_init_hook.assert_called_once_with(
+        snapshot=sample_snapshot_response_model
+    )
+    mock_lifecycle_run_cleanup_hook.assert_called_once_with(
+        snapshot=sample_snapshot_response_model
+    )
+
+
+def test_step_runner_uses_explicit_lifecycle_owner_for_step_hooks(
+    mocker,
+    local_stack,
+    sample_pipeline_run: PipelineRunResponse,
+    sample_step_run: StepRunResponse,
+    sample_snapshot_response_model: PipelineSnapshotResponse,
+):
+    _mock_successful_step_runner_dependencies(mocker)
+    (
+        mock_stack_run_init_hook,
+        mock_stack_run_cleanup_hook,
+    ) = _mock_stack_lifecycle_hooks(mocker, local_stack)
+    mock_lifecycle_run_init_hook = mocker.patch.object(
+        _LifecycleOwner, "run_init_hook"
+    )
+    mock_lifecycle_run_cleanup_hook = mocker.patch.object(
+        _LifecycleOwner, "run_cleanup_hook"
+    )
+
+    _run_successful_step(
+        local_stack=local_stack,
+        sample_pipeline_run=sample_pipeline_run,
+        sample_step_run=sample_step_run,
+        sample_snapshot_response_model=sample_snapshot_response_model,
+        lifecycle_orchestrator=_LifecycleOwner(run_step_hooks=False),
+    )
+
+    mock_stack_run_init_hook.assert_not_called()
+    mock_stack_run_cleanup_hook.assert_not_called()
+    mock_lifecycle_run_init_hook.assert_not_called()
+    mock_lifecycle_run_cleanup_hook.assert_not_called()
+
+
+def test_launch_step_passes_lifecycle_orchestrator_to_step_launcher(
+    mocker,
+    sample_snapshot_response_model: PipelineSnapshotResponse,
+    sample_step_run: StepRunResponse,
+):
+    step = _successful_step_config()
+    lifecycle_orchestrator = _LifecycleOwner(run_step_hooks=False)
+    mock_launcher_class = mocker.patch(
+        "zenml.execution.step.utils.StepLauncher"
+    )
+    mock_launcher = mock_launcher_class.return_value
+    mock_launcher.launch.return_value = sample_step_run
+
+    result = launch_step(
+        snapshot=sample_snapshot_response_model,
+        step=step,
+        orchestrator_run_id="orchestrator-run-id",
+        lifecycle_orchestrator=lifecycle_orchestrator,
+    )
+
+    assert result is sample_step_run
+    mock_launcher_class.assert_called_once_with(
+        snapshot=sample_snapshot_response_model,
+        step=step,
+        orchestrator_run_id="orchestrator-run-id",
+        wait=True,
+        lifecycle_orchestrator=lifecycle_orchestrator,
+    )
+
+
+def test_step_launcher_passes_lifecycle_orchestrator_to_step_runner(
+    mocker,
+    local_stack,
+    sample_pipeline_run: PipelineRunResponse,
+    sample_step_run: StepRunResponse,
+    sample_snapshot_response_model: PipelineSnapshotResponse,
+):
+    step = _successful_step_config()
+    snapshot = _snapshot_with_stack(
+        sample_snapshot_response_model, local_stack
+    )
+    lifecycle_orchestrator = _LifecycleOwner(run_step_hooks=False)
+    step_run_info = _successful_step_run_info(
+        step=step,
+        step_run=sample_step_run,
+        snapshot=snapshot,
+    )
+    pipeline_run = _pipeline_run_with_snapshot(sample_pipeline_run, snapshot)
+    mocker.patch.object(Stack, "from_model", return_value=local_stack)
+    mock_runner_class = mocker.patch(
+        "zenml.orchestrators.step_launcher.StepRunner"
+    )
+    mock_runner = mock_runner_class.return_value
+
+    launcher = StepLauncher(
+        snapshot=snapshot,
+        step=step,
+        orchestrator_run_id="orchestrator-run-id",
+        lifecycle_orchestrator=lifecycle_orchestrator,
+    )
+    launcher._run_step_in_current_thread(
+        pipeline_run=pipeline_run,
+        step_run=sample_step_run,
+        step_run_info=step_run_info,
+        input_artifacts={},
+        output_artifact_uris={},
+    )
+
+    mock_runner_class.assert_called_once_with(
+        step=step,
+        stack=local_stack,
+        lifecycle_orchestrator=lifecycle_orchestrator,
+    )
+    mock_runner.run.assert_called_once_with(
+        pipeline_run=pipeline_run,
+        step_run=sample_step_run,
+        step_run_info=step_run_info,
+        input_artifacts={},
+        output_artifact_uris={},
+    )
 
 
 def test_running_a_failing_step(
@@ -115,51 +411,20 @@ def test_running_a_failing_step(
     sample_step_run: StepRunResponse,
     sample_snapshot_response_model: PipelineSnapshotResponse,
 ):
-    """Tests that running a failing step runs the step entrypoint
-    and correctly prepares/cleans up."""
-
-    mock_prepare_step_run = mocker.patch.object(Stack, "prepare_step_run")
-    mock_cleanup_step_run = mocker.patch.object(Stack, "cleanup_step_run")
-    mocker.patch(
-        "zenml.artifacts.utils.save_artifact",
-        return_value=uuid4(),
-    )
-    mock_publish_successful_step_run = mocker.patch(
-        "zenml.orchestrators.step_runner.publish_successful_step_run"
-    )
+    (
+        mock_prepare_step_run,
+        mock_cleanup_step_run,
+        mock_publish_successful_step_run,
+    ) = _mock_successful_step_runner_dependencies(mocker)
     mock_publish_failed_step_run = mocker.patch(
         "zenml.orchestrators.step_runner.publish_failed_step_run"
     )
-    mocker.patch(
-        "zenml.orchestrators.step_runner.setup_logging_context",
-        return_value=mocker.MagicMock(
-            __enter__=lambda s: None, __exit__=lambda s, *a: None
-        ),
-    )
 
-    step = Step.model_validate(
-        {
-            "spec": {
-                "source": "tests.unit.orchestrators.test_step_runner.failing_step",
-                "upstream_steps": [],
-            },
-            "config": {
-                "name": "step_name",
-            },
-        }
-    )
-    pipeline_config = PipelineConfiguration(name="pipeline_name")
-    step_run_info = StepRunInfo(
-        step_run_id=uuid4(),
-        run_id=uuid4(),
-        run_name="run_name",
-        pipeline_step_name="step_name",
-        config=step.config,
-        spec=step.spec,
-        pipeline=pipeline_config,
-        snapshot=sample_snapshot_response_model,
-        force_write_logs=lambda: None,
+    step = _failing_step_config()
+    step_run_info = _successful_step_run_info(
+        step=step,
         step_run=sample_step_run,
+        snapshot=sample_snapshot_response_model,
     )
 
     runner = StepRunner(step=step, stack=local_stack)
@@ -183,9 +448,6 @@ def test_running_a_failing_step(
 
 
 def test_loading_unmaterialized_input_artifact(local_stack, clean_client):
-    """Tests that having an input of type `UnmaterializedArtifact` does not
-    materialize the artifact but instead returns the response model."""
-
     artifact_response = save_artifact(
         42, "main_answer", save_type=ArtifactSaveType.STEP_OUTPUT
     ).get_hydrated_version()
@@ -211,9 +473,6 @@ def test_loading_unmaterialized_input_artifact(local_stack, clean_client):
 def test_loading_input_artifact_without_specified_data_type(
     local_stack, clean_client
 ):
-    """Tests that loading an artifact without a specified data type falls
-    back to the data type of the artifact response."""
-
     artifact_response = save_artifact(
         42, "main_answer", save_type=ArtifactSaveType.STEP_OUTPUT
     )

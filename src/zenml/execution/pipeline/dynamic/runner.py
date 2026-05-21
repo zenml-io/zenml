@@ -1237,6 +1237,7 @@ class DynamicPipelineRunner:
             wait=True,
             retry=True,
             remaining_retries=remaining_retries,
+            lifecycle_orchestrator=self._orchestrator,
         )
 
     def _compile_or_reuse(
@@ -1956,6 +1957,7 @@ class DynamicPipelineRunner:
                     # steps.
                     wait=False,
                     retry=False,
+                    lifecycle_orchestrator=self._orchestrator,
                 )
             except BaseException as e:
                 self.mark_node_failed(node_id=step.spec.invocation_id)

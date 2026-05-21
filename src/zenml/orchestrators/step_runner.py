@@ -23,6 +23,7 @@ from typing import (
     ContextManager,
     Dict,
     List,
+    Optional,
     Tuple,
     Type,
 )
@@ -87,6 +88,7 @@ if TYPE_CHECKING:
         PipelineRunResponse,
         StepRunResponse,
     )
+    from zenml.orchestrators import BaseOrchestrator
     from zenml.stack import Stack
     from zenml.steps import BaseStep
 
@@ -101,15 +103,23 @@ class StepRunner:
         self,
         step: "Step",
         stack: "Stack",
+        lifecycle_orchestrator: Optional["BaseOrchestrator"] = None,
     ):
         """Initializes the step runner.
 
         Args:
             step: The step to run.
             stack: The stack on which the step should run.
+            lifecycle_orchestrator: The orchestrator that owns run-context
+                init and cleanup policy. Defaults to the stack orchestrator.
         """
         self._step = step
         self._stack = stack
+        self._lifecycle_orchestrator = (
+            lifecycle_orchestrator
+            if lifecycle_orchestrator is not None
+            else stack.orchestrator
+        )
 
     @property
     def configuration(self) -> StepConfiguration:
@@ -224,9 +234,9 @@ class StepRunner:
                     if (
                         # TODO: do we need to disable this for dynamic pipelines?
                         pipeline_run.snapshot
-                        and self._stack.orchestrator.run_init_cleanup_at_step_level
+                        and self._lifecycle_orchestrator.run_init_cleanup_at_step_level
                     ):
-                        self._stack.orchestrator.run_init_hook(
+                        self._lifecycle_orchestrator.run_init_hook(
                             snapshot=pipeline_run.snapshot
                         )
 
@@ -359,9 +369,9 @@ class StepRunner:
                     # environment that supports a shared run context
                     if (
                         pipeline_run.snapshot
-                        and self._stack.orchestrator.run_init_cleanup_at_step_level
+                        and self._lifecycle_orchestrator.run_init_cleanup_at_step_level
                     ):
-                        self._stack.orchestrator.run_cleanup_hook(
+                        self._lifecycle_orchestrator.run_cleanup_hook(
                             snapshot=pipeline_run.snapshot
                         )
 

@@ -533,6 +533,7 @@ class BaseOrchestrator(StackComponent, ABC):
             step=step,
             orchestrator_run_id=self.get_orchestrator_run_id(),
             retry=not self.config.handles_step_retries,
+            lifecycle_orchestrator=self,
         )
 
     @property
