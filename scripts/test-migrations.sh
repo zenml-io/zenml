@@ -6,6 +6,7 @@ RANDOM_MIGRATION_COUNT="${RANDOM_MIGRATION_COUNT:-3}"
 RANDOM_MIGRATION_SEED="${RANDOM_MIGRATION_SEED:-${GITHUB_RUN_ID:-}}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PYTHON313_MIGRATION_OVERRIDES_FILE="$SCRIPT_DIR/ci/python313-migration-overrides.txt"
+PYTHON313_PYDANTIC_V2_MIGRATION_OVERRIDES_FILE="$SCRIPT_DIR/ci/python313-pydantic-v2-migration-overrides.txt"
 
 export ZENML_ANALYTICS_OPT_IN=false
 export ZENML_DEBUG=true
@@ -113,6 +114,9 @@ function version_compare() {
 function run_tests_for_version() {
     set -e  # Exit immediately if a command exits with a non-zero status
     local VERSION=$1
+    local PYTHON_VERSION
+
+    PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
 
     echo "===== Testing version $VERSION ====="
 
@@ -137,10 +141,30 @@ function run_tests_for_version() {
 
     # Historical starter templates define custom sklearn transformers that
     # predate the stricter __sklearn_tags__ checks introduced in newer
-    # scikit-learn releases. Keep the migration fixture on the compatible
-    # sklearn line so this test exercises ZenML migrations instead of external
-    # template dependency drift.
-    printf "\nscikit-learn<1.6\n" >> integration-requirements.txt
+    # scikit-learn releases. Python 3.13 also cannot build the older exact
+    # pins emitted by some historical ZenML releases, so use the newest
+    # compatible sklearn line that has CPython 3.13 wheels.
+    if [ "$PYTHON_VERSION" == "3.13" ]; then
+        awk '
+            BEGIN { replaced = 0 }
+            /^scikit-learn([<>=!~ ].*)?$/ {
+                if (!replaced) {
+                    print "scikit-learn==1.5.2"
+                    replaced = 1
+                }
+                next
+            }
+            { print }
+            END {
+                if (!replaced) {
+                    print "scikit-learn==1.5.2"
+                }
+            }
+        ' integration-requirements.txt > integration-requirements.txt.tmp
+        mv integration-requirements.txt.tmp integration-requirements.txt
+    else
+        printf "\nscikit-learn<1.6\n" >> integration-requirements.txt
+    fi
     uv pip install -r integration-requirements.txt
     rm integration-requirements.txt
 
@@ -228,6 +252,8 @@ function test_upgrade_to_version() {
     set -e  # Exit immediately if a command exits with a non-zero status
     local VERSION=$1
     local PYTHON_VERSION
+    local ZENML_INSTALL_ENV=()
+    local ZENML_INSTALL_OVERRIDES_FILE="$PYTHON313_MIGRATION_OVERRIDES_FILE"
     local ZENML_INSTALL_ARGS=(
         --exclude-newer-package
         zenml=2100-01-01
@@ -254,12 +280,24 @@ function test_upgrade_to_version() {
         # Keep dependency resolution capped, but allow the requested ZenML
         # release itself through.
         if [ "$PYTHON_VERSION" == "3.13" ]; then
+            # Historical pydantic-core releases were built before CPython 3.13
+            # and carry older PyO3 version metadata. Keep the fixture on
+            # Python 3.13 while allowing those source builds to use PyO3's
+            # forward-compatibility path.
+            ZENML_INSTALL_ENV=(
+                PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1
+            )
+            if [ "$(version_compare "$VERSION" "0.60.0")" != "<" ]; then
+                ZENML_INSTALL_OVERRIDES_FILE="$PYTHON313_PYDANTIC_V2_MIGRATION_OVERRIDES_FILE"
+            fi
             ZENML_INSTALL_ARGS+=(
                 --overrides
-                "$PYTHON313_MIGRATION_OVERRIDES_FILE"
+                "$ZENML_INSTALL_OVERRIDES_FILE"
             )
         fi
-        uv pip install "${ZENML_INSTALL_ARGS[@]}" "zenml[templates,server]==$VERSION"
+        env "${ZENML_INSTALL_ENV[@]}" uv pip install \
+            "${ZENML_INSTALL_ARGS[@]}" \
+            "zenml[templates,server]==$VERSION"
         if [ "$(version_compare "$VERSION" "0.60.0")" == "<" ]; then
             # handles unpinned sqlmodel dependency in older versions
             uv pip install "sqlmodel==0.0.8" "bcrypt==4.0.1" "pyyaml-include<2.0" "numpy<2.0.0" "tenacity!=8.4.0"

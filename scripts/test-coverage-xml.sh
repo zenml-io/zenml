@@ -14,6 +14,21 @@ TEST_SPLITS=${3:-"1"}
 TEST_GROUP=${4:-"1"}
 STORE_DURATIONS=${5:-""}
 
+PYTEST_SELECTION_ARGS=("$TEST_SRC")
+if [[ "$1" == "integration" && "$TEST_ENVIRONMENT" == "remote-mysql-modal" ]]; then
+    # The Modal lane validates the remote REST/MySQL server behavior. Keep it
+    # away from local examples and CLI/template checks that mutate process-wide
+    # state and already run in the normal local/server lanes.
+    PYTEST_SELECTION_ARGS=(
+        tests/integration
+        --ignore=tests/integration/examples
+        --ignore=tests/integration/functional/cli
+        -m "not slow and not global_state"
+        --deselect=tests/integration/functional/zen_stores/test_secrets_store.py::test_list_secrets_pagination_and_sorting
+        --deselect=tests/integration/functional/model/test_model_version.py::TestModel::test_deletion_of_links[True]
+    )
+fi
+
 # Control flaky test retries via environment variables.
 # - PYTEST_RERUNS: non-negative integer (0 disables reruns), defaults to 3 if unset or invalid.
 # - PYTEST_RERUNS_DELAY: non-negative integer delay between reruns in seconds, defaults to 5 if unset or invalid.
@@ -53,9 +68,9 @@ export EVIDENTLY_DISABLE_TELEMETRY=1
 # Shows errors instantly in logs when test fails.
 if [ -n "$1" ]; then
     if [ "$STORE_DURATIONS" == "store-durations" ]; then
-        coverage run -m pytest $TEST_SRC --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker --store-durations --durations-path=.test_durations "${PYTEST_RERUN_ARGS[@]}" --instafail
+        coverage run -m pytest "${PYTEST_SELECTION_ARGS[@]}" --color=yes -vv --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker --store-durations --durations-path=.test_durations "${PYTEST_RERUN_ARGS[@]}" --instafail
     else
-        coverage run -m pytest $TEST_SRC --color=yes -vv --durations-path=.test_durations --splits=$TEST_SPLITS --group=$TEST_GROUP --splitting-algorithm least_duration --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker "${PYTEST_RERUN_ARGS[@]}" --instafail
+        coverage run -m pytest "${PYTEST_SELECTION_ARGS[@]}" --color=yes -vv --durations-path=.test_durations --splits=$TEST_SPLITS --group=$TEST_GROUP --splitting-algorithm least_duration --environment $TEST_ENVIRONMENT --no-provision --cleanup-docker "${PYTEST_RERUN_ARGS[@]}" --instafail
     fi
 else
     if [ "$STORE_DURATIONS" == "store-durations" ]; then

@@ -17,7 +17,6 @@ import logging
 import time
 from typing import Optional
 
-import docker.errors as docker_errors
 from docker.models.containers import Container
 
 from tests.harness.deployment.base import (
@@ -105,6 +104,11 @@ services:
         return f"{self.config.name}_zenml_1"
 
     @property
+    def zenml_compose_v2_container_name(self) -> str:
+        """The Docker Compose v2 name of the ZenML container."""
+        return f"{self.config.name}-zenml-1"
+
+    @property
     def mariadb_container_name(self) -> str:
         """The name of the MariaDB container.
 
@@ -114,16 +118,21 @@ services:
         return f"{self.config.name}_mariadb_1"
 
     @property
+    def mariadb_compose_v2_container_name(self) -> str:
+        """The Docker Compose v2 name of the MariaDB container."""
+        return f"{self.config.name}-mariadb-1"
+
+    @property
     def zenml_container(self) -> Optional[Container]:
         """Returns the Docker container running the ZenML server.
 
         Returns:
             The container for the ZenML server if it exists, None otherwise.
         """
-        try:
-            return self.docker_client.containers.get(self.zenml_container_name)
-        except docker_errors.NotFound:
-            return None
+        return self.get_container(
+            self.zenml_container_name,
+            self.zenml_compose_v2_container_name,
+        )
 
     @property
     def mariadb_container(self) -> Optional[Container]:
@@ -132,12 +141,10 @@ services:
         Returns:
             The container for the MariaDB server if it exists, None otherwise.
         """
-        try:
-            return self.docker_client.containers.get(
-                self.mariadb_container_name
-            )
-        except docker_errors.NotFound:
-            return None
+        return self.get_container(
+            self.mariadb_container_name,
+            self.mariadb_compose_v2_container_name,
+        )
 
     @property
     def is_running(self) -> bool:
@@ -162,11 +169,6 @@ services:
         Raises:
             RuntimeError: If the deployment could not be started.
         """
-        from compose.cli.main import (  # type: ignore
-            TopLevelCommand,
-            project_from_options,
-        )
-
         if self.is_running:
             logging.info(
                 f"Deployment '{self.config.name}' is already running. "
@@ -184,28 +186,14 @@ services:
 
         self.build_server_image()
 
-        options = {
-            "--project-name": self.config.name,
-            "--wait": True,
-            "--pull": "never",
-            "--no-deps": False,
-            "--abort-on-container-exit": False,
-            "SERVICE": "",
-            "--remove-orphans": False,
-            "--no-recreate": False,
-            "--force-recreate": True,
-            "--always-recreate-deps": True,
-            "--build": False,
-            "--no-build": False,
-            "--no-color": False,
-            "--detach": True,
-            "--scale": "",
-            "--no-log-prefix": False,
-        }
-
-        project = project_from_options(str(path), options)
-        cmd = TopLevelCommand(project)
-        cmd.up(options)
+        self.run_docker_compose(
+            "up",
+            "--wait",
+            "--detach",
+            "--force-recreate",
+            "--pull",
+            "never",
+        )
 
         timeout = DEPLOYMENT_START_TIMEOUT
         while True:
@@ -232,8 +220,6 @@ services:
 
     def down(self) -> None:
         """Stops the deployment."""
-        from compose.cli.main import TopLevelCommand, project_from_options
-
         zenml_container = self.zenml_container
         mariadb_container = self.mariadb_container
         if zenml_container is None and mariadb_container is None:
@@ -242,17 +228,7 @@ services:
             )
             return
 
-        options = {
-            "--project-name": self.config.name,
-            "--remove-orphans": False,
-            "--rmi": "none",
-            "--volumes": "",
-        }
-
-        path = self.get_runtime_path()
-        project = project_from_options(str(path), options)
-        cmd = TopLevelCommand(project)
-        cmd.down(options)
+        self.run_docker_compose("down", "--rmi", "none")
 
         logging.info(
             f"Removed docker-compose project '{self.config.name}' "

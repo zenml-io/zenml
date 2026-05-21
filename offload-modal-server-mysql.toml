@@ -23,7 +23,7 @@ run_args = "--no-provision --environment remote-mysql-modal -p no:randomly -p no
 [groups.integration]
 retry_count = 0
 # These shared-state-sensitive tests are covered by a separate serial GitHub-runner job with its own Modal MySQL server.
-filters = "tests/integration --ignore=tests/integration/examples -m 'not slow and not global_state' --deselect=tests/integration/functional/zen_stores/test_secrets_store.py::test_list_secrets_pagination_and_sorting --deselect=tests/integration/functional/model/test_model_version.py::TestModel::test_deletion_of_links[True]"
+filters = "tests/integration --ignore=tests/integration/examples --ignore=tests/integration/functional/cli -m 'not slow and not global_state' --deselect=tests/integration/functional/zen_stores/test_secrets_store.py::test_list_secrets_pagination_and_sorting --deselect=tests/integration/functional/model/test_model_version.py::TestModel::test_deletion_of_links[True]"
 
 [report]
 output_dir = ".ci/offload"

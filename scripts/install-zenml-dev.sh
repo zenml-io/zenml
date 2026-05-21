@@ -149,6 +149,12 @@ install_integrations() {
         echo "typing-extensions" >> integration-requirements.txt
         echo "maison<2" >> integration-requirements.txt
     fi
+
+    # NumPy 2.4.x Windows wheels for CPython 3.13 currently emit runtime
+    # warnings and can segfault before pytest collection starts.
+    if [ "$os_name" = "Windows" ] && [ "$python_version" = "3.13" ]; then
+        echo "numpy==2.2.6" >> integration-requirements.txt
+    fi
     
     echo "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]" >> integration-requirements.txt
 

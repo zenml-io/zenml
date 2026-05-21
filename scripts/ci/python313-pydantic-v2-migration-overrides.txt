@@ -1,0 +1,10 @@
+# Historical ZenML releases pin an orjson version without Python 3.13
+# wheels. This keeps the migration fixture on the current CI runtime while
+# avoiding a resolver/build failure before the database upgrade is tested.
+orjson==3.10.18
+
+# ZenML releases in the pydantic v2 migration window constrain pydantic to
+# versions whose pydantic-core/jiter stack predates CPython 3.13 wheels and
+# does not compile cleanly through PyO3 ABI3. Override only in the 3.13
+# migration fixture so the database migration path remains testable.
+pydantic==2.10.6

@@ -54,6 +54,7 @@ def test_modal_mysql_offload_config_is_valid() -> None:
     integration_filters = config["groups"]["integration"]["filters"]
     assert "tests/integration" in integration_filters
     assert "--ignore=tests/integration/examples" in integration_filters
+    assert "--ignore=tests/integration/functional/cli" in integration_filters
     assert "not slow" in integration_filters
     assert "not global_state" in integration_filters
     assert "test_list_secrets_pagination_and_sorting" in integration_filters

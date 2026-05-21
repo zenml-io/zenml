@@ -15,6 +15,7 @@
 
 import logging
 import os
+import subprocess
 import sys
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
@@ -30,7 +31,9 @@ from typing import (
     cast,
 )
 
+from docker import errors as docker_errors
 from docker.client import DockerClient
+from docker.models.containers import Container
 
 import zenml
 from tests.harness.model import (
@@ -202,6 +205,42 @@ class BaseTestDeployment(ABC):
             The docker client
         """
         return self.container_engine.client
+
+    def get_container(self, *names: str) -> Optional[Container]:
+        """Returns the first Docker container matching one of the names."""
+        for name in names:
+            try:
+                return self.docker_client.containers.get(name)
+            except docker_errors.NotFound:
+                continue
+
+        return None
+
+    def run_docker_compose(self, *args: str) -> None:
+        """Runs Docker Compose v2 for this deployment."""
+        command = [
+            "docker",
+            "compose",
+            "--project-name",
+            self.config.name,
+            *args,
+        ]
+
+        try:
+            subprocess.run(
+                command,
+                cwd=self.get_runtime_path(),
+                check=True,
+            )
+        except FileNotFoundError as e:
+            raise RuntimeError(
+                "Docker Compose v2 is required to run this deployment."
+            ) from e
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(
+                "Docker Compose command failed with exit code "
+                f"{e.returncode}: {' '.join(command)}"
+            ) from e
 
     def build_image(
         self,
