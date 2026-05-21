@@ -256,6 +256,30 @@ def test_json_formatted_logs(
     assert "levelno" not in payload
 
 
+def test_logging_format(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Logging format selection defaults to console for unset and invalid values."""
+    # Unset logging format defaults to console.
+    monkeypatch.delenv(ENV_ZENML_LOGGING_FORMAT, raising=False)
+    with caplog.at_level(logging.INFO):
+        handler = ZenMLConsoleHandler()
+
+    assert isinstance(handler.formatter, ZenMLConsoleFormatter)
+    assert "Invalid logging format" not in caplog.text
+
+    caplog.clear()
+
+    # Invalid logging format defaults to console with a debug message.
+    monkeypatch.setenv(ENV_ZENML_LOGGING_FORMAT, "invalid")
+
+    with caplog.at_level(logging.DEBUG):
+        handler = ZenMLConsoleHandler()
+
+    assert isinstance(handler.formatter, ZenMLConsoleFormatter)
+    assert "Invalid logging format: invalid" in caplog.text
+
+
 def test_extra_collision_with_reserved_key_raises() -> None:
     """Reserved stdlib log record fields cannot be overwritten by extras."""
     logger = get_logger("zenml.test.reserved")
@@ -290,6 +314,8 @@ def test_structured_console_formatted_logs(
     # Assert the handler is a console handler and the formatter is a console formatter.
     assert isinstance(handler, ZenMLConsoleHandler)
     assert isinstance(handler.formatter, ZenMLConsoleFormatter)
+
+    # Assert that if no logging format is set, no debug message is logged.
 
     # Assert the log record is formatted as a structured log with extras.
     formatted = handler.format(record)

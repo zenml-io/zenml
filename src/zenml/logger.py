@@ -436,13 +436,18 @@ def _select_console_formatter() -> logging.Formatter:
         The formatter to attach to the console handler.
 
     """
-    # Return a JSON formatter if the env var is set to "json" or if the server is running.
     fmt = os.environ.get(ENV_ZENML_LOGGING_FORMAT, "").lower()
+
+    # If the env var is not set, default to console.
+    if not fmt:
+        fmt = "console"
+
+    # Return a JSON formatter if the env var is set to "json" or if the server is running.
     if fmt == "json":
         return ZenMLJsonFormatter()
 
     if fmt not in ("json", "console"):
-        get_logger(__name__).warning(
+        get_logger(__name__).debug(
             f"Invalid logging format: {fmt}. Defaulting to console formatter."
         )
 
