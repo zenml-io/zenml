@@ -224,6 +224,9 @@ class LoggingContext(context_utils.BaseContext):
 
         Returns:
             self
+
+        Raises:
+            Exception: If the log store registration fails.
         """
         with self._lock:
             super().__enter__()
