@@ -109,17 +109,6 @@ jobs:
       python-version: '3.13'
       use-offload: true
     secrets: inherit
-  linux-fast-offload-modal-mysql:
-    if: github.event_name != 'pull_request' || (github.event.pull_request.draft ==
-      false && github.event.pull_request.head.repo.full_name == github.repository)
-      && vars.ZENML_CI_MODAL_DISABLED != 'true'
-    uses: ./.github/workflows/linux-fast-offload.yml
-    with:
-      backend: modal
-      python-version: '3.13'
-      use-offload: true
-      test_environment: modal-server-mysql
-    secrets: inherit
   default-serial-dynamic-pipeline-test:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
       false
@@ -259,7 +248,6 @@ jobs:
       - api-docs-test
       - static-checks
       - linux-fast-offload
-      - linux-fast-offload-modal-mysql
       - default-serial-dynamic-pipeline-test
       - modal-mysql-serial-shared-state-tests
     if: always() && (github.event_name != 'pull_request' || github.event.pull_request.draft
@@ -278,7 +266,6 @@ jobs:
           if [ "$ALLOW_FORK_OFFLOAD_SKIPS" = "true" ]; then
             args+=(
               --allow-skipped linux-fast-offload
-              --allow-skipped linux-fast-offload-modal-mysql
               --allow-skipped modal-mysql-serial-shared-state-tests
             )
           fi
