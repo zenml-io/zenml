@@ -102,6 +102,7 @@ secrets-aws = ["boto3>=1.16.0"]
 secrets-gcp = ["google-cloud-secret-manager>=2.12.5"]
 secrets-azure = ["azure-identity>=1.4.0", "azure-keyvault-secrets>=4.0.0"]
 secrets-hashicorp = ["hvac>=0.11.2"]
+gpu-metrics = ["pynvml>=11.5.0"]
 s3fs = ["s3fs>=2022.11.0,!=2025.3.1"]
 gcsfs = ["gcsfs>=2022.11.0"]
 adlfs = ["adlfs>=2021.10.0"]
@@ -336,6 +337,7 @@ module = [
     "tensorflow.*",
     "apache_beam.*",
     "pandas.*",
+    "pynvml.*",
     "distro.*",
     "analytics.*",
     "absl.*",

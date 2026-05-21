@@ -207,6 +207,7 @@ class StackComponentType(StrEnum):
     FEATURE_STORE = "feature_store"
     IMAGE_BUILDER = "image_builder"
     LOG_STORE = "log_store"
+    METRIC_STORE = "metric_store"
     MODEL_DEPLOYER = "model_deployer"
     ORCHESTRATOR = "orchestrator"
     STEP_OPERATOR = "step_operator"

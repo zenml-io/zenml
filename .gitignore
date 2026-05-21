@@ -219,4 +219,12 @@ uv.lock
 AGENTS.override.md
 
 .local/
+
+# Local scratch directories used by contributors (notes, manual test harnesses)
+notes/
+python_test_files/
+
+# Anchored so it ignores only the top-level scratch dir, NEVER src/zenml/
+/zenml/
+
 # PLEASE KEEP THIS LINE AT THE EOF: never include here src/zenml/zen_server/dashboard, since it is affecting release flow

@@ -378,6 +378,10 @@ from zenml.models.v2.misc.param_groups import (
     ArtifactVersionIdentifier,
     ModelVersionIdentifier,
 )
+from zenml.models.v2.misc.metrics import (
+    MetricSample,
+    MetricsResponse,
+)
 from zenml.models.v2.misc.statistics import (
     ProjectStatistics,
     ServerStatistics,
@@ -729,6 +733,8 @@ __all__ = [
     "LogsRequest",
     "LogsUpdate",
     "LogsResponse",
+    "MetricSample",
+    "MetricsResponse",
     "LogsResponseBody",
     "LogsResponseMetadata",
     "LogsResponseResources",
