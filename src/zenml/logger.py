@@ -24,7 +24,9 @@ from rich.traceback import install as rich_tb_install
 
 from zenml.constants import (
     ENABLE_RICH_TRACEBACK,
+    ENV_ZENML_CONSOLE_LOGGING_FORMAT,
     ENV_ZENML_LOGGING_COLORS_DISABLED,
+    ENV_ZENML_LOGGING_FORMAT,
     ENV_ZENML_SUPPRESS_LOGS,
     ZENML_LOGGING_VERBOSITY,
     ZENML_STORAGE_LOGGING_VERBOSITY,
@@ -113,6 +115,21 @@ def _add_step_name_to_message(message: str) -> str:
     return message
 
 
+def _get_console_logging_format() -> Optional[str]:
+    """Get the configured console logging format.
+
+    Returns:
+        The configured console logging format, if one is set.
+    """
+    if log_format := os.environ.get(ENV_ZENML_CONSOLE_LOGGING_FORMAT):
+        return log_format
+
+    if log_format := os.environ.get(ENV_ZENML_LOGGING_FORMAT):
+        return log_format
+
+    return None
+
+
 class ConsoleFormatter(logging.Formatter):
     """Formats logs according to custom specifications."""
 
@@ -139,6 +156,8 @@ class ConsoleFormatter(logging.Formatter):
         """
         if get_logging_level() == LoggingLevels.DEBUG:
             return "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
+        elif log_format := _get_console_logging_format():
+            return log_format
         else:
             return "%(message)s"
 
@@ -290,7 +309,7 @@ def _wrapped_write(original_write: Any, stream_name: str) -> Any:
             )
             LoggingContext.emit(record)
 
-        return original_write(text)
+        return original_write(_add_step_name_to_message(text))
 
     return wrapped_write
 
@@ -360,6 +379,19 @@ def init_logging() -> None:
 
     # Add both handlers to the root logger
     root_logger = logging.getLogger()
+
+    # Warn about deprecated logging format variables. We have to handle
+    # it separately to avoid circular imports
+    if (
+        ENV_ZENML_LOGGING_FORMAT in os.environ
+        and ENV_ZENML_CONSOLE_LOGGING_FORMAT not in os.environ
+    ):
+        get_logger(__name__).warning(
+            "The `%s` environment variable is deprecated and will be "
+            "removed in a future version. Use `%s` instead.",
+            ENV_ZENML_LOGGING_FORMAT,
+            ENV_ZENML_CONSOLE_LOGGING_FORMAT,
+        )
 
     # Console handler - writes to original stdout
     root_logger.addHandler(get_console_handler())

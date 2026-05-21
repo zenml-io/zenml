@@ -30,12 +30,13 @@ from zenml.config.step_configurations import StepConfiguration
 from zenml.constants import (
     ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE,
     ENV_ZENML_DISABLE_STEP_LOGS_STORAGE,
+    ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS,
     ENV_ZENML_SERVER,
     handle_bool_env_var,
 )
 from zenml.enums import LoggingLevels, StackComponentType
 from zenml.exceptions import DoesNotExistException
-from zenml.logger import get_logger
+from zenml.logger import get_logger, step_names_in_console
 from zenml.models import (
     LogsRequest,
     LogsResponse,
@@ -132,6 +133,7 @@ class LoggingContext(context_utils.BaseContext):
         self._origin: Optional["BaseLogStoreOrigin"] = None
         self._name = name
         self._block_on_exit = block_on_exit
+        self._step_names_token: Optional[Any] = None
 
     @property
     def name(self) -> str:
@@ -225,11 +227,22 @@ class LoggingContext(context_utils.BaseContext):
         """
         with self._lock:
             super().__enter__()
-            self._origin = self._log_store.register_origin(
-                name=self.name,
-                log_model=self.log_model,
-                metadata=self._metadata,
+            self._step_names_token = step_names_in_console.set(
+                not handle_bool_env_var(
+                    ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, False
+                )
             )
+            try:
+                self._origin = self._log_store.register_origin(
+                    name=self.name,
+                    log_model=self.log_model,
+                    metadata=self._metadata,
+                )
+            except Exception:
+                step_names_in_console.reset(self._step_names_token)
+                self._step_names_token = None
+                super().__exit__(None, None, None)
+                raise
 
         return self
 
@@ -262,12 +275,17 @@ class LoggingContext(context_utils.BaseContext):
             )
 
         with self._lock:
-            super().__exit__(exc_type, exc_val, exc_tb)
-            if self._origin:
-                self._log_store.deregister_origin(
-                    self._origin, blocking=self._block_on_exit
-                )
-                self._origin = None
+            try:
+                super().__exit__(exc_type, exc_val, exc_tb)
+                if self._origin:
+                    self._log_store.deregister_origin(
+                        self._origin, blocking=self._block_on_exit
+                    )
+                    self._origin = None
+            finally:
+                if self._step_names_token is not None:
+                    step_names_in_console.reset(self._step_names_token)
+                    self._step_names_token = None
 
 
 def generate_logs_request(source: str) -> LogsRequest:
