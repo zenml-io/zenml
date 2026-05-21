@@ -17,8 +17,7 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
-from typing import Any, Generator
+from typing import Generator
 
 import pytest
 
@@ -30,27 +29,6 @@ from zenml.utils.string_utils import random_str
 def _is_medium_tier() -> bool:
     """Return whether tests are running in the medium CI tier."""
     return os.environ.get("ZENML_CI_TIER") == "medium"
-
-
-def _load_quarantined_tests() -> dict[str, str]:
-    """Load tests quarantined for the current CI tier."""
-    registry_path = Path(__file__).parents[2] / ".github/quarantined-tests.yml"
-    if not registry_path.exists():
-        return {}
-
-    import yaml
-
-    data: dict[str, Any] = (
-        yaml.safe_load(registry_path.read_text(encoding="utf-8")) or {}
-    )
-    quarantined: dict[str, str] = {}
-    for entry in data.get("quarantined", []):
-        if "medium" not in entry.get("skip_in", []):
-            continue
-        quarantined[str(entry["test_id"])] = str(
-            entry.get("reason", "quarantined")
-        )
-    return quarantined
 
 
 def pytest_configure(config: pytest.Config) -> None:
@@ -90,11 +68,10 @@ def zenml_workspace(
 def pytest_collection_modifyitems(
     config: pytest.Config, items: list[pytest.Item]
 ) -> None:
-    """Skip medium-tier tests with active quarantines."""
+    """Skip global-state tests in medium-tier CI."""
     if not _is_medium_tier():
         return
 
-    quarantined = _load_quarantined_tests()
     for item in items:
         if item.get_closest_marker("global_state"):
             item.add_marker(
@@ -102,8 +79,3 @@ def pytest_collection_modifyitems(
                     reason="global-state test runs outside medium tier"
                 )
             )
-            continue
-
-        reason = quarantined.get(item.nodeid)
-        if reason:
-            item.add_marker(pytest.mark.skip(reason=f"quarantined: {reason}"))

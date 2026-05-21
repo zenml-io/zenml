@@ -69,8 +69,8 @@ def main() -> None:
     )
     summary = "\n".join(
         [
-            f"| Field | Value |",
-            f"| --- | --- |",
+            "| Field | Value |",
+            "| --- | --- |",
             f"| SHA | `{sha}` |",
             f"| Run | [{run_id}]({run_url}) |",
             f"| Matrix hash | `{matrix_hash}` |",

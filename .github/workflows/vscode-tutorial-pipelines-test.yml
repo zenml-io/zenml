@@ -16,9 +16,9 @@ on:
       python-version:
         description: Python version
         type: choice
-        options: ['3.12']
+        options: ['3.13']
         required: false
-        default: '3.12'
+        default: '3.13'
       enable_tmate:
         description: Enable tmate session for debugging
         type: choice
@@ -45,10 +45,10 @@ jobs:
         with:
           ref: ${{ inputs.git-ref || github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
-      - name: Set up Python 3.12
+      - name: Set up Python 3.13
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
-          python-version: '3.12'
+          python-version: '3.13'
       - name: Install uv
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -58,9 +58,9 @@ jobs:
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
         with:
           path: ~/.cache/uv
-          key: uv-tutorial-${{ runner.os }}-3.12-${{ github.run_id }}
+          key: uv-tutorial-${{ runner.os }}-3.13-${{ github.run_id }}
           restore-keys: |
-            uv-tutorial-${{ runner.os }}-3.12-
+            uv-tutorial-${{ runner.os }}-3.13-
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}
         uses: mxschmitt/action-tmate@c0afd6f790e3a5564914980036ebf83216678101  # v3.23

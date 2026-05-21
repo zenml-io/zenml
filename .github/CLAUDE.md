@@ -31,7 +31,7 @@ All reusable workflows use `secrets: inherit` for centralized secret management.
 
 Runs automatically on all PRs, merge queue entries, and pushes to develop:
 - SQLite migration testing
-- Static checks (ubuntu, Python 3.11) — spellcheck, Ruff, and pydoclint
+- Static checks (ubuntu, Python 3.13) — spellcheck, Ruff, and pydoclint
 - Fast unit and non-slow integration coverage through `linux-fast-offload.yml`
 - Separate Modal MySQL offload lane through `linux-fast-offload.yml`
 - API docs buildability test
@@ -40,17 +40,16 @@ Runs automatically on all PRs, merge queue entries, and pushes to develop:
 
 Runs merge-queue validation beyond fast PR checks:
 - Random database migration coverage
-- Python 3.12 linting and unit tests
+- Python 3.13 linting and unit tests
 - Modal-hosted MySQL integration coverage
-- Template example updates (PRs only, same-repo only)
 
-### ci-slow-develop.yml and slow-ci-on-pr.yml (Full Matrix)
+### ci-slow-develop.yml and slow-ci-on-pr.yml (Develop Qualification)
 
 `ci-slow-develop.yml` runs scheduled/manual develop qualification and can be called by other workflows. `slow-ci-on-pr.yml` triggers that same slow matrix for a PR when maintainers add the `run-slow-ci` label.
 
 The slow matrix includes:
 - Multi-OS: Ubuntu, Windows, macOS
-- Multi-Python: 3.10, 3.11, 3.12, 3.13
+- Python 3.13
 - Full database migration tests (MySQL, MariaDB, SQLite)
 - VSCode tutorial pipeline tests
 - Base package functionality tests
@@ -59,7 +58,7 @@ The slow matrix includes:
 
 Triggered by tag push. Sequence:
 
-1. Unit tests (ubuntu, Python 3.11)
+1. Unit tests (ubuntu, Python 3.13)
 2. Database migration tests (MySQL, SQLite, MariaDB) - parallel
 3. Publish to PyPI (trusted publishing with OIDC)
 4. Wait 4 minutes (PyPI CDN propagation)
@@ -155,9 +154,7 @@ Offload CI uses separate cache families:
 - `offload-image-v2`: Modal image metadata. This intentionally excludes runtime fields such as CPU, memory, `max_parallel`, commands used after sandbox creation, and test filters.
 - `offload-junit-v2`: offload JUnit duration seeds keyed by lane and test-selection inputs.
 
-Restored offload JUnit XML is only a duration seed. It must not be treated as current test output unless `.ci/offload/junit.xml` is newer than `.ci/offload/run-start.marker`. Stale restored XML should be quarantined as `junit.stale.xml`.
-
-The `offload-cache-warm.yml` workflow refreshes offload image and JUnit duration caches weekly or manually. It is a maintenance workflow, not a branch-protection signal.
+Restored offload JUnit XML is only a duration seed. It must not be treated as current test output unless `.ci/offload/junit.xml` is newer than `.ci/offload/run-start.marker`. Stale restored XML should be moved aside as `junit.stale.xml`.
 
 ## Key Supporting Files
 

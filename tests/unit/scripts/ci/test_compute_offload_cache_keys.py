@@ -13,7 +13,6 @@ REQUIRED_FILES = [
     "Dockerfile.ci.dockerignore",
     "pyproject.toml",
     "scripts/install-zenml-dev.sh",
-    "scripts/ci/export_offload_integration_requirements.py",
     "scripts/ci/modal_sandbox_requirements.txt",
     "src/zenml/cli/integration.py",
     "src/zenml/integrations/integration.py",

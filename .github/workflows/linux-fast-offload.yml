@@ -34,7 +34,7 @@ on:
       python-version:
         description: Python version used by fallback runner jobs
         type: choice
-        options: ['3.11', '3.12', '3.13']
+        options: ['3.13']
         required: false
         default: '3.13'
       use-offload:

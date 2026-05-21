@@ -47,10 +47,10 @@ jobs:
         with:
           ref: ${{ needs.resolve-ref.outputs.git-ref }}
           fetch-depth: 0
-      - name: Set up Python 3.10
+      - name: Set up Python 3.13
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
-          python-version: '3.10'
+          python-version: '3.13'
       - name: Login to Docker Hub
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
@@ -71,10 +71,10 @@ jobs:
         with:
           ref: ${{ needs.resolve-ref.outputs.git-ref }}
           fetch-depth: 0
-      - name: Set up Python 3.10
+      - name: Set up Python 3.13
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
-          python-version: '3.10'
+          python-version: '3.13'
       - name: Test random migrations
         run: bash scripts/test-migrations.sh sqlite random
   mariadb-db-migration-testing-random:
@@ -90,10 +90,10 @@ jobs:
         with:
           ref: ${{ needs.resolve-ref.outputs.git-ref }}
           fetch-depth: 0
-      - name: Set up Python 3.10
+      - name: Set up Python 3.13
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
-          python-version: '3.10'
+          python-version: '3.13'
       - name: Login to Docker Hub
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
@@ -111,7 +111,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
-          python-version: '3.11'
+          python-version: '3.13'
       - name: Install uv
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -151,7 +151,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.10', '3.12', '3.13']
+        python-version: ['3.13']
       fail-fast: false
     uses: ./.github/workflows/linting.yml
     with:
@@ -164,7 +164,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.10', '3.12', '3.13']
+        python-version: ['3.13']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -177,7 +177,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.13']
       fail-fast: false
     uses: ./.github/workflows/linting.yml
     with:
@@ -190,7 +190,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.13']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -203,7 +203,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.13']
       fail-fast: false
     uses: ./.github/workflows/linting.yml
     with:
@@ -216,7 +216,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.13']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -231,7 +231,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.13']
         test_environment: [default]
       fail-fast: false
     uses: ./.github/workflows/integration-test-slow.yml
@@ -246,7 +246,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.13']
         test_environment: [default]
       fail-fast: false
     uses: ./.github/workflows/integration-test-slow.yml
@@ -261,20 +261,11 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.10', '3.11', '3.13']
+        python-version: ['3.13']
         test_environment:
           - default
           - docker-server-docker-orchestrator-mysql
           - docker-server-docker-orchestrator-mariadb
-        exclude:
-          - test_environment: docker-server-docker-orchestrator-mysql
-            python-version: '3.10'
-          - test_environment: docker-server-docker-orchestrator-mysql
-            python-version: '3.13'
-          - test_environment: docker-server-docker-orchestrator-mariadb
-            python-version: '3.10'
-          - test_environment: docker-server-docker-orchestrator-mariadb
-            python-version: '3.13'
       fail-fast: false
     uses: ./.github/workflows/integration-test-slow.yml
     with:
@@ -294,7 +285,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.11']
+        python-version: ['3.13']
       fail-fast: false
     uses: ./.github/workflows/base-package-functionality.yml
     with:

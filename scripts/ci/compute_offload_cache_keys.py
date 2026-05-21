@@ -86,12 +86,6 @@ def _image_fingerprint(root: Path) -> str:
         ),
         ("pyproject.toml", _read_file(root / "pyproject.toml")),
         (
-            "scripts/ci/export_offload_integration_requirements.py",
-            _read_file(
-                root / "scripts/ci/export_offload_integration_requirements.py"
-            ),
-        ),
-        (
             "src/zenml/cli/integration.py",
             _read_file(root / "src/zenml/cli/integration.py"),
         ),
