@@ -46,6 +46,7 @@ from google.auth._default import (
 )
 from google.auth.transport.requests import Request
 from google.cloud import artifactregistry_v1, container_v1, storage
+from google.cloud.container_v1.types import Cluster as GKECluster
 from google.cloud.location import locations_pb2
 from google.oauth2 import credentials as gcp_oauth2_credentials
 from google.oauth2 import service_account as gcp_service_account
@@ -2201,6 +2202,56 @@ class GCPServiceConnector(ServiceConnector):
 
         return []
 
+    @staticmethod
+    def _resolve_gke_kubernetes_api_connection(
+        cluster: GKECluster,
+    ) -> Tuple[str, Optional[str]]:
+        """Resolve the Kubernetes API server URL and CA certificate for GKE.
+
+        Prefers the DNS-based control plane endpoint when configured, matching
+        ``gcloud container clusters get-credentials --dns-endpoint``. Falls
+        back to the legacy IP-based ``cluster.endpoint`` with the
+        cluster-issued CA.
+
+        Args:
+            cluster: A GKE cluster object returned by the Container API.
+
+        Returns:
+            A tuple of ``(server_url, certificate_authority)``. The
+            certificate authority is the base64-encoded cluster CA for
+            IP-based endpoints, or ``None`` for DNS-based endpoints (clients
+            should use the system CA bundle).
+
+        Raises:
+            AuthorizationException: If no Kubernetes API endpoint is available.
+        """
+        dns_host = (
+            cluster.control_plane_endpoints_config.dns_endpoint_config.endpoint.strip()
+        )
+        if dns_host:
+            logger.debug(
+                "Using GKE DNS control plane endpoint for Kubernetes API "
+                "access: %s",
+                dns_host,
+            )
+            return f"https://{dns_host}", None
+
+        ip_endpoint = cluster.endpoint.strip()
+        if not ip_endpoint:
+            raise AuthorizationException(
+                "The GKE cluster does not expose a Kubernetes API endpoint "
+                "that this connector can use. Enable the DNS-based control "
+                "plane endpoint or ensure the cluster endpoint is configured."
+            )
+
+        logger.debug(
+            "Using GKE IP-based control plane endpoint for Kubernetes API "
+            "access: %s",
+            ip_endpoint,
+        )
+        ca_cert = cluster.master_auth.cluster_ca_certificate or None
+        return f"https://{ip_endpoint}", ca_cert
+
     def _get_connector_client(
         self,
         resource_type: str,
@@ -2345,9 +2396,9 @@ class GCPServiceConnector(ServiceConnector):
 
             cluster = cluster_map[cluster_name]
 
-            # get cluster details
-            cluster_server = cluster.endpoint
-            cluster_ca_cert = cluster.master_auth.cluster_ca_certificate
+            cluster_server, cluster_ca_cert = (
+                self._resolve_gke_kubernetes_api_connection(cluster)
+            )
             bearer_token = credentials.token
 
             # Create a client-side Kubernetes connector instance with the
@@ -2372,7 +2423,7 @@ class GCPServiceConnector(ServiceConnector):
                 config=KubernetesTokenConfig(
                     cluster_name=f"gke_{self.config.gcp_project_id}_{cluster_name}",
                     certificate_authority=cluster_ca_cert,
-                    server=f"https://{cluster_server}",
+                    server=cluster_server,
                     token=bearer_token,
                 ),
                 expires_at=expires_at,
