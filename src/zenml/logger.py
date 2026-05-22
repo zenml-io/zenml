@@ -20,6 +20,7 @@ import re
 import sys
 import traceback
 from contextlib import contextmanager
+from contextvars import ContextVar
 from typing import Any, Generator, Optional
 
 import structlog
@@ -27,6 +28,7 @@ from rich.traceback import install as rich_tb_install
 
 from zenml.constants import (
     ENABLE_RICH_TRACEBACK,
+    ENV_ZENML_CONSOLE_LOGGING_FORMAT,
     ENV_ZENML_LOGGING_COLORS_DISABLED,
     ENV_ZENML_LOGGING_FORMAT,
     ENV_ZENML_SERVER,
@@ -41,6 +43,9 @@ _original_stdout_write: Optional[Any] = None
 _original_stderr_write: Optional[Any] = None
 _stdout_wrapped: bool = False
 _stderr_wrapped: bool = False
+step_names_in_console: ContextVar[bool] = ContextVar(
+    "step_names_in_console", default=False
+)
 
 
 class _ZenMLStdoutStream:
@@ -77,6 +82,30 @@ def get_logger(logger_name: str) -> logging.Logger:
         ``logger.info("event", extra={"key": "value"})``
     """
     return logging.getLogger(logger_name)
+
+
+def get_logging_level() -> LoggingLevels:
+    """Get logging level from the env variable.
+
+    Returns:
+        The logging level.
+
+    Raises:
+        KeyError: If the logging level is not found.
+    """
+    verbosity = ZENML_LOGGING_VERBOSITY.upper()
+    if verbosity not in LoggingLevels.__members__:
+        raise KeyError(
+            f"Verbosity must be one of {list(LoggingLevels.__members__.keys())}"
+        )
+
+    if ZENML_STORAGE_LOGGING_VERBOSITY is not None:
+        get_logger(__name__).warning(
+            "The ZENML_STORAGE_LOGGING_VERBOSITY is no longer supported. "
+            "Please use the ZENML_LOGGING_VERBOSITY instead."
+        )
+
+    return LoggingLevels[verbosity]
 
 
 def bind_request_context(**fields: Any) -> None:
@@ -162,21 +191,52 @@ _RESERVED_LOG_RECORD_ATTRS: frozenset[str] = frozenset(
 )
 
 
+def _collect_extra_fields(
+    record: logging.LogRecord,
+    exclude_attrs: Optional[set[str]] = None,
+) -> dict[str, Any]:
+    """Extract structured fields that aren't stdlib LogRecord attrs.
+
+    Args:
+        record: The log record whose ``__dict__`` we mine.
+        exclude_attrs: Extra attributes to skip, if any.
+
+    Returns:
+        Mapping of extra-field name to value.
+    """
+    exclude_attrs = exclude_attrs or set()
+    return {
+        k: v
+        for k, v in record.__dict__.items()
+        if k not in _RESERVED_LOG_RECORD_ATTRS
+        and not k.startswith("_")
+        and k not in exclude_attrs
+    }
+
+
 class ZenMLConsoleFormatter(logging.Formatter):
     """Stdlib console formatter for all ZenML console output.
 
+    Custom format:
+      * User-provided Python `%`-style format string.
+
     Client Side:
-      * ``INFO+``: bare log message with level coloring and backtick / URL highlights.
-      * ``DEBUG+``: structured log format
+      * ``INFO+`` default: bare log message with extras and highlights.
+      * ``DEBUG`` default: structured log format with full context.
 
     Server Side:
       * Always: structured log format.
         Decides based on whether ``ENV_ZENML_SERVER`` is set to True.
     """
 
-    # log format:
-    # <time> | <loglevel> | <name>:<funcName>:<lineno> | <message> | <extras as JSON, if any> \n [traceback if any]
-    LOG_FORMAT = "%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s:%(lineno)d | %(message)s"
+    # Structured log format:
+    # <time> | <loglevel> | <name>:<funcName>:<lineno> | <message> | <extras as JSON, if any>
+    # [traceback if any in a new line]
+    #
+    # This format is used for default server logs and client DEBUG logs.
+    # Client INFO logs use a compact layout. A custom log format takes
+    # precedence for both client and server console output.
+    _LOG_FORMAT = "%(asctime)s | %(levelname)-8s | %(name)s:%(funcName)s:%(lineno)d | %(message)s"
 
     _RESET = "\x1b[0m"
     _GREY = "\x1b[90m"
@@ -195,25 +255,22 @@ class ZenMLConsoleFormatter(logging.Formatter):
         logging.CRITICAL: _BOLD_RED,
     }
 
-    _BACKTICK_PATTERN = r"`([^`]*)`"
-    _URL_PATTERN = r"https?://[^\s)\"'>]+"
+    _BACKTICK_PATTERN = re.compile(r"`([^`]*)`")
+    _URL_PATTERN = re.compile(r"https?://[^\s)\"'>]+")
 
-    def __init__(self) -> None:
+    def __init__(self, custom_log_format: Optional[str] = None) -> None:
         """Initialize the formatter."""
-        super().__init__(fmt=self.LOG_FORMAT)
+        super().__init__(fmt=custom_log_format or self._LOG_FORMAT)
+        self._custom_log_format = custom_log_format
 
         # disable colors if the env var is set to true
         self._colors_disabled = handle_bool_env_var(
             ENV_ZENML_LOGGING_COLORS_DISABLED, False
         )
 
-        # The ENV_ZENML_SERVER env var is set to True when the ZenML
-        # server is running. By default, if the env var is not set,
-        # it get initialized at import time.
-        # src/zenml/zen_server/utils.py: initialize_zen_store()
-        # sets it later during FastAPI startup. Once set, the value
-        # never changes.
-        self._is_server: Optional[bool] = None
+        # using this var, we determine if the log record should be formatted
+        # for ZenML server or client.
+        self._is_zenml_server: Optional[bool] = None
 
     def format(self, record: logging.LogRecord) -> str:
         """Render a log record.
@@ -224,37 +281,47 @@ class ZenMLConsoleFormatter(logging.Formatter):
         Returns:
             The fully formatted line.
         """
-        # Show structured log format in the console
-        # always on server side, and for client at DEBUG+ log level.
-        if self._use_structured_log():
-            return self._format_structured_log(record)
+        if self._custom_log_format:
+            return super().format(record)
 
-        # Show bare log message for client at INFO+ log level.
-        return self._format_log_message(record)
+        # For ZenML server logs, always format logs with default LOG_FORMAT layout.
+        if self._use_zenml_server_layout():
+            return self._format_structured_console_log(record)
 
-    def _use_structured_log(self) -> bool:
-        """Check whether to use structured log format in the console.
+        # If client has not set any custom log format:
+        # - for DEBUG logs, use default structured layout
+        # - for INFO+ logs, use compact layout
+        if get_logging_level() == LoggingLevels.DEBUG:
+            return self._format_structured_console_log(record)
 
-        Structured log is shown always on server side, and for client at DEBUG+ log level.
+        return self._format_compact_client_log(record)
+
+    def _use_zenml_server_layout(self) -> bool:
+        """Check whether the record should use the server log layout(LOG_FORMAT).
+
+        The ZenML server sets ``ENV_ZENML_SERVER`` during FastAPI startup, so
+        the first formatter call can happen before the env var is available.
+        src/zenml/zen_server/utils.py: initialize_zen_store() sets the env var
+        during FastAPI app initialization.
+
+        Cache only the positive result and keep re-checking until then.
 
         Returns:
-            True for structured pipe layout, False for bare messages.
+            True if the server log layout should be used.
         """
         # Only cache once True — before initialize_zen_store() runs
         # the env var isn't set yet, so we must keep re-checking.
-        if self._is_server is None:
+        if self._is_zenml_server is None:
             if handle_bool_env_var(ENV_ZENML_SERVER, False):
-                self._is_server = True
+                self._is_zenml_server = True
 
-        # On server side, always show structured log.
-        if self._is_server:
-            return True
+        return bool(self._is_zenml_server)
 
-        # If the log level is DEBUG, show structured log for the client.
-        return get_logging_level() == LoggingLevels.DEBUG
+    def _format_compact_client_log(self, record: logging.LogRecord) -> str:
+        """Format default client INFO logs with a compact layout.
 
-    def _format_log_message(self, record: logging.LogRecord) -> str:
-        """Bare log message with level coloring and highlights.
+        Log format:
+        <message> | <extras as JSON, if any> \n [traceback if any]
 
         Args:
             record: The log record to render.
@@ -263,12 +330,13 @@ class ZenMLConsoleFormatter(logging.Formatter):
             Formatted log message string.
         """
         message = record.getMessage()
-        extras_text = self._format_extras(record)
+        # Client INFO logs (ZENML_LOGGING_VERBOSITY=INFO) already show step
+        # boundaries in ZenML's console messages, so repeating the injected step
+        # name in extras adds noise. So we exclude the step attribute from the
+        # extras dict in the formatted log message.
+        extras_text = self._format_extra_fields(record, exclude_attrs={"step"})
 
-        # Format the traceback text separately to avoid colorizing the traceback text.
-        traceback_text = ""
-        if record.exc_info:
-            traceback_text = "\n" + self.formatException(record.exc_info)
+        traceback_text = self._format_traceback_and_stack_info(record)
 
         # Return the message and traceback text if colors are disabled.
         if self._colors_disabled:
@@ -277,15 +345,15 @@ class ZenMLConsoleFormatter(logging.Formatter):
         # Colorize the level and highlights.
         level_color = self._LEVEL_COLORS.get(record.levelno, "")
         colored_message = f"{level_color}{message}{self._RESET}"
-        colored_message = self._colorize_highlights(
+        colored_message = self._highlight_message_tokens(
             colored_message, level_color
         )
 
         # Return the colored message and plain traceback text.
         return colored_message + extras_text + traceback_text
 
-    def _format_structured_log(self, record: logging.LogRecord) -> str:
-        """Uses LOG_FORMAT to format the log record. DEBUG logs are greyed out.
+    def _format_structured_console_log(self, record: logging.LogRecord) -> str:
+        """Format a record with the structured ``LOG_FORMAT`` layout.
 
         Args:
             record: The log record to render.
@@ -294,42 +362,32 @@ class ZenMLConsoleFormatter(logging.Formatter):
             Fully formatted line.
         """
         # log format:
-        # <time> | <loglevel> | <name>:<funcName>:<lineno> | <message> | <extras as JSON, if any> \n [traceback if any]
+        # <time> | <loglevel> | <name>:<funcName>:<lineno> | <message> | <extras as JSON, if any>
+        # [traceback if present in a new line]
 
-        # Format without traceback first so we can append extras before the traceback.
+        # Format without traceback/stack info first so extras stay attached to
+        # the primary log line and diagnostic details are always appended last.
         exc_info_backup = record.exc_info
         exc_text_backup = record.exc_text
+        stack_info_backup = record.stack_info
         try:
             record.exc_info = None
             record.exc_text = None
+            record.stack_info = None
             formatted_log = super().format(record)
         finally:
-            # Restore exc_info and exc_text.
+            # Restore diagnostic fields for explicit formatting below.
             record.exc_info = exc_info_backup
             record.exc_text = exc_text_backup
+            record.stack_info = stack_info_backup
 
-        extras_text = self._format_extras(record)
+        # If present, get extras dict from log record and format it.
+        extras_text = self._format_extra_fields(record)
 
-        traceback_text = ""
-        if record.exc_info:
-            traceback_text = "\n{}".format(
-                self.formatException(record.exc_info)
-            )
+        traceback_text = self._format_traceback_and_stack_info(record)
 
+        # If colors are disabled, return the formatted log message with extras and traceback.
         if self._colors_disabled:
-            return formatted_log + extras_text + traceback_text
-
-        # Grey out DEBUG logs.
-        is_debug = record.levelno == logging.DEBUG
-        if is_debug:
-            formatted_log = f"{self._GREY}{formatted_log}{self._RESET}"
-            formatted_log = self._colorize_highlights(
-                formatted_log, self._GREY
-            )
-            if traceback_text:
-                traceback_text = (
-                    f"\n{self._GREY}{traceback_text.lstrip()}{self._RESET}"
-                )
             return formatted_log + extras_text + traceback_text
 
         # Colorize the log message based on log level.
@@ -337,23 +395,19 @@ class ZenMLConsoleFormatter(logging.Formatter):
         formatted_log = f"{level_color}{formatted_log}{self._RESET}"
 
         # Colorize highlights - backtick-quoted text and URLs.
-        formatted_log = self._colorize_highlights(formatted_log, level_color)
-        return formatted_log + self._RESET + extras_text + traceback_text
+        formatted_log = self._highlight_message_tokens(
+            formatted_log, level_color
+        )
 
-    def _format_extras(
+        return formatted_log + extras_text + traceback_text
+
+    def _format_extra_fields(
         self,
         record: logging.LogRecord,
+        exclude_attrs: Optional[set[str]] = None,
     ) -> str:
         """Format structured fields attached to a log record."""
-        # Client INFO logs (ZENML_LOGGING_VERBOSITY=INFO) already show step
-        # boundaries in ZenML's own messages, so repeating the injected step
-        # name in extras adds noise. So we exclude the step attribute from the
-        # extras dict in the formatted log message.
-        exclude_attrs = None
-        if get_logging_level() == LoggingLevels.INFO and not self._is_server:
-            exclude_attrs = {"step"}
-
-        extras = self._collect_extras(record, exclude_attrs=exclude_attrs)
+        extras = _collect_extra_fields(record, exclude_attrs=exclude_attrs)
 
         if not extras:
             return ""
@@ -367,38 +421,39 @@ class ZenMLConsoleFormatter(logging.Formatter):
 
         return extras_text
 
+    def _format_traceback_and_stack_info(
+        self, record: logging.LogRecord
+    ) -> str:
+        """Format traceback and stack info, if present."""
+        if not record.exc_info and not record.stack_info:
+            return ""
+
+        traceback_parts = []
+        if record.exc_info:
+            traceback_parts.append(self.formatException(record.exc_info))
+        if record.stack_info:
+            traceback_parts.append(self.formatStack(record.stack_info))
+
+        traceback_text = "\n".join(traceback_parts)
+
+        # For DEBUG logs, if colors are enabled,
+        # grey out the traceback text, if present for better readability.
+        if not self._colors_disabled and record.levelno == logging.DEBUG:
+            traceback_text = (
+                f"{self._GREY}{traceback_text.lstrip()}{self._RESET}"
+            )
+
+        return f"\n{traceback_text}"
+
     @classmethod
-    def _collect_extras(
-        cls,
-        record: logging.LogRecord,
-        exclude_attrs: Optional[set[str]] = None,
-    ) -> dict[str, Any]:
-        """Extract structured fields that aren't stdlib LogRecord attrs.
-
-        Args:
-            record: The log record whose ``__dict__`` we mine.
-            exclude_attrs: Extra attributes to skip, if any.
-
-        Returns:
-            Mapping of extra-field name to value.
-        """
-        exclude_attrs = exclude_attrs or set()
-        return {
-            k: v
-            for k, v in record.__dict__.items()
-            if k not in _RESERVED_LOG_RECORD_ATTRS and not k.startswith("_")
-            and k not in exclude_attrs
-        }
-
-    @classmethod
-    def _colorize_highlights(cls, text: str, base_color: str) -> str:
+    def _highlight_message_tokens(cls, text: str, base_color: str) -> str:
         """Highlight backtick-quoted text in purple and URLs in blue."""
-        for quoted in re.findall(cls._BACKTICK_PATTERN, text):
+        for quoted in cls._BACKTICK_PATTERN.findall(text):
             text = text.replace(
                 "`" + quoted + "`",
                 cls._RESET + cls._PURPLE + quoted + base_color,
             )
-        for url in re.findall(cls._URL_PATTERN, text):
+        for url in cls._URL_PATTERN.findall(text):
             text = text.replace(
                 url,
                 cls._RESET + cls._BLUE + url + base_color,
@@ -427,15 +482,9 @@ class ZenMLJsonFormatter(logging.Formatter):
             "message": record.getMessage(),
         }
 
-        for k, v in record.__dict__.items():
-            # Skip stdlib internals, duplicates, and private attributes.
-            if (
-                k in _RESERVED_LOG_RECORD_ATTRS
-                or k in payload
-                or k.startswith("_")
-            ):
-                continue
-            payload[k] = v
+        payload.update(
+            _collect_extra_fields(record, exclude_attrs=set(payload))
+        )
 
         if record.exc_info:
             exc_type, exc_value, exc_traceback = record.exc_info
@@ -455,77 +504,82 @@ class ZenMLJsonFormatter(logging.Formatter):
         return json.dumps(payload, default=str, separators=(",", ":"))
 
 
+def _get_console_logging_format() -> Optional[str]:
+    """Get the configured client console logging format."""
+    # ZENML_CONSOLE_LOGGING_FORMAT takes precedence over older deprecated ZENML_LOGGING_FORMAT.
+    log_format = os.environ.get(
+        ENV_ZENML_CONSOLE_LOGGING_FORMAT
+    ) or os.environ.get(ENV_ZENML_LOGGING_FORMAT)
+
+    # If no log format is provided, return None.
+    # Both Client and Server would default to structured layout.
+    if not log_format:
+        return None
+
+    # For "json" or "console", return the format directly.
+    if log_format.lower() in {"json", "console"}:
+        return log_format.lower()
+
+    # Validate if client provided log format is a valid Python logging
+    # format string in %-style format. If not, return None
+    try:
+        logging.Formatter(log_format, validate=True)
+    except ValueError:
+        get_logger(__name__).warning(
+            "Invalid console logging format: %s. Defaulting to console formatter. "
+            "Please use a valid Python logging format string in %%-style format.",
+            log_format,
+        )
+        return None
+
+    return log_format
+
+
 def _select_console_formatter() -> logging.Formatter:
-    """Return a JSON or console formatter based on ``ZENML_LOGGING_FORMAT`` env var. Default is console.
+    """Return the configured formatter for terminal output.
 
     Returns:
         The formatter to attach to the console handler.
-
     """
-    fmt = os.environ.get(ENV_ZENML_LOGGING_FORMAT, "").lower()
+    fmt = _get_console_logging_format()
 
-    # If the env var is not set, default to console.
-    if not fmt:
-        fmt = "console"
-
-    # Return a JSON formatter if the env var is set to "json" or if the server is running.
     if fmt == "json":
         return ZenMLJsonFormatter()
 
-    if fmt not in ("json", "console"):
-        get_logger(__name__).debug(
-            f"Invalid logging format: {fmt}. Defaulting to console formatter."
-        )
+    # If no log format is provided, default to console.
+    if fmt in (None, "console"):
+        return ZenMLConsoleFormatter()
 
-    # Return a console formatter if the env var is set to "console" or for the client.
-    return ZenMLConsoleFormatter()
-
-
-def get_logging_level() -> LoggingLevels:
-    """Get logging level from the env variable.
-
-    Returns:
-        The logging level.
-
-    Raises:
-        KeyError: If the logging level is not found.
-    """
-    verbosity = ZENML_LOGGING_VERBOSITY.upper()
-    if verbosity not in LoggingLevels.__members__:
-        raise KeyError(
-            f"Verbosity must be one of {list(LoggingLevels.__members__.keys())}"
-        )
-
-    if ZENML_STORAGE_LOGGING_VERBOSITY is not None:
-        get_logger(__name__).warning(
-            "The ZENML_STORAGE_LOGGING_VERBOSITY is no longer supported. "
-            "Please use the ZENML_LOGGING_VERBOSITY instead."
-        )
-
-    return LoggingLevels[verbosity]
+    # If any other valid Python `%`-style logging format string, use it.
+    return ZenMLConsoleFormatter(custom_log_format=fmt)
 
 
-def set_root_verbosity() -> LoggingLevels:
-    """Set the root verbosity.
+def _add_step_name_to_message(message: str) -> str:
+    """Adds the step name to the message.
+
+    Args:
+        message: The message to add the step name to.
 
     Returns:
-        The active logging level.
+        The message with the step name added.
     """
-    level = get_logging_level()
-    if level != LoggingLevels.NOTSET:
-        if ENABLE_RICH_TRACEBACK:
-            rich_tb_install(show_locals=(level == LoggingLevels.DEBUG))
+    try:
+        if step_names_in_console.get():
+            from zenml.steps import get_step_context
 
-        logging.root.setLevel(level=level.value)
-        logging.getLogger(__name__).debug(
-            f"Logging set to level: {logging.getLevelName(level.value)}"
-        )
-    else:
-        logging.disable(sys.maxsize)
-        logging.getLogger().disabled = True
-        logging.getLogger(__name__).debug("Logging NOTSET")
+            step_context = get_step_context()
 
-    return level
+            if step_context and message not in ["\n", ""]:
+                if "\r" in message:
+                    message = message.replace(
+                        "\r", f"\r[{step_context.step_name}] "
+                    )
+                else:
+                    message = f"[{step_context.step_name}] {message}"
+    except Exception:
+        pass
+
+    return message
 
 
 def _wrapped_write(original_write: Any, stream_name: str) -> Any:
@@ -565,7 +619,7 @@ def _wrapped_write(original_write: Any, stream_name: str) -> Any:
             )
             LoggingContext.emit(record)
 
-        return original_write(text)
+        return original_write(_add_step_name_to_message(text))
 
     return wrapped_write
 
@@ -592,39 +646,6 @@ def wrap_stdout_stderr() -> None:
             _wrapped_write(_original_stderr_write, "stderr"),
         )
         _stderr_wrapped = True
-
-
-class ZenMLLoggingHandler(logging.Handler):
-    """Custom handler that routes logs through LoggingContext."""
-
-    def emit(self, record: logging.LogRecord) -> None:
-        """Emit a log record through LoggingContext.
-
-        Args:
-            record: The log record to emit.
-        """
-        from zenml.utils.logging_utils import LoggingContext
-
-        LoggingContext.emit(record)
-
-
-class ZenMLConsoleHandler(logging.StreamHandler):  # type: ignore[type-arg]
-    """Console handler owned by the ZenML logging setup.
-
-    Default stream is ``_ZenMLStdoutStream()`` which writes
-    to the original stdout, bypassing the ZenML wrapper.
-    """
-
-    def __init__(self, stream: Optional[Any] = None) -> None:
-        """Initialize the console handler."""
-        # initialize the handler with the provided stream or the default stream
-        super().__init__(stream or _ZenMLStdoutStream())
-
-        # set the formatter to the ZenML formatter
-        self.setFormatter(_select_console_formatter())
-
-        # add filters to the handler to attach structlog contextvars and step name to the log record
-        add_zenml_filters(self)
 
 
 class _StepNameFilter(logging.Filter):
@@ -694,10 +715,65 @@ def add_zenml_filters(handler: logging.Handler) -> logging.Handler:
     return handler
 
 
-def get_zenml_handler() -> logging.Handler:
-    """Get ZenML handler that routes logs through LoggingContext."""
-    handler = ZenMLLoggingHandler()
-    return add_zenml_filters(handler)
+class ZenMLLoggingHandler(logging.Handler):
+    """Custom handler that routes logs through LoggingContext."""
+
+    def __init__(self) -> None:
+        """Initialize the logging handler."""
+        super().__init__()
+        add_zenml_filters(self)
+
+    def emit(self, record: logging.LogRecord) -> None:
+        """Emit a log record through LoggingContext.
+
+        Args:
+            record: The log record to emit.
+        """
+        from zenml.utils.logging_utils import LoggingContext
+
+        LoggingContext.emit(record)
+
+
+class ZenMLConsoleHandler(logging.StreamHandler):  # type: ignore[type-arg]
+    """Console handler owned by the ZenML logging setup.
+
+    Default stream is ``_ZenMLStdoutStream()`` which writes
+    to the original stdout, bypassing the ZenML wrapper.
+    """
+
+    def __init__(self, stream: Optional[Any] = None) -> None:
+        """Initialize the console handler."""
+        # initialize the handler with the provided stream or the default stream
+        super().__init__(stream or _ZenMLStdoutStream())
+
+        # set the formatter to the ZenML formatter
+        self.setFormatter(_select_console_formatter())
+
+        # add filters to the handler to attach structlog contextvars and step name to the log record
+        add_zenml_filters(self)
+
+
+def set_root_verbosity() -> LoggingLevels:
+    """Set the root verbosity.
+
+    Returns:
+        The active logging level.
+    """
+    level = get_logging_level()
+    if level != LoggingLevels.NOTSET:
+        if ENABLE_RICH_TRACEBACK:
+            rich_tb_install(show_locals=(level == LoggingLevels.DEBUG))
+
+        logging.root.setLevel(level=level.value)
+        logging.getLogger(__name__).debug(
+            f"Logging set to level: {logging.getLevelName(level.value)}"
+        )
+    else:
+        logging.disable(sys.maxsize)
+        logging.getLogger().disabled = True
+        logging.getLogger(__name__).debug("Logging NOTSET")
+
+    return level
 
 
 def _remove_zenml_handlers(root_logger: logging.Logger) -> None:
@@ -729,7 +805,20 @@ def init_logging() -> None:
 
     # Add new ZenML handlers to the root logger
     root_logger.addHandler(ZenMLConsoleHandler())
-    root_logger.addHandler(get_zenml_handler())
+    root_logger.addHandler(ZenMLLoggingHandler())
+
+    # Warn about deprecated logging format variables. We have to handle
+    # it separately to avoid circular imports
+    if (
+        ENV_ZENML_LOGGING_FORMAT in os.environ
+        and ENV_ZENML_CONSOLE_LOGGING_FORMAT not in os.environ
+    ):
+        get_logger(__name__).warning(
+            "The `%s` environment variable is deprecated and will be "
+            "removed in a future version. Use `%s` instead.",
+            ENV_ZENML_LOGGING_FORMAT,
+            ENV_ZENML_CONSOLE_LOGGING_FORMAT,
+        )
 
     # Wraps stdout/stderr after handlers are attached so the
     # wrapped writes flow through a fully configured pipeline.
