@@ -26,6 +26,7 @@ import structlog
 
 import zenml.logger as zenml_logger_module
 from zenml.constants import (
+    ENV_ZENML_CONSOLE_LOGGING_FORMAT,
     ENV_ZENML_LOGGING_COLORS_DISABLED,
     ENV_ZENML_LOGGING_FORMAT,
     ENV_ZENML_SERVER,
@@ -221,9 +222,8 @@ def test_removing_zenml_handlers_does_not_remove_foreign_handlers() -> None:
 def test_json_formatted_logs(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The logging format env var switches the console handler to JSON."""
-    # Set the logging format to JSON.
-    monkeypatch.setenv(ENV_ZENML_LOGGING_FORMAT, "json")
+    """The client console logging format env var selects JSON output."""
+    monkeypatch.setenv(ENV_ZENML_CONSOLE_LOGGING_FORMAT, "json")
 
     handler = ZenMLConsoleHandler()
     record = _make_log_record(
@@ -231,6 +231,7 @@ def test_json_formatted_logs(
         request_id="request-1",
         duration_ms=12.3,
         endpoint="list_pipelines",
+        step="trainer",
     )
 
     # Assert the handler is a console handler and the formatter is a JSON formatter.
@@ -248,6 +249,7 @@ def test_json_formatted_logs(
     assert payload["request_id"] == "request-1"
     assert payload["duration_ms"] == 12.3
     assert payload["endpoint"] == "list_pipelines"
+    assert payload["step"] == "trainer"
     assert payload["timestamp"]
     # Assert that payload does not contain any internal stdlib LogRecord fields.
     assert "event" not in payload
@@ -260,25 +262,121 @@ def test_json_formatted_logs(
 def test_logging_format(
     monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
-    """Logging format selection defaults to console for unset and invalid values."""
+    """Client console format selection defaults to compact console output."""
     # Unset logging format defaults to console.
     monkeypatch.delenv(ENV_ZENML_LOGGING_FORMAT, raising=False)
-    with caplog.at_level(logging.INFO):
-        handler = ZenMLConsoleHandler()
+    monkeypatch.delenv(ENV_ZENML_CONSOLE_LOGGING_FORMAT, raising=False)
+    handler = ZenMLConsoleHandler()
 
     assert isinstance(handler.formatter, ZenMLConsoleFormatter)
-    assert "Invalid logging format" not in caplog.text
+
+    monkeypatch.setenv(
+        ENV_ZENML_CONSOLE_LOGGING_FORMAT, "%(message)s [%(levelname)s]"
+    )
+    handler = ZenMLConsoleHandler()
+
+    assert handler.format(_make_log_record("custom layout")) == (
+        "custom layout [INFO]"
+    )
 
     caplog.clear()
+    monkeypatch.setenv(ENV_ZENML_CONSOLE_LOGGING_FORMAT, "invalid")
 
-    # Invalid logging format defaults to console with a debug message.
-    monkeypatch.setenv(ENV_ZENML_LOGGING_FORMAT, "invalid")
-
-    with caplog.at_level(logging.DEBUG):
+    with caplog.at_level(logging.WARNING):
         handler = ZenMLConsoleHandler()
 
     assert isinstance(handler.formatter, ZenMLConsoleFormatter)
-    assert "Invalid logging format: invalid" in caplog.text
+    assert "Invalid console logging format: invalid" in caplog.text
+
+
+def test_deprecated_logging_format_alias_uses_custom_console_format(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The deprecated logging format variable remains a custom format alias."""
+    monkeypatch.delenv(ENV_ZENML_CONSOLE_LOGGING_FORMAT, raising=False)
+    monkeypatch.setenv(ENV_ZENML_LOGGING_FORMAT, "%(message)s [%(levelname)s]")
+
+    handler = ZenMLConsoleHandler()
+
+    assert handler.format(_make_log_record("custom log layout")) == (
+        "custom log layout [INFO]"
+    )
+
+
+def test_deprecated_logging_format_alias_warns_on_init(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Using only the deprecated logging format variable emits a warning."""
+    monkeypatch.delenv(ENV_ZENML_CONSOLE_LOGGING_FORMAT, raising=False)
+    monkeypatch.setenv(ENV_ZENML_LOGGING_FORMAT, "%(message)s")
+
+    with caplog.at_level(logging.WARNING):
+        init_logging()
+
+    assert (
+        f"The `{ENV_ZENML_LOGGING_FORMAT}` environment variable is deprecated"
+        in caplog.text
+    )
+    assert f"Use `{ENV_ZENML_CONSOLE_LOGGING_FORMAT}` instead" in caplog.text
+
+
+def test_console_logging_format_takes_precedence_over_deprecated_alias(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """The new console logging format variable wins over the deprecated alias."""
+    monkeypatch.setenv(ENV_ZENML_LOGGING_FORMAT, "%(levelname)s %(message)s")
+    monkeypatch.setenv(ENV_ZENML_CONSOLE_LOGGING_FORMAT, "%(message)s")
+
+    with caplog.at_level(logging.WARNING):
+        init_logging()
+
+    console_handlers = [
+        handler
+        for handler in logging.getLogger().handlers
+        if isinstance(handler, ZenMLConsoleHandler)
+    ]
+
+    assert console_handlers[0].format(_make_log_record("new format")) == (
+        "new format"
+    )
+    assert ENV_ZENML_LOGGING_FORMAT not in caplog.text
+
+
+def test_deprecated_logging_format_alias_selects_json(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The deprecated logging format variable can still select JSON output."""
+    monkeypatch.delenv(ENV_ZENML_CONSOLE_LOGGING_FORMAT, raising=False)
+    monkeypatch.setenv(ENV_ZENML_LOGGING_FORMAT, "json")
+
+    handler = ZenMLConsoleHandler()
+
+    assert isinstance(handler.formatter, ZenMLJsonFormatter)
+    assert (
+        json.loads(handler.format(_make_log_record("legacy json")))["message"]
+        == "legacy json"
+    )
+
+
+def test_server_logs_use_custom_console_format(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Server console logs use valid custom console formats."""
+    monkeypatch.setenv(ENV_ZENML_SERVER, "true")
+    monkeypatch.setenv(
+        ENV_ZENML_CONSOLE_LOGGING_FORMAT, "%(asctime)s %(message)s"
+    )
+    monkeypatch.setenv(ENV_ZENML_LOGGING_COLORS_DISABLED, "true")
+
+    handler = ZenMLConsoleHandler()
+    record = _make_log_record("server.started")
+
+    formatted = handler.format(record)
+
+    assert formatted.endswith(" server.started")
+    assert "zenml.test:test_function:42" not in formatted
 
 
 def test_extra_collision_with_reserved_key_raises() -> None:
@@ -310,13 +408,12 @@ def test_structured_console_formatted_logs(
         level=logging.DEBUG,
         request_id="request-1",
         duration_ms=12.3,
+        step="trainer",
     )
 
     # Assert the handler is a console handler and the formatter is a console formatter.
     assert isinstance(handler, ZenMLConsoleHandler)
     assert isinstance(handler.formatter, ZenMLConsoleFormatter)
-
-    # Assert that if no logging format is set, no debug message is logged.
 
     # Assert the log record is formatted as a structured log with extras.
     formatted = handler.format(record)
@@ -325,8 +422,41 @@ def test_structured_console_formatted_logs(
     assert "zenml.test:test_function:42" in formatted
     assert "endpoint.completed" in formatted
     assert formatted.endswith(
-        ' | {"request_id":"request-1","duration_ms":12.3}'
+        ' | {"request_id":"request-1","duration_ms":12.3,"step":"trainer"}'
     )
+
+
+def test_structured_console_logs_append_diagnostics_after_extras(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Structured logs append traceback and stack details after extras."""
+    monkeypatch.setattr(
+        zenml_logger_module,
+        "get_logging_level",
+        lambda: LoggingLevels.DEBUG,
+    )
+    monkeypatch.setenv(ENV_ZENML_LOGGING_COLORS_DISABLED, "true")
+
+    try:
+        raise ValueError("broken")
+    except ValueError:
+        record = _make_log_record(
+            "endpoint.failed",
+            level=logging.ERROR,
+            request_id="request-1",
+        )
+        record.exc_info = sys.exc_info()
+        record.stack_info = "Stack (most recent call last):\nstack line"
+
+    formatted = ZenMLConsoleFormatter().format(record)
+
+    extras_index = formatted.index(' | {"request_id":"request-1"}')
+    traceback_index = formatted.index("Traceback (most recent call last):")
+    stack_index = formatted.index("Stack (most recent call last):")
+
+    assert extras_index < traceback_index < stack_index
+    assert "ValueError: broken" in formatted
+    assert "stack line" in formatted
 
 
 def test_console_highlights_backticks_and_urls(
@@ -395,6 +525,36 @@ def test_color_disabled_strips_ansi_and_preserves_message(
 
     assert formatted == message
     assert "\x1b[" not in formatted
+
+
+def test_wrapped_stdout_stores_raw_message_without_step_prefix(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Stored stdout logs stay raw while terminal output gets the step prefix."""
+    emitted_messages = []
+    terminal_messages = []
+
+    def emit(record: logging.LogRecord) -> None:
+        emitted_messages.append(record.getMessage())
+
+    def get_step_context() -> SimpleNamespace:
+        return SimpleNamespace(step_name="trainer")
+
+    monkeypatch.setattr("zenml.utils.logging_utils.LoggingContext.emit", emit)
+    monkeypatch.setattr("zenml.steps.get_step_context", get_step_context)
+    token = zenml_logger_module.step_names_in_console.set(True)
+
+    try:
+        wrapped_write = zenml_logger_module._wrapped_write(
+            terminal_messages.append, "stdout"
+        )
+
+        wrapped_write("hello\n")
+    finally:
+        zenml_logger_module.step_names_in_console.reset(token)
+
+    assert emitted_messages == ["hello\n"]
+    assert terminal_messages == ["[trainer] hello\n"]
 
 
 def test_contextvars_filter_copies_bound_context_to_log_record() -> None:
