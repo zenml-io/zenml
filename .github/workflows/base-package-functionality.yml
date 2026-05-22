@@ -63,9 +63,11 @@ jobs:
         with:
           version: 0.8.14
       - name: Build server image
+        env:
+          PYTHON_VERSION: ${{ inputs.python-version }}
         run: |
           docker build \
-            --build-arg PYTHON_VERSION="${{ inputs.python-version }}" \
+            --build-arg PYTHON_VERSION="${PYTHON_VERSION}" \
             -t zenml-server-dev \
             -f docker/zenml-server-dev.Dockerfile \
             .
