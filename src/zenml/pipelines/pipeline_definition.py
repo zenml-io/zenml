@@ -1014,6 +1014,10 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
             code_path = code_utils.upload_code_if_necessary(code_archive)
 
+        source_snapshot_id = None
+        if self._original_run:
+            source_snapshot_id = self._original_run.source_snapshot
+
         request = PipelineSnapshotRequest(
             project=Client().active_project.id,
             stack=stack.id,
@@ -1023,6 +1027,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             code_reference=code_reference,
             code_path=code_path,
             source_code=self.source_code,
+            source_snapshot=source_snapshot_id,
             **snapshot.model_dump(),
             **snapshot_request_kwargs,
         )
