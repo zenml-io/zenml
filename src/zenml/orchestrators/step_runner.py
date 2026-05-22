@@ -61,6 +61,7 @@ from zenml.steps.step_context import (
 )
 from zenml.steps.utils import (
     OutputSignature,
+    get_resolved_signature,
     parse_return_type_annotations,
     resolve_type_annotation,
 )
@@ -154,12 +155,13 @@ class StepRunner:
         with logs_context:
             step_instance = self._load_step()
             output_materializers = self._load_output_materializers()
-            spec = inspect.getfullargspec(
-                inspect.unwrap(step_instance.entrypoint)
+            resolved_signature = get_resolved_signature(
+                step_instance.entrypoint
             )
 
             output_annotations = parse_return_type_annotations(
-                func=step_instance.entrypoint
+                func=step_instance.entrypoint,
+                resolved_signature=resolved_signature,
             )
 
             self._evaluate_artifact_names_in_collections(
@@ -185,8 +187,7 @@ class StepRunner:
 
             with step_context:
                 function_params = self._parse_inputs(
-                    args=spec.args + spec.kwonlyargs,
-                    annotations=spec.annotations,
+                    signature=resolved_signature,
                     input_artifacts=input_artifacts,
                 )
 
@@ -441,15 +442,13 @@ class StepRunner:
 
     def _parse_inputs(
         self,
-        args: List[str],
-        annotations: Dict[str, Any],
+        signature: inspect.Signature,
         input_artifacts: Dict[str, List["StepRunInputResponse"]],
     ) -> Dict[str, Any]:
         """Parses the inputs for a step entrypoint function.
 
         Args:
-            args: The arguments of the step entrypoint function.
-            annotations: The annotations of the step entrypoint function.
+            signature: The resolved signature of the step entrypoint function.
             input_artifacts: The input artifact versions of the step.
 
         Raises:
@@ -461,11 +460,18 @@ class StepRunner:
         """
         function_params: Dict[str, Any] = {}
 
-        if args and args[0] == "self":
-            args.pop(0)
+        for arg, parameter in signature.parameters.items():
+            if parameter.kind in {
+                inspect.Parameter.VAR_POSITIONAL,
+                inspect.Parameter.VAR_KEYWORD,
+            }:
+                continue
 
-        for arg in args:
-            annotation = annotations.get(arg, None)
+            annotation = (
+                parameter.annotation
+                if parameter.annotation is not inspect.Parameter.empty
+                else None
+            )
             arg_type = resolve_type_annotation(annotation)
 
             if arg in input_artifacts:
