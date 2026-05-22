@@ -171,20 +171,30 @@ my_pipeline = my_pipeline.with_options(
 )
 ```
 
-### Setting Logging Format
+### Setting Console Logging Format
 
-Change the default logging format with:
+Change the console/stdout logging format with:
 
 ```bash
-export ZENML_LOGGING_FORMAT=console
+export ZENML_CONSOLE_LOGGING_FORMAT=console
 ```
 
 Options:
 
-- `console` (default): Human-readable console output. Client-side `INFO` logs use a compact layout, while `DEBUG` logs use a full structured text layout.
-- `json`: JSON formatted logs.
+- `console` (default): Human-readable console output. Client-side `INFO` logs use a compact layout, while `DEBUG` logs and server logs use a full structured text layout.
+- `json`: JSON formatted console/stdout logs.
+- Any other valid Python `%`-style logging format string, such as `%(asctime)s - %(message)s`, for custom console output.
 
-Custom Python logging format strings are not supported; use either `console` or `json`.
+
+```bash
+export ZENML_CONSOLE_LOGGING_FORMAT='%(asctime)s %(message)s'
+```
+
+The format must use `%`-string formatting style. See the [available LogRecord attributes](https://docs.python.org/3/library/logging.html#logrecord-attributes). This only changes terminal output; stored logs keep their raw message and structured metadata.
+
+{% hint style="warning" %}
+The older `ZENML_LOGGING_FORMAT` environment variable is deprecated and will be removed in a future version. Use `ZENML_CONSOLE_LOGGING_FORMAT` instead. Existing configurations such as `ZENML_LOGGING_FORMAT='%(asctime)s %(message)s'` continue to work during the deprecation period.
+{% endhint %}
 
 The compact client console layout is:
 
@@ -235,6 +245,10 @@ logger.info(
 
 
 Avoid using Python `LogRecord` attribute names such as `name`, `message`, `levelname`, `filename`, or `lineno` as keys in `extra` because they are reserved for Python's internal use.
+
+{% hint style="warning" %}
+When a custom console format string is configured, ZenML uses that format as-is for console output. It does not append structured `extra` fields or apply ZenML's default console coloring and highlighting to that custom layout.
+{% endhint %}
 
 ### Disabling Rich Traceback Output
 

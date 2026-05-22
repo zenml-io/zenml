@@ -736,17 +736,17 @@ You can configure server log output and OpenTelemetry export through the `server
 ```yaml
 server:
   environment:
-    ZENML_LOGGING_FORMAT: <console|json>  # default is console
+    ZENML_CONSOLE_LOGGING_FORMAT: <console|json|custom_format>  # default is console
     ZENML_LOGGING_COLORS_DISABLED: <true|false>  # default is false
     ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
     ZENML_SERVER_OTEL_SERVICE_NAME: zenml-server
 ```
 
-`ZENML_LOGGING_FORMAT` can be set to `console` (default) or `json`. This controls the server's container stdout/stderr output, i.e. the logs that Kubernetes pod log collectors scrapes. See the [logging guide](../../how-to/steps-pipelines/logging.md) for more details.
+`ZENML_CONSOLE_LOGGING_FORMAT` can be set to `console` (default), `json`, or a valid Python `%`-style logging format string. This controls the server container stdout/stderr output, i.e. the logs that Kubernetes pod log collectors scrape. The older `ZENML_LOGGING_FORMAT` environment variable is still supported as a deprecated alias but will be removed in a future version.
 
 Setting `ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT` enables server OpenTelemetry instrumentation and exports traces, metrics, and logs using OTLP/HTTP. Configure it with the base collector endpoint; ZenML appends `/v1/traces`, `/v1/metrics`, and `/v1/logs` for each signal. If this value is not set, server OpenTelemetry instrumentation is disabled.
 
-The server logs export is independent of `ZENML_LOGGING_FORMAT`: logs are exported as OTLP records with structured attributes derived from the underlying log record, not as console-formatted text or JSON.
+The server logs export to the OpenTelemetry collector is independent of `ZENML_CONSOLE_LOGGING_FORMAT`: logs are exported as OTLP records with structured attributes derived from the underlying log record, not as console-formatted text or JSON.
 
 ### Custom CA Certificates
 

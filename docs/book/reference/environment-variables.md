@@ -15,13 +15,15 @@ export ZENML_LOGGING_VERBOSITY=INFO
 
 Choose from `INFO`, `WARN`, `ERROR`, `CRITICAL`, `DEBUG`.
 
-## Logging format
+## Console logging format
 
 ```bash
-export ZENML_LOGGING_FORMAT=console
+export ZENML_CONSOLE_LOGGING_FORMAT=console
 ```
 
-Choose from `console` (default) or `json`. The `console` format uses compact layout for client-side `INFO` logs and full structured text layout `DEBUG` logs. The `json` format emits JSON formatted logs. Custom Python logging format strings are not supported; use either `console` or `json`.
+Choose from `console` (default), `json`, or any valid Python `%`-style logging format string such as `%(asctime)s - %(message)s` for custom console output. The `console` format uses a default compact layout for client-side `INFO+` logs and full structured text layout for `DEBUG` and server logs. The `json` format emits JSON formatted console/stdout logs.
+
+This controls terminal log formatting only; stored logs keep their raw message and structured metadata. The older `ZENML_LOGGING_FORMAT` environment variable is still supported as a deprecated alias.
 
 See [this page](https://docs.zenml.io/concepts/steps_and_pipelines/logging) for more information.
 
