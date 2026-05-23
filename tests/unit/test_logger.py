@@ -153,24 +153,23 @@ def test_init_logging_is_idempotent() -> None:
     """Calling init_logging repeatedly does not duplicate ZenML handlers."""
     root_logger = logging.getLogger()
 
-    # First init logging call
     init_logging()
     after_first_init = [
         type(handler).__name__ for handler in root_logger.handlers
     ]
 
+    # Emitting once between init calls exercises the configured handlers before
+    # reinitialization. The second init should reconfigure ZenML-owned handlers
+    # without stacking duplicate console/log-store handlers on the root logger.
     logging.getLogger("zenml.test").info("Step `demo` has started.")
 
-    # Second init logging call
     init_logging()
     after_second_init = [
         type(handler).__name__ for handler in root_logger.handlers
     ]
 
-    # Assert the handlers are the same after second init logging call.
     assert after_second_init == after_first_init
 
-    # Assert zenml handlers are present
     assert (
         sum(
             isinstance(handler, ZenMLConsoleHandler)
@@ -331,6 +330,8 @@ def test_console_logging_format_takes_precedence_over_deprecated_alias(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """The new console logging format variable wins over the deprecated alias."""
+    # Both env vars can be present during migration. The new variable should
+    # select the formatter and suppress the deprecation warning for the old one.
     monkeypatch.setenv(ENV_ZENML_LOGGING_FORMAT, "%(levelname)s %(message)s")
     monkeypatch.setenv(ENV_ZENML_CONSOLE_LOGGING_FORMAT, "%(message)s")
 
@@ -458,6 +459,8 @@ def test_json_logs_keep_message_unprefixed_when_step_prefix_is_enabled(
     """JSON output keeps step context structured instead of mutating message."""
     monkeypatch.setenv(ENV_ZENML_CONSOLE_LOGGING_FORMAT, "json")
     record = _make_log_record("training.started", step="trainer")
+    # Step prefixes are a human-console affordance. JSON logs should retain
+    # `step` as structured data instead of folding it into `message`.
     token = zenml_logger_module.step_names_in_console.set(True)
 
     try:
@@ -554,6 +557,9 @@ def test_structured_console_logs_prefix_step_name_when_enabled(
         request_id="request-1",
         step="trainer",
     )
+    # Formatting temporarily mutates LogRecord.msg so the prefix appears in the
+    # %(message)s position. The assertion below verifies the record is restored
+    # afterwards, which protects other handlers attached to the same record.
     token = zenml_logger_module.step_names_in_console.set(True)
 
     try:
@@ -593,6 +599,8 @@ def test_structured_console_logs_append_traceback_and_stack_info_after_extras(
 
     formatted = ZenMLConsoleFormatter().format(record)
 
+    # The primary log line should stay machine-parseable: extras remain attached
+    # to that line and diagnostics are appended afterwards on separate lines.
     extras_index = formatted.index(' | {"request_id":"request-1"}')
     traceback_index = formatted.index("Traceback (most recent call last):")
     stack_index = formatted.index("Stack (most recent call last):")
@@ -620,6 +628,9 @@ def test_compact_console_logs_include_extras_for_client_info_logs(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Compact client console logs include extras and hide redundant step."""
+    # Client INFO logs use the compact human layout. The active step is already
+    # visible in ZenML's step boundary messages, so the formatter omits `step`
+    # from the JSON extras unless step-name prefixes are explicitly enabled.
     monkeypatch.setenv(ENV_ZENML_SERVER, "false")
     monkeypatch.setattr(
         zenml_logger_module,
@@ -745,6 +756,9 @@ def test_wrapped_stdout_stores_raw_message_without_step_prefix(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Stored stdout logs stay raw while terminal output gets the step prefix."""
+    # `emitted_messages` captures what would be stored in the log store, while
+    # `terminal_messages` captures what the user sees in stdout. The prefix is
+    # useful in the terminal but would be redundant/noisy in stored logs.
     emitted_messages = []
     terminal_messages = []
 
@@ -892,6 +906,8 @@ def test_contextvars_filter_copies_bound_context_to_log_record() -> None:
 def test_contextvars_filter_preserves_existing_log_record_fields() -> None:
     """Test _ContextVarsFilter copies contextvars onto log record but preserves existing fields."""
     bind_request_context(request_id="bound-request", method="GET")
+    # Explicit LogRecord fields should win over bound context. This lets a
+    # caller override request-level defaults for a single log line.
     record = _make_log_record("request.received", request_id="record-request")
 
     zenml_logger_module._ContextVarsFilter().filter(record)
