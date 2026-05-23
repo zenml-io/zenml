@@ -774,7 +774,7 @@ def test_wrapped_stdout_stores_raw_message_without_step_prefix(
 @pytest.mark.parametrize(
     ("env_value", "expected_message"),
     [
-        (None, "[trainer] hello\n"),
+        (None, "hello\n"),
         ("false", "[trainer] hello\n"),
         ("true", "hello\n"),
     ],
@@ -784,7 +784,7 @@ def test_logging_context_step_name_prefix_uses_legacy_env_semantics(
     env_value: str | None,
     expected_message: str,
 ) -> None:
-    """Step prefixes are shown unless the env var, ``ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS``, is set to true."""
+    """Step prefixes are hidden by default and shown when disabled is false."""
     from zenml.utils import logging_utils
 
     class FakeLogStore:

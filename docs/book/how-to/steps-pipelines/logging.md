@@ -266,9 +266,15 @@ Console logs use colors by default. Disable colorful logging with:
 ZENML_LOGGING_COLORS_DISABLED=true
 ```
 
-### Disabling Step Names in Logs
+### Showing Step Names in Logs
 
-By default, ZenML adds step name prefixes to console logs:
+ZenML hides step name prefixes in console logs by default. You can show them with:
+
+```bash
+ZENML_DISABLE_STEP_NAMES_IN_LOGS=false
+```
+
+When enabled, console logs include the step name as a prefix:
 
 ```
 [data_loader] Loading data from source...
@@ -276,7 +282,7 @@ By default, ZenML adds step name prefixes to console logs:
 [model_trainer] Training model with parameters...
 ```
 
-These prefixes only appear in console output, not in stored logs. Disable them with:
+These prefixes only appear in console output, not in stored logs. You can disable the step name prefixes in console with:
 
 ```bash
 ZENML_DISABLE_STEP_NAMES_IN_LOGS=true

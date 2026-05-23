@@ -230,9 +230,10 @@ class LoggingContext(context_utils.BaseContext):
         """
         with self._lock:
             super().__enter__()
+            # By default, if the env var is not set, we disable step names in console.
             self._step_names_token = step_names_in_console.set(
                 not handle_bool_env_var(
-                    ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, False
+                    ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, True
                 )
             )
             try:
