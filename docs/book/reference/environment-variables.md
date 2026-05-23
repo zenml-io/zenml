@@ -15,13 +15,13 @@ export ZENML_LOGGING_VERBOSITY=INFO
 
 Choose from `INFO`, `WARN`, `ERROR`, `CRITICAL`, `DEBUG`.
 
-## Logging format
+## Console logging format
 
 ```bash
-export ZENML_LOGGING_FORMAT='%(asctime)s %(message)s'
+export ZENML_CONSOLE_LOGGING_FORMAT='%(asctime)s %(message)s'
 ```
 
-See [this page](https://docs.zenml.io/concepts/steps_and_pipelines/logging) for more information.
+Controls terminal log formatting only; stored logs keep their raw message and structured metadata. The older `ZENML_LOGGING_FORMAT` environment variable is still supported as a deprecated alias. See [this page](https://docs.zenml.io/concepts/steps_and_pipelines/logging) for more information.
 
 ## Disable step logs
 

@@ -1178,6 +1178,48 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
                 f"'{deployment.name}': {e}"
             )
 
+    def _check_deployment_health(
+        self,
+        deployment: DeploymentResponse,
+    ) -> bool:
+        """Check if the deployment is healthy.
+
+        For GCP Cloud Run, the standard HTTP health check from the base
+        deployer is unreachable when the service is configured with
+        restricted ingress (``internal`` or
+        ``internal-and-cloud-load-balancing``) or when unauthenticated
+        requests are disabled (``allow_unauthenticated=False``).  In those
+        cases, the plain ``requests.get`` issued by the base class will
+        either be blocked by Cloud Run's ingress rules or rejected with a
+        403 by IAM, causing the deployment to time out.
+
+        Args:
+            deployment: The deployment to check.
+
+        Returns:
+            True if the deployment is considered healthy.
+        """
+        snapshot = deployment.snapshot
+        assert snapshot, "Deployment snapshot not found"
+
+        settings = cast(
+            GCPDeployerSettings,
+            self.get_settings(snapshot),
+        )
+
+        if settings.ingress != "all" or not settings.allow_unauthenticated:
+            logger.debug(
+                "Skipping HTTP health check for deployment "
+                f"'{deployment.name}' because the Cloud Run service is "
+                "not reachable without authentication and/or has "
+                f"restricted ingress (ingress={settings.ingress!r}, "
+                f"allow_unauthenticated={settings.allow_unauthenticated}). "
+                "Relying on Cloud Run API state instead."
+            )
+            return True
+
+        return super()._check_deployment_health(deployment)
+
     def do_get_deployment_state(
         self,
         deployment: DeploymentResponse,
