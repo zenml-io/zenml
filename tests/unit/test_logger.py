@@ -787,6 +787,10 @@ def test_logging_context_step_name_prefix_uses_legacy_env_semantics(
     """Step prefixes are hidden by default and shown when disabled is false."""
     from zenml.utils import logging_utils
 
+    # LoggingContext gets the log store from Client().active_stack and
+    # registers an origin before stdout/stderr writes can be emitted. This
+    # fake keeps the test focused on console-prefix behavior without
+    # involving the real client, stack, or log storage backend.
     class FakeLogStore:
         def register_origin(
             self,
@@ -801,15 +805,39 @@ def test_logging_context_step_name_prefix_uses_legacy_env_semantics(
         ) -> None:
             pass
 
+        def emit(
+            self,
+            origin: object,
+            record: logging.LogRecord,
+            metadata: dict[str, Any] | None = None,
+        ) -> None:
+            pass
+
+    # The production prefixing code discovers the active pipeline step
+    # dynamically, so the test provides a stable step context instead of
+    # constructing a real pipeline run.
     def get_step_context() -> SimpleNamespace:
         return SimpleNamespace(step_name="trainer")
 
+    # Exercise the legacy env-var contract: unset and "true" hide step
+    # prefixes, while "false" opts into showing them in console output.
     if env_value is None:
         monkeypatch.delenv(ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, raising=False)
     else:
         monkeypatch.setenv(ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, env_value)
     monkeypatch.setenv(ENV_ZENML_LOGGING_COLORS_DISABLED, "true")
 
+    # CI may run tests with ZENML_DEBUG=1. Pin INFO formatting so this test
+    # verifies step-prefix semantics, not the DEBUG structured-log layout.
+    monkeypatch.setattr(
+        zenml_logger_module,
+        "get_logging_level",
+        lambda: LoggingLevels.INFO,
+    )
+
+    # `terminal_messages` represents the text written to the user-visible
+    # stdout stream. It is intentionally separate from the log record emitted to
+    # the log store because step prefixes should only affect console output.
     terminal_messages = []
     console_record = _make_log_record("training.started", step="trainer")
     fake_client = SimpleNamespace(
@@ -821,6 +849,9 @@ def test_logging_context_step_name_prefix_uses_legacy_env_semantics(
     with logging_utils.LoggingContext(
         name="test", log_model=cast(Any, SimpleNamespace(id="logs-id"))
     ):
+        # Entering LoggingContext enables the same stdout wrapper behavior used
+        # during step execution: writes are emitted to the log store and then
+        # forwarded to the terminal, optionally with a step prefix.
         wrapped_write = zenml_logger_module._wrapped_write(
             terminal_messages.append, "stdout"
         )
@@ -828,7 +859,11 @@ def test_logging_context_step_name_prefix_uses_legacy_env_semantics(
         wrapped_write("hello\n")
         console_message = ZenMLConsoleFormatter().format(console_record)
 
+    # The wrapped stdout path controls raw terminal writes like `print()`.
     assert terminal_messages == [expected_message]
+
+    # The formatter path controls stdlib logger messages. It should follow the
+    # same env-var prefix contract while preserving the original LogRecord.
     assert console_message == expected_message.replace(
         "hello\n", "training.started"
     )
