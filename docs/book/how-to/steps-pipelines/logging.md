@@ -200,14 +200,14 @@ The compact client console layout is:
 
 ```text
 <message> | <extras as JSON, if any>
-[traceback if any]
+[traceback and stack_info if any]
 ```
 
 The full structured console layout for `DEBUG` logs is:
 
 ```text
 <time> | <loglevel> | <logger-name>:<function-name>:<line-number> | <message> | <extras as JSON, if any>
-[traceback if any]
+[traceback and stack_info if any]
 ```
 
 The JSON format emits the same information as fields:
