@@ -39,6 +39,10 @@ from zenml.constants import (
 )
 from zenml.enums import LoggingLevels
 
+#####################################
+# Constants / Module State Variables
+#####################################
+
 _original_stdout_write: Optional[Any] = None
 _original_stderr_write: Optional[Any] = None
 _stdout_wrapped: bool = False
@@ -47,30 +51,40 @@ step_names_in_console: ContextVar[bool] = ContextVar(
     "step_names_in_console", default=False
 )
 
+# Stdlib LogRecord attributes plus our derived ones — never rendered
+# as "extras". Kept in sync with
+# https://docs.python.org/3/library/logging.html#logrecord-attributes
+_RESERVED_LOG_RECORD_ATTRS: frozenset[str] = frozenset(
+    {
+        "args",
+        "asctime",
+        "created",
+        "exc_info",
+        "exc_text",
+        "filename",
+        "funcName",
+        "levelname",
+        "levelno",
+        "lineno",
+        "message",
+        "module",
+        "msecs",
+        "msg",
+        "name",
+        "pathname",
+        "process",
+        "processName",
+        "relativeCreated",
+        "stack_info",
+        "taskName",
+        "thread",
+        "threadName",
+    }
+)
 
-class _ZenMLStdoutStream:
-    """Stream that writes to the original stdout, bypassing the ZenML wrapper.
-
-    This ensures console logging doesn't trigger the LoggingContext wrapper,
-    preventing duplicate log entries in stored logs.
-    """
-
-    def write(self, text: str) -> Any:
-        """Write text to the original stdout.
-
-        Args:
-            text: The text to write.
-
-        Returns:
-            The number of characters written.
-        """
-        if _original_stdout_write:
-            return _original_stdout_write(text)
-        return sys.stdout.write(text)
-
-    def flush(self) -> None:
-        """Flush the stdout buffer."""
-        sys.stdout.flush()
+#####################
+# Public Logging API
+#####################
 
 
 def get_logger(logger_name: str) -> logging.Logger:
@@ -157,38 +171,6 @@ def get_logging_context() -> dict[str, Any]:
     (typically ``request_id``) back to the caller.
     """
     return dict(structlog.contextvars.get_contextvars())
-
-
-# Stdlib LogRecord attributes plus our derived ones — never rendered
-# as "extras". Kept in sync with
-# https://docs.python.org/3/library/logging.html#logrecord-attributes
-_RESERVED_LOG_RECORD_ATTRS: frozenset[str] = frozenset(
-    {
-        "args",
-        "asctime",
-        "created",
-        "exc_info",
-        "exc_text",
-        "filename",
-        "funcName",
-        "levelname",
-        "levelno",
-        "lineno",
-        "message",
-        "module",
-        "msecs",
-        "msg",
-        "name",
-        "pathname",
-        "process",
-        "processName",
-        "relativeCreated",
-        "stack_info",
-        "taskName",
-        "thread",
-        "threadName",
-    }
-)
 
 
 def _collect_extra_fields(
@@ -282,7 +264,7 @@ class ZenMLConsoleFormatter(logging.Formatter):
             The fully formatted line.
         """
         if self._custom_log_format:
-            return super().format(record)
+            return self._format_custom_log_format(record)
 
         # For ZenML server logs, always format logs with default LOG_FORMAT layout.
         if self._use_zenml_server_layout():
@@ -317,6 +299,10 @@ class ZenMLConsoleFormatter(logging.Formatter):
 
         return bool(self._is_zenml_server)
 
+    def _format_custom_log_format(self, record: logging.LogRecord) -> str:
+        """Format a record with a user-provided console format."""
+        return self._format_with_step_prefix_in_message(record)
+
     def _format_compact_client_log(self, record: logging.LogRecord) -> str:
         """Format default client INFO logs with a compact layout.
 
@@ -330,6 +316,9 @@ class ZenMLConsoleFormatter(logging.Formatter):
             Formatted log message string.
         """
         message = record.getMessage()
+        if self._should_prefix_step_name(record):
+            message = _prefix_step_name(message, str(getattr(record, "step")))
+
         # Client INFO logs (ZENML_LOGGING_VERBOSITY=INFO) already show step
         # boundaries in ZenML's console messages, so repeating the injected step
         # name in extras adds noise. So we exclude the step attribute from the
@@ -374,7 +363,7 @@ class ZenMLConsoleFormatter(logging.Formatter):
             record.exc_info = None
             record.exc_text = None
             record.stack_info = None
-            formatted_log = super().format(record)
+            formatted_log = self._format_with_step_prefix_in_message(record)
         finally:
             # Restore diagnostic fields for explicit formatting below.
             record.exc_info = exc_info_backup
@@ -400,6 +389,45 @@ class ZenMLConsoleFormatter(logging.Formatter):
         )
 
         return formatted_log + extras_text + traceback_text
+
+    def _format_with_step_prefix_in_message(
+        self, record: logging.LogRecord
+    ) -> str:
+        """Format a record with the step prefix folded into its message, if enabled."""
+        if not self._should_prefix_step_name(record):
+            return super().format(record)
+
+        # The step prefix is only for console/stdout rendering. We temporarily
+        # fold it into the LogRecord message so custom `%(message)s` layouts
+        # keep the prefix in the message position, then restore the original
+        # record for other handlers.
+        #
+        # `args` belongs to stdlib's lazy message interpolation (`msg % args`):
+        # `logger.info("Sleeping for %s seconds", 10)` stores
+        # `msg="Sleeping for %s seconds"` and `args=(10,)`. Once we replace
+        # `msg` with the already-rendered prefixed string, `args` must be
+        # cleared during formatting and restored afterwards because Formatter
+        # calls `getMessage()` again and would otherwise re-apply the old args.
+        msg_backup = record.msg
+        args_backup = record.args
+        try:
+            record.msg = _prefix_step_name(
+                record.getMessage(), str(getattr(record, "step"))
+            )
+            record.args = ()
+            return super().format(record)
+        finally:
+            record.msg = msg_backup
+            record.args = args_backup
+
+    @staticmethod
+    def _should_prefix_step_name(record: logging.LogRecord) -> bool:
+        """Check whether the console message should include pipeline step name prefix."""
+        # Only add step prefix if step names are enabled in console and the
+        # log record has a step name.
+        return step_names_in_console.get() and bool(
+            getattr(record, "step", None)
+        )
 
     def _format_extra_fields(
         self,
@@ -554,6 +582,11 @@ def _select_console_formatter() -> logging.Formatter:
     return ZenMLConsoleFormatter(custom_log_format=fmt)
 
 
+######################
+# Step prefix helpers
+######################
+
+
 def _add_step_name_to_message(message: str) -> str:
     """Adds the step name to the message.
 
@@ -570,16 +603,56 @@ def _add_step_name_to_message(message: str) -> str:
             step_context = get_step_context()
 
             if step_context and message not in ["\n", ""]:
-                if "\r" in message:
-                    message = message.replace(
-                        "\r", f"\r[{step_context.step_name}] "
-                    )
-                else:
-                    message = f"[{step_context.step_name}] {message}"
+                message = _prefix_step_name(message, step_context.step_name)
     except Exception:
         pass
 
     return message
+
+
+def _prefix_step_name(message: str, step_name: str) -> str:
+    """Prefix a console/stdout message with the active step name."""
+    # Console writes can arrive as blank chunks; prefixing those would turn
+    # empty lines into visible "[step]" noise.
+    if message in ["\n", ""]:
+        return message
+
+    # Progress bars and status updates often use carriage returns to redraw the
+    # same line, so place the prefix after each redraw marker.
+    if "\r" in message:
+        return message.replace("\r", f"\r[{step_name}] ")
+
+    return f"[{step_name}] {message}"
+
+
+#########################
+# Stdout/Stderr Wrapping
+#########################
+
+
+class _ZenMLStdoutStream:
+    """Stream that writes to the original stdout, bypassing the ZenML wrapper.
+
+    This ensures console logging doesn't trigger the LoggingContext wrapper,
+    preventing duplicate log entries in stored logs.
+    """
+
+    def write(self, text: str) -> Any:
+        """Write text to the original stdout.
+
+        Args:
+            text: The text to write.
+
+        Returns:
+            The number of characters written.
+        """
+        if _original_stdout_write:
+            return _original_stdout_write(text)
+        return sys.stdout.write(text)
+
+    def flush(self) -> None:
+        """Flush the stdout buffer."""
+        sys.stdout.flush()
 
 
 def _wrapped_write(original_write: Any, stream_name: str) -> Any:
@@ -646,6 +719,11 @@ def wrap_stdout_stderr() -> None:
             _wrapped_write(_original_stderr_write, "stderr"),
         )
         _stderr_wrapped = True
+
+
+#################
+# Logging Filters
+#################
 
 
 class _StepNameFilter(logging.Filter):
@@ -715,6 +793,11 @@ def add_zenml_filters(handler: logging.Handler) -> logging.Handler:
     return handler
 
 
+###################
+# Logging Handlers
+###################
+
+
 class ZenMLLoggingHandler(logging.Handler):
     """Custom handler that routes logs through LoggingContext."""
 
@@ -751,6 +834,11 @@ class ZenMLConsoleHandler(logging.StreamHandler):  # type: ignore[type-arg]
 
         # add filters to the handler to attach structlog contextvars and step name to the log record
         add_zenml_filters(self)
+
+
+#############################
+# Root Logger Initialization
+#############################
 
 
 def set_root_verbosity() -> LoggingLevels:
@@ -800,7 +888,7 @@ def init_logging() -> None:
     # We are following, "remove and re-configure" pattern instead of
     # "add once, and skip later" pattern. On repeated init_logging() calls,
     # this allows us to re-configure the handlers with updated env vars (if any)
-    # like ZENML_LOGGING_FORMAT, ZENML_LOGGING_VERBOSITY, etc.
+    # like ZENML_CONSOLE_LOGGING_FORMAT, ZENML_LOGGING_VERBOSITY, etc.
     _remove_zenml_handlers(root_logger)
 
     # Add new ZenML handlers to the root logger
