@@ -307,7 +307,7 @@ class ZenMLConsoleFormatter(logging.Formatter):
         """Format default client INFO logs with a compact layout.
 
         Log format:
-        <message> | <extras as JSON, if any> \n [traceback if any]
+        <message> | <extras as JSON, if any> \n [traceback and stack_info if any]
 
         Args:
             record: The log record to render.
