@@ -1108,6 +1108,22 @@ server:
 
 
   # Extra environment variables to set in the ZenML server container.
+  #
+  # Examples:
+  #
+  #   # Controls the server stdout/stderr log format.
+  #   # Use "console" (default), "json", or a valid Python %-style format string.
+  #   ZENML_CONSOLE_LOGGING_FORMAT: "json"
+  #
+  #   # Disables ANSI color output in console logs. Default is "false".
+  #   ZENML_LOGGING_COLORS_DISABLED: "true"
+  #
+  #   # Enables server OpenTelemetry export for traces, metrics, and logs.
+  #   # The logs export to the OTel backend is independent of ZENML_CONSOLE_LOGGING_FORMAT
+  #   # Logs are exported as OTLP records with structured attributes derived from the
+  #   # underlying log record, not as console-formatted text or JSON.
+  #   ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
+  #   ZENML_SERVER_OTEL_SERVICE_NAME: "zenml-server"
   environment: {}
 
   # Extra environment variables to set in the ZenML server container that

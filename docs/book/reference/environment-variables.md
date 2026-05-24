@@ -18,10 +18,14 @@ Choose from `INFO`, `WARN`, `ERROR`, `CRITICAL`, `DEBUG`.
 ## Console logging format
 
 ```bash
-export ZENML_CONSOLE_LOGGING_FORMAT='%(asctime)s %(message)s'
+export ZENML_CONSOLE_LOGGING_FORMAT=console
 ```
 
-Controls terminal log formatting only; stored logs keep their raw message and structured metadata. The older `ZENML_LOGGING_FORMAT` environment variable is still supported as a deprecated alias. See [this page](https://docs.zenml.io/concepts/steps_and_pipelines/logging) for more information.
+Choose from `console` (default), `json`, or any valid Python `%`-style logging format string such as `%(asctime)s - %(message)s` for custom console output. The `console` format uses a default compact layout for client-side `INFO+` logs and full structured text layout for `DEBUG` and server logs. The `json` format emits JSON formatted console/stdout logs.
+
+This controls terminal log formatting only; stored logs keep their raw message and structured metadata. The older `ZENML_LOGGING_FORMAT` environment variable is still supported as a deprecated alias.
+
+See [this page](https://docs.zenml.io/concepts/steps_and_pipelines/logging) for more information.
 
 ## Disable step logs
 
@@ -83,7 +87,8 @@ export ZENML_ENABLE_RICH_TRACEBACK=true
 
 ## Disable colorful logging
 
-If you wish to disable colorful logging, set the following environment variable:
+Console logs use colors by default. If you wish to disable colorful logging,
+set the following environment variable:
 
 ```bash
 ZENML_LOGGING_COLORS_DISABLED=true
@@ -103,6 +108,26 @@ def my_pipeline() -> None:
 my_pipeline = my_pipeline.with_options(
     settings={"docker": docker_settings}
 )
+```
+
+## Server OpenTelemetry export
+
+Set `ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT` to export ZenML server traces,
+metrics, and logs to an OpenTelemetry-compatible backend using OTLP/HTTP:
+
+```bash
+export ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+```
+
+The endpoint should be the base OTLP/HTTP endpoint. ZenML appends
+`/v1/traces`, `/v1/metrics`, and `/v1/logs` for each signal. If this variable
+is not set, server OpenTelemetry instrumentation is disabled.
+
+You can also customize the service name reported in OpenTelemetry resource
+attributes:
+
+```bash
+export ZENML_SERVER_OTEL_SERVICE_NAME=zenml-server
 ```
 
 ## Disable stack validation
