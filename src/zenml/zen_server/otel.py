@@ -71,8 +71,21 @@ def configure_otel(app: "FastAPI") -> None:
         return
 
     config = server_config()
+
+    # If the endpoint is not configured, then return early.
     endpoint = config.otel_exporter_otlp_endpoint
     if not endpoint:
+        return
+
+    # If all the signals are disabled, then return early.
+    signals_enabled = any(
+        [
+            config.otel_traces_enabled,
+            config.otel_metrics_enabled,
+            config.otel_logs_enabled,
+        ]
+    )
+    if not signals_enabled:
         return
 
     try:
@@ -86,15 +99,23 @@ def configure_otel(app: "FastAPI") -> None:
         )
         return
 
-    traces_configured = _configure_traces(endpoint=endpoint, resource=resource)
+    traces_configured = _configure_traces(
+        endpoint=endpoint,
+        resource=resource,
+        enabled=config.otel_traces_enabled,
+    )
     metrics_configured = _configure_metrics(
-        endpoint=endpoint, resource=resource
+        endpoint=endpoint,
+        resource=resource,
+        enabled=config.otel_metrics_enabled,
     )
     logs_configured = _configure_logs(
         endpoint=endpoint,
         resource=resource,
+        enabled=config.otel_logs_enabled,
     )
 
+    # If all the signals were enabled but none of the exports were configured, then warn.
     if not any([traces_configured, metrics_configured, logs_configured]):
         logger.warning(
             "OpenTelemetry endpoint is configured, but no telemetry signals "
@@ -135,16 +156,23 @@ def shutdown_otel() -> None:
     _otel_configured = False
 
 
-def _configure_traces(endpoint: str, resource: "Resource") -> bool:
+def _configure_traces(
+    endpoint: str, resource: "Resource", enabled: bool
+) -> bool:
     """Configure OpenTelemetry trace export.
 
     Args:
         endpoint: Base OTLP endpoint.
         resource: Resource attributes shared by all telemetry signals.
+        enabled: Whether trace export is enabled.
 
     Returns:
         True if trace export was configured, otherwise False.
     """
+    if not enabled:
+        logger.debug("OpenTelemetry trace export is disabled.")
+        return False
+
     try:
         from opentelemetry import trace
         from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
@@ -167,16 +195,23 @@ def _configure_traces(endpoint: str, resource: "Resource") -> bool:
         return False
 
 
-def _configure_metrics(endpoint: str, resource: "Resource") -> bool:
+def _configure_metrics(
+    endpoint: str, resource: "Resource", enabled: bool
+) -> bool:
     """Configure OpenTelemetry metric export.
 
     Args:
         endpoint: Base OTLP endpoint.
         resource: Resource attributes shared by all telemetry signals.
+        enabled: Whether metric export is enabled.
 
     Returns:
         True if metric export was configured, otherwise False.
     """
+    if not enabled:
+        logger.debug("OpenTelemetry metric export is disabled.")
+        return False
+
     try:
         from opentelemetry import metrics
         from opentelemetry.exporter.otlp.proto.http.metric_exporter import (
@@ -204,17 +239,23 @@ def _configure_metrics(endpoint: str, resource: "Resource") -> bool:
 def _configure_logs(
     endpoint: str,
     resource: "Resource",
+    enabled: bool,
 ) -> bool:
     """Configure OpenTelemetry log export.
 
     Args:
         endpoint: Base OTLP endpoint.
         resource: Resource attributes shared by all telemetry signals.
+        enabled: Whether log export is enabled.
 
     Returns:
         True if log export was configured, otherwise False.
     """
     global _otel_log_handler
+
+    if not enabled:
+        logger.debug("OpenTelemetry log export is disabled.")
+        return False
 
     try:
         from opentelemetry._logs import set_logger_provider

@@ -261,6 +261,12 @@ class ServerConfiguration(BaseModel):
         otel_service_name: Service name reported in OTel resource attributes.
             Appears as ``service.name`` in traces, metrics, and logs.
             Defaults to 'zenml-server'
+        otel_traces_enabled: Whether to export OpenTelemetry traces when the
+            OTLP endpoint is configured.
+        otel_metrics_enabled: Whether to export OpenTelemetry metrics when the
+            OTLP endpoint is configured.
+        otel_logs_enabled: Whether to export OpenTelemetry logs when the OTLP
+            endpoint is configured.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -377,6 +383,9 @@ class ServerConfiguration(BaseModel):
 
     otel_exporter_otlp_endpoint: Optional[str] = None
     otel_service_name: str = "zenml-server"
+    otel_traces_enabled: bool = True
+    otel_metrics_enabled: bool = True
+    otel_logs_enabled: bool = True
 
     _deployment_id: Optional[UUID] = None
 
