@@ -114,6 +114,9 @@ def shutdown_otel() -> None:
     """Flush and shut down OpenTelemetry providers configured by ZenML."""
     global _otel_configured, _otel_log_handler
 
+    if not _otel_configured and not _otel_log_handler and not _otel_providers:
+        return
+
     if _otel_log_handler:
         root_logger = logging.getLogger()
         root_logger.removeHandler(_otel_log_handler)
