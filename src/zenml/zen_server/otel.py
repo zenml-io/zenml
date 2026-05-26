@@ -43,6 +43,8 @@ if TYPE_CHECKING:
     from fastapi import FastAPI
     from opentelemetry.sdk.resources import Resource
 
+    from zenml.config.server_config import ServerConfiguration
+
 logger = get_logger(__name__)
 
 _otel_configured = False
@@ -95,7 +97,7 @@ def configure_otel(app: "FastAPI") -> None:
     try:
         from opentelemetry.sdk.resources import Resource
 
-        resource = Resource.create({"service.name": config.otel_service_name})
+        resource = Resource.create(_get_resource_attributes(config))
     except ImportError:
         logger.debug(
             "OpenTelemetry SDK packages not installed — skipping "
@@ -382,3 +384,14 @@ def _instrument_libraries(app: "FastAPI") -> None:
         pass
     except Exception:
         logger.exception("Failed to instrument SQLAlchemy with OpenTelemetry.")
+
+
+def _get_resource_attributes(config: "ServerConfiguration") -> dict[str, str]:
+    """Get stable resource attributes shared by all OTel signals."""
+    import zenml
+
+    return {
+        "service.name": config.otel_service_name,
+        "service.version": zenml.__version__,
+        "deployment.environment.name": str(config.deployment_type),
+    }
