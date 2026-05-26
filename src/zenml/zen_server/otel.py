@@ -54,6 +54,7 @@ _otel_providers: list[Any] = []
 # list of callbacks to uninstrument the libraries when we shutdown OTel.
 _otel_uninstrument_callbacks: list[Callable[[], None]] = []
 
+
 def configure_otel(app: "FastAPI") -> None:
     """Set up OpenTelemetry tracing, metrics, and log export.
 
@@ -146,7 +147,6 @@ def shutdown_otel() -> None:
         and not _otel_uninstrument_callbacks
     ):
         return
-
 
     # Uninstrument the libraries.
     while _otel_uninstrument_callbacks:
