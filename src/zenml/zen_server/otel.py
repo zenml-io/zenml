@@ -331,10 +331,23 @@ def _instrument_libraries(app: "FastAPI") -> None:
             SQLAlchemyInstrumentor,
         )
 
-        SQLAlchemyInstrumentor().instrument()
+        from zenml.zen_server.utils import initialize_zen_store, zen_store
+
+        # if the zen store is not initialized, initialize it. Else, use the existing store.
+        # The zen-store is initialized during the server startup, but otel is configured
+        # before the server starts, during the module-level import. (see zen_server_api.py)
+        try:
+            store = zen_store()
+        except RuntimeError:
+            initialize_zen_store()
+            store = zen_store()
+
+        SQLAlchemyInstrumentor().instrument(engine=store.engine)
     except ImportError:
         logger.debug(
             "OpenTelemetry SQLAlchemy instrumentation package not installed. "
             "Install `opentelemetry-instrumentation-sqlalchemy`."
         )
         pass
+    except Exception:
+        logger.exception("Failed to instrument SQLAlchemy with OpenTelemetry.")
