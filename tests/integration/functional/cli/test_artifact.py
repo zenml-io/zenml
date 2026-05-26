@@ -13,14 +13,13 @@
 #  permissions and limitations under the License.
 """Test zenml artifact CLI commands."""
 
-from click.testing import CliRunner
-
+from tests.cli_runner_utils import cli_runner
 from zenml.cli.cli import cli
 
 
 def test_artifact_list(clean_client_with_run):
     """Test that `zenml artifact list` does not fail."""
-    runner = CliRunner()
+    runner = cli_runner()
     list_command = cli.commands["artifact"].commands["list"]
     result = runner.invoke(list_command)
     assert result.exit_code == 0
@@ -28,7 +27,7 @@ def test_artifact_list(clean_client_with_run):
 
 def test_artifact_version_list(clean_client_with_run):
     """Test that `zenml artifact version list` does not fail."""
-    runner = CliRunner()
+    runner = cli_runner()
     list_command = (
         cli.commands["artifact"].commands["version"].commands["list"]
     )
@@ -38,7 +37,7 @@ def test_artifact_version_list(clean_client_with_run):
 
 def test_artifact_update(clean_client_with_run):
     """Test `zenml artifact update`."""
-    runner = CliRunner()
+    runner = cli_runner()
     update_command = cli.commands["artifact"].commands["update"]
     new_name = "new_name"
     tags = ["tag1", "tag2"]
@@ -86,7 +85,7 @@ def test_artifact_update(clean_client_with_run):
 
 def test_artifact_version_update(clean_client_with_run):
     """Test `zenml artifact version update`."""
-    runner = CliRunner()
+    runner = cli_runner()
     update_command = (
         cli.commands["artifact"].commands["version"].commands["update"]
     )
@@ -149,7 +148,7 @@ def test_artifact_prune(clean_client_with_run):
     assert len(existing_artifact_versions) == 2
 
     # After pruning, nothing should change since the artifacts are still used
-    runner = CliRunner()
+    runner = cli_runner()
     prune_command = cli.commands["artifact"].commands["prune"]
     result = runner.invoke(prune_command, ["-y"])
     assert result.exit_code == 0

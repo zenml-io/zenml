@@ -48,9 +48,7 @@ from zenml.config.server_config import ServerConfiguration
 from zenml.constants import (
     API,
     ENV_ZENML_SERVER,
-    HEALTH,
     INFO,
-    READY,
     VERSION_1,
 )
 from zenml.exceptions import IllegalOperationError, OAuthError
@@ -694,12 +692,30 @@ if sys.platform != "win32":
         pass
 
 
-def get_system_metrics() -> Dict[str, Any]:
-    """Get comprehensive system metrics.
+def get_system_metrics(
+    logger: Optional[logging.Logger] = None,
+    log_level: int = logging.DEBUG,
+) -> Dict[str, Any]:
+    """Get comprehensive system metrics for enabled log records.
+
+    Metrics are only collected when the provided logger, or this module's
+    logger when omitted, is enabled for ``log_level``. This keeps debug-only
+    structured fields cheap when debug logging is disabled.
+
+    Args:
+        logger: Logger whose logging level decides whether metrics are
+            collected.
+        log_level: Logging level that must be enabled to collect metrics.
+            Defaults to ``logging.DEBUG``.
 
     Returns:
-        Dict containing system metrics
+        Dict containing system metrics, or an empty dict if ``log_level`` is
+        not enabled.
     """
+    active_logger = logger or get_logger(__name__)
+    if not active_logger.isEnabledFor(log_level):
+        return {}
+
     # Get active requests count
     from zenml.zen_server.middleware import active_requests_count
 
@@ -728,29 +744,6 @@ def get_system_metrics() -> Dict[str, Any]:
         "current_thread_name": current_thread_name,
         "current_thread_id": current_thread_id,
     }
-
-
-def get_system_metrics_log_str(request: Optional["Request"] = None) -> str:
-    """Get the system metrics as a string for logging.
-
-    Args:
-        request: The request object.
-
-    Returns:
-        The system metrics as a string for debugging logging.
-    """
-    if not logger.isEnabledFor(logging.DEBUG):
-        return ""
-    if request and request.url.path in [HEALTH, READY]:
-        # Don't log system metrics for health and ready endpoints to keep them
-        # fast
-        return ""
-    metrics = get_system_metrics()
-    return (
-        " [ "
-        + " ".join([f"{key}: {value}" for key, value in metrics.items()])
-        + " ]"
-    )
 
 
 event_loop_lag_monitor_task: Optional[asyncio.Task[None]] = None

@@ -15,9 +15,9 @@
 import sys
 
 import pytest
-from click.testing import CliRunner
 from pytest_mock import MockFixture
 
+from tests.cli_runner_utils import cli_runner
 from zenml.cli.integration import integration
 from zenml.integrations.registry import integration_registry
 
@@ -28,7 +28,7 @@ INTEGRATIONS = ["airflow", "sklearn", "discord"]
 def test_integration_list() -> None:
     """Test that integration list works as expected and lists all
     integrations."""
-    runner = CliRunner()
+    runner = cli_runner()
 
     result = runner.invoke(integration, ["list"])
     assert result.exit_code == 0
@@ -41,7 +41,7 @@ def test_integration_get_requirements_inexistent_integration(
     not_an_integration: str,
 ) -> None:
     """Tests that the get-requirements sub-command works as expected."""
-    runner = CliRunner()
+    runner = cli_runner()
 
     result = runner.invoke(integration, ["requirements", not_an_integration])
     assert result.exit_code == 1
@@ -49,7 +49,7 @@ def test_integration_get_requirements_inexistent_integration(
 
 def test_integration_get_requirements_specific_integration() -> None:
     """Tests that the get-requirements sub-command works as expected."""
-    runner = CliRunner()
+    runner = cli_runner()
 
     result = runner.invoke(integration, ["requirements", "airflow"])
     assert result.exit_code == 0
@@ -57,7 +57,7 @@ def test_integration_get_requirements_specific_integration() -> None:
 
 def test_integration_get_requirements_all() -> None:
     """Tests that the get-requirements sub-command works as expected."""
-    runner = CliRunner()
+    runner = cli_runner()
 
     result = runner.invoke(integration, ["requirements"])
     assert result.exit_code == 0
@@ -70,7 +70,7 @@ def test_integration_install_inexistent_integration(
     """Tests that the install command behaves as expected when supplied with
     no specific integration. This should lead to all packages for all
     integrations to be installed."""
-    runner = CliRunner()
+    runner = cli_runner()
     mock_install_package = mocker.patch.object(
         sys.modules["zenml.cli.integration"],
         "install_packages",
@@ -88,7 +88,7 @@ def test_integration_install_specific_integration(
 ) -> None:
     """Tests that the install command behaves as expected when supplied with
     a specific integration."""
-    runner = CliRunner()
+    runner = cli_runner()
 
     mock_install_package = mocker.patch.object(
         sys.modules["zenml.cli.integration"],
@@ -117,7 +117,7 @@ def test_integration_install_multiple_integrations(
 ) -> None:
     """Tests that the install command behaves as expected when supplied with
     multiple integration."""
-    runner = CliRunner()
+    runner = cli_runner()
 
     mock_install_package = mocker.patch.object(
         sys.modules["zenml.cli.integration"],
@@ -138,7 +138,7 @@ def test_integration_install_all(mocker: MockFixture) -> None:
     """Tests that the install command behaves as expected when supplied with
     no specific integration. This should lead to all packages for all
     integrations to be installed."""
-    runner = CliRunner()
+    runner = cli_runner()
     mock_install_package = mocker.patch.object(
         sys.modules["zenml.cli.integration"],
         "install_packages",
@@ -161,7 +161,7 @@ def test_integration_uninstall_inexistent_integration(
     """Tests that the install command behaves as expected when supplied with
     no specific integration. This should lead to all packages for all
     integrations to be installed."""
-    runner = CliRunner()
+    runner = cli_runner()
     mock_uninstall_package = mocker.patch.object(
         sys.modules["zenml.cli.integration"],
         "uninstall_package",
@@ -178,7 +178,7 @@ def test_integration_uninstall_specific_integration(
 ) -> None:
     """Tests that the uninstall command behaves as expected when supplied with
     a specific integration."""
-    runner = CliRunner()
+    runner = cli_runner()
     mock_uninstall_package = mocker.patch.object(
         sys.modules["zenml.cli.integration"],
         "uninstall_package",
@@ -206,7 +206,7 @@ def test_integration_uninstall_all(mocker: MockFixture) -> None:
     """Tests that the uninstall command behaves as expected when supplied with
     no specific integration. This should lead to all packages for all
     integrations to be uninstalled."""
-    runner = CliRunner()
+    runner = cli_runner()
     mock_uninstall_package = mocker.patch.object(
         sys.modules["zenml.cli.integration"],
         "uninstall_package",
@@ -240,7 +240,7 @@ def test_integration_requirements_exporting(tmp_path) -> None:
         KubeflowIntegration.NAME,
         MlflowIntegration.NAME,
     ]
-    runner = CliRunner()
+    runner = cli_runner()
     result = runner.invoke(integration, command)
     assert result.exit_code == 0
     assert set(result.output.split(" ")) == flow_integration_requirements
