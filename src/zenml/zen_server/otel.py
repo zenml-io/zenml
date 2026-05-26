@@ -35,7 +35,7 @@ Ref:
 """
 
 import logging
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from zenml.logger import add_zenml_filters, get_logger, get_logging_level
 
@@ -47,9 +47,12 @@ logger = get_logger(__name__)
 
 _otel_configured = False
 _otel_log_handler: Optional[logging.Handler] = None
-_otel_providers: list[Any] = []
-# ^^^list of OTel providers: logger, tracer, meter
 
+# list of OTel providers, logger, tracer, meter, to shutdown on server exit.
+_otel_providers: list[Any] = []
+
+# list of callbacks to uninstrument the libraries when we shutdown OTel.
+_otel_uninstrument_callbacks: list[Callable[[], None]] = []
 
 def configure_otel(app: "FastAPI") -> None:
     """Set up OpenTelemetry tracing, metrics, and log export.
@@ -135,15 +138,34 @@ def shutdown_otel() -> None:
     """Flush and shut down OpenTelemetry providers configured by ZenML."""
     global _otel_configured, _otel_log_handler
 
-    if not _otel_configured and not _otel_log_handler and not _otel_providers:
+    # If OTel is not configured, return early.
+    if (
+        not _otel_configured
+        and not _otel_log_handler
+        and not _otel_providers
+        and not _otel_uninstrument_callbacks
+    ):
         return
 
+
+    # Uninstrument the libraries.
+    while _otel_uninstrument_callbacks:
+        uninstrument = _otel_uninstrument_callbacks.pop()
+        try:
+            uninstrument()
+        except Exception:
+            logger.exception(
+                "Failed to uninstrument OpenTelemetry library cleanly."
+            )
+
+    # Remove the OTel log handler from the root logger.
     if _otel_log_handler:
         root_logger = logging.getLogger()
         root_logger.removeHandler(_otel_log_handler)
         _otel_log_handler.close()
         _otel_log_handler = None
 
+    # Shut down the OTel providers.
     while _otel_providers:
         provider = _otel_providers.pop()
         try:
@@ -308,6 +330,9 @@ def _instrument_libraries(app: "FastAPI") -> None:
         from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
         FastAPIInstrumentor.instrument_app(app)
+        _otel_uninstrument_callbacks.append(
+            lambda: FastAPIInstrumentor.uninstrument_app(app)
+        )
     except ImportError:
         logger.debug(
             "OpenTelemetry FastAPI instrumentation package not installed. "
@@ -318,7 +343,9 @@ def _instrument_libraries(app: "FastAPI") -> None:
     try:
         from opentelemetry.instrumentation.requests import RequestsInstrumentor
 
-        RequestsInstrumentor().instrument()
+        requests_instrumentor = RequestsInstrumentor()
+        requests_instrumentor.instrument()
+        _otel_uninstrument_callbacks.append(requests_instrumentor.uninstrument)
     except ImportError:
         logger.debug(
             "OpenTelemetry requests instrumentation package not installed. "
@@ -342,7 +369,11 @@ def _instrument_libraries(app: "FastAPI") -> None:
             initialize_zen_store()
             store = zen_store()
 
-        SQLAlchemyInstrumentor().instrument(engine=store.engine)
+        sqlalchemy_instrumentor = SQLAlchemyInstrumentor()
+        sqlalchemy_instrumentor.instrument(engine=store.engine)
+        _otel_uninstrument_callbacks.append(
+            sqlalchemy_instrumentor.uninstrument
+        )
     except ImportError:
         logger.debug(
             "OpenTelemetry SQLAlchemy instrumentation package not installed. "
