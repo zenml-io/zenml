@@ -123,6 +123,14 @@ The endpoint should be the base OTLP/HTTP endpoint. ZenML appends
 `/v1/traces`, `/v1/metrics`, and `/v1/logs` for each signal. If this variable
 is not set, server OpenTelemetry instrumentation is disabled.
 
+Each signal is enabled by default when the endpoint is configured. You can disable individual signals with:
+
+```bash
+export ZENML_SERVER_OTEL_TRACES_ENABLED=false
+export ZENML_SERVER_OTEL_METRICS_ENABLED=false
+export ZENML_SERVER_OTEL_LOGS_ENABLED=false
+```
+
 You can also customize the service name reported in OpenTelemetry resource
 attributes:
 

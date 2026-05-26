@@ -124,11 +124,14 @@ server:
     ZENML_LOGGING_COLORS_DISABLED: "<true|false>" # default is false
     ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
     ZENML_SERVER_OTEL_SERVICE_NAME: "zenml-server" # default is zenml-server
+    ZENML_SERVER_OTEL_TRACES_ENABLED: "<true|false>" # default is true
+    ZENML_SERVER_OTEL_METRICS_ENABLED: "<true|false>" # default is true
+    ZENML_SERVER_OTEL_LOGS_ENABLED: "<true|false>" # default is true
 ```
 
 `ZENML_CONSOLE_LOGGING_FORMAT` controls the server container stdout/stderr output. It can be set to `console`, `json`, or a valid Python `%`-style logging format string. The older `ZENML_LOGGING_FORMAT` environment variable is still supported as a deprecated alias but will be removed in a future version.
 
-OpenTelemetry export is configured separately with `ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT` and exports traces, metrics, and logs using OTLP/HTTP transport.
+OpenTelemetry export is configured separately with `ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT` and exports traces, metrics, and logs using OTLP/HTTP transport. Each signal is enabled by default and can be disabled individually with `ZENML_SERVER_OTEL_TRACES_ENABLED`, `ZENML_SERVER_OTEL_METRICS_ENABLED`, and `ZENML_SERVER_OTEL_LOGS_ENABLED`.
 
 ## Backwards Compatibility
 

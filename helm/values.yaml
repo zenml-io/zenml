@@ -1124,6 +1124,9 @@ server:
   #   # underlying log record, not as console-formatted text or JSON.
   #   ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
   #   ZENML_SERVER_OTEL_SERVICE_NAME: "zenml-server"
+  #   ZENML_SERVER_OTEL_TRACES_ENABLED: "true"
+  #   ZENML_SERVER_OTEL_METRICS_ENABLED: "true"
+  #   ZENML_SERVER_OTEL_LOGS_ENABLED: "true"
   environment: {}
 
   # Extra environment variables to set in the ZenML server container that
