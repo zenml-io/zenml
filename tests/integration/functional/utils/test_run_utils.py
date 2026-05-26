@@ -252,7 +252,7 @@ def test_execution_mode_continue_on_failure(clean_client):
     assert run.steps["step_3"].status == ExecutionStatus.COMPLETED
     assert run.steps["step_4"].status == ExecutionStatus.COMPLETED
     assert run.steps["step_6"].status == ExecutionStatus.COMPLETED
-    # Step 7 is critical because it checks whether the in progress flag 
+    # Step 7 is critical because it checks whether the in progress flag
     # and end time were set correctly, even though step 2 failed.
     assert run.steps["step_7"].status == ExecutionStatus.COMPLETED
     assert "step_5" not in run.steps
