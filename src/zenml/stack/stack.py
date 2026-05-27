@@ -149,6 +149,8 @@ class Stack:
             model_registry: Model registry component of the stack.
             deployer: Deployer component of the stack.
             log_store: Log store component of the stack.
+            sandbox: Sandbox component(s) of the stack. Repeatable; a single
+                component or a list of components.
         """
         self._id = id
         self._name = name

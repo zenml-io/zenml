@@ -204,9 +204,19 @@ class SandboxSession(ABC):
         )
 
     def __enter__(self) -> "SandboxSession":
+        """Returns self so the Session can be used as a context manager.
+
+        Returns:
+            This session.
+        """
         return self
 
     def __exit__(self, *args: Any) -> None:
+        """Releases the local handle on context-manager exit.
+
+        Args:
+            *args: Exception info; ignored — ``close()`` is best-effort.
+        """
         self.close()
 
 
@@ -231,6 +241,11 @@ class BaseSandboxConfig(StackComponentConfig):
 
     @property
     def is_local(self) -> bool:
+        """Inverse of ``is_remote``.
+
+        Returns:
+            Whether this sandbox component is local-only.
+        """
         return not self.is_remote
 
 
@@ -282,10 +297,21 @@ class BaseSandbox(StackComponent, ABC):
 
     @property
     def config(self) -> BaseSandboxConfig:
+        """Typed sandbox component configuration.
+
+        Returns:
+            The component's config.
+        """
         return cast(BaseSandboxConfig, self._config)
 
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
+        """Settings class for per-step / per-pipeline overrides.
+
+        Returns:
+            ``BaseSandboxSettings``. Flavors may override to expose
+            flavor-specific fields.
+        """
         return BaseSandboxSettings
 
     @abstractmethod
@@ -332,10 +358,20 @@ class BaseSandboxFlavor(Flavor):
 
     @property
     def type(self) -> StackComponentType:
+        """Stack component type for all sandbox flavors.
+
+        Returns:
+            ``StackComponentType.SANDBOX``.
+        """
         return StackComponentType.SANDBOX
 
     @property
     def config_class(self) -> Type[BaseSandboxConfig]:
+        """Configuration class for this flavor.
+
+        Returns:
+            The config class (subclasses may override).
+        """
         return BaseSandboxConfig
 
     @property
