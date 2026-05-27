@@ -197,6 +197,17 @@ def my_step(
     ...
 ```
 
+ZenML disables W&B SDK console output by default with settings equivalent to `wandb.Settings(console="off", silent=True)`. This keeps W&B status and progress messages out of ZenML step logs. To show W&B SDK console output again, override these settings:
+
+```python
+wandb_settings = WandbExperimentTrackerSettings(
+    settings=wandb.Settings(
+        console="auto",
+        silent=False,
+    ),
+)
+```
+
 ZenML manages common `wandb.init(...)` fields for you. In addition to the W&B entity and project configured on the stack component, `WandbExperimentTrackerSettings` supports:
 
 ```python

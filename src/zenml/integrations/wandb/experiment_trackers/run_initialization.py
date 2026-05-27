@@ -30,6 +30,11 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
+DEFAULT_WANDB_SETTINGS: Dict[str, Any] = {
+    "console": "off",
+    "silent": True,
+}
+
 
 def sanitize_tag(tag: str) -> str:
     """Sanitize a tag to be a valid Wandb tag.
@@ -73,7 +78,7 @@ def build_wandb_initialization(
             "project": config.project_name,
             "name": _get_run_name(settings=settings, info=info),
             "tags": _get_tags(settings=settings, info=info),
-            "settings": settings.settings,
+            "settings": {**DEFAULT_WANDB_SETTINGS, **settings.settings},
         }
     )
 

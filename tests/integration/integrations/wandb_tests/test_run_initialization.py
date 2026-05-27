@@ -95,6 +95,10 @@ def test_default_initialization_adds_zenml_metadata_without_run_id() -> None:
     assert init_kwargs["name"] == "training_pipeline-2026_05_14_train_model"
     assert "id" not in init_kwargs
     assert "resume" not in init_kwargs
+    assert init_kwargs["settings"] == {
+        "console": "off",
+        "silent": True,
+    }
     assert init_kwargs["group"] == "training_pipeline-2026_05_14"
     assert init_kwargs["tags"] == [
         "zenml",
@@ -110,6 +114,27 @@ def test_default_initialization_adds_zenml_metadata_without_run_id() -> None:
         "zenml_latest_step_run_version": 1,
     }
     assert "job_type" not in init_kwargs
+
+
+def test_wandb_console_output_can_be_enabled_with_settings() -> None:
+    """Test W&B console settings can override ZenML's quiet defaults."""
+    initialization = _build_wandb_initialization(
+        config=_config(),
+        settings=_settings(
+            settings={
+                "console": "auto",
+                "show_info": True,
+                "silent": False,
+            },
+        ),
+        info=_info(),
+    )
+
+    assert initialization.init_kwargs["settings"] == {
+        "console": "auto",
+        "show_info": True,
+        "silent": False,
+    }
 
 
 def test_user_tags_merge_with_human_readable_zenml_tags() -> None:
