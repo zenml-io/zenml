@@ -21,6 +21,7 @@ from zenml.sandboxes.base_sandbox import (
     BaseSandboxSettings,
     BaseSandboxSnapshot,
     SandboxExecError,
+    SandboxOutput,
     SandboxProcess,
     SandboxSession,
 )
@@ -45,6 +46,7 @@ __all__ = [
     "LocalSandboxFlavor",
     "LocalSandboxSettings",
     "SandboxExecError",
+    "SandboxOutput",
     "SandboxProcess",
     "SandboxSession",
 ]

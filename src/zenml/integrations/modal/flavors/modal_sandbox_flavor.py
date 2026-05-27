@@ -23,6 +23,7 @@ from zenml.sandboxes import (
     BaseSandboxFlavor,
     BaseSandboxSettings,
 )
+from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.modal.sandboxes import ModalSandbox
@@ -78,6 +79,20 @@ class ModalSandboxConfig(BaseSandboxConfig, ModalSandboxSettings):
         description="Docker image used when neither the component nor the "
         "per-step settings specify a base_image. Fallback for the "
         "STEP_IMAGE sentinel when not in a containerized step.",
+    )
+    token_id: Optional[str] = SecretField(
+        default=None,
+        description="Modal token id. When set, exported as "
+        "MODAL_TOKEN_ID in the step process before importing modal — "
+        "lets remote orchestrators (Kubernetes, SageMaker, ...) "
+        "authenticate to Modal without a local ~/.modal.toml. Accepts "
+        "ZenML secret references via {{secret_name.key}}.",
+    )
+    token_secret: Optional[str] = SecretField(
+        default=None,
+        description="Modal token secret. Companion to `token_id`. "
+        "Exported as MODAL_TOKEN_SECRET. Use {{secret_name.key}} to "
+        "reference a ZenML secret.",
     )
 
     @property
