@@ -311,7 +311,11 @@ class ModalSandboxSession(SandboxSession):
             # Modal expects a ``modal.Secret`` for env injection.
             import modal
 
-            kwargs["secrets"] = [modal.Secret.from_dict(env)]
+            # Modal types env_dict as Dict[str, Optional[str]]; our env is
+            # narrower (Dict[str, str]) — valid subtype at runtime, cast for mypy.
+            kwargs["secrets"] = [
+                modal.Secret.from_dict(cast(Dict[str, Optional[str]], env))
+            ]
         try:
             process = self._sandbox.exec(*argv, **kwargs)
         except Exception as e:
@@ -491,7 +495,11 @@ class ModalSandbox(BaseSandbox):
 
         kwargs: Dict[str, Any] = {"image": image, "app": self._get_app()}
         if env:
-            kwargs["secrets"] = [modal.Secret.from_dict(env)]
+            # Modal types env_dict as Dict[str, Optional[str]]; our env is
+            # narrower (Dict[str, str]) — valid subtype at runtime, cast for mypy.
+            kwargs["secrets"] = [
+                modal.Secret.from_dict(cast(Dict[str, Optional[str]], env))
+            ]
         if eff.timeout_seconds is not None:
             kwargs["timeout"] = eff.timeout_seconds
         if eff.gpu is not None:

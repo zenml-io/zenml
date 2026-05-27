@@ -20,7 +20,7 @@ loader without walking the type MRO, and lets the artifact surface in the UI
 with its real type name.
 """
 
-from typing import ClassVar, Tuple, Type
+from typing import Any, ClassVar, Tuple, Type
 
 from zenml.integrations.modal.sandboxes import ModalSandboxSnapshot
 from zenml.materializers.pydantic_materializer import PydanticMaterializer
@@ -34,4 +34,4 @@ class ModalSandboxSnapshotMaterializer(PydanticMaterializer):
     infrastructure; this materializer only persists the *reference* to it.
     """
 
-    ASSOCIATED_TYPES: ClassVar[Tuple[Type, ...]] = (ModalSandboxSnapshot,)
+    ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (ModalSandboxSnapshot,)
