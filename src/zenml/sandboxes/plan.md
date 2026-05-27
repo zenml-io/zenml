@@ -20,17 +20,21 @@ This document is the running plan + design rationale for the Sandbox stack compo
 
 Adds a new ZenML stack component type, **Sandbox**, that lets a step (typically running an AI agent) execute LLM-generated code in an isolated environment (Modal container, E2B microVM, k8s pod, etc.) and stream results back. The step *consumes* the sandbox via `Client().active_stack.sandbox`; the sandbox does not run the step. Multiple sandboxes per stack are allowed.
 
-This PR ships **the base abstraction only** — no concrete flavors. Provider implementations land in dedicated follow-up PRs from branches off this one:
+This PR ships the base abstraction plus one built-in flavor (`local`). Real-isolation flavors land in dedicated follow-up PRs from branches off this one:
 
-- `feature/sandbox-modal` → Modal flavor
-- `feature/sandbox-agent-substrate` → kubernetes-sigs/agent-sandbox (Agent Substrate) flavor
+- `feature/sandbox-modal` → Modal flavor (PR #4867; stacked)
+- `feature/sandbox-pydantic-ai-example` → PydanticAI example (PR pending; stacked on Modal)
+- `feature/sandbox-agent-substrate` → kubernetes-sigs/agent-sandbox (Agent Substrate) flavor — *not started*
 - additional flavors (E2B, Daytona) cribbed from the abandoned `feature/sandboxes-stack-component` branch as we discover real demand
 
-PR #1 ships:
-- The abstract `BaseSandbox`, `SandboxSession`, `SandboxProcess`, `BaseSandboxSnapshot` interfaces.
-- The `SANDBOX` `StackComponentType` enum value + stack wiring.
-- A user-facing overview page in the component guide.
-- Unit tests for the base abstraction.
+PR #1 (this branch) ships:
+- The abstract `BaseSandbox`, `SandboxSession`, `SandboxProcess`, `BaseSandboxSnapshot` interfaces (with their optional methods raising `NotImplementedError` by default).
+- The `SANDBOX` `StackComponentType` enum value (repeatable per stack) + `Stack.sandbox` / `Stack.sandboxes` properties + `--sandbox` CLI flag.
+- `ZENML_ACTIVE_STEP_IMAGE` injected into the step environment by `BaseOrchestrator._inject_active_step_image_env` for containerized orchestrators so the `STEP_IMAGE` sentinel resolves.
+- Base helpers: `_resolve_session_environment` (env+secret merge with `{{secret.key}}` resolution), `_validate_snapshot_provider`, `forward_session_logs` / `forward_lines` for log routing into ZenML's step log stream.
+- **`LocalSandbox` flavor** — subprocess-based, built-in (no extra deps), registered in `FlavorRegistry.builtin_flavors`. **No isolation** — loud warning on every `create_session()` — but suitable for examples, unit tests, and development against the abstraction.
+- 62 unit tests (37 base + 25 LocalSandbox).
+- User docs: `docs/book/component-guide/sandboxes/{README.md, local.md}` + toc entry.
 
 The outbound-credential proxy ("Sandbox Auth Proxy" pattern shipped by LangSmith, Vercel, Cloudflare) is **deferred to a later PR** once we've shipped concrete flavors and have real usage to model against.
 
@@ -221,22 +225,30 @@ Multi-per-stack: `StackComponentType.SANDBOX.supports_multiple_per_stack == True
 | File | Purpose |
 |---|---|
 | `src/zenml/enums.py` | Add `SANDBOX = "sandbox"`; include in `supports_multiple_per_stack` set. |
-| `src/zenml/sandboxes/__init__.py` | Re-exports. |
-| `src/zenml/sandboxes/base_sandbox.py` | All base classes above + `STEP_IMAGE` sentinel + `SandboxExecError`. |
+| `src/zenml/sandboxes/__init__.py` | Re-exports for both base classes and the `LocalSandbox` flavor. |
+| `src/zenml/sandboxes/base_sandbox.py` | All base classes + `STEP_IMAGE` sentinel + `SandboxExecError` + base helpers (`_resolve_session_environment`, `_validate_snapshot_provider`, `forward_session_logs`, `forward_lines`, `resolve_forward_logs_to_step`). |
+| `src/zenml/sandboxes/local_sandbox.py` | Built-in `LocalSandbox` flavor — subprocess-based, no isolation, loud warning on each `create_session()`. |
 | `src/zenml/stack/stack.py` | Add `sandbox` / `sandboxes` properties on `Stack`. Update `__init__` to accept sandbox(es). |
-| `tests/unit/sandboxes/test_base_sandbox.py` | Interface contracts: `NotImplementedError` defaults on optional methods, `restore` provider-mismatch guard, snapshot Pydantic round-trip, settings defaults, context-manager `close()`. |
-| `docs/book/component-guide/sandboxes/README.md` | User-facing overview. |
-| `docs/book/component-guide/toc.md` | Add sandbox entry. |
+| `src/zenml/stack/flavor_registry.py` | Register `LocalSandboxFlavor` in `builtin_flavors`. |
+| `src/zenml/cli/stack.py` | `--sandbox` / `-sb` repeatable flag on `zenml stack register/update`. |
+| `src/zenml/orchestrators/base_orchestrator.py` | `_inject_active_step_image_env` helper exports `ZENML_ACTIVE_STEP_IMAGE` for containerized orchestrators so the `STEP_IMAGE` sentinel resolves. |
+| `tests/unit/sandboxes/test_base_sandbox.py` | 37 tests: NotImplementedError defaults, `_validate_snapshot_provider`, snapshot Pydantic round-trip, env-merge order, log-forwarding helpers. |
+| `tests/unit/sandboxes/test_local_sandbox.py` | 25 tests: exec lifecycle, env merge, workdir cleanup, settings coercion, builtin-flavor registration. |
+| `tests/unit/orchestrators/test_base_orchestrator.py` | 3 new tests: `_inject_active_step_image_env` for containerized vs non-containerized orchestrators + failure-swallowing. |
+| `docs/book/component-guide/sandboxes/{README.md,local.md}` | User-facing overview + Local flavor docs. |
+| `docs/book/component-guide/toc.md` | Add sandbox entry + Local sub-entry. |
 
-**Branching strategy.** Concrete flavors live on branches off this one (`feature/sandbox-modal`, `feature/sandbox-agent-substrate`, ...). Each flavor branch opens its own PR; if PR #1 merges first, the flavor PRs rebase onto `develop`. If a flavor PR is reviewed before PR #1 merges, the diff will include both — GitHub auto-prunes once the base merges.
+**Branching strategy.** Concrete flavors live on branches off this one (`feature/sandbox-modal` is open as PR #4867; `feature/sandbox-pydantic-ai-example` stacked on top of Modal). Each branch opens its own PR. If PR #1 merges first, the flavor PRs rebase onto `develop`. While #4866 is open, downstream PRs show its commits too — GitHub auto-prunes once the base merges.
 
 ---
 
 ## Out of scope / future PRs
 
-**Modal flavor (branch: `feature/sandbox-modal`).** `src/zenml/integrations/modal/sandboxes/` + flavor + materializer for `ModalSandboxSnapshot` (Modal Image ref). Maps to `modal.Sandbox.create / exec / snapshot_filesystem / from_id`.
+**Modal flavor (PR #4867, branch `feature/sandbox-modal`)** — already open. `src/zenml/integrations/modal/sandboxes/` + flavor + materializer for `ModalSandboxSnapshot` (Modal Image ref). Maps to `modal.Sandbox.create / exec / snapshot_filesystem / from_id`. Implements log forwarding via the base `forward_session_logs` helper. 41 unit tests.
 
-**Agent Substrate flavor (branch: `feature/sandbox-agent-substrate`).** `src/zenml/integrations/agent_sandbox/` against `agents.x-k8s.io/v1alpha1` `Sandbox` CRD; not GKE-specific.
+**PydanticAI example (PR pending, branch `feature/sandbox-pydantic-ai-example`)** — open after Modal lands. Demonstrates an agent using `SandboxSession.exec` as its `run_python` tool. Works against any flavor; defaults to LocalSandbox for the quickstart.
+
+**Agent Substrate flavor (branch: `feature/sandbox-agent-substrate`)** — *not started*. `src/zenml/integrations/agent_sandbox/` against `agents.x-k8s.io/v1alpha1` `Sandbox` CRD; not GKE-specific.
 
 **Sandbox Auth Proxy.** Industry-standard pattern shipped by LangSmith, Vercel, Cloudflare. Routes outbound HTTP from the Session through a sidecar/paired-sandbox proxy that injects `Authorization` headers per host-pattern rule, so LLM-generated code never sees raw credentials. Reference design: kami-agent's mitmproxy-addon implementation. Config schema sketch:
 
@@ -334,7 +346,10 @@ def restore(self, snapshot: BaseSandboxSnapshot) -> SandboxSession: ...  # NotIm
 | 2 | Add `SANDBOX` to `StackComponentType` enum + multi-per-stack set | ✅ done |
 | 3 | Create `src/zenml/sandboxes/` with base classes | ✅ done |
 | 4 | Wire `SANDBOX` into `Stack` (singular `.sandbox` + plural `.sandboxes`) | ✅ done |
-| 5 | ~~Implement Modal flavor~~ → moved to `feature/sandbox-modal` | dropped from PR #1 |
-| 6 | Unit tests for base abstraction | ✅ done (21 tests, all passing) |
-| 7 | Docs overview page + `toc.md` entry | ✅ done |
-| 8 | `bash scripts/format.sh`, lint, open PR with `release-notes` label | in progress |
+| 5 | ~~Implement Modal flavor~~ → moved to `feature/sandbox-modal` (PR #4867) | dropped from PR #1 |
+| 6 | Unit tests for base abstraction | ✅ done (37 tests) |
+| 7 | Two rounds of review fixes (Michael + Stefan) | ✅ done |
+| 8 | CLI `--sandbox` / `-sb` flag + `ZENML_ACTIVE_STEP_IMAGE` orchestrator wiring | ✅ done |
+| 9 | `LocalSandbox` built-in flavor (subprocess; no isolation; for examples + tests) | ✅ done (25 tests) |
+| 10 | Docs overview page + Local flavor page + `toc.md` entry | ✅ done |
+| 11 | `bash scripts/format.sh`, lint clean, PR #4866 open and reviewed twice | ✅ done |
