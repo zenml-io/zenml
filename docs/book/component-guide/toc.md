@@ -48,6 +48,7 @@
   * [OpenTelemetry Log Store](log-stores/otel.md)
   * [Datadog Log Store](log-stores/datadog.md)
   * [Develop a Custom Log Store](log-stores/custom.md)
+* [Sandboxes](sandboxes/README.md)
 * [Step Operators](step-operators/README.md)
   * [Amazon SageMaker](step-operators/sagemaker.md)
   * [AzureML](step-operators/azureml.md)

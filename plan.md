@@ -1,4 +1,4 @@
-# Sandbox Stack Component — PR #1: Core abstraction + Modal flavor
+# Sandbox Stack Component — PR #1: Core abstraction
 
 Branch: `feature/sandbox-component-core`. Targets `develop`.
 
@@ -20,14 +20,19 @@ This document is the running plan + design rationale for the Sandbox stack compo
 
 Adds a new ZenML stack component type, **Sandbox**, that lets a step (typically running an AI agent) execute LLM-generated code in an isolated environment (Modal container, E2B microVM, k8s pod, etc.) and stream results back. The step *consumes* the sandbox via `Client().active_stack.sandbox`; the sandbox does not run the step. Multiple sandboxes per stack are allowed.
 
-This PR ships:
+This PR ships **the base abstraction only** — no concrete flavors. Provider implementations land in dedicated follow-up PRs from branches off this one:
+
+- `feature/sandbox-modal` → Modal flavor
+- `feature/sandbox-agent-substrate` → kubernetes-sigs/agent-sandbox (Agent Substrate) flavor
+- additional flavors (E2B, Daytona) cribbed from the abandoned `feature/sandboxes-stack-component` branch as we discover real demand
+
+PR #1 ships:
 - The abstract `BaseSandbox`, `SandboxSession`, `SandboxProcess`, `BaseSandboxSnapshot` interfaces.
 - The `SANDBOX` `StackComponentType` enum value + stack wiring.
-- A concrete **Modal** flavor (`ModalSandbox`) that maps to `modal.Sandbox.create / exec / snapshot_filesystem / from_id`.
-- A `ModalSandboxSnapshot` Pydantic model + dedicated materializer.
-- Unit tests and user docs.
+- A user-facing overview page in the component guide.
+- Unit tests for the base abstraction.
 
-The outbound-credential proxy ("Sandbox Auth Proxy" pattern shipped by LangSmith, Vercel, Cloudflare) is **deferred to PR #2**.
+The outbound-credential proxy ("Sandbox Auth Proxy" pattern shipped by LangSmith, Vercel, Cloudflare) is **deferred to a later PR** once we've shipped concrete flavors and have real usage to model against.
 
 ---
 
@@ -219,37 +224,32 @@ Multi-per-stack: `StackComponentType.SANDBOX.supports_multiple_per_stack == True
 | `src/zenml/sandboxes/__init__.py` | Re-exports. |
 | `src/zenml/sandboxes/base_sandbox.py` | All base classes above + `STEP_IMAGE` sentinel + `SandboxExecError`. |
 | `src/zenml/stack/stack.py` | Add `sandbox` / `sandboxes` properties on `Stack`. Update `__init__` to accept sandbox(es). |
-| `src/zenml/integrations/modal/sandboxes/modal_sandbox.py` | `ModalSandbox` + `ModalSandboxSession` + `ModalSandboxProcess`. |
-| `src/zenml/integrations/modal/flavors/modal_sandbox_flavor.py` | `ModalSandboxConfig`, `ModalSandboxSettings`, `ModalSandboxFlavor`. |
-| `src/zenml/integrations/modal/materializers/modal_sandbox_snapshot_materializer.py` | Per-flavor materializer for `ModalSandboxSnapshot`. |
-| `src/zenml/integrations/modal/__init__.py` | Register `ModalSandboxFlavor` in `ModalIntegration.flavors()`. |
-| `tests/unit/sandboxes/test_base_sandbox.py` | Interface contracts; `NotImplementedError` defaults; merge order. |
-| `tests/unit/integrations/modal/test_modal_sandbox.py` | Mock `modal.Sandbox`; verify exec stream, snapshot round-trip, env merge. |
-| `docs/book/component-guide/sandboxes/sandboxes.md` | Overview + how to use. |
-| `docs/book/component-guide/sandboxes/modal.md` | Modal-specific page. |
-| `docs/book/component-guide/toc.md` | Add sandbox section. |
+| `tests/unit/sandboxes/test_base_sandbox.py` | Interface contracts: `NotImplementedError` defaults on optional methods, `restore` provider-mismatch guard, snapshot Pydantic round-trip, settings defaults, context-manager `close()`. |
+| `docs/book/component-guide/sandboxes/README.md` | User-facing overview. |
+| `docs/book/component-guide/toc.md` | Add sandbox entry. |
+
+**Branching strategy.** Concrete flavors live on branches off this one (`feature/sandbox-modal`, `feature/sandbox-agent-substrate`, ...). Each flavor branch opens its own PR; if PR #1 merges first, the flavor PRs rebase onto `develop`. If a flavor PR is reviewed before PR #1 merges, the diff will include both — GitHub auto-prunes once the base merges.
 
 ---
 
 ## Out of scope / future PRs
 
-**PR #2 — Sandbox Auth Proxy (Modal).** Industry-standard pattern shipped by LangSmith, Vercel, Cloudflare. Routes outbound HTTP from the Session through a sidecar/paired-sandbox proxy that injects `Authorization` headers per host-pattern rule, so LLM-generated code never sees raw credentials. Reference design: kami-agent's mitmproxy-addon implementation. Config schema to adopt:
+**Modal flavor (branch: `feature/sandbox-modal`).** `src/zenml/integrations/modal/sandboxes/` + flavor + materializer for `ModalSandboxSnapshot` (Modal Image ref). Maps to `modal.Sandbox.create / exec / snapshot_filesystem / from_id`.
+
+**Agent Substrate flavor (branch: `feature/sandbox-agent-substrate`).** `src/zenml/integrations/agent_sandbox/` against `agents.x-k8s.io/v1alpha1` `Sandbox` CRD; not GKE-specific.
+
+**Sandbox Auth Proxy.** Industry-standard pattern shipped by LangSmith, Vercel, Cloudflare. Routes outbound HTTP from the Session through a sidecar/paired-sandbox proxy that injects `Authorization` headers per host-pattern rule, so LLM-generated code never sees raw credentials. Reference design: kami-agent's mitmproxy-addon implementation. Config schema sketch:
 
 ```python
 class SandboxProxyRule(BaseModel):
     name: str
     match_hosts: List[str]
     inject_headers: Dict[str, str]   # values support {{secret.key}}
-
-class BaseSandboxConfig:
-    proxy_rules: List[SandboxProxyRule] = []
 ```
 
-Each flavor implements proxy infra (Modal: paired sandbox running mitmdump; k8s: sidecar container + NetworkPolicy; E2B/Daytona: custom template). Until this lands, secrets in `environment` are readable by LLM-generated code — documented loudly.
+Each flavor implements proxy infra (Modal: paired sandbox running mitmdump; k8s: sidecar container + NetworkPolicy; E2B/Daytona: custom template). Lands once at least one flavor is in to model against. Until then, secrets injected through `StackComponent.environment` / `secrets` are readable by LLM-generated code — documented in `docs/book/component-guide/sandboxes/README.md`.
 
-**PR #3 — Agent Substrate / k8s flavor.** `src/zenml/integrations/agent_sandbox/` against `agents.x-k8s.io/v1alpha1` `Sandbox` CRD; not GKE-specific. Includes the k8s side of PR #2's proxy if PR #2 has landed.
-
-**PR #4+ — E2B, Daytona, and any flavors lifted from the existing `feature/sandboxes-stack-component` branch worth keeping (e.g. cost-tracking metadata, structured logging via `forward_sandbox_output`).**
+**Later flavors.** E2B, Daytona — lift from the abandoned `feature/sandboxes-stack-component` branch as demand emerges (cost-tracking metadata, structured logging via `forward_sandbox_output`, etc.).
 
 **Other deferred items:**
 - Auto-explode `secrets: List[str]` field (sugar for "expand every key of these secrets as env vars"). Adopt if real usage demands it.
@@ -331,10 +331,10 @@ def restore(self, snapshot: BaseSandboxSnapshot) -> SandboxSession: ...  # NotIm
 | # | Task | Status |
 |---|------|--------|
 | 1 | Create branch off develop | ✅ done |
-| 2 | Add `SANDBOX` to `StackComponentType` enum + multi-per-stack set | pending |
-| 3 | Create `src/zenml/sandboxes/` with base classes (`BaseSandbox`, `BaseSandboxConfig`, `BaseSandboxFlavor`, `BaseSandboxSettings`, `SandboxSession`, `SandboxProcess`, `BaseSandboxSnapshot`, `STEP_IMAGE` sentinel, `SandboxExecError`) | pending |
-| 4 | Wire `SANDBOX` into `Stack` (singular `.sandbox` + plural `.sandboxes`) | pending |
-| 5 | Implement `ModalSandbox` + `ModalSandboxSession` + `ModalSandboxProcess` + `ModalSandboxSnapshot` + materializer + flavor | pending |
-| 6 | Unit tests (base interface + Modal flavor mocked) | pending |
-| 7 | Docs (`docs/book/component-guide/sandboxes/`) + `toc.md` update | pending |
-| 8 | `bash scripts/format.sh`, targeted pytest, `/simplify` pass, open PR with `release-notes` label | pending |
+| 2 | Add `SANDBOX` to `StackComponentType` enum + multi-per-stack set | ✅ done |
+| 3 | Create `src/zenml/sandboxes/` with base classes | ✅ done |
+| 4 | Wire `SANDBOX` into `Stack` (singular `.sandbox` + plural `.sandboxes`) | ✅ done |
+| 5 | ~~Implement Modal flavor~~ → moved to `feature/sandbox-modal` | dropped from PR #1 |
+| 6 | Unit tests for base abstraction | ✅ done (21 tests, all passing) |
+| 7 | Docs overview page + `toc.md` entry | ✅ done |
+| 8 | `bash scripts/format.sh`, lint, open PR with `release-notes` label | in progress |
