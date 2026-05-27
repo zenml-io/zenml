@@ -25,7 +25,9 @@ from zenml.constants import (
 )
 from zenml.models import (
     Page,
+    ResourcePoolAllocation,
     ResourcePoolFilter,
+    ResourcePoolQueueItem,
     ResourcePoolRequest,
     ResourcePoolResponse,
     ResourcePoolUpdate,
@@ -135,6 +137,47 @@ def get_resource_pool(
         get_method=zen_store().get_resource_pool,
         hydrate=hydrate,
     )
+
+
+@router.get(
+    "/{resource_pool_id}/queue",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def list_resource_pool_queue(
+    resource_pool_id: UUID,
+    _: AuthContext = Security(authorize),
+) -> Page[ResourcePoolQueueItem]:
+    """List queued requests for a resource pool.
+
+    Args:
+        resource_pool_id: ID of the resource pool whose queue should be read.
+
+    Returns:
+        A page containing queue entries for the resource pool.
+    """
+    return zen_store().list_resource_pool_queue(resource_pool_id)
+
+
+@router.get(
+    "/{resource_pool_id}/allocations",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def list_resource_pool_allocations(
+    resource_pool_id: UUID,
+    _: AuthContext = Security(authorize),
+) -> Page[ResourcePoolAllocation]:
+    """List active allocations for a resource pool.
+
+    Args:
+        resource_pool_id: ID of the resource pool whose allocations should be
+            read.
+
+    Returns:
+        A page containing active allocation entries for the resource pool.
+    """
+    return zen_store().list_resource_pool_allocations(resource_pool_id)
 
 
 @router.put(

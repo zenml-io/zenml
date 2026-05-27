@@ -1,0 +1,1174 @@
+#  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Resource pool store backed by the ZenML Pro Resource Manager service."""
+
+import os
+from datetime import datetime
+from typing import TYPE_CHECKING, Optional, TypeVar
+from uuid import UUID
+
+import requests
+from pydantic import BaseModel
+
+from zenml.enums import ResourceRequestStatus
+from zenml.models import (
+    Page,
+    ResourceDescriptorFilter,
+    ResourceDescriptorRequest,
+    ResourceDescriptorResponse,
+    ResourceDescriptorResponseBody,
+    ResourceDescriptorResponseMetadata,
+    ResourceDescriptorResponseResources,
+    ResourceDescriptorUpdate,
+    ResourcePolicyFilter,
+    ResourcePolicyGrant,
+    ResourcePolicyRequest,
+    ResourcePolicyResponse,
+    ResourcePolicyResponseBody,
+    ResourcePolicyResponseMetadata,
+    ResourcePolicyResponseResources,
+    ResourcePolicyUpdate,
+    ResourcePoolAllocation,
+    ResourcePoolCapacityClass,
+    ResourcePoolFilter,
+    ResourcePoolLedgerOccupied,
+    ResourcePoolQueueItem,
+    ResourcePoolRequest,
+    ResourcePoolResponse,
+    ResourcePoolResponseBody,
+    ResourcePoolResponseMetadata,
+    ResourcePoolResponseResources,
+    ResourcePoolUpdate,
+    ResourceRequestDemand,
+    ResourceRequestFilter,
+    ResourceRequestReclaimTolerance,
+    ResourceRequestRequest,
+    ResourceRequestResponse,
+    ResourceRequestResponseBody,
+    ResourceRequestResponseMetadata,
+    ResourceRequestResponseResources,
+)
+from zenml.utils.time_utils import utc_now
+from zenml.zen_stores.resource_pools.resource_manager.client import (
+    ResourceManagerClient,
+)
+from zenml.zen_stores.resource_pools.resource_manager.transport import (
+    RMAllocationResponse,
+    RMCandidateSubject,
+    RMPolicyGrant,
+    RMPolicyRequest,
+    RMPolicyResponse,
+    RMPolicyUpdate,
+    RMPoolCapacityClass,
+    RMPoolRequest,
+    RMPoolResponse,
+    RMPoolUpdate,
+    RMQueueEntryResponse,
+    RMRequestDemand,
+    RMResourceRequest,
+    RMResourceRequestCreate,
+    RMResourceRequestResponse,
+    RMResourceResponse,
+    RMResourceUpdate,
+    RMSubjectRequest,
+)
+from zenml.zen_stores.resource_pools.store_interface import (
+    ResourcePoolsSQLStoreInterface,
+)
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.sql_zen_store import Session, SqlZenStore
+
+PageItemT = TypeVar("PageItemT", bound=BaseModel)
+
+
+class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
+    """Resource pool store facade for ZenML Pro Resource Manager."""
+
+    ENV_RESOURCE_MANAGER_URL = "ZENML_RESOURCE_MANAGER_URL"
+    ENV_RM_URL = "ZENML_RM_URL"
+    ENV_RESOURCE_MANAGER_TOKEN = "ZENML_RESOURCE_MANAGER_TOKEN"
+    ENV_RESOURCE_MANAGER_TIMEOUT = "ZENML_RESOURCE_MANAGER_TIMEOUT"
+    COMPONENT_SUBJECT_TYPE = "component"
+
+    def __init__(
+        self,
+        store: "SqlZenStore",
+        client: Optional[ResourceManagerClient] = None,
+    ) -> None:
+        """Initialize the Resource Manager-backed resource pool store.
+
+        Args:
+            store: SQL ZenStore that owns this backend.
+            client: Optional Resource Manager client. If omitted, the client is
+                built from environment variables.
+        """
+        super().__init__(store=store)
+        self._client = client or self._client_from_environment()
+        self._request_step_run_ids: dict[UUID, UUID] = {}
+
+    def create_resource_descriptor(
+        self, descriptor: ResourceDescriptorRequest
+    ) -> ResourceDescriptorResponse:
+        """Create a resource descriptor through Resource Manager.
+
+        Args:
+            descriptor: The ZenML descriptor request.
+
+        Returns:
+            The created ZenML descriptor response.
+        """
+        response = self._client.create_resource(
+            RMResourceRequest(
+                name=descriptor.name,
+                kind=descriptor.kind,
+                attributes=descriptor.attributes,
+                owner_id=descriptor.user,
+            )
+        )
+        return self._to_descriptor_response(response)
+
+    def get_resource_descriptor(
+        self, descriptor_id: UUID
+    ) -> ResourceDescriptorResponse:
+        """Get a resource descriptor through Resource Manager.
+
+        Args:
+            descriptor_id: The descriptor ID.
+
+        Returns:
+            The requested ZenML descriptor response.
+        """
+        return self._to_descriptor_response(
+            self._client.get_resource(descriptor_id)
+        )
+
+    def list_resource_descriptors(
+        self, filter_model: ResourceDescriptorFilter
+    ) -> Page[ResourceDescriptorResponse]:
+        """List resource descriptors through Resource Manager.
+
+        Args:
+            filter_model: ZenML filter model. Pagination fields are currently
+                ignored because Resource Manager returns a full page.
+
+        Returns:
+            Matching ZenML descriptor responses.
+        """
+        items = [
+            self._to_descriptor_response(item)
+            for item in self._client.list_resources().items
+            if self._matches_descriptor_filter(item, filter_model)
+        ]
+        return self._page(items)
+
+    def update_resource_descriptor(
+        self, descriptor_id: UUID, update: ResourceDescriptorUpdate
+    ) -> ResourceDescriptorResponse:
+        """Update a resource descriptor through Resource Manager.
+
+        Args:
+            descriptor_id: The descriptor ID.
+            update: The ZenML descriptor update.
+
+        Returns:
+            The updated ZenML descriptor response.
+        """
+        response = self._client.update_resource(
+            descriptor_id,
+            RMResourceUpdate(
+                name=update.name,
+                kind=update.kind,
+                attributes=update.attributes,
+            ),
+        )
+        return self._to_descriptor_response(response)
+
+    def delete_resource_descriptor(self, descriptor_id: UUID) -> None:
+        """Delete a resource descriptor through Resource Manager.
+
+        Args:
+            descriptor_id: The descriptor ID.
+        """
+        self._client.delete_resource(descriptor_id)
+
+    def create_resource_pool(
+        self, resource_pool: ResourcePoolRequest
+    ) -> ResourcePoolResponse:
+        """Create a resource pool through Resource Manager.
+
+        Args:
+            resource_pool: The ZenML pool request.
+
+        Returns:
+            The created ZenML pool response.
+        """
+        response = self._client.create_pool(
+            RMPoolRequest(
+                name=resource_pool.name,
+                description=resource_pool.description,
+                capacity=[
+                    self._to_rm_capacity(entry)
+                    for entry in resource_pool.capacity
+                ],
+            )
+        )
+        return self._to_pool_response(response)
+
+    def get_resource_pool(
+        self, resource_pool_id: UUID, hydrate: bool = True
+    ) -> ResourcePoolResponse:
+        """Get a resource pool through Resource Manager.
+
+        Args:
+            resource_pool_id: The pool ID.
+            hydrate: Ignored for Resource Manager-backed pools.
+
+        Returns:
+            The requested ZenML pool response.
+        """
+        return self._to_pool_response(self._client.get_pool(resource_pool_id))
+
+    def list_resource_pools(
+        self, filter_model: ResourcePoolFilter, hydrate: bool = False
+    ) -> Page[ResourcePoolResponse]:
+        """List resource pools through Resource Manager.
+
+        Args:
+            filter_model: ZenML filter model. Pagination fields are currently
+                ignored because Resource Manager returns a full page.
+            hydrate: Ignored for Resource Manager-backed pools.
+
+        Returns:
+            Matching ZenML pool responses.
+        """
+        items = [
+            self._to_pool_response(item)
+            for item in self._client.list_pools().items
+            if self._matches_pool_filter(item, filter_model)
+        ]
+        return self._page(items)
+
+    def update_resource_pool(
+        self, resource_pool_id: UUID, update: ResourcePoolUpdate
+    ) -> ResourcePoolResponse:
+        """Update a resource pool through Resource Manager.
+
+        Args:
+            resource_pool_id: The pool ID.
+            update: The ZenML pool update.
+
+        Returns:
+            The updated ZenML pool response.
+        """
+        capacity = None
+        if update.capacity is not None:
+            capacity = [
+                self._to_rm_capacity(entry) for entry in update.capacity
+            ]
+        response = self._client.update_pool(
+            resource_pool_id,
+            RMPoolUpdate(
+                name=update.name,
+                description=update.description,
+                clear_description=update.clear_description,
+                capacity=capacity,
+            ),
+        )
+        return self._to_pool_response(response)
+
+    def delete_resource_pool(self, resource_pool_id: UUID) -> None:
+        """Delete a resource pool through Resource Manager.
+
+        Args:
+            resource_pool_id: The pool ID.
+        """
+        self._client.delete_pool(resource_pool_id)
+
+    def list_resource_pool_queue(
+        self, resource_pool_id: UUID
+    ) -> Page[ResourcePoolQueueItem]:
+        """List queued requests for a resource pool through Resource Manager.
+
+        Args:
+            resource_pool_id: The pool ID.
+
+        Returns:
+            Queue entries for the pool.
+        """
+        items = [
+            self._to_queue_item(item)
+            for item in self._client.list_pool_queue(resource_pool_id).items
+        ]
+        return self._page(items)
+
+    def list_resource_pool_allocations(
+        self, resource_pool_id: UUID
+    ) -> Page[ResourcePoolAllocation]:
+        """List allocations for a resource pool through Resource Manager.
+
+        Args:
+            resource_pool_id: The pool ID.
+
+        Returns:
+            Allocations for the pool.
+        """
+        items = [
+            self._to_allocation(item)
+            for item in self._client.list_pool_allocations(
+                resource_pool_id
+            ).items
+        ]
+        return self._page(items)
+
+    def create_resource_policy(
+        self, policy: ResourcePolicyRequest
+    ) -> ResourcePolicyResponse:
+        """Create a resource policy through Resource Manager.
+
+        Args:
+            policy: The ZenML policy request.
+
+        Returns:
+            The created ZenML policy response.
+        """
+        self._ensure_component_subject(policy.component_id)
+        response = self._client.create_policy(
+            RMPolicyRequest(
+                pool=self._pool_name(policy.pool_id, policy.pool),
+                subject_selector=self._component_subject_selector(
+                    policy.component_id
+                ),
+                priority=policy.priority,
+                grants=[self._to_rm_grant(grant) for grant in policy.grants],
+            )
+        )
+        return self._to_policy_response(response)
+
+    def get_resource_policy(
+        self, policy_id: UUID, hydrate: bool = True
+    ) -> ResourcePolicyResponse:
+        """Get a resource policy through Resource Manager.
+
+        Args:
+            policy_id: The policy ID.
+            hydrate: Ignored for Resource Manager-backed policies.
+
+        Returns:
+            The requested ZenML policy response.
+        """
+        return self._to_policy_response(self._client.get_policy(policy_id))
+
+    def list_resource_policies(
+        self,
+        filter_model: ResourcePolicyFilter,
+        hydrate: bool = False,
+    ) -> Page[ResourcePolicyResponse]:
+        """List resource policies through Resource Manager.
+
+        Args:
+            filter_model: ZenML filter model. Pagination fields are currently
+                ignored because Resource Manager returns a full page.
+            hydrate: Ignored for Resource Manager-backed policies.
+
+        Returns:
+            Matching ZenML policy responses.
+        """
+        items = [
+            self._to_policy_response(item)
+            for item in self._client.list_policies().items
+            if self._matches_policy_filter(item, filter_model)
+        ]
+        return self._page(items)
+
+    def update_resource_policy(
+        self, policy_id: UUID, update: ResourcePolicyUpdate
+    ) -> ResourcePolicyResponse:
+        """Update a resource policy through Resource Manager.
+
+        Args:
+            policy_id: The policy ID.
+            update: The ZenML policy update.
+
+        Returns:
+            The updated ZenML policy response.
+
+        Raises:
+            ValueError: If the update tries to move a policy to another pool.
+        """
+        if update.pool_id is not None or update.pool is not None:
+            raise ValueError(
+                "Resource Manager does not support moving an existing "
+                "resource policy to another pool."
+            )
+
+        subject_selector = None
+        if update.component_id is not None:
+            self._ensure_component_subject(update.component_id)
+            subject_selector = self._component_subject_selector(
+                update.component_id
+            )
+
+        grants = None
+        if update.grants is not None:
+            grants = [self._to_rm_grant(grant) for grant in update.grants]
+
+        response = self._client.update_policy(
+            policy_id,
+            RMPolicyUpdate(
+                subject_selector=subject_selector,
+                priority=update.priority,
+                grants=grants,
+            ),
+        )
+        return self._to_policy_response(response)
+
+    def delete_resource_policy(self, policy_id: UUID) -> None:
+        """Delete a resource policy through Resource Manager.
+
+        Args:
+            policy_id: The policy ID.
+        """
+        self._client.delete_policy(policy_id)
+
+    def get_resource_request(
+        self, resource_request_id: UUID, hydrate: bool = True
+    ) -> ResourceRequestResponse:
+        """Get a resource request through Resource Manager.
+
+        Args:
+            resource_request_id: The request ID.
+            hydrate: Ignored for Resource Manager-backed requests.
+
+        Returns:
+            The requested ZenML resource request response.
+        """
+        response = self._client.get_request(resource_request_id)
+        return self._to_request_response(
+            response,
+            step_run_id=self._request_step_run_ids.get(response.id),
+        )
+
+    def list_resource_requests(
+        self, filter_model: ResourceRequestFilter, hydrate: bool = False
+    ) -> Page[ResourceRequestResponse]:
+        """List resource requests through Resource Manager.
+
+        Args:
+            filter_model: ZenML filter model. Pagination fields are currently
+                ignored because Resource Manager returns a full page.
+            hydrate: Ignored for Resource Manager-backed requests.
+
+        Returns:
+            Matching ZenML request responses.
+        """
+        items = [
+            self._to_request_response(
+                item, step_run_id=self._request_step_run_ids.get(item.id)
+            )
+            for item in self._client.list_requests().items
+            if self._matches_request_filter(item, filter_model)
+        ]
+        return self._page(items)
+
+    def delete_resource_request(self, resource_request_id: UUID) -> None:
+        """Cancel a resource request through Resource Manager.
+
+        Args:
+            resource_request_id: The request ID.
+        """
+        self._client.cancel_request(resource_request_id)
+
+    def release_step_run_resources(
+        self, session: "Session", step_run_id: UUID
+    ) -> None:
+        """Release Resource Manager allocations for a ZenML step run.
+
+        Args:
+            session: DB session. The Resource Manager backend does not use the
+                session, but the SQL store callback requires it.
+            step_run_id: The ZenML step run whose resources should be released.
+        """
+        request_ids = [
+            request_id
+            for request_id, stored_step_run_id in self._request_step_run_ids.items()
+            if stored_step_run_id == step_run_id
+        ]
+        for request_id in request_ids:
+            self._client.release_request(request_id)
+            self._request_step_run_ids.pop(request_id, None)
+
+    def delete_component_subject(
+        self, session: "Session", component_id: UUID
+    ) -> None:
+        """Delete the internal Resource Manager subject for a component.
+
+        Args:
+            session: DB session. The Resource Manager backend does not use the
+                session, but the SQL store callback requires it.
+            component_id: The ZenML stack component being deleted.
+
+        Raises:
+            requests.HTTPError: If Resource Manager fails for any reason other
+                than the subject not existing.
+        """
+        try:
+            self._client.delete_subject(component_id)
+        except requests.HTTPError as error:
+            if error.response is None or error.response.status_code != 404:
+                raise
+
+    def create_resource_request(
+        self, session: "Session", resource_request: ResourceRequestRequest
+    ) -> ResourceRequestResponse | None:
+        """Create a runtime resource request through Resource Manager.
+
+        Args:
+            session: DB session. The Resource Manager backend does not use the
+                session, but the SQL store callback requires it.
+            resource_request: The ZenML resource request payload.
+
+        Returns:
+            The created ZenML resource request response.
+        """
+        response = self._client.create_request(
+            RMResourceRequestCreate(
+                subject_id=resource_request.component_id,
+                candidate_subjects=[
+                    RMCandidateSubject(
+                        subject_id=component_id,
+                        subject_type=self.COMPONENT_SUBJECT_TYPE,
+                    )
+                    for component_id in resource_request.candidate_component_ids
+                ],
+                demands=[
+                    self._to_rm_demand(demand)
+                    for demand in resource_request.demands
+                ],
+                reclaim_tolerance=(
+                    resource_request.reclaim_tolerance
+                    or ResourceRequestReclaimTolerance.NONE
+                ).value,
+                lease_expires_at=resource_request.lease_expires_at,
+            )
+        )
+        self._request_step_run_ids[response.id] = resource_request.step_run_id
+        return self._to_request_response(
+            response,
+            step_run_id=resource_request.step_run_id,
+        )
+
+    def _client_from_environment(self) -> ResourceManagerClient:
+        """Create a Resource Manager client from environment variables.
+
+        Returns:
+            A configured Resource Manager client.
+
+        Raises:
+            RuntimeError: If the Resource Manager URL is missing.
+        """
+        base_url = os.getenv(self.ENV_RESOURCE_MANAGER_URL) or os.getenv(
+            self.ENV_RM_URL
+        )
+        if not base_url:
+            raise RuntimeError(
+                f"Set {self.ENV_RESOURCE_MANAGER_URL} to enable the "
+                "Resource Manager resource pool store."
+            )
+
+        headers = {}
+        if token := os.getenv(self.ENV_RESOURCE_MANAGER_TOKEN):
+            headers["Authorization"] = f"Bearer {token}"
+
+        timeout = int(os.getenv(self.ENV_RESOURCE_MANAGER_TIMEOUT, "30"))
+        return ResourceManagerClient(
+            base_url=base_url, timeout=timeout, headers=headers
+        )
+
+    def _ensure_component_subject(self, component_id: UUID) -> None:
+        """Ensure the internal RM subject exists for a ZenML component.
+
+        Args:
+            component_id: ZenML stack component ID.
+
+        Raises:
+            requests.HTTPError: If Resource Manager fails for any reason other
+                than the subject not existing.
+        """
+        subject = RMSubjectRequest(
+            subject_id=component_id,
+            subject_type=self.COMPONENT_SUBJECT_TYPE,
+            attributes=self._component_subject_selector(component_id),
+        )
+        try:
+            self._client.get_subject(component_id)
+        except requests.HTTPError as error:
+            if error.response is None or error.response.status_code != 404:
+                raise
+            self._client.create_subject(subject)
+        else:
+            self._client.update_subject(component_id, subject)
+
+    def _component_subject_selector(
+        self, component_id: UUID
+    ) -> dict[str, str]:
+        """Build the internal RM selector for a ZenML component.
+
+        Args:
+            component_id: ZenML stack component ID.
+
+        Returns:
+            Selector attributes that match the component subject.
+        """
+        return {
+            "subject_type": self.COMPONENT_SUBJECT_TYPE,
+            "component_id": str(component_id),
+        }
+
+    def _pool_name(
+        self, pool_id: Optional[UUID], pool_name: Optional[str]
+    ) -> str:
+        """Resolve a ZenML pool reference to an RM pool name.
+
+        Args:
+            pool_id: Optional resource pool ID.
+            pool_name: Optional resource pool name.
+
+        Returns:
+            The pool name accepted by Resource Manager policy APIs.
+
+        Raises:
+            ValueError: If neither reference is set.
+        """
+        if pool_name:
+            return pool_name
+        if pool_id:
+            return self._client.get_pool(pool_id).name
+        raise ValueError("A resource policy requires a pool ID or name.")
+
+    def _resource_name(
+        self, resource_id: Optional[UUID], resource_name: Optional[str]
+    ) -> str:
+        """Resolve a ZenML descriptor reference to an RM resource name.
+
+        Args:
+            resource_id: Optional descriptor ID.
+            resource_name: Optional descriptor name.
+
+        Returns:
+            The descriptor name accepted by Resource Manager APIs.
+
+        Raises:
+            ValueError: If neither reference is set.
+        """
+        if resource_name:
+            return resource_name
+        if resource_id:
+            return self._client.get_resource(resource_id).name
+        raise ValueError("A resource descriptor ID or name is required.")
+
+    def _resource_id_by_name(self, resource_name: str) -> Optional[UUID]:
+        """Resolve a resource descriptor name to an ID when possible.
+
+        Args:
+            resource_name: Resource descriptor name.
+
+        Returns:
+            The descriptor ID if found, otherwise None.
+        """
+        for resource in self._client.list_resources().items:
+            if resource.name == resource_name:
+                return resource.id
+        return None
+
+    def _to_rm_capacity(
+        self, entry: ResourcePoolCapacityClass
+    ) -> RMPoolCapacityClass:
+        """Convert ZenML pool capacity to an RM payload entry.
+
+        Args:
+            entry: ZenML capacity entry.
+
+        Returns:
+            Resource Manager capacity entry.
+        """
+        return RMPoolCapacityClass(
+            resource=self._resource_name(entry.resource_id, entry.resource),
+            class_name=entry.class_name,
+            quantity=entry.quantity,
+            rank=entry.rank,
+            reclaimable=entry.reclaimable,
+            attributes=entry.attributes,
+            subject_settings=entry.subject_settings,
+        )
+
+    def _to_rm_grant(self, grant: ResourcePolicyGrant) -> RMPolicyGrant:
+        """Convert a ZenML policy grant to an RM payload entry.
+
+        Args:
+            grant: ZenML policy grant.
+
+        Returns:
+            Resource Manager policy grant.
+        """
+        return RMPolicyGrant(
+            resource=self._resource_name(grant.resource_id, grant.resource),
+            classes=grant.classes,
+            reserved=grant.reserved,
+            limit=grant.limit,
+        )
+
+    def _to_rm_demand(self, demand: ResourceRequestDemand) -> RMRequestDemand:
+        """Convert a ZenML resource demand to an RM demand payload.
+
+        Args:
+            demand: ZenML resource request demand.
+
+        Returns:
+            Resource Manager demand entry.
+        """
+        resource_selector = dict(demand.resource_selector or {})
+        if demand.resource is not None:
+            resource_selector.setdefault("name", demand.resource)
+
+        return RMRequestDemand(
+            resource_id=(
+                demand.resource_id
+                or (
+                    self._resource_id_by_name(demand.resource)
+                    if demand.resource is not None
+                    else None
+                )
+            ),
+            resource_selector=resource_selector or None,
+            quantity=demand.quantity,
+            class_name=demand.class_name,
+            class_selector=demand.class_selector,
+        )
+
+    def _to_descriptor_response(
+        self, response: RMResourceResponse
+    ) -> ResourceDescriptorResponse:
+        """Convert an RM descriptor response to a ZenML response.
+
+        Args:
+            response: Resource Manager descriptor response.
+
+        Returns:
+            ZenML descriptor response.
+        """
+        created, updated = self._timestamps(response.created, response.updated)
+        return ResourceDescriptorResponse(
+            id=response.id,
+            body=ResourceDescriptorResponseBody(
+                created=created,
+                updated=updated,
+                user_id=response.owner_id,
+                name=response.name,
+                kind=response.kind,
+            ),
+            metadata=ResourceDescriptorResponseMetadata(
+                attributes=response.attributes
+            ),
+            resources=ResourceDescriptorResponseResources(),
+        )
+
+    def _to_pool_response(
+        self, response: RMPoolResponse
+    ) -> ResourcePoolResponse:
+        """Convert an RM pool response to a ZenML response.
+
+        Args:
+            response: Resource Manager pool response.
+
+        Returns:
+            ZenML pool response.
+        """
+        created, updated = self._timestamps(response.created, response.updated)
+        return ResourcePoolResponse(
+            id=response.id,
+            name=response.name,
+            body=ResourcePoolResponseBody(
+                created=created,
+                updated=updated,
+                user_id=None,
+                capacity=[
+                    ResourcePoolCapacityClass(
+                        resource_id=entry.resource_id,
+                        resource=entry.resource,
+                        class_name=entry.class_name,
+                        quantity=entry.quantity,
+                        rank=entry.rank,
+                        reclaimable=entry.reclaimable,
+                        attributes=entry.attributes,
+                        subject_settings=entry.subject_settings,
+                    )
+                    for entry in response.capacity
+                ],
+                occupied_resources=[
+                    ResourcePoolLedgerOccupied(
+                        resource_id=entry.resource_id,
+                        class_name=entry.class_name,
+                        quantity=entry.quantity,
+                    )
+                    for entry in response.ledger.occupied
+                ],
+                queue_length=response.ledger.queue_length,
+            ),
+            metadata=ResourcePoolResponseMetadata(
+                description=response.description
+            ),
+            resources=ResourcePoolResponseResources(),
+        )
+
+    def _to_policy_response(
+        self, response: RMPolicyResponse
+    ) -> ResourcePolicyResponse:
+        """Convert an RM policy response to a ZenML response.
+
+        Args:
+            response: Resource Manager policy response.
+
+        Returns:
+            ZenML policy response.
+        """
+        created, updated = self._timestamps(response.created, response.updated)
+        component_id = UUID(response.subject_selector["component_id"])
+        return ResourcePolicyResponse(
+            id=response.id,
+            body=ResourcePolicyResponseBody(
+                created=created,
+                updated=updated,
+                user_id=None,
+                pool_id=response.pool_id,
+                component_id=component_id,
+                priority=response.priority,
+                grants=[
+                    ResourcePolicyGrant(
+                        resource_id=grant.resource_id,
+                        resource=grant.resource,
+                        classes=grant.classes,
+                        reserved=grant.reserved,
+                        limit=grant.limit,
+                    )
+                    for grant in response.grants
+                ],
+            ),
+            metadata=ResourcePolicyResponseMetadata(pool=response.pool),
+            resources=ResourcePolicyResponseResources(),
+        )
+
+    def _to_request_response(
+        self,
+        response: RMResourceRequestResponse,
+        *,
+        step_run_id: Optional[UUID] = None,
+    ) -> ResourceRequestResponse:
+        """Convert an RM runtime request response to a ZenML response.
+
+        Args:
+            response: Resource Manager runtime request response.
+            step_run_id: Optional ZenML step run ID tracked by this backend.
+
+        Returns:
+            ZenML runtime request response.
+        """
+        created, updated = self._timestamps(None, response.renewed_at)
+        requested_resources = {}
+        for demand in response.demands:
+            resource_name = None
+            if demand.resource_selector:
+                resource_name = demand.resource_selector.get("name")
+            if resource_name is None and demand.resource_id is not None:
+                resource_name = self._client.get_resource(
+                    demand.resource_id
+                ).name
+            if resource_name is not None:
+                requested_resources[resource_name] = demand.quantity
+
+        return ResourceRequestResponse(
+            id=response.id,
+            body=ResourceRequestResponseBody(
+                created=created,
+                updated=updated,
+                user_id=None,
+                component_id=response.subject_id,
+                candidate_component_ids=[
+                    candidate.subject_id
+                    for candidate in response.candidate_subjects
+                ],
+                step_run_id=step_run_id,
+                pipeline_run_id=None,
+                pool_id=None,
+                requested_resources=requested_resources,
+                demands=[
+                    self._to_request_demand(demand)
+                    for demand in response.demands
+                ],
+                status=ResourceRequestStatus(response.status),
+                reclaim_tolerance=ResourceRequestReclaimTolerance(
+                    response.reclaim_tolerance
+                ),
+                lease_expires_at=response.lease_expires_at,
+                renewed_at=response.renewed_at,
+                status_reason=response.status_reason,
+                preemption_initiated_by_id=(
+                    response.preemption_initiated_by_id
+                ),
+            ),
+            metadata=ResourceRequestResponseMetadata(),
+            resources=ResourceRequestResponseResources(),
+        )
+
+    def _to_request_demand(
+        self, demand: RMRequestDemand
+    ) -> ResourceRequestDemand:
+        """Convert an RM demand response to a ZenML demand.
+
+        Args:
+            demand: Resource Manager demand response.
+
+        Returns:
+            ZenML resource request demand.
+        """
+        resource_name = None
+        resource_selector = demand.resource_selector
+        if resource_selector:
+            resource_name = resource_selector.get("name")
+        if resource_name is None and demand.resource_id is not None:
+            resource_name = self._client.get_resource(demand.resource_id).name
+
+        return ResourceRequestDemand(
+            resource_id=demand.resource_id,
+            resource=resource_name,
+            quantity=demand.quantity,
+            class_name=demand.class_name,
+            resource_selector=demand.resource_selector,
+            class_selector=demand.class_selector,
+        )
+
+    def _to_queue_item(
+        self, response: RMQueueEntryResponse
+    ) -> ResourcePoolQueueItem:
+        """Convert an RM queue entry to a ZenML queue item.
+
+        Args:
+            response: Resource Manager queue entry.
+
+        Returns:
+            ZenML queue item.
+        """
+        return ResourcePoolQueueItem(
+            id=response.id,
+            request_id=response.request_id,
+            pool_id=response.pool_id,
+            policy_id=response.policy_id,
+            priority=response.priority,
+            enqueued_at=response.enqueued_at,
+        )
+
+    def _to_allocation(
+        self, response: RMAllocationResponse
+    ) -> ResourcePoolAllocation:
+        """Convert an RM allocation to a ZenML allocation.
+
+        Args:
+            response: Resource Manager allocation.
+
+        Returns:
+            ZenML allocation.
+        """
+        return ResourcePoolAllocation(
+            id=response.id,
+            request_id=response.request_id,
+            pool_id=response.pool_id,
+            resource_id=response.resource_id,
+            class_name=response.class_name,
+            quantity=response.quantity,
+            policy_id=response.admitted_by_policy_id,
+            grant_id=response.resolved_grant_id,
+            priority=response.allocation_priority,
+            component_id=response.selected_subject_id,
+            preemption_state=response.preemption_state,
+            preemption_reason=response.preemption_reason,
+            released_at=response.released_at,
+        )
+
+    def _matches_descriptor_filter(
+        self,
+        response: RMResourceResponse,
+        filter_model: ResourceDescriptorFilter,
+    ) -> bool:
+        """Check whether an RM descriptor matches a ZenML filter.
+
+        Args:
+            response: Resource Manager descriptor response.
+            filter_model: ZenML descriptor filter.
+
+        Returns:
+            True if the descriptor should be included.
+        """
+        return (
+            self._matches_uuid_filter(response.id, filter_model.id)
+            and self._matches_string_filter(response.name, filter_model.name)
+            and self._matches_string_filter(response.kind, filter_model.kind)
+        )
+
+    def _matches_pool_filter(
+        self, response: RMPoolResponse, filter_model: ResourcePoolFilter
+    ) -> bool:
+        """Check whether an RM pool matches a ZenML filter.
+
+        Args:
+            response: Resource Manager pool response.
+            filter_model: ZenML pool filter.
+
+        Returns:
+            True if the pool should be included.
+        """
+        return self._matches_uuid_filter(
+            response.id, filter_model.id
+        ) and self._matches_string_filter(response.name, filter_model.name)
+
+    def _matches_policy_filter(
+        self,
+        response: RMPolicyResponse,
+        filter_model: ResourcePolicyFilter,
+    ) -> bool:
+        """Check whether an RM policy matches a ZenML filter.
+
+        Args:
+            response: Resource Manager policy response.
+            filter_model: ZenML policy filter.
+
+        Returns:
+            True if the policy should be included.
+        """
+        component_id = response.subject_selector.get("component_id")
+        return (
+            self._matches_uuid_filter(response.id, filter_model.id)
+            and self._matches_uuid_filter(
+                response.pool_id, filter_model.pool_id
+            )
+            and self._matches_string_filter(response.pool, filter_model.pool)
+            and self._matches_string_filter(
+                component_id, filter_model.component_id
+            )
+            and self._matches_string_filter(
+                str(response.priority), filter_model.priority
+            )
+        )
+
+    def _matches_request_filter(
+        self,
+        response: RMResourceRequestResponse,
+        filter_model: ResourceRequestFilter,
+    ) -> bool:
+        """Check whether an RM runtime request matches a ZenML filter.
+
+        Args:
+            response: Resource Manager runtime request response.
+            filter_model: ZenML request filter.
+
+        Returns:
+            True if the request should be included.
+        """
+        step_run_id = self._request_step_run_ids.get(response.id)
+        return (
+            self._matches_uuid_filter(
+                response.subject_id, filter_model.component_id
+            )
+            and self._matches_uuid_filter(
+                step_run_id, filter_model.step_run_id
+            )
+            and self._matches_string_filter(
+                response.status, filter_model.status
+            )
+            and self._matches_uuid_filter(
+                response.preemption_initiated_by_id,
+                filter_model.preemption_initiated_by_id,
+            )
+        )
+
+    def _matches_uuid_filter(
+        self, value: Optional[UUID], filter_value: object
+    ) -> bool:
+        """Check whether a UUID value matches an optional filter value.
+
+        Args:
+            value: Actual UUID value.
+            filter_value: Optional filter value.
+
+        Returns:
+            True if the filter is empty or the value matches.
+        """
+        if filter_value is None:
+            return True
+        if value is None:
+            return False
+        return str(value) == str(filter_value)
+
+    def _matches_string_filter(
+        self, value: Optional[str], filter_value: object
+    ) -> bool:
+        """Check whether a string value matches an optional filter value.
+
+        Args:
+            value: Actual string value.
+            filter_value: Optional filter value.
+
+        Returns:
+            True if the filter is empty or the value matches.
+        """
+        if filter_value is None:
+            return True
+        if value is None:
+            return False
+        return value == str(filter_value)
+
+    def _timestamps(
+        self,
+        created: Optional[datetime],
+        updated: Optional[datetime],
+    ) -> tuple[datetime, datetime]:
+        """Normalize optional RM timestamps for ZenML response bodies.
+
+        Args:
+            created: Optional creation timestamp from Resource Manager.
+            updated: Optional update timestamp from Resource Manager.
+
+        Returns:
+            Creation and update timestamps accepted by ZenML response bodies.
+        """
+        now = utc_now()
+        created_at = created or now
+        updated_at = updated or created_at
+        return created_at, updated_at
+
+    def _page(self, items: list[PageItemT]) -> Page[PageItemT]:
+        """Build a ZenML page for a full Resource Manager result set.
+
+        Args:
+            items: Result items.
+
+        Returns:
+            ZenML page with all items included.
+        """
+        return Page(
+            index=1,
+            max_size=max(len(items), 1),
+            total_pages=1,
+            total=len(items),
+            items=items,
+        )

@@ -30,8 +30,11 @@ from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
 from zenml.models import (
     Page,
+    ResourcePolicyGrant,
+    ResourcePolicyResponse,
+    ResourcePoolCapacityClass,
     ResourcePoolFilter,
-    ResourcePoolSubjectPolicyResponse,
+    ResourcePoolReclaimable,
     ResourceRequestResponse,
 )
 
@@ -64,6 +67,30 @@ def _parse_resources(resources: str) -> Dict[str, int]:
                 "Resource values must be integers."
             ) from e
     return parsed
+
+
+def _resource_dict_to_capacity(
+    resources: Dict[str, int],
+) -> list[ResourcePoolCapacityClass]:
+    """Convert CLI resource shorthand into capacity class entries.
+
+    Args:
+        resources: Mapping of resource descriptor names to declared capacity
+            quantities.
+
+    Returns:
+        Capacity class entries using the compatibility ``default`` class.
+    """
+    return [
+        ResourcePoolCapacityClass(
+            resource=resource,
+            class_name="default",
+            quantity=quantity,
+            rank=0,
+            reclaimable=ResourcePoolReclaimable.NEVER,
+        )
+        for resource, quantity in resources.items()
+    ]
 
 
 @resource_pool.command("create", help="Create a resource pool.")
@@ -101,7 +128,9 @@ def create_resource_pool(
     with console.status(f"Creating resource pool '{name}'...\n"):
         try:
             resource_pool_ = Client().create_resource_pool(
-                name=name, capacity=parsed_capacity, description=description
+                name=name,
+                capacity=_resource_dict_to_capacity(parsed_capacity),
+                description=description,
             )
         except Exception as err:
             cli_utils.exception(err)
@@ -159,7 +188,9 @@ def update_resource_pool(
             resource_pool_ = Client().update_resource_pool(
                 name_id_or_prefix=name_id_or_prefix,
                 description=description,
-                capacity=parsed_capacity,
+                capacity=_resource_dict_to_capacity(parsed_capacity)
+                if parsed_capacity is not None
+                else None,
             )
         except Exception as err:
             cli_utils.exception(err)
@@ -329,12 +360,22 @@ def attach_policy_to_resource_pool(
                 allow_name_prefix_match=False,
                 hydrate=False,
             )
-            Client().create_resource_pool_subject_policy(
+            grants = [
+                ResourcePolicyGrant(
+                    resource=resource,
+                    classes=["default"],
+                    reserved=reserved_quantity,
+                    limit=(parsed_limit or parsed_reserved).get(
+                        resource, reserved_quantity
+                    ),
+                )
+                for resource, reserved_quantity in parsed_reserved.items()
+            ]
+            Client().create_resource_policy(
                 component_id=component_model.id,
                 pool_id=pool.id,
                 priority=priority,
-                reserved=parsed_reserved,
-                limit=parsed_limit,
+                grants=grants,
             )
         except Exception as err:
             cli_utils.exception(err)
@@ -389,7 +430,7 @@ def detach_policy_from_resource_pool(
                 allow_name_prefix_match=False,
                 hydrate=False,
             )
-            policies = Client().list_resource_pool_subject_policies(
+            policies = Client().list_resource_policies(
                 pool_id=pool.id,
                 component_id=component_model.id,
                 hydrate=False,
@@ -399,9 +440,7 @@ def detach_policy_from_resource_pool(
                     f"No policy found for component `{component_model.name}` "
                     f"in resource pool `{pool.name}`."
                 )
-            Client().delete_resource_pool_subject_policy(
-                policy_id=policies.items[0].id
-            )
+            Client().delete_resource_policy(policy_id=policies.items[0].id)
         except Exception as err:
             cli_utils.exception(err)
         else:
@@ -446,7 +485,7 @@ def detach_policy_from_resource_pool(
 @click.option(
     "--columns",
     type=str,
-    default="id,component,pool,priority,reserved,limit,created",
+    default="id,component_id,pool_id,priority,grants,created",
     help="Comma-separated list of columns to display, or 'all' for all columns.",
 )
 @click.option(
@@ -496,7 +535,7 @@ def list_resource_pool_policies(
                     hydrate=False,
                 )
                 component_id = component_model.id
-            policies_page = Client().list_resource_pool_subject_policies(
+            policies_page = Client().list_resource_policies(
                 pool_id=pool_id,
                 component_id=component_id,
                 hydrate=True,
@@ -504,7 +543,7 @@ def list_resource_pool_policies(
         except Exception as err:
             cli_utils.exception(err)
 
-    page: Page[ResourcePoolSubjectPolicyResponse] = policies_page
+    page: Page[ResourcePolicyResponse] = policies_page
     if pool is not None and component is not None:
         empty = (
             f"No policies found for resource pool `{pool_label}` and "
@@ -565,22 +604,33 @@ def list_resource_pool_requests(
         output_format: Output format.
     """
     with console.status("Loading resource pool requests...\n"):
-        pool_model = Client().get_resource_pool(
+        client = Client()
+        pool_model = client.get_resource_pool(
             name_id_or_prefix=pool, hydrate=True
         )
+        queued = client.list_resource_pool_queue(pool_model.id).items
+        active = client.list_resource_pool_allocations(pool_model.id).items
 
     if view == "queued":
-        items = list(item.request for item in pool_model.queued_requests)
+        items = [
+            client.get_resource_request(item.request_id) for item in queued
+        ]
         state_by_id = {r.id: "queued" for r in items}
     elif view == "active":
-        items = list(item.request for item in pool_model.active_requests)
+        items = [
+            client.get_resource_request(item.request_id) for item in active
+        ]
         state_by_id = {r.id: "active" for r in items}
     else:
-        active = list(item.request for item in pool_model.active_requests)
-        queued = list(item.request for item in pool_model.queued_requests)
-        items = [*active, *queued]
-        state_by_id = {r.id: "active" for r in active}
-        state_by_id.update({r.id: "queued" for r in queued})
+        active_requests = [
+            client.get_resource_request(item.request_id) for item in active
+        ]
+        queued_requests = [
+            client.get_resource_request(item.request_id) for item in queued
+        ]
+        items = [*active_requests, *queued_requests]
+        state_by_id = {r.id: "active" for r in active_requests}
+        state_by_id.update({r.id: "queued" for r in queued_requests})
 
     page: Page["ResourceRequestResponse"] = Page(
         index=1,

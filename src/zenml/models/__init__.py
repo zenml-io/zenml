@@ -16,6 +16,7 @@
 # ------------------------------------- V2 -------------------------------------
 
 # V2 Base
+from zenml.enums import ResourceRequestReclaimTolerance
 from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
     BaseIdentifiedResponse,
@@ -255,10 +256,32 @@ from zenml.models.v2.core.project import (
     ProjectResponseMetadata,
     ProjectUpdate,
 )
+from zenml.models.v2.core.resource_descriptor import (
+    ResourceDescriptorFilter,
+    ResourceDescriptorRequest,
+    ResourceDescriptorResponse,
+    ResourceDescriptorResponseBody,
+    ResourceDescriptorResponseMetadata,
+    ResourceDescriptorResponseResources,
+    ResourceDescriptorUpdate,
+)
+from zenml.models.v2.core.resource_policy import (
+    ResourcePolicyFilter,
+    ResourcePolicyGrant,
+    ResourcePolicyRequest,
+    ResourcePolicyResponse,
+    ResourcePolicyResponseBody,
+    ResourcePolicyResponseMetadata,
+    ResourcePolicyResponseResources,
+    ResourcePolicyUpdate,
+)
 from zenml.models.v2.core.resource_pool import (
     ResourcePoolAllocation,
+    ResourcePoolCapacityClass,
     ResourcePoolFilter,
+    ResourcePoolLedgerOccupied,
     ResourcePoolQueueItem,
+    ResourcePoolReclaimable,
     ResourcePoolRequest,
     ResourcePoolResponse,
     ResourcePoolResponseBody,
@@ -266,16 +289,8 @@ from zenml.models.v2.core.resource_pool import (
     ResourcePoolResponseResources,
     ResourcePoolUpdate,
 )
-from zenml.models.v2.core.resource_pool_subject_policy import (
-    ResourcePoolSubjectPolicyFilter,
-    ResourcePoolSubjectPolicyRequest,
-    ResourcePoolSubjectPolicyResponse,
-    ResourcePoolSubjectPolicyResponseBody,
-    ResourcePoolSubjectPolicyResponseMetadata,
-    ResourcePoolSubjectPolicyResponseResources,
-    ResourcePoolSubjectPolicyUpdate,
-)
 from zenml.models.v2.core.resource_request import (
+    ResourceRequestDemand,
     ResourceRequestFilter,
     ResourceRequestRequest,
     ResourceRequestResponse,
@@ -615,6 +630,10 @@ ComponentInfo.model_rebuild()
 ServiceConnectorInfo.model_rebuild()
 ServiceConnectorResourcesInfo.model_rebuild()
 ResourcesInfo.model_rebuild()
+ResourceDescriptorResponseBody.model_rebuild()
+ResourceDescriptorResponseMetadata.model_rebuild()
+ResourceDescriptorResponseResources.model_rebuild()
+ResourceDescriptorResponse.model_rebuild()
 ResourcePoolResponseBody.model_rebuild()
 ResourcePoolResponseMetadata.model_rebuild()
 ResourcePoolResponseResources.model_rebuild()
@@ -625,11 +644,11 @@ ResourceRequestResponseResources.model_rebuild()
 ResourceRequestResponse.model_rebuild()
 ResourcePoolAllocation.model_rebuild()
 ResourcePoolQueueItem.model_rebuild()
-ResourcePoolSubjectPolicyRequest.model_rebuild()
-ResourcePoolSubjectPolicyResponseBody.model_rebuild()
-ResourcePoolSubjectPolicyResponseMetadata.model_rebuild()
-ResourcePoolSubjectPolicyResponseResources.model_rebuild()
-ResourcePoolSubjectPolicyResponse.model_rebuild()
+ResourcePolicyRequest.model_rebuild()
+ResourcePolicyResponseBody.model_rebuild()
+ResourcePolicyResponseMetadata.model_rebuild()
+ResourcePolicyResponseResources.model_rebuild()
+ResourcePolicyResponse.model_rebuild()
 TriggerRequest.model_rebuild()
 TriggerResponseBody.model_rebuild()
 TriggerResponseMetadata.model_rebuild()
@@ -828,6 +847,13 @@ __all__ = [
     "PipelineRunResponseMetadata",
     "PipelineRunResponseResources",
     "PipelineRunTriggerInfo",
+    "ResourceDescriptorFilter",
+    "ResourceDescriptorRequest",
+    "ResourceDescriptorResponse",
+    "ResourceDescriptorResponseBody",
+    "ResourceDescriptorResponseMetadata",
+    "ResourceDescriptorResponseResources",
+    "ResourceDescriptorUpdate",
     "ResourcePoolRequest",
     "ResourcePoolUpdate",
     "ResourcePoolFilter",
@@ -835,16 +861,22 @@ __all__ = [
     "ResourcePoolResponseBody",
     "ResourcePoolResponseMetadata",
     "ResourcePoolResponseResources",
+    "ResourcePoolCapacityClass",
+    "ResourcePoolLedgerOccupied",
     "ResourcePoolAllocation",
     "ResourcePoolQueueItem",
-    "ResourcePoolSubjectPolicyFilter",
-    "ResourcePoolSubjectPolicyRequest",
-    "ResourcePoolSubjectPolicyResponse",
-    "ResourcePoolSubjectPolicyResponseBody",
-    "ResourcePoolSubjectPolicyResponseMetadata",
-    "ResourcePoolSubjectPolicyResponseResources",
-    "ResourcePoolSubjectPolicyUpdate",
+    "ResourcePoolReclaimable",
+    "ResourcePolicyFilter",
+    "ResourcePolicyGrant",
+    "ResourcePolicyRequest",
+    "ResourcePolicyResponse",
+    "ResourcePolicyResponseBody",
+    "ResourcePolicyResponseMetadata",
+    "ResourcePolicyResponseResources",
+    "ResourcePolicyUpdate",
+    "ResourceRequestDemand",
     "ResourceRequestRequest",
+    "ResourceRequestReclaimTolerance",
     "ResourceRequestFilter",
     "ResourceRequestResponse",
     "ResourceRequestResponseBody",

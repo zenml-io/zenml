@@ -12,27 +12,32 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Config classes."""
+
+from zenml.config.cache_policy import CachePolicy
 from zenml.config.deployment_settings import (
-    DeploymentSettings,
+    AppExtensionSpec,
+    CORSConfig,
     DeploymentDefaultEndpoints,
     DeploymentDefaultMiddleware,
-    EndpointSpec,
+    DeploymentSettings,
     EndpointMethod,
+    EndpointSpec,
     MiddlewareSpec,
-    AppExtensionSpec,
     SecureHeadersConfig,
-    CORSConfig,
 )
 from zenml.config.docker_settings import (
     DockerSettings,
-    PythonPackageInstaller,
     PythonEnvironmentExportMethod,
+    PythonPackageInstaller,
 )
-from zenml.config.resource_settings import ResourceSettings, ByteUnit
+from zenml.config.resource_settings import (
+    ByteUnit,
+    PoolResourceDemand,
+    ResourceSettings,
+)
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.schedule import Schedule
 from zenml.config.store_config import StoreConfiguration
-from zenml.config.cache_policy import CachePolicy
 
 __all__ = [
     "DeploymentSettings",
@@ -48,6 +53,7 @@ __all__ = [
     "PythonPackageInstaller",
     "PythonEnvironmentExportMethod",
     "ResourceSettings",
+    "PoolResourceDemand",
     "ByteUnit",
     "StepRetryConfig",
     "Schedule",

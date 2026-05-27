@@ -72,7 +72,7 @@ class ResourceType(StrEnum):
     STACK = "stack"
     STACK_COMPONENT = "stack_component"
     RESOURCE_POOL = "resource_pool"
-    RESOURCE_POOL_SUBJECT_POLICY = "resource_pool_subject_policy"
+    RESOURCE_POLICY = "resource_pool_subject_policy"
     TAG = "tag"
     PROJECT = "project"
     # Deactivated for now
@@ -92,7 +92,7 @@ class ResourceType(StrEnum):
             self.STACK,
             self.STACK_COMPONENT,
             self.RESOURCE_POOL,
-            self.RESOURCE_POOL_SUBJECT_POLICY,
+            self.RESOURCE_POLICY,
             self.TAG,
             self.SERVICE_ACCOUNT,
             self.PROJECT,

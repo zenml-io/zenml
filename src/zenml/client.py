@@ -152,14 +152,23 @@ from zenml.models import (
     ProjectRequest,
     ProjectResponse,
     ProjectUpdate,
+    ResourceDescriptorFilter,
+    ResourceDescriptorRequest,
+    ResourceDescriptorResponse,
+    ResourceDescriptorUpdate,
+    ResourcePolicyFilter,
+    ResourcePolicyGrant,
+    ResourcePolicyRequest,
+    ResourcePolicyResponse,
+    ResourcePolicyUpdate,
+    ResourcePoolAllocation,
+    ResourcePoolCapacityClass,
     ResourcePoolFilter,
+    ResourcePoolQueueItem,
     ResourcePoolRequest,
     ResourcePoolResponse,
-    ResourcePoolSubjectPolicyFilter,
-    ResourcePoolSubjectPolicyRequest,
-    ResourcePoolSubjectPolicyResponse,
-    ResourcePoolSubjectPolicyUpdate,
     ResourcePoolUpdate,
+    ResourceRequestResponse,
     RunMetadataRequest,
     RunMetadataResource,
     RunTemplateFilter,
@@ -2278,10 +2287,115 @@ class Client(metaclass=ClientMetaClass):
 
     # -------------------------------- Resource Pools --------------------------
 
+    def create_resource_descriptor(
+        self,
+        name: str,
+        kind: str,
+        attributes: Optional[Dict[str, Any]] = None,
+    ) -> ResourceDescriptorResponse:
+        """Create a resource descriptor.
+
+        Args:
+            name: The descriptor name.
+            kind: The descriptor kind.
+            attributes: Descriptor attributes.
+
+        Returns:
+            The created descriptor.
+        """
+        request = ResourceDescriptorRequest(
+            name=name,
+            kind=kind,
+            attributes=attributes or {},
+        )
+        return self.zen_store.create_resource_descriptor(request)
+
+    def get_resource_descriptor(
+        self,
+        descriptor_id: UUID,
+    ) -> ResourceDescriptorResponse:
+        """Get a resource descriptor.
+
+        Args:
+            descriptor_id: The descriptor ID.
+
+        Returns:
+            The resource descriptor.
+        """
+        return self.zen_store.get_resource_descriptor(descriptor_id)
+
+    def list_resource_descriptors(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        name: Optional[str] = None,
+        kind: Optional[str] = None,
+    ) -> Page[ResourceDescriptorResponse]:
+        """List resource descriptors.
+
+        Args:
+            sort_by: The column to sort by.
+            page: The page of items.
+            size: The maximum size of all pages.
+            logical_operator: Which logical operator to use.
+            id: Filter by descriptor ID.
+            name: Filter by descriptor name.
+            kind: Filter by descriptor kind.
+
+        Returns:
+            A page of resource descriptors.
+        """
+        filter_model = ResourceDescriptorFilter(
+            page=page,
+            size=size,
+            sort_by=sort_by,
+            logical_operator=logical_operator,
+            id=id,
+            name=name,
+            kind=kind,
+        )
+        return self.zen_store.list_resource_descriptors(filter_model)
+
+    def update_resource_descriptor(
+        self,
+        descriptor_id: UUID,
+        name: Optional[str] = None,
+        kind: Optional[str] = None,
+        attributes: Optional[Dict[str, Any]] = None,
+    ) -> ResourceDescriptorResponse:
+        """Update a resource descriptor.
+
+        Args:
+            descriptor_id: The descriptor ID.
+            name: The new descriptor name.
+            kind: The new descriptor kind.
+            attributes: Replacement descriptor attributes.
+
+        Returns:
+            The updated descriptor.
+        """
+        update = ResourceDescriptorUpdate(
+            name=name,
+            kind=kind,
+            attributes=attributes,
+        )
+        return self.zen_store.update_resource_descriptor(descriptor_id, update)
+
+    def delete_resource_descriptor(self, descriptor_id: UUID) -> None:
+        """Delete a resource descriptor.
+
+        Args:
+            descriptor_id: The descriptor ID.
+        """
+        self.zen_store.delete_resource_descriptor(descriptor_id)
+
     def create_resource_pool(
         self,
         name: str,
-        capacity: Dict[str, int],
+        capacity: List[ResourcePoolCapacityClass],
         description: Optional[str] = None,
     ) -> ResourcePoolResponse:
         """Create a resource pool.
@@ -2378,7 +2492,9 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[UUID, str],
         description: Optional[str] = None,
-        capacity: Optional[Dict[str, int]] = None,
+        capacity: Optional[List[ResourcePoolCapacityClass]] = None,
+        name: Optional[str] = None,
+        clear_description: bool = False,
     ) -> ResourcePoolResponse:
         """Update a resource pool.
 
@@ -2386,8 +2502,9 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: The name, id or prefix of the resource pool to
                 update.
             description: The new description of the resource pool.
-            capacity: The new capacity of the resource pool. Setting a value to
-                0 will remove the resource from the pool.
+            capacity: The full replacement capacity declaration.
+            name: The new resource pool name.
+            clear_description: Whether to clear the description.
 
         Returns:
             The updated resource pool.
@@ -2398,7 +2515,9 @@ class Client(metaclass=ClientMetaClass):
         )
 
         update_model = ResourcePoolUpdate(
+            name=name,
             description=description,
+            clear_description=clear_description,
             capacity=capacity,
         )
 
@@ -2423,41 +2542,65 @@ class Client(metaclass=ClientMetaClass):
         )
         self.zen_store.delete_resource_pool(resource_pool_id=resource_pool.id)
 
-    def create_resource_pool_subject_policy(
+    def list_resource_pool_queue(
+        self, resource_pool_id: UUID
+    ) -> Page[ResourcePoolQueueItem]:
+        """List queued requests for a resource pool.
+
+        Args:
+            resource_pool_id: The resource pool ID.
+
+        Returns:
+            A page of queue items for the resource pool.
+        """
+        return self.zen_store.list_resource_pool_queue(resource_pool_id)
+
+    def list_resource_pool_allocations(
+        self, resource_pool_id: UUID
+    ) -> Page[ResourcePoolAllocation]:
+        """List active allocations for a resource pool.
+
+        Args:
+            resource_pool_id: The resource pool ID.
+
+        Returns:
+            A page of allocations for the resource pool.
+        """
+        return self.zen_store.list_resource_pool_allocations(resource_pool_id)
+
+    def create_resource_policy(
         self,
         component_id: UUID,
-        pool_id: UUID,
+        pool_id: Optional[UUID],
         priority: int,
-        reserved: Optional[Dict[str, int]] = None,
-        limit: Optional[Dict[str, int]] = None,
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Create a resource pool subject policy.
+        grants: List[ResourcePolicyGrant],
+        pool: Optional[str] = None,
+    ) -> ResourcePolicyResponse:
+        """Create a resource policy.
 
         Args:
             component_id: The component ID this policy applies to.
             pool_id: The pool ID this policy belongs to.
             priority: The policy priority.
-            reserved: Optional reserved resources by key.
-            limit: Optional resource limits by key.
+            grants: Resource policy grants.
+            pool: The pool name this policy belongs to.
 
         Returns:
             The created policy.
         """
-        request = ResourcePoolSubjectPolicyRequest(
+        request = ResourcePolicyRequest(
             component_id=component_id,
             pool_id=pool_id,
+            pool=pool,
             priority=priority,
-            reserved=reserved,
-            limit=limit,
+            grants=grants,
         )
-        return self.zen_store.create_resource_pool_subject_policy(
-            policy=request
-        )
+        return self.zen_store.create_resource_policy(policy=request)
 
-    def get_resource_pool_subject_policy(
+    def get_resource_policy(
         self, policy_id: UUID, hydrate: bool = True
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Get a resource pool subject policy by ID.
+    ) -> ResourcePolicyResponse:
+        """Get a resource policy by ID.
 
         Args:
             policy_id: The ID of the policy to fetch.
@@ -2466,11 +2609,11 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The requested policy.
         """
-        return self.zen_store.get_resource_pool_subject_policy(
+        return self.zen_store.get_resource_policy(
             policy_id=policy_id, hydrate=hydrate
         )
 
-    def list_resource_pool_subject_policies(
+    def list_resource_policies(
         self,
         sort_by: str = "created",
         page: int = PAGINATION_STARTING_PAGE,
@@ -2484,8 +2627,8 @@ class Client(metaclass=ClientMetaClass):
         component_id: UUIDFilterOption = None,
         priority: IntegerFilterOption = None,
         hydrate: bool = False,
-    ) -> Page[ResourcePoolSubjectPolicyResponse]:
-        """List resource pool subject policies.
+    ) -> Page[ResourcePolicyResponse]:
+        """List resource policies.
 
         Args:
             sort_by: The column to sort by.
@@ -2504,7 +2647,7 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A page of matching policies.
         """
-        filter_model = ResourcePoolSubjectPolicyFilter(
+        filter_model = ResourcePolicyFilter(
             page=page,
             size=size,
             sort_by=sort_by,
@@ -2517,42 +2660,67 @@ class Client(metaclass=ClientMetaClass):
             component_id=component_id,
             priority=priority,
         )
-        return self.zen_store.list_resource_pool_subject_policies(
+        return self.zen_store.list_resource_policies(
             filter_model=filter_model, hydrate=hydrate
         )
 
-    def update_resource_pool_subject_policy(
+    def update_resource_policy(
         self,
         policy_id: UUID,
+        pool_id: Optional[UUID] = None,
+        pool: Optional[str] = None,
+        component_id: Optional[UUID] = None,
         priority: Optional[int] = None,
-        reserved: Optional[Dict[str, int]] = None,
-        limit: Optional[Dict[str, int]] = None,
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Update a resource pool subject policy.
+        grants: Optional[List[ResourcePolicyGrant]] = None,
+    ) -> ResourcePolicyResponse:
+        """Update a resource policy.
 
         Args:
             policy_id: The policy ID.
+            pool_id: Updated pool ID.
+            pool: Updated pool name.
+            component_id: Updated component ID.
             priority: Updated priority.
-            reserved: Updated reserved resources by key.
-            limit: Updated limits by key.
+            grants: Updated full replacement grants.
 
         Returns:
             The updated policy.
         """
-        update = ResourcePoolSubjectPolicyUpdate(
-            priority=priority, reserved=reserved, limit=limit
+        update = ResourcePolicyUpdate(
+            pool_id=pool_id,
+            pool=pool,
+            component_id=component_id,
+            priority=priority,
+            grants=grants,
         )
-        return self.zen_store.update_resource_pool_subject_policy(
+        return self.zen_store.update_resource_policy(
             policy_id=policy_id, update=update
         )
 
-    def delete_resource_pool_subject_policy(self, policy_id: UUID) -> None:
-        """Delete a resource pool subject policy.
+    def delete_resource_policy(self, policy_id: UUID) -> None:
+        """Delete a resource policy.
 
         Args:
             policy_id: The policy ID.
         """
-        self.zen_store.delete_resource_pool_subject_policy(policy_id=policy_id)
+        self.zen_store.delete_resource_policy(policy_id=policy_id)
+
+    def get_resource_request(
+        self, resource_request_id: UUID, hydrate: bool = True
+    ) -> ResourceRequestResponse:
+        """Get a resource request by ID.
+
+        Args:
+            resource_request_id: The resource request ID.
+            hydrate: Whether to include metadata in the response.
+
+        Returns:
+            The requested resource request.
+        """
+        return self.zen_store.get_resource_request(
+            resource_request_id=resource_request_id,
+            hydrate=hydrate,
+        )
 
     # --------------------------------- Flavors --------------------------------
 

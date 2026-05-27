@@ -93,7 +93,8 @@ from zenml.constants import (
     PROJECTS,
     REPLAY,
     RESOLVE,
-    RESOURCE_POOL_SUBJECT_POLICIES,
+    RESOURCE_DESCRIPTORS,
+    RESOURCE_POLICIES,
     RESOURCE_POOLS,
     RESOURCE_REQUESTS,
     RUN_METADATA,
@@ -234,13 +235,19 @@ from zenml.models import (
     ProjectRequest,
     ProjectResponse,
     ProjectUpdate,
+    ResourceDescriptorFilter,
+    ResourceDescriptorRequest,
+    ResourceDescriptorResponse,
+    ResourceDescriptorUpdate,
+    ResourcePolicyFilter,
+    ResourcePolicyRequest,
+    ResourcePolicyResponse,
+    ResourcePolicyUpdate,
+    ResourcePoolAllocation,
     ResourcePoolFilter,
+    ResourcePoolQueueItem,
     ResourcePoolRequest,
     ResourcePoolResponse,
-    ResourcePoolSubjectPolicyFilter,
-    ResourcePoolSubjectPolicyRequest,
-    ResourcePoolSubjectPolicyResponse,
-    ResourcePoolSubjectPolicyUpdate,
     ResourcePoolUpdate,
     ResourceRequestFilter,
     ResourceRequestResponse,
@@ -330,6 +337,7 @@ Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 AnyRequest = TypeVar("AnyRequest", bound=BaseRequest)
 AnyResponse = TypeVar("AnyResponse", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
+AnyModel = TypeVar("AnyModel", bound=BaseModel)
 
 
 class RestZenStoreConfiguration(StoreConfiguration):
@@ -1418,10 +1426,125 @@ class RestZenStore(BaseZenStore):
             route=RESOURCE_POOLS,
         )
 
-    def create_resource_pool_subject_policy(
-        self, policy: ResourcePoolSubjectPolicyRequest
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Create a resource pool subject policy.
+    def create_resource_descriptor(
+        self, descriptor: ResourceDescriptorRequest
+    ) -> ResourceDescriptorResponse:
+        """Create a resource descriptor.
+
+        Args:
+            descriptor: The resource descriptor to create.
+
+        Returns:
+            The created resource descriptor.
+        """
+        return self._create_resource(
+            resource=descriptor,
+            route=RESOURCE_DESCRIPTORS,
+            response_model=ResourceDescriptorResponse,
+        )
+
+    def get_resource_descriptor(
+        self, descriptor_id: UUID
+    ) -> ResourceDescriptorResponse:
+        """Get a resource descriptor by ID.
+
+        Args:
+            descriptor_id: The ID of the descriptor to get.
+
+        Returns:
+            The resource descriptor.
+        """
+        return self._get_resource(
+            resource_id=descriptor_id,
+            route=RESOURCE_DESCRIPTORS,
+            response_model=ResourceDescriptorResponse,
+        )
+
+    def list_resource_descriptors(
+        self, filter_model: ResourceDescriptorFilter
+    ) -> Page[ResourceDescriptorResponse]:
+        """List resource descriptors.
+
+        Args:
+            filter_model: Filter parameters.
+
+        Returns:
+            Matching resource descriptors.
+        """
+        return self._list_paginated_resources(
+            route=RESOURCE_DESCRIPTORS,
+            response_model=ResourceDescriptorResponse,
+            filter_model=filter_model,
+        )
+
+    def update_resource_descriptor(
+        self, descriptor_id: UUID, update: ResourceDescriptorUpdate
+    ) -> ResourceDescriptorResponse:
+        """Update a resource descriptor.
+
+        Args:
+            descriptor_id: The descriptor ID.
+            update: The update to apply.
+
+        Returns:
+            The updated descriptor.
+        """
+        return self._update_resource(
+            resource_id=descriptor_id,
+            resource_update=update,
+            route=RESOURCE_DESCRIPTORS,
+            response_model=ResourceDescriptorResponse,
+        )
+
+    def delete_resource_descriptor(self, descriptor_id: UUID) -> None:
+        """Delete a resource descriptor.
+
+        Args:
+            descriptor_id: The descriptor ID.
+        """
+        self._delete_resource(
+            resource_id=descriptor_id,
+            route=RESOURCE_DESCRIPTORS,
+        )
+
+    def list_resource_pool_queue(
+        self, resource_pool_id: UUID
+    ) -> Page[ResourcePoolQueueItem]:
+        """List queued requests for a resource pool.
+
+        Args:
+            resource_pool_id: The resource pool ID.
+
+        Returns:
+            Queued requests for the pool.
+        """
+        return self._list_paginated_models(
+            route=f"{RESOURCE_POOLS}/{resource_pool_id}/queue",
+            response_model=ResourcePoolQueueItem,
+            filter_model=BaseFilter(),
+        )
+
+    def list_resource_pool_allocations(
+        self, resource_pool_id: UUID
+    ) -> Page[ResourcePoolAllocation]:
+        """List active allocations for a resource pool.
+
+        Args:
+            resource_pool_id: The resource pool ID.
+
+        Returns:
+            Active allocations for the pool.
+        """
+        return self._list_paginated_models(
+            route=f"{RESOURCE_POOLS}/{resource_pool_id}/allocations",
+            response_model=ResourcePoolAllocation,
+            filter_model=BaseFilter(),
+        )
+
+    def create_resource_policy(
+        self, policy: ResourcePolicyRequest
+    ) -> ResourcePolicyResponse:
+        """Create a resource policy.
 
         Args:
             policy: The policy to create.
@@ -1431,54 +1554,54 @@ class RestZenStore(BaseZenStore):
         """
         return self._create_resource(
             resource=policy,
-            route=RESOURCE_POOL_SUBJECT_POLICIES,
-            response_model=ResourcePoolSubjectPolicyResponse,
+            route=RESOURCE_POLICIES,
+            response_model=ResourcePolicyResponse,
         )
 
-    def get_resource_pool_subject_policy(
+    def get_resource_policy(
         self, policy_id: UUID, hydrate: bool = True
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Get a resource pool subject policy by ID.
+    ) -> ResourcePolicyResponse:
+        """Get a resource policy by ID.
 
         Args:
             policy_id: The ID of the policy to get.
-            hydrate: Flag deciding whether to hydrate the output model(s).
+            hydrate: Ignored for Resource Manager-backed policies.
 
         Returns:
             The policy.
         """
         return self._get_resource(
             resource_id=policy_id,
-            route=RESOURCE_POOL_SUBJECT_POLICIES,
-            response_model=ResourcePoolSubjectPolicyResponse,
+            route=RESOURCE_POLICIES,
+            response_model=ResourcePolicyResponse,
             params={"hydrate": hydrate},
         )
 
-    def list_resource_pool_subject_policies(
+    def list_resource_policies(
         self,
-        filter_model: ResourcePoolSubjectPolicyFilter,
+        filter_model: ResourcePolicyFilter,
         hydrate: bool = False,
-    ) -> Page[ResourcePoolSubjectPolicyResponse]:
-        """List resource pool subject policies.
+    ) -> Page[ResourcePolicyResponse]:
+        """List resource policies.
 
         Args:
             filter_model: All filter parameters including pagination params.
-            hydrate: Flag deciding whether to hydrate the output model(s).
+            hydrate: Ignored for Resource Manager-backed policies.
 
         Returns:
             Matching policies.
         """
         return self._list_paginated_resources(
-            route=RESOURCE_POOL_SUBJECT_POLICIES,
-            response_model=ResourcePoolSubjectPolicyResponse,
+            route=RESOURCE_POLICIES,
+            response_model=ResourcePolicyResponse,
             filter_model=filter_model,
             params={"hydrate": hydrate},
         )
 
-    def update_resource_pool_subject_policy(
-        self, policy_id: UUID, update: ResourcePoolSubjectPolicyUpdate
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Update an existing resource pool subject policy.
+    def update_resource_policy(
+        self, policy_id: UUID, update: ResourcePolicyUpdate
+    ) -> ResourcePolicyResponse:
+        """Update an existing resource policy.
 
         Args:
             policy_id: The ID of the policy to update.
@@ -1490,19 +1613,19 @@ class RestZenStore(BaseZenStore):
         return self._update_resource(
             resource_id=policy_id,
             resource_update=update,
-            route=RESOURCE_POOL_SUBJECT_POLICIES,
-            response_model=ResourcePoolSubjectPolicyResponse,
+            route=RESOURCE_POLICIES,
+            response_model=ResourcePolicyResponse,
         )
 
-    def delete_resource_pool_subject_policy(self, policy_id: UUID) -> None:
-        """Delete a resource pool subject policy.
+    def delete_resource_policy(self, policy_id: UUID) -> None:
+        """Delete a resource policy.
 
         Args:
             policy_id: The ID of the policy to delete.
         """
         self._delete_resource(
             resource_id=policy_id,
-            route=RESOURCE_POOL_SUBJECT_POLICIES,
+            route=RESOURCE_POLICIES,
         )
 
     # -------------------- Resource Requests -------------
@@ -5549,6 +5672,42 @@ class RestZenStore(BaseZenStore):
         # The initial page of items will be of type BaseResponseModel
         page_of_items: Page[AnyResponse] = Page.model_validate(body)
         # So these items will be parsed into their correct types like here
+        page_of_items.items = [
+            response_model.model_validate(generic_item)
+            for generic_item in body["items"]
+        ]
+        return page_of_items
+
+    def _list_paginated_models(
+        self,
+        route: str,
+        response_model: Type[AnyModel],
+        filter_model: BaseFilter,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> Page[AnyModel]:
+        """Retrieve a page of Pydantic models from a REST endpoint.
+
+        Args:
+            route: The resource REST API route to use.
+            response_model: Model to use to serialize the response body.
+            filter_model: The filter model to use for the list query.
+            params: Optional query parameters to pass to the endpoint.
+
+        Returns:
+            Page of retrieved models matching the filter criteria.
+
+        Raises:
+            ValueError: If the value returned by the server is not a list.
+        """
+        params = params or {}
+        params.update(filter_model.model_dump(exclude_none=True))
+        body = self.get(route, params=params)
+        if not isinstance(body, dict):
+            raise ValueError(
+                f"Bad API Response. Expected list, got {type(body)}"
+            )
+
+        page_of_items: Page[AnyModel] = Page.model_validate(body)
         page_of_items.items = [
             response_model.model_validate(generic_item)
             for generic_item in body["items"]
