@@ -394,26 +394,11 @@ class BaseOrchestrator(StackComponent, ABC):
 
                         combined_environment = base_environment.copy()
                         combined_environment.update(step_environment)
-
-                        # Expose the step's runtime image to step code so the
-                        # Sandbox STEP_IMAGE sentinel can reuse it. Only set
-                        # for containerized orchestrators; non-containerized
-                        # orchestrators don't have an image concept.
-                        get_image = getattr(self, "get_image", None)
-                        if callable(get_image):
-                            try:
-                                combined_environment[
-                                    "ZENML_ACTIVE_STEP_IMAGE"
-                                ] = get_image(
-                                    snapshot=snapshot, step_name=invocation_id
-                                )
-                            except Exception as e:
-                                logger.debug(
-                                    "Could not resolve step image for "
-                                    "ZENML_ACTIVE_STEP_IMAGE: %s",
-                                    e,
-                                )
-
+                        self._inject_active_step_image_env(
+                            combined_environment,
+                            snapshot=snapshot,
+                            step_name=invocation_id,
+                        )
                         step_environments[invocation_id] = combined_environment
 
                     submission_result = self.submit_pipeline(
@@ -707,6 +692,47 @@ class BaseOrchestrator(StackComponent, ABC):
             return False
 
         return not step.config.resource_settings.empty
+
+    def _inject_active_step_image_env(
+        self,
+        environment: Dict[str, str],
+        *,
+        snapshot: "PipelineSnapshotResponse",
+        step_name: str,
+    ) -> None:
+        """Exports the step's runtime image as an env var.
+
+        Sets ``ZENML_ACTIVE_STEP_IMAGE`` so the Sandbox component's
+        ``STEP_IMAGE`` sentinel can resolve to the image this step is
+        running in. Skips silently for non-containerized orchestrators
+        (no image concept) and logs at debug if the image lookup itself
+        fails.
+
+        Only effective on the static ``submit_pipeline`` path. Dynamic
+        pipelines and the legacy ``prepare_or_run_pipeline`` path don't
+        call this — see plan.md "Out of scope".
+
+        Args:
+            environment: Mutable env dict to inject into.
+            snapshot: The pipeline snapshot the step belongs to.
+            step_name: The step's invocation id.
+        """
+        from zenml.orchestrators.containerized_orchestrator import (
+            ContainerizedOrchestrator,
+        )
+
+        if not isinstance(self, ContainerizedOrchestrator):
+            return
+
+        try:
+            environment["ZENML_ACTIVE_STEP_IMAGE"] = self.get_image(
+                snapshot=snapshot, step_name=step_name
+            )
+        except Exception as e:
+            logger.debug(
+                "Could not resolve step image for ZENML_ACTIVE_STEP_IMAGE: %s",
+                e,
+            )
 
     def _prepare_run(self, snapshot: "PipelineSnapshotResponse") -> None:
         """Prepares a run.

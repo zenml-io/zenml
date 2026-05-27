@@ -26,6 +26,7 @@ from typing import (
     Generator,
     Iterator,
     List,
+    Literal,
     Optional,
     Type,
     Union,
@@ -259,7 +260,10 @@ class BaseSandboxSettings(BaseSettings):
         description="Image for the Session. None → flavor default; the "
         "sentinel STEP_IMAGE → image the current ZenML step is running in "
         "(warns and falls back to flavor default if not containerized); "
-        "any other string → exact image URI.",
+        "any other string → exact image URI. STEP_IMAGE resolution only "
+        "fires for static containerized pipelines (the non-dynamic submit "
+        "path); dynamic pipelines and the legacy prepare_or_run_pipeline "
+        "path silently fall back to the flavor default.",
     )
     environment: Dict[str, str] = Field(
         default_factory=dict,
@@ -272,7 +276,10 @@ class BaseSandboxSettings(BaseSettings):
         default=False,
         description="If True, propagates the step process's full local env "
         "(including any resolved ZenML secrets present) into the Session. "
-        "Convenient for prototyping; off by default for security.",
+        "Layered FIRST in the env merge — explicit component env, "
+        "component secrets, and per-step settings.environment all override "
+        "values copied from the local env. Convenient for prototyping; off "
+        "by default for security.",
     )
     timeout_seconds: Optional[int] = Field(
         default=None,
@@ -401,7 +408,9 @@ class BaseSandbox(StackComponent, ABC):
 
     @staticmethod
     def forward_lines(
-        lines: Iterator[str], *, stream: str = "stdout"
+        lines: Iterator[str],
+        *,
+        stream: Literal["stdout", "stderr"] = "stdout",
     ) -> Iterator[str]:
         """Side-effects each yielded line through the Python logger.
 
@@ -426,16 +435,18 @@ class BaseSandbox(StackComponent, ABC):
     ) -> Dict[str, str]:
         """Merges env vars from all sources for a new Session.
 
-        Order (later sources override earlier on key collision):
+        Order (later sources override earlier on key collision — most-specific
+        wins, matching ``get_runtime_environment`` precedent):
 
-        1. ``StackComponent.environment`` (component-level explicit env vars).
-        2. Each UUID in ``StackComponent.secrets`` resolved via the ZenML
+        1. ``os.environ`` of the step process, if ``settings.copy_local_env``
+           is ``True``. Layered first so explicit configuration always wins.
+        2. ``StackComponent.environment`` (component-level explicit env vars).
+        3. Each UUID in ``StackComponent.secrets`` resolved via the ZenML
            secret store and exploded into env vars (every key in the secret
            becomes one ``$KEY=value`` entry).
-        3. ``settings.environment`` — per-step overrides. Values may be
-           ZenML ``{{secret_name.key}}`` references, resolved here.
-        4. ``os.environ`` of the step process, if
-           ``settings.copy_local_env`` is ``True``.
+        4. ``settings.environment`` — per-step overrides. Values may be ZenML
+           ``{{secret_name.key}}`` references, resolved here. Highest
+           precedence.
 
         Args:
             settings: Effective per-step settings, or ``None`` (use defaults).
@@ -449,10 +460,20 @@ class BaseSandbox(StackComponent, ABC):
         from zenml.utils import secret_utils
 
         merged: Dict[str, str] = {}
+
+        # 1. Local env first — explicit configuration below will overwrite.
+        if settings is not None and settings.copy_local_env:
+            merged.update(os.environ)
+
+        # 2. Component-level explicit env vars.
         merged.update(self.environment or {})
 
-        if self.secrets:
+        # 3. Component-level secrets exploded.
+        client: Optional["Client"] = None
+        if self.secrets or (settings is not None and settings.environment):
             client = Client()
+
+        if self.secrets and client is not None:
             for secret_id in self.secrets:
                 try:
                     secret = client.get_secret(secret_id)
@@ -466,8 +487,13 @@ class BaseSandbox(StackComponent, ABC):
                     continue
                 merged.update(secret.secret_values)
 
-        if settings is not None and settings.environment:
-            client = Client()
+        # 4. Per-step overrides (highest precedence). Secret references
+        # in values get resolved against the secret store.
+        if (
+            settings is not None
+            and settings.environment
+            and client is not None
+        ):
             for key, value in settings.environment.items():
                 if secret_utils.is_secret_reference(value):
                     ref = secret_utils.parse_secret_reference(value)
@@ -486,9 +512,6 @@ class BaseSandbox(StackComponent, ABC):
                         )
                 else:
                     merged[key] = value
-
-        if settings is not None and settings.copy_local_env:
-            merged.update(os.environ)
 
         return merged
 

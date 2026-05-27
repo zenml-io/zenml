@@ -294,7 +294,7 @@ class TestResolveSessionEnvironment:
             merged = sb._resolve_session_environment(settings)
         assert merged == {"OK": "plain"}
 
-    def test_copy_local_env_layered_last(
+    def test_copy_local_env_fills_in_non_collisions(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         monkeypatch.setenv("FROM_LOCAL", "local-val")
@@ -303,6 +303,31 @@ class TestResolveSessionEnvironment:
         merged = sb._resolve_session_environment(settings)
         assert merged["COMPONENT"] == "yes"
         assert merged["FROM_LOCAL"] == "local-val"
+
+    def test_component_env_wins_over_copy_local_env(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Explicit component-level env must not be silently clobbered by
+        # the local-env layer — even when the same key exists locally.
+        monkeypatch.setenv("API_KEY", "from-local-env")
+        sb = _make_sandbox(environment={"API_KEY": "from-component"})
+        settings = BaseSandboxSettings(copy_local_env=True)
+        merged = sb._resolve_session_environment(settings)
+        assert merged["API_KEY"] == "from-component"
+
+    def test_settings_env_wins_over_copy_local_env(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Per-step settings.environment is the most-specific layer and must
+        # win over copy_local_env even when both set the same key.
+        monkeypatch.setenv("DEBUG", "from-local-env")
+        sb = _make_sandbox()
+        settings = BaseSandboxSettings(
+            environment={"DEBUG": "from-step"},
+            copy_local_env=True,
+        )
+        merged = sb._resolve_session_environment(settings)
+        assert merged["DEBUG"] == "from-step"
 
 
 class TestResolveForwardLogs:

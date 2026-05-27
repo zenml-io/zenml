@@ -27,6 +27,101 @@ from zenml.orchestrators import BaseOrchestrator
         (None, {"resources": ResourceSettings(cpu_count=1)}, True),
     ],
 )
+def _make_local_orchestrator():
+    """Build a LocalOrchestrator without going through Stack/Client."""
+    from datetime import datetime
+    from uuid import uuid4
+
+    from zenml.enums import StackComponentType
+    from zenml.orchestrators.local.local_orchestrator import (
+        LocalOrchestrator,
+        LocalOrchestratorConfig,
+    )
+
+    return LocalOrchestrator(
+        name="local",
+        id=uuid4(),
+        config=LocalOrchestratorConfig(),
+        flavor="local",
+        type=StackComponentType.ORCHESTRATOR,
+        user=None,
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+def _make_local_docker_orchestrator():
+    """Build a LocalDockerOrchestrator (concrete ContainerizedOrchestrator)."""
+    from datetime import datetime
+    from uuid import uuid4
+
+    from zenml.enums import StackComponentType
+    from zenml.orchestrators.local_docker.local_docker_orchestrator import (
+        LocalDockerOrchestrator,
+        LocalDockerOrchestratorConfig,
+    )
+
+    return LocalDockerOrchestrator(
+        name="local-docker",
+        id=uuid4(),
+        config=LocalDockerOrchestratorConfig(),
+        flavor="local-docker",
+        type=StackComponentType.ORCHESTRATOR,
+        user=None,
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+class TestInjectActiveStepImageEnv:
+    """Tests for BaseOrchestrator._inject_active_step_image_env.
+
+    Validates the contract used by the Sandbox ``STEP_IMAGE`` sentinel:
+    containerized orchestrators export the env var; non-containerized
+    ones skip silently; image-lookup failures degrade to a debug log.
+    """
+
+    def test_skips_for_non_containerized_orchestrator(self):
+        from unittest.mock import MagicMock
+
+        env = {"PRE_EXISTING": "1"}
+        orchestrator = _make_local_orchestrator()
+        orchestrator._inject_active_step_image_env(
+            env, snapshot=MagicMock(), step_name="my_step"
+        )
+        assert "ZENML_ACTIVE_STEP_IMAGE" not in env
+        assert env == {"PRE_EXISTING": "1"}
+
+    def test_sets_for_containerized_orchestrator(self):
+        from unittest.mock import MagicMock, patch
+
+        env = {}
+        orchestrator = _make_local_docker_orchestrator()
+        with patch.object(
+            type(orchestrator), "get_image", return_value="my-image:v1"
+        ):
+            orchestrator._inject_active_step_image_env(
+                env, snapshot=MagicMock(), step_name="my_step"
+            )
+        assert env["ZENML_ACTIVE_STEP_IMAGE"] == "my-image:v1"
+
+    def test_swallows_get_image_failure(self):
+        from unittest.mock import MagicMock, patch
+
+        env = {}
+        orchestrator = _make_local_docker_orchestrator()
+        with patch.object(
+            type(orchestrator),
+            "get_image",
+            side_effect=RuntimeError("no build"),
+        ):
+            # Must not raise; falls through to flavor default at sandbox side.
+            orchestrator._inject_active_step_image_env(
+                env, snapshot=MagicMock(), step_name="my_step"
+            )
+        assert "ZENML_ACTIVE_STEP_IMAGE" not in env
+
+
 def test_resource_required(step_operator, settings, resources_required):
     """Tests whether the resource requirements detection method works as
     expected."""
