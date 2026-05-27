@@ -76,7 +76,14 @@ class LocalSandboxSettings(BaseSandboxSettings):
     is accepted but ignored — there is no image concept locally; a
     warning is emitted at session creation if a non-None / non-STEP_IMAGE
     value is set.
+
+    Overrides ``copy_local_env`` default to ``True``: LocalSandbox runs
+    in the same shell environment as the step (no isolation), so
+    propagating PATH and friends matches user expectations. Explicit
+    settings still override.
     """
+
+    copy_local_env: bool = True
 
 
 class LocalSandboxProcess(SandboxProcess):
@@ -335,6 +342,8 @@ class LocalSandbox(BaseSandbox):
         Returns:
             The effective settings for this Session.
         """
+        if override is None:
+            override = self.pull_step_settings()
         if override is None:
             return LocalSandboxSettings()
         if isinstance(override, LocalSandboxSettings):
