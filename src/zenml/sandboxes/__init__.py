@@ -24,14 +24,26 @@ from zenml.sandboxes.base_sandbox import (
     SandboxProcess,
     SandboxSession,
 )
+from zenml.sandboxes.local_sandbox import (
+    LOCAL_SANDBOX_FLAVOR,
+    LocalSandbox,
+    LocalSandboxConfig,
+    LocalSandboxFlavor,
+    LocalSandboxSettings,
+)
 
 __all__ = [
+    "LOCAL_SANDBOX_FLAVOR",
     "STEP_IMAGE",
     "BaseSandbox",
     "BaseSandboxConfig",
     "BaseSandboxFlavor",
     "BaseSandboxSettings",
     "BaseSandboxSnapshot",
+    "LocalSandbox",
+    "LocalSandboxConfig",
+    "LocalSandboxFlavor",
+    "LocalSandboxSettings",
     "SandboxExecError",
     "SandboxProcess",
     "SandboxSession",

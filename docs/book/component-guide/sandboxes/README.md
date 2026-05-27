@@ -117,7 +117,9 @@ A first-class auth-injecting outbound proxy (the pattern shipped by LangSmith, V
 
 ## Available flavors
 
-Concrete Sandbox flavors (Modal, Agent Substrate, E2B, Daytona, ...) ship in their own integration packages and will be listed here as they land.
+- **[Local](local.md)** — subprocess-based; **no isolation**; built-in. Intended for examples, unit tests, and development against the abstraction.
+
+Additional flavors that boot real isolated execution environments (Modal, Agent Substrate, E2B, Daytona, ...) ship in their own integration packages and will be listed here as they land.
 
 ## Develop a custom Sandbox
 
