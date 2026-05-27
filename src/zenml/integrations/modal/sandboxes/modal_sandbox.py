@@ -270,10 +270,11 @@ class ModalSandboxSession(SandboxSession):
         """Records sandbox session id + Modal dashboard URL on the current step.
 
         Silently no-ops when called outside a step context (e.g. from
-        a script that uses the sandbox directly). The dashboard URL
-        comes from ``Sandbox.get_dashboard_url()``; if the Modal SDK
-        version doesn't support it we just log the id.
+        a script that uses the sandbox directly). The dashboard URL is
+        typed as ``Uri`` so the ZenML dashboard renders it as a
+        clickable link rather than plain text.
         """
+        from zenml.metadata.metadata_types import Uri
         from zenml.utils.metadata_utils import log_metadata
 
         metadata: Dict[str, Any] = {
@@ -283,7 +284,7 @@ class ModalSandboxSession(SandboxSession):
         try:
             url = self._sandbox.get_dashboard_url()
             if url:
-                metadata["sandbox_dashboard_url"] = url
+                metadata["sandbox_dashboard_url"] = Uri(url)
         except Exception as e:
             logger.debug(
                 "Could not resolve Modal sandbox dashboard URL: %s", e
