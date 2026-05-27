@@ -23,6 +23,7 @@ from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
 MODAL_STEP_OPERATOR_FLAVOR = "modal"
+MODAL_SANDBOX_FLAVOR = "modal"
 
 
 class ModalIntegration(Integration):
@@ -38,8 +39,11 @@ class ModalIntegration(Integration):
         Returns:
             List of new stack component flavors.
         """
-        from zenml.integrations.modal.flavors import ModalStepOperatorFlavor
+        from zenml.integrations.modal.flavors import (
+            ModalSandboxFlavor,
+            ModalStepOperatorFlavor,
+        )
 
-        return [ModalStepOperatorFlavor]
+        return [ModalStepOperatorFlavor, ModalSandboxFlavor]
 
 
