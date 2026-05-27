@@ -23,19 +23,43 @@ source .venv/bin/activate
 uv pip install -r requirements.txt
 
 zenml init
-zenml sandbox register modal-sb --flavor=modal
+```
+
+Create a ZenML secret carrying your OpenAI key. **Important:** the secret-key casing must be `OPENAI_API_KEY` (uppercase), because the OpenAI SDK reads from that exact env var name — and ZenML exposes secret keys verbatim. Don't use `zenml secret create openai --openai_api_key=...` (the click flag gets normalized to lowercase). Use the `-v` JSON form instead:
+
+```bash
+zenml secret create openai -v '{"OPENAI_API_KEY": "sk-..."}'
+```
+
+Then register the sandbox and stack:
+
+```bash
+zenml sandbox register modal-sb --flavor=modal --secret=openai
 zenml stack register sandbox-stack -o default -a default --sandbox modal-sb
 zenml stack set sandbox-stack
 ```
 
+If you're using a remote artifact store (S3 / GCS / Azure Blob), point `-a` at that instead. The agent step runs locally against your `default` orchestrator; only the Sandbox boots on Modal.
+
+You also need to authenticate the Modal CLI on your machine (`modal token new` or `modal token set --token-id ... --token-secret ...`). The Modal sandbox component currently does **not** carry the Modal auth itself — it relies on the agent process's local `~/.modal.toml` or `MODAL_TOKEN_ID` / `MODAL_TOKEN_SECRET` env vars. This is a known limitation; see [`plan.md`](../../src/zenml/sandboxes/plan.md) "Out of scope".
+
 ## Run
 
 ```bash
-export OPENAI_API_KEY=sk-...
 python run.py
 ```
 
-Default query: *"What's the sum of the first 100 prime numbers? Write Python to compute it."* The agent writes a sieve, runs it in the sandbox, parses the stdout, and answers in natural language. Pass your own:
+Default query: *"What's the sum of the first 100 prime numbers? Write Python to compute it."* The agent writes a sieve, runs it in the sandbox, parses the stdout, and answers in natural language.
+
+Inspect the result either through the [ZenML dashboard](https://staging.cloud.zenml.io/) (link prints to stdout on each run) or by loading the artifact:
+
+```python
+from zenml.client import Client
+run = Client().get_pipeline_run("<run-id-from-stdout>")
+print(run.steps["agent_step"].outputs["agent_answer"][0].load())
+```
+
+Pass your own query:
 
 ```bash
 python -c "from run import sandbox_pydantic_ai_pipeline; sandbox_pydantic_ai_pipeline(query='Plot a sine wave and tell me the peak value.')"
