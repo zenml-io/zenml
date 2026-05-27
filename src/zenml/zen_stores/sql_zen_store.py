@@ -293,14 +293,21 @@ from zenml.models import (
     ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectUpdate,
+    ResourceDescriptorFilter,
+    ResourceDescriptorRequest,
+    ResourceDescriptorResponse,
+    ResourceDescriptorUpdate,
+    ResourcePolicyFilter,
+    ResourcePolicyRequest,
+    ResourcePolicyResponse,
+    ResourcePolicyUpdate,
+    ResourcePoolAllocation,
     ResourcePoolFilter,
+    ResourcePoolQueueItem,
     ResourcePoolRequest,
     ResourcePoolResponse,
-    ResourcePoolSubjectPolicyFilter,
-    ResourcePoolSubjectPolicyRequest,
-    ResourcePoolSubjectPolicyResponse,
-    ResourcePoolSubjectPolicyUpdate,
     ResourcePoolUpdate,
+    ResourceRequestDemand,
     ResourceRequestFilter,
     ResourceRequestRequest,
     ResourceRequestResponse,
@@ -3921,6 +3928,11 @@ class SqlZenStore(BaseZenStore):
                     f"from all stacks."
                 )
 
+            if self.resource_pools_enabled:
+                self.resource_pools.delete_component_subject(
+                    session=session, component_id=component_id
+                )
+
             session.delete(stack_component)
             session.commit()
 
@@ -3969,6 +3981,40 @@ class SqlZenStore(BaseZenStore):
                 f"with name '{name}': Found an existing "
                 f"component with the same name and type."
             )
+
+    # -------------------- Resource Descriptors -------------
+
+    def create_resource_descriptor(
+        self, descriptor: ResourceDescriptorRequest
+    ) -> ResourceDescriptorResponse:
+        """Create a resource descriptor."""
+        with Session(self.engine) as session:
+            self._set_request_user_id(descriptor, session)
+        return self.resource_pools.create_resource_descriptor(descriptor)
+
+    def get_resource_descriptor(
+        self, descriptor_id: UUID
+    ) -> ResourceDescriptorResponse:
+        """Get a resource descriptor by ID."""
+        return self.resource_pools.get_resource_descriptor(descriptor_id)
+
+    def list_resource_descriptors(
+        self, filter_model: ResourceDescriptorFilter
+    ) -> Page[ResourceDescriptorResponse]:
+        """List resource descriptors."""
+        return self.resource_pools.list_resource_descriptors(filter_model)
+
+    def update_resource_descriptor(
+        self, descriptor_id: UUID, update: ResourceDescriptorUpdate
+    ) -> ResourceDescriptorResponse:
+        """Update a resource descriptor."""
+        return self.resource_pools.update_resource_descriptor(
+            descriptor_id, update
+        )
+
+    def delete_resource_descriptor(self, descriptor_id: UUID) -> None:
+        """Delete a resource descriptor."""
+        self.resource_pools.delete_resource_descriptor(descriptor_id)
 
     # -------------------- Resource Pools -------------
 
@@ -4044,10 +4090,24 @@ class SqlZenStore(BaseZenStore):
         """
         self.resource_pools.delete_resource_pool(resource_pool_id)
 
-    def create_resource_pool_subject_policy(
-        self, policy: ResourcePoolSubjectPolicyRequest
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Create a resource pool subject policy.
+    def list_resource_pool_queue(
+        self, resource_pool_id: UUID
+    ) -> Page[ResourcePoolQueueItem]:
+        """List queued requests for a resource pool."""
+        return self.resource_pools.list_resource_pool_queue(resource_pool_id)
+
+    def list_resource_pool_allocations(
+        self, resource_pool_id: UUID
+    ) -> Page[ResourcePoolAllocation]:
+        """List active allocations for a resource pool."""
+        return self.resource_pools.list_resource_pool_allocations(
+            resource_pool_id
+        )
+
+    def create_resource_policy(
+        self, policy: ResourcePolicyRequest
+    ) -> ResourcePolicyResponse:
+        """Create a resource policy.
 
         Args:
             policy: The policy to create.
@@ -4055,46 +4115,46 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The created policy.
         """
-        return self.resource_pools.create_resource_pool_subject_policy(policy)
+        return self.resource_pools.create_resource_policy(policy)
 
-    def get_resource_pool_subject_policy(
+    def get_resource_policy(
         self, policy_id: UUID, hydrate: bool = True
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Get a resource pool subject policy by ID.
+    ) -> ResourcePolicyResponse:
+        """Get a resource policy by ID.
 
         Args:
             policy_id: The ID of the policy to get.
-            hydrate: Whether to include metadata fields.
+            hydrate: Ignored for Resource Manager-backed policies.
 
         Returns:
             The requested policy.
         """
-        return self.resource_pools.get_resource_pool_subject_policy(
+        return self.resource_pools.get_resource_policy(
             policy_id, hydrate=hydrate
         )
 
-    def list_resource_pool_subject_policies(
+    def list_resource_policies(
         self,
-        filter_model: ResourcePoolSubjectPolicyFilter,
+        filter_model: ResourcePolicyFilter,
         hydrate: bool = False,
-    ) -> Page[ResourcePoolSubjectPolicyResponse]:
-        """List resource pool subject policies.
+    ) -> Page[ResourcePolicyResponse]:
+        """List resource policies.
 
         Args:
             filter_model: All filter parameters including pagination params.
-            hydrate: Whether to include metadata fields.
+            hydrate: Ignored for Resource Manager-backed policies.
 
         Returns:
             Matching policies.
         """
-        return self.resource_pools.list_resource_pool_subject_policies(
+        return self.resource_pools.list_resource_policies(
             filter_model, hydrate=hydrate
         )
 
-    def update_resource_pool_subject_policy(
-        self, policy_id: UUID, update: ResourcePoolSubjectPolicyUpdate
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Update an existing resource pool subject policy.
+    def update_resource_policy(
+        self, policy_id: UUID, update: ResourcePolicyUpdate
+    ) -> ResourcePolicyResponse:
+        """Update an existing resource policy.
 
         Args:
             policy_id: The ID of the policy to update.
@@ -4103,17 +4163,15 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The updated policy.
         """
-        return self.resource_pools.update_resource_pool_subject_policy(
-            policy_id, update
-        )
+        return self.resource_pools.update_resource_policy(policy_id, update)
 
-    def delete_resource_pool_subject_policy(self, policy_id: UUID) -> None:
-        """Delete a resource pool subject policy.
+    def delete_resource_policy(self, policy_id: UUID) -> None:
+        """Delete a resource policy.
 
         Args:
             policy_id: The ID of the policy to delete.
         """
-        self.resource_pools.delete_resource_pool_subject_policy(policy_id)
+        self.resource_pools.delete_resource_policy(policy_id)
 
     # -------------------- Resource Requests -------------
 
@@ -11900,8 +11958,15 @@ class SqlZenStore(BaseZenStore):
                 }
                 and step_run.resource_requester
             ):
-                requested_resources = step_config.config.resource_settings.merged_requested_resources()
+                resource_settings = step_config.config.resource_settings
+                requested_resources = (
+                    resource_settings.merged_requested_resources()
+                )
                 requested_resources["step_run"] = 1
+                demands = resource_settings.merged_resource_demands()
+                demands.append(
+                    ResourceRequestDemand(resource="step_run", quantity=1)
+                )
 
                 request = self.resource_pools.create_resource_request(
                     session=session,
@@ -11909,8 +11974,9 @@ class SqlZenStore(BaseZenStore):
                         user=step_run.user,
                         component_id=step_run.resource_requester,
                         step_run_id=step_schema.id,
+                        demands=demands,
                         requested_resources=requested_resources,
-                        preemptible=step_config.config.resource_settings.preemptible,
+                        reclaim_tolerance=resource_settings.reclaim_tolerance,
                     ),
                 )
                 if (

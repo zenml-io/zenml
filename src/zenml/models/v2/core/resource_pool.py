@@ -14,26 +14,15 @@
 """Models representing resource pools."""
 
 from datetime import datetime
-from typing import (
-    TYPE_CHECKING,
-    ClassVar,
-    Dict,
-    List,
-    Optional,
-    TypeVar,
-)
+from typing import Any, ClassVar, List, Optional, Union
+from uuid import UUID
 
-from pydantic import (
-    BaseModel,
-    Field,
-    NonNegativeInt,
-    PositiveInt,
-    model_validator,
-)
+from pydantic import ConfigDict, Field, NonNegativeInt, PositiveInt
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import StringFilterOption
+from zenml.models.v2.base.base import BaseZenModel
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
     UserScopedRequest,
@@ -42,40 +31,71 @@ from zenml.models.v2.base.scoped import (
     UserScopedResponseMetadata,
     UserScopedResponseResources,
 )
-
-if TYPE_CHECKING:
-    from zenml.models.v2.core.resource_request import ResourceRequestResponse
-    from zenml.zen_stores.schemas import BaseSchema
-
-    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
+from zenml.utils.enum_utils import StrEnum
 
 
-class ResourcePoolAllocation(BaseModel):
-    """Resource pool allocation."""
+class ResourcePoolReclaimable(StrEnum):
+    """How safely capacity on a resource pool class can be reclaimed."""
 
-    request: "ResourceRequestResponse" = Field(
-        title="The request that is allocated to the resource pool.",
+    NEVER = "never"
+    COORDINATED = "coordinated"
+    UNSAFE = "unsafe"
+
+
+class ResourcePoolCapacityClass(BaseZenModel):
+    """Capacity class entry for a resource pool."""
+
+    resource_id: Optional[UUID] = Field(
+        default=None,
+        title="The resource descriptor ID.",
     )
-    priority: Optional[int] = Field(
-        title="The priority of the component in the resource pool.",
+    resource: Optional[str] = Field(
+        default=None,
+        title="The resource descriptor name.",
+        max_length=STR_FIELD_MAX_LENGTH,
     )
-    allocated_at: datetime = Field(
-        title="The time the resource pool was allocated.",
+    class_name: str = Field(
+        alias="class",
+        serialization_alias="class",
+        title="The capacity class name.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    quantity: PositiveInt = Field(title="The declared capacity quantity.")
+    rank: int = Field(title="The precedence rank for this capacity class.")
+    reclaimable: ResourcePoolReclaimable = Field(
+        title="The capacity reclaim behavior."
+    )
+    attributes: dict[str, Any] = Field(
+        default_factory=dict,
+        title="Metadata for matching and display.",
+    )
+    subject_settings: list[dict[str, Any]] = Field(
+        default_factory=list,
+        title="Resource Manager subject settings snapshots.",
+        exclude=True,
     )
 
+    model_config = ConfigDict(populate_by_name=True)
 
-class ResourcePoolQueueItem(BaseModel):
-    """Resource pool queue item."""
 
-    request: "ResourceRequestResponse" = Field(
-        title="The request that is queued for the resource pool.",
+class ResourcePoolLedgerOccupied(BaseZenModel):
+    """Occupied resource pool capacity entry."""
+
+    resource_id: UUID = Field(title="The resource descriptor ID.")
+    resource: Optional[str] = Field(
+        default=None,
+        title="The resource descriptor name.",
+        max_length=STR_FIELD_MAX_LENGTH,
     )
-    priority: int = Field(
-        title="The priority of the request in the resource pool.",
+    class_name: str = Field(
+        alias="class",
+        serialization_alias="class",
+        title="The capacity class name.",
+        max_length=STR_FIELD_MAX_LENGTH,
     )
+    quantity: NonNegativeInt = Field(title="The occupied quantity.")
 
-
-# ------------------ Request Model ------------------
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class ResourcePoolRequest(UserScopedRequest):
@@ -89,53 +109,48 @@ class ResourcePoolRequest(UserScopedRequest):
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    capacity: Dict[str, PositiveInt] = Field(
-        title="The capacity of the resource pool.",
+    capacity: list[ResourcePoolCapacityClass] = Field(
+        title="The full capacity declaration for the resource pool.",
+        min_length=1,
     )
-
-    @model_validator(mode="after")
-    def _validate_capacity(self) -> "ResourcePoolRequest":
-        if not self.capacity:
-            raise ValueError(
-                "Resource pools with no capacity are not allowed."
-            )
-
-        return self
-
-
-# ------------------ Update Model ------------------
 
 
 class ResourcePoolUpdate(BaseUpdate):
     """Update model for resource pools."""
 
+    name: Optional[str] = Field(
+        title="The new resource pool name.",
+        max_length=STR_FIELD_MAX_LENGTH,
+        default=None,
+    )
     description: Optional[str] = Field(
         title="The description of the resource pool",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    capacity: Optional[Dict[str, NonNegativeInt]] = Field(
-        title="The capacity of the resource pool.",
-        description="The capacity of the resource pool. Setting a value to 0 "
-        "will remove the resource from the pool.",
+    clear_description: bool = Field(
+        default=False,
+        title="Whether to clear the resource pool description.",
+    )
+    capacity: Optional[list[ResourcePoolCapacityClass]] = Field(
+        title="The full replacement capacity declaration.",
         default=None,
     )
-
-
-# ------------------ Response Model ------------------
 
 
 class ResourcePoolResponseBody(UserScopedResponseBody):
     """Response body for resource pools."""
 
-    queue_length: NonNegativeInt = Field(
-        title="The number of queued requests for the resource pool.",
+    capacity: list[ResourcePoolCapacityClass] = Field(
+        title="The full capacity declaration for the resource pool.",
     )
-    capacity: Dict[str, int] = Field(
-        title="The capacity of the resource pool.",
-    )
-    occupied_resources: Dict[str, int] = Field(
+    occupied_resources: list[ResourcePoolLedgerOccupied] = Field(
+        default_factory=list,
         title="The occupied resources of the resource pool.",
+    )
+    queue_length: NonNegativeInt = Field(
+        default=0,
+        title="The number of queued requests for the resource pool.",
     )
 
 
@@ -143,18 +158,9 @@ class ResourcePoolResponseMetadata(UserScopedResponseMetadata):
     """Response metadata for resource pools."""
 
     description: Optional[str] = Field(
-        default="",
+        default=None,
         title="The description of the resource pool",
         max_length=STR_FIELD_MAX_LENGTH,
-    )
-
-    active_requests: List["ResourcePoolAllocation"] = Field(
-        title="The active allocations for the resource pool.",
-        default=[],
-    )
-    queued_requests: List["ResourcePoolQueueItem"] = Field(
-        title="The queued requests for the resource pool.",
-        default=[],
     )
 
 
@@ -179,7 +185,7 @@ class ResourcePoolResponse(
         """Get the hydrated version of this resource pool.
 
         Returns:
-            The hydrated version of this resource pool.
+            The current resource pool fetched from the configured ZenML store.
         """
         from zenml.client import Client
 
@@ -187,60 +193,84 @@ class ResourcePoolResponse(
 
     @property
     def description(self) -> Optional[str]:
-        """The `description` property.
+        """Resource pool description.
 
         Returns:
-            the value of the property.
+            The optional resource pool description.
         """
         return self.get_metadata().description
 
     @property
-    def active_requests(self) -> List["ResourcePoolAllocation"]:
-        """The `active_requests` property.
+    def capacity(self) -> list[ResourcePoolCapacityClass]:
+        """Resource pool capacity declaration.
 
         Returns:
-            the value of the property.
-        """
-        return self.get_metadata().active_requests
-
-    @property
-    def queued_requests(self) -> List["ResourcePoolQueueItem"]:
-        """The `queued_requests` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().queued_requests
-
-    @property
-    def capacity(self) -> Dict[str, int]:
-        """The `capacity` property.
-
-        Returns:
-            the value of the property.
+            The resource pool capacity classes.
         """
         return self.get_body().capacity
 
     @property
-    def occupied_resources(self) -> Dict[str, int]:
-        """The `occupied_resources` property.
+    def occupied_resources(self) -> list[ResourcePoolLedgerOccupied]:
+        """Occupied resource pool capacity.
 
         Returns:
-            the value of the property.
+            The occupied resource quantities reported by the Resource Manager.
         """
         return self.get_body().occupied_resources
 
     @property
     def queue_length(self) -> int:
-        """The `queue_length` property.
+        """Resource pool queue length.
 
         Returns:
-            the value of the property.
+            The number of queued requests reported by the Resource Manager.
         """
         return self.get_body().queue_length
 
 
-# ------------------ Filter Model ------------------
+class ResourcePoolQueueItem(BaseZenModel):
+    """Queue item returned by explicit resource pool queue reads."""
+
+    id: UUID = Field(title="The unique queue item ID.")
+    request_id: UUID = Field(title="The queued resource request ID.")
+    pool_id: UUID = Field(title="The resource pool ID.")
+    policy_id: UUID = Field(title="The resource policy ID.")
+    priority: int = Field(title="The priority snapshot for this queue item.")
+    enqueued_at: datetime = Field(title="The queue insertion timestamp.")
+
+
+class ResourcePoolAllocation(BaseZenModel):
+    """Allocation returned by explicit resource pool allocation reads."""
+
+    id: UUID = Field(title="The unique allocation ID.")
+    request_id: UUID = Field(title="The allocated resource request ID.")
+    pool_id: UUID = Field(title="The resource pool ID.")
+    resource_id: UUID = Field(title="The allocated resource descriptor ID.")
+    resource: Optional[str] = Field(
+        default=None,
+        title="The allocated resource descriptor name.",
+    )
+    class_name: str = Field(
+        alias="class",
+        serialization_alias="class",
+        title="The allocated capacity class.",
+    )
+    quantity: PositiveInt = Field(title="The allocated quantity.")
+    policy_id: UUID = Field(title="The policy that admitted this allocation.")
+    grant_id: UUID = Field(title="The policy grant that matched the demand.")
+    priority: int = Field(title="The priority snapshot for this allocation.")
+    component_id: UUID = Field(title="The selected stack component ID.")
+    preemption_state: str = Field(title="The preemption state.")
+    preemption_reason: Optional[str] = Field(
+        default=None,
+        title="The preemption reason.",
+    )
+    released_at: Optional[datetime] = Field(
+        default=None,
+        title="The release timestamp.",
+    )
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class ResourcePoolFilter(UserScopedFilter):
@@ -253,4 +283,8 @@ class ResourcePoolFilter(UserScopedFilter):
     name: StringFilterOption = Field(
         default=None,
         description="Name of the resource pool",
+    )
+    id: Union[UUID, str, None] = Field(
+        default=None,
+        description="ID of the resource pool.",
     )

@@ -13,8 +13,10 @@
 #  permissions and limitations under the License.
 """Models representing resource requests."""
 
+from datetime import datetime
 from typing import (
     TYPE_CHECKING,
+    Any,
     ClassVar,
     Dict,
     List,
@@ -24,13 +26,17 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import Field, PositiveInt, model_validator
+from pydantic import ConfigDict, Field, PositiveInt, model_validator
 
-from zenml.enums import ResourceRequestStatus
 from zenml.models.v2.base.filter import (
     EnumFilterOption,
     UUIDFilterOption,
 )
+from zenml.enums import (
+    ResourceRequestReclaimTolerance,
+    ResourceRequestStatus,
+)
+from zenml.models.v2.base.base import BaseZenModel
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
     UserScopedRequest,
@@ -43,65 +49,174 @@ from zenml.models.v2.base.scoped import (
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
 
-    from zenml.models import (
-        ComponentResponse,
-        PipelineRunResponse,
-        StepRunResponse,
-    )
-    from zenml.models.v2.core.resource_pool import ResourcePoolResponse
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 
-# ------------------ Request Model ------------------
+class ResourceRequestDemand(BaseZenModel):
+    """Resource demand for a Resource Manager-backed request."""
+
+    resource_id: Optional[UUID] = Field(
+        default=None,
+        title="The exact resource descriptor ID.",
+    )
+    resource: Optional[str] = Field(
+        default=None,
+        title="The exact resource descriptor name.",
+    )
+    quantity: PositiveInt = Field(title="The resource quantity requested.")
+    class_name: Optional[str] = Field(
+        default=None,
+        alias="class",
+        serialization_alias="class",
+        title="The exact capacity class.",
+    )
+    resource_selector: Optional[dict[str, Any]] = Field(
+        default=None,
+        title="Selector over resource descriptor fields and attributes.",
+    )
+    class_selector: Optional[dict[str, Any]] = Field(
+        default=None,
+        title="Selector over capacity class fields and attributes.",
+    )
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    @model_validator(mode="after")
+    def _validate_resource_reference(self) -> "ResourceRequestDemand":
+        """Validate that the demand can resolve to a resource.
+
+        Returns:
+            The validated demand.
+
+        Raises:
+            ValueError: If no resource reference or selector is configured.
+        """
+        if (
+            self.resource_id is None
+            and self.resource is None
+            and self.resource_selector is None
+        ):
+            raise ValueError(
+                "Resource demands require a resource ID, resource name, or "
+                "resource selector."
+            )
+        return self
 
 
 class ResourceRequestRequest(UserScopedRequest):
     """Request model for resource requests."""
 
     component_id: UUID = Field(
-        title="The id of the component that is requesting the resources.",
+        title="The default stack component requesting the resources.",
+    )
+    candidate_component_ids: list[UUID] = Field(
+        default_factory=list,
+        title="Candidate stack components that may satisfy the request.",
     )
     step_run_id: UUID = Field(
-        title="The id of the step run that is requesting the resources.",
+        title="The step run that is requesting the resources.",
+    )
+    demands: list[ResourceRequestDemand] = Field(
+        default_factory=list,
+        title="The resource demands requested.",
     )
     requested_resources: Dict[str, PositiveInt] = Field(
-        title="The resources requested."
+        default_factory=dict,
+        title="Compatibility shorthand resources requested by name.",
     )
-    preemptible: bool = Field(
-        default=True,
-        title="Whether this request can be preempted.",
+    reclaim_tolerance: ResourceRequestReclaimTolerance = Field(
+        default=ResourceRequestReclaimTolerance.UNSAFE,
+        title="The capacity reclaim behavior tolerated by this request.",
+    )
+    lease_expires_at: Optional[datetime] = Field(
+        default=None,
+        title="The optional initial lease expiration timestamp.",
     )
 
     @model_validator(mode="after")
-    def _validate_requested_resources(self) -> "ResourceRequestRequest":
-        if not self.requested_resources:
+    def _normalize_demands(self) -> "ResourceRequestRequest":
+        """Normalize compatibility fields into canonical demands.
+
+        Returns:
+            The validated resource request.
+
+        Raises:
+            ValueError: If no demands were configured.
+        """
+        if not self.demands and self.requested_resources:
+            self.demands = [
+                ResourceRequestDemand(resource=name, quantity=quantity)
+                for name, quantity in self.requested_resources.items()
+            ]
+
+        if not self.requested_resources and self.demands:
+            self.requested_resources = {
+                demand.resource: demand.quantity
+                for demand in self.demands
+                if demand.resource is not None
+            }
+
+        if not self.demands:
             raise ValueError(
-                "Resource requests with no requested resources are not allowed."
+                "Resource requests with no demands are not allowed."
             )
 
         return self
 
 
-# ------------------ Response Model ------------------
-
-
 class ResourceRequestResponseBody(UserScopedResponseBody):
     """Response body for resource requests."""
 
+    component_id: UUID = Field(
+        title="The default stack component associated with the request.",
+    )
+    candidate_component_ids: list[UUID] = Field(
+        default_factory=list,
+        title="Candidate stack components associated with the request.",
+    )
+    step_run_id: Optional[UUID] = Field(
+        default=None,
+        title="The step run associated with the resource request.",
+    )
+    pipeline_run_id: Optional[UUID] = Field(
+        default=None,
+        title="The pipeline run associated with the resource request.",
+    )
+    pool_id: Optional[UUID] = Field(
+        default=None,
+        title="The resource pool selected for the resource request.",
+    )
     requested_resources: Dict[str, int] = Field(
-        title="The resources requested."
+        default_factory=dict,
+        title="Compatibility shorthand resources requested by name.",
+    )
+    demands: list[ResourceRequestDemand] = Field(
+        default_factory=list,
+        title="The resource demands requested.",
     )
     status: ResourceRequestStatus = Field(
         title="The status of the resource request."
+    )
+    reclaim_tolerance: ResourceRequestReclaimTolerance = Field(
+        title="The capacity reclaim behavior tolerated by this request.",
+    )
+    lease_expires_at: Optional[datetime] = Field(
+        default=None,
+        title="The optional lease expiration timestamp.",
+    )
+    renewed_at: Optional[datetime] = Field(
+        default=None,
+        title="The optional lease renewal timestamp.",
     )
     status_reason: Optional[str] = Field(
         title="The reason for the status of the resource request.",
         default=None,
     )
-    preemptible: bool = Field(
-        title="Whether this request can be preempted.",
+    preemption_initiated_by_id: Optional[UUID] = Field(
+        default=None,
+        title="The request that initiated preemption.",
     )
 
 
@@ -111,22 +226,6 @@ class ResourceRequestResponseMetadata(UserScopedResponseMetadata):
 
 class ResourceRequestResponseResources(UserScopedResponseResources):
     """Response resources for resource requests."""
-
-    component: Optional["ComponentResponse"] = Field(
-        title="The component that is requesting the resources.",
-        default=None,
-    )
-    step_run: Optional["StepRunResponse"] = Field(
-        title="The step run that is requesting the resources.", default=None
-    )
-    pipeline_run: Optional["PipelineRunResponse"] = Field(
-        title="The pipeline run that is requesting the resources.",
-        default=None,
-    )
-    pool: Optional["ResourcePoolResponse"] = Field(
-        title="The pool that the resource request is/was running in.",
-        default=None,
-    )
 
 
 class ResourceRequestResponse(
@@ -142,86 +241,129 @@ class ResourceRequestResponse(
         """Get the hydrated version of this resource request.
 
         Returns:
-            The hydrated version of this resource request.
+            The current resource request fetched from the configured ZenML
+            store.
         """
         from zenml.client import Client
 
         return Client().zen_store.get_resource_request(self.id)
 
     @property
-    def requested_resources(self) -> Dict[str, int]:
-        """The `requested_resources` property.
+    def component_id(self) -> UUID:
+        """Resource request component ID.
 
         Returns:
-            the value of the property.
+            The stack component associated with the resource request.
+        """
+        return self.get_body().component_id
+
+    @property
+    def candidate_component_ids(self) -> list[UUID]:
+        """Resource request candidate component IDs.
+
+        Returns:
+            The candidate stack components associated with the resource request.
+        """
+        return self.get_body().candidate_component_ids
+
+    @property
+    def step_run_id(self) -> Optional[UUID]:
+        """Resource request step run ID.
+
+        Returns:
+            The optional step run associated with the resource request.
+        """
+        return self.get_body().step_run_id
+
+    @property
+    def pipeline_run_id(self) -> Optional[UUID]:
+        """Resource request pipeline run ID.
+
+        Returns:
+            The optional pipeline run associated with the resource request.
+        """
+        return self.get_body().pipeline_run_id
+
+    @property
+    def pool_id(self) -> Optional[UUID]:
+        """Resource request pool ID.
+
+        Returns:
+            The optional resource pool selected for the request.
+        """
+        return self.get_body().pool_id
+
+    @property
+    def requested_resources(self) -> Dict[str, int]:
+        """Requested resources.
+
+        Returns:
+            The requested resources keyed by resource name.
         """
         return self.get_body().requested_resources
 
     @property
-    def status(self) -> ResourceRequestStatus:
-        """The `status` property.
+    def demands(self) -> list[ResourceRequestDemand]:
+        """Requested resource demands.
 
         Returns:
-            the value of the property.
+            The resource demands requested.
+        """
+        return self.get_body().demands
+
+    @property
+    def reclaim_tolerance(self) -> ResourceRequestReclaimTolerance:
+        """Resource request reclaim tolerance.
+
+        Returns:
+            The reclaim behavior tolerated by the request.
+        """
+        return self.get_body().reclaim_tolerance
+
+    @property
+    def lease_expires_at(self) -> Optional[datetime]:
+        """Resource request lease expiration timestamp.
+
+        Returns:
+            The optional lease expiration timestamp.
+        """
+        return self.get_body().lease_expires_at
+
+    @property
+    def renewed_at(self) -> Optional[datetime]:
+        """Resource request renewal timestamp.
+
+        Returns:
+            The optional lease renewal timestamp.
+        """
+        return self.get_body().renewed_at
+
+    @property
+    def status(self) -> ResourceRequestStatus:
+        """Resource request status.
+
+        Returns:
+            The lifecycle status of the resource request.
         """
         return self.get_body().status
 
     @property
     def status_reason(self) -> Optional[str]:
-        """The `status_reason` property.
+        """Resource request status reason.
 
         Returns:
-            the value of the property.
+            The optional status reason.
         """
         return self.get_body().status_reason
 
     @property
-    def preemptible(self) -> bool:
-        """The `preemptible` property.
+    def preemption_initiated_by_id(self) -> Optional[UUID]:
+        """Request that initiated preemption.
 
         Returns:
-            the value of the property.
+            The optional ID of the request that initiated preemption.
         """
-        return self.get_body().preemptible
-
-    @property
-    def component(self) -> Optional["ComponentResponse"]:
-        """The `component` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_resources().component
-
-    @property
-    def step_run(self) -> Optional["StepRunResponse"]:
-        """The `step_run` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_resources().step_run
-
-    @property
-    def pipeline_run(self) -> Optional["PipelineRunResponse"]:
-        """The `pipeline_run` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_resources().pipeline_run
-
-    @property
-    def pool(self) -> Optional["ResourcePoolResponse"]:
-        """The `pool` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_resources().pool
-
-
-# ------------------ Filter Model ------------------
+        return self.get_body().preemption_initiated_by_id
 
 
 class ResourceRequestFilter(UserScopedFilter):
@@ -236,21 +378,23 @@ class ResourceRequestFilter(UserScopedFilter):
         "preemptible",
     ]
 
-    preemptible: Optional[bool] = Field(
-        default=None,
-        description="Whether the resource request is preemptible.",
+    reclaim_tolerance: Union[ResourceRequestReclaimTolerance, str, None] = (
+        Field(
+            default=None,
+            description="The reclaim behavior tolerated by the request.",
+        )
     )
     component_id: UUIDFilterOption = Field(
         default=None,
-        description="The id of the component that is requesting the resources.",
+        description="The component requesting resources.",
     )
     step_run_id: UUIDFilterOption = Field(
         default=None,
-        description="The id of the step run that is requesting the resources.",
+        description="The step run requesting resources.",
     )
     preemption_initiated_by_id: UUIDFilterOption = Field(
         default=None,
-        description="The id of the request that initiated the preemption of this request.",
+        description="The request that initiated preemption.",
     )
     status: EnumFilterOption[ResourceRequestStatus] = Field(
         default=None,
@@ -259,20 +403,21 @@ class ResourceRequestFilter(UserScopedFilter):
     )
     pipeline_run_id: UUIDFilterOption = Field(
         default=None,
-        description="The id of the pipeline run that is requesting the resources.",
+        description="The pipeline run requesting resources.",
     )
 
     def get_custom_filters(
         self,
         table: Type["AnySchema"],
     ) -> List["ColumnElement[bool]"]:
-        """Get custom filters.
+        """Get custom SQL filters for resource request list queries.
 
         Args:
-            table: The query table.
+            table: Schema table used by the generic filter machinery.
 
         Returns:
-            A list of custom filters.
+            Additional SQL conditions for filters that cannot be represented as
+            direct columns on the resource request table.
         """
         custom_filters = super().get_custom_filters(table)
 

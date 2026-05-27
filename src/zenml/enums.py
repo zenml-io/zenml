@@ -669,6 +669,15 @@ class ResourceRequestStatus(StrEnum):
     CANCELLED = "cancelled"
     REJECTED = "rejected"
     RELEASED = "released"
+    EXPIRED = "expired"
+
+
+class ResourceRequestReclaimTolerance(StrEnum):
+    """Capacity reclaim behavior tolerated by a resource request."""
+
+    NONE = "none"
+    COORDINATED = "coordinated"
+    UNSAFE = "unsafe"
 
 
 class TriggerType(StrEnum):
