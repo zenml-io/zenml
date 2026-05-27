@@ -35,6 +35,7 @@ from zenml.models import (
     RunStatisticsRequest,
     SimpleGrouping,
     SimpleMetric,
+    StackFilter,
     TimeGrouping,
     UserFilter,
 )
@@ -982,7 +983,6 @@ def test_grouping_by_source_snapshot(sql_store: SqlZenStore) -> None:
 def test_grouping_by_stack(sql_store: SqlZenStore) -> None:
     """Stack grouping joins through pipeline_snapshot.stack_id."""
     project_id = _project_id(sql_store)
-    from zenml.models import StackFilter
 
     stack_id = (
         sql_store.list_stacks(stack_filter_model=StackFilter()).items[0].id
@@ -1112,6 +1112,38 @@ def test_max_groups_truncation(sql_store: SqlZenStore) -> None:
 
     assert response.truncated is True
     assert len(response.groups) == 3
+
+
+def test_time_grouping_truncation_keeps_latest_buckets(
+    sql_store: SqlZenStore,
+) -> None:
+    """Truncation drops the oldest buckets and keeps the latest ones."""
+    project_id = _project_id(sql_store)
+    base = datetime(2026, 1, 1, 12, 0, 0)
+    for i in range(5):
+        _create_run(
+            sql_store,
+            project_id=project_id,
+            name=f"r{i}",
+            start_time=base + timedelta(days=i),
+            end_time=base + timedelta(days=i, seconds=1),
+        )
+
+    request = RunStatisticsRequest(
+        filter=PipelineRunFilter(project=project_id),
+        groupings=[
+            TimeGrouping(type="time", name="day", granularity="day"),
+        ],
+        max_groups=3,
+    )
+    response = sql_store.get_run_statistics(request)
+
+    assert response.truncated is True
+    assert [g.group_keys["day"] for g in response.groups] == [
+        "2026-01-03",
+        "2026-01-04",
+        "2026-01-05",
+    ]
 
 
 def test_empty_groupings_produce_single_row(sql_store: SqlZenStore) -> None:

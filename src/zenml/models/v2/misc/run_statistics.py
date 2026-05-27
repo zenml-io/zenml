@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Run statistics request and response models."""
+"""Run statistics models."""
 
 from typing import Annotated, Dict, List, Literal, Optional, Union
 
@@ -69,8 +69,9 @@ class _GroupingBase(BaseModel):
     """Run statistics grouping base."""
 
     name: str = Field(
-        description="Output key under 'group_keys' in the response. Must be "
+        description="Output key under `group_keys` in the response. Must be "
         "unique within the request.",
+        min_length=1,
     )
 
 
@@ -121,8 +122,9 @@ class _MetricBase(BaseModel):
     """Run statistics metric base."""
 
     name: str = Field(
-        description="Output key under 'metrics' in the response. Must be "
+        description="Output key under `metrics` in the response. Must be "
         "unique within the request.",
+        min_length=1,
     )
     aggregation: StatisticsAggregation = Field(
         description="Aggregation operator.",
@@ -177,18 +179,25 @@ class RunStatisticsRequest(BaseZenModel):
         default=1000,
         le=10_000,
         gt=0,
-        description="Maximum number of groups to return. Excess groups are "
-        "dropped and 'truncated' is set to true.",
+        description="Maximum number of groups to return.",
     )
 
     @model_validator(mode="after")
-    def _validate_unique_names(self) -> "RunStatisticsRequest":
+    def _validate_request(self) -> "RunStatisticsRequest":
         grouping_names = [g.name for g in self.groupings]
         if len(grouping_names) != len(set(grouping_names)):
             raise ValueError("Duplicate grouping names are not allowed.")
+
         metric_names = [m.name for m in self.metrics]
         if len(metric_names) != len(set(metric_names)):
             raise ValueError("Duplicate metric names are not allowed.")
+
+        time_groupings = sum(
+            1 for g in self.groupings if isinstance(g, TimeGrouping)
+        )
+        if time_groupings > 1:
+            raise ValueError("At most one time grouping is allowed.")
+
         return self
 
 
@@ -220,5 +229,5 @@ class RunStatisticsResponse(BaseZenModel):
     )
     truncated: bool = Field(
         default=False,
-        description="True when more groups existed than 'max_groups' allowed.",
+        description="True when more groups existed than `max_groups` allowed.",
     )

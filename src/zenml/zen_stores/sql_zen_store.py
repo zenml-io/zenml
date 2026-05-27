@@ -58,7 +58,6 @@ from typing import (
     ContextManager,
     Dict,
     ForwardRef,
-    FrozenSet,
     List,
     Literal,
     NoReturn,
@@ -84,16 +83,11 @@ from pydantic import (
     model_validator,
 )
 from sqlalchemy import (
-    Float,
     QueuePool,
-    case,
-    distinct,
     event,
     func,
-    text,
     update,
 )
-from sqlalchemy import cast as sql_cast
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
@@ -101,13 +95,11 @@ from sqlalchemy.exc import (
 )
 from sqlalchemy.orm import (
     Mapped,
-    aliased,
     load_only,
     noload,
     selectinload,
 )
 from sqlalchemy.sql.base import ExecutableOption
-from sqlalchemy.sql.elements import ColumnElement
 from sqlalchemy.util import immutabledict
 from sqlmodel import Session as SqlModelSession
 
@@ -252,8 +244,6 @@ from zenml.models import (
     LogsRequest,
     LogsResponse,
     LogsUpdate,
-    MetadataGrouping,
-    MetadataMetric,
     ModelFilter,
     ModelRequest,
     ModelResponse,
@@ -312,7 +302,6 @@ from zenml.models import (
     ResourceRequestResponse,
     RunMetadataRequest,
     RunMetadataResource,
-    RunStatisticsGroup,
     RunStatisticsRequest,
     RunStatisticsResponse,
     RunTemplateFilter,
@@ -354,17 +343,12 @@ from zenml.models import (
     ServiceRequest,
     ServiceResponse,
     ServiceUpdate,
-    SimpleGrouping,
     StackDeploymentConfig,
     StackDeploymentInfo,
     StackFilter,
     StackRequest,
     StackResponse,
     StackUpdate,
-    StatisticsAggregation,
-    StatisticsGroupingType,
-    StatisticsMetricSource,
-    StatisticsTimeGranularity,
     StepRunFilter,
     StepRunRequest,
     StepRunResponse,
@@ -376,7 +360,6 @@ from zenml.models import (
     TagResourceResponse,
     TagResponse,
     TagUpdate,
-    TimeGrouping,
     TriggerDispatchStatusCode,
     TriggerFilter,
     TriggerRequest,
@@ -7371,289 +7354,10 @@ class SqlZenStore(BaseZenStore):
             schema=PipelineRunSchema, filter_model=filter_model
         )
 
-    # -------------------- Run statistics --------------------
-
-    _SIMPLE_GROUPING_COLUMNS: ClassVar[Dict[StatisticsGroupingType, str]] = {
-        StatisticsGroupingType.STATUS: "__status",
-        StatisticsGroupingType.PIPELINE: "__pipeline_id",
-        StatisticsGroupingType.SNAPSHOT: "__snapshot_id",
-        StatisticsGroupingType.SOURCE_SNAPSHOT: "__source_snapshot_id",
-        StatisticsGroupingType.STACK: "__stack_id",
-        StatisticsGroupingType.USER: "__user_id",
-        StatisticsGroupingType.TRIGGER: "__trigger_id",
-    }
-
-    _SIMPLE_METRIC_COLUMNS: ClassVar[Dict[StatisticsMetricSource, str]] = {
-        StatisticsMetricSource.DURATION: "__duration_seconds",
-        StatisticsMetricSource.STEP_COUNT: "__step_count",
-        StatisticsMetricSource.CACHED_STEP_COUNT: "__cached_step_count",
-        StatisticsMetricSource.OUTPUT_ARTIFACT_COUNT: "__output_artifact_count",
-    }
-
-    _UUID_GROUPING_TYPES: ClassVar[FrozenSet[StatisticsGroupingType]] = (
-        frozenset(
-            {
-                StatisticsGroupingType.PIPELINE,
-                StatisticsGroupingType.SNAPSHOT,
-                StatisticsGroupingType.SOURCE_SNAPSHOT,
-                StatisticsGroupingType.STACK,
-                StatisticsGroupingType.TRIGGER,
-                StatisticsGroupingType.USER,
-            }
-        )
-    )
-
-    _AGGREGATE_FUNCTIONS: ClassVar[Dict[StatisticsAggregation, Any]] = {
-        StatisticsAggregation.AVG: func.avg,
-        StatisticsAggregation.SUM: func.sum,
-        StatisticsAggregation.MIN: func.min,
-        StatisticsAggregation.MAX: func.max,
-    }
-
-    def _run_duration_seconds_expr(self) -> ColumnElement[float]:
-        """Dialect-appropriate ``end_time - start_time`` in seconds.
-
-        Returns:
-            Column expression.
-        """
-        start = col(PipelineRunSchema.start_time)
-        end = col(PipelineRunSchema.end_time)
-        if self.config.driver == SQLDatabaseDriver.MYSQL:
-            return func.timestampdiff(text("SECOND"), start, end)
-        return (func.julianday(end) - func.julianday(start)) * 86400.0
-
-    def _time_bucket_expr(
-        self,
-        column: Any,
-        granularity: StatisticsTimeGranularity,
-    ) -> ColumnElement[str]:
-        """Sortable ISO-ish bucket label for a datetime column.
-
-        WEEK buckets use the Monday of the week as a `YYYY-MM-DD` date,
-        matching the DAY and MONTH conventions and avoiding ISO-week vs
-        calendar-week mismatches between dialects.
-
-        Args:
-            column: Datetime column.
-            granularity: Bucket size.
-
-        Returns:
-            Column expression.
-        """
-        if self.config.driver == SQLDatabaseDriver.MYSQL:
-            if granularity == StatisticsTimeGranularity.WEEK:
-                return func.date_format(
-                    func.subdate(column, func.weekday(column)),
-                    "%Y-%m-%d",
-                )
-            mysql_formats = {
-                StatisticsTimeGranularity.HOUR: "%Y-%m-%d %H:00:00",
-                StatisticsTimeGranularity.DAY: "%Y-%m-%d",
-                StatisticsTimeGranularity.MONTH: "%Y-%m-01",
-            }
-            return func.date_format(column, mysql_formats[granularity])
-
-        if granularity == StatisticsTimeGranularity.WEEK:
-            return func.date(column, "-6 days", "weekday 1")
-
-        sqlite_formats = {
-            StatisticsTimeGranularity.HOUR: "%Y-%m-%d %H:00:00",
-            StatisticsTimeGranularity.DAY: "%Y-%m-%d",
-            StatisticsTimeGranularity.MONTH: "%Y-%m-01",
-        }
-        return func.strftime(sqlite_formats[granularity], column)
-
-    @staticmethod
-    def _metadata_group_label(key: str) -> str:
-        """Stage-1 column label for the raw metadata value (grouping use).
-
-        Args:
-            key: Metadata key.
-
-        Returns:
-            Column label.
-        """
-        return f"__md_group__{key}"
-
-    @staticmethod
-    def _metadata_metric_label(key: str) -> str:
-        """Stage-1 column label for the numeric metadata value (metric use).
-
-        Args:
-            key: Metadata key.
-
-        Returns:
-            Column label.
-        """
-        return f"__md_metric__{key}"
-
-    def _latest_metadata_per_run_subquery(self, key: str) -> Any:
-        """Latest metadata row per pipeline run for a key.
-
-        Mirrors `RunMetadataInterface.fetch_metadata` (non-dict path):
-        last entry by `created` wins. Statistics aggregations then see
-        one value per (run, key), matching what every other API surface
-        returns for the same run.
-
-        Args:
-            key: Metadata key.
-
-        Returns:
-            Subquery with `run_id`, `value`, `type` columns.
-        """
-        rm = aliased(RunMetadataSchema)
-        rmr = aliased(RunMetadataResourceSchema)
-        ranked = (
-            select(
-                col(rmr.resource_id).label("run_id"),
-                col(rm.value).label("value"),
-                col(rm.type).label("type"),
-                func.row_number()
-                .over(
-                    partition_by=col(rmr.resource_id),
-                    order_by=col(rm.created).desc(),
-                )
-                .label("rn"),
-            )
-            .select_from(rm)
-            .join(rmr, col(rmr.run_metadata_id) == col(rm.id))
-            .where(
-                col(rmr.resource_type)
-                == MetadataResourceTypes.PIPELINE_RUN.value,
-                col(rm.key) == key,
-            )
-            .subquery()
-        )
-        return (
-            select(
-                ranked.c.run_id,
-                ranked.c.value,
-                ranked.c.type,
-            )
-            .where(ranked.c.rn == 1)
-            .subquery()
-        )
-
-    @staticmethod
-    def _metadata_numeric_expr(latest_sq: Any) -> ColumnElement[Any]:
-        """Numeric-only projection of a latest-per-run metadata subquery.
-
-        Non-numeric types are projected to NULL so outer aggregates skip them.
-
-        Args:
-            latest_sq: Subquery returned by `_latest_metadata_per_run_subquery`.
-
-        Returns:
-            Column expression.
-        """
-        from zenml.metadata.metadata_types import MetadataTypeEnum
-
-        return case(
-            (
-                latest_sq.c.type.in_(
-                    (
-                        MetadataTypeEnum.INT.value,
-                        MetadataTypeEnum.FLOAT.value,
-                    )
-                ),
-                sql_cast(latest_sq.c.value, Float),
-            ),
-            else_=None,
-        )
-
-    def _tag_subquery(self) -> Any:
-        """Pipeline-run-tag association subquery (run_id, name)."""
-        tr = aliased(TagResourceSchema)
-        ts = aliased(TagSchema)
-        return (
-            select(
-                col(tr.resource_id).label("run_id"),
-                col(ts.name).label("name"),
-            )
-            .select_from(tr)
-            .join(ts, col(ts.id) == col(tr.tag_id))
-            .where(
-                col(tr.resource_type)
-                == TaggableResourceTypes.PIPELINE_RUN.value,
-            )
-            .subquery()
-        )
-
-    def _build_step_aggregates_subquery(
-        self,
-        *,
-        need_step_count: bool,
-        need_cached_step_count: bool,
-        need_output_artifact_count: bool,
-    ) -> Optional[Any]:
-        """One-pass step-run aggregates with conditional counts.
-
-        Args:
-            need_step_count: Project distinct step name count.
-            need_cached_step_count: Project distinct cached step name count.
-            need_output_artifact_count: Project distinct output artifact count.
-
-        Returns:
-            Subquery with `run_id` and the requested aggregate columns, or
-            `None` if no step-derived metric was requested.
-        """
-        if not (
-            need_step_count
-            or need_cached_step_count
-            or need_output_artifact_count
-        ):
-            return None
-
-        select_cols: List[ColumnElement[Any]] = [
-            col(StepRunSchema.pipeline_run_id).label("run_id"),
-        ]
-        if need_step_count:
-            select_cols.append(
-                func.count(distinct(col(StepRunSchema.name))).label(
-                    "step_count"
-                )
-            )
-        if need_cached_step_count:
-            select_cols.append(
-                func.count(
-                    distinct(
-                        case(
-                            (
-                                col(StepRunSchema.status)
-                                == ExecutionStatus.CACHED.value,
-                                col(StepRunSchema.name),
-                            ),
-                            else_=None,
-                        )
-                    )
-                ).label("cached_step_count")
-            )
-        if need_output_artifact_count:
-            select_cols.append(
-                func.count(
-                    distinct(col(StepRunOutputArtifactSchema.artifact_id))
-                ).label("output_artifact_count")
-            )
-        query = select(*select_cols).select_from(StepRunSchema)
-        if need_output_artifact_count:
-            query = query.outerjoin(
-                StepRunOutputArtifactSchema,
-                col(StepRunOutputArtifactSchema.step_id)
-                == col(StepRunSchema.id),
-            )
-        return query.group_by(col(StepRunSchema.pipeline_run_id)).subquery()
-
     def get_run_statistics(
         self, request: RunStatisticsRequest
     ) -> RunStatisticsResponse:
         """Compute grouped statistics over pipeline runs.
-
-        Stage 1 produces one row per matching pipeline run with every per-run
-        scalar resolved (status, IDs, duration, step counts, latest metadata
-        value, trigger). Stage 2 optionally LEFT JOINs the tag fan-out source
-        and aggregates over the stage-1 rowset, so a run with N tags
-        contributes once to each tag bucket without inflating AVG/SUM with
-        duplicated rows.
 
         Args:
             request: Statistics request.
@@ -7661,331 +7365,18 @@ class SqlZenStore(BaseZenStore):
         Returns:
             Grouped statistics.
         """
-        filter_model = request.filter
+        from zenml.zen_stores.sql_run_statistics import (
+            compute_run_statistics,
+        )
 
         with Session(self.engine) as session:
             self._set_filter_project_id(
-                filter_model=filter_model,
+                filter_model=request.filter,
                 session=session,
             )
-
-            # ----- Classify the request -----
-            grouping_types = {g.type for g in request.groupings}
-            needs_snapshot_join = bool(
-                grouping_types
-                & {
-                    StatisticsGroupingType.SOURCE_SNAPSHOT,
-                    StatisticsGroupingType.STACK,
-                }
+            return compute_run_statistics(
+                session=session, request=request, driver=self.config.driver
             )
-            needs_trigger_join = (
-                StatisticsGroupingType.TRIGGER in grouping_types
-            )
-            tag_grouping_present = StatisticsGroupingType.TAG in grouping_types
-
-            metric_sources = {m.source for m in request.metrics}
-            need_step_count = (
-                StatisticsMetricSource.STEP_COUNT in metric_sources
-            )
-            need_cached_step_count = (
-                StatisticsMetricSource.CACHED_STEP_COUNT in metric_sources
-            )
-            need_output_artifact_count = (
-                StatisticsMetricSource.OUTPUT_ARTIFACT_COUNT in metric_sources
-            )
-
-            # Metadata keys per use. One subquery per unique key is shared
-            # between grouping and metric projections.
-            metadata_grouping_keys: List[str] = []
-            for grouping in request.groupings:
-                if (
-                    isinstance(grouping, MetadataGrouping)
-                    and grouping.metadata_key not in metadata_grouping_keys
-                ):
-                    metadata_grouping_keys.append(grouping.metadata_key)
-
-            metadata_metric_keys: List[str] = []
-            for metric in request.metrics:
-                if (
-                    isinstance(metric, MetadataMetric)
-                    and metric.metadata_key not in metadata_metric_keys
-                ):
-                    metadata_metric_keys.append(metric.metadata_key)
-
-            metadata_subqueries: Dict[str, Any] = {
-                key: self._latest_metadata_per_run_subquery(key)
-                for key in dict.fromkeys(
-                    [*metadata_grouping_keys, *metadata_metric_keys]
-                )
-            }
-
-            step_aggregates_sq = self._build_step_aggregates_subquery(
-                need_step_count=need_step_count,
-                need_cached_step_count=need_cached_step_count,
-                need_output_artifact_count=need_output_artifact_count,
-            )
-
-            # ----- Stage 1: one row per pipeline run -----
-            stage1_columns: List[ColumnElement[Any]] = [
-                col(PipelineRunSchema.id).label("__run_id"),
-                col(PipelineRunSchema.status).label("__status"),
-                col(PipelineRunSchema.pipeline_id).label("__pipeline_id"),
-                col(PipelineRunSchema.snapshot_id).label("__snapshot_id"),
-                col(PipelineRunSchema.user_id).label("__user_id"),
-                col(PipelineRunSchema.start_time).label("__start_time"),
-                self._run_duration_seconds_expr().label("__duration_seconds"),
-            ]
-            if needs_snapshot_join:
-                stage1_columns.append(
-                    col(PipelineSnapshotSchema.source_snapshot_id).label(
-                        "__source_snapshot_id"
-                    )
-                )
-                stage1_columns.append(
-                    col(PipelineSnapshotSchema.stack_id).label("__stack_id")
-                )
-            if needs_trigger_join:
-                # The (trigger_id, pipeline_run_id) PK on `trigger_execution`
-                # means at most one row per run, so this join does not fan
-                # out the rowset.
-                stage1_columns.append(
-                    col(TriggerExecutionSchema.trigger_id).label(
-                        "__trigger_id"
-                    )
-                )
-            if step_aggregates_sq is not None:
-                if need_step_count:
-                    stage1_columns.append(
-                        func.coalesce(
-                            step_aggregates_sq.c.step_count, 0
-                        ).label("__step_count")
-                    )
-                if need_cached_step_count:
-                    stage1_columns.append(
-                        func.coalesce(
-                            step_aggregates_sq.c.cached_step_count, 0
-                        ).label("__cached_step_count")
-                    )
-                if need_output_artifact_count:
-                    stage1_columns.append(
-                        func.coalesce(
-                            step_aggregates_sq.c.output_artifact_count, 0
-                        ).label("__output_artifact_count")
-                    )
-            for key in metadata_grouping_keys:
-                stage1_columns.append(
-                    metadata_subqueries[key].c.value.label(
-                        self._metadata_group_label(key)
-                    )
-                )
-            for key in metadata_metric_keys:
-                stage1_columns.append(
-                    self._metadata_numeric_expr(
-                        metadata_subqueries[key]
-                    ).label(self._metadata_metric_label(key))
-                )
-
-            stage1_query = select(*stage1_columns).select_from(
-                PipelineRunSchema
-            )
-            if needs_snapshot_join:
-                stage1_query = stage1_query.outerjoin(
-                    PipelineSnapshotSchema,
-                    col(PipelineSnapshotSchema.id)
-                    == col(PipelineRunSchema.snapshot_id),
-                )
-            if needs_trigger_join:
-                stage1_query = stage1_query.outerjoin(
-                    TriggerExecutionSchema,
-                    col(TriggerExecutionSchema.pipeline_run_id)
-                    == col(PipelineRunSchema.id),
-                )
-            if step_aggregates_sq is not None:
-                stage1_query = stage1_query.outerjoin(
-                    step_aggregates_sq,
-                    step_aggregates_sq.c.run_id == col(PipelineRunSchema.id),
-                )
-            for sq in metadata_subqueries.values():
-                stage1_query = stage1_query.outerjoin(
-                    sq, sq.c.run_id == col(PipelineRunSchema.id)
-                )
-
-            # PipelineRunFilter.tags joins tag_resource on every matching
-            # run, fanning rows out per tag. Resolve filters on a flat id
-            # query first and deduplicate so stage 1 keeps one row per run.
-            filtered_ids_subquery = (
-                filter_model.apply_filter(
-                    query=select(col(PipelineRunSchema.id)),
-                    table=PipelineRunSchema,
-                )
-                .distinct()
-                .subquery("filtered_run_ids")
-            )
-            stage1_query = stage1_query.where(
-                col(PipelineRunSchema.id).in_(
-                    select(filtered_ids_subquery.c.id)
-                )
-            )
-            run_stats = stage1_query.subquery("run_stats")
-
-            # ----- Stage 2: tag fan-out (if any), grouping, aggregation -----
-            tag_subquery = (
-                self._tag_subquery() if tag_grouping_present else None
-            )
-
-            group_columns: List[ColumnElement[Any]] = []
-            group_column_labels: List[str] = []
-            for index, grouping in enumerate(request.groupings):
-                label = f"__group_{index}"
-                if isinstance(grouping, TimeGrouping):
-                    expr = self._time_bucket_expr(
-                        run_stats.c["__start_time"], grouping.granularity
-                    )
-                elif isinstance(grouping, MetadataGrouping):
-                    expr = run_stats.c[
-                        self._metadata_group_label(grouping.metadata_key)
-                    ]
-                elif grouping.type == StatisticsGroupingType.TAG:
-                    assert tag_subquery is not None
-                    expr = tag_subquery.c.name
-                else:
-                    expr = run_stats.c[
-                        self._SIMPLE_GROUPING_COLUMNS[grouping.type]
-                    ]
-                group_columns.append(expr.label(label))
-                group_column_labels.append(label)
-
-            metric_columns: List[ColumnElement[Any]] = []
-            metric_column_labels: List[str] = []
-            for index, metric in enumerate(request.metrics):
-                label = f"__metric_{index}"
-                if isinstance(metric, MetadataMetric):
-                    value = run_stats.c[
-                        self._metadata_metric_label(metric.metadata_key)
-                    ]
-                else:
-                    value = run_stats.c[
-                        self._SIMPLE_METRIC_COLUMNS[metric.source]
-                    ]
-                metric_columns.append(
-                    self._AGGREGATE_FUNCTIONS[metric.aggregation](value).label(
-                        label
-                    )
-                )
-                metric_column_labels.append(label)
-
-            run_count_col = func.count(
-                distinct(run_stats.c["__run_id"])
-            ).label("__run_count")
-            select_columns: List[ColumnElement[Any]] = [
-                *group_columns,
-                run_count_col,
-                *metric_columns,
-            ]
-
-            query = select(*select_columns).select_from(run_stats)
-            if tag_subquery is not None:
-                query = query.outerjoin(
-                    tag_subquery,
-                    tag_subquery.c.run_id == run_stats.c["__run_id"],
-                )
-            if group_columns:
-                query = query.group_by(*group_columns)
-
-            # Order: time bucket asc if present, else run_count desc; ties
-            # broken by remaining group columns ascending for determinism.
-            time_group_index = next(
-                (
-                    i
-                    for i, g in enumerate(request.groupings)
-                    if isinstance(g, TimeGrouping)
-                ),
-                None,
-            )
-            primary_order: Any = (
-                group_columns[time_group_index].asc()
-                if time_group_index is not None
-                else desc("__run_count")
-            )
-            tiebreakers = [
-                c.asc()
-                for i, c in enumerate(group_columns)
-                if i != time_group_index
-            ]
-            query = query.order_by(primary_order, *tiebreakers)
-            query = query.limit(request.max_groups + 1)
-
-            rows = session.execute(query).all()
-
-        truncated = len(rows) > request.max_groups
-        if truncated:
-            rows = rows[: request.max_groups]
-
-        groups: List[RunStatisticsGroup] = []
-        for row in rows:
-            row_mapping = row._mapping
-            group_keys: Dict[str, Optional[Union[str, int, float, bool]]] = {
-                grouping.name: self._format_group_value(
-                    grouping, row_mapping[label]
-                )
-                for grouping, label in zip(
-                    request.groupings, group_column_labels
-                )
-            }
-            metrics_out: Dict[str, Optional[float]] = {}
-            for metric, label in zip(request.metrics, metric_column_labels):
-                raw = row_mapping[label]
-                metrics_out[metric.name] = (
-                    float(raw) if raw is not None else None
-                )
-
-            groups.append(
-                RunStatisticsGroup(
-                    group_keys=group_keys,
-                    metrics=metrics_out,
-                    run_count=int(row_mapping["__run_count"] or 0),
-                )
-            )
-
-        return RunStatisticsResponse(groups=groups, truncated=truncated)
-
-    @classmethod
-    def _format_group_value(
-        cls,
-        grouping: Union[SimpleGrouping, TimeGrouping, MetadataGrouping],
-        raw_value: Any,
-    ) -> Optional[Union[str, int, float, bool]]:
-        """Convert a raw SQL group value into the response-shaped value.
-
-        Args:
-            grouping: Grouping the value came from.
-            raw_value: Raw DB value.
-
-        Returns:
-            JSON-shaped value.
-        """
-        if raw_value is None:
-            return None
-
-        if isinstance(grouping, MetadataGrouping):
-            try:
-                decoded = json.loads(raw_value)
-            except (json.JSONDecodeError, TypeError):
-                return str(raw_value)
-            if isinstance(decoded, (str, int, float, bool)):
-                return decoded
-            if decoded is None:
-                return None
-            return str(raw_value)
-
-        if isinstance(grouping, TimeGrouping):
-            return cast(str, raw_value)
-
-        if grouping.type in cls._UUID_GROUPING_TYPES:
-            return str(raw_value)
-
-        # STATUS and TAG yield strings already.
-        return cast(str, raw_value)
 
     def disable_run_heartbeat(self, run_id: UUID) -> None:
         """Disables heartbeat for pipeline and all its running steps.

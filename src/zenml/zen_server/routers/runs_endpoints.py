@@ -125,9 +125,9 @@ from zenml.zen_server.utils import (
     async_handle_endpoint_errors,
     make_dependable,
     server_config,
+    set_filter_project_scope,
     stream_broadcaster,
     stream_broker,
-    set_filter_project_scope,
     workload_manager,
     zen_store,
 )
@@ -238,7 +238,12 @@ def list_runs(
 
 @router.post(
     STATISTICS,
-    responses={401: error_response, 403: error_response, 422: error_response},
+    responses={
+        401: error_response,
+        403: error_response,
+        404: error_response,
+        422: error_response,
+    },
 )
 @async_fastapi_endpoint_wrapper
 def get_run_statistics(
