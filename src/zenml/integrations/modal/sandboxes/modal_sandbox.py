@@ -136,12 +136,26 @@ class ModalSandboxProcess(SandboxProcess):
         return int(self._process.returncode or 0)
 
     def kill(self) -> None:
-        """Terminates the underlying Modal command."""
+        """Best-effort process termination.
+
+        Modal's ``ContainerProcess`` does not expose a per-command kill in
+        the public API (``wait`` / ``poll`` / ``stdin`` / ``stdout`` /
+        ``stderr`` / ``attach`` only — see ``modal.container_process``).
+        We close stdin to signal EOF, which lets well-behaved processes
+        exit cleanly. For a hard kill, call ``ModalSandboxSession.destroy()``
+        to terminate the entire Sandbox.
+        """
         try:
-            self._process.kill()
+            if self._process.stdin is not None:
+                self._process.stdin.close()
         except Exception:
-            # Already finished; ignore.
-            logger.debug("Modal process kill() failed; likely already exited.")
+            logger.debug(
+                "Closing Modal process stdin failed; proceeding without."
+            )
+        logger.warning(
+            "Modal does not support per-command kill; closed stdin instead. "
+            "Use session.destroy() to force-terminate the whole Sandbox."
+        )
 
     @property
     def exit_code(self) -> Optional[int]:

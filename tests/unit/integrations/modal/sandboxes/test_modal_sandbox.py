@@ -226,9 +226,15 @@ class TestModalSandboxProcess:
         proc = ModalSandboxProcess(fake)
         assert proc.exit_code is None
 
-    def test_kill_swallows_already_exited(self) -> None:
+    def test_kill_closes_stdin(self) -> None:
+        # Modal has no per-command kill — we close stdin as best-effort.
         fake = MagicMock()
-        fake.kill.side_effect = RuntimeError("already terminated")
+        ModalSandboxProcess(fake).kill()
+        fake.stdin.close.assert_called_once()
+
+    def test_kill_tolerates_stdin_close_failure(self) -> None:
+        fake = MagicMock()
+        fake.stdin.close.side_effect = RuntimeError("already closed")
         ModalSandboxProcess(fake).kill()  # no raise
 
 
