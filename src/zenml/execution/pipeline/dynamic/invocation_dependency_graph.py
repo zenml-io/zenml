@@ -15,15 +15,29 @@
 
 import threading
 from dataclasses import dataclass, field
-from typing import Any, Collection, Dict, List, Optional, Sequence, Set, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Collection,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+    Union,
+)
 
 from zenml.config.step_configurations import StepConfigurationUpdate
-from zenml.execution.pipeline.dynamic.outputs import AnyStepFuture
+from zenml.execution.pipeline.dynamic.outputs import AnyOutputFuture
 from zenml.logger import get_logger
 from zenml.steps import BaseStep
 from zenml.utils.enum_utils import StrEnum
 
 logger = get_logger(__name__)
+
+if TYPE_CHECKING:
+    from zenml.pipelines.dynamic.pipeline_definition import DynamicPipeline
 
 
 class NodeState(StrEnum):
@@ -35,6 +49,7 @@ class NodeState(StrEnum):
     RUNNING = "running"
     SUCCEEDED = "succeeded"
     FAILED = "failed"
+    PAUSED = "paused"
 
     @property
     def is_terminal(self) -> bool:
@@ -46,6 +61,7 @@ class NodeState(StrEnum):
         return self in {
             NodeState.SUCCEEDED,
             NodeState.FAILED,
+            NodeState.PAUSED,
         }
 
 
@@ -75,7 +91,7 @@ class StepNode(BaseNode):
     parent_id: Optional[str] = None
     step: Optional[BaseStep] = None
     inputs: Optional[Dict[str, Any]] = None
-    after: Optional[Union[AnyStepFuture, Sequence[AnyStepFuture]]] = None
+    after: Optional[Union[AnyOutputFuture, Sequence[AnyOutputFuture]]] = None
     config_overrides: Optional["StepConfigurationUpdate"] = None
 
 
@@ -86,11 +102,20 @@ class MapNode(BaseNode):
     child_node_ids: Set[str] = field(default_factory=set)
     step: BaseStep
     inputs: Dict[str, Any]
-    after: Union[AnyStepFuture, Sequence[AnyStepFuture], None]
+    after: Union[AnyOutputFuture, Sequence[AnyOutputFuture], None]
     product: bool
 
 
-AnyNode = Union[StepNode, MapNode]
+@dataclass(kw_only=True)
+class ChildPipelineNode(BaseNode):
+    """Child pipeline graph node."""
+
+    pipeline: "DynamicPipeline"
+    args: Sequence[Any] = field(default_factory=tuple)
+    kwargs: Dict[str, Any] = field(default_factory=dict)
+
+
+AnyNode = Union[StepNode, MapNode, ChildPipelineNode]
 
 
 class InvocationDependencyGraph:
@@ -108,9 +133,11 @@ class InvocationDependencyGraph:
         state: Optional[NodeState] = None,
         step: Optional[BaseStep] = None,
         inputs: Optional[Dict[str, Any]] = None,
-        after: Optional[Union[AnyStepFuture, Sequence[AnyStepFuture]]] = None,
+        after: Optional[
+            Union[AnyOutputFuture, Sequence[AnyOutputFuture]]
+        ] = None,
         config_overrides: Optional["StepConfigurationUpdate"] = None,
-    ) -> bool:
+    ) -> Tuple[StepNode, bool]:
         """Register a step node.
 
         Args:
@@ -123,7 +150,8 @@ class InvocationDependencyGraph:
             config_overrides: Optional config overrides for startup.
 
         Returns:
-            Whether the registration caused any newly ready nodes.
+            The registered step node and whether the registration caused
+            any newly ready nodes.
         """
         node = StepNode(
             node_id=node_id,
@@ -133,7 +161,11 @@ class InvocationDependencyGraph:
             after=after,
             config_overrides=config_overrides,
         )
-        return self._register_node(node=node, upstream_ids=upstream_ids)
+        registered, newly_ready = self._register_node(
+            node=node, upstream_ids=upstream_ids
+        )
+        assert isinstance(registered, StepNode)
+        return registered, newly_ready
 
     def register_map_node(
         self,
@@ -143,8 +175,10 @@ class InvocationDependencyGraph:
         product: bool,
         upstream_ids: Optional[Sequence[str]] = None,
         state: Optional[NodeState] = None,
-        after: Optional[Union[AnyStepFuture, Sequence[AnyStepFuture]]] = None,
-    ) -> bool:
+        after: Optional[
+            Union[AnyOutputFuture, Sequence[AnyOutputFuture]]
+        ] = None,
+    ) -> Tuple[MapNode, bool]:
         """Register a map aggregate node.
 
         Args:
@@ -157,7 +191,8 @@ class InvocationDependencyGraph:
             product: The map expansion mode.
 
         Returns:
-            Whether the registration caused any newly ready nodes.
+            The registered map node and whether the registration caused
+            any newly ready nodes.
         """
         node = MapNode(
             node_id=node_id,
@@ -167,7 +202,47 @@ class InvocationDependencyGraph:
             after=after,
             product=product,
         )
-        return self._register_node(node=node, upstream_ids=upstream_ids)
+        registered, newly_ready = self._register_node(
+            node=node, upstream_ids=upstream_ids
+        )
+        assert isinstance(registered, MapNode)
+        return registered, newly_ready
+
+    def register_child_pipeline_node(
+        self,
+        node_id: str,
+        pipeline: "DynamicPipeline",
+        args: Optional[Sequence[Any]] = None,
+        kwargs: Optional[Dict[str, Any]] = None,
+        upstream_ids: Optional[Sequence[str]] = None,
+        state: Optional[NodeState] = None,
+    ) -> Tuple[ChildPipelineNode, bool]:
+        """Register a child pipeline node.
+
+        Args:
+            node_id: The node ID.
+            pipeline: The child pipeline payload for startup.
+            args: Optional positional payload for startup.
+            kwargs: Optional keyword payload for startup.
+            upstream_ids: Optional upstream node IDs.
+            state: Optional initial state for the node.
+
+        Returns:
+            The registered child pipeline node and whether the registration
+            caused any newly ready nodes.
+        """
+        node = ChildPipelineNode(
+            node_id=node_id,
+            state=state or NodeState.PENDING,
+            pipeline=pipeline,
+            args=args or (),
+            kwargs=kwargs or {},
+        )
+        registered, newly_ready = self._register_node(
+            node=node, upstream_ids=upstream_ids
+        )
+        assert isinstance(registered, ChildPipelineNode)
+        return registered, newly_ready
 
     def get_step_node(self, node_id: str) -> StepNode:
         """Get a step node by ID.
@@ -203,6 +278,27 @@ class InvocationDependencyGraph:
             node = self._get_node(node_id=node_id)
             if not isinstance(node, MapNode):
                 raise RuntimeError(f"Node `{node_id}` is not a map node.")
+            return node
+
+    def get_child_pipeline_node(self, node_id: str) -> ChildPipelineNode:
+        """Get a child pipeline node by ID.
+
+        Args:
+            node_id: The node ID.
+
+        Raises:
+            RuntimeError: If the node does not exist or is not a child pipeline
+                node.
+
+        Returns:
+            The child pipeline node.
+        """
+        with self._lock:
+            node = self._get_node(node_id=node_id)
+            if not isinstance(node, ChildPipelineNode):
+                raise RuntimeError(
+                    f"Node `{node_id}` is not a child pipeline node."
+                )
             return node
 
     def attach_map_children(
@@ -263,22 +359,28 @@ class InvocationDependencyGraph:
     def get_ready_node(self) -> Optional[AnyNode]:
         """Get one ready node in insertion order.
 
-        Step nodes are prioritized over map nodes.
+        Step nodes are prioritized over child pipeline nodes over map nodes.
 
         Returns:
             A ready node if one exists, otherwise `None`.
         """
         with self._lock:
+            ready_child_pipeline_node: Optional[ChildPipelineNode] = None
             ready_map_node: Optional[MapNode] = None
             for node in self._nodes.values():
                 if node.state != NodeState.READY:
                     continue
                 if isinstance(node, StepNode):
                     return node
+                if (
+                    isinstance(node, ChildPipelineNode)
+                    and ready_child_pipeline_node is None
+                ):
+                    ready_child_pipeline_node = node
                 if isinstance(node, MapNode) and ready_map_node is None:
                     ready_map_node = node
 
-            return ready_map_node
+            return ready_child_pipeline_node or ready_map_node
 
     def mark_node_starting(self, node_id: str) -> bool:
         """Mark a node as starting.
@@ -324,11 +426,48 @@ class InvocationDependencyGraph:
         """
         return self._set_node_state(node_id=node_id, state=NodeState.FAILED)
 
+    def mark_node_paused(self, node_id: str) -> List[str]:
+        """Mark a node as paused and cascade to all downstream nodes.
+
+        Args:
+            node_id: The node ID.
+
+        Returns:
+            The IDs of all nodes whose state transitioned to PAUSED.
+        """
+        with self._lock:
+            cascaded: List[str] = []
+            stack: List[str] = [node_id]
+            while stack:
+                current_id = stack.pop()
+                node = self._get_node(node_id=current_id)
+                if node.state.is_terminal:
+                    continue
+
+                self._set_node_state(
+                    node_id=current_id, state=NodeState.PAUSED
+                )
+                cascaded.append(current_id)
+                stack.extend(node.downstream_ids)
+            return cascaded
+
+    def get_node_state(self, node_id: str) -> NodeState:
+        """Get the current state of a node.
+
+        Args:
+            node_id: The node ID.
+
+        Returns:
+            The current state of the node.
+        """
+        with self._lock:
+            return self._get_node(node_id=node_id).state
+
     def _register_node(
         self,
         node: AnyNode,
         upstream_ids: Optional[Sequence[str]],
-    ) -> bool:
+    ) -> Tuple[AnyNode, bool]:
         """Register a graph node.
 
         Args:
@@ -340,7 +479,8 @@ class InvocationDependencyGraph:
                 ID but a different node type already exists.
 
         Returns:
-            Whether the registration caused any newly ready nodes.
+            The registered node and whether the registration caused any
+            newly ready nodes.
         """
         with self._lock:
             if existing_node := self._nodes.get(node.node_id):
@@ -349,7 +489,7 @@ class InvocationDependencyGraph:
                         f"Node `{node.node_id}` already exists as a different "
                         "node type."
                     )
-                return False
+                return existing_node, False
 
             self._nodes[node.node_id] = node
 
@@ -359,14 +499,24 @@ class InvocationDependencyGraph:
                 self._nodes[upstream_id].downstream_ids.add(node.node_id)
 
             if node.state == NodeState.READY:
-                return True
+                return node, True
 
             if node.state.is_terminal:
-                return self._handle_terminal_node_transition(
+                return node, self._handle_terminal_node_transition(
                     node_id=node.node_id
                 )
 
-            return self._maybe_mark_node_ready(node_id=node.node_id)
+            # If any upstream is paused, we inherit the paused state.
+            if any(
+                self._get_node(node_id=upstream_id).state == NodeState.PAUSED
+                for upstream_id in node.upstream_ids
+            ):
+                self._set_node_state(
+                    node_id=node.node_id, state=NodeState.PAUSED
+                )
+                return node, False
+
+            return node, self._maybe_mark_node_ready(node_id=node.node_id)
 
     def _validate_node_state_transition(
         self, old_state: NodeState, new_state: NodeState
@@ -494,6 +644,10 @@ class InvocationDependencyGraph:
             child_node.state == NodeState.FAILED for child_node in child_nodes
         ):
             aggregate_state = NodeState.FAILED
+        elif any(
+            child_node.state == NodeState.PAUSED for child_node in child_nodes
+        ):
+            aggregate_state = NodeState.PAUSED
         else:
             aggregate_state = NodeState.SUCCEEDED
 

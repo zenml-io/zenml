@@ -14,8 +14,8 @@
 """Tests for stack component register/update/remove-attribute --help flavor schema."""
 
 import pytest
-from click.testing import CliRunner
 
+from tests.cli_runner_utils import cli_runner
 from zenml.cli.cli import cli
 from zenml.cli.utils import _resolve_schema_property_type, _type_to_metavar
 from zenml.enums import StackComponentType
@@ -72,7 +72,7 @@ def test_register_help_includes_flavor_schema(
         "zenml.cli.stack_components.Client", _make_mock_client(schema)
     )
 
-    runner = CliRunner()
+    runner = cli_runner()
     result = runner.invoke(
         cli,
         ["orchestrator", "register", "-f", "default", "--help"],
@@ -106,7 +106,7 @@ def test_register_help_works_with_extra_config_args(
         "zenml.cli.stack_components.Client", _make_mock_client(schema)
     )
 
-    runner = CliRunner()
+    runner = cli_runner()
     result = runner.invoke(
         cli,
         [
@@ -144,7 +144,7 @@ def test_update_help_includes_flavor_schema(
         "zenml.cli.stack_components.Client", _make_mock_client(schema)
     )
 
-    runner = CliRunner()
+    runner = cli_runner()
     result = runner.invoke(
         cli,
         ["orchestrator", "update", "my-orch", "--help"],
@@ -164,7 +164,7 @@ def test_register_help_without_flavor_has_no_schema_section(
         _make_mock_client({"properties": {}}),
     )
 
-    runner = CliRunner()
+    runner = cli_runner()
     result = runner.invoke(
         cli,
         ["orchestrator", "register", "--help"],
@@ -196,7 +196,7 @@ def test_register_help_shows_required_marker(
         "zenml.cli.stack_components.Client", _make_mock_client(schema)
     )
 
-    runner = CliRunner()
+    runner = cli_runner()
     result = runner.invoke(
         cli,
         ["orchestrator", "register", "-f", "default", "--help"],
@@ -223,7 +223,7 @@ def test_register_help_skips_ref_properties(
         "zenml.cli.stack_components.Client", _make_mock_client(schema)
     )
 
-    runner = CliRunner()
+    runner = cli_runner()
     result = runner.invoke(
         cli,
         ["orchestrator", "register", "-f", "default", "--help"],
@@ -321,7 +321,7 @@ def test_remove_attribute_help_includes_flavor_schema(
         "zenml.cli.stack_components.Client", _make_mock_client(schema)
     )
 
-    runner = CliRunner()
+    runner = cli_runner()
     result = runner.invoke(
         cli,
         ["orchestrator", "remove-attribute", "my-orch", "--help"],
@@ -343,7 +343,7 @@ def test_remove_attribute_help_without_name_has_no_schema(
         _make_mock_client({"properties": {}}),
     )
 
-    runner = CliRunner()
+    runner = cli_runner()
     result = runner.invoke(
         cli,
         ["orchestrator", "remove-attribute", "--help"],

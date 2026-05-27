@@ -264,6 +264,15 @@ class DockerSettings(BaseSettings):
             stack component settings will be used.
         python_package_installer: The package installer to use for python
             packages.
+        python_package_installer_cache_mount: If set, this is rendered as the
+            value of a BuildKit `RUN --mount=<value>` instruction on the
+            package install steps, so the installer's cache is preserved
+            across builds. Requires BuildKit. The value is passed through
+            verbatim, so any valid `--mount` spec works (e.g. `type=cache` or
+            `type=bind`). When set, the default `--no-cache-dir` install
+            argument is dropped so the mount is actually used. Examples:
+            `type=cache,target=/root/.cache/uv` for the `uv` installer,
+            `type=cache,target=/root/.cache/pip` for the `pip` installer.
         python_package_installer_args: Arguments to pass to the python package
             installer.
         disable_automatic_requirements_detection: If set to True, ZenML will
@@ -336,6 +345,7 @@ class DockerSettings(BaseSettings):
     python_package_installer: PythonPackageInstaller = (
         PythonPackageInstaller.UV
     )
+    python_package_installer_cache_mount: Optional[str] = None
     python_package_installer_args: Dict[str, Any] = {}
     disable_automatic_requirements_detection: bool = True
     replicate_local_python_environment: Optional[

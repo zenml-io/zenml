@@ -255,6 +255,18 @@ class ServerConfiguration(BaseModel):
             cleanup batches.
         dashboard_files_path: The path to the dashboard files directory. If not
             specified, the built-in dashboard files will be used.
+        otel_exporter_otlp_endpoint: OTLP collector endpoint URL for
+            OpenTelemetry export (traces, metrics, logs). If not set,
+            OTel instrumentation is disabled.
+        otel_service_name: Service name reported in OTel resource attributes.
+            Appears as ``service.name`` in traces, metrics, and logs.
+            Defaults to 'zenml-server'
+        otel_traces_enabled: Whether to export OpenTelemetry traces when the
+            OTLP endpoint is configured.
+        otel_metrics_enabled: Whether to export OpenTelemetry metrics when the
+            OTLP endpoint is configured.
+        otel_logs_enabled: Whether to export OpenTelemetry logs when the OTLP
+            endpoint is configured.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -368,6 +380,12 @@ class ServerConfiguration(BaseModel):
         DEFAULT_ZENML_SERVER_FILE_DOWNLOAD_SIZE_LIMIT
     )
     dashboard_files_path: Optional[str] = None
+
+    otel_exporter_otlp_endpoint: Optional[str] = None
+    otel_service_name: str = "zenml-server"
+    otel_traces_enabled: bool = True
+    otel_metrics_enabled: bool = True
+    otel_logs_enabled: bool = True
 
     _deployment_id: Optional[UUID] = None
 

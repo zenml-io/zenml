@@ -57,7 +57,7 @@ Use filesystem navigation tools to explore the codebase structure as needed.
   - Automatically fixes and formats code using ruff and yamlfix
 - Check code quality with: `bash scripts/lint.sh`
   - Unlike format.sh, this doesn't auto-fix issues
-  - Runs mypy type checking on the codebase
+  - Runs Ruff, pydoclint (on `src/zenml tests/harness`), yamlfix, zizmor, unused import/variable checks, Ruff formatting checks, and mypy
   - Note: Full mypy check is slow on the entire codebase
   - For faster checks, run mypy directly on specific files: `mypy src/zenml/path/to/file.py`
 - The primary code style is enforced by ruff, configured in `pyproject.toml`
@@ -285,7 +285,7 @@ ZenML documentation is available via a built-in GitBook MCP server: https://docs
 - Database schema changes require Alembic migrations
 - ZenML uses **SQLModel** (SQLAlchemy-based) — no raw SQL unless absolutely necessary
 - Create migrations with descriptive names: `alembic revision -m "Add X to Y table"`
-- Test migrations both up and down: `alembic upgrade head` and `alembic downgrade -1`
+- Test the upgrade path with `alembic upgrade head`; downgrade testing is optional because ZenML does not generally support downgrades
 - Never modify existing migrations that are already on main/develop branches
 - Always consider backward compatibility for rolling deployments
 - Include both schema changes and data migrations when needed
@@ -381,12 +381,20 @@ This ensures migrations handle existing data correctly. CI does basic migration 
 - `BaseOrchestrator` - Pipeline execution
 - `BaseStepOperator` - Remote step execution (submit/status/wait/cancel lifecycle)
 
+### Cross-Cutting Architecture Areas
+Some ZenML features span many layers. When working in these areas, follow the full chain instead of editing only the file where the immediate change appears:
+
+- `src/zenml/execution/pipeline/dynamic/` and `src/zenml/pipelines/dynamic/` contain dynamic pipeline execution, including nested child pipelines. Changes here often need matching updates in orchestrators, pipeline run models/schemas, migrations, tests, and docs.
+- `src/zenml/triggers/` and `src/zenml/models/v2/core/triggers.py` contain the trigger architecture, including schedule triggers and platform event triggers. Keep CLI, client, server, model, schema, and docs layers aligned when touching triggers.
+- `src/zenml/models/v2/core/resource_pool*.py`, `resource_request.py`, and `src/zenml/zen_stores/resource_pools/` contain resource pool and resource request functionality. These features coordinate API models, store behavior, CLI commands, and Pro/backend integrations.
+- `src/zenml/container_engines/` contains the client-side container engine abstraction for Docker and Podman. Prefer this abstraction over calling Docker-specific helpers directly when local OCI tooling is involved.
+
 ## Common Tasks
 
 ### Adding New Integrations
 1. Create integration package in `/src/zenml/integrations/`
 2. Implement required abstractions and register flavors
-3. Add tests in `/tests/integrations/`
+3. Add tests in `/tests/integration/` (usually `/tests/integration/integrations/` for integration-specific tests)
 4. Add documentation in `/docs/book/component-guide/`
 
 ### Modifying Core Functionality

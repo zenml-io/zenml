@@ -51,6 +51,7 @@ from zenml.service_connectors.service_connector_registry import (
 from zenml.zen_server.cloud_utils import send_pro_workspace_status_update
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.middleware import add_middlewares
+from zenml.zen_server.otel import configure_otel, shutdown_otel
 from zenml.zen_server.routers import (
     artifact_endpoint,
     artifact_version_endpoints,
@@ -122,6 +123,27 @@ def dashboard_directory() -> str:
     return os.path.join(os.path.dirname(__file__), "dashboard")
 
 
+def _configure_uvicorn_logging() -> None:
+    """Route uvicorn records through the ZenML root logging setup."""
+    # On startup uvicorn installs its own handlers and formatters on three loggers:
+    #
+    #   "uvicorn"        – parent logger (propagate=False by default)
+    #   "uvicorn.error"  – server lifecycle and internal errors
+    #   "uvicorn.access" – per-request access log
+    #
+    # These handlers use uvicorn's own output path. Clear them and let uvicorn
+    # propagate to the root logger so its records are handled by the same
+    # ZenML handlers that render console/JSON output and export logs to OTel.
+    for _uvicorn_logger_name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
+        _uvicorn_logger = logging.getLogger(_uvicorn_logger_name)
+
+        # clear uvicorn handlers to avoid double logging
+        _uvicorn_logger.handlers.clear()
+
+        # propagate uvicorn logs to the root logger
+        _uvicorn_logger.propagate = True
+
+
 app = FastAPI(
     title="ZenML",
     version=zenml.__version__,
@@ -130,6 +152,12 @@ app = FastAPI(
 )
 
 add_middlewares(app)
+
+# suppress uvicorn access logs
+_configure_uvicorn_logging()
+
+# Configure OpenTelemetry
+configure_otel(app)
 
 
 # Customize the default request validation handler that comes with FastAPI
@@ -186,6 +214,7 @@ async def shutdown() -> None:
     """Shutdown the ZenML server."""
     if logger.isEnabledFor(logging.DEBUG):
         stop_event_loop_lag_monitor()
+    shutdown_otel()
     snapshot_executor().shutdown(wait=True)
     await cleanup_request_manager()
 
@@ -252,7 +281,9 @@ async def dashboard(request: Request) -> Any:
 
     if not os.path.isfile(os.path.join(dashboard_directory(), "index.html")):
         raise HTTPException(status_code=404)
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(
+        name="index.html", context={"request": request}
+    )
 
 
 app.include_router(artifact_endpoint.artifact_router)
@@ -373,4 +404,6 @@ async def catch_all(request: Request, file_path: str) -> Any:
 
     # everything else is directed to the index.html file that hosts the
     # single-page application
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(
+        name="index.html", context={"request": request}
+    )
