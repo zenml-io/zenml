@@ -59,6 +59,23 @@ server:
   #
   # requestCacheTimeout: 300
 
+  # Live event streaming for pipeline runs. Dormant unless
+  # `streamBrokerImplementationSource` is set. Source `ZENML_REDIS_BROKER_URL`
+  # from a secret via `server.environmentSecretKeyRefs`.
+  streaming:
+    # streamBrokerImplementationSource: zenml.zen_server.streaming.brokers.redis_streams.RedisStreamsBroker
+    #
+    # SSE heartbeat interval (seconds). Default: 30.
+    # heartbeatSeconds: 30
+    #
+    # Max simultaneous subscribers per run. The N+1th gets 503. Default: 100.
+    # maxSubscribersPerStream: 100
+    #
+    # How long the server keeps a stream's broker reader running after the
+    # last subscriber disconnects, so quick reconnects don't re-probe the
+    # broker. Default: 30.
+    # broadcasterIdleGraceSeconds: 30
+
   image:
     repository: zenmldocker/zenml-server
     pullPolicy: Always

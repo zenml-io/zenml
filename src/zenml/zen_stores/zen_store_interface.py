@@ -147,6 +147,8 @@ from zenml.models import (
     StepRunRequest,
     StepRunResponse,
     StepRunUpdate,
+    StreamBatchRequest,
+    StreamBatchResponse,
     TagFilter,
     TagRequest,
     TagResourceRequest,
@@ -1693,6 +1695,24 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
 
         Returns:
             KeyError: if the pipeline run doesn't exist.
+        """
+
+    @abstractmethod
+    def publish_run_events(
+        self, pipeline_run_id: UUID, batch: StreamBatchRequest
+    ) -> StreamBatchResponse:
+        """Publish a batch of live events to a pipeline run's stream.
+
+        Args:
+            pipeline_run_id: The ID of the run the events belong to.
+            batch: The batch of events to publish.
+
+        Returns:
+            The server-side ingest response.
+
+        Raises:
+            NotImplementedError: If streaming is not configured on the
+                target store.
         """
 
     @abstractmethod
