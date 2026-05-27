@@ -458,14 +458,17 @@ class BaseSandbox(StackComponent, ABC):
         """
         from zenml.steps.step_context import StepContext
 
-        if StepContext.get() is None:
+        ctx = StepContext.get()
+        if ctx is None:
             return None
 
         try:
             settings_cls = self.settings_class
-            if settings_cls is None:
+            if settings_cls is None or not issubclass(
+                settings_cls, BaseSandboxSettings
+            ):
                 return None
-            step_settings = StepContext.get().step_run.config.settings
+            step_settings = ctx.step_run.config.settings
             # Settings can be keyed three ways - try all of them in
             # increasing-specificity order so we pick up the most general
             # form first but still let a more specific key win if both
