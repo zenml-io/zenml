@@ -119,10 +119,24 @@ def build_agent() -> Agent[AgentDeps, str]:
         # immediately — important once the Modal flavor's log-forwarding
         # wraps these iterators (lines surface in the step log live).
         process = ctx.deps.session.exec(["python", "-u", "-c", code])
-        stdout = _drain(process.stdout())
-        stderr = _drain(process.stderr())
-        exit_code = process.wait()
-        return CodeResult(stdout=stdout, stderr=stderr, exit_code=exit_code)
+        # ``collect`` drains both streams to completion (so the
+        # provider's wait() is safe), caps each stream at max_bytes,
+        # and flags truncation per-stream. Replaces the three-line
+        # ``stdout = _drain(...); stderr = _drain(...); wait()`` dance.
+        out = process.collect(max_bytes=_MAX_STREAM_BYTES)
+        if out.stdout_truncated:
+            out.stdout += (
+                f"\n... [stdout truncated at {_MAX_STREAM_BYTES} bytes]\n"
+            )
+        if out.stderr_truncated:
+            out.stderr += (
+                f"\n... [stderr truncated at {_MAX_STREAM_BYTES} bytes]\n"
+            )
+        return CodeResult(
+            stdout=out.stdout,
+            stderr=out.stderr,
+            exit_code=out.exit_code,
+        )
 
     return agent
 

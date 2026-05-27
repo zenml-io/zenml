@@ -23,9 +23,9 @@ import sys
 from pathlib import Path
 from typing import Annotated, Any
 
-import zenml
 from agent import run_agent
 
+import zenml
 from zenml import pipeline, step
 from zenml.config import DockerSettings
 
@@ -114,6 +114,7 @@ def agent_step(query: str) -> Annotated[str, "agent_answer"]:
 
 
 @pipeline(
+    dynamic=True,
     enable_cache=False,
     settings={
         "docker": get_docker_settings(
