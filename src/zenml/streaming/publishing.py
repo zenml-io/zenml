@@ -29,6 +29,8 @@ from typing import (
 )
 from uuid import UUID
 
+from zenml.exceptions import MethodNotAllowedError
+
 if TYPE_CHECKING:
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -53,28 +55,6 @@ _PAYLOAD_ADAPTER: TypeAdapter[Dict[str, Any]] = TypeAdapter(Dict[str, Any])
 _RESERVED_KINDS: FrozenSet[str] = frozenset(
     {"end", "gap", "error", "cursor", "system"}
 )
-
-
-def _check_payload_size(payload: Dict[str, Any]) -> None:
-    """Reject payloads that are not JSON-encodable or exceed the cap.
-
-    Args:
-        payload: The event payload to size-check.
-
-    Raises:
-        ValueError: If the payload is not JSON-encodable or its encoded
-            size exceeds `STREAM_EVENT_PAYLOAD_BYTES_MAX`.
-    """
-    try:
-        encoded = _PAYLOAD_ADAPTER.dump_json(payload)
-    except Exception as exc:
-        raise ValueError(f"Payload is not JSON-encodable: {exc}") from exc
-
-    if len(encoded) > STREAM_EVENT_PAYLOAD_BYTES_MAX:
-        raise ValueError(
-            f"Payload encoded size ({len(encoded)} bytes) exceeds the "
-            f"maximum of {STREAM_EVENT_PAYLOAD_BYTES_MAX} bytes."
-        )
 
 
 class _PublishContext(NamedTuple):
@@ -144,7 +124,8 @@ class _StreamPublisher(metaclass=SingletonMetaClass):
         """
         if self._disabled:
             return
-        _check_payload_size(event.payload)
+
+        self._check_payload_size(event.payload)
 
         if self._thread is None:
             self._ensure_thread()
@@ -295,7 +276,7 @@ class _StreamPublisher(metaclass=SingletonMetaClass):
                         pipeline_run_id=run_id,
                         batch=StreamBatchRequest(events=run_events),
                     )
-                except NotImplementedError:
+                except (NotImplementedError, MethodNotAllowedError):
                     self._disable_publishing()
                     return
                 except Exception as exc:
@@ -307,6 +288,28 @@ class _StreamPublisher(metaclass=SingletonMetaClass):
                     )
         finally:
             self._done_sending()
+
+    @staticmethod
+    def _check_payload_size(payload: Dict[str, Any]) -> None:
+        """Reject payloads that are not JSON-encodable or exceed the cap.
+
+        Args:
+            payload: The event payload to size-check.
+
+        Raises:
+            ValueError: If the payload is not JSON-encodable or its encoded
+                size exceeds `STREAM_EVENT_PAYLOAD_BYTES_MAX`.
+        """
+        try:
+            encoded = _PAYLOAD_ADAPTER.dump_json(payload)
+        except Exception as exc:
+            raise ValueError(f"Payload is not JSON-encodable: {exc}") from exc
+
+        if len(encoded) > STREAM_EVENT_PAYLOAD_BYTES_MAX:
+            raise ValueError(
+                f"Payload encoded size ({len(encoded)} bytes) exceeds the "
+                f"maximum of {STREAM_EVENT_PAYLOAD_BYTES_MAX} bytes."
+            )
 
 
 def flush(timeout: float = 2.0) -> bool:
@@ -350,7 +353,7 @@ def publish(
         )
     ctx = _resolve_publish_context()
     if ctx is None:
-        logger.debug(
+        logger.warning(
             "`publish(...)` called outside a pipeline run, ignoring event: %s",
             payload,
         )

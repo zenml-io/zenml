@@ -23,7 +23,7 @@ from zenml.constants import (
     STREAM_EVENT_PAYLOAD_BYTES_MAX,
 )
 from zenml.models import StreamBatchRequest, StreamEvent
-from zenml.streaming.publishing import _check_payload_size
+from zenml.streaming.publishing import _StreamPublisher
 
 
 def _make(kind: str = "token") -> StreamEvent:
@@ -64,14 +64,14 @@ def test_batch_accepts_empty():
 
 def test_check_payload_size_accepts_small():
     """A tiny dict passes the producer-side size check."""
-    _check_payload_size({"v": "hello"})
+    _StreamPublisher._check_payload_size({"v": "hello"})
 
 
 def test_check_payload_size_rejects_oversize():
     """An oversize dict is rejected before any HTTP work happens."""
     huge = {"v": "x" * (STREAM_EVENT_PAYLOAD_BYTES_MAX + 100)}
     with pytest.raises(ValueError, match="exceeds the maximum"):
-        _check_payload_size(huge)
+        _StreamPublisher._check_payload_size(huge)
 
 
 def test_stream_event_construction_no_longer_validates_payload_size():

@@ -780,11 +780,11 @@ async def publish_run_events(
         ids = await stream_broker().publish(
             stream_key_for_run(pipeline_run_id), payloads
         )
-    except Exception as exc:
+    except Exception:
         logger.exception("Broker publish failed for run %s", pipeline_run_id)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Broker publish failed: {exc}",
+            detail="Broker publish failed.",
             headers={"Retry-After": "5"},
         )
 
