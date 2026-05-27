@@ -1,0 +1,340 @@
+# Sandbox Stack Component — PR #1: Core abstraction + Modal flavor
+
+Branch: `feature/sandbox-component-core`. Targets `develop`.
+
+This document is the running plan + design rationale for the Sandbox stack component. It will become the PR description. Sections:
+
+1. [Summary](#summary)
+2. [Glossary](#glossary)
+3. [API](#api)
+4. [Config & Settings](#config--settings)
+5. [PR #1 scope](#pr-1-scope)
+6. [Out of scope / future PRs](#out-of-scope--future-prs)
+7. [ADR 0001 — Sandbox is a step's tool, not a step launcher](#adr-0001--sandbox-is-a-steps-tool-not-a-step-launcher)
+8. [ADR 0002 — Attach and Restore as separate verbs](#adr-0002--attach-and-restore-as-separate-verbs)
+9. [Running task list](#running-task-list)
+
+---
+
+## Summary
+
+Adds a new ZenML stack component type, **Sandbox**, that lets a step (typically running an AI agent) execute LLM-generated code in an isolated environment (Modal container, E2B microVM, k8s pod, etc.) and stream results back. The step *consumes* the sandbox via `Client().active_stack.sandbox`; the sandbox does not run the step. Multiple sandboxes per stack are allowed.
+
+This PR ships:
+- The abstract `BaseSandbox`, `SandboxSession`, `SandboxProcess`, `BaseSandboxSnapshot` interfaces.
+- The `SANDBOX` `StackComponentType` enum value + stack wiring.
+- A concrete **Modal** flavor (`ModalSandbox`) that maps to `modal.Sandbox.create / exec / snapshot_filesystem / from_id`.
+- A `ModalSandboxSnapshot` Pydantic model + dedicated materializer.
+- Unit tests and user docs.
+
+The outbound-credential proxy ("Sandbox Auth Proxy" pattern shipped by LangSmith, Vercel, Cloudflare) is **deferred to PR #2**.
+
+---
+
+## Glossary
+
+### Sandbox
+
+A **stack component** that provides isolated code execution to a step at runtime. The step *uses* the sandbox (via the active stack) — the sandbox does **not** run the step. Distinct from a Step Operator, which submits and executes the step itself.
+
+Typical use: an AI agent running inside a ZenML step reaches for the active stack's Sandbox to execute generated code as a tool, possibly across many turns of an agent loop.
+
+When prose says "the sandbox", the **Sandbox Session** (below) is almost always meant. Use "Sandbox component" or "Sandbox flavor" when referring to the stack-component entity.
+
+### Sandbox Session
+
+A **live, bounded interaction with a single isolated execution environment** (container / microVM / pod) created by a Sandbox component. Has an `id`, accepts many `exec` calls, can optionally be snapshotted, and is explicitly closed when done.
+
+Created by `Sandbox.create_session()`. One Sandbox component can mint many Sessions.
+
+### Sandbox Snapshot
+
+A serializable, provider-specific reference to a captured Sandbox Session state. Round-trips: `session.snapshot() → BaseSandboxSnapshot`, then `sandbox.restore(snapshot) → SandboxSession`. Snapshots from one flavor cannot be restored by another.
+
+**Restore** always returns a *new* Session (fresh `id`). The original Session is unaffected.
+
+### Attach vs Restore
+
+Two distinct ways to obtain a Session that isn't freshly created:
+
+- **Attach** (`sandbox.attach(session_id)`) — reconnect to an **already-live** Session by id. No snapshot needed. Use for subagent / cross-pipeline flows that want to share one live Session.
+- **Restore** (`sandbox.restore(snapshot)`) — materialize a new Session from a stored Snapshot. The original Session may or may not still exist; restore doesn't care.
+
+### Session Environment
+
+The base image and environment variables a Session is created with.
+
+**Component-level (no new fields on `BaseSandboxConfig`).** Every `StackComponent` already exposes `self.environment: Dict[str, str]` and `self.secrets: List[UUID]` ([docs](https://docs.zenml.io/concepts/environment-variables#configuring-environment-variables-on-stack-components)). Sandbox flavors read those at `create_session()` time — explicit env vars from `self.environment` plus secrets resolved via `Client().get_secret(uuid).secret_values` and exploded into env vars.
+
+**Per-step (`BaseSandboxSettings`):**
+
+- `base_image: Union[str, None]` — `None` → flavor default; sentinel `STEP_IMAGE` → image the current ZenML step is running in (warns and falls back to flavor default if not containerized); any other string → exact image URI.
+- `environment: Dict[str, str]` — per-step overrides merged onto `StackComponent.environment` (Settings wins on key collision). Values may use ZenML `{{secret.key}}` references; auto-resolved at access time.
+- `copy_local_env: bool` (default `False`) — propagate the step process's *full* local env (incl. resolved secrets) into the Session. Convenience for prototyping; off by default for security.
+- `forward_logs_to_step: Optional[bool]` (default `None`) — see "Log forwarding" below.
+
+LLM-generated code running inside the Session can read everything in this environment. The mitigation pattern (auth-injecting proxy) is future work; see *Out of scope*.
+
+---
+
+## API
+
+```python
+# src/zenml/sandboxes/base_sandbox.py
+
+STEP_IMAGE = "<step>"  # sentinel for "use the step's runtime image"
+
+
+class SandboxProcess(ABC):
+    """Handle to a running command inside a Session."""
+    @abstractmethod
+    def stdout(self) -> Iterator[str]: ...   # line-delimited, utf-8 decoded
+    @abstractmethod
+    def stderr(self) -> Iterator[str]: ...
+    @abstractmethod
+    def wait(self, timeout: Optional[float] = None) -> int: ...
+    @abstractmethod
+    def kill(self) -> None: ...
+    @property
+    @abstractmethod
+    def exit_code(self) -> Optional[int]: ...
+
+
+class BaseSandboxSnapshot(BaseModel):
+    provider: str        # must match a flavor name
+    ref: str             # provider-specific (Modal image id, etc.)
+    metadata: Dict[str, Any] = {}
+
+
+class SandboxSession(ABC):
+    id: str
+
+    @abstractmethod
+    def exec(
+        self,
+        command: Union[str, List[str]],
+        *,
+        cwd: Optional[str] = None,
+        env: Optional[Dict[str, str]] = None,
+    ) -> SandboxProcess: ...
+
+    async def aexec(self, command, *, cwd=None, env=None) -> SandboxProcess:
+        raise NotImplementedError(...)
+
+    def snapshot(self) -> BaseSandboxSnapshot:
+        raise NotImplementedError(...)
+
+    def upload_file(self, local_path: str, remote_path: str) -> None:
+        raise NotImplementedError(...)
+
+    def download_file(self, remote_path: str, local_path: str) -> None:
+        raise NotImplementedError(...)
+
+    @abstractmethod
+    def close(self) -> None:
+        """Release the local handle. Sandbox keeps running on the provider."""
+
+    def destroy(self) -> None:
+        """Terminate the sandbox on the provider. Invalidates the session id."""
+        raise NotImplementedError(...)
+
+    # __enter__ / __exit__ → close()
+
+
+class BaseSandbox(StackComponent, ABC):
+    @abstractmethod
+    def create_session(
+        self, settings: Optional["BaseSandboxSettings"] = None
+    ) -> SandboxSession: ...
+
+    def attach(self, session_id: str) -> SandboxSession:
+        """Reconnect to an already-live Session by id. Cheap."""
+        raise NotImplementedError(...)
+
+    def restore(self, snapshot: BaseSandboxSnapshot) -> SandboxSession:
+        """Materialize a new Session from a stored Snapshot."""
+        # Base validates snapshot.provider == self.flavor; subclasses
+        # super().restore(snap) first, then do their work.
+        raise NotImplementedError(...)
+
+
+class BaseSandboxFlavor(Flavor):
+    @property
+    def type(self) -> StackComponentType:
+        return StackComponentType.SANDBOX
+
+    @property
+    def config_class(self) -> Type[BaseSandboxConfig]:
+        return BaseSandboxConfig
+
+    @property
+    @abstractmethod
+    def implementation_class(self) -> Type[BaseSandbox]: ...
+```
+
+`exec()` raises `SandboxExecError` (subclass of `RuntimeError`) synchronously if the launch itself fails (binary not found, image broken). Once a `SandboxProcess` is returned, runtime errors flow through `exit_code`/`stderr()`.
+
+---
+
+## Config & Settings
+
+```python
+class BaseSandboxConfig(StackComponentConfig):
+    # No fields. Env vars and secrets live on StackComponent (self.environment,
+    # self.secrets) — set via `zenml stack-component register --env ... --secret ...`.
+    pass
+
+
+class BaseSandboxSettings(BaseSettings):
+    base_image: Optional[str] = None       # None | STEP_IMAGE | "image:tag"
+    environment: Dict[str, str] = {}       # MERGED onto StackComponent.environment; Settings wins
+    copy_local_env: bool = False
+    timeout_seconds: Optional[int] = None
+    forward_logs_to_step: Optional[bool] = None   # see "Log forwarding"
+```
+
+Merge order at `create_session()`:
+1. `StackComponent.environment` (component-level defaults).
+2. Each `StackComponent.secrets` UUID resolved via `Client().get_secret(uuid).secret_values` and exploded into env vars.
+3. `Settings.environment` overrides on key collision.
+4. If `Settings.copy_local_env=True`, the step's local env is layered last.
+
+**Log forwarding.** When effective `forward_logs_to_step` is `True`, the flavor opens a ZenML `LoggingContext` with `source=f"sandbox:{session_id}"` so sandbox stdout/stderr surfaces in the UI as a distinct log stream per session — `zenml.utils.logging_utils.setup_logging_context(source=...)` is the wiring point.
+
+Flavor-side default resolution (when the user leaves `forward_logs_to_step=None`): `True` if `base_image == STEP_IMAGE` (the sandbox is running the step's own image and is "integrated"), `False` for the flavor's default image or any custom image (sandbox is "alien" — don't presume the user wants their logs intermingled).
+
+Implementation notes:
+- Before forwarding, check `is_step_logging_enabled(step_configuration, pipeline_configuration)` — if the user disabled step logs globally (`ZENML_DISABLE_STEP_LOGS_STORAGE=1` or via pipeline/step config), the sandbox path must also silently no-op.
+- `setup_logging_context` requires a reachable log store. The default `ArtifactLogStore` writes through the stack's `artifact_store` (already a required stack component). For non-pipeline / script-mode usage where no `LoggingContext` is available, wrap the setup call in try/except and fall back to plain `logger.info()` line-by-line.
+
+Multi-per-stack: `StackComponentType.SANDBOX.supports_multiple_per_stack == True`. `active_stack.sandbox` returns the default (first attached); `active_stack.sandboxes` returns `Dict[str, BaseSandbox]`.
+
+---
+
+## PR #1 scope
+
+| File | Purpose |
+|---|---|
+| `src/zenml/enums.py` | Add `SANDBOX = "sandbox"`; include in `supports_multiple_per_stack` set. |
+| `src/zenml/sandboxes/__init__.py` | Re-exports. |
+| `src/zenml/sandboxes/base_sandbox.py` | All base classes above + `STEP_IMAGE` sentinel + `SandboxExecError`. |
+| `src/zenml/stack/stack.py` | Add `sandbox` / `sandboxes` properties on `Stack`. Update `__init__` to accept sandbox(es). |
+| `src/zenml/integrations/modal/sandboxes/modal_sandbox.py` | `ModalSandbox` + `ModalSandboxSession` + `ModalSandboxProcess`. |
+| `src/zenml/integrations/modal/flavors/modal_sandbox_flavor.py` | `ModalSandboxConfig`, `ModalSandboxSettings`, `ModalSandboxFlavor`. |
+| `src/zenml/integrations/modal/materializers/modal_sandbox_snapshot_materializer.py` | Per-flavor materializer for `ModalSandboxSnapshot`. |
+| `src/zenml/integrations/modal/__init__.py` | Register `ModalSandboxFlavor` in `ModalIntegration.flavors()`. |
+| `tests/unit/sandboxes/test_base_sandbox.py` | Interface contracts; `NotImplementedError` defaults; merge order. |
+| `tests/unit/integrations/modal/test_modal_sandbox.py` | Mock `modal.Sandbox`; verify exec stream, snapshot round-trip, env merge. |
+| `docs/book/component-guide/sandboxes/sandboxes.md` | Overview + how to use. |
+| `docs/book/component-guide/sandboxes/modal.md` | Modal-specific page. |
+| `docs/book/component-guide/toc.md` | Add sandbox section. |
+
+---
+
+## Out of scope / future PRs
+
+**PR #2 — Sandbox Auth Proxy (Modal).** Industry-standard pattern shipped by LangSmith, Vercel, Cloudflare. Routes outbound HTTP from the Session through a sidecar/paired-sandbox proxy that injects `Authorization` headers per host-pattern rule, so LLM-generated code never sees raw credentials. Reference design: kami-agent's mitmproxy-addon implementation. Config schema to adopt:
+
+```python
+class SandboxProxyRule(BaseModel):
+    name: str
+    match_hosts: List[str]
+    inject_headers: Dict[str, str]   # values support {{secret.key}}
+
+class BaseSandboxConfig:
+    proxy_rules: List[SandboxProxyRule] = []
+```
+
+Each flavor implements proxy infra (Modal: paired sandbox running mitmdump; k8s: sidecar container + NetworkPolicy; E2B/Daytona: custom template). Until this lands, secrets in `environment` are readable by LLM-generated code — documented loudly.
+
+**PR #3 — Agent Substrate / k8s flavor.** `src/zenml/integrations/agent_sandbox/` against `agents.x-k8s.io/v1alpha1` `Sandbox` CRD; not GKE-specific. Includes the k8s side of PR #2's proxy if PR #2 has landed.
+
+**PR #4+ — E2B, Daytona, and any flavors lifted from the existing `feature/sandboxes-stack-component` branch worth keeping (e.g. cost-tracking metadata, structured logging via `forward_sandbox_output`).**
+
+**Other deferred items:**
+- Auto-explode `secrets: List[str]` field (sugar for "expand every key of these secrets as env vars"). Adopt if real usage demands it.
+- Async-first interface (currently `aexec` is opt-in NotImpl-by-default).
+- "Lazy" helper module (`zenml.sandboxes.get_session()` context manager) — design considered, deferred.
+
+---
+
+## ADR 0001 — Sandbox is a step's tool, not a step launcher
+
+**Status**: Accepted
+
+### Context
+
+ZenML already has several stack components that "run code somewhere": Orchestrator runs pipelines; Step Operator runs individual steps remotely; Image Builder + Container Registry prepare the env. The Sandbox is adjacent to all of these, and the framing decision is foundational. Three framings:
+
+- **(A)** A backend the step *consumes* during its own execution.
+- **(B)** A launcher that *runs* the step on the user's behalf.
+- **(C)** A non-stack-component library.
+
+### Decision
+
+**(A).** The Sandbox is a stack component the step uses, accessed via `Client().active_stack.sandbox` from inside the step body. The Sandbox does not run the step. A step running on (say) SageMaker step operator can still grab the active stack's Sandbox and use it as a tool. Closest analogs: Experiment Tracker, Alerter — ambient capabilities the step reaches for.
+
+### Consequences
+
+- Interface centres on `BaseSandbox.create_session() -> SandboxSession`, not `submit(step, ...)`. No step-operator lifecycle on the component.
+- Sessions are long-lived, stateful, multi-`exec` — fits an agent's tool-use loop.
+- Composes orthogonally with Step Operators.
+- Multi-per-stack consistent with Step Operator / Alerter / Experiment Tracker.
+
+### Alternatives considered
+
+- **(B) Step-operator framing** — rejected. Steps are atomic; sandboxes are interactive. A step operator cannot model `exec` driven by an agent loop inside the step.
+- **(C) Library, not stack component** — rejected. Loses ZenML's secret resolution (`{{secret.key}}`), settings/config plumbing, swap-by-stack ergonomics.
+
+---
+
+## ADR 0002 — Attach and Restore as separate verbs
+
+**Status**: Accepted
+
+### Context
+
+A Sandbox Session is the live execution environment. There are two legitimate ways a caller might want to obtain a Session that isn't freshly created:
+
+1. **Reconnect to a still-live Session by id.** Common in subagent / cross-pipeline flows. Every backend supports lookup by id (Modal `Sandbox.from_id`, E2B `Sandbox.connect`, Daytona `get`, k8s CR lookup).
+2. **Materialize a new Session from a stored snapshot.** Provider semantics diverge sharply (Modal: FS-only image; E2B: full pause/resume; Daytona: none; Agent Substrate: gVisor checkpoint).
+
+A single overloaded method (`restore(snap_or_id, reuse=...)`) conflates two contracts — one needs a `BaseSandboxSnapshot`, the other a plain string; one presupposes someone took a snapshot, the other does not.
+
+### Decision
+
+Two distinct methods on `BaseSandbox`:
+
+```python
+def attach(self, session_id: str) -> SandboxSession: ...        # NotImpl default
+def restore(self, snapshot: BaseSandboxSnapshot) -> SandboxSession: ...  # NotImpl default
+```
+
+`restore` always returns a *new* Session with a new id, even when the backend reuses memory state. Uniform contract across flavors.
+
+### Consequences
+
+- Subagent flow does not require a snapshot. Parent `save_artifact(session.id)`; child `sandbox.attach(get_artifact(...))`.
+- Snapshot remains opt-in per flavor; Daytona implements `attach` only.
+- Framework does not auto-close Sessions on step exit (close/destroy split on `SandboxSession`). Required for `attach` to be useful across step boundaries.
+
+### Alternatives considered
+
+- **Single overloaded `restore(snap_or_id, reuse=True)`** — rejected. Hides the semantic split behind a flag.
+- **Only `restore`, fake snapshot for reconnect** — rejected. Forces snapshot ceremony for the common path.
+- **Only `attach`, drop `restore`** — rejected. Loses snapshot/replay/branching use case.
+
+---
+
+## Running task list
+
+| # | Task | Status |
+|---|------|--------|
+| 1 | Create branch off develop | ✅ done |
+| 2 | Add `SANDBOX` to `StackComponentType` enum + multi-per-stack set | pending |
+| 3 | Create `src/zenml/sandboxes/` with base classes (`BaseSandbox`, `BaseSandboxConfig`, `BaseSandboxFlavor`, `BaseSandboxSettings`, `SandboxSession`, `SandboxProcess`, `BaseSandboxSnapshot`, `STEP_IMAGE` sentinel, `SandboxExecError`) | pending |
+| 4 | Wire `SANDBOX` into `Stack` (singular `.sandbox` + plural `.sandboxes`) | pending |
+| 5 | Implement `ModalSandbox` + `ModalSandboxSession` + `ModalSandboxProcess` + `ModalSandboxSnapshot` + materializer + flavor | pending |
+| 6 | Unit tests (base interface + Modal flavor mocked) | pending |
+| 7 | Docs (`docs/book/component-guide/sandboxes/`) + `toc.md` update | pending |
+| 8 | `bash scripts/format.sh`, targeted pytest, `/simplify` pass, open PR with `release-notes` label | pending |

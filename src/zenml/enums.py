@@ -212,6 +212,7 @@ class StackComponentType(StrEnum):
     STEP_OPERATOR = "step_operator"
     MODEL_REGISTRY = "model_registry"
     DEPLOYER = "deployer"
+    SANDBOX = "sandbox"
 
     @property
     def plural(self) -> str:
@@ -238,6 +239,7 @@ class StackComponentType(StrEnum):
             StackComponentType.ALERTER,
             StackComponentType.EXPERIMENT_TRACKER,
             StackComponentType.STEP_OPERATOR,
+            StackComponentType.SANDBOX,
         }
 
 
