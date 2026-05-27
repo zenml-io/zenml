@@ -394,6 +394,26 @@ class BaseOrchestrator(StackComponent, ABC):
 
                         combined_environment = base_environment.copy()
                         combined_environment.update(step_environment)
+
+                        # Expose the step's runtime image to step code so the
+                        # Sandbox STEP_IMAGE sentinel can reuse it. Only set
+                        # for containerized orchestrators; non-containerized
+                        # orchestrators don't have an image concept.
+                        get_image = getattr(self, "get_image", None)
+                        if callable(get_image):
+                            try:
+                                combined_environment[
+                                    "ZENML_ACTIVE_STEP_IMAGE"
+                                ] = get_image(
+                                    snapshot=snapshot, step_name=invocation_id
+                                )
+                            except Exception as e:
+                                logger.debug(
+                                    "Could not resolve step image for "
+                                    "ZENML_ACTIVE_STEP_IMAGE: %s",
+                                    e,
+                                )
+
                         step_environments[invocation_id] = combined_environment
 
                     submission_result = self.submit_pipeline(

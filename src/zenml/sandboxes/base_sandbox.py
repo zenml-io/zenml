@@ -19,9 +19,11 @@ component-vs-launcher framing rationale.
 """
 
 from abc import ABC, abstractmethod
+from contextlib import contextmanager
 from typing import (
     Any,
     Dict,
+    Generator,
     Iterator,
     List,
     Optional,
@@ -336,18 +338,199 @@ class BaseSandbox(StackComponent, ABC):
             f"{type(self).__name__} does not support session attach."
         )
 
-    def restore(self, snapshot: BaseSandboxSnapshot) -> SandboxSession:
-        """Materializes a new Session from a stored Snapshot.
+    def resolve_forward_logs_to_step(
+        self, settings: BaseSandboxSettings
+    ) -> bool:
+        """Resolves the effective ``forward_logs_to_step`` value.
 
-        Returns a *new* Session (fresh id); the original is unaffected.
-        Validates ``snapshot.provider`` matches this flavor before delegating.
-        Subclasses should call ``super().restore(snapshot)`` first.
+        When the user leaves the setting as ``None`` (default), the flavor
+        decides: ``True`` only when ``base_image == STEP_IMAGE`` (the
+        sandbox is running the step's own image and is "integrated");
+        ``False`` for the flavor default image or any custom image
+        (sandbox is "alien" — don't assume the user wants their logs
+        intermingled).
+
+        Args:
+            settings: Effective per-step settings.
+
+        Returns:
+            The resolved boolean.
+        """
+        if settings.forward_logs_to_step is not None:
+            return settings.forward_logs_to_step
+        return settings.base_image == STEP_IMAGE
+
+    @contextmanager
+    def forward_session_logs(
+        self, session_id: str
+    ) -> Generator[None, None, None]:
+        """Opens a ZenML log context for a Session's stdout/stderr stream.
+
+        Flavors wrap their ``create_session()`` / ``exec`` integration with
+        this context manager when ``resolve_forward_logs_to_step`` is
+        ``True``. Sandbox output emitted through ``logger.info`` /
+        ``logger.warning`` inside this block lands as a dedicated log
+        source ``f"sandbox:{session_id}"`` in the step's log stream.
+
+        No-ops gracefully if step logging is globally disabled (e.g.
+        ``ZENML_DISABLE_STEP_LOGS_STORAGE=1``) or the active stack has no
+        reachable log store (e.g. script-mode usage). The wrapped block
+        still runs in both cases.
+
+        Args:
+            session_id: Stable id of the Session being forwarded.
+
+        Yields:
+            ``None``.
+        """
+        from zenml.utils.logging_utils import setup_logging_context
+
+        try:
+            ctx = setup_logging_context(source=f"sandbox:{session_id}")
+        except Exception as e:
+            logger.debug(
+                "Sandbox log forwarding disabled: %s. Falling back to "
+                "plain logger.",
+                e,
+            )
+            yield
+            return
+
+        with ctx:
+            yield
+
+    @staticmethod
+    def forward_lines(
+        lines: Iterator[str], *, stream: str = "stdout"
+    ) -> Iterator[str]:
+        """Side-effects each yielded line through the Python logger.
+
+        Used by flavors to plug a Session's stdout/stderr iterator into
+        the active ``LoggingContext`` without changing the iterator
+        contract — callers still get back each line.
+
+        Args:
+            lines: Source iterator (line-delimited strings).
+            stream: ``"stdout"`` → INFO, ``"stderr"`` → WARNING.
+
+        Yields:
+            Each line from the source iterator unchanged.
+        """
+        log_fn = logger.info if stream == "stdout" else logger.warning
+        for line in lines:
+            log_fn(line.rstrip("\n"))
+            yield line
+
+    def _resolve_session_environment(
+        self, settings: Optional[BaseSandboxSettings]
+    ) -> Dict[str, str]:
+        """Merges env vars from all sources for a new Session.
+
+        Order (later sources override earlier on key collision):
+
+        1. ``StackComponent.environment`` (component-level explicit env vars).
+        2. Each UUID in ``StackComponent.secrets`` resolved via the ZenML
+           secret store and exploded into env vars (every key in the secret
+           becomes one ``$KEY=value`` entry).
+        3. ``settings.environment`` — per-step overrides. Values may be
+           ZenML ``{{secret_name.key}}`` references, resolved here.
+        4. ``os.environ`` of the step process, if
+           ``settings.copy_local_env`` is ``True``.
+
+        Args:
+            settings: Effective per-step settings, or ``None`` (use defaults).
+
+        Returns:
+            The merged ``Dict[str, str]`` to pass to the provider.
+        """
+        import os
+
+        from zenml.client import Client
+        from zenml.utils import secret_utils
+
+        merged: Dict[str, str] = {}
+        merged.update(self.environment or {})
+
+        if self.secrets:
+            client = Client()
+            for secret_id in self.secrets:
+                try:
+                    secret = client.get_secret(secret_id)
+                except Exception as e:
+                    logger.warning(
+                        "Could not resolve sandbox component secret %s: %s. "
+                        "Skipping.",
+                        secret_id,
+                        e,
+                    )
+                    continue
+                merged.update(secret.secret_values)
+
+        if settings is not None and settings.environment:
+            client = Client()
+            for key, value in settings.environment.items():
+                if secret_utils.is_secret_reference(value):
+                    ref = secret_utils.parse_secret_reference(value)
+                    try:
+                        secret = client.get_secret_by_name_and_private_status(
+                            name=ref.name
+                        )
+                        merged[key] = secret.secret_values[ref.key]
+                    except Exception as e:
+                        logger.warning(
+                            "Could not resolve secret reference %r for env "
+                            "var '%s': %s. Skipping.",
+                            value,
+                            key,
+                            e,
+                        )
+                else:
+                    merged[key] = value
+
+        if settings is not None and settings.copy_local_env:
+            merged.update(os.environ)
+
+        return merged
+
+    def _validate_snapshot_provider(
+        self, snapshot: BaseSandboxSnapshot
+    ) -> None:
+        """Asserts a snapshot was produced by this component's flavor.
+
+        Subclasses that implement ``restore`` call this helper first to
+        reject cross-flavor snapshots with a clear error message before
+        invoking their provider's restore primitive.
+
+        Args:
+            snapshot: The snapshot to validate.
+
+        Raises:
+            ValueError: If ``snapshot.provider`` does not match this
+                component's flavor.
         """
         if snapshot.provider != self.flavor:
             raise ValueError(
                 f"Cannot restore snapshot from provider '{snapshot.provider}' "
                 f"on a '{self.flavor}' sandbox component."
             )
+
+    def restore(self, snapshot: BaseSandboxSnapshot) -> SandboxSession:
+        """Materializes a new Session from a stored Snapshot.
+
+        Returns a *new* Session (fresh id); the original is unaffected.
+        Subclasses that support restore should call
+        ``self._validate_snapshot_provider(snapshot)`` first, then
+        materialize from the provider primitive.
+
+        Args:
+            snapshot: The snapshot to restore from.
+
+        Returns:
+            A new ``SandboxSession`` materialized from the snapshot.
+
+        Raises:
+            NotImplementedError: Default — flavors opt in by overriding.
+        """
         raise NotImplementedError(
             f"{type(self).__name__} does not support restore."
         )

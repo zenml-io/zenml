@@ -15,6 +15,7 @@
 
 from datetime import datetime
 from typing import Dict, Iterator, List, Optional, Type, Union
+from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
 import pytest
@@ -98,7 +99,12 @@ class _FakeSandboxFlavor(BaseSandboxFlavor):
         return _FakeSandbox
 
 
-def _make_sandbox(flavor: str = "fake") -> _FakeSandbox:
+def _make_sandbox(
+    flavor: str = "fake",
+    *,
+    environment: Optional[Dict[str, str]] = None,
+    secrets: Optional[List] = None,
+) -> _FakeSandbox:
     """Build a _FakeSandbox without going through Stack/Client."""
     return _FakeSandbox(
         name="test-sandbox",
@@ -109,6 +115,8 @@ def _make_sandbox(flavor: str = "fake") -> _FakeSandbox:
         user=None,
         created=datetime.now(),
         updated=datetime.now(),
+        environment=environment or {},
+        secrets=secrets or [],
     )
 
 
@@ -212,21 +220,147 @@ class TestSandboxOptionalMethods:
 
 
 class TestRestoreProviderGuard:
-    def test_restore_rejects_cross_provider_snapshot(self) -> None:
+    def test_validate_snapshot_provider_rejects_cross_provider(self) -> None:
         sandbox = _make_sandbox(flavor="fake")
         wrong_snap = BaseSandboxSnapshot(provider="other", ref="r")
         with pytest.raises(ValueError, match="provider 'other'"):
-            sandbox.restore(wrong_snap)
+            sandbox._validate_snapshot_provider(wrong_snap)
 
-    def test_restore_with_matching_provider_falls_through_to_not_impl(
-        self,
-    ) -> None:
+    def test_validate_snapshot_provider_passes_on_match(self) -> None:
         sandbox = _make_sandbox(flavor="fake")
         matching_snap = BaseSandboxSnapshot(provider="fake", ref="r")
-        # Provider check passes; base then raises NotImplementedError so
-        # flavors must explicitly opt in.
+        # Returns None; no exception.
+        assert sandbox._validate_snapshot_provider(matching_snap) is None
+
+    def test_restore_default_raises_not_implemented(self) -> None:
+        # Base restore() is opt-in. Flavors override; default raises.
+        sandbox = _make_sandbox(flavor="fake")
+        snap = BaseSandboxSnapshot(provider="fake", ref="r")
         with pytest.raises(NotImplementedError):
-            sandbox.restore(matching_snap)
+            sandbox.restore(snap)
+
+
+class TestResolveSessionEnvironment:
+    def test_component_env_alone(self) -> None:
+        sb = _make_sandbox(environment={"A": "1"})
+        merged = sb._resolve_session_environment(None)
+        assert merged == {"A": "1"}
+
+    def test_settings_env_overrides_component(self) -> None:
+        sb = _make_sandbox(environment={"A": "1", "B": "1"})
+        settings = BaseSandboxSettings(environment={"A": "2"})
+        merged = sb._resolve_session_environment(settings)
+        assert merged == {"A": "2", "B": "1"}
+
+    def test_secrets_exploded_between_component_and_settings(self) -> None:
+        # Component secret defines API_KEY; Settings overrides.
+        fake_secret = MagicMock(secret_values={"API_KEY": "from_secret"})
+        fake_client = MagicMock()
+        fake_client.get_secret.return_value = fake_secret
+        sb = _make_sandbox(secrets=["secret-uuid"])
+        settings = BaseSandboxSettings(environment={"API_KEY": "from_step"})
+        with patch("zenml.client.Client", return_value=fake_client):
+            merged = sb._resolve_session_environment(settings)
+        assert merged["API_KEY"] == "from_step"  # settings wins
+
+    def test_settings_env_resolves_secret_references(self) -> None:
+        fake_secret = MagicMock(secret_values={"api_key": "sk-xxx"})
+        fake_client = MagicMock()
+        fake_client.get_secret_by_name_and_private_status.return_value = (
+            fake_secret
+        )
+        sb = _make_sandbox()
+        settings = BaseSandboxSettings(
+            environment={"OPENAI_API_KEY": "{{openai_creds.api_key}}"}
+        )
+        with patch("zenml.client.Client", return_value=fake_client):
+            merged = sb._resolve_session_environment(settings)
+        assert merged["OPENAI_API_KEY"] == "sk-xxx"
+
+    def test_settings_env_unresolvable_ref_is_skipped(self) -> None:
+        # Bad refs log a warning and drop the key — not raise.
+        fake_client = MagicMock()
+        fake_client.get_secret_by_name_and_private_status.side_effect = (
+            RuntimeError("not found")
+        )
+        sb = _make_sandbox()
+        settings = BaseSandboxSettings(
+            environment={
+                "OK": "plain",
+                "BAD": "{{missing_secret.key}}",
+            }
+        )
+        with patch("zenml.client.Client", return_value=fake_client):
+            merged = sb._resolve_session_environment(settings)
+        assert merged == {"OK": "plain"}
+
+    def test_copy_local_env_layered_last(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("FROM_LOCAL", "local-val")
+        sb = _make_sandbox(environment={"COMPONENT": "yes"})
+        settings = BaseSandboxSettings(copy_local_env=True)
+        merged = sb._resolve_session_environment(settings)
+        assert merged["COMPONENT"] == "yes"
+        assert merged["FROM_LOCAL"] == "local-val"
+
+
+class TestResolveForwardLogs:
+    def test_explicit_true(self) -> None:
+        sb = _make_sandbox()
+        s = BaseSandboxSettings(forward_logs_to_step=True)
+        assert sb.resolve_forward_logs_to_step(s) is True
+
+    def test_explicit_false(self) -> None:
+        sb = _make_sandbox()
+        s = BaseSandboxSettings(forward_logs_to_step=False)
+        assert sb.resolve_forward_logs_to_step(s) is False
+
+    def test_none_defaults_true_for_step_image(self) -> None:
+        sb = _make_sandbox()
+        s = BaseSandboxSettings(base_image=STEP_IMAGE)
+        assert sb.resolve_forward_logs_to_step(s) is True
+
+    def test_none_defaults_false_for_other_images(self) -> None:
+        sb = _make_sandbox()
+        assert sb.resolve_forward_logs_to_step(BaseSandboxSettings()) is False
+        assert (
+            sb.resolve_forward_logs_to_step(
+                BaseSandboxSettings(base_image="python:3.11-slim")
+            )
+            is False
+        )
+
+
+class TestForwardLines:
+    def test_yields_lines_unchanged(self) -> None:
+        with patch("zenml.sandboxes.base_sandbox.logger") as log:
+            out = list(
+                BaseSandbox.forward_lines(
+                    iter(["a\n", "b\n"]), stream="stdout"
+                )
+            )
+            assert out == ["a\n", "b\n"]
+            log.info.assert_any_call("a")
+            log.info.assert_any_call("b")
+
+    def test_stderr_goes_to_warning(self) -> None:
+        with patch("zenml.sandboxes.base_sandbox.logger") as log:
+            list(BaseSandbox.forward_lines(iter(["oops\n"]), stream="stderr"))
+            log.warning.assert_called_with("oops")
+
+
+class TestForwardSessionLogs:
+    def test_falls_back_gracefully_when_setup_raises(self) -> None:
+        sb = _make_sandbox()
+        # No active stack/log store in this test process — setup_logging_context
+        # raises. The context manager should yield anyway, not error.
+        with patch(
+            "zenml.utils.logging_utils.setup_logging_context",
+            side_effect=RuntimeError("no log store"),
+        ):
+            with sb.forward_session_logs("sess-1"):
+                pass  # must not raise
 
 
 class TestSandboxExecError:

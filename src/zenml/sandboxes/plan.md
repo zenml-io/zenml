@@ -276,7 +276,7 @@ ZenML already has several stack components that "run code somewhere": Orchestrat
 
 ### Consequences
 
-- Interface centres on `BaseSandbox.create_session() -> SandboxSession`, not `submit(step, ...)`. No step-operator lifecycle on the component.
+- Interface centers on `BaseSandbox.create_session() -> SandboxSession`, not `submit(step, ...)`. No step-operator lifecycle on the component.
 - Sessions are long-lived, stateful, multi-`exec` — fits an agent's tool-use loop.
 - Composes orthogonally with Step Operators.
 - Multi-per-stack consistent with Step Operator / Alerter / Experiment Tracker.
