@@ -29,7 +29,9 @@ OTEL_ENV_VARS = [
 
 
 @pytest.fixture(autouse=True)
-def clean_otel_env(monkeypatch: pytest.MonkeyPatch) -> Generator[None, None, None]:
+def clean_otel_env(
+    monkeypatch: pytest.MonkeyPatch,
+) -> Generator[None, None, None]:
     """Clear OTel env vars so config tests do not depend on local state."""
     for env_var in OTEL_ENV_VARS:
         monkeypatch.delenv(env_var, raising=False)
@@ -68,7 +70,9 @@ def test_otel_config_prefers_signal_endpoint_overrides() -> None:
         otel_exporter_otlp_logs_endpoint="http://logs/v1/logs",
     )
 
-    assert config.otel_exporter_otlp_traces_endpoint == "http://traces/v1/traces"
+    assert (
+        config.otel_exporter_otlp_traces_endpoint == "http://traces/v1/traces"
+    )
     assert (
         config.otel_exporter_otlp_metrics_endpoint
         == "http://metrics/v1/metrics"
@@ -103,7 +107,9 @@ def test_otel_config_reads_standard_otel_env_vars(
     config = ServerConfiguration.get_server_config()
 
     assert config.otel_exporter_otlp_endpoint == "http://otel:4318"
-    assert config.otel_exporter_otlp_traces_endpoint == "http://traces/v1/traces"
+    assert (
+        config.otel_exporter_otlp_traces_endpoint == "http://traces/v1/traces"
+    )
     assert (
         config.otel_exporter_otlp_metrics_endpoint
         == "http://otel:4318/v1/metrics"
@@ -121,7 +127,9 @@ def test_otel_config_prefers_zenml_prefixed_env_vars_over_standard_otel(
         "ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT",
         "http://zenml:4318",
     )
-    monkeypatch.setenv("ZENML_SERVER_OTEL_SERVICE_NAME", "zenml-prefixed-service-name")
+    monkeypatch.setenv(
+        "ZENML_SERVER_OTEL_SERVICE_NAME", "zenml-prefixed-service-name"
+    )
 
     config = ServerConfiguration.get_server_config()
 
@@ -153,4 +161,5 @@ def test_server_config_does_not_import_unsupported_otel_env_vars(
 
     config = ServerConfiguration.get_server_config()
 
+    assert config.model_extra is not None
     assert "otel_exporter_otlp_protocol" not in config.model_extra
