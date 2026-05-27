@@ -73,12 +73,12 @@ class WandbExperimentTracker(BaseExperimentTracker):
         settings = cast(
             WandbExperimentTrackerSettings, self.get_settings(info)
         )
-        initialization = build_wandb_initialization(
+        init_kwargs = build_wandb_initialization(
             config=self.config,
             settings=settings,
             info=info,
         )
-        self._initialize_wandb(info=info, **initialization.init_kwargs)
+        self._initialize_wandb(info=info, **init_kwargs)
 
     def get_step_run_metadata(
         self, info: "StepRunInfo"

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Helpers for constructing Wandb run initialization arguments."""
 
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from uuid import NAMESPACE_URL, uuid5
 
@@ -48,19 +47,12 @@ def sanitize_tag(tag: str) -> str:
     return tag[:64]
 
 
-@dataclass(frozen=True)
-class WandbInitialization:
-    """Wandb initialization arguments and ZenML metadata."""
-
-    init_kwargs: Dict[str, Any]
-
-
 def build_wandb_initialization(
     *,
     config: WandbExperimentTrackerConfig,
     settings: WandbExperimentTrackerSettings,
     info: "StepRunInfo",
-) -> WandbInitialization:
+) -> Dict[str, Any]:
     """Build Wandb initialization arguments for a ZenML step run.
 
     Args:
@@ -100,7 +92,7 @@ def build_wandb_initialization(
     if run_config:
         init_kwargs["config"] = run_config
 
-    return WandbInitialization(init_kwargs=init_kwargs)
+    return init_kwargs
 
 
 def _get_run_name(

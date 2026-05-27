@@ -82,13 +82,11 @@ def _info(
 
 def test_default_initialization_adds_zenml_metadata_without_run_id() -> None:
     """Test default Wandb kwargs include ZenML metadata but no run ID."""
-    initialization = _build_wandb_initialization(
+    init_kwargs = _build_wandb_initialization(
         config=_config(),
         settings=_settings(),
         info=_info(),
     )
-
-    init_kwargs = initialization.init_kwargs
 
     assert init_kwargs["entity"] == "entity"
     assert init_kwargs["project"] == "project"
@@ -118,7 +116,7 @@ def test_default_initialization_adds_zenml_metadata_without_run_id() -> None:
 
 def test_wandb_console_output_can_be_enabled_with_settings() -> None:
     """Test W&B console settings can override ZenML's quiet defaults."""
-    initialization = _build_wandb_initialization(
+    init_kwargs = _build_wandb_initialization(
         config=_config(),
         settings=_settings(
             settings={
@@ -130,7 +128,7 @@ def test_wandb_console_output_can_be_enabled_with_settings() -> None:
         info=_info(),
     )
 
-    assert initialization.init_kwargs["settings"] == {
+    assert init_kwargs["settings"] == {
         "console": "auto",
         "show_info": True,
         "silent": False,
@@ -139,7 +137,7 @@ def test_wandb_console_output_can_be_enabled_with_settings() -> None:
 
 def test_user_tags_merge_with_human_readable_zenml_tags() -> None:
     """Test user tags are merged with readable ZenML tags."""
-    initialization = _build_wandb_initialization(
+    init_kwargs = _build_wandb_initialization(
         config=_config(),
         settings=_settings(
             tags=["team", "zenml"],
@@ -147,7 +145,7 @@ def test_user_tags_merge_with_human_readable_zenml_tags() -> None:
         info=_info(),
     )
 
-    assert initialization.init_kwargs["tags"] == [
+    assert init_kwargs["tags"] == [
         "team",
         "zenml",
         "training_pipeline",
@@ -157,7 +155,7 @@ def test_user_tags_merge_with_human_readable_zenml_tags() -> None:
 
 def test_minimal_mode_omits_zenml_group_tags_and_config() -> None:
     """Test disabling ZenML metadata keeps Wandb initialization minimal."""
-    initialization = _build_wandb_initialization(
+    init_kwargs = _build_wandb_initialization(
         config=_config(),
         settings=_settings(
             enable_zenml_metadata=False,
@@ -166,8 +164,6 @@ def test_minimal_mode_omits_zenml_group_tags_and_config() -> None:
         ),
         info=_info(),
     )
-
-    init_kwargs = initialization.init_kwargs
 
     assert "group" not in init_kwargs
     assert init_kwargs["tags"] == ["team"]
@@ -183,7 +179,7 @@ def test_step_run_strategy_sets_deterministic_run_id_and_resume() -> None:
             step_run_id=UUID("00000000-0000-0000-0000-000000000002"),
             version=1,
         ),
-    ).init_kwargs
+    )
     second = _build_wandb_initialization(
         config=_config(),
         settings=_settings(run_id_strategy="step_run"),
@@ -191,7 +187,7 @@ def test_step_run_strategy_sets_deterministic_run_id_and_resume() -> None:
             step_run_id=UUID("00000000-0000-0000-0000-000000000003"),
             version=2,
         ),
-    ).init_kwargs
+    )
 
     assert first["id"] != second["id"]
     assert first["name"] == "training_pipeline-2026_05_14_train_model_v1"
@@ -211,7 +207,7 @@ def test_pipeline_step_strategy_collapses_retries() -> None:
             step_run_id=UUID("00000000-0000-0000-0000-000000000002"),
             version=1,
         ),
-    ).init_kwargs
+    )
     retry = _build_wandb_initialization(
         config=_config(),
         settings=_settings(
@@ -221,7 +217,7 @@ def test_pipeline_step_strategy_collapses_retries() -> None:
             step_run_id=UUID("00000000-0000-0000-0000-000000000003"),
             version=2,
         ),
-    ).init_kwargs
+    )
 
     assert first["id"] == retry["id"]
     assert first["name"] == retry["name"]
@@ -241,12 +237,12 @@ def test_pipeline_step_strategy_separates_invocation_names() -> None:
         config=_config(),
         settings=settings,
         info=_info(pipeline_step_name="train_model"),
-    ).init_kwargs
+    )
     second = _build_wandb_initialization(
         config=_config(),
         settings=settings,
         info=_info(pipeline_step_name="train_model_2"),
-    ).init_kwargs
+    )
 
     assert first["id"] != second["id"]
 
@@ -255,14 +251,14 @@ def test_explicit_run_id_sets_resume_allow_by_default() -> None:
     """Test explicit Wandb run IDs default to resume allow."""
     settings = _settings(run_id="external-run-id")
 
-    initialization = _build_wandb_initialization(
+    init_kwargs = _build_wandb_initialization(
         config=_config(),
         settings=settings,
         info=_info(),
     )
 
-    assert initialization.init_kwargs["id"] == "external-run-id"
-    assert initialization.init_kwargs["resume"] == "allow"
+    assert init_kwargs["id"] == "external-run-id"
+    assert init_kwargs["resume"] == "allow"
 
 
 def test_job_type_is_only_passed_when_configured() -> None:
@@ -271,12 +267,12 @@ def test_job_type_is_only_passed_when_configured() -> None:
         config=_config(),
         settings=_settings(),
         info=_info(),
-    ).init_kwargs
+    )
     with_job_type = _build_wandb_initialization(
         config=_config(),
         settings=_settings(job_type="training"),
         info=_info(),
-    ).init_kwargs
+    )
 
     assert "job_type" not in without_job_type
     assert with_job_type["job_type"] == "training"
@@ -296,13 +292,13 @@ def test_dashboard_links_are_added_when_available(monkeypatch) -> None:
         WandbExperimentTrackerSettings,
     )
 
-    initialization = _build_wandb_initialization(
+    init_kwargs = _build_wandb_initialization(
         config=_config(),
         settings=WandbExperimentTrackerSettings(),
         info=_info(),
     )
 
-    assert initialization.init_kwargs["config"]["zenml_pipeline_run_url"] == (
+    assert init_kwargs["config"]["zenml_pipeline_run_url"] == (
         "https://zenml.example/runs/1"
     )
 
@@ -382,7 +378,7 @@ def test_invalid_settings_fail_early(
 
 def test_unmanaged_init_kwargs_pass_through() -> None:
     """Test unmanaged Wandb init kwargs are passed through."""
-    initialization = _build_wandb_initialization(
+    init_kwargs = _build_wandb_initialization(
         config=_config(),
         settings=_settings(
             init_kwargs={"mode": "offline"},
@@ -390,4 +386,4 @@ def test_unmanaged_init_kwargs_pass_through() -> None:
         info=_info(),
     )
 
-    assert initialization.init_kwargs["mode"] == "offline"
+    assert init_kwargs["mode"] == "offline"
