@@ -120,10 +120,13 @@ class ModalSandboxProcess(SandboxProcess):
         self._forward_logs = forward_logs
 
     def stdout(self) -> Iterator[str]:
-        """Line-buffered stdout iterator.
+        """Returns a line-buffered stdout iterator.
 
-        Yields:
-            Lines of stdout output, with trailing newlines preserved.
+        Returns:
+            An iterator yielding stdout lines with trailing newlines
+            preserved. When ``forward_logs=True`` the iterator is wrapped
+            with ``BaseSandbox.forward_lines`` so each line side-effects
+            through ``logger.info`` into the active ``LoggingContext``.
         """
         lines = _line_buffer(self._process.stdout)
         if self._forward_logs:
@@ -131,10 +134,13 @@ class ModalSandboxProcess(SandboxProcess):
         return lines
 
     def stderr(self) -> Iterator[str]:
-        """Line-buffered stderr iterator.
+        """Returns a line-buffered stderr iterator.
 
-        Yields:
-            Lines of stderr output, with trailing newlines preserved.
+        Returns:
+            An iterator yielding stderr lines with trailing newlines
+            preserved. When ``forward_logs=True`` the iterator is wrapped
+            with ``BaseSandbox.forward_lines`` so each line side-effects
+            through ``logger.warning`` into the active ``LoggingContext``.
         """
         lines = _line_buffer(self._process.stderr)
         if self._forward_logs:

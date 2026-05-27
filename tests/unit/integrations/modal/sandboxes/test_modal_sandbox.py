@@ -106,8 +106,10 @@ class TestLineBuffer:
         assert list(_line_buffer(chunks)) == ["hello\n", "world\n"]
 
     def test_joins_split_lines_across_chunks(self) -> None:
-        chunks = [b"hel", b"lo\nwo", b"rld\n"]
-        assert list(_line_buffer(chunks)) == ["hello\n", "world\n"]
+        # Split the word "alpha" across chunk boundaries — "hel" trips
+        # the CI typos check.
+        chunks = [b"alp", b"ha\nbe", b"ta\n"]
+        assert list(_line_buffer(chunks)) == ["alpha\n", "beta\n"]
 
     def test_flushes_trailing_partial_line(self) -> None:
         chunks = [b"final line without newline"]
