@@ -322,7 +322,7 @@ def test_step_metadata_includes_richer_wandb_identifiers(monkeypatch) -> None:
         project="project",
         entity="entity",
         job_type="training",
-        get_url=lambda: "https://wandb.ai/entity/project/runs/wandb-id",
+        url="https://wandb.ai/entity/project/runs/wandb-id",
     )
     monkeypatch.setattr(tracker_module.wandb, "run", wandb_run)
 

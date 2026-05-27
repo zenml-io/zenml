@@ -105,7 +105,7 @@ class WandbExperimentTracker(BaseExperimentTracker):
         if current_wandb_run:
             run_id = getattr(current_wandb_run, "id", None)
             run_path = getattr(current_wandb_run, "path", None)
-            run_url = current_wandb_run.get_url()
+            run_url = current_wandb_run.url
             run_name = getattr(current_wandb_run, "name", None)
             run_group = getattr(current_wandb_run, "group", None)
             run_project = getattr(current_wandb_run, "project", None)
