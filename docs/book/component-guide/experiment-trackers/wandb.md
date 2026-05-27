@@ -220,7 +220,15 @@ wandb_settings = WandbExperimentTrackerSettings(
 )
 ```
 
-By default, ZenML leaves W&B run IDs unset (`run_id_strategy="wandb_generated"`), preserving W&B-generated IDs. If you want deterministic IDs, choose one of the opt-in strategies. For example, this configuration keeps retries for the same ZenML step invocation attached to the same W&B run:
+By default, ZenML leaves W&B run IDs unset (`run_id_strategy="wandb_generated"`), preserving W&B-generated IDs. The supported `run_id_strategy` values are:
+
+| Strategy | Behavior |
+| --- | --- |
+| `wandb_generated` | Let W&B generate the run ID. |
+| `pipeline_step` | Use one deterministic W&B run ID for each ZenML pipeline-step invocation, so retries for the same invocation resume the same W&B run. |
+| `step_run` | Use one deterministic W&B run ID for each ZenML step-run attempt, including retries. |
+
+For example, this configuration keeps retries for the same ZenML step invocation attached to the same W&B run:
 
 ```python
 retry_collapsed_settings = WandbExperimentTrackerSettings(
@@ -236,6 +244,8 @@ attempt_settings = WandbExperimentTrackerSettings(
     run_id_strategy="step_run",
 )
 ```
+
+When `run_id_strategy="step_run"` is used without an explicit `run_name`, ZenML appends the ZenML step-run version to the W&B display name so retry attempts are easier to distinguish in the W&B UI.
 
 ZenML defaults `resume` to `allow` whenever it passes a deterministic or explicit W&B run ID.
 

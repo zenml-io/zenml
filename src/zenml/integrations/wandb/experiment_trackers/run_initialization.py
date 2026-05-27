@@ -102,7 +102,14 @@ def _get_run_name(
     *, settings: WandbExperimentTrackerSettings, info: "StepRunInfo"
 ) -> str:
     """Get the Wandb display name for a ZenML step run."""
-    return settings.run_name or f"{info.run_name}_{info.pipeline_step_name}"
+    if settings.run_name:
+        return settings.run_name
+
+    run_name = f"{info.run_name}_{info.pipeline_step_name}"
+    if settings.run_id_strategy == "step_run":
+        return f"{run_name}_v{info.step_run.version}"
+
+    return run_name
 
 
 def _get_run_id(

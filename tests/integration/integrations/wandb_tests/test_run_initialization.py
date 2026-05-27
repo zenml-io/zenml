@@ -154,15 +154,23 @@ def test_step_run_strategy_sets_deterministic_run_id_and_resume() -> None:
     first = _build_wandb_initialization(
         config=_config(),
         settings=_settings(run_id_strategy="step_run"),
-        info=_info(step_run_id=UUID("00000000-0000-0000-0000-000000000002")),
+        info=_info(
+            step_run_id=UUID("00000000-0000-0000-0000-000000000002"),
+            version=1,
+        ),
     ).init_kwargs
     second = _build_wandb_initialization(
         config=_config(),
         settings=_settings(run_id_strategy="step_run"),
-        info=_info(step_run_id=UUID("00000000-0000-0000-0000-000000000003")),
+        info=_info(
+            step_run_id=UUID("00000000-0000-0000-0000-000000000003"),
+            version=2,
+        ),
     ).init_kwargs
 
     assert first["id"] != second["id"]
+    assert first["name"] == "training_pipeline-2026_05_14_train_model_v1"
+    assert second["name"] == "training_pipeline-2026_05_14_train_model_v2"
     assert first["resume"] == "allow"
     assert second["resume"] == "allow"
 
@@ -191,6 +199,7 @@ def test_pipeline_step_strategy_collapses_retries() -> None:
     ).init_kwargs
 
     assert first["id"] == retry["id"]
+    assert first["name"] == retry["name"]
     assert retry["config"]["zenml_latest_step_run_id"] == (
         "00000000-0000-0000-0000-000000000003"
     )
