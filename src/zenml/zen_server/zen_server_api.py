@@ -51,7 +51,11 @@ from zenml.service_connectors.service_connector_registry import (
 from zenml.zen_server.cloud_utils import send_pro_workspace_status_update
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.middleware import add_middlewares
-from zenml.zen_server.otel import configure_otel, shutdown_otel
+from zenml.zen_server.otel import (
+    configure_otel,
+    instrument_sqlalchemy_store,
+    shutdown_otel,
+)
 from zenml.zen_server.routers import (
     artifact_endpoint,
     artifact_version_endpoints,
@@ -110,6 +114,7 @@ from zenml.zen_server.utils import (
     snapshot_executor,
     start_event_loop_lag_monitor,
     stop_event_loop_lag_monitor,
+    zen_store,
 )
 
 
@@ -192,6 +197,8 @@ async def initialize() -> None:
     # race conditions
     await initialize_request_manager()
     initialize_zen_store()
+    # Instrument the SQL store with OpenTelemetry after it has been initialized.
+    instrument_sqlalchemy_store(store=zen_store())
     initialize_resource_pool_store()
     service_connector_registry.register_builtin_service_connectors()
     initialize_rbac()
