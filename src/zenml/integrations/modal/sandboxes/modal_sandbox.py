@@ -104,13 +104,20 @@ def _line_buffer(chunks: Iterable[Any]) -> Iterator[str]:
 class ModalSandboxProcess(SandboxProcess):
     """Wraps a Modal ``ContainerProcess`` in the ``SandboxProcess`` interface."""
 
-    def __init__(self, process: Any) -> None:
+    def __init__(self, process: Any, *, forward_logs: bool = False) -> None:
         """Initializes the process wrapper.
 
         Args:
             process: The Modal ``ContainerProcess`` returned by ``sandbox.exec``.
+            forward_logs: If True, each yielded stdout/stderr line is also
+                side-effected through the Python logger (via
+                ``BaseSandbox.forward_lines``). Combined with the Session's
+                ``forward_session_logs`` context manager, this routes
+                sandbox output into ZenML's step log stream tagged with the
+                session id.
         """
         self._process = process
+        self._forward_logs = forward_logs
 
     def stdout(self) -> Iterator[str]:
         """Line-buffered stdout iterator.
@@ -118,7 +125,10 @@ class ModalSandboxProcess(SandboxProcess):
         Yields:
             Lines of stdout output, with trailing newlines preserved.
         """
-        return _line_buffer(self._process.stdout)
+        lines = _line_buffer(self._process.stdout)
+        if self._forward_logs:
+            return BaseSandbox.forward_lines(lines, stream="stdout")
+        return lines
 
     def stderr(self) -> Iterator[str]:
         """Line-buffered stderr iterator.
@@ -126,7 +136,10 @@ class ModalSandboxProcess(SandboxProcess):
         Yields:
             Lines of stderr output, with trailing newlines preserved.
         """
-        return _line_buffer(self._process.stderr)
+        lines = _line_buffer(self._process.stderr)
+        if self._forward_logs:
+            return BaseSandbox.forward_lines(lines, stream="stderr")
+        return lines
 
     def wait(self, timeout: Optional[float] = None) -> int:
         """Blocks until the command exits.
@@ -192,14 +205,58 @@ class ModalSandboxProcess(SandboxProcess):
 class ModalSandboxSession(SandboxSession):
     """Wraps a Modal ``Sandbox`` in the ``SandboxSession`` interface."""
 
-    def __init__(self, sandbox: Any) -> None:
+    def __init__(
+        self,
+        sandbox: Any,
+        *,
+        parent: Optional["BaseSandbox"] = None,
+        forward_logs: bool = False,
+    ) -> None:
         """Initializes the session wrapper.
 
         Args:
             sandbox: The live Modal ``Sandbox`` object.
+            parent: The owning ``BaseSandbox`` component. Used to open
+                the log-forwarding ``LoggingContext`` when entering the
+                Session as a context manager. Pass ``None`` for the
+                ``attach()`` / ``restore()`` paths where no parent is
+                relevant.
+            forward_logs: If True, sandbox stdout/stderr is auto-routed
+                into ZenML step logs as a per-session log source. The
+                ``LoggingContext`` is opened on ``__enter__`` and closed
+                on ``__exit__``; outside a ``with`` block the flag has
+                no effect.
         """
         self._sandbox = sandbox
         self.id = sandbox.object_id
+        self._parent = parent
+        self._forward_logs = forward_logs
+        self._log_ctx: Any = None
+
+    def __enter__(self) -> "ModalSandboxSession":
+        """Opens the log-forwarding context if enabled.
+
+        Returns:
+            This session.
+        """
+        if self._forward_logs and self._parent is not None:
+            self._log_ctx = self._parent.forward_session_logs(self.id)
+            self._log_ctx.__enter__()
+        return self
+
+    def __exit__(self, *args: Any) -> None:
+        """Closes the log-forwarding context, then releases the handle.
+
+        Args:
+            *args: Exception info; passed through to the underlying
+                context manager so it can run any cleanup.
+        """
+        if self._log_ctx is not None:
+            try:
+                self._log_ctx.__exit__(*args)
+            finally:
+                self._log_ctx = None
+        self.close()
 
     def exec(
         self,
@@ -220,6 +277,10 @@ class ModalSandboxSession(SandboxSession):
 
         Returns:
             A ``ModalSandboxProcess`` wrapping the live command handle.
+            If the Session was created with ``forward_logs=True``, the
+            returned process's ``stdout()`` / ``stderr()`` iterators
+            side-effect each line through the Python logger so they
+            land in the active ``LoggingContext`` opened on ``__enter__``.
 
         Raises:
             SandboxExecError: If Modal rejects the launch (e.g. binary not
@@ -244,7 +305,7 @@ class ModalSandboxSession(SandboxSession):
             raise SandboxExecError(
                 f"Modal exec failed to launch ({type(e).__name__}): {e}"
             ) from e
-        return ModalSandboxProcess(process)
+        return ModalSandboxProcess(process, forward_logs=self._forward_logs)
 
     def snapshot(self) -> ModalSandboxSnapshot:
         """Captures the Sandbox's filesystem as a reusable Modal Image.
@@ -427,7 +488,11 @@ class ModalSandbox(BaseSandbox):
             kwargs["cloud"] = eff.cloud
 
         sandbox = modal.Sandbox.create(**kwargs)
-        return ModalSandboxSession(sandbox)
+        return ModalSandboxSession(
+            sandbox,
+            parent=self,
+            forward_logs=self.resolve_forward_logs_to_step(eff),
+        )
 
     def attach(self, session_id: str) -> SandboxSession:
         """Reconnects to a still-live Modal Sandbox by id.
@@ -452,7 +517,10 @@ class ModalSandbox(BaseSandbox):
                 f"Failed to attach to Modal sandbox '{session_id}' "
                 f"({type(e).__name__}): {e}"
             ) from e
-        return ModalSandboxSession(sandbox)
+        # Reattached sessions don't get log forwarding by default since
+        # we don't know the original Settings; callers can wrap manually
+        # via `with sandbox.forward_session_logs(session.id):`.
+        return ModalSandboxSession(sandbox, parent=self, forward_logs=False)
 
     def restore(self, snapshot: BaseSandboxSnapshot) -> SandboxSession:
         """Boots a new Session from a stored filesystem snapshot.
@@ -480,4 +548,4 @@ class ModalSandbox(BaseSandbox):
                 f"Failed to restore Modal sandbox from image "
                 f"'{snapshot.ref}' ({type(e).__name__}): {e}"
             ) from e
-        return ModalSandboxSession(sandbox)
+        return ModalSandboxSession(sandbox, parent=self, forward_logs=False)

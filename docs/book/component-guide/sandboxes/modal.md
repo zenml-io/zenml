@@ -64,7 +64,7 @@ zenml stack update --sandbox my-modal-sandbox
 | `memory_mb` | Memory in MiB. |
 | `region` | Modal region (e.g. `"us-east"`). Enterprise/Team plans. |
 | `cloud` | Cloud provider (e.g. `"aws"`, `"gcp"`). Enterprise/Team plans. |
-| `forward_logs_to_step` | Auto-route Sandbox stdout/stderr into ZenML step logs as a per-session log source. Default: `True` when `base_image == STEP_IMAGE`, else `False`. |
+| `forward_logs_to_step` | Auto-route Sandbox stdout/stderr into ZenML step logs as a per-session log source tagged with the session id (visible as a separate stream in the UI). Active when the Session is used as a context manager (`with sandbox.create_session() as session:`). Default: `True` when `base_image == STEP_IMAGE`, else `False`. |
 
 ### Using it from a step
 

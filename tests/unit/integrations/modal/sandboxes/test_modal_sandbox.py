@@ -22,7 +22,7 @@ import sys
 from contextlib import contextmanager
 from datetime import datetime
 from typing import Any, Iterator, List
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
 import pytest
@@ -363,6 +363,111 @@ class TestModalSandbox:
             )
             with pytest.raises(RuntimeError, match="sb_missing"):
                 _make_modal_sandbox().attach("sb_missing")
+
+    def test_app_lookup_cached_across_create_sessions(self) -> None:
+        # _get_app should only call modal.App.lookup once per ModalSandbox
+        # instance; the cached App is reused on the second create_session.
+        with _patch_modal() as modal_mock:
+            modal_mock.App.lookup.return_value = MagicMock()
+            modal_mock.Image.from_registry.return_value = MagicMock()
+            modal_mock.Sandbox.create.return_value = MagicMock(
+                object_id="sb_a"
+            )
+            sandbox = _make_modal_sandbox()
+            sandbox.create_session()
+            sandbox.create_session()
+        assert modal_mock.App.lookup.call_count == 1
+
+
+class TestModalSandboxFileIO:
+    def test_upload_file_streams_in_chunks(self, tmp_path: Any) -> None:
+        # 2.5 MiB of payload at a 1 MiB chunk size → 3 read calls
+        # (and 3 write calls on the destination handle).
+        payload = b"x" * (2 * 1024 * 1024 + 512 * 1024)
+        src_path = tmp_path / "big.bin"
+        src_path.write_bytes(payload)
+
+        fake_dst = MagicMock()
+        dst_cm = MagicMock()
+        dst_cm.__enter__ = MagicMock(return_value=fake_dst)
+        dst_cm.__exit__ = MagicMock(return_value=False)
+        fake_sandbox = MagicMock(object_id="sb_xyz")
+        fake_sandbox.open.return_value = dst_cm
+
+        ModalSandboxSession(fake_sandbox).upload_file(
+            str(src_path), "/tmp/big.bin"
+        )
+        assert fake_dst.write.call_count == 3
+        # Every chunk written should fit within 1 MiB.
+        for call in fake_dst.write.call_args_list:
+            assert len(call.args[0]) <= 1024 * 1024
+
+    def test_download_file_streams_in_chunks(self, tmp_path: Any) -> None:
+        payload = b"y" * (2 * 1024 * 1024 + 256 * 1024)
+        chunks = [
+            payload[: 1024 * 1024],
+            payload[1024 * 1024 : 2 * 1024 * 1024],
+            payload[2 * 1024 * 1024 :],
+            b"",  # EOF terminates the while-loop
+        ]
+
+        fake_src = MagicMock()
+        fake_src.read.side_effect = chunks
+        src_cm = MagicMock()
+        src_cm.__enter__ = MagicMock(return_value=fake_src)
+        src_cm.__exit__ = MagicMock(return_value=False)
+        fake_sandbox = MagicMock(object_id="sb_xyz")
+        fake_sandbox.open.return_value = src_cm
+
+        dst_path = tmp_path / "out.bin"
+        ModalSandboxSession(fake_sandbox).download_file(
+            "/tmp/big.bin", str(dst_path)
+        )
+        assert dst_path.read_bytes() == payload
+        # Read was called 3 chunks + 1 EOF read = 4.
+        assert fake_src.read.call_count == 4
+
+
+class TestModalLogForwarding:
+    """The Session enters BaseSandbox.forward_session_logs on __enter__."""
+
+    def test_forward_logs_true_opens_context_on_enter(self) -> None:
+        parent = MagicMock()
+        log_ctx = MagicMock()
+        parent.forward_session_logs.return_value = log_ctx
+        fake_sandbox = MagicMock(object_id="sb_xyz")
+
+        session = ModalSandboxSession(
+            fake_sandbox, parent=parent, forward_logs=True
+        )
+        with session:
+            parent.forward_session_logs.assert_called_once_with("sb_xyz")
+            log_ctx.__enter__.assert_called_once()
+        log_ctx.__exit__.assert_called_once()
+
+    def test_forward_logs_false_skips_context(self) -> None:
+        parent = MagicMock()
+        fake_sandbox = MagicMock(object_id="sb_xyz")
+        session = ModalSandboxSession(
+            fake_sandbox, parent=parent, forward_logs=False
+        )
+        with session:
+            parent.forward_session_logs.assert_not_called()
+
+    def test_process_stdout_forwards_lines_when_enabled(self) -> None:
+        fake_process = MagicMock()
+        fake_process.stdout = [b"hello\n", b"world\n"]
+        with patch(
+            "zenml.integrations.modal.sandboxes.modal_sandbox.BaseSandbox.forward_lines"
+        ) as forward:
+            forward.side_effect = lambda lines, **_: lines  # passthrough
+            out = list(
+                ModalSandboxProcess(fake_process, forward_logs=True).stdout()
+            )
+        # forward_lines was invoked with stream="stdout"; lines pass through.
+        forward.assert_called_once()
+        assert forward.call_args.kwargs["stream"] == "stdout"
+        assert out == ["hello\n", "world\n"]
 
     def test_restore_rejects_cross_provider(self) -> None:
         wrong = BaseSandboxSnapshot(provider="agent_sandbox", ref="ref")
