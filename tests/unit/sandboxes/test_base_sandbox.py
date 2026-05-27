@@ -29,6 +29,7 @@ from zenml.sandboxes import (
     BaseSandboxSettings,
     BaseSandboxSnapshot,
     SandboxExecError,
+    SandboxOutput,
     SandboxProcess,
     SandboxSession,
 )
@@ -386,6 +387,97 @@ class TestForwardSessionLogs:
         ):
             with sb.forward_session_logs("sess-1"):
                 pass  # must not raise
+
+
+class TestSandboxProcessCollect:
+    """Tests for SandboxProcess.collect() — fully drain + wait + return."""
+
+    def _proc_returning(
+        self, stdout_lines: List[str], stderr_lines: List[str], code: int = 0
+    ) -> SandboxProcess:
+        # Build a fake SandboxProcess with our chosen lines.
+        outer_self = self
+
+        class _Proc(SandboxProcess):
+            def stdout(self) -> Iterator[str]:
+                yield from stdout_lines
+
+            def stderr(self) -> Iterator[str]:
+                yield from stderr_lines
+
+            def wait(self, timeout: Optional[float] = None) -> int:
+                return code
+
+            def kill(self) -> None:
+                return None
+
+            @property
+            def exit_code(self) -> Optional[int]:
+                return code
+
+        return _Proc()
+
+    def test_drains_both_streams_and_returns_exit_code(self) -> None:
+        proc = self._proc_returning(
+            stdout_lines=["a\n", "b\n"],
+            stderr_lines=["err\n"],
+            code=0,
+        )
+        out = proc.collect()
+        assert isinstance(out, SandboxOutput)
+        assert out.stdout == "a\nb\n"
+        assert out.stderr == "err\n"
+        assert out.exit_code == 0
+        assert out.stdout_truncated is False
+        assert out.stderr_truncated is False
+
+    def test_truncation_flagged_per_stream(self) -> None:
+        # 100 bytes of stdout but max_bytes=10 → truncated; stderr small → not.
+        proc = self._proc_returning(
+            stdout_lines=["x" * 50 + "\n", "y" * 50 + "\n"],
+            stderr_lines=["short\n"],
+            code=0,
+        )
+        out = proc.collect(max_bytes=10)
+        assert out.stdout_truncated is True
+        assert out.stderr_truncated is False
+        # Output fits within the cap.
+        assert len(out.stdout) <= 10
+        assert out.stderr == "short\n"
+
+    def test_drains_fully_even_when_truncated(self) -> None:
+        # Verifies the iterator is consumed to StopIteration even after the
+        # cap is hit — important so the underlying provider's wait() is safe.
+        consumed: List[str] = []
+
+        def lines() -> Iterator[str]:
+            for line in ("a" * 100, "b" * 100, "c" * 100):
+                consumed.append(line)
+                yield line + "\n"
+
+        outer_self = self
+
+        class _Proc(SandboxProcess):
+            def stdout(self) -> Iterator[str]:
+                return lines()
+
+            def stderr(self) -> Iterator[str]:
+                return iter(())
+
+            def wait(self, timeout: Optional[float] = None) -> int:
+                return 0
+
+            def kill(self) -> None:
+                return None
+
+            @property
+            def exit_code(self) -> Optional[int]:
+                return 0
+
+        _Proc().collect(max_bytes=10)
+        # All three chunks were consumed, even though only the first
+        # fit under the cap.
+        assert len(consumed) == 3
 
 
 class TestSandboxExecError:

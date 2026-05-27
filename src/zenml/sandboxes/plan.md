@@ -267,6 +267,7 @@ Each flavor implements proxy infra (Modal: paired sandbox running mitmdump; k8s:
 - Auto-explode `secrets: List[str]` field (sugar for "expand every key of these secrets as env vars"). Adopt if real usage demands it.
 - Async-first interface (currently `aexec` is opt-in NotImpl-by-default).
 - "Lazy" helper module (`zenml.sandboxes.get_session()` context manager) — design considered, deferred.
+- **Modal flavor auth in remote orchestrators.** Modal's auth flows through `~/.modal.toml` or `MODAL_TOKEN_ID` / `MODAL_TOKEN_SECRET` env vars on the *step process*, not through `ModalSandboxConfig`. For the local `default` orchestrator this works — the agent step inherits the user's local Modal credentials. For containerized orchestrators (Kubernetes, SageMaker, Vertex) the step container has no Modal token and `modal.Sandbox.create()` raises. Workaround until a real fix: attach a ZenML secret containing `MODAL_TOKEN_ID` + `MODAL_TOKEN_SECRET` to the *stack* (`zenml stack update --secret modal-creds`) — ZenML will expose those as env vars in every step container. **Proper fix:** add `modal_token_id` / `modal_token_secret` `SecretField`s to `ModalSandboxConfig` and have `ModalSandbox.create_session` export them to the process env before importing modal. Tracked as a follow-up after #4867 lands.
 
 ---
 

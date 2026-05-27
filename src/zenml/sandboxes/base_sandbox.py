@@ -20,6 +20,7 @@ component-vs-launcher framing rationale.
 
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
+from dataclasses import dataclass
 from typing import (
     Any,
     Dict,
@@ -28,6 +29,7 @@ from typing import (
     List,
     Literal,
     Optional,
+    Tuple,
     Type,
     Union,
     cast,
@@ -56,6 +58,29 @@ class SandboxExecError(RuntimeError):
     Once a ``SandboxProcess`` has been returned by ``exec()``, runtime errors
     flow through ``exit_code`` / ``stderr()`` instead of this exception.
     """
+
+
+# Default cap for ``SandboxProcess.collect`` — 1 MiB per stream is enough
+# for typical agent tool output (a printed answer, an exception traceback,
+# a small dataframe dump) without swamping the LLM's context window or
+# returning megabytes of data through the tool call.
+_DEFAULT_COLLECT_BYTES = 1_048_576
+
+
+@dataclass
+class SandboxOutput:
+    """Result of fully consuming a ``SandboxProcess``.
+
+    Returned by ``SandboxProcess.collect()``. Carries both stdout and
+    stderr as captured strings plus the exit code, along with per-stream
+    truncation flags so callers can tell when they hit the byte cap.
+    """
+
+    stdout: str
+    stderr: str
+    exit_code: int
+    stdout_truncated: bool = False
+    stderr_truncated: bool = False
 
 
 class BaseSandboxSnapshot(BaseModel):
@@ -112,6 +137,66 @@ class SandboxProcess(ABC):
     @abstractmethod
     def exit_code(self) -> Optional[int]:
         """Exit code, or ``None`` if the command is still running."""
+
+    def collect(
+        self, *, max_bytes: int = _DEFAULT_COLLECT_BYTES
+    ) -> SandboxOutput:
+        """Fully drains stdout + stderr, blocks until exit, returns everything.
+
+        This is the typical convenience for agent-tool callers: replaces
+        the ``stdout = ...; stderr = ...; code = wait()`` dance with one
+        call that returns a ``SandboxOutput``. Both streams are drained
+        to completion (so ``wait()`` is safe to call even when the
+        underlying provider holds output in a buffered reader); output
+        beyond ``max_bytes`` per stream is dropped and the corresponding
+        ``*_truncated`` flag is set so callers know.
+
+        For full streaming control, iterate ``stdout()`` / ``stderr()``
+        directly instead.
+
+        Args:
+            max_bytes: Soft cap per stream. Default 1 MiB.
+
+        Returns:
+            A ``SandboxOutput`` with captured stdout, stderr, exit code,
+            and per-stream truncation flags.
+        """
+        stdout, stdout_truncated = _drain_capped(self.stdout(), max_bytes)
+        stderr, stderr_truncated = _drain_capped(self.stderr(), max_bytes)
+        exit_code = self.wait()
+        return SandboxOutput(
+            stdout=stdout,
+            stderr=stderr,
+            exit_code=exit_code,
+            stdout_truncated=stdout_truncated,
+            stderr_truncated=stderr_truncated,
+        )
+
+
+def _drain_capped(stream: Iterator[str], max_bytes: int) -> Tuple[str, bool]:
+    """Drain a line iterator fully, capping the returned string at ``max_bytes``.
+
+    Always consumes to completion (StopIteration) so the underlying
+    provider's wait() is not blocked. Lines that would push the total
+    over ``max_bytes`` are dropped, but iteration continues.
+
+    Args:
+        stream: Source iterator (line-delimited strings).
+        max_bytes: Soft cap on the returned string length.
+
+    Returns:
+        Tuple of ``(joined_string, truncated_flag)``.
+    """
+    parts: List[str] = []
+    total = 0
+    truncated = False
+    for line in stream:
+        total += len(line)
+        if total > max_bytes:
+            truncated = True
+            continue
+        parts.append(line)
+    return "".join(parts), truncated
 
 
 class SandboxSession(ABC):
