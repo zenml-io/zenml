@@ -243,19 +243,24 @@ class ModalSandboxSession(SandboxSession):
         self._log_ctx: Any = None
 
     def __enter__(self) -> "ModalSandboxSession":
-        """Opens the log-forwarding context and logs sandbox metadata to the step.
+        """Logs step metadata and opens the log-forwarding context.
 
-        Idempotent against double-entry: if the context is already open
-        (e.g. nested ``with``), we don't open a second one — that would
-        leak the first.
+        Metadata is logged BEFORE the log-forwarding context opens so a
+        failure in ``_log_step_metadata`` can't leak ``_log_ctx``.
 
-        Also records the sandbox session id and Modal dashboard URL as
-        step metadata when called from within a step, so users can pivot
-        from the ZenML step run page directly to the Modal sandbox.
+        Idempotent against double-entry: if the log context is already
+        open (e.g. nested ``with``), we don't open a second one — that
+        would leak the first.
+
+        Caveat: step metadata + log forwarding only fire when the
+        Session is used as a context manager. ``session = create_session();
+        session.close()`` without a ``with`` block bypasses both.
 
         Returns:
             This session.
         """
+        # Log metadata first so a failure here can't leak _log_ctx below.
+        self._log_step_metadata()
         if (
             self._forward_logs
             and self._parent is not None
@@ -263,21 +268,25 @@ class ModalSandboxSession(SandboxSession):
         ):
             self._log_ctx = self._parent.forward_session_logs(self.id)
             self._log_ctx.__enter__()
-        self._log_step_metadata()
         return self
 
     def _log_step_metadata(self) -> None:
         """Records sandbox session id + Modal dashboard URL on the current step.
 
         Silently no-ops when called outside a step context (e.g. from
-        a script that uses the sandbox directly). The dashboard URL is
-        typed as ``Uri`` so the ZenML dashboard renders it as a
-        clickable link rather than plain text.
+        a script that uses the sandbox directly) — that path raises
+        ``ValueError`` from ``log_metadata`` and is the expected ad-hoc
+        case. Any other failure (server publish error, payload bug) is
+        logged at WARNING so it's debuggable rather than silently
+        swallowed.
+
+        The dashboard URL is typed as ``Uri`` so the ZenML dashboard
+        renders it as a clickable link rather than plain text.
         """
-        from zenml.metadata.metadata_types import Uri
+        from zenml.metadata.metadata_types import MetadataType, Uri
         from zenml.utils.metadata_utils import log_metadata
 
-        metadata: Dict[str, Any] = {
+        metadata: Dict[str, "MetadataType"] = {
             "sandbox_session_id": self.id,
             "sandbox_flavor": "modal",
         }
@@ -286,17 +295,23 @@ class ModalSandboxSession(SandboxSession):
             if url:
                 metadata["sandbox_dashboard_url"] = Uri(url)
         except Exception as e:
+            # Older Modal SDKs may not expose get_dashboard_url; tolerable.
             logger.debug(
                 "Could not resolve Modal sandbox dashboard URL: %s", e
             )
         try:
             log_metadata(metadata=metadata)
-        except Exception as e:
-            # Outside a step context, log_metadata raises. That's the
-            # expected case for ad-hoc usage; silence the debug log.
+        except ValueError as e:
+            # log_metadata raises ValueError when invoked outside a step
+            # context (e.g. ad-hoc Client().active_stack.sandbox usage).
+            # That's expected here; anything else escalates below.
             logger.debug(
                 "Skipping sandbox step metadata (no active step): %s", e
             )
+        except Exception as e:
+            # Real failure (network error, serialization bug, etc.). Don't
+            # break sandbox usage, but make it visible so it's debuggable.
+            logger.warning("Failed to publish sandbox step metadata: %s", e)
 
     def __exit__(self, *args: Any) -> None:
         """Releases the handle (which also tears down the log context).
@@ -592,6 +607,9 @@ class ModalSandbox(BaseSandbox):
                 (terminated or unknown). Wraps the underlying Modal error
                 so callers get a stable exception type with a clear message.
         """
+        # Export tokens before any Modal call, otherwise users on
+        # remote orchestrators with no local ~/.modal.toml can't attach.
+        self._export_modal_tokens()
         import modal
 
         try:

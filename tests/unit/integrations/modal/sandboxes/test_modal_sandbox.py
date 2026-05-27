@@ -586,3 +586,154 @@ class TestModalLogForwarding:
         modal_mock.Image.from_registry.assert_called_with(
             ModalSandboxConfig().default_image
         )
+
+
+class TestExportModalTokens:
+    """ModalSandbox._export_modal_tokens copies SecretField values to env."""
+
+    def _build_sandbox_with_tokens(
+        self, *, token_id: str = "tk-1", token_secret: str = "ts-1"
+    ) -> ModalSandbox:
+        return ModalSandbox(
+            name="test-modal",
+            id=uuid4(),
+            config=ModalSandboxConfig(
+                token_id=token_id, token_secret=token_secret
+            ),
+            flavor="modal",
+            type=StackComponentType.SANDBOX,
+            user=None,
+            created=datetime.now(),
+            updated=datetime.now(),
+            environment={},
+            secrets=[],
+        )
+
+    def test_exports_both_when_set(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("MODAL_TOKEN_ID", raising=False)
+        monkeypatch.delenv("MODAL_TOKEN_SECRET", raising=False)
+        self._build_sandbox_with_tokens()._export_modal_tokens()
+        import os
+
+        assert os.environ["MODAL_TOKEN_ID"] == "tk-1"
+        assert os.environ["MODAL_TOKEN_SECRET"] == "ts-1"
+
+    def test_does_not_clobber_already_set_env(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # setdefault semantics: a developer's existing local
+        # ~/.modal.toml-derived token wins over a config-carried one.
+        monkeypatch.setenv("MODAL_TOKEN_ID", "preexisting")
+        monkeypatch.delenv("MODAL_TOKEN_SECRET", raising=False)
+        self._build_sandbox_with_tokens()._export_modal_tokens()
+        import os
+
+        assert os.environ["MODAL_TOKEN_ID"] == "preexisting"
+        assert os.environ["MODAL_TOKEN_SECRET"] == "ts-1"
+
+    def test_noop_when_both_unset(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv("MODAL_TOKEN_ID", raising=False)
+        monkeypatch.delenv("MODAL_TOKEN_SECRET", raising=False)
+        ModalSandbox(
+            name="t",
+            id=uuid4(),
+            config=ModalSandboxConfig(),
+            flavor="modal",
+            type=StackComponentType.SANDBOX,
+            user=None,
+            created=datetime.now(),
+            updated=datetime.now(),
+            environment={},
+            secrets=[],
+        )._export_modal_tokens()
+        import os
+
+        assert "MODAL_TOKEN_ID" not in os.environ
+        assert "MODAL_TOKEN_SECRET" not in os.environ
+
+    def test_attach_exports_tokens(self) -> None:
+        # Remote orchestrators reattach via .attach(); without the
+        # token export the modal.Sandbox.from_id call would fail.
+        with _patch_modal() as modal_mock:
+            modal_mock.Sandbox.from_id.return_value = MagicMock(
+                object_id="sb_xyz"
+            )
+            sandbox = self._build_sandbox_with_tokens(token_id="attach-tk")
+            import os
+
+            os.environ.pop("MODAL_TOKEN_ID", None)
+            sandbox.attach("sb_xyz")
+            assert os.environ["MODAL_TOKEN_ID"] == "attach-tk"
+
+
+class TestLogStepMetadata:
+    """ModalSandboxSession._log_step_metadata behavior under various conditions."""
+
+    def _session(self, dashboard_url: str = "https://modal.com/id/sb-x"):
+        fake_sandbox = MagicMock(object_id="sb_xyz")
+        fake_sandbox.get_dashboard_url.return_value = dashboard_url
+        return ModalSandboxSession(
+            fake_sandbox, parent=MagicMock(), forward_logs=False
+        )
+
+    def test_logs_session_id_flavor_and_typed_url(self) -> None:
+        with patch("zenml.utils.metadata_utils.log_metadata") as log_meta:
+            self._session()._log_step_metadata()
+        log_meta.assert_called_once()
+        payload = log_meta.call_args.kwargs["metadata"]
+        assert payload["sandbox_session_id"] == "sb_xyz"
+        assert payload["sandbox_flavor"] == "modal"
+        # Uri is a subclass of str so isinstance works against both.
+        from zenml.metadata.metadata_types import Uri
+
+        assert isinstance(payload["sandbox_dashboard_url"], Uri)
+
+    def test_skips_url_when_get_dashboard_url_fails(self) -> None:
+        fake_sandbox = MagicMock(object_id="sb_xyz")
+        fake_sandbox.get_dashboard_url.side_effect = AttributeError("old SDK")
+        session = ModalSandboxSession(
+            fake_sandbox, parent=MagicMock(), forward_logs=False
+        )
+        with patch("zenml.utils.metadata_utils.log_metadata") as log_meta:
+            session._log_step_metadata()
+        payload = log_meta.call_args.kwargs["metadata"]
+        assert "sandbox_dashboard_url" not in payload
+        assert payload["sandbox_session_id"] == "sb_xyz"
+
+    def test_no_step_context_is_silently_skipped(self) -> None:
+        # log_metadata raises ValueError outside a step. We swallow at
+        # debug — not at warning, since this is the expected ad-hoc path.
+        with (
+            patch(
+                "zenml.utils.metadata_utils.log_metadata",
+                side_effect=ValueError("not in a step"),
+            ),
+            patch(
+                "zenml.integrations.modal.sandboxes.modal_sandbox.logger.debug"
+            ) as dbg,
+            patch(
+                "zenml.integrations.modal.sandboxes.modal_sandbox.logger.warning"
+            ) as warn,
+        ):
+            self._session()._log_step_metadata()
+        dbg.assert_called()
+        warn.assert_not_called()
+
+    def test_real_failure_is_surfaced_at_warning(self) -> None:
+        # Anything other than ValueError is logged at warning so users
+        # can debug why their step metadata never landed.
+        with (
+            patch(
+                "zenml.utils.metadata_utils.log_metadata",
+                side_effect=RuntimeError("publish 500"),
+            ),
+            patch(
+                "zenml.integrations.modal.sandboxes.modal_sandbox.logger.warning"
+            ) as warn,
+        ):
+            self._session()._log_step_metadata()
+        warn.assert_called()
