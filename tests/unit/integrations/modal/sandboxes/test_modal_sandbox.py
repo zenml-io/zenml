@@ -382,52 +382,32 @@ class TestModalSandbox:
 
 
 class TestModalSandboxFileIO:
-    def test_upload_file_streams_in_chunks(self, tmp_path: Any) -> None:
-        # 2.5 MiB of payload at a 1 MiB chunk size → 3 read calls
-        # (and 3 write calls on the destination handle).
-        payload = b"x" * (2 * 1024 * 1024 + 512 * 1024)
-        src_path = tmp_path / "big.bin"
-        src_path.write_bytes(payload)
-
-        fake_dst = MagicMock()
-        dst_cm = MagicMock()
-        dst_cm.__enter__ = MagicMock(return_value=fake_dst)
-        dst_cm.__exit__ = MagicMock(return_value=False)
+    def test_upload_file_delegates_to_filesystem_api(
+        self, tmp_path: Any
+    ) -> None:
+        src_path = tmp_path / "in.bin"
+        src_path.write_bytes(b"payload")
         fake_sandbox = MagicMock(object_id="sb_xyz")
-        fake_sandbox.open.return_value = dst_cm
 
         ModalSandboxSession(fake_sandbox).upload_file(
-            str(src_path), "/tmp/big.bin"
+            str(src_path), "/tmp/in.bin"
         )
-        assert fake_dst.write.call_count == 3
-        # Every chunk written should fit within 1 MiB.
-        for call in fake_dst.write.call_args_list:
-            assert len(call.args[0]) <= 1024 * 1024
+        fake_sandbox.filesystem.copy_from_local.assert_called_once_with(
+            str(src_path), "/tmp/in.bin"
+        )
 
-    def test_download_file_streams_in_chunks(self, tmp_path: Any) -> None:
-        payload = b"y" * (2 * 1024 * 1024 + 256 * 1024)
-        chunks = [
-            payload[: 1024 * 1024],
-            payload[1024 * 1024 : 2 * 1024 * 1024],
-            payload[2 * 1024 * 1024 :],
-            b"",  # EOF terminates the while-loop
-        ]
-
-        fake_src = MagicMock()
-        fake_src.read.side_effect = chunks
-        src_cm = MagicMock()
-        src_cm.__enter__ = MagicMock(return_value=fake_src)
-        src_cm.__exit__ = MagicMock(return_value=False)
-        fake_sandbox = MagicMock(object_id="sb_xyz")
-        fake_sandbox.open.return_value = src_cm
-
+    def test_download_file_delegates_to_filesystem_api(
+        self, tmp_path: Any
+    ) -> None:
         dst_path = tmp_path / "out.bin"
+        fake_sandbox = MagicMock(object_id="sb_xyz")
+
         ModalSandboxSession(fake_sandbox).download_file(
-            "/tmp/big.bin", str(dst_path)
+            "/tmp/out.bin", str(dst_path)
         )
-        assert dst_path.read_bytes() == payload
-        # Read was called 3 chunks + 1 EOF read = 4.
-        assert fake_src.read.call_count == 4
+        fake_sandbox.filesystem.copy_to_local.assert_called_once_with(
+            "/tmp/out.bin", str(dst_path)
+        )
 
 
 class TestModalLogForwarding:
