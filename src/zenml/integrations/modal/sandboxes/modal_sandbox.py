@@ -205,6 +205,9 @@ class ModalSandboxProcess(SandboxProcess):
 class ModalSandboxSession(SandboxSession):
     """Wraps a Modal ``Sandbox`` in the ``SandboxSession`` interface."""
 
+    # 1 MiB transfer chunks balance throughput and memory for large files.
+    _FILE_CHUNK_SIZE = 1024 * 1024
+
     def __init__(
         self,
         sandbox: Any,
@@ -236,26 +239,30 @@ class ModalSandboxSession(SandboxSession):
     def __enter__(self) -> "ModalSandboxSession":
         """Opens the log-forwarding context if enabled.
 
+        Idempotent against double-entry: if the context is already open
+        (e.g. nested ``with``), we don't open a second one — that would
+        leak the first.
+
         Returns:
             This session.
         """
-        if self._forward_logs and self._parent is not None:
+        if (
+            self._forward_logs
+            and self._parent is not None
+            and self._log_ctx is None
+        ):
             self._log_ctx = self._parent.forward_session_logs(self.id)
             self._log_ctx.__enter__()
         return self
 
     def __exit__(self, *args: Any) -> None:
-        """Closes the log-forwarding context, then releases the handle.
+        """Releases the handle (which also tears down the log context).
 
         Args:
-            *args: Exception info; passed through to the underlying
-                context manager so it can run any cleanup.
+            *args: Exception info; ignored by ``close()`` (matches the
+                base ``SandboxSession`` contract that ``close()`` is
+                best-effort).
         """
-        if self._log_ctx is not None:
-            try:
-                self._log_ctx.__exit__(*args)
-            finally:
-                self._log_ctx = None
         self.close()
 
     def exec(
@@ -317,9 +324,6 @@ class ModalSandboxSession(SandboxSession):
         image = self._sandbox.snapshot_filesystem()
         return ModalSandboxSnapshot(ref=image.object_id)
 
-    # 1 MiB transfer chunks balance throughput and memory for large files.
-    _FILE_CHUNK_SIZE = 1024 * 1024
-
     def upload_file(self, local_path: str, remote_path: str) -> None:
         """Uploads a local file into the Sandbox (streamed in chunks).
 
@@ -345,13 +349,21 @@ class ModalSandboxSession(SandboxSession):
                     dst.write(chunk)
 
     def close(self) -> None:
-        """Releases the local handle. The Sandbox keeps running on Modal.
+        """Releases the local handle and tears down the log-forwarding context.
 
-        Modal will eventually terminate the Sandbox per its TTL; use
+        Modal's ``Sandbox`` itself is a stateless client handle (no socket
+        to drop), but if log forwarding was opened via ``__enter__`` we
+        close that ``LoggingContext`` here. Idempotent — safe to call
+        multiple times, and safe to call outside a ``with`` block.
+
+        The Sandbox keeps running on Modal until its TTL expires; use
         ``destroy()`` to force-stop immediately.
         """
-        # Nothing to release — modal.Sandbox is just a client-side handle.
-        return None
+        if self._log_ctx is not None:
+            try:
+                self._log_ctx.__exit__(None, None, None)
+            finally:
+                self._log_ctx = None
 
     def destroy(self) -> None:
         """Terminates the Sandbox on Modal."""

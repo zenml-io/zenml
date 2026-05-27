@@ -454,6 +454,39 @@ class TestModalLogForwarding:
         with session:
             parent.forward_session_logs.assert_not_called()
 
+    def test_close_outside_with_still_closes_log_ctx(self) -> None:
+        # If a caller manually __enter__'s the session and then calls
+        # close() instead of __exit__, the LoggingContext should still
+        # be torn down (no leak).
+        parent = MagicMock()
+        log_ctx = MagicMock()
+        parent.forward_session_logs.return_value = log_ctx
+        fake_sandbox = MagicMock(object_id="sb_xyz")
+        session = ModalSandboxSession(
+            fake_sandbox, parent=parent, forward_logs=True
+        )
+        session.__enter__()
+        session.close()
+        log_ctx.__exit__.assert_called_once()
+        # Calling close() again is idempotent — no double-exit.
+        session.close()
+        log_ctx.__exit__.assert_called_once()
+
+    def test_double_enter_does_not_leak_log_ctx(self) -> None:
+        parent = MagicMock()
+        log_ctx = MagicMock()
+        parent.forward_session_logs.return_value = log_ctx
+        fake_sandbox = MagicMock(object_id="sb_xyz")
+        session = ModalSandboxSession(
+            fake_sandbox, parent=parent, forward_logs=True
+        )
+        session.__enter__()
+        session.__enter__()
+        # forward_session_logs called exactly once even on double-enter.
+        assert parent.forward_session_logs.call_count == 1
+        assert log_ctx.__enter__.call_count == 1
+        session.close()
+
     def test_process_stdout_forwards_lines_when_enabled(self) -> None:
         fake_process = MagicMock()
         fake_process.stdout = [b"hello\n", b"world\n"]
