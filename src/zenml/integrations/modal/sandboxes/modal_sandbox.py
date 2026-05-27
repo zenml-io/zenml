@@ -621,10 +621,13 @@ class ModalSandbox(BaseSandbox):
                 f"Failed to attach to Modal sandbox '{session_id}' "
                 f"({type(e).__name__}): {e}"
             ) from e
-        # Reattached sessions don't get log forwarding by default since
-        # we don't know the original Settings; callers can wrap manually
-        # via `with sandbox.forward_session_logs(session.id):`.
-        return ModalSandboxSession(sandbox, parent=self, forward_logs=False)
+        return ModalSandboxSession(
+            sandbox,
+            parent=self,
+            forward_logs=self.resolve_forward_logs_to_step(
+                self._settings(None)
+            ),
+        )
 
     def restore(self, snapshot: BaseSandboxSnapshot) -> SandboxSession:
         """Boots a new Session from a stored filesystem snapshot.
@@ -652,4 +655,10 @@ class ModalSandbox(BaseSandbox):
                 f"Failed to restore Modal sandbox from image "
                 f"'{snapshot.ref}' ({type(e).__name__}): {e}"
             ) from e
-        return ModalSandboxSession(sandbox, parent=self, forward_logs=False)
+        return ModalSandboxSession(
+            sandbox,
+            parent=self,
+            forward_logs=self.resolve_forward_logs_to_step(
+                self._settings(None)
+            ),
+        )
