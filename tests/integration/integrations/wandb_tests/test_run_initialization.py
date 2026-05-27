@@ -359,6 +359,10 @@ def test_step_metadata_includes_richer_wandb_identifiers(monkeypatch) -> None:
             "run_id",
         ),
         (
+            {"resume": "must"},
+            "resume='must'",
+        ),
+        (
             {"run_config": {"zenml_pipeline_name": "override"}},
             "run_config",
         ),

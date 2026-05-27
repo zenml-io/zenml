@@ -273,6 +273,7 @@ ZenML validates conflicts early:
 
 * `run_id` cannot be combined with a non-default `run_id_strategy`.
 * `resume="never"` cannot be combined with `run_id_strategy="pipeline_step"`, because retries intentionally reuse the same W&B run ID.
+* `resume="must"` requires either an explicit `run_id` or a deterministic `run_id_strategy`.
 * `run_config` cannot contain `zenml_*` keys, which are reserved for ZenML metadata.
 * `init_kwargs` cannot override ZenML-managed `wandb.init(...)` keys such as `entity`, `project`, `name`, `id`, `resume`, `group`, `job_type`, `tags`, `config`, or `settings`.
 

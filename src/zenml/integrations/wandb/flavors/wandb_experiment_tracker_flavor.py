@@ -164,6 +164,16 @@ class WandbExperimentTrackerSettings(BaseSettings):
                 "resume='never'."
             )
 
+        if (
+            self.resume == "must"
+            and not self.run_id
+            and self.run_id_strategy == "wandb_generated"
+        ):
+            raise ValueError(
+                "The resume='must' setting requires either an explicit "
+                "'run_id' or a deterministic 'run_id_strategy'."
+            )
+
         reserved_config_keys = [
             key for key in self.run_config if key.startswith("zenml_")
         ]
