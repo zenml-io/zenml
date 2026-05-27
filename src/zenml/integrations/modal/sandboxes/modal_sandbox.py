@@ -243,11 +243,15 @@ class ModalSandboxSession(SandboxSession):
         self._log_ctx: Any = None
 
     def __enter__(self) -> "ModalSandboxSession":
-        """Opens the log-forwarding context if enabled.
+        """Opens the log-forwarding context and logs sandbox metadata to the step.
 
         Idempotent against double-entry: if the context is already open
         (e.g. nested ``with``), we don't open a second one — that would
         leak the first.
+
+        Also records the sandbox session id and Modal dashboard URL as
+        step metadata when called from within a step, so users can pivot
+        from the ZenML step run page directly to the Modal sandbox.
 
         Returns:
             This session.
@@ -259,7 +263,39 @@ class ModalSandboxSession(SandboxSession):
         ):
             self._log_ctx = self._parent.forward_session_logs(self.id)
             self._log_ctx.__enter__()
+        self._log_step_metadata()
         return self
+
+    def _log_step_metadata(self) -> None:
+        """Records sandbox session id + Modal dashboard URL on the current step.
+
+        Silently no-ops when called outside a step context (e.g. from
+        a script that uses the sandbox directly). The dashboard URL
+        comes from ``Sandbox.get_dashboard_url()``; if the Modal SDK
+        version doesn't support it we just log the id.
+        """
+        from zenml.utils.metadata_utils import log_metadata
+
+        metadata: Dict[str, Any] = {
+            "sandbox_session_id": self.id,
+            "sandbox_flavor": "modal",
+        }
+        try:
+            url = self._sandbox.get_dashboard_url()
+            if url:
+                metadata["sandbox_dashboard_url"] = url
+        except Exception as e:
+            logger.debug(
+                "Could not resolve Modal sandbox dashboard URL: %s", e
+            )
+        try:
+            log_metadata(metadata=metadata)
+        except Exception as e:
+            # Outside a step context, log_metadata raises. That's the
+            # expected case for ad-hoc usage; silence the debug log.
+            logger.debug(
+                "Skipping sandbox step metadata (no active step): %s", e
+            )
 
     def __exit__(self, *args: Any) -> None:
         """Releases the handle (which also tears down the log context).
@@ -435,6 +471,25 @@ class ModalSandbox(BaseSandbox):
         """
         return cast(ModalSandboxConfig, self._config)
 
+    def _export_modal_tokens(self) -> None:
+        """Exports config-carried Modal credentials into ``os.environ``.
+
+        Modal authenticates from ``~/.modal.toml`` or the
+        ``MODAL_TOKEN_ID`` / ``MODAL_TOKEN_SECRET`` env vars. For step
+        processes running in remote orchestrators (Kubernetes,
+        SageMaker, etc.) the local toml isn't available, so we let
+        users attach the tokens to the component config (as
+        ``SecretField``s) and export them here just before importing
+        modal. Safe to call multiple times; no-op when both fields are
+        unset.
+        """
+        token_id = self.config.token_id
+        token_secret = self.config.token_secret
+        if token_id:
+            os.environ.setdefault("MODAL_TOKEN_ID", token_id)
+        if token_secret:
+            os.environ.setdefault("MODAL_TOKEN_SECRET", token_secret)
+
     def _get_app(self) -> Any:
         """Returns this component's Modal ``App``, looking it up once and caching.
 
@@ -442,6 +497,7 @@ class ModalSandbox(BaseSandbox):
             The Modal App.
         """
         if self._app is None:
+            self._export_modal_tokens()
             import modal
 
             self._app = modal.App.lookup(
@@ -487,6 +543,7 @@ class ModalSandbox(BaseSandbox):
         Returns:
             A ``ModalSandboxSession`` wrapping the live Modal Sandbox.
         """
+        self._export_modal_tokens()
         import modal
 
         eff = self._settings(settings)
