@@ -19,13 +19,20 @@ code. The Sandbox isolates the LLM-generated code from the agent process,
 which is the headline use case for the Sandbox stack component.
 """
 
-from typing import List
+from dataclasses import dataclass
+from typing import Iterator, List
 
 from pydantic import BaseModel
 from pydantic_ai import Agent, RunContext
 
 from zenml.client import Client
 from zenml.sandboxes import SandboxSession
+
+# Cap the stdout/stderr surface the agent sees per tool call. Modal sends
+# the full process output through a `LogsReader`; we must drain it fully
+# (otherwise `process.wait()` can block waiting for the consumer), but
+# the LLM doesn't need megabytes of output, so we concatenate then trim.
+_MAX_STREAM_BYTES = 32_000
 
 
 class CodeResult(BaseModel):
@@ -36,37 +43,53 @@ class CodeResult(BaseModel):
     exit_code: int
 
 
-class AgentDeps(BaseModel):
-    """Dependencies injected into every tool call.
+@dataclass
+class AgentDeps:
+    """Runtime handle passed to every tool call.
 
     Carries the live ``SandboxSession`` so all tool invocations share one
-    interpreter state (filesystem persists between calls).
+    container. A plain dataclass (not a Pydantic model) — there's nothing
+    to validate, and the live session isn't serializable anyway.
     """
 
-    model_config = {"arbitrary_types_allowed": True}
     session: SandboxSession
 
 
-def _drain(stream: List[str], limit: int = 500) -> str:
-    """Reads up to ``limit`` lines from a SandboxProcess stream iterator.
+def _drain(stream: Iterator[str], max_bytes: int = _MAX_STREAM_BYTES) -> str:
+    """Fully consumes a stream iterator and returns the concatenated text.
 
-    Bounded so a runaway agent doesn't hang the pipeline.
+    Always drains to completion so the underlying ``SandboxProcess.wait()``
+    does not block on an un-emptied buffer. Output beyond ``max_bytes`` is
+    discarded and replaced with a clear truncation marker so the LLM
+    doesn't reason on silently-clipped output.
+
+    Args:
+        stream: Source iterator (line-delimited strings).
+        max_bytes: Soft cap on the returned string length.
+
+    Returns:
+        Concatenated lines, with a trailing marker if truncation occurred.
     """
-    lines: List[str] = []
-    for _ in range(limit):
-        try:
-            lines.append(next(stream))
-        except StopIteration:
-            break
-    return "".join(lines)
+    parts: List[str] = []
+    total = 0
+    truncated = False
+    for line in stream:
+        total += len(line)
+        if total > max_bytes:
+            truncated = True
+            continue  # keep consuming so wait() is safe
+        parts.append(line)
+    if truncated:
+        parts.append(f"\n... [output truncated at {max_bytes} bytes]\n")
+    return "".join(parts)
 
 
 def build_agent() -> Agent[AgentDeps, str]:
     """Constructs the PydanticAI agent with the sandbox tool registered.
 
     Returns:
-        A PydanticAI ``Agent`` that streams Python code execution through
-        the active ZenML stack's Sandbox.
+        A PydanticAI ``Agent`` that runs Python code through the active
+        ZenML stack's Sandbox via a single ``run_python`` tool.
     """
     agent: Agent[AgentDeps, str] = Agent(
         "openai:gpt-4o-mini",
@@ -74,9 +97,10 @@ def build_agent() -> Agent[AgentDeps, str]:
         system_prompt=(
             "You are a data-analysis assistant. To answer questions that "
             "need computation, write Python code and call the run_python "
-            "tool with it. The tool executes the code in an isolated "
-            "sandbox and returns stdout, stderr, and the exit code. Keep "
-            "code self-contained and print the final answer."
+            "tool with it. Each call is a fresh Python interpreter — "
+            "imports and variables do NOT persist between calls, so write "
+            "self-contained scripts. Files written under /tmp do persist. "
+            "Print the final answer to stdout."
         ),
     )
 
@@ -91,7 +115,10 @@ def build_agent() -> Agent[AgentDeps, str]:
         Returns:
             The captured stdout, stderr, and exit code.
         """
-        process = ctx.deps.session.exec(["python", "-c", code])
+        # ``-u`` forces unbuffered output so prints arrive on the stream
+        # immediately — important once the Modal flavor's log-forwarding
+        # wraps these iterators (lines surface in the step log live).
+        process = ctx.deps.session.exec(["python", "-u", "-c", code])
         stdout = _drain(process.stdout())
         stderr = _drain(process.stderr())
         exit_code = process.wait()
@@ -103,9 +130,12 @@ def build_agent() -> Agent[AgentDeps, str]:
 def run_agent(query: str) -> str:
     """Drives the agent against the active stack's Sandbox.
 
-    Opens a ``with`` block around the Session so log forwarding (if the
-    flavor enables it) routes sandbox stdout/stderr into ZenML's step
-    log stream as a per-session source.
+    Opens a ``with`` block around the Session. When the flavor enables
+    log forwarding (e.g. Modal opens a ``LoggingContext`` on
+    ``__enter__`` when ``forward_logs_to_step`` resolves True), sandbox
+    stdout/stderr surfaces in the step's log stream as a dedicated
+    ``sandbox:<session_id>`` source. Otherwise the tool just returns the
+    captured strings.
 
     Args:
         query: The natural-language question to ask the agent.
