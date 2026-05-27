@@ -21,14 +21,6 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship
 
-from zenml.enums import ResourceRequestStatus
-from zenml.models import (
-    ResourceRequestRequest,
-    ResourceRequestResponse,
-    ResourceRequestResponseBody,
-    ResourceRequestResponseMetadata,
-    ResourceRequestResponseResources,
-)
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.schema_utils import (
@@ -166,81 +158,6 @@ class ResourceRequestSchema(BaseSchema, table=True):
             )
 
         return options
-
-    @classmethod
-    def from_request(
-        cls,
-        request: "ResourceRequestRequest",
-    ) -> "ResourceRequestSchema":
-        """Create a resource request schema from a request.
-
-        Args:
-            request: The `ResourceRequestRequest` to create from.
-
-        Returns:
-            The created `ResourceRequestSchema`.
-        """
-        return cls(
-            user_id=request.user,
-            component_id=request.component_id,
-            step_run_id=request.step_run_id,
-            status=ResourceRequestStatus.PENDING.value,
-            preemption_initiated_by_id=None,
-            preemptible=request.preemptible,
-        )
-
-    def to_model(
-        self,
-        include_metadata: bool = False,
-        include_resources: bool = False,
-        **kwargs: Any,
-    ) -> "ResourceRequestResponse":
-        """Creates a `ResourceRequestResponse` from a `ResourceRequestSchema`.
-
-        Args:
-            include_metadata: Whether to include metadata in the response.
-            include_resources: Whether to include resources in the response.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            A `ResourceRequestResponse` object.
-        """
-        body = ResourceRequestResponseBody(
-            created=self.created,
-            updated=self.updated,
-            user_id=self.user_id,
-            requested_resources={
-                r.key: r.amount for r in self.requested_resources
-            },
-            status=ResourceRequestStatus(self.status),
-            status_reason=self.status_reason,
-            preemptible=self.preemptible,
-        )
-
-        metadata = None
-        if include_metadata:
-            metadata = ResourceRequestResponseMetadata()
-
-        resources = None
-        if include_resources:
-            resources = ResourceRequestResponseResources(
-                user=self.user.to_model() if self.user else None,
-                component=self.component.to_model()
-                if self.component
-                else None,
-                step_run=self.step_run.to_model() if self.step_run else None,
-                pipeline_run=self.step_run.pipeline_run.to_model()
-                if self.step_run
-                else None,
-                pool=self.pool.to_model() if self.pool else None,
-            )
-
-        return ResourceRequestResponse(
-            id=self.id,
-            body=body,
-            metadata=metadata,
-            resources=resources,
-        )
 
 
 class ResourceRequestResourceSchema(BaseSchema, table=True):

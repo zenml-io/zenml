@@ -19,13 +19,19 @@ from uuid import UUID
 
 from zenml.models import (
     Page,
+    ResourceDescriptorFilter,
+    ResourceDescriptorRequest,
+    ResourceDescriptorResponse,
+    ResourceDescriptorUpdate,
+    ResourcePolicyFilter,
+    ResourcePolicyRequest,
+    ResourcePolicyResponse,
+    ResourcePolicyUpdate,
+    ResourcePoolAllocation,
     ResourcePoolFilter,
+    ResourcePoolQueueItem,
     ResourcePoolRequest,
     ResourcePoolResponse,
-    ResourcePoolSubjectPolicyFilter,
-    ResourcePoolSubjectPolicyRequest,
-    ResourcePoolSubjectPolicyResponse,
-    ResourcePoolSubjectPolicyUpdate,
     ResourcePoolUpdate,
     ResourceRequestFilter,
     ResourceRequestRequest,
@@ -38,6 +44,69 @@ if TYPE_CHECKING:
 
 class ResourcePoolsStoreInterface(ABC):
     """Resource pools store interface."""
+
+    # -------------------- Resource Descriptors -------------
+
+    @abstractmethod
+    def create_resource_descriptor(
+        self, descriptor: ResourceDescriptorRequest
+    ) -> ResourceDescriptorResponse:
+        """Create a resource descriptor.
+
+        Args:
+            descriptor: The resource descriptor to create.
+
+        Returns:
+            The created resource descriptor.
+        """
+
+    @abstractmethod
+    def get_resource_descriptor(
+        self, descriptor_id: UUID
+    ) -> ResourceDescriptorResponse:
+        """Get a resource descriptor by ID.
+
+        Args:
+            descriptor_id: The ID of the resource descriptor to get.
+
+        Returns:
+            The resource descriptor.
+        """
+
+    @abstractmethod
+    def list_resource_descriptors(
+        self, filter_model: ResourceDescriptorFilter
+    ) -> Page[ResourceDescriptorResponse]:
+        """List resource descriptors matching the given filter criteria.
+
+        Args:
+            filter_model: Filter and pagination parameters.
+
+        Returns:
+            Matching resource descriptors.
+        """
+
+    @abstractmethod
+    def update_resource_descriptor(
+        self, descriptor_id: UUID, update: ResourceDescriptorUpdate
+    ) -> ResourceDescriptorResponse:
+        """Update an existing resource descriptor.
+
+        Args:
+            descriptor_id: The ID of the descriptor to update.
+            update: The update to apply.
+
+        Returns:
+            The updated descriptor.
+        """
+
+    @abstractmethod
+    def delete_resource_descriptor(self, descriptor_id: UUID) -> None:
+        """Delete a resource descriptor.
+
+        Args:
+            descriptor_id: The ID of the descriptor to delete.
+        """
 
     # -------------------- Resource Pools -------------
 
@@ -108,10 +177,36 @@ class ResourcePoolsStoreInterface(ABC):
         """
 
     @abstractmethod
-    def create_resource_pool_subject_policy(
-        self, policy: ResourcePoolSubjectPolicyRequest
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Create a resource pool subject policy.
+    def list_resource_pool_queue(
+        self, resource_pool_id: UUID
+    ) -> Page[ResourcePoolQueueItem]:
+        """List queued requests for a resource pool.
+
+        Args:
+            resource_pool_id: The ID of the resource pool.
+
+        Returns:
+            Queued requests for the pool.
+        """
+
+    @abstractmethod
+    def list_resource_pool_allocations(
+        self, resource_pool_id: UUID
+    ) -> Page[ResourcePoolAllocation]:
+        """List active allocations for a resource pool.
+
+        Args:
+            resource_pool_id: The ID of the resource pool.
+
+        Returns:
+            Active allocations for the pool.
+        """
+
+    @abstractmethod
+    def create_resource_policy(
+        self, policy: ResourcePolicyRequest
+    ) -> ResourcePolicyResponse:
+        """Create a resource policy.
 
         Args:
             policy: The policy to create.
@@ -121,40 +216,40 @@ class ResourcePoolsStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_resource_pool_subject_policy(
+    def get_resource_policy(
         self, policy_id: UUID, hydrate: bool = True
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Get a resource pool subject policy by ID.
+    ) -> ResourcePolicyResponse:
+        """Get a resource policy by ID.
 
         Args:
             policy_id: The ID of the policy to get.
-            hydrate: Whether to include metadata fields.
+            hydrate: Ignored for Resource Manager-backed policies.
 
         Returns:
             The requested policy.
         """
 
     @abstractmethod
-    def list_resource_pool_subject_policies(
+    def list_resource_policies(
         self,
-        filter_model: ResourcePoolSubjectPolicyFilter,
+        filter_model: ResourcePolicyFilter,
         hydrate: bool = False,
-    ) -> Page[ResourcePoolSubjectPolicyResponse]:
-        """List resource pool subject policies.
+    ) -> Page[ResourcePolicyResponse]:
+        """List resource policies.
 
         Args:
             filter_model: All filter parameters including pagination params.
-            hydrate: Whether to include metadata fields.
+            hydrate: Ignored for Resource Manager-backed policies.
 
         Returns:
             Matching policies.
         """
 
     @abstractmethod
-    def update_resource_pool_subject_policy(
-        self, policy_id: UUID, update: ResourcePoolSubjectPolicyUpdate
-    ) -> ResourcePoolSubjectPolicyResponse:
-        """Update an existing resource pool subject policy.
+    def update_resource_policy(
+        self, policy_id: UUID, update: ResourcePolicyUpdate
+    ) -> ResourcePolicyResponse:
+        """Update an existing resource policy.
 
         Args:
             policy_id: The ID of the policy to update.
@@ -165,8 +260,8 @@ class ResourcePoolsStoreInterface(ABC):
         """
 
     @abstractmethod
-    def delete_resource_pool_subject_policy(self, policy_id: UUID) -> None:
-        """Delete a resource pool subject policy.
+    def delete_resource_policy(self, policy_id: UUID) -> None:
+        """Delete a resource policy.
 
         Args:
             policy_id: The ID of the policy to delete.
@@ -236,6 +331,17 @@ class ResourcePoolsSQLStoreInterface(ResourcePoolsStoreInterface):
         Args:
             session: DB session.
             step_run_id: The ID of the step run to release resources for.
+        """
+
+    @abstractmethod
+    def delete_component_subject(
+        self, session: "Session", component_id: UUID
+    ) -> None:
+        """Delete Resource Manager state associated with a stack component.
+
+        Args:
+            session: DB session.
+            component_id: The ID of the stack component being deleted.
         """
 
     @abstractmethod

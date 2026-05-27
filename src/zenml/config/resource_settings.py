@@ -13,9 +13,12 @@
 #  permissions and limitations under the License.
 """Resource settings class used to specify resources for a step."""
 
+from __future__ import annotations
+
 import math
 from enum import Enum
-from typing import Dict, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Literal, Optional, Union
+from uuid import UUID
 
 from pydantic import (
     ConfigDict,
@@ -27,6 +30,10 @@ from pydantic import (
 )
 
 from zenml.config.base_settings import BaseSettings
+from zenml.enums import ResourceRequestReclaimTolerance
+
+if TYPE_CHECKING:
+    from zenml.models import ResourceRequestDemand
 
 
 class ByteUnit(Enum):
@@ -65,6 +72,55 @@ class ByteUnit(Enum):
 
 
 MEMORY_REGEX = r"^[0-9]+(" + "|".join(unit.value for unit in ByteUnit) + r")$"
+
+
+class PoolResourceDemand(BaseSettings):
+    """Extended resource pool demand used by ResourceSettings.
+
+    Attributes:
+        resource_id: Optional exact resource descriptor ID.
+        resource: Optional exact resource descriptor name.
+        quantity: Requested quantity.
+        class_name: Optional exact capacity class name.
+        resource_selector: Optional selector over resource descriptor fields and
+            attributes.
+        class_selector: Optional selector over capacity class fields and
+            attributes.
+    """
+
+    resource_id: Optional[UUID] = None
+    resource: Optional[str] = None
+    quantity: PositiveInt
+    class_name: Optional[str] = Field(
+        default=None,
+        alias="class",
+        serialization_alias="class",
+    )
+    resource_selector: Optional[Dict[str, Any]] = None
+    class_selector: Optional[Dict[str, Any]] = None
+
+    @model_validator(mode="after")
+    def _validate_resource_reference(self) -> "PoolResourceDemand":
+        """Validate that the demand can resolve to a resource.
+
+        Returns:
+            The validated demand.
+
+        Raises:
+            ValueError: If no resource reference or selector is configured.
+        """
+        if (
+            self.resource_id is None
+            and self.resource is None
+            and self.resource_selector is None
+        ):
+            raise ValueError(
+                "Pool resource demands require a resource ID, resource name, "
+                "or resource selector."
+            )
+        return self
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class ResourceSettings(BaseSettings):
@@ -112,9 +168,15 @@ class ResourceSettings(BaseSettings):
     Attributes:
         cpu_count: The amount of CPU cores that should be configured.
         gpu_count: The amount of GPUs that should be configured.
+        gpu_type: Optional GPU type selector for resource pool scheduling.
+        gpu_class: Optional GPU capacity class for resource pool scheduling.
         memory: The amount of memory that should be configured.
-        preemptible: Whether the resources can be preempted. This only applies
-            when using ZenML resource pools.
+        preemptible: Legacy flag for whether resource pool requests can be
+            preempted. If set and ``reclaim_tolerance`` is omitted, ``True``
+            maps to ``coordinated`` and ``False`` maps to ``none``.
+        reclaim_tolerance: Capacity reclaim behavior tolerated by resource pool
+            requests. Defaults to ``unsafe`` when neither this nor the legacy
+            preemptible flag is set.
         min_replicas: Minimum number of container instances (replicas).
             Use 0 to allow scale-to-zero on idle. Only relevant to
             deployed pipelines.
@@ -135,10 +197,14 @@ class ResourceSettings(BaseSettings):
             (for example ``tpu``) or to supply ``gpu`` / ``mcpu`` / ``memory_mb``
             without the typed fields. When ``gpu_count``, ``cpu_count``, or
             ``memory`` is set, those fields override the same keys in this map.
+        pool_resource_demands: Extended resource pool demands with selectors
+            and class constraints.
     """
 
     cpu_count: Optional[PositiveFloat] = None
     gpu_count: Optional[NonNegativeInt] = None
+    gpu_type: Optional[str] = None
+    gpu_class: Optional[str] = None
     memory: Optional[str] = Field(pattern=MEMORY_REGEX, default=None)
     pool_resources: Optional[Dict[str, PositiveInt]] = Field(
         default=None,
@@ -150,7 +216,17 @@ class ResourceSettings(BaseSettings):
             "respectively."
         ),
     )
-    preemptible: bool = True
+    pool_resource_demands: Optional[list[PoolResourceDemand]] = Field(
+        default=None,
+        description=(
+            "Extended resource pool demands with optional exact resources, "
+            "capacity classes, resource selectors, and class selectors."
+        ),
+    )
+    reclaim_tolerance: ResourceRequestReclaimTolerance = (
+        ResourceRequestReclaimTolerance.UNSAFE
+    )
+    preemptible: Optional[bool] = None
 
     # Settings only applicable for deployers and deployed pipelines
     min_replicas: Optional[NonNegativeInt] = None
@@ -160,6 +236,36 @@ class ResourceSettings(BaseSettings):
     ] = None
     autoscaling_target: Optional[PositiveFloat] = None
     max_concurrency: Optional[PositiveInt] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_reclaim_tolerance(cls, data: Any) -> Any:
+        """Normalize legacy preemptible settings into reclaim tolerance.
+
+        Args:
+            data: Raw input data supplied to the model.
+
+        Returns:
+            Input data with ``reclaim_tolerance`` populated when possible.
+        """
+        if not isinstance(data, dict):
+            return data
+
+        if data.get("reclaim_tolerance") is not None:
+            return data
+
+        normalized = dict(data)
+        preemptible = normalized.get("preemptible")
+        if preemptible is True:
+            normalized["reclaim_tolerance"] = (
+                ResourceRequestReclaimTolerance.COORDINATED
+            )
+        elif preemptible is False:
+            normalized["reclaim_tolerance"] = (
+                ResourceRequestReclaimTolerance.NONE
+            )
+
+        return normalized
 
     @model_validator(mode="after")
     def validate_replicas(self) -> "ResourceSettings":
@@ -206,7 +312,14 @@ class ResourceSettings(BaseSettings):
                 self.model_dump(
                     exclude_unset=True,
                     exclude_none=True,
-                    exclude={"preemptible", "pool_resources"},
+                    exclude={
+                        "preemptible",
+                        "pool_resources",
+                        "pool_resource_demands",
+                        "reclaim_tolerance",
+                        "gpu_type",
+                        "gpu_class",
+                    },
                 )
             )
             == 0
@@ -266,6 +379,53 @@ class ResourceSettings(BaseSettings):
             merged["memory_mb"] = math.ceil(memory_amount)
 
         return merged
+
+    def merged_resource_demands(self) -> list["ResourceRequestDemand"]:
+        """Build canonical Resource Manager demands for pool allocation.
+
+        Returns:
+            Resource demand entries including compatibility shorthand resources
+            and extended selector-based demands.
+        """
+        from zenml.models import ResourceRequestDemand
+
+        demands = [
+            ResourceRequestDemand(
+                resource_id=demand.resource_id,
+                resource=demand.resource,
+                quantity=demand.quantity,
+                class_name=demand.class_name,
+                resource_selector=demand.resource_selector,
+                class_selector=demand.class_selector,
+            )
+            for demand in self.pool_resource_demands or []
+        ]
+
+        for resource, quantity in self.merged_requested_resources().items():
+            if resource == "gpu" and (
+                self.gpu_type is not None or self.gpu_class is not None
+            ):
+                selector = {"kind": "gpu"}
+                if self.gpu_type is not None:
+                    selector["gpu_type"] = self.gpu_type
+
+                demands.append(
+                    ResourceRequestDemand(
+                        resource=resource,
+                        quantity=quantity,
+                        class_name=self.gpu_class,
+                        resource_selector=selector,
+                    )
+                )
+            else:
+                demands.append(
+                    ResourceRequestDemand(
+                        resource=resource,
+                        quantity=quantity,
+                    )
+                )
+
+        return demands
 
     model_config = ConfigDict(
         # public attributes are immutable

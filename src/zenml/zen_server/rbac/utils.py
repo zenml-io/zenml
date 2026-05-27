@@ -498,10 +498,10 @@ def get_resource_type_for_model(
         PlatformEventTriggerResponse,
         ProjectRequest,
         ProjectResponse,
+        ResourcePolicyRequest,
+        ResourcePolicyResponse,
         ResourcePoolRequest,
         ResourcePoolResponse,
-        ResourcePoolSubjectPolicyRequest,
-        ResourcePoolSubjectPolicyResponse,
         RunMetadataRequest,
         RunTemplateRequest,
         RunTemplateResponse,
@@ -577,8 +577,8 @@ def get_resource_type_for_model(
         TagResponse: ResourceType.TAG,
         ProjectResponse: ResourceType.PROJECT,
         ProjectRequest: ResourceType.PROJECT,
-        ResourcePoolSubjectPolicyRequest: ResourceType.RESOURCE_POOL_SUBJECT_POLICY,
-        ResourcePoolSubjectPolicyResponse: ResourceType.RESOURCE_POOL_SUBJECT_POLICY,
+        ResourcePolicyRequest: ResourceType.RESOURCE_POLICY,
+        ResourcePolicyResponse: ResourceType.RESOURCE_POLICY,
         # UserResponse: ResourceType.USER,
         PlatformEventTriggerRequest: ResourceType.TRIGGER,
         PlatformEventTriggerResponse: ResourceType.TRIGGER,
@@ -752,7 +752,7 @@ def _get_resource_type_schema_mapping() -> Dict[
         # ResourceType.USER: UserSchema,
         ResourceType.TRIGGER: TriggerSchema,
         ResourceType.WEBHOOK: WebhookSchema,
-        ResourceType.RESOURCE_POOL_SUBJECT_POLICY: ResourcePoolSubjectPolicySchema,
+        ResourceType.RESOURCE_POLICY: ResourcePoolSubjectPolicySchema,
     }
 
 

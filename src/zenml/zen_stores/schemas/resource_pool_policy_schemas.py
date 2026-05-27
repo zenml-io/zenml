@@ -21,15 +21,6 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship
 
-from zenml.models import (
-    ResourcePoolSubjectPolicyRequest,
-    ResourcePoolSubjectPolicyResponse,
-    ResourcePoolSubjectPolicyResponseBody,
-    ResourcePoolSubjectPolicyResponseMetadata,
-    ResourcePoolSubjectPolicyResponseResources,
-    ResourcePoolSubjectPolicyUpdate,
-)
-from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.schema_utils import (
@@ -140,94 +131,6 @@ class ResourcePoolSubjectPolicySchema(BaseSchema, table=True):
             )
 
         return options
-
-    @classmethod
-    def from_request(
-        cls, request: ResourcePoolSubjectPolicyRequest
-    ) -> "ResourcePoolSubjectPolicySchema":
-        """Creates a schema instance from a request model.
-
-        Args:
-            request: The request model.
-
-        Returns:
-            The schema instance.
-        """
-        return cls(
-            user_id=request.user,
-            component_id=request.component_id,
-            pool_id=request.pool_id,
-            priority=request.priority,
-        )
-
-    def update(
-        self, update: ResourcePoolSubjectPolicyUpdate
-    ) -> "ResourcePoolSubjectPolicySchema":
-        """Updates this schema from an update model.
-
-        Args:
-            update: The update model.
-
-        Returns:
-            The updated schema.
-        """
-        if update.priority is not None:
-            self.priority = update.priority
-
-        self.updated = utc_now()
-        return self
-
-    def to_model(
-        self,
-        include_metadata: bool = False,
-        include_resources: bool = False,
-        **kwargs: Any,
-    ) -> "ResourcePoolSubjectPolicyResponse":
-        """Converts this schema to a response model.
-
-        Args:
-            include_metadata: Whether to include metadata.
-            include_resources: Whether to include nested resources.
-            **kwargs: Additional keyword arguments.
-
-        Returns:
-            The response model.
-        """
-        body = ResourcePoolSubjectPolicyResponseBody(
-            created=self.created,
-            updated=self.updated,
-            user_id=self.user_id,
-            priority=self.priority,
-            reserved={
-                resource.key: resource.reserved for resource in self.resources
-            },
-            limit={
-                resource.key: resource.limit
-                for resource in self.resources
-                if resource.limit is not None
-            },
-        )
-
-        metadata = None
-        if include_metadata:
-            metadata = ResourcePoolSubjectPolicyResponseMetadata()
-
-        resources = None
-        if include_resources:
-            resources = ResourcePoolSubjectPolicyResponseResources(
-                user=self.user.to_model() if self.user else None,
-                component=self.component.to_model(),
-                pool=self.pool.to_model(
-                    include_metadata=False, include_resources=False
-                ),
-            )
-
-        return ResourcePoolSubjectPolicyResponse(
-            id=self.id,
-            body=body,
-            metadata=metadata,
-            resources=resources,
-        )
 
 
 class ResourcePoolSubjectPolicyResourceSchema(BaseSchema, table=True):

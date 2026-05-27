@@ -22,14 +22,6 @@ from sqlalchemy.orm import load_only, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, col
 
-from zenml.models import (
-    ResourcePoolRequest,
-    ResourcePoolResponse,
-    ResourcePoolResponseBody,
-    ResourcePoolResponseMetadata,
-    ResourcePoolResponseResources,
-    ResourcePoolUpdate,
-)
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.resource_pool_policy_schemas import (
@@ -253,87 +245,6 @@ class ResourcePoolSchema(NamedSchema, table=True):
             )
 
         return options
-
-    @classmethod
-    def from_request(
-        cls,
-        request: "ResourcePoolRequest",
-    ) -> "ResourcePoolSchema":
-        """Create a resource pool schema from a request.
-
-        Args:
-            request: The request from which to create the resource pool.
-
-        Returns:
-            The resource pool schema.
-        """
-        return cls(
-            name=request.name,
-            user_id=request.user,
-            description=request.description,
-        )
-
-    def update(
-        self, resource_pool_update: "ResourcePoolUpdate"
-    ) -> "ResourcePoolSchema":
-        """Updates a `ResourcePoolSchema` from a `ResourcePoolUpdate`.
-
-        Args:
-            resource_pool_update: The `ResourcePoolUpdate` to update from.
-
-        Returns:
-            The updated `ResourcePoolSchema`.
-        """
-        if resource_pool_update.description:
-            self.description = resource_pool_update.description
-
-        self.updated = utc_now()
-        return self
-
-    def to_model(
-        self,
-        include_metadata: bool = False,
-        include_resources: bool = False,
-        **kwargs: Any,
-    ) -> "ResourcePoolResponse":
-        """Creates a `ResourcePoolResponse` from a `ResourcePoolSchema`.
-
-        Args:
-            include_metadata: Whether the metadata will be filled.
-            include_resources: Whether the resources will be filled.
-            **kwargs: Keyword arguments to allow schema specific logic
-
-        Returns:
-            A `ResourcePoolResponse`
-        """
-        body = ResourcePoolResponseBody(
-            created=self.created,
-            updated=self.updated,
-            user_id=self.user_id,
-            queue_length=len(self.queue_items),
-            capacity={r.key: r.total for r in self.resources},
-            occupied_resources={r.key: r.occupied for r in self.resources},
-        )
-
-        metadata = None
-        if include_metadata:
-            metadata = ResourcePoolResponseMetadata(
-                description=self.description,
-            )
-
-        resources = None
-        if include_resources:
-            resources = ResourcePoolResponseResources(
-                user=self.user.to_model() if self.user else None,
-            )
-
-        return ResourcePoolResponse(
-            id=self.id,
-            name=self.name,
-            body=body,
-            metadata=metadata,
-            resources=resources,
-        )
 
 
 class ResourcePoolResourceSchema(BaseSchema, table=True):
