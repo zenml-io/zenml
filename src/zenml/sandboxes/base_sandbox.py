@@ -443,6 +443,43 @@ class BaseSandbox(StackComponent, ABC):
             f"{type(self).__name__} does not support session attach."
         )
 
+    def pull_step_settings(self) -> Optional[BaseSandboxSettings]:
+        """Returns the active step's sandbox settings, if any.
+
+        Lets flavors fall back to the per-step settings configured via
+        ``@step(settings={"sandbox.<flavor>": ...})`` when a caller
+        invokes ``create_session()`` without an explicit override.
+        Returns ``None`` when there is no active step context or when
+        the step did not declare sandbox settings.
+
+        Returns:
+            The step's sandbox settings (already validated against the
+            flavor's ``settings_class``) or ``None``.
+        """
+        from zenml.steps.step_context import StepContext
+
+        if StepContext.get() is None:
+            return None
+
+        try:
+            settings_cls = self.settings_class
+            if settings_cls is None:
+                return None
+            step_settings = StepContext.get().step_run.config.settings
+            # Settings are keyed by full settings key, e.g. "sandbox.local".
+            key = f"sandbox.{self.flavor}"
+            raw = step_settings.get(key)
+            if raw is None:
+                return None
+            if isinstance(raw, settings_cls):
+                return raw
+            return settings_cls.model_validate(
+                raw.model_dump(exclude_unset=True)
+            )
+        except Exception as e:  # noqa: BLE001
+            logger.debug("Could not pull step sandbox settings: %s", e)
+            return None
+
     def resolve_forward_logs_to_step(
         self, settings: BaseSandboxSettings
     ) -> bool:

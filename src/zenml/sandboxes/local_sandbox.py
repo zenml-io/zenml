@@ -343,6 +343,8 @@ class LocalSandbox(BaseSandbox):
             The effective settings for this Session.
         """
         if override is None:
+            override = self.pull_step_settings()
+        if override is None:
             return LocalSandboxSettings()
         if isinstance(override, LocalSandboxSettings):
             return override
