@@ -18,15 +18,6 @@ from zenml.config.step_configurations import Step
 from zenml.orchestrators import BaseOrchestrator
 
 
-@pytest.mark.parametrize(
-    "step_operator, settings, resources_required",
-    [
-        ("step_operator", {}, False),
-        (None, {}, False),
-        (None, {"resources": ResourceSettings()}, False),
-        (None, {"resources": ResourceSettings(cpu_count=1)}, True),
-    ],
-)
 def _make_local_orchestrator():
     """Build a LocalOrchestrator without going through Stack/Client."""
     from datetime import datetime
@@ -122,6 +113,15 @@ class TestInjectActiveStepImageEnv:
         assert "ZENML_ACTIVE_STEP_IMAGE" not in env
 
 
+@pytest.mark.parametrize(
+    "step_operator, settings, resources_required",
+    [
+        ("step_operator", {}, False),
+        (None, {}, False),
+        (None, {"resources": ResourceSettings()}, False),
+        (None, {"resources": ResourceSettings(cpu_count=1)}, True),
+    ],
+)
 def test_resource_required(step_operator, settings, resources_required):
     """Tests whether the resource requirements detection method works as
     expected."""
