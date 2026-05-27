@@ -33,6 +33,18 @@ class ModalIntegration(Integration):
     REQUIREMENTS = ["modal>=0.64.49,<1"]
 
     @classmethod
+    def activate(cls) -> None:
+        """Activates the Modal integration.
+
+        Imports the Modal materializers module so its
+        ``BaseMaterializer`` subclasses register themselves in the
+        materializer registry at integration-activation time. Without
+        this, ``save_artifact(ModalSandboxSnapshot(...))`` would fall
+        back to the generic ``PydanticMaterializer`` by MRO.
+        """
+        from zenml.integrations.modal import materializers  # noqa: F401
+
+    @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
         """Declare the stack component flavors for the Modal integration.
 

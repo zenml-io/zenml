@@ -46,7 +46,7 @@ zenml sandbox register my-modal-sandbox --flavor=modal ... \
 Then attach it to your stack:
 
 ```bash
-zenml stack update -ss my-modal-sandbox
+zenml stack update --sandbox my-modal-sandbox
 ```
 
 ### Settings reference

@@ -115,9 +115,7 @@ def _check_file_io(sandbox) -> None:
             src_path = src.name
         try:
             session.upload_file(src_path, "/tmp/in.txt")
-            out, code = _exec_and_collect(
-                session, ["cat", "/tmp/in.txt"]
-            )
+            out, code = _exec_and_collect(session, ["cat", "/tmp/in.txt"])
             assert code == 0
             assert out == ["hello", "from", "local"], out
 
@@ -154,9 +152,7 @@ def _check_snapshot_restore(sandbox) -> None:
         print(f"   snapshot ref: {snap.ref}")
 
     with sandbox.restore(snap) as restored:
-        out, code = _exec_and_collect(
-            restored, ["cat", "/tmp/snap.txt"]
-        )
+        out, code = _exec_and_collect(restored, ["cat", "/tmp/snap.txt"])
         assert code == 0 and out == ["snapshot-payload"], out
         print(f"   restored session id: {restored.id} (new id; FS preserved)")
 

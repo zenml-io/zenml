@@ -22,7 +22,7 @@ import sys
 from contextlib import contextmanager
 from datetime import datetime
 from typing import Any, Iterator, List
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 from uuid import uuid4
 
 import pytest
@@ -42,7 +42,6 @@ from zenml.integrations.modal.sandboxes import (  # noqa: E402
 )
 from zenml.integrations.modal.sandboxes.modal_sandbox import (  # noqa: E402
     _line_buffer,
-    _resolve_environment,
 )
 from zenml.sandboxes import (  # noqa: E402
     STEP_IMAGE,
@@ -69,6 +68,7 @@ def _patch_modal() -> Iterator[MagicMock]:
             sys.modules["modal"] = real
         else:
             del sys.modules["modal"]
+
 
 # ---------------------------------------------------------------------------
 # helpers
@@ -123,60 +123,9 @@ class TestLineBuffer:
 
 
 # ---------------------------------------------------------------------------
-# _resolve_environment
+# Env merging is now BaseSandbox._resolve_session_environment — exercised
+# in tests/unit/sandboxes/test_base_sandbox.py. Modal just consumes it.
 # ---------------------------------------------------------------------------
-
-
-class TestResolveEnvironment:
-    def test_component_env_alone(self) -> None:
-        merged = _resolve_environment(
-            component_env={"A": "1"},
-            component_secret_ids=[],
-            settings_env={},
-            copy_local_env=False,
-        )
-        assert merged == {"A": "1"}
-
-    def test_settings_override_component(self) -> None:
-        merged = _resolve_environment(
-            component_env={"A": "1", "B": "1"},
-            component_secret_ids=[],
-            settings_env={"A": "2"},
-            copy_local_env=False,
-        )
-        assert merged == {"A": "2", "B": "1"}
-
-    def test_secrets_layered_between_component_and_settings(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        # Component env defines A; secret defines B; Settings overrides B.
-        fake_secret = MagicMock(secret_values={"B": "from_secret"})
-        fake_client = MagicMock()
-        fake_client.get_secret.return_value = fake_secret
-        with patch(
-            "zenml.integrations.modal.sandboxes.modal_sandbox.Client",
-            return_value=fake_client,
-        ):
-            merged = _resolve_environment(
-                component_env={"A": "1"},
-                component_secret_ids=["secret-uuid"],
-                settings_env={"B": "from_settings"},
-                copy_local_env=False,
-            )
-        assert merged == {"A": "1", "B": "from_settings"}
-
-    def test_copy_local_env_layered_last(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        monkeypatch.setenv("FROM_LOCAL", "local-val")
-        merged = _resolve_environment(
-            component_env={"A": "1"},
-            component_secret_ids=[],
-            settings_env={},
-            copy_local_env=True,
-        )
-        assert merged["A"] == "1"
-        assert merged["FROM_LOCAL"] == "local-val"
 
 
 # ---------------------------------------------------------------------------
@@ -189,6 +138,14 @@ class TestModalSnapshot:
         snap = ModalSandboxSnapshot(ref="im-123")
         assert snap.provider == "modal"
 
+    def test_provider_is_frozen(self) -> None:
+        # The provider field is frozen — callers cannot mint a snapshot
+        # that lies about which flavor it belongs to.
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            ModalSandboxSnapshot(provider="other-flavor", ref="im-123")
+
     def test_subclass_of_base_snapshot(self) -> None:
         snap = ModalSandboxSnapshot(ref="im-123")
         assert isinstance(snap, BaseSandboxSnapshot)
@@ -199,6 +156,95 @@ class TestModalSnapshot:
             snap.model_dump_json()
         )
         assert restored == snap
+
+
+# ---------------------------------------------------------------------------
+# Materializer registration via ModalIntegration.activate()
+# ---------------------------------------------------------------------------
+
+
+class TestMaterializerRegistration:
+    def test_activate_registers_snapshot_materializer(self) -> None:
+        from zenml.integrations.modal import ModalIntegration
+        from zenml.integrations.modal.materializers import (
+            ModalSandboxSnapshotMaterializer,
+        )
+        from zenml.materializers.materializer_registry import (
+            materializer_registry,
+        )
+
+        ModalIntegration.activate()
+        # The registry resolves the type via direct lookup, not MRO.
+        resolved = materializer_registry.materializer_types.get(
+            ModalSandboxSnapshot
+        )
+        assert resolved is ModalSandboxSnapshotMaterializer
+
+
+# ---------------------------------------------------------------------------
+# Settings merge — component defaults must survive a partial override
+# ---------------------------------------------------------------------------
+
+
+class TestSettingsMerge:
+    def test_component_defaults_survive_partial_override(self) -> None:
+        # Build a sandbox with component-level Modal config defaults set.
+        sandbox = ModalSandbox(
+            name="test-modal",
+            id=uuid4(),
+            config=ModalSandboxConfig(
+                gpu="A100",
+                cpu=4.0,
+                region="us-east",
+            ),
+            flavor="modal",
+            type=StackComponentType.SANDBOX,
+            user=None,
+            created=datetime.now(),
+            updated=datetime.now(),
+            environment={},
+            secrets=[],
+        )
+        # Override only timeout_seconds — gpu/cpu/region must persist.
+        override = ModalSandboxSettings(timeout_seconds=600)
+        eff = sandbox._settings(override)
+        assert eff.gpu == "A100"
+        assert eff.cpu == 4.0
+        assert eff.region == "us-east"
+        assert eff.timeout_seconds == 600
+
+    def test_override_wins_on_explicit_field_collision(self) -> None:
+        sandbox = ModalSandbox(
+            name="test-modal",
+            id=uuid4(),
+            config=ModalSandboxConfig(gpu="A100"),
+            flavor="modal",
+            type=StackComponentType.SANDBOX,
+            user=None,
+            created=datetime.now(),
+            updated=datetime.now(),
+            environment={},
+            secrets=[],
+        )
+        override = ModalSandboxSettings(gpu="H100")
+        assert sandbox._settings(override).gpu == "H100"
+
+    def test_none_override_returns_config_defaults(self) -> None:
+        sandbox = ModalSandbox(
+            name="test-modal",
+            id=uuid4(),
+            config=ModalSandboxConfig(gpu="A100", cpu=4.0),
+            flavor="modal",
+            type=StackComponentType.SANDBOX,
+            user=None,
+            created=datetime.now(),
+            updated=datetime.now(),
+            environment={},
+            secrets=[],
+        )
+        eff = sandbox._settings(None)
+        assert eff.gpu == "A100"
+        assert eff.cpu == 4.0
 
 
 # ---------------------------------------------------------------------------
@@ -225,6 +271,12 @@ class TestModalSandboxProcess:
         fake.returncode = None
         proc = ModalSandboxProcess(fake)
         assert proc.exit_code is None
+
+    def test_wait_with_timeout_raises_not_implemented(self) -> None:
+        # Modal has no per-exec timeout; we refuse rather than silently drop.
+        fake = MagicMock()
+        with pytest.raises(NotImplementedError, match="timeout"):
+            ModalSandboxProcess(fake).wait(timeout=5.0)
 
     def test_kill_closes_stdin(self) -> None:
         # Modal has no per-command kill — we close stdin as best-effort.
@@ -303,6 +355,14 @@ class TestModalSandbox:
             session = _make_modal_sandbox().attach("sb_xyz")
         modal_mock.Sandbox.from_id.assert_called_once_with("sb_xyz")
         assert session.id == "sb_xyz"
+
+    def test_attach_wraps_modal_errors_in_runtime_error(self) -> None:
+        with _patch_modal() as modal_mock:
+            modal_mock.Sandbox.from_id.side_effect = RuntimeError(
+                "sandbox not found"
+            )
+            with pytest.raises(RuntimeError, match="sb_missing"):
+                _make_modal_sandbox().attach("sb_missing")
 
     def test_restore_rejects_cross_provider(self) -> None:
         wrong = BaseSandboxSnapshot(provider="agent_sandbox", ref="ref")
