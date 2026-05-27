@@ -20,7 +20,6 @@ which is the headline use case for the Sandbox stack component.
 """
 
 from dataclasses import dataclass
-from typing import Iterator, List
 
 from pydantic import BaseModel
 from pydantic_ai import Agent, RunContext
@@ -28,11 +27,11 @@ from pydantic_ai import Agent, RunContext
 from zenml.client import Client
 from zenml.sandboxes import SandboxSession
 
-# Cap the stdout/stderr surface the agent sees per tool call. Modal sends
-# the full process output through a `LogsReader`; we must drain it fully
-# (otherwise `process.wait()` can block waiting for the consumer), but
-# the LLM doesn't need megabytes of output, so we concatenate then trim.
-_MAX_STREAM_BYTES = 32_000
+# Cap the stdout/stderr surface the agent sees per tool call. Passed to
+# ``SandboxProcess.collect`` as ``max_chars`` -- the base helper drains
+# both streams fully (so the provider's wait() doesn't block on a
+# buffered reader) and flags per-stream truncation via ``SandboxOutput``.
+_MAX_STREAM_CHARS = 32_000
 
 
 class CodeResult(BaseModel):
@@ -48,40 +47,11 @@ class AgentDeps:
     """Runtime handle passed to every tool call.
 
     Carries the live ``SandboxSession`` so all tool invocations share one
-    container. A plain dataclass (not a Pydantic model) — there's nothing
+    container. A plain dataclass (not a Pydantic model) -- there's nothing
     to validate, and the live session isn't serializable anyway.
     """
 
     session: SandboxSession
-
-
-def _drain(stream: Iterator[str], max_bytes: int = _MAX_STREAM_BYTES) -> str:
-    """Fully consumes a stream iterator and returns the concatenated text.
-
-    Always drains to completion so the underlying ``SandboxProcess.wait()``
-    does not block on an un-emptied buffer. Output beyond ``max_bytes`` is
-    discarded and replaced with a clear truncation marker so the LLM
-    doesn't reason on silently-clipped output.
-
-    Args:
-        stream: Source iterator (line-delimited strings).
-        max_bytes: Soft cap on the returned string length.
-
-    Returns:
-        Concatenated lines, with a trailing marker if truncation occurred.
-    """
-    parts: List[str] = []
-    total = 0
-    truncated = False
-    for line in stream:
-        total += len(line)
-        if total > max_bytes:
-            truncated = True
-            continue  # keep consuming so wait() is safe
-        parts.append(line)
-    if truncated:
-        parts.append(f"\n... [output truncated at {max_bytes} bytes]\n")
-    return "".join(parts)
 
 
 def build_agent() -> Agent[AgentDeps, str]:
@@ -97,7 +67,7 @@ def build_agent() -> Agent[AgentDeps, str]:
         system_prompt=(
             "You are a data-analysis assistant. To answer questions that "
             "need computation, write Python code and call the run_python "
-            "tool with it. Each call is a fresh Python interpreter — "
+            "tool with it. Each call is a fresh Python interpreter -- "
             "imports and variables do NOT persist between calls, so write "
             "self-contained scripts. Files written under /tmp do persist. "
             "Print the final answer to stdout."
@@ -116,25 +86,29 @@ def build_agent() -> Agent[AgentDeps, str]:
             The captured stdout, stderr, and exit code.
         """
         # ``-u`` forces unbuffered output so prints arrive on the stream
-        # immediately — important once the Modal flavor's log-forwarding
+        # immediately -- important once the Modal flavor's log-forwarding
         # wraps these iterators (lines surface in the step log live).
         process = ctx.deps.session.exec(["python", "-u", "-c", code])
         # ``collect`` drains both streams to completion (so the
-        # provider's wait() is safe), caps each stream at max_bytes,
+        # provider's wait() is safe), caps each stream at max_chars,
         # and flags truncation per-stream. Replaces the three-line
         # ``stdout = _drain(...); stderr = _drain(...); wait()`` dance.
-        out = process.collect(max_bytes=_MAX_STREAM_BYTES)
+        out = process.collect(max_chars=_MAX_STREAM_CHARS)
+        # ``SandboxOutput`` is frozen; assemble the truncation-marker
+        # strings locally and pass them on rather than mutating in place.
+        stdout = out.stdout
         if out.stdout_truncated:
-            out.stdout += (
-                f"\n... [stdout truncated at {_MAX_STREAM_BYTES} bytes]\n"
+            stdout += (
+                f"\n... [stdout truncated at {_MAX_STREAM_CHARS} chars]\n"
             )
+        stderr = out.stderr
         if out.stderr_truncated:
-            out.stderr += (
-                f"\n... [stderr truncated at {_MAX_STREAM_BYTES} bytes]\n"
+            stderr += (
+                f"\n... [stderr truncated at {_MAX_STREAM_CHARS} chars]\n"
             )
         return CodeResult(
-            stdout=out.stdout,
-            stderr=out.stderr,
+            stdout=stdout,
+            stderr=stderr,
             exit_code=out.exit_code,
         )
 
@@ -148,8 +122,9 @@ def run_agent(query: str) -> str:
     log forwarding (e.g. Modal opens a ``LoggingContext`` on
     ``__enter__`` when ``forward_logs_to_step`` resolves True), sandbox
     stdout/stderr surfaces in the step's log stream as a dedicated
-    ``sandbox:<session_id>`` source. Otherwise the tool just returns the
-    captured strings.
+    ``sandbox:<session_id>`` source. The Modal flavor also records the
+    sandbox session id and dashboard URL as step metadata on
+    ``__enter__`` -- both behaviors only fire inside a ``with`` block.
 
     Args:
         query: The natural-language question to ask the agent.
