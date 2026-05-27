@@ -211,9 +211,6 @@ class ModalSandboxProcess(SandboxProcess):
 class ModalSandboxSession(SandboxSession):
     """Wraps a Modal ``Sandbox`` in the ``SandboxSession`` interface."""
 
-    # 1 MiB transfer chunks balance throughput and memory for large files.
-    _FILE_CHUNK_SIZE = 1024 * 1024
-
     def __init__(
         self,
         sandbox: Any,
@@ -387,28 +384,30 @@ class ModalSandboxSession(SandboxSession):
         return ModalSandboxSnapshot(ref=image.object_id)
 
     def upload_file(self, local_path: str, remote_path: str) -> None:
-        """Uploads a local file into the Sandbox (streamed in chunks).
+        """Uploads a local file into the Sandbox.
+
+        Uses Modal's ``Sandbox.filesystem.copy_from_local()`` API. The
+        older ``Sandbox.open() + FileIO.write()`` path is deprecated by
+        Modal as of 2026-03-09.
 
         Args:
             local_path: Path to the file on the caller's machine.
             remote_path: Destination path inside the Sandbox.
         """
-        with open(local_path, "rb") as src:
-            with self._sandbox.open(remote_path, "wb") as dst:
-                while chunk := src.read(self._FILE_CHUNK_SIZE):
-                    dst.write(chunk)
+        self._sandbox.filesystem.copy_from_local(local_path, remote_path)
 
     def download_file(self, remote_path: str, local_path: str) -> None:
-        """Downloads a file from the Sandbox to local storage (streamed).
+        """Downloads a file from the Sandbox to local storage.
+
+        Uses Modal's ``Sandbox.filesystem.copy_to_local()`` API. The
+        older ``Sandbox.open() + FileIO.read()`` path is deprecated by
+        Modal as of 2026-03-09.
 
         Args:
             remote_path: Source path inside the Sandbox.
             local_path: Destination path on the caller's machine.
         """
-        with self._sandbox.open(remote_path, "rb") as src:
-            with open(local_path, "wb") as dst:
-                while chunk := src.read(self._FILE_CHUNK_SIZE):
-                    dst.write(chunk)
+        self._sandbox.filesystem.copy_to_local(remote_path, local_path)
 
     def close(self) -> None:
         """Releases the local handle and tears down the log-forwarding context.
