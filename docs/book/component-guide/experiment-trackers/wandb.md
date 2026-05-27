@@ -220,6 +220,8 @@ wandb_settings = WandbExperimentTrackerSettings(
 )
 ```
 
+ZenML truncates W&B tags to 64 characters and removes duplicates after truncation, so long tags with the same first 64 characters collapse into one W&B tag.
+
 When ZenML metadata is enabled, W&B config receives flat keys such as `zenml_pipeline_name`, `zenml_pipeline_run_name`, `zenml_pipeline_run_id`, `zenml_step_name`, `zenml_latest_step_run_id`, and `zenml_latest_step_run_version`. ZenML dashboard links are added when they can be derived from the active server. These values are written to W&B config, not W&B summary, so metric summaries stay focused on experiment results.
 
 To use W&B in a minimal mode without ZenML-added grouping, tags, or config, disable metadata:
