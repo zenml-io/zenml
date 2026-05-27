@@ -538,6 +538,8 @@ class ModalSandbox(BaseSandbox):
         Returns:
             The effective ``ModalSandboxSettings`` for this Session.
         """
+        if override is None:
+            override = self.pull_step_settings()
         base = self.config.model_dump(
             include=set(ModalSandboxSettings.model_fields.keys())
         )
