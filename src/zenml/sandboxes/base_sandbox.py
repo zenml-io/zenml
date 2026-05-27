@@ -488,10 +488,28 @@ class BaseSandbox(StackComponent, ABC):
         Yields:
             ``None``.
         """
+        from zenml.steps.step_context import (
+            StepContext,
+            get_step_context,
+        )
         from zenml.utils.logging_utils import setup_logging_context
 
+        step_run = None
+        pipeline_run = None
+        if StepContext.get() is not None:
+            try:
+                step_ctx = get_step_context()
+                step_run = step_ctx.step_run
+                pipeline_run = step_ctx.pipeline_run
+            except Exception:  # noqa: BLE001
+                pass
+
         try:
-            ctx = setup_logging_context(source=f"sandbox:{session_id}")
+            ctx = setup_logging_context(
+                source=f"sandbox:{session_id}",
+                step_run=step_run,
+                pipeline_run=pipeline_run,
+            )
         except Exception as e:
             logger.debug(
                 "Sandbox log forwarding disabled: %s. Falling back to "
