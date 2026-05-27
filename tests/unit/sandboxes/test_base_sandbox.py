@@ -396,7 +396,6 @@ class TestSandboxProcessCollect:
         self, stdout_lines: List[str], stderr_lines: List[str], code: int = 0
     ) -> SandboxProcess:
         # Build a fake SandboxProcess with our chosen lines.
-        outer_self = self
 
         class _Proc(SandboxProcess):
             def stdout(self) -> Iterator[str]:
@@ -432,18 +431,29 @@ class TestSandboxProcessCollect:
         assert out.stderr_truncated is False
 
     def test_truncation_flagged_per_stream(self) -> None:
-        # 100 bytes of stdout but max_bytes=10 → truncated; stderr small → not.
+        # 100 chars of stdout but max_chars=10 → truncated; stderr small → not.
         proc = self._proc_returning(
             stdout_lines=["x" * 50 + "\n", "y" * 50 + "\n"],
             stderr_lines=["short\n"],
             code=0,
         )
-        out = proc.collect(max_bytes=10)
+        out = proc.collect(max_chars=10)
         assert out.stdout_truncated is True
         assert out.stderr_truncated is False
         # Output fits within the cap.
         assert len(out.stdout) <= 10
         assert out.stderr == "short\n"
+
+    def test_single_line_larger_than_cap_is_dropped_entirely(self) -> None:
+        # No partial lines emitted; the whole oversize line is dropped.
+        proc = self._proc_returning(
+            stdout_lines=["a" * 100 + "\n"],
+            stderr_lines=[],
+            code=0,
+        )
+        out = proc.collect(max_chars=10)
+        assert out.stdout == ""
+        assert out.stdout_truncated is True
 
     def test_drains_fully_even_when_truncated(self) -> None:
         # Verifies the iterator is consumed to StopIteration even after the
@@ -454,8 +464,6 @@ class TestSandboxProcessCollect:
             for line in ("a" * 100, "b" * 100, "c" * 100):
                 consumed.append(line)
                 yield line + "\n"
-
-        outer_self = self
 
         class _Proc(SandboxProcess):
             def stdout(self) -> Iterator[str]:
@@ -474,7 +482,7 @@ class TestSandboxProcessCollect:
             def exit_code(self) -> Optional[int]:
                 return 0
 
-        _Proc().collect(max_bytes=10)
+        _Proc().collect(max_chars=10)
         # All three chunks were consumed, even though only the first
         # fit under the cap.
         assert len(consumed) == 3

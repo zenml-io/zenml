@@ -60,20 +60,24 @@ class SandboxExecError(RuntimeError):
     """
 
 
-# Default cap for ``SandboxProcess.collect`` — 1 MiB per stream is enough
-# for typical agent tool output (a printed answer, an exception traceback,
-# a small dataframe dump) without swamping the LLM's context window or
-# returning megabytes of data through the tool call.
-_DEFAULT_COLLECT_BYTES = 1_048_576
+# Default cap for ``SandboxProcess.collect`` — 1 Mi*characters* per stream
+# (counted via ``len(line)`` on the decoded UTF-8 string, so it's actually
+# a code-point count, not a byte count). 1 Mi covers typical agent tool
+# output (a printed answer, an exception traceback, a small dataframe
+# dump) without swamping the LLM's context window.
+_DEFAULT_COLLECT_CHARS = 1_048_576
 
 
-@dataclass
+@dataclass(frozen=True)
 class SandboxOutput:
     """Result of fully consuming a ``SandboxProcess``.
 
     Returned by ``SandboxProcess.collect()``. Carries both stdout and
     stderr as captured strings plus the exit code, along with per-stream
-    truncation flags so callers can tell when they hit the byte cap.
+    truncation flags so callers can tell when they hit the character
+    cap. Frozen so callers can't mutate the captured strings in place —
+    if they want to append a truncation marker for downstream display,
+    they assemble a local string and pass it on.
     """
 
     stdout: str
@@ -139,7 +143,7 @@ class SandboxProcess(ABC):
         """Exit code, or ``None`` if the command is still running."""
 
     def collect(
-        self, *, max_bytes: int = _DEFAULT_COLLECT_BYTES
+        self, *, max_chars: int = _DEFAULT_COLLECT_CHARS
     ) -> SandboxOutput:
         """Fully drains stdout + stderr, blocks until exit, returns everything.
 
@@ -147,22 +151,30 @@ class SandboxProcess(ABC):
         the ``stdout = ...; stderr = ...; code = wait()`` dance with one
         call that returns a ``SandboxOutput``. Both streams are drained
         to completion (so ``wait()`` is safe to call even when the
-        underlying provider holds output in a buffered reader); output
-        beyond ``max_bytes`` per stream is dropped and the corresponding
-        ``*_truncated`` flag is set so callers know.
+        underlying provider holds output in a buffered reader); once the
+        cap is hit on a stream, subsequent whole lines are dropped (no
+        partial lines emitted) and the corresponding ``*_truncated`` flag
+        is set.
 
         For full streaming control, iterate ``stdout()`` / ``stderr()``
         directly instead.
 
+        Note: blocks indefinitely on ``wait()``. If you need a wall-clock
+        bound, iterate the streams yourself and call ``kill()`` on
+        timeout.
+
         Args:
-            max_bytes: Soft cap per stream. Default 1 MiB.
+            max_chars: Soft cap per stream, counted by ``len(line)`` on
+                the decoded text (i.e. code points). Default 1 Mi. A
+                single line larger than the cap is dropped entirely —
+                we never emit partial lines.
 
         Returns:
             A ``SandboxOutput`` with captured stdout, stderr, exit code,
             and per-stream truncation flags.
         """
-        stdout, stdout_truncated = _drain_capped(self.stdout(), max_bytes)
-        stderr, stderr_truncated = _drain_capped(self.stderr(), max_bytes)
+        stdout, stdout_truncated = _drain_capped(self.stdout(), max_chars)
+        stderr, stderr_truncated = _drain_capped(self.stderr(), max_chars)
         exit_code = self.wait()
         return SandboxOutput(
             stdout=stdout,
@@ -173,16 +185,17 @@ class SandboxProcess(ABC):
         )
 
 
-def _drain_capped(stream: Iterator[str], max_bytes: int) -> Tuple[str, bool]:
-    """Drain a line iterator fully, capping the returned string at ``max_bytes``.
+def _drain_capped(stream: Iterator[str], max_chars: int) -> Tuple[str, bool]:
+    """Drain a line iterator fully, capping the returned string at ``max_chars``.
 
     Always consumes to completion (StopIteration) so the underlying
     provider's wait() is not blocked. Lines that would push the total
-    over ``max_bytes`` are dropped, but iteration continues.
+    over ``max_chars`` are dropped, but iteration continues.
 
     Args:
         stream: Source iterator (line-delimited strings).
-        max_bytes: Soft cap on the returned string length.
+        max_chars: Soft cap on the returned string length (in
+            characters, not bytes — counted via ``len(line)``).
 
     Returns:
         Tuple of ``(joined_string, truncated_flag)``.
@@ -192,7 +205,7 @@ def _drain_capped(stream: Iterator[str], max_bytes: int) -> Tuple[str, bool]:
     truncated = False
     for line in stream:
         total += len(line)
-        if total > max_bytes:
+        if total > max_chars:
             truncated = True
             continue
         parts.append(line)
