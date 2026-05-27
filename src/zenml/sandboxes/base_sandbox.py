@@ -466,9 +466,18 @@ class BaseSandbox(StackComponent, ABC):
             if settings_cls is None:
                 return None
             step_settings = StepContext.get().step_run.config.settings
-            # Settings are keyed by full settings key, e.g. "sandbox.local".
-            key = f"sandbox.{self.flavor}"
-            raw = step_settings.get(key)
+            # Settings can be keyed three ways - try all of them in
+            # increasing-specificity order so we pick up the most general
+            # form first but still let a more specific key win if both
+            # are present.
+            raw: Optional[BaseSettings] = None
+            for key in (
+                "sandbox",
+                f"sandbox.{self.flavor}",
+                f"sandbox:{self.name}",
+            ):
+                if key in step_settings:
+                    raw = step_settings[key]
             if raw is None:
                 return None
             if isinstance(raw, settings_cls):
