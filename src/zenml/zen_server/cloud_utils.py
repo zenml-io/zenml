@@ -1,6 +1,5 @@
 """Utils concerning anything concerning the cloud control plane backend."""
 
-import logging
 import time
 from datetime import datetime, timedelta
 from threading import RLock
@@ -17,7 +16,7 @@ from zenml.exceptions import (
 from zenml.logger import get_logger
 from zenml.utils.time_utils import utc_now
 from zenml.zen_server.utils import (
-    get_system_metrics_log_str,
+    get_system_metrics,
     get_zenml_headers,
     server_config,
 )
@@ -63,23 +62,17 @@ class ZenMLCloudConnection:
         Returns:
             The response.
         """
-        from zenml.zen_server.utils import get_current_request_context
-
         url = self._config.api_url + endpoint
 
-        log_request_id = "N/A"
-        try:
-            request_context = get_current_request_context()
-            log_request_id = request_context.log_request_id
-        except RuntimeError:
-            pass
-
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(
-                f"[{log_request_id}] RBAC STATS - {method} "
-                f"{endpoint} started {get_system_metrics_log_str()}"
-            )
-            start_time = time.time()
+        logger.debug(
+            "rbac.request.started",
+            extra={
+                "rbac_method": method,
+                "rbac_endpoint": endpoint,
+                **get_system_metrics(),
+            },
+        )
+        start_time = time.time()
 
         status_code: Optional[int] = None
         try:
@@ -115,13 +108,17 @@ class ZenMLCloudConnection:
                         f"service: {e}"
                     )
         finally:
-            if logger.isEnabledFor(logging.DEBUG):
-                duration = (time.time() - start_time) * 1000
-                logger.debug(
-                    f"[{log_request_id}] RBAC STATS - "
-                    f"{status_code} {method} {endpoint} completed in "
-                    f"{duration:.2f}ms {get_system_metrics_log_str()}"
-                )
+            duration_ms = round((time.time() - start_time) * 1000, 2)
+            logger.debug(
+                "rbac.request.completed",
+                extra={
+                    "rbac_method": method,
+                    "rbac_endpoint": endpoint,
+                    "status_code": status_code,
+                    "duration_ms": duration_ms,
+                    **get_system_metrics(),
+                },
+            )
 
         return response
 

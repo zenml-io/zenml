@@ -95,7 +95,7 @@ install_zenml() {
     fi
     
     # install ZenML in editable mode
-    uv pip install $PIP_ARGS $upgrade_args -e ".[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]"
+    uv pip install $PIP_ARGS $upgrade_args -e ".[server,otel,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]"
     
     echo "✅ ZenML installation completed"
 }

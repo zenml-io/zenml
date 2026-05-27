@@ -79,6 +79,61 @@ def deployment_pipeline() -> None:
     print(config.environment, config.replicas, config.notify_slack)
 ```
 
+## Agentic approval workflow
+
+`wait(...)` is useful when an agentic workflow should prepare a recommendation
+but a human should approve the final action. The example below plans multiple
+agent tasks, runs them with dynamic mapping, summarizes the results, and then
+continues only if the approval wait condition resolves to `true`.
+
+```python
+from zenml import pipeline, step, wait
+
+
+@step
+def plan_agent_tasks(goal: str) -> list[dict[str, str]]:
+    return [
+        {"task_id": "research", "instruction": f"Research {goal}"},
+        {"task_id": "draft", "instruction": f"Draft a plan for {goal}"},
+        {"task_id": "risk_check", "instruction": f"Review risks for {goal}"},
+    ]
+
+
+@step
+def execute_agent_task(task: dict[str, str]) -> dict[str, str]:
+    return {"task_id": task["task_id"], "result": "completed"}
+
+
+@step
+def summarize_agent_work(results: list[dict[str, str]]) -> list[dict[str, str]]:
+    return results
+
+
+@step
+def take_final_action(summary: list[dict[str, str]]) -> None:
+    print(f"Acting on {len(summary)} reviewed tasks.")
+
+
+@pipeline(dynamic=True)
+def agentic_approval_pipeline(goal: str) -> None:
+    tasks = plan_agent_tasks(goal=goal)
+    results = execute_agent_task.map(task=tasks)
+    summary = summarize_agent_work(results)
+    approved = wait(
+        schema=bool,
+        question="Approve the agent recommendation and continue?",
+        metadata={"goal": goal},
+        name="human_approval",
+    )
+
+    if approved:
+        take_final_action(summary)
+```
+
+For a runnable version that also logs metadata and returns tabular artifacts,
+see the
+[`agentic_hitl_pipeline` example](https://github.com/zenml-io/zenml/tree/main/examples/agentic_hitl_pipeline).
+
 ## Timeouts and pausing
 
 `wait(...)` accepts a `timeout` (default: 600 seconds). When the timeout
