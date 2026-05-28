@@ -344,7 +344,6 @@ Optional synchronization and dashboard freezing can also be enabled through runt
 
 ```python
 """ZenML + Trackio + Hugging Face ecosystem example."""
-
 from pathlib import Path
 import json
 
@@ -372,6 +371,12 @@ experiment_tracker = (
     .active_stack
     .experiment_tracker
 )
+
+if experiment_tracker is None:
+    raise RuntimeError(
+        "No active experiment tracker "
+        "configured in the active ZenML stack."
+    )
 
 # ---------------------------------------------------------
 # Artifact directory
@@ -418,7 +423,7 @@ HF_SPACE_URL = (
 
 trackio_settings = (
     TrackioExperimentTrackerSettings(
-        auto_sync=False,
+        auto_sync=True,
         auto_freeze=False,
         resume="allow",
     )
@@ -640,7 +645,7 @@ def classify_sentiment(
     )
 
     # -----------------------------------------------------
-    # Publish Space metadata
+    # Dashboard metadata
     # -----------------------------------------------------
 
     trackio.log(
@@ -654,7 +659,6 @@ def classify_sentiment(
         }
     )
 
-    trackio.sync(project=experiment_tracker.config.project_name)
     print(
         "\nHF Space dashboard:"
     )
@@ -671,7 +675,7 @@ def classify_sentiment(
 
 @pipeline(
     enable_cache=False,
-    enable_pipeline_logs=False,
+    enable_pipeline_logs=True,
 )
 def sentiment_analysis_pipeline():
     """HF + Trackio pipeline."""

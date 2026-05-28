@@ -160,12 +160,14 @@ class TrackioExperimentTracker(BaseExperimentTracker):
             if settings.auto_sync:
                 logger.info("Syncing Trackio run.")
 
-                trackio.sync()
+                trackio.sync(project=self.config.project_name)
 
             if settings.auto_freeze:
                 logger.info("Freezing Trackio dashboard.")
 
-                trackio.freeze()
+                trackio.freeze(
+                    space_id=self.config.hf_space,
+                    project=self.config.project_name,)
 
         except Exception as e:
             logger.warning(
