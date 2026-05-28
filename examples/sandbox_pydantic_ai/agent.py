@@ -32,7 +32,6 @@ from pydantic import BaseModel
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.usage import UsageLimits
 
-from zenml.client import Client
 from zenml.sandboxes import SandboxSession
 
 # Cap the stdout/stderr surface the agent sees per tool call. Passed to
@@ -297,31 +296,3 @@ def run_agent_in_session(session: SandboxSession, query: str) -> str:
         usage_limits=UsageLimits(request_limit=200),
     )
     return result.output
-
-
-def run_agent(query: str = _DEFAULT_QUERY) -> str:
-    """Drives the agent against a fresh session on the active stack's Sandbox.
-
-    Opens a ``with`` block around a freshly-created Session. The
-    Session base class handles step-metadata publishing and routes
-    sandbox stdout/stderr into the step log stream when log forwarding
-    is enabled.
-
-    Args:
-        query: Natural-language task for the agent.
-
-    Returns:
-        The agent's final natural-language answer.
-
-    Raises:
-        RuntimeError: If the active stack has no Sandbox component.
-    """
-    sandbox = Client().active_stack.sandbox
-    if sandbox is None:
-        raise RuntimeError(
-            "No Sandbox component in the active stack. Register one "
-            "(e.g. `zenml sandbox register modal-sb --flavor=modal`) "
-            "and attach it via `zenml stack update --sandbox modal-sb`."
-        )
-    with sandbox.create_session() as session:
-        return run_agent_in_session(session, query)
