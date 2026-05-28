@@ -14,7 +14,7 @@
 """Base abstractions for ZenML sandbox stack components.
 
 A Sandbox is a stack component a step *uses* (not one that runs the
-step) to execute code in an isolated environment. See ``plan.md`` and
+step) to execute code in an isolated environment. See ``docs/book/component-guide/sandboxes/dev/plan.md`` and
 ADR 0001 for the component-vs-launcher framing rationale.
 """
 
@@ -42,7 +42,7 @@ logger = get_logger(__name__)
 
 # Sentinel: when used as ``base_image``, the Session uses the image the
 # current ZenML step is running in. Falls back to flavor default with a
-# warning if the step is not containerized. See plan.md "Session Environment".
+# warning if the step is not containerized. See docs/book/component-guide/sandboxes/dev/plan.md "Session Environment".
 STEP_IMAGE = "<step>"
 
 
@@ -115,7 +115,7 @@ class BaseSandbox(StackComponent, ABC):
     """Base class for all ZenML sandbox components.
 
     See ADR 0001 (component-vs-launcher) and ADR 0002 (attach vs restore) in
-    ``plan.md``.
+    ``docs/book/component-guide/sandboxes/dev/plan.md``.
     """
 
     # ------------------------- typed config / settings --------------------
@@ -280,6 +280,47 @@ class BaseSandbox(StackComponent, ABC):
         if settings is not None and settings.environment:
             env.update(settings.environment)
         return env
+
+    # ------------------------- step-image resolution ----------------------
+
+    @staticmethod
+    def resolve_step_image() -> Optional[str]:
+        """Returns the image URI of the currently-running step, if any.
+
+        Flavor-agnostic resolution of the ``STEP_IMAGE`` sentinel: looks
+        up the snapshot attached to the active pipeline run via
+        ``StepContext`` and delegates to
+        ``ContainerizedOrchestrator.get_image(snapshot, step_name)`` —
+        the same helper the orchestrator uses to pick images at submit
+        time. Containerized flavors call this from their image-resolution
+        path when the user sets ``base_image=STEP_IMAGE``.
+
+        Returns ``None`` when there's no step context, no snapshot,
+        no build, or the active orchestrator isn't containerized —
+        callers should fall back to a flavor default image and emit a
+        warning so the user knows the sentinel didn't resolve.
+
+        Returns:
+            The image URI for the current step, or ``None``.
+        """
+        from zenml.orchestrators.containerized_orchestrator import (
+            ContainerizedOrchestrator,
+        )
+        from zenml.steps.step_context import StepContext
+
+        ctx = StepContext.get()
+        if ctx is None:
+            return None
+        snapshot = ctx.pipeline_run.snapshot
+        if snapshot is None or snapshot.build is None:
+            return None
+        try:
+            return ContainerizedOrchestrator.get_image(
+                snapshot=snapshot, step_name=ctx.step_name
+            )
+        except Exception as e:  # noqa: BLE001
+            logger.debug("Could not resolve step image: %s", e)
+            return None
 
     # ------------------------- snapshot helpers ---------------------------
 
