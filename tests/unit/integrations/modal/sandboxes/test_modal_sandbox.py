@@ -429,78 +429,41 @@ class TestModalSandboxFileIO:
 
 
 class TestModalLogForwarding:
-    """The Session enters BaseSandbox.forward_session_logs on __enter__."""
+    """Process stdout/stderr route through session._wrap_stream.
 
-    def test_forward_logs_true_opens_context_on_enter(self) -> None:
-        parent = MagicMock()
-        log_ctx = MagicMock()
-        parent.forward_session_logs.return_value = log_ctx
-        fake_sandbox = MagicMock(object_id="sb_xyz")
+    Most of the sandbox-log routing is now covered on the base side in
+    tests/unit/sandboxes/test_base_sandbox.py::TestSandboxLogEmission.
+    These tests only verify that ModalSandboxProcess passes its line
+    iterators through the session when one is attached.
+    """
 
-        session = ModalSandboxSession(
-            fake_sandbox, parent=parent, forward_logs=True
-        )
-        with session:
-            parent.forward_session_logs.assert_called_once_with("sb_xyz")
-            log_ctx.__enter__.assert_called_once()
-        log_ctx.__exit__.assert_called_once()
-
-    def test_forward_logs_false_skips_context(self) -> None:
-        parent = MagicMock()
-        fake_sandbox = MagicMock(object_id="sb_xyz")
-        session = ModalSandboxSession(
-            fake_sandbox, parent=parent, forward_logs=False
-        )
-        with session:
-            parent.forward_session_logs.assert_not_called()
-
-    def test_close_outside_with_still_closes_log_ctx(self) -> None:
-        # If a caller manually __enter__'s the session and then calls
-        # close() instead of __exit__, the LoggingContext should still
-        # be torn down (no leak).
-        parent = MagicMock()
-        log_ctx = MagicMock()
-        parent.forward_session_logs.return_value = log_ctx
-        fake_sandbox = MagicMock(object_id="sb_xyz")
-        session = ModalSandboxSession(
-            fake_sandbox, parent=parent, forward_logs=True
-        )
-        session.__enter__()
-        session.close()
-        log_ctx.__exit__.assert_called_once()
-        # Calling close() again is idempotent — no double-exit.
-        session.close()
-        log_ctx.__exit__.assert_called_once()
-
-    def test_double_enter_does_not_leak_log_ctx(self) -> None:
-        parent = MagicMock()
-        log_ctx = MagicMock()
-        parent.forward_session_logs.return_value = log_ctx
-        fake_sandbox = MagicMock(object_id="sb_xyz")
-        session = ModalSandboxSession(
-            fake_sandbox, parent=parent, forward_logs=True
-        )
-        session.__enter__()
-        session.__enter__()
-        # forward_session_logs called exactly once even on double-enter.
-        assert parent.forward_session_logs.call_count == 1
-        assert log_ctx.__enter__.call_count == 1
-        session.close()
-
-    def test_process_stdout_forwards_lines_when_enabled(self) -> None:
+    def test_process_stdout_routes_through_session_wrap_stream(self) -> None:
         fake_process = MagicMock()
         fake_process.stdout = [b"hello\n", b"world\n"]
-        with patch(
-            "zenml.integrations.modal.sandboxes.modal_sandbox.BaseSandbox.forward_lines"
-        ) as forward:
-            forward.side_effect = lambda lines, **_: lines  # passthrough
-            out = list(
-                ModalSandboxProcess(fake_process, forward_logs=True).stdout()
-            )
-        # forward_lines was invoked with stream="stdout"; lines pass through.
-        forward.assert_called_once()
-        assert forward.call_args.kwargs["stream"] == "stdout"
-        assert out == ["hello\n", "world\n"]
+        session = _make_session(MagicMock(object_id="sb_xyz"))
+        session._wrap_stream = MagicMock(  # type: ignore[method-assign]
+            side_effect=lambda lines, stream: iter(["wrapped"])
+        )
+        out = list(ModalSandboxProcess(fake_process, session=session).stdout())
+        session._wrap_stream.assert_called_once()
+        assert session._wrap_stream.call_args.kwargs["stream"] == "stdout"
+        assert out == ["wrapped"]
+
+    def test_process_stderr_routes_through_session_wrap_stream(self) -> None:
+        fake_process = MagicMock()
+        fake_process.stderr = [b"oops\n"]
+        session = _make_session(MagicMock(object_id="sb_xyz"))
+        session._wrap_stream = MagicMock(  # type: ignore[method-assign]
+            side_effect=lambda lines, stream: iter(["wrapped"])
+        )
+        list(ModalSandboxProcess(fake_process, session=session).stderr())
+        assert session._wrap_stream.call_args.kwargs["stream"] == "stderr"
+
+    def test_process_without_session_yields_raw_lines(self) -> None:
+        fake_process = MagicMock()
+        fake_process.stdout = [b"raw\n"]
+        out = list(ModalSandboxProcess(fake_process, session=None).stdout())
+        assert out == ["raw\n"]
 
     def test_restore_rejects_cross_provider(self) -> None:
         wrong = BaseSandboxSnapshot(provider="agent_sandbox", ref="ref")
