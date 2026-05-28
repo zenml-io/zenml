@@ -219,6 +219,74 @@ class LoggingContext(context_utils.BaseContext):
             logs_id=self.log_model.id, logs_update=log_update
         )
 
+    def begin(self) -> None:
+        """Register the origin without joining the active-context stack.
+
+        Use this when a caller wants to emit records to *this* source
+        without affecting whatever ``LoggingContext`` is currently
+        active on the thread — e.g. proxying subprocess output through
+        ``emit_to()`` while the step's regular logger remains
+        attributed to its own source. Idempotent.
+
+        For the normal stack-routed case use the ``with ctx:`` form;
+        ``__enter__`` calls ``begin()`` internally on top of pushing
+        the context-var. ``register_origin`` may raise if the log
+        store rejects the model.
+        """
+        with self._lock:
+            if self._origin is not None:
+                return
+            self._origin = self._log_store.register_origin(
+                name=self.name,
+                log_model=self.log_model,
+                metadata=self._metadata,
+            )
+
+    def end(self) -> None:
+        """Deregister the origin set up by ``begin()``. Idempotent."""
+        with self._lock:
+            if self._origin is not None:
+                self._log_store.deregister_origin(
+                    self._origin, blocking=self._block_on_exit
+                )
+                self._origin = None
+
+    def emit_to(
+        self,
+        record: logging.LogRecord,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Emit a record to *this* context's origin.
+
+        Bypasses the active-context lookup that ``LoggingContext.emit``
+        does — useful for side-channels (subprocess stdout/stderr,
+        sandbox commands, ...) where the caller knows exactly which
+        source the record belongs to and wants to avoid the
+        thread-wide stack push.
+
+        No-op when ``begin()`` has not been called yet (or after
+        ``end()``).
+
+        Args:
+            record: The log record to emit.
+            metadata: Additional metadata to attach to the log entry.
+        """
+        if self._origin is None or self._disabled:
+            return
+        self._disabled = True
+        try:
+            message = record.getMessage()
+            if message and message.strip():
+                self._log_store.emit(
+                    origin=self._origin,
+                    record=record,
+                    metadata=metadata,
+                )
+        except Exception:
+            logger.debug("Failed to emit log record", exc_info=True)
+        finally:
+            self._disabled = False
+
     def __enter__(self) -> "LoggingContext":
         """Enter the context and set as active.
 
@@ -236,17 +304,15 @@ class LoggingContext(context_utils.BaseContext):
                     ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, True
                 )
             )
-            try:
-                self._origin = self._log_store.register_origin(
-                    name=self.name,
-                    log_model=self.log_model,
-                    metadata=self._metadata,
-                )
-            except Exception:
-                step_names_in_console.reset(self._step_names_token)
-                self._step_names_token = None
+        try:
+            self.begin()
+        except Exception:
+            with self._lock:
+                if self._step_names_token is not None:
+                    step_names_in_console.reset(self._step_names_token)
+                    self._step_names_token = None
                 super().__exit__(None, None, None)
-                raise
+            raise
 
         return self
 
@@ -278,14 +344,10 @@ class LoggingContext(context_utils.BaseContext):
                 metadata={"zenml.event.type": "exception"},
             )
 
+        self.end()
         with self._lock:
             try:
                 super().__exit__(exc_type, exc_val, exc_tb)
-                if self._origin:
-                    self._log_store.deregister_origin(
-                        self._origin, blocking=self._block_on_exit
-                    )
-                    self._origin = None
             finally:
                 if self._step_names_token is not None:
                     step_names_in_console.reset(self._step_names_token)

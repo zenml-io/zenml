@@ -296,7 +296,7 @@ class LocalSandboxSession(SandboxSession):
         if self._closed:
             return
         self._closed = True
-        self._close_log_origin()
+        self._close_log_ctx()
         try:
             shutil.rmtree(self._workdir, ignore_errors=True)
         except Exception as e:

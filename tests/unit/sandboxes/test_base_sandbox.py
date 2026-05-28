@@ -86,7 +86,7 @@ class _FakeSession(SandboxSession):
 
     def close(self) -> None:
         self.closed = True
-        self._close_log_origin()
+        self._close_log_ctx()
 
 
 class _FakeSandbox(BaseSandbox):
@@ -382,34 +382,31 @@ class TestSandboxLogEmission:
     """
 
     def _patched_session(self) -> "_FakeSession":
-        """Builds a session with the log-origin setup short-circuited.
+        """Builds a session with a mock ``LoggingContext`` short-circuiting setup.
 
-        The lazy ``_ensure_log_origin`` creates a fresh ``LogsResponse``
-        and registers an origin with the active stack's log store. In
-        unit tests there's no stack, so we substitute mocks for the
-        log_store + origin and return a session that will emit straight
-        into them.
+        The real ``_ensure_log_ctx`` calls ``setup_logging_context`` +
+        ``ctx.begin()`` which require an active stack. We bypass both
+        by injecting a mock context that supports ``emit_to`` and
+        ``end``.
         """
         session = _FakeSession()
-        session._log_store = MagicMock()
-        session._log_origin = MagicMock()
+        session._log_ctx = MagicMock()
         return session
 
     def test_log_command_emits_dollar_prefix(self) -> None:
         session = self._patched_session()
         session._log_command(["python", "-c", "print('hi')"])
-        emitted_records = [
-            call.kwargs["record"]
-            for call in session._log_store.emit.call_args_list
+        records = [
+            call.args[0] for call in session._log_ctx.emit_to.call_args_list
         ]
-        assert len(emitted_records) == 1
-        assert emitted_records[0].getMessage().startswith("$ ")
-        assert "python" in emitted_records[0].getMessage()
+        assert len(records) == 1
+        assert records[0].getMessage().startswith("$ ")
+        assert "python" in records[0].getMessage()
 
     def test_log_exec_result_success(self) -> None:
         session = self._patched_session()
         session._log_exec_result(exit_code=0, started_at=time.time() - 1.5)
-        record = session._log_store.emit.call_args.kwargs["record"]
+        record = session._log_ctx.emit_to.call_args.args[0]
         msg = record.getMessage()
         assert msg.startswith("✓ exit 0 in ")
         assert msg.endswith("s")
@@ -418,14 +415,14 @@ class TestSandboxLogEmission:
     def test_log_exec_result_failure_goes_to_warning(self) -> None:
         session = self._patched_session()
         session._log_exec_result(exit_code=1, started_at=time.time())
-        record = session._log_store.emit.call_args.kwargs["record"]
+        record = session._log_ctx.emit_to.call_args.args[0]
         assert record.getMessage().startswith("✗ exit 1 in ")
         assert record.levelno == logging.WARNING
 
     def test_log_exec_result_without_started_at_omits_duration(self) -> None:
         session = self._patched_session()
         session._log_exec_result(exit_code=0, started_at=None)
-        record = session._log_store.emit.call_args.kwargs["record"]
+        record = session._log_ctx.emit_to.call_args.args[0]
         assert record.getMessage() == "✓ exit 0"
 
     def test_wrap_stream_emits_each_line(self) -> None:
@@ -433,8 +430,7 @@ class TestSandboxLogEmission:
         out = list(session._wrap_stream(iter(["a\n", "b\n"]), stream="stdout"))
         assert out == ["a\n", "b\n"]  # passthrough preserved
         records = [
-            call.kwargs["record"]
-            for call in session._log_store.emit.call_args_list
+            call.args[0] for call in session._log_ctx.emit_to.call_args_list
         ]
         assert [r.getMessage() for r in records] == ["a", "b"]
         assert all(r.levelno == logging.INFO for r in records)
@@ -442,7 +438,7 @@ class TestSandboxLogEmission:
     def test_wrap_stream_stderr_uses_warning_level(self) -> None:
         session = self._patched_session()
         list(session._wrap_stream(iter(["oops\n"]), stream="stderr"))
-        record = session._log_store.emit.call_args.kwargs["record"]
+        record = session._log_ctx.emit_to.call_args.args[0]
         assert record.levelno == logging.WARNING
         assert record.getMessage() == "oops"
 
@@ -452,38 +448,31 @@ class TestSandboxLogEmission:
         session._log_forwarding_disabled = True
         out = list(session._wrap_stream(iter(["a", "b"]), stream="stdout"))
         assert out == ["a", "b"]
-        assert session._log_store is None
+        assert session._log_ctx is None
 
     def test_emit_failure_latches_forwarding_off(self) -> None:
-        """If origin setup fails once, we don't retry on every emit."""
+        """If LoggingContext setup fails once, we don't retry on every emit."""
         session = _FakeSession()
-        # Patch _ensure_log_origin to fail on first call by raising
-        # inside the lazy registration; the helper catches and latches.
-        with patch.object(
-            session,
-            "_ensure_log_origin",
-            side_effect=lambda: (
-                setattr(session, "_log_forwarding_disabled", True),
-                None,
-            )[1],
+        with patch(
+            "zenml.utils.logging_utils.setup_logging_context",
+            side_effect=RuntimeError("no log store"),
         ):
             session._emit_sandbox("ignored")
         assert session._log_forwarding_disabled is True
+        assert session._log_ctx is None
 
-    def test_close_log_origin_deregisters(self) -> None:
+    def test_close_log_ctx_calls_end(self) -> None:
         session = self._patched_session()
-        log_store = session._log_store
-        origin = session._log_origin
-        session._close_log_origin()
-        log_store.deregister_origin.assert_called_once_with(origin)
-        assert session._log_origin is None
-        assert session._log_store is None
+        ctx = session._log_ctx
+        session._close_log_ctx()
+        ctx.end.assert_called_once()
+        assert session._log_ctx is None
 
-    def test_close_log_origin_is_idempotent(self) -> None:
+    def test_close_log_ctx_is_idempotent(self) -> None:
         session = self._patched_session()
-        session._close_log_origin()
-        session._close_log_origin()  # second call must be a no-op
-        assert session._log_origin is None
+        session._close_log_ctx()
+        session._close_log_ctx()  # second call must be a no-op
+        assert session._log_ctx is None
 
 
 class TestSandboxProcessCollect:
