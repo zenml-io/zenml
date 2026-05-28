@@ -11,24 +11,25 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Event dispatcher base functionality."""
+"""Event dispatcher that fans out run lifecycle events to handlers."""
 
-import logging
 import threading
+from typing import List
 
 from zenml.dispatcher.handler import EventHandler
+from zenml.logger import get_logger
 from zenml.models import PipelineRunResponse
 from zenml.utils.singleton import SingletonMetaClass
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class EventDispatcher(metaclass=SingletonMetaClass):
-    """Event Dispatcher class."""
+    """Process-wide broadcaster of pipeline run lifecycle events."""
 
     def __init__(self) -> None:
-        """Event Dispatcher constructor."""
-        self._event_handlers: list[EventHandler] = []
+        """Initialize the dispatcher with an empty handler list."""
+        self._event_handlers: List[EventHandler] = []
         self._handlers_lock = threading.Lock()
 
     def register_event_handler(self, event_handler: EventHandler) -> None:
@@ -40,24 +41,42 @@ class EventDispatcher(metaclass=SingletonMetaClass):
         with self._handlers_lock:
             self._event_handlers.append(event_handler)
 
+    def unregister_event_handler(self, event_handler: EventHandler) -> None:
+        """Unregister a previously-registered event handler.
+
+        No-op if the handler isn't registered.
+
+        Args:
+            event_handler: The event handler instance to remove.
+        """
+        with self._handlers_lock:
+            try:
+                self._event_handlers.remove(event_handler)
+            except ValueError:
+                pass
+
+    def has_handlers(self) -> bool:
+        """Return True if any handlers are registered.
+
+        Returns:
+            Whether the dispatcher would fan out to at least one handler.
+        """
+        with self._handlers_lock:
+            return bool(self._event_handlers)
+
     def handle_run_status_update(
         self,
         run: PipelineRunResponse,
     ) -> None:
-        """Handle a status update on a PipelineRun object.
-
-        Note: Status updates are a run-specific concept. This
-        method is non-generalizable across types by design. To support richer events
-        like `creation` or `deletion` of a resource we should extend the interface
-        signature with generic methods.
+        """Handle a status update on a pipeline run.
 
         Args:
-            run: A PipelineRunResponse object (with a status change).
+            run: The pipeline run whose status has changed.
         """
-        if not self._event_handlers:
-            return
+        with self._handlers_lock:
+            handlers = list(self._event_handlers)
 
-        for event_handler in self._event_handlers:
+        for event_handler in handlers:
             try:
                 logger.debug(
                     "Event handler: %s picking up %s status change to %s",

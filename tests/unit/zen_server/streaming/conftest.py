@@ -11,12 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Event dispatcher for pipeline run lifecycle events."""
+"""Shared fixtures for streaming tests."""
 
-from zenml.dispatcher.dispatcher import EventDispatcher
-from zenml.dispatcher.handler import EventHandler
+import uuid
 
-__all__ = [
-    "EventDispatcher",
-    "EventHandler",
-]
+import pytest
+
+from zenml.models import StreamEvent
+
+
+@pytest.fixture
+def anyio_backend() -> str:
+    """Pin async tests to the asyncio backend."""
+    return "asyncio"
+
+
+def make_event(run_id: uuid.UUID, kind: str = "token") -> StreamEvent:
+    """Build a `StreamEvent` with a default payload for test use."""
+    return StreamEvent(pipeline_run_id=run_id, kind=kind, payload={"v": 1})

@@ -35,7 +35,7 @@ Ref:
 """
 
 import logging
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from zenml.logger import add_zenml_filters, get_logger, get_logging_level
 
@@ -43,12 +43,18 @@ if TYPE_CHECKING:
     from fastapi import FastAPI
     from opentelemetry.sdk.resources import Resource
 
+    from zenml.zen_stores.sql_zen_store import SqlZenStore
+
 logger = get_logger(__name__)
 
 _otel_configured = False
 _otel_log_handler: Optional[logging.Handler] = None
+
+# list of OTel providers, logger, tracer, meter, to shutdown on server exit.
 _otel_providers: list[Any] = []
-# ^^^list of OTel providers: logger, tracer, meter
+
+# list of callbacks to uninstrument the libraries when we shutdown OTel.
+_otel_uninstrument_callbacks: list[Callable[[], None]] = []
 
 
 def configure_otel(app: "FastAPI") -> None:
@@ -64,11 +70,12 @@ def configure_otel(app: "FastAPI") -> None:
     """
     global _otel_configured
 
-    from zenml.zen_server.utils import server_config
-
     if _otel_configured:
         logger.debug("OpenTelemetry instrumentation already configured.")
         return
+
+    import zenml
+    from zenml.zen_server.utils import server_config
 
     config = server_config()
 
@@ -91,7 +98,13 @@ def configure_otel(app: "FastAPI") -> None:
     try:
         from opentelemetry.sdk.resources import Resource
 
-        resource = Resource.create({"service.name": config.otel_service_name})
+        resource_attributes = {
+            "service.name": config.otel_service_name,
+            "service.version": zenml.__version__,
+            "deployment.environment.name": str(config.deployment_type),
+        }
+
+        resource = Resource.create(attributes=resource_attributes)
     except ImportError:
         logger.debug(
             "OpenTelemetry SDK packages not installed — skipping "
@@ -135,23 +148,44 @@ def shutdown_otel() -> None:
     """Flush and shut down OpenTelemetry providers configured by ZenML."""
     global _otel_configured, _otel_log_handler
 
-    if not _otel_configured and not _otel_log_handler and not _otel_providers:
+    # If OTel is not configured, return early.
+    if (
+        not _otel_configured
+        and not _otel_log_handler
+        and not _otel_providers
+        and not _otel_uninstrument_callbacks
+    ):
         return
 
+    # Undo instrumentation in reverse registration order so dependent
+    # instrumentation (if any) is removed before the lower-level providers it uses.
+    for uninstrument in reversed(_otel_uninstrument_callbacks):
+        try:
+            uninstrument()
+        except Exception:
+            logger.exception(
+                "Failed to uninstrument OpenTelemetry library cleanly."
+            )
+    # Empty the list of uninstrument callbacks.
+    _otel_uninstrument_callbacks.clear()
+
+    # Remove the OTel log handler from the root logger.
     if _otel_log_handler:
         root_logger = logging.getLogger()
         root_logger.removeHandler(_otel_log_handler)
         _otel_log_handler.close()
         _otel_log_handler = None
 
-    while _otel_providers:
-        provider = _otel_providers.pop()
+    # Shut down the OTel providers.
+    for provider in reversed(_otel_providers):
         try:
             provider.shutdown()
         except Exception:
             logger.exception(
                 "Failed to shut down OpenTelemetry provider cleanly."
             )
+    # Empty the list of OTel providers.
+    _otel_providers.clear()
 
     _otel_configured = False
 
@@ -298,6 +332,35 @@ def _configure_logs(
         return False
 
 
+def instrument_sqlalchemy_store(store: "SqlZenStore") -> None:
+    """Instrument the initialized server SQL store with OpenTelemetry.
+
+    Args:
+        store: The SQL Zen store used by the server.
+    """
+    if not _otel_configured:
+        return
+
+    try:
+        from opentelemetry.instrumentation.sqlalchemy import (
+            SQLAlchemyInstrumentor,
+        )
+
+        sqlalchemy_instrumentor = SQLAlchemyInstrumentor()
+        sqlalchemy_instrumentor.instrument(engine=store.engine)
+        _otel_uninstrument_callbacks.append(
+            sqlalchemy_instrumentor.uninstrument
+        )
+    except ImportError:
+        logger.debug(
+            "OpenTelemetry SQLAlchemy instrumentation package not installed. "
+            "Install `opentelemetry-instrumentation-sqlalchemy`."
+        )
+        pass
+    except Exception:
+        logger.exception("Failed to instrument SQLAlchemy with OpenTelemetry.")
+
+
 def _instrument_libraries(app: "FastAPI") -> None:
     """Instrument supported libraries when their OTel packages are present.
 
@@ -308,6 +371,9 @@ def _instrument_libraries(app: "FastAPI") -> None:
         from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
         FastAPIInstrumentor.instrument_app(app)
+        _otel_uninstrument_callbacks.append(
+            lambda: FastAPIInstrumentor.uninstrument_app(app)
+        )
     except ImportError:
         logger.debug(
             "OpenTelemetry FastAPI instrumentation package not installed. "
@@ -318,23 +384,12 @@ def _instrument_libraries(app: "FastAPI") -> None:
     try:
         from opentelemetry.instrumentation.requests import RequestsInstrumentor
 
-        RequestsInstrumentor().instrument()
+        requests_instrumentor = RequestsInstrumentor()
+        requests_instrumentor.instrument()
+        _otel_uninstrument_callbacks.append(requests_instrumentor.uninstrument)
     except ImportError:
         logger.debug(
             "OpenTelemetry requests instrumentation package not installed. "
             "Install `opentelemetry-instrumentation-requests`."
-        )
-        pass
-
-    try:
-        from opentelemetry.instrumentation.sqlalchemy import (
-            SQLAlchemyInstrumentor,
-        )
-
-        SQLAlchemyInstrumentor().instrument()
-    except ImportError:
-        logger.debug(
-            "OpenTelemetry SQLAlchemy instrumentation package not installed. "
-            "Install `opentelemetry-instrumentation-sqlalchemy`."
         )
         pass

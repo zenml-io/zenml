@@ -51,7 +51,11 @@ from zenml.service_connectors.service_connector_registry import (
 from zenml.zen_server.cloud_utils import send_pro_workspace_status_update
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.middleware import add_middlewares
-from zenml.zen_server.otel import configure_otel, shutdown_otel
+from zenml.zen_server.otel import (
+    configure_otel,
+    instrument_sqlalchemy_store,
+    shutdown_otel,
+)
 from zenml.zen_server.routers import (
     artifact_endpoint,
     artifact_version_endpoints,
@@ -101,13 +105,16 @@ from zenml.zen_server.utils import (
     initialize_request_manager,
     initialize_resource_pool_store,
     initialize_snapshot_executor,
+    initialize_streaming,
     initialize_workload_manager,
     initialize_zen_store,
     register_event_handlers,
     server_config,
+    shutdown_streaming,
     snapshot_executor,
     start_event_loop_lag_monitor,
     stop_event_loop_lag_monitor,
+    zen_store,
 )
 
 
@@ -190,6 +197,8 @@ async def initialize() -> None:
     # race conditions
     await initialize_request_manager()
     initialize_zen_store()
+    # Instrument the SQL store with OpenTelemetry after it has been initialized.
+    instrument_sqlalchemy_store(store=zen_store())
     initialize_resource_pool_store()
     service_connector_registry.register_builtin_service_connectors()
     initialize_rbac()
@@ -197,6 +206,7 @@ async def initialize() -> None:
     initialize_workload_manager()
     initialize_resource_pool_store()
     initialize_snapshot_executor()
+    await initialize_streaming()
     initialize_secure_headers()
     if cfg.deployment_type == ServerDeploymentType.CLOUD:
         # Send a workspace status update to the Cloud API to indicate that the
@@ -216,6 +226,7 @@ async def shutdown() -> None:
         stop_event_loop_lag_monitor()
     shutdown_otel()
     snapshot_executor().shutdown(wait=True)
+    await shutdown_streaming()
     await cleanup_request_manager()
 
 
