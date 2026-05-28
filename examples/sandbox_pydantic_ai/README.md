@@ -1,18 +1,35 @@
 # PydanticAI + ZenML Sandbox
 
-A minimal example showing a [PydanticAI](https://ai.pydantic.dev) agent that uses a ZenML [Sandbox](../../docs/book/component-guide/sandboxes/README.md) component to execute the Python code it generates as a tool. The agent reasons in natural language, writes Python when it needs to compute something, and the Sandbox runs that code in an isolated environment — the agent process never executes LLM-generated code directly.
+A multi-step ZenML pipeline that drives a [PydanticAI](https://ai.pydantic.dev) agent through a ZenML [Sandbox](../../docs/book/component-guide/sandboxes/README.md) backed by Modal. The pipeline plans, fans out subagents, and reduces — each subagent gets its own isolated sandbox session restored from a snapshot the parent prepared once.
+
+## Pipeline shape
+
+```
+prep_step ──► snapshot ─┐
+                        ├─► subagent_step.map() ──► reducer_step
+planner_step ──► subtasks ┘
+```
+
+1. **`prep_step`** boots a sandbox, `pip install`s the scientific stack (numpy, scipy) once, and snapshots the filesystem into a `ModalSandboxSnapshot` artifact (Modal Image id, materialised through ZenML's artifact store).
+2. **`planner_step`** asks a small LLM to decompose the user's goal into `N` *independent* subtasks (system prompt enforces no shared filesystem / no cross-subagent dependencies, since each subagent runs in its own sandbox).
+3. **`subagent_step`** (fanned out via `step.map(snapshot=unmapped(...), subtask=subtasks)`) — each instance restores from the shared snapshot, opens a fresh agent loop in that restored sandbox, and returns one partial answer.
+4. **`reducer_step`** synthesises the partial answers into a final response with another LLM call.
+
+Wall clock on the smoke run: prep ~13 s, planner ~5 s, three parallel subagents ~90–200 s, reducer ~9 s — about **3.5 min total** vs ~11 min if every subagent re-installed deps from scratch.
 
 ## What's interesting here
 
-- **The Sandbox component is the agent's tool.** `agent.run_python(code)` calls `session.exec(["python", "-u", "-c", code])` on the active stack's Sandbox. Switch the stack's sandbox flavor (Modal, future Agent Substrate, etc.) and the agent gets a different execution backend without code changes.
-- **One Session, many tool calls.** The agent loop opens one `SandboxSession` and reuses it across every `run_python` invocation. The container's filesystem (files, installed packages) persists between turns — each call is a fresh Python interpreter though, so variables and imports do *not* carry over and the agent must write self-contained scripts.
-- **Streaming stdout into the step log.** When the Modal flavor's `forward_logs_to_step` setting resolves `True` (the default when `base_image == STEP_IMAGE`), the live Session opens a ZenML `LoggingContext` on `__enter__` and each output line surfaces in the step's log stream as a dedicated `sandbox:<session_id>` source. With the flavor's default image, the setting resolves `False` — the agent still sees the captured stdout from the tool's return value, but it doesn't land in the step log. Override per-step via `ModalSandboxSettings(forward_logs_to_step=True)` if you want it on.
+- **The Sandbox component is the agent's tool.** The agent has four tools — `run_python`, `run_shell`, `list_files`, `read_file` — each of which calls `session.exec(...)` on the active stack's Sandbox. Switch flavor (Modal today, E2B/Daytona/Agent Substrate later) and the agent gets a different execution backend without code changes.
+- **One sandbox session per subagent, many tool calls per session.** Every subagent step opens one `SandboxSession` and reuses it across all of its `run_python` / `run_shell` calls. Files written to `/tmp` and pip-installed packages persist between turns, so the agent can build up state across tool calls. (Imports / Python variables do *not* persist — each `run_python` is a fresh interpreter.)
+- **Snapshot fan-out.** Heavy setup (pip install, dataset download, model warmup) runs once in `prep_step`; every fanned-out subagent boots from the snapshot for free. The snapshot is a normal ZenML artifact — cacheable, queryable, replayable.
+- **Per-session log forwarding.** Each subagent's sandbox stdout/stderr surfaces in *its own* step log stream as a dedicated `sandbox:<session_id>` source. Step metadata records `sandbox.<session_id>.flavor` and (Uri-typed) `sandbox.<session_id>.dashboard_url` so the dashboard renders a clickable link to the Modal sandbox.
+- **`step.map` + `unmapped`.** Fan-out is just `subagent_step.map(snapshot=unmapped(snap), subtask=subtasks)`. The snapshot is broadcast to all N steps; the subtasks zip 1:1. Zero bespoke infra.
 
 ## Prerequisites
 
-1. A Modal account (or another Sandbox flavor once they ship): `modal token new`.
+1. A Modal account — get tokens via `modal token new` or pass them on the component (see below).
 2. `OPENAI_API_KEY` in your environment (or swap the model in `agent.py`).
-3. The ZenML Modal integration: `zenml integration install modal`.
+3. ZenML's Modal integration: `zenml integration install modal`.
 
 ## Setup
 
@@ -25,23 +42,26 @@ uv pip install -r requirements.txt
 zenml init
 ```
 
-Create a ZenML secret carrying your OpenAI key. **Important:** the secret-key casing must be `OPENAI_API_KEY` (uppercase), because the OpenAI SDK reads from that exact env var name — and ZenML exposes secret keys verbatim. Don't use `zenml secret create openai --openai_api_key=...` (the click flag gets normalized to lowercase). Use the `-v` JSON form instead:
+Create a ZenML secret carrying your OpenAI key. **Important:** the secret-key casing must be `OPENAI_API_KEY` (uppercase). The Click CLI normalizes `--flag` names to lowercase, so use the `-v` JSON form:
 
 ```bash
 zenml secret create openai -v '{"OPENAI_API_KEY": "sk-..."}'
 ```
 
-Then register the sandbox and stack:
+Register the sandbox with your Modal token (the `--token_id` / `--token_secret` fields are `SecretField`s — exported as `MODAL_TOKEN_ID` / `MODAL_TOKEN_SECRET` on every `create_session` / `attach` / `restore` so remote orchestrators don't need a local `~/.modal.toml`):
 
 ```bash
-zenml sandbox register modal-sb --flavor=modal --secret=openai
+zenml sandbox register modal-sb \
+  --flavor=modal \
+  --secret=openai \
+  --token_id=ak-... \
+  --token_secret=as-...
+
 zenml stack register sandbox-stack -o default -a default --sandbox modal-sb
 zenml stack set sandbox-stack
 ```
 
-If you're using a remote artifact store (S3 / GCS / Azure Blob), point `-a` at that instead. The agent step runs locally against your `default` orchestrator; only the Sandbox boots on Modal.
-
-You also need to authenticate the Modal CLI on your machine (`modal token new` or `modal token set --token-id ... --token-secret ...`). The Modal sandbox component currently does **not** carry the Modal auth itself — it relies on the agent process's local `~/.modal.toml` or `MODAL_TOKEN_ID` / `MODAL_TOKEN_SECRET` env vars. This is a known limitation; see [`plan.md`](../../src/zenml/sandboxes/plan.md) "Out of scope".
+If you're using a remote artifact store (S3 / GCS / Azure Blob), point `-a` at that — the `ModalSandboxSnapshot` artifact crosses the prep → subagent boundary through the artifact store.
 
 ## Run
 
@@ -49,56 +69,61 @@ You also need to authenticate the Modal CLI on your machine (`modal token new` o
 python run.py
 ```
 
-Default query: *"What's the sum of the first 100 prime numbers? Write Python to compute it."* The agent writes a sieve, runs it in the sandbox, parses the stdout, and answers in natural language.
-
-Inspect the result either through the [ZenML dashboard](https://staging.cloud.zenml.io/) (link prints to stdout on each run) or by loading the artifact:
-
-```python
-from zenml.client import Client
-run = Client().get_pipeline_run("<run-id-from-stdout>")
-print(run.steps["agent_step"].outputs["agent_answer"][0].load())
-```
+Default query benchmarks three classic numerical-methods problems (Monte Carlo π, Simpson's rule, Newton's method) — each landed in its own subagent, each truly independent of the others.
 
 Pass your own query:
 
 ```bash
-python -c "from run import sandbox_pydantic_ai_pipeline; sandbox_pydantic_ai_pipeline(query='Plot a sine wave and tell me the peak value.')"
+python -c "from run import sandbox_pydantic_ai_pipeline; \
+  sandbox_pydantic_ai_pipeline(query='Compare three sorting algorithms by runtime on 100k random ints.')"
 ```
 
-> **Run as a script, not in a notebook.** PydanticAI's `run_sync` spins up its own event loop and refuses to nest inside an existing one (Jupyter has one).
+Phrase tasks so they decompose into **independent** subtasks (each subagent sees a fresh filesystem — no inter-subagent state). If you ask the planner to coordinate (e.g. "step 1 writes a file, step 2 reads it") the subagents will fail; the planner system prompt enforces independence but a sufficiently leading user query can still confuse it.
+
+Open the run on the dashboard URL printed to stdout, or load the final answer programmatically:
+
+```python
+from zenml.client import Client
+run = Client().get_pipeline_run("<run-id-from-stdout>")
+print(run.steps["reducer_step"].outputs["final_answer"][0].load())
+```
+
+> **Run as a script, not in a notebook.** PydanticAI's `run_sync` opens its own event loop and refuses to nest inside an existing one (Jupyter already has one).
 
 ## File layout
 
-- `agent.py` — PydanticAI `Agent` with a single `run_python(code: str) -> CodeResult` tool that wraps `SandboxSession.exec`. Carries the live session via `RunContext.deps`. Stdout/stderr are fully drained and byte-capped (truncation marker appended) to avoid hanging Modal's `wait()` on un-emptied buffers.
-- `run.py` — Single-step ZenML pipeline that calls `run_agent(query)`. The agent loop lives entirely inside one step; see `examples/agent_framework_integrations/langgraph/` if you want a multi-step decomposition.
-- `requirements.txt` — pydantic-ai + zenml + modal.
+- `agent.py` — Four-tool PydanticAI agent (`run_python`, `run_shell`, `list_files`, `read_file`), the planner / reducer helper functions, and `run_agent_in_session(session, query)` that drives the agent against a caller-supplied session (so the pipeline can plug in a restored snapshot).
+- `run.py` — `prep_step → planner_step → subagent_step.map() → reducer_step` dynamic pipeline.
+- `requirements.txt` — pydantic-ai + openai + zenml + modal.
+
+## Tuning knobs
+
+- **Make subagents independent.** The planner's system prompt insists on no shared state; if you write a leading query that implies a pipeline, the planner may still produce dependent subtasks and you'll see "file not found" errors from subagents 2+.
+- **Sandbox timeout.** The default Modal Sandbox TTL is 5 min; `BaseSandboxSettings(timeout_seconds=900)` in `run.py` lifts it to 15 min for slow agent loops. Applied to both `create_session` and `restore`.
+- **PydanticAI usage limit.** Default is 50 LLM requests per `run_sync`. The example bumps to 200 in `run_agent_in_session` since multi-step tool-using loops can chew through the budget on a slow day.
+- **Richer base image.** The default Modal image is `python:3.11-slim` — bare Python. The agent's system prompt teaches it to `pip install` on demand, and `prep_step` does this once and snapshots. To skip the snapshot dance, register the sandbox with a pre-built sci-py image: `--default_image=ghcr.io/your-org/scipy-base:latest`.
 
 ## Switching sandbox flavors
 
-The example doesn't import anything Modal-specific — it goes through `Client().active_stack.sandbox` and the `BaseSandbox` interface. To use a different flavor, just change your stack:
+The agent code is flavor-agnostic — `Client().active_stack.sandbox` returns a `BaseSandbox`, the agent calls `session.exec(...)` through the interface. To run against a different flavor (once they ship), just swap the stack:
 
 ```bash
 zenml sandbox register my-other-sandbox --flavor=<other_flavor>
 zenml stack update --sandbox my-other-sandbox
 ```
 
-The agent code is identical.
+The **snapshot fan-out** part of the pipeline does need flavor-level support — `run.py` currently imports `ModalSandboxSnapshot` for the step type annotation, and `session.snapshot()` / `sandbox.restore(snap)` are only implemented on Modal today. For a fresh-session-per-subagent fan-out (no snapshot reuse), swap `subagent_step` to call `sandbox.create_session()` instead of `sandbox.restore(snapshot)` and drop the `prep_step` / `snapshot` plumbing.
 
 ## Cloud orchestrators
 
-The setup above uses the `default` orchestrator (the agent step runs in your local Python). To run on a remote orchestrator (Kubernetes, SageMaker, Vertex...), add `DockerSettings` to the pipeline so the step image carries `pydantic-ai` and `OPENAI_API_KEY`:
+The default `orchestrator: default` runs the agent steps on your local Python. To run on a remote orchestrator (Kubernetes, SageMaker, Vertex…), the included `get_docker_settings()` helper bakes the example's requirements into the step image and — when ZenML is installed editable — copies the current source. Add `OPENAI_API_KEY` to the step env:
 
 ```python
-from zenml.config import DockerSettings, PythonPackageInstaller
-
-docker_settings = DockerSettings(
-    python_package_installer=PythonPackageInstaller.UV,
+DockerSettings(
+    python_package_installer="uv",
     requirements="requirements.txt",
     environment={"OPENAI_API_KEY": os.environ["OPENAI_API_KEY"]},
 )
-
-@pipeline(settings={"docker": docker_settings})
-def sandbox_pydantic_ai_pipeline(...): ...
 ```
 
-The Sandbox still runs on its own backend (Modal) — only the orchestration changes.
+The Sandbox itself still runs on Modal regardless of the orchestrator — only step execution location changes.
