@@ -189,8 +189,6 @@ class SandboxSession(ABC):
             "Rely on close() and the provider's session TTL."
         )
 
-    # ----- lifecycle hooks: implemented here, overridable by flavors ------
-
     def _dashboard_url(self) -> Optional[str]:
         """Returns a URL to the provider's UI for this Session, if any.
 
@@ -241,8 +239,6 @@ class SandboxSession(ABC):
             # Real failure (network error, serialization bug, etc.). Don't
             # break sandbox usage, but make it visible so it's debuggable.
             logger.warning("Failed to publish sandbox step metadata: %s", e)
-
-    # ----- sandbox log emission ------------------------------------------
 
     def _ensure_log_ctx(self) -> Optional["LoggingContext"]:
         """Lazily sets up the per-session ``LoggingContext`` on first emit.

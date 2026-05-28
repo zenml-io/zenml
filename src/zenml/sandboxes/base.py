@@ -117,8 +117,6 @@ class BaseSandbox(StackComponent, ABC):
     ``docs/book/component-guide/sandboxes/dev/plan.md``.
     """
 
-    # ------------------------- typed config / settings --------------------
-
     @property
     def config(self) -> BaseSandboxConfig:
         """Typed sandbox component configuration.
@@ -137,8 +135,6 @@ class BaseSandbox(StackComponent, ABC):
             flavor-specific fields.
         """
         return BaseSandboxSettings
-
-    # ------------------------- abstract surface ---------------------------
 
     @abstractmethod
     def create_session(
@@ -183,8 +179,6 @@ class BaseSandbox(StackComponent, ABC):
             f"{type(self).__name__} does not support restore."
         )
 
-    # ------------------------- settings resolution ------------------------
-
     def resolve_settings(
         self, override: Optional[BaseSandboxSettings] = None
     ) -> BaseSandboxSettings:
@@ -228,8 +222,6 @@ class BaseSandbox(StackComponent, ABC):
                 self.config.model_dump(exclude_unset=True)
             ),
         )
-
-    # ------------------------- env / secret merging -----------------------
 
     def _resolve_session_environment(
         self, settings: Optional[BaseSandboxSettings]
@@ -280,8 +272,6 @@ class BaseSandbox(StackComponent, ABC):
             env.update(settings.environment)
         return env
 
-    # ------------------------- step-image resolution ----------------------
-
     @staticmethod
     def resolve_step_image() -> Optional[str]:
         """Returns the image URI of the currently-running step, if any.
@@ -320,8 +310,6 @@ class BaseSandbox(StackComponent, ABC):
         except Exception as e:  # noqa: BLE001
             logger.debug("Could not resolve step image: %s", e)
             return None
-
-    # ------------------------- snapshot helpers ---------------------------
 
     def _validate_snapshot_provider(
         self, snapshot: BaseSandboxSnapshot

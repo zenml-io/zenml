@@ -23,6 +23,8 @@ from zenml.enums import AuthScheme
 
 T = TypeVar("T")
 
+DEFAULT_ZENML_SERVER_OTEL_SERVICE_NAME = "zenml-server"
+
 
 def handle_json_env_var(
     var: str,
