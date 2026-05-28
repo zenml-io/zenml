@@ -18,6 +18,7 @@ from typing import (
     List,
     Optional,
     Type,
+    Literal,
 )
 
 from pydantic import Field
@@ -51,7 +52,7 @@ class TrackioExperimentTrackerSettings(BaseSettings):
         description=("Tags associated with the Trackio run."),
     )
 
-    resume: str = Field(
+    resume: Literal["allow", "must", "never"]= Field(
         default="allow",
         description=(
             "Run resume behavior. "
