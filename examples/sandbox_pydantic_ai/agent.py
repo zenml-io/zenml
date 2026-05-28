@@ -95,10 +95,14 @@ def build_agent() -> Agent[AgentDeps, str]:
         deps_type=AgentDeps,
         system_prompt=(
             "You are a data-analysis assistant operating inside a Linux "
-            "sandbox. You have four tools:\n"
+            "sandbox running python:3.11-slim. The sandbox starts bare: "
+            "only the Python standard library is available. If you need "
+            "scientific packages (numpy, pandas, scipy, ...) install "
+            "them first with `pip install --quiet --no-cache-dir <pkgs>` "
+            "via run_shell. You have four tools:\n"
             "- run_python(code): runs Python source in a fresh interpreter. "
             "Imports/variables do NOT persist between calls, but files "
-            "written to /tmp do.\n"
+            "written to /tmp and installed packages DO persist.\n"
             "- run_shell(command): runs a shell command (bash -c).\n"
             "- list_files(path): lists a directory.\n"
             "- read_file(path): reads a file as text.\n"
@@ -171,11 +175,16 @@ def build_agent() -> Agent[AgentDeps, str]:
 
 
 _DEFAULT_QUERY = (
-    "Generate a small synthetic stock-price series in /tmp/prices.csv "
-    "(200 days, daily-return mean 0.0005, stdev 0.012, starting price "
-    "100). Then compute and report: mean price, final price, max "
-    "drawdown, and 30-day moving-average crossover signals. Use one "
-    "tool call per logical step."
+    "Benchmark three classic numerical-methods problems and report "
+    "the answer plus how it compares to the known exact value:\n"
+    "1. Estimate π using Monte Carlo with at least 200k samples.\n"
+    "2. Approximate the integral of sin(x) from 0 to π using "
+    "Simpson's rule with 1000 sub-intervals.\n"
+    "3. Find a real root of x^2 - 612 using Newton's method starting "
+    "at x0 = 25.\n"
+    "Treat each problem as independent -- no shared inputs, no shared "
+    "files. For each, write Python, run it in the sandbox, and report "
+    "the numerical result with a one-line verification."
 )
 
 
@@ -204,11 +213,17 @@ def plan_subtasks(query: str, n: int = 3) -> list[str]:
         "openai:gpt-4o-mini",
         output_type=_Subtasks,
         system_prompt=(
-            f"Decompose the user's task into exactly {n} independent "
-            "subtasks. Each subtask must be self-contained (no shared "
-            "state with siblings) and tractable by a Python "
-            "data-analysis agent in an isolated sandbox in under a "
-            "minute. Phrase each subtask as a direct instruction."
+            f"Decompose the user's task into exactly {n} fully "
+            "independent subtasks for parallel execution. CRITICAL: "
+            "each subtask runs in its OWN isolated sandbox with a "
+            "separate filesystem -- subtasks cannot read each other's "
+            "files, share memory, or depend on each other's outputs. "
+            "If the task involves shared data, each subtask must "
+            "regenerate or re-derive its own copy. Each subtask "
+            "should be self-contained, tractable by a Python "
+            "data-analysis agent in under a minute, and produce a "
+            "standalone result the parent can stitch together. "
+            "Phrase each as a direct instruction."
         ),
     )
     return planner.run_sync(query).output.subtasks
