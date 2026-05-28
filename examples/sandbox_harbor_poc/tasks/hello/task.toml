@@ -1,0 +1,27 @@
+schema_version = "1.2"
+artifacts = []
+
+[metadata]
+description = "Smoke task: write '42' to /app/answer.txt so the verifier can read it back."
+
+[verifier]
+timeout_sec = 120.0
+
+[verifier.env]
+
+[agent]
+timeout_sec = 120.0
+
+[environment]
+build_timeout_sec = 120.0
+os = "linux"
+allow_internet = true
+mcp_servers = []
+# Pin the image so the ZenML Sandbox flavor consumes it directly —
+# the bridge ignores the local Dockerfile and forwards this to the
+# underlying flavor's `base_image` setting.
+docker_image = "python:3.11-slim"
+
+[environment.env]
+
+[solution.env]
