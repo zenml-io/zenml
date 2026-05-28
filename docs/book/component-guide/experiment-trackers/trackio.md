@@ -729,7 +729,7 @@ The Trackio integration extends ZenML with a lightweight experiment tracking lay
 
 The example pipeline demonstrates how ZenML orchestration, Hugging Face tooling, and Trackio tracking can be combined into a single reproducible ML workflow with minimal infrastructure requirements.
 
-### Key Integration Benefits
+### Integration Benefits
 
 - **Hugging Face Ecosystem**: Native integration with Datasets, Models, and Spaces.
 - **Multiple Backends**: Supports local SQLite, Hugging Face Spaces, HTTP servers, and static deployments.
@@ -738,49 +738,3 @@ The example pipeline demonstrates how ZenML orchestration, Hugging Face tooling,
 - **Dashboard Publishing**: Export runs to hosted Hugging Face Spaces dashboards.
 
 ---
-
-## Troubleshooting
-
-### OpenTelemetry Threading Issue
-
-If you encounter `RuntimeError: can't create new thread at interpreter shutdown`, ensure proper cleanup of OpenTelemetry background threads, this ensures all background threads are shut down cleanly before the interpreter exits.:
-
-```python
-def cleanup_otel():
-    """Properly flush and shutdown OpenTelemetry SDK."""
-    try:
-        from opentelemetry.sdk.trace import TracerProvider
-        from opentelemetry.sdk._logs import LoggerProvider
-        from opentelemetry.sdk.metrics import MeterProvider
-
-        tracer_provider = TracerProvider()
-        logger_provider = LoggerProvider()
-        meter_provider = MeterProvider()
-
-        if hasattr(tracer_provider, "force_flush"):
-            tracer_provider.force_flush(timeout_millis=5000)
-        if hasattr(tracer_provider, "shutdown"):
-            tracer_provider.shutdown()
-
-        if hasattr(logger_provider, "force_flush"):
-            logger_provider.force_flush(timeout_millis=5000)
-        if hasattr(logger_provider, "shutdown"):
-            logger_provider.shutdown()
-
-        if hasattr(meter_provider, "force_flush"):
-            meter_provider.force_flush(timeout_millis=5000)
-        if hasattr(meter_provider, "shutdown"):
-            meter_provider.shutdown()
-
-    except Exception as e:
-        pass
-
-if __name__ == "__main__":
-    try:
-        sentiment_analysis_pipeline.with_options(
-            settings=pipeline_settings,
-        )()
-    finally:
-        cleanup_otel()
-        time.sleep(0.5)
-```
