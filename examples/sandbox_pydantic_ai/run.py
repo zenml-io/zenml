@@ -46,6 +46,13 @@ def get_docker_settings(
 ) -> DockerSettings:
     """Builds ``DockerSettings`` that work with an editable ZenML install.
 
+    Sibling copy of ``examples/dynamic_test/utils.py``'s helper (kept
+    inline so this example stays self-contained — examples don't
+    cross-import each other in this repo). Adds two
+    ``allow_download_from_*`` defaults on top of the dynamic_test
+    version since the sandbox example assumes a clean step image
+    rather than runtime artifact pulls.
+
     When this example runs against a containerized orchestrator (e.g. the
     Kubernetes stack), the step image needs to include the current ZenML
     source. If ZenML is installed editable from a git checkout (the dev
