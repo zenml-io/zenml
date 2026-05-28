@@ -14,6 +14,7 @@
 """Unit tests for the Sandbox base abstraction."""
 
 import logging
+import time
 from datetime import datetime
 from typing import Dict, Iterator, List, Optional, Type, Union
 from unittest.mock import MagicMock, patch
@@ -435,6 +436,28 @@ class TestSandboxLogEmission:
         assert len(emitted_records) == 1
         assert emitted_records[0].getMessage().startswith("$ ")
         assert "python" in emitted_records[0].getMessage()
+
+    def test_log_exec_result_success(self) -> None:
+        session = self._patched_session()
+        session._log_exec_result(exit_code=0, started_at=time.time() - 1.5)
+        record = session._log_store.emit.call_args.kwargs["record"]
+        msg = record.getMessage()
+        assert msg.startswith("✓ exit 0 in ")
+        assert msg.endswith("s")
+        assert record.levelno == logging.INFO
+
+    def test_log_exec_result_failure_goes_to_warning(self) -> None:
+        session = self._patched_session()
+        session._log_exec_result(exit_code=1, started_at=time.time())
+        record = session._log_store.emit.call_args.kwargs["record"]
+        assert record.getMessage().startswith("✗ exit 1 in ")
+        assert record.levelno == logging.WARNING
+
+    def test_log_exec_result_without_started_at_omits_duration(self) -> None:
+        session = self._patched_session()
+        session._log_exec_result(exit_code=0, started_at=None)
+        record = session._log_store.emit.call_args.kwargs["record"]
+        assert record.getMessage() == "✓ exit 0"
 
     def test_wrap_stream_emits_each_line(self) -> None:
         session = self._patched_session()
