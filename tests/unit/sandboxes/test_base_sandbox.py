@@ -62,8 +62,17 @@ class _FakeProcess(SandboxProcess):
 class _FakeSession(SandboxSession):
     """Minimal SandboxSession for testing. Only implements `exec` + `close`."""
 
-    def __init__(self, session_id: str = "sess-1") -> None:
-        self.id = session_id
+    def __init__(
+        self,
+        session_id: str = "sess-1",
+        parent: Optional["BaseSandbox"] = None,
+        forward_logs: bool = False,
+    ) -> None:
+        super().__init__(
+            id=session_id,
+            parent=parent or MagicMock(spec=BaseSandbox, flavor="fake"),
+            forward_logs=forward_logs,
+        )
         self.closed = False
 
     def exec(
@@ -77,6 +86,7 @@ class _FakeSession(SandboxSession):
 
     def close(self) -> None:
         self.closed = True
+        self._close_log_ctx()
 
 
 class _FakeSandbox(BaseSandbox):
@@ -126,7 +136,7 @@ class TestStepImageSentinel:
         assert isinstance(STEP_IMAGE, str)
 
     def test_sentinel_value_matches_module_export(self) -> None:
-        from zenml.sandboxes.base_sandbox import STEP_IMAGE as direct
+        from zenml.sandboxes.base import STEP_IMAGE as direct
 
         assert STEP_IMAGE == direct
 
@@ -360,7 +370,7 @@ class TestResolveForwardLogs:
 
 class TestForwardLines:
     def test_yields_lines_unchanged(self) -> None:
-        with patch("zenml.sandboxes.base_sandbox.logger") as log:
+        with patch("zenml.sandboxes.base.logger") as log:
             out = list(
                 BaseSandbox.forward_lines(
                     iter(["a\n", "b\n"]), stream="stdout"
@@ -371,7 +381,7 @@ class TestForwardLines:
             log.info.assert_any_call("b")
 
     def test_stderr_goes_to_warning(self) -> None:
-        with patch("zenml.sandboxes.base_sandbox.logger") as log:
+        with patch("zenml.sandboxes.base.logger") as log:
             list(BaseSandbox.forward_lines(iter(["oops\n"]), stream="stderr"))
             log.warning.assert_called_with("oops")
 
