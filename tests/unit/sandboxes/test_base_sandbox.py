@@ -197,6 +197,72 @@ class TestSessionContextManager:
         assert session.closed is True
 
 
+class TestSessionMetadata:
+    """SandboxSession._on_enter publishes session-scoped step metadata.
+
+    Keys are suffixed with the session id so steps that open multiple
+    sandbox sessions don't overwrite each other.
+    """
+
+    def test_logs_flavor_and_dashboard_url_keyed_by_session_id(
+        self,
+    ) -> None:
+        session = _FakeSession(session_id="sb-test-1")
+        session._dashboard_url = lambda: "https://example/sb-test-1"  # type: ignore[method-assign]
+        with patch("zenml.utils.metadata_utils.log_metadata") as log_meta:
+            session._on_enter()
+        from zenml.metadata.metadata_types import Uri
+
+        payload = log_meta.call_args.kwargs["metadata"]
+        assert payload["sandbox.sb-test-1.flavor"] == "fake"
+        assert isinstance(payload["sandbox.sb-test-1.dashboard_url"], Uri)
+
+    def test_two_sessions_produce_disjoint_keys(self) -> None:
+        s1 = _FakeSession(session_id="sb-1")
+        s2 = _FakeSession(session_id="sb-2")
+        s2._dashboard_url = lambda: "https://example/sb-2"  # type: ignore[method-assign]
+        with patch("zenml.utils.metadata_utils.log_metadata") as log_meta:
+            s1._on_enter()
+            s2._on_enter()
+        first = log_meta.call_args_list[0].kwargs["metadata"]
+        second = log_meta.call_args_list[1].kwargs["metadata"]
+        assert "sandbox.sb-1.flavor" in first
+        assert "sandbox.sb-1.flavor" not in second
+        assert "sandbox.sb-2.flavor" in second
+        assert "sandbox.sb-2.dashboard_url" in second
+
+    def test_omits_dashboard_url_when_hook_returns_none(self) -> None:
+        session = _FakeSession(session_id="sb-x")
+        with patch("zenml.utils.metadata_utils.log_metadata") as log_meta:
+            session._on_enter()
+        payload = log_meta.call_args.kwargs["metadata"]
+        assert "sandbox.sb-x.dashboard_url" not in payload
+
+    def test_value_error_swallowed_at_debug(self) -> None:
+        with (
+            patch(
+                "zenml.utils.metadata_utils.log_metadata",
+                side_effect=ValueError("not in a step"),
+            ),
+            patch("zenml.sandboxes.session.logger.debug") as dbg,
+            patch("zenml.sandboxes.session.logger.warning") as warn,
+        ):
+            _FakeSession()._on_enter()
+        dbg.assert_called()
+        warn.assert_not_called()
+
+    def test_unexpected_failure_surfaces_at_warning(self) -> None:
+        with (
+            patch(
+                "zenml.utils.metadata_utils.log_metadata",
+                side_effect=RuntimeError("publish 500"),
+            ),
+            patch("zenml.sandboxes.session.logger.warning") as warn,
+        ):
+            _FakeSession()._on_enter()
+        warn.assert_called()
+
+
 class TestSessionOptionalMethods:
     """Optional methods on SandboxSession raise NotImplementedError by default."""
 
