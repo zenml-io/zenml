@@ -180,9 +180,11 @@ class SandboxSession(ABC):
         """Publishes generic sandbox step metadata.
 
         Hook called from ``__enter__`` before the log-forwarding context
-        opens. Records ``sandbox_session_id``, ``sandbox_flavor``, and
-        (when ``_dashboard_url()`` returns a non-None value)
-        ``sandbox_dashboard_url`` typed as ``Uri`` on the active step.
+        opens. Records ``sandbox.<id>.flavor`` and (when
+        ``_dashboard_url()`` returns a non-None value)
+        ``sandbox.<id>.dashboard_url`` (typed ``Uri``) on the active
+        step. The session id is embedded in the key so steps that open
+        multiple sandbox sessions don't overwrite each other's metadata.
 
         No-ops gracefully when called outside a step context (e.g.
         ad-hoc usage from a script) — ``log_metadata`` raises
@@ -193,13 +195,13 @@ class SandboxSession(ABC):
         from zenml.metadata.metadata_types import MetadataType, Uri
         from zenml.utils.metadata_utils import log_metadata
 
+        prefix = f"sandbox.{self.id}"
         metadata: Dict[str, MetadataType] = {
-            "sandbox_session_id": self.id,
-            "sandbox_flavor": self._parent.flavor,
+            f"{prefix}.flavor": self._parent.flavor,
         }
         url = self._dashboard_url()
         if url:
-            metadata["sandbox_dashboard_url"] = Uri(url)
+            metadata[f"{prefix}.dashboard_url"] = Uri(url)
         try:
             log_metadata(metadata=metadata)
         except ValueError as e:
