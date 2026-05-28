@@ -15,7 +15,10 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Iterator, List, Optional, Tuple
+from typing import TYPE_CHECKING, Iterator, List, Optional, Tuple
+
+if TYPE_CHECKING:
+    from zenml.sandboxes.session import SandboxSession
 
 # Default cap for ``SandboxProcess.collect`` — 1 Mi*characters* per stream
 # (counted via ``len(line)`` on the decoded UTF-8 string, so it's actually
@@ -58,7 +61,15 @@ class SandboxProcess(ABC):
     Output streams are line-delimited iterators of decoded UTF-8 text. A
     trailing line without a newline is yielded once the underlying reader
     closes. Binary-stream consumers should use a different abstraction.
+
+    Flavor subclasses may populate ``_session`` and ``_started_at`` so
+    ``collect()`` can emit a per-exec exit-code + duration marker into
+    the session's sandbox log. Both default to ``None`` for processes
+    constructed outside a session context (rare, mostly test paths).
     """
+
+    _session: Optional["SandboxSession"] = None
+    _started_at: Optional[float] = None
 
     @abstractmethod
     def stdout(self) -> Iterator[str]:
@@ -115,6 +126,11 @@ class SandboxProcess(ABC):
         stdout, stdout_truncated = _drain_capped(self.stdout(), max_chars)
         stderr, stderr_truncated = _drain_capped(self.stderr(), max_chars)
         exit_code = self.wait()
+        if self._session is not None:
+            self._session._log_exec_result(
+                exit_code=exit_code,
+                started_at=self._started_at,
+            )
         return SandboxOutput(
             stdout=stdout,
             stderr=stderr,

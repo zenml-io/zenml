@@ -34,6 +34,7 @@ import shlex
 import shutil
 import subprocess
 import tempfile
+import time
 import uuid
 from typing import Any, Dict, Iterator, List, Optional, Type, Union, cast
 
@@ -268,6 +269,7 @@ class LocalSandboxSession(SandboxSession):
         if env:
             effective_env.update(env)
 
+        started_at = time.time()
         try:
             popen: "subprocess.Popen[str]" = subprocess.Popen(
                 argv,
@@ -282,7 +284,9 @@ class LocalSandboxSession(SandboxSession):
             raise SandboxExecError(
                 f"LocalSandbox exec failed to launch ({type(e).__name__}): {e}"
             ) from e
-        return LocalSandboxProcess(popen, session=self)
+        process = LocalSandboxProcess(popen, session=self)
+        process._started_at = started_at
+        return process
 
     def close(self) -> None:
         """Flushes the sandbox log source and removes the workdir.

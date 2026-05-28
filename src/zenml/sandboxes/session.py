@@ -40,6 +40,7 @@ other.
 
 import logging
 import shlex
+import time
 from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
@@ -354,6 +355,35 @@ class SandboxSession(ABC):
         else:
             display = command
         self._emit_sandbox(f"$ {display}", level=logging.INFO)
+
+    def _log_exec_result(
+        self,
+        *,
+        exit_code: int,
+        started_at: Optional[float] = None,
+    ) -> None:
+        """Records the result of an exec after collect() drains.
+
+        Emits ``✓ exit 0 in 1.3s`` (or ``✗ exit 1 in 0.2s`` for non-zero
+        codes) as a trailing marker so the sandbox log reads like a
+        shell session: command → output → result.
+
+        Levels: success at INFO, failure at WARNING — the dashboard
+        renders the failure rows with their own treatment.
+
+        Args:
+            exit_code: The exit code reported by the sandbox.
+            started_at: Wall-clock start time captured by the flavor
+                when exec'ing. ``None`` skips the duration suffix.
+        """
+        glyph = "✓" if exit_code == 0 else "✗"
+        if started_at is not None:
+            elapsed = time.time() - started_at
+            message = f"{glyph} exit {exit_code} in {elapsed:.1f}s"
+        else:
+            message = f"{glyph} exit {exit_code}"
+        level = logging.INFO if exit_code == 0 else logging.WARNING
+        self._emit_sandbox(message, level=level)
 
     def _wrap_stream(
         self, lines: Iterator[str], *, stream: str = "stdout"
