@@ -100,28 +100,42 @@ def build_agent() -> Agent[AgentDeps, str]:
             "only the Python standard library is available. If you need "
             "scientific packages (numpy, pandas, scipy, ...) install "
             "them first with `pip install --quiet --no-cache-dir <pkgs>` "
-            "via run_shell. You have four tools:\n"
+            "via run_shell.\n"
+            "\n"
+            "CRITICAL: run_python uses `python -c` — it does NOT echo the "
+            "last expression like Jupyter or the REPL. Code like `x, y` "
+            "on the last line evaluates but produces NO output. To see "
+            "ANY value, you MUST call print(...). If a tool call returns "
+            "empty stdout, your code didn't print — wrap your result in "
+            "print() rather than retrying the same code.\n"
+            "\n"
+            "Tools:\n"
             "- run_python(code): runs Python source in a fresh interpreter. "
             "Imports/variables do NOT persist between calls, but files "
             "written to /tmp and installed packages DO persist.\n"
             "- run_shell(command): runs a shell command (bash -c).\n"
             "- list_files(path): lists a directory.\n"
             "- read_file(path): reads a file as text.\n"
-            "Prefer multi-step workflows: produce intermediate artifacts on "
-            "disk, then inspect them with list_files / read_file before "
-            "deciding the next step. Print final answers to stdout."
+            "\n"
+            "Solve each subtask in as few tool calls as possible. Compose "
+            "the full computation into one print()ed script when you can."
         ),
     )
 
     @agent.tool
     def run_python(ctx: RunContext[AgentDeps], code: str) -> CodeResult:
-        """Executes Python code in the sandbox.
+        """Executes Python source via ``python -c`` in the sandbox.
+
+        IMPORTANT: this is NOT a REPL or a Jupyter cell. The last
+        expression of ``code`` is NOT auto-displayed. You MUST call
+        ``print(...)`` explicitly to see ANY output. Empty stdout
+        almost always means missing print(), not a failed run.
 
         Args:
             ctx: PydanticAI run context, carrying the live SandboxSession.
-            code: Python source to execute. Must be self-contained --
-                each call is a fresh interpreter, but ``/tmp`` files
-                persist.
+            code: Self-contained Python source. Each call is a fresh
+                interpreter; ``/tmp`` files and installed packages
+                persist across calls.
 
         Returns:
             Captured stdout, stderr, and exit code.
@@ -183,9 +197,10 @@ _DEFAULT_QUERY = (
     "Simpson's rule with 1000 sub-intervals.\n"
     "3. Find a real root of x^2 - 612 using Newton's method starting "
     "at x0 = 25.\n"
-    "Treat each problem as independent -- no shared inputs, no shared "
-    "files. For each, write Python, run it in the sandbox, and report "
-    "the numerical result with a one-line verification."
+    "Treat each problem as independent — no shared inputs, no shared "
+    "files. For each, write a single self-contained Python script "
+    "that print()s the result, run it once, and report the numerical "
+    "answer with a one-line verification."
 )
 
 
