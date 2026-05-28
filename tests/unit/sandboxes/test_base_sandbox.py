@@ -62,8 +62,17 @@ class _FakeProcess(SandboxProcess):
 class _FakeSession(SandboxSession):
     """Minimal SandboxSession for testing. Only implements `exec` + `close`."""
 
-    def __init__(self, session_id: str = "sess-1") -> None:
-        self.id = session_id
+    def __init__(
+        self,
+        session_id: str = "sess-1",
+        parent: Optional["BaseSandbox"] = None,
+        forward_logs: bool = False,
+    ) -> None:
+        super().__init__(
+            id=session_id,
+            parent=parent or MagicMock(spec=BaseSandbox, flavor="fake"),
+            forward_logs=forward_logs,
+        )
         self.closed = False
 
     def exec(
@@ -77,6 +86,7 @@ class _FakeSession(SandboxSession):
 
     def close(self) -> None:
         self.closed = True
+        self._close_log_ctx()
 
 
 class _FakeSandbox(BaseSandbox):
@@ -126,7 +136,7 @@ class TestStepImageSentinel:
         assert isinstance(STEP_IMAGE, str)
 
     def test_sentinel_value_matches_module_export(self) -> None:
-        from zenml.sandboxes.base_sandbox import STEP_IMAGE as direct
+        from zenml.sandboxes.base import STEP_IMAGE as direct
 
         assert STEP_IMAGE == direct
 
@@ -185,6 +195,56 @@ class TestSessionContextManager:
             assert s is session
             assert session.closed is False
         assert session.closed is True
+
+
+class TestSessionMetadata:
+    """SandboxSession._on_enter publishes generic step metadata."""
+
+    def test_logs_session_id_and_flavor_with_dashboard_url(self) -> None:
+        session = _FakeSession(session_id="sb-test-1")
+        # Override dashboard URL via the hook.
+        session._dashboard_url = lambda: "https://example/sb-test-1"  # type: ignore[method-assign]
+        with patch("zenml.utils.metadata_utils.log_metadata") as log_meta:
+            session._on_enter()
+        from zenml.metadata.metadata_types import Uri
+
+        payload = log_meta.call_args.kwargs["metadata"]
+        assert payload["sandbox_session_id"] == "sb-test-1"
+        assert payload["sandbox_flavor"] == "fake"
+        assert isinstance(payload["sandbox_dashboard_url"], Uri)
+
+    def test_omits_dashboard_url_when_hook_returns_none(self) -> None:
+        session = _FakeSession()
+        with patch("zenml.utils.metadata_utils.log_metadata") as log_meta:
+            session._on_enter()
+        payload = log_meta.call_args.kwargs["metadata"]
+        assert "sandbox_dashboard_url" not in payload
+
+    def test_value_error_is_swallowed_at_debug(self) -> None:
+        # log_metadata raises ValueError outside a step — that's the
+        # expected ad-hoc path, not an error.
+        with (
+            patch(
+                "zenml.utils.metadata_utils.log_metadata",
+                side_effect=ValueError("not in a step"),
+            ),
+            patch("zenml.sandboxes.session.logger.debug") as dbg,
+            patch("zenml.sandboxes.session.logger.warning") as warn,
+        ):
+            _FakeSession()._on_enter()
+        dbg.assert_called()
+        warn.assert_not_called()
+
+    def test_unexpected_failure_surfaces_at_warning(self) -> None:
+        with (
+            patch(
+                "zenml.utils.metadata_utils.log_metadata",
+                side_effect=RuntimeError("publish 500"),
+            ),
+            patch("zenml.sandboxes.session.logger.warning") as warn,
+        ):
+            _FakeSession()._on_enter()
+        warn.assert_called()
 
 
 class TestSessionOptionalMethods:
@@ -360,7 +420,7 @@ class TestResolveForwardLogs:
 
 class TestForwardLines:
     def test_yields_lines_unchanged(self) -> None:
-        with patch("zenml.sandboxes.base_sandbox.logger") as log:
+        with patch("zenml.sandboxes.base.logger") as log:
             out = list(
                 BaseSandbox.forward_lines(
                     iter(["a\n", "b\n"]), stream="stdout"
@@ -371,7 +431,7 @@ class TestForwardLines:
             log.info.assert_any_call("b")
 
     def test_stderr_goes_to_warning(self) -> None:
-        with patch("zenml.sandboxes.base_sandbox.logger") as log:
+        with patch("zenml.sandboxes.base.logger") as log:
             list(BaseSandbox.forward_lines(iter(["oops\n"]), stream="stderr"))
             log.warning.assert_called_with("oops")
 

@@ -32,11 +32,14 @@ from typing import (
     List,
     Literal,
     Optional,
+    Type,
     Union,
     cast,
 )
 
 from pydantic import Field
+
+from zenml.config.base_settings import BaseSettings
 
 from zenml.integrations.modal.flavors import (
     ModalSandboxConfig,
@@ -215,110 +218,40 @@ class ModalSandboxSession(SandboxSession):
         self,
         sandbox: Any,
         *,
-        parent: Optional["BaseSandbox"] = None,
+        parent: "BaseSandbox",
         forward_logs: bool = False,
     ) -> None:
         """Initializes the session wrapper.
 
         Args:
             sandbox: The live Modal ``Sandbox`` object.
-            parent: The owning ``BaseSandbox`` component. Used to open
-                the log-forwarding ``LoggingContext`` when entering the
-                Session as a context manager. Pass ``None`` for the
-                ``attach()`` / ``restore()`` paths where no parent is
-                relevant.
+            parent: The owning ``BaseSandbox`` component.
             forward_logs: If True, sandbox stdout/stderr is auto-routed
-                into ZenML step logs as a per-session log source. The
-                ``LoggingContext`` is opened on ``__enter__`` and closed
-                on ``__exit__``; outside a ``with`` block the flag has
-                no effect.
+                into ZenML step logs as a per-session log source.
         """
+        super().__init__(
+            id=sandbox.object_id,
+            parent=parent,
+            forward_logs=forward_logs,
+        )
         self._sandbox = sandbox
-        self.id = sandbox.object_id
-        self._parent = parent
-        self._forward_logs = forward_logs
-        self._log_ctx: Any = None
 
-    def __enter__(self) -> "ModalSandboxSession":
-        """Logs step metadata and opens the log-forwarding context.
-
-        Metadata is logged BEFORE the log-forwarding context opens so a
-        failure in ``_log_step_metadata`` can't leak ``_log_ctx``.
-
-        Idempotent against double-entry: if the log context is already
-        open (e.g. nested ``with``), we don't open a second one — that
-        would leak the first.
-
-        Caveat: step metadata + log forwarding only fire when the
-        Session is used as a context manager. ``session = create_session();
-        session.close()`` without a ``with`` block bypasses both.
+    def _dashboard_url(self) -> Optional[str]:
+        """Returns the Modal sandbox's dashboard URL, or ``None``.
 
         Returns:
-            This session.
+            URL string from ``Sandbox.get_dashboard_url()`` (older SDKs
+            without this API return ``None``).
         """
-        # Log metadata first so a failure here can't leak _log_ctx below.
-        self._log_step_metadata()
-        if (
-            self._forward_logs
-            and self._parent is not None
-            and self._log_ctx is None
-        ):
-            self._log_ctx = self._parent.forward_session_logs(self.id)
-            self._log_ctx.__enter__()
-        return self
-
-    def _log_step_metadata(self) -> None:
-        """Records sandbox session id + Modal dashboard URL on the current step.
-
-        Silently no-ops when called outside a step context (e.g. from
-        a script that uses the sandbox directly) — that path raises
-        ``ValueError`` from ``log_metadata`` and is the expected ad-hoc
-        case. Any other failure (server publish error, payload bug) is
-        logged at WARNING so it's debuggable rather than silently
-        swallowed.
-
-        The dashboard URL is typed as ``Uri`` so the ZenML dashboard
-        renders it as a clickable link rather than plain text.
-        """
-        from zenml.metadata.metadata_types import MetadataType, Uri
-        from zenml.utils.metadata_utils import log_metadata
-
-        metadata: Dict[str, "MetadataType"] = {
-            "sandbox_session_id": self.id,
-            "sandbox_flavor": "modal",
-        }
         try:
             url = self._sandbox.get_dashboard_url()
-            if url:
-                metadata["sandbox_dashboard_url"] = Uri(url)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             # Older Modal SDKs may not expose get_dashboard_url; tolerable.
             logger.debug(
                 "Could not resolve Modal sandbox dashboard URL: %s", e
             )
-        try:
-            log_metadata(metadata=metadata)
-        except ValueError as e:
-            # log_metadata raises ValueError when invoked outside a step
-            # context (e.g. ad-hoc Client().active_stack.sandbox usage).
-            # That's expected here; anything else escalates below.
-            logger.debug(
-                "Skipping sandbox step metadata (no active step): %s", e
-            )
-        except Exception as e:
-            # Real failure (network error, serialization bug, etc.). Don't
-            # break sandbox usage, but make it visible so it's debuggable.
-            logger.warning("Failed to publish sandbox step metadata: %s", e)
-
-    def __exit__(self, *args: Any) -> None:
-        """Releases the handle (which also tears down the log context).
-
-        Args:
-            *args: Exception info; ignored by ``close()`` (matches the
-                base ``SandboxSession`` contract that ``close()`` is
-                best-effort).
-        """
-        self.close()
+            return None
+        return cast(Optional[str], url)
 
     def exec(
         self,
@@ -412,19 +345,13 @@ class ModalSandboxSession(SandboxSession):
     def close(self) -> None:
         """Releases the local handle and tears down the log-forwarding context.
 
-        Modal's ``Sandbox`` itself is a stateless client handle (no socket
-        to drop), but if log forwarding was opened via ``__enter__`` we
-        close that ``LoggingContext`` here. Idempotent — safe to call
-        multiple times, and safe to call outside a ``with`` block.
-
-        The Sandbox keeps running on Modal until its TTL expires; use
-        ``destroy()`` to force-stop immediately.
+        Modal's ``Sandbox`` is a stateless client handle (no socket to
+        drop). Idempotent — safe to call multiple times, and safe to
+        call outside a ``with`` block. The Sandbox keeps running on
+        Modal until its TTL expires; use ``destroy()`` to force-stop
+        immediately.
         """
-        if self._log_ctx is not None:
-            try:
-                self._log_ctx.__exit__(None, None, None)
-            finally:
-                self._log_ctx = None
+        self._close_log_ctx()
 
     def destroy(self) -> None:
         """Terminates the Sandbox on Modal."""
@@ -486,6 +413,15 @@ class ModalSandbox(BaseSandbox):
         """
         return cast(ModalSandboxConfig, self._config)
 
+    @property
+    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+        """Settings class — Modal extends the base with gpu/cpu/memory etc.
+
+        Returns:
+            ``ModalSandboxSettings``.
+        """
+        return ModalSandboxSettings
+
     def _export_modal_tokens(self) -> None:
         """Exports config-carried Modal credentials into ``os.environ``.
 
@@ -520,35 +456,6 @@ class ModalSandbox(BaseSandbox):
             )
         return self._app
 
-    def _settings(
-        self, override: Optional[BaseSandboxSettings]
-    ) -> ModalSandboxSettings:
-        """Effective settings = config defaults layered with the override.
-
-        Component-level defaults come from ``self.config`` (which inherits
-        from ``ModalSandboxSettings``, so gpu/cpu/memory_mb/region/cloud +
-        the base sandbox settings all flow through). Per-step overrides
-        win on a per-field basis (only fields explicitly set on the
-        override are applied).
-
-        Args:
-            override: Optional per-step settings.
-
-        Returns:
-            The effective ``ModalSandboxSettings`` for this Session.
-        """
-        if override is None:
-            override = self.pull_step_settings()
-        base = self.config.model_dump(
-            include=set(ModalSandboxSettings.model_fields.keys())
-        )
-        if override is not None:
-            # ``exclude_unset=True`` so we only apply fields the caller
-            # actually set — fixes the bug where Settings defaults
-            # silently overwrote Config defaults.
-            base.update(override.model_dump(exclude_unset=True))
-        return ModalSandboxSettings(**base)
-
     def create_session(
         self, settings: Optional[BaseSandboxSettings] = None
     ) -> SandboxSession:
@@ -563,7 +470,7 @@ class ModalSandbox(BaseSandbox):
         self._export_modal_tokens()
         import modal
 
-        eff = self._settings(settings)
+        eff = cast(ModalSandboxSettings, self.effective_settings(settings))
         image = _resolve_image(eff.base_image, self.config.default_image)
         env = self._resolve_session_environment(eff)
 
@@ -591,7 +498,7 @@ class ModalSandbox(BaseSandbox):
         return ModalSandboxSession(
             sandbox,
             parent=self,
-            forward_logs=self.resolve_forward_logs_to_step(eff),
+            forward_logs=self._resolve_forward_logs(eff),
         )
 
     def attach(self, session_id: str) -> SandboxSession:
@@ -623,9 +530,7 @@ class ModalSandbox(BaseSandbox):
         return ModalSandboxSession(
             sandbox,
             parent=self,
-            forward_logs=self.resolve_forward_logs_to_step(
-                self._settings(None)
-            ),
+            forward_logs=self._resolve_forward_logs(),
         )
 
     def restore(self, snapshot: BaseSandboxSnapshot) -> SandboxSession:
@@ -657,7 +562,5 @@ class ModalSandbox(BaseSandbox):
         return ModalSandboxSession(
             sandbox,
             parent=self,
-            forward_logs=self.resolve_forward_logs_to_step(
-                self._settings(None)
-            ),
+            forward_logs=self._resolve_forward_logs(),
         )

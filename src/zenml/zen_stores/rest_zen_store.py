@@ -76,6 +76,7 @@ from zenml.constants import (
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     DISABLE_HEARTBEAT,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
+    EVENTS,
     FLAVORS,
     HEARTBEAT,
     INFO,
@@ -284,6 +285,8 @@ from zenml.models import (
     StepRunRequest,
     StepRunResponse,
     StepRunUpdate,
+    StreamBatchRequest,
+    StreamBatchResponse,
     TagFilter,
     TagRequest,
     TagResourceRequest,
@@ -2401,6 +2404,23 @@ class RestZenStore(BaseZenStore):
         self.put(
             path=f"{RUNS}/{str(run_id)}{DISABLE_HEARTBEAT}",
         )
+
+    def publish_run_events(
+        self, pipeline_run_id: UUID, batch: StreamBatchRequest
+    ) -> StreamBatchResponse:
+        """Publish a batch of live events to a pipeline run's stream.
+
+        Args:
+            pipeline_run_id: The ID of the run the events belong to.
+            batch: The batch of events to publish.
+
+        Returns:
+            The server-side ingest response.
+        """
+        response_body = self.post(
+            f"{RUNS}/{pipeline_run_id}{EVENTS}", body=batch
+        )
+        return StreamBatchResponse.model_validate(response_body)
 
     def create_run_wait_condition(
         self, run_wait_condition: RunWaitConditionRequest

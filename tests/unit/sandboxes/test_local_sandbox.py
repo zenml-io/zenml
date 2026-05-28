@@ -270,12 +270,12 @@ class TestSettingsCoercion:
     def test_base_settings_coerced_to_local(self) -> None:
         sandbox = _make_local_sandbox()
         base = BaseSandboxSettings(environment={"K": "v"})
-        eff = sandbox._effective_settings(base)
+        eff = sandbox.effective_settings(base)
         assert isinstance(eff, LocalSandboxSettings)
         assert eff.environment == {"K": "v"}
 
     def test_none_returns_defaults(self) -> None:
-        eff = _make_local_sandbox()._effective_settings(None)
+        eff = _make_local_sandbox().effective_settings(None)
         assert eff.base_image is None
         assert eff.environment == {}
 
