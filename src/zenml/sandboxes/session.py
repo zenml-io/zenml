@@ -18,9 +18,8 @@ Sessions are created by ``BaseSandbox.create_session()``, accept many
 handle, sandbox keeps running on the provider until its TTL) or
 ``destroy()`` (terminates immediately).
 
-Sandbox-log forwarding is opt-in via ``forward_logs`` and writes
-**only** the actual sandbox execution surface to a dedicated
-``sandbox:<id>`` log source:
+Sandbox-log forwarding writes **only** the actual sandbox execution
+surface to a dedicated ``sandbox:<id>`` log source:
 
 * the command line on each ``exec`` call (``$ python -c ...``)
 * the sandbox process's stdout lines (level INFO)
@@ -92,25 +91,20 @@ class SandboxSession(ABC):
         *,
         id: str,
         parent: "BaseSandbox",
-        forward_logs: bool = False,
     ) -> None:
         """Initializes the session lifecycle state.
 
         Args:
             id: Stable session identifier (flavor decides the format).
             parent: The owning ``BaseSandbox`` component.
-            forward_logs: If True, the sandbox's exec command line plus
-                process stdout/stderr lines land in a dedicated
-                ``sandbox:<id>`` log source on the active step.
         """
         self.id = id
         self._parent = parent
-        self._forward_logs = forward_logs
         self._log_store: Optional["BaseLogStore"] = None
         self._log_origin: Optional["BaseLogStoreOrigin"] = None
         self._log_response: Optional["LogsResponse"] = None
-        # Latched off when origin setup fails so we don't retry every
-        # exec — keeps the failure noisy once, then quiet.
+        # Latched off when origin setup fails so we don't keep retrying
+        # every emit — keeps the failure noisy once, then quiet.
         self._log_forwarding_disabled = False
 
     @abstractmethod
@@ -263,10 +257,10 @@ class SandboxSession(ABC):
         logger calls don't leak into the sandbox source.
 
         Returns:
-            The origin to emit to, or ``None`` when forwarding is
-            disabled (or setup failed for this session).
+            The origin to emit to, or ``None`` when setup has failed
+            for this session (latched after first failure).
         """
-        if not self._forward_logs or self._log_forwarding_disabled:
+        if self._log_forwarding_disabled:
             return None
         if self._log_origin is not None:
             return self._log_origin
@@ -378,7 +372,7 @@ class SandboxSession(ABC):
         Yields:
             Each line from the source iterator, unchanged.
         """
-        if not self._forward_logs or self._log_forwarding_disabled:
+        if self._log_forwarding_disabled:
             yield from lines
             return
         level = logging.INFO if stream == "stdout" else logging.WARNING

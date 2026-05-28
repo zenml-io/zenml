@@ -67,12 +67,10 @@ class _FakeSession(SandboxSession):
         self,
         session_id: str = "sess-1",
         parent: Optional["BaseSandbox"] = None,
-        forward_logs: bool = False,
     ) -> None:
         super().__init__(
             id=session_id,
             parent=parent or MagicMock(spec=BaseSandbox, flavor="fake"),
-            forward_logs=forward_logs,
         )
         self.closed = False
 
@@ -165,7 +163,6 @@ class TestSettings:
         assert s.environment == {}
         assert s.copy_local_env is False
         assert s.timeout_seconds is None
-        assert s.forward_logs_to_step is None
 
     def test_step_image_sentinel_accepted(self) -> None:
         s = BaseSandboxSettings(base_image=STEP_IMAGE)
@@ -408,33 +405,6 @@ class TestResolveSessionEnvironment:
         assert merged["DEBUG"] == "from-step"
 
 
-class TestResolveForwardLogs:
-    def test_explicit_true(self) -> None:
-        sb = _make_sandbox()
-        s = BaseSandboxSettings(forward_logs_to_step=True)
-        assert sb.resolve_forward_logs_to_step(s) is True
-
-    def test_explicit_false(self) -> None:
-        sb = _make_sandbox()
-        s = BaseSandboxSettings(forward_logs_to_step=False)
-        assert sb.resolve_forward_logs_to_step(s) is False
-
-    def test_none_defaults_true_for_step_image(self) -> None:
-        sb = _make_sandbox()
-        s = BaseSandboxSettings(base_image=STEP_IMAGE)
-        assert sb.resolve_forward_logs_to_step(s) is True
-
-    def test_none_defaults_false_for_other_images(self) -> None:
-        sb = _make_sandbox()
-        assert sb.resolve_forward_logs_to_step(BaseSandboxSettings()) is False
-        assert (
-            sb.resolve_forward_logs_to_step(
-                BaseSandboxSettings(base_image="python:3.11-slim")
-            )
-            is False
-        )
-
-
 class TestSandboxLogEmission:
     """SandboxSession routes command + stdout + stderr straight to a per-session
     log origin -- bypassing the global ``LoggingContext`` stack so the
@@ -450,7 +420,7 @@ class TestSandboxLogEmission:
         log_store + origin and return a session that will emit straight
         into them.
         """
-        session = _FakeSession(forward_logs=True)
+        session = _FakeSession()
         session._log_store = MagicMock()
         session._log_origin = MagicMock()
         return session
@@ -468,9 +438,7 @@ class TestSandboxLogEmission:
 
     def test_wrap_stream_emits_each_line(self) -> None:
         session = self._patched_session()
-        out = list(
-            session._wrap_stream(iter(["a\n", "b\n"]), stream="stdout")
-        )
+        out = list(session._wrap_stream(iter(["a\n", "b\n"]), stream="stdout"))
         assert out == ["a\n", "b\n"]  # passthrough preserved
         records = [
             call.kwargs["record"]
@@ -486,16 +454,17 @@ class TestSandboxLogEmission:
         assert record.levelno == logging.WARNING
         assert record.getMessage() == "oops"
 
-    def test_wrap_stream_passthrough_when_forwarding_off(self) -> None:
-        session = _FakeSession(forward_logs=False)
+    def test_wrap_stream_passthrough_after_latch(self) -> None:
+        """When the origin setup has latched off, lines pass through unmodified."""
+        session = _FakeSession()
+        session._log_forwarding_disabled = True
         out = list(session._wrap_stream(iter(["a", "b"]), stream="stdout"))
         assert out == ["a", "b"]
-        # no log_store was ever attached -> nothing emitted
         assert session._log_store is None
 
     def test_emit_failure_latches_forwarding_off(self) -> None:
         """If origin setup fails once, we don't retry on every emit."""
-        session = _FakeSession(forward_logs=True)
+        session = _FakeSession()
         # Patch _ensure_log_origin to fail on first call by raising
         # inside the lazy registration; the helper catches and latches.
         with patch.object(

@@ -206,7 +206,6 @@ class LocalSandboxSession(SandboxSession):
         env: Dict[str, str],
         *,
         parent: "BaseSandbox",
-        forward_logs: bool = False,
     ) -> None:
         """Initializes the local Session.
 
@@ -214,13 +213,10 @@ class LocalSandboxSession(SandboxSession):
             workdir: Path to the per-session working directory.
             env: Resolved env vars to set for every exec'd subprocess.
             parent: The owning ``BaseSandbox`` component.
-            forward_logs: If True, sandbox stdout/stderr is auto-routed
-                into ZenML step logs as a per-session log source.
         """
         super().__init__(
             id=f"local-{uuid.uuid4().hex[:12]}",
             parent=parent,
-            forward_logs=forward_logs,
         )
         self._workdir = workdir
         self._env = env
@@ -369,7 +365,6 @@ class LocalSandbox(BaseSandbox):
             workdir=workdir,
             env=env,
             parent=self,
-            forward_logs=self.resolve_forward_logs_to_step(eff),
         )
 
 
