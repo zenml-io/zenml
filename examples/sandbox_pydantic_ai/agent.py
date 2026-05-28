@@ -30,6 +30,7 @@ from dataclasses import dataclass
 
 from pydantic import BaseModel
 from pydantic_ai import Agent, RunContext
+from pydantic_ai.usage import UsageLimits
 
 from zenml.client import Client
 from zenml.sandboxes import SandboxSession
@@ -286,5 +287,13 @@ def run_agent(query: str = _DEFAULT_QUERY) -> str:
 
     agent = build_agent()
     with sandbox.create_session() as session:
-        result = agent.run_sync(query, deps=AgentDeps(session=session))
+        result = agent.run_sync(
+            query,
+            deps=AgentDeps(session=session),
+            # PydanticAI defaults to 50 LLM requests per run; a
+            # multi-step tool-using agent can chew through that on a
+            # rough day (retries, package installs, etc.). Lift the cap
+            # so the example doesn't UsageLimitExceeded prematurely.
+            usage_limits=UsageLimits(request_limit=200),
+        )
     return result.output
