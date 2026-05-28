@@ -509,7 +509,7 @@ class TestModalLogForwarding:
         with (
             _patch_modal() as modal_mock,
             patch(
-                "zenml.orchestrators.containerized_orchestrator.ContainerizedOrchestrator.get_active_step_image",
+                "zenml.sandboxes.base.BaseSandbox.resolve_step_image",
                 return_value="my-registry/step-image:v1",
             ),
         ):
@@ -531,7 +531,7 @@ class TestModalLogForwarding:
         with (
             _patch_modal() as modal_mock,
             patch(
-                "zenml.orchestrators.containerized_orchestrator.ContainerizedOrchestrator.get_active_step_image",
+                "zenml.sandboxes.base.BaseSandbox.resolve_step_image",
                 return_value=None,
             ),
         ):

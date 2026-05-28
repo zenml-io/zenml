@@ -45,9 +45,6 @@ from zenml.integrations.modal.flavors import (
     ModalSandboxSettings,
 )
 from zenml.logger import get_logger
-from zenml.orchestrators.containerized_orchestrator import (
-    ContainerizedOrchestrator,
-)
 from zenml.sandboxes import (
     STEP_IMAGE,
     BaseSandbox,
@@ -384,7 +381,7 @@ def _resolve_image(
     if base_image is None:
         return modal.Image.from_registry(default_image)
     if base_image == STEP_IMAGE:
-        step_image = ContainerizedOrchestrator.get_active_step_image()
+        step_image = BaseSandbox.resolve_step_image()
         if not step_image:
             logger.warning(
                 "STEP_IMAGE requested but the current step is not "
