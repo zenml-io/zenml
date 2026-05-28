@@ -354,7 +354,7 @@ class LocalSandbox(BaseSandbox):
         """
         logger.warning(_NO_ISOLATION_WARNING)
 
-        eff = cast(LocalSandboxSettings, self.effective_settings(settings))
+        eff = cast(LocalSandboxSettings, self.resolve_settings(settings))
         if eff.base_image not in (None, STEP_IMAGE):
             logger.warning(
                 "LocalSandbox ignores base_image=%r — there is no image "

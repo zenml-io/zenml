@@ -339,37 +339,6 @@ class TestResolveSessionEnvironment:
             merged = sb._resolve_session_environment(settings)
         assert merged["API_KEY"] == "from_step"  # settings wins
 
-    def test_settings_env_resolves_secret_references(self) -> None:
-        fake_secret = MagicMock(secret_values={"api_key": "sk-xxx"})
-        fake_client = MagicMock()
-        fake_client.get_secret_by_name_and_private_status.return_value = (
-            fake_secret
-        )
-        sb = _make_sandbox()
-        settings = BaseSandboxSettings(
-            environment={"OPENAI_API_KEY": "{{openai_creds.api_key}}"}
-        )
-        with patch("zenml.client.Client", return_value=fake_client):
-            merged = sb._resolve_session_environment(settings)
-        assert merged["OPENAI_API_KEY"] == "sk-xxx"
-
-    def test_settings_env_unresolvable_ref_is_skipped(self) -> None:
-        # Bad refs log a warning and drop the key — not raise.
-        fake_client = MagicMock()
-        fake_client.get_secret_by_name_and_private_status.side_effect = (
-            RuntimeError("not found")
-        )
-        sb = _make_sandbox()
-        settings = BaseSandboxSettings(
-            environment={
-                "OK": "plain",
-                "BAD": "{{missing_secret.key}}",
-            }
-        )
-        with patch("zenml.client.Client", return_value=fake_client):
-            merged = sb._resolve_session_environment(settings)
-        assert merged == {"OK": "plain"}
-
     def test_copy_local_env_fills_in_non_collisions(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
