@@ -21,7 +21,6 @@ returned as a ``LogsReader`` iterable that yields byte chunks (not lines); we
 line-buffer it to satisfy ``SandboxProcess.stdout()`` / ``stderr()`` contracts.
 """
 
-import os
 import shlex
 import time
 from typing import (
@@ -382,7 +381,7 @@ def _resolve_image(
     if base_image is None:
         return modal.Image.from_registry(default_image)
     if base_image == STEP_IMAGE:
-        step_image = _resolve_step_image()
+        step_image = BaseSandbox.resolve_step_image()
         if not step_image:
             logger.warning(
                 "STEP_IMAGE requested but the current step is not "
@@ -393,38 +392,6 @@ def _resolve_image(
             return modal.Image.from_registry(default_image)
         return modal.Image.from_registry(step_image)
     return modal.Image.from_registry(base_image)
-
-
-def _resolve_step_image() -> Optional[str]:
-    """Returns the image URI of the currently-running step, if any.
-
-    Looks up the snapshot attached to the active pipeline run via
-    ``StepContext`` and delegates to ``ContainerizedOrchestrator.get_image``
-    (the same helper the orchestrator uses to pick images at submit time).
-    Returns ``None`` when there's no step context, no snapshot, no build,
-    or the active orchestrator isn't containerized.
-
-    Returns:
-        The image URI for the current step, or ``None``.
-    """
-    from zenml.orchestrators.containerized_orchestrator import (
-        ContainerizedOrchestrator,
-    )
-    from zenml.steps.step_context import StepContext
-
-    ctx = StepContext.get()
-    if ctx is None:
-        return None
-    snapshot = ctx.pipeline_run.snapshot
-    if snapshot is None or snapshot.build is None:
-        return None
-    try:
-        return ContainerizedOrchestrator.get_image(
-            snapshot=snapshot, step_name=ctx.step_name
-        )
-    except Exception as e:  # noqa: BLE001
-        logger.debug("Could not resolve step image: %s", e)
-        return None
 
 
 class ModalSandbox(BaseSandbox):
@@ -452,25 +419,6 @@ class ModalSandbox(BaseSandbox):
         """
         return ModalSandboxSettings
 
-    def _export_modal_tokens(self) -> None:
-        """Exports config-carried Modal credentials into ``os.environ``.
-
-        Modal authenticates from ``~/.modal.toml`` or the
-        ``MODAL_TOKEN_ID`` / ``MODAL_TOKEN_SECRET`` env vars. For step
-        processes running in remote orchestrators (Kubernetes,
-        SageMaker, etc.) the local toml isn't available, so we let
-        users attach the tokens to the component config (as
-        ``SecretField``s) and export them here just before importing
-        modal. Safe to call multiple times; no-op when both fields are
-        unset.
-        """
-        token_id = self.config.token_id
-        token_secret = self.config.token_secret
-        if token_id:
-            os.environ.setdefault("MODAL_TOKEN_ID", token_id)
-        if token_secret:
-            os.environ.setdefault("MODAL_TOKEN_SECRET", token_secret)
-
     def _get_app(self) -> Any:
         """Returns this component's Modal ``App``, looking it up once and caching.
 
@@ -478,7 +426,6 @@ class ModalSandbox(BaseSandbox):
             The Modal App.
         """
         if self._app is None:
-            self._export_modal_tokens()
             import modal
 
             self._app = modal.App.lookup(
@@ -514,20 +461,16 @@ class ModalSandbox(BaseSandbox):
         import modal
 
         from zenml.config.resource_settings import ByteUnit
+        from zenml.integrations.modal.step_operators.modal_step_operator import (
+            get_gpu_values,
+        )
 
         resource_settings = self._active_resource_settings()
         memory_mb = resource_settings.get_memory(ByteUnit.MB)
-
-        # GPU value combines the Modal-specific type ("A100", "H100", ...)
-        # with the count from ResourceSettings ("A100:2"). Mirrors what
-        # ModalStepOperator does so the two components stay consistent.
-        gpu_values: Optional[str] = None
-        if eff.gpu:
-            gpu_values = (
-                f"{eff.gpu}:{resource_settings.gpu_count}"
-                if resource_settings.gpu_count
-                else eff.gpu
-            )
+        # ModalSandboxSettings inherits from ModalStepOperatorSettings, so
+        # get_gpu_values accepts it directly — single source of truth for
+        # the "<type>:<count>" composition shared with the step operator.
+        gpu_values = get_gpu_values(eff, resource_settings)
 
         kwargs: Dict[str, Any] = {"app": self._get_app()}
         if with_env:
@@ -584,7 +527,6 @@ class ModalSandbox(BaseSandbox):
         Returns:
             A ``ModalSandboxSession`` wrapping the live Modal Sandbox.
         """
-        self._export_modal_tokens()
         import modal
 
         eff = cast(ModalSandboxSettings, self.resolve_settings(settings))
@@ -609,9 +551,6 @@ class ModalSandbox(BaseSandbox):
                 (terminated or unknown). Wraps the underlying Modal error
                 so callers get a stable exception type with a clear message.
         """
-        # Export tokens before any Modal call, otherwise users on
-        # remote orchestrators with no local ~/.modal.toml can't attach.
-        self._export_modal_tokens()
         import modal
 
         try:
@@ -643,7 +582,6 @@ class ModalSandbox(BaseSandbox):
             RuntimeError: If Modal can't load the Image (e.g. id GC'd).
         """
         self._validate_snapshot_provider(snapshot)
-        self._export_modal_tokens()
         import modal
 
         eff = cast(ModalSandboxSettings, self.resolve_settings(None))

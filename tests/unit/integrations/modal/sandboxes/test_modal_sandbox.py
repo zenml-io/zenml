@@ -177,26 +177,25 @@ class TestModalSnapshot:
 
 
 # ---------------------------------------------------------------------------
-# Materializer registration via ModalIntegration.activate()
+# Generic PydanticMaterializer handles ModalSandboxSnapshot via MRO; no
+# dedicated materializer needed.
 # ---------------------------------------------------------------------------
 
 
-class TestMaterializerRegistration:
-    def test_activate_registers_snapshot_materializer(self) -> None:
-        from zenml.integrations.modal import ModalIntegration
-        from zenml.integrations.modal.materializers import (
-            ModalSandboxSnapshotMaterializer,
-        )
+class TestSnapshotMaterializationPath:
+    def test_pydantic_materializer_resolved_for_snapshot(self) -> None:
         from zenml.materializers.materializer_registry import (
             materializer_registry,
         )
-
-        ModalIntegration.activate()
-        # The registry resolves the type via direct lookup, not MRO.
-        resolved = materializer_registry.materializer_types.get(
-            ModalSandboxSnapshot
+        from zenml.materializers.pydantic_materializer import (
+            PydanticMaterializer,
         )
-        assert resolved is ModalSandboxSnapshotMaterializer
+
+        # No explicit registration: the registry walks the MRO from
+        # ModalSandboxSnapshot -> BaseSandboxSnapshot -> BaseModel and
+        # finds PydanticMaterializer's BaseModel binding.
+        resolved = materializer_registry[ModalSandboxSnapshot]
+        assert resolved is PydanticMaterializer
 
 
 # ---------------------------------------------------------------------------
@@ -510,7 +509,7 @@ class TestModalLogForwarding:
         with (
             _patch_modal() as modal_mock,
             patch(
-                "zenml.integrations.modal.sandboxes.modal_sandbox._resolve_step_image",
+                "zenml.sandboxes.base.BaseSandbox.resolve_step_image",
                 return_value="my-registry/step-image:v1",
             ),
         ):
@@ -532,7 +531,7 @@ class TestModalLogForwarding:
         with (
             _patch_modal() as modal_mock,
             patch(
-                "zenml.integrations.modal.sandboxes.modal_sandbox._resolve_step_image",
+                "zenml.sandboxes.base.BaseSandbox.resolve_step_image",
                 return_value=None,
             ),
         ):
@@ -547,88 +546,6 @@ class TestModalLogForwarding:
         modal_mock.Image.from_registry.assert_called_with(
             ModalSandboxConfig().default_image
         )
-
-
-class TestExportModalTokens:
-    """ModalSandbox._export_modal_tokens copies SecretField values to env."""
-
-    def _build_sandbox_with_tokens(
-        self, *, token_id: str = "tk-1", token_secret: str = "ts-1"
-    ) -> ModalSandbox:
-        return ModalSandbox(
-            name="test-modal",
-            id=uuid4(),
-            config=ModalSandboxConfig(
-                token_id=token_id, token_secret=token_secret
-            ),
-            flavor="modal",
-            type=StackComponentType.SANDBOX,
-            user=None,
-            created=datetime.now(),
-            updated=datetime.now(),
-            environment={},
-            secrets=[],
-        )
-
-    def test_exports_both_when_set(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        monkeypatch.delenv("MODAL_TOKEN_ID", raising=False)
-        monkeypatch.delenv("MODAL_TOKEN_SECRET", raising=False)
-        self._build_sandbox_with_tokens()._export_modal_tokens()
-        import os
-
-        assert os.environ["MODAL_TOKEN_ID"] == "tk-1"
-        assert os.environ["MODAL_TOKEN_SECRET"] == "ts-1"
-
-    def test_does_not_clobber_already_set_env(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        # setdefault semantics: a developer's existing local
-        # ~/.modal.toml-derived token wins over a config-carried one.
-        monkeypatch.setenv("MODAL_TOKEN_ID", "preexisting")
-        monkeypatch.delenv("MODAL_TOKEN_SECRET", raising=False)
-        self._build_sandbox_with_tokens()._export_modal_tokens()
-        import os
-
-        assert os.environ["MODAL_TOKEN_ID"] == "preexisting"
-        assert os.environ["MODAL_TOKEN_SECRET"] == "ts-1"
-
-    def test_noop_when_both_unset(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        monkeypatch.delenv("MODAL_TOKEN_ID", raising=False)
-        monkeypatch.delenv("MODAL_TOKEN_SECRET", raising=False)
-        ModalSandbox(
-            name="t",
-            id=uuid4(),
-            config=ModalSandboxConfig(),
-            flavor="modal",
-            type=StackComponentType.SANDBOX,
-            user=None,
-            created=datetime.now(),
-            updated=datetime.now(),
-            environment={},
-            secrets=[],
-        )._export_modal_tokens()
-        import os
-
-        assert "MODAL_TOKEN_ID" not in os.environ
-        assert "MODAL_TOKEN_SECRET" not in os.environ
-
-    def test_attach_exports_tokens(self) -> None:
-        # Remote orchestrators reattach via .attach(); without the
-        # token export the modal.Sandbox.from_id call would fail.
-        with _patch_modal() as modal_mock:
-            modal_mock.Sandbox.from_id.return_value = MagicMock(
-                object_id="sb_xyz"
-            )
-            sandbox = self._build_sandbox_with_tokens(token_id="attach-tk")
-            import os
-
-            os.environ.pop("MODAL_TOKEN_ID", None)
-            sandbox.attach("sb_xyz")
-            assert os.environ["MODAL_TOKEN_ID"] == "attach-tk"
 
 
 class TestModalDashboardUrl:
