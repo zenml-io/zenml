@@ -1,0 +1,9 @@
+campaign:
+  name: dev-oracle-sandbox
+  dataset_path: datasets/mini_harbor
+  agents:
+    - oracle
+  models: []
+  # env_provider is ignored: the substrate is the active stack's ZenML
+  # Sandbox component, not a Harbor env provider.
+  env_provider: ~

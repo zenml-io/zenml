@@ -1,0 +1,4 @@
+[task]
+name = "mini_harbor/create-file"
+description = "Create output.txt containing 'hello world'"
+type = "coding"

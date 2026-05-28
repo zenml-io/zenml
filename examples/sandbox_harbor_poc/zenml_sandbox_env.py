@@ -7,7 +7,7 @@ ZenML stack:
     Harbor trial
       -> ZenMLSandboxEnvironment (this file)
         -> Client().active_stack.sandbox.create_session()
-          -> Modal today; Agent Substrate / GKE Agent Sandbox later
+          -> the Sandbox flavor on your active stack
 
 ``start`` opens a ``SandboxSession``, ``exec`` runs a command and
 wraps the output in Harbor's ``ExecResult``, ``upload_file`` /
@@ -22,6 +22,7 @@ Consumed by ``run.py`` via ``JobConfig.environment.import_path``.
 from __future__ import annotations
 
 import asyncio
+import re
 import shlex
 import tarfile
 import tempfile
@@ -38,6 +39,44 @@ from zenml.sandboxes import BaseSandboxSettings, SandboxSession
 logger = get_logger(__name__)
 
 
+def _parse_dockerfile(text: str) -> list[tuple[str, str]]:
+    """Parse a Dockerfile into ordered ``(INSTRUCTION, value)`` pairs.
+
+    A deliberately small parser (no ``dockerfile_parse`` dependency): it
+    joins ``\\`` line continuations, drops blank lines and comments, and
+    splits each logical line into its instruction keyword and remainder.
+    Sufficient for the ``FROM`` / ``WORKDIR`` / ``RUN`` / ``COPY``
+    instructions the Sandbox bridge replays; richer forms (heredocs,
+    parser directives) are out of scope.
+
+    Args:
+        text: Raw Dockerfile contents.
+
+    Returns:
+        Instructions in file order, keyword upper-cased.
+    """
+    logical_lines: list[str] = []
+    buffer = ""
+    for raw in text.splitlines():
+        stripped = raw.strip()
+        if not buffer and (not stripped or stripped.startswith("#")):
+            continue
+        buffer = f"{buffer} {stripped}".strip() if buffer else stripped
+        if buffer.endswith("\\"):
+            buffer = buffer[:-1].rstrip()
+        else:
+            logical_lines.append(buffer)
+            buffer = ""
+    if buffer:
+        logical_lines.append(buffer)
+
+    instructions: list[tuple[str, str]] = []
+    for line in logical_lines:
+        keyword, _, value = line.partition(" ")
+        instructions.append((keyword.upper(), value.strip()))
+    return instructions
+
+
 class ZenMLSandboxEnvironment(BaseEnvironment):
     """A Harbor environment that delegates to the active stack's Sandbox.
 
@@ -46,9 +85,18 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
     ``create_session`` / ``session.exec`` / ``session.close``. The
     session is opened in ``start`` and held on ``self._session`` for
     the lifetime of the environment.
+
+    The Sandbox component consumes a prebuilt base image rather than
+    building a Dockerfile, so a task's ``environment/Dockerfile`` is
+    honored by replaying it at runtime: ``FROM`` selects the base image,
+    and ``WORKDIR`` / ``RUN`` / ``COPY`` are applied via ``exec`` /
+    uploads right after the session starts (see ``_provision_from_dockerfile``).
     """
 
     _session: SandboxSession | None = None
+    # WORKDIR from the task Dockerfile; used as the default cwd for exec
+    # so agent/verifier commands run where the task expects them.
+    _workdir: str | None = None
 
     @staticmethod
     def type() -> str:
@@ -56,12 +104,14 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
         return "zenml-sandbox"
 
     def _validate_definition(self) -> None:
-        """No-op: the Sandbox flavor owns the image; no Dockerfile needed.
+        """No-op: a task Dockerfile is optional, not required.
 
         Harbor's local backends use this to assert a ``Dockerfile`` /
-        ``docker-compose.yaml`` exists next to the task. With ZenML
-        Sandbox the image comes from ``task_env_config.docker_image``
-        (or the flavor's default), so there's nothing to validate.
+        ``docker-compose.yaml`` exists next to the task. Here a Dockerfile
+        is honored when present (``FROM`` picks the base image,
+        ``WORKDIR`` / ``RUN`` / ``COPY`` are replayed in ``start``), but a
+        hermetic task with none is equally valid — the flavor's default
+        image is used — so there's nothing to require.
         """
 
     @property
@@ -77,16 +127,42 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
         """
         return EnvironmentCapabilities(gpus=False)
 
+    def _dockerfile_path(self) -> Path:
+        """Path to the task's environment Dockerfile (may not exist)."""
+        return self.environment_dir / "Dockerfile"
+
+    def _base_image(self) -> str | None:
+        """Resolve the base image for the sandbox.
+
+        A task may pin a prebuilt image in ``task.toml`` (``docker_image``),
+        which wins. Otherwise we read the ``FROM`` line of the task's
+        ``environment/Dockerfile`` so the sandbox pulls the same base the
+        task was authored against (e.g. ``ubuntu:24.04`` vs the flavor's
+        default). Returns None to fall through to the flavor default.
+        """
+        if self.task_env_config.docker_image:
+            return self.task_env_config.docker_image
+        dockerfile = self._dockerfile_path()
+        if not dockerfile.exists():
+            return None
+        for instruction, value in _parse_dockerfile(dockerfile.read_text()):
+            if instruction == "FROM":
+                # Drop a trailing ``as <stage>`` from multi-stage builds.
+                return re.split(
+                    r"\s+as\s+", value, maxsplit=1, flags=re.IGNORECASE
+                )[0].strip()
+        return None
+
     def _settings_override(self) -> BaseSandboxSettings | None:
-        """Translates Harbor's task-level ``docker_image`` to a setting.
+        """Carry the resolved base image into the Sandbox settings.
 
         Env vars do NOT ride on the settings: they flow through
         ``exec`` per call so the Sandbox component's own env merge
         (component config + secrets + step-level overrides) stays
         authoritative. The only thing the override needs to carry is
-        the image the task pinned in ``task.toml``, when set.
+        the base image (from ``task.toml`` or the task's Dockerfile).
         """
-        image = self.task_env_config.docker_image
+        image = self._base_image()
         if image is None:
             return None
         return BaseSandboxSettings(base_image=image)
@@ -122,6 +198,7 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
             self.session_id,
         )
         try:
+            await self._provision_from_dockerfile()
             await self._ensure_harbor_log_dirs()
         except Exception:
             # Tear down so a half-started env doesn't leak a paid Modal
@@ -149,6 +226,65 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
         joined = " ".join(shlex.quote(d) for d in dirs)
         await self.exec(f"mkdir -p {joined} && chmod 1777 {joined}")
 
+    async def _provision_from_dockerfile(self) -> None:
+        """Replay the task's Dockerfile inside the started sandbox.
+
+        The Sandbox component pulls a prebuilt base image but does not
+        build a Dockerfile, so the task's environment setup (working dir
+        and starter files created by ``WORKDIR`` / ``RUN`` / ``COPY``)
+        would otherwise be missing. We reproduce that state at runtime via
+        ``exec`` and file uploads — the same translate-don't-build approach
+        Harbor's own remote-sandbox environments (e.g. Novita) take.
+
+        Skipped when the task pins a prebuilt ``docker_image``: that image
+        is assumed to already contain the setup, matching Harbor's E2B /
+        Novita behavior. ``FROM`` is handled separately via the base image.
+        """
+        if self.task_env_config.docker_image:
+            return
+        dockerfile = self._dockerfile_path()
+        if not dockerfile.exists():
+            return
+        for instruction, value in _parse_dockerfile(dockerfile.read_text()):
+            if instruction == "WORKDIR":
+                # Create the dir before adopting it as the default cwd —
+                # otherwise this very mkdir would exec with cwd set to a
+                # directory that does not exist yet.
+                await self.exec(f"mkdir -p {shlex.quote(value)}")
+                self._workdir = value
+            elif instruction == "RUN":
+                result = await self.exec(value)
+                if result.return_code != 0:
+                    raise RuntimeError(
+                        f"Dockerfile RUN failed ({result.return_code}): "
+                        f"{value}\n{result.stderr}"
+                    )
+            elif instruction == "COPY":
+                await self._replay_copy(value)
+
+    async def _replay_copy(self, value: str) -> None:
+        """Replay a Dockerfile ``COPY`` by uploading from the build context.
+
+        Build-context sources resolve against ``environment_dir``;
+        ``--from=`` (multi-stage) copies are skipped since there is no
+        prior build stage to read from. Relative destinations resolve
+        against the tracked ``WORKDIR``.
+        """
+        parts = [p for p in shlex.split(value) if not p.startswith("--")]
+        if any(p.startswith("--from=") for p in shlex.split(value)):
+            return
+        if len(parts) < 2:
+            return
+        *sources, dest = parts
+        if not dest.startswith("/") and self._workdir:
+            dest = f"{self._workdir.rstrip('/')}/{dest}"
+        for source in sources:
+            src_path = self.environment_dir / source
+            if src_path.is_dir():
+                await self.upload_dir(src_path, dest)
+            elif src_path.is_file():
+                await self.upload_file(src_path, dest)
+
     async def stop(self, delete: bool) -> None:
         """Close (or destroy) the underlying SandboxSession.
 
@@ -161,6 +297,7 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
             return
         session = self._session
         self._session = None
+        self._workdir = None
         await asyncio.to_thread(session.destroy if delete else session.close)
 
     async def exec(
@@ -176,9 +313,12 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
         Harbor passes ``command`` as a shell string with redirects,
         subshells, pipelines — so we wrap in ``bash -c`` (argv form,
         not ``shlex.split``-able) and let the session handle env
-        injection and workdir natively. ``timeout_sec`` is enforced
-        host-side via ``asyncio.wait_for`` since Modal doesn't take
-        per-exec timeouts. ``user`` is not yet plumbed.
+        injection and workdir natively. When Harbor doesn't pin a cwd we
+        fall back to the Dockerfile's ``WORKDIR`` so agent/verifier
+        commands run where the task expects (the prebuilt base image
+        doesn't carry the Dockerfile's WORKDIR). ``timeout_sec`` is
+        enforced host-side via ``asyncio.wait_for`` since Modal doesn't
+        take per-exec timeouts. ``user`` is not yet plumbed.
         """
         if self._session is None:
             raise RuntimeError(
@@ -191,11 +331,12 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
                 user,
             )
         merged_env = self._merge_env(env)
+        effective_cwd = cwd or self._workdir
 
         def _run() -> ExecResult:
             assert self._session is not None
             process = self._session.exec(
-                ["bash", "-c", command], cwd=cwd, env=merged_env
+                ["bash", "-c", command], cwd=effective_cwd, env=merged_env
             )
             out = process.collect()
             return ExecResult(

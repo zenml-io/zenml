@@ -1,0 +1,4 @@
+[task]
+name = "mini_harbor/reverse-string"
+description = "Reverse the contents of a file"
+type = "coding"

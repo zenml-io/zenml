@@ -1,0 +1,4 @@
+[task]
+name = "mini_harbor/merge-files"
+description = "Concatenate two files into one"
+type = "coding"

@@ -1,0 +1,12 @@
+campaign:
+  name: prod-multi-agent
+  dataset_path: datasets/mini_harbor
+  agents:
+    - oracle
+    - terminus-2
+  models:
+    - gpt-4o
+    - claude-sonnet-4-20250514
+  # env_provider is ignored: the substrate is the active stack's ZenML
+  # Sandbox component, not a Harbor env provider.
+  env_provider: ~

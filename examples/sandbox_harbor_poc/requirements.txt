@@ -1,2 +1,4 @@
+# The Modal substrate comes via: zenml integration install modal
+zenml[local,server]
 harbor>=0.8.0
-zenml[local]
+pyyaml>=6.0

@@ -1,148 +1,86 @@
-"""ZenML pipeline that runs a Harbor evaluation trial.
+#!/usr/bin/env python3
+# Apache Software License 2.0
+#
+# Copyright (c) ZenML GmbH 2026. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Harbor Eval Campaign — CLI entry point.
 
-This is the single entry point for running Harbor evals on top of the
-ZenML Sandbox component. The pipeline owns the run; its single step
-builds a Harbor ``JobConfig`` pointed at the ``ZenMLSandboxEnvironment``
-bridge, and ``Job.create(config).run()`` executes the trial inside
-whatever Sandbox the active stack provides (Modal today; GKE Agent
-Sandbox / Agent Substrate later).
-
-Everything Harbor produces — reward, ATIF, agent/verifier logs, exit
-codes — comes back as ``JobResult`` and lands as a ZenML artifact
-attached to the pipeline run, so you get full lineage, caching, and
-the dashboard view by default.
-
-Invocation::
-
-    python run.py                            # default: tasks/hello, oracle
-    python run.py tasks/hello oracle
+Launches the Harbor evaluation campaign pipeline with a given config. Every
+trial runs on the Sandbox component of your active stack: each matrix cell
+runs Harbor programmatically through the ZenMLSandboxEnvironment bridge, so
+results land as ZenML artifacts with full lineage and the dashboard view.
 """
 
-from __future__ import annotations
+import argparse
+import os
+from typing import Any, Dict, Optional, Sequence
 
-import asyncio
-import sys
-import tempfile
-from pathlib import Path
-from typing import Annotated, Any
-
-from harbor.job import Job
-from harbor.models.job.config import JobConfig
-from harbor.models.trial.config import (
-    AgentConfig,
-    EnvironmentConfig,
-    TaskConfig,
-    VerifierConfig,
-)
-
-from zenml import pipeline, step
-from zenml.logger import get_logger
-
-logger = get_logger(__name__)
-
-# Import path Harbor uses to load our bridge — the env-side equivalent
-# of ``--environment-import-path`` on the CLI.
-_BRIDGE_IMPORT_PATH = "zenml_sandbox_env:ZenMLSandboxEnvironment"
-
-# Default task: writes "42" to /app/answer.txt, verifier scores 1.0
-# iff the file matches. Hermetic — runs under the oracle agent so no
-# LLM keys are required for the smoke test.
-_DEFAULT_TASK_PATH = "tasks/hello"
-_DEFAULT_AGENT = "oracle"
+from pipelines.harbor_eval_campaign import harbor_eval_campaign
 
 
-async def _run_harbor_job(
-    task_path: Path,
-    agent_name: str,
-    jobs_dir: Path,
-) -> dict[str, Any]:
-    """Build a single-trial ``JobConfig`` and execute it via the bridge."""
-    config = JobConfig(
-        jobs_dir=jobs_dir,
-        n_concurrent_trials=1,
-        quiet=True,
-        tasks=[TaskConfig(path=task_path)],
-        agents=[AgentConfig(name=agent_name)],
-        environment=EnvironmentConfig(import_path=_BRIDGE_IMPORT_PATH),
-        verifier=VerifierConfig(),
-    )
+def _collect_runtime_env_vars() -> Dict[str, str]:
+    """Collect API keys from the local environment to forward to remote pods.
 
-    job = await Job.create(config)
-    result = await job.run()
-
-    return {
-        "job_id": str(result.id),
-        "n_total": result.n_total_trials,
-        "n_completed": result.stats.n_completed_trials,
-        "n_errored": result.stats.n_errored_trials,
-        "mean_reward": _mean_reward(result),
-    }
-
-
-def _mean_reward(result: Any) -> float | None:
-    """Pull a single mean-reward scalar out of ``JobResult.stats.evals``.
-
-    Harbor's stats nest one ``mean`` per eval bucket
-    (``agent__dataset``). A POC job has a single bucket, so we flatten
-    by averaging across them — keeps the artifact's schema flat for
-    the dashboard's metadata table.
-    """
-    evals = result.stats.evals or {}
-    means: list[float] = []
-    for eval_stats in evals.values():
-        for metric in eval_stats.metrics or []:
-            mean = metric.get("mean") if isinstance(metric, dict) else None
-            if mean is not None:
-                means.append(float(mean))
-    if not means:
-        return None
-    return sum(means) / len(means)
-
-
-@step
-def run_harbor_trial(
-    task_path: str = _DEFAULT_TASK_PATH,
-    agent_name: str = _DEFAULT_AGENT,
-) -> Annotated[dict[str, Any], "harbor_trial_result"]:
-    """Run one Harbor trial through the ZenML Sandbox bridge.
-
-    Args:
-        task_path: Filesystem path to the Harbor task, relative to
-            this example's directory.
-        agent_name: One of Harbor's built-in agents (``oracle``,
-            ``nop``, ``claude-code-agent``, ...).
+    Forwarding OPENAI/ANTHROPIC keys lets non-oracle agents reach their LLM
+    providers from inside the Sandbox. The oracle agent needs none.
 
     Returns:
-        Job id, completion counts, mean reward across trials.
+        Dict of env var name → value for keys that are set locally.
     """
-    here = Path(__file__).parent.resolve()
-    task = (here / task_path).resolve()
-    if not task.exists():
-        raise FileNotFoundError(f"Harbor task path not found: {task}")
-
-    # Harbor's on-disk ``jobs/`` tree duplicates everything we hand back
-    # as a ZenML artifact, so we drop it on TemporaryDirectory exit.
-    # ``asyncio.run`` is safe because ZenML steps run synchronously
-    # today; revisit if step bodies grow an outer event loop.
-    with tempfile.TemporaryDirectory(prefix="zenml-harbor-") as tmp:
-        jobs_dir = Path(tmp)
-        return asyncio.run(_run_harbor_job(task, agent_name, jobs_dir))
+    env_vars: Dict[str, str] = {}
+    for key in ("OPENAI_API_KEY", "ANTHROPIC_API_KEY"):
+        val = os.environ.get(key)
+        if val:
+            env_vars[key] = val
+    return env_vars
 
 
-@pipeline(enable_cache=False)
-def sandbox_harbor_poc_pipeline(
-    task_path: str = _DEFAULT_TASK_PATH,
-    agent_name: str = _DEFAULT_AGENT,
-) -> dict[str, Any]:
-    """Single-step pipeline: ZenML on top, Harbor running inside."""
-    return run_harbor_trial(task_path=task_path, agent_name=agent_name)
+def main(argv: Optional[Sequence[str]] = None) -> None:
+    """Run the Harbor evaluation campaign pipeline.
+
+    Args:
+        argv: Command-line arguments. If None, uses sys.argv.
+    """
+    parser = argparse.ArgumentParser(
+        description="Run Harbor agent evaluations across an agent x model matrix"
+    )
+    parser.add_argument(
+        "--config",
+        "-c",
+        default="configs/dev.yaml",
+        help="Path to campaign YAML config file (default: configs/dev.yaml)",
+    )
+    parser.add_argument(
+        "--forward-env",
+        action="store_true",
+        help="Forward local API keys (OPENAI, ANTHROPIC) to remote pods",
+    )
+    args = parser.parse_args(argv)
+
+    extra_settings: Dict[str, Any] = {}
+    if args.forward_env:
+        runtime_env = _collect_runtime_env_vars()
+        if runtime_env:
+            extra_settings["docker"] = {"runtime_environment": runtime_env}
+
+    if extra_settings:
+        harbor_eval_campaign.with_options(
+            settings=extra_settings,
+        )(config_path=args.config)
+    else:
+        harbor_eval_campaign(config_path=args.config)
 
 
 if __name__ == "__main__":
-    task = sys.argv[1] if len(sys.argv) > 1 else _DEFAULT_TASK_PATH
-    agent = sys.argv[2] if len(sys.argv) > 2 else _DEFAULT_AGENT
-    print("Running ZenML pipeline (Harbor on Modal sandbox) ...")
-    print(f"  task  = {task}")
-    print(f"  agent = {agent}")
-    sandbox_harbor_poc_pipeline(task_path=task, agent_name=agent)
-    print("Done. Check the ZenML dashboard for the run + artifact.")
+    main()

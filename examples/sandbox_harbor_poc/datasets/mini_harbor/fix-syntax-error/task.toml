@@ -1,0 +1,4 @@
+[task]
+name = "mini_harbor/fix-syntax-error"
+description = "Fix a missing closing parenthesis in app.py"
+type = "coding"
