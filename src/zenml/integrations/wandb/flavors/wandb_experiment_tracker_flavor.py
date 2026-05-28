@@ -16,14 +16,16 @@
 from typing import (
     TYPE_CHECKING,
     Any,
+    ClassVar,
     Dict,
     List,
+    Literal,
     Optional,
     Type,
     cast,
 )
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.experiment_trackers.base_experiment_tracker import (
@@ -42,16 +44,70 @@ if TYPE_CHECKING:
 class WandbExperimentTrackerSettings(BaseSettings):
     """Settings for the Wandb experiment tracker."""
 
+    _MANAGED_INIT_KWARGS: ClassVar[set[str]] = {
+        "config",
+        "entity",
+        "group",
+        "id",
+        "job_type",
+        "name",
+        "project",
+        "project_name",
+        "resume",
+        "settings",
+        "tags",
+    }
+
     run_name: Optional[str] = Field(
         None, description="The Wandb run name to use for tracking experiments."
+    )
+    run_id: Optional[str] = Field(
+        None,
+        description="Explicit Wandb run ID to use for advanced resume flows.",
+    )
+    run_id_strategy: Literal[
+        "wandb_generated", "new_on_retry", "reuse_on_retry"
+    ] = Field(
+        "wandb_generated",
+        description=(
+            "Strategy used to derive Wandb run IDs. The default leaves IDs "
+            "to Wandb, 'reuse_on_retry' resumes the same run for retries, "
+            "and 'new_on_retry' creates a new deterministic run for retries."
+        ),
+    )
+    resume: Optional[Literal["allow", "must", "never", "auto"]] = Field(
+        None,
+        description="Wandb resume policy. Defaults to 'allow' when ZenML sets a run ID.",
+    )
+    group: Optional[str] = Field(
+        None, description="Wandb group to use for the run."
+    )
+    job_type: Optional[str] = Field(
+        None, description="Optional Wandb job type for the run."
     )
     tags: List[str] = Field(
         default_factory=list,
         description="Tags to attach to the Wandb run for categorization and filtering.",
     )
+    run_config: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="User-provided Wandb config values to attach to the run.",
+    )
+    init_kwargs: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Advanced Wandb init keyword arguments not managed by ZenML.",
+    )
     settings: Dict[str, Any] = Field(
         default_factory=dict,
         description="Additional settings for the Wandb run configuration.",
+    )
+    enable_zenml_metadata: bool = Field(
+        True,
+        description="Whether to add ZenML context to Wandb tags and config.",
+    )
+    enable_zenml_dashboard_links: bool = Field(
+        True,
+        description="Whether to add ZenML dashboard links to Wandb config when available.",
     )
     enable_weave: bool = Field(
         False,
@@ -82,7 +138,7 @@ class WandbExperimentTrackerSettings(BaseSettings):
             # `make_static` or `to_dict` is available to convert the settings
             # to a dictionary
             if isinstance(value, BaseModel):
-                return value.model_dump()  # type: ignore[no-untyped-call]
+                return value.model_dump()  # type: ignore[no-untyped-call, unused-ignore]
             elif hasattr(value, "make_static"):
                 return cast(Dict[str, Any], value.make_static())
             elif hasattr(value, "to_dict"):
@@ -91,6 +147,53 @@ class WandbExperimentTrackerSettings(BaseSettings):
                 raise ValueError("Unable to convert wandb settings to dict.")
         else:
             return value
+
+    @model_validator(mode="after")
+    def _validate_wandb_init_settings(
+        self,
+    ) -> "WandbExperimentTrackerSettings":
+        """Validate Wandb identity and config settings."""
+        if self.run_id and self.run_id_strategy != "wandb_generated":
+            raise ValueError(
+                "The 'run_id' setting cannot be combined with a "
+                "non-default 'run_id_strategy'."
+            )
+
+        if self.run_id_strategy == "reuse_on_retry" and self.resume == "never":
+            raise ValueError(
+                "The 'reuse_on_retry' run ID strategy is incompatible with "
+                "resume='never'."
+            )
+
+        if (
+            self.resume == "must"
+            and not self.run_id
+            and self.run_id_strategy == "wandb_generated"
+        ):
+            raise ValueError(
+                "The resume='must' setting requires either an explicit "
+                "'run_id' or a deterministic 'run_id_strategy'."
+            )
+
+        reserved_config_keys = [
+            key for key in self.run_config if key.startswith("zenml_")
+        ]
+        if reserved_config_keys:
+            raise ValueError(
+                "The 'run_config' setting cannot contain ZenML-reserved "
+                f"config keys: {reserved_config_keys}."
+            )
+
+        managed_init_keys = sorted(
+            self._MANAGED_INIT_KWARGS.intersection(self.init_kwargs)
+        )
+        if managed_init_keys:
+            raise ValueError(
+                "The 'init_kwargs' setting cannot contain Wandb init keys "
+                f"managed by ZenML: {managed_init_keys}."
+            )
+
+        return self
 
 
 class WandbExperimentTrackerConfig(
