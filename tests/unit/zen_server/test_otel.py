@@ -117,15 +117,25 @@ def test_otel_config_reads_standard_otel_env_vars(
     assert config.otel_service_name == "custom-server"
 
 
-def test_otel_config_prefers_zenml_prefixed_env_vars_over_standard_otel(
+def test_otel_config_prefers_zenml_prefixed_env_vars_over_standard_otel_env_vars(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """ZenML server prefixed env vars take precedence over standard OTel env vars."""
+    # Set standard OTel env vars
     monkeypatch.setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://standard:4318")
+    monkeypatch.setenv(
+        "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
+        "http://standard/v1/traces",
+    )
     monkeypatch.setenv("OTEL_SERVICE_NAME", "standard-env-var-service-name")
+    # Set ZenML server prefixed OTel env vars
     monkeypatch.setenv(
         "ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT",
         "http://zenml:4318",
+    )
+    monkeypatch.setenv(
+        "ZENML_SERVER_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
+        "http://zenml/v1/traces",
     )
     monkeypatch.setenv(
         "ZENML_SERVER_OTEL_SERVICE_NAME", "zenml-prefixed-service-name"
@@ -134,10 +144,7 @@ def test_otel_config_prefers_zenml_prefixed_env_vars_over_standard_otel(
     config = ServerConfiguration.get_server_config()
 
     assert config.otel_exporter_otlp_endpoint == "http://zenml:4318"
-    assert (
-        config.otel_exporter_otlp_traces_endpoint
-        == "http://zenml:4318/v1/traces"
-    )
+    assert config.otel_exporter_otlp_traces_endpoint == "http://zenml/v1/traces"
     assert config.otel_service_name == "zenml-prefixed-service-name"
 
 

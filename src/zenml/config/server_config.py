@@ -24,7 +24,6 @@ from pydantic import (
     ConfigDict,
     Field,
     PositiveInt,
-    computed_field,
     field_validator,
     model_validator,
 )
@@ -407,18 +406,9 @@ class ServerConfiguration(BaseModel):
     dashboard_files_path: Optional[str] = None
 
     otel_exporter_otlp_endpoint: Optional[str] = None
-    otel_exporter_otlp_traces_endpoint_override: Optional[str] = Field(
-        default=None,
-        alias="otel_exporter_otlp_traces_endpoint",
-    )
-    otel_exporter_otlp_metrics_endpoint_override: Optional[str] = Field(
-        default=None,
-        alias="otel_exporter_otlp_metrics_endpoint",
-    )
-    otel_exporter_otlp_logs_endpoint_override: Optional[str] = Field(
-        default=None,
-        alias="otel_exporter_otlp_logs_endpoint",
-    )
+    otel_exporter_otlp_traces_endpoint: Optional[str] = None
+    otel_exporter_otlp_metrics_endpoint: Optional[str] = None
+    otel_exporter_otlp_logs_endpoint: Optional[str] = None
     otel_service_name: str = DEFAULT_ZENML_SERVER_OTEL_SERVICE_NAME
     otel_traces_enabled: bool = True
     otel_metrics_enabled: bool = True
@@ -428,35 +418,31 @@ class ServerConfiguration(BaseModel):
 
     event_handler_sources: list[str] = []
 
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def otel_exporter_otlp_traces_endpoint(self) -> Optional[str]:
-        """Get the effective OTLP/HTTP trace endpoint."""
-        return self._get_otel_signal_endpoint(
-            enabled=self.otel_traces_enabled,
-            endpoint=self.otel_exporter_otlp_traces_endpoint_override,
-            signal_path="v1/traces",
+    @model_validator(mode="after")
+    def _resolve_otel_endpoints(self) -> "ServerConfiguration":
+        """Resolve effective OTLP/HTTP endpoints for all telemetry signals."""
+        # Resolve OTLP/HTTP endpoints for all telemetry signals
+        self.otel_exporter_otlp_traces_endpoint = (
+            self._get_otel_signal_endpoint(
+                enabled=self.otel_traces_enabled,
+                endpoint=self.otel_exporter_otlp_traces_endpoint,
+                signal_path="v1/traces",
+            )
         )
-
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def otel_exporter_otlp_metrics_endpoint(self) -> Optional[str]:
-        """Get the effective OTLP/HTTP metric endpoint."""
-        return self._get_otel_signal_endpoint(
-            enabled=self.otel_metrics_enabled,
-            endpoint=self.otel_exporter_otlp_metrics_endpoint_override,
-            signal_path="v1/metrics",
+        self.otel_exporter_otlp_metrics_endpoint = (
+            self._get_otel_signal_endpoint(
+                enabled=self.otel_metrics_enabled,
+                endpoint=self.otel_exporter_otlp_metrics_endpoint,
+                signal_path="v1/metrics",
+            )
         )
-
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def otel_exporter_otlp_logs_endpoint(self) -> Optional[str]:
-        """Get the resolved OTLP HTTP logs endpoint."""
-        return self._get_otel_signal_endpoint(
+        self.otel_exporter_otlp_logs_endpoint = self._get_otel_signal_endpoint(
             enabled=self.otel_logs_enabled,
-            endpoint=self.otel_exporter_otlp_logs_endpoint_override,
+            endpoint=self.otel_exporter_otlp_logs_endpoint,
             signal_path="v1/logs",
         )
+
+        return self
 
     def _get_otel_signal_endpoint(
         self,
@@ -464,7 +450,7 @@ class ServerConfiguration(BaseModel):
         endpoint: Optional[str],
         signal_path: str,
     ) -> Optional[str]:
-        """Get a configured OTLP/HTTP endpoint or derive one from the base OTLP endpoint."""
+        """Get a configured or derived OTLP/HTTP signal endpoint."""
         # If the signal is disabled, return None.
         if not enabled:
             return None
