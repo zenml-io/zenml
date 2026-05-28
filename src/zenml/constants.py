@@ -23,6 +23,8 @@ from zenml.enums import AuthScheme
 
 T = TypeVar("T")
 
+DEFAULT_ZENML_SERVER_OTEL_SERVICE_NAME = "zenml-server"
+
 
 def handle_json_env_var(
     var: str,
@@ -288,6 +290,7 @@ ENV_ZENML_DYNAMIC_PIPELINE_MONITORING_DELAY = (
 ENV_ZENML_STEP_RUNS_FETCH_MAX_CHUNK_LENGTH = (
     "ZENML_STEP_RUNS_FETCH_MAX_CHUNK_LENGTH"
 )
+ENV_ZENML_STREAM_PUBLISHER_BATCH_SIZE = "ZENML_STREAM_PUBLISHER_BATCH_SIZE"
 
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
@@ -489,6 +492,8 @@ PROJECTS = "/projects"
 REFRESH = "/refresh"
 RESOLVE = "/resolve"
 RUNS = "/runs"
+EVENTS = "/events"
+EVENTS_STREAM = "/events/stream"
 RUN_TEMPLATES = "/run_templates"
 RUN_METADATA = "/run-metadata"
 RUN_WAIT_CONDITIONS = "/run_wait_conditions"
@@ -662,3 +667,10 @@ SCHEDULE_FEATURE = "schedule"
 RESOURCE_POOL_FEATURE = "resource_pool"
 
 LOGS_RUNNER_SOURCE = "runner"
+
+# Streaming
+STREAM_EVENT_MAX_BATCH_SIZE = 1000
+STREAM_EVENT_PAYLOAD_BYTES_MAX = 64 * 1024
+STREAM_PUBLISHER_BATCH_SIZE = max(
+    1, handle_int_env_var(ENV_ZENML_STREAM_PUBLISHER_BATCH_SIZE, default=64)
+)
