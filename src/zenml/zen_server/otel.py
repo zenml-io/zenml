@@ -73,7 +73,7 @@ def configure_otel(app: "FastAPI") -> None:
         logger.debug("OpenTelemetry instrumentation already configured.")
         return
 
-    import zenml
+    from zenml import __version__
     from zenml.zen_server.utils import server_config
 
     config = server_config()
@@ -93,7 +93,7 @@ def configure_otel(app: "FastAPI") -> None:
 
         resource_attributes = {
             "service.name": config.otel_service_name,
-            "service.version": zenml.__version__,
+            "service.version": __version__,
             "deployment.environment.name": str(config.deployment_type),
         }
 
