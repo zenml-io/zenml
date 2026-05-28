@@ -13,17 +13,12 @@
 #  permissions and limitations under the License.
 """Sandbox stack components for isolated code execution."""
 
-from zenml.sandboxes.base_sandbox import (
+from zenml.sandboxes.base import (
     STEP_IMAGE,
     BaseSandbox,
     BaseSandboxConfig,
     BaseSandboxFlavor,
     BaseSandboxSettings,
-    BaseSandboxSnapshot,
-    SandboxExecError,
-    SandboxOutput,
-    SandboxProcess,
-    SandboxSession,
 )
 from zenml.sandboxes.local_sandbox import (
     LOCAL_SANDBOX_FLAVOR,
@@ -32,6 +27,13 @@ from zenml.sandboxes.local_sandbox import (
     LocalSandboxFlavor,
     LocalSandboxSettings,
 )
+from zenml.sandboxes.process import (
+    SandboxExecError,
+    SandboxOutput,
+    SandboxProcess,
+)
+from zenml.sandboxes.session import SandboxSession
+from zenml.sandboxes.snapshot import BaseSandboxSnapshot
 
 __all__ = [
     "LOCAL_SANDBOX_FLAVOR",

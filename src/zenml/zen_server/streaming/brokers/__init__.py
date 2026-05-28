@@ -11,12 +11,4 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Event dispatcher for pipeline run lifecycle events."""
-
-from zenml.dispatcher.dispatcher import EventDispatcher
-from zenml.dispatcher.handler import EventHandler
-
-__all__ = [
-    "EventDispatcher",
-    "EventHandler",
-]
+"""Built-in StreamBroker implementations."""

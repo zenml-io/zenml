@@ -38,16 +38,15 @@ import uuid
 from typing import Any, Dict, Iterator, List, Optional, Type, Union, cast
 
 from zenml.logger import get_logger
-from zenml.sandboxes.base_sandbox import (
+from zenml.sandboxes.base import (
     STEP_IMAGE,
     BaseSandbox,
     BaseSandboxConfig,
     BaseSandboxFlavor,
     BaseSandboxSettings,
-    SandboxExecError,
-    SandboxProcess,
-    SandboxSession,
 )
+from zenml.sandboxes.process import SandboxExecError, SandboxProcess
+from zenml.sandboxes.session import SandboxSession
 
 logger = get_logger(__name__)
 
@@ -171,7 +170,7 @@ class LocalSandboxSession(SandboxSession):
         workdir: str,
         env: Dict[str, str],
         *,
-        parent: Optional["BaseSandbox"] = None,
+        parent: "BaseSandbox",
         forward_logs: bool = False,
     ) -> None:
         """Initializes the local Session.
@@ -179,43 +178,18 @@ class LocalSandboxSession(SandboxSession):
         Args:
             workdir: Path to the per-session working directory.
             env: Resolved env vars to set for every exec'd subprocess.
-            parent: The owning ``BaseSandbox`` component (used to open
-                the log-forwarding ``LoggingContext`` on ``__enter__``).
+            parent: The owning ``BaseSandbox`` component.
             forward_logs: If True, sandbox stdout/stderr is auto-routed
                 into ZenML step logs as a per-session log source.
         """
-        self.id = f"local-{uuid.uuid4().hex[:12]}"
+        super().__init__(
+            id=f"local-{uuid.uuid4().hex[:12]}",
+            parent=parent,
+            forward_logs=forward_logs,
+        )
         self._workdir = workdir
         self._env = env
-        self._parent = parent
-        self._forward_logs = forward_logs
-        self._log_ctx: Any = None
         self._closed = False
-
-    def __enter__(self) -> "LocalSandboxSession":
-        """Opens the log-forwarding context if enabled.
-
-        Idempotent against double-entry.
-
-        Returns:
-            This session.
-        """
-        if (
-            self._forward_logs
-            and self._parent is not None
-            and self._log_ctx is None
-        ):
-            self._log_ctx = self._parent.forward_session_logs(self.id)
-            self._log_ctx.__enter__()
-        return self
-
-    def __exit__(self, *args: Any) -> None:
-        """Releases the handle (which also tears down log context + workdir).
-
-        Args:
-            *args: Exception info; ignored by ``close()``.
-        """
-        self.close()
 
     def exec(
         self,
@@ -283,11 +257,7 @@ class LocalSandboxSession(SandboxSession):
         if self._closed:
             return
         self._closed = True
-        if self._log_ctx is not None:
-            try:
-                self._log_ctx.__exit__(None, None, None)
-            finally:
-                self._log_ctx = None
+        self._close_log_ctx()
         try:
             shutil.rmtree(self._workdir, ignore_errors=True)
         except Exception as e:
@@ -331,25 +301,6 @@ class LocalSandbox(BaseSandbox):
         """
         return LocalSandboxSettings
 
-    def _effective_settings(
-        self, override: Optional[BaseSandboxSettings]
-    ) -> LocalSandboxSettings:
-        """Coerces an arbitrary override into a typed LocalSandboxSettings.
-
-        Args:
-            override: Optional caller-provided settings.
-
-        Returns:
-            The effective settings for this Session.
-        """
-        if override is None:
-            override = self.pull_step_settings()
-        if override is None:
-            return LocalSandboxSettings()
-        if isinstance(override, LocalSandboxSettings):
-            return override
-        return LocalSandboxSettings(**override.model_dump(exclude_unset=True))
-
     def create_session(
         self, settings: Optional[BaseSandboxSettings] = None
     ) -> SandboxSession:
@@ -364,7 +315,7 @@ class LocalSandbox(BaseSandbox):
         """
         logger.warning(_NO_ISOLATION_WARNING)
 
-        eff = self._effective_settings(settings)
+        eff = cast(LocalSandboxSettings, self.effective_settings(settings))
         if eff.base_image not in (None, STEP_IMAGE):
             logger.warning(
                 "LocalSandbox ignores base_image=%r — there is no image "
