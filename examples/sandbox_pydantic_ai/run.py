@@ -29,7 +29,7 @@ import zenml
 from zenml import pipeline, step
 from zenml.client import Client
 from zenml.config import DockerSettings
-from zenml.sandboxes.base_sandbox import BaseSandboxSettings
+from zenml.sandboxes import BaseSandboxSettings
 
 
 def get_docker_settings(
