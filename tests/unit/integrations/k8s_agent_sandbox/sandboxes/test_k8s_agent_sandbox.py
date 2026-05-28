@@ -201,8 +201,7 @@ class TestCreateSession:
         sb = _make_sandbox(namespace="prod")
         fake_client = _wire_client(sb)
 
-        with patch("kubernetes.client.CoreV1Api"):
-            session = sb.create_session()
+        session = sb.create_session()
         assert isinstance(session, K8sAgentSandboxSession)
         fake_client.create_sandbox.assert_called_once_with(
             template="python-sandbox",
@@ -214,13 +213,12 @@ class TestCreateSession:
         sb = _make_sandbox(namespace="prod")
         fake_client = _wire_client(sb)
 
-        with patch("kubernetes.client.CoreV1Api"):
-            sb.create_session(
-                settings=K8sAgentSandboxSettings(
-                    template_name="python-sandbox",
-                    namespace="experiments",
-                )
+        sb.create_session(
+            settings=K8sAgentSandboxSettings(
+                template_name="python-sandbox",
+                namespace="experiments",
             )
+        )
         kwargs = fake_client.create_sandbox.call_args.kwargs
         assert kwargs["namespace"] == "experiments"
 
@@ -234,10 +232,7 @@ class TestCreateSession:
         )
         fake_client = _wire_client(sb)
 
-        with (
-            patch("kubernetes.client.CustomObjectsApi") as fake_api_cls,
-            patch("kubernetes.client.CoreV1Api"),
-        ):
+        with patch("kubernetes.client.CustomObjectsApi") as fake_api_cls:
             fake_api = MagicMock()
             fake_api_cls.return_value = fake_api
             session = sb.create_session()
@@ -276,10 +271,7 @@ class TestCreateSession:
         )
         _wire_client(sb)
 
-        with (
-            patch("kubernetes.client.CustomObjectsApi"),
-            patch("kubernetes.client.CoreV1Api"),
-        ):
+        with patch("kubernetes.client.CustomObjectsApi"):
             session = sb.create_session()
         assert session._inline_template_name is None
         assert session._inline_template_namespace is None
@@ -290,7 +282,6 @@ class TestCreateSession:
         _wire_client(sb)
         with (
             patch("kubernetes.client.CustomObjectsApi"),
-            patch("kubernetes.client.CoreV1Api"),
             pytest.raises(ValueError, match="requires an image"),
         ):
             sb.create_session()
@@ -306,10 +297,7 @@ class TestCreateSession:
         fake_client = _wire_client(sb)
         fake_client.create_sandbox.side_effect = RuntimeError("denied")
 
-        with (
-            patch("kubernetes.client.CustomObjectsApi") as fake_api_cls,
-            patch("kubernetes.client.CoreV1Api"),
-        ):
+        with patch("kubernetes.client.CustomObjectsApi") as fake_api_cls:
             fake_api = MagicMock()
             fake_api_cls.return_value = fake_api
             with pytest.raises(RuntimeError, match="denied"):
@@ -318,7 +306,26 @@ class TestCreateSession:
         fake_api.create_namespaced_custom_object.assert_called_once()
         fake_api.delete_namespaced_custom_object.assert_called_once()
 
-    def test_404_error_hint_mentions_install(self) -> None:
+    def test_orphan_cleanup_runs_even_when_cleanup_disabled(self) -> None:
+        # `inline_template_cleanup=False` governs successful teardown;
+        # orphan cleanup on create-sandbox failure must still happen.
+        sb = _make_sandbox(
+            template_name=None,
+            namespace="lab",
+            default_image="runtime:1.0",
+            inline_template_cleanup=False,
+        )
+        fake_client = _wire_client(sb)
+        fake_client.create_sandbox.side_effect = RuntimeError("denied")
+
+        with patch("kubernetes.client.CustomObjectsApi") as fake_api_cls:
+            fake_api = MagicMock()
+            fake_api_cls.return_value = fake_api
+            with pytest.raises(RuntimeError, match="denied"):
+                sb.create_session()
+        fake_api.delete_namespaced_custom_object.assert_called_once()
+
+    def test_404_crd_missing_hint(self) -> None:
         from kubernetes.client.rest import ApiException
 
         sb = _make_sandbox(
@@ -329,14 +336,37 @@ class TestCreateSession:
         _wire_client(sb)
 
         api_exc = ApiException(status=404, reason="Not Found")
-        with (
-            patch("kubernetes.client.CustomObjectsApi") as fake_api_cls,
-            patch("kubernetes.client.CoreV1Api"),
-        ):
+        api_exc.body = (
+            '{"kind":"Status","status":"Failure",'
+            '"reason":"NotFound","message":"the server could not find '
+            'the requested resource"}'
+        )
+        with patch("kubernetes.client.CustomObjectsApi") as fake_api_cls:
             fake_api = MagicMock()
             fake_api.create_namespaced_custom_object.side_effect = api_exc
             fake_api_cls.return_value = fake_api
             with pytest.raises(RuntimeError, match="CRDs aren't installed"):
+                sb.create_session()
+
+    def test_404_namespace_missing_hint(self) -> None:
+        # If the 404 body mentions the namespace, surface the
+        # namespace-missing remediation instead of the CRD hint.
+        from kubernetes.client.rest import ApiException
+
+        sb = _make_sandbox(
+            template_name=None,
+            namespace="missing-ns",
+            default_image="runtime:1.0",
+        )
+        _wire_client(sb)
+
+        api_exc = ApiException(status=404, reason="Not Found")
+        api_exc.body = '{"message":"namespaces \\"missing-ns\\" not found"}'
+        with patch("kubernetes.client.CustomObjectsApi") as fake_api_cls:
+            fake_api = MagicMock()
+            fake_api.create_namespaced_custom_object.side_effect = api_exc
+            fake_api_cls.return_value = fake_api
+            with pytest.raises(RuntimeError, match="does not exist"):
                 sb.create_session()
 
 

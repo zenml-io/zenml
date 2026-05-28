@@ -76,9 +76,9 @@ class K8sAgentSandboxSettings(BaseSandboxSettings):
         description="Kubernetes namespace where the Sandbox claim is "
         "created. Per-step override via settings; component-level "
         "default lives on the config. Examples: ``default``, "
-        "``agent-workloads``. Auto-created on first ``create_session`` "
-        "if it doesn't exist and the connector identity has "
-        "``namespaces/create`` access.",
+        "``agent-workloads``. Must exist in the cluster — create with "
+        "``kubectl create namespace <name>`` before registering the "
+        "component.",
     )
     sandbox_ready_timeout: int = Field(
         default=180,
