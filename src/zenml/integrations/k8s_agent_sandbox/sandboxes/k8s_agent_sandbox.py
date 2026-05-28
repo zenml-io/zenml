@@ -26,6 +26,7 @@ snapshot/restore work once the operator exposes it.
 
 import shlex
 import time
+import uuid
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -155,6 +156,8 @@ class K8sAgentSandboxSession(SandboxSession):
         sandbox: "Sandbox",
         *,
         parent: "BaseSandbox",
+        inline_template_name: Optional[str] = None,
+        inline_template_namespace: Optional[str] = None,
     ) -> None:
         """Initializes the session wrapper.
 
@@ -162,12 +165,19 @@ class K8sAgentSandboxSession(SandboxSession):
             sandbox: The live ``Sandbox`` returned by
                 ``SandboxClient.create_sandbox``.
             parent: The owning ``BaseSandbox`` component.
+            inline_template_name: Name of an inline-synthesised
+                SandboxTemplate CR to delete on close, or ``None`` when
+                the session was created from a pre-existing template.
+            inline_template_namespace: Namespace of the inline template
+                (paired with ``inline_template_name``).
         """
         super().__init__(
             id=str(sandbox.name),
             parent=parent,
         )
         self._sandbox = sandbox
+        self._inline_template_name = inline_template_name
+        self._inline_template_namespace = inline_template_namespace
 
     def exec(
         self,
@@ -223,15 +233,43 @@ class K8sAgentSandboxSession(SandboxSession):
         return wrapped
 
     def close(self) -> None:
-        """Closes the session by terminating the underlying Sandbox.
+        """Closes the session and cleans up any inline template CR.
 
-        Idempotent — repeated calls log at debug but do not raise.
+        Idempotent — repeated calls and partial failures (terminate or
+        template delete) log at debug but do not raise.
         """
         try:
             self._sandbox.terminate()
         except Exception as e:  # noqa: BLE001
             logger.debug("agent-sandbox terminate raised during close: %s", e)
+        if self._inline_template_name and self._inline_template_namespace:
+            self._delete_inline_template()
         super().close()
+
+    def _delete_inline_template(self) -> None:
+        """Best-effort delete of the inline-synthesised SandboxTemplate CR."""
+        from kubernetes import (
+            client as k8s_client,  # type: ignore[import-untyped]
+        )
+
+        try:
+            k8s_client.CustomObjectsApi().delete_namespaced_custom_object(
+                group="extensions.agents.x-k8s.io",
+                version="v1beta1",
+                namespace=self._inline_template_namespace,
+                plural="sandboxtemplates",
+                name=self._inline_template_name,
+            )
+        except Exception as e:  # noqa: BLE001
+            logger.debug(
+                "Cleanup of inline SandboxTemplate '%s' failed: %s. "
+                "The CR may be left behind; delete manually with "
+                "`kubectl delete sandboxtemplate -n %s %s` if needed.",
+                self._inline_template_name,
+                e,
+                self._inline_template_namespace,
+                self._inline_template_name,
+            )
 
 
 class K8sAgentSandbox(BaseSandbox):
@@ -367,39 +405,194 @@ class K8sAgentSandbox(BaseSandbox):
         )
         return self._client
 
+    def _build_inline_template_body(
+        self, eff: K8sAgentSandboxSettings, namespace: str, name: str
+    ) -> Dict[str, Any]:
+        """Constructs the SandboxTemplate CR body for inline mode.
+
+        Reuses the Kubernetes integration's helpers rather than
+        hand-rolling pod-spec construction:
+
+        - ``kube_utils.convert_resource_settings_to_k8s_format`` maps
+          the active step's ``ResourceSettings`` (cpu/memory/gpu) to
+          K8s ``resources.requests`` / ``limits`` — handles fractional
+          CPU as millicores, memory in MiB, and ``nvidia.com/gpu``
+          mirrored to limits.
+        - ``manifest_utils.add_pod_settings`` applies user-supplied
+          ``KubernetesPodSettings`` (affinity, tolerations,
+          node_selectors, volumes, env, security_context,
+          additional_pod_spec_args, ...).
+        - ``kubernetes.client`` typed objects (``V1PodSpec`` /
+          ``V1Container``) + ``ApiClient.sanitize_for_serialization``
+          for the final dict — same path the SDK itself uses.
+
+        Args:
+            eff: Effective settings (used for ``base_image`` and
+                ``pod_settings``).
+            namespace: Target namespace.
+            name: Pre-generated template name.
+
+        Returns:
+            A dict ready to pass to ``CustomObjectsApi.
+            create_namespaced_custom_object``. Mirrors the layout of
+            the SDK's example ``python-sandbox-template.yaml``: a
+            single container exposing port 8888 with an HTTP readiness
+            probe, plus resource requests/limits and any pod-level
+            customisations from settings.
+        """
+        from kubernetes import (
+            client as k8s_client,  # type: ignore[import-untyped]
+        )
+
+        from zenml.integrations.kubernetes.kube_utils import (
+            convert_resource_settings_to_k8s_format,
+        )
+        from zenml.integrations.kubernetes.manifest_utils import (
+            add_pod_settings,
+        )
+        from zenml.steps.step_context import StepContext
+
+        image = eff.base_image or self.config.default_image
+        container = k8s_client.V1Container(
+            name="sandbox",
+            image=image,
+            ports=[k8s_client.V1ContainerPort(container_port=8888)],
+            readiness_probe=k8s_client.V1Probe(
+                http_get=k8s_client.V1HTTPGetAction(path="/", port=8888),
+                initial_delay_seconds=0,
+                period_seconds=1,
+            ),
+        )
+
+        ctx = StepContext.get()
+        if ctx is not None:
+            requests, limits, _ = convert_resource_settings_to_k8s_format(
+                ctx.step_run.config.resource_settings
+            )
+            if requests or limits:
+                container.resources = k8s_client.V1ResourceRequirements(
+                    requests=requests or None,
+                    limits=limits or None,
+                )
+
+        pod_spec = k8s_client.V1PodSpec(
+            containers=[container],
+            restart_policy="OnFailure",
+        )
+
+        if eff.pod_settings is not None:
+            add_pod_settings(
+                pod_spec=pod_spec,
+                settings=eff.pod_settings,
+                substitutions={"{{ image }}": image},
+            )
+
+        # Serialize the typed pod spec to a dict the k8s API will accept
+        # inside the SandboxTemplate CR body.
+        pod_spec_dict = k8s_client.ApiClient().sanitize_for_serialization(
+            pod_spec
+        )
+
+        return {
+            "apiVersion": "extensions.agents.x-k8s.io/v1beta1",
+            "kind": "SandboxTemplate",
+            "metadata": {"name": name, "namespace": namespace},
+            "spec": {"podTemplate": {"spec": pod_spec_dict}},
+        }
+
+    def _synthesize_inline_template(
+        self, eff: K8sAgentSandboxSettings, namespace: str
+    ) -> str:
+        """Creates a one-off SandboxTemplate CR for this session.
+
+        Synthesised templates are short-lived — they exist only to back
+        a single Sandbox claim and are deleted on session close (unless
+        ``inline_template_cleanup=False`` on the component config).
+
+        Args:
+            eff: Effective settings.
+            namespace: Target namespace for the CR.
+
+        Returns:
+            The generated template name.
+
+        Raises:
+            RuntimeError: If the Kubernetes API rejects the create
+                (RBAC failure, CRD not installed, name collision, …).
+                Raises with the underlying ``ApiException`` chained for
+                diagnostics.
+        """
+        from kubernetes import (
+            client as k8s_client,  # type: ignore[import-untyped]
+        )
+        from kubernetes.client.rest import (
+            ApiException,  # type: ignore[import-untyped]
+        )
+
+        name = f"zenml-sb-tpl-{uuid.uuid4().hex[:8]}"
+        body = self._build_inline_template_body(eff, namespace, name)
+        api = k8s_client.CustomObjectsApi()
+        try:
+            api.create_namespaced_custom_object(
+                group="extensions.agents.x-k8s.io",
+                version="v1beta1",
+                namespace=namespace,
+                plural="sandboxtemplates",
+                body=body,
+            )
+        except ApiException as e:
+            raise RuntimeError(
+                f"Failed to create inline SandboxTemplate '{name}' in "
+                f"namespace '{namespace}': {e.status} {e.reason}. "
+                f"Verify the agent-sandbox operator is installed and "
+                f"the service connector identity has create access on "
+                f"sandboxtemplates.extensions.agents.x-k8s.io."
+            ) from e
+        return name
+
     def create_session(
         self, settings: Optional[BaseSandboxSettings] = None
     ) -> SandboxSession:
         """Creates a new Agent Sandbox Session.
+
+        Resolves ``settings`` against the component config, then either
+        references the configured ``template_name`` or — in inline mode
+        — synthesises a SandboxTemplate CR from ``base_image`` +
+        ResourceSettings before claiming the sandbox.
 
         Args:
             settings: Per-call overrides on top of the component config.
 
         Returns:
             A live ``K8sAgentSandboxSession`` ready for ``exec`` calls.
-
-        Raises:
-            ValueError: If ``template_name`` is unset (inline template
-                synthesis is planned but not yet implemented in this
-                skeleton).
         """
         eff = cast(
             K8sAgentSandboxSettings, self.resolve_settings(override=settings)
         )
 
-        if not eff.template_name:
-            raise ValueError(
-                "Inline template synthesis is not yet implemented. "
-                "Pre-create a SandboxTemplate in the cluster and set "
-                "`template_name` on the component config or per-step "
-                "settings."
-            )
-
+        # Resolve k8s api defaults *before* synthesising the template,
+        # because the create-CR call goes through the same Configuration
+        # the SDK's K8sHelper will pick up.
         client = self._get_client(eff)
         namespace = eff.namespace or self.config.default_namespace
+
+        template_name = eff.template_name
+        inline_template_name: Optional[str] = None
+        if not template_name:
+            template_name = self._synthesize_inline_template(eff, namespace)
+            if self.config.inline_template_cleanup:
+                inline_template_name = template_name
+
         sandbox = client.create_sandbox(
-            template=eff.template_name,
+            template=template_name,
             namespace=namespace,
             sandbox_ready_timeout=eff.sandbox_ready_timeout,
         )
-        return K8sAgentSandboxSession(sandbox, parent=self)
+        return K8sAgentSandboxSession(
+            sandbox,
+            parent=self,
+            inline_template_name=inline_template_name,
+            inline_template_namespace=(
+                namespace if inline_template_name else None
+            ),
+        )

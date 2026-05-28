@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import sys
 import types
-from typing import Any, Iterator
+from typing import Any, Iterator, Optional
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
@@ -68,9 +68,12 @@ from zenml.integrations.k8s_agent_sandbox.sandboxes.k8s_agent_sandbox import (  
 )
 
 
-def _make_sandbox(**config_overrides: Any) -> K8sAgentSandbox:
+def _make_sandbox(
+    template_name: Optional[str] = "python-sandbox",
+    **config_overrides: Any,
+) -> K8sAgentSandbox:
     cfg = K8sAgentSandboxConfig(
-        template_name="python-sandbox",
+        template_name=template_name,
         **config_overrides,
     )
     return K8sAgentSandbox(
@@ -162,16 +165,6 @@ class TestConnectionConfigBuild:
 
 
 class TestCreateSession:
-    def test_requires_template_name(self) -> None:
-        sb = _make_sandbox()
-        # template_name defaults to "python-sandbox" via _make_sandbox;
-        # explicitly null it on the per-call override to reach the
-        # not-implemented branch.
-        with pytest.raises(ValueError, match="Inline template synthesis"):
-            sb.create_session(
-                settings=K8sAgentSandboxSettings(template_name="")
-            )
-
     def test_passes_template_and_namespace_to_sdk(self) -> None:
         sb = _make_sandbox(default_namespace="prod")
         fake_client = MagicMock()
@@ -202,6 +195,190 @@ class TestCreateSession:
         )
         kwargs = fake_client.create_sandbox.call_args.kwargs
         assert kwargs["namespace"] == "experiments"
+
+    def test_synthesises_inline_template_when_template_name_unset(
+        self,
+    ) -> None:
+        sb = _make_sandbox(template_name=None, default_namespace="lab")
+        fake_client = MagicMock()
+        fake_client.create_sandbox.return_value = MagicMock(name="sb1")
+        fake_client.create_sandbox.return_value.name = "sb1"
+        sb._client = fake_client
+
+        with patch("kubernetes.client.CustomObjectsApi") as fake_api_cls:
+            fake_api = MagicMock()
+            fake_api_cls.return_value = fake_api
+            session = sb.create_session()
+
+        fake_api.create_namespaced_custom_object.assert_called_once()
+        call_kwargs = fake_api.create_namespaced_custom_object.call_args.kwargs
+        assert call_kwargs["group"] == "extensions.agents.x-k8s.io"
+        assert call_kwargs["version"] == "v1beta1"
+        assert call_kwargs["plural"] == "sandboxtemplates"
+        assert call_kwargs["namespace"] == "lab"
+        body = call_kwargs["body"]
+        assert body["kind"] == "SandboxTemplate"
+        assert body["metadata"]["name"].startswith("zenml-sb-tpl-")
+        # Container shape: image, port 8888, readiness probe. K8s-client
+        # serialises camelCase keys (`containerPort`, `readinessProbe`).
+        container = body["spec"]["podTemplate"]["spec"]["containers"][0]
+        assert container["image"]
+        assert container["ports"][0]["containerPort"] == 8888
+        assert container["readinessProbe"]["httpGet"]["port"] == 8888
+        # SDK got the synthesised name.
+        sdk_kwargs = fake_client.create_sandbox.call_args.kwargs
+        assert sdk_kwargs["template"] == body["metadata"]["name"]
+        # Session tracks the inline template for cleanup.
+        assert session._inline_template_name == body["metadata"]["name"]
+        assert session._inline_template_namespace == "lab"
+
+    def test_inline_template_cleanup_disabled_skips_tracking(self) -> None:
+        sb = _make_sandbox(
+            template_name=None,
+            default_namespace="lab",
+            inline_template_cleanup=False,
+        )
+        fake_client = MagicMock()
+        fake_client.create_sandbox.return_value = MagicMock(name="sb1")
+        fake_client.create_sandbox.return_value.name = "sb1"
+        sb._client = fake_client
+
+        with patch("kubernetes.client.CustomObjectsApi"):
+            session = sb.create_session()
+        assert session._inline_template_name is None
+        assert session._inline_template_namespace is None
+
+
+class TestInlineTemplateBody:
+    def test_resources_omitted_when_no_step_context(self) -> None:
+        sb = _make_sandbox(template_name=None)
+        body = sb._build_inline_template_body(
+            K8sAgentSandboxSettings(), "ns", "zenml-sb-tpl-test"
+        )
+        container = body["spec"]["podTemplate"]["spec"]["containers"][0]
+        # No StepContext in unit tests → no resources block.
+        assert "resources" not in container
+
+    def test_image_override_via_settings(self) -> None:
+        sb = _make_sandbox()
+        body = sb._build_inline_template_body(
+            K8sAgentSandboxSettings(base_image="my-org/custom:latest"),
+            "ns",
+            "zenml-sb-tpl-test",
+        )
+        container = body["spec"]["podTemplate"]["spec"]["containers"][0]
+        assert container["image"] == "my-org/custom:latest"
+
+    def test_resource_requests_via_k8s_helper(self) -> None:
+        # Confirms we reuse `convert_resource_settings_to_k8s_format`:
+        # cpu_count=0.5 must become "500m", not "0.5" — the helper's
+        # millicore handling is the integration value-add.
+        from zenml.config.resource_settings import ResourceSettings
+
+        sb = _make_sandbox()
+        fake_ctx = MagicMock()
+        fake_ctx.step_run.config.resource_settings = ResourceSettings(
+            cpu_count=0.5, memory="512MiB"
+        )
+        with patch(
+            "zenml.steps.step_context.StepContext.get",
+            return_value=fake_ctx,
+        ):
+            body = sb._build_inline_template_body(
+                K8sAgentSandboxSettings(), "ns", "zenml-sb-tpl-test"
+            )
+        requests = body["spec"]["podTemplate"]["spec"]["containers"][0][
+            "resources"
+        ]["requests"]
+        assert requests["cpu"] == "500m"
+        assert requests["memory"].endswith("Mi")
+
+    def test_gpu_count_routed_to_nvidia_resource(self) -> None:
+        # The k8s helper mirrors GPUs to both requests and limits.
+        from zenml.config.resource_settings import ResourceSettings
+
+        sb = _make_sandbox()
+        fake_ctx = MagicMock()
+        fake_ctx.step_run.config.resource_settings = ResourceSettings(
+            gpu_count=1
+        )
+        with patch(
+            "zenml.steps.step_context.StepContext.get",
+            return_value=fake_ctx,
+        ):
+            body = sb._build_inline_template_body(
+                K8sAgentSandboxSettings(), "ns", "zenml-sb-tpl-test"
+            )
+        res = body["spec"]["podTemplate"]["spec"]["containers"][0]["resources"]
+        assert res["requests"]["nvidia.com/gpu"] == "1"
+        assert res["limits"]["nvidia.com/gpu"] == "1"
+
+    def test_pod_settings_applied_via_manifest_utils(self) -> None:
+        # `add_pod_settings` should plumb node_selectors / tolerations
+        # / affinity through. We verify by setting node_selectors and
+        # checking it lands in the serialised dict.
+        from zenml.integrations.kubernetes.pod_settings import (
+            KubernetesPodSettings,
+        )
+
+        sb = _make_sandbox()
+        body = sb._build_inline_template_body(
+            K8sAgentSandboxSettings(
+                pod_settings=KubernetesPodSettings(
+                    node_selectors={"node-pool": "sandbox"}
+                )
+            ),
+            "ns",
+            "zenml-sb-tpl-test",
+        )
+        pod_spec = body["spec"]["podTemplate"]["spec"]
+        assert pod_spec["nodeSelector"] == {"node-pool": "sandbox"}
+
+
+class TestInlineTemplateCleanup:
+    def _session_with_inline(self) -> K8sAgentSandboxSession:
+        sb = _make_sandbox()
+        fake_underlying = MagicMock()
+        fake_underlying.name = "sb1"
+        return K8sAgentSandboxSession(
+            fake_underlying,
+            parent=sb,
+            inline_template_name="zenml-sb-tpl-deadbeef",
+            inline_template_namespace="lab",
+        )
+
+    def test_close_deletes_inline_template(self) -> None:
+        session = self._session_with_inline()
+        with patch("kubernetes.client.CustomObjectsApi") as fake_api_cls:
+            fake_api = MagicMock()
+            fake_api_cls.return_value = fake_api
+            session.close()
+        fake_api.delete_namespaced_custom_object.assert_called_once_with(
+            group="extensions.agents.x-k8s.io",
+            version="v1beta1",
+            namespace="lab",
+            plural="sandboxtemplates",
+            name="zenml-sb-tpl-deadbeef",
+        )
+
+    def test_close_tolerates_delete_failure(self) -> None:
+        session = self._session_with_inline()
+        with patch("kubernetes.client.CustomObjectsApi") as fake_api_cls:
+            fake_api = MagicMock()
+            fake_api.delete_namespaced_custom_object.side_effect = (
+                RuntimeError("403 forbidden")
+            )
+            fake_api_cls.return_value = fake_api
+            session.close()  # should not raise
+
+    def test_close_skips_delete_when_no_inline_template(self) -> None:
+        sb = _make_sandbox()
+        fake_underlying = MagicMock()
+        fake_underlying.name = "sb1"
+        session = K8sAgentSandboxSession(fake_underlying, parent=sb)
+        with patch("kubernetes.client.CustomObjectsApi") as fake_api_cls:
+            session.close()
+        fake_api_cls.assert_not_called()
 
 
 class TestProcessSurface:

@@ -20,6 +20,7 @@ from pydantic import Field
 
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.k8s_agent_sandbox import K8S_AGENT_SANDBOX_FLAVOR
+from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.models import ServiceConnectorRequirements
 from zenml.sandboxes import (
     BaseSandboxConfig,
@@ -86,6 +87,15 @@ class K8sAgentSandboxSettings(BaseSandboxSettings):
         "the cluster auto-scales from zero.",
         ge=1,
     )
+    pod_settings: Optional[KubernetesPodSettings] = Field(
+        default=None,
+        description="Full Kubernetes pod customisation reusing the "
+        "Kubernetes orchestrator's ``KubernetesPodSettings`` surface — "
+        "node_selectors, affinity, tolerations, volume_mounts, env, "
+        "security_context, additional_pod_spec_args, etc. Only applied "
+        "in inline-template mode (when ``template_name`` is unset); in "
+        "template mode the referenced SandboxTemplate's spec wins.",
+    )
 
 
 class K8sAgentSandboxConfig(BaseSandboxConfig, K8sAgentSandboxSettings):
@@ -134,11 +144,27 @@ class K8sAgentSandboxConfig(BaseSandboxConfig, K8sAgentSandboxSettings):
         "``K8sAgentSandboxSettings.namespace`` is unset.",
     )
     default_image: str = Field(
-        default="python:3.11-slim",
+        default=(
+            "us-central1-docker.pkg.dev/k8s-staging-images/agent-sandbox/"
+            "python-runtime-sandbox:latest-main"
+        ),
         description="Container image used when synthesising an inline "
-        "SandboxTemplate (i.e. when no per-step ``template_name`` is "
-        "set and ``base_image`` is also ``None``). Ignored in template "
-        "mode.",
+        "SandboxTemplate (i.e. when no ``template_name`` is set). MUST "
+        "contain the agent-sandbox runtime that exposes the sandbox HTTP "
+        "API on port 8888 — ``commands.run`` POSTs to ``/execute`` and "
+        "fails fast if the container isn't running the runtime. Defaults "
+        "to the upstream ``python-runtime-sandbox`` image. To bundle "
+        "extra deps, base a custom image on it (the operator's "
+        "``examples/`` show the Dockerfile shape). Ignored when "
+        "``template_name`` is set — the referenced SandboxTemplate's "
+        "container image wins.",
+    )
+    inline_template_cleanup: bool = Field(
+        default=True,
+        description="Whether to delete synthesised SandboxTemplate "
+        "custom resources at session close. ``True`` (default) keeps "
+        "the cluster clean; set ``False`` for debugging when you want "
+        "to inspect the generated CR after the session exits.",
     )
 
     @property

@@ -36,7 +36,9 @@ class K8sAgentSandboxIntegration(Integration):
     """Definition of the Agent Sandbox integration for ZenML."""
 
     NAME = K8S_AGENT_SANDBOX
-    REQUIREMENTS = ["k8s-agent-sandbox>=0.1.0", "kubernetes"]
+    # Pin matches the `kubernetes` integration so pod-spec helpers we
+    # reuse (manifest_utils, pod_settings, kube_utils) can't drift.
+    REQUIREMENTS = ["k8s-agent-sandbox>=0.1.0", "kubernetes>=21.7,<26"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
