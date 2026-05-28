@@ -43,7 +43,6 @@ if TYPE_CHECKING:
     from fastapi import FastAPI
     from opentelemetry.sdk.resources import Resource
 
-    from zenml.config.server_config import ServerConfiguration
     from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 logger = get_logger(__name__)
@@ -71,11 +70,12 @@ def configure_otel(app: "FastAPI") -> None:
     """
     global _otel_configured
 
-    from zenml.zen_server.utils import server_config
-
     if _otel_configured:
         logger.debug("OpenTelemetry instrumentation already configured.")
         return
+
+    import zenml
+    from zenml.zen_server.utils import server_config
 
     config = server_config()
 
@@ -98,7 +98,13 @@ def configure_otel(app: "FastAPI") -> None:
     try:
         from opentelemetry.sdk.resources import Resource
 
-        resource = Resource.create(_get_resource_attributes(config))
+        resource_attributes = {
+            "service.name": config.otel_service_name,
+            "service.version": zenml.__version__,
+            "deployment.environment.name": str(config.deployment_type),
+        }
+
+        resource = Resource.create(attributes=resource_attributes)
     except ImportError:
         logger.debug(
             "OpenTelemetry SDK packages not installed — skipping "
@@ -151,15 +157,17 @@ def shutdown_otel() -> None:
     ):
         return
 
-    # Uninstrument the libraries.
-    while _otel_uninstrument_callbacks:
-        uninstrument = _otel_uninstrument_callbacks.pop()
+    # Undo instrumentation in reverse registration order so dependent
+    # instrumentation (if any) is removed before the lower-level providers it uses.
+    for uninstrument in reversed(_otel_uninstrument_callbacks):
         try:
             uninstrument()
         except Exception:
             logger.exception(
                 "Failed to uninstrument OpenTelemetry library cleanly."
             )
+    # Empty the list of uninstrument callbacks.
+    _otel_uninstrument_callbacks.clear()
 
     # Remove the OTel log handler from the root logger.
     if _otel_log_handler:
@@ -169,14 +177,15 @@ def shutdown_otel() -> None:
         _otel_log_handler = None
 
     # Shut down the OTel providers.
-    while _otel_providers:
-        provider = _otel_providers.pop()
+    for provider in reversed(_otel_providers):
         try:
             provider.shutdown()
         except Exception:
             logger.exception(
                 "Failed to shut down OpenTelemetry provider cleanly."
             )
+    # Empty the list of OTel providers.
+    _otel_providers.clear()
 
     _otel_configured = False
 
@@ -384,14 +393,3 @@ def _instrument_libraries(app: "FastAPI") -> None:
             "Install `opentelemetry-instrumentation-requests`."
         )
         pass
-
-
-def _get_resource_attributes(config: "ServerConfiguration") -> dict[str, str]:
-    """Get stable resource attributes shared by all OTel signals."""
-    import zenml
-
-    return {
-        "service.name": config.otel_service_name,
-        "service.version": zenml.__version__,
-        "deployment.environment.name": str(config.deployment_type),
-    }
