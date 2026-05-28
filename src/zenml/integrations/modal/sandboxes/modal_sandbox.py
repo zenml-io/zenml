@@ -59,12 +59,9 @@ from zenml.sandboxes import (
 if TYPE_CHECKING:
     import modal  # noqa: F401
 
+    from zenml.config import ResourceSettings
+
 logger = get_logger(__name__)
-
-
-# Env var the orchestrator entrypoint sets when a step runs in a container.
-# Used to resolve the STEP_IMAGE sentinel — see plan.md.
-_STEP_IMAGE_ENV_VAR = "ZENML_ACTIVE_STEP_IMAGE"
 
 
 class ModalSandboxSnapshot(BaseSandboxSnapshot):
@@ -385,17 +382,49 @@ def _resolve_image(
     if base_image is None:
         return modal.Image.from_registry(default_image)
     if base_image == STEP_IMAGE:
-        step_image = os.environ.get(_STEP_IMAGE_ENV_VAR)
+        step_image = _resolve_step_image()
         if not step_image:
             logger.warning(
-                "STEP_IMAGE requested but %s is not set; falling back to "
-                "the flavor's default image '%s'.",
-                _STEP_IMAGE_ENV_VAR,
+                "STEP_IMAGE requested but the current step is not "
+                "running on a containerized orchestrator with a built "
+                "image; falling back to the flavor's default image '%s'.",
                 default_image,
             )
             return modal.Image.from_registry(default_image)
         return modal.Image.from_registry(step_image)
     return modal.Image.from_registry(base_image)
+
+
+def _resolve_step_image() -> Optional[str]:
+    """Returns the image URI of the currently-running step, if any.
+
+    Looks up the snapshot attached to the active pipeline run via
+    ``StepContext`` and delegates to ``ContainerizedOrchestrator.get_image``
+    (the same helper the orchestrator uses to pick images at submit time).
+    Returns ``None`` when there's no step context, no snapshot, no build,
+    or the active orchestrator isn't containerized.
+
+    Returns:
+        The image URI for the current step, or ``None``.
+    """
+    from zenml.orchestrators.containerized_orchestrator import (
+        ContainerizedOrchestrator,
+    )
+    from zenml.steps.step_context import StepContext
+
+    ctx = StepContext.get()
+    if ctx is None:
+        return None
+    snapshot = ctx.pipeline_run.snapshot
+    if snapshot is None or snapshot.build is None:
+        return None
+    try:
+        return ContainerizedOrchestrator.get_image(
+            snapshot=snapshot, step_name=ctx.step_name
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.debug("Could not resolve step image: %s", e)
+        return None
 
 
 class ModalSandbox(BaseSandbox):
@@ -466,9 +495,11 @@ class ModalSandbox(BaseSandbox):
         """Builds the kwargs passed to ``modal.Sandbox.create``.
 
         Used by both ``create_session`` and ``restore`` so the same
-        timeout / resource / region knobs apply uniformly — previously
-        ``restore`` silently dropped them, leaving restored sandboxes
-        on Modal's 5-minute default timeout.
+        timeout / resource / region knobs apply uniformly. Resource
+        knobs (cpu, memory, gpu count) are read from the active step's
+        ``ResourceSettings`` and combined with this flavor's gpu
+        type via ``get_gpu_values`` — the same helper the Modal step
+        operator uses, so the two components stay consistent.
 
         Args:
             eff: Effective per-step settings.
@@ -482,6 +513,22 @@ class ModalSandbox(BaseSandbox):
         """
         import modal
 
+        from zenml.config.resource_settings import ByteUnit
+
+        resource_settings = self._active_resource_settings()
+        memory_mb = resource_settings.get_memory(ByteUnit.MB)
+
+        # GPU value combines the Modal-specific type ("A100", "H100", ...)
+        # with the count from ResourceSettings ("A100:2"). Mirrors what
+        # ModalStepOperator does so the two components stay consistent.
+        gpu_values: Optional[str] = None
+        if eff.gpu:
+            gpu_values = (
+                f"{eff.gpu}:{resource_settings.gpu_count}"
+                if resource_settings.gpu_count
+                else eff.gpu
+            )
+
         kwargs: Dict[str, Any] = {"app": self._get_app()}
         if with_env:
             env = self._resolve_session_environment(eff)
@@ -494,17 +541,37 @@ class ModalSandbox(BaseSandbox):
                 ]
         if eff.timeout_seconds is not None:
             kwargs["timeout"] = eff.timeout_seconds
-        if eff.gpu is not None:
-            kwargs["gpu"] = eff.gpu
-        if eff.cpu is not None:
-            kwargs["cpu"] = eff.cpu
-        if eff.memory_mb is not None:
-            kwargs["memory"] = eff.memory_mb
+        if gpu_values is not None:
+            kwargs["gpu"] = gpu_values
+        if resource_settings.cpu_count is not None:
+            kwargs["cpu"] = resource_settings.cpu_count
+        if memory_mb is not None:
+            kwargs["memory"] = int(memory_mb)
         if eff.region is not None:
             kwargs["region"] = eff.region
         if eff.cloud is not None:
             kwargs["cloud"] = eff.cloud
         return kwargs
+
+    @staticmethod
+    def _active_resource_settings() -> "ResourceSettings":
+        """Returns the active step's ``ResourceSettings``, or defaults.
+
+        Reads from the active ``StepContext``'s step config. When no step
+        context is available (ad-hoc sandbox usage from a script),
+        returns an empty ``ResourceSettings`` so the caller can still
+        compose Modal kwargs without erroring.
+
+        Returns:
+            The step's resource settings (cpu_count, memory, gpu_count).
+        """
+        from zenml.config import ResourceSettings
+        from zenml.steps.step_context import StepContext
+
+        ctx = StepContext.get()
+        if ctx is None:
+            return ResourceSettings()
+        return ctx.step_run.config.resource_settings
 
     def create_session(
         self, settings: Optional[BaseSandboxSettings] = None
@@ -520,7 +587,7 @@ class ModalSandbox(BaseSandbox):
         self._export_modal_tokens()
         import modal
 
-        eff = cast(ModalSandboxSettings, self.effective_settings(settings))
+        eff = cast(ModalSandboxSettings, self.resolve_settings(settings))
         image = _resolve_image(eff.base_image, self.config.default_image)
 
         sandbox = modal.Sandbox.create(
@@ -579,7 +646,7 @@ class ModalSandbox(BaseSandbox):
         self._export_modal_tokens()
         import modal
 
-        eff = cast(ModalSandboxSettings, self.effective_settings(None))
+        eff = cast(ModalSandboxSettings, self.resolve_settings(None))
         try:
             image = modal.Image.from_id(snapshot.ref)
             sandbox = modal.Sandbox.create(

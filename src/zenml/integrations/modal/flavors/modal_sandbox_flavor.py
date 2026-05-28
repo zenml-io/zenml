@@ -32,6 +32,13 @@ if TYPE_CHECKING:
 class ModalSandboxSettings(BaseSandboxSettings):
     """Per-step settings for the Modal sandbox.
 
+    Holds Modal-specific knobs that ``ResourceSettings`` doesn't cover
+    (gpu type, region, cloud). For cpu count, memory, and gpu count
+    use the standard ``ResourceSettings`` instead -- the sandbox reads
+    them from the active step's resource settings and combines them
+    with the gpu type via ``get_gpu_values``, the same helper the
+    Modal step operator uses.
+
     See https://modal.com/docs/guide/region-selection for region / cloud
     selection (Enterprise & Team plans). Combinations that aren't available
     surface as Modal API errors at session creation time.
@@ -40,15 +47,8 @@ class ModalSandboxSettings(BaseSandboxSettings):
     gpu: Optional[str] = Field(
         default=None,
         description="GPU type for the Session (e.g. 'A100', 'H100', 'T4'). "
-        "None for CPU-only.",
-    )
-    cpu: Optional[float] = Field(
-        default=None,
-        description="Number of CPU cores requested for the Session.",
-    )
-    memory_mb: Optional[int] = Field(
-        default=None,
-        description="Memory in MiB requested for the Session.",
+        "None for CPU-only. The gpu count is read from "
+        "ResourceSettings.gpu_count and combined into '<type>:<count>'.",
     )
     region: Optional[str] = Field(
         default=None,
