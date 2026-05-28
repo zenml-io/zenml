@@ -212,7 +212,6 @@ class TestSettingsMerge:
             id=uuid4(),
             config=ModalSandboxConfig(
                 gpu="A100",
-                cpu=4.0,
                 region="us-east",
             ),
             flavor="modal",
@@ -223,11 +222,10 @@ class TestSettingsMerge:
             environment={},
             secrets=[],
         )
-        # Override only timeout_seconds — gpu/cpu/region must persist.
+        # Override only timeout_seconds — gpu/region must persist.
         override = ModalSandboxSettings(timeout_seconds=600)
-        eff = sandbox.effective_settings(override)
+        eff = sandbox.resolve_settings(override)
         assert eff.gpu == "A100"
-        assert eff.cpu == 4.0
         assert eff.region == "us-east"
         assert eff.timeout_seconds == 600
 
@@ -245,13 +243,13 @@ class TestSettingsMerge:
             secrets=[],
         )
         override = ModalSandboxSettings(gpu="H100")
-        assert sandbox.effective_settings(override).gpu == "H100"
+        assert sandbox.resolve_settings(override).gpu == "H100"
 
     def test_none_override_returns_config_defaults(self) -> None:
         sandbox = ModalSandbox(
             name="test-modal",
             id=uuid4(),
-            config=ModalSandboxConfig(gpu="A100", cpu=4.0),
+            config=ModalSandboxConfig(gpu="A100"),
             flavor="modal",
             type=StackComponentType.SANDBOX,
             user=None,
@@ -260,9 +258,8 @@ class TestSettingsMerge:
             environment={},
             secrets=[],
         )
-        eff = sandbox.effective_settings(None)
+        eff = sandbox.resolve_settings(None)
         assert eff.gpu == "A100"
-        assert eff.cpu == 4.0
 
 
 # ---------------------------------------------------------------------------
@@ -507,13 +504,16 @@ class TestModalLogForwarding:
         assert env_dict["COMPONENT_VAR"] == "override"  # settings wins
         assert env_dict["STEP_VAR"] == "y"
 
-    def test_step_image_sentinel_resolves_to_env_var(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        monkeypatch.setenv(
-            "ZENML_ACTIVE_STEP_IMAGE", "my-registry/step-image:v1"
-        )
-        with _patch_modal() as modal_mock:
+    def test_step_image_sentinel_resolves_via_snapshot_lookup(self) -> None:
+        # When the active step's pipeline_run.snapshot has a build, the
+        # sentinel resolves to the containerized orchestrator's image.
+        with (
+            _patch_modal() as modal_mock,
+            patch(
+                "zenml.integrations.modal.sandboxes.modal_sandbox._resolve_step_image",
+                return_value="my-registry/step-image:v1",
+            ),
+        ):
             modal_mock.App.lookup.return_value = MagicMock()
             modal_mock.Image.from_registry.return_value = MagicMock()
             modal_mock.Sandbox.create.return_value = MagicMock(
@@ -526,11 +526,16 @@ class TestModalLogForwarding:
             "my-registry/step-image:v1"
         )
 
-    def test_step_image_sentinel_falls_back_when_env_missing(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        monkeypatch.delenv("ZENML_ACTIVE_STEP_IMAGE", raising=False)
-        with _patch_modal() as modal_mock:
+    def test_step_image_sentinel_falls_back_when_unresolvable(self) -> None:
+        # No step context / no snapshot / no build -> default image
+        # plus a warning.
+        with (
+            _patch_modal() as modal_mock,
+            patch(
+                "zenml.integrations.modal.sandboxes.modal_sandbox._resolve_step_image",
+                return_value=None,
+            ),
+        ):
             modal_mock.App.lookup.return_value = MagicMock()
             modal_mock.Image.from_registry.return_value = MagicMock()
             modal_mock.Sandbox.create.return_value = MagicMock(
@@ -539,7 +544,6 @@ class TestModalLogForwarding:
 
             settings = ModalSandboxSettings(base_image=STEP_IMAGE)
             _make_modal_sandbox().create_session(settings=settings)
-        # Falls back to the flavor's default_image.
         modal_mock.Image.from_registry.assert_called_with(
             ModalSandboxConfig().default_image
         )

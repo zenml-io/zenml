@@ -27,7 +27,7 @@ from typing import (
     cast,
 )
 
-from pydantic import Field, ValidationError
+from pydantic import Field
 
 from zenml.config.base_settings import BaseSettings
 from zenml.enums import StackComponentType
@@ -90,19 +90,19 @@ class BaseSandboxSettings(BaseSettings):
     )
     environment: Dict[str, str] = Field(
         default_factory=dict,
-        description="Per-step env vars merged into the Session on top of the "
-        "component's `StackComponent.environment` (settings override on key "
-        "collision). Values may reference ZenML secrets via "
-        "{{secret_name.key}}.",
+        description="Per-step env vars merged into the Session on top of "
+        "the component's `StackComponent.environment` and resolved "
+        "secrets (settings override on key collision). For secret-backed "
+        "values, attach a secret to the component via "
+        "`zenml sandbox register --secret=...`.",
     )
     copy_local_env: bool = Field(
         default=False,
         description="If True, propagates the step process's full local env "
-        "(including any resolved ZenML secrets present) into the Session. "
-        "Layered FIRST in the env merge — explicit component env, "
-        "component secrets, and per-step settings.environment all override "
-        "values copied from the local env. Convenient for prototyping; off "
-        "by default for security.",
+        "into the Session. Layered FIRST in the env merge — explicit "
+        "component env, component secrets, and per-step "
+        "settings.environment all override values copied from the local "
+        "env. Convenient for prototyping; off by default for security.",
     )
     timeout_seconds: Optional[int] = Field(
         default=None,
@@ -148,7 +148,7 @@ class BaseSandbox(StackComponent, ABC):
         """Creates a fresh Session, applying config + settings.
 
         Implementations typically delegate the settings merge to
-        ``self.effective_settings(settings)`` and the env merge to
+        ``self.resolve_settings(settings)`` and the env merge to
         ``self._resolve_session_environment(...)`` before calling the
         provider's primitive.
         """
@@ -186,129 +186,75 @@ class BaseSandbox(StackComponent, ABC):
 
     # ------------------------- settings resolution ------------------------
 
-    def pull_step_settings(self) -> Optional[BaseSandboxSettings]:
-        """Returns the active step's sandbox settings, if any.
+    def resolve_settings(
+        self, override: Optional[BaseSandboxSettings] = None
+    ) -> BaseSandboxSettings:
+        """Returns the effective sandbox settings.
 
-        Lets flavors fall back to the per-step settings configured via
-        ``@step(settings={"sandbox[.<flavor>|:<name>]": ...})`` when a
-        caller invokes ``create_session()`` without an explicit override.
-        Returns ``None`` when there is no active step context or when
-        the step did not declare sandbox settings.
+        Reuses the canonical ``StackComponent.get_settings(step_run)``
+        which already layers config defaults under the step's
+        ``settings[<canonical-key>]`` entry and validates against this
+        flavor's ``settings_class``.
 
-        ZenML accepts three settings key forms: ``"sandbox"`` (any
-        flavor), ``"sandbox.<flavor>"`` (only this flavor), and
-        ``"sandbox:<name>"`` (only this component instance). All three
-        are checked in increasing specificity so a more specific key
-        wins if both are present.
+        Args:
+            override: Explicit per-call settings. If provided, they are
+                layered on top of the config defaults exactly the same
+                way ``get_settings`` does for the step container.
+                Otherwise the active step context is consulted; if
+                there is no step context either, the config defaults
+                are returned as-is.
 
         Returns:
-            The step's sandbox settings (already validated against the
-            flavor's ``settings_class``) or ``None``.
+            The effective settings for the next Session.
         """
         from zenml.steps.step_context import StepContext
 
-        ctx = StepContext.get()
-        if ctx is None:
-            return None
+        settings_cls = self.settings_class or BaseSandboxSettings
 
-        settings_cls = self.settings_class
-        if settings_cls is None or not issubclass(
-            settings_cls, BaseSandboxSettings
-        ):
-            return None
-
-        raw: Optional[BaseSettings] = None
-        step_settings = ctx.step_run.config.settings
-        for key in (
-            "sandbox",
-            f"sandbox.{self.flavor}",
-            f"sandbox:{self.name}",
-        ):
-            if key in step_settings:
-                raw = step_settings[key]
-        if raw is None:
-            return None
-
-        if isinstance(raw, settings_cls):
-            return raw
-        try:
-            return settings_cls.model_validate(
-                raw.model_dump(exclude_unset=True)
-            )
-        except ValidationError as e:
-            logger.debug(
-                "Could not coerce step sandbox settings to %s: %s",
-                settings_cls.__name__,
-                e,
-            )
-            return None
-
-    def effective_settings(
-        self,
-        override: Optional[BaseSandboxSettings] = None,
-    ) -> BaseSandboxSettings:
-        """Resolves effective settings = config defaults + override.
-
-        Generic 3-step pipeline used by every flavor:
-
-        1. If ``override`` is ``None``, fall back to per-step settings
-           via ``pull_step_settings()``.
-        2. Layer the config's settings-shaped defaults under the override
-           so only fields the caller explicitly set on the override are
-           applied (``exclude_unset=True``).
-        3. Validate the result through the flavor's ``settings_class``.
-
-        Flavors with a settings class that inherits from both ``Config``
-        and ``Settings`` get the config defaults included automatically.
-
-        Args:
-            override: Optional per-step settings; if omitted the step
-                context is consulted.
-
-        Returns:
-            The effective settings for this Session.
-        """
-        if override is None:
-            override = self.pull_step_settings()
-        settings_cls = self.settings_class
-        if settings_cls is None or not issubclass(
-            settings_cls, BaseSandboxSettings
-        ):
-            # Should not happen for a sandbox flavor, but fall back
-            # gracefully rather than crash.
-            return override or BaseSandboxSettings()
-
-        # Only carry over config fields that the settings class actually
-        # declares — config may extend with non-settings fields.
-        base = self.config.model_dump(
-            include=set(settings_cls.model_fields.keys())
-        )
         if override is not None:
-            base.update(override.model_dump(exclude_unset=True))
-        return settings_cls(**base)
+            settings_dict = self.config.model_dump(exclude_unset=True)
+            settings_dict.update(override.model_dump(exclude_unset=True))
+            return cast(
+                BaseSandboxSettings,
+                settings_cls.model_validate(settings_dict),
+            )
+
+        ctx = StepContext.get()
+        if ctx is not None:
+            return cast(BaseSandboxSettings, self.get_settings(ctx.step_run))
+
+        return cast(
+            BaseSandboxSettings,
+            settings_cls.model_validate(
+                self.config.model_dump(exclude_unset=True)
+            ),
+        )
 
     # ------------------------- env / secret merging -----------------------
 
     def _resolve_session_environment(
         self, settings: Optional[BaseSandboxSettings]
     ) -> Dict[str, str]:
-        """Merges env vars from all sources for a new Session.
+        """Composes env vars to inject into a new Session.
 
-        Order (later sources override earlier on key collision — most-specific
-        wins, matching ``get_runtime_environment`` precedent):
+        Layers (later sources override earlier on key collision):
 
-        1. ``os.environ`` of the step process, if ``settings.copy_local_env``
-           is ``True``. Layered first so explicit configuration always wins.
-        2. ``StackComponent.environment`` (component-level explicit env vars).
-        3. Each UUID in ``StackComponent.secrets`` resolved via the ZenML
-           secret store and exploded into env vars (every key in the secret
-           becomes one ``$KEY=value`` entry).
-        4. ``settings.environment`` — per-step overrides. Values may be ZenML
-           ``{{secret_name.key}}`` references, resolved here. Highest
-           precedence.
+        1. ``os.environ`` of the step process, if
+           ``settings.copy_local_env`` is True.
+        2. ``self.environment`` — component-level env vars (already
+           secret-ref-resolved by ``SecretReferenceMixin``).
+        3. ``self.secrets`` — component-level secret UUIDs exploded
+           into env vars via ``Client().get_secret(...).secret_values``.
+        4. ``settings.environment`` — per-step plain overrides.
+
+        For step-runtime env (every stack component's env merged), use
+        ``zenml.utils.env_utils.get_runtime_environment`` instead — this
+        helper is intentionally scoped to *this* component since the
+        Sandbox runs in its own provider, not the step container.
 
         Args:
-            settings: Effective per-step settings, or ``None`` (use defaults).
+            settings: Effective per-step settings (or None to skip the
+                ``copy_local_env`` + ``settings.environment`` layers).
 
         Returns:
             The merged ``Dict[str, str]`` to pass to the provider.
@@ -316,63 +262,24 @@ class BaseSandbox(StackComponent, ABC):
         import os
 
         from zenml.client import Client
-        from zenml.utils import secret_utils
 
-        merged: Dict[str, str] = {}
-
-        # 1. Local env first — explicit configuration below will overwrite.
+        env: Dict[str, str] = {}
         if settings is not None and settings.copy_local_env:
-            merged.update(os.environ)
-
-        # 2. Component-level explicit env vars.
-        merged.update(self.environment or {})
-
-        # 3. Component-level secrets exploded.
-        client: Optional["Client"] = None
-        if self.secrets or (settings is not None and settings.environment):
-            client = Client()
-
-        if self.secrets and client is not None:
-            for secret_id in self.secrets:
-                try:
-                    secret = client.get_secret(secret_id)
-                except Exception as e:
-                    logger.warning(
-                        "Could not resolve sandbox component secret %s: %s. "
-                        "Skipping.",
-                        secret_id,
-                        e,
-                    )
-                    continue
-                merged.update(secret.secret_values)
-
-        # 4. Per-step overrides (highest precedence). Secret references
-        # in values get resolved against the secret store.
-        if (
-            settings is not None
-            and settings.environment
-            and client is not None
-        ):
-            for key, value in settings.environment.items():
-                if secret_utils.is_secret_reference(value):
-                    ref = secret_utils.parse_secret_reference(value)
-                    try:
-                        secret = client.get_secret_by_name_and_private_status(
-                            name=ref.name
-                        )
-                        merged[key] = secret.secret_values[ref.key]
-                    except Exception as e:
-                        logger.warning(
-                            "Could not resolve secret reference %r for env "
-                            "var '%s': %s. Skipping.",
-                            value,
-                            key,
-                            e,
-                        )
-                else:
-                    merged[key] = value
-
-        return merged
+            env.update(os.environ)
+        env.update(self.environment or {})
+        for secret_id in self.secrets or []:
+            try:
+                env.update(Client().get_secret(secret_id).secret_values)
+            except Exception as e:
+                logger.warning(
+                    "Could not resolve sandbox component secret %s: %s. "
+                    "Skipping.",
+                    secret_id,
+                    e,
+                )
+        if settings is not None and settings.environment:
+            env.update(settings.environment)
+        return env
 
     # ------------------------- snapshot helpers ---------------------------
 

@@ -55,16 +55,31 @@ zenml stack update --sandbox my-modal-sandbox
 
 | Field | Purpose |
 |---|---|
-| `base_image` | `None` → component `default_image`; `STEP_IMAGE` sentinel → image the current ZenML step is running in; any other string → exact image URI for `modal.Image.from_registry`. |
-| `environment` | Per-step env vars merged onto `StackComponent.environment` (Settings wins on collision). |
+| `base_image` | `None` → component `default_image`; `STEP_IMAGE` sentinel → image the current ZenML step is running in (resolved on-demand from the active pipeline run's snapshot via `ContainerizedOrchestrator.get_image`); any other string → exact image URI for `modal.Image.from_registry`. |
+| `environment` | Per-step env vars merged onto `StackComponent.environment` and resolved secrets (Settings wins on collision). |
 | `copy_local_env` | If `True`, propagate the step process's full local env into the Session. Off by default. |
-| `timeout_seconds` | Forwarded to Modal's `Sandbox.create(timeout=)`. |
-| `gpu` | Modal GPU spec, e.g. `"A100"`, `"H100"`, `"T4"`. |
-| `cpu` | Cores requested. |
-| `memory_mb` | Memory in MiB. |
+| `timeout_seconds` | Forwarded to Modal's `Sandbox.create(timeout=)`. Also honored on `restore()`. |
+| `gpu` | Modal GPU type, e.g. `"A100"`, `"H100"`, `"T4"`. The count comes from `ResourceSettings.gpu_count` and is appended as `<type>:<count>`. |
 | `region` | Modal region (e.g. `"us-east"`). Enterprise/Team plans. |
 | `cloud` | Cloud provider (e.g. `"aws"`, `"gcp"`). Enterprise/Team plans. |
-| `forward_logs_to_step` | Auto-route Sandbox stdout/stderr into ZenML step logs as a per-session log source tagged with the session id (visible as a separate stream in the UI). Active when the Session is used as a context manager (`with sandbox.create_session() as session:`). Default: `True` when `base_image == STEP_IMAGE`, else `False`. |
+
+For **cpu / memory / gpu count**, use ZenML's standard `ResourceSettings` rather than this flavor's settings — the same place the [Modal step operator](../step-operators/modal.md) reads them from. Example:
+
+```python
+from zenml import step
+from zenml.config import ResourceSettings
+from zenml.integrations.modal.flavors import ModalSandboxSettings
+
+@step(
+    settings={
+        "resources": ResourceSettings(cpu_count=4, memory="8GB", gpu_count=2),
+        "sandbox.modal": ModalSandboxSettings(gpu="A100", timeout_seconds=900),
+    },
+)
+def agent_step(...): ...   # the sandbox will request "A100:2" on Modal
+```
+
+Sandbox stdout/stderr automatically lands on the active step under a dedicated `sandbox:<session_id>` log source — see the [base sandbox docs](README.md#sandbox-logs) for the format. The `sandbox.<id>.dashboard_url` step-metadata entry is rendered as a clickable link to the Modal sandbox.
 
 ### Using it from a step
 
