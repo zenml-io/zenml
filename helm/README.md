@@ -133,6 +133,12 @@ server:
 
 OpenTelemetry export is configured separately with `ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT` and exports traces, metrics, and logs using OTLP/HTTP transport. Each signal is enabled by default and can be disabled individually with `ZENML_SERVER_OTEL_TRACES_ENABLED`, `ZENML_SERVER_OTEL_METRICS_ENABLED`, and `ZENML_SERVER_OTEL_LOGS_ENABLED`.
 
+The standard `OTEL_EXPORTER_OTLP_ENDPOINT` environment variable is also supported as a fallback.
+
+Standard per-signal OTLP/HTTP endpoint variables such as `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`, `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`, and `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT` are supported too, along with matching `ZENML_SERVER_OTEL_EXPORTER_OTLP_<SIGNAL>_ENDPOINT` names.
+
+Standard OTLP headers, timeout, and compression variables are handled by the OpenTelemetry Python exporters. OTLP/gRPC protocol variables are not supported because the server configures OTLP/HTTP exporters directly. You can read more about the OpenTelemetry environment variables and SDK configuration [here](https://opentelemetry.io/docs/languages/sdk-configuration/).
+
 ## Backwards Compatibility
 
 The top-level `zenml:` values key has been renamed to `server:`. Existing
