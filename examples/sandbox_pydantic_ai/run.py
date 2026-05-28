@@ -25,11 +25,19 @@ import sys
 from pathlib import Path
 from typing import Annotated, Any
 
-from agent import _DEFAULT_QUERY, plan_subtasks, run_agent, synthesize
+from agent import (
+    _DEFAULT_QUERY,
+    plan_subtasks,
+    run_agent_in_session,
+    synthesize,
+)
 
 import zenml
 from zenml import pipeline, step
+from zenml.client import Client
 from zenml.config import DockerSettings
+from zenml.execution.pipeline.dynamic.utils import unmapped
+from zenml.integrations.modal.sandboxes import ModalSandboxSnapshot
 from zenml.sandboxes import BaseSandboxSettings
 
 
@@ -109,6 +117,40 @@ _AGENT_SANDBOX_SETTINGS = BaseSandboxSettings(
 )
 
 
+_PYTHON_DEPS = "numpy scipy"
+
+
+@step(settings={"sandbox": _AGENT_SANDBOX_SETTINGS})
+def prep_step() -> Annotated[ModalSandboxSnapshot, "scientific_image"]:
+    """Boots a sandbox, pip-installs scientific deps, snapshots.
+
+    The snapshot is materialized through ZenML's artifact store as a
+    ``ModalSandboxSnapshot`` (just a Modal Image id + metadata). Every
+    downstream subagent step restores from this snapshot instead of
+    booting a bare sandbox and re-installing the same deps -- one
+    ~30s install vs N×3min per subagent.
+
+    Returns:
+        The Modal Image snapshot with the scientific stack pre-installed.
+    """
+    sandbox = Client().active_stack.sandbox
+    if sandbox is None:
+        raise RuntimeError("No Sandbox component in the active stack.")
+
+    with sandbox.create_session() as session:
+        out = session.exec(
+            [
+                "bash",
+                "-lc",
+                f"pip install --quiet --no-cache-dir {_PYTHON_DEPS}",
+            ]
+        ).collect()
+        if out.exit_code != 0:
+            raise RuntimeError(f"Failed to install deps: {out.stderr}")
+        snap = session.snapshot()
+    return snap  # type: ignore[return-value]
+
+
 @step
 def planner_step(query: str) -> Annotated[list[str], "subtasks"]:
     """Asks a planner LLM to decompose the user goal into N subtasks.
@@ -123,21 +165,29 @@ def planner_step(query: str) -> Annotated[list[str], "subtasks"]:
 
 
 @step(settings={"sandbox": _AGENT_SANDBOX_SETTINGS})
-def subagent_step(subtask: str) -> Annotated[str, "subagent_answer"]:
-    """Runs one subagent in a fresh Sandbox session.
+def subagent_step(
+    snapshot: ModalSandboxSnapshot, subtask: str
+) -> Annotated[str, "subagent_answer"]:
+    """Restores from the shared snapshot and runs the agent on one subtask.
 
-    Each fanned-out instance gets its own ZenML step run -- its own
-    artifact, its own ``sandbox:<id>`` log source, and its own
-    ``sandbox.<id>.*`` step metadata entries. Isolation is automatic
-    because ``run_agent`` calls ``sandbox.create_session()``.
+    Each fanned-out instance is its own ZenML step run with its own
+    artifact, ``sandbox:<id>`` log source, and ``sandbox.<id>.*`` step
+    metadata. The snapshot is broadcast (via ``unmapped(...)`` at the
+    call site) so all subagents share the same pre-baked environment
+    but otherwise run in fully isolated sandboxes.
 
     Args:
-        subtask: The subtask description produced by the planner.
+        snapshot: Shared snapshot with scientific deps pre-installed.
+        subtask: The subtask description for this subagent.
 
     Returns:
         The subagent's final natural-language answer.
     """
-    return run_agent(subtask)
+    sandbox = Client().active_stack.sandbox
+    if sandbox is None:
+        raise RuntimeError("No Sandbox component in the active stack.")
+    with sandbox.restore(snapshot) as session:
+        return run_agent_in_session(session, subtask)
 
 
 @step
@@ -164,11 +214,13 @@ def reducer_step(
     },
 )
 def sandbox_pydantic_ai_pipeline(query: str = _DEFAULT_QUERY) -> str:
-    """Planner -> fan-out subagents -> reducer.
+    """Prep -> plan -> fan-out subagents -> reduce.
 
-    Each subagent step holds its own Sandbox session and its own agent
-    loop; the same ``run_agent`` function runs in every fanned-out
-    instance unchanged.
+    The prep step installs scientific deps once and snapshots the
+    resulting sandbox filesystem. Each subagent step restores from the
+    snapshot (cheap; ~seconds vs ~minutes for a fresh install) and
+    runs its independent subtask. The reducer LLM stitches results
+    together.
 
     Args:
         query: The natural-language goal for the agent.
@@ -176,8 +228,9 @@ def sandbox_pydantic_ai_pipeline(query: str = _DEFAULT_QUERY) -> str:
     Returns:
         The reducer's final synthesized answer.
     """
+    snapshot = prep_step()
     subtasks = planner_step(query=query)
-    parts = subagent_step.map(subtask=subtasks)
+    parts = subagent_step.map(snapshot=unmapped(snapshot), subtask=subtasks)
     return reducer_step(query=query, parts=parts)
 
 

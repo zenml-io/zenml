@@ -256,20 +256,44 @@ def synthesize(query: str, parts: list[str]) -> str:
     return reducer.run_sync(bundle).output
 
 
-def run_agent(query: str = _DEFAULT_QUERY) -> str:
-    """Drives the agent against the active stack's Sandbox.
+def run_agent_in_session(session: SandboxSession, query: str) -> str:
+    """Runs the agent loop against a caller-provided live session.
 
-    Opens a ``with`` block around the Session. The Session base class
-    handles step-metadata publishing (sandbox session id, flavor, and
-    flavor-supplied dashboard URL) and -- when ``forward_logs_to_step``
-    resolves True -- routes sandbox stdout/stderr into the step's log
-    stream as a ``sandbox:<session_id>`` source. Both behaviors only
-    fire inside a ``with`` block.
+    Used by the fan-out pipeline so each subagent step can drive the
+    agent against a session restored from a shared snapshot (avoids
+    re-installing scientific deps in every fanned-out sandbox).
 
     Args:
-        query: Natural-language task for the agent. Defaults to a
-            multi-step analysis prompt that naturally fans out into
-            several tool calls.
+        session: A live ``SandboxSession``. Must already be opened as
+            a context manager so metadata + log forwarding fire.
+        query: Natural-language task for the agent.
+
+    Returns:
+        The agent's final natural-language answer.
+    """
+    agent = build_agent()
+    result = agent.run_sync(
+        query,
+        deps=AgentDeps(session=session),
+        # PydanticAI defaults to 50 LLM requests per run; a multi-step
+        # tool-using agent can chew through that on a rough day
+        # (retries, package installs, etc.). Lift the cap so the
+        # example doesn't UsageLimitExceeded prematurely.
+        usage_limits=UsageLimits(request_limit=200),
+    )
+    return result.output
+
+
+def run_agent(query: str = _DEFAULT_QUERY) -> str:
+    """Drives the agent against a fresh session on the active stack's Sandbox.
+
+    Opens a ``with`` block around a freshly-created Session. The
+    Session base class handles step-metadata publishing and routes
+    sandbox stdout/stderr into the step log stream when log forwarding
+    is enabled.
+
+    Args:
+        query: Natural-language task for the agent.
 
     Returns:
         The agent's final natural-language answer.
@@ -284,16 +308,5 @@ def run_agent(query: str = _DEFAULT_QUERY) -> str:
             "(e.g. `zenml sandbox register modal-sb --flavor=modal`) "
             "and attach it via `zenml stack update --sandbox modal-sb`."
         )
-
-    agent = build_agent()
     with sandbox.create_session() as session:
-        result = agent.run_sync(
-            query,
-            deps=AgentDeps(session=session),
-            # PydanticAI defaults to 50 LLM requests per run; a
-            # multi-step tool-using agent can chew through that on a
-            # rough day (retries, package installs, etc.). Lift the cap
-            # so the example doesn't UsageLimitExceeded prematurely.
-            usage_limits=UsageLimits(request_limit=200),
-        )
-    return result.output
+        return run_agent_in_session(session, query)
