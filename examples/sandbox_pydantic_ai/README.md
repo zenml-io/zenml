@@ -27,7 +27,7 @@ Wall clock on the smoke run: prep ~13 s, planner ~5 s, three parallel subagents 
 
 ## Prerequisites
 
-1. A Modal account — get tokens via `modal token new` or pass them on the component (see below).
+1. A Modal account — authenticate with `modal token new` (writes `~/.modal.toml`) or export `MODAL_TOKEN_ID` / `MODAL_TOKEN_SECRET`. The Modal SDK reads these on import.
 2. `OPENAI_API_KEY` in your environment (or swap the model in `agent.py`).
 3. ZenML's Modal integration: `zenml integration install modal`.
 
@@ -48,14 +48,12 @@ Create a ZenML secret carrying your OpenAI key. **Important:** the secret-key ca
 zenml secret create openai -v '{"OPENAI_API_KEY": "sk-..."}'
 ```
 
-Register the sandbox with your Modal token (the `--token_id` / `--token_secret` fields are `SecretField`s — exported as `MODAL_TOKEN_ID` / `MODAL_TOKEN_SECRET` on every `create_session` / `attach` / `restore` so remote orchestrators don't need a local `~/.modal.toml`):
+Register the sandbox component. Modal credentials are *not* configured on the component — the Modal SDK reads `MODAL_TOKEN_ID` / `MODAL_TOKEN_SECRET` from the process environment (or `~/.modal.toml`) at import time. On remote orchestrators, surface those via the orchestrator's own env/secret plumbing.
 
 ```bash
 zenml sandbox register modal-sb \
   --flavor=modal \
-  --secret=openai \
-  --token_id=ak-... \
-  --token_secret=as-...
+  --secret=openai
 
 zenml stack register sandbox-stack -o default -a default --sandbox modal-sb
 zenml stack set sandbox-stack
@@ -94,12 +92,12 @@ print(run.steps["reducer_step"].outputs["final_answer"][0].load())
 
 - `agent.py` — Four-tool PydanticAI agent (`run_python`, `run_shell`, `list_files`, `read_file`), the planner / reducer helper functions, and `run_agent_in_session(session, query)` that drives the agent against a caller-supplied session (so the pipeline can plug in a restored snapshot).
 - `run.py` — `prep_step → planner_step → subagent_step.map() → reducer_step` dynamic pipeline.
-- `requirements.txt` — pydantic-ai + openai + zenml + modal.
+- `requirements.txt` — pydantic-ai + zenml. The Modal SDK is pulled in by `zenml integration install modal`.
 
 ## Tuning knobs
 
 - **Make subagents independent.** The planner's system prompt insists on no shared state; if you write a leading query that implies a pipeline, the planner may still produce dependent subtasks and you'll see "file not found" errors from subagents 2+.
-- **Sandbox timeout.** The default Modal Sandbox TTL is 5 min; `BaseSandboxSettings(timeout_seconds=900)` in `run.py` lifts it to 15 min for slow agent loops. Applied to both `create_session` and `restore`.
+- **Sandbox timeout.** The default Modal Sandbox TTL is 5 min; `ModalSandboxSettings(timeout_seconds=900)` in `run.py` lifts it to 15 min for slow agent loops. Applied to both `create_session` and `restore`.
 - **PydanticAI usage limit.** Default is 50 LLM requests per `run_sync`. The example bumps to 200 in `run_agent_in_session` since multi-step tool-using loops can chew through the budget on a slow day.
 - **Richer base image.** The default Modal image is `python:3.11-slim` — bare Python. The agent's system prompt teaches it to `pip install` on demand, and `prep_step` does this once and snapshots. To skip the snapshot dance, register the sandbox with a pre-built sci-py image: `--default_image=ghcr.io/your-org/scipy-base:latest`.
 

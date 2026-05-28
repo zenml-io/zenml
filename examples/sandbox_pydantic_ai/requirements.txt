@@ -1,3 +1,2 @@
 pydantic-ai>=0.0.13
 zenml[local]
-modal>=0.64.49,<1

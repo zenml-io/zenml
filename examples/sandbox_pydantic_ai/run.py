@@ -33,12 +33,11 @@ from agent import (
 )
 
 import zenml
-from zenml import pipeline, step
+from zenml import pipeline, step, unmapped
 from zenml.client import Client
 from zenml.config import DockerSettings
-from zenml.execution.pipeline.dynamic.utils import unmapped
-from zenml.integrations.modal.sandboxes import ModalSandboxSnapshot
-from zenml.sandboxes import BaseSandboxSettings
+from zenml.integrations.modal.flavors import ModalSandboxSettings
+from zenml.sandboxes import BaseSandboxSnapshot
 
 
 def get_docker_settings(
@@ -118,24 +117,25 @@ def get_docker_settings(
 # OpenAI tool-use loop doesn't terminate the sandbox mid-exec. Sandbox
 # stdout/stderr automatically lands in a per-session ``sandbox:<id>``
 # log source on the active step -- no opt-in needed.
-_AGENT_SANDBOX_SETTINGS = BaseSandboxSettings(timeout_seconds=900)
+_AGENT_SANDBOX_SETTINGS = ModalSandboxSettings(timeout_seconds=900)
 
 
 _PYTHON_DEPS = "numpy scipy"
 
 
 @step(settings={"sandbox": _AGENT_SANDBOX_SETTINGS})
-def prep_step() -> Annotated[ModalSandboxSnapshot, "scientific_image"]:
+def prep_step() -> Annotated[BaseSandboxSnapshot, "scientific_image"]:
     """Boots a sandbox, pip-installs scientific deps, snapshots.
 
     The snapshot is materialized through ZenML's artifact store as a
-    ``ModalSandboxSnapshot`` (just a Modal Image id + metadata). Every
-    downstream subagent step restores from this snapshot instead of
-    booting a bare sandbox and re-installing the same deps -- one
-    ~30s install vs N×3min per subagent.
+    flavor-specific subclass of ``BaseSandboxSnapshot`` (on Modal: a
+    ``ModalSandboxSnapshot`` carrying the Image id). Every downstream
+    subagent step restores from this snapshot instead of booting a bare
+    sandbox and re-installing the same deps -- one ~30s install vs
+    N×3min per subagent.
 
     Returns:
-        The Modal Image snapshot with the scientific stack pre-installed.
+        The sandbox snapshot with the scientific stack pre-installed.
     """
     sandbox = Client().active_stack.sandbox
     if sandbox is None:
@@ -150,9 +150,10 @@ def prep_step() -> Annotated[ModalSandboxSnapshot, "scientific_image"]:
             ]
         ).collect()
         if out.exit_code != 0:
-            raise RuntimeError(f"Failed to install deps: {out.stderr}")
-        snap = session.snapshot()
-    return snap  # type: ignore[return-value]
+            raise RuntimeError(
+                f"Failed to install deps (exit {out.exit_code}): {out.stderr}"
+            )
+        return session.snapshot()
 
 
 @step
@@ -170,7 +171,7 @@ def planner_step(query: str) -> Annotated[list[str], "subtasks"]:
 
 @step(settings={"sandbox": _AGENT_SANDBOX_SETTINGS})
 def subagent_step(
-    snapshot: ModalSandboxSnapshot, subtask: str
+    snapshot: BaseSandboxSnapshot, subtask: str
 ) -> Annotated[str, "subagent_answer"]:
     """Restores from the shared snapshot and runs the agent on one subtask.
 
