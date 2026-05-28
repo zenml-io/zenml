@@ -30,10 +30,10 @@ This PR ships the base abstraction plus one built-in flavor (`local`). Real-isol
 PR #1 (this branch) ships:
 - The abstract `BaseSandbox`, `SandboxSession`, `SandboxProcess`, `BaseSandboxSnapshot` interfaces (with their optional methods raising `NotImplementedError` by default).
 - The `SANDBOX` `StackComponentType` enum value (repeatable per stack) + `Stack.sandbox` / `Stack.sandboxes` properties + `--sandbox` CLI flag.
-- `ZENML_ACTIVE_STEP_IMAGE` injected into the step environment by `BaseOrchestrator._inject_active_step_image_env` for containerized orchestrators so the `STEP_IMAGE` sentinel resolves.
-- Base helpers: `_resolve_session_environment` (env+secret merge with `{{secret.key}}` resolution), `_validate_snapshot_provider`, `forward_session_logs` / `forward_lines` for log routing into ZenML's step log stream.
+- `STEP_IMAGE` sentinel that flavors resolve at session-creation time by reading `StepContext.get().pipeline_run.snapshot` and delegating to `ContainerizedOrchestrator.get_image(snapshot, step_name)` — no env-var injection, no orchestrator hook.
+- Base helpers: `resolve_settings` (thin wrapper around the standard `StackComponent.get_settings(step_run)`), `_resolve_session_environment` (component-scoped env+secret merge), `_validate_snapshot_provider`, plus session-level helpers `_log_command` / `_wrap_stream` / `_emit_sandbox` / `_log_exec_result` that route sandbox stdout/stderr directly to a per-session `sandbox:<id>` log source.
 - **`LocalSandbox` flavor** — subprocess-based, built-in (no extra deps), registered in `FlavorRegistry.builtin_flavors`. **No isolation** — loud warning on every `create_session()` — but suitable for examples, unit tests, and development against the abstraction.
-- 62 unit tests (37 base + 25 LocalSandbox).
+- Unit tests covering base + LocalSandbox + plan.md ADRs.
 - User docs: `docs/book/component-guide/sandboxes/{README.md, local.md}` + toc entry.
 
 The outbound-credential proxy ("Sandbox Auth Proxy" pattern shipped by LangSmith, Vercel, Cloudflare) is **deferred to a later PR** once we've shipped concrete flavors and have real usage to model against.
@@ -78,9 +78,8 @@ The base image and environment variables a Session is created with.
 **Per-step (`BaseSandboxSettings`):**
 
 - `base_image: Union[str, None]` — `None` → flavor default; sentinel `STEP_IMAGE` → image the current ZenML step is running in (warns and falls back to flavor default if not containerized); any other string → exact image URI.
-- `environment: Dict[str, str]` — per-step overrides merged onto `StackComponent.environment` (Settings wins on key collision). Values may use ZenML `{{secret.key}}` references; auto-resolved at access time.
+- `environment: Dict[str, str]` — per-step overrides merged onto `StackComponent.environment` and resolved component secrets (Settings wins on key collision). For secret-backed values, attach the secret at component-register time.
 - `copy_local_env: bool` (default `False`) — propagate the step process's *full* local env (incl. resolved secrets) into the Session. Convenience for prototyping; off by default for security.
-- `forward_logs_to_step: Optional[bool]` (default `None`) — see "Log forwarding" below.
 
 LLM-generated code running inside the Session can read everything in this environment. The mitigation pattern (auth-injecting proxy) is future work; see *Out of scope*.
 
@@ -199,22 +198,17 @@ class BaseSandboxSettings(BaseSettings):
     environment: Dict[str, str] = {}       # MERGED onto StackComponent.environment; Settings wins
     copy_local_env: bool = False
     timeout_seconds: Optional[int] = None
-    forward_logs_to_step: Optional[bool] = None   # see "Log forwarding"
 ```
 
-Merge order at `create_session()`:
-1. `StackComponent.environment` (component-level defaults).
-2. Each `StackComponent.secrets` UUID resolved via `Client().get_secret(uuid).secret_values` and exploded into env vars.
-3. `Settings.environment` overrides on key collision.
-4. If `Settings.copy_local_env=True`, the step's local env is layered last.
+Settings resolution goes through `StackComponent.get_settings(step_run)` (the canonical helper used by every stack component). `BaseSandbox.resolve_settings(override=None)` is a thin wrapper that handles the explicit-override path on top.
 
-**Log forwarding.** When effective `forward_logs_to_step` is `True`, the flavor opens a ZenML `LoggingContext` with `source=f"sandbox:{session_id}"` so sandbox stdout/stderr surfaces in the UI as a distinct log stream per session — `zenml.utils.logging_utils.setup_logging_context(source=...)` is the wiring point.
+Env merge order at `create_session()`:
+1. If `Settings.copy_local_env=True`, the step's local env is layered first.
+2. `StackComponent.environment` (component-level defaults, already secret-ref-resolved by `SecretReferenceMixin`).
+3. Each `StackComponent.secrets` UUID resolved via `Client().get_secret(uuid).secret_values` and exploded into env vars.
+4. `Settings.environment` overrides on key collision (most-specific wins).
 
-Flavor-side default resolution (when the user leaves `forward_logs_to_step=None`): `True` if `base_image == STEP_IMAGE` (the sandbox is running the step's own image and is "integrated"), `False` for the flavor's default image or any custom image (sandbox is "alien" — don't presume the user wants their logs intermingled).
-
-Implementation notes:
-- Before forwarding, check `is_step_logging_enabled(step_configuration, pipeline_configuration)` — if the user disabled step logs globally (`ZENML_DISABLE_STEP_LOGS_STORAGE=1` or via pipeline/step config), the sandbox path must also silently no-op.
-- `setup_logging_context` requires a reachable log store. The default `ArtifactLogStore` writes through the stack's `artifact_store` (already a required stack component). For non-pipeline / script-mode usage where no `LoggingContext` is available, wrap the setup call in try/except and fall back to plain `logger.info()` line-by-line.
+**Log forwarding.** Each `SandboxSession` lazily creates a dedicated log origin on first `exec` and emits records directly to it (`log_store.emit(origin, record)`) — no `LoggingContext` stack push, so step-side Python logger calls never leak into the sandbox source. `_log_command` opens each exec with a `$ <command>` marker, `_wrap_stream` routes stdout (INFO) / stderr (WARNING) lines, and `_log_exec_result` emits a `✓ exit <code> in <duration>s` trailer when `process.collect()` finishes. Origin setup failure latches off so per-line emit doesn't retry. Sessions that never exec leave no log artifact behind.
 
 Multi-per-stack: `StackComponentType.SANDBOX.supports_multiple_per_stack == True`. `active_stack.sandbox` returns the default (first attached); `active_stack.sandboxes` returns `Dict[str, BaseSandbox]`.
 
@@ -226,15 +220,16 @@ Multi-per-stack: `StackComponentType.SANDBOX.supports_multiple_per_stack == True
 |---|---|
 | `src/zenml/enums.py` | Add `SANDBOX = "sandbox"`; include in `supports_multiple_per_stack` set. |
 | `src/zenml/sandboxes/__init__.py` | Re-exports for both base classes and the `LocalSandbox` flavor. |
-| `src/zenml/sandboxes/base_sandbox.py` | All base classes + `STEP_IMAGE` sentinel + `SandboxExecError` + base helpers (`_resolve_session_environment`, `_validate_snapshot_provider`, `forward_session_logs`, `forward_lines`, `resolve_forward_logs_to_step`). |
+| `src/zenml/sandboxes/process.py` | `SandboxProcess` (abstract), `SandboxOutput` (frozen), `SandboxExecError`, `_drain_capped`. |
+| `src/zenml/sandboxes/snapshot.py` | `BaseSandboxSnapshot` Pydantic model. |
+| `src/zenml/sandboxes/session.py` | `SandboxSession` with lifecycle, metadata logging (`_on_enter`), and direct-emit log helpers (`_emit_sandbox`, `_log_command`, `_wrap_stream`, `_log_exec_result`, `_close_log_origin`). |
+| `src/zenml/sandboxes/base.py` | `BaseSandbox`, `BaseSandboxConfig`, `BaseSandboxSettings`, `BaseSandboxFlavor`, `STEP_IMAGE` sentinel + helpers (`resolve_settings`, `_resolve_session_environment`, `_validate_snapshot_provider`). |
 | `src/zenml/sandboxes/local_sandbox.py` | Built-in `LocalSandbox` flavor — subprocess-based, no isolation, loud warning on each `create_session()`. |
 | `src/zenml/stack/stack.py` | Add `sandbox` / `sandboxes` properties on `Stack`. Update `__init__` to accept sandbox(es). |
 | `src/zenml/stack/flavor_registry.py` | Register `LocalSandboxFlavor` in `builtin_flavors`. |
 | `src/zenml/cli/stack.py` | `--sandbox` / `-sb` repeatable flag on `zenml stack register/update`. |
-| `src/zenml/orchestrators/base_orchestrator.py` | `_inject_active_step_image_env` helper exports `ZENML_ACTIVE_STEP_IMAGE` for containerized orchestrators so the `STEP_IMAGE` sentinel resolves. |
-| `tests/unit/sandboxes/test_base_sandbox.py` | 37 tests: NotImplementedError defaults, `_validate_snapshot_provider`, snapshot Pydantic round-trip, env-merge order, log-forwarding helpers. |
-| `tests/unit/sandboxes/test_local_sandbox.py` | 25 tests: exec lifecycle, env merge, workdir cleanup, settings coercion, builtin-flavor registration. |
-| `tests/unit/orchestrators/test_base_orchestrator.py` | 3 new tests: `_inject_active_step_image_env` for containerized vs non-containerized orchestrators + failure-swallowing. |
+| `tests/unit/sandboxes/test_base_sandbox.py` | Tests: NotImplementedError defaults, `_validate_snapshot_provider`, snapshot Pydantic round-trip, env-merge order, sandbox log emission (command + wrap_stream + exec result + idempotent close), session metadata keyed by session id. |
+| `tests/unit/sandboxes/test_local_sandbox.py` | Tests: exec lifecycle, env merge, workdir cleanup, settings coercion, builtin-flavor registration. |
 | `docs/book/component-guide/sandboxes/{README.md,local.md}` | User-facing overview + Local flavor docs. |
 | `docs/book/component-guide/toc.md` | Add sandbox entry + Local sub-entry. |
 
@@ -244,9 +239,9 @@ Multi-per-stack: `StackComponentType.SANDBOX.supports_multiple_per_stack == True
 
 ## Out of scope / future PRs
 
-**Modal flavor (PR #4867, branch `feature/sandbox-modal`)** — already open. `src/zenml/integrations/modal/sandboxes/` + flavor + materializer for `ModalSandboxSnapshot` (Modal Image ref). Maps to `modal.Sandbox.create / exec / snapshot_filesystem / from_id`. Implements log forwarding via the base `forward_session_logs` helper. 41 unit tests.
+**Modal flavor (PR #4867, branch `feature/sandbox-modal`)** — already open. `src/zenml/integrations/modal/sandboxes/` + flavor + materializer for `ModalSandboxSnapshot` (Modal Image ref). Maps to `modal.Sandbox.create / exec / snapshot_filesystem / from_id`. `STEP_IMAGE` resolves via `ContainerizedOrchestrator.get_image(snapshot, step_name)` from `StepContext.get().pipeline_run.snapshot`. CPU/memory/gpu_count come from the step's `ResourceSettings` (only `gpu` type, `region`, `cloud` live on `ModalSandboxSettings`).
 
-**PydanticAI example (PR pending, branch `feature/sandbox-pydantic-ai-example`)** — open after Modal lands. Demonstrates an agent using `SandboxSession.exec` as its `run_python` tool. Works against any flavor; defaults to LocalSandbox for the quickstart.
+**PydanticAI example (PR #4868, branch `feature/sandbox-pydantic-ai-example`)** — open. Planner → fan-out subagent steps via `step.map(snapshot=unmapped(...), subtask=subtasks)` → reducer. Subagents restore from a shared `prep_step` snapshot so scientific deps only install once.
 
 **Agent Substrate flavor (branch: `feature/sandbox-agent-substrate`)** — *not started*. `src/zenml/integrations/agent_sandbox/` against `agents.x-k8s.io/v1alpha1` `Sandbox` CRD; not GKE-specific.
 
@@ -350,7 +345,7 @@ def restore(self, snapshot: BaseSandboxSnapshot) -> SandboxSession: ...  # NotIm
 | 5 | ~~Implement Modal flavor~~ → moved to `feature/sandbox-modal` (PR #4867) | dropped from PR #1 |
 | 6 | Unit tests for base abstraction | ✅ done (37 tests) |
 | 7 | Two rounds of review fixes (Michael + Stefan) | ✅ done |
-| 8 | CLI `--sandbox` / `-sb` flag + `ZENML_ACTIVE_STEP_IMAGE` orchestrator wiring | ✅ done |
+| 8 | CLI `--sandbox` / `-sb` flag + STEP_IMAGE sentinel (resolved on-demand from the pipeline snapshot, no orchestrator hook) | ✅ done |
 | 9 | `LocalSandbox` built-in flavor (subprocess; no isolation; for examples + tests) | ✅ done (25 tests) |
 | 10 | Docs overview page + Local flavor page + `toc.md` entry | ✅ done |
 | 11 | `bash scripts/format.sh`, lint clean, PR #4866 open and reviewed twice | ✅ done |

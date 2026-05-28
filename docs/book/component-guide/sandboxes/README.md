@@ -104,10 +104,15 @@ Step writers can override sandbox behavior on individual `@step` invocations via
 | Setting | Purpose |
 |---|---|
 | `base_image` | `None` → flavor default; the sentinel `STEP_IMAGE` → reuse the image the current ZenML step is running in; any other string → an exact image URI. |
-| `environment` | Per-step env vars. Merged onto the component's `environment` (Settings wins on key collision). Supports `{{secret.key}}` references. |
+| `environment` | Per-step env vars. Merged onto the component's `environment` and resolved secrets (Settings wins on key collision). For secret-backed values, attach a secret to the component via `--secret=...`. |
 | `copy_local_env` | If `True`, propagates the step process's full local env (incl. any resolved ZenML secrets) into the Session. Off by default for security — anything in the env is readable by code running in the Sandbox. |
 | `timeout_seconds` | Provider TTL knob for the Session. `None` lets the provider apply its own default. |
-| `forward_logs_to_step` | If `True`, Sandbox stdout/stderr is auto-forwarded into ZenML's step logs as a dedicated log source per session (visible in the UI as a separate stream). Default: flavor decides — typically `True` only when `base_image == STEP_IMAGE`. |
+
+### Sandbox logs
+
+Sandbox stdout/stderr automatically lands on the active step as a dedicated `sandbox:<session_id>` log source. Each `session.exec(...)` writes a `$ <command>` marker, then the process output (stdout at INFO, stderr at WARNING), then a trailing `✓ exit <code> in <seconds>s` marker — reads like a shell session. ZenML's own step-level Python logger calls stay in the regular `step` source: the sandbox source is dedicated to actual sandbox-execution events, no false attribution.
+
+Multi-session steps don't clobber: each session's metadata (flavor, dashboard URL when the flavor exposes one) is keyed by session id (`sandbox.<id>.flavor`, `sandbox.<id>.dashboard_url`).
 
 ## Security considerations
 
