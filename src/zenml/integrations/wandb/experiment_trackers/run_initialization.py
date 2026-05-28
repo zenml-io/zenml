@@ -103,7 +103,7 @@ def _get_run_name(
         return settings.run_name
 
     run_name = f"{info.run_name}_{info.pipeline_step_name}"
-    if settings.run_id_strategy == "step_run":
+    if settings.run_id_strategy == "new_on_retry":
         return f"{run_name}_v{info.step_run.version}"
 
     return run_name
@@ -116,13 +116,13 @@ def _get_run_id(
     if settings.run_id:
         return settings.run_id
 
-    if settings.run_id_strategy == "step_run":
+    if settings.run_id_strategy == "new_on_retry":
         return uuid5(
             NAMESPACE_URL,
             f"zenml:wandb:step-run:{info.step_run_id}",
         ).hex
 
-    if settings.run_id_strategy == "pipeline_step":
+    if settings.run_id_strategy == "reuse_on_retry":
         return uuid5(
             NAMESPACE_URL,
             "zenml:wandb:pipeline-step:"

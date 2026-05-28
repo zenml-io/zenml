@@ -170,11 +170,11 @@ def test_minimal_mode_omits_zenml_group_tags_and_config() -> None:
     assert init_kwargs["config"] == {"owner": "ml-platform"}
 
 
-def test_step_run_strategy_sets_deterministic_run_id_and_resume() -> None:
-    """Test step-run IDs produce one Wandb ID per ZenML attempt."""
+def test_new_on_retry_strategy_sets_deterministic_run_id_and_resume() -> None:
+    """Test retry attempts produce separate deterministic W&B run IDs."""
     first = _build_wandb_initialization(
         config=_config(),
-        settings=_settings(run_id_strategy="step_run"),
+        settings=_settings(run_id_strategy="new_on_retry"),
         info=_info(
             step_run_id=UUID("00000000-0000-0000-0000-000000000002"),
             version=1,
@@ -182,7 +182,7 @@ def test_step_run_strategy_sets_deterministic_run_id_and_resume() -> None:
     )
     second = _build_wandb_initialization(
         config=_config(),
-        settings=_settings(run_id_strategy="step_run"),
+        settings=_settings(run_id_strategy="new_on_retry"),
         info=_info(
             step_run_id=UUID("00000000-0000-0000-0000-000000000003"),
             version=2,
@@ -196,12 +196,12 @@ def test_step_run_strategy_sets_deterministic_run_id_and_resume() -> None:
     assert second["resume"] == "allow"
 
 
-def test_pipeline_step_strategy_collapses_retries() -> None:
-    """Test pipeline-step IDs resume one Wandb run across retries."""
+def test_reuse_on_retry_strategy_collapses_retries() -> None:
+    """Test retries resume one W&B run for the same step invocation."""
     first = _build_wandb_initialization(
         config=_config(),
         settings=_settings(
-            run_id_strategy="pipeline_step",
+            run_id_strategy="reuse_on_retry",
         ),
         info=_info(
             step_run_id=UUID("00000000-0000-0000-0000-000000000002"),
@@ -211,7 +211,7 @@ def test_pipeline_step_strategy_collapses_retries() -> None:
     retry = _build_wandb_initialization(
         config=_config(),
         settings=_settings(
-            run_id_strategy="pipeline_step",
+            run_id_strategy="reuse_on_retry",
         ),
         info=_info(
             step_run_id=UUID("00000000-0000-0000-0000-000000000003"),
@@ -227,10 +227,10 @@ def test_pipeline_step_strategy_collapses_retries() -> None:
     assert retry["config"]["zenml_latest_step_run_version"] == 2
 
 
-def test_pipeline_step_strategy_separates_invocation_names() -> None:
-    """Test pipeline-step IDs include concrete invocation names."""
+def test_reuse_on_retry_strategy_separates_invocation_names() -> None:
+    """Test reused retry IDs still include concrete invocation names."""
     settings = _settings(
-        run_id_strategy="pipeline_step",
+        run_id_strategy="reuse_on_retry",
     )
 
     first = _build_wandb_initialization(
@@ -347,11 +347,11 @@ def test_step_metadata_includes_richer_wandb_identifiers(monkeypatch) -> None:
     "settings_kwargs,error_match",
     [
         (
-            {"run_id_strategy": "pipeline_step", "resume": "never"},
+            {"run_id_strategy": "reuse_on_retry", "resume": "never"},
             "resume='never'",
         ),
         (
-            {"run_id": "explicit", "run_id_strategy": "step_run"},
+            {"run_id": "explicit", "run_id_strategy": "new_on_retry"},
             "run_id",
         ),
         (

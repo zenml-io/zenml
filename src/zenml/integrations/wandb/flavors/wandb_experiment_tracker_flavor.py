@@ -66,12 +66,13 @@ class WandbExperimentTrackerSettings(BaseSettings):
         description="Explicit Wandb run ID to use for advanced resume flows.",
     )
     run_id_strategy: Literal[
-        "wandb_generated", "step_run", "pipeline_step"
+        "wandb_generated", "new_on_retry", "reuse_on_retry"
     ] = Field(
         "wandb_generated",
         description=(
             "Strategy used to derive Wandb run IDs. The default leaves IDs "
-            "to Wandb."
+            "to Wandb, 'reuse_on_retry' resumes the same run for retries, "
+            "and 'new_on_retry' creates a new deterministic run for retries."
         ),
     )
     resume: Optional[Literal["allow", "must", "never", "auto"]] = Field(
@@ -158,9 +159,9 @@ class WandbExperimentTrackerSettings(BaseSettings):
                 "non-default 'run_id_strategy'."
             )
 
-        if self.run_id_strategy == "pipeline_step" and self.resume == "never":
+        if self.run_id_strategy == "reuse_on_retry" and self.resume == "never":
             raise ValueError(
-                "The 'pipeline_step' run ID strategy is incompatible with "
+                "The 'reuse_on_retry' run ID strategy is incompatible with "
                 "resume='never'."
             )
 

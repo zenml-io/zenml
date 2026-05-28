@@ -197,7 +197,7 @@ def my_step(
     ...
 ```
 
-ZenML disables W&B SDK console output by default with settings equivalent to `wandb.Settings(console="off", silent=True)`. This keeps W&B status and progress messages out of ZenML step logs. To show W&B SDK console output again, override these settings:
+ZenML disables W&B SDK console output by default with settings equivalent to `wandb.Settings(console="off", silent=True)`. W&B writes normal status and progress messages to stderr and uses carriage returns to redraw progress output. ZenML log stores preserve stderr as error-level logs, which can create confusing entries and trigger error-based log alerts even when W&B is working correctly. Metrics logged with `wandb.log(...)` are still sent to W&B. To show W&B SDK console output again, override these settings:
 
 ```python
 wandb_settings = WandbExperimentTrackerSettings(
@@ -207,6 +207,8 @@ wandb_settings = WandbExperimentTrackerSettings(
     ),
 )
 ```
+
+If you enable W&B SDK console output again, expect W&B login, sync, and progress messages to appear in ZenML step logs. Some of these messages may be stored as error-level logs because they are emitted through stderr by the W&B SDK.
 
 ZenML manages common `wandb.init(...)` fields for you. In addition to the W&B entity and project configured on the stack component, `WandbExperimentTrackerSettings` supports:
 
@@ -238,14 +240,14 @@ By default, ZenML leaves W&B run IDs unset (`run_id_strategy="wandb_generated"`)
 | Strategy | Behavior |
 | --- | --- |
 | `wandb_generated` | Let W&B generate the run ID. |
-| `pipeline_step` | Use one deterministic W&B run ID for each ZenML pipeline-step invocation, so retries for the same invocation resume the same W&B run. |
-| `step_run` | Use one deterministic W&B run ID for each ZenML step-run attempt, including retries. |
+| `reuse_on_retry` | Use one deterministic W&B run ID for each ZenML pipeline-step invocation, so retries for the same invocation resume the same W&B run. |
+| `new_on_retry` | Use one deterministic W&B run ID for each ZenML step-run attempt, including retries. |
 
 For example, this configuration keeps retries for the same ZenML step invocation attached to the same W&B run:
 
 ```python
 retry_collapsed_settings = WandbExperimentTrackerSettings(
-    run_id_strategy="pipeline_step",
+    run_id_strategy="reuse_on_retry",
     resume="allow",
 )
 ```
@@ -254,11 +256,11 @@ If you prefer one W&B run for every ZenML step-run attempt, including retries, u
 
 ```python
 attempt_settings = WandbExperimentTrackerSettings(
-    run_id_strategy="step_run",
+    run_id_strategy="new_on_retry",
 )
 ```
 
-When `run_id_strategy="step_run"` is used without an explicit `run_name`, ZenML appends the ZenML step-run version to the W&B display name so retry attempts are easier to distinguish in the W&B UI.
+When `run_id_strategy="new_on_retry"` is used without an explicit `run_name`, ZenML appends the ZenML step-run version to the W&B display name so retry attempts are easier to distinguish in the W&B UI.
 
 ZenML defaults `resume` to `allow` whenever it passes a deterministic or explicit W&B run ID.
 
@@ -274,7 +276,7 @@ wandb_settings = WandbExperimentTrackerSettings(
 ZenML validates conflicts early:
 
 * `run_id` cannot be combined with a non-default `run_id_strategy`.
-* `resume="never"` cannot be combined with `run_id_strategy="pipeline_step"`, because retries intentionally reuse the same W&B run ID.
+* `resume="never"` cannot be combined with `run_id_strategy="reuse_on_retry"`, because retries intentionally reuse the same W&B run ID.
 * `resume="must"` requires either an explicit `run_id` or a deterministic `run_id_strategy`.
 * `run_config` cannot contain `zenml_*` keys, which are reserved for ZenML metadata.
 * `init_kwargs` cannot override ZenML-managed `wandb.init(...)` keys such as `entity`, `project`, `name`, `id`, `resume`, `group`, `job_type`, `tags`, `config`, or `settings`.
