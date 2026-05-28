@@ -349,7 +349,7 @@ class ModalSandboxSession(SandboxSession):
         Modal until its TTL expires; use ``destroy()`` to force-stop
         immediately.
         """
-        self._close_log_origin()
+        self._close_log_ctx()
 
     def destroy(self) -> None:
         """Terminates the Sandbox on Modal."""
