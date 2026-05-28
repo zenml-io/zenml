@@ -1,0 +1,9 @@
+campaign:
+  name: dev-oracle-local
+  dataset_path: datasets/mini_harbor
+  agents:
+    - oracle
+  models: []
+  env_provider: null
+  n_concurrent: null
+  extra_args: []

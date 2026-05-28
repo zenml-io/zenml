@@ -1,0 +1,10 @@
+campaign:
+  name: stress-test-k8s
+  dataset_path: datasets/mini_harbor
+  agents:
+    - oracle
+    - aider
+  models:
+    - openai/gpt-4o-mini
+  env_provider: daytona
+  n_concurrent: 1

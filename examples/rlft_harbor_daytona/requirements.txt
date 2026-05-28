@@ -1,0 +1,4 @@
+zenml[local,server]>=0.93
+harbor>=0.1.0
+daytona>=0.10.0
+pyyaml>=6.0

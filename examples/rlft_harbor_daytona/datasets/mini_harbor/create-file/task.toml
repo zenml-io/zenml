@@ -1,0 +1,4 @@
+[task]
+name = "create-file"
+description = "Create output.txt containing 'hello world'"
+type = "coding"

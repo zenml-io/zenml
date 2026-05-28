@@ -1,0 +1,4 @@
+[task]
+name = "write-json"
+description = "Write a valid JSON file with specific keys"
+type = "coding"

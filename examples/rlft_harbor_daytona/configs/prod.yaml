@@ -1,0 +1,13 @@
+campaign:
+  name: prod-multi-agent
+  dataset_path: datasets/mini_harbor
+  dataset_ref: null
+  agents:
+    - oracle
+    - terminus-2
+  models:
+    - gpt-4o
+    - claude-sonnet-4-20250514
+  env_provider: daytona
+  n_concurrent: 3
+  extra_args: []

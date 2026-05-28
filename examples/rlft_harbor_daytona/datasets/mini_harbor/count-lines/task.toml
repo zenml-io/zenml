@@ -1,0 +1,4 @@
+[task]
+name = "count-lines"
+description = "Count lines in a file and write the result"
+type = "coding"
