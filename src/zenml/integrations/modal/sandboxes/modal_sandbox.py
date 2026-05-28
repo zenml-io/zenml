@@ -106,48 +106,48 @@ def _line_buffer(chunks: Iterable[Any]) -> Iterator[str]:
 class ModalSandboxProcess(SandboxProcess):
     """Wraps a Modal ``ContainerProcess`` in the ``SandboxProcess`` interface."""
 
-    def __init__(self, process: Any, *, forward_logs: bool = False) -> None:
+    def __init__(
+        self,
+        process: Any,
+        *,
+        session: Optional["ModalSandboxSession"] = None,
+    ) -> None:
         """Initializes the process wrapper.
 
         Args:
             process: The Modal ``ContainerProcess`` returned by ``sandbox.exec``.
-            forward_logs: If True, each yielded stdout/stderr line is also
-                side-effected through the Python logger (via
-                ``BaseSandbox.forward_lines``). Combined with the Session's
-                ``forward_session_logs`` context manager, this routes
-                sandbox output into ZenML's step log stream tagged with the
-                session id.
+            session: Owning session. When provided, stdout/stderr lines
+                are forwarded through ``session._wrap_stream`` so they
+                land in the per-session sandbox log source.
         """
         self._process = process
-        self._forward_logs = forward_logs
+        self._session = session
 
     def stdout(self) -> Iterator[str]:
-        """Returns a line-buffered stdout iterator.
+        """Returns a line-buffered stdout iterator, log-wrapped when bound.
 
         Returns:
-            An iterator yielding stdout lines with trailing newlines
-            preserved. When ``forward_logs=True`` the iterator is wrapped
-            with ``BaseSandbox.forward_lines`` so each line side-effects
-            through ``logger.info`` into the active ``LoggingContext``.
+            Plain line iterator when no session is attached; otherwise
+            wrapped via ``session._wrap_stream`` so each line is also
+            emitted to the sandbox log source.
         """
         lines = _line_buffer(self._process.stdout)
-        if self._forward_logs:
-            return BaseSandbox.forward_lines(lines, stream="stdout")
-        return lines
+        if self._session is None:
+            return lines
+        return self._session._wrap_stream(lines, stream="stdout")
 
     def stderr(self) -> Iterator[str]:
-        """Returns a line-buffered stderr iterator.
+        """Returns a line-buffered stderr iterator, log-wrapped when bound.
 
         Returns:
-            An iterator yielding stderr lines with trailing newlines
-            preserved. When ``forward_logs=True`` the iterator is wrapped
-            with ``BaseSandbox.forward_lines`` so each line side-effects
-            through ``logger.warning`` into the active ``LoggingContext``.
+            Plain line iterator when no session is attached; otherwise
+            wrapped via ``session._wrap_stream`` so each line is also
+            emitted to the sandbox log source at WARNING level.
         """
         lines = _line_buffer(self._process.stderr)
-        if self._forward_logs:
-            return BaseSandbox.forward_lines(lines, stream="stderr")
-        return lines
+        if self._session is None:
+            return lines
+        return self._session._wrap_stream(lines, stream="stderr")
 
     def wait(self, timeout: Optional[float] = None) -> int:
         """Blocks until the command exits.
@@ -271,10 +271,11 @@ class ModalSandboxSession(SandboxSession):
 
         Returns:
             A ``ModalSandboxProcess`` wrapping the live command handle.
-            If the Session was created with ``forward_logs=True``, the
+            When ``forward_logs=True`` was set on the Session, the
             returned process's ``stdout()`` / ``stderr()`` iterators
-            side-effect each line through the Python logger so they
-            land in the active ``LoggingContext`` opened on ``__enter__``.
+            emit each line into the dedicated ``sandbox:<id>`` log
+            source (alongside a ``$ <command>`` marker emitted right
+            before launch).
 
         Raises:
             SandboxExecError: If Modal rejects the launch (e.g. binary not
@@ -285,6 +286,9 @@ class ModalSandboxSession(SandboxSession):
             if isinstance(command, list)
             else shlex.split(command)
         )
+        # Shell-style marker in the sandbox log source.
+        self._log_command(argv)
+
         kwargs: Dict[str, Any] = {}
         if cwd is not None:
             kwargs["workdir"] = cwd
@@ -303,7 +307,7 @@ class ModalSandboxSession(SandboxSession):
             raise SandboxExecError(
                 f"Modal exec failed to launch ({type(e).__name__}): {e}"
             ) from e
-        return ModalSandboxProcess(process, forward_logs=self._forward_logs)
+        return ModalSandboxProcess(process, session=self)
 
     def snapshot(self) -> ModalSandboxSnapshot:
         """Captures the Sandbox's filesystem as a reusable Modal Image.
@@ -350,7 +354,7 @@ class ModalSandboxSession(SandboxSession):
         Modal until its TTL expires; use ``destroy()`` to force-stop
         immediately.
         """
-        self._close_log_ctx()
+        self._close_log_origin()
 
     def destroy(self) -> None:
         """Terminates the Sandbox on Modal."""

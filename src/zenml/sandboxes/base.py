@@ -19,13 +19,9 @@ ADR 0001 for the component-vs-launcher framing rationale.
 """
 
 from abc import ABC, abstractmethod
-from contextlib import contextmanager
 from typing import (
     Any,
     Dict,
-    Generator,
-    Iterator,
-    Literal,
     Optional,
     Type,
     cast,
@@ -452,92 +448,6 @@ class BaseSandbox(StackComponent, ABC):
                 f"Cannot restore snapshot from provider '{snapshot.provider}' "
                 f"on a '{self.flavor}' sandbox component."
             )
-
-    # ------------------------- log forwarding -----------------------------
-
-    @contextmanager
-    def forward_session_logs(
-        self, session_id: str
-    ) -> Generator[None, None, None]:
-        """Opens a ZenML log context for a Session's stdout/stderr stream.
-
-        Sandbox output emitted through ``logger.info`` / ``logger.warning``
-        inside this block lands as a dedicated log source
-        ``f"sandbox:{session_id}"`` in the step's log stream.
-
-        No-ops gracefully if step logging is globally disabled (e.g.
-        ``ZENML_DISABLE_STEP_LOGS_STORAGE=1``) or the active stack has no
-        reachable log store (e.g. script-mode usage). The wrapped block
-        still runs in both cases.
-
-        Typically not called directly — ``SandboxSession.__enter__`` opens
-        this when ``forward_logs`` is True. Flavors that want
-        finer-grained control (e.g. forwarding only inside ``exec``) can
-        invoke it manually.
-
-        Args:
-            session_id: Stable id of the Session being forwarded.
-
-        Yields:
-            ``None``.
-        """
-        from zenml.steps.step_context import StepContext, get_step_context
-        from zenml.utils.logging_utils import setup_logging_context
-
-        step_run = None
-        pipeline_run = None
-        if StepContext.get() is not None:
-            try:
-                step_ctx = get_step_context()
-                step_run = step_ctx.step_run
-                pipeline_run = step_ctx.pipeline_run
-            except Exception:  # noqa: BLE001
-                # Defensive — get_step_context can race with cleanup. The
-                # logging context still works without it (just orphaned
-                # from the step), so don't break the wrapped block.
-                pass
-
-        try:
-            ctx = setup_logging_context(
-                source=f"sandbox:{session_id}",
-                step_run=step_run,
-                pipeline_run=pipeline_run,
-            )
-        except Exception as e:
-            logger.debug(
-                "Sandbox log forwarding disabled: %s. Falling back to "
-                "plain logger.",
-                e,
-            )
-            yield
-            return
-
-        with ctx:
-            yield
-
-    @staticmethod
-    def forward_lines(
-        lines: Iterator[str],
-        *,
-        stream: Literal["stdout", "stderr"] = "stdout",
-    ) -> Iterator[str]:
-        """Side-effects each yielded line through the Python logger.
-
-        Used by flavors to plug a Session's stdout/stderr iterator into
-        the active ``LoggingContext`` without changing the iterator
-        contract — callers still get back each line.
-
-        Args:
-            lines: Source iterator (line-delimited strings).
-            stream: ``"stdout"`` → INFO, ``"stderr"`` → WARNING.
-
-        Yields:
-            Each line from the source iterator unchanged.
-        """
-        log_fn = logger.info if stream == "stdout" else logger.warning
-        for line in lines:
-            log_fn(line.rstrip("\n"))
-            yield line
 
 
 class BaseSandboxFlavor(Flavor):

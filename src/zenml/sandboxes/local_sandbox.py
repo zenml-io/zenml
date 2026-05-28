@@ -88,17 +88,26 @@ class LocalSandboxSettings(BaseSandboxSettings):
 class LocalSandboxProcess(SandboxProcess):
     """Wraps ``subprocess.Popen`` in the ``SandboxProcess`` interface."""
 
-    def __init__(self, process: "subprocess.Popen[str]") -> None:
+    def __init__(
+        self,
+        process: "subprocess.Popen[str]",
+        *,
+        session: Optional["LocalSandboxSession"] = None,
+    ) -> None:
         """Initializes the process wrapper.
 
         Args:
             process: A live ``subprocess.Popen`` opened with text-mode
                 stdout/stderr pipes.
+            session: Owning session. When provided, stdout/stderr lines
+                are forwarded through ``session._wrap_stream`` so they
+                land in the per-session sandbox log source.
         """
         self._process = process
+        self._session = session
 
-    def stdout(self) -> Iterator[str]:
-        """Yields stdout one line at a time.
+    def _raw_stdout(self) -> Iterator[str]:
+        """Yields stdout one line at a time from the underlying Popen.
 
         Yields:
             Each line of stdout, including the trailing newline when
@@ -109,8 +118,8 @@ class LocalSandboxProcess(SandboxProcess):
         for line in self._process.stdout:
             yield line
 
-    def stderr(self) -> Iterator[str]:
-        """Yields stderr one line at a time.
+    def _raw_stderr(self) -> Iterator[str]:
+        """Yields stderr one line at a time from the underlying Popen.
 
         Yields:
             Each line of stderr, including the trailing newline when
@@ -120,6 +129,32 @@ class LocalSandboxProcess(SandboxProcess):
             return
         for line in self._process.stderr:
             yield line
+
+    def stdout(self) -> Iterator[str]:
+        """Returns stdout line iterator, log-wrapped when a session is bound.
+
+        Returns:
+            Plain stdout iterator when no session is attached; otherwise
+            wrapped via ``session._wrap_stream`` so each line is also
+            emitted to the sandbox log source.
+        """
+        lines = self._raw_stdout()
+        if self._session is None:
+            return lines
+        return self._session._wrap_stream(lines, stream="stdout")
+
+    def stderr(self) -> Iterator[str]:
+        """Returns stderr line iterator, log-wrapped when a session is bound.
+
+        Returns:
+            Plain stderr iterator when no session is attached; otherwise
+            wrapped via ``session._wrap_stream`` so each line is also
+            emitted to the sandbox log source at WARNING level.
+        """
+        lines = self._raw_stderr()
+        if self._session is None:
+            return lines
+        return self._session._wrap_stream(lines, stream="stderr")
 
     def wait(self, timeout: Optional[float] = None) -> int:
         """Blocks until the subprocess exits.
@@ -225,6 +260,10 @@ class LocalSandboxSession(SandboxSession):
             if isinstance(command, list)
             else shlex.split(command)
         )
+        # Marker into the sandbox log so the source reads like a shell
+        # session: `$ <command>` line followed by its stdout/stderr.
+        self._log_command(argv)
+
         effective_cwd = cwd or self._workdir
         if not os.path.isabs(effective_cwd):
             effective_cwd = os.path.join(self._workdir, effective_cwd)
@@ -247,17 +286,17 @@ class LocalSandboxSession(SandboxSession):
             raise SandboxExecError(
                 f"LocalSandbox exec failed to launch ({type(e).__name__}): {e}"
             ) from e
-        return LocalSandboxProcess(popen)
+        return LocalSandboxProcess(popen, session=self)
 
     def close(self) -> None:
-        """Tears down the log-forwarding context and the workdir.
+        """Flushes the sandbox log source and removes the workdir.
 
         Idempotent — safe to call multiple times.
         """
         if self._closed:
             return
         self._closed = True
-        self._close_log_ctx()
+        self._close_log_origin()
         try:
             shutil.rmtree(self._workdir, ignore_errors=True)
         except Exception as e:
