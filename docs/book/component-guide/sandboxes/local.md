@@ -27,7 +27,7 @@ No deps, no setup, no API keys. Works wherever Python runs.
 
 ## Settings
 
-The Local sandbox inherits the base [`BaseSandboxSettings`](README.md#per-step-settings) — `environment`, `copy_local_env`, `timeout_seconds`, `forward_logs_to_step`. The `base_image` field is accepted for interface compatibility but ignored (there is no image concept locally) and logged as a warning if set.
+The Local sandbox inherits the base [`BaseSandboxSettings`](README.md#per-step-settings) — `environment`, `copy_local_env`, `timeout_seconds`. The `base_image` field is accepted for interface compatibility but ignored (there is no image concept locally) and logged as a warning if set. `copy_local_env` defaults to `True` so PATH/HOME flow into the subprocess (no isolation anyway, so this just matches user expectation).
 
 Component-level `environment` and `secrets` (set via `zenml sandbox register --env ... --secret ...`) flow into every subprocess.
 
@@ -39,7 +39,7 @@ Component-level `environment` and `secrets` (set via `zenml sandbox register --e
 | `attach(session_id)` | ❌ | Sessions are bound to the parent process; not re-attachable. |
 | `upload_file` / `download_file` | ❌ | Files live in the session workdir already; use plain Python file I/O. |
 | Streaming output | ✅ | `subprocess.PIPE` line-buffered. |
-| `forward_logs_to_step` | ✅ | When True, lines route into the active ZenML `LoggingContext`. |
+| Sandbox log forwarding | ✅ | Each `exec` emits a `$ <command>` marker plus stdout/stderr lines + a `✓ exit <code>` trailer into the step's `sandbox:<id>` log source. |
 | `destroy()` | ✅ | Delegates to `close()`; removes the session workdir. |
 
 ## When to use it
