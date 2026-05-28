@@ -197,6 +197,56 @@ class TestSessionContextManager:
         assert session.closed is True
 
 
+class TestSessionMetadata:
+    """SandboxSession._on_enter publishes generic step metadata."""
+
+    def test_logs_session_id_and_flavor_with_dashboard_url(self) -> None:
+        session = _FakeSession(session_id="sb-test-1")
+        # Override dashboard URL via the hook.
+        session._dashboard_url = lambda: "https://example/sb-test-1"  # type: ignore[method-assign]
+        with patch("zenml.utils.metadata_utils.log_metadata") as log_meta:
+            session._on_enter()
+        from zenml.metadata.metadata_types import Uri
+
+        payload = log_meta.call_args.kwargs["metadata"]
+        assert payload["sandbox_session_id"] == "sb-test-1"
+        assert payload["sandbox_flavor"] == "fake"
+        assert isinstance(payload["sandbox_dashboard_url"], Uri)
+
+    def test_omits_dashboard_url_when_hook_returns_none(self) -> None:
+        session = _FakeSession()
+        with patch("zenml.utils.metadata_utils.log_metadata") as log_meta:
+            session._on_enter()
+        payload = log_meta.call_args.kwargs["metadata"]
+        assert "sandbox_dashboard_url" not in payload
+
+    def test_value_error_is_swallowed_at_debug(self) -> None:
+        # log_metadata raises ValueError outside a step — that's the
+        # expected ad-hoc path, not an error.
+        with (
+            patch(
+                "zenml.utils.metadata_utils.log_metadata",
+                side_effect=ValueError("not in a step"),
+            ),
+            patch("zenml.sandboxes.session.logger.debug") as dbg,
+            patch("zenml.sandboxes.session.logger.warning") as warn,
+        ):
+            _FakeSession()._on_enter()
+        dbg.assert_called()
+        warn.assert_not_called()
+
+    def test_unexpected_failure_surfaces_at_warning(self) -> None:
+        with (
+            patch(
+                "zenml.utils.metadata_utils.log_metadata",
+                side_effect=RuntimeError("publish 500"),
+            ),
+            patch("zenml.sandboxes.session.logger.warning") as warn,
+        ):
+            _FakeSession()._on_enter()
+        warn.assert_called()
+
+
 class TestSessionOptionalMethods:
     """Optional methods on SandboxSession raise NotImplementedError by default."""
 

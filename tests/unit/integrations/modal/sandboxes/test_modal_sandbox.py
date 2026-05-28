@@ -45,9 +45,29 @@ from zenml.integrations.modal.sandboxes.modal_sandbox import (  # noqa: E402
 )
 from zenml.sandboxes import (  # noqa: E402
     STEP_IMAGE,
+    BaseSandbox,
     BaseSandboxSnapshot,
     SandboxExecError,
 )
+
+
+def _make_session(
+    fake_sandbox: Any, *, forward_logs: bool = False
+) -> ModalSandboxSession:
+    """Builds a ModalSandboxSession with a fake parent for tests.
+
+    Args:
+        fake_sandbox: Mock Modal Sandbox.
+        forward_logs: Whether to opt into log forwarding.
+
+    Returns:
+        Session under test.
+    """
+    return ModalSandboxSession(
+        fake_sandbox,
+        parent=MagicMock(spec=BaseSandbox, flavor="modal"),
+        forward_logs=forward_logs,
+    )
 
 
 @contextmanager
@@ -209,7 +229,7 @@ class TestSettingsMerge:
         )
         # Override only timeout_seconds — gpu/cpu/region must persist.
         override = ModalSandboxSettings(timeout_seconds=600)
-        eff = sandbox._settings(override)
+        eff = sandbox.effective_settings(override)
         assert eff.gpu == "A100"
         assert eff.cpu == 4.0
         assert eff.region == "us-east"
@@ -229,7 +249,7 @@ class TestSettingsMerge:
             secrets=[],
         )
         override = ModalSandboxSettings(gpu="H100")
-        assert sandbox._settings(override).gpu == "H100"
+        assert sandbox.effective_settings(override).gpu == "H100"
 
     def test_none_override_returns_config_defaults(self) -> None:
         sandbox = ModalSandbox(
@@ -244,7 +264,7 @@ class TestSettingsMerge:
             environment={},
             secrets=[],
         )
-        eff = sandbox._settings(None)
+        eff = sandbox.effective_settings(None)
         assert eff.gpu == "A100"
         assert eff.cpu == 4.0
 
@@ -300,19 +320,19 @@ class TestModalSandboxProcess:
 class TestModalSandboxSession:
     def test_id_from_sandbox_object_id(self) -> None:
         fake_sandbox = MagicMock(object_id="sb_xyz")
-        session = ModalSandboxSession(fake_sandbox)
+        session = _make_session(fake_sandbox)
         assert session.id == "sb_xyz"
 
     def test_exec_list_command_passes_argv(self) -> None:
         fake_sandbox = MagicMock(object_id="sb_xyz")
         fake_sandbox.exec.return_value = MagicMock()
-        ModalSandboxSession(fake_sandbox).exec(["python", "-c", "print(1)"])
+        _make_session(fake_sandbox).exec(["python", "-c", "print(1)"])
         fake_sandbox.exec.assert_called_once_with("python", "-c", "print(1)")
 
     def test_exec_string_command_shell_split(self) -> None:
         fake_sandbox = MagicMock(object_id="sb_xyz")
         fake_sandbox.exec.return_value = MagicMock()
-        ModalSandboxSession(fake_sandbox).exec("python -c 'print(1)'")
+        _make_session(fake_sandbox).exec("python -c 'print(1)'")
         # shlex.split → ["python", "-c", "print(1)"]
         fake_sandbox.exec.assert_called_once_with("python", "-c", "print(1)")
 
@@ -320,27 +340,27 @@ class TestModalSandboxSession:
         fake_sandbox = MagicMock(object_id="sb_xyz")
         fake_sandbox.exec.side_effect = RuntimeError("image broken")
         with pytest.raises(SandboxExecError, match="image broken"):
-            ModalSandboxSession(fake_sandbox).exec(["nope"])
+            _make_session(fake_sandbox).exec(["nope"])
 
     def test_snapshot_packages_image_id(self) -> None:
         fake_sandbox = MagicMock(object_id="sb_xyz")
         fake_sandbox.snapshot_filesystem.return_value = MagicMock(
             object_id="im-123"
         )
-        snap = ModalSandboxSession(fake_sandbox).snapshot()
+        snap = _make_session(fake_sandbox).snapshot()
         assert snap.provider == "modal"
         assert snap.ref == "im-123"
 
     def test_destroy_calls_terminate(self) -> None:
         fake_sandbox = MagicMock(object_id="sb_xyz")
-        ModalSandboxSession(fake_sandbox).destroy()
+        _make_session(fake_sandbox).destroy()
         fake_sandbox.terminate.assert_called_once()
 
     def test_close_is_a_noop(self) -> None:
         # Modal Sandbox has no client-side resources to release; close()
         # must not call terminate() (that's destroy()'s job).
         fake_sandbox = MagicMock(object_id="sb_xyz")
-        ModalSandboxSession(fake_sandbox).close()
+        _make_session(fake_sandbox).close()
         fake_sandbox.terminate.assert_not_called()
 
 
@@ -389,9 +409,7 @@ class TestModalSandboxFileIO:
         src_path.write_bytes(b"payload")
         fake_sandbox = MagicMock(object_id="sb_xyz")
 
-        ModalSandboxSession(fake_sandbox).upload_file(
-            str(src_path), "/tmp/in.bin"
-        )
+        _make_session(fake_sandbox).upload_file(str(src_path), "/tmp/in.bin")
         fake_sandbox.filesystem.copy_from_local.assert_called_once_with(
             str(src_path), "/tmp/in.bin"
         )
@@ -402,7 +420,7 @@ class TestModalSandboxFileIO:
         dst_path = tmp_path / "out.bin"
         fake_sandbox = MagicMock(object_id="sb_xyz")
 
-        ModalSandboxSession(fake_sandbox).download_file(
+        _make_session(fake_sandbox).download_file(
             "/tmp/out.bin", str(dst_path)
         )
         fake_sandbox.filesystem.copy_to_local.assert_called_once_with(
@@ -650,70 +668,24 @@ class TestExportModalTokens:
             assert os.environ["MODAL_TOKEN_ID"] == "attach-tk"
 
 
-class TestLogStepMetadata:
-    """ModalSandboxSession._log_step_metadata behavior under various conditions."""
+class TestModalDashboardUrl:
+    """The Modal-specific _dashboard_url() override.
 
-    def _session(self, dashboard_url: str = "https://modal.com/id/sb-x"):
+    Generic step-metadata logging behaviour now lives on the base in
+    SandboxSession._on_enter (covered by tests/unit/sandboxes/). These
+    tests only verify the Modal flavor's URL-resolution hook.
+    """
+
+    def test_returns_url_when_modal_provides_it(self) -> None:
         fake_sandbox = MagicMock(object_id="sb_xyz")
-        fake_sandbox.get_dashboard_url.return_value = dashboard_url
-        return ModalSandboxSession(
-            fake_sandbox, parent=MagicMock(), forward_logs=False
+        fake_sandbox.get_dashboard_url.return_value = (
+            "https://modal.com/id/sb-x"
         )
+        session = _make_session(fake_sandbox)
+        assert session._dashboard_url() == "https://modal.com/id/sb-x"
 
-    def test_logs_session_id_flavor_and_typed_url(self) -> None:
-        with patch("zenml.utils.metadata_utils.log_metadata") as log_meta:
-            self._session()._log_step_metadata()
-        log_meta.assert_called_once()
-        payload = log_meta.call_args.kwargs["metadata"]
-        assert payload["sandbox_session_id"] == "sb_xyz"
-        assert payload["sandbox_flavor"] == "modal"
-        # Uri is a subclass of str so isinstance works against both.
-        from zenml.metadata.metadata_types import Uri
-
-        assert isinstance(payload["sandbox_dashboard_url"], Uri)
-
-    def test_skips_url_when_get_dashboard_url_fails(self) -> None:
+    def test_returns_none_when_get_dashboard_url_fails(self) -> None:
         fake_sandbox = MagicMock(object_id="sb_xyz")
         fake_sandbox.get_dashboard_url.side_effect = AttributeError("old SDK")
-        session = ModalSandboxSession(
-            fake_sandbox, parent=MagicMock(), forward_logs=False
-        )
-        with patch("zenml.utils.metadata_utils.log_metadata") as log_meta:
-            session._log_step_metadata()
-        payload = log_meta.call_args.kwargs["metadata"]
-        assert "sandbox_dashboard_url" not in payload
-        assert payload["sandbox_session_id"] == "sb_xyz"
-
-    def test_no_step_context_is_silently_skipped(self) -> None:
-        # log_metadata raises ValueError outside a step. We swallow at
-        # debug — not at warning, since this is the expected ad-hoc path.
-        with (
-            patch(
-                "zenml.utils.metadata_utils.log_metadata",
-                side_effect=ValueError("not in a step"),
-            ),
-            patch(
-                "zenml.integrations.modal.sandboxes.modal_sandbox.logger.debug"
-            ) as dbg,
-            patch(
-                "zenml.integrations.modal.sandboxes.modal_sandbox.logger.warning"
-            ) as warn,
-        ):
-            self._session()._log_step_metadata()
-        dbg.assert_called()
-        warn.assert_not_called()
-
-    def test_real_failure_is_surfaced_at_warning(self) -> None:
-        # Anything other than ValueError is logged at warning so users
-        # can debug why their step metadata never landed.
-        with (
-            patch(
-                "zenml.utils.metadata_utils.log_metadata",
-                side_effect=RuntimeError("publish 500"),
-            ),
-            patch(
-                "zenml.integrations.modal.sandboxes.modal_sandbox.logger.warning"
-            ) as warn,
-        ):
-            self._session()._log_step_metadata()
-        warn.assert_called()
+        session = _make_session(fake_sandbox)
+        assert session._dashboard_url() is None
