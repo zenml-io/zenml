@@ -214,11 +214,7 @@ class TrackioExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
         Returns:
             Logo URL.
         """
-        return (
-            "https://raw.githubusercontent.com/"
-            "gradio-app/trackio/main/"
-            "trackio/assets/trackio_logo_light.png"
-        )
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/experiment_tracker/trackio.png"
 
     @property
     def config_class(
@@ -236,7 +232,7 @@ class TrackioExperimentTrackerFlavor(BaseExperimentTrackerFlavor):
         self,
     ) -> Type["TrackioExperimentTracker"]:
         """Implementation class for this flavor.
-        
+
         Returns:
             The implementation class.
         """

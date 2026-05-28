@@ -167,7 +167,8 @@ class TrackioExperimentTracker(BaseExperimentTracker):
 
                 trackio.freeze(
                     space_id=self.config.hf_space,
-                    project=self.config.project_name,)
+                    project=self.config.project_name,
+                )
 
         except Exception as e:
             logger.warning(
