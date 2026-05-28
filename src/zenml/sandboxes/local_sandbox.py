@@ -36,7 +36,7 @@ import subprocess
 import tempfile
 import time
 import uuid
-from typing import Any, Dict, Iterator, List, Optional, Type, Union, cast
+from typing import Dict, Iterator, List, Optional, Type, Union, cast
 
 from zenml.logger import get_logger
 from zenml.sandboxes.base import (
