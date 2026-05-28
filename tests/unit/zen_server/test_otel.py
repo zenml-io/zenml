@@ -17,15 +17,10 @@ from collections.abc import Generator
 
 import pytest
 
-from zenml.config.server_config import ServerConfiguration
-
-OTEL_ENV_VARS = [
-    "OTEL_EXPORTER_OTLP_ENDPOINT",
-    "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
-    "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT",
-    "OTEL_EXPORTER_OTLP_LOGS_ENDPOINT",
-    "OTEL_SERVICE_NAME",
-]
+from zenml.config.server_config import (
+    SUPPORTED_STANDARD_OTEL_ENV_VARS,
+    ServerConfiguration,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -33,7 +28,7 @@ def clean_otel_env(
     monkeypatch: pytest.MonkeyPatch,
 ) -> Generator[None, None, None]:
     """Clear OTel env vars so config tests do not depend on local state."""
-    for env_var in OTEL_ENV_VARS:
+    for env_var in SUPPORTED_STANDARD_OTEL_ENV_VARS:
         monkeypatch.delenv(env_var, raising=False)
         # also delete ZENML_SERVER_ prefixed OTel env vars
         monkeypatch.delenv(f"ZENML_SERVER_{env_var}", raising=False)
