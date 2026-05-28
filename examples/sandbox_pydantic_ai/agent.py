@@ -171,19 +171,73 @@ def build_agent() -> Agent[AgentDeps, str]:
 
 
 _DEFAULT_QUERY = (
-    "Run a small data-analysis workflow inside the sandbox:\n"
-    "1. Generate 200 daily returns from a normal distribution with mean "
-    "0.0005 and stdev 0.012, then compute a cumulative price series "
-    "starting at 100. Save the prices to /tmp/prices.csv with header "
-    "'day,price'.\n"
-    "2. List /tmp to confirm the file exists and report its size.\n"
-    "3. Read the first 5 rows of /tmp/prices.csv.\n"
-    "4. Compute and report: mean price, final price, max drawdown "
-    "(largest peak-to-trough percentage drop), and the day index where "
-    "the max drawdown bottomed out.\n"
-    "Use a separate tool call for each step. Finish with a 2-3 sentence "
-    "natural-language summary of the run."
+    "Generate a small synthetic stock-price series in /tmp/prices.csv "
+    "(200 days, daily-return mean 0.0005, stdev 0.012, starting price "
+    "100). Then compute and report: mean price, final price, max "
+    "drawdown, and 30-day moving-average crossover signals. Use one "
+    "tool call per logical step."
 )
+
+
+class _Subtasks(BaseModel):
+    """Structured planner output."""
+
+    subtasks: list[str]
+
+
+def plan_subtasks(query: str, n: int = 3) -> list[str]:
+    """Decomposes a user goal into ``n`` independent subtasks.
+
+    Each subtask is meant to be tackled by an isolated subagent in its
+    own sandbox session — no shared state, no cross-subagent
+    dependencies. Used by the pipeline's planner step before fanning
+    out via ``.map()``.
+
+    Args:
+        query: The user's natural-language goal.
+        n: How many subtasks to produce.
+
+    Returns:
+        A list of self-contained subtask descriptions.
+    """
+    planner: Agent[None, _Subtasks] = Agent(
+        "openai:gpt-4o-mini",
+        output_type=_Subtasks,
+        system_prompt=(
+            f"Decompose the user's task into exactly {n} independent "
+            "subtasks. Each subtask must be self-contained (no shared "
+            "state with siblings) and tractable by a Python "
+            "data-analysis agent in an isolated sandbox in under a "
+            "minute. Phrase each subtask as a direct instruction."
+        ),
+    )
+    return planner.run_sync(query).output.subtasks
+
+
+def synthesize(query: str, parts: list[str]) -> str:
+    """Aggregates per-subagent answers into one coherent response.
+
+    Args:
+        query: The original user goal.
+        parts: The per-subtask answers produced by fanned-out subagents.
+
+    Returns:
+        A final natural-language response.
+    """
+    reducer: Agent[None, str] = Agent(
+        "openai:gpt-4o-mini",
+        system_prompt=(
+            "You are synthesizing the answers of several subagents that "
+            "each tackled an independent subtask of the user's "
+            "original goal. Produce a single concise response that "
+            "directly answers the original goal. Cite which subagent "
+            "produced which finding when relevant."
+        ),
+    )
+    bundle = f"Original goal: {query}\n\n" + "\n\n".join(
+        f"Subagent {i + 1} result:\n{p}" for i, p in enumerate(parts)
+    )
+    return reducer.run_sync(bundle).output
 
 
 def run_agent(query: str = _DEFAULT_QUERY) -> str:

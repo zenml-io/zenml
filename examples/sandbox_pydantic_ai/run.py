@@ -11,11 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""ZenML pipeline driving the PydanticAI + Sandbox agent.
+"""ZenML pipeline: plan -> fan-out subagents -> reduce.
 
-Reads the active stack's Sandbox component, lets the PydanticAI agent
-loop with a ``run_python`` tool that executes its generated code in the
-sandbox, and returns the natural-language answer.
+A planner LLM decomposes the user's goal into ``N`` independent
+subtasks. Each subtask runs in its own ZenML step via ``step.map()``,
+which gives each subagent a fresh ``SandboxSession`` (isolated /tmp,
+own log source, own step metadata, independently cacheable). A reducer
+LLM stitches the subagent outputs into a single coherent answer.
 """
 
 import site
@@ -23,7 +25,7 @@ import sys
 from pathlib import Path
 from typing import Annotated, Any
 
-from agent import run_agent
+from agent import _DEFAULT_QUERY, plan_subtasks, run_agent, synthesize
 
 import zenml
 from zenml import pipeline, step
@@ -44,12 +46,11 @@ def get_docker_settings(
     example's requirements on top.
 
     Harmless when running on the ``default`` orchestrator (which doesn't
-    containerize) — the settings are simply ignored.
+    containerize) -- the settings are simply ignored.
 
     Args:
         skip_parent_build: If True, never add the parent build even when
-            ZenML appears to be an editable install. Useful when the
-            target environment has its own preferred image.
+            ZenML appears to be an editable install.
         **kwargs: Extra ``DockerSettings`` fields to merge in.
 
     Returns:
@@ -67,11 +68,8 @@ def get_docker_settings(
     if not skip_parent_build:
         for path in site.getsitepackages() + [site.getusersitepackages()]:
             if Path(path).resolve() in Path(zenml.__file__).resolve().parents:
-                # ZenML is installed from a wheel; nothing to do.
                 break
         else:
-            # Editable install — add a parent build so the image carries
-            # the current ZenML source rather than the published wheel.
             zenml_git_root = Path(zenml.__file__).parents[2]
             settings_kwargs.update(
                 {
@@ -101,54 +99,89 @@ def get_docker_settings(
     return DockerSettings(**settings_kwargs)
 
 
+# Per-step sandbox settings. Lift Modal's 5-minute timeout so a slow
+# OpenAI tool-use loop doesn't terminate the sandbox mid-exec, and opt
+# into log forwarding so each subagent's stdout surfaces as a
+# ``sandbox:<id>`` source in its own step's log stream.
 _AGENT_SANDBOX_SETTINGS = BaseSandboxSettings(
     forward_logs_to_step=True,
-    # Agent loops can run >5min on a slow OpenAI day; lift Modal's
-    # 5-minute default so a slow tool-use loop doesn't kill the sandbox
-    # mid-exec.
     timeout_seconds=900,
 )
 
 
-@step(settings={"sandbox": _AGENT_SANDBOX_SETTINGS})
-def agent_step(query: str = "") -> Annotated[str, "agent_answer"]:
-    """Runs the PydanticAI agent against the active stack's Sandbox.
+@step
+def planner_step(query: str) -> Annotated[list[str], "subtasks"]:
+    """Asks a planner LLM to decompose the user goal into N subtasks.
 
     Args:
-        query: Override prompt. Empty string defers to the agent's
-            multi-step default task.
+        query: The user's natural-language goal.
 
     Returns:
-        The agent's answer.
+        Self-contained subtask descriptions, one per intended subagent.
     """
-    return run_agent(query) if query else run_agent()
+    return plan_subtasks(query)
+
+
+@step(settings={"sandbox": _AGENT_SANDBOX_SETTINGS})
+def subagent_step(subtask: str) -> Annotated[str, "subagent_answer"]:
+    """Runs one subagent in a fresh Sandbox session.
+
+    Each fanned-out instance gets its own ZenML step run -- its own
+    artifact, its own ``sandbox:<id>`` log source, and its own
+    ``sandbox.<id>.*`` step metadata entries. Isolation is automatic
+    because ``run_agent`` calls ``sandbox.create_session()``.
+
+    Args:
+        subtask: The subtask description produced by the planner.
+
+    Returns:
+        The subagent's final natural-language answer.
+    """
+    return run_agent(subtask)
+
+
+@step
+def reducer_step(
+    query: str, parts: list[str]
+) -> Annotated[str, "final_answer"]:
+    """Synthesizes per-subagent answers into a single response.
+
+    Args:
+        query: The original user goal.
+        parts: Per-subagent answers, gathered from the fan-out.
+
+    Returns:
+        A single coherent final answer.
+    """
+    return synthesize(query, parts)
 
 
 @pipeline(
     dynamic=True,
     enable_cache=False,
     settings={
-        "docker": get_docker_settings(
-            requirements="requirements.txt",
-        )
+        "docker": get_docker_settings(requirements="requirements.txt"),
     },
 )
-def sandbox_pydantic_ai_pipeline(query: str = "") -> str:
-    """Single-step pipeline that drives the PydanticAI agent.
+def sandbox_pydantic_ai_pipeline(query: str = _DEFAULT_QUERY) -> str:
+    """Planner -> fan-out subagents -> reducer.
+
+    Each subagent step holds its own Sandbox session and its own agent
+    loop; the same ``run_agent`` function runs in every fanned-out
+    instance unchanged.
 
     Args:
-        query: Override prompt. Empty string falls back to the agent's
-            default multi-step analysis task so the run naturally
-            exercises multiple tool calls (run_python, list_files,
-            read_file, ...).
+        query: The natural-language goal for the agent.
 
     Returns:
-        The agent's final natural-language answer.
+        The reducer's final synthesized answer.
     """
-    return agent_step(query=query)
+    subtasks = planner_step(query=query)
+    parts = subagent_step.map(subtask=subtasks)
+    return reducer_step(query=query, parts=parts)
 
 
 if __name__ == "__main__":
-    print("Running PydanticAI + Sandbox pipeline...")
+    print("Running PydanticAI + Sandbox fan-out pipeline...")
     sandbox_pydantic_ai_pipeline()
     print("Done. Check the ZenML dashboard for the run + log stream.")
