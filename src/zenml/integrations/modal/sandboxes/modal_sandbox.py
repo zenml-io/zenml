@@ -23,6 +23,7 @@ line-buffer it to satisfy ``SandboxProcess.stdout()`` / ``stderr()`` contracts.
 
 import os
 import shlex
+import time
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -295,13 +296,16 @@ class ModalSandboxSession(SandboxSession):
             kwargs["secrets"] = [
                 modal.Secret.from_dict(cast(Dict[str, Optional[str]], env))
             ]
+        started_at = time.time()
         try:
             process = self._sandbox.exec(*argv, **kwargs)
         except Exception as e:
             raise SandboxExecError(
                 f"Modal exec failed to launch ({type(e).__name__}): {e}"
             ) from e
-        return ModalSandboxProcess(process, session=self)
+        wrapped = ModalSandboxProcess(process, session=self)
+        wrapped._started_at = started_at
+        return wrapped
 
     def snapshot(self) -> ModalSandboxSnapshot:
         """Captures the Sandbox's filesystem as a reusable Modal Image.
