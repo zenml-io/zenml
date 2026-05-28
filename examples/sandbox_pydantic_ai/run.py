@@ -108,13 +108,10 @@ def get_docker_settings(
 
 
 # Per-step sandbox settings. Lift Modal's 5-minute timeout so a slow
-# OpenAI tool-use loop doesn't terminate the sandbox mid-exec, and opt
-# into log forwarding so each subagent's stdout surfaces as a
-# ``sandbox:<id>`` source in its own step's log stream.
-_AGENT_SANDBOX_SETTINGS = BaseSandboxSettings(
-    forward_logs_to_step=True,
-    timeout_seconds=900,
-)
+# OpenAI tool-use loop doesn't terminate the sandbox mid-exec. Sandbox
+# stdout/stderr automatically lands in a per-session ``sandbox:<id>``
+# log source on the active step -- no opt-in needed.
+_AGENT_SANDBOX_SETTINGS = BaseSandboxSettings(timeout_seconds=900)
 
 
 _PYTHON_DEPS = "numpy scipy"
