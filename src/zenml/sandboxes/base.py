@@ -109,15 +109,6 @@ class BaseSandboxSettings(BaseSettings):
         description="Session-level timeout passed through to the provider's "
         "TTL knob. None lets the provider apply its own default.",
     )
-    forward_logs_to_step: Optional[bool] = Field(
-        default=None,
-        description="If True, sandbox stdout/stderr is auto-forwarded into "
-        "ZenML's step logs as a dedicated log source tagged with the "
-        "session id (visible as a separate stream in the UI). Disable to "
-        "skip the forwarding overhead. None (default) lets the flavor "
-        "decide: True when base_image is STEP_IMAGE (ZenML deps available), "
-        "False otherwise.",
-    )
 
 
 class BaseSandbox(StackComponent, ABC):
@@ -295,48 +286,6 @@ class BaseSandbox(StackComponent, ABC):
         if override is not None:
             base.update(override.model_dump(exclude_unset=True))
         return settings_cls(**base)
-
-    def resolve_forward_logs_to_step(
-        self, settings: BaseSandboxSettings
-    ) -> bool:
-        """Resolves the effective ``forward_logs_to_step`` value.
-
-        When the user leaves the setting as ``None`` (default), the flavor
-        decides: ``True`` only when ``base_image == STEP_IMAGE`` (the
-        sandbox is running the step's own image and is "integrated");
-        ``False`` for the flavor default image or any custom image
-        (sandbox is "alien" — don't assume the user wants their logs
-        intermingled).
-
-        Args:
-            settings: Effective per-step settings.
-
-        Returns:
-            The resolved boolean.
-        """
-        if settings.forward_logs_to_step is not None:
-            return settings.forward_logs_to_step
-        return settings.base_image == STEP_IMAGE
-
-    def _resolve_forward_logs(
-        self, settings: Optional[BaseSandboxSettings] = None
-    ) -> bool:
-        """One-shot ``forward_logs`` resolver for flavor entrypoints.
-
-        Combines ``effective_settings`` + ``resolve_forward_logs_to_step``
-        so ``create_session`` / ``attach`` / ``restore`` collapse to a
-        single helper call instead of three method chains.
-
-        Args:
-            settings: Optional explicit settings; otherwise resolved
-                from the step context.
-
-        Returns:
-            The effective ``forward_logs`` boolean to pass to the Session.
-        """
-        return self.resolve_forward_logs_to_step(
-            self.effective_settings(settings)
-        )
 
     # ------------------------- env / secret merging -----------------------
 
