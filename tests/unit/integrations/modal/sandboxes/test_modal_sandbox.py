@@ -51,14 +51,11 @@ from zenml.sandboxes import (  # noqa: E402
 )
 
 
-def _make_session(
-    fake_sandbox: Any, *, forward_logs: bool = False
-) -> ModalSandboxSession:
+def _make_session(fake_sandbox: Any) -> ModalSandboxSession:
     """Builds a ModalSandboxSession with a fake parent for tests.
 
     Args:
         fake_sandbox: Mock Modal Sandbox.
-        forward_logs: Whether to opt into log forwarding.
 
     Returns:
         Session under test.
@@ -66,7 +63,6 @@ def _make_session(
     return ModalSandboxSession(
         fake_sandbox,
         parent=MagicMock(spec=BaseSandbox, flavor="modal"),
-        forward_logs=forward_logs,
     )
 
 

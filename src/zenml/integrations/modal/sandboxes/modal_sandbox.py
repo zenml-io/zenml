@@ -218,20 +218,16 @@ class ModalSandboxSession(SandboxSession):
         sandbox: Any,
         *,
         parent: "BaseSandbox",
-        forward_logs: bool = False,
     ) -> None:
         """Initializes the session wrapper.
 
         Args:
             sandbox: The live Modal ``Sandbox`` object.
             parent: The owning ``BaseSandbox`` component.
-            forward_logs: If True, sandbox stdout/stderr is auto-routed
-                into ZenML step logs as a per-session log source.
         """
         super().__init__(
             id=sandbox.object_id,
             parent=parent,
-            forward_logs=forward_logs,
         )
         self._sandbox = sandbox
 
@@ -271,11 +267,9 @@ class ModalSandboxSession(SandboxSession):
 
         Returns:
             A ``ModalSandboxProcess`` wrapping the live command handle.
-            When ``forward_logs=True`` was set on the Session, the
-            returned process's ``stdout()`` / ``stderr()`` iterators
-            emit each line into the dedicated ``sandbox:<id>`` log
-            source (alongside a ``$ <command>`` marker emitted right
-            before launch).
+            stdout/stderr iterators emit each line into the dedicated
+            ``sandbox:<id>`` log source (alongside a ``$ <command>``
+            marker emitted right before launch).
 
         Raises:
             SandboxExecError: If Modal rejects the launch (e.g. binary not
@@ -528,11 +522,7 @@ class ModalSandbox(BaseSandbox):
         sandbox = modal.Sandbox.create(
             image=image, **self._modal_sandbox_kwargs(eff)
         )
-        return ModalSandboxSession(
-            sandbox,
-            parent=self,
-            forward_logs=self._resolve_forward_logs(eff),
-        )
+        return ModalSandboxSession(sandbox, parent=self)
 
     def attach(self, session_id: str) -> SandboxSession:
         """Reconnects to a still-live Modal Sandbox by id.
@@ -560,11 +550,7 @@ class ModalSandbox(BaseSandbox):
                 f"Failed to attach to Modal sandbox '{session_id}' "
                 f"({type(e).__name__}): {e}"
             ) from e
-        return ModalSandboxSession(
-            sandbox,
-            parent=self,
-            forward_logs=self._resolve_forward_logs(),
-        )
+        return ModalSandboxSession(sandbox, parent=self)
 
     def restore(self, snapshot: BaseSandboxSnapshot) -> SandboxSession:
         """Boots a new Session from a stored filesystem snapshot.
@@ -601,8 +587,4 @@ class ModalSandbox(BaseSandbox):
                 f"Failed to restore Modal sandbox from image "
                 f"'{snapshot.ref}' ({type(e).__name__}): {e}"
             ) from e
-        return ModalSandboxSession(
-            sandbox,
-            parent=self,
-            forward_logs=self._resolve_forward_logs(),
-        )
+        return ModalSandboxSession(sandbox, parent=self)
