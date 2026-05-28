@@ -80,10 +80,6 @@ class TrackioExperimentTracker(BaseExperimentTracker):
             run_name=trackio_run_name,
         )
 
-        # -------------------------------------------------
-        # Log tags as metadata instead of init arguments
-        # -------------------------------------------------
-
         tags = settings.tags
 
         if tags:
