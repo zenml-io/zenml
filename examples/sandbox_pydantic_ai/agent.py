@@ -11,14 +11,21 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""PydanticAI agent with a ZenML Sandbox-backed code-execution tool.
+"""PydanticAI agent with ZenML Sandbox-backed code-execution tools.
 
-The agent has one tool, ``run_python``, that takes a Python source string,
-executes it inside the active stack's Sandbox, and returns stdout + exit
-code. The Sandbox isolates the LLM-generated code from the agent process,
-which is the headline use case for the Sandbox stack component.
+The agent has four tools backed by the active stack's Sandbox:
+
+* ``run_python`` -- execute Python source, return stdout/stderr/exit code
+* ``run_shell`` -- run a shell command, return stdout/stderr/exit code
+* ``list_files`` -- list a directory inside the sandbox
+* ``read_file`` -- read a file from the sandbox
+
+All tools share a single live ``SandboxSession`` so files written in one
+tool call persist for the next. That naturally drives multi-step
+agent flows: generate data, inspect, filter, re-compute, etc.
 """
 
+import shlex
 from dataclasses import dataclass
 
 from pydantic import BaseModel
@@ -35,7 +42,7 @@ _MAX_STREAM_CHARS = 32_000
 
 
 class CodeResult(BaseModel):
-    """Structured result returned by the ``run_python`` tool."""
+    """Structured result returned by the ``run_python``/``run_shell`` tools."""
 
     stdout: str
     stderr: str
@@ -54,23 +61,50 @@ class AgentDeps:
     session: SandboxSession
 
 
-def build_agent() -> Agent[AgentDeps, str]:
-    """Constructs the PydanticAI agent with the sandbox tool registered.
+def _exec_collect(session: SandboxSession, argv: list[str]) -> CodeResult:
+    """Runs a command in the sandbox and folds the result into ``CodeResult``.
+
+    Args:
+        session: The live Sandbox session.
+        argv: Command arguments to exec.
 
     Returns:
-        A PydanticAI ``Agent`` that runs Python code through the active
-        ZenML stack's Sandbox via a single ``run_python`` tool.
+        Captured stdout/stderr/exit code, with truncation markers
+        appended when the per-stream cap was hit.
+    """
+    process = session.exec(argv)
+    out = process.collect(max_chars=_MAX_STREAM_CHARS)
+    stdout = out.stdout
+    if out.stdout_truncated:
+        stdout += f"\n... [stdout truncated at {_MAX_STREAM_CHARS} chars]\n"
+    stderr = out.stderr
+    if out.stderr_truncated:
+        stderr += f"\n... [stderr truncated at {_MAX_STREAM_CHARS} chars]\n"
+    return CodeResult(stdout=stdout, stderr=stderr, exit_code=out.exit_code)
+
+
+def build_agent() -> Agent[AgentDeps, str]:
+    """Constructs the PydanticAI agent with the sandbox tools registered.
+
+    Returns:
+        A PydanticAI ``Agent`` wired up to drive a ZenML Sandbox session
+        via four tools: run_python, run_shell, list_files, read_file.
     """
     agent: Agent[AgentDeps, str] = Agent(
         "openai:gpt-4o-mini",
         deps_type=AgentDeps,
         system_prompt=(
-            "You are a data-analysis assistant. To answer questions that "
-            "need computation, write Python code and call the run_python "
-            "tool with it. Each call is a fresh Python interpreter -- "
-            "imports and variables do NOT persist between calls, so write "
-            "self-contained scripts. Files written under /tmp do persist. "
-            "Print the final answer to stdout."
+            "You are a data-analysis assistant operating inside a Linux "
+            "sandbox. You have four tools:\n"
+            "- run_python(code): runs Python source in a fresh interpreter. "
+            "Imports/variables do NOT persist between calls, but files "
+            "written to /tmp do.\n"
+            "- run_shell(command): runs a shell command (bash -c).\n"
+            "- list_files(path): lists a directory.\n"
+            "- read_file(path): reads a file as text.\n"
+            "Prefer multi-step workflows: produce intermediate artifacts on "
+            "disk, then inspect them with list_files / read_file before "
+            "deciding the next step. Print final answers to stdout."
         ),
     )
 
@@ -80,61 +114,98 @@ def build_agent() -> Agent[AgentDeps, str]:
 
         Args:
             ctx: PydanticAI run context, carrying the live SandboxSession.
-            code: Python source to execute. Must be self-contained.
+            code: Python source to execute. Must be self-contained --
+                each call is a fresh interpreter, but ``/tmp`` files
+                persist.
 
         Returns:
-            The captured stdout, stderr, and exit code.
+            Captured stdout, stderr, and exit code.
         """
         # ``-u`` forces unbuffered output so prints arrive on the stream
-        # immediately -- important once the Modal flavor's log-forwarding
-        # wraps these iterators (lines surface in the step log live).
-        process = ctx.deps.session.exec(["python", "-u", "-c", code])
-        # ``collect`` drains both streams to completion (so the
-        # provider's wait() is safe), caps each stream at max_chars,
-        # and flags truncation per-stream. Replaces the three-line
-        # ``stdout = _drain(...); stderr = _drain(...); wait()`` dance.
-        out = process.collect(max_chars=_MAX_STREAM_CHARS)
-        # ``SandboxOutput`` is frozen; assemble the truncation-marker
-        # strings locally and pass them on rather than mutating in place.
-        stdout = out.stdout
-        if out.stdout_truncated:
-            stdout += (
-                f"\n... [stdout truncated at {_MAX_STREAM_CHARS} chars]\n"
-            )
-        stderr = out.stderr
-        if out.stderr_truncated:
-            stderr += (
-                f"\n... [stderr truncated at {_MAX_STREAM_CHARS} chars]\n"
-            )
-        return CodeResult(
-            stdout=stdout,
-            stderr=stderr,
-            exit_code=out.exit_code,
+        # immediately -- important so the step log shows progress live.
+        return _exec_collect(ctx.deps.session, ["python", "-u", "-c", code])
+
+    @agent.tool
+    def run_shell(ctx: RunContext[AgentDeps], command: str) -> CodeResult:
+        """Executes a shell command in the sandbox.
+
+        Args:
+            ctx: PydanticAI run context.
+            command: Shell command to run via ``bash -c``.
+
+        Returns:
+            Captured stdout, stderr, and exit code.
+        """
+        return _exec_collect(ctx.deps.session, ["bash", "-lc", command])
+
+    @agent.tool
+    def list_files(ctx: RunContext[AgentDeps], path: str) -> CodeResult:
+        """Lists a directory in the sandbox.
+
+        Args:
+            ctx: PydanticAI run context.
+            path: Directory path to list.
+
+        Returns:
+            ``ls -la`` output as stdout.
+        """
+        return _exec_collect(ctx.deps.session, ["ls", "-la", "--", path])
+
+    @agent.tool
+    def read_file(ctx: RunContext[AgentDeps], path: str) -> CodeResult:
+        """Reads a text file from the sandbox.
+
+        Args:
+            ctx: PydanticAI run context.
+            path: File path inside the sandbox.
+
+        Returns:
+            File contents on stdout (capped at ``_MAX_STREAM_CHARS``).
+        """
+        # ``cat -- path`` so paths starting with - don't get parsed as flags.
+        return _exec_collect(
+            ctx.deps.session, ["bash", "-lc", f"cat -- {shlex.quote(path)}"]
         )
 
     return agent
 
 
-def run_agent(query: str) -> str:
+_DEFAULT_QUERY = (
+    "Run a small data-analysis workflow inside the sandbox:\n"
+    "1. Generate 200 daily returns from a normal distribution with mean "
+    "0.0005 and stdev 0.012, then compute a cumulative price series "
+    "starting at 100. Save the prices to /tmp/prices.csv with header "
+    "'day,price'.\n"
+    "2. List /tmp to confirm the file exists and report its size.\n"
+    "3. Read the first 5 rows of /tmp/prices.csv.\n"
+    "4. Compute and report: mean price, final price, max drawdown "
+    "(largest peak-to-trough percentage drop), and the day index where "
+    "the max drawdown bottomed out.\n"
+    "Use a separate tool call for each step. Finish with a 2-3 sentence "
+    "natural-language summary of the run."
+)
+
+
+def run_agent(query: str = _DEFAULT_QUERY) -> str:
     """Drives the agent against the active stack's Sandbox.
 
-    Opens a ``with`` block around the Session. When the flavor enables
-    log forwarding (e.g. Modal opens a ``LoggingContext`` on
-    ``__enter__`` when ``forward_logs_to_step`` resolves True), sandbox
-    stdout/stderr surfaces in the step's log stream as a dedicated
-    ``sandbox:<session_id>`` source. The Modal flavor also records the
-    sandbox session id and dashboard URL as step metadata on
-    ``__enter__`` -- both behaviors only fire inside a ``with`` block.
+    Opens a ``with`` block around the Session. The Session base class
+    handles step-metadata publishing (sandbox session id, flavor, and
+    flavor-supplied dashboard URL) and -- when ``forward_logs_to_step``
+    resolves True -- routes sandbox stdout/stderr into the step's log
+    stream as a ``sandbox:<session_id>`` source. Both behaviors only
+    fire inside a ``with`` block.
 
     Args:
-        query: The natural-language question to ask the agent.
+        query: Natural-language task for the agent. Defaults to a
+            multi-step analysis prompt that naturally fans out into
+            several tool calls.
 
     Returns:
         The agent's final natural-language answer.
 
     Raises:
-        RuntimeError: If the active stack does not have a Sandbox
-            component configured.
+        RuntimeError: If the active stack has no Sandbox component.
     """
     sandbox = Client().active_stack.sandbox
     if sandbox is None:

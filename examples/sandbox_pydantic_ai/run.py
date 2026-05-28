@@ -111,16 +111,17 @@ _AGENT_SANDBOX_SETTINGS = BaseSandboxSettings(
 
 
 @step(settings={"sandbox": _AGENT_SANDBOX_SETTINGS})
-def agent_step(query: str) -> Annotated[str, "agent_answer"]:
+def agent_step(query: str = "") -> Annotated[str, "agent_answer"]:
     """Runs the PydanticAI agent against the active stack's Sandbox.
 
     Args:
-        query: The natural-language question.
+        query: Override prompt. Empty string defers to the agent's
+            multi-step default task.
 
     Returns:
         The agent's answer.
     """
-    return run_agent(query)
+    return run_agent(query) if query else run_agent()
 
 
 @pipeline(
@@ -132,13 +133,18 @@ def agent_step(query: str) -> Annotated[str, "agent_answer"]:
         )
     },
 )
-def sandbox_pydantic_ai_pipeline(
-    query: str = (
-        "What's the sum of the first 100 prime numbers? "
-        "Write Python to compute it."
-    ),
-) -> str:
-    """Single-step pipeline that drives the PydanticAI agent."""
+def sandbox_pydantic_ai_pipeline(query: str = "") -> str:
+    """Single-step pipeline that drives the PydanticAI agent.
+
+    Args:
+        query: Override prompt. Empty string falls back to the agent's
+            default multi-step analysis task so the run naturally
+            exercises multiple tool calls (run_python, list_files,
+            read_file, ...).
+
+    Returns:
+        The agent's final natural-language answer.
+    """
     return agent_step(query=query)
 
 
