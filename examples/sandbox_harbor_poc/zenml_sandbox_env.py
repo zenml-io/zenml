@@ -25,6 +25,7 @@ import asyncio
 import shlex
 import tarfile
 import tempfile
+import uuid
 from pathlib import Path
 
 from harbor.environments.base import BaseEnvironment, ExecResult
@@ -67,33 +68,28 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
     def capabilities(self) -> EnvironmentCapabilities:
         """Capabilities reported to Harbor's preflight validators.
 
-        We declare GPU support so tasks requesting GPUs pass preflight;
-        the actual allocation rides on the underlying flavor's
-        settings. Internet isolation, Windows containers, mount
-        semantics and docker-compose stay off — none of those are
-        primitives the Sandbox interface currently exposes.
+        Default to no-GPU because the Sandbox interface doesn't yet
+        expose a per-flavor capability surface — claiming GPU support
+        unconditionally (when Local can't and Modal can) would let
+        Harbor preflight a task that fails deep in the agent run.
+        Conservative default; revisit when ``BaseSandbox`` grows a
+        ``supports_gpu`` property.
         """
-        return EnvironmentCapabilities(gpus=True)
+        return EnvironmentCapabilities(gpus=False)
 
-    def _settings_from_task_env(self) -> BaseSandboxSettings | None:
-        """Translates Harbor's ``EnvironmentConfig`` into Sandbox settings.
+    def _settings_override(self) -> BaseSandboxSettings | None:
+        """Translates Harbor's task-level ``docker_image`` to a setting.
 
-        ``docker_image`` -> ``base_image`` (when set; otherwise the
-        flavor default applies). ``env`` -> ``environment`` (resolved
-        host env vars come pre-merged in ``self._persistent_env`` by
-        the base class). Returns ``None`` when neither is populated so
-        the Sandbox component falls back to its own config defaults.
+        Env vars do NOT ride on the settings: they flow through
+        ``exec`` per call so the Sandbox component's own env merge
+        (component config + secrets + step-level overrides) stays
+        authoritative. The only thing the override needs to carry is
+        the image the task pinned in ``task.toml``, when set.
         """
         image = self.task_env_config.docker_image
-        env = dict(self._persistent_env)
-        if image is None and not env:
+        if image is None:
             return None
-        kwargs: dict = {}
-        if image is not None:
-            kwargs["base_image"] = image
-        if env:
-            kwargs["environment"] = env
-        return BaseSandboxSettings(**kwargs)
+        return BaseSandboxSettings(base_image=image)
 
     async def start(self, force_build: bool) -> None:
         """Open a SandboxSession on the active stack's Sandbox component.
@@ -106,8 +102,8 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
         Harbor expects ``/logs/{agent,verifier,artifacts}`` to exist
         when the trial starts — its built-in envs either bind-mount
         them (Docker) or create them explicitly after start (Modal).
-        We do the latter so the agent / verifier / artifact handler
-        downstream don't trip on missing directories.
+        We do the latter; if that post-start setup fails the session
+        is torn down so we don't leak it.
         """
         sandbox = Client().active_stack.sandbox
         if sandbox is None:
@@ -116,7 +112,7 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
                 "Register one with `zenml sandbox register ...` and add "
                 "it to the active stack before running Harbor."
             )
-        settings = self._settings_from_task_env()
+        settings = self._settings_override()
         self._session = await asyncio.to_thread(
             lambda: sandbox.create_session(settings=settings).__enter__()
         )
@@ -125,26 +121,33 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
             self._session.id,
             self.session_id,
         )
-        await self._ensure_harbor_log_dirs()
+        try:
+            await self._ensure_harbor_log_dirs()
+        except Exception:
+            # Tear down so a half-started env doesn't leak a paid Modal
+            # sandbox up to its TTL.
+            await self.stop(delete=True)
+            raise
 
     async def _ensure_harbor_log_dirs(self) -> None:
         """Create the canonical Harbor log dirs the trial harness expects.
 
-        Mirrors Harbor's own Modal env, which runs ``ensure_dirs``
-        on the mount targets after ``start``. We hit
-        ``EnvironmentPaths.for_os`` for the canonical layout and
-        chmod 777 so non-root agents/verifiers can write.
+        Mirrors Harbor's own Modal env, which runs ``ensure_dirs`` on
+        the mount targets after ``start``. ``chmod 1777`` matches
+        ``/tmp`` semantics — world-writable but sticky — so non-root
+        agent and verifier users can write to ``/logs/agent`` and
+        ``/logs/verifier`` without one trampling the other.
         """
         from harbor.models.trial.paths import EnvironmentPaths
 
         paths = EnvironmentPaths.for_os(self.task_env_config.os)
         dirs = [
-            shlex.quote(str(paths.agent_dir)),
-            shlex.quote(str(paths.verifier_dir)),
-            shlex.quote(str(paths.artifacts_dir)),
+            str(paths.agent_dir),
+            str(paths.verifier_dir),
+            str(paths.artifacts_dir),
         ]
-        joined = " ".join(dirs)
-        await self.exec(f"mkdir -p {joined} && chmod 777 {joined}")
+        joined = " ".join(shlex.quote(d) for d in dirs)
+        await self.exec(f"mkdir -p {joined} && chmod 1777 {joined}")
 
     async def stop(self, delete: bool) -> None:
         """Close (or destroy) the underlying SandboxSession.
@@ -160,30 +163,6 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
         self._session = None
         await asyncio.to_thread(session.destroy if delete else session.close)
 
-    def _wrap_command(
-        self,
-        command: str,
-        *,
-        cwd: str | None,
-        env: dict[str, str] | None,
-    ) -> list[str]:
-        """Fold ``cwd`` / ``env`` overrides into a ``bash -lc`` invocation.
-
-        ``SandboxSession.exec`` takes an argv list, not a shell string,
-        and has no first-class ``cwd`` / ``env`` knobs. We rewrite the
-        command so the env vars ride inside a single shell invocation
-        as ``export … ;`` statements (NOT ``KEY=val CMD``, which is
-        only valid before *simple* commands — a subshell or pipeline
-        in ``CMD`` would make bash syntax-error).
-        """
-        prefix = ""
-        if env:
-            assigns = " ".join(f"{k}={shlex.quote(v)}" for k, v in env.items())
-            prefix += f"export {assigns}; "
-        if cwd:
-            prefix += f"cd {shlex.quote(cwd)} && "
-        return ["bash", "-lc", prefix + command]
-
     async def exec(
         self,
         command: str,
@@ -194,10 +173,12 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
     ) -> ExecResult:
         """Run ``command`` in the open SandboxSession.
 
-        ``timeout_sec`` is honored only when the underlying flavor
-        supports per-exec timeouts; Modal currently doesn't, so we
-        log-and-ignore. ``user`` is not yet plumbed — the session runs
-        as the container default.
+        Harbor passes ``command`` as a shell string with redirects,
+        subshells, pipelines — so we wrap in ``bash -c`` (argv form,
+        not ``shlex.split``-able) and let the session handle env
+        injection and workdir natively. ``timeout_sec`` is enforced
+        host-side via ``asyncio.wait_for`` since Modal doesn't take
+        per-exec timeouts. ``user`` is not yet plumbed.
         """
         if self._session is None:
             raise RuntimeError(
@@ -209,11 +190,13 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
                 "supported by the Sandbox interface yet.",
                 user,
             )
-        argv = self._wrap_command(command, cwd=cwd, env=self._merge_env(env))
+        merged_env = self._merge_env(env)
 
         def _run() -> ExecResult:
             assert self._session is not None
-            process = self._session.exec(argv)
+            process = self._session.exec(
+                ["bash", "-c", command], cwd=cwd, env=merged_env
+            )
             out = process.collect()
             return ExecResult(
                 stdout=out.stdout,
@@ -258,6 +241,15 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
             self._session.download_file, source_path, str(target_path)
         )
 
+    def _remote_tar_path(self, kind: str) -> str:
+        """Per-call remote tar path, safe against concurrent / repeated calls.
+
+        ``session_id`` alone collides if two ``upload_dir`` calls overlap
+        within the same env; a per-call uuid keeps each archive
+        independent and lets ``rm -f`` safely race the cleanup.
+        """
+        return f"/tmp/.hb-{kind}-{uuid.uuid4().hex}.tar.gz"
+
     async def upload_dir(
         self, source_dir: Path | str, target_dir: str
     ) -> None:
@@ -265,27 +257,30 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
 
         SandboxSession only exposes ``upload_file``; recursive uploads
         would mean a per-file call (slow on remote flavors). We tar
-        locally, ``upload_file`` the archive, and untar inside the
-        session. Mirrors how Harbor's own ``download_dir_with_exclusions``
-        already moves directories.
+        locally, ``upload_file`` the archive, untar inside the
+        session, and remove the archive regardless of extract success.
         """
         if self._session is None:
             raise RuntimeError(
                 "ZenMLSandboxEnvironment.upload_dir called before start()."
             )
         source = Path(source_dir)
+        remote_tar = self._remote_tar_path("upload")
         with tempfile.TemporaryDirectory() as host_tmp:
             archive = Path(host_tmp) / "upload.tar.gz"
             with tarfile.open(archive, "w:gz") as tf:
                 tf.add(source, arcname=".")
-            remote_tar = f"/tmp/.hb-upload-{self.session_id}.tar.gz"
             await asyncio.to_thread(
                 self._session.upload_file, str(archive), remote_tar
             )
+        q_target = shlex.quote(target_dir)
+        q_tar = shlex.quote(remote_tar)
+        # Always remove the tar — failure inside `tar xzf` shouldn't
+        # leak the archive into /tmp.
         await self.exec(
-            f"mkdir -p {shlex.quote(target_dir)} && "
-            f"tar xzf {shlex.quote(remote_tar)} -C "
-            f"{shlex.quote(target_dir)} && rm -f {shlex.quote(remote_tar)}"
+            f"mkdir -p {q_target}; "
+            f"tar xzf {q_tar} -C {q_target}; "
+            f"rc=$?; rm -f {q_tar}; exit $rc"
         )
 
     async def download_dir(
@@ -296,17 +291,22 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
             raise RuntimeError(
                 "ZenMLSandboxEnvironment.download_dir called before start()."
             )
-        remote_tar = f"/tmp/.hb-download-{self.session_id}.tar.gz"
+        remote_tar = self._remote_tar_path("download")
         await self.exec(
             f"tar czf {shlex.quote(remote_tar)} -C {shlex.quote(source_dir)} ."
         )
         target = Path(target_dir)
         target.mkdir(parents=True, exist_ok=True)
-        with tempfile.TemporaryDirectory() as host_tmp:
-            host_tar = Path(host_tmp) / "download.tar.gz"
-            await asyncio.to_thread(
-                self._session.download_file, remote_tar, str(host_tar)
-            )
-            with tarfile.open(host_tar, "r:gz") as tf:
-                tf.extractall(path=target, filter="data")
-        await self.exec(f"rm -f {shlex.quote(remote_tar)}")
+        try:
+            with tempfile.TemporaryDirectory() as host_tmp:
+                host_tar = Path(host_tmp) / "download.tar.gz"
+                await asyncio.to_thread(
+                    self._session.download_file, remote_tar, str(host_tar)
+                )
+                with tarfile.open(host_tar, "r:gz") as tf:
+                    # ``filter="data"`` blocks unsafe tar entries
+                    # (absolute paths, links escaping target). Requires
+                    # Python 3.12+; the surrounding example pins 3.12.
+                    tf.extractall(path=target, filter="data")
+        finally:
+            await self.exec(f"rm -f {shlex.quote(remote_tar)}")

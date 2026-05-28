@@ -17,10 +17,10 @@ build_timeout_sec = 120.0
 os = "linux"
 allow_internet = true
 mcp_servers = []
-# Pin the image so the ZenML Sandbox flavor consumes it directly —
-# the bridge ignores the local Dockerfile and forwards this to the
-# underlying flavor's `base_image` setting.
-docker_image = "python:3.11-slim"
+# No `docker_image` — the bridge ignores the local Dockerfile and
+# falls through to the active Sandbox flavor's default image (Modal:
+# python:3.11-slim). Set `docker_image = "..."` here only when a
+# task needs to pin a specific registry image regardless of flavor.
 
 [environment.env]
 

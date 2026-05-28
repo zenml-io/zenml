@@ -21,8 +21,8 @@ Invocation::
 from __future__ import annotations
 
 import asyncio
-import shutil
 import sys
+import tempfile
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -120,17 +120,13 @@ def run_harbor_trial(
     if not task.exists():
         raise FileNotFoundError(f"Harbor task path not found: {task}")
 
-    # Per-step jobs dir; we throw the on-disk trace away and trust
-    # the ZenML artifact as the durable record of the trial.
-    jobs_dir = here / ".zenml_harbor_jobs"
-    if jobs_dir.exists():
-        shutil.rmtree(jobs_dir)
-    jobs_dir.mkdir()
-
-    try:
+    # Harbor's on-disk ``jobs/`` tree duplicates everything we hand back
+    # as a ZenML artifact, so we drop it on TemporaryDirectory exit.
+    # ``asyncio.run`` is safe because ZenML steps run synchronously
+    # today; revisit if step bodies grow an outer event loop.
+    with tempfile.TemporaryDirectory(prefix="zenml-harbor-") as tmp:
+        jobs_dir = Path(tmp)
         return asyncio.run(_run_harbor_job(task, agent_name, jobs_dir))
-    finally:
-        logger.info("Harbor on-disk trace at %s", jobs_dir)
 
 
 @pipeline(enable_cache=False)

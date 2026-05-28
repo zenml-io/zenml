@@ -1,0 +1,7 @@
+# Re-run artifacts from `python run.py` — Harbor's on-disk trace
+# duplicates what the ZenML artifact already records.
+.zenml_harbor_jobs/
+
+# Python
+__pycache__/
+*.py[cod]
