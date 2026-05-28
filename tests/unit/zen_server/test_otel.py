@@ -144,7 +144,9 @@ def test_otel_config_prefers_zenml_prefixed_env_vars_over_standard_otel_env_vars
     config = ServerConfiguration.get_server_config()
 
     assert config.otel_exporter_otlp_endpoint == "http://zenml:4318"
-    assert config.otel_exporter_otlp_traces_endpoint == "http://zenml/v1/traces"
+    assert (
+        config.otel_exporter_otlp_traces_endpoint == "http://zenml/v1/traces"
+    )
     assert config.otel_service_name == "zenml-prefixed-service-name"
 
 
