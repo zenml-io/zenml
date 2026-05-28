@@ -455,6 +455,55 @@ class ModalSandbox(BaseSandbox):
             )
         return self._app
 
+    def _modal_sandbox_kwargs(
+        self,
+        eff: ModalSandboxSettings,
+        *,
+        with_env: bool = True,
+    ) -> Dict[str, Any]:
+        """Builds the kwargs passed to ``modal.Sandbox.create``.
+
+        Used by both ``create_session`` and ``restore`` so the same
+        timeout / resource / region knobs apply uniformly — previously
+        ``restore`` silently dropped them, leaving restored sandboxes
+        on Modal's 5-minute default timeout.
+
+        Args:
+            eff: Effective per-step settings.
+            with_env: If True, the resolved Session env is exported as
+                a Modal Secret. Skipped on the restore path where
+                injecting env into a frozen filesystem image is rarely
+                what the caller wants.
+
+        Returns:
+            Kwargs for ``modal.Sandbox.create``.
+        """
+        import modal
+
+        kwargs: Dict[str, Any] = {"app": self._get_app()}
+        if with_env:
+            env = self._resolve_session_environment(eff)
+            if env:
+                # Modal types env_dict as Dict[str, Optional[str]]; our
+                # env is narrower (Dict[str, str]). Valid subtype at
+                # runtime, cast for mypy.
+                kwargs["secrets"] = [
+                    modal.Secret.from_dict(cast(Dict[str, Optional[str]], env))
+                ]
+        if eff.timeout_seconds is not None:
+            kwargs["timeout"] = eff.timeout_seconds
+        if eff.gpu is not None:
+            kwargs["gpu"] = eff.gpu
+        if eff.cpu is not None:
+            kwargs["cpu"] = eff.cpu
+        if eff.memory_mb is not None:
+            kwargs["memory"] = eff.memory_mb
+        if eff.region is not None:
+            kwargs["region"] = eff.region
+        if eff.cloud is not None:
+            kwargs["cloud"] = eff.cloud
+        return kwargs
+
     def create_session(
         self, settings: Optional[BaseSandboxSettings] = None
     ) -> SandboxSession:
@@ -471,29 +520,10 @@ class ModalSandbox(BaseSandbox):
 
         eff = cast(ModalSandboxSettings, self.effective_settings(settings))
         image = _resolve_image(eff.base_image, self.config.default_image)
-        env = self._resolve_session_environment(eff)
 
-        kwargs: Dict[str, Any] = {"image": image, "app": self._get_app()}
-        if env:
-            # Modal types env_dict as Dict[str, Optional[str]]; our env is
-            # narrower (Dict[str, str]) — valid subtype at runtime, cast for mypy.
-            kwargs["secrets"] = [
-                modal.Secret.from_dict(cast(Dict[str, Optional[str]], env))
-            ]
-        if eff.timeout_seconds is not None:
-            kwargs["timeout"] = eff.timeout_seconds
-        if eff.gpu is not None:
-            kwargs["gpu"] = eff.gpu
-        if eff.cpu is not None:
-            kwargs["cpu"] = eff.cpu
-        if eff.memory_mb is not None:
-            kwargs["memory"] = eff.memory_mb
-        if eff.region is not None:
-            kwargs["region"] = eff.region
-        if eff.cloud is not None:
-            kwargs["cloud"] = eff.cloud
-
-        sandbox = modal.Sandbox.create(**kwargs)
+        sandbox = modal.Sandbox.create(
+            image=image, **self._modal_sandbox_kwargs(eff)
+        )
         return ModalSandboxSession(
             sandbox,
             parent=self,
@@ -535,6 +565,11 @@ class ModalSandbox(BaseSandbox):
     def restore(self, snapshot: BaseSandboxSnapshot) -> SandboxSession:
         """Boots a new Session from a stored filesystem snapshot.
 
+        Applies the same timeout / resource / region settings as
+        ``create_session``. Env injection is skipped: a restored
+        sandbox boots from a frozen Image and the caller almost never
+        wants to layer a fresh env merge on top.
+
         Args:
             snapshot: A ``ModalSandboxSnapshot`` whose ``ref`` is a Modal
                 Image id captured via ``snapshot_filesystem()``.
@@ -547,12 +582,16 @@ class ModalSandbox(BaseSandbox):
             RuntimeError: If Modal can't load the Image (e.g. id GC'd).
         """
         self._validate_snapshot_provider(snapshot)
-
+        self._export_modal_tokens()
         import modal
 
+        eff = cast(ModalSandboxSettings, self.effective_settings(None))
         try:
             image = modal.Image.from_id(snapshot.ref)
-            sandbox = modal.Sandbox.create(image=image, app=self._get_app())
+            sandbox = modal.Sandbox.create(
+                image=image,
+                **self._modal_sandbox_kwargs(eff, with_env=False),
+            )
         except Exception as e:
             raise RuntimeError(
                 f"Failed to restore Modal sandbox from image "
