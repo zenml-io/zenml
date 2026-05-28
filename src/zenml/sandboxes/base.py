@@ -117,8 +117,6 @@ class BaseSandbox(StackComponent, ABC):
     ``docs/book/component-guide/sandboxes/dev/plan.md``.
     """
 
-    # ------------------------- typed config / settings --------------------
-
     @property
     def config(self) -> BaseSandboxConfig:
         """Typed sandbox component configuration.
@@ -137,8 +135,6 @@ class BaseSandbox(StackComponent, ABC):
             flavor-specific fields.
         """
         return BaseSandboxSettings
-
-    # ------------------------- abstract surface ---------------------------
 
     @abstractmethod
     def create_session(
@@ -183,8 +179,6 @@ class BaseSandbox(StackComponent, ABC):
             f"{type(self).__name__} does not support restore."
         )
 
-    # ------------------------- settings resolution ------------------------
-
     def resolve_settings(
         self, override: Optional[BaseSandboxSettings] = None
     ) -> BaseSandboxSettings:
@@ -228,8 +222,6 @@ class BaseSandbox(StackComponent, ABC):
                 self.config.model_dump(exclude_unset=True)
             ),
         )
-
-    # ------------------------- env / secret merging -----------------------
 
     def _resolve_session_environment(
         self, settings: Optional[BaseSandboxSettings]
@@ -279,49 +271,6 @@ class BaseSandbox(StackComponent, ABC):
         if settings is not None and settings.environment:
             env.update(settings.environment)
         return env
-
-    # ------------------------- step-image resolution ----------------------
-
-    @staticmethod
-    def resolve_step_image() -> Optional[str]:
-        """Returns the image URI of the currently-running step, if any.
-
-        Flavor-agnostic resolution of the ``STEP_IMAGE`` sentinel: looks
-        up the snapshot attached to the active pipeline run via
-        ``StepContext`` and delegates to
-        ``ContainerizedOrchestrator.get_image(snapshot, step_name)`` —
-        the same helper the orchestrator uses to pick images at submit
-        time. Containerized flavors call this from their image-resolution
-        path when the user sets ``base_image=STEP_IMAGE``.
-
-        Returns ``None`` when there's no step context, no snapshot,
-        no build, or the active orchestrator isn't containerized —
-        callers should fall back to a flavor default image and emit a
-        warning so the user knows the sentinel didn't resolve.
-
-        Returns:
-            The image URI for the current step, or ``None``.
-        """
-        from zenml.orchestrators.containerized_orchestrator import (
-            ContainerizedOrchestrator,
-        )
-        from zenml.steps.step_context import StepContext
-
-        ctx = StepContext.get()
-        if ctx is None:
-            return None
-        snapshot = ctx.pipeline_run.snapshot
-        if snapshot is None or snapshot.build is None:
-            return None
-        try:
-            return ContainerizedOrchestrator.get_image(
-                snapshot=snapshot, step_name=ctx.step_name
-            )
-        except Exception as e:  # noqa: BLE001
-            logger.debug("Could not resolve step image: %s", e)
-            return None
-
-    # ------------------------- snapshot helpers ---------------------------
 
     def _validate_snapshot_provider(
         self, snapshot: BaseSandboxSnapshot

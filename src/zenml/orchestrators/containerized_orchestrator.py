@@ -20,8 +20,11 @@ import zenml
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ORCHESTRATOR_DOCKER_IMAGE_KEY
+from zenml.logger import get_logger
 from zenml.models import PipelineSnapshotBase, PipelineSnapshotResponse
 from zenml.orchestrators import BaseOrchestrator
+
+logger = get_logger(__name__)
 
 
 class ContainerizedOrchestrator(BaseOrchestrator, ABC):
@@ -70,6 +73,40 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
         return snapshot.build.get_image(
             component_key=ORCHESTRATOR_DOCKER_IMAGE_KEY, step=step_name
         )
+
+    @staticmethod
+    def get_active_step_image() -> Optional[str]:
+        """Returns the image URI of the currently-running step, if any.
+
+        Looks up the snapshot attached to the active pipeline run via
+        ``StepContext`` and delegates to ``get_image``. Callers (e.g.
+        containerized sandbox flavors resolving a ``STEP_IMAGE`` sentinel
+        on ``base_image``) get back the same image the orchestrator
+        picked at submit time.
+
+        Returns ``None`` when there's no step context, no snapshot, no
+        build, or ``get_image`` raises — callers should fall back to a
+        flavor default image and surface a warning so the user knows
+        the lookup didn't resolve.
+
+        Returns:
+            The image URI for the current step, or ``None``.
+        """
+        from zenml.steps.step_context import StepContext
+
+        ctx = StepContext.get()
+        if ctx is None:
+            return None
+        snapshot = ctx.pipeline_run.snapshot
+        if snapshot is None or snapshot.build is None:
+            return None
+        try:
+            return ContainerizedOrchestrator.get_image(
+                snapshot=snapshot, step_name=ctx.step_name
+            )
+        except Exception as e:  # noqa: BLE001
+            logger.debug("Could not resolve active step image: %s", e)
+            return None
 
     def should_build_pipeline_image(
         self, snapshot: "PipelineSnapshotBase"
