@@ -15,7 +15,7 @@
 
 import inspect
 import os
-from typing import TYPE_CHECKING, Dict, Optional, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type, cast
 
 import trackio
 
@@ -64,7 +64,7 @@ class TrackioExperimentTracker(BaseExperimentTracker):
     ) -> None:
         """Configure a Trackio run."""
         if self.config.hf_token:
-            previous_token = os.environ.get(HF_TOKEN_ENV_VAR)
+            previous_token: Optional[str] = os.environ.get(HF_TOKEN_ENV_VAR)
 
         setattr(
             info,
@@ -166,7 +166,7 @@ class TrackioExperimentTracker(BaseExperimentTracker):
 
                 trackio.sync(project=self.config.project_name)
 
-            if settings.auto_freeze:
+            if settings.auto_freeze and self.config.hf_space:
                 logger.info("Freezing Trackio dashboard.")
 
                 trackio.freeze(
@@ -181,7 +181,7 @@ class TrackioExperimentTracker(BaseExperimentTracker):
             )
 
         finally:
-            trackio.finish()
+            cast(Any, trackio.finish)()
 
             if self.config.hf_token:
                 previous_token: Optional[str] = getattr(
@@ -247,7 +247,7 @@ class TrackioExperimentTracker(BaseExperimentTracker):
 
         valid_params = inspect.signature(trackio.init).parameters
 
-        filtered_kwargs = {
+        filtered_kwargs: Dict[str, Any] = {
             key: value
             for key, value in init_kwargs.items()
             if (key in valid_params and value is not None)
@@ -258,6 +258,6 @@ class TrackioExperimentTracker(BaseExperimentTracker):
             filtered_kwargs,
         )
 
-        trackio.init(**filtered_kwargs)
+        cast(Any, trackio.init)(**filtered_kwargs)
 
         logger.info("Trackio run initialized successfully.")
