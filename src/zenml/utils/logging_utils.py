@@ -150,32 +150,20 @@ class LoggingContext(context_utils.BaseContext):
         record: logging.LogRecord,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
-        """Emit a log record using the active logging context.
+        """Emit a log record using the *active* logging context.
 
-        This class method is called by stdout/stderr wrappers and logging
-        handlers to route logs to the active log store.
+        Called by stdout/stderr wrappers and logging handlers to route
+        records to whatever context is currently on the stack. Side-
+        channel emitters (where the caller knows the target source)
+        should call ``ctx.emit_to(record, metadata)`` on a specific
+        ``LoggingContext`` instead.
 
         Args:
             record: The log record to emit.
             metadata: Additional metadata to attach to the log entry.
         """
         if context := LoggingContext.get():
-            if context._disabled:
-                return
-            context._disabled = True
-            try:
-                message = record.getMessage()
-                if message and message.strip():
-                    if context._origin:
-                        context._log_store.emit(
-                            origin=context._origin,
-                            record=record,
-                            metadata=metadata,
-                        )
-            except Exception:
-                logger.debug("Failed to emit log record", exc_info=True)
-            finally:
-                context._disabled = False
+            context.emit_to(record, metadata)
 
     def update(
         self,
