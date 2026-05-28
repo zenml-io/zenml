@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Unit tests for the Sandbox base abstraction."""
 
+import logging
 from datetime import datetime
 from typing import Dict, Iterator, List, Optional, Type, Union
 from unittest.mock import MagicMock, patch
@@ -86,7 +87,7 @@ class _FakeSession(SandboxSession):
 
     def close(self) -> None:
         self.closed = True
-        self._close_log_ctx()
+        self._close_log_origin()
 
 
 class _FakeSandbox(BaseSandbox):
@@ -434,35 +435,94 @@ class TestResolveForwardLogs:
         )
 
 
-class TestForwardLines:
-    def test_yields_lines_unchanged(self) -> None:
-        with patch("zenml.sandboxes.base.logger") as log:
-            out = list(
-                BaseSandbox.forward_lines(
-                    iter(["a\n", "b\n"]), stream="stdout"
-                )
-            )
-            assert out == ["a\n", "b\n"]
-            log.info.assert_any_call("a")
-            log.info.assert_any_call("b")
+class TestSandboxLogEmission:
+    """SandboxSession routes command + stdout + stderr straight to a per-session
+    log origin -- bypassing the global ``LoggingContext`` stack so the
+    sandbox source captures only sandbox-execution events.
+    """
 
-    def test_stderr_goes_to_warning(self) -> None:
-        with patch("zenml.sandboxes.base.logger") as log:
-            list(BaseSandbox.forward_lines(iter(["oops\n"]), stream="stderr"))
-            log.warning.assert_called_with("oops")
+    def _patched_session(self) -> "_FakeSession":
+        """Builds a session with the log-origin setup short-circuited.
 
+        The lazy ``_ensure_log_origin`` creates a fresh ``LogsResponse``
+        and registers an origin with the active stack's log store. In
+        unit tests there's no stack, so we substitute mocks for the
+        log_store + origin and return a session that will emit straight
+        into them.
+        """
+        session = _FakeSession(forward_logs=True)
+        session._log_store = MagicMock()
+        session._log_origin = MagicMock()
+        return session
 
-class TestForwardSessionLogs:
-    def test_falls_back_gracefully_when_setup_raises(self) -> None:
-        sb = _make_sandbox()
-        # No active stack/log store in this test process — setup_logging_context
-        # raises. The context manager should yield anyway, not error.
-        with patch(
-            "zenml.utils.logging_utils.setup_logging_context",
-            side_effect=RuntimeError("no log store"),
+    def test_log_command_emits_dollar_prefix(self) -> None:
+        session = self._patched_session()
+        session._log_command(["python", "-c", "print('hi')"])
+        emitted_records = [
+            call.kwargs["record"]
+            for call in session._log_store.emit.call_args_list
+        ]
+        assert len(emitted_records) == 1
+        assert emitted_records[0].getMessage().startswith("$ ")
+        assert "python" in emitted_records[0].getMessage()
+
+    def test_wrap_stream_emits_each_line(self) -> None:
+        session = self._patched_session()
+        out = list(
+            session._wrap_stream(iter(["a\n", "b\n"]), stream="stdout")
+        )
+        assert out == ["a\n", "b\n"]  # passthrough preserved
+        records = [
+            call.kwargs["record"]
+            for call in session._log_store.emit.call_args_list
+        ]
+        assert [r.getMessage() for r in records] == ["a", "b"]
+        assert all(r.levelno == logging.INFO for r in records)
+
+    def test_wrap_stream_stderr_uses_warning_level(self) -> None:
+        session = self._patched_session()
+        list(session._wrap_stream(iter(["oops\n"]), stream="stderr"))
+        record = session._log_store.emit.call_args.kwargs["record"]
+        assert record.levelno == logging.WARNING
+        assert record.getMessage() == "oops"
+
+    def test_wrap_stream_passthrough_when_forwarding_off(self) -> None:
+        session = _FakeSession(forward_logs=False)
+        out = list(session._wrap_stream(iter(["a", "b"]), stream="stdout"))
+        assert out == ["a", "b"]
+        # no log_store was ever attached -> nothing emitted
+        assert session._log_store is None
+
+    def test_emit_failure_latches_forwarding_off(self) -> None:
+        """If origin setup fails once, we don't retry on every emit."""
+        session = _FakeSession(forward_logs=True)
+        # Patch _ensure_log_origin to fail on first call by raising
+        # inside the lazy registration; the helper catches and latches.
+        with patch.object(
+            session,
+            "_ensure_log_origin",
+            side_effect=lambda: (
+                setattr(session, "_log_forwarding_disabled", True),
+                None,
+            )[1],
         ):
-            with sb.forward_session_logs("sess-1"):
-                pass  # must not raise
+            session._emit_sandbox("ignored")
+        assert session._log_forwarding_disabled is True
+
+    def test_close_log_origin_deregisters(self) -> None:
+        session = self._patched_session()
+        log_store = session._log_store
+        origin = session._log_origin
+        session._close_log_origin()
+        log_store.deregister_origin.assert_called_once_with(origin)
+        assert session._log_origin is None
+        assert session._log_store is None
+
+    def test_close_log_origin_is_idempotent(self) -> None:
+        session = self._patched_session()
+        session._close_log_origin()
+        session._close_log_origin()  # second call must be a no-op
+        assert session._log_origin is None
 
 
 class TestSandboxProcessCollect:

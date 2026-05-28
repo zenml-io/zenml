@@ -18,22 +18,50 @@ Sessions are created by ``BaseSandbox.create_session()``, accept many
 handle, sandbox keeps running on the provider until its TTL) or
 ``destroy()`` (terminates immediately).
 
-Lifecycle plumbing — opening a per-session ZenML logging context so
-sandbox stdout/stderr surfaces as a dedicated ``sandbox:<id>`` source
-in the step log stream, plus publishing the session id / flavor /
-dashboard URL as step metadata — lives on this base class so every
-flavor inherits it. Flavors only need to implement the transport
-(``exec``/``close``) and optionally override ``_dashboard_url()``.
+Sandbox-log forwarding is opt-in via ``forward_logs`` and writes
+**only** the actual sandbox execution surface to a dedicated
+``sandbox:<id>`` log source:
+
+* the command line on each ``exec`` call (``$ python -c ...``)
+* the sandbox process's stdout lines (level INFO)
+* the sandbox process's stderr lines (level WARNING)
+
+Routing is direct: each line is emitted straight to a per-session
+``BaseLogStoreOrigin`` via ``log_store.emit(...)``. The base class
+does NOT push a ``LoggingContext`` onto the step's logging stack, so
+incidental ``logger.info(...)`` calls in the step process (e.g. from
+``zenml`` internals) are NOT captured under the sandbox source. They
+stay in the regular step log where they belong.
+
+Step metadata (sandbox session id, flavor, optional dashboard URL) is
+published once on ``__enter__`` via ``_on_enter()`` and keyed by the
+session id so multiple sessions in one step don't overwrite each
+other.
 """
 
+import logging
+import shlex
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Union,
+)
 
 from zenml.logger import get_logger
 from zenml.sandboxes.process import SandboxProcess
 from zenml.sandboxes.snapshot import BaseSandboxSnapshot
 
 if TYPE_CHECKING:
+    from zenml.log_stores.base_log_store import (
+        BaseLogStore,
+        BaseLogStoreOrigin,
+    )
+    from zenml.models import LogsResponse
     from zenml.sandboxes.base import BaseSandbox
 
 
@@ -51,12 +79,12 @@ class SandboxSession(ABC):
 
     * ``self.id`` is set in ``__init__`` and stable for the Session's lifetime.
     * ``__enter__`` publishes step metadata (session id, flavor, optional
-      dashboard URL via ``_dashboard_url()``) and opens the log-forwarding
-      ``LoggingContext`` exactly once when ``forward_logs`` is True.
-    * ``__exit__`` calls ``close()``; subclasses release the log context by
-      calling ``_close_log_ctx()`` from their ``close()`` impl.
-    * Both step-metadata and log-forwarding only fire inside a ``with``
-      block. ``s = sandbox.create_session(); s.close()`` skips them.
+      dashboard URL via ``_dashboard_url()``) keyed by session id.
+    * ``__exit__`` calls ``close()``; subclasses release the sandbox log
+      origin by calling ``_close_log_origin()`` from their ``close()`` impl.
+    * The sandbox log origin is created lazily on first ``_emit_sandbox()``
+      (or first ``_log_command`` / ``_wrap_stream`` call) so sessions that
+      never produce output don't create empty log artifacts.
     """
 
     def __init__(
@@ -70,15 +98,20 @@ class SandboxSession(ABC):
 
         Args:
             id: Stable session identifier (flavor decides the format).
-            parent: The owning ``BaseSandbox`` component — used to open
-                the log-forwarding ``LoggingContext`` on ``__enter__``.
-            forward_logs: If True, sandbox stdout/stderr is auto-routed
-                into ZenML step logs as a per-session log source.
+            parent: The owning ``BaseSandbox`` component.
+            forward_logs: If True, the sandbox's exec command line plus
+                process stdout/stderr lines land in a dedicated
+                ``sandbox:<id>`` log source on the active step.
         """
         self.id = id
         self._parent = parent
         self._forward_logs = forward_logs
-        self._log_ctx: Any = None
+        self._log_store: Optional["BaseLogStore"] = None
+        self._log_origin: Optional["BaseLogStoreOrigin"] = None
+        self._log_response: Optional["LogsResponse"] = None
+        # Latched off when origin setup fails so we don't retry every
+        # exec — keeps the failure noisy once, then quiet.
+        self._log_forwarding_disabled = False
 
     @abstractmethod
     def exec(
@@ -93,6 +126,9 @@ class SandboxSession(ABC):
         ``command`` accepts a list (no shell escaping needed) or a string
         (run via the Session's default shell — flavors should pick a sane
         shell or escape via ``shlex.join`` internally).
+
+        Flavor implementations should call ``self._log_command(command)``
+        before launching so the sandbox log captures the command line.
 
         Raises ``SandboxExecError`` synchronously if the command fails to
         launch (e.g. binary not found, image broken). Runtime failures flow
@@ -143,8 +179,9 @@ class SandboxSession(ABC):
     def close(self) -> None:
         """Releases this local handle. Cheap; safe to call multiple times.
 
-        Subclasses must call ``self._close_log_ctx()`` from their override
-        to release the log-forwarding context opened in ``__enter__``.
+        Subclasses must call ``self._close_log_origin()`` from their
+        override to deregister the sandbox log origin (which flushes
+        the source to the log store).
 
         The sandbox keeps running on the provider until its TTL expires or
         ``destroy()`` is called. Implicitly invoked by ``__exit__``.
@@ -179,9 +216,8 @@ class SandboxSession(ABC):
     def _on_enter(self) -> None:
         """Publishes generic sandbox step metadata.
 
-        Hook called from ``__enter__`` before the log-forwarding context
-        opens. Records ``sandbox.<id>.flavor`` and (when
-        ``_dashboard_url()`` returns a non-None value)
+        Hook called from ``__enter__``. Records ``sandbox.<id>.flavor``
+        and (when ``_dashboard_url()`` returns a non-None value)
         ``sandbox.<id>.dashboard_url`` (typed ``Uri``) on the active
         step. The session id is embedded in the key so steps that open
         multiple sandbox sessions don't overwrite each other's metadata.
@@ -216,33 +252,172 @@ class SandboxSession(ABC):
             # break sandbox usage, but make it visible so it's debuggable.
             logger.warning("Failed to publish sandbox step metadata: %s", e)
 
-    def _close_log_ctx(self) -> None:
-        """Releases the log-forwarding ``LoggingContext`` if one is open.
+    # ----- sandbox log emission ------------------------------------------
 
-        Idempotent. Subclasses call this from their ``close()`` impl so
-        the lifecycle invariant ("opened once on __enter__, closed
-        once on close()") lives in one place.
+    def _ensure_log_origin(self) -> Optional["BaseLogStoreOrigin"]:
+        """Lazily creates the per-session log origin on first emit.
+
+        The origin is bound to a dedicated ``sandbox:<id>`` source — a
+        side-channel into the active step's log store that does NOT
+        share the active ``LoggingContext`` stack, so step-side
+        logger calls don't leak into the sandbox source.
+
+        Returns:
+            The origin to emit to, or ``None`` when forwarding is
+            disabled (or setup failed for this session).
         """
-        if self._log_ctx is not None:
+        if not self._forward_logs or self._log_forwarding_disabled:
+            return None
+        if self._log_origin is not None:
+            return self._log_origin
+
+        try:
+            from zenml.client import Client
+            from zenml.steps.step_context import StepContext
+            from zenml.utils.logging_utils import (
+                generate_logs_request,
+                get_run_log_metadata,
+                get_step_log_metadata,
+            )
+
+            log_store = Client().active_stack.log_store
+            logs_request = generate_logs_request(source=f"sandbox:{self.id}")
+            metadata: Dict[str, Any] = {}
+            ctx = StepContext.get()
+            if ctx is not None:
+                logs_request.step_run_id = ctx.step_run.id
+                metadata.update(get_step_log_metadata(step_run=ctx.step_run))
+                metadata.update(
+                    get_run_log_metadata(pipeline_run=ctx.pipeline_run)
+                )
+            log_response = Client().zen_store.create_logs(logs_request)
+            origin = log_store.register_origin(
+                name=f"sandbox:{self.id}",
+                log_model=log_response,
+                metadata=metadata,
+            )
+        except Exception as e:
+            logger.debug(
+                "Sandbox log forwarding disabled for session %s: %s",
+                self.id,
+                e,
+            )
+            self._log_forwarding_disabled = True
+            return None
+
+        self._log_store = log_store
+        self._log_response = log_response
+        self._log_origin = origin
+        return origin
+
+    def _emit_sandbox(
+        self, message: str, *, level: int = logging.INFO
+    ) -> None:
+        """Writes a single line to the sandbox log source.
+
+        Bypasses the global ``LoggingContext`` stack so this only
+        records sandbox-execution events, never incidental step-side
+        Python logger calls.
+
+        Args:
+            message: The text to emit (newlines should be stripped
+                before calling).
+            level: The log level (INFO for stdout / command,
+                WARNING for stderr).
+        """
+        origin = self._ensure_log_origin()
+        if origin is None or self._log_store is None:
+            return
+        record = logging.LogRecord(
+            name=f"sandbox.{self.id}",
+            level=level,
+            pathname="",
+            lineno=0,
+            msg="%s",
+            args=(message,),
+            exc_info=None,
+        )
+        try:
+            self._log_store.emit(origin=origin, record=record)
+        except Exception:
+            logger.debug(
+                "Failed to emit sandbox log line for %s",
+                self.id,
+                exc_info=True,
+            )
+
+    def _log_command(self, command: Union[str, List[str]]) -> None:
+        """Records the command about to be executed.
+
+        Flavor ``exec`` impls call this immediately before launching so
+        the sandbox log opens with a shell-style ``$ <command>`` marker.
+
+        Args:
+            command: The command argv or shell string.
+        """
+        if isinstance(command, list):
+            display = " ".join(shlex.quote(c) for c in command)
+        else:
+            display = command
+        self._emit_sandbox(f"$ {display}", level=logging.INFO)
+
+    def _wrap_stream(
+        self, lines: Iterator[str], *, stream: str = "stdout"
+    ) -> Iterator[str]:
+        """Yields each line after emitting it to the sandbox log source.
+
+        Flavor process impls wrap their raw stdout/stderr iterators in
+        this so the sandbox log captures live output as the sandbox
+        process emits it. When forwarding is disabled, lines pass
+        through unchanged.
+
+        Args:
+            lines: Source line iterator from the flavor's process.
+            stream: ``"stdout"`` → INFO, ``"stderr"`` → WARNING.
+
+        Yields:
+            Each line from the source iterator, unchanged.
+        """
+        if not self._forward_logs or self._log_forwarding_disabled:
+            yield from lines
+            return
+        level = logging.INFO if stream == "stdout" else logging.WARNING
+        for line in lines:
+            self._emit_sandbox(line.rstrip("\n"), level=level)
+            yield line
+
+    def _close_log_origin(self) -> None:
+        """Deregisters the sandbox log origin (flushes the source).
+
+        Idempotent — safe to call multiple times. Subclasses call this
+        from their ``close()`` so the per-session log is finalized and
+        readable from the dashboard.
+        """
+        if self._log_origin is not None and self._log_store is not None:
             try:
-                self._log_ctx.__exit__(None, None, None)
+                self._log_store.deregister_origin(self._log_origin)
+            except Exception:
+                logger.debug(
+                    "Failed to deregister sandbox log origin for %s",
+                    self.id,
+                    exc_info=True,
+                )
             finally:
-                self._log_ctx = None
+                self._log_origin = None
+                self._log_store = None
+                self._log_response = None
 
     def __enter__(self) -> "SandboxSession":
-        """Publishes step metadata then opens the log-forwarding context.
+        """Publishes step metadata.
 
-        Metadata fires first so a failure here can't leak ``_log_ctx``.
-        Idempotent against double-entry: if a log context is already
-        open, we don't open a second one — that would orphan the first.
+        The sandbox log origin is NOT created here -- it's lazily
+        created on the first ``exec`` call so sessions that never run
+        a command don't leave empty log artifacts behind.
 
         Returns:
             This session.
         """
         self._on_enter()
-        if self._forward_logs and self._log_ctx is None:
-            self._log_ctx = self._parent.forward_session_logs(self.id)
-            self._log_ctx.__enter__()
         return self
 
     def __exit__(self, *args: Any) -> None:
