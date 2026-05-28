@@ -18,55 +18,50 @@ from typing import TYPE_CHECKING, Optional, Type
 from pydantic import Field
 
 from zenml.integrations.modal import MODAL_SANDBOX_FLAVOR
+from zenml.integrations.modal.flavors.modal_step_operator_flavor import (
+    ModalStepOperatorSettings,
+)
 from zenml.sandboxes import (
     BaseSandboxConfig,
     BaseSandboxFlavor,
     BaseSandboxSettings,
 )
-from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.modal.sandboxes import ModalSandbox
 
 
-class ModalSandboxSettings(BaseSandboxSettings):
+class ModalSandboxSettings(BaseSandboxSettings, ModalStepOperatorSettings):
     """Per-step settings for the Modal sandbox.
 
-    Holds Modal-specific knobs that ``ResourceSettings`` doesn't cover
-    (gpu type, region, cloud). For cpu count, memory, and gpu count
-    use the standard ``ResourceSettings`` instead -- the sandbox reads
-    them from the active step's resource settings and combines them
-    with the gpu type via ``get_gpu_values``, the same helper the
-    Modal step operator uses.
+    Inherits ``gpu`` / ``region`` / ``cloud`` from
+    ``ModalStepOperatorSettings`` so the two Modal stack components
+    share one source of truth for the Modal-specific provisioning
+    knobs. For cpu count, memory, and gpu count use the standard
+    ``ResourceSettings`` instead — the sandbox reads them from the
+    active step's resource settings and combines them with the gpu
+    type via ``get_gpu_values``, the same helper the Modal step
+    operator uses.
 
     See https://modal.com/docs/guide/region-selection for region / cloud
     selection (Enterprise & Team plans). Combinations that aren't available
     surface as Modal API errors at session creation time.
     """
 
-    gpu: Optional[str] = Field(
-        default=None,
-        description="GPU type for the Session (e.g. 'A100', 'H100', 'T4'). "
-        "None for CPU-only. The gpu count is read from "
-        "ResourceSettings.gpu_count and combined into '<type>:<count>'.",
-    )
-    region: Optional[str] = Field(
-        default=None,
-        description="Modal region to pin the Session to (e.g. 'us-east'). "
-        "Requires Enterprise/Team plan.",
-    )
-    cloud: Optional[str] = Field(
-        default=None,
-        description="Cloud provider for the Session (e.g. 'aws', 'gcp'). "
-        "Requires Enterprise/Team plan.",
-    )
-
 
 class ModalSandboxConfig(BaseSandboxConfig, ModalSandboxSettings):
     """Configuration for the Modal sandbox component.
 
     Inherits per-step settings so they can be set as component-level defaults;
-    `ModalSandboxSettings` overrides them per step.
+    ``ModalSandboxSettings`` overrides them per step.
+
+    Modal credentials (``MODAL_TOKEN_ID`` / ``MODAL_TOKEN_SECRET``)
+    are not configured here — the Modal SDK reads them from the
+    process environment or ``~/.modal.toml``. Set them via your
+    orchestrator's env-injection mechanism (e.g.
+    ``DockerSettings(environment={"MODAL_TOKEN_ID": ...})``, a
+    Kubernetes secret mounted into the pod, or a local
+    ``modal setup``).
     """
 
     app_name: str = Field(
@@ -79,20 +74,6 @@ class ModalSandboxConfig(BaseSandboxConfig, ModalSandboxSettings):
         description="Docker image used when neither the component nor the "
         "per-step settings specify a base_image. Fallback for the "
         "STEP_IMAGE sentinel when not in a containerized step.",
-    )
-    token_id: Optional[str] = SecretField(
-        default=None,
-        description="Modal token id. When set, exported as "
-        "MODAL_TOKEN_ID in the step process before importing modal — "
-        "lets remote orchestrators (Kubernetes, SageMaker, ...) "
-        "authenticate to Modal without a local ~/.modal.toml. Accepts "
-        "ZenML secret references via {{secret_name.key}}.",
-    )
-    token_secret: Optional[str] = SecretField(
-        default=None,
-        description="Modal token secret. Companion to `token_id`. "
-        "Exported as MODAL_TOKEN_SECRET. Use {{secret_name.key}} to "
-        "reference a ZenML secret.",
     )
 
     @property
