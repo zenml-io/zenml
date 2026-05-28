@@ -40,7 +40,6 @@ from typing import (
 from pydantic import Field
 
 from zenml.config.base_settings import BaseSettings
-
 from zenml.integrations.modal.flavors import (
     ModalSandboxConfig,
     ModalSandboxSettings,
