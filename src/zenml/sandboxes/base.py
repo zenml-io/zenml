@@ -20,7 +20,6 @@ ADR 0001 for the component-vs-launcher framing rationale.
 
 from abc import ABC, abstractmethod
 from typing import (
-    Any,
     Dict,
     Optional,
     Type,
