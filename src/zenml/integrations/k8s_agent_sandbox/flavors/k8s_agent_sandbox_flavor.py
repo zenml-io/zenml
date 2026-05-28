@@ -71,13 +71,14 @@ class K8sAgentSandboxSettings(BaseSandboxSettings):
         "is recommended for production; inline mode is convenient "
         "for prototyping.",
     )
-    namespace: Optional[str] = Field(
-        default=None,
+    namespace: str = Field(
+        default="default",
         description="Kubernetes namespace where the Sandbox claim is "
-        "created. When ``None`` falls back to the component-level "
-        "``default_namespace``. Examples: ``default``, "
-        "``agent-workloads``. Must exist in the cluster and be "
-        "writable by the service connector's identity.",
+        "created. Per-step override via settings; component-level "
+        "default lives on the config. Examples: ``default``, "
+        "``agent-workloads``. Auto-created on first ``create_session`` "
+        "if it doesn't exist and the connector identity has "
+        "``namespaces/create`` access.",
     )
     sandbox_ready_timeout: int = Field(
         default=180,
@@ -138,26 +139,20 @@ class K8sAgentSandboxConfig(BaseSandboxConfig, K8sAgentSandboxSettings):
         "Required when ``connection_mode=direct``; ignored otherwise. "
         "Example: ``http://sandbox-router.example.com``.",
     )
-    default_namespace: str = Field(
-        default="default",
-        description="Fallback Kubernetes namespace when per-step "
-        "``K8sAgentSandboxSettings.namespace`` is unset.",
-    )
-    default_image: str = Field(
-        default=(
-            "us-central1-docker.pkg.dev/k8s-staging-images/agent-sandbox/"
-            "python-runtime-sandbox:latest-main"
-        ),
+    default_image: Optional[str] = Field(
+        default=None,
         description="Container image used when synthesising an inline "
         "SandboxTemplate (i.e. when no ``template_name`` is set). MUST "
-        "contain the agent-sandbox runtime that exposes the sandbox HTTP "
-        "API on port 8888 — ``commands.run`` POSTs to ``/execute`` and "
-        "fails fast if the container isn't running the runtime. Defaults "
-        "to the upstream ``python-runtime-sandbox`` image. To bundle "
-        "extra deps, base a custom image on it (the operator's "
-        "``examples/`` show the Dockerfile shape). Ignored when "
-        "``template_name`` is set — the referenced SandboxTemplate's "
-        "container image wins.",
+        "contain the agent-sandbox runtime that exposes the sandbox "
+        "HTTP API on port 8888 — ``commands.run`` POSTs to ``/execute`` "
+        "and fails fast without it. No default: reproducibility-first, "
+        "we refuse to enter inline mode unless an explicit image is "
+        "provided here or via per-step ``base_image``. Pin to a digest "
+        "or a stable tag — never ``:latest``. To bundle extra deps "
+        "base a custom image on the upstream ``python-runtime-sandbox`` "
+        "(see the operator's ``examples/`` for the Dockerfile shape). "
+        "Ignored when ``template_name`` is set — the referenced "
+        "SandboxTemplate's container image wins.",
     )
     inline_template_cleanup: bool = Field(
         default=True,

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Constants for ZenML integrations."""
 
-K8S_AGENT_SANDBOX = "k8s_agent_sandbox"
 AIRFLOW = "airflow"
 ARGILLA = "argilla"
 AWS = "aws"
@@ -36,6 +35,7 @@ HUGGINGFACE = "huggingface"
 HYPERAI = "hyperai"
 GREAT_EXPECTATIONS = "great_expectations"
 JAX = "jax"
+K8S_AGENT_SANDBOX = "k8s_agent_sandbox"
 KANIKO = "kaniko"
 KUBEFLOW = "kubeflow"
 KUBERNETES = "kubernetes"

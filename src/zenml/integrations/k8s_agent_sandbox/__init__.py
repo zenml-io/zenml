@@ -27,18 +27,27 @@ from typing import List, Type
 
 from zenml.integrations.constants import K8S_AGENT_SANDBOX
 from zenml.integrations.integration import Integration
+from zenml.integrations.kubernetes import KubernetesIntegration
 from zenml.stack import Flavor
 
 K8S_AGENT_SANDBOX_FLAVOR = "k8s_agent_sandbox"
+
+# Verified against k8s-agent-sandbox SDK 0.1.x against the operator's
+# `main` branch as of 2026-05. Bump the cap deliberately as each new
+# SDK minor is smoke-tested.
+_SDK_REQUIREMENT = "k8s-agent-sandbox>=0.1.0,<0.2"
 
 
 class K8sAgentSandboxIntegration(Integration):
     """Definition of the Agent Sandbox integration for ZenML."""
 
     NAME = K8S_AGENT_SANDBOX
-    # Pin matches the `kubernetes` integration so pod-spec helpers we
-    # reuse (manifest_utils, pod_settings, kube_utils) can't drift.
-    REQUIREMENTS = ["k8s-agent-sandbox>=0.1.0", "kubernetes>=21.7,<26"]
+    # Inherit the kubernetes-client pin from the ``kubernetes`` integration
+    # so the pod-spec helpers we reuse (manifest_utils, pod_settings,
+    # kube_utils) can't drift across installs.
+    REQUIREMENTS = [_SDK_REQUIREMENT] + [
+        r for r in KubernetesIntegration.REQUIREMENTS if "kubernetes" in r
+    ]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
