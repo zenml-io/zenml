@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Constants for ZenML integrations."""
 
+K8S_AGENT_SANDBOX = "k8s_agent_sandbox"
 AIRFLOW = "airflow"
 ARGILLA = "argilla"
 AWS = "aws"
