@@ -64,7 +64,15 @@ class TrackioExperimentTracker(BaseExperimentTracker):
     ) -> None:
         """Configure a Trackio run."""
         if self.config.hf_token:
-            os.environ[HF_TOKEN_ENV_VAR] = self.config.hf_token
+            previous_token = os.environ.get(HF_TOKEN_ENV_VAR)
+
+        setattr(
+            info,
+            "_trackio_previous_hf_token",
+            previous_token,
+        )
+
+        os.environ[HF_TOKEN_ENV_VAR] = self.config.hf_token
 
         settings = cast(
             TrackioExperimentTrackerSettings,
@@ -176,10 +184,19 @@ class TrackioExperimentTracker(BaseExperimentTracker):
             trackio.finish()
 
             if self.config.hf_token:
-                os.environ.pop(
-                    HF_TOKEN_ENV_VAR,
+                previous_token: Optional[str] = getattr(
+                    info,
+                    "_trackio_previous_hf_token",
                     None,
                 )
+
+                if previous_token is not None:
+                    os.environ[HF_TOKEN_ENV_VAR] = previous_token
+                else:
+                    os.environ.pop(
+                        HF_TOKEN_ENV_VAR,
+                        None,
+                    )
 
     def _initialize_trackio(
         self,
