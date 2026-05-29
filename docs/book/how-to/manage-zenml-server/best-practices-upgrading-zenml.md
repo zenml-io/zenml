@@ -3,6 +3,11 @@ description: >-
   Simple, step-by-step guide for keeping your ZenML workspaces (servers) up to date without breaking your teams.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Keeping ZenML Upgraded — Without Breaking Things
 
 Upgrading ZenML doesn't have to be scary.
