@@ -48,9 +48,7 @@ from zenml.config.server_config import ServerConfiguration
 from zenml.constants import (
     API,
     ENV_ZENML_SERVER,
-    HEALTH,
     INFO,
-    READY,
     VERSION_1,
 )
 from zenml.exceptions import IllegalOperationError, OAuthError
@@ -65,6 +63,8 @@ from zenml.zen_server.pipeline_execution.workload_manager_interface import (
 )
 from zenml.zen_server.rbac.rbac_interface import RBACInterface
 from zenml.zen_server.request_management import RequestContext, RequestManager
+from zenml.zen_server.streaming.broadcaster import StreamBroadcaster
+from zenml.zen_server.streaming.brokers.base import StreamBroker
 from zenml.zen_stores.resource_pools.store_interface import (
     ResourcePoolsSQLStoreInterface,
 )
@@ -76,6 +76,9 @@ if TYPE_CHECKING:
     from zenml.zen_server.auth import AuthContext
     from zenml.zen_server.pipeline_execution.utils import (
         BoundedThreadPoolExecutor,
+    )
+    from zenml.zen_server.streaming.run_end_handler import (
+        StreamEndEventHandler,
     )
 
 
@@ -92,6 +95,9 @@ _workload_manager: Optional[WorkloadManagerInterface] = None
 _resource_pool_store: Optional[ResourcePoolsSQLStoreInterface] = None
 _snapshot_executor: Optional["BoundedThreadPoolExecutor"] = None
 _request_manager: Optional[RequestManager] = None
+_stream_broker: Optional[StreamBroker] = None
+_stream_broadcaster: Optional[StreamBroadcaster] = None
+_stream_end_handler: Optional["StreamEndEventHandler"] = None
 _auth_context: ContextVar[Optional["AuthContext"]] = ContextVar(
     "auth_context", default=None
 )
@@ -206,6 +212,136 @@ def initialize_workload_manager() -> None:
             logger.warning("Unable to load workload manager source.")
         else:
             _workload_manager = workload_manager_class()
+
+
+def stream_broker() -> StreamBroker:
+    """Return the initialized stream broker.
+
+    Returns:
+        The active stream broker.
+
+    Raises:
+        RuntimeError: If streaming is disabled.
+    """
+    global _stream_broker
+    if _stream_broker is None:
+        raise RuntimeError(
+            "Stream broker not initialized; streaming is disabled. "
+            "Set `stream_broker_implementation_source` on the server config."
+        )
+    return _stream_broker
+
+
+def stream_broadcaster() -> StreamBroadcaster:
+    """Return the initialized stream broadcaster.
+
+    Returns:
+        The active stream broadcaster.
+
+    Raises:
+        RuntimeError: If streaming is disabled.
+    """
+    global _stream_broadcaster
+    if _stream_broadcaster is None:
+        raise RuntimeError(
+            "Stream broadcaster not initialized. Streaming is disabled. "
+            "Set `stream_broker_implementation_source` on the server config."
+        )
+    return _stream_broadcaster
+
+
+async def initialize_streaming() -> None:
+    """Initialize the live event streaming components.
+
+    Raises:
+        RuntimeError: If the configured broker class can't be loaded or
+            its connectivity probe fails.
+    """
+    global _stream_broker, _stream_broadcaster, _stream_end_handler
+
+    cfg = server_config()
+    source = cfg.stream_broker_implementation_source
+    if not source:
+        return
+
+    from zenml.utils import source_utils
+
+    try:
+        broker_class: Type[StreamBroker] = (
+            source_utils.load_and_validate_class(
+                source=source, expected_class=StreamBroker
+            )
+        )
+    except Exception as exc:
+        raise RuntimeError(
+            f"Could not load stream broker class {source}: {exc}. "
+            "Check `stream_broker_implementation_source` on the server "
+            "config."
+        ) from exc
+
+    try:
+        _stream_broker = broker_class()
+    except Exception as exc:
+        _stream_broker = None
+        raise RuntimeError(
+            f"Could not instantiate stream broker {source}: {exc}"
+        ) from exc
+
+    from zenml.zen_server.streaming.brokers.utils import startup_probe_key
+
+    try:
+        await _stream_broker.latest_id(startup_probe_key())
+    except Exception as exc:
+        broker = _stream_broker
+        _stream_broker = None
+        try:
+            await broker.close()
+        except Exception:
+            logger.debug("Probe-failure broker close errored", exc_info=True)
+        raise RuntimeError(
+            f"Stream broker {source} startup probe failed: {exc}"
+        ) from exc
+
+    _stream_broadcaster = StreamBroadcaster(
+        broker=_stream_broker,
+        max_subscribers_per_stream=cfg.streaming_max_subscribers_per_stream,
+        idle_grace_seconds=cfg.streaming_broadcaster_idle_grace_seconds,
+    )
+
+    from zenml.dispatcher import EventDispatcher
+    from zenml.zen_server.streaming.run_end_handler import (
+        StreamEndEventHandler,
+    )
+
+    _stream_end_handler = StreamEndEventHandler(
+        broker=_stream_broker, loop=asyncio.get_running_loop()
+    )
+    EventDispatcher().register_event_handler(_stream_end_handler)
+
+
+async def shutdown_streaming() -> None:
+    """Cancel broadcaster readers, unregister handlers, close the broker."""
+    global _stream_broker, _stream_broadcaster, _stream_end_handler
+    if _stream_end_handler is not None:
+        from zenml.dispatcher import EventDispatcher
+
+        try:
+            EventDispatcher().unregister_event_handler(_stream_end_handler)
+        except Exception:
+            logger.exception("Error unregistering stream-end handler")
+        _stream_end_handler = None
+    if _stream_broadcaster is not None:
+        try:
+            await _stream_broadcaster.shutdown()
+        except Exception:
+            logger.exception("Error during stream broadcaster shutdown")
+        _stream_broadcaster = None
+    if _stream_broker is not None:
+        try:
+            await _stream_broker.close()
+        except Exception:
+            logger.exception("Error during stream broker close")
+        _stream_broker = None
 
 
 def resource_pool_store() -> ResourcePoolsSQLStoreInterface:
@@ -345,6 +481,80 @@ async def cleanup_request_manager() -> None:
         _request_manager = None
 
 
+def handle_endpoint_errors(
+    func: Callable[P, R],
+) -> Callable[P, R]:
+    """Translate raised exceptions into FastAPI HTTP responses.
+
+    OAuthError becomes a JSONResponse (it needs to carry its own body
+    schema); HTTPException is re-raised unchanged; anything else is
+    funneled through `http_exception_from_error` so the status code
+    follows the REST_API_EXCEPTIONS mapping. Use this on async endpoints
+    that don't go through `async_fastapi_endpoint_wrapper` (e.g. SSE).
+
+    Args:
+        func: The endpoint function to wrap.
+
+    Returns:
+        The wrapped function.
+    """
+
+    @wraps(func)
+    def wrapped(*args: P.args, **kwargs: P.kwargs) -> R:
+        # Imports kept inside the wrapper: this module is also imported by
+        # the CLI which doesn't ship with the `server` extra.
+        from fastapi import HTTPException
+        from fastapi.responses import JSONResponse
+
+        try:
+            return func(*args, **kwargs)
+        except OAuthError as error:
+            return JSONResponse(  # type: ignore[return-value]
+                status_code=error.status_code,
+                content=error.to_dict(),
+            )
+        except HTTPException:
+            raise
+        except Exception as error:
+            logger.exception("API error")
+            raise http_exception_from_error(error)
+
+    return wrapped
+
+
+def async_handle_endpoint_errors(
+    func: Callable[P, Awaitable[R]],
+) -> Callable[P, Awaitable[R]]:
+    """Async variant of `handle_endpoint_errors`.
+
+    Args:
+        func: The async endpoint function to wrap.
+
+    Returns:
+        The wrapped async function.
+    """
+
+    @wraps(func)
+    async def wrapped(*args: P.args, **kwargs: P.kwargs) -> R:
+        from fastapi import HTTPException
+        from fastapi.responses import JSONResponse
+
+        try:
+            return await func(*args, **kwargs)
+        except OAuthError as error:
+            return JSONResponse(  # type: ignore[return-value]
+                status_code=error.status_code,
+                content=error.to_dict(),
+            )
+        except HTTPException:
+            raise
+        except Exception as error:
+            logger.exception("API error")
+            raise http_exception_from_error(error)
+
+    return wrapped
+
+
 @overload
 def async_fastapi_endpoint_wrapper(
     func: Callable[P, R],
@@ -384,32 +594,12 @@ def async_fastapi_endpoint_wrapper(
     """
 
     def decorator(func: Callable[P, R]) -> Callable[P, Awaitable[Any]]:
+        translated = handle_endpoint_errors(func)
+
         @wraps(func)
         async def async_decorated(*args: P.args, **kwargs: P.kwargs) -> Any:
-            @wraps(func)
-            def decorated(*args: P.args, **kwargs: P.kwargs) -> Any:
-                # These imports can't happen at module level as this module is also
-                # used by the CLI when installed without the `server` extra
-                from fastapi import HTTPException
-                from fastapi.responses import JSONResponse
-
-                try:
-                    return func(*args, **kwargs)
-                except OAuthError as error:
-                    # The OAuthError is special because it needs to have a JSON response
-                    return JSONResponse(
-                        status_code=error.status_code,
-                        content=error.to_dict(),
-                    )
-                except HTTPException:
-                    raise
-                except Exception as error:
-                    logger.exception("API error")
-                    http_exception = http_exception_from_error(error)
-                    raise http_exception
-
             return await request_manager().execute(
-                decorated,
+                translated,
                 deduplicate,
                 *args,
                 **kwargs,
@@ -693,12 +883,30 @@ if sys.platform != "win32":
         pass
 
 
-def get_system_metrics() -> Dict[str, Any]:
-    """Get comprehensive system metrics.
+def get_system_metrics(
+    logger: Optional[logging.Logger] = None,
+    log_level: int = logging.DEBUG,
+) -> Dict[str, Any]:
+    """Get comprehensive system metrics for enabled log records.
+
+    Metrics are only collected when the provided logger, or this module's
+    logger when omitted, is enabled for ``log_level``. This keeps debug-only
+    structured fields cheap when debug logging is disabled.
+
+    Args:
+        logger: Logger whose logging level decides whether metrics are
+            collected.
+        log_level: Logging level that must be enabled to collect metrics.
+            Defaults to ``logging.DEBUG``.
 
     Returns:
-        Dict containing system metrics
+        Dict containing system metrics, or an empty dict if ``log_level`` is
+        not enabled.
     """
+    active_logger = logger or get_logger(__name__)
+    if not active_logger.isEnabledFor(log_level):
+        return {}
+
     # Get active requests count
     from zenml.zen_server.middleware import active_requests_count
 
@@ -727,29 +935,6 @@ def get_system_metrics() -> Dict[str, Any]:
         "current_thread_name": current_thread_name,
         "current_thread_id": current_thread_id,
     }
-
-
-def get_system_metrics_log_str(request: Optional["Request"] = None) -> str:
-    """Get the system metrics as a string for logging.
-
-    Args:
-        request: The request object.
-
-    Returns:
-        The system metrics as a string for debugging logging.
-    """
-    if not logger.isEnabledFor(logging.DEBUG):
-        return ""
-    if request and request.url.path in [HEALTH, READY]:
-        # Don't log system metrics for health and ready endpoints to keep them
-        # fast
-        return ""
-    metrics = get_system_metrics()
-    return (
-        " [ "
-        + " ".join([f"{key}: {value}" for key, value in metrics.items()])
-        + " ]"
-    )
 
 
 event_loop_lag_monitor_task: Optional[asyncio.Task[None]] = None
@@ -832,7 +1017,8 @@ async def register_event_handlers() -> None:
             try:
                 event_handler_cls: type[EventHandler] = (
                     source_utils.load_and_validate_class(
-                        source=source, expected_class=EventHandler
+                        source=source,
+                        expected_class=EventHandler,
                     )
                 )
             except Exception as exc:

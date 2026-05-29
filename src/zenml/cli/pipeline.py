@@ -41,11 +41,13 @@ from zenml.models import (
     PipelineRunUpdate,
     PipelineSnapshotFilter,
     RunWaitConditionFilter,
+    RunWaitConditionResponse,
     ScheduleFilter,
 )
 from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.utils import run_utils, source_utils, uuid_utils
 from zenml.utils.dashboard_utils import get_deployment_url
+from zenml.utils.json_utils import parse_value_for_schema
 from zenml.utils.yaml_utils import write_yaml
 
 logger = get_logger(__name__)
@@ -1019,7 +1021,7 @@ def _interactive_resolve_wait_conditions(
     skipped_condition_ids: set[UUID] = set()
 
     def _resolve_single_condition_interactively(
-        condition: Any,
+        condition: "RunWaitConditionResponse",
         idx: int,
         total: int,
     ) -> str:
@@ -1093,10 +1095,12 @@ def _interactive_resolve_wait_conditions(
                         result = None
                         break
                     try:
-                        result = json.loads(raw_value)
+                        result = parse_value_for_schema(
+                            raw_value, expected_schema
+                        )
                         break
-                    except json.JSONDecodeError as e:
-                        click.echo(f"Invalid JSON value: {e}", err=True)
+                    except ValueError as e:
+                        click.echo(f"Invalid input: {e}", err=True)
 
             try:
                 client.resolve_run_wait_condition(
