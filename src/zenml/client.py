@@ -1190,12 +1190,12 @@ class Client(metaclass=ClientMetaClass):
         if project.name != DEFAULT_PROJECT_NAME:
             if not self.zen_store.get_store_info().is_pro_server():
                 logger.warning(
-                    f"You are currently working with project '{project.name}'. "
-                    f"Your pipelines will run, but they won't be visible in "
-                    f"the ZenML OSS dashboard, which only supports the default "
-                    f"project ('{DEFAULT_PROJECT_NAME}'). To use multiple "
-                    f"projects with full dashboard support, visit "
-                    "https://zenml.io/pro."
+                    f"The ZenML OSS dashboard only works with the default "
+                    f"project ('{DEFAULT_PROJECT_NAME}'). You are currently "
+                    f"working with project '{project.name}', so your pipelines "
+                    f"won't be visible in the OSS dashboard. To use multiple "
+                    f"projects with full dashboard support, please visit "
+                    "https://zenml.io/pro to learn more."
                 )
         return project
 
