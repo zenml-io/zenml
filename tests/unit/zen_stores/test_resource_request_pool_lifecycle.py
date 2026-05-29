@@ -160,12 +160,22 @@ def _create_resource_request(
     Returns:
         The created resource request model.
     """
+    from zenml.enums import ResourceRequestReclaimTolerance
+    from zenml.models import ResourceRequestDemand, ResourceRequestRequest
+
     return clean_client.zen_store.create_resource_request(
         ResourceRequestRequest(
-            component_id=component_id,
+            component_ids=[component_id],
             step_run_id=step_run_id,
-            requested_resources=requested_resources,
-            preemptible=preemptible,
+            demands=[
+                ResourceRequestDemand(resource=name, quantity=quantity)
+                for name, quantity in requested_resources.items()
+            ],
+            reclaim_tolerance=(
+                ResourceRequestReclaimTolerance.ANY
+                if preemptible
+                else ResourceRequestReclaimTolerance.NONE
+            ),
         )
     )
 

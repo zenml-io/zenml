@@ -18,7 +18,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Dict,
     List,
     Optional,
     Type,
@@ -65,6 +64,12 @@ class ResourceRequestDemand(BaseZenModel):
         default=None,
         title="The exact resource descriptor name.",
     )
+    kind: Optional[str] = Field(
+        default=None,
+        title="The optional resource descriptor kind.",
+        min_length=1,
+        max_length=64,
+    )
     quantity: PositiveInt = Field(title="The resource quantity requested.")
     unit: Optional[str] = Field(
         default=None,
@@ -103,10 +108,11 @@ class ResourceRequestDemand(BaseZenModel):
             self.resource_id is None
             and self.resource is None
             and self.resource_selector is None
+            and self.kind is None
         ):
             raise ValueError(
-                "Resource demands require a resource ID, resource name, or "
-                "resource selector."
+                "Resource demands require a resource ID, resource name, "
+                "resource kind, or resource selector."
             )
         return self
 
@@ -114,26 +120,19 @@ class ResourceRequestDemand(BaseZenModel):
 class ResourceRequestRequest(UserScopedRequest):
     """Request model for resource requests."""
 
-    component_id: UUID = Field(
-        title="The default stack component requesting the resources.",
-    )
-    candidate_component_ids: list[UUID] = Field(
-        default_factory=list,
-        title="Candidate stack components that may satisfy the request.",
+    component_ids: list[UUID] = Field(
+        min_length=1,
+        title="Stack components that may satisfy the request.",
     )
     step_run_id: UUID = Field(
         title="The step run that is requesting the resources.",
     )
     demands: list[ResourceRequestDemand] = Field(
-        default_factory=list,
+        min_length=1,
         title="The resource demands requested.",
     )
-    requested_resources: Dict[str, PositiveInt] = Field(
-        default_factory=dict,
-        title="Compatibility shorthand resources requested by name.",
-    )
     reclaim_tolerance: ResourceRequestReclaimTolerance = Field(
-        default=ResourceRequestReclaimTolerance.UNSAFE,
+        default=ResourceRequestReclaimTolerance.ANY,
         title="The capacity reclaim behavior tolerated by this request.",
     )
     lease_expires_at: Optional[datetime] = Field(
@@ -141,46 +140,13 @@ class ResourceRequestRequest(UserScopedRequest):
         title="The optional initial lease expiration timestamp.",
     )
 
-    @model_validator(mode="after")
-    def _normalize_demands(self) -> "ResourceRequestRequest":
-        """Normalize compatibility fields into canonical demands.
-
-        Returns:
-            The validated resource request.
-
-        Raises:
-            ValueError: If no demands were configured.
-        """
-        if not self.demands and self.requested_resources:
-            self.demands = [
-                ResourceRequestDemand(resource=name, quantity=quantity)
-                for name, quantity in self.requested_resources.items()
-            ]
-
-        if not self.requested_resources and self.demands:
-            self.requested_resources = {
-                demand.resource: demand.quantity
-                for demand in self.demands
-                if demand.resource is not None
-            }
-
-        if not self.demands:
-            raise ValueError(
-                "Resource requests with no demands are not allowed."
-            )
-
-        return self
-
 
 class ResourceRequestResponseBody(UserScopedResponseBody):
     """Response body for resource requests."""
 
-    component_id: UUID = Field(
-        title="The default stack component associated with the request.",
-    )
-    candidate_component_ids: list[UUID] = Field(
+    component_ids: list[UUID] = Field(
         default_factory=list,
-        title="Candidate stack components associated with the request.",
+        title="Stack components associated with the request.",
     )
     step_run_id: Optional[UUID] = Field(
         default=None,
@@ -193,10 +159,6 @@ class ResourceRequestResponseBody(UserScopedResponseBody):
     pool_id: Optional[UUID] = Field(
         default=None,
         title="The resource pool selected for the resource request.",
-    )
-    requested_resources: Dict[str, int] = Field(
-        default_factory=dict,
-        title="Compatibility shorthand resources requested by name.",
     )
     demands: list[ResourceRequestDemand] = Field(
         default_factory=list,
@@ -255,22 +217,13 @@ class ResourceRequestResponse(
         return Client().zen_store.get_resource_request(self.id)
 
     @property
-    def component_id(self) -> UUID:
-        """Resource request component ID.
+    def component_ids(self) -> list[UUID]:
+        """Resource request component IDs.
 
         Returns:
-            The stack component associated with the resource request.
+            Stack components associated with the resource request.
         """
-        return self.get_body().component_id
-
-    @property
-    def candidate_component_ids(self) -> list[UUID]:
-        """Resource request candidate component IDs.
-
-        Returns:
-            The candidate stack components associated with the resource request.
-        """
-        return self.get_body().candidate_component_ids
+        return self.get_body().component_ids
 
     @property
     def step_run_id(self) -> Optional[UUID]:
@@ -298,15 +251,6 @@ class ResourceRequestResponse(
             The optional resource pool selected for the request.
         """
         return self.get_body().pool_id
-
-    @property
-    def requested_resources(self) -> Dict[str, int]:
-        """Requested resources.
-
-        Returns:
-            The requested resources keyed by resource name.
-        """
-        return self.get_body().requested_resources
 
     @property
     def demands(self) -> list[ResourceRequestDemand]:

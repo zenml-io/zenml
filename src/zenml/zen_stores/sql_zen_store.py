@@ -11959,10 +11959,6 @@ class SqlZenStore(BaseZenStore):
                 and step_run.resource_requester
             ):
                 resource_settings = step_config.config.resource_settings
-                requested_resources = (
-                    resource_settings.merged_requested_resources()
-                )
-                requested_resources["step_run"] = 1
                 demands = resource_settings.merged_resource_demands()
                 demands.append(
                     ResourceRequestDemand(resource="step_run", quantity=1)
@@ -11972,10 +11968,9 @@ class SqlZenStore(BaseZenStore):
                     session=session,
                     resource_request=ResourceRequestRequest(
                         user=step_run.user,
-                        component_id=step_run.resource_requester,
+                        component_ids=[step_run.resource_requester],
                         step_run_id=step_schema.id,
                         demands=demands,
-                        requested_resources=requested_resources,
                         reclaim_tolerance=resource_settings.reclaim_tolerance,
                     ),
                 )

@@ -33,6 +33,7 @@ from zenml.config.docker_settings import (
 from zenml.config.resource_settings import (
     ByteUnit,
     PoolResourceDemand,
+    ResourceInput,
     ResourceSettings,
 )
 from zenml.config.retry_config import StepRetryConfig
@@ -53,6 +54,7 @@ __all__ = [
     "PythonPackageInstaller",
     "PythonEnvironmentExportMethod",
     "ResourceSettings",
+    "ResourceInput",
     "PoolResourceDemand",
     "ByteUnit",
     "StepRetryConfig",
