@@ -21,9 +21,9 @@ from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     OutputFormat,
-    check_zenml_pro_project_availability,
     is_sorted_or_filtered,
     list_options,
+    warn_if_project_not_visible_on_oss,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -80,7 +80,6 @@ def list_projects(
         row_generator=cli_utils.generate_project_row,
         active_id=active_project_id,
     )
-    check_zenml_pro_project_availability()
 
 
 @project.command("register")
@@ -145,7 +144,7 @@ def register_project(
         cli_utils.success(
             f"✔ The default project has been set to {project.name}"
         )
-    check_zenml_pro_project_availability(project_name=project_name)
+    warn_if_project_not_visible_on_oss(project_name=project_name)
 
 
 @project.command("set")
@@ -181,7 +180,7 @@ def set_project(project_name_or_id: str, default: bool = False) -> None:
         cli_utils.declare(
             f"The default project has been set to {project.name}"
         )
-    check_zenml_pro_project_availability(project_name=project.name)
+    warn_if_project_not_visible_on_oss(project_name=project.name)
 
 
 @project.command("describe")
@@ -198,7 +197,6 @@ def describe_project(project_name_or_id: Optional[str] = None) -> None:
         cli_utils.print_pydantic_models(
             [active_project], exclude_columns=["created", "updated"]
         )
-        check_zenml_pro_project_availability(project_name=active_project.name)
     else:
         try:
             project_ = client.get_project(project_name_or_id)
@@ -208,7 +206,7 @@ def describe_project(project_name_or_id: Optional[str] = None) -> None:
             cli_utils.print_pydantic_models(
                 [project_], exclude_columns=["created", "updated"]
             )
-            check_zenml_pro_project_availability(project_name=project_.name)
+            warn_if_project_not_visible_on_oss(project_name=project_.name)
 
 
 @project.command("delete")
@@ -228,4 +226,3 @@ def delete_project(project_name_or_id: str) -> None:
             )
         except Exception as e:
             cli_utils.exception(e)
-    check_zenml_pro_project_availability(project_name=project_name_or_id)
