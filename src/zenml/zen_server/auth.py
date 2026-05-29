@@ -1323,7 +1323,7 @@ def get_authorization_provider() -> Callable[..., Awaitable[AuthContext]]:
 
     @wraps(provider)
     async def async_authorize_fn(*args: Any, **kwargs: Any) -> AuthContext:
-        from zenml.zen_server.utils import get_system_metrics_log_str
+        from zenml.zen_server.utils import get_system_metrics
 
         request_context = request_manager().current_request
 
@@ -1332,10 +1332,8 @@ def get_authorization_provider() -> Callable[..., Awaitable[AuthContext]]:
             assert request_context is not None
 
             logger.debug(
-                f"[{request_context.log_request_id}] API STATS - "
-                f"{request_context.log_request} "
-                f"AUTHORIZING "
-                f"{get_system_metrics_log_str(request_context.request)}"
+                "request.authorizing",
+                extra=get_system_metrics(),
             )
 
             try:
@@ -1344,10 +1342,8 @@ def get_authorization_provider() -> Callable[..., Awaitable[AuthContext]]:
                 return auth_context
             finally:
                 logger.debug(
-                    f"[{request_context.log_request_id}] API STATS - "
-                    f"{request_context.log_request} "
-                    f"AUTHORIZED "
-                    f"{get_system_metrics_log_str(request_context.request)}"
+                    "request.authorized",
+                    extra=get_system_metrics(),
                 )
 
         func = functools.partial(sync_authorize_fn, *args, **kwargs)

@@ -17,8 +17,8 @@ import time
 
 import pytest
 import requests
-from click.testing import CliRunner
 
+from tests.cli_runner_utils import cli_runner
 from zenml.cli.cli import cli
 from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import ENV_DAEMON_ZENML_SERVER_DEFAULT_TIMEOUT
@@ -42,11 +42,11 @@ def test_server_cli_up_down(clean_client, mocker):
             ENV_DAEMON_ZENML_SERVER_DEFAULT_TIMEOUT: "90",
         },
     )
-    cli_runner = CliRunner()
+    runner = cli_runner()
 
     port = scan_for_available_port(start=8003, stop=9000)
     login_command = cli.commands["login"]
-    cli_runner.invoke(login_command, ["--local", "--port", port])
+    runner.invoke(login_command, ["--local", "--port", port])
 
     endpoint = f"http://127.0.0.1:{port}"
     assert requests.head(endpoint + "/health", timeout=16).status_code == 200
@@ -61,7 +61,7 @@ def test_server_cli_up_down(clean_client, mocker):
         GlobalConfiguration, "set_default_store", return_value=None
     )
     logout_command = cli.commands["logout"]
-    cli_runner.invoke(logout_command)
+    runner.invoke(logout_command)
 
     # sleep for a bit to let the server stop
     time.sleep(5)

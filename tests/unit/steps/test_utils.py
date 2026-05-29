@@ -11,7 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-from typing import Any, Dict, List, Set, Tuple
+import inspect
+import logging
+import typing
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 import pytest
 from numpy import ndarray
@@ -19,8 +22,10 @@ from typing_extensions import Annotated
 
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.enums import ArtifactType
+from zenml.exceptions import StepInterfaceError
 from zenml.orchestrators.step_runner import OutputSignature
 from zenml.steps.utils import (
+    get_resolved_signature,
     parse_return_type_annotations,
     resolve_type_annotation,
 )
@@ -326,3 +331,114 @@ def func_with_duplicate_output_name() -> Tuple[
 def test_invalid_step_output_annotations(func, exception):
     with pytest.raises(exception):
         parse_return_type_annotations(func, {})
+
+
+def test_get_resolved_signature_resolves_stringized_parameter():
+    def f(x: "int") -> None:
+        pass
+
+    sig = get_resolved_signature(f)
+    assert sig.parameters["x"].annotation is int
+
+
+def test_get_resolved_signature_resolves_stringized_return():
+    def f() -> "int":
+        return 1
+
+    sig = get_resolved_signature(f)
+    assert sig.return_annotation is int
+
+
+def test_get_resolved_signature_preserves_annotated_string_metadata():
+    def f() -> "Annotated[int, 'custom_name']":
+        return 1
+
+    sig = get_resolved_signature(f)
+    assert sig.return_annotation == Annotated[int, "custom_name"]
+
+
+def test_get_resolved_signature_preserves_annotated_artifact_config():
+    def f() -> "Annotated[int, ArtifactConfig(name='custom_name')]":
+        return 1
+
+    sig = get_resolved_signature(f)
+    args = typing.get_args(sig.return_annotation)
+    assert args[0] is int
+    assert isinstance(args[1], ArtifactConfig)
+    assert args[1].name == "custom_name"
+
+
+def test_get_resolved_signature_resolves_stringized_tuple():
+    def f() -> "Tuple[int, str]":
+        return 1, "x"
+
+    sig = get_resolved_signature(f)
+    assert sig.return_annotation == Tuple[int, str]
+
+
+def test_get_resolved_signature_resolves_stringized_optional():
+    def f(x: "Optional[int]") -> None:
+        pass
+
+    sig = get_resolved_signature(f)
+    assert sig.parameters["x"].annotation == Optional[int]
+
+
+def test_get_resolved_signature_preserves_unannotated_parameter():
+    def f(x, y: "int") -> None:
+        pass
+
+    sig = get_resolved_signature(f)
+    assert sig.parameters["x"].annotation is inspect.Parameter.empty
+    assert sig.parameters["y"].annotation is int
+
+
+def test_get_resolved_signature_falls_back_to_any_for_unresolvable_parameter(
+    caplog,
+):
+    def f(x: "MissingType") -> None:  # noqa: F821
+        pass
+
+    with caplog.at_level(logging.WARNING):
+        sig = get_resolved_signature(f)
+
+    assert sig.parameters["x"].annotation is Any
+    assert any("MissingType" in record.message for record in caplog.records)
+
+
+def test_get_resolved_signature_raises_for_unresolvable_return():
+    def my_step_fn() -> "MissingType":  # noqa: F821
+        raise NotImplementedError
+
+    with pytest.raises(StepInterfaceError) as exc_info:
+        get_resolved_signature(my_step_fn)
+
+    assert "my_step_fn" in str(exc_info.value)
+    assert "MissingType" in str(exc_info.value)
+
+
+def test_get_resolved_signature_passes_through_live_annotations():
+    def f(x: int) -> int:
+        return x
+
+    sig = get_resolved_signature(f)
+    assert sig.parameters["x"].annotation is int
+    assert sig.return_annotation is int
+
+
+def test_get_resolved_signature_preserves_missing_return_annotation():
+    def f(x: "int"):
+        pass
+
+    sig = get_resolved_signature(f)
+    assert sig.return_annotation is inspect.Signature.empty
+
+
+def test_stringized_none_return_produces_no_outputs():
+    """Regression test: `-> "None"` (as under `from __future__ import
+    annotations`) must produce no output artifact, same as `-> None`."""
+
+    def f() -> "None":
+        return None
+
+    assert parse_return_type_annotations(f) == {}

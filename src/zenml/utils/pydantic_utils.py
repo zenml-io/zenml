@@ -347,7 +347,9 @@ def validate_function_args(
     Returns:
         The validated arguments.
     """
-    signature = inspect.signature(__func)
+    from zenml.steps.utils import get_resolved_signature
+
+    signature = get_resolved_signature(__func)
 
     validated_args = ()
     validated_kwargs = {}
@@ -360,9 +362,18 @@ def validate_function_args(
         validated_kwargs = kwargs
 
     # We create a dummy function with the original function signature to run
-    # pydantic validation without actually running the function code
+    # pydantic validation without actually running the function code. We
+    # rebuild the annotations dict from the resolved signature so that we use
+    # the resolved type annotations, not any
+    # PEP 563 / `from __future__ import annotations` strings.
     f.__signature__ = signature  # type: ignore[attr-defined]
-    f.__annotations__ = __func.__annotations__
+    f.__annotations__ = {
+        name: parameter.annotation
+        for name, parameter in signature.parameters.items()
+        if parameter.annotation is not inspect.Parameter.empty
+    }
+    if signature.return_annotation is not inspect.Signature.empty:
+        f.__annotations__["return"] = signature.return_annotation
 
     validated_function = validate_call(config=__config, validate_return=False)(
         f
