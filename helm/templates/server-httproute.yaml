@@ -26,6 +26,30 @@ spec:
     - {{ $server.gateway.host | quote }}
   {{- end }}
   rules:
+    # Long-lived SSE streaming endpoints. Envoy applies a 15s
+    # wall-clock request timeout by default which kills SSE responses;
+    # setting both timeouts to 0s disables that cap.
+    #
+    # The match combines the `/api/v1/runs/` path prefix with an
+    # exact `Accept: text/event-stream` header. Gateway API doesn't
+    # support per-segment regex, so anything under the runs tree
+    # that sends this header (in practice: the SSE stream endpoint,
+    # plus any client that manually sets the header) bypasses the
+    # request timeout. Browsers' `EventSource` and the ZenML client
+    # are the expected callers.
+    - matches:
+        - path:
+            type: PathPrefix
+            value: {{ printf "%s/api/v1/runs/" (trimSuffix "/" ($server.gateway.path | default "/")) | quote }}
+          headers:
+            - name: Accept
+              value: text/event-stream
+      timeouts:
+        request: "0s"
+        backendRequest: "0s"
+      backendRefs:
+        - name: {{ $fullName }}
+          port: {{ $svcPort }}
     - matches:
         - path:
             type: PathPrefix

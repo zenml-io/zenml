@@ -82,7 +82,12 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlalchemy import QueuePool, event, func, update
+from sqlalchemy import (
+    QueuePool,
+    event,
+    func,
+    update,
+)
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
@@ -184,7 +189,7 @@ from zenml.exceptions import (
     SecretsStoreNotConfiguredError,
 )
 from zenml.io import fileio
-from zenml.logger import get_console_handler, get_logger, get_logging_level
+from zenml.logger import ZenMLConsoleHandler, get_logger, get_logging_level
 from zenml.metadata.metadata_types import get_metadata_type
 from zenml.models import (
     TRIGGER_RETURN_TYPE_UNION,
@@ -297,6 +302,8 @@ from zenml.models import (
     ResourceRequestResponse,
     RunMetadataRequest,
     RunMetadataResource,
+    RunStatisticsRequest,
+    RunStatisticsResponse,
     RunTemplateFilter,
     RunTemplateRequest,
     RunTemplateResponse,
@@ -346,6 +353,7 @@ from zenml.models import (
     StepRunRequest,
     StepRunResponse,
     StepRunUpdate,
+    StreamBatchRequest,
     TagFilter,
     TagRequest,
     TagResourceRequest,
@@ -408,6 +416,7 @@ from zenml.zen_stores.schemas import (
     NamedSchema,
     OAuthDeviceSchema,
     PipelineBuildSchema,
+    PipelineRunOutputSchema,
     PipelineRunSchema,
     PipelineSchema,
     PipelineSnapshotSchema,
@@ -519,26 +528,20 @@ class Session(SqlModelSession):
             "overflow_connections": overflow,
         }
 
-    def _get_metrics_log_str(self) -> str:
-        """Get the metrics for the session as a string for logging.
+    def _get_log_metrics(self) -> Dict[str, Any]:
+        """Get SQL and system metrics for debug logs.
 
         Returns:
-            The metrics for the session as a string for logging.
+            The metrics for SQL session debug logs.
         """
-        if not logger.isEnabledFor(logging.DEBUG):
-            return ""
         metrics = self._get_metrics()
-        # Add the server metrics if running in a server
+
         if handle_bool_env_var(ENV_ZENML_SERVER):
             from zenml.zen_server.utils import get_system_metrics
 
             metrics.update(get_system_metrics())
 
-        return (
-            " [ "
-            + " ".join([f"{key}: {value}" for key, value in metrics.items()])
-            + " ]"
-        )
+        return metrics
 
     def __enter__(self) -> "Session":
         """Enter the context manager.
@@ -547,20 +550,6 @@ class Session(SqlModelSession):
             The SqlModel session.
         """
         if logger.isEnabledFor(logging.DEBUG):
-            self.log_request_id = "N/A"
-            self.log_request = ""
-            if handle_bool_env_var(ENV_ZENML_SERVER):
-                # Running inside server
-                from zenml.zen_server.utils import get_current_request_context
-
-                # If the code is running on the server, use the auth context.
-                try:
-                    request_context = get_current_request_context()
-                    self.log_request_id = request_context.log_request_id
-                    self.log_request = request_context.log_request
-                except RuntimeError:
-                    pass
-
             # Look up the stack to find the SQLZenStore method
             for frame in inspect.stack():
                 if "self" in frame.frame.f_locals:
@@ -574,9 +563,11 @@ class Session(SqlModelSession):
                 self.caller_method = "unknown"
 
             logger.debug(
-                f"[{self.log_request_id}] SQL STATS - "
-                f"{self.log_request} "
-                f"'{self.caller_method}' STARTED {self._get_metrics_log_str()}"
+                "sql.session.started",
+                extra={
+                    "caller": self.caller_method,
+                    **self._get_log_metrics(),
+                },
             )
 
             self.start_time = time.time()
@@ -597,18 +588,16 @@ class Session(SqlModelSession):
             exc_tb: The exception traceback.
         """
         if logger.isEnabledFor(logging.DEBUG):
-            duration = (time.time() - self.start_time) * 1000
-
-            # Add error information to the log
-            error_info = ""
-            if exc_type is not None:
-                error_info = " with ERROR"
+            duration_ms = round((time.time() - self.start_time) * 1000, 2)
 
             logger.debug(
-                f"[{self.log_request_id}] SQL STATS - "
-                f"{self.log_request} "
-                f"'{self.caller_method}' COMPLETED in "
-                f"{duration:.2f}ms {error_info} {self._get_metrics_log_str()}"
+                "sql.session.completed",
+                extra={
+                    "caller": self.caller_method,
+                    "duration_ms": duration_ms,
+                    "error": exc_type is not None,
+                    **self._get_log_metrics(),
+                },
             )
 
         super().__exit__(exc_type, exc_val, exc_tb)
@@ -1599,7 +1588,7 @@ class SqlZenStore(BaseZenStore):
         else:
             alembic_logger.setLevel(logging.WARNING)
 
-        alembic_logger.addHandler(get_console_handler())
+        alembic_logger.addHandler(ZenMLConsoleHandler())
 
         # We need to account for 3 distinct cases here:
         # 1. the database is completely empty (not initialized)
@@ -3286,6 +3275,9 @@ class SqlZenStore(BaseZenStore):
                             ),
                             col(ArtifactVersionSchema.id).notin_(
                                 select(StepRunInputArtifactSchema.artifact_id)
+                            ),
+                            col(ArtifactVersionSchema.id).notin_(
+                                select(PipelineRunOutputSchema.artifact_id)
                             ),
                             col(ArtifactVersionSchema.project_id)
                             == project_id,
@@ -5458,6 +5450,24 @@ class SqlZenStore(BaseZenStore):
             "Replaying a pipeline run is not possible with a local store."
         )
 
+    def publish_run_events(
+        self,
+        pipeline_run_id: UUID,
+        batch: StreamBatchRequest,
+    ) -> NoReturn:
+        """Publish a batch of live events to a pipeline run's stream.
+
+        Args:
+            pipeline_run_id: The ID of the run the events belong to.
+            batch: The batch of events to publish.
+
+        Raises:
+            NotImplementedError: Always — the local store has no broker.
+        """
+        raise NotImplementedError(
+            "Publishing live events is not possible with a local store."
+        )
+
     # -------------------- Deployments --------------------
 
     @track_decorator(AnalyticsEvent.CREATE_DEPLOYMENT)
@@ -6160,6 +6170,15 @@ class SqlZenStore(BaseZenStore):
                         jl_arg(PipelineRunSchema.status),
                         jl_arg(PipelineRunSchema.index),
                     ),
+                    selectinload(
+                        jl_arg(PipelineRunSchema.child_runs)
+                    ).load_only(
+                        jl_arg(PipelineRunSchema.id),
+                        jl_arg(PipelineRunSchema.name),
+                        jl_arg(PipelineRunSchema.start_time),
+                        jl_arg(PipelineRunSchema.end_time),
+                        jl_arg(PipelineRunSchema.status),
+                    ),
                 ],
             )
             assert run.snapshot is not None
@@ -6219,6 +6238,9 @@ class SqlZenStore(BaseZenStore):
             regular_output_artifact_nodes: Dict[
                 str, Dict[str, PipelineRunDAG.Node]
             ] = defaultdict(dict)
+            input_artifact_nodes_by_id: Dict[UUID, List[str]] = defaultdict(
+                list
+            )
 
             def _get_regular_output_artifact_node(
                 step_name: str, output_name: str
@@ -6330,6 +6352,9 @@ class SqlZenStore(BaseZenStore):
                             index=input.input_index,
                             chunk_index=input.chunk_index,
                             chunk_size=input.chunk_size,
+                        )
+                        input_artifact_nodes_by_id[input.artifact_id].append(
+                            artifact_node.node_id
                         )
 
                     for output in step_run.output_artifacts:
@@ -6565,6 +6590,30 @@ class SqlZenStore(BaseZenStore):
                         target=step_node.node_id,
                     )
 
+            for child_run in run.child_runs:
+                child_run_metadata: Dict[str, Any] = {
+                    "status": child_run.status,
+                }
+                if child_run.start_time:
+                    child_run_metadata["start_time"] = (
+                        child_run.start_time.isoformat()
+                    )
+                    if child_run.end_time:
+                        child_run_metadata["end_time"] = (
+                            child_run.end_time.isoformat()
+                        )
+                        child_run_metadata["duration"] = (
+                            child_run.end_time - child_run.start_time
+                        ).total_seconds()
+
+                helper.add_child_run_node(
+                    node_id=helper.get_child_run_node_id(child_run.name),
+                    id=child_run.id,
+                    name=child_run.name,
+                    **child_run_metadata,
+                )
+                # TODO: maybe include nodes for outputs and connect via edges?
+
         return helper.finalize_dag(
             pipeline_run_id=pipeline_run_id, status=ExecutionStatus(run.status)
         )
@@ -6663,6 +6712,17 @@ class SqlZenStore(BaseZenStore):
                 reference_type="original run",
             )
 
+        root_run_id: Optional[UUID] = None
+        if pipeline_run.parent_run_id:
+            parent_run = self._get_reference_schema_by_id(
+                resource=pipeline_run,
+                reference_schema=PipelineRunSchema,
+                reference_id=pipeline_run.parent_run_id,
+                session=session,
+                reference_type="parent run",
+            )
+            root_run_id = parent_run.root_run_id or parent_run.id
+
         index = self._get_next_run_index(
             pipeline_id=snapshot.pipeline_id, session=session
         )
@@ -6672,6 +6732,7 @@ class SqlZenStore(BaseZenStore):
             pipeline_id=snapshot.pipeline_id,
             index=index,
             enable_heartbeat=self._get_enable_run_heartbeat(snapshot),
+            root_run_id=root_run_id,
         )
 
         session.add(new_run)
@@ -7186,8 +7247,41 @@ class SqlZenStore(BaseZenStore):
                         f"New: {run_update.orchestrator_run_id}"
                     )
 
+            if run_update.outputs is not None:
+                # Validate that every referenced artifact version exists and
+                # belongs to the same project as the run before mutating
+                # `pipeline_run_output`. This prevents cross-project info
+                # disclosure via run outputs (a caller with UPDATE on the run
+                # could otherwise pin arbitrary artifact IDs by guessing
+                # them).
+                for artifact_id in set(run_update.outputs.values()):
+                    self._get_reference_schema_by_id(
+                        resource=existing_run,
+                        reference_schema=ArtifactVersionSchema,
+                        reference_id=artifact_id,
+                        session=session,
+                        reference_type="output artifact version",
+                    )
+
             existing_run.update(run_update=run_update)
             session.add(existing_run)
+            if run_update.outputs is not None:
+                session.execute(
+                    delete(PipelineRunOutputSchema).where(
+                        col(PipelineRunOutputSchema.pipeline_run_id) == run_id
+                    )
+                )
+                for index, (name, artifact_id) in enumerate(
+                    run_update.outputs.items()
+                ):
+                    session.add(
+                        PipelineRunOutputSchema(
+                            pipeline_run_id=run_id,
+                            name=name,
+                            output_index=index,
+                            artifact_id=artifact_id,
+                        )
+                    )
             session.commit()
             session.refresh(existing_run)
 
@@ -7259,6 +7353,30 @@ class SqlZenStore(BaseZenStore):
         return self._count_entity(
             schema=PipelineRunSchema, filter_model=filter_model
         )
+
+    def get_run_statistics(
+        self, request: RunStatisticsRequest
+    ) -> RunStatisticsResponse:
+        """Compute grouped statistics over pipeline runs.
+
+        Args:
+            request: Statistics request.
+
+        Returns:
+            Grouped statistics.
+        """
+        from zenml.zen_stores.sql_run_statistics import (
+            compute_run_statistics,
+        )
+
+        with Session(self.engine) as session:
+            self._set_filter_project_id(
+                filter_model=request.filter,
+                session=session,
+            )
+            return compute_run_statistics(
+                session=session, request=request, driver=self.config.driver
+            )
 
     def disable_run_heartbeat(self, run_id: UUID) -> None:
         """Disables heartbeat for pipeline and all its running steps.
@@ -7534,6 +7652,9 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=True,
                 include_resources=True,
             )
+            root_run_id = (
+                updated_schema.run.root_run_id or updated_schema.run_id
+            )
 
         if resolved_model.resolution == RunWaitConditionResolution.CONTINUE:
             # There is a possibility that the instance holding the lease
@@ -7543,9 +7664,7 @@ class SqlZenStore(BaseZenStore):
             # conditions would solve this, but we don't implement this for
             # now.
             if not active_lease_exists:
-                self._attempt_resume_run_from_server(
-                    run_id=resolved_model.run.id,
-                )
+                self._attempt_resume_run_from_server(run_id=root_run_id)
         elif resolved_model.resolution == RunWaitConditionResolution.ABORT:
             with Session(self.engine) as session:
                 self._update_pipeline_run_status(
@@ -7617,6 +7736,8 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
             resolution = schema.resolution
+            run_id = schema.run_id
+            root_run_id = schema.run.root_run_id or run_id
 
         if (
             lease_update.mode == RunWaitConditionLeaseMode.ABANDON
@@ -7630,7 +7751,7 @@ class SqlZenStore(BaseZenStore):
             # (running -> resuming status transition is not allowed)
             with Session(self.engine) as session:
                 self._update_pipeline_run_status_no_commit(
-                    pipeline_run_id=schema.run_id,
+                    pipeline_run_id=run_id,
                     session=session,
                     requested_status=ExecutionStatus.PAUSED,
                 )
@@ -7638,7 +7759,8 @@ class SqlZenStore(BaseZenStore):
             # Then, attempt to resume the run from the server.
             # TODO: There is a race condition because the runner will
             # publish a failed run status at some point.
-            self._attempt_resume_run_from_server(run_id=schema.run_id)
+
+            self._attempt_resume_run_from_server(run_id=root_run_id)
 
         return current_status
 
@@ -11269,9 +11391,9 @@ class SqlZenStore(BaseZenStore):
 
                 if execution_mode != ExecutionMode.CONTINUE_ON_FAILURE:
                     raise IllegalOperationError(
-                        f"Cannot creat step '{step_run.name}' for the run '{run.name}' "
-                        "because the run is in a FAILED state and the execution mode is"
-                        f"{execution_mode}."
+                        f"Cannot create step '{step_run.name}' for the run '{run.name}' "
+                        "because the run is in a FAILED state and the execution "
+                        f"mode is {execution_mode}."
                     )
 
             self._get_reference_schema_by_id(
@@ -12224,9 +12346,12 @@ class SqlZenStore(BaseZenStore):
         new_status = ExecutionStatus(pipeline_run.status)
 
         if new_status != previous_status:
-            EventDispatcher().handle_run_status_update(
-                run=pipeline_run.to_model(include_metadata=True)
-            )
+            dispatcher = EventDispatcher()
+            if dispatcher.has_handlers():
+                # Only convert to model if there are handlers to notify
+                dispatcher.handle_run_status_update(
+                    run=pipeline_run.to_model(include_metadata=True)
+                )
 
         if new_status.is_finished and pipeline_run.end_time:
             if pipeline_run.start_time:

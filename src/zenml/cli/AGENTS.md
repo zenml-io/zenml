@@ -7,7 +7,10 @@ Guidance for agents working with ZenML CLI code.
 | File | Purpose |
 |------|---------|
 | `utils.py` | CLI utilities including `list_options` decorator |
-| `pipeline.py` | Pipeline and run management commands |
+| `pipeline.py` | Pipeline, run, legacy schedule, and replay/resume management commands |
+| `trigger.py` | Native trigger commands, including schedule triggers and platform event triggers |
+| `resource_pool.py` | Resource pool commands and resource pool subject policies |
+| `resource_request.py` | Resource request / queue inspection commands |
 | `stack.py` | Stack management commands |
 | `base.py` | Core CLI setup and common decorators |
 
@@ -47,12 +50,17 @@ class EntityFilter(...):
 
 ## Scheduling Command Families
 
-There are now two separate scheduling command families in the CLI:
+There are now separate scheduling/trigger command families in the CLI:
 
 - `zenml pipeline schedule ...` — Legacy schedule records (CRUD on `ScheduleResponse`)
-- `zenml trigger schedule ...` — Native schedule triggers (new trigger-based architecture)
+- `zenml trigger schedule ...` — Native schedule triggers in the trigger architecture
+- `zenml trigger platform-event ...` — Platform event triggers and their supported events
 
-When modifying scheduling CLI code, be explicit about which stack you are changing. The trigger CLI lives in `cli/trigger.py`, while legacy schedule commands live in `cli/pipeline.py`.
+When modifying scheduling or trigger CLI code, be explicit about which stack you are changing. The trigger CLI lives in `cli/trigger.py`, while legacy schedule commands live in `cli/pipeline.py`. Trigger changes usually span CLI, client, server endpoints, models, schemas, and docs.
+
+## Resource Pool Command Family
+
+Resource pools have their own CLI surfaces in `cli/resource_pool.py` and `cli/resource_request.py`. When changing resource pool behavior, check both the management commands (create/update/list/delete, policy attach/detach/list) and request/queue inspection commands. These commands are coupled to `ResourcePool*`, `ResourcePoolSubjectPolicy*`, and `ResourceRequest*` models.
 
 ## Import Considerations
 

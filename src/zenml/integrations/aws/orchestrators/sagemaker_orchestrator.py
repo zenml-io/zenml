@@ -726,6 +726,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 upstream_steps=step.spec.upstream_steps,
                 wait=False,
             )
+            assert isinstance(sagemaker_step, Step)
 
             sagemaker_steps.append(sagemaker_step)
 
@@ -1029,13 +1030,13 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                             wait=True,
                             poll=POLLING_DELAY,
                             timeout=POLLING_DELAY * MAX_POLLING_ATTEMPTS,
-                        )
+                        )  # type: ignore[no-untyped-call,unused-ignore]
                     else:
                         session.logs_for_processing_job(
                             job_name,
                             wait=True,
                             poll=POLLING_DELAY,
-                        )
+                        )  # type: ignore[no-untyped-call,unused-ignore]
 
                     logger.info("Pipeline completed successfully.")
                 except WaiterError:
