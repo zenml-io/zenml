@@ -673,11 +673,11 @@ class ResourceRequestStatus(StrEnum):
 
 
 class ResourceRequestReclaimTolerance(StrEnum):
-    """Capacity reclaim behavior tolerated by a resource request."""
+    """Caller tolerance for reclaiming lower-priority work on a request."""
 
     NONE = "none"
     COORDINATED = "coordinated"
-    UNSAFE = "unsafe"
+    ANY = "any"
 
 
 class TriggerType(StrEnum):

@@ -39,6 +39,7 @@ class RMResourceRequest(BaseModel):
 
     name: str
     kind: str
+    description: Optional[str] = None
     attributes: dict[str, Any] = Field(default_factory=dict)
     units: list[RMResourceUnit] = Field(default_factory=list)
     owner_id: Optional[UUID] = None
@@ -49,6 +50,8 @@ class RMResourceUpdate(BaseModel):
 
     name: Optional[str] = None
     kind: Optional[str] = None
+    description: Optional[str] = None
+    clear_description: bool = False
     attributes: Optional[dict[str, Any]] = None
     units: Optional[list[RMResourceUnit]] = None
 
@@ -57,12 +60,14 @@ class RMResourceResponse(BaseModel):
     """Resource descriptor response from the Resource Manager API."""
 
     id: UUID
-    organization_id: UUID
+    organization_id: Optional[UUID] = None
     name: str
     kind: str
+    description: Optional[str] = None
     attributes: dict[str, Any]
     units: list[RMResourceUnit] = Field(default_factory=list)
     owner_id: Optional[UUID] = None
+    is_system: bool = False
     created: Optional[datetime] = None
     updated: Optional[datetime] = None
 
@@ -241,6 +246,8 @@ class RMRequestDemand(BaseModel):
     """Resource demand payload for the Resource Manager API."""
 
     resource_id: Optional[UUID] = None
+    resource: Optional[str] = None
+    kind: Optional[str] = None
     quantity: int
     unit: Optional[str] = None
     class_name: Optional[str] = Field(

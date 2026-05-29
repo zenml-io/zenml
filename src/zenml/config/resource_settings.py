@@ -17,8 +17,7 @@ from __future__ import annotations
 
 import math
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, Literal, Optional, Union
-from uuid import UUID
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, Union
 
 from pydantic import (
     ConfigDict,
@@ -26,6 +25,7 @@ from pydantic import (
     NonNegativeInt,
     PositiveFloat,
     PositiveInt,
+    field_validator,
     model_validator,
 )
 
@@ -39,6 +39,7 @@ if TYPE_CHECKING:
 class ByteUnit(Enum):
     """Enum for byte units."""
 
+    B = "B"
     KB = "KB"
     KIB = "KiB"
     MB = "MB"
@@ -58,6 +59,7 @@ class ByteUnit(Enum):
             The byte value of this unit.
         """
         return {
+            ByteUnit.B: 1,
             ByteUnit.KB: 10**3,
             ByteUnit.KIB: 1 << 10,
             ByteUnit.MB: 10**6,
@@ -73,14 +75,31 @@ class ByteUnit(Enum):
 
 MEMORY_REGEX = r"^[0-9]+(" + "|".join(unit.value for unit in ByteUnit) + r")$"
 
+ResourceInput = Union[
+    str,
+    Dict[str, PositiveInt],
+    "PoolResourceDemand",
+    List["PoolResourceDemand"],
+]
+"""Flexible resource pool demand input accepted by ``ResourceSettings.resources``.
+
+May be:
+
+* a resource name string (quantity defaults to 1),
+* a name-to-quantity map (for example ``{"tpu": 2}``),
+* one ``PoolResourceDemand``,
+* a list of demands or demand dictionaries.
+"""
+
 
 class PoolResourceDemand(BaseSettings):
-    """Extended resource pool demand used by ResourceSettings.
+    """Resource pool demand used by ResourceSettings.
 
     Attributes:
-        resource_id: Optional exact resource descriptor ID.
-        resource: Optional exact resource descriptor name.
+        name: Resource descriptor name.
         quantity: Requested quantity.
+        kind: Optional resource kind (for example ``gpu``).
+        unit: Optional unit for the requested quantity.
         class_name: Optional exact capacity class name.
         resource_selector: Optional selector over resource descriptor fields and
             attributes.
@@ -88,9 +107,10 @@ class PoolResourceDemand(BaseSettings):
             attributes.
     """
 
-    resource_id: Optional[UUID] = None
-    resource: Optional[str] = None
+    name: str = Field(min_length=1)
     quantity: PositiveInt
+    kind: Optional[str] = Field(default=None, min_length=1)
+    unit: Optional[str] = Field(default=None, min_length=1)
     class_name: Optional[str] = Field(
         default=None,
         alias="class",
@@ -99,28 +119,11 @@ class PoolResourceDemand(BaseSettings):
     resource_selector: Optional[Dict[str, Any]] = None
     class_selector: Optional[Dict[str, Any]] = None
 
-    @model_validator(mode="after")
-    def _validate_resource_reference(self) -> "PoolResourceDemand":
-        """Validate that the demand can resolve to a resource.
-
-        Returns:
-            The validated demand.
-
-        Raises:
-            ValueError: If no resource reference or selector is configured.
-        """
-        if (
-            self.resource_id is None
-            and self.resource is None
-            and self.resource_selector is None
-        ):
-            raise ValueError(
-                "Pool resource demands require a resource ID, resource name, "
-                "or resource selector."
-            )
-        return self
-
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(
+        populate_by_name=True,
+        # prevent extra attributes during model initialization
+        extra="ignore",
+    )
 
 
 class ResourceSettings(BaseSettings):
@@ -168,15 +171,15 @@ class ResourceSettings(BaseSettings):
     Attributes:
         cpu_count: The amount of CPU cores that should be configured.
         gpu_count: The amount of GPUs that should be configured.
-        gpu_type: Optional GPU type selector for resource pool scheduling.
         gpu_class: Optional GPU capacity class for resource pool scheduling.
         memory: The amount of memory that should be configured.
-        preemptible: Legacy flag for whether resource pool requests can be
-            preempted. If set and ``reclaim_tolerance`` is omitted, ``True``
-            maps to ``coordinated`` and ``False`` maps to ``none``.
+        resources: Resource pool demands (``ResourceInput``). After validation
+            this is a list of ``PoolResourceDemand``. Legacy ``pool_resources``
+            and ``pool_resource_demands`` inputs are still accepted and folded
+            into this field.
         reclaim_tolerance: Capacity reclaim behavior tolerated by resource pool
-            requests. Defaults to ``unsafe`` when neither this nor the legacy
-            preemptible flag is set.
+            requests. Defaults to ``any`` when not set. Legacy ``preemptible``
+            booleans are still accepted on input and mapped into this field.
         min_replicas: Minimum number of container instances (replicas).
             Use 0 to allow scale-to-zero on idle. Only relevant to
             deployed pipelines.
@@ -192,41 +195,22 @@ class ResourceSettings(BaseSettings):
         max_concurrency: Maximum concurrent requests per instance (if supported
             by the platform). Defines a concurrency limit for each container.
             Only relevant to deployed pipelines.
-        pool_resources: Optional map of resource name to positive integer amount
-            for ZenML resource pools. Use for custom keys
-            (for example ``tpu``) or to supply ``gpu`` / ``mcpu`` / ``memory_mb``
-            without the typed fields. When ``gpu_count``, ``cpu_count``, or
-            ``memory`` is set, those fields override the same keys in this map.
-        pool_resource_demands: Extended resource pool demands with selectors
-            and class constraints.
     """
 
     cpu_count: Optional[PositiveFloat] = None
     gpu_count: Optional[NonNegativeInt] = None
-    gpu_type: Optional[str] = None
     gpu_class: Optional[str] = None
     memory: Optional[str] = Field(pattern=MEMORY_REGEX, default=None)
-    pool_resources: Optional[Dict[str, PositiveInt]] = Field(
-        default=None,
+    resources: ResourceInput = Field(
+        default_factory=list,
         description=(
-            "Maps resource names to positive integer amounts allocated from "
-            "ZenML resource pools. Examples: {'memory': 2}, {'tpu': 4}, "
-            "{'vcpus': 2}, {'gpus': 4}. When gpu_count, cpu_count, or memory "
-            "is set, those fields override the gpu, mcpu, and memory_mb keys "
-            "respectively."
-        ),
-    )
-    pool_resource_demands: Optional[list[PoolResourceDemand]] = Field(
-        default=None,
-        description=(
-            "Extended resource pool demands with optional exact resources, "
-            "capacity classes, resource selectors, and class selectors."
+            "Resource pool demands. Accepts a resource name, a name-to-quantity "
+            "map, one PoolResourceDemand, or a list of demands."
         ),
     )
     reclaim_tolerance: ResourceRequestReclaimTolerance = (
-        ResourceRequestReclaimTolerance.UNSAFE
+        ResourceRequestReclaimTolerance.ANY
     )
-    preemptible: Optional[bool] = None
 
     # Settings only applicable for deployers and deployed pipelines
     min_replicas: Optional[NonNegativeInt] = None
@@ -239,33 +223,56 @@ class ResourceSettings(BaseSettings):
 
     @model_validator(mode="before")
     @classmethod
-    def normalize_reclaim_tolerance(cls, data: Any) -> Any:
-        """Normalize legacy preemptible settings into reclaim tolerance.
+    def normalize_input(cls, data: Any) -> Any:
+        """Normalize legacy and flexible resource settings input.
 
         Args:
             data: Raw input data supplied to the model.
 
         Returns:
-            Input data with ``reclaim_tolerance`` populated when possible.
+            Input data with ``resources`` and ``reclaim_tolerance`` populated.
         """
         if not isinstance(data, dict):
             return data
 
-        if data.get("reclaim_tolerance") is not None:
-            return data
-
         normalized = dict(data)
-        preemptible = normalized.get("preemptible")
-        if preemptible is True:
-            normalized["reclaim_tolerance"] = (
-                ResourceRequestReclaimTolerance.COORDINATED
-            )
-        elif preemptible is False:
-            normalized["reclaim_tolerance"] = (
-                ResourceRequestReclaimTolerance.NONE
-            )
 
+        if normalized.get("reclaim_tolerance") is None:
+            preemptible = normalized.get("preemptible")
+            if preemptible is True:
+                normalized["reclaim_tolerance"] = (
+                    ResourceRequestReclaimTolerance.COORDINATED
+                )
+            elif preemptible is False:
+                normalized["reclaim_tolerance"] = (
+                    ResourceRequestReclaimTolerance.NONE
+                )
+
+        if normalized.get("resources") is None:
+            if normalized.get("pool_resources") is not None:
+                normalized["resources"] = normalized["pool_resources"]
+
+        normalized.pop("preemptible", None)
+        normalized.pop("pool_resources", None)
         return normalized
+
+    @property
+    def normalized_resources(self) -> List[PoolResourceDemand]:
+        """Normalized resources field.
+
+        Returns:
+            List of normalized resource demands.
+        """
+        if isinstance(self.resources, str):
+            return [PoolResourceDemand(name=self.resources, quantity=1)]
+        if isinstance(self.resources, PoolResourceDemand):
+            return [self.resources]
+        if isinstance(self.resources, dict):
+            return [
+                PoolResourceDemand(name=name, quantity=quantity)
+                for name, quantity in self.resources.items()
+            ]
+        return self.resources
 
     @model_validator(mode="after")
     def validate_replicas(self) -> "ResourceSettings":
@@ -294,30 +301,22 @@ class ResourceSettings(BaseSettings):
         """Returns if this object is "empty" or not.
 
         A ResourceSettings instance is considered empty if none of the
-        generic resource-related values are configured. This excludes the
-        preemptible flag and the pool_resources map, which are only relevant
-        for resource pool scheduling and currently ignored by workload
-        scheduling stack components like orchestrators and step operators.
+        generic resource-related values are configured. This excludes pool
+        ``resources`` and ``reclaim_tolerance``, which are only relevant for
+        resource pool scheduling and currently ignored by workload scheduling
+        stack components like orchestrators and step operators.
 
         Returns:
             `True` if no values were configured, `False` otherwise.
         """
-        # To detect whether this config is empty (= no values specified), we
-        # check if there are any attributes which are explicitly set to any
-        # value other than `None`. Exclude preemptible and pool_resources
-        # because they are not part of the set of unified resource settings
-        # that are understood and applied by orchestrators and step operators.
         return (
             len(
                 self.model_dump(
                     exclude_unset=True,
                     exclude_none=True,
                     exclude={
-                        "preemptible",
-                        "pool_resources",
-                        "pool_resource_demands",
+                        "resources",
                         "reclaim_tolerance",
-                        "gpu_type",
                         "gpu_class",
                     },
                 )
@@ -326,7 +325,7 @@ class ResourceSettings(BaseSettings):
         )
 
     def get_memory(
-        self, unit: Union[str, ByteUnit] = ByteUnit.GB
+        self, unit: Union[str, "ByteUnit"] = ByteUnit.GB
     ) -> Optional[float]:
         """Gets the memory configuration in a specific unit.
 
@@ -347,7 +346,9 @@ class ResourceSettings(BaseSettings):
             unit = ByteUnit(unit)
 
         memory = self.memory
-        for memory_unit in ByteUnit:
+        for memory_unit in sorted(
+            ByteUnit, key=lambda unit: len(unit.value), reverse=True
+        ):
             if memory.endswith(memory_unit.value):
                 memory_value = int(memory[: -len(memory_unit.value)])
                 return memory_value * memory_unit.byte_value / unit.byte_value
@@ -355,75 +356,77 @@ class ResourceSettings(BaseSettings):
             # Should never happen due to the regex validation
             raise ValueError(f"Unable to parse memory unit from '{memory}'.")
 
-    def merged_requested_resources(self) -> Dict[str, int]:
-        """Build the resource request map for scheduling and pool allocation.
+    def memory_quantity_and_unit(self) -> Optional[tuple[int, ByteUnit]]:
+        """Parse the configured memory string into quantity and unit.
 
         Returns:
-            Resource name to amount.
+            Quantity and ``ByteUnit`` parsed from ``memory``, or None when
+            memory is not configured.
         """
-        merged: Dict[str, int] = (
-            dict(self.pool_resources) if self.pool_resources else {}
-        )
+        if not self.memory:
+            return None
 
-        if self.gpu_count is not None:
-            if self.gpu_count > 0:
-                merged["gpu"] = self.gpu_count
-            else:
-                merged.pop("gpu", None)
+        for memory_unit in sorted(
+            ByteUnit, key=lambda unit: len(unit.value), reverse=True
+        ):
+            if self.memory.endswith(memory_unit.value):
+                quantity = int(self.memory[: -len(memory_unit.value)])
+                return quantity, memory_unit
 
-        if self.cpu_count is not None:
-            merged["mcpu"] = math.ceil(self.cpu_count * 1000)
-
-        memory_amount = self.get_memory(unit=ByteUnit.MB)
-        if memory_amount is not None:
-            merged["memory_mb"] = math.ceil(memory_amount)
-
-        return merged
+        raise ValueError(f"Unable to parse memory unit from '{self.memory}'.")
 
     def merged_resource_demands(self) -> list["ResourceRequestDemand"]:
         """Build canonical Resource Manager demands for pool allocation.
 
+        Pool ``resources`` and typed CPU/GPU/memory fields are converted into
+        separate demands without merging or overriding.
+
         Returns:
-            Resource demand entries including compatibility shorthand resources
-            and extended selector-based demands.
+            Resource demand entries for pool scheduling.
         """
         from zenml.models import ResourceRequestDemand
 
         demands = [
             ResourceRequestDemand(
-                resource_id=demand.resource_id,
-                resource=demand.resource,
+                resource=demand.name,
                 quantity=demand.quantity,
+                kind=demand.kind,
+                unit=demand.unit,
                 class_name=demand.class_name,
                 resource_selector=demand.resource_selector,
                 class_selector=demand.class_selector,
             )
-            for demand in self.pool_resource_demands or []
+            for demand in self.normalized_resources
         ]
 
-        for resource, quantity in self.merged_requested_resources().items():
-            if resource == "gpu" and (
-                self.gpu_type is not None or self.gpu_class is not None
-            ):
-                selector = {"kind": "gpu"}
-                if self.gpu_type is not None:
-                    selector["gpu_type"] = self.gpu_type
+        if self.gpu_count is not None and self.gpu_count > 0:
+            demands.append(
+                ResourceRequestDemand(
+                    kind="gpu",
+                    quantity=self.gpu_count,
+                    class_name=self.gpu_class,
+                )
+            )
 
-                demands.append(
-                    ResourceRequestDemand(
-                        resource=resource,
-                        quantity=quantity,
-                        class_name=self.gpu_class,
-                        resource_selector=selector,
-                    )
+        if self.cpu_count is not None:
+            demands.append(
+                ResourceRequestDemand(
+                    kind="cpu",
+                    quantity=math.ceil(self.cpu_count),
+                    unit="CPU",
                 )
-            else:
-                demands.append(
-                    ResourceRequestDemand(
-                        resource=resource,
-                        quantity=quantity,
-                    )
+            )
+
+        memory_spec = self.memory_quantity_and_unit()
+        if memory_spec is not None:
+            memory_quantity, memory_unit = memory_spec
+            demands.append(
+                ResourceRequestDemand(
+                    kind="memory",
+                    quantity=memory_quantity,
+                    unit=memory_unit.value,
                 )
+            )
 
         return demands
 
