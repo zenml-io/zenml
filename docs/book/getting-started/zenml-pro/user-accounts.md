@@ -13,6 +13,11 @@ layout:
     visible: true
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # User Accounts
 
 This guide covers user account types and management for ZenML Pro self-hosted deployments. Understanding the different account types and their capabilities is essential for effectively managing access to your ZenML Pro instance.

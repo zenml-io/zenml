@@ -2,6 +2,11 @@
 description: Learn how to implement a RAG pipeline in just 85 lines of code.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 There's a lot of theory and context to think about when it comes to RAG, but
 let's start with a quick implementation in code to motivate what follows. The
 following 85 lines do the following:

@@ -16,6 +16,11 @@ layout:
     visible: true
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Trusted domains
 
 Trusted domains are an optional ZenML Pro control-plane feature. Each organization can store a list of DNS hostnames (for example `example.com` and `example.org`) that ZenML treats as trusted email domains for that organization. The setting affects:

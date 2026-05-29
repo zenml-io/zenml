@@ -13,6 +13,11 @@ layout:
     visible: true
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Enable Snapshot (Workload Manager) Support for the Workspace Server
 
 The Workspace Server includes a Workload Manager feature that allows running pipelines directly from the ZenML Pro UI. This feature requires access to a Kubernetes cluster where ad-hoc pipeline runner pods can be created.
