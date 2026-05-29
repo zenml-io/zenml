@@ -18,7 +18,12 @@ from contextlib import ExitStack as does_not_raise
 import pytest
 from pydantic import ValidationError
 
-from zenml.config.resource_settings import ByteUnit, ResourceSettings
+from zenml.config.resource_settings import (
+    ByteUnit,
+    PoolResourceDemand,
+    ResourceSettings,
+)
+from zenml.enums import ResourceRequestReclaimTolerance
 
 
 def test_unit_byte_value_defined_for_all_values():
@@ -97,56 +102,120 @@ def test_resource_config_memory_conversion():
     assert r.get_memory(unit="GiB") == 11
 
 
-def test_pool_resources_empty_dict_merges_to_empty() -> None:
-    """Empty pool_resources is accepted; merged map has no keys from the map."""
-    rs = ResourceSettings(pool_resources={})
+def test_memory_quantity_and_unit_parses_configured_suffix() -> None:
+    """memory_quantity_and_unit returns the literal quantity and ByteUnit."""
+    rs = ResourceSettings(memory="512MB")
+    assert rs.memory_quantity_and_unit() == (512, ByteUnit.MB)
+
+    rs = ResourceSettings(memory="11GiB")
+    assert rs.memory_quantity_and_unit() == (11, ByteUnit.GIB)
+
+
+def test_resources_empty_dict_normalizes_to_empty_list() -> None:
+    """Empty resource maps are accepted and normalize to no demands."""
+    rs = ResourceSettings(resources={})
     assert rs.empty is True
-    assert rs.merged_requested_resources() == {}
+    assert rs.resources == {}
+    assert rs.normalized_resources == []
+    assert rs.merged_resource_demands() == []
 
 
-def test_merged_requested_resources_from_pool_resources_only() -> None:
-    """Custom keys pass through when typed resource fields are unset."""
-    rs = ResourceSettings(pool_resources={"tpu": 2, "widgets": 3})
-    assert rs.merged_requested_resources() == {"tpu": 2, "widgets": 3}
+def test_resources_from_name_to_quantity_map() -> None:
+    """Name-to-quantity maps normalize into pool demands."""
+    rs = ResourceSettings(resources={"tpu": 2, "widgets": 3})
+    assert rs.resources == {"tpu": 2, "widgets": 3}
+    assert [demand.name for demand in rs.normalized_resources] == [
+        "tpu",
+        "widgets",
+    ]
+    assert [demand.quantity for demand in rs.normalized_resources] == [2, 3]
 
 
-def test_merged_requested_resources_typed_fields_override_pool_resources() -> (
+def test_resources_from_string_defaults_quantity_to_one() -> None:
+    """A bare resource name becomes a single-quantity demand."""
+    rs = ResourceSettings(resources="tpu")
+    assert rs.resources == "tpu"
+    assert rs.normalized_resources == [
+        PoolResourceDemand(name="tpu", quantity=1),
+    ]
+
+
+def test_legacy_pool_resources_input_is_normalized() -> None:
+    """Legacy pool_resources input is folded into resources."""
+    rs = ResourceSettings(pool_resources={"tpu": 2})
+    assert rs.resources == {"tpu": 2}
+    assert rs.normalized_resources[0].name == "tpu"
+    assert rs.normalized_resources[0].quantity == 2
+
+
+def test_resources_from_pool_resource_demand_list() -> None:
+    """A list of PoolResourceDemand values is accepted via resources."""
+    rs = ResourceSettings(
+        resources=[
+            PoolResourceDemand(name="gpu", quantity=2, kind="gpu"),
+        ]
+    )
+    assert rs.normalized_resources[0].name == "gpu"
+    assert rs.normalized_resources[0].kind == "gpu"
+
+
+def test_merged_resource_demands_keeps_pool_and_typed_fields_separate() -> (
     None
 ):
-    """gpu_count, cpu_count, and memory override duplicate dict keys."""
+    """Pool resources and typed fields become separate kind-based demands."""
     rs = ResourceSettings(
-        pool_resources={"gpu": 9, "mcpu": 1, "memory_mb": 1},
+        resources={"tpu": 2},
         gpu_count=2,
         cpu_count=1.0,
         memory="512MB",
+        gpu_class="h100",
     )
-    merged = rs.merged_requested_resources()
-    assert merged["gpu"] == 2
-    assert merged["mcpu"] == 1000
-    assert merged["memory_mb"] == 512
+    demands = rs.merged_resource_demands()
+    assert demands[0].resource == "tpu"
+    assert demands[0].quantity == 2
+    assert demands[1].kind == "gpu"
+    assert demands[1].resource is None
+    assert demands[1].quantity == 2
+    assert demands[1].class_name == "h100"
+    assert demands[2].kind == "cpu"
+    assert demands[2].unit == "CPU"
+    assert demands[2].quantity == 1
+    assert demands[3].kind == "memory"
+    assert demands[3].unit == ByteUnit.MB.value
+    assert demands[3].quantity == 512
 
 
-def test_merged_requested_resources_gpu_count_zero_clears_gpu() -> None:
-    """gpu_count zero removes gpu from the merged map."""
-    rs = ResourceSettings(pool_resources={"gpu": 2}, gpu_count=0)
-    assert "gpu" not in rs.merged_requested_resources()
+def test_merged_resource_demands_gpu_count_zero_omits_gpu() -> None:
+    """gpu_count zero does not add a GPU demand."""
+    rs = ResourceSettings(gpu_count=0)
+    assert rs.merged_resource_demands() == []
 
 
-def test_merged_requested_resources_legacy_equivalent() -> None:
-    """Behavior matches the former StackComponent.get_requested_resources logic."""
+def test_merged_resource_demands_typed_fields_use_kind_convention() -> None:
+    """Typed fields map to kind/unit conventions instead of resource names."""
     rs = ResourceSettings(cpu_count=2.5, gpu_count=1, memory="1GB")
-    assert rs.merged_requested_resources() == {
-        "gpu": 1,
-        "mcpu": 2500,
-        "memory_mb": 1000,
-    }
+    demands = rs.merged_resource_demands()
+    assert demands[0].kind == "gpu"
+    assert demands[0].quantity == 1
+    assert demands[1].kind == "cpu"
+    assert demands[1].unit == "CPU"
+    assert demands[1].quantity == 3
+    assert demands[2].kind == "memory"
+    assert demands[2].unit == ByteUnit.GB.value
+    assert demands[2].quantity == 1
 
 
-def test_empty_property_excludes_pool_resources() -> None:
-    """empty stays True when only pool_resources is set.
-
-    pool_resources are for resource-pool scheduling; they are not part of the
-    generic resource fields that orchestrators and step operators consume.
-    """
-    rs = ResourceSettings(pool_resources={"x": 1})
+def test_empty_property_excludes_resources() -> None:
+    """empty stays True when only pool resources are configured."""
+    rs = ResourceSettings(resources={"x": 1})
     assert rs.empty is True
+
+
+def test_legacy_preemptible_maps_to_reclaim_tolerance() -> None:
+    """Legacy preemptible input is accepted without storing the field."""
+    rs = ResourceSettings(preemptible=True)
+    assert rs.reclaim_tolerance is ResourceRequestReclaimTolerance.COORDINATED
+    assert "preemptible" not in rs.model_dump()
+
+    rs = ResourceSettings(preemptible=False)
+    assert rs.reclaim_tolerance is ResourceRequestReclaimTolerance.NONE

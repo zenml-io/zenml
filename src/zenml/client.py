@@ -2305,6 +2305,7 @@ class Client(metaclass=ClientMetaClass):
         kind: str,
         attributes: Optional[Dict[str, Any]] = None,
         units: Optional[List[ResourceDescriptorUnit]] = None,
+        description: Optional[str] = None,
     ) -> ResourceDescriptorResponse:
         """Create a resource descriptor.
 
@@ -2313,6 +2314,7 @@ class Client(metaclass=ClientMetaClass):
             kind: The descriptor kind.
             attributes: Descriptor attributes.
             units: Descriptor unit catalog.
+            description: Optional descriptor description.
 
         Returns:
             The created descriptor.
@@ -2320,6 +2322,7 @@ class Client(metaclass=ClientMetaClass):
         request = ResourceDescriptorRequest(
             name=name,
             kind=kind,
+            description=description,
             attributes=attributes or {},
             units=units or [],
         )
@@ -2381,6 +2384,8 @@ class Client(metaclass=ClientMetaClass):
         kind: Optional[str] = None,
         attributes: Optional[Dict[str, Any]] = None,
         units: Optional[List[ResourceDescriptorUnit]] = None,
+        description: Optional[str] = None,
+        clear_description: bool = False,
     ) -> ResourceDescriptorResponse:
         """Update a resource descriptor.
 
@@ -2390,6 +2395,8 @@ class Client(metaclass=ClientMetaClass):
             kind: The new descriptor kind.
             attributes: Replacement descriptor attributes.
             units: Replacement descriptor unit catalog.
+            description: Replacement descriptor description.
+            clear_description: Whether to clear the descriptor description.
 
         Returns:
             The updated descriptor.
@@ -2397,6 +2404,8 @@ class Client(metaclass=ClientMetaClass):
         update = ResourceDescriptorUpdate(
             name=name,
             kind=kind,
+            description=description,
+            clear_description=clear_description,
             attributes=attributes,
             units=units,
         )

@@ -54,6 +54,11 @@ class ResourceDescriptorRequest(UserScopedRequest):
         title="The resource descriptor kind.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    description: Optional[str] = Field(
+        default=None,
+        title="The resource descriptor description.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     attributes: dict[str, Any] = Field(
         default_factory=dict,
         title="The resource descriptor attributes.",
@@ -77,6 +82,15 @@ class ResourceDescriptorUpdate(BaseUpdate):
         title="The new resource descriptor kind.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    description: Optional[str] = Field(
+        default=None,
+        title="The new resource descriptor description.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    clear_description: bool = Field(
+        default=False,
+        title="Whether to clear the resource descriptor description.",
+    )
     attributes: Optional[dict[str, Any]] = Field(
         default=None,
         title="The replacement resource descriptor attributes.",
@@ -97,6 +111,14 @@ class ResourceDescriptorResponseBody(UserScopedResponseBody):
 class ResourceDescriptorResponseMetadata(UserScopedResponseMetadata):
     """Response metadata for resource descriptors."""
 
+    description: Optional[str] = Field(
+        default=None,
+        title="The resource descriptor description.",
+    )
+    is_system: bool = Field(
+        default=False,
+        title="Whether this descriptor is a stock global resource.",
+    )
     attributes: dict[str, Any] = Field(
         default_factory=dict,
         title="The resource descriptor attributes.",
@@ -137,6 +159,24 @@ class ResourceDescriptorResponse(
             The resource descriptor kind.
         """
         return self.get_body().kind
+
+    @property
+    def description(self) -> Optional[str]:
+        """Resource descriptor description.
+
+        Returns:
+            The optional resource descriptor description.
+        """
+        return self.get_metadata().description
+
+    @property
+    def is_system(self) -> bool:
+        """Whether this descriptor is a stock global resource.
+
+        Returns:
+            True when the descriptor is managed by the platform.
+        """
+        return self.get_metadata().is_system
 
     @property
     def attributes(self) -> dict[str, Any]:

@@ -147,6 +147,7 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             RMResourceRequest(
                 name=descriptor.name,
                 kind=descriptor.kind,
+                description=descriptor.description,
                 attributes=descriptor.attributes,
                 units=[
                     RMResourceUnit(name=unit.name, multiplier=unit.multiplier)
@@ -208,6 +209,8 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             RMResourceUpdate(
                 name=update.name,
                 kind=update.kind,
+                description=update.description,
+                clear_description=update.clear_description,
                 attributes=update.attributes,
                 units=(
                     [
@@ -569,15 +572,16 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         Returns:
             The created ZenML resource request response.
         """
+        component_ids = resource_request.component_ids
         response = self._client.create_request(
             RMResourceRequestCreate(
-                subject_id=resource_request.component_id,
+                subject_id=component_ids[0],
                 candidate_subjects=[
                     RMCandidateSubject(
                         subject_id=component_id,
                         subject_type=self.COMPONENT_SUBJECT_TYPE,
                     )
-                    for component_id in resource_request.candidate_component_ids
+                    for component_id in component_ids
                 ],
                 demands=[
                     self._to_rm_demand(demand)
@@ -699,20 +703,6 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             return self._client.get_resource(resource_id).name
         raise ValueError("A resource descriptor ID or name is required.")
 
-    def _resource_id_by_name(self, resource_name: str) -> Optional[UUID]:
-        """Resolve a resource descriptor name to an ID when possible.
-
-        Args:
-            resource_name: Resource descriptor name.
-
-        Returns:
-            The descriptor ID if found, otherwise None.
-        """
-        for resource in self._client.list_resources().items:
-            if resource.name == resource_name:
-                return resource.id
-        return None
-
     def _to_rm_capacity(
         self, entry: ResourcePoolCapacityClass
     ) -> RMPoolCapacityClass:
@@ -824,20 +814,11 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         Returns:
             Resource Manager demand entry.
         """
-        resource_selector = dict(demand.resource_selector or {})
-        if demand.resource is not None:
-            resource_selector.setdefault("name", demand.resource)
-
         return RMRequestDemand(
-            resource_id=(
-                demand.resource_id
-                or (
-                    self._resource_id_by_name(demand.resource)
-                    if demand.resource is not None
-                    else None
-                )
-            ),
-            resource_selector=resource_selector or None,
+            resource_id=demand.resource_id,
+            resource=demand.resource,
+            kind=demand.kind,
+            resource_selector=demand.resource_selector,
             quantity=demand.quantity,
             unit=demand.unit,
             class_name=demand.class_name,
@@ -866,6 +847,8 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
                 kind=response.kind,
             ),
             metadata=ResourceDescriptorResponseMetadata(
+                description=response.description,
+                is_system=response.is_system,
                 attributes=response.attributes,
                 units=[
                     ResourceDescriptorUnit(
@@ -982,17 +965,15 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             ZenML runtime request response.
         """
         created, updated = self._timestamps(None, response.renewed_at)
-        requested_resources = {}
-        for demand in response.demands:
-            resource_name = None
-            if demand.resource_selector:
-                resource_name = demand.resource_selector.get("name")
-            if resource_name is None and demand.resource_id is not None:
-                resource_name = self._client.get_resource(
-                    demand.resource_id
-                ).name
-            if resource_name is not None:
-                requested_resources[resource_name] = demand.quantity
+        component_ids: list[UUID] = []
+        seen_component_ids: set[UUID] = set()
+        for component_id in [response.subject_id, *(
+            candidate.subject_id for candidate in response.candidate_subjects
+        )]:
+            if component_id in seen_component_ids:
+                continue
+            seen_component_ids.add(component_id)
+            component_ids.append(component_id)
 
         return ResourceRequestResponse(
             id=response.id,
@@ -1000,15 +981,10 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
                 created=created,
                 updated=updated,
                 user_id=None,
-                component_id=response.subject_id,
-                candidate_component_ids=[
-                    candidate.subject_id
-                    for candidate in response.candidate_subjects
-                ],
+                component_ids=component_ids,
                 step_run_id=step_run_id,
                 pipeline_run_id=None,
                 pool_id=None,
-                requested_resources=requested_resources,
                 demands=[
                     self._to_request_demand(demand)
                     for demand in response.demands
@@ -1039,16 +1015,14 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         Returns:
             ZenML resource request demand.
         """
-        resource_name = None
-        resource_selector = demand.resource_selector
-        if resource_selector:
-            resource_name = resource_selector.get("name")
+        resource_name = demand.resource
         if resource_name is None and demand.resource_id is not None:
             resource_name = self._client.get_resource(demand.resource_id).name
 
         return ResourceRequestDemand(
             resource_id=demand.resource_id,
             resource=resource_name,
+            kind=demand.kind,
             quantity=demand.quantity,
             unit=demand.unit,
             class_name=demand.class_name,
@@ -1185,10 +1159,14 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             True if the request should be included.
         """
         step_run_id = self._request_step_run_ids.get(response.id)
+        component_ids = {response.subject_id, *(
+            candidate.subject_id for candidate in response.candidate_subjects
+        )}
+        component_matches = filter_model.component_id is None or (
+            filter_model.component_id in component_ids
+        )
         return (
-            self._matches_uuid_filter(
-                response.subject_id, filter_model.component_id
-            )
+            component_matches
             and self._matches_uuid_filter(
                 step_run_id, filter_model.step_run_id
             )
