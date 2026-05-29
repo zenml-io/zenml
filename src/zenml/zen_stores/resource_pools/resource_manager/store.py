@@ -13,14 +13,14 @@
 #  permissions and limitations under the License.
 """Resource pool store backed by the ZenML Pro Resource Manager service."""
 
-import os
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Optional, TypeVar
 from uuid import UUID
 
-import requests
 from pydantic import BaseModel
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from zenml.config.server_config import ServerProConfiguration
 from zenml.enums import ResourceRequestStatus
 from zenml.models import (
     Page,
@@ -30,6 +30,7 @@ from zenml.models import (
     ResourceDescriptorResponseBody,
     ResourceDescriptorResponseMetadata,
     ResourceDescriptorResponseResources,
+    ResourceDescriptorUnit,
     ResourceDescriptorUpdate,
     ResourcePolicyFilter,
     ResourcePolicyGrant,
@@ -41,6 +42,7 @@ from zenml.models import (
     ResourcePolicyUpdate,
     ResourcePoolAllocation,
     ResourcePoolCapacityClass,
+    ResourcePoolCapacityComponentSettings,
     ResourcePoolFilter,
     ResourcePoolLedgerOccupied,
     ResourcePoolQueueItem,
@@ -80,6 +82,7 @@ from zenml.zen_stores.resource_pools.resource_manager.transport import (
     RMResourceRequestCreate,
     RMResourceRequestResponse,
     RMResourceResponse,
+    RMResourceUnit,
     RMResourceUpdate,
     RMSubjectRequest,
 )
@@ -93,13 +96,22 @@ if TYPE_CHECKING:
 PageItemT = TypeVar("PageItemT", bound=BaseModel)
 
 
+class ResourceManagerResourcePoolsStoreSettings(BaseSettings):
+    """Settings used by the Resource Manager resource pool store."""
+
+    url: str
+    token: Optional[str] = None
+    timeout: int = 30
+
+    model_config = SettingsConfigDict(
+        env_prefix="ZENML_PRO_RM_",
+        extra="ignore",
+    )
+
+
 class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
     """Resource pool store facade for ZenML Pro Resource Manager."""
 
-    ENV_RESOURCE_MANAGER_URL = "ZENML_RESOURCE_MANAGER_URL"
-    ENV_RM_URL = "ZENML_RM_URL"
-    ENV_RESOURCE_MANAGER_TOKEN = "ZENML_RESOURCE_MANAGER_TOKEN"
-    ENV_RESOURCE_MANAGER_TIMEOUT = "ZENML_RESOURCE_MANAGER_TIMEOUT"
     COMPONENT_SUBJECT_TYPE = "component"
 
     def __init__(
@@ -112,10 +124,12 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         Args:
             store: SQL ZenStore that owns this backend.
             client: Optional Resource Manager client. If omitted, the client is
-                built from environment variables.
+                built from Resource Manager store settings.
         """
         super().__init__(store=store)
-        self._client = client or self._client_from_environment()
+        self._client = client or self._client_from_settings(
+            ResourceManagerResourcePoolsStoreSettings()
+        )
         self._request_step_run_ids: dict[UUID, UUID] = {}
 
     def create_resource_descriptor(
@@ -134,6 +148,10 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
                 name=descriptor.name,
                 kind=descriptor.kind,
                 attributes=descriptor.attributes,
+                units=[
+                    RMResourceUnit(name=unit.name, multiplier=unit.multiplier)
+                    for unit in descriptor.units
+                ],
                 owner_id=descriptor.user,
             )
         )
@@ -191,6 +209,16 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
                 name=update.name,
                 kind=update.kind,
                 attributes=update.attributes,
+                units=(
+                    [
+                        RMResourceUnit(
+                            name=unit.name, multiplier=unit.multiplier
+                        )
+                        for unit in update.units
+                    ]
+                    if update.units is not None
+                    else None
+                ),
             ),
         )
         return self._to_descriptor_response(response)
@@ -520,14 +548,13 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             component_id: The ZenML stack component being deleted.
 
         Raises:
-            requests.HTTPError: If Resource Manager fails for any reason other
-                than the subject not existing.
+            Exception: If Resource Manager fails for any reason other than the
+                subject not existing.
         """
         try:
             self._client.delete_subject(component_id)
-        except requests.HTTPError as error:
-            if error.response is None or error.response.status_code != 404:
-                raise
+        except KeyError:
+            pass
 
     def create_resource_request(
         self, session: "Session", resource_request: ResourceRequestRequest
@@ -569,31 +596,27 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             step_run_id=resource_request.step_run_id,
         )
 
-    def _client_from_environment(self) -> ResourceManagerClient:
-        """Create a Resource Manager client from environment variables.
+    def _client_from_settings(
+        self, settings: ResourceManagerResourcePoolsStoreSettings
+    ) -> ResourceManagerClient:
+        """Create a Resource Manager client from store settings.
 
         Returns:
             A configured Resource Manager client.
-
-        Raises:
-            RuntimeError: If the Resource Manager URL is missing.
         """
-        base_url = os.getenv(self.ENV_RESOURCE_MANAGER_URL) or os.getenv(
-            self.ENV_RM_URL
-        )
-        if not base_url:
-            raise RuntimeError(
-                f"Set {self.ENV_RESOURCE_MANAGER_URL} to enable the "
-                "Resource Manager resource pool store."
-            )
-
-        headers = {}
-        if token := os.getenv(self.ENV_RESOURCE_MANAGER_TOKEN):
+        pro_config = ServerProConfiguration.get_server_config()
+        headers = {
+            ResourceManagerClient.ORGANIZATION_HEADER: str(
+                pro_config.organization_id
+            ),
+        }
+        if token := settings.token:
             headers["Authorization"] = f"Bearer {token}"
 
-        timeout = int(os.getenv(self.ENV_RESOURCE_MANAGER_TIMEOUT, "30"))
         return ResourceManagerClient(
-            base_url=base_url, timeout=timeout, headers=headers
+            base_url=settings.url,
+            timeout=settings.timeout,
+            headers=headers,
         )
 
     def _ensure_component_subject(self, component_id: UUID) -> None:
@@ -603,8 +626,8 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             component_id: ZenML stack component ID.
 
         Raises:
-            requests.HTTPError: If Resource Manager fails for any reason other
-                than the subject not existing.
+            Exception: If Resource Manager fails for any reason other than the
+                subject not existing.
         """
         subject = RMSubjectRequest(
             subject_id=component_id,
@@ -613,9 +636,7 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         )
         try:
             self._client.get_subject(component_id)
-        except requests.HTTPError as error:
-            if error.response is None or error.response.status_code != 404:
-                raise
+        except KeyError:
             self._client.create_subject(subject)
         else:
             self._client.update_subject(component_id, subject)
@@ -707,11 +728,75 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             resource=self._resource_name(entry.resource_id, entry.resource),
             class_name=entry.class_name,
             quantity=entry.quantity,
+            unit=entry.unit,
             rank=entry.rank,
             reclaimable=entry.reclaimable,
             attributes=entry.attributes,
-            subject_settings=entry.subject_settings,
+            subject_settings=self._to_rm_subject_settings(
+                entry.component_settings
+            ),
         )
+
+    def _to_rm_subject_settings(
+        self,
+        component_settings: list[ResourcePoolCapacityComponentSettings],
+    ) -> list[dict[str, Any]]:
+        """Convert ZenML component settings to RM subject settings.
+
+        Args:
+            component_settings: ZenML capacity class component settings.
+
+        Returns:
+            Resource Manager subject settings payloads.
+        """
+        return [
+            {
+                "subject_type": self.COMPONENT_SUBJECT_TYPE,
+                "subject_selector": {
+                    "component_type": entry.component_type,
+                    "flavor": entry.flavor,
+                },
+                "settings": entry.settings,
+            }
+            for entry in component_settings
+        ]
+
+    def _from_rm_subject_settings(
+        self,
+        subject_settings: list[dict[str, Any]],
+    ) -> list[ResourcePoolCapacityComponentSettings]:
+        """Convert RM subject settings to ZenML component settings.
+
+        Args:
+            subject_settings: Resource Manager subject settings payloads.
+
+        Returns:
+            ZenML capacity class component settings.
+
+        Raises:
+            ValueError: If a subject settings entry is not for a component.
+        """
+        from zenml.enums import StackComponentType
+
+        component_settings: list[ResourcePoolCapacityComponentSettings] = []
+        for entry in subject_settings:
+            subject_type = entry.get("subject_type")
+            if subject_type != self.COMPONENT_SUBJECT_TYPE:
+                raise ValueError(
+                    "Resource Manager subject settings must use subject_type "
+                    f"'{self.COMPONENT_SUBJECT_TYPE}', got {subject_type!r}."
+                )
+            selector = entry.get("subject_selector") or {}
+            component_settings.append(
+                ResourcePoolCapacityComponentSettings(
+                    component_type=StackComponentType(
+                        selector["component_type"]
+                    ),
+                    flavor=selector["flavor"],
+                    settings=entry.get("settings") or {},
+                )
+            )
+        return component_settings
 
     def _to_rm_grant(self, grant: ResourcePolicyGrant) -> RMPolicyGrant:
         """Convert a ZenML policy grant to an RM payload entry.
@@ -727,6 +812,7 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             classes=grant.classes,
             reserved=grant.reserved,
             limit=grant.limit,
+            unit=grant.unit,
         )
 
     def _to_rm_demand(self, demand: ResourceRequestDemand) -> RMRequestDemand:
@@ -753,6 +839,7 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             ),
             resource_selector=resource_selector or None,
             quantity=demand.quantity,
+            unit=demand.unit,
             class_name=demand.class_name,
             class_selector=demand.class_selector,
         )
@@ -779,7 +866,13 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
                 kind=response.kind,
             ),
             metadata=ResourceDescriptorResponseMetadata(
-                attributes=response.attributes
+                attributes=response.attributes,
+                units=[
+                    ResourceDescriptorUnit(
+                        name=unit.name, multiplier=unit.multiplier
+                    )
+                    for unit in response.units
+                ],
             ),
             resources=ResourceDescriptorResponseResources(),
         )
@@ -809,10 +902,13 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
                         resource=entry.resource,
                         class_name=entry.class_name,
                         quantity=entry.quantity,
+                        unit=entry.unit,
                         rank=entry.rank,
                         reclaimable=entry.reclaimable,
                         attributes=entry.attributes,
-                        subject_settings=entry.subject_settings,
+                        component_settings=self._from_rm_subject_settings(
+                            entry.subject_settings
+                        ),
                     )
                     for entry in response.capacity
                 ],
@@ -861,6 +957,7 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
                         classes=grant.classes,
                         reserved=grant.reserved,
                         limit=grant.limit,
+                        unit=grant.unit,
                     )
                     for grant in response.grants
                 ],
@@ -953,6 +1050,7 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             resource_id=demand.resource_id,
             resource=resource_name,
             quantity=demand.quantity,
+            unit=demand.unit,
             class_name=demand.class_name,
             resource_selector=demand.resource_selector,
             class_selector=demand.class_selector,
@@ -996,6 +1094,8 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             resource_id=response.resource_id,
             class_name=response.class_name,
             quantity=response.quantity,
+            unit=response.unit,
+            base_quantity=response.base_quantity,
             policy_id=response.admitted_by_policy_id,
             grant_id=response.resolved_grant_id,
             priority=response.allocation_priority,

@@ -53,6 +53,12 @@ class ResourcePolicyGrant(BaseZenModel):
     limit: NonNegativeInt = Field(
         title="The hard usage limit for this grant.",
     )
+    unit: Optional[str] = Field(
+        default=None,
+        title="The optional unit for reserved and limit.",
+        min_length=1,
+        max_length=64,
+    )
 
     @model_validator(mode="after")
     def _validate_limit(self) -> "ResourcePolicyGrant":

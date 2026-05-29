@@ -23,6 +23,7 @@ from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import StringFilterOption
 from zenml.models.v2.base.base import BaseZenModel
+from zenml.enums import StackComponentType
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
     UserScopedRequest,
@@ -40,6 +41,22 @@ class ResourcePoolReclaimable(StrEnum):
     NEVER = "never"
     COORDINATED = "coordinated"
     UNSAFE = "unsafe"
+
+
+class ResourcePoolCapacityComponentSettings(BaseZenModel):
+    """Stack component settings applied when a capacity class is allocated."""
+
+    component_type: StackComponentType = Field(
+        title="The stack component type to apply settings to.",
+    )
+    flavor: str = Field(
+        title="The stack component flavor to apply settings to.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    settings: dict[str, Any] = Field(
+        default_factory=dict,
+        title="The stack component settings to apply on allocation.",
+    )
 
 
 class ResourcePoolCapacityClass(BaseZenModel):
@@ -61,6 +78,12 @@ class ResourcePoolCapacityClass(BaseZenModel):
         max_length=STR_FIELD_MAX_LENGTH,
     )
     quantity: PositiveInt = Field(title="The declared capacity quantity.")
+    unit: Optional[str] = Field(
+        default=None,
+        title="The optional unit for the declared capacity quantity.",
+        min_length=1,
+        max_length=64,
+    )
     rank: int = Field(title="The precedence rank for this capacity class.")
     reclaimable: ResourcePoolReclaimable = Field(
         title="The capacity reclaim behavior."
@@ -69,10 +92,9 @@ class ResourcePoolCapacityClass(BaseZenModel):
         default_factory=dict,
         title="Metadata for matching and display.",
     )
-    subject_settings: list[dict[str, Any]] = Field(
+    component_settings: list[ResourcePoolCapacityComponentSettings] = Field(
         default_factory=list,
-        title="Resource Manager subject settings snapshots.",
-        exclude=True,
+        title="Stack component settings applied when this capacity class is allocated.",
     )
 
     model_config = ConfigDict(populate_by_name=True)
@@ -256,6 +278,16 @@ class ResourcePoolAllocation(BaseZenModel):
         title="The allocated capacity class.",
     )
     quantity: PositiveInt = Field(title="The allocated quantity.")
+    unit: Optional[str] = Field(
+        default=None,
+        title="The optional unit for the allocated quantity.",
+        min_length=1,
+        max_length=64,
+    )
+    base_quantity: Optional[PositiveInt] = Field(
+        default=None,
+        title="The allocated quantity converted to the descriptor base unit.",
+    )
     policy_id: UUID = Field(title="The policy that admitted this allocation.")
     grant_id: UUID = Field(title="The policy grant that matched the demand.")
     priority: int = Field(title="The priority snapshot for this allocation.")

@@ -66,6 +66,12 @@ class ResourceRequestDemand(BaseZenModel):
         title="The exact resource descriptor name.",
     )
     quantity: PositiveInt = Field(title="The resource quantity requested.")
+    unit: Optional[str] = Field(
+        default=None,
+        title="The optional unit for the requested quantity.",
+        min_length=1,
+        max_length=64,
+    )
     class_name: Optional[str] = Field(
         default=None,
         alias="class",

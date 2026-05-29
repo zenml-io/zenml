@@ -27,12 +27,20 @@ from pydantic import BaseModel, ConfigDict, Field
 from zenml.models.v2.core.resource_pool import ResourcePoolReclaimable
 
 
+class RMResourceUnit(BaseModel):
+    """Resource descriptor unit entry for the Resource Manager API."""
+
+    name: str
+    multiplier: int
+
+
 class RMResourceRequest(BaseModel):
     """Resource descriptor create payload for the Resource Manager API."""
 
     name: str
     kind: str
     attributes: dict[str, Any] = Field(default_factory=dict)
+    units: list[RMResourceUnit] = Field(default_factory=list)
     owner_id: Optional[UUID] = None
 
 
@@ -42,6 +50,7 @@ class RMResourceUpdate(BaseModel):
     name: Optional[str] = None
     kind: Optional[str] = None
     attributes: Optional[dict[str, Any]] = None
+    units: Optional[list[RMResourceUnit]] = None
 
 
 class RMResourceResponse(BaseModel):
@@ -52,6 +61,7 @@ class RMResourceResponse(BaseModel):
     name: str
     kind: str
     attributes: dict[str, Any]
+    units: list[RMResourceUnit] = Field(default_factory=list)
     owner_id: Optional[UUID] = None
     created: Optional[datetime] = None
     updated: Optional[datetime] = None
@@ -70,6 +80,7 @@ class RMPoolCapacityClass(BaseModel):
     resource: str
     class_name: str = Field(alias="class", serialization_alias="class")
     quantity: int
+    unit: Optional[str] = None
     rank: int
     reclaimable: ResourcePoolReclaimable
     attributes: dict[str, Any] = Field(default_factory=dict)
@@ -85,6 +96,7 @@ class RMPoolCapacityClassResponse(BaseModel):
     resource: Optional[str] = None
     class_name: str = Field(alias="class", serialization_alias="class")
     quantity: int
+    unit: Optional[str] = None
     rank: int
     reclaimable: ResourcePoolReclaimable
     attributes: dict[str, Any] = Field(default_factory=dict)
@@ -173,6 +185,7 @@ class RMPolicyGrant(BaseModel):
     classes: list[str]
     reserved: int = 0
     limit: int
+    unit: Optional[str] = None
 
 
 class RMPolicyGrantResponse(BaseModel):
@@ -183,6 +196,7 @@ class RMPolicyGrantResponse(BaseModel):
     classes: list[str]
     reserved: int = 0
     limit: int
+    unit: Optional[str] = None
 
 
 class RMPolicyRequest(BaseModel):
@@ -228,6 +242,7 @@ class RMRequestDemand(BaseModel):
 
     resource_id: Optional[UUID] = None
     quantity: int
+    unit: Optional[str] = None
     class_name: Optional[str] = Field(
         default=None,
         alias="class",
@@ -308,6 +323,8 @@ class RMAllocationResponse(BaseModel):
     resource_id: UUID
     class_name: str = Field(alias="class", serialization_alias="class")
     quantity: int
+    unit: Optional[str] = None
+    base_quantity: Optional[int] = None
     admitted_by_policy_id: UUID
     resolved_grant_id: UUID
     allocation_priority: int
