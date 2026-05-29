@@ -1,5 +1,39 @@
 <!-- markdown-link-check-disable -->
 
+# 0.94.5
+
+## What's Changed
+* Add version 0.94.3 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4828
+* Document the organization trusted domain feature by @stefannica in https://github.com/zenml-io/zenml/pull/4819
+* Add 0.94.4 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4829
+* Add option to mount build cache during python package installation by @schustmi in https://github.com/zenml-io/zenml/pull/4820
+* Fix CLI page info formatting by @strickvl in https://github.com/zenml-io/zenml/pull/4834
+* Fail a pipeline run if failing to import the user pipeline function by @schustmi in https://github.com/zenml-io/zenml/pull/4832
+* Only run DB backup/restore tests on local code version by @schustmi in https://github.com/zenml-io/zenml/pull/4831
+* Improved keyboard interrupt handling in active wait conditions by @schustmi in https://github.com/zenml-io/zenml/pull/4835
+* Bump the minor-and-patch group across 1 directory with 5 updates by @dependabot[bot] in https://github.com/zenml-io/zenml/pull/4847
+* Support string type annotations by @schustmi in https://github.com/zenml-io/zenml/pull/4843
+* Add agentic human-in-the-loop pipeline example by @htahir1 in https://github.com/zenml-io/zenml/pull/4849
+* Better string parsing during interactive wait condition resolving by @schustmi in https://github.com/zenml-io/zenml/pull/4845
+* Fix CLI tests in CI by @schustmi in https://github.com/zenml-io/zenml/pull/4850
+* Fixes for the logging env variables by @bcdurak in https://github.com/zenml-io/zenml/pull/4851
+* Fix GCP Cloud Run deployer timeout for internal/authenticated services by @safoinme in https://github.com/zenml-io/zenml/pull/4700
+* Structured logs and OTel Instrumentation for ZenML Server by @amitvikramraj in https://github.com/zenml-io/zenml/pull/4781
+* made shutdown_otel function idempotent and added support for individually enabling otel signals by @amitvikramraj in https://github.com/zenml-io/zenml/pull/4857
+* Bump actions/github-script from 8.0.0 to 9.0.0 by @dependabot[bot] in https://github.com/zenml-io/zenml/pull/4750
+* Allow streaming events while running a pipeline by @schustmi in https://github.com/zenml-io/zenml/pull/4804
+* fix: scoped sqlalchemy otel instrumentation to server sql engine by @amitvikramraj in https://github.com/zenml-io/zenml/pull/4858
+* fix(users): correct copy-paste bug in active status update by @sebastiondev in https://github.com/zenml-io/zenml/pull/4839
+* feat: supporting standard OTel env vars for zenml-server OTel configuration by @amitvikramraj in https://github.com/zenml-io/zenml/pull/4861
+* Richer WanDB integration by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4838
+* Run statistics endpoint by @schustmi in https://github.com/zenml-io/zenml/pull/4860
+
+## New Contributors
+* @sebastiondev made their first contribution in https://github.com/zenml-io/zenml/pull/4839
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.94.4...0.94.5
+
+
 > **Note:** This file is no longer actively maintained. For the latest release notes, please visit the [ZenML Changelog](https://docs.zenml.io/changelog). Historical release notes are also available in [GitHub Releases](https://github.com/zenml-io/zenml/releases).
 
 ---
