@@ -14,11 +14,17 @@
 """Synchronous client for the ZenML Pro Resource Manager service."""
 
 from typing import Any, Optional, Type, TypeVar
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import requests
 from pydantic import BaseModel
+from requests.adapters import HTTPAdapter, Retry
 
+from zenml.exceptions import (
+    CredentialsNotValid,
+    EntityExistsError,
+    IllegalOperationError,
+)
 from zenml.zen_stores.resource_pools.resource_manager.transport import (
     RMAllocationListResponse,
     RMPolicyListResponse,
@@ -44,8 +50,68 @@ from zenml.zen_stores.resource_pools.resource_manager.transport import (
 ModelT = TypeVar("ModelT", bound=BaseModel)
 
 
+def _error_message_from_response(response: requests.Response) -> str:
+    """Extract a human-readable error message from a Resource Manager response.
+
+    Args:
+        response: Failed HTTP response from Resource Manager.
+
+    Returns:
+        Error message text suitable for ZenML exceptions.
+    """
+    try:
+        payload = response.json()
+    except requests.JSONDecodeError:
+        return response.text
+
+    if not isinstance(payload, dict):
+        return response.text
+
+    detail = payload.get("detail", response.text)
+    if isinstance(detail, str):
+        return detail
+    if isinstance(detail, list):
+        return ": ".join(str(item) for item in detail)
+    return response.text
+
+
+def _exception_from_rm_response(response: requests.Response) -> Exception:
+    """Map a Resource Manager HTTP error to a ZenML store exception.
+
+    Resource Manager returns FastAPI-style ``{"detail": "..."}`` bodies. These
+    are translated to the same exception types the workspace REST API already
+    maps to HTTP status codes.
+
+    Args:
+        response: Failed HTTP response from Resource Manager.
+
+    Returns:
+        Exception to raise to workspace callers.
+    """
+    message = _error_message_from_response(response)
+    status_code = response.status_code
+
+    if status_code == 404:
+        return KeyError(message)
+    if status_code == 409:
+        return EntityExistsError(message)
+    if status_code in {400, 422}:
+        return ValueError(message)
+    if status_code == 403:
+        return IllegalOperationError(message)
+    if status_code == 401:
+        return CredentialsNotValid(message)
+
+    return RuntimeError(
+        f"{status_code} HTTP Error received from Resource Manager: {message}"
+    )
+
+
 class ResourceManagerClient:
     """Minimal synchronous client for the Resource Manager REST API."""
+
+    IDEMPOTENCY_HEADER = "X-Idempotency-Key"
+    ORGANIZATION_HEADER = "X-Test-Organization-Id"
 
     def __init__(
         self,
@@ -66,6 +132,7 @@ class ResourceManagerClient:
         self._base_url = base_url.rstrip("/")
         self._timeout = timeout
         self._session = session or requests.Session()
+        self._configure_session(self._session)
         self._headers = headers or {}
 
     def create_resource(
@@ -460,12 +527,54 @@ class ResourceManagerClient:
         if json is not None:
             payload = json.model_dump(mode="json", by_alias=True)
 
+        headers = {
+            **self._headers,
+            self.IDEMPOTENCY_HEADER: str(uuid4()),
+        }
         response = self._session.request(
             method=method,
             url=f"{self._base_url}{path}",
-            headers=self._headers,
+            headers=headers,
             json=payload,
             timeout=self._timeout,
         )
-        response.raise_for_status()
+        if response.status_code >= 400:
+            raise _exception_from_rm_response(response)
         return response
+
+    def _configure_session(self, session: requests.Session) -> None:
+        """Configure session retry behavior for transient HTTP failures.
+
+        This mirrors the REST ZenStore client behavior so transient network
+        and upstream availability issues are retried consistently.
+
+        Args:
+            session: Session to configure.
+        """
+        retries = Retry(
+            connect=5,
+            read=8,
+            redirect=3,
+            status=10,
+            allowed_methods=[
+                "HEAD",
+                "GET",
+                "POST",
+                "PUT",
+                "PATCH",
+                "DELETE",
+                "OPTIONS",
+            ],
+            status_forcelist=[
+                408,  # Request Timeout
+                429,  # Too Many Requests
+                502,  # Bad Gateway
+                503,  # Service Unavailable
+                504,  # Gateway Timeout
+            ],
+            other=3,
+            backoff_factor=1,
+        )
+        http_adapter = HTTPAdapter(max_retries=retries)
+        session.mount("https://", http_adapter)
+        session.mount("http://", http_adapter)

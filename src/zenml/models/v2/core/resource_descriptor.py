@@ -16,10 +16,10 @@
 from typing import Any, ClassVar, List, Optional, Union
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, PositiveInt
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.base import BaseUpdate, BaseZenModel
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
     UserScopedRequest,
@@ -28,6 +28,19 @@ from zenml.models.v2.base.scoped import (
     UserScopedResponseMetadata,
     UserScopedResponseResources,
 )
+
+
+class ResourceDescriptorUnit(BaseZenModel):
+    """Unit entry for a resource descriptor."""
+
+    name: str = Field(
+        title="The resource unit name.",
+        min_length=1,
+        max_length=64,
+    )
+    multiplier: PositiveInt = Field(
+        title="The positive multiplier over the descriptor base unit.",
+    )
 
 
 class ResourceDescriptorRequest(UserScopedRequest):
@@ -44,6 +57,10 @@ class ResourceDescriptorRequest(UserScopedRequest):
     attributes: dict[str, Any] = Field(
         default_factory=dict,
         title="The resource descriptor attributes.",
+    )
+    units: list[ResourceDescriptorUnit] = Field(
+        default_factory=list,
+        title="The resource descriptor unit catalog.",
     )
 
 
@@ -64,6 +81,10 @@ class ResourceDescriptorUpdate(BaseUpdate):
         default=None,
         title="The replacement resource descriptor attributes.",
     )
+    units: Optional[list[ResourceDescriptorUnit]] = Field(
+        default=None,
+        title="The replacement resource descriptor unit catalog.",
+    )
 
 
 class ResourceDescriptorResponseBody(UserScopedResponseBody):
@@ -79,6 +100,10 @@ class ResourceDescriptorResponseMetadata(UserScopedResponseMetadata):
     attributes: dict[str, Any] = Field(
         default_factory=dict,
         title="The resource descriptor attributes.",
+    )
+    units: list[ResourceDescriptorUnit] = Field(
+        default_factory=list,
+        title="The resource descriptor unit catalog.",
     )
 
 
@@ -121,6 +146,15 @@ class ResourceDescriptorResponse(
             The descriptor attributes.
         """
         return self.get_metadata().attributes
+
+    @property
+    def units(self) -> list[ResourceDescriptorUnit]:
+        """Resource descriptor unit catalog.
+
+        Returns:
+            The resource descriptor units.
+        """
+        return self.get_metadata().units
 
 
 class ResourceDescriptorFilter(UserScopedFilter):

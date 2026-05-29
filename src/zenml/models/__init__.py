@@ -263,6 +263,7 @@ from zenml.models.v2.core.resource_descriptor import (
     ResourceDescriptorResponseBody,
     ResourceDescriptorResponseMetadata,
     ResourceDescriptorResponseResources,
+    ResourceDescriptorUnit,
     ResourceDescriptorUpdate,
 )
 from zenml.models.v2.core.resource_policy import (
@@ -278,6 +279,7 @@ from zenml.models.v2.core.resource_policy import (
 from zenml.models.v2.core.resource_pool import (
     ResourcePoolAllocation,
     ResourcePoolCapacityClass,
+    ResourcePoolCapacityComponentSettings,
     ResourcePoolFilter,
     ResourcePoolLedgerOccupied,
     ResourcePoolQueueItem,
@@ -862,6 +864,7 @@ __all__ = [
     "ResourcePoolResponseMetadata",
     "ResourcePoolResponseResources",
     "ResourcePoolCapacityClass",
+    "ResourcePoolCapacityComponentSettings",
     "ResourcePoolLedgerOccupied",
     "ResourcePoolAllocation",
     "ResourcePoolQueueItem",
