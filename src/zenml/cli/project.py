@@ -56,7 +56,6 @@ def list_projects(
         output_format: Format for output (table/json/yaml/csv/tsv).
         **kwargs: Keyword arguments to filter the list of projects.
     """
-    check_zenml_pro_project_availability()
     client = Client()
     with console.status("Listing projects...\n"):
         projects = client.list_projects(**kwargs, hydrate=True)
@@ -81,6 +80,7 @@ def list_projects(
         row_generator=cli_utils.generate_project_row,
         active_id=active_project_id,
     )
+    check_zenml_pro_project_availability()
 
 
 @project.command("register")
@@ -119,7 +119,6 @@ def register_project(
         display_name: The display name of the project.
         set_default: Whether to set the project as the default project.
     """
-    check_zenml_pro_project_availability()
     client = Client()
     with console.status("Creating project...\n"):
         try:
@@ -146,6 +145,7 @@ def register_project(
         cli_utils.success(
             f"✔ The default project has been set to {project.name}"
         )
+    check_zenml_pro_project_availability()
 
 
 @project.command("set")
@@ -163,7 +163,6 @@ def set_project(project_name_or_id: str, default: bool = False) -> None:
         project_name_or_id: The name or ID of the project to set as active.
         default: Whether to set the project as the default project.
     """
-    check_zenml_pro_project_availability()
     client = Client()
     with console.status("Setting project...\n"):
         try:
@@ -182,6 +181,7 @@ def set_project(project_name_or_id: str, default: bool = False) -> None:
         cli_utils.declare(
             f"The default project has been set to {project.name}"
         )
+    check_zenml_pro_project_availability()
 
 
 @project.command("describe")
@@ -192,7 +192,6 @@ def describe_project(project_name_or_id: Optional[str] = None) -> None:
     Args:
         project_name_or_id: The name or ID of the project to set as active.
     """
-    check_zenml_pro_project_availability()
     client = Client()
     if not project_name_or_id:
         active_project = client.active_project
@@ -208,6 +207,7 @@ def describe_project(project_name_or_id: Optional[str] = None) -> None:
             cli_utils.print_pydantic_models(
                 [project_], exclude_columns=["created", "updated"]
             )
+    check_zenml_pro_project_availability()
 
 
 @project.command("delete")
@@ -218,7 +218,6 @@ def delete_project(project_name_or_id: str) -> None:
     Args:
         project_name_or_id: The name or ID of the project to delete.
     """
-    check_zenml_pro_project_availability()
     client = Client()
     with console.status("Deleting project...\n"):
         try:
@@ -228,3 +227,4 @@ def delete_project(project_name_or_id: str) -> None:
             )
         except Exception as e:
             cli_utils.exception(e)
+    check_zenml_pro_project_availability()
