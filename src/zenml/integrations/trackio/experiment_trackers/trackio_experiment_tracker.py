@@ -66,13 +66,13 @@ class TrackioExperimentTracker(BaseExperimentTracker):
         if self.config.hf_token:
             previous_token: Optional[str] = os.environ.get(HF_TOKEN_ENV_VAR)
 
-        setattr(
-            info,
-            "_trackio_previous_hf_token",
-            previous_token,
-        )
+            setattr(
+                info,
+                "_trackio_previous_hf_token",
+                previous_token,
+            )
 
-        os.environ[HF_TOKEN_ENV_VAR] = self.config.hf_token
+            os.environ[HF_TOKEN_ENV_VAR] = self.config.hf_token
 
         settings = cast(
             TrackioExperimentTrackerSettings,
