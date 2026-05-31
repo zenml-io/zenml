@@ -182,6 +182,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
+    resource_request_id: Optional[UUID] = Field(nullable=True)
 
     # Relationships
     project: "ProjectSchema" = Relationship(back_populates="step_runs")
@@ -480,6 +481,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             created=self.created,
             updated=self.updated,
             model_version_id=self.model_version_id,
+            resource_request_id=self.resource_request_id,
             substitutions=step.config.substitutions,
             heartbeat_threshold=self.heartbeat_threshold,
         )

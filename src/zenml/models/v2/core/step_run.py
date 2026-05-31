@@ -255,6 +255,11 @@ class StepRunResponseBody(ProjectScopedResponseBody):
         "configured by this step run explicitly.",
         default=None,
     )
+    resource_request_id: Optional[UUID] = Field(
+        title="The ID of an externally managed resource request for the "
+        "step run.",
+        default=None,
+    )
     substitutions: Dict[str, str] = Field(
         title="The substitutions of the step run.",
         default={},
@@ -739,6 +744,15 @@ class StepRunResponse(
             the value of the property.
         """
         return self.get_resources().model_version
+
+    @property
+    def resource_request_id(self) -> Optional[UUID]:
+        """The `resource_request_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().resource_request_id
 
     @property
     def resource_request(self) -> Optional["ResourceRequestResponse"]:

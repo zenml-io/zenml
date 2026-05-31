@@ -18,7 +18,6 @@ from zenml.models import (
     ResourcePoolRequest,
     ResourcePoolSubjectPolicyRequest,
     ResourcePoolUpdate,
-    ResourceRequestRequest,
 )
 from zenml.zen_stores.schemas.resource_pool_schemas import (
     ResourcePoolQueueSchema,
