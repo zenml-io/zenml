@@ -43,8 +43,6 @@ from zenml.zen_stores.resource_pools.resource_manager.transport import (
     RMResourceRequestResponse,
     RMResourceResponse,
     RMResourceUpdate,
-    RMSubjectRequest,
-    RMSubjectResponse,
 )
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
@@ -163,14 +161,31 @@ class ResourceManagerClient:
             "GET", f"/v1/resources/{resource_id}", RMResourceResponse
         )
 
-    def list_resources(self) -> RMResourceListResponse:
+    def list_resources(
+        self,
+        *,
+        resource_id: Optional[UUID] = None,
+        name: Optional[str] = None,
+        metadata: Optional[dict[str, str]] = None,
+    ) -> RMResourceListResponse:
         """List Resource Manager resource descriptors.
 
+        Args:
+            resource_id: When set, return only the descriptor with this id.
+            name: When set, return only descriptors with this exact name.
+            metadata: Optional exact-match filters against opaque entity
+                metadata. Each entry is sent as a query parameter.
+
         Returns:
-            A list wrapper containing all descriptors.
+            A list wrapper containing matching descriptors.
         """
+        params = self._list_params(
+            metadata=metadata,
+            resource_id=resource_id,
+            name=name,
+        )
         return self._request_model(
-            "GET", "/v1/resources", RMResourceListResponse
+            "GET", "/v1/resources", RMResourceListResponse, params=params
         )
 
     def update_resource(
@@ -226,14 +241,31 @@ class ResourceManagerClient:
             "GET", f"/v1/resource-pools/{pool_id}", RMPoolResponse
         )
 
-    def list_pools(self) -> RMPoolListResponse:
+    def list_pools(
+        self,
+        *,
+        pool_id: Optional[UUID] = None,
+        name: Optional[str] = None,
+        metadata: Optional[dict[str, str]] = None,
+    ) -> RMPoolListResponse:
         """List Resource Manager resource pools.
 
+        Args:
+            pool_id: When set, return only the pool with this id.
+            name: When set, return only pools with this exact name.
+            metadata: Optional exact-match filters against opaque entity
+                metadata. Each entry is sent as a query parameter.
+
         Returns:
-            A list wrapper containing all pools.
+            A list wrapper containing matching pools.
         """
+        params = self._list_params(
+            metadata=metadata,
+            pool_id=pool_id,
+            name=name,
+        )
         return self._request_model(
-            "GET", "/v1/resource-pools", RMPoolListResponse
+            "GET", "/v1/resource-pools", RMPoolListResponse, params=params
         )
 
     def update_pool(
@@ -293,58 +325,45 @@ class ResourceManagerClient:
             RMAllocationListResponse,
         )
 
-    def get_subject(self, subject_id: UUID) -> RMSubjectResponse:
-        """Fetch an internal Resource Manager subject.
+    def list_policies(
+        self,
+        *,
+        policy_id: Optional[UUID] = None,
+        pool_id: Optional[UUID] = None,
+        pool: Optional[str] = None,
+        subject_id: Optional[UUID] = None,
+        priority: Optional[int] = None,
+        metadata: Optional[dict[str, str]] = None,
+    ) -> RMPolicyListResponse:
+        """List Resource Manager policies.
 
         Args:
-            subject_id: Subject ID.
+            policy_id: When set, return only the policy with this id.
+            pool_id: When set, return only policies bound to this pool id.
+            pool: When set, return only policies bound to this pool name.
+            subject_id: When set, return only policies whose selector
+                references this subject id.
+            priority: When set, return only policies with this exact priority.
+            metadata: Optional exact-match filters against opaque entity
+                metadata. Each entry is sent as a query parameter.
 
         Returns:
-            The requested subject.
+            A list wrapper containing matching policies.
         """
-        return self._request_model(
-            "GET", f"/v1/subjects/{subject_id}", RMSubjectResponse
+        params = self._list_params(
+            metadata=metadata,
+            policy_id=policy_id,
+            pool_id=pool_id,
+            pool=pool,
+            subject_id=subject_id,
+            priority=priority,
         )
-
-    def create_subject(self, request: RMSubjectRequest) -> RMSubjectResponse:
-        """Create an internal Resource Manager subject.
-
-        Args:
-            request: Subject create payload.
-
-        Returns:
-            The created subject.
-        """
         return self._request_model(
-            "POST", "/v1/subjects", RMSubjectResponse, json=request
+            "GET",
+            "/v1/resource-policies",
+            RMPolicyListResponse,
+            params=params,
         )
-
-    def update_subject(
-        self, subject_id: UUID, request: RMSubjectRequest
-    ) -> RMSubjectResponse:
-        """Update an internal Resource Manager subject.
-
-        Args:
-            subject_id: Subject ID.
-            request: Subject update payload.
-
-        Returns:
-            The updated subject.
-        """
-        return self._request_model(
-            "PATCH",
-            f"/v1/subjects/{subject_id}",
-            RMSubjectResponse,
-            json=request,
-        )
-
-    def delete_subject(self, subject_id: UUID) -> None:
-        """Delete an internal Resource Manager subject.
-
-        Args:
-            subject_id: Subject ID.
-        """
-        self._request("DELETE", f"/v1/subjects/{subject_id}")
 
     def create_policy(self, request: RMPolicyRequest) -> RMPolicyResponse:
         """Create a Resource Manager policy.
@@ -370,16 +389,6 @@ class ResourceManagerClient:
         """
         return self._request_model(
             "GET", f"/v1/resource-policies/{policy_id}", RMPolicyResponse
-        )
-
-    def list_policies(self) -> RMPolicyListResponse:
-        """List Resource Manager policies.
-
-        Returns:
-            A list wrapper containing all policies.
-        """
-        return self._request_model(
-            "GET", "/v1/resource-policies", RMPolicyListResponse
         )
 
     def update_policy(
@@ -442,16 +451,46 @@ class ResourceManagerClient:
             RMResourceRequestResponse,
         )
 
-    def list_requests(self) -> RMResourceRequestListResponse:
+    def list_requests(
+        self,
+        *,
+        request_id: Optional[UUID] = None,
+        subject_id: Optional[UUID] = None,
+        status: Optional[str] = None,
+        reclaim_tolerance: Optional[str] = None,
+        preemption_initiated_by_id: Optional[UUID] = None,
+        metadata: Optional[dict[str, str]] = None,
+    ) -> RMResourceRequestListResponse:
         """List runtime Resource Manager requests.
 
+        Args:
+            request_id: When set, return only the request with this id.
+            subject_id: When set, return only requests that include this
+                subject id.
+            status: When set, return only requests in this lifecycle state.
+            reclaim_tolerance: When set, return only requests with this
+                reclaim tolerance.
+            preemption_initiated_by_id: When set, return only requests
+                preempted by this request id.
+            metadata: Optional exact-match filters against opaque entity
+                metadata. Each entry is sent as a query parameter.
+
         Returns:
-            A list wrapper containing all runtime requests.
+            A list wrapper containing matching runtime requests.
         """
+        params = self._list_params(
+            metadata=metadata,
+            request_id=request_id,
+            subject_id=subject_id,
+            status=status,
+            reclaim_tolerance=reclaim_tolerance,
+            preemption_initiated_by_id=preemption_initiated_by_id,
+        )
         return self._request_model(
             "GET",
             "/v1/resource-requests",
             RMResourceRequestListResponse,
+            params=params,
         )
 
     def release_request(self, request_id: UUID) -> RMResourceRequestResponse:
@@ -491,6 +530,7 @@ class ResourceManagerClient:
         response_model: Type[ModelT],
         *,
         json: Optional[BaseModel] = None,
+        params: Optional[dict[str, str]] = None,
     ) -> ModelT:
         """Send an HTTP request and parse a Pydantic response model.
 
@@ -499,11 +539,12 @@ class ResourceManagerClient:
             path: API path relative to the Resource Manager base URL.
             response_model: Pydantic model used to parse the response.
             json: Optional Pydantic request body.
+            params: Optional query string parameters.
 
         Returns:
             Parsed response model.
         """
-        response = self._request(method, path, json=json)
+        response = self._request(method, path, json=json, params=params)
         return response_model.model_validate(response.json())
 
     def _request(
@@ -512,6 +553,7 @@ class ResourceManagerClient:
         path: str,
         *,
         json: Optional[BaseModel] = None,
+        params: Optional[dict[str, str]] = None,
     ) -> requests.Response:
         """Send an HTTP request to the Resource Manager service.
 
@@ -519,10 +561,19 @@ class ResourceManagerClient:
             method: HTTP method to use.
             path: API path relative to the Resource Manager base URL.
             json: Optional Pydantic request body.
+            params: Optional query string parameters.
 
         Returns:
             Raw requests response object.
-        """
+
+        Raises:
+            KeyError: If the server returns 404.
+            EntityExistsError: If the server returns 409.
+            ValueError: If the server returns 400 or 422.
+            IllegalOperationError: If the server returns 403.
+            CredentialsNotValid: If the server returns 401.
+            RuntimeError: For other HTTP error status codes.
+        """  # noqa: DOC503
         payload: Any = None
         if json is not None:
             payload = json.model_dump(mode="json", by_alias=True)
@@ -536,6 +587,7 @@ class ResourceManagerClient:
             url=f"{self._base_url}{path}",
             headers=headers,
             json=payload,
+            params=params,
             timeout=self._timeout,
         )
         if response.status_code >= 400:
@@ -578,3 +630,28 @@ class ResourceManagerClient:
         http_adapter = HTTPAdapter(max_retries=retries)
         session.mount("https://", http_adapter)
         session.mount("http://", http_adapter)
+
+    @staticmethod
+    def _list_params(
+        *,
+        metadata: Optional[dict[str, str]] = None,
+        **values: object,
+    ) -> Optional[dict[str, str]]:
+        """Build optional query parameters for list endpoints.
+
+        Args:
+            metadata: Optional exact-match opaque metadata filters merged
+                into the query string as individual parameters.
+            **values: Optional filter values keyed by query parameter name.
+
+        Returns:
+            Query parameters with unset values omitted, or ``None`` when empty.
+        """
+        params: dict[str, str] = {}
+        for key, value in values.items():
+            if value is None:
+                continue
+            params[key] = str(value)
+        if metadata:
+            params.update(metadata)
+        return params or None

@@ -27,6 +27,21 @@ from pydantic import BaseModel, ConfigDict, Field
 from zenml.models.v2.core.resource_pool import ResourcePoolReclaimable
 
 
+class RMSubjectSelector(BaseModel):
+    """Structured selector for policies and pool subject settings."""
+
+    subject_type: Optional[str] = None
+    subject_id: Optional[UUID] = None
+    attributes: dict[str, Any] = Field(default_factory=dict)
+
+
+class RMSubjectSettingsEntry(BaseModel):
+    """Subject settings entry in pool capacity payloads."""
+
+    subject_selector: RMSubjectSelector
+    settings: dict[str, Any] = Field(default_factory=dict)
+
+
 class RMResourceUnit(BaseModel):
     """Resource descriptor unit entry for the Resource Manager API."""
 
@@ -41,6 +56,7 @@ class RMResourceRequest(BaseModel):
     kind: str
     description: Optional[str] = None
     attributes: dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
     units: list[RMResourceUnit] = Field(default_factory=list)
     owner_id: Optional[UUID] = None
 
@@ -53,6 +69,7 @@ class RMResourceUpdate(BaseModel):
     description: Optional[str] = None
     clear_description: bool = False
     attributes: Optional[dict[str, Any]] = None
+    metadata: Optional[dict[str, Any]] = None
     units: Optional[list[RMResourceUnit]] = None
 
 
@@ -65,6 +82,7 @@ class RMResourceResponse(BaseModel):
     kind: str
     description: Optional[str] = None
     attributes: dict[str, Any]
+    metadata: dict[str, Any] = Field(default_factory=dict)
     units: list[RMResourceUnit] = Field(default_factory=list)
     owner_id: Optional[UUID] = None
     is_system: bool = False
@@ -89,7 +107,9 @@ class RMPoolCapacityClass(BaseModel):
     rank: int
     reclaimable: ResourcePoolReclaimable
     attributes: dict[str, Any] = Field(default_factory=dict)
-    subject_settings: list[dict[str, Any]] = Field(default_factory=list)
+    subject_settings: list[RMSubjectSettingsEntry] = Field(
+        default_factory=list
+    )
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -105,7 +125,9 @@ class RMPoolCapacityClassResponse(BaseModel):
     rank: int
     reclaimable: ResourcePoolReclaimable
     attributes: dict[str, Any] = Field(default_factory=dict)
-    subject_settings: list[dict[str, Any]] = Field(default_factory=list)
+    subject_settings: list[RMSubjectSettingsEntry] = Field(
+        default_factory=list
+    )
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -133,6 +155,7 @@ class RMPoolRequest(BaseModel):
     name: str
     description: Optional[str] = None
     capacity: list[RMPoolCapacityClass]
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class RMPoolUpdate(BaseModel):
@@ -142,6 +165,7 @@ class RMPoolUpdate(BaseModel):
     description: Optional[str] = None
     clear_description: bool = False
     capacity: Optional[list[RMPoolCapacityClass]] = None
+    metadata: Optional[dict[str, Any]] = None
 
 
 class RMPoolResponse(BaseModel):
@@ -153,6 +177,7 @@ class RMPoolResponse(BaseModel):
     description: Optional[str] = None
     capacity: list[RMPoolCapacityClassResponse]
     ledger: RMPoolLedger
+    metadata: dict[str, Any] = Field(default_factory=dict)
     created: Optional[datetime] = None
     updated: Optional[datetime] = None
 
@@ -164,23 +189,12 @@ class RMPoolListResponse(BaseModel):
     total: int
 
 
-class RMSubjectRequest(BaseModel):
-    """Subject create/update payload for the Resource Manager API."""
-
-    subject_id: Optional[UUID] = None
-    subject_type: str
-    attributes: dict[str, Any] = Field(default_factory=dict)
-
-
-class RMSubjectResponse(BaseModel):
-    """Subject response from the Resource Manager API."""
+class RMSubject(BaseModel):
+    """Subject on runtime resource request payloads."""
 
     subject_id: UUID
-    organization_id: UUID
     subject_type: str
-    attributes: dict[str, Any]
-    created: Optional[datetime] = None
-    updated: Optional[datetime] = None
+    attributes: dict[str, Any] = Field(default_factory=dict)
 
 
 class RMPolicyGrant(BaseModel):
@@ -208,17 +222,19 @@ class RMPolicyRequest(BaseModel):
     """Resource policy create payload for the Resource Manager API."""
 
     pool: str
-    subject_selector: dict[str, Any]
+    subject_selector: RMSubjectSelector
     priority: int
     grants: list[RMPolicyGrant]
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class RMPolicyUpdate(BaseModel):
     """Resource policy update payload for the Resource Manager API."""
 
-    subject_selector: Optional[dict[str, Any]] = None
+    subject_selector: Optional[RMSubjectSelector] = None
     priority: Optional[int] = None
     grants: Optional[list[RMPolicyGrant]] = None
+    metadata: Optional[dict[str, Any]] = None
 
 
 class RMPolicyResponse(BaseModel):
@@ -228,9 +244,10 @@ class RMPolicyResponse(BaseModel):
     organization_id: UUID
     pool_id: UUID
     pool: Optional[str] = None
-    subject_selector: dict[str, Any]
+    subject_selector: RMSubjectSelector
     priority: int
     grants: list[RMPolicyGrantResponse]
+    metadata: dict[str, Any] = Field(default_factory=dict)
     created: Optional[datetime] = None
     updated: Optional[datetime] = None
 
@@ -261,21 +278,14 @@ class RMRequestDemand(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
 
-class RMCandidateSubject(BaseModel):
-    """Candidate subject payload for the Resource Manager API."""
-
-    subject_id: UUID
-    subject_type: Optional[str] = None
-
-
 class RMResourceRequestCreate(BaseModel):
     """Runtime resource request create payload for the Resource Manager API."""
 
-    subject_id: UUID
-    candidate_subjects: list[RMCandidateSubject] = Field(default_factory=list)
+    subjects: list[RMSubject] = Field(min_length=1)
     demands: list[RMRequestDemand]
     reclaim_tolerance: str = "none"
     lease_expires_at: Optional[datetime] = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class RMResourceRequestResponse(BaseModel):
@@ -283,8 +293,7 @@ class RMResourceRequestResponse(BaseModel):
 
     id: UUID
     organization_id: UUID
-    subject_id: UUID
-    candidate_subjects: list[RMCandidateSubject] = Field(default_factory=list)
+    subjects: list[RMSubject] = Field(default_factory=list)
     demands: list[RMRequestDemand] = Field(default_factory=list)
     status: str
     reclaim_tolerance: str
@@ -292,6 +301,7 @@ class RMResourceRequestResponse(BaseModel):
     renewed_at: Optional[datetime] = None
     status_reason: Optional[str] = None
     preemption_initiated_by_id: Optional[UUID] = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class RMResourceRequestListResponse(BaseModel):
@@ -336,7 +346,9 @@ class RMAllocationResponse(BaseModel):
     resolved_grant_id: UUID
     allocation_priority: int
     selected_subject_id: UUID
-    subject_settings: list[dict[str, Any]] = Field(default_factory=list)
+    subject_settings: list[RMSubjectSettingsEntry] = Field(
+        default_factory=list
+    )
     preemption_state: str
     preemption_reason: Optional[str] = None
     released_at: Optional[datetime] = None

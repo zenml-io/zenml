@@ -347,7 +347,7 @@ class ResourcePoolsSQLStoreInterface(ResourcePoolsStoreInterface):
     @abstractmethod
     def create_resource_request(
         self, session: "Session", resource_request: ResourceRequestRequest
-    ) -> ResourceRequestResponse | None:
+    ) -> ResourceRequestResponse:
         """Create a resource request.
 
         Args:

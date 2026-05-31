@@ -11961,7 +11961,7 @@ class SqlZenStore(BaseZenStore):
                 resource_settings = step_config.config.resource_settings
                 demands = resource_settings.merged_resource_demands()
                 demands.append(
-                    ResourceRequestDemand(resource="step_run", quantity=1)
+                    ResourceRequestDemand(kind="step_run", quantity=1)
                 )
 
                 request = self.resource_pools.create_resource_request(
@@ -11974,11 +11974,10 @@ class SqlZenStore(BaseZenStore):
                         reclaim_tolerance=resource_settings.reclaim_tolerance,
                     ),
                 )
-                if (
-                    request is not None
-                    and request.status != ResourceRequestStatus.ALLOCATED
-                ):
-                    step_schema.status = ExecutionStatus.QUEUED.value
+                if request.status != ResourceRequestStatus.NO_MATCHING_POLICY:
+                    step_schema.resource_request_id = request.id
+                    if request.status != ResourceRequestStatus.ALLOCATED:
+                        step_schema.status = ExecutionStatus.QUEUED.value
                     session.add(step_schema)
                     session.commit()
 
