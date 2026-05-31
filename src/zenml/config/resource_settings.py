@@ -25,7 +25,6 @@ from pydantic import (
     NonNegativeInt,
     PositiveFloat,
     PositiveInt,
-    field_validator,
     model_validator,
 )
 
@@ -362,6 +361,10 @@ class ResourceSettings(BaseSettings):
         Returns:
             Quantity and ``ByteUnit`` parsed from ``memory``, or None when
             memory is not configured.
+
+        Raises:
+            ValueError: If ``memory`` is set but does not end with a known
+                byte unit suffix.
         """
         if not self.memory:
             return None

@@ -22,6 +22,12 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from zenml.config.server_config import ServerProConfiguration
 from zenml.enums import ResourceRequestStatus
+from zenml.exceptions import (
+    CredentialsNotValid,
+    EntityExistsError,
+    IllegalOperationError,
+)
+from zenml.logger import get_logger
 from zenml.models import (
     Page,
     ResourceDescriptorFilter,
@@ -67,7 +73,6 @@ from zenml.zen_stores.resource_pools.resource_manager.client import (
 )
 from zenml.zen_stores.resource_pools.resource_manager.transport import (
     RMAllocationResponse,
-    RMCandidateSubject,
     RMPolicyGrant,
     RMPolicyRequest,
     RMPolicyResponse,
@@ -84,7 +89,9 @@ from zenml.zen_stores.resource_pools.resource_manager.transport import (
     RMResourceResponse,
     RMResourceUnit,
     RMResourceUpdate,
-    RMSubjectRequest,
+    RMSubject,
+    RMSubjectSelector,
+    RMSubjectSettingsEntry,
 )
 from zenml.zen_stores.resource_pools.store_interface import (
     ResourcePoolsSQLStoreInterface,
@@ -93,6 +100,7 @@ from zenml.zen_stores.resource_pools.store_interface import (
 if TYPE_CHECKING:
     from zenml.zen_stores.sql_zen_store import Session, SqlZenStore
 
+logger = get_logger(__name__)
 PageItemT = TypeVar("PageItemT", bound=BaseModel)
 
 
@@ -113,6 +121,8 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
     """Resource pool store facade for ZenML Pro Resource Manager."""
 
     COMPONENT_SUBJECT_TYPE = "component"
+    STEP_RUN_ID_METADATA_KEY = "step_run_id"
+    PIPELINE_RUN_ID_METADATA_KEY = "pipeline_run_id"
 
     def __init__(
         self,
@@ -130,7 +140,6 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         self._client = client or self._client_from_settings(
             ResourceManagerResourcePoolsStoreSettings()
         )
-        self._request_step_run_ids: dict[UUID, UUID] = {}
 
     def create_resource_descriptor(
         self, descriptor: ResourceDescriptorRequest
@@ -284,10 +293,14 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         Returns:
             Matching ZenML pool responses.
         """
+        list_kwargs: dict[str, Any] = {}
+        if filter_model.id is not None:
+            list_kwargs["pool_id"] = UUID(str(filter_model.id))
+        if filter_model.name is not None:
+            list_kwargs["name"] = str(filter_model.name)
         items = [
             self._to_pool_response(item)
-            for item in self._client.list_pools().items
-            if self._matches_pool_filter(item, filter_model)
+            for item in self._client.list_pools(**list_kwargs).items
         ]
         return self._page(items)
 
@@ -374,12 +387,12 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         Returns:
             The created ZenML policy response.
         """
-        self._ensure_component_subject(policy.component_id)
         response = self._client.create_policy(
             RMPolicyRequest(
                 pool=self._pool_name(policy.pool_id, policy.pool),
-                subject_selector=self._component_subject_selector(
-                    policy.component_id
+                subject_selector=RMSubjectSelector(
+                    subject_type=self.COMPONENT_SUBJECT_TYPE,
+                    subject_id=policy.component_id,
                 ),
                 priority=policy.priority,
                 grants=[self._to_rm_grant(grant) for grant in policy.grants],
@@ -416,10 +429,20 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         Returns:
             Matching ZenML policy responses.
         """
+        list_kwargs: dict[str, Any] = {}
+        if filter_model.id is not None:
+            list_kwargs["policy_id"] = UUID(str(filter_model.id))
+        if filter_model.pool_id is not None:
+            list_kwargs["pool_id"] = UUID(str(filter_model.pool_id))
+        if filter_model.pool is not None:
+            list_kwargs["pool"] = str(filter_model.pool)
+        if filter_model.component_id is not None:
+            list_kwargs["subject_id"] = UUID(str(filter_model.component_id))
+        if filter_model.priority is not None:
+            list_kwargs["priority"] = int(filter_model.priority)
         items = [
             self._to_policy_response(item)
-            for item in self._client.list_policies().items
-            if self._matches_policy_filter(item, filter_model)
+            for item in self._client.list_policies(**list_kwargs).items
         ]
         return self._page(items)
 
@@ -446,9 +469,9 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
 
         subject_selector = None
         if update.component_id is not None:
-            self._ensure_component_subject(update.component_id)
-            subject_selector = self._component_subject_selector(
-                update.component_id
+            subject_selector = RMSubjectSelector(
+                subject_type=self.COMPONENT_SUBJECT_TYPE,
+                subject_id=update.component_id,
             )
 
         grants = None
@@ -486,10 +509,7 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             The requested ZenML resource request response.
         """
         response = self._client.get_request(resource_request_id)
-        return self._to_request_response(
-            response,
-            step_run_id=self._request_step_run_ids.get(response.id),
-        )
+        return self._to_request_response(response)
 
     def list_resource_requests(
         self, filter_model: ResourceRequestFilter, hydrate: bool = False
@@ -504,12 +524,35 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         Returns:
             Matching ZenML request responses.
         """
-        items = [
-            self._to_request_response(
-                item, step_run_id=self._request_step_run_ids.get(item.id)
+        list_kwargs: dict[str, Any] = {}
+        if filter_model.component_id is not None:
+            list_kwargs["subject_id"] = UUID(str(filter_model.component_id))
+        if filter_model.status is not None:
+            list_kwargs["status"] = str(filter_model.status)
+        if filter_model.reclaim_tolerance is not None:
+            list_kwargs["reclaim_tolerance"] = str(
+                filter_model.reclaim_tolerance
             )
-            for item in self._client.list_requests().items
-            if self._matches_request_filter(item, filter_model)
+        if filter_model.preemption_initiated_by_id is not None:
+            list_kwargs["preemption_initiated_by_id"] = UUID(
+                str(filter_model.preemption_initiated_by_id)
+            )
+
+        metadata: dict[str, str] = {}
+        if filter_model.step_run_id is not None:
+            metadata[self.STEP_RUN_ID_METADATA_KEY] = str(
+                filter_model.step_run_id
+            )
+        if filter_model.pipeline_run_id is not None:
+            metadata[self.PIPELINE_RUN_ID_METADATA_KEY] = str(
+                filter_model.pipeline_run_id
+            )
+        if metadata:
+            list_kwargs["metadata"] = metadata
+
+        items = [
+            self._to_request_response(item)
+            for item in self._client.list_requests(**list_kwargs).items
         ]
         return self._page(items)
 
@@ -531,37 +574,33 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
                 session, but the SQL store callback requires it.
             step_run_id: The ZenML step run whose resources should be released.
         """
-        request_ids = [
-            request_id
-            for request_id, stored_step_run_id in self._request_step_run_ids.items()
-            if stored_step_run_id == step_run_id
-        ]
-        for request_id in request_ids:
-            self._client.release_request(request_id)
-            self._request_step_run_ids.pop(request_id, None)
+        from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
+
+        step_run = session.get(StepRunSchema, step_run_id)
+        if step_run is None or step_run.resource_request_id is None:
+            return
+
+        self._client.release_request(step_run.resource_request_id)
 
     def delete_component_subject(
         self, session: "Session", component_id: UUID
     ) -> None:
-        """Delete the internal Resource Manager subject for a component.
+        """Delete Resource Manager policies that reference a component.
 
         Args:
             session: DB session. The Resource Manager backend does not use the
                 session, but the SQL store callback requires it.
             component_id: The ZenML stack component being deleted.
-
-        Raises:
-            Exception: If Resource Manager fails for any reason other than the
-                subject not existing.
         """
-        try:
-            self._client.delete_subject(component_id)
-        except KeyError:
-            pass
+        _ = session
+        for policy in self._client.list_policies(
+            subject_id=component_id
+        ).items:
+            self._client.delete_policy(policy.id)
 
     def create_resource_request(
         self, session: "Session", resource_request: ResourceRequestRequest
-    ) -> ResourceRequestResponse | None:
+    ) -> ResourceRequestResponse:
         """Create a runtime resource request through Resource Manager.
 
         Args:
@@ -571,16 +610,29 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
 
         Returns:
             The created ZenML resource request response.
+
+        Raises:
+            Exception: If an error occurs while creating the resource request.
         """
         component_ids = resource_request.component_ids
-        response = self._client.create_request(
-            RMResourceRequestCreate(
-                subject_id=component_ids[0],
-                candidate_subjects=[
-                    RMCandidateSubject(
-                        subject_id=component_id,
-                        subject_type=self.COMPONENT_SUBJECT_TYPE,
-                    )
+        metadata: dict[str, Any] = {
+            self.STEP_RUN_ID_METADATA_KEY: str(resource_request.step_run_id)
+        }
+        if session is not None:
+            from zenml.zen_stores.schemas.step_run_schemas import (
+                StepRunSchema,
+            )
+
+            step_run = session.get(StepRunSchema, resource_request.step_run_id)
+            if step_run is not None and step_run.pipeline_run_id is not None:
+                metadata[self.PIPELINE_RUN_ID_METADATA_KEY] = str(
+                    step_run.pipeline_run_id
+                )
+
+        try:
+            request = RMResourceRequestCreate(
+                subjects=[
+                    self._component_subject(component_id)
                     for component_id in component_ids
                 ],
                 demands=[
@@ -592,18 +644,33 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
                     or ResourceRequestReclaimTolerance.NONE
                 ).value,
                 lease_expires_at=resource_request.lease_expires_at,
+                metadata=metadata,
             )
-        )
-        self._request_step_run_ids[response.id] = resource_request.step_run_id
-        return self._to_request_response(
-            response,
-            step_run_id=resource_request.step_run_id,
-        )
+            logger.info(f"Creating resource request: {request}")
+
+            response = self._client.create_request(request)
+        except (
+            KeyError,
+            ValueError,
+            EntityExistsError,
+            IllegalOperationError,
+            CredentialsNotValid,
+            RuntimeError,
+        ) as exc:
+            raise type(exc)(
+                "An error occurred while trying to create a resource request: "
+                f"{exc}"
+            ) from exc
+        return self._to_request_response(response)
 
     def _client_from_settings(
         self, settings: ResourceManagerResourcePoolsStoreSettings
     ) -> ResourceManagerClient:
         """Create a Resource Manager client from store settings.
+
+        Args:
+            settings: Resource Manager connection settings (URL, token,
+                timeout).
 
         Returns:
             A configured Resource Manager client.
@@ -623,43 +690,44 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             headers=headers,
         )
 
-    def _ensure_component_subject(self, component_id: UUID) -> None:
-        """Ensure the internal RM subject exists for a ZenML component.
-
-        Args:
-            component_id: ZenML stack component ID.
-
-        Raises:
-            Exception: If Resource Manager fails for any reason other than the
-                subject not existing.
-        """
-        subject = RMSubjectRequest(
-            subject_id=component_id,
-            subject_type=self.COMPONENT_SUBJECT_TYPE,
-            attributes=self._component_subject_selector(component_id),
-        )
-        try:
-            self._client.get_subject(component_id)
-        except KeyError:
-            self._client.create_subject(subject)
-        else:
-            self._client.update_subject(component_id, subject)
-
-    def _component_subject_selector(
-        self, component_id: UUID
-    ) -> dict[str, str]:
-        """Build the internal RM selector for a ZenML component.
+    def _component_subject(self, component_id: UUID) -> RMSubject:
+        """Build an inline RM subject for a ZenML stack component.
 
         Args:
             component_id: ZenML stack component ID.
 
         Returns:
-            Selector attributes that match the component subject.
+            Inline subject payload for runtime requests.
         """
-        return {
-            "subject_type": self.COMPONENT_SUBJECT_TYPE,
-            "component_id": str(component_id),
-        }
+        component = self.store.get_stack_component(component_id, hydrate=False)
+        return RMSubject(
+            subject_id=component_id,
+            subject_type=self.COMPONENT_SUBJECT_TYPE,
+            attributes={
+                "component_type": component.type.value,
+                "flavor": component.flavor_name,
+            },
+        )
+
+    def _component_id_from_subject_selector(
+        self, subject_selector: RMSubjectSelector
+    ) -> UUID:
+        """Resolve a ZenML component id from an RM subject selector.
+
+        Args:
+            subject_selector: Resource Manager subject selector.
+
+        Returns:
+            The matching ZenML stack component id.
+
+        Raises:
+            ValueError: If the selector does not pin a component subject.
+        """
+        if subject_selector.subject_id is not None:
+            return subject_selector.subject_id
+        raise ValueError(
+            "Resource Manager policy subject selector must specify subject_id."
+        )
 
     def _pool_name(
         self, pool_id: Optional[UUID], pool_name: Optional[str]
@@ -730,7 +798,7 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
     def _to_rm_subject_settings(
         self,
         component_settings: list[ResourcePoolCapacityComponentSettings],
-    ) -> list[dict[str, Any]]:
+    ) -> list[RMSubjectSettingsEntry]:
         """Convert ZenML component settings to RM subject settings.
 
         Args:
@@ -740,20 +808,22 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             Resource Manager subject settings payloads.
         """
         return [
-            {
-                "subject_type": self.COMPONENT_SUBJECT_TYPE,
-                "subject_selector": {
-                    "component_type": entry.component_type,
-                    "flavor": entry.flavor,
-                },
-                "settings": entry.settings,
-            }
+            RMSubjectSettingsEntry(
+                subject_selector=RMSubjectSelector(
+                    subject_type=self.COMPONENT_SUBJECT_TYPE,
+                    attributes={
+                        "component_type": entry.component_type.value,
+                        "flavor": entry.flavor,
+                    },
+                ),
+                settings=entry.settings,
+            )
             for entry in component_settings
         ]
 
     def _from_rm_subject_settings(
         self,
-        subject_settings: list[dict[str, Any]],
+        subject_settings: list[RMSubjectSettingsEntry],
     ) -> list[ResourcePoolCapacityComponentSettings]:
         """Convert RM subject settings to ZenML component settings.
 
@@ -770,20 +840,20 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
 
         component_settings: list[ResourcePoolCapacityComponentSettings] = []
         for entry in subject_settings:
-            subject_type = entry.get("subject_type")
-            if subject_type != self.COMPONENT_SUBJECT_TYPE:
+            selector = entry.subject_selector
+            if selector.subject_type != self.COMPONENT_SUBJECT_TYPE:
                 raise ValueError(
                     "Resource Manager subject settings must use subject_type "
-                    f"'{self.COMPONENT_SUBJECT_TYPE}', got {subject_type!r}."
+                    f"'{self.COMPONENT_SUBJECT_TYPE}', got "
+                    f"{selector.subject_type!r}."
                 )
-            selector = entry.get("subject_selector") or {}
             component_settings.append(
                 ResourcePoolCapacityComponentSettings(
                     component_type=StackComponentType(
-                        selector["component_type"]
+                        selector.attributes["component_type"]
                     ),
-                    flavor=selector["flavor"],
-                    settings=entry.get("settings") or {},
+                    flavor=selector.attributes["flavor"],
+                    settings=entry.settings,
                 )
             )
         return component_settings
@@ -923,7 +993,9 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             ZenML policy response.
         """
         created, updated = self._timestamps(response.created, response.updated)
-        component_id = UUID(response.subject_selector["component_id"])
+        component_id = self._component_id_from_subject_selector(
+            response.subject_selector
+        )
         return ResourcePolicyResponse(
             id=response.id,
             body=ResourcePolicyResponseBody(
@@ -952,28 +1024,29 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
     def _to_request_response(
         self,
         response: RMResourceRequestResponse,
-        *,
-        step_run_id: Optional[UUID] = None,
     ) -> ResourceRequestResponse:
         """Convert an RM runtime request response to a ZenML response.
 
         Args:
             response: Resource Manager runtime request response.
-            step_run_id: Optional ZenML step run ID tracked by this backend.
 
         Returns:
             ZenML runtime request response.
         """
         created, updated = self._timestamps(None, response.renewed_at)
-        component_ids: list[UUID] = []
-        seen_component_ids: set[UUID] = set()
-        for component_id in [response.subject_id, *(
-            candidate.subject_id for candidate in response.candidate_subjects
-        )]:
-            if component_id in seen_component_ids:
-                continue
-            seen_component_ids.add(component_id)
-            component_ids.append(component_id)
+        step_run_id = None
+        step_run_id_value = response.metadata.get(
+            self.STEP_RUN_ID_METADATA_KEY
+        )
+        if step_run_id_value is not None:
+            step_run_id = UUID(str(step_run_id_value))
+
+        pipeline_run_id = None
+        pipeline_run_id_value = response.metadata.get(
+            self.PIPELINE_RUN_ID_METADATA_KEY
+        )
+        if pipeline_run_id_value is not None:
+            pipeline_run_id = UUID(str(pipeline_run_id_value))
 
         return ResourceRequestResponse(
             id=response.id,
@@ -981,9 +1054,11 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
                 created=created,
                 updated=updated,
                 user_id=None,
-                component_ids=component_ids,
+                component_ids=[
+                    subject.subject_id for subject in response.subjects
+                ],
                 step_run_id=step_run_id,
-                pipeline_run_id=None,
+                pipeline_run_id=pipeline_run_id,
                 pool_id=None,
                 demands=[
                     self._to_request_demand(demand)
@@ -1074,6 +1149,9 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             grant_id=response.resolved_grant_id,
             priority=response.allocation_priority,
             component_id=response.selected_subject_id,
+            component_settings=self._from_rm_subject_settings(
+                response.subject_settings
+            ),
             preemption_state=response.preemption_state,
             preemption_reason=response.preemption_reason,
             released_at=response.released_at,
@@ -1097,86 +1175,6 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             self._matches_uuid_filter(response.id, filter_model.id)
             and self._matches_string_filter(response.name, filter_model.name)
             and self._matches_string_filter(response.kind, filter_model.kind)
-        )
-
-    def _matches_pool_filter(
-        self, response: RMPoolResponse, filter_model: ResourcePoolFilter
-    ) -> bool:
-        """Check whether an RM pool matches a ZenML filter.
-
-        Args:
-            response: Resource Manager pool response.
-            filter_model: ZenML pool filter.
-
-        Returns:
-            True if the pool should be included.
-        """
-        return self._matches_uuid_filter(
-            response.id, filter_model.id
-        ) and self._matches_string_filter(response.name, filter_model.name)
-
-    def _matches_policy_filter(
-        self,
-        response: RMPolicyResponse,
-        filter_model: ResourcePolicyFilter,
-    ) -> bool:
-        """Check whether an RM policy matches a ZenML filter.
-
-        Args:
-            response: Resource Manager policy response.
-            filter_model: ZenML policy filter.
-
-        Returns:
-            True if the policy should be included.
-        """
-        component_id = response.subject_selector.get("component_id")
-        return (
-            self._matches_uuid_filter(response.id, filter_model.id)
-            and self._matches_uuid_filter(
-                response.pool_id, filter_model.pool_id
-            )
-            and self._matches_string_filter(response.pool, filter_model.pool)
-            and self._matches_string_filter(
-                component_id, filter_model.component_id
-            )
-            and self._matches_string_filter(
-                str(response.priority), filter_model.priority
-            )
-        )
-
-    def _matches_request_filter(
-        self,
-        response: RMResourceRequestResponse,
-        filter_model: ResourceRequestFilter,
-    ) -> bool:
-        """Check whether an RM runtime request matches a ZenML filter.
-
-        Args:
-            response: Resource Manager runtime request response.
-            filter_model: ZenML request filter.
-
-        Returns:
-            True if the request should be included.
-        """
-        step_run_id = self._request_step_run_ids.get(response.id)
-        component_ids = {response.subject_id, *(
-            candidate.subject_id for candidate in response.candidate_subjects
-        )}
-        component_matches = filter_model.component_id is None or (
-            filter_model.component_id in component_ids
-        )
-        return (
-            component_matches
-            and self._matches_uuid_filter(
-                step_run_id, filter_model.step_run_id
-            )
-            and self._matches_string_filter(
-                response.status, filter_model.status
-            )
-            and self._matches_uuid_filter(
-                response.preemption_initiated_by_id,
-                filter_model.preemption_initiated_by_id,
-            )
         )
 
     def _matches_uuid_filter(

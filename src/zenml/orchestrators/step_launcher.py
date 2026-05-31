@@ -798,7 +798,20 @@ class StepLauncher:
         """
         resource_request = step_run_info.step_run.resource_request
         if not resource_request:
-            return
+            resource_request_id = step_run_info.step_run.resource_request_id
+            if not resource_request_id:
+                return
+            try:
+                resource_request = Client().zen_store.get_resource_request(
+                    resource_request_id, hydrate=False
+                )
+            except KeyError as e:
+                raise RuntimeError(
+                    f"Resource request `{resource_request_id}` for step "
+                    f"`{step_run_info.pipeline_step_name}` not found. This "
+                    "is most likely because someone deleted the resource "
+                    "request."
+                ) from e
 
         if resource_request.status == ResourceRequestStatus.ALLOCATED:
             return

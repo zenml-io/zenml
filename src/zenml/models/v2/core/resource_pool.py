@@ -292,6 +292,10 @@ class ResourcePoolAllocation(BaseZenModel):
     grant_id: UUID = Field(title="The policy grant that matched the demand.")
     priority: int = Field(title="The priority snapshot for this allocation.")
     component_id: UUID = Field(title="The selected stack component ID.")
+    component_settings: list[ResourcePoolCapacityComponentSettings] = Field(
+        default_factory=list,
+        title="Stack component settings applied for this allocation.",
+    )
     preemption_state: str = Field(title="The preemption state.")
     preemption_reason: Optional[str] = Field(
         default=None,
