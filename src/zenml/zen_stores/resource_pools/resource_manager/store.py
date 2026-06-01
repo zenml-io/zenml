@@ -123,6 +123,9 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
     COMPONENT_SUBJECT_TYPE = "component"
     STEP_RUN_ID_METADATA_KEY = "step_run_id"
     PIPELINE_RUN_ID_METADATA_KEY = "pipeline_run_id"
+    STEP_NAME_METADATA_KEY = "step_name"
+    PIPELINE_RUN_NAME_METADATA_KEY = "pipeline_run_name"
+    PROJECT_ID_METADATA_KEY = "project_id"
 
     def __init__(
         self,
@@ -509,6 +512,7 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             The requested ZenML resource request response.
         """
         response = self._client.get_request(resource_request_id)
+        _ = hydrate
         return self._to_request_response(response)
 
     def list_resource_requests(
@@ -529,6 +533,8 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             list_kwargs["subject_id"] = UUID(str(filter_model.component_id))
         if filter_model.status is not None:
             list_kwargs["status"] = str(filter_model.status)
+        if filter_model.pool_id is not None:
+            list_kwargs["pool_id"] = UUID(str(filter_model.pool_id))
         if filter_model.reclaim_tolerance is not None:
             list_kwargs["reclaim_tolerance"] = str(
                 filter_model.reclaim_tolerance
@@ -550,6 +556,7 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         if metadata:
             list_kwargs["metadata"] = metadata
 
+        _ = hydrate
         items = [
             self._to_request_response(item)
             for item in self._client.list_requests(**list_kwargs).items
@@ -613,7 +620,7 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
 
         Raises:
             Exception: If an error occurs while creating the resource request.
-        """
+        """  # noqa: DOC503
         component_ids = resource_request.component_ids
         metadata: dict[str, Any] = {
             self.STEP_RUN_ID_METADATA_KEY: str(resource_request.step_run_id)
@@ -624,10 +631,26 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             )
 
             step_run = session.get(StepRunSchema, resource_request.step_run_id)
-            if step_run is not None and step_run.pipeline_run_id is not None:
-                metadata[self.PIPELINE_RUN_ID_METADATA_KEY] = str(
-                    step_run.pipeline_run_id
-                )
+            if step_run is not None:
+                metadata[self.STEP_NAME_METADATA_KEY] = step_run.name
+                if step_run.pipeline_run_id is not None:
+                    from zenml.zen_stores.schemas.pipeline_run_schemas import (
+                        PipelineRunSchema,
+                    )
+
+                    metadata[self.PIPELINE_RUN_ID_METADATA_KEY] = str(
+                        step_run.pipeline_run_id
+                    )
+                    pipeline_run = session.get(
+                        PipelineRunSchema, step_run.pipeline_run_id
+                    )
+                    if pipeline_run is not None:
+                        metadata[self.PIPELINE_RUN_NAME_METADATA_KEY] = (
+                            pipeline_run.name
+                        )
+                        metadata[self.PROJECT_ID_METADATA_KEY] = str(
+                            pipeline_run.project_id
+                        )
 
         try:
             request = RMResourceRequestCreate(
@@ -968,6 +991,7 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
                 occupied_resources=[
                     ResourcePoolLedgerOccupied(
                         resource_id=entry.resource_id,
+                        resource=entry.resource_name,
                         class_name=entry.class_name,
                         quantity=entry.quantity,
                     )
@@ -1033,7 +1057,7 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         Returns:
             ZenML runtime request response.
         """
-        created, updated = self._timestamps(None, response.renewed_at)
+        created, updated = self._timestamps(response.created, response.updated)
         step_run_id = None
         step_run_id_value = response.metadata.get(
             self.STEP_RUN_ID_METADATA_KEY
@@ -1048,6 +1072,24 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         if pipeline_run_id_value is not None:
             pipeline_run_id = UUID(str(pipeline_run_id_value))
 
+        step_name = self._metadata_string(
+            response.metadata, self.STEP_NAME_METADATA_KEY
+        )
+        pipeline_run_name = self._metadata_string(
+            response.metadata, self.PIPELINE_RUN_NAME_METADATA_KEY
+        )
+        project_id = self._metadata_uuid(
+            response.metadata, self.PROJECT_ID_METADATA_KEY
+        )
+
+        allocations = [
+            self._to_allocation(allocation)
+            for allocation in response.allocations
+        ]
+        queue_entries = [
+            self._to_queue_item(entry) for entry in response.queue_entries
+        ]
+
         return ResourceRequestResponse(
             id=response.id,
             body=ResourceRequestResponseBody(
@@ -1059,7 +1101,11 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
                 ],
                 step_run_id=step_run_id,
                 pipeline_run_id=pipeline_run_id,
-                pool_id=None,
+                pool_id=response.pool_id,
+                step_name=step_name,
+                pipeline_run_name=pipeline_run_name,
+                project_id=project_id,
+                pool_name=response.pool_name,
                 demands=[
                     self._to_request_demand(demand)
                     for demand in response.demands
@@ -1070,14 +1116,57 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
                 ),
                 lease_expires_at=response.lease_expires_at,
                 renewed_at=response.renewed_at,
+                allocated_at=response.allocated_at,
+                released_at=response.released_at,
+                queued_at=response.queued_at,
                 status_reason=response.status_reason,
                 preemption_initiated_by_id=(
                     response.preemption_initiated_by_id
                 ),
             ),
             metadata=ResourceRequestResponseMetadata(),
-            resources=ResourceRequestResponseResources(),
+            resources=ResourceRequestResponseResources(
+                allocations=allocations,
+                queue_entries=queue_entries,
+            ),
         )
+
+    def _metadata_string(
+        self, metadata: dict[str, Any], key: str
+    ) -> Optional[str]:
+        """Read a string metadata value when present.
+
+        Args:
+            metadata: Resource Manager request metadata.
+            key: Metadata key to read.
+
+        Returns:
+            The metadata value as a string, or None when absent.
+        """
+        value = metadata.get(key)
+        if value is None:
+            return None
+        return str(value)
+
+    def _metadata_uuid(
+        self, metadata: dict[str, Any], key: str
+    ) -> Optional[UUID]:
+        """Read a UUID metadata value when present.
+
+        Args:
+            metadata: Resource Manager request metadata.
+            key: Metadata key to read.
+
+        Returns:
+            The metadata value as a UUID, or None when absent or invalid.
+        """
+        value = metadata.get(key)
+        if value is None:
+            return None
+        try:
+            return UUID(str(value))
+        except ValueError:
+            return None
 
     def _to_request_demand(
         self, demand: RMRequestDemand
@@ -1120,9 +1209,11 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             id=response.id,
             request_id=response.request_id,
             pool_id=response.pool_id,
+            pool_name=response.pool_name,
             policy_id=response.policy_id,
             priority=response.priority,
             enqueued_at=response.enqueued_at,
+            created=response.created,
         )
 
     def _to_allocation(
@@ -1139,8 +1230,11 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         return ResourcePoolAllocation(
             id=response.id,
             request_id=response.request_id,
+            demand_index=response.demand_index,
             pool_id=response.pool_id,
+            pool_name=response.pool_name,
             resource_id=response.resource_id,
+            resource=response.resource_name,
             class_name=response.class_name,
             quantity=response.quantity,
             unit=response.unit,
@@ -1155,6 +1249,8 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             preemption_state=response.preemption_state,
             preemption_reason=response.preemption_reason,
             released_at=response.released_at,
+            created=response.created,
+            updated=response.updated,
         )
 
     def _matches_descriptor_filter(

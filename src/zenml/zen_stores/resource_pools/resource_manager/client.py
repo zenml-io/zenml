@@ -457,6 +457,8 @@ class ResourceManagerClient:
         request_id: Optional[UUID] = None,
         subject_id: Optional[UUID] = None,
         status: Optional[str] = None,
+        statuses: Optional[list[str]] = None,
+        pool_id: Optional[UUID] = None,
         reclaim_tolerance: Optional[str] = None,
         preemption_initiated_by_id: Optional[UUID] = None,
         metadata: Optional[dict[str, str]] = None,
@@ -468,6 +470,9 @@ class ResourceManagerClient:
             subject_id: When set, return only requests that include this
                 subject id.
             status: When set, return only requests in this lifecycle state.
+            statuses: When set, return only requests in any of these states.
+            pool_id: When set, return only requests linked to this pool via an
+                allocation or queue entry.
             reclaim_tolerance: When set, return only requests with this
                 reclaim tolerance.
             preemption_initiated_by_id: When set, return only requests
@@ -483,6 +488,8 @@ class ResourceManagerClient:
             request_id=request_id,
             subject_id=subject_id,
             status=status,
+            statuses=statuses,
+            pool_id=pool_id,
             reclaim_tolerance=reclaim_tolerance,
             preemption_initiated_by_id=preemption_initiated_by_id,
         )
@@ -530,7 +537,7 @@ class ResourceManagerClient:
         response_model: Type[ModelT],
         *,
         json: Optional[BaseModel] = None,
-        params: Optional[dict[str, str]] = None,
+        params: Optional[dict[str, str | list[str]]] = None,
     ) -> ModelT:
         """Send an HTTP request and parse a Pydantic response model.
 
@@ -553,7 +560,7 @@ class ResourceManagerClient:
         path: str,
         *,
         json: Optional[BaseModel] = None,
-        params: Optional[dict[str, str]] = None,
+        params: Optional[dict[str, str | list[str]]] = None,
     ) -> requests.Response:
         """Send an HTTP request to the Resource Manager service.
 
@@ -636,7 +643,7 @@ class ResourceManagerClient:
         *,
         metadata: Optional[dict[str, str]] = None,
         **values: object,
-    ) -> Optional[dict[str, str]]:
+    ) -> Optional[dict[str, str | list[str]]]:
         """Build optional query parameters for list endpoints.
 
         Args:
@@ -647,9 +654,12 @@ class ResourceManagerClient:
         Returns:
             Query parameters with unset values omitted, or ``None`` when empty.
         """
-        params: dict[str, str] = {}
+        params: dict[str, str | list[str]] = {}
         for key, value in values.items():
             if value is None:
+                continue
+            if isinstance(value, (list, tuple)):
+                params[key] = [str(entry) for entry in value]
                 continue
             params[key] = str(value)
         if metadata:

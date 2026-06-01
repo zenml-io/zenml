@@ -67,6 +67,8 @@ from zenml.enums import (
     LogicalOperators,
     ModelStages,
     OAuthDeviceStatus,
+    ResourceRequestReclaimTolerance,
+    ResourceRequestStatus,
     RunWaitConditionResolution,
     ServiceState,
     SorterOps,
@@ -169,6 +171,7 @@ from zenml.models import (
     ResourcePoolRequest,
     ResourcePoolResponse,
     ResourcePoolUpdate,
+    ResourceRequestFilter,
     ResourceRequestResponse,
     RunMetadataRequest,
     RunMetadataResource,
@@ -2735,6 +2738,72 @@ class Client(metaclass=ClientMetaClass):
         """
         return self.zen_store.get_resource_request(
             resource_request_id=resource_request_id,
+            hydrate=hydrate,
+        )
+
+    def list_resource_requests(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[datetime] = None,
+        updated: Optional[datetime] = None,
+        user: Optional[Union[UUID, str]] = None,
+        reclaim_tolerance: Optional[
+            Union[ResourceRequestReclaimTolerance, str]
+        ] = None,
+        component_id: Optional[Union[UUID, str]] = None,
+        step_run_id: Optional[Union[UUID, str]] = None,
+        preemption_initiated_by_id: Optional[Union[UUID, str]] = None,
+        status: Optional[Union[ResourceRequestStatus, str]] = None,
+        pipeline_run_id: Optional[Union[UUID, str]] = None,
+        pool_id: Optional[Union[UUID, str]] = None,
+        hydrate: bool = False,
+    ) -> Page[ResourceRequestResponse]:
+        """List resource requests.
+
+        Args:
+            sort_by: The column to sort by.
+            page: The page of items.
+            size: The maximum size of all pages.
+            logical_operator: Which logical operator to use.
+            id: Filter by request ID.
+            created: Filter by creation time.
+            updated: Filter by last update time.
+            user: Filter by user name/ID.
+            reclaim_tolerance: Filter by reclaim tolerance.
+            component_id: Filter by stack component name/ID.
+            step_run_id: Filter by step run name/ID.
+            preemption_initiated_by_id: Filter by preempting request ID.
+            status: Filter by lifecycle status.
+            pipeline_run_id: Filter by pipeline run name/ID.
+            pool_id: Filter by resource pool name/ID.
+            hydrate: Whether to include related resources in the response.
+
+        Returns:
+            A page of matching resource requests.
+        """
+        filter_model = ResourceRequestFilter(
+            page=page,
+            size=size,
+            sort_by=sort_by,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            user=user,
+            reclaim_tolerance=reclaim_tolerance,
+            component_id=component_id,
+            step_run_id=step_run_id,
+            preemption_initiated_by_id=preemption_initiated_by_id,
+            status=status,
+            pipeline_run_id=pipeline_run_id,
+            pool_id=pool_id,
+        )
+        return self.zen_store.list_resource_requests(
+            filter_model=filter_model,
             hydrate=hydrate,
         )
 
