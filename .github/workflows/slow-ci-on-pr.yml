@@ -43,4 +43,6 @@ jobs:
     uses: ./.github/workflows/ci-slow-develop.yml
     with:
       git-ref: ${{ inputs.git-ref || github.event.pull_request.head.sha || github.sha }}
+      publish-incident: false
+      qualification-target: pr
     secrets: inherit

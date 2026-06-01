@@ -31,6 +31,7 @@ from zenml.config.source import (
     Source,
     SourceType,
 )
+from zenml.constants import ENV_ZENML_CUSTOM_SOURCE_ROOT
 from zenml.exceptions import SourceValidationException
 from zenml.utils import code_repository_utils, source_utils
 
@@ -284,13 +285,29 @@ def test_prepend_python_path():
     assert path not in sys.path
 
 
-def test_setting_a_custom_source_root():
+def test_setting_a_custom_source_root(monkeypatch):
     """Tests setting and resetting a custom source root."""
+    monkeypatch.delenv(ENV_ZENML_CUSTOM_SOURCE_ROOT, raising=False)
+    monkeypatch.setattr(source_utils, "_CUSTOM_SOURCE_ROOT", None)
+    monkeypatch.setattr(source_utils, "_CUSTOM_SOURCE_ROOT_CLEARED", False)
+
     initial_source_root = source_utils.get_source_root()
     source_utils.set_custom_source_root(source_root="custom_source_root")
     assert source_utils.get_source_root() == "custom_source_root"
     source_utils.set_custom_source_root(source_root=None)
     assert source_utils.get_source_root() == initial_source_root
+
+
+def test_environment_source_root_can_be_cleared(monkeypatch, mocker, tmp_path):
+    """Tests that clearing the custom source root overrides the env fallback."""
+    monkeypatch.setenv(ENV_ZENML_CUSTOM_SOURCE_ROOT, "environment_source_root")
+    monkeypatch.setattr(source_utils, "_CUSTOM_SOURCE_ROOT", None)
+    monkeypatch.setattr(source_utils, "_CUSTOM_SOURCE_ROOT_CLEARED", False)
+    mocker.patch("zenml.client.Client.find_repository", return_value=tmp_path)
+
+    assert source_utils.get_source_root() == "environment_source_root"
+    source_utils.set_custom_source_root(source_root=None)
+    assert source_utils.get_source_root() == str(tmp_path.resolve())
 
 
 def test_validating_source_classes(mocker):

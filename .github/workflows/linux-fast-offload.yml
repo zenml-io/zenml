@@ -56,8 +56,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 75
     env:
-      MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
-      MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: 1
       ZENML_ENABLE_RICH_TRACEBACK: false
@@ -88,6 +86,8 @@ jobs:
           BACKEND: ${{ inputs.backend }}
           USE_OFFLOAD: ${{ inputs.use-offload }}
           MODAL_DISABLED: ${{ vars.ZENML_CI_MODAL_DISABLED }}
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
         run: |
           set -euo pipefail
           eligible=true
@@ -218,6 +218,8 @@ jobs:
           'success' && inputs.test_environment == 'modal-server-mysql'
         continue-on-error: true
         env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
           ZENML_CI_MODAL_DISABLED: ${{ vars.ZENML_CI_MODAL_DISABLED }}
           ZENML_CI_CHECKOUT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
@@ -231,6 +233,8 @@ jobs:
         continue-on-error: true
         env:
           TEST_ENVIRONMENT: ${{ inputs.test_environment }}
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
           MODAL_CI_SERVER_URL: ${{ steps.modal-server.outputs.server_url }}
           MODAL_CI_SERVER_USERNAME: ${{ steps.modal-server.outputs.server_username }}
           ZENML_CI_CHECKOUT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -318,6 +322,8 @@ jobs:
         id: teardown
         if: always() && steps.modal-server.outputs.sandbox_id != ''
         env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
           SANDBOX_ID: ${{ steps.modal-server.outputs.sandbox_id }}
         run: |
           echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"

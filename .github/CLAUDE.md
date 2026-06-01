@@ -8,7 +8,7 @@ This document provides guidance for AI assistants working with ZenML's GitHub Ac
 
 | Category | Workflows | Purpose |
 |----------|-----------|---------|
-| **CI/Testing** | ci-fast.yml, ci-slow.yml, unit-test.yml, integration-test-*.yml, base-package-functionality.yml | Primary PR testing and reusable test jobs |
+| **CI/Testing** | ci-fast.yml, ci-medium.yml, ci-slow-develop.yml, slow-ci-on-pr.yml, unit-test.yml, integration-test-*.yml, base-package-functionality.yml | Primary PR, merge-queue, develop qualification, and reusable test jobs |
 | **Linting/Quality** | linting.yml, spellcheck.yml, zizmor.yml, check-links.yml, check-markdown-links.yml, gitbook-redirect-check.yml, validate-changelog.yml | Code quality, docs links, changelog, and workflow security checks |
 | **Release/Nightly** | release.yml, release_prepare.yml, release_finalize.yml, publish_*.yml, nightly_build.yml | PyPI, Docker, Helm, stack template, and nightly publishing |
 | **Security** | codeql.yml, trivy-*.yml, zizmor.yml | Static analysis and vulnerability/supply-chain scanning |
@@ -17,7 +17,7 @@ This document provides guidance for AI assistants working with ZenML's GitHub Ac
 
 ### Entry Points vs Reusable Workflows
 
-**Entry points** (triggered externally): ci-fast.yml, ci-slow.yml, release.yml, nightly_build.yml, check-links.yml, check-markdown-links.yml, gitbook-redirect-check.yml, validate-changelog.yml, zizmor.yml
+**Entry points** (triggered externally): ci-fast.yml, ci-medium.yml, ci-slow-develop.yml, slow-ci-on-pr.yml, release.yml, nightly_build.yml, check-links.yml, check-markdown-links.yml, gitbook-redirect-check.yml, validate-changelog.yml, zizmor.yml
 
 **Reusable workflows** (called via `workflow_call`): unit-test.yml, linting.yml, integration-test-*.yml, base-package-functionality.yml, publish_*.yml
 
@@ -33,7 +33,8 @@ Runs automatically on all PRs, merge queue entries, and pushes to develop:
 - SQLite migration testing
 - Static checks (ubuntu, Python 3.13) — spellcheck, Ruff, and pydoclint
 - Fast unit and non-slow integration coverage through `linux-fast-offload.yml`
-- Separate Modal MySQL offload lane through `linux-fast-offload.yml`
+- Fork PR fallback unit, default integration, and local MySQL integration coverage when Modal offload cannot run
+- Separate Modal MySQL serial shared-state lane
 - API docs buildability test
 
 ### ci-medium.yml (Merge Queue)
@@ -49,10 +50,12 @@ Runs merge-queue validation beyond fast PR checks:
 
 The slow matrix includes:
 - Multi-OS: Ubuntu, Windows, macOS
-- Python 3.13
+- Python 3.10, 3.11, 3.12, and 3.13 coverage where supported by the lane
 - Full database migration tests (MySQL, MariaDB, SQLite)
 - VSCode tutorial pipeline tests
 - Base package functionality tests
+
+`slow-ci-on-pr.yml` is advisory for labeled PRs and must not publish develop-red incidents; only scheduled/manual develop qualification should do that.
 
 ## Release Process
 

@@ -109,6 +109,35 @@ jobs:
       python-version: '3.13'
       use-offload: true
     secrets: inherit
+  fork-local-unit-test:
+    if: github.event_name == 'pull_request' && github.event.pull_request.draft ==
+      false && github.event.pull_request.head.repo.full_name != github.repository
+    uses: ./.github/workflows/unit-test.yml
+    with:
+      python-version: '3.13'
+      os: ubuntu-latest
+      install_integrations: 'yes'
+    secrets: inherit
+  fork-local-default-integration-test:
+    if: github.event_name == 'pull_request' && github.event.pull_request.draft ==
+      false && github.event.pull_request.head.repo.full_name != github.repository
+    uses: ./.github/workflows/integration-test-fast.yml
+    with:
+      python-version: '3.13'
+      os: ubuntu-latest
+      test_environment: default
+      ci_tier: fast
+    secrets: inherit
+  fork-local-mysql-integration-test:
+    if: github.event_name == 'pull_request' && github.event.pull_request.draft ==
+      false && github.event.pull_request.head.repo.full_name != github.repository
+    uses: ./.github/workflows/integration-test-fast.yml
+    with:
+      python-version: '3.13'
+      os: ubuntu-latest
+      test_environment: docker-server-docker-orchestrator-mysql
+      ci_tier: fast
+    secrets: inherit
   default-serial-dynamic-pipeline-test:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
       false
@@ -195,7 +224,7 @@ jobs:
           os: ubuntu-latest
           install_integrations: 'no'
       - name: Install Modal SDK
-        run: python -m pip install --upgrade 'modal>=1.0.0'
+        run: python -m pip install -r scripts/ci/modal_sandbox_requirements.txt
       - name: Prepare result directory
         run: mkdir -p .ci/modal-mysql-serial
       - name: Start Modal MySQL sandbox
@@ -248,6 +277,9 @@ jobs:
       - api-docs-test
       - static-checks
       - linux-fast-offload
+      - fork-local-unit-test
+      - fork-local-default-integration-test
+      - fork-local-mysql-integration-test
       - default-serial-dynamic-pipeline-test
       - modal-mysql-serial-shared-state-tests
     if: always() && (github.event_name != 'pull_request' || github.event.pull_request.draft
@@ -259,14 +291,20 @@ jobs:
       - name: Verify required fast CI jobs
         env:
           NEEDS_CONTEXT: ${{ toJSON(needs) }}
-          ALLOW_FORK_OFFLOAD_SKIPS: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name
+          IS_FORK_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name
             != github.repository }}
         run: |-
           args=()
-          if [ "$ALLOW_FORK_OFFLOAD_SKIPS" = "true" ]; then
+          if [ "$IS_FORK_PR" = "true" ]; then
             args+=(
               --allow-skipped linux-fast-offload
               --allow-skipped modal-mysql-serial-shared-state-tests
+            )
+          else
+            args+=(
+              --allow-skipped fork-local-unit-test
+              --allow-skipped fork-local-default-integration-test
+              --allow-skipped fork-local-mysql-integration-test
             )
           fi
           python scripts/ci/verify_required_jobs.py \

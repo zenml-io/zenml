@@ -15,6 +15,11 @@ from ci_matrix_hash import compute_matrix_hash
 
 CHECK_NAME = "ci-slow-develop/qualification"
 
+TARGET_TITLES = {
+    "develop": "develop",
+    "pr": "PR ref",
+}
+
 
 def _github_request(url: str, method: str, payload: dict) -> dict:
     token = os.environ["GITHUB_TOKEN"]
@@ -34,7 +39,7 @@ def _github_request(url: str, method: str, payload: dict) -> dict:
         return json.loads(response.read().decode("utf-8"))
 
 
-def _develop_sha() -> str:
+def _current_sha() -> str:
     return subprocess.check_output(
         ["git", "rev-parse", "HEAD"], text=True
     ).strip()
@@ -47,6 +52,9 @@ def main() -> None:
         "--conclusion", choices=["success", "failure"], required=True
     )
     parser.add_argument("--incident", action="store_true")
+    parser.add_argument(
+        "--target", choices=sorted(TARGET_TITLES), default="develop"
+    )
     args = parser.parse_args()
 
     repository = os.environ["GITHUB_REPOSITORY"]
@@ -59,14 +67,12 @@ def main() -> None:
     matrix_hash = compute_matrix_hash(
         Path(".github/workflows/ci-slow-develop.yml")
     )
-    sha = _develop_sha()
+    sha = _current_sha()
     run_url = f"{server_url}/{repository}/actions/runs/{run_id}"
 
-    title = (
-        "Slow CI passed on develop"
-        if args.conclusion == "success"
-        else "Slow CI failed on develop"
-    )
+    target_title = TARGET_TITLES[args.target]
+    result_verb = "passed" if args.conclusion == "success" else "failed"
+    title = f"Slow CI {result_verb} on {target_title}"
     summary = "\n".join(
         [
             "| Field | Value |",

@@ -174,11 +174,13 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-        if: github.event.pull_request.head.repo.fork == false && (contains(inputs.test_environment,
-          'docker') || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
-          'airflow') || contains(inputs.test_environment, 'kubernetes'))
+        if: (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork
+          == false) && (contains(inputs.test_environment, 'docker') || contains(inputs.test_environment,
+          'kubeflow') || contains(inputs.test_environment, 'airflow') || contains(inputs.test_environment,
+          'kubernetes'))
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
           ref: ${{ inputs.git-ref || github.event.pull_request.head.sha || github.sha }}
       - name: Restore uv cache
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5

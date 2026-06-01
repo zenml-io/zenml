@@ -10,11 +10,32 @@ on:
         type: string
         required: false
         default: develop
+      publish-incident:
+        description: Publish a develop incident issue when qualification fails
+        type: boolean
+        required: false
+        default: true
+      qualification-target:
+        description: Human-readable target for check run output
+        type: string
+        required: false
+        default: develop
   workflow_dispatch:
     inputs:
       git-ref:
         description: Git branch or ref to qualify
         type: string
+        required: false
+        default: develop
+      publish-incident:
+        description: Publish a develop incident issue when qualification fails
+        type: boolean
+        required: false
+        default: true
+      qualification-target:
+        description: Human-readable target for check run output
+        type: choice
+        options: [develop, pr]
         required: false
         default: develop
 permissions:
@@ -29,84 +50,97 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       git-ref: ${{ steps.ref.outputs.git-ref }}
+      publish-incident: ${{ steps.ref.outputs.publish-incident }}
+      qualification-target: ${{ steps.ref.outputs.qualification-target }}
     steps:
       - id: ref
         env:
           GIT_REF: ${{ inputs.git-ref || 'develop' }}
-        run: echo "git-ref=${GIT_REF}" >> "$GITHUB_OUTPUT"
-  mysql-db-migration-testing-random:
+          PUBLISH_INCIDENT: ${{ inputs.publish-incident }}
+          QUALIFICATION_TARGET: ${{ inputs.qualification-target || 'develop' }}
+        run: |
+          echo "git-ref=${GIT_REF}" >> "$GITHUB_OUTPUT"
+          if [ "${PUBLISH_INCIDENT:-true}" = "false" ]; then
+            echo "publish-incident=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish-incident=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "qualification-target=${QUALIFICATION_TARGET}" >> "$GITHUB_OUTPUT"
+  mysql-db-migration-testing-full:
     needs: resolve-ref
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
-      RANDOM_MIGRATION_COUNT: 5
-      RANDOM_MIGRATION_SEED: ${{ github.run_number }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
           ref: ${{ needs.resolve-ref.outputs.git-ref }}
           fetch-depth: 0
-      - name: Set up Python 3.13
+      - name: Set up Python 3.10
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
-          python-version: '3.13'
+          python-version: '3.10'
       - name: Login to Docker Hub
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork
+          == false
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Test random migrations
-        run: bash scripts/test-migrations.sh mysql random
-  sqlite-db-migration-testing-random:
+      - name: Test full migrations
+        run: bash scripts/test-migrations.sh mysql full
+  sqlite-db-migration-testing-full:
     needs: resolve-ref
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
-      RANDOM_MIGRATION_COUNT: 5
-      RANDOM_MIGRATION_SEED: ${{ github.run_number }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
           ref: ${{ needs.resolve-ref.outputs.git-ref }}
           fetch-depth: 0
-      - name: Set up Python 3.13
+      - name: Set up Python 3.10
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
-          python-version: '3.13'
-      - name: Test random migrations
-        run: bash scripts/test-migrations.sh sqlite random
-  mariadb-db-migration-testing-random:
+          python-version: '3.10'
+      - name: Test full migrations
+        run: bash scripts/test-migrations.sh sqlite full
+  mariadb-db-migration-testing-full:
     needs: resolve-ref
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
-      RANDOM_MIGRATION_COUNT: 5
-      RANDOM_MIGRATION_SEED: ${{ github.run_number }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
           ref: ${{ needs.resolve-ref.outputs.git-ref }}
           fetch-depth: 0
-      - name: Set up Python 3.13
+      - name: Set up Python 3.10
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
-          python-version: '3.13'
+          python-version: '3.10'
       - name: Login to Docker Hub
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork
+          == false
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Test random migrations
-        run: bash scripts/test-migrations.sh mariadb random
+      - name: Test full migrations
+        run: bash scripts/test-migrations.sh mariadb full
   small-checks:
     needs: resolve-ref
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
           ref: ${{ needs.resolve-ref.outputs.git-ref }}
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
@@ -151,7 +185,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.13']
+        python-version: ['3.10', '3.12', '3.13']
       fail-fast: false
     uses: ./.github/workflows/linting.yml
     with:
@@ -164,7 +198,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.13']
+        python-version: ['3.10', '3.12', '3.13']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -177,7 +211,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ['3.13']
+        python-version: ['3.10', '3.11', '3.12', '3.13']
       fail-fast: false
     uses: ./.github/workflows/linting.yml
     with:
@@ -190,7 +224,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ['3.13']
+        python-version: ['3.10', '3.11', '3.12', '3.13']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -203,7 +237,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ['3.13']
+        python-version: ['3.10', '3.11', '3.12', '3.13']
       fail-fast: false
     uses: ./.github/workflows/linting.yml
     with:
@@ -216,7 +250,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ['3.13']
+        python-version: ['3.10', '3.11', '3.12', '3.13']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -231,7 +265,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ['3.13']
+        python-version: ['3.10', '3.11', '3.12', '3.13']
         test_environment: [default]
       fail-fast: false
     uses: ./.github/workflows/integration-test-slow.yml
@@ -246,7 +280,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ['3.13']
+        python-version: ['3.10', '3.11', '3.12', '3.13']
         test_environment: [default]
       fail-fast: false
     uses: ./.github/workflows/integration-test-slow.yml
@@ -260,12 +294,25 @@ jobs:
     needs: [resolve-ref, ubuntu-unit-test]
     strategy:
       matrix:
-        os: [ubuntu-latest]
-        python-version: ['3.13']
-        test_environment:
-          - default
-          - docker-server-docker-orchestrator-mysql
-          - docker-server-docker-orchestrator-mariadb
+        include:
+          - os: ubuntu-latest
+            python-version: '3.10'
+            test_environment: default
+          - os: ubuntu-latest
+            python-version: '3.11'
+            test_environment: default
+          - os: ubuntu-latest
+            python-version: '3.12'
+            test_environment: default
+          - os: ubuntu-latest
+            python-version: '3.13'
+            test_environment: default
+          - os: ubuntu-latest
+            python-version: '3.13'
+            test_environment: docker-server-docker-orchestrator-mysql
+          - os: ubuntu-latest
+            python-version: '3.13'
+            test_environment: docker-server-docker-orchestrator-mariadb
       fail-fast: false
     uses: ./.github/workflows/integration-test-slow.yml
     with:
@@ -285,7 +332,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.13']
+        python-version: ['3.11', '3.13']
       fail-fast: false
     uses: ./.github/workflows/base-package-functionality.yml
     with:
@@ -296,9 +343,9 @@ jobs:
   publish-qualification-success:
     needs:
       - resolve-ref
-      - mysql-db-migration-testing-random
-      - sqlite-db-migration-testing-random
-      - mariadb-db-migration-testing-random
+      - mysql-db-migration-testing-full
+      - sqlite-db-migration-testing-full
+      - mariadb-db-migration-testing-full
       - small-checks
       - ubuntu-unit-test
       - windows-unit-test
@@ -313,18 +360,23 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
           ref: ${{ needs.resolve-ref.outputs.git-ref }}
           fetch-depth: 0
       - name: Publish qualification Check Run
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python scripts/publish_ci_qualification.py --conclusion success
+          QUALIFICATION_TARGET: ${{ needs.resolve-ref.outputs.qualification-target }}
+        run: >-
+          python scripts/publish_ci_qualification.py
+          --conclusion success
+          --target "$QUALIFICATION_TARGET"
   publish-qualification-failure:
     needs:
       - resolve-ref
-      - mysql-db-migration-testing-random
-      - sqlite-db-migration-testing-random
-      - mariadb-db-migration-testing-random
+      - mysql-db-migration-testing-full
+      - sqlite-db-migration-testing-full
+      - mariadb-db-migration-testing-full
       - small-checks
       - ubuntu-unit-test
       - windows-unit-test
@@ -339,9 +391,17 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
           ref: ${{ needs.resolve-ref.outputs.git-ref }}
           fetch-depth: 0
       - name: Publish failure Check Run and incident
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python scripts/publish_ci_qualification.py --conclusion failure --incident
+          PUBLISH_INCIDENT: ${{ needs.resolve-ref.outputs.publish-incident }}
+          QUALIFICATION_TARGET: ${{ needs.resolve-ref.outputs.qualification-target }}
+        run: |
+          args=(--conclusion failure --target "$QUALIFICATION_TARGET")
+          if [ "$PUBLISH_INCIDENT" = "true" ]; then
+            args+=(--incident)
+          fi
+          python scripts/publish_ci_qualification.py "${args[@]}"

@@ -217,9 +217,10 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-        if: github.event.pull_request.head.repo.fork == false && (contains(env.EFFECTIVE_TEST_ENVIRONMENT,
-          'docker') || contains(env.EFFECTIVE_TEST_ENVIRONMENT, 'kubeflow') || contains(env.EFFECTIVE_TEST_ENVIRONMENT,
-          'airflow') || contains(env.EFFECTIVE_TEST_ENVIRONMENT, 'kubernetes'))
+        if: (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork
+          == false) && (contains(env.EFFECTIVE_TEST_ENVIRONMENT, 'docker') || contains(env.EFFECTIVE_TEST_ENVIRONMENT,
+          'kubeflow') || contains(env.EFFECTIVE_TEST_ENVIRONMENT, 'airflow') || contains(env.EFFECTIVE_TEST_ENVIRONMENT,
+          'kubernetes'))
       - name: Setup environment
         uses: ./.github/actions/setup_environment
         with:

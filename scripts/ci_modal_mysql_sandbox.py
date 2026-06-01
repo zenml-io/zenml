@@ -142,7 +142,7 @@ def _get_modal() -> Any:
     except ImportError as exc:
         raise RuntimeError(
             "The 'modal' package is required. Install it with "
-            "`python -m pip install --upgrade 'modal>=1.0.0'`."
+            "`python -m pip install -r scripts/ci/modal_sandbox_requirements.txt`."
         ) from exc
     return modal
 

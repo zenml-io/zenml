@@ -1,10 +1,7 @@
 ---
 name: ci-medium
 on:
-  workflow_dispatch:
   merge_group:
-  pull_request:
-    types: [opened, synchronize, ready_for_review]
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -164,14 +161,14 @@ jobs:
         with:
           python-version: '3.13'
       - name: Install Modal SDK
-        run: python -m pip install --upgrade 'modal>=1.0.0'
+        run: python -m pip install -r scripts/ci/modal_sandbox_requirements.txt
       - id: start
         name: Start Modal MySQL sandbox
         env:
           ZENML_CI_MODAL_DISABLED: ${{ vars.ZENML_CI_MODAL_DISABLED }}
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
-          ZENML_CI_CHECKOUT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+          ZENML_CI_CHECKOUT_REF: ${{ github.sha }}
         run: python scripts/ci_modal_mysql_sandbox.py start
   remote-mysql-modal-integration-test:
     needs: [modal-enabled, linting, start-modal-mysql-sandbox]
@@ -204,7 +201,7 @@ jobs:
         with:
           python-version: '3.13'
       - name: Install Modal SDK
-        run: python -m pip install --upgrade 'modal>=1.0.0'
+        run: python -m pip install -r scripts/ci/modal_sandbox_requirements.txt
       - name: Stop Modal MySQL sandbox
         env:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}

@@ -7548,6 +7548,16 @@ class SqlZenStore(BaseZenStore):
                 hydrate=hydrate,
             )
 
+    @staticmethod
+    def _get_root_run_id_for_run(run_id: UUID, session: Session) -> UUID:
+        """Get the root pipeline run ID for a run."""
+        root_run_id = session.exec(
+            select(PipelineRunSchema.root_run_id).where(
+                PipelineRunSchema.id == run_id
+            )
+        ).one()
+        return root_run_id or run_id
+
     def resolve_run_wait_condition(
         self,
         run_wait_condition_id: UUID,
@@ -7622,13 +7632,8 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=True,
                 include_resources=True,
             )
-            root_run_id = (
-                session.exec(
-                    select(PipelineRunSchema.root_run_id).where(
-                        PipelineRunSchema.id == updated_schema.run_id
-                    )
-                ).one()
-                or updated_schema.run_id
+            root_run_id = self._get_root_run_id_for_run(
+                run_id=updated_schema.run_id, session=session
             )
 
         if resolved_model.resolution == RunWaitConditionResolution.CONTINUE:
@@ -7708,21 +7713,12 @@ class SqlZenStore(BaseZenStore):
                     )
 
             run_id = schema.run_id
-            root_run_id = (
-                session.exec(
-                    select(PipelineRunSchema.root_run_id).where(
-                        PipelineRunSchema.id == run_id
-                    )
-                ).one()
-                or run_id
+            root_run_id = self._get_root_run_id_for_run(
+                run_id=run_id, session=session
             )
             resolution = schema.resolution
             session.add(schema)
             session.commit()
-
-            resolution = schema.resolution
-            run_id = schema.run_id
-            root_run_id = schema.run.root_run_id or run_id
 
         if (
             lease_update.mode == RunWaitConditionLeaseMode.ABANDON

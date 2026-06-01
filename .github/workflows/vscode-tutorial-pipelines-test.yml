@@ -43,6 +43,7 @@ jobs:
       - name: Checkout ZenML code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
           ref: ${{ inputs.git-ref || github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
       - name: Set up Python 3.13
@@ -82,9 +83,12 @@ jobs:
         run: |
           uv venv
       - name: Install ZenML from current branch
+        env:
+          ZENML_TEST_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ZENML_TEST_REF: ${{ inputs.git-ref || github.event.pull_request.head.sha || github.sha }}
         run: |
           source .venv/bin/activate
-          uv pip install "git+https://github.com/${{ github.repository }}@${{ github.sha }}[server,templates,dev]"
+          uv pip install "git+https://github.com/${ZENML_TEST_REPOSITORY}@${ZENML_TEST_REF}[server,templates,dev]"
       - name: Install tutorial requirements
         run: |
           source .venv/bin/activate
