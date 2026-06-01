@@ -48,8 +48,17 @@ def assert_extra_step():
     assert extra == {"a": 1}
 
 
-def test_pipeline_with_model_from_yaml(clean_client: "Client", tmp_path):
+def test_pipeline_with_model_from_yaml(
+    clean_client: "Client",
+    tmp_path,
+    request: pytest.FixtureRequest,
+):
     """Test that the pipeline can be configured with a model version from a yaml file."""
+    if request.config.getoption("environment") == "remote-mysql-modal":
+        pytest.fail(
+            "CI coverage canary: Modal/MySQL integration offload should fail"
+        )
+
     model = Model(
         name="foo",
         description="description",
