@@ -17,7 +17,7 @@ Wraps the ``k8s-agent-sandbox`` Python SDK's ``SandboxClient`` /
 ``Sandbox`` primitives in the ``BaseSandbox`` interface. The SDK exposes
 ``sandbox.commands.run(cmd)`` as a single blocking call returning a full
 ``ExecutionResult`` — there is no server-side streaming endpoint in the
-current operator. This implementation honours the SDK contract: each
+current operator. This implementation honors the SDK contract: each
 ``exec()`` issues one HTTP POST and surfaces the captured streams as
 one-shot ``stdout()`` / ``stderr()`` iterators on
 ``K8sAgentSandboxProcess``. Real per-line streaming will land alongside the
@@ -254,7 +254,7 @@ class K8sAgentSandboxSession(SandboxSession):
             sandbox: The live ``Sandbox`` returned by
                 ``SandboxClient.create_sandbox``.
             parent: The owning ``BaseSandbox`` component.
-            inline_template_name: Name of an inline-synthesised
+            inline_template_name: Name of an inline-synthesized
                 SandboxTemplate CR to delete on close, or ``None`` when
                 the session was created from a pre-existing template.
             inline_template_namespace: Namespace of the inline template
@@ -334,7 +334,7 @@ class K8sAgentSandboxSession(SandboxSession):
         agent-sandbox operator has no built-in TTL on a SandboxClaim,
         so a `with create_session()` block that exits via ``close()``
         will leave the underlying pod running until explicitly
-        destroyed (or cleaned up cluster-side). Inline-synthesised
+        destroyed (or cleaned up cluster-side). Inline-synthesized
         SandboxTemplate CRs ARE cleaned up here, since they're scoped
         to this session (the operator copies the spec into the
         SandboxClaim at claim time, so the template itself becomes
@@ -347,7 +347,7 @@ class K8sAgentSandboxSession(SandboxSession):
         self._close_log_ctx()
 
     def destroy(self) -> None:
-        """Terminates the underlying Sandbox and finalises the session.
+        """Terminates the underlying Sandbox and finalizes the session.
 
         Calls the SDK's ``Sandbox.terminate()`` (deletes the
         SandboxClaim CR; the operator garbage-collects the pod) and
@@ -374,7 +374,7 @@ class K8sAgentSandboxSession(SandboxSession):
         self._close_log_ctx()
 
     def _delete_inline_template(self) -> None:
-        """Best-effort delete of the inline-synthesised SandboxTemplate CR.
+        """Best-effort delete of the inline-synthesized SandboxTemplate CR.
 
         Idempotent: clears the tracker before the API call so a second
         call (e.g. ``destroy()`` after ``close()``) is a no-op even if
@@ -598,7 +598,7 @@ class K8sAgentSandbox(BaseSandbox):
             the SDK's example ``python-sandbox-template.yaml``: a
             single container exposing port 8888 with an HTTP readiness
             probe, plus resource requests/limits and any pod-level
-            customisations from settings.
+            customizations from settings.
 
         Raises:
             ValueError: If neither per-step ``base_image`` nor
@@ -700,7 +700,7 @@ class K8sAgentSandbox(BaseSandbox):
     ) -> str:
         """Creates a one-off SandboxTemplate CR for this session.
 
-        Synthesised templates are short-lived — they exist only to back
+        Synthesized templates are short-lived — they exist only to back
         a single Sandbox claim and are deleted on session close (unless
         ``inline_template_cleanup=False`` on the component config).
 
@@ -749,7 +749,7 @@ class K8sAgentSandbox(BaseSandbox):
 
         Resolves ``settings`` against the component config, then either
         references the configured ``template_name`` or — in inline mode
-        — synthesises a SandboxTemplate CR from ``base_image`` +
+        — synthesizes a SandboxTemplate CR from ``base_image`` +
         ResourceSettings before claiming the sandbox.
 
         Args:
@@ -763,7 +763,7 @@ class K8sAgentSandbox(BaseSandbox):
                 ``_synthesize_inline_template`` raises — typically a
                 ``RuntimeError`` from the kubernetes API (RBAC, missing
                 CRDs, namespace permissions) or an SDK timeout when the
-                claim doesn't become Ready. Any inline-synthesised
+                claim doesn't become Ready. Any inline-synthesized
                 SandboxTemplate CR is cleaned up before re-raising.
         """
         eff = cast(
@@ -779,12 +779,12 @@ class K8sAgentSandbox(BaseSandbox):
             namespace = eff.namespace
 
             template_name = eff.template_name
-            synthesised_name: Optional[str] = None
+            synthesized_name: Optional[str] = None
             if not template_name:
                 template_name = self._synthesize_inline_template(
                     eff, namespace
                 )
-                synthesised_name = template_name
+                synthesized_name = template_name
 
             try:
                 sandbox = self._build_client().create_sandbox(
@@ -798,28 +798,28 @@ class K8sAgentSandbox(BaseSandbox):
                 # accumulate orphans, regardless of the user's
                 # `inline_template_cleanup` setting (which only governs
                 # *successful* session teardown).
-                if synthesised_name:
+                if synthesized_name:
                     try:
-                        _delete_sandbox_template(synthesised_name, namespace)
+                        _delete_sandbox_template(synthesized_name, namespace)
                     except Exception as cleanup_exc:  # noqa: BLE001
                         logger.warning(
                             "Failed to clean up orphan SandboxTemplate "
                             "'%s/%s' after create_sandbox failure: %s",
                             namespace,
-                            synthesised_name,
+                            synthesized_name,
                             cleanup_exc,
                         )
                 raise
 
             track_for_cleanup = (
-                synthesised_name is not None
+                synthesized_name is not None
                 and self.config.inline_template_cleanup
             )
             return K8sAgentSandboxSession(
                 sandbox,
                 parent=self,
                 inline_template_name=(
-                    synthesised_name if track_for_cleanup else None
+                    synthesized_name if track_for_cleanup else None
                 ),
                 inline_template_namespace=(
                     namespace if track_for_cleanup else None

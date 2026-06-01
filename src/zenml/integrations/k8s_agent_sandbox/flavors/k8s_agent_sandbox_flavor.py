@@ -102,7 +102,7 @@ class K8sAgentSandboxSettings(BaseSandboxSettings):
     )
     pod_settings: Optional[KubernetesPodSettings] = Field(
         default=None,
-        description="Full Kubernetes pod customisation reusing the "
+        description="Full Kubernetes pod customization reusing the "
         "Kubernetes orchestrator's ``KubernetesPodSettings`` surface — "
         "node_selectors, affinity, tolerations, volume_mounts, env, "
         "security_context, additional_pod_spec_args, etc. Only applied "
@@ -168,7 +168,7 @@ class K8sAgentSandboxConfig(BaseSandboxConfig, K8sAgentSandboxSettings):
     )
     inline_template_cleanup: bool = Field(
         default=True,
-        description="Whether to delete synthesised SandboxTemplate "
+        description="Whether to delete synthesized SandboxTemplate "
         "custom resources at session close. ``True`` (default) keeps "
         "the cluster clean; set ``False`` for debugging when you want "
         "to inspect the generated CR after the session exits.",

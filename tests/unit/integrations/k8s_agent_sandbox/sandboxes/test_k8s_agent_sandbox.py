@@ -225,7 +225,7 @@ class TestCreateSession:
         kwargs = fake_client.create_sandbox.call_args.kwargs
         assert kwargs["namespace"] == "experiments"
 
-    def test_synthesises_inline_template_when_template_name_unset(
+    def test_synthesizes_inline_template_when_template_name_unset(
         self,
     ) -> None:
         sb = _make_sandbox(
@@ -258,7 +258,7 @@ class TestCreateSession:
         assert container["ports"][0]["containerPort"] == 8888
         assert container["readinessProbe"]["httpGet"]["port"] == 8888
         assert container["livenessProbe"]["httpGet"]["port"] == 8888
-        # SDK got the synthesised name.
+        # SDK got the synthesized name.
         sdk_kwargs = fake_client.create_sandbox.call_args.kwargs
         assert sdk_kwargs["template"] == body["metadata"]["name"]
         # Session tracks the inline template for cleanup.
@@ -468,7 +468,7 @@ class TestInlineTemplateBody:
     def test_pod_settings_applied_via_manifest_utils(self) -> None:
         # `add_pod_settings` should plumb node_selectors / tolerations
         # / affinity through. We verify by setting node_selectors and
-        # checking it lands in the serialised dict.
+        # checking it lands in the serialized dict.
         from zenml.integrations.kubernetes.pod_settings import (
             KubernetesPodSettings,
         )
@@ -585,7 +585,7 @@ class TestSessionLifecycle:
 
 class TestProcessSurface:
     def test_stdout_yields_line_by_line(self) -> None:
-        # Honour the SandboxProcess line-iterator contract: each line is
+        # Honor the SandboxProcess line-iterator contract: each line is
         # one yield, trailing newline preserved.
         result = MagicMock(stdout="hello\nworld\n", stderr="", exit_code=0)
         proc = K8sAgentSandboxProcess(result, session=None)
