@@ -136,14 +136,17 @@ jobs:
               all)
                 offload_lane="default"
                 offload_config="offload.toml"
+                offload_parallel="20"
                 ;;
               unit)
                 offload_lane="default-unit"
                 offload_config="offload-unit.toml"
+                offload_parallel="2"
                 ;;
               integration)
                 offload_lane="default-integration"
                 offload_config="offload-default-integration.toml"
+                offload_parallel="10"
                 ;;
               *)
                 echo "Unsupported default test suite: $TEST_SUITE" >&2
@@ -153,12 +156,14 @@ jobs:
           elif [ "$TEST_ENVIRONMENT" = "modal-server-mysql" ] && [ "$TEST_SUITE" = "all" ]; then
             offload_lane="modal-server-mysql"
             offload_config="offload-modal-server-mysql.toml"
+            offload_parallel="10"
           else
             echo "Unsupported offload environment/suite: $TEST_ENVIRONMENT/$TEST_SUITE" >&2
             exit 2
           fi
           echo "lane=$offload_lane" >> "$GITHUB_OUTPUT"
           echo "config=$offload_config" >> "$GITHUB_OUTPUT"
+          echo "parallel=$offload_parallel" >> "$GITHUB_OUTPUT"
           python3 scripts/ci/compute_offload_cache_keys.py \
             --lane "$offload_lane" \
             --runner-os "$RUNNER_OS_NAME" \
@@ -275,6 +280,7 @@ jobs:
         env:
           TEST_ENVIRONMENT: ${{ inputs.test_environment }}
           OFFLOAD_CONFIG: ${{ steps.cache-keys.outputs.config }}
+          OFFLOAD_PARALLEL: ${{ steps.cache-keys.outputs.parallel }}
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
           MODAL_CI_SERVER_URL: ${{ steps.modal-server.outputs.server_url }}
@@ -321,9 +327,9 @@ jobs:
           print(f"junit_marker_mtime_ns={marker.stat().st_mtime_ns}")
           PY
           echo "started_at=$(date +%s)" >> "$GITHUB_OUTPUT"
-          echo "Running: offload -v run --parallel 20"
+          echo "Running: offload -v run --parallel ${OFFLOAD_PARALLEL}"
           set +e
-          offload -v run --parallel 20 2>&1 | tee .ci/offload/offload.log
+          offload -v run --parallel "${OFFLOAD_PARALLEL}" 2>&1 | tee .ci/offload/offload.log
           offload_exit_code=${PIPESTATUS[0]}
           set -e
           echo "exit_code=$offload_exit_code" >> "$GITHUB_OUTPUT"

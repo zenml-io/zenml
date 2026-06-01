@@ -100,6 +100,8 @@ jobs:
         run: |
           uv pip install --system --force-reinstall --no-deps "docstring_parser_fork"
           pydoclint src/zenml tests/harness
+      - name: CI config unit tests
+        run: python -m pytest -p no:pytest_postgresql tests/unit/scripts/ci
   linux-fast-offload-unit:
     if: github.event_name != 'pull_request' || (github.event.pull_request.draft ==
       false && github.event.pull_request.head.repo.full_name == github.repository

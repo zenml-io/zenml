@@ -1,5 +1,5 @@
 [offload]
-max_parallel = 20
+max_parallel = 2
 test_timeout_secs = 960
 max_batch_duration_secs = 320
 sandbox_project_root = "/app"
@@ -23,7 +23,9 @@ run_args = "--no-provision --environment default -p no:randomly -p no:rerunfailu
 [groups.unit]
 retry_count = 0
 # These timing-sensitive dynamic pipeline tests are covered by a separate serial GitHub-runner job.
-filters = "tests/unit --deselect=tests/unit/execution/pipeline/dynamic/test_child_pipelines.py::test_wait_abort_aborts_run --deselect=tests/unit/execution/pipeline/dynamic/test_child_pipelines.py::test_parent_waits_while_child_runs_then_wait_resolves"
+# CI configuration tests run in the static-checks job before this workflow
+# swaps the active offload config file.
+filters = "tests/unit --ignore=tests/unit/scripts/ci --deselect=tests/unit/execution/pipeline/dynamic/test_child_pipelines.py::test_wait_abort_aborts_run --deselect=tests/unit/execution/pipeline/dynamic/test_child_pipelines.py::test_parent_waits_while_child_runs_then_wait_resolves"
 
 [report]
 output_dir = ".ci/offload"

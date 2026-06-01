@@ -53,13 +53,35 @@ def test_split_default_offload_configs_match_original_groups() -> None:
     integration_config = _load_config("offload-default-integration.toml")
 
     for split_config in (unit_config, integration_config):
-        assert split_config["offload"] == default_config["offload"]
+        assert (
+            split_config["offload"]["max_batch_duration_secs"]
+            == default_config["offload"]["max_batch_duration_secs"]
+        )
+        assert (
+            split_config["offload"]["test_timeout_secs"]
+            == default_config["offload"]["test_timeout_secs"]
+        )
+        assert (
+            split_config["offload"]["sandbox_project_root"]
+            == default_config["offload"]["sandbox_project_root"]
+        )
         assert split_config["provider"] == default_config["provider"]
         assert split_config["framework"] == default_config["framework"]
         assert split_config["report"] == default_config["report"]
 
+    assert unit_config["offload"]["max_parallel"] == 2
+    assert integration_config["offload"]["max_parallel"] == 10
     assert set(unit_config["groups"]) == {"unit"}
-    assert unit_config["groups"]["unit"] == default_config["groups"]["unit"]
+    assert (
+        unit_config["groups"]["unit"]["retry_count"]
+        == default_config["groups"]["unit"]["retry_count"]
+    )
+    unit_filters = unit_config["groups"]["unit"]["filters"]
+    assert "--ignore=tests/unit/scripts/ci" in unit_filters
+    assert (
+        unit_filters.replace(" --ignore=tests/unit/scripts/ci", "")
+        == default_config["groups"]["unit"]["filters"]
+    )
     assert set(integration_config["groups"]) == {"integration"}
     assert (
         integration_config["groups"]["integration"]
@@ -84,7 +106,7 @@ def test_modal_mysql_offload_config_is_valid() -> None:
     """Modal/MySQL offload config targets the remote server environment."""
     config = _load_config("offload-modal-server-mysql.toml")
 
-    assert config["offload"]["max_parallel"] == 20
+    assert config["offload"]["max_parallel"] == 10
     assert config["offload"]["max_batch_duration_secs"] == 320
     assert config["provider"]["type"] == "default"
     assert config["report"]["output_dir"] == ".ci/offload"

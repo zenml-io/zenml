@@ -1278,7 +1278,9 @@ def test_delete_service_account_with_resources_fails():
         zen_store.delete_service_account(service_account.id)
 
     with ServiceAccountContext(delete=False, login=True) as service_account:
-        model_context = ModelContext(create_version=True, delete=False)
+        model_context = ModelContext(
+            create_version=True, tags=[], delete=False
+        )
         with model_context:
             # We only use the context as a shortcut to create the resource
             pass
