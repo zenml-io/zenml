@@ -12,7 +12,7 @@ It is intended for:
 - Unit tests of code that consumes the `BaseSandbox` interface.
 - Local development against the abstraction.
 
-It is **not** intended for running untrusted LLM-generated code. For real isolation, use the [Modal](modal.md) flavor or wait for the upcoming container-based flavors (Agent Substrate, E2B, Daytona).
+It is **not** intended for running untrusted LLM-generated code. For real isolation, use a container-based flavor (Modal, Agent Substrate, E2B, Daytona) once they ship.
 
 A loud warning is emitted on every `create_session()` call to make the no-isolation property impossible to miss.
 
@@ -27,7 +27,7 @@ No deps, no setup, no API keys. Works wherever Python runs.
 
 ## Settings
 
-The Local sandbox inherits the base [`BaseSandboxSettings`](README.md#per-step-settings) — `environment`, `copy_local_env`, `timeout_seconds`. The `base_image` field is accepted for interface compatibility but ignored (there is no image concept locally) and logged as a warning if set. `copy_local_env` defaults to `True` so PATH/HOME flow into the subprocess (no isolation anyway, so this just matches user expectation).
+The Local sandbox inherits the base `BaseSandboxSettings` (`environment`, `copy_local_env`). `copy_local_env` defaults to `True` so PATH/HOME flow into the subprocess. Since there is no isolation, this matches user expectation, but it does mean the executed code sees every variable in your local environment (credentials, tokens). Set `copy_local_env=False` when running untrusted code.
 
 Component-level `environment` and `secrets` (set via `zenml sandbox register --env ... --secret ...`) flow into every subprocess.
 
