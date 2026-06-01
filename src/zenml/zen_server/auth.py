@@ -767,6 +767,8 @@ def authenticate_external_user(
             )
 
         if isinstance(payload, dict):
+            if payload.get("is_superuser"):
+                payload = {**payload, "is_admin": True}
             try:
                 external_user = ExternalUserModel.model_validate(payload)
             except Exception as e:
