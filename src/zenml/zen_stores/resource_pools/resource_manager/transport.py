@@ -136,6 +136,7 @@ class RMPoolLedgerOccupied(BaseModel):
     """Occupied pool capacity response from the Resource Manager API."""
 
     resource_id: UUID
+    resource_name: Optional[str] = None
     class_name: str = Field(alias="class", serialization_alias="class")
     quantity: int
 
@@ -295,10 +296,19 @@ class RMResourceRequestResponse(BaseModel):
     organization_id: UUID
     subjects: list[RMSubject] = Field(default_factory=list)
     demands: list[RMRequestDemand] = Field(default_factory=list)
+    allocations: list["RMAllocationResponse"] = Field(default_factory=list)
+    queue_entries: list["RMQueueEntryResponse"] = Field(default_factory=list)
+    pool_id: Optional[UUID] = None
+    pool_name: Optional[str] = None
     status: str
     reclaim_tolerance: str
     lease_expires_at: Optional[datetime] = None
     renewed_at: Optional[datetime] = None
+    created: Optional[datetime] = None
+    updated: Optional[datetime] = None
+    allocated_at: Optional[datetime] = None
+    released_at: Optional[datetime] = None
+    queued_at: Optional[datetime] = None
     status_reason: Optional[str] = None
     preemption_initiated_by_id: Optional[UUID] = None
     metadata: dict[str, Any] = Field(default_factory=dict)
@@ -318,9 +328,11 @@ class RMQueueEntryResponse(BaseModel):
     organization_id: UUID
     request_id: UUID
     pool_id: UUID
+    pool_name: str
     policy_id: UUID
     priority: int
     enqueued_at: datetime
+    created: Optional[datetime] = None
 
 
 class RMQueueEntryListResponse(BaseModel):
@@ -336,8 +348,11 @@ class RMAllocationResponse(BaseModel):
     id: UUID
     organization_id: UUID
     request_id: UUID
+    demand_index: int = Field(ge=0)
     pool_id: UUID
+    pool_name: str
     resource_id: UUID
+    resource_name: str
     class_name: str = Field(alias="class", serialization_alias="class")
     quantity: int
     unit: Optional[str] = None
@@ -352,6 +367,8 @@ class RMAllocationResponse(BaseModel):
     preemption_state: str
     preemption_reason: Optional[str] = None
     released_at: Optional[datetime] = None
+    created: Optional[datetime] = None
+    updated: Optional[datetime] = None
 
     model_config = ConfigDict(populate_by_name=True)
 

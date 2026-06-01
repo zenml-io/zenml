@@ -885,6 +885,7 @@ __all__ = [
     "ResourceDescriptorResponseBody",
     "ResourceDescriptorResponseMetadata",
     "ResourceDescriptorResponseResources",
+    "ResourceDescriptorUnit",
     "ResourceDescriptorUpdate",
     "ResourcePoolRequest",
     "ResourcePoolUpdate",
