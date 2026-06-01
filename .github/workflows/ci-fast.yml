@@ -102,25 +102,39 @@ jobs:
           pydoclint src/zenml tests/harness
   linux-fast-offload:
     if: github.event_name != 'pull_request' || (github.event.pull_request.draft ==
-      false && github.event.pull_request.head.repo.full_name == github.repository)
+      false && github.event.pull_request.head.repo.full_name == github.repository
+      && vars.ZENML_CI_MODAL_DISABLED != 'true')
     uses: ./.github/workflows/linux-fast-offload.yml
     with:
       backend: modal
       python-version: '3.13'
       use-offload: true
     secrets: inherit
-  fork-local-unit-test:
+  linux-fast-offload-modal-mysql:
+    if: (github.event_name != 'pull_request' || (github.event.pull_request.draft ==
+      false && github.event.pull_request.head.repo.full_name == github.repository))
+      && vars.ZENML_CI_MODAL_DISABLED != 'true'
+    uses: ./.github/workflows/linux-fast-offload.yml
+    with:
+      backend: modal
+      python-version: '3.13'
+      use-offload: true
+      test_environment: modal-server-mysql
+    secrets: inherit
+  local-fallback-unit-test:
     if: github.event_name == 'pull_request' && github.event.pull_request.draft ==
-      false && github.event.pull_request.head.repo.full_name != github.repository
+      false && (github.event.pull_request.head.repo.full_name != github.repository
+      || vars.ZENML_CI_MODAL_DISABLED == 'true')
     uses: ./.github/workflows/unit-test.yml
     with:
       python-version: '3.13'
       os: ubuntu-latest
       install_integrations: 'yes'
     secrets: inherit
-  fork-local-default-integration-test:
+  local-fallback-default-integration-test:
     if: github.event_name == 'pull_request' && github.event.pull_request.draft ==
-      false && github.event.pull_request.head.repo.full_name != github.repository
+      false && (github.event.pull_request.head.repo.full_name != github.repository
+      || vars.ZENML_CI_MODAL_DISABLED == 'true')
     uses: ./.github/workflows/integration-test-fast.yml
     with:
       python-version: '3.13'
@@ -128,9 +142,10 @@ jobs:
       test_environment: default
       ci_tier: fast
     secrets: inherit
-  fork-local-mysql-integration-test:
+  local-fallback-mysql-integration-test:
     if: github.event_name == 'pull_request' && github.event.pull_request.draft ==
-      false && github.event.pull_request.head.repo.full_name != github.repository
+      false && (github.event.pull_request.head.repo.full_name != github.repository
+      || vars.ZENML_CI_MODAL_DISABLED == 'true')
     uses: ./.github/workflows/integration-test-fast.yml
     with:
       python-version: '3.13'
@@ -235,6 +250,29 @@ jobs:
           ZENML_CI_MODAL_DISABLED: ${{ vars.ZENML_CI_MODAL_DISABLED }}
           ZENML_CI_CHECKOUT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
         run: python scripts/ci_modal_mysql_sandbox.py start
+      - name: Run serial global-state tests
+        env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+          MODAL_CI_SERVER_URL: ${{ steps.modal-server.outputs.server_url }}
+          MODAL_CI_SERVER_USERNAME: ${{ steps.modal-server.outputs.server_username }}
+          ZENML_CI_CHECKOUT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          export MODAL_CI_SERVER_PASSWORD
+          MODAL_CI_SERVER_PASSWORD=$(python - <<'PY'
+          from scripts.ci_modal_mysql_sandbox import derive_server_password
+          print(derive_server_password())
+          PY
+          )
+          unset MODAL_TOKEN_ID MODAL_TOKEN_SECRET
+          python -m pytest -p no:pytest_postgresql -v --tb=short \
+            --junitxml=.ci/modal-mysql-serial/global-state-junit.xml \
+            --no-provision --environment remote-mysql-modal \
+            -p no:randomly -p no:rerunfailures \
+            tests/integration/functional/cli/test_tag.py \
+            tests/integration/functional/zen_stores/test_secrets_store.py \
+            tests/integration/functional/zen_stores/test_zen_store.py \
+            -m "global_state and not slow"
       - name: Run serial shared-state tests
         env:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
@@ -251,7 +289,7 @@ jobs:
           )
           unset MODAL_TOKEN_ID MODAL_TOKEN_SECRET
           python -m pytest -p no:pytest_postgresql -v --tb=short \
-            --junitxml=.ci/modal-mysql-serial/junit.xml \
+            --junitxml=.ci/modal-mysql-serial/shared-state-junit.xml \
             --no-provision --environment remote-mysql-modal \
             -p no:randomly -p no:rerunfailures \
             tests/integration/functional/zen_stores/test_secrets_store.py::test_list_secrets_pagination_and_sorting \
@@ -277,9 +315,10 @@ jobs:
       - api-docs-test
       - static-checks
       - linux-fast-offload
-      - fork-local-unit-test
-      - fork-local-default-integration-test
-      - fork-local-mysql-integration-test
+      - linux-fast-offload-modal-mysql
+      - local-fallback-unit-test
+      - local-fallback-default-integration-test
+      - local-fallback-mysql-integration-test
       - default-serial-dynamic-pipeline-test
       - modal-mysql-serial-shared-state-tests
     if: always() && (github.event_name != 'pull_request' || github.event.pull_request.draft
@@ -291,20 +330,21 @@ jobs:
       - name: Verify required fast CI jobs
         env:
           NEEDS_CONTEXT: ${{ toJSON(needs) }}
-          IS_FORK_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name
-            != github.repository }}
+          USES_LOCAL_FALLBACK: ${{ github.event_name == 'pull_request' && (github.event.pull_request.head.repo.full_name
+            != github.repository || vars.ZENML_CI_MODAL_DISABLED == 'true') }}
         run: |-
           args=()
-          if [ "$IS_FORK_PR" = "true" ]; then
+          if [ "$USES_LOCAL_FALLBACK" = "true" ]; then
             args+=(
               --allow-skipped linux-fast-offload
+              --allow-skipped linux-fast-offload-modal-mysql
               --allow-skipped modal-mysql-serial-shared-state-tests
             )
           else
             args+=(
-              --allow-skipped fork-local-unit-test
-              --allow-skipped fork-local-default-integration-test
-              --allow-skipped fork-local-mysql-integration-test
+              --allow-skipped local-fallback-unit-test
+              --allow-skipped local-fallback-default-integration-test
+              --allow-skipped local-fallback-mysql-integration-test
             )
           fi
           python scripts/ci/verify_required_jobs.py \

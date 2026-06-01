@@ -5,6 +5,16 @@ from __future__ import annotations
 from pathlib import Path
 
 import tomllib
+import yaml
+
+
+def _global_state_test_files() -> set[str]:
+    """Return integration test files that contain global-state tests."""
+    return {
+        path.as_posix()
+        for path in Path("tests/integration").rglob("test_*.py")
+        if "global_state" in path.read_text()
+    }
 
 
 def test_fast_offload_config_is_valid() -> None:
@@ -65,3 +75,18 @@ def test_modal_mysql_offload_config_is_valid() -> None:
     )
     assert "MODAL_CI_SERVER_URL" in config["provider"]["create_command"]
     assert "MODAL_TOKEN_SECRET" not in config["provider"]["create_command"]
+
+
+def test_fast_ci_serial_modal_mysql_job_restores_excluded_tests() -> None:
+    """Serial Modal/MySQL job restores tests excluded from parallel offload."""
+    workflow = yaml.safe_load(
+        Path(".github/workflows/ci-fast.yml").read_text()
+    )
+    steps = workflow["jobs"]["modal-mysql-serial-shared-state-tests"]["steps"]
+    run_blocks = "\n".join(step.get("run", "") for step in steps)
+
+    assert '-m "global_state and not slow"' in run_blocks
+    for path in _global_state_test_files():
+        assert path in run_blocks
+    assert "test_list_secrets_pagination_and_sorting" in run_blocks
+    assert "test_deletion_of_links[True]" in run_blocks

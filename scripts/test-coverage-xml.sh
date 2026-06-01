@@ -17,8 +17,8 @@ STORE_DURATIONS=${5:-""}
 PYTEST_SELECTION_ARGS=("$TEST_SRC")
 if [[ "$1" == "integration" && "$TEST_ENVIRONMENT" == "remote-mysql-modal" ]]; then
     # The Modal lane validates the remote REST/MySQL server behavior. Keep it
-    # away from local examples and CLI/template checks that mutate process-wide
-    # state and already run in the normal local/server lanes.
+    # away from local examples and parallel-unsafe global-state checks. Fast CI
+    # runs those global-state checks serially against the same Modal/MySQL shape.
     PYTEST_SELECTION_ARGS=(
         tests/integration
         --ignore=tests/integration/examples
