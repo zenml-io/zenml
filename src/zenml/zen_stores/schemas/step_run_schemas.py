@@ -93,6 +93,15 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 "cache_key",
             ],
         ),
+        build_index(
+            table_name=__tablename__,
+            column_names=[
+                "project_id",
+                "cache_key",
+                "status",
+                "created",
+            ],
+        ),
     )
 
     # Fields

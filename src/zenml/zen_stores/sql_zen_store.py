@@ -144,6 +144,8 @@ from zenml.constants import (
     DEFAULT_PASSWORD,
     DEFAULT_STACK_AND_COMPONENT_NAME,
     DEFAULT_USERNAME,
+    DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE,
+    DEFAULT_ZENML_STORE_POOL_TIMEOUT,
     ENV_ZENML_DEFAULT_USER_NAME,
     ENV_ZENML_DEFAULT_USER_PASSWORD,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
@@ -643,6 +645,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         pool_pre_ping: Enable emitting a test statement on the SQL connection
             at the start of each connection pool checkout, to test that the
             database connection is still viable.
+        pool_timeout: The number of seconds to wait for a connection from the
+            SQLAlchemy pool before failing the checkout.
     """
 
     type: StoreType = StoreType.SQL
@@ -664,6 +668,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     pool_size: int = 20
     max_overflow: int = 20
     pool_pre_ping: bool = True
+    pool_timeout: int = DEFAULT_ZENML_STORE_POOL_TIMEOUT
 
     backup_strategy: DatabaseBackupStrategy = DatabaseBackupStrategy.IN_MEMORY
     custom_backup_engine: Optional[str] = None
@@ -988,6 +993,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 "pool_size": self.pool_size,
                 "max_overflow": self.max_overflow,
                 "pool_pre_ping": self.pool_pre_ping,
+                "pool_timeout": self.pool_timeout,
             }
 
             sql_url = sql_url._replace(
@@ -2377,19 +2383,55 @@ class SqlZenStore(BaseZenStore):
                 "the same ID already exists with a different method or URL."
             )
 
+        if (
+            api_transaction_schema.completed
+            and api_transaction_schema.expired is not None
+            and api_transaction_schema.expired < utc_now()
+        ):
+            session.delete(api_transaction_schema)
+            session.commit()
+            raise KeyError(
+                f"API transaction with ID {api_transaction_id} has expired."
+            )
+
         return api_transaction_schema
 
-    def cleanup_expired_api_transactions(self) -> None:
+    def cleanup_expired_api_transactions(
+        self,
+        batch_size: int = DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE,
+    ) -> int:
         """Delete completed API transactions that have expired."""
         with Session(self.engine) as session:
-            session.execute(
-                delete(ApiTransactionSchema).where(
+            query = (
+                select(ApiTransactionSchema.id)
+                .where(
                     col(ApiTransactionSchema.completed),
                     col(ApiTransactionSchema.expired) < utc_now(),
+                )
+                .order_by(
+                    col(ApiTransactionSchema.expired),
+                    col(ApiTransactionSchema.id),
+                )
+                .limit(batch_size)
+            )
+            if self.config.driver == SQLDatabaseDriver.MYSQL:
+                query = query.with_for_update(skip_locked=True)
+
+            expired_transaction_ids = session.exec(query).all()
+
+            if not expired_transaction_ids:
+                return 0
+
+            result = session.execute(
+                delete(ApiTransactionSchema).where(
+                    col(ApiTransactionSchema.id).in_(
+                        expired_transaction_ids
+                    )
                 )
             )
 
             session.commit()
+            return max(result.rowcount or 0, 0)
 
     def get_or_create_api_transaction(
         self, api_transaction: ApiTransactionRequest
@@ -2408,24 +2450,32 @@ class SqlZenStore(BaseZenStore):
                 request_model=api_transaction, session=session
             )
 
-            api_transaction_schema = ApiTransactionSchema.from_request(
-                api_transaction
-            )
-            session.add(api_transaction_schema)
             created = False
-            try:
-                session.commit()
-                created = True
-            except IntegrityError:
-                # We have to rollback the failed session first in order to
-                # continue using it
-                session.rollback()
-                api_transaction_schema = self._get_api_transaction(
-                    api_transaction_id=api_transaction_schema.id,
-                    method=api_transaction.method,
-                    url=api_transaction.url,
-                    session=session,
+            for attempt in range(2):
+                api_transaction_schema = ApiTransactionSchema.from_request(
+                    api_transaction
                 )
+                session.add(api_transaction_schema)
+                try:
+                    session.commit()
+                    created = True
+                    break
+                except IntegrityError:
+                    # We have to rollback the failed session first in order to
+                    # continue using it
+                    session.rollback()
+                    try:
+                        api_transaction_schema = self._get_api_transaction(
+                            api_transaction_id=api_transaction_schema.id,
+                            method=api_transaction.method,
+                            url=api_transaction.url,
+                            session=session,
+                        )
+                    except KeyError:
+                        if attempt == 0:
+                            continue
+                        raise
+                    break
 
             return (
                 api_transaction_schema.to_model(

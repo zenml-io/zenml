@@ -188,6 +188,7 @@ class RequestManager:
         )
 
         self._cleanup_interval = cfg.api_transaction_cleanup_interval
+        self._cleanup_batch_size = cfg.api_transaction_cleanup_batch_size
 
         self._cleanup_task: Optional[asyncio.Task[None]] = None
         self._shutdown_event = asyncio.Event()
@@ -279,10 +280,16 @@ class RequestManager:
         from zenml.zen_server.utils import zen_store
 
         start_time = time.perf_counter()
-        zen_store().cleanup_expired_api_transactions()
+        deleted_count = zen_store().cleanup_expired_api_transactions(
+            batch_size=self._cleanup_batch_size
+        )
         duration = time.perf_counter() - start_time
 
-        logger.debug(f"Cleaning up expired transactions took {duration:.2f}s")
+        logger.debug(
+            "Cleaned up %d expired transactions in %.2fs",
+            deleted_count,
+            duration,
+        )
 
     async def async_run_and_cache_result(
         self,
@@ -595,7 +602,9 @@ class RequestManager:
                     )
                 )
 
-        # Wait for the request to complete; timeout if deduplication is enabled
+        # Wait for the request to complete. The work continues in the
+        # background after a timeout so retryable clients get a backpressure
+        # signal instead of holding the connection open indefinitely.
         try:
             # We take into account the time that has already elapsed since the
             # request was received to avoid keeping the request for too long.
@@ -606,7 +615,7 @@ class RequestManager:
                 # We use asyncio.shield to prevent the request from being
                 # cancelled when the timeout is reached.
                 asyncio.shield(fut),
-                timeout=timeout if deduplicate else None,
+                timeout=timeout,
             )
 
             logger.debug(

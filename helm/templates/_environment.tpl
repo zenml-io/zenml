@@ -74,6 +74,9 @@ pool_size: {{ .ZenML.database.poolSize | quote }}
 {{- if .ZenML.database.maxOverflow }}
 max_overflow: {{ .ZenML.database.maxOverflow | quote }}
 {{- end }}
+{{- if .ZenML.database.poolTimeout }}
+pool_timeout: {{ .ZenML.database.poolTimeout | quote }}
+{{- end }}
 {{- end }}
 {{- end }}
 

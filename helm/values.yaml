@@ -417,6 +417,7 @@ server:
     #
     # poolSize: 20
     # maxOverflow: 20
+    # poolTimeout: 10
 
     # ZenML supports backing up the database before DB migrations are performed
     # and restoring it in case of a DB migration failure. For more information,

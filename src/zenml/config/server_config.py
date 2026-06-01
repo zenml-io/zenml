@@ -33,6 +33,7 @@ from zenml.constants import (
     DEFAULT_REPORTABLE_RESOURCES,
     DEFAULT_ZENML_JWT_TOKEN_ALGORITHM,
     DEFAULT_ZENML_JWT_TOKEN_LEEWAY,
+    DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE,
     DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_INTERVAL,
     DEFAULT_ZENML_SERVER_AUTH_THREAD_POOL_SIZE,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING,
@@ -60,6 +61,7 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_THREAD_POOL_SIZE,
     ENV_ZENML_SERVER_PREFIX,
     ENV_ZENML_SERVER_PRO_PREFIX,
+    MAX_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE,
 )
 from zenml.enums import AuthScheme
 from zenml.logger import get_logger
@@ -262,6 +264,8 @@ class ServerConfiguration(BaseModel):
             value should be lower than the client's request timeout.
         api_transaction_cleanup_interval: The interval in seconds between
             cleanup batches.
+        api_transaction_cleanup_batch_size: The maximum number of expired API
+            transactions to delete per cleanup batch.
         dashboard_files_path: The path to the dashboard files directory. If not
             specified, the built-in dashboard files will be used.
         otel_exporter_otlp_endpoint: Base OTLP/HTTP collector endpoint URL for
@@ -389,8 +393,12 @@ class ServerConfiguration(BaseModel):
     request_deduplication: bool = True
     request_cache_timeout: int = DEFAULT_ZENML_SERVER_REQUEST_CACHE_TIMEOUT
 
-    api_transaction_cleanup_interval: int = (
+    api_transaction_cleanup_interval: PositiveInt = (
         DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_INTERVAL
+    )
+    api_transaction_cleanup_batch_size: PositiveInt = Field(
+        default=DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE,
+        le=MAX_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE,
     )
 
     max_request_body_size_in_bytes: int = (
