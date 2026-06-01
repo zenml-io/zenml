@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Resource pool store backed by the ZenML Pro Resource Manager service."""
 
+import json
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Optional, TypeVar
 from uuid import UUID
@@ -532,7 +533,14 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         if filter_model.component_id is not None:
             list_kwargs["subject_id"] = UUID(str(filter_model.component_id))
         if filter_model.status is not None:
-            list_kwargs["status"] = str(filter_model.status)
+            if isinstance(filter_model.status, ResourceRequestStatus):
+                list_kwargs["status"] = filter_model.status.value
+            else:
+                operator, _, value = str(filter_model.status).partition(":")
+                if operator == "oneof":
+                    list_kwargs["statuses"] = json.loads(value)
+                else:
+                    list_kwargs["status"] = str(filter_model.status)
         if filter_model.pool_id is not None:
             list_kwargs["pool_id"] = UUID(str(filter_model.pool_id))
         if filter_model.reclaim_tolerance is not None:
@@ -564,12 +572,22 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         return self._page(items)
 
     def delete_resource_request(self, resource_request_id: UUID) -> None:
-        """Cancel a resource request through Resource Manager.
+        """Cancel or release a resource request through Resource Manager.
+
+        Fetches the request first and applies the lifecycle action allowed for
+        its current status. Pending requests are cancelled; allocated requests
+        are released. Terminal or non-actionable states are left unchanged.
 
         Args:
             resource_request_id: The request ID.
         """
-        self._client.cancel_request(resource_request_id)
+        request = self._client.get_request(resource_request_id)
+        status = ResourceRequestStatus(request.status)
+
+        if status == ResourceRequestStatus.PENDING:
+            self._client.cancel_request(resource_request_id)
+        elif status == ResourceRequestStatus.ALLOCATED:
+            self._client.release_request(resource_request_id)
 
     def release_step_run_resources(
         self, session: "Session", step_run_id: UUID
