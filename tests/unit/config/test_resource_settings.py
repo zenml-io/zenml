@@ -29,7 +29,6 @@ def test_unit_byte_value_defined_for_all_values():
 
 def test_resource_config_empty():
     """Tests that the empty property is only True when no value is configured."""
-    pytest.fail("CI coverage canary: linux-fast-offload-unit should fail")
     assert ResourceSettings().empty is True
     assert (
         ResourceSettings(cpu_count=None, gpu_count=None, memory=None).empty

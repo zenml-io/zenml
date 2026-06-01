@@ -28,7 +28,6 @@ INTEGRATIONS = ["airflow", "sklearn", "discord"]
 def test_integration_list() -> None:
     """Test that integration list works as expected and lists all
     integrations."""
-    pytest.fail("CI coverage canary: default integration offload should fail")
     runner = cli_runner()
 
     result = runner.invoke(integration, ["list"])
