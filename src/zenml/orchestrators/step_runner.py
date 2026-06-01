@@ -503,8 +503,14 @@ class StepRunner:
                         pass
                     elif issubclass(arg_type, (list, tuple)):
                         assert annotation
-                        item_arg_type = get_args(annotation)[0]
-                        item_arg_type = resolve_type_annotation(item_arg_type)
+                        _type_args = get_args(annotation)
+                        if _type_args:
+                            item_arg_type = resolve_type_annotation(
+                                _type_args[0]
+                            )
+                        # else: bare `list`/`tuple` with no type argument —
+                        # item_arg_type stays as arg_type (set above), which
+                        # causes each artifact to be loaded with its own type.
                         collection_type = arg_type
                     else:
                         raise StepInterfaceError(

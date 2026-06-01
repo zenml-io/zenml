@@ -239,3 +239,24 @@ def test_loading_input_artifact_without_specified_data_type(
     )
     assert isinstance(data, int)
     assert data == 42
+
+
+def test_bare_list_annotation_does_not_raise_index_error():
+    """Regression test: bare `list` annotation (no type arg) must not raise
+    IndexError when get_args returns an empty tuple."""
+    from typing import get_args
+
+    from zenml.steps.utils import resolve_type_annotation
+
+    annotation = list
+    arg_type = resolve_type_annotation(annotation)
+    assert issubclass(arg_type, (list, tuple))
+    # This was the crashing line before the fix:
+    _type_args = get_args(annotation)
+    assert _type_args == ()  # bare list has no type args
+    # The fix: only index when non-empty — must not raise
+    if _type_args:
+        item_arg_type = resolve_type_annotation(_type_args[0])
+    else:
+        item_arg_type = arg_type
+    assert item_arg_type is list
