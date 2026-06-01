@@ -53,13 +53,13 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.exceptions import EntityExistsError
 from zenml.execution.pipeline.utils import (
     should_prevent_pipeline_execution,
     submit_pipeline,
 )
-from zenml.hooks.hook_validators import resolve_and_validate_hook
+from zenml.hooks.validation import resolve_and_validate_hook
 from zenml.logger import get_logger
 from zenml.models import (
     CodeReferenceRequest,
@@ -148,6 +148,8 @@ class Pipeline:
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
+        on_start: Optional["HookSpecification"] = None,
+        on_end: Optional["HookSpecification"] = None,
         on_init: Optional["InitHookSpecification"] = None,
         on_init_kwargs: Optional[Dict[str, Any]] = None,
         on_cleanup: Optional["HookSpecification"] = None,
@@ -178,12 +180,22 @@ class Pipeline:
             settings: Settings for this pipeline.
             tags: Tags to apply to runs of this pipeline.
             extra: Extra configurations for this pipeline.
-            on_failure: Callback function in event of failure of the step. Can
-                be a function with a single argument of type `BaseException`, or
-                a source path to such a function (e.g. `module.my_function`).
-            on_success: Callback function in event of success of the step. Can
-                be a function with no arguments, or a source path to such a
-                function (e.g. `module.my_function`).
+            on_failure: Hook run when the pipeline fails. A callable taking
+                an optional `BaseException`, or a source path to one. Static
+                pipelines propagate it to each step as a default. Dynamic
+                pipelines run it once at the run level.
+            on_success: Hook run when the pipeline succeeds. A no-arg
+                callable, or a source path to one. Static pipelines propagate
+                it to each step as a default. Dynamic pipelines run it once
+                at the run level.
+            on_start: Hook run when the pipeline starts. A no-arg callable,
+                or a source path to one. Static pipelines propagate it to each
+                step as a default. Dynamic pipelines run it once at the run
+                level.
+            on_end: Hook run when the pipeline ends. A callable taking an
+                optional status and `BaseException`, or a source path to one.
+                Static pipelines propagate it to each step as a default.
+                Dynamic pipelines run it once at the run level.
             on_init: Callback function to run on initialization of the pipeline.
                 Can be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`) if the function returns a
@@ -220,6 +232,8 @@ class Pipeline:
                 extra=extra,
                 on_failure=on_failure,
                 on_success=on_success,
+                on_start=on_start,
+                on_end=on_end,
                 on_init=on_init,
                 on_init_kwargs=on_init_kwargs,
                 on_cleanup=on_cleanup,
@@ -368,6 +382,8 @@ class Pipeline:
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
+        on_start: Optional["HookSpecification"] = None,
+        on_end: Optional["HookSpecification"] = None,
         on_init: Optional["InitHookSpecification"] = None,
         on_init_kwargs: Optional[Dict[str, Any]] = None,
         on_cleanup: Optional["HookSpecification"] = None,
@@ -407,12 +423,22 @@ class Pipeline:
             settings: Settings for this pipeline.
             tags: Tags to apply to runs of this pipeline.
             extra: Extra configurations for this pipeline.
-            on_failure: Callback function in event of failure of the step. Can
-                be a function with a single argument of type `BaseException`, or
-                a source path to such a function (e.g. `module.my_function`).
-            on_success: Callback function in event of success of the step. Can
-                be a function with no arguments, or a source path to such a
-                function (e.g. `module.my_function`).
+            on_failure: Hook run when the pipeline fails. A callable taking
+                an optional `BaseException`, or a source path to one. Static
+                pipelines propagate it to each step as a default. Dynamic
+                pipelines run it once at the run level.
+            on_success: Hook run when the pipeline succeeds. A no-arg
+                callable, or a source path to one. Static pipelines propagate
+                it to each step as a default. Dynamic pipelines run it once
+                at the run level.
+            on_start: Hook run when the pipeline starts. A no-arg callable,
+                or a source path to one. Static pipelines propagate it to each
+                step as a default. Dynamic pipelines run it once at the run
+                level.
+            on_end: Hook run when the pipeline ends. A callable taking an
+                optional status and `BaseException`, or a source path to one.
+                Static pipelines propagate it to each step as a default.
+                Dynamic pipelines run it once at the run level.
             on_init: Callback function to run on initialization of the pipeline.
                 Can be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`) if the function returns a
@@ -446,13 +472,25 @@ class Pipeline:
         if on_failure:
             # string of on_failure hook function to be used for this pipeline
             failure_hook_source, _ = resolve_and_validate_hook(
-                on_failure, allow_exception_arg=True
+                on_failure, Exception()
             )
 
         success_hook_source = None
         if on_success:
             # string of on_success hook function to be used for this pipeline
             success_hook_source, _ = resolve_and_validate_hook(on_success)
+
+        start_hook_source = None
+        if on_start:
+            # string of on_start hook function to be used for this pipeline
+            start_hook_source, _ = resolve_and_validate_hook(on_start)
+
+        end_hook_source = None
+        if on_end:
+            # string of on_end hook function to be used for this pipeline
+            end_hook_source, _ = resolve_and_validate_hook(
+                on_end, ExecutionStatus.COMPLETED, Exception()
+            )
 
         init_hook_kwargs = None
         init_hook_source = None
@@ -472,7 +510,7 @@ class Pipeline:
             # string of on_init hook function and JSON-able arguments to be used
             # for this pipeline
             init_hook_source, init_hook_kwargs = resolve_and_validate_hook(
-                on_init, on_init_kwargs
+                on_init, kwargs=on_init_kwargs
             )
 
         cleanup_hook_source = None
@@ -503,6 +541,8 @@ class Pipeline:
                 "extra": extra,
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
+                "start_hook_source": start_hook_source,
+                "end_hook_source": end_hook_source,
                 "init_hook_source": init_hook_source,
                 "init_hook_kwargs": init_hook_kwargs,
                 "cleanup_hook_source": cleanup_hook_source,

@@ -68,6 +68,8 @@ def pipeline(
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
+    on_start: Optional["HookSpecification"] = None,
+    on_end: Optional["HookSpecification"] = None,
     on_init: Optional["InitHookSpecification"] = None,
     on_init_kwargs: Optional[Dict[str, Any]] = None,
     on_cleanup: Optional["HookSpecification"] = None,
@@ -97,6 +99,8 @@ def pipeline(
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
+    on_start: Optional["HookSpecification"] = None,
+    on_end: Optional["HookSpecification"] = None,
     on_init: Optional["InitHookSpecification"] = None,
     on_init_kwargs: Optional[Dict[str, Any]] = None,
     on_cleanup: Optional["HookSpecification"] = None,
@@ -126,6 +130,8 @@ def pipeline(
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
+    on_start: Optional["HookSpecification"] = None,
+    on_end: Optional["HookSpecification"] = None,
     on_init: Optional["InitHookSpecification"] = None,
     on_init_kwargs: Optional[Dict[str, Any]] = None,
     on_cleanup: Optional["HookSpecification"] = None,
@@ -155,6 +161,8 @@ def pipeline(
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
+    on_start: Optional["HookSpecification"] = None,
+    on_end: Optional["HookSpecification"] = None,
     on_init: Optional["InitHookSpecification"] = None,
     on_init_kwargs: Optional[Dict[str, Any]] = None,
     on_cleanup: Optional["HookSpecification"] = None,
@@ -188,12 +196,20 @@ def pipeline(
         settings: Settings for this pipeline.
         tags: Tags to apply to runs of the pipeline.
         extra: Extra configurations for this pipeline.
-        on_failure: Callback function in event of failure of the step. Can be a
-            function with a single argument of type `BaseException`, or a source
-            path to such a function (e.g. `module.my_function`).
-        on_success: Callback function in event of success of the step. Can be a
-            function with no arguments, or a source path to such a function
-            (e.g. `module.my_function`).
+        on_failure: Hook run when the pipeline fails. A callable taking an
+            optional `BaseException`, or a source path to one. Static pipelines
+            propagate it to each step as a default. Dynamic pipelines run it
+            once at the run level.
+        on_success: Hook run when the pipeline succeeds. A no-arg callable, or
+            a source path to one. Static pipelines propagate it to each step
+            as a default. Dynamic pipelines run it once at the run level.
+        on_start: Hook run when the pipeline starts. A no-arg callable, or a
+            source path to one. Static pipelines propagate it to each step as
+            a default. Dynamic pipelines run it once at the run level.
+        on_end: Hook run when the pipeline ends. A callable taking an optional
+            status and `BaseException`, or a source path to one. Static
+            pipelines propagate it to each step as a default. Dynamic pipelines
+            run it once at the run level.
         on_init: Callback function to run on initialization of the pipeline. Can
             be a function with no arguments, or a source path to such a function
             (e.g. `module.my_function`) if the function returns a value, it will
@@ -250,6 +266,8 @@ def pipeline(
             extra=extra,
             on_failure=on_failure,
             on_success=on_success,
+            on_start=on_start,
+            on_end=on_end,
             on_init=on_init,
             on_init_kwargs=on_init_kwargs,
             on_cleanup=on_cleanup,

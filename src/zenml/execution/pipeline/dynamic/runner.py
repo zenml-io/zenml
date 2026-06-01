@@ -60,6 +60,7 @@ from zenml.enums import (
     ExecutionMode,
     ExecutionStatus,
     GroupType,
+    HookType,
     RunWaitConditionLeaseMode,
     RunWaitConditionResolution,
     RunWaitConditionStatus,
@@ -119,6 +120,7 @@ from zenml.execution.pipeline.dynamic.utils import (
 )
 from zenml.execution.pipeline.utils import compute_invocation_id
 from zenml.execution.step.utils import launch_step
+from zenml.hooks.execution import run_lifecycle_hook
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineRunResponse,
@@ -757,6 +759,7 @@ class DynamicPipelineRunner:
         """Run the pipeline.
 
         Raises:
+            BaseException: If the init hook fails.
             Exception: If loading the pipeline fails.
         """
         self._state.id = threading.get_ident()
@@ -767,6 +770,7 @@ class DynamicPipelineRunner:
             )
 
         with logs_context:
+            run_start_hook = False
             if self._run.status.is_finished:
                 logger.info("Run `%s` is already finished.", str(self._run.id))
                 return
@@ -800,6 +804,7 @@ class DynamicPipelineRunner:
                         status=ExecutionStatus.RUNNING,
                     ),
                 )
+                run_start_hook = True
 
             assert self._snapshot.stack
 
@@ -824,11 +829,28 @@ class DynamicPipelineRunner:
                 monitoring_thread = self._start_monitoring_loop()
                 startup_thread = self._start_startup_loop()
 
+                if run_start_hook:
+                    run_lifecycle_hook(
+                        self._snapshot.pipeline_configuration.start_hook_source,
+                        HookType.RUN_START,
+                    )
+
                 if not self._run.triggered_by_deployment:
                     # Only run the init hook if the run is not triggered by
                     # a deployment, as the deployment service will have
                     # already run the init hook.
-                    self._orchestrator.run_init_hook(snapshot=self._snapshot)
+                    try:
+                        self._orchestrator.run_init_hook(
+                            snapshot=self._snapshot
+                        )
+                    except BaseException as e:
+                        # The init hook itself is not tracked, but its failure
+                        # ends the run, so the run end and failure hooks fire
+                        # before the failure propagates.
+                        self._fire_terminal_run_hooks(
+                            ExecutionStatus.FAILED, e
+                        )
+                        raise
 
                 try:
                     self._run_entrypoint_and_finalize()
@@ -872,12 +894,16 @@ class DynamicPipelineRunner:
                 self._run.id,
             )
             self._abort_and_drain(exception=abort_exception)
-            # The server already published the status in this case.
+            # The server already published the terminal status. Refresh the run
+            # so the end hook sees it, then fire the run end hook.
+            self._run = Client().zen_store.get_run(self._run.id)
+            self._fire_terminal_run_hooks(self._run.status)
             return
         except BaseException as e:
             logger.debug("Exception in pipeline function: %s", e)
             self._abort_and_drain(exception=e)
             self._publish_run_status(exception=e)
+            self._fire_terminal_run_hooks(ExecutionStatus.FAILED, e)
             raise
 
         # The user code has returned. But there might still be concurrent work
@@ -889,10 +915,16 @@ class DynamicPipelineRunner:
             logger.debug("Failure during settle: %s", e)
             self._abort_and_drain(exception=e)
             self._publish_run_status(exception=e)
+            self._fire_terminal_run_hooks(ExecutionStatus.FAILED, e)
             raise
 
         try:
             self._publish_run_status(return_value=return_value)
+            # A completed run fires end then success. A concurrent stop can
+            # resolve the run to a terminal, non-completed status, which fires
+            # the end hook only.
+            if self._run.status.is_finished:
+                self._fire_terminal_run_hooks(self._run.status)
         except Exception as e:
             # Publish failed for some reason (e.g., invalid return value).
             # Mark the run failed instead of leaving it stuck in RUNNING.
@@ -901,7 +933,36 @@ class DynamicPipelineRunner:
                 self.snapshot.pipeline.name,
             )
             self._publish_run_status(exception=e)
+            self._fire_terminal_run_hooks(ExecutionStatus.FAILED, e)
             raise
+
+    def _fire_terminal_run_hooks(
+        self,
+        status: ExecutionStatus,
+        exception: Optional[BaseException] = None,
+    ) -> None:
+        """Fire the run end hook, then the terminal hook matching the status.
+
+        Args:
+            status: The terminal status of the run.
+            exception: The exception that ended the run, if any.
+        """
+        config = self._snapshot.pipeline_configuration
+        run_lifecycle_hook(
+            config.end_hook_source,
+            HookType.RUN_END,
+            optional_args=(status, exception),
+        )
+        if status == ExecutionStatus.COMPLETED:
+            run_lifecycle_hook(
+                config.success_hook_source, HookType.RUN_SUCCESS
+            )
+        elif exception is not None:
+            run_lifecycle_hook(
+                config.failure_hook_source,
+                HookType.RUN_FAILURE,
+                optional_args=(exception,),
+            )
 
     def notify_graph_changed(self, nodes_ready: bool) -> None:
         """Wake up the startup loop if new nodes became ready.

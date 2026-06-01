@@ -66,6 +66,7 @@ from zenml.enums import (
     ColorVariants,
     CuratedVisualizationSize,
     DeploymentStatus,
+    HookType,
     LogicalOperators,
     ModelStages,
     OAuthDeviceStatus,
@@ -119,6 +120,8 @@ from zenml.models import (
     DeploymentResponse,
     FlavorFilter,
     FlavorResponse,
+    HookInvocationFilter,
+    HookInvocationResponse,
     ModelFilter,
     ModelRequest,
     ModelResponse,
@@ -5489,6 +5492,93 @@ class Client(metaclass=ClientMetaClass):
             step_run_filter_model=step_run_filter_model,
             hydrate=hydrate,
         )
+
+    def get_hook_invocation(
+        self,
+        hook_invocation_id: UUID,
+        hydrate: bool = True,
+    ) -> HookInvocationResponse:
+        """Get a hook invocation by ID.
+
+        Args:
+            hook_invocation_id: The ID of the hook invocation to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The hook invocation.
+        """
+        return self.zen_store.get_hook_invocation(
+            hook_invocation_id,
+            hydrate=hydrate,
+        )
+
+    def list_hook_invocations(
+        self,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        pipeline_run_id: Optional[Union[str, UUID]] = None,
+        step_run_id: Optional[Union[str, UUID]] = None,
+        hook_type: Optional[Union[str, HookType]] = None,
+        name: Optional[str] = None,
+        project: Optional[Union[str, UUID]] = None,
+        user: Optional[Union[UUID, str]] = None,
+        hydrate: bool = False,
+    ) -> Page[HookInvocationResponse]:
+        """List all hook invocations matching the given filter criteria.
+
+        Args:
+            sort_by: The column to sort by
+            page: The page of items
+            size: The maximum size of all pages
+            logical_operator: Which logical operator to use [and, or]
+            id: Use the id of hook invocations to filter by.
+            created: Use to filter by time of creation
+            updated: Use the last updated date for filtering
+            pipeline_run_id: The id of the pipeline run to filter by.
+            step_run_id: The id of the step run to filter by.
+            hook_type: The type of the hook invocation to filter by.
+            name: The name of the hook invocation to filter by.
+            project: The project name/ID to filter by.
+            user: Filter by user name/ID.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A page of hook invocations matching the filter description.
+        """
+        hook_invocation_filter_model = HookInvocationFilter(
+            sort_by=sort_by,
+            page=page,
+            size=size,
+            logical_operator=logical_operator,
+            id=id,
+            created=created,
+            updated=updated,
+            pipeline_run_id=pipeline_run_id,
+            step_run_id=step_run_id,
+            hook_type=hook_type,
+            name=name,
+            project=project or self.active_project.id,
+            user=user,
+        )
+        return self.zen_store.list_hook_invocations(
+            hook_invocation_filter_model=hook_invocation_filter_model,
+            hydrate=hydrate,
+        )
+
+    def delete_hook_invocation(self, hook_invocation_id: UUID) -> None:
+        """Delete a hook invocation.
+
+        Args:
+            hook_invocation_id: The ID of the hook invocation to delete.
+        """
+        self.zen_store.delete_hook_invocation(hook_invocation_id)
 
     def update_step_run(
         self,

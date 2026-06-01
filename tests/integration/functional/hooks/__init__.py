@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,14 +11,3 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""(Lifecycle) Hooks for steps and pipelines."""
-
-from zenml.hooks.alerter_hooks import alerter_success_hook
-from zenml.hooks.alerter_hooks import alerter_failure_hook
-from zenml.hooks.execution import run_hook
-
-__all__ = [
-    "alerter_success_hook",
-    "alerter_failure_hook",
-    "run_hook",
-]
