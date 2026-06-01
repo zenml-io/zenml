@@ -170,6 +170,26 @@ class TestSnapshotModel:
         assert snap.metadata == {}
         assert snap.component_id is None
 
+    def test_legacy_provider_alias_accepted(self) -> None:
+        # Snapshots persisted before the field rename used `provider`.
+        # The model_validator must accept legacy JSON so loaded
+        # artifacts still round-trip.
+        legacy_json = '{"provider":"fake","ref":"snap-legacy"}'
+        snap = BaseSandboxSnapshot.model_validate_json(legacy_json)
+        assert snap.sandbox_flavor == "fake"
+        assert snap.ref == "snap-legacy"
+
+    def test_legacy_provider_does_not_override_new_field(self) -> None:
+        # If both fields are present, sandbox_flavor wins.
+        snap = BaseSandboxSnapshot.model_validate(
+            {
+                "provider": "old",
+                "sandbox_flavor": "new",
+                "ref": "r",
+            }
+        )
+        assert snap.sandbox_flavor == "new"
+
 
 class TestSessionContextManager:
     def test_with_block_calls_close(self) -> None:
@@ -178,6 +198,37 @@ class TestSessionContextManager:
             assert s is session
             assert session.closed is False
         assert session.closed is True
+
+    def test_exit_flushes_log_ctx_when_close_raises(self) -> None:
+        # The base __exit__ must call _close_log_ctx() even when the
+        # subclass close() raises. That's the W5 fix: log cleanup is
+        # base-owned, not delegated to subclasses that may forget or
+        # error out before reaching the call.
+        class _RaisingSession(SandboxSession):
+            def __init__(self) -> None:
+                super().__init__(
+                    id="raise-test",
+                    parent=MagicMock(spec=BaseSandbox, flavor="fake"),
+                )
+
+            def exec(
+                self,
+                command: Union[str, List[str]],
+                *,
+                cwd: Optional[str] = None,
+                env: Optional[Dict[str, str]] = None,
+            ) -> SandboxProcess:
+                return _FakeProcess()
+
+            def close(self) -> None:
+                raise RuntimeError("close failed")
+
+        session = _RaisingSession()
+        with patch.object(session, "_close_log_ctx") as fake_close_log:
+            with pytest.raises(RuntimeError, match="close failed"):
+                with session:
+                    pass
+        fake_close_log.assert_called_once()
 
 
 class TestSessionMetadata:
@@ -569,6 +620,68 @@ class TestSandboxProcessCollect:
         # All three chunks were consumed, even though only the first
         # fit under the cap.
         assert len(consumed) == 3
+
+    def test_collect_called_twice_logs_exec_result_only_once(self) -> None:
+        # Repeated collect() must not double-emit the OK/FAIL marker.
+        # Streams are already drained on the 2nd call so captured
+        # strings are empty, and the _collected latch prevents the
+        # session._log_exec_result fire.
+        proc = self._proc_returning(
+            stdout_lines=["x\n"], stderr_lines=[], code=0
+        )
+        fake_session = MagicMock(spec=SandboxSession)
+        proc._session = fake_session
+        proc.collect()
+        proc.collect()
+        assert fake_session._log_exec_result.call_count == 1
+
+    def test_drain_exception_kills_process_and_reraises(self) -> None:
+        # If a stream iterator raises mid-iteration, collect() must
+        # NOT silently swallow it (would return empty output and a
+        # potentially-deadlocked wait() on an undrained pipe). Instead
+        # the drain thread captures the exception, collect() kills the
+        # process, then re-raises so the caller sees the failure.
+        kill_called = [False]
+
+        class _RaisingProc(SandboxProcess):
+            def stdout(self) -> Iterator[str]:
+                yield "ok\n"
+                raise RuntimeError("stream blew up")
+
+            def stderr(self) -> Iterator[str]:
+                return iter(())
+
+            def wait(self, timeout: Optional[float] = None) -> int:
+                return 0
+
+            def kill(self) -> None:
+                kill_called[0] = True
+
+            @property
+            def exit_code(self) -> Optional[int]:
+                return 0
+
+        with pytest.raises(RuntimeError, match="stream blew up"):
+            _RaisingProc().collect()
+        assert kill_called[0] is True
+
+    def test_concurrent_drain_on_both_streams_at_volume(self) -> None:
+        # The original B2 bug was reported as concurrent drain on both
+        # streams: the new threaded drain should handle this without
+        # deadlock or interleaving issues. We don't have a real pipe
+        # here (that's covered in test_local_sandbox.py), but verify
+        # the iterator-level behavior: 1000 lines on each stream are
+        # all captured.
+        out_lines = [f"out-{i}\n" for i in range(1000)]
+        err_lines = [f"err-{i}\n" for i in range(1000)]
+        proc = self._proc_returning(
+            stdout_lines=out_lines, stderr_lines=err_lines, code=0
+        )
+        out = proc.collect()
+        assert out.stdout.count("\n") == 1000
+        assert out.stderr.count("\n") == 1000
+        assert out.stdout.endswith("out-999\n")
+        assert out.stderr.endswith("err-999\n")
 
 
 class TestSandboxExecError:

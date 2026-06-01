@@ -16,11 +16,32 @@
 from typing import Any, Dict, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class BaseSandboxSnapshot(BaseModel):
     """Serializable handle to a captured sandbox session state."""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _accept_legacy_provider(cls, data: Any) -> Any:
+        """Map the pre-rename ``provider`` field to ``sandbox_flavor``.
+
+        Older persisted snapshots (before the field rename) used
+        ``provider`` for what is now ``sandbox_flavor``. Accept it
+        transparently so loaded artifacts still round-trip.
+
+        Args:
+            data: Raw input passed to ``BaseSandboxSnapshot``.
+
+        Returns:
+            The same input, with ``provider`` aliased to
+            ``sandbox_flavor`` when present.
+        """
+        if isinstance(data, dict) and "sandbox_flavor" not in data:
+            if "provider" in data:
+                data = {**data, "sandbox_flavor": data["provider"]}
+        return data
 
     sandbox_flavor: str = Field(
         description="Flavor name that produced this snapshot (e.g. "

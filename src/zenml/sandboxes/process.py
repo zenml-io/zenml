@@ -18,8 +18,12 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Iterator, List, Optional, Tuple
 
+from zenml.logger import get_logger
+
 if TYPE_CHECKING:
     from zenml.sandboxes.session import SandboxSession
+
+logger = get_logger(__name__)
 
 # Default cap for `SandboxProcess.collect`: 1 Mi characters per stream
 # (counted via `len(line)` on the decoded UTF-8 string, so it's actually
@@ -120,11 +124,21 @@ class SandboxProcess(ABC):
         Returns:
             A `SandboxOutput` with captured stdout, stderr, exit code,
             and per-stream truncation flags.
+
+        Raises:
+            drain_err: Re-raised when a drain thread caught an
+                exception while iterating `stdout()` / `stderr()`. The
+                process is killed first so an undrained pipe can't
+                re-introduce the deadlock via `wait()`.
         """
         results: List[Optional[Tuple[str, bool]]] = [None, None]
+        errors: List[Optional[BaseException]] = [None, None]
 
         def _drain(idx: int, stream: Iterator[str]) -> None:
-            results[idx] = _drain_capped(stream, max_chars)
+            try:
+                results[idx] = _drain_capped(stream, max_chars)
+            except BaseException as e:  # noqa: BLE001
+                errors[idx] = e
 
         t_out = threading.Thread(
             target=_drain, args=(0, self.stdout()), daemon=True
@@ -136,6 +150,28 @@ class SandboxProcess(ABC):
         t_err.start()
         t_out.join()
         t_err.join()
+
+        # If a drain raised, the corresponding pipe is undrained. wait()
+        # below would re-deadlock on a child still writing. Kill the
+        # process first, then re-raise the original drain exception.
+        drain_err = errors[0] or errors[1]
+        if drain_err is not None:
+            try:
+                self.kill()
+            except Exception:
+                logger.debug(
+                    "kill() failed during drain-error cleanup",
+                    exc_info=True,
+                )
+            try:
+                self.wait()
+            except Exception:
+                logger.debug(
+                    "wait() failed during drain-error cleanup",
+                    exc_info=True,
+                )
+            raise drain_err
+
         stdout, stdout_truncated = results[0] or ("", False)
         stderr, stderr_truncated = results[1] or ("", False)
 

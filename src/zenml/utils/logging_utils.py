@@ -127,7 +127,14 @@ class LoggingContext(context_utils.BaseContext):
         """
         self.log_model = log_model
         self._lock = threading.Lock()
-        self._disabled = False
+        # Per-thread re-entrancy guard. The flag was previously a plain
+        # bool, which raced when concurrent drain threads (e.g. the new
+        # SandboxProcess.collect() stdout+stderr threads) both routed
+        # through emit_to: one thread's in-flight True caused the other
+        # to drop its line silently. threading.local keeps the guard
+        # scoped to the calling thread so concurrent emits don't drop
+        # each other.
+        self._disabled = threading.local()
         self._log_store = Client().active_stack.log_store
         self._metadata = metadata
         self._origin: Optional["BaseLogStoreOrigin"] = None
@@ -247,9 +254,9 @@ class LoggingContext(context_utils.BaseContext):
             record: The log record to emit.
             metadata: Additional metadata to attach to the log entry.
         """
-        if self._disabled or self._origin is None:
+        if getattr(self._disabled, "value", False) or self._origin is None:
             return
-        self._disabled = True
+        self._disabled.value = True
         try:
             message = record.getMessage()
             if message and message.strip():
@@ -261,7 +268,7 @@ class LoggingContext(context_utils.BaseContext):
         except Exception:
             logger.debug("Failed to emit log record", exc_info=True)
         finally:
-            self._disabled = False
+            self._disabled.value = False
 
     def __enter__(self) -> "LoggingContext":
         """Enter the context and set as active.
