@@ -46,7 +46,6 @@ from zenml.integrations.modal.flavors import (
 )
 from zenml.logger import get_logger
 from zenml.sandboxes import (
-    STEP_IMAGE,
     BaseSandbox,
     BaseSandboxSettings,
     BaseSandboxSnapshot,
@@ -54,6 +53,11 @@ from zenml.sandboxes import (
     SandboxProcess,
     SandboxSession,
 )
+
+# Sentinel for "use the active step's containerized-orchestrator image."
+# Inlined here (rather than imported from base) so the image-resolution
+# behavior stays owned by this flavor and the base stays minimal.
+MODAL_STEP_IMAGE_SENTINEL = "<step>"
 
 if TYPE_CHECKING:
     import modal  # noqa: F401
@@ -69,12 +73,12 @@ class ModalSandboxSnapshot(BaseSandboxSnapshot):
     Modal's ``snapshot_filesystem()`` captures the FS only — no in-memory
     process state. ``restore`` boots a *new* Sandbox from the stored Image.
 
-    ``provider`` is locked to ``"modal"`` via ``Literal`` — Pydantic rejects
-    any other value at construction time, so callers can't mint a snapshot
-    that lies about its flavor.
+    ``sandbox_flavor`` is locked to ``"modal"`` via ``Literal`` — Pydantic
+    rejects any other value at construction time, so callers can't mint a
+    snapshot that lies about its flavor.
     """
 
-    provider: Literal["modal"] = Field(default="modal")
+    sandbox_flavor: Literal["modal"] = Field(default="modal")
 
 
 def _line_buffer(chunks: Iterable[Any]) -> Iterator[str]:
@@ -139,7 +143,7 @@ class ModalSandboxProcess(SandboxProcess):
         Returns:
             Plain line iterator when no session is attached; otherwise
             wrapped via ``session._wrap_stream`` so each line is also
-            emitted to the sandbox log source at WARNING level.
+            emitted to the sandbox log source.
         """
         lines = _line_buffer(self._process.stderr)
         if self._session is None:
@@ -364,13 +368,42 @@ class ModalSandboxSession(SandboxSession):
             )
 
 
+def _resolve_step_image() -> Optional[str]:
+    """Looks up the active step's containerized-orchestrator image.
+
+    Returns:
+        The image URI for the active step's build, or ``None`` if no step
+        context is active, the run carries no snapshot, or the snapshot
+        was assembled without a Docker build.
+    """
+    from zenml.orchestrators.containerized_orchestrator import (
+        ContainerizedOrchestrator,
+    )
+    from zenml.steps.step_context import StepContext
+
+    ctx = StepContext.get()
+    if ctx is None:
+        return None
+    snapshot = ctx.pipeline_run.snapshot
+    if snapshot is None or snapshot.build is None:
+        return None
+    try:
+        return ContainerizedOrchestrator.get_image(
+            snapshot=snapshot, step_name=ctx.step_name
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.debug("Step image lookup for Modal sandbox failed: %s", e)
+        return None
+
+
 def _resolve_image(
     base_image: Optional[str], default_image: str
 ) -> "modal.Image":
     """Resolves a base_image setting into a concrete Modal Image.
 
     Args:
-        base_image: The setting value (``None``, ``STEP_IMAGE``, or a URI).
+        base_image: The setting value (``None``, the module-local
+            ``MODAL_STEP_IMAGE_SENTINEL``, or a registry URI).
         default_image: Fallback image URI from the component config.
 
     Returns:
@@ -380,13 +413,14 @@ def _resolve_image(
 
     if base_image is None:
         return modal.Image.from_registry(default_image)
-    if base_image == STEP_IMAGE:
-        step_image = BaseSandbox.resolve_step_image()
+    if base_image == MODAL_STEP_IMAGE_SENTINEL:
+        step_image = _resolve_step_image()
         if not step_image:
             logger.warning(
-                "STEP_IMAGE requested but the current step is not "
-                "running on a containerized orchestrator with a built "
-                "image; falling back to the flavor's default image '%s'.",
+                "Step-image sentinel requested but the current step is "
+                "not running on a containerized orchestrator with a "
+                "built image; falling back to the flavor's default "
+                "image '%s'.",
                 default_image,
             )
             return modal.Image.from_registry(default_image)

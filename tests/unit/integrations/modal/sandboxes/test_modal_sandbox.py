@@ -41,10 +41,10 @@ from zenml.integrations.modal.sandboxes import (  # noqa: E402
     ModalSandboxSnapshot,
 )
 from zenml.integrations.modal.sandboxes.modal_sandbox import (  # noqa: E402
+    MODAL_STEP_IMAGE_SENTINEL,
     _line_buffer,
 )
 from zenml.sandboxes import (  # noqa: E402
-    STEP_IMAGE,
     BaseSandbox,
     BaseSandboxSnapshot,
     SandboxExecError,
@@ -152,17 +152,17 @@ class TestLineBuffer:
 
 
 class TestModalSnapshot:
-    def test_provider_defaults_to_modal(self) -> None:
+    def test_sandbox_flavor_defaults_to_modal(self) -> None:
         snap = ModalSandboxSnapshot(ref="im-123")
-        assert snap.provider == "modal"
+        assert snap.sandbox_flavor == "modal"
 
-    def test_provider_is_frozen(self) -> None:
-        # The provider field is frozen — callers cannot mint a snapshot
-        # that lies about which flavor it belongs to.
+    def test_sandbox_flavor_is_frozen(self) -> None:
+        # The sandbox_flavor field is frozen — callers cannot mint a
+        # snapshot that lies about which flavor it belongs to.
         from pydantic import ValidationError
 
         with pytest.raises(ValidationError):
-            ModalSandboxSnapshot(provider="other-flavor", ref="im-123")
+            ModalSandboxSnapshot(sandbox_flavor="other-flavor", ref="im-123")
 
     def test_subclass_of_base_snapshot(self) -> None:
         snap = ModalSandboxSnapshot(ref="im-123")
@@ -340,7 +340,7 @@ class TestModalSandboxSession:
             object_id="im-123"
         )
         snap = _make_session(fake_sandbox).snapshot()
-        assert snap.provider == "modal"
+        assert snap.sandbox_flavor == "modal"
         assert snap.ref == "im-123"
 
     def test_destroy_calls_terminate(self) -> None:
@@ -458,8 +458,8 @@ class TestModalLogForwarding:
         assert out == ["raw\n"]
 
     def test_restore_rejects_cross_provider(self) -> None:
-        wrong = BaseSandboxSnapshot(provider="agent_sandbox", ref="ref")
-        with pytest.raises(ValueError, match="provider 'agent_sandbox'"):
+        wrong = BaseSandboxSnapshot(sandbox_flavor="agent_sandbox", ref="ref")
+        with pytest.raises(ValueError, match="agent_sandbox"):
             _make_modal_sandbox().restore(wrong)
 
     def test_restore_creates_new_sandbox_from_image_id(self) -> None:
@@ -509,7 +509,7 @@ class TestModalLogForwarding:
         with (
             _patch_modal() as modal_mock,
             patch(
-                "zenml.sandboxes.base.BaseSandbox.resolve_step_image",
+                "zenml.integrations.modal.sandboxes.modal_sandbox._resolve_step_image",
                 return_value="my-registry/step-image:v1",
             ),
         ):
@@ -519,7 +519,9 @@ class TestModalLogForwarding:
                 object_id="sb_new"
             )
 
-            settings = ModalSandboxSettings(base_image=STEP_IMAGE)
+            settings = ModalSandboxSettings(
+                base_image=MODAL_STEP_IMAGE_SENTINEL
+            )
             _make_modal_sandbox().create_session(settings=settings)
         modal_mock.Image.from_registry.assert_called_with(
             "my-registry/step-image:v1"
@@ -531,7 +533,7 @@ class TestModalLogForwarding:
         with (
             _patch_modal() as modal_mock,
             patch(
-                "zenml.sandboxes.base.BaseSandbox.resolve_step_image",
+                "zenml.integrations.modal.sandboxes.modal_sandbox._resolve_step_image",
                 return_value=None,
             ),
         ):
@@ -541,7 +543,9 @@ class TestModalLogForwarding:
                 object_id="sb_new"
             )
 
-            settings = ModalSandboxSettings(base_image=STEP_IMAGE)
+            settings = ModalSandboxSettings(
+                base_image=MODAL_STEP_IMAGE_SENTINEL
+            )
             _make_modal_sandbox().create_session(settings=settings)
         modal_mock.Image.from_registry.assert_called_with(
             ModalSandboxConfig().default_image
