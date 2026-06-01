@@ -759,8 +759,8 @@ def test_wrapped_stdout_stores_raw_message_without_step_prefix(
     # `emitted_messages` captures what would be stored in the log store, while
     # `terminal_messages` captures what the user sees in stdout. The prefix is
     # useful in the terminal but would be redundant/noisy in stored logs.
-    emitted_messages = []
-    terminal_messages = []
+    emitted_messages: list[str] = []
+    terminal_messages: list[str] = []
 
     def emit(record: logging.LogRecord) -> None:
         emitted_messages.append(record.getMessage())
@@ -852,7 +852,7 @@ def test_logging_context_step_name_prefix_uses_legacy_env_semantics(
     # `terminal_messages` represents the text written to the user-visible
     # stdout stream. It is intentionally separate from the log record emitted to
     # the log store because step prefixes should only affect console output.
-    terminal_messages = []
+    terminal_messages: list[str] = []
     console_record = _make_log_record("training.started", step="trainer")
     fake_client = SimpleNamespace(
         active_stack=SimpleNamespace(log_store=FakeLogStore())

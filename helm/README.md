@@ -20,8 +20,8 @@ ZenML is an open-source MLOps framework designed to help you create robust, main
 To install the ZenML chart directly from Amazon ECR, use the following command:
 
 ```bash
-# example command for version 0.94.4
-helm install my-zenml oci://public.ecr.aws/zenml/zenml --version 0.94.4
+# example command for version 0.94.5
+helm install my-zenml oci://public.ecr.aws/zenml/zenml --version 0.94.5
 ```
 
 Note: Ensure you have OCI support enabled in your Helm client and that you are authenticated with Amazon ECR.
@@ -132,6 +132,12 @@ server:
 `ZENML_CONSOLE_LOGGING_FORMAT` controls the server container stdout/stderr output. It can be set to `console`, `json`, or a valid Python `%`-style logging format string. The older `ZENML_LOGGING_FORMAT` environment variable is still supported as a deprecated alias but will be removed in a future version.
 
 OpenTelemetry export is configured separately with `ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT` and exports traces, metrics, and logs using OTLP/HTTP transport. Each signal is enabled by default and can be disabled individually with `ZENML_SERVER_OTEL_TRACES_ENABLED`, `ZENML_SERVER_OTEL_METRICS_ENABLED`, and `ZENML_SERVER_OTEL_LOGS_ENABLED`.
+
+The standard `OTEL_EXPORTER_OTLP_ENDPOINT` environment variable is also supported as a fallback.
+
+Standard per-signal OTLP/HTTP endpoint variables such as `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`, `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`, and `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT` are supported too, along with matching `ZENML_SERVER_OTEL_EXPORTER_OTLP_<SIGNAL>_ENDPOINT` names.
+
+Standard OTLP headers, timeout, and compression variables are handled by the OpenTelemetry Python exporters. OTLP/gRPC protocol variables are not supported because the server configures OTLP/HTTP exporters directly. You can read more about the OpenTelemetry environment variables and SDK configuration [here](https://opentelemetry.io/docs/languages/sdk-configuration/).
 
 ## Backwards Compatibility
 

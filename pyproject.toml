@@ -18,7 +18,7 @@ module-name = ["zenml", "zenml_cli"]
 
 [project]
 name = "zenml"
-version = "0.94.4"
+version = "0.94.5"
 description = "ZenML: MLOps for Reliable AI: from Classical AI to Agents."
 authors = [{name = "ZenML GmbH", email = "info@zenml.io"}]
 readme = "README.md"
@@ -103,6 +103,7 @@ otel = [
     "opentelemetry-instrumentation-requests>=0.59b0",
     "opentelemetry-instrumentation-sqlalchemy>=0.59b0",
 ]
+server-streaming = ["redis>=7.1.0,<8.0.0"]
 jupyter = ["rich[jupyter]>=12.0.0"]
 templates = ["copier>=8.1.0", "jinja2-time>=0.2.0,<0.3.0", "ruff>=0.1.7", "pyyaml-include<2.0"]
 terraform = ["python-terraform"]
