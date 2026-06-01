@@ -24,7 +24,6 @@ import pytest
 
 from zenml.enums import StackComponentType
 from zenml.sandboxes import (
-    STEP_IMAGE,
     BaseSandbox,
     BaseSandboxConfig,
     BaseSandboxFlavor,
@@ -131,16 +130,6 @@ def _make_sandbox(
     )
 
 
-class TestStepImageSentinel:
-    def test_sentinel_is_a_string(self) -> None:
-        assert isinstance(STEP_IMAGE, str)
-
-    def test_sentinel_value_matches_module_export(self) -> None:
-        from zenml.sandboxes.base import STEP_IMAGE as direct
-
-        assert STEP_IMAGE == direct
-
-
 class TestFlavor:
     def test_flavor_type_is_sandbox(self) -> None:
         assert _FakeSandboxFlavor().type == StackComponentType.SANDBOX
@@ -160,20 +149,14 @@ class TestConfig:
 class TestSettings:
     def test_defaults(self) -> None:
         s = BaseSandboxSettings()
-        assert s.base_image is None
         assert s.environment == {}
         assert s.copy_local_env is False
-        assert s.timeout_seconds is None
-
-    def test_step_image_sentinel_accepted(self) -> None:
-        s = BaseSandboxSettings(base_image=STEP_IMAGE)
-        assert s.base_image == STEP_IMAGE
 
 
 class TestSnapshotModel:
     def test_round_trip(self) -> None:
         snap = BaseSandboxSnapshot(
-            provider="fake",
+            sandbox_flavor="fake",
             ref="snap-123",
             metadata={"size_mb": 42},
         )
@@ -183,8 +166,9 @@ class TestSnapshotModel:
         assert restored == snap
 
     def test_metadata_defaults_empty(self) -> None:
-        snap = BaseSandboxSnapshot(provider="fake", ref="r")
+        snap = BaseSandboxSnapshot(sandbox_flavor="fake", ref="r")
         assert snap.metadata == {}
+        assert snap.component_id is None
 
 
 class TestSessionContextManager:
@@ -298,20 +282,30 @@ class TestSandboxOptionalMethods:
 class TestRestoreProviderGuard:
     def test_validate_snapshot_provider_rejects_cross_provider(self) -> None:
         sandbox = _make_sandbox(flavor="fake")
-        wrong_snap = BaseSandboxSnapshot(provider="other", ref="r")
-        with pytest.raises(ValueError, match="provider 'other'"):
+        wrong_snap = BaseSandboxSnapshot(sandbox_flavor="other", ref="r")
+        with pytest.raises(ValueError, match="flavor 'other'"):
             sandbox._validate_snapshot_provider(wrong_snap)
 
     def test_validate_snapshot_provider_passes_on_match(self) -> None:
         sandbox = _make_sandbox(flavor="fake")
-        matching_snap = BaseSandboxSnapshot(provider="fake", ref="r")
+        matching_snap = BaseSandboxSnapshot(sandbox_flavor="fake", ref="r")
         # Returns None; no exception.
         assert sandbox._validate_snapshot_provider(matching_snap) is None
+
+    def test_validate_rejects_cross_component_when_id_set(self) -> None:
+        sandbox = _make_sandbox(flavor="fake")
+        other_snap = BaseSandboxSnapshot(
+            sandbox_flavor="fake",
+            ref="r",
+            component_id=uuid4(),
+        )
+        with pytest.raises(ValueError, match="different component"):
+            sandbox._validate_snapshot_provider(other_snap)
 
     def test_restore_default_raises_not_implemented(self) -> None:
         # Base restore() is opt-in. Flavors override; default raises.
         sandbox = _make_sandbox(flavor="fake")
-        snap = BaseSandboxSnapshot(provider="fake", ref="r")
+        snap = BaseSandboxSnapshot(sandbox_flavor="fake", ref="r")
         with pytest.raises(NotImplementedError):
             sandbox.restore(snap)
 
@@ -335,7 +329,7 @@ class TestResolveSessionEnvironment:
         fake_client.get_secret.return_value = fake_secret
         sb = _make_sandbox(secrets=["secret-uuid"])
         settings = BaseSandboxSettings(environment={"API_KEY": "from_step"})
-        with patch("zenml.client.Client", return_value=fake_client):
+        with patch("zenml.utils.env_utils.Client", return_value=fake_client):
             merged = sb._resolve_session_environment(settings)
         assert merged["API_KEY"] == "from_step"  # settings wins
 
@@ -408,7 +402,7 @@ class TestSandboxLogEmission:
         session._log_exec_result(exit_code=0, started_at=time.time() - 1.5)
         record = session._log_ctx.emit_to.call_args.args[0]
         msg = record.getMessage()
-        assert msg.startswith("✓ exit 0 in ")
+        assert msg.startswith("OK exit 0 in ")
         assert msg.endswith("s")
         assert record.levelno == logging.INFO
 
@@ -416,14 +410,14 @@ class TestSandboxLogEmission:
         session = self._patched_session()
         session._log_exec_result(exit_code=1, started_at=time.time())
         record = session._log_ctx.emit_to.call_args.args[0]
-        assert record.getMessage().startswith("✗ exit 1 in ")
+        assert record.getMessage().startswith("FAIL exit 1 in ")
         assert record.levelno == logging.WARNING
 
     def test_log_exec_result_without_started_at_omits_duration(self) -> None:
         session = self._patched_session()
         session._log_exec_result(exit_code=0, started_at=None)
         record = session._log_ctx.emit_to.call_args.args[0]
-        assert record.getMessage() == "✓ exit 0"
+        assert record.getMessage() == "OK exit 0"
 
     def test_wrap_stream_emits_each_line(self) -> None:
         session = self._patched_session()
@@ -435,11 +429,14 @@ class TestSandboxLogEmission:
         assert [r.getMessage() for r in records] == ["a", "b"]
         assert all(r.levelno == logging.INFO for r in records)
 
-    def test_wrap_stream_stderr_uses_warning_level(self) -> None:
+    def test_wrap_stream_stderr_emits_at_info(self) -> None:
+        # Sandbox stderr is diagnostic output, not an application-level
+        # warning; both streams emit at INFO. Stream attribution is
+        # preserved on the signature for future routing decisions.
         session = self._patched_session()
         list(session._wrap_stream(iter(["oops\n"]), stream="stderr"))
         record = session._log_ctx.emit_to.call_args.args[0]
-        assert record.levelno == logging.WARNING
+        assert record.levelno == logging.INFO
         assert record.getMessage() == "oops"
 
     def test_wrap_stream_passthrough_after_latch(self) -> None:

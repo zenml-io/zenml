@@ -150,7 +150,7 @@ class LoggingContext(context_utils.BaseContext):
         record: logging.LogRecord,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
-        """Emit a log record using the *active* logging context.
+        """Emit a log record using the active logging context.
 
         Called by stdout/stderr wrappers and logging handlers to route
         records to whatever context is currently on the stack. Side-
@@ -210,16 +210,9 @@ class LoggingContext(context_utils.BaseContext):
     def begin(self) -> None:
         """Register the origin without joining the active-context stack.
 
-        Use this when a caller wants to emit records to *this* source
-        without affecting whatever ``LoggingContext`` is currently
-        active on the thread — e.g. proxying subprocess output through
-        ``emit_to()`` while the step's regular logger remains
-        attributed to its own source. Idempotent.
-
-        For the normal stack-routed case use the ``with ctx:`` form;
-        ``__enter__`` calls ``begin()`` internally on top of pushing
-        the context-var. ``register_origin`` may raise if the log
-        store rejects the model.
+        Idempotent. Use this when emitting to this source without
+        pushing the thread-wide context stack (subprocess proxy,
+        sandbox commands).
         """
         with self._lock:
             if self._origin is not None:
@@ -231,7 +224,7 @@ class LoggingContext(context_utils.BaseContext):
             )
 
     def end(self) -> None:
-        """Deregister the origin set up by ``begin()``. Idempotent."""
+        """Deregister the origin set up by `begin()`. Idempotent."""
         with self._lock:
             if self._origin is not None:
                 self._log_store.deregister_origin(
@@ -244,22 +237,17 @@ class LoggingContext(context_utils.BaseContext):
         record: logging.LogRecord,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
-        """Emit a record to *this* context's origin.
+        """Emit a record to this context's origin.
 
-        Bypasses the active-context lookup that ``LoggingContext.emit``
-        does — useful for side-channels (subprocess stdout/stderr,
-        sandbox commands, ...) where the caller knows exactly which
-        source the record belongs to and wants to avoid the
-        thread-wide stack push.
-
-        No-op when ``begin()`` has not been called yet (or after
-        ``end()``).
+        Bypasses the active-context lookup that `LoggingContext.emit`
+        does. No-op when `begin()` has not been called yet (or after
+        `end()`).
 
         Args:
             record: The log record to emit.
             metadata: Additional metadata to attach to the log entry.
         """
-        if self._origin is None or self._disabled:
+        if self._disabled or self._origin is None:
             return
         self._disabled = True
         try:
@@ -332,14 +320,16 @@ class LoggingContext(context_utils.BaseContext):
                 metadata={"zenml.event.type": "exception"},
             )
 
-        self.end()
-        with self._lock:
-            try:
-                super().__exit__(exc_type, exc_val, exc_tb)
-            finally:
-                if self._step_names_token is not None:
-                    step_names_in_console.reset(self._step_names_token)
-                    self._step_names_token = None
+        try:
+            self.end()
+        finally:
+            with self._lock:
+                try:
+                    super().__exit__(exc_type, exc_val, exc_tb)
+                finally:
+                    if self._step_names_token is not None:
+                        step_names_in_console.reset(self._step_names_token)
+                        self._step_names_token = None
 
 
 def generate_logs_request(source: str) -> LogsRequest:
