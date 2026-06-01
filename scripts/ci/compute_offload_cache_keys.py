@@ -12,7 +12,13 @@ from typing import Any
 
 import tomllib
 
-SUPPORTED_LANES = {"default", "modal-server-mysql"}
+LANE_CONFIGS = {
+    "default": "offload.toml",
+    "default-unit": "offload-unit.toml",
+    "default-integration": "offload-default-integration.toml",
+    "modal-server-mysql": "offload-modal-server-mysql.toml",
+}
+SUPPORTED_LANES = set(LANE_CONFIGS)
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -53,14 +59,13 @@ def _load_toml(path: Path) -> dict[str, Any]:
 
 
 def _config_for_lane(lane: str) -> str:
-    if lane == "default":
-        return "offload.toml"
-    if lane == "modal-server-mysql":
-        return "offload-modal-server-mysql.toml"
-    raise ValueError(
-        f"Unsupported offload lane '{lane}'. Expected one of: "
-        f"{', '.join(sorted(SUPPORTED_LANES))}."
-    )
+    try:
+        return LANE_CONFIGS[lane]
+    except KeyError as exc:
+        raise ValueError(
+            f"Unsupported offload lane '{lane}'. Expected one of: "
+            f"{', '.join(sorted(SUPPORTED_LANES))}."
+        ) from exc
 
 
 def _uv_fingerprint(root: Path) -> str:
@@ -76,8 +81,6 @@ def _uv_fingerprint(root: Path) -> str:
 
 
 def _image_fingerprint(root: Path) -> str:
-    default_config = _load_toml(root / "offload.toml")
-    mysql_config = _load_toml(root / "offload-modal-server-mysql.toml")
     parts: list[tuple[str, str | bytes]] = [
         ("Dockerfile.ci", _read_file(root / "Dockerfile.ci")),
         (
@@ -97,23 +100,21 @@ def _image_fingerprint(root: Path) -> str:
             "src/zenml/integrations/registry.py",
             _read_file(root / "src/zenml/integrations/registry.py"),
         ),
-        (
-            "offload.toml:provider.prepare_command",
-            default_config["provider"]["prepare_command"],
-        ),
-        (
-            "offload-modal-server-mysql.toml:provider.prepare_command",
-            mysql_config["provider"]["prepare_command"],
-        ),
-        (
-            "offload.toml:offload.sandbox_project_root",
-            default_config["offload"]["sandbox_project_root"],
-        ),
-        (
-            "offload-modal-server-mysql.toml:offload.sandbox_project_root",
-            mysql_config["offload"]["sandbox_project_root"],
-        ),
     ]
+    for config_name in sorted(set(LANE_CONFIGS.values())):
+        config = _load_toml(root / config_name)
+        parts.extend(
+            [
+                (
+                    f"{config_name}:provider.prepare_command",
+                    config["provider"]["prepare_command"],
+                ),
+                (
+                    f"{config_name}:offload.sandbox_project_root",
+                    config["offload"]["sandbox_project_root"],
+                ),
+            ]
+        )
     for path in sorted(
         (root / "src/zenml/integrations").glob("*/__init__.py")
     ):

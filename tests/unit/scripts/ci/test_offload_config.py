@@ -8,6 +8,10 @@ import tomllib
 import yaml
 
 
+def _load_config(path: str) -> dict:
+    return tomllib.loads(Path(path).read_text())
+
+
 def _global_state_test_files() -> set[str]:
     """Return integration test files that contain global-state tests."""
     return {
@@ -19,7 +23,7 @@ def _global_state_test_files() -> set[str]:
 
 def test_fast_offload_config_is_valid() -> None:
     """Default fast offload config has the expected shape."""
-    config = tomllib.loads(Path("offload.toml").read_text())
+    config = _load_config("offload.toml")
 
     assert config["offload"]["max_parallel"] == 20
     assert config["offload"]["max_batch_duration_secs"] == 320
@@ -42,6 +46,27 @@ def test_fast_offload_config_is_valid() -> None:
     )
 
 
+def test_split_default_offload_configs_match_original_groups() -> None:
+    """Split configs keep the same filters as the combined default config."""
+    default_config = _load_config("offload.toml")
+    unit_config = _load_config("offload-unit.toml")
+    integration_config = _load_config("offload-default-integration.toml")
+
+    for split_config in (unit_config, integration_config):
+        assert split_config["offload"] == default_config["offload"]
+        assert split_config["provider"] == default_config["provider"]
+        assert split_config["framework"] == default_config["framework"]
+        assert split_config["report"] == default_config["report"]
+
+    assert set(unit_config["groups"]) == {"unit"}
+    assert unit_config["groups"]["unit"] == default_config["groups"]["unit"]
+    assert set(integration_config["groups"]) == {"integration"}
+    assert (
+        integration_config["groups"]["integration"]
+        == default_config["groups"]["integration"]
+    )
+
+
 def test_offload_dockerfile_does_not_bake_source_before_dependencies() -> None:
     """Code-only changes should not invalidate the dependency image layer."""
     dockerfile = Path("Dockerfile.ci").read_text()
@@ -50,11 +75,14 @@ def test_offload_dockerfile_does_not_bake_source_before_dependencies() -> None:
     assert "COPY . ." not in dockerfile
     assert "integration-requirements.txt" in dockerfile
     assert "!.ci/offload/integration-requirements.txt" in dockerignore
+    assert "!.github/workflows/ci-fast.yml" in dockerignore
+    assert "!offload-default-integration.toml" in dockerignore
+    assert "!offload-unit.toml" in dockerignore
 
 
 def test_modal_mysql_offload_config_is_valid() -> None:
     """Modal/MySQL offload config targets the remote server environment."""
-    config = tomllib.loads(Path("offload-modal-server-mysql.toml").read_text())
+    config = _load_config("offload-modal-server-mysql.toml")
 
     assert config["offload"]["max_parallel"] == 20
     assert config["offload"]["max_batch_duration_secs"] == 320

@@ -100,7 +100,7 @@ jobs:
         run: |
           uv pip install --system --force-reinstall --no-deps "docstring_parser_fork"
           pydoclint src/zenml tests/harness
-  linux-fast-offload:
+  linux-fast-offload-unit:
     if: github.event_name != 'pull_request' || (github.event.pull_request.draft ==
       false && github.event.pull_request.head.repo.full_name == github.repository
       && vars.ZENML_CI_MODAL_DISABLED != 'true')
@@ -109,6 +109,18 @@ jobs:
       backend: modal
       python-version: '3.13'
       use-offload: true
+      test_suite: unit
+    secrets: inherit
+  linux-fast-offload-default-integration:
+    if: github.event_name != 'pull_request' || (github.event.pull_request.draft ==
+      false && github.event.pull_request.head.repo.full_name == github.repository
+      && vars.ZENML_CI_MODAL_DISABLED != 'true')
+    uses: ./.github/workflows/linux-fast-offload.yml
+    with:
+      backend: modal
+      python-version: '3.13'
+      use-offload: true
+      test_suite: integration
     secrets: inherit
   linux-fast-offload-modal-mysql:
     if: (github.event_name != 'pull_request' || (github.event.pull_request.draft ==
@@ -314,7 +326,8 @@ jobs:
       - sqlite-db-migration-testing-random
       - api-docs-test
       - static-checks
-      - linux-fast-offload
+      - linux-fast-offload-unit
+      - linux-fast-offload-default-integration
       - linux-fast-offload-modal-mysql
       - local-fallback-unit-test
       - local-fallback-default-integration-test
@@ -336,7 +349,8 @@ jobs:
           args=()
           if [ "$USES_LOCAL_FALLBACK" = "true" ]; then
             args+=(
-              --allow-skipped linux-fast-offload
+              --allow-skipped linux-fast-offload-unit
+              --allow-skipped linux-fast-offload-default-integration
               --allow-skipped linux-fast-offload-modal-mysql
               --allow-skipped modal-mysql-serial-shared-state-tests
             )

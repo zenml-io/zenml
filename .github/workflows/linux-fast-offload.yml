@@ -23,6 +23,11 @@ on:
         type: string
         required: false
         default: default
+      test_suite:
+        description: Test suite to execute for the selected environment
+        type: string
+        required: false
+        default: all
   workflow_dispatch:
     inputs:
       backend:
@@ -48,6 +53,12 @@ on:
         options: [default, modal-server-mysql]
         required: false
         default: default
+      test_suite:
+        description: Test suite to execute for the selected environment
+        type: choice
+        options: [all, unit, integration]
+        required: false
+        default: all
 permissions:
   contents: read
 jobs:
@@ -112,14 +123,44 @@ jobs:
       - name: Compute offload cache keys
         id: cache-keys
         env:
-          OFFLOAD_LANE: ${{ inputs.test_environment }}
+          TEST_ENVIRONMENT: ${{ inputs.test_environment }}
+          TEST_SUITE: ${{ inputs.test_suite }}
           RUNNER_OS_NAME: ${{ runner.os }}
           PYTHON_VERSION: ${{ inputs.python-version }}
           GITHUB_RUN_ID_VALUE: ${{ github.run_id }}
           GITHUB_RUN_ATTEMPT_VALUE: ${{ github.run_attempt }}
         run: |
+          set -euo pipefail
+          if [ "$TEST_ENVIRONMENT" = "default" ]; then
+            case "$TEST_SUITE" in
+              all)
+                offload_lane="default"
+                offload_config="offload.toml"
+                ;;
+              unit)
+                offload_lane="default-unit"
+                offload_config="offload-unit.toml"
+                ;;
+              integration)
+                offload_lane="default-integration"
+                offload_config="offload-default-integration.toml"
+                ;;
+              *)
+                echo "Unsupported default test suite: $TEST_SUITE" >&2
+                exit 2
+                ;;
+            esac
+          elif [ "$TEST_ENVIRONMENT" = "modal-server-mysql" ] && [ "$TEST_SUITE" = "all" ]; then
+            offload_lane="modal-server-mysql"
+            offload_config="offload-modal-server-mysql.toml"
+          else
+            echo "Unsupported offload environment/suite: $TEST_ENVIRONMENT/$TEST_SUITE" >&2
+            exit 2
+          fi
+          echo "lane=$offload_lane" >> "$GITHUB_OUTPUT"
+          echo "config=$offload_config" >> "$GITHUB_OUTPUT"
           python3 scripts/ci/compute_offload_cache_keys.py \
-            --lane "$OFFLOAD_LANE" \
+            --lane "$offload_lane" \
             --runner-os "$RUNNER_OS_NAME" \
             --python-version "$PYTHON_VERSION" \
             --run-id "$GITHUB_RUN_ID_VALUE" \
@@ -233,6 +274,7 @@ jobs:
         continue-on-error: true
         env:
           TEST_ENVIRONMENT: ${{ inputs.test_environment }}
+          OFFLOAD_CONFIG: ${{ steps.cache-keys.outputs.config }}
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
           MODAL_CI_SERVER_URL: ${{ steps.modal-server.outputs.server_url }}
@@ -262,9 +304,11 @@ jobs:
           print(derive_server_password())
           PY
           )
+          fi
+          if [ -n "$OFFLOAD_CONFIG" ] && [ "$OFFLOAD_CONFIG" != "offload.toml" ]; then
             original_offload="$(mktemp)"
             cp offload.toml "$original_offload"
-            cp offload-modal-server-mysql.toml offload.toml
+            cp "$OFFLOAD_CONFIG" offload.toml
           fi
           find . -type d -name __pycache__ -prune -exec rm -rf {} +
           find . -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete
@@ -333,7 +377,7 @@ jobs:
         if: always()
         env:
           CLASSIFICATION: ${{ steps.classify.outputs.conclusion || 'unknown' }}
-          LANE: ${{ inputs.test_environment }}
+          LANE: ${{ steps.cache-keys.outputs.lane || inputs.test_environment }}
           STARTED_AT: ${{ steps.run-offload.outputs.started_at || steps.eligibility.outputs.started_at }}
           COMPLETED_AT: ${{ steps.run-offload.outputs.completed_at }}
           SETUP_STARTED_AT: ${{ steps.setup.outputs.started_at }}
@@ -411,7 +455,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50  # untagged
         with:
-          name: linux-fast-offload-artifacts-${{ inputs.test_environment }}
+          name: linux-fast-offload-artifacts-${{ steps.cache-keys.outputs.lane || inputs.test_environment }}
           path: .ci/offload
           if-no-files-found: warn
       - name: Fail on unsuccessful offload

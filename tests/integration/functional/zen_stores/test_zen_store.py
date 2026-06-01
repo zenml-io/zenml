@@ -953,7 +953,9 @@ def test_delete_user_with_resources_fails():
         zen_store.delete_user(user.id)
 
     with UserContext(delete=False, login=True) as user:
-        model_context = ModelContext(create_version=True, delete=False)
+        model_context = ModelContext(
+            create_version=True, tags=[], delete=False
+        )
         with model_context:
             # We only use the context as a shortcut to create the resource
             pass

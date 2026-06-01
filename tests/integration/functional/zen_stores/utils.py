@@ -662,12 +662,15 @@ class ModelContext:
         create_artifacts: int = 0,
         create_prs: int = 0,
         artifact_types: Optional[List[ArtifactType]] = None,
+        tags: Optional[List[str]] = None,
         delete: bool = True,
     ):
         client = Client()
         self.project = client.active_project.id
         self.model = sample_name("su_model")
         self.model_version = "2.0.0"
+        self.model_id = None
+        self.model_version_id = None
 
         self.create_version = create_version
         self.create_artifacts = create_artifacts
@@ -676,6 +679,7 @@ class ModelContext:
         self.create_prs = create_prs
         self.prs = []
         self.snapshots = []
+        self.tags = ["foo", "bar"] if tags is None else tags
         self.delete = delete
 
         if create_artifacts > 0:
@@ -692,7 +696,8 @@ class ModelContext:
         try:
             model = client.get_model(self.model)
         except KeyError:
-            model = client.create_model(name=self.model, tags=["foo", "bar"])
+            model = client.create_model(name=self.model, tags=self.tags)
+        self.model_id = model.id
         if self.create_version:
             try:
                 mv = client.get_model_version(self.model, self.model_version)
@@ -704,6 +709,7 @@ class ModelContext:
                         name=self.model_version,
                     )
                 )
+            self.model_version_id = mv.id
 
         self.pipeline = client.zen_store.create_pipeline(
             PipelineRequest(
@@ -777,10 +783,16 @@ class ModelContext:
 
     def cleanup(self):
         client = Client()
-        try:
-            client.delete_model(self.model)
-        except KeyError:
-            pass
+        if self.model_version_id:
+            try:
+                client.zen_store.delete_model_version(self.model_version_id)
+            except KeyError:
+                pass
+        if self.model_id:
+            try:
+                client.zen_store.delete_model(self.model_id)
+            except KeyError:
+                pass
         for artifact_version in self.artifact_versions:
             client.delete_artifact_version(artifact_version.id)
         for artifact in self.artifacts:

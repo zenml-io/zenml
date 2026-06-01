@@ -19,7 +19,9 @@ REQUIRED_FILES = [
     "src/zenml/integrations/registry.py",
     "src/zenml/integrations/sklearn/__init__.py",
     "offload.toml",
+    "offload-default-integration.toml",
     "offload-modal-server-mysql.toml",
+    "offload-unit.toml",
 ]
 
 
@@ -109,6 +111,24 @@ def test_junit_fingerprint_changes_when_filters_change(
     )
 
     assert _keys(root).junit_restore_prefix != before
+
+
+def test_split_default_lanes_have_separate_duration_caches(
+    tmp_path: Path,
+) -> None:
+    """Unit and integration lanes should not share timing history."""
+    root = _copy_key_inputs(tmp_path)
+
+    unit = _keys(root, lane="default-unit")
+    integration = _keys(root, lane="default-integration")
+
+    assert unit.junit_restore_prefix.startswith(
+        "offload-junit-v2-default-unit-"
+    )
+    assert integration.junit_restore_prefix.startswith(
+        "offload-junit-v2-default-integration-"
+    )
+    assert unit.junit_restore_prefix != integration.junit_restore_prefix
 
 
 def test_junit_save_key_includes_run_id_and_attempt(tmp_path: Path) -> None:
