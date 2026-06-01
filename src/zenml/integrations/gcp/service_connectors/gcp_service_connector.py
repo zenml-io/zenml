@@ -2237,7 +2237,7 @@ class GCPServiceConnector(ServiceConnector):
             )
             if dns_endpoint_config:
                 dns_host = dns_endpoint_config.endpoint.strip()
-                if dns_host and dns_endpoint_config.allow_external_traffic:
+                if dns_host:
                     logger.debug(
                         "Using GKE DNS control plane endpoint for Kubernetes API "
                         "access: %s",
