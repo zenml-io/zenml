@@ -44,6 +44,10 @@ from zenml.models.v2.base.scoped import (
     UserScopedResponseMetadata,
     UserScopedResponseResources,
 )
+from zenml.models.v2.core.resource_pool import (
+    ResourcePoolAllocation,
+    ResourcePoolQueueItem,
+)
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
@@ -160,6 +164,22 @@ class ResourceRequestResponseBody(UserScopedResponseBody):
         default=None,
         title="The resource pool selected for the resource request.",
     )
+    step_name: Optional[str] = Field(
+        default=None,
+        title="The pipeline step name associated with the resource request.",
+    )
+    pipeline_run_name: Optional[str] = Field(
+        default=None,
+        title="The pipeline run name associated with the resource request.",
+    )
+    project_id: Optional[UUID] = Field(
+        default=None,
+        title="The project that owns the pipeline run for this request.",
+    )
+    pool_name: Optional[str] = Field(
+        default=None,
+        title="The resource pool name selected for the resource request.",
+    )
     demands: list[ResourceRequestDemand] = Field(
         default_factory=list,
         title="The resource demands requested.",
@@ -178,6 +198,18 @@ class ResourceRequestResponseBody(UserScopedResponseBody):
         default=None,
         title="The optional lease renewal timestamp.",
     )
+    allocated_at: Optional[datetime] = Field(
+        default=None,
+        title="The timestamp when capacity was first granted.",
+    )
+    released_at: Optional[datetime] = Field(
+        default=None,
+        title="The timestamp when the request was released.",
+    )
+    queued_at: Optional[datetime] = Field(
+        default=None,
+        title="The timestamp when the request first entered a pool queue.",
+    )
     status_reason: Optional[str] = Field(
         title="The reason for the status of the resource request.",
         default=None,
@@ -194,6 +226,15 @@ class ResourceRequestResponseMetadata(UserScopedResponseMetadata):
 
 class ResourceRequestResponseResources(UserScopedResponseResources):
     """Response resources for resource requests."""
+
+    allocations: list[ResourcePoolAllocation] = Field(
+        default_factory=list,
+        title="Allocation grants linked to this request.",
+    )
+    queue_entries: list[ResourcePoolQueueItem] = Field(
+        default_factory=list,
+        title="Pool queue memberships linked to this request.",
+    )
 
 
 class ResourceRequestResponse(
@@ -354,6 +395,10 @@ class ResourceRequestFilter(UserScopedFilter):
     pipeline_run_id: UUIDFilterOption = Field(
         default=None,
         description="The pipeline run requesting resources.",
+    )
+    pool_id: Union[UUID, str, None] = Field(
+        default=None,
+        description="The resource pool linked to the request.",
     )
 
     def get_custom_filters(

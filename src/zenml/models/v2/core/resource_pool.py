@@ -256,9 +256,17 @@ class ResourcePoolQueueItem(BaseZenModel):
     id: UUID = Field(title="The unique queue item ID.")
     request_id: UUID = Field(title="The queued resource request ID.")
     pool_id: UUID = Field(title="The resource pool ID.")
+    pool_name: Optional[str] = Field(
+        default=None,
+        title="The resource pool name.",
+    )
     policy_id: UUID = Field(title="The resource policy ID.")
     priority: int = Field(title="The priority snapshot for this queue item.")
     enqueued_at: datetime = Field(title="The queue insertion timestamp.")
+    created: Optional[datetime] = Field(
+        default=None,
+        title="The queue entry creation timestamp.",
+    )
 
 
 class ResourcePoolAllocation(BaseZenModel):
@@ -266,7 +274,15 @@ class ResourcePoolAllocation(BaseZenModel):
 
     id: UUID = Field(title="The unique allocation ID.")
     request_id: UUID = Field(title="The allocated resource request ID.")
+    demand_index: int = Field(
+        ge=0,
+        title="The zero-based request demand index this grant satisfies.",
+    )
     pool_id: UUID = Field(title="The resource pool ID.")
+    pool_name: Optional[str] = Field(
+        default=None,
+        title="The resource pool name.",
+    )
     resource_id: UUID = Field(title="The allocated resource descriptor ID.")
     resource: Optional[str] = Field(
         default=None,
@@ -304,6 +320,14 @@ class ResourcePoolAllocation(BaseZenModel):
     released_at: Optional[datetime] = Field(
         default=None,
         title="The release timestamp.",
+    )
+    created: Optional[datetime] = Field(
+        default=None,
+        title="The allocation creation timestamp.",
+    )
+    updated: Optional[datetime] = Field(
+        default=None,
+        title="The allocation last update timestamp.",
     )
 
     model_config = ConfigDict(populate_by_name=True)
