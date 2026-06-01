@@ -106,7 +106,10 @@ class TestFlavorMetadata:
 class TestConfigDefaults:
     def test_inherits_base_sandbox_fields(self) -> None:
         fields = K8sAgentSandboxSettings.model_fields
-        assert {"base_image", "environment", "timeout_seconds"} <= set(fields)
+        # ``base_image`` is declared locally on the flavor (base no
+        # longer ships it); ``environment`` comes from
+        # ``BaseSandboxSettings``.
+        assert {"base_image", "environment"} <= set(fields)
 
     def test_default_connection_mode_is_gateway(self) -> None:
         cfg = K8sAgentSandboxConfig()

@@ -52,13 +52,25 @@ class ConnectionMode(str, Enum):
 class K8sAgentSandboxSettings(BaseSandboxSettings):
     """Per-step settings for an Agent Sandbox component.
 
-    Inherits ``base_image`` / ``environment`` / ``copy_local_env`` /
-    ``timeout_seconds`` from ``BaseSandboxSettings``. The ``base_image``
-    knob is only honored when ``template_name`` is unset (inline mode);
-    in template mode the image comes from the referenced
-    ``SandboxTemplate`` custom resource.
+    Inherits ``environment`` / ``copy_local_env`` from
+    ``BaseSandboxSettings`` and adds a flavor-local ``base_image``
+    (only honored when ``template_name`` is unset — inline mode; in
+    template mode the image comes from the referenced
+    ``SandboxTemplate`` custom resource).
     """
 
+    base_image: Optional[str] = Field(
+        default=None,
+        description="Container image used when synthesising an inline "
+        "SandboxTemplate (i.e. when ``template_name`` is unset). MUST "
+        "contain the agent-sandbox runtime that exposes the sandbox "
+        "HTTP API on port 8888. Per-step override on top of the "
+        "component-level ``default_image``. Examples: "
+        "``ghcr.io/agent-sandbox/python-runtime@sha256:...``, "
+        "``my-org/sandbox-runtime:1.0``. Pin to a digest or stable "
+        "tag — never ``:latest``. Ignored when ``template_name`` is "
+        "set — the referenced SandboxTemplate's image wins.",
+    )
     template_name: Optional[str] = Field(
         default=None,
         description="Name of a pre-created SandboxTemplate custom "
