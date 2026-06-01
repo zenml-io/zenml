@@ -549,14 +549,43 @@ class StackComponent:
             else container.pipeline_configuration.settings
         )
 
-        # Use the current config as a base
-        settings_dict = self.config.model_dump(exclude_unset=True)
-
         if canonical_key in all_settings:
-            settings_dict.update(dict(all_settings[canonical_key]))
+            overlay = dict(all_settings[canonical_key])
         elif legacy_key in all_settings:
-            settings_dict.update(dict(all_settings[legacy_key]))
+            overlay = dict(all_settings[legacy_key])
+        else:
+            overlay = {}
 
+        return self._merge_settings(overlay)
+
+    def _merge_settings(self, overlay: Dict[str, Any]) -> "BaseSettings":
+        """Layers an overlay dict on top of this component's config defaults.
+
+        Internal helper shared by `get_settings` and any caller that
+        needs the same `config(exclude_unset=True) + overlay
+        -> settings_class.model_validate` semantics (e.g.
+        `BaseSandbox.resolve_settings`).
+
+        Args:
+            overlay: Dict of overrides layered on top of the config
+                defaults. Empty dict returns the config defaults.
+
+        Returns:
+            A validated `settings_class` instance.
+
+        Raises:
+            RuntimeError: If `settings_class` is not defined on this
+                component.
+        """
+        if not self.settings_class:
+            raise RuntimeError(
+                f"Unable to merge settings for component {self} because "
+                "this component does not have an associated settings "
+                "class."
+            )
+        settings_dict = self.config.model_dump(exclude_unset=True)
+        if overlay:
+            settings_dict.update(overlay)
         return self.settings_class.model_validate(settings_dict)
 
     def connector_has_expired(self) -> bool:

@@ -14,7 +14,6 @@
 """Sandbox stack components for isolated code execution."""
 
 from zenml.sandboxes.base import (
-    STEP_IMAGE,
     BaseSandbox,
     BaseSandboxConfig,
     BaseSandboxFlavor,
@@ -37,7 +36,6 @@ from zenml.sandboxes.snapshot import BaseSandboxSnapshot
 
 __all__ = [
     "LOCAL_SANDBOX_FLAVOR",
-    "STEP_IMAGE",
     "BaseSandbox",
     "BaseSandboxConfig",
     "BaseSandboxFlavor",
