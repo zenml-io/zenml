@@ -2225,16 +2225,25 @@ class GCPServiceConnector(ServiceConnector):
         Raises:
             AuthorizationException: If no Kubernetes API endpoint is available.
         """
-        dns_host = (
-            cluster.control_plane_endpoints_config.dns_endpoint_config.endpoint.strip()
+        # Important: The `control_plane_endpoints_config` is only available with the
+        # google-cloud-container>=2.52.0 package. Until we can update the dependencies,
+        # we need to handle this gracefully.
+        control_plane_endpoints_config = getattr(
+            cluster, "control_plane_endpoints_config", None
         )
-        if dns_host:
-            logger.debug(
-                "Using GKE DNS control plane endpoint for Kubernetes API "
-                "access: %s",
-                dns_host,
+        if control_plane_endpoints_config:
+            dns_endpoint_config = getattr(
+                control_plane_endpoints_config, "dns_endpoint_config", None
             )
-            return f"https://{dns_host}", None
+            if dns_endpoint_config:
+                dns_host = dns_endpoint_config.endpoint.strip()
+                if dns_host and dns_endpoint_config.allow_external_traffic:
+                    logger.debug(
+                        "Using GKE DNS control plane endpoint for Kubernetes API "
+                        "access: %s",
+                        dns_host,
+                    )
+                    return f"https://{dns_host}", None
 
         ip_endpoint = cluster.endpoint.strip()
         if not ip_endpoint:
