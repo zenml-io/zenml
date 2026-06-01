@@ -53,7 +53,25 @@ jobs:
       publish-incident: ${{ steps.ref.outputs.publish-incident }}
       qualification-target: ${{ steps.ref.outputs.qualification-target }}
     steps:
-      - id: ref
+      # using this instead of contains(github.event.pull_request.labels.*.name, 'run-slow-ci')
+      # to make it dynamic, otherwise github context is fixed at the moment of trigger event.
+      # With dynamic approach dev can set label and rerun this flow to make it running.
+      - name: Get PR labels
+        id: pr-labels
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        with:
+          script: |
+            const prNumber = ${{ github.event.pull_request.number }};
+            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+            const labelNames = labels.map(label => label.name);
+            core.setOutput('all-labels', labelNames.join(','));
+      - name: Slow CI label not set
+        id: ref
+        if: ${{ !contains(steps.pr-labels.outputs.all-labels, 'run-slow-ci') }}
         env:
           GIT_REF: ${{ inputs.git-ref || 'develop' }}
           PUBLISH_INCIDENT: ${{ inputs.publish-incident }}

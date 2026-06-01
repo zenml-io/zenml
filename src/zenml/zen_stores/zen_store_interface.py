@@ -102,6 +102,8 @@ from zenml.models import (
     ProjectResponse,
     ProjectUpdate,
     RunMetadataRequest,
+    RunStatisticsRequest,
+    RunStatisticsResponse,
     RunTemplateFilter,
     RunTemplateRequest,
     RunTemplateResponse,
@@ -147,6 +149,8 @@ from zenml.models import (
     StepRunRequest,
     StepRunResponse,
     StepRunUpdate,
+    StreamBatchRequest,
+    StreamBatchResponse,
     TagFilter,
     TagRequest,
     TagResourceRequest,
@@ -1641,6 +1645,19 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
         """
 
     @abstractmethod
+    def get_run_statistics(
+        self, request: RunStatisticsRequest
+    ) -> RunStatisticsResponse:
+        """Compute grouped statistics over pipeline runs.
+
+        Args:
+            request: Statistics request.
+
+        Returns:
+            Grouped statistics.
+        """
+
+    @abstractmethod
     def update_run(
         self, run_id: UUID, run_update: PipelineRunUpdate
     ) -> PipelineRunResponse:
@@ -1693,6 +1710,24 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
 
         Returns:
             KeyError: if the pipeline run doesn't exist.
+        """
+
+    @abstractmethod
+    def publish_run_events(
+        self, pipeline_run_id: UUID, batch: StreamBatchRequest
+    ) -> StreamBatchResponse:
+        """Publish a batch of live events to a pipeline run's stream.
+
+        Args:
+            pipeline_run_id: The ID of the run the events belong to.
+            batch: The batch of events to publish.
+
+        Returns:
+            The server-side ingest response.
+
+        Raises:
+            NotImplementedError: If streaming is not configured on the
+                target store.
         """
 
     @abstractmethod
