@@ -111,6 +111,9 @@ class SandboxSession(ABC):
             cwd: Optional working directory override.
             env: Optional per-exec env vars.
 
+        Returns:
+            A `SandboxProcess` handle. Flavors opt in by overriding.
+
         Raises:
             NotImplementedError: Default. Flavors opt in by overriding.
         """
