@@ -81,8 +81,9 @@ server:
     analyticsOptIn: false
     threadPoolSize: 10
     database:
-        maxOverflow: "-1"
+        maxOverflow: "10"
         poolSize: "10"
+        poolTimeout: "10"
         # Note: Workspace servers only support MySQL, not PostgreSQL
         url: mysql://zenml_workspace_user:password@mysql.internal.mycompany.com:3306/zenml_workspace
     image:
