@@ -63,10 +63,10 @@ class TestFlavor:
 
 
 class TestSettings:
-    def test_inherits_base_fields(self) -> None:
-        s = LocalSandboxSettings(timeout_seconds=60)
-        assert s.timeout_seconds == 60
-        assert s.base_image is None
+    def test_copy_local_env_default_is_true(self) -> None:
+        # LocalSandbox flips the base default because there's no
+        # isolation; PATH/HOME need to flow into the subprocess.
+        assert LocalSandboxSettings().copy_local_env is True
 
 
 class TestCreateSession:
@@ -276,8 +276,8 @@ class TestSettingsCoercion:
 
     def test_none_returns_defaults(self) -> None:
         eff = _make_local_sandbox().resolve_settings(None)
-        assert eff.base_image is None
         assert eff.environment == {}
+        assert eff.copy_local_env is True
 
 
 class TestBuiltinFlavorRegistration:
@@ -289,3 +289,59 @@ class TestBuiltinFlavorRegistration:
 
         flavors = FlavorRegistry().builtin_flavors
         assert LocalSandboxFlavor in flavors
+
+
+class TestCollectNoDeadlockOnLargeStderr:
+    """Regression test for SandboxProcess.collect() deadlock.
+
+    Before the concurrent-drain fix, collect() drained stdout first.
+    A child that filled the stderr pipe buffer (~64KB on Linux) without
+    writing to stdout would block on write(stderr), never exit, never
+    close stdout, and collect() would hang forever waiting for stdout
+    EOF. Common trigger: a >64KB Python traceback from an agent tool.
+    """
+
+    def test_collect_does_not_deadlock_on_large_stderr_only(self) -> None:
+        import threading
+
+        sandbox = _make_local_sandbox()
+        with sandbox.create_session() as session:
+            proc = session.exec(
+                [
+                    sys.executable,
+                    "-u",
+                    "-c",
+                    "import sys; sys.stderr.write('X' * 200000); "
+                    "sys.stderr.flush()",
+                ]
+            )
+
+            result: list = [None]
+            error: list = [None]
+
+            def _run() -> None:
+                try:
+                    result[0] = proc.collect()
+                except Exception as e:
+                    error[0] = e
+
+            t = threading.Thread(target=_run, daemon=True)
+            t.start()
+            t.join(timeout=25.0)
+
+            if t.is_alive():
+                proc.kill()
+                pytest.fail(
+                    "SandboxProcess.collect() deadlocked draining a "
+                    "large stderr-only payload (>64KB pipe buffer)."
+                )
+
+            if error[0] is not None:
+                raise error[0]
+
+            out = result[0]
+            assert out is not None
+            assert out.exit_code == 0
+            assert out.stdout == ""
+            assert len(out.stderr) == 200000
+            assert out.stderr_truncated is False

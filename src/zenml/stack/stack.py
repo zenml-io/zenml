@@ -931,10 +931,10 @@ class Stack:
 
     @property
     def sandbox(self) -> Optional["BaseSandbox"]:
-        """The default sandbox of the stack (first attached, if any).
+        """The sandbox of the stack.
 
         Returns:
-            The default sandbox of the stack, or None if none is attached.
+            The sandbox of the stack.
         """
         return cast(
             "BaseSandbox",
