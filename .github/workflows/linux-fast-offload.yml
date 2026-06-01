@@ -146,7 +146,7 @@ jobs:
               integration)
                 offload_lane="default-integration"
                 offload_config="offload-default-integration.toml"
-                offload_parallel="10"
+                offload_parallel="20"
                 ;;
               *)
                 echo "Unsupported default test suite: $TEST_SUITE" >&2
@@ -156,7 +156,7 @@ jobs:
           elif [ "$TEST_ENVIRONMENT" = "modal-server-mysql" ] && [ "$TEST_SUITE" = "all" ]; then
             offload_lane="modal-server-mysql"
             offload_config="offload-modal-server-mysql.toml"
-            offload_parallel="10"
+            offload_parallel="20"
           else
             echo "Unsupported offload environment/suite: $TEST_ENVIRONMENT/$TEST_SUITE" >&2
             exit 2

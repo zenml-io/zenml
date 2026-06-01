@@ -70,7 +70,7 @@ def test_split_default_offload_configs_match_original_groups() -> None:
         assert split_config["report"] == default_config["report"]
 
     assert unit_config["offload"]["max_parallel"] == 2
-    assert integration_config["offload"]["max_parallel"] == 10
+    assert integration_config["offload"]["max_parallel"] == 20
     assert set(unit_config["groups"]) == {"unit"}
     assert (
         unit_config["groups"]["unit"]["retry_count"]
@@ -106,7 +106,7 @@ def test_modal_mysql_offload_config_is_valid() -> None:
     """Modal/MySQL offload config targets the remote server environment."""
     config = _load_config("offload-modal-server-mysql.toml")
 
-    assert config["offload"]["max_parallel"] == 10
+    assert config["offload"]["max_parallel"] == 20
     assert config["offload"]["max_batch_duration_secs"] == 320
     assert config["provider"]["type"] == "default"
     assert config["report"]["output_dir"] == ".ci/offload"
