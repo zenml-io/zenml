@@ -56,7 +56,7 @@ from zenml.sandboxes import (
 
 # Sentinel for "use the active step's containerized-orchestrator image."
 # Inlined here (rather than imported from base) so the image-resolution
-# behaviour stays owned by this flavor and the base stays minimal.
+# behavior stays owned by this flavor and the base stays minimal.
 MODAL_STEP_IMAGE_SENTINEL = "<step>"
 
 if TYPE_CHECKING:
@@ -143,7 +143,7 @@ class ModalSandboxProcess(SandboxProcess):
         Returns:
             Plain line iterator when no session is attached; otherwise
             wrapped via ``session._wrap_stream`` so each line is also
-            emitted to the sandbox log source at WARNING level.
+            emitted to the sandbox log source.
         """
         lines = _line_buffer(self._process.stderr)
         if self._session is None:
