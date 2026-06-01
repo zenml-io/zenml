@@ -1,6 +1,7 @@
 """Tests for Wandb run initialization helpers."""
 
 import sys
+from importlib.machinery import ModuleSpec
 from types import ModuleType, SimpleNamespace
 from typing import Any
 from uuid import UUID
@@ -8,12 +9,14 @@ from uuid import UUID
 import pytest
 
 wandb_module = ModuleType("wandb")
+wandb_module.__spec__ = ModuleSpec("wandb", loader=None)
 wandb_module.run = None
 wandb_module.Settings = type("Settings", (), {})
 wandb_module.init = lambda **_: None
 wandb_module.finish = lambda **_: None
 
 weave_module = ModuleType("weave")
+weave_module.__spec__ = ModuleSpec("weave", loader=None)
 weave_module.init = lambda **_: None
 
 sys.modules.setdefault("wandb", wandb_module)

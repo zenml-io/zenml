@@ -417,7 +417,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_INCIDENT: ${{ needs.resolve-ref.outputs.publish-incident }}
           QUALIFICATION_TARGET: ${{ needs.resolve-ref.outputs.qualification-target }}
-        run: |
+        run: |-
           args=(--conclusion failure --target "$QUALIFICATION_TARGET")
           if [ "$PUBLISH_INCIDENT" = "true" ]; then
             args+=(--incident)
