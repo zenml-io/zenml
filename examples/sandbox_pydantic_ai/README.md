@@ -10,10 +10,10 @@ prep_step ──► snapshot ─┐
 planner_step ──► subtasks ┘
 ```
 
-1. **`prep_step`** boots a sandbox, `pip install`s the scientific stack (numpy, scipy) once, and snapshots the filesystem into a `ModalSandboxSnapshot` artifact (Modal Image id, materialised through ZenML's artifact store).
+1. **`prep_step`** boots a sandbox, `pip install`s the scientific stack (numpy, scipy) once, and snapshots the filesystem into a `ModalSandboxSnapshot` artifact (Modal Image id, materialized through ZenML's artifact store).
 2. **`planner_step`** asks a small LLM to decompose the user's goal into `N` *independent* subtasks (system prompt enforces no shared filesystem / no cross-subagent dependencies, since each subagent runs in its own sandbox).
 3. **`subagent_step`** (fanned out via `step.map(snapshot=unmapped(...), subtask=subtasks)`) — each instance restores from the shared snapshot, opens a fresh agent loop in that restored sandbox, and returns one partial answer.
-4. **`reducer_step`** synthesises the partial answers into a final response with another LLM call.
+4. **`reducer_step`** synthesizes the partial answers into a final response with another LLM call.
 
 Wall clock on the smoke run: prep ~13 s, planner ~5 s, three parallel subagents ~90–200 s, reducer ~9 s — about **3.5 min total** vs ~11 min if every subagent re-installed deps from scratch.
 
