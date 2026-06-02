@@ -1,7 +1,7 @@
 """Add step run resource request id [d4e8f1a2b3c5].
 
 Revision ID: d4e8f1a2b3c5
-Revises: 0.94.4
+Revises: 0.94.6
 Create Date: 2026-05-29 12:00:00.000000
 
 """
@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "d4e8f1a2b3c5"
-down_revision = "0.94.4"
+down_revision = "0.94.6"
 branch_labels = None
 depends_on = None
 
