@@ -189,7 +189,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.10', '3.12', '3.13']
+        python-version: ['3.10', '3.12', '3.13', '3.14']
       fail-fast: false
     uses: ./.github/workflows/linting.yml
     with:
@@ -202,7 +202,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.10', '3.12', '3.13']
+        python-version: ['3.10', '3.12', '3.13', '3.14']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -215,7 +215,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
       fail-fast: false
     uses: ./.github/workflows/linting.yml
     with:
@@ -228,7 +228,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -241,7 +241,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
       fail-fast: false
     uses: ./.github/workflows/linting.yml
     with:
@@ -254,7 +254,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -269,7 +269,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
         test_environment: [default]
       fail-fast: false
     uses: ./.github/workflows/integration-test-slow.yml
@@ -284,7 +284,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-latest]
-        python-version: ['3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
         test_environment: [default]
       fail-fast: false
     uses: ./.github/workflows/integration-test-slow.yml
@@ -299,7 +299,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.10', '3.12', '3.13']
+        python-version: ['3.10', '3.12', '3.13', '3.14']
         test_environment:
           - default
           - docker-server-docker-orchestrator-mysql
@@ -312,12 +312,16 @@ jobs:
             python-version: '3.12'
           - test_environment: docker-server-docker-orchestrator-mysql
             python-version: '3.13'
+          - test_environment: docker-server-docker-orchestrator-mysql
+            python-version: '3.14'
           - test_environment: docker-server-docker-orchestrator-mariadb
             python-version: '3.10'
           - test_environment: docker-server-docker-orchestrator-mariadb
             python-version: '3.12'
           - test_environment: docker-server-docker-orchestrator-mariadb
             python-version: '3.13'
+          - test_environment: docker-server-docker-orchestrator-mariadb
+            python-version: '3.14'
       fail-fast: false
     uses: ./.github/workflows/integration-test-slow.yml
     with:
