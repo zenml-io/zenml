@@ -474,7 +474,6 @@ jobs:
             python3 - "$password" .ci/offload/offload.log <<'PY'
           from pathlib import Path
           import sys
-
           secret = sys.argv[1]
           log_path = Path(sys.argv[2])
           log_path.write_text(

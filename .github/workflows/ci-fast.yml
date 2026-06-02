@@ -137,8 +137,8 @@ jobs:
     secrets: inherit
   local-fallback-unit-test:
     if: (vars.ZENML_CI_MODAL_DISABLED == 'true' && github.event_name != 'pull_request')
-      || (github.event_name == 'pull_request' && github.event.pull_request.draft
-      == false && (github.event.pull_request.head.repo.full_name != github.repository
+      || (github.event_name == 'pull_request' && github.event.pull_request.draft ==
+      false && (github.event.pull_request.head.repo.full_name != github.repository
       || vars.ZENML_CI_MODAL_DISABLED == 'true'))
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -148,8 +148,8 @@ jobs:
     secrets: inherit
   local-fallback-default-integration-test:
     if: (vars.ZENML_CI_MODAL_DISABLED == 'true' && github.event_name != 'pull_request')
-      || (github.event_name == 'pull_request' && github.event.pull_request.draft
-      == false && (github.event.pull_request.head.repo.full_name != github.repository
+      || (github.event_name == 'pull_request' && github.event.pull_request.draft ==
+      false && (github.event.pull_request.head.repo.full_name != github.repository
       || vars.ZENML_CI_MODAL_DISABLED == 'true'))
     uses: ./.github/workflows/integration-test-fast.yml
     with:
@@ -160,8 +160,8 @@ jobs:
     secrets: inherit
   local-fallback-mysql-integration-test:
     if: (vars.ZENML_CI_MODAL_DISABLED == 'true' && github.event_name != 'pull_request')
-      || (github.event_name == 'pull_request' && github.event.pull_request.draft
-      == false && (github.event.pull_request.head.repo.full_name != github.repository
+      || (github.event_name == 'pull_request' && github.event.pull_request.draft ==
+      false && (github.event.pull_request.head.repo.full_name != github.repository
       || vars.ZENML_CI_MODAL_DISABLED == 'true'))
     uses: ./.github/workflows/integration-test-fast.yml
     with:
@@ -350,8 +350,9 @@ jobs:
       - name: Verify required fast CI jobs
         env:
           NEEDS_CONTEXT: ${{ toJSON(needs) }}
-          USES_LOCAL_FALLBACK: ${{ vars.ZENML_CI_MODAL_DISABLED == 'true' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name
-            != github.repository) }}
+          USES_LOCAL_FALLBACK: ${{ vars.ZENML_CI_MODAL_DISABLED == 'true' || (github.event_name
+            == 'pull_request' && github.event.pull_request.head.repo.full_name !=
+            github.repository) }}
         run: |-
           args=()
           if [ "$USES_LOCAL_FALLBACK" = "true" ]; then
