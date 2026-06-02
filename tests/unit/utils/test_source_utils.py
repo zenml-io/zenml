@@ -31,6 +31,7 @@ from zenml.config.source import (
     Source,
     SourceType,
 )
+from zenml.constants import ENV_ZENML_CUSTOM_SOURCE_ROOT
 from zenml.exceptions import SourceValidationException
 from zenml.utils import code_repository_utils, source_utils
 
@@ -284,8 +285,11 @@ def test_prepend_python_path():
     assert path not in sys.path
 
 
-def test_setting_a_custom_source_root():
+def test_setting_a_custom_source_root(monkeypatch):
     """Tests setting and resetting a custom source root."""
+    monkeypatch.delenv(ENV_ZENML_CUSTOM_SOURCE_ROOT, raising=False)
+    monkeypatch.setattr(source_utils, "_CUSTOM_SOURCE_ROOT", None)
+
     initial_source_root = source_utils.get_source_root()
     source_utils.set_custom_source_root(source_root="custom_source_root")
     assert source_utils.get_source_root() == "custom_source_root"
