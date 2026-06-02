@@ -299,6 +299,7 @@ from zenml.models.v2.core.resource_request import (
     ResourceRequestResponseBody,
     ResourceRequestResponseMetadata,
     ResourceRequestResponseResources,
+    ResourceRequestTerminateRequest,
 )
 from zenml.models.v2.core.run_metadata import (
     RunMetadataRequest,
@@ -910,6 +911,7 @@ __all__ = [
     "ResourcePolicyUpdate",
     "ResourceRequestDemand",
     "ResourceRequestRequest",
+    "ResourceRequestTerminateRequest",
     "ResourceRequestReclaimTolerance",
     "ResourceRequestFilter",
     "ResourceRequestResponse",

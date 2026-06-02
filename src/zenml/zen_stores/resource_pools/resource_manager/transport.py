@@ -289,6 +289,13 @@ class RMResourceRequestCreate(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
+class RMResourceRequestTerminateRequest(BaseModel):
+    """Runtime resource request terminate payload for the Resource Manager API."""
+
+    force: bool = False
+    reason: Optional[str] = None
+
+
 class RMResourceRequestResponse(BaseModel):
     """Runtime resource request response from the Resource Manager API."""
 

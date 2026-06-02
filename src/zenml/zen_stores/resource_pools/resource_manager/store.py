@@ -67,6 +67,7 @@ from zenml.models import (
     ResourceRequestResponseBody,
     ResourceRequestResponseMetadata,
     ResourceRequestResponseResources,
+    ResourceRequestTerminateRequest,
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.resource_pools.resource_manager.client import (
@@ -534,13 +535,13 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             list_kwargs["subject_id"] = UUID(str(filter_model.component_id))
         if filter_model.status is not None:
             if isinstance(filter_model.status, ResourceRequestStatus):
-                list_kwargs["status"] = filter_model.status.value
+                list_kwargs["statuses"] = [filter_model.status.value]
             else:
                 operator, _, value = str(filter_model.status).partition(":")
                 if operator == "oneof":
                     list_kwargs["statuses"] = json.loads(value)
                 else:
-                    list_kwargs["status"] = str(filter_model.status)
+                    list_kwargs["statuses"] = [str(filter_model.status)]
         if filter_model.pool_id is not None:
             list_kwargs["pool_id"] = UUID(str(filter_model.pool_id))
         if filter_model.reclaim_tolerance is not None:
@@ -571,23 +572,38 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         ]
         return self._page(items)
 
-    def delete_resource_request(self, resource_request_id: UUID) -> None:
-        """Cancel or release a resource request through Resource Manager.
+    def terminate_resource_request(
+        self,
+        resource_request_id: UUID,
+        terminate_request: ResourceRequestTerminateRequest,
+    ) -> ResourceRequestResponse:
+        """Terminate a resource request through Resource Manager.
 
-        Fetches the request first and applies the lifecycle action allowed for
-        its current status. Pending requests are cancelled; allocated requests
-        are released. Terminal or non-actionable states are left unchanged.
+        Soft termination cancels pending requests and marks reclaimable
+        allocated requests preempting. Forceful termination cancels pending
+        requests, releases allocated requests, and completes preempting requests.
+
+        Args:
+            resource_request_id: The request ID.
+            terminate_request: Termination options such as force and reason.
+
+        Returns:
+            The terminated resource request.
+        """
+        response = self._client.terminate_request(
+            resource_request_id,
+            force=terminate_request.force,
+            reason=terminate_request.reason,
+        )
+        return self._to_request_response(response)
+
+    def delete_resource_request(self, resource_request_id: UUID) -> None:
+        """Delete a terminal resource request through Resource Manager.
 
         Args:
             resource_request_id: The request ID.
         """
-        request = self._client.get_request(resource_request_id)
-        status = ResourceRequestStatus(request.status)
-
-        if status == ResourceRequestStatus.PENDING:
-            self._client.cancel_request(resource_request_id)
-        elif status == ResourceRequestStatus.ALLOCATED:
-            self._client.release_request(resource_request_id)
+        self._client.delete_request(resource_request_id)
 
     def release_step_run_resources(
         self, session: "Session", step_run_id: UUID
@@ -605,7 +621,11 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         if step_run is None or step_run.resource_request_id is None:
             return
 
-        self._client.release_request(step_run.resource_request_id)
+        self._client.terminate_request(
+            step_run.resource_request_id,
+            force=True,
+            reason="Resource request released by ZenML step run.",
+        )
 
     def delete_component_subject(
         self, session: "Session", component_id: UUID

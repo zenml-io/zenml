@@ -174,15 +174,15 @@ class ResourceManagerClient:
             resource_id: When set, return only the descriptor with this id.
             name: When set, return only descriptors with this exact name.
             metadata: Optional exact-match filters against opaque entity
-                metadata. Each entry is sent as a query parameter.
+                metadata. Each entry is sent as ``metadata[key]=value``.
 
         Returns:
             A list wrapper containing matching descriptors.
         """
         params = self._list_params(
-            metadata=metadata,
             resource_id=resource_id,
             name=name,
+            metadata=metadata,
         )
         return self._request_model(
             "GET", "/v1/resources", RMResourceListResponse, params=params
@@ -254,15 +254,15 @@ class ResourceManagerClient:
             pool_id: When set, return only the pool with this id.
             name: When set, return only pools with this exact name.
             metadata: Optional exact-match filters against opaque entity
-                metadata. Each entry is sent as a query parameter.
+                metadata. Each entry is sent as ``metadata[key]=value``.
 
         Returns:
             A list wrapper containing matching pools.
         """
         params = self._list_params(
-            metadata=metadata,
             pool_id=pool_id,
             name=name,
+            metadata=metadata,
         )
         return self._request_model(
             "GET", "/v1/resource-pools", RMPoolListResponse, params=params
@@ -345,18 +345,18 @@ class ResourceManagerClient:
                 references this subject id.
             priority: When set, return only policies with this exact priority.
             metadata: Optional exact-match filters against opaque entity
-                metadata. Each entry is sent as a query parameter.
+                metadata. Each entry is sent as ``metadata[key]=value``.
 
         Returns:
             A list wrapper containing matching policies.
         """
         params = self._list_params(
-            metadata=metadata,
             policy_id=policy_id,
             pool_id=pool_id,
             pool=pool,
             subject_id=subject_id,
             priority=priority,
+            metadata=metadata,
         )
         return self._request_model(
             "GET",
@@ -456,7 +456,6 @@ class ResourceManagerClient:
         *,
         request_id: Optional[UUID] = None,
         subject_id: Optional[UUID] = None,
-        status: Optional[str] = None,
         statuses: Optional[list[str]] = None,
         pool_id: Optional[UUID] = None,
         reclaim_tolerance: Optional[str] = None,
@@ -469,7 +468,6 @@ class ResourceManagerClient:
             request_id: When set, return only the request with this id.
             subject_id: When set, return only requests that include this
                 subject id.
-            status: When set, return only requests in this lifecycle state.
             statuses: When set, return only requests in any of these states.
             pool_id: When set, return only requests linked to this pool via an
                 allocation or queue entry.
@@ -478,20 +476,19 @@ class ResourceManagerClient:
             preemption_initiated_by_id: When set, return only requests
                 preempted by this request id.
             metadata: Optional exact-match filters against opaque entity
-                metadata. Each entry is sent as a query parameter.
+                metadata. Each entry is sent as ``metadata[key]=value``.
 
         Returns:
             A list wrapper containing matching runtime requests.
         """
         params = self._list_params(
-            metadata=metadata,
             request_id=request_id,
             subject_id=subject_id,
-            status=status,
             statuses=statuses,
             pool_id=pool_id,
             reclaim_tolerance=reclaim_tolerance,
             preemption_initiated_by_id=preemption_initiated_by_id,
+            metadata=metadata,
         )
         return self._request_model(
             "GET",
@@ -500,34 +497,47 @@ class ResourceManagerClient:
             params=params,
         )
 
-    def release_request(self, request_id: UUID) -> RMResourceRequestResponse:
-        """Release a runtime Resource Manager request.
+    def terminate_request(
+        self,
+        request_id: UUID,
+        *,
+        force: bool = False,
+        reason: Optional[str] = None,
+    ) -> RMResourceRequestResponse:
+        """Terminate a runtime Resource Manager request idempotently.
 
         Args:
             request_id: Runtime request ID.
+            force: When ``True``, skip coordinated preemption and terminate
+                forcefully.
+            reason: Optional operator-facing explanation for soft termination.
 
         Returns:
-            The released runtime request.
+            The terminated runtime request.
         """
-        return self._request_model(
-            "POST",
-            f"/v1/resource-requests/{request_id}/release",
-            RMResourceRequestResponse,
+        from zenml.zen_stores.resource_pools.resource_manager.transport import (
+            RMResourceRequestTerminateRequest,
         )
 
-    def cancel_request(self, request_id: UUID) -> RMResourceRequestResponse:
-        """Cancel a runtime Resource Manager request.
+        return self._request_model(
+            "POST",
+            f"/v1/resource-requests/{request_id}/terminate",
+            RMResourceRequestResponse,
+            json=RMResourceRequestTerminateRequest(
+                force=force,
+                reason=reason,
+            ),
+        )
+
+    def delete_request(self, request_id: UUID) -> None:
+        """Delete a terminal runtime Resource Manager request.
 
         Args:
             request_id: Runtime request ID.
-
-        Returns:
-            The canceled runtime request.
         """
-        return self._request_model(
-            "POST",
-            f"/v1/resource-requests/{request_id}/cancel",
-            RMResourceRequestResponse,
+        self._request(
+            "DELETE",
+            f"/v1/resource-requests/{request_id}",
         )
 
     def _request_model(
@@ -639,16 +649,14 @@ class ResourceManagerClient:
         session.mount("http://", http_adapter)
 
     @staticmethod
-    def _list_params(
-        *,
-        metadata: Optional[dict[str, str]] = None,
-        **values: object,
-    ) -> Optional[dict[str, str | list[str]]]:
+    def _list_params(**values: object) -> Optional[dict[str, str | list[str]]]:
         """Build optional query parameters for list endpoints.
 
+        Scalar values become one query parameter. Sequence values become
+        repeated query parameters. Mapping values become ``field[key]=value``
+        bracket query parameters.
+
         Args:
-            metadata: Optional exact-match opaque metadata filters merged
-                into the query string as individual parameters.
             **values: Optional filter values keyed by query parameter name.
 
         Returns:
@@ -658,10 +666,12 @@ class ResourceManagerClient:
         for key, value in values.items():
             if value is None:
                 continue
+            if isinstance(value, dict):
+                for inner_key, inner_value in value.items():
+                    params[f"{key}[{inner_key}]"] = str(inner_value)
+                continue
             if isinstance(value, (list, tuple)):
                 params[key] = [str(entry) for entry in value]
                 continue
             params[key] = str(value)
-        if metadata:
-            params.update(metadata)
         return params or None

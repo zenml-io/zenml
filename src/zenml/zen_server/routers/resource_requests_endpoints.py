@@ -22,6 +22,7 @@ from zenml.models import (
     Page,
     ResourceRequestFilter,
     ResourceRequestResponse,
+    ResourceRequestTerminateRequest,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -92,6 +93,32 @@ def get_resource_request(
     )
 
 
+@router.post(
+    "/{resource_request_id}/terminate",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def terminate_resource_request(
+    resource_request_id: UUID,
+    terminate_request: ResourceRequestTerminateRequest | None = None,
+    _: AuthContext = Security(authorize),
+) -> ResourceRequestResponse:
+    """Terminate a resource request.
+
+    Args:
+        resource_request_id: ID of the resource request.
+        terminate_request: Optional force flag and termination reason.
+
+    Returns:
+        The terminated resource request.
+    """
+    payload = terminate_request or ResourceRequestTerminateRequest()
+    return zen_store().terminate_resource_request(
+        resource_request_id,
+        payload,
+    )
+
+
 @router.delete(
     "/{resource_request_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
@@ -101,7 +128,7 @@ def delete_resource_request(
     resource_request_id: UUID,
     _: AuthContext = Security(authorize),
 ) -> None:
-    """Deletes a resource request.
+    """Delete a terminal resource request from persistence.
 
     Args:
         resource_request_id: ID of the resource request.
