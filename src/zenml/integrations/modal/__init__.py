@@ -23,6 +23,10 @@ from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
 MODAL_STEP_OPERATOR_FLAVOR = "modal"
+# Same string as the step-operator flavor; intentional. The framework
+# disambiguates by StackComponentType.SANDBOX vs STEP_OPERATOR, so the
+# two flavors can coexist without renaming either.
+MODAL_SANDBOX_FLAVOR = "modal"
 
 
 class ModalIntegration(Integration):
@@ -38,8 +42,11 @@ class ModalIntegration(Integration):
         Returns:
             List of new stack component flavors.
         """
-        from zenml.integrations.modal.flavors import ModalStepOperatorFlavor
+        from zenml.integrations.modal.flavors import (
+            ModalSandboxFlavor,
+            ModalStepOperatorFlavor,
+        )
 
-        return [ModalStepOperatorFlavor]
+        return [ModalStepOperatorFlavor, ModalSandboxFlavor]
 
 
