@@ -17,7 +17,10 @@ import urllib.error
 import urllib.request
 from typing import Any
 
-from scripts.ci.github_outputs import write_github_outputs
+try:
+    from scripts.ci.github_outputs import write_github_outputs
+except ModuleNotFoundError:
+    from ci.github_outputs import write_github_outputs
 
 DEFAULT_USERNAME = "default"
 SERVER_PORT = 8080

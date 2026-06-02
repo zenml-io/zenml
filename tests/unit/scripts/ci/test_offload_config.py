@@ -165,17 +165,38 @@ def test_modal_mysql_password_is_masked_before_artifacts_upload() -> None:
 
 def test_modal_disabled_fast_ci_uses_local_fallback_on_non_pr_events() -> None:
     """The Modal kill-switch should not brick develop or merge queue CI."""
-    workflow_text = Path(".github/workflows/ci-fast.yml").read_text()
+    workflow = yaml.safe_load(
+        Path(".github/workflows/ci-fast.yml").read_text()
+    )
+    jobs = workflow["jobs"]
+    fallback_jobs = {
+        "local-fallback-unit-test",
+        "local-fallback-default-integration-test",
+        "local-fallback-mysql-integration-test",
+    }
 
-    assert (
-        "vars.ZENML_CI_MODAL_DISABLED == 'true' && github.event_name != 'pull_request'"
-        in workflow_text
+    for job_name in fallback_jobs:
+        condition = jobs[job_name]["if"]
+        assert "vars.ZENML_CI_MODAL_DISABLED == 'true'" in condition
+        assert "github.event_name != 'pull_request'" in condition
+        assert (
+            "github.event.pull_request.head.repo.full_name != github.repository"
+            in condition
+        )
+
+    verify_step = next(
+        step
+        for step in jobs["ci-fast-required"]["steps"]
+        if step.get("name") == "Verify required fast CI jobs"
     )
+    fallback_expression = verify_step["env"]["USES_LOCAL_FALLBACK"]
+
+    assert "vars.ZENML_CI_MODAL_DISABLED == 'true'" in fallback_expression
+    assert "github.event_name == 'pull_request'" in fallback_expression
     assert (
-        "vars.ZENML_CI_MODAL_DISABLED == 'true' || (github.event_name == 'pull_request'"
-        in workflow_text
+        "github.event.pull_request.head.repo.full_name != github.repository"
+        in fallback_expression
     )
-    assert "vars.ZENML_CI_MODAL_DISABLED != 'true' &&" in workflow_text
 
 
 def test_fast_ci_rollup_guards_offload_and_fallback_skip_modes() -> None:
