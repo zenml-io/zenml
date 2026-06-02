@@ -102,6 +102,8 @@ from zenml.models import (
     ProjectResponse,
     ProjectUpdate,
     RunMetadataRequest,
+    RunStatisticsRequest,
+    RunStatisticsResponse,
     RunTemplateFilter,
     RunTemplateRequest,
     RunTemplateResponse,
@@ -1640,6 +1642,19 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
 
         Returns:
             A list of all pipeline runs matching the filter criteria.
+        """
+
+    @abstractmethod
+    def get_run_statistics(
+        self, request: RunStatisticsRequest
+    ) -> RunStatisticsResponse:
+        """Compute grouped statistics over pipeline runs.
+
+        Args:
+            request: Statistics request.
+
+        Returns:
+            Grouped statistics.
         """
 
     @abstractmethod
