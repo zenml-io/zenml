@@ -135,7 +135,7 @@ class BaseTestSecretConfigModel(BaseTestConfigModel):
                         f"using environment variables."
                     )
 
-    def dict(self, **kwargs: Any) -> Dict[str, Any]:
+    def model_dump(self, **kwargs: Any) -> Dict[str, Any]:
         """Resolve secrets in the dictionary representation.
 
         Args:
@@ -151,3 +151,14 @@ class BaseTestSecretConfigModel(BaseTestConfigModel):
                 d[key] = self._resolve_secret(secret_name, value)
 
         return d
+
+    def dict(self, **kwargs: Any) -> Dict[str, Any]:
+        """Resolve secrets in the legacy dictionary representation.
+
+        Args:
+            **kwargs: Additional keyword arguments to include in the dictionary.
+
+        Returns:
+            The dictionary representation of the model.
+        """
+        return self.model_dump(**kwargs)

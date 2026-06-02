@@ -126,6 +126,28 @@ def test_build_server_image_uses_current_python_version(
     }
 
 
+def test_store_config_model_dump_resolves_environment_placeholders(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Modal CI store config serialization should keep resolved credentials."""
+    monkeypatch.setenv("MODAL_CI_SERVER_URL", "https://sandbox.example.com")
+    monkeypatch.setenv("MODAL_CI_SERVER_USERNAME", "default")
+    monkeypatch.setenv("MODAL_CI_SERVER_PASSWORD", "password")
+
+    config = DeploymentStoreConfig(
+        url="{{MODAL_CI_SERVER_URL}}",
+        username="{{MODAL_CI_SERVER_USERNAME}}",
+        password="{{MODAL_CI_SERVER_PASSWORD}}",
+    )
+
+    assert config.url == "https://sandbox.example.com"
+    assert config.model_dump() == {
+        "url": "https://sandbox.example.com",
+        "username": "default",
+        "password": "password",
+    }
+
+
 @pytest.mark.parametrize(
     "deployment_cls",
     [
