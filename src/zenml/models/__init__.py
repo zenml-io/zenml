@@ -17,61 +17,60 @@
 
 # V2 Base
 from zenml.models.v2.base.base import (
-    BaseZenModel,
+    BaseDatedResponseBody,
+    BaseIdentifiedResponse,
     BaseRequest,
     BaseResponse,
-    BaseUpdate,
-    BaseIdentifiedResponse,
     BaseResponseBody,
     BaseResponseMetadata,
     BaseResponseResources,
-    BaseDatedResponseBody,
+    BaseUpdate,
+    BaseZenModel,
 )
+from zenml.models.v2.base.filter import (
+    BaseFilter,
+    BoolFilter,
+    NumericFilter,
+    StrFilter,
+    UUIDFilter,
+)
+from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
-    TaggableFilter,
-    RunMetadataFilterMixin,
-    UserScopedRequest,
-    UserScopedFilter,
-    UserScopedResponse,
-    UserScopedResponseBody,
-    UserScopedResponseMetadata,
-    ProjectScopedRequest,
     ProjectScopedFilter,
+    ProjectScopedRequest,
     ProjectScopedResponse,
     ProjectScopedResponseBody,
     ProjectScopedResponseMetadata,
     ProjectScopedResponseResources,
-    ProjectScopedFilter,
+    RunMetadataFilterMixin,
+    TaggableFilter,
+    UserScopedFilter,
+    UserScopedRequest,
+    UserScopedResponse,
+    UserScopedResponseBody,
+    UserScopedResponseMetadata,
 )
-from zenml.models.v2.base.filter import (
-    BaseFilter,
-    StrFilter,
-    BoolFilter,
-    NumericFilter,
-    UUIDFilter,
-)
-from zenml.models.v2.base.page import Page
 
 # V2 Core
 from zenml.models.v2.core.api_key import (
     APIKey,
-    APIKeyRequest,
-    APIKeyUpdate,
     APIKeyFilter,
+    APIKeyInternalResponse,
+    APIKeyInternalUpdate,
+    APIKeyRequest,
     APIKeyResponse,
     APIKeyResponseBody,
     APIKeyResponseMetadata,
-    APIKeyInternalResponse,
-    APIKeyInternalUpdate,
     APIKeyRotateRequest,
+    APIKeyUpdate,
 )
 from zenml.models.v2.core.api_transaction import (
     ApiTransactionRequest,
-    ApiTransactionUpdate,
     ApiTransactionResponse,
     ApiTransactionResponseBody,
     ApiTransactionResponseMetadata,
     ApiTransactionResponseResources,
+    ApiTransactionUpdate,
 )
 from zenml.models.v2.core.artifact import (
     ArtifactFilter,
@@ -83,14 +82,14 @@ from zenml.models.v2.core.artifact import (
     ArtifactUpdate,
 )
 from zenml.models.v2.core.artifact_version import (
-    ArtifactVersionRequest,
     ArtifactVersionFilter,
+    ArtifactVersionRequest,
     ArtifactVersionResponse,
     ArtifactVersionResponseBody,
     ArtifactVersionResponseMetadata,
     ArtifactVersionResponseResources,
     ArtifactVersionUpdate,
-    LazyArtifactVersionResponse
+    LazyArtifactVersionResponse,
 )
 from zenml.models.v2.core.artifact_visualization import (
     ArtifactVisualizationRequest,
@@ -99,15 +98,6 @@ from zenml.models.v2.core.artifact_visualization import (
     ArtifactVisualizationResponseMetadata,
     ArtifactVisualizationResponseResources,
 )
-from zenml.models.v2.core.service import (
-    ServiceResponse,
-    ServiceResponseBody,
-    ServiceResponseMetadata,
-    ServiceUpdate,
-    ServiceFilter,
-    ServiceRequest,
-    ServiceResponseResources,
-)
 from zenml.models.v2.core.code_reference import (
     CodeReferenceRequest,
     CodeReferenceResponse,
@@ -115,34 +105,24 @@ from zenml.models.v2.core.code_reference import (
     CodeReferenceResponseMetadata,
 )
 from zenml.models.v2.core.code_repository import (
-    CodeRepositoryRequest,
-    CodeRepositoryUpdate,
     CodeRepositoryFilter,
+    CodeRepositoryRequest,
     CodeRepositoryResponse,
     CodeRepositoryResponseBody,
     CodeRepositoryResponseMetadata,
     CodeRepositoryResponseResources,
+    CodeRepositoryUpdate,
 )
 from zenml.models.v2.core.component import (
     ComponentBase,
-    ComponentRequest,
-    ComponentUpdate,
     ComponentFilter,
+    ComponentRequest,
     ComponentResponse,
     ComponentResponseBody,
     ComponentResponseMetadata,
     ComponentResponseResources,
+    ComponentUpdate,
     DefaultComponentRequest,
-)
-from zenml.models.v2.core.deployment import (
-    DeploymentRequest,
-    DeploymentUpdate,
-    DeploymentFilter,
-    DeploymentOperationalState,
-    DeploymentResponse,
-    DeploymentResponseBody,
-    DeploymentResponseMetadata,
-    DeploymentResponseResources,
 )
 from zenml.models.v2.core.curated_visualization import (
     CuratedVisualizationRequest,
@@ -152,51 +132,61 @@ from zenml.models.v2.core.curated_visualization import (
     CuratedVisualizationResponseResources,
     CuratedVisualizationUpdate,
 )
+from zenml.models.v2.core.deployment import (
+    DeploymentFilter,
+    DeploymentOperationalState,
+    DeploymentRequest,
+    DeploymentResponse,
+    DeploymentResponseBody,
+    DeploymentResponseMetadata,
+    DeploymentResponseResources,
+    DeploymentUpdate,
+)
 from zenml.models.v2.core.device import (
-    OAuthDeviceUpdate,
     OAuthDeviceFilter,
+    OAuthDeviceInternalRequest,
+    OAuthDeviceInternalResponse,
+    OAuthDeviceInternalUpdate,
     OAuthDeviceResponse,
     OAuthDeviceResponseBody,
     OAuthDeviceResponseMetadata,
     OAuthDeviceResponseResources,
-    OAuthDeviceInternalRequest,
-    OAuthDeviceInternalUpdate,
-    OAuthDeviceInternalResponse,
+    OAuthDeviceUpdate,
 )
 from zenml.models.v2.core.flavor import (
-    FlavorRequest,
-    FlavorUpdate,
     FlavorFilter,
+    FlavorRequest,
     FlavorResponse,
     FlavorResponseBody,
     FlavorResponseMetadata,
     FlavorResponseResources,
+    FlavorUpdate,
 )
 from zenml.models.v2.core.logs import (
     LogsRequest,
-    LogsUpdate,
     LogsResponse,
     LogsResponseBody,
     LogsResponseMetadata,
     LogsResponseResources,
+    LogsUpdate,
 )
 from zenml.models.v2.core.model import (
     ModelFilter,
+    ModelRequest,
     ModelResponse,
     ModelResponseBody,
     ModelResponseMetadata,
     ModelResponseResources,
-    ModelRequest,
     ModelUpdate,
 )
 from zenml.models.v2.core.model_version import (
-    ModelVersionResponse,
+    ModelVersionFilter,
     ModelVersionRequest,
+    ModelVersionResponse,
     ModelVersionResponseBody,
     ModelVersionResponseMetadata,
-    ModelVersionFilter,
-    ModelVersionUpdate,
     ModelVersionResponseResources,
+    ModelVersionUpdate,
 )
 from zenml.models.v2.core.model_version_artifact import (
     ModelVersionArtifactFilter,
@@ -211,124 +201,62 @@ from zenml.models.v2.core.model_version_pipeline_run import (
     ModelVersionPipelineRunResponseBody,
 )
 from zenml.models.v2.core.pipeline import (
-    PipelineRequest,
-    PipelineUpdate,
     PipelineFilter,
+    PipelineRequest,
     PipelineResponse,
     PipelineResponseBody,
     PipelineResponseMetadata,
-    PipelineResponseResources
+    PipelineResponseResources,
+    PipelineUpdate,
 )
 from zenml.models.v2.core.pipeline_build import (
     PipelineBuildBase,
-    PipelineBuildRequest,
     PipelineBuildFilter,
+    PipelineBuildRequest,
     PipelineBuildResponse,
     PipelineBuildResponseBody,
     PipelineBuildResponseMetadata,
     PipelineBuildResponseResources,
 )
-from zenml.models.v2.core.pipeline_snapshot import (
-    PipelineSnapshotBase,
-    PipelineSnapshotRequest,
-    PipelineSnapshotUpdate,
-    PipelineSnapshotFilter,
-    PipelineSnapshotResponse,
-    PipelineSnapshotResponseBody,
-    PipelineSnapshotResponseMetadata,
-    PipelineSnapshotResponseResources,
-    PipelineSnapshotRunRequest,
-)
 from zenml.models.v2.core.pipeline_run import (
-    PipelineRunRequest,
-    PipelineRunUpdate,
     PipelineRunFilter,
+    PipelineRunRequest,
     PipelineRunResponse,
     PipelineRunResponseBody,
     PipelineRunResponseMetadata,
     PipelineRunResponseResources,
     PipelineRunTriggerInfo,
+    PipelineRunUpdate,
 )
-from zenml.models.v2.core.run_template import (
-    RunTemplateRequest,
-    RunTemplateUpdate,
-    RunTemplateResponse,
-    RunTemplateResponseBody,
-    RunTemplateResponseMetadata,
-    RunTemplateResponseResources,
-    RunTemplateFilter,
+from zenml.models.v2.core.pipeline_snapshot import (
+    PipelineSnapshotBase,
+    PipelineSnapshotFilter,
+    PipelineSnapshotRequest,
+    PipelineSnapshotResponse,
+    PipelineSnapshotResponseBody,
+    PipelineSnapshotResponseMetadata,
+    PipelineSnapshotResponseResources,
+    PipelineSnapshotRunRequest,
+    PipelineSnapshotUpdate,
 )
-from zenml.models.v2.core.run_wait_condition import (
-    RunWaitConditionFilter,
-    RunWaitConditionRequest,
-    RunWaitConditionResolveRequest,
-    RunWaitConditionResponse,
-    RunWaitConditionResponseBody,
-    RunWaitConditionResponseMetadata,
-    RunWaitConditionResponseResources,
-    RunWaitConditionLeaseUpdate,
-)
-from zenml.models.v2.core.run_metadata import (
-    RunMetadataRequest,
-)
-from zenml.models.v2.core.schedule import (
-    ScheduleRequest,
-    ScheduleUpdate,
-    ScheduleFilter,
-    ScheduleResponse,
-    ScheduleResponseBody,
-    ScheduleResponseMetadata,
-    ScheduleResponseResources,
-)
-from zenml.models.v2.core.secret import (
-    SecretFilter,
-    SecretRequest,
-    SecretResponse,
-    SecretResponseBody,
-    SecretResponseMetadata,
-    SecretResponseResources,
-    SecretUpdate,
-)
-from zenml.models.v2.core.service_account import (
-    ServiceAccountFilter,
-    ServiceAccountResponseBody,
-    ServiceAccountResponseMetadata,
-    ServiceAccountUpdate,
-    ServiceAccountRequest,
-    ServiceAccountInternalRequest,
-    ServiceAccountInternalUpdate,
-    ServiceAccountResponse,
-)
-from zenml.models.v2.core.service_connector import (
-    ServiceConnectorConfiguration,
-    ServiceConnectorRequest,
-    ServiceConnectorUpdate,
-    ServiceConnectorFilter,
-    ServiceConnectorResponse,
-    ServiceConnectorResponseBody,
-    ServiceConnectorResponseMetadata,
-    ServiceConnectorResponseResources,
-)
-from zenml.models.v2.core.stack import (
-    DefaultStackRequest,
-    StackRequest,
-    StackUpdate,
-    StackFilter,
-    StackResponse,
-    StackResponseBody,
-    StackResponseMetadata,
-    StackResponseResources
+from zenml.models.v2.core.project import (
+    ProjectFilter,
+    ProjectRequest,
+    ProjectResponse,
+    ProjectResponseBody,
+    ProjectResponseMetadata,
+    ProjectUpdate,
 )
 from zenml.models.v2.core.resource_pool import (
-    ResourcePoolRequest,
-    ResourcePoolUpdate,
+    ResourcePoolAllocation,
     ResourcePoolFilter,
+    ResourcePoolQueueItem,
+    ResourcePoolRequest,
     ResourcePoolResponse,
     ResourcePoolResponseBody,
     ResourcePoolResponseMetadata,
     ResourcePoolResponseResources,
-    ResourcePoolAllocation,
-    ResourcePoolQueueItem,
+    ResourcePoolUpdate,
 )
 from zenml.models.v2.core.resource_pool_subject_policy import (
     ResourcePoolSubjectPolicyFilter,
@@ -340,57 +268,109 @@ from zenml.models.v2.core.resource_pool_subject_policy import (
     ResourcePoolSubjectPolicyUpdate,
 )
 from zenml.models.v2.core.resource_request import (
-    ResourceRequestRequest,
     ResourceRequestFilter,
+    ResourceRequestRequest,
     ResourceRequestResponse,
     ResourceRequestResponseBody,
     ResourceRequestResponseMetadata,
     ResourceRequestResponseResources,
 )
-from zenml.models.v2.core.triggers import (
-    TriggerRequest,
-    TriggerUpdate,
-    TriggerResponseBody,
-    TriggerResponseMetadata,
-    TriggerResponseResources,
-    TriggerFilter,
-    TriggerSnapshotDispatchState,
-    TriggerDispatchErrorSeverity,
-    TriggerDispatchStatusCode,
-    ScheduleTriggerRequest,
-    ScheduleTriggerResponseBody,
-    ScheduleTriggerResponse,
-    ScheduleTriggerUpdate,
-    PlatformEventTriggerRequest,
-    PlatformEventTriggerUpdate,
-    PlatformEventTriggerResponse,
-    PlatformEventTriggerResponseBody,
-    PlatformEventTrigger,
-    SourceEntity,
-    TRIGGER_UPDATE_TYPE_UNION,
-    TRIGGER_CREATE_TYPE_UNION,
-    TRIGGER_RETURN_TYPE_UNION,
-    TriggerExecutionInfo,
+from zenml.models.v2.core.run_metadata import (
+    RunMetadataRequest,
 )
-from zenml.models.v2.misc.param_groups import (
-    PipelineRunIdentifier,
-    StepRunIdentifier,
-    ArtifactVersionIdentifier,
-    ModelVersionIdentifier,
+from zenml.models.v2.core.run_template import (
+    RunTemplateFilter,
+    RunTemplateRequest,
+    RunTemplateResponse,
+    RunTemplateResponseBody,
+    RunTemplateResponseMetadata,
+    RunTemplateResponseResources,
+    RunTemplateUpdate,
 )
-from zenml.models.v2.misc.statistics import (
-    ProjectStatistics,
-    ServerStatistics,
+from zenml.models.v2.core.run_wait_condition import (
+    RunWaitConditionFilter,
+    RunWaitConditionLeaseUpdate,
+    RunWaitConditionRequest,
+    RunWaitConditionResolveRequest,
+    RunWaitConditionResponse,
+    RunWaitConditionResponseBody,
+    RunWaitConditionResponseMetadata,
+    RunWaitConditionResponseResources,
+)
+from zenml.models.v2.core.schedule import (
+    ScheduleFilter,
+    ScheduleRequest,
+    ScheduleResponse,
+    ScheduleResponseBody,
+    ScheduleResponseMetadata,
+    ScheduleResponseResources,
+    ScheduleUpdate,
+)
+from zenml.models.v2.core.secret import (
+    SecretFilter,
+    SecretRequest,
+    SecretResponse,
+    SecretResponseBody,
+    SecretResponseMetadata,
+    SecretResponseResources,
+    SecretUpdate,
+)
+from zenml.models.v2.core.server_settings import (
+    ServerActivationRequest,
+    ServerSettingsResponse,
+    ServerSettingsResponseBody,
+    ServerSettingsResponseMetadata,
+    ServerSettingsResponseResources,
+    ServerSettingsUpdate,
+)
+from zenml.models.v2.core.service import (
+    ServiceFilter,
+    ServiceRequest,
+    ServiceResponse,
+    ServiceResponseBody,
+    ServiceResponseMetadata,
+    ServiceResponseResources,
+    ServiceUpdate,
+)
+from zenml.models.v2.core.service_account import (
+    ServiceAccountFilter,
+    ServiceAccountInternalRequest,
+    ServiceAccountInternalUpdate,
+    ServiceAccountRequest,
+    ServiceAccountResponse,
+    ServiceAccountResponseBody,
+    ServiceAccountResponseMetadata,
+    ServiceAccountUpdate,
+)
+from zenml.models.v2.core.service_connector import (
+    ServiceConnectorConfiguration,
+    ServiceConnectorFilter,
+    ServiceConnectorRequest,
+    ServiceConnectorResponse,
+    ServiceConnectorResponseBody,
+    ServiceConnectorResponseMetadata,
+    ServiceConnectorResponseResources,
+    ServiceConnectorUpdate,
+)
+from zenml.models.v2.core.stack import (
+    DefaultStackRequest,
+    StackFilter,
+    StackRequest,
+    StackResponse,
+    StackResponseBody,
+    StackResponseMetadata,
+    StackResponseResources,
+    StackUpdate,
 )
 from zenml.models.v2.core.step_run import (
-    StepRunRequest,
-    StepRunUpdate,
+    StepHeartbeatResponse,
     StepRunFilter,
+    StepRunRequest,
     StepRunResponse,
     StepRunResponseBody,
     StepRunResponseMetadata,
     StepRunResponseResources,
-    StepHeartbeatResponse,
+    StepRunUpdate,
 )
 from zenml.models.v2.core.stream_event import (
     StreamEvent,
@@ -399,53 +379,51 @@ from zenml.models.v2.core.stream_event import (
 )
 from zenml.models.v2.core.tag import (
     TagFilter,
+    TagRequest,
     TagResponse,
     TagResponseBody,
     TagResponseMetadata,
     TagResponseResources,
-    TagRequest,
     TagUpdate,
 )
 from zenml.models.v2.core.tag_resource import (
+    TagResourceRequest,
     TagResourceResponse,
     TagResourceResponseBody,
-    TagResourceRequest,
+)
+from zenml.models.v2.core.triggers import (
+    TRIGGER_CREATE_TYPE_UNION,
+    TRIGGER_RETURN_TYPE_UNION,
+    TRIGGER_UPDATE_TYPE_UNION,
+    PlatformEventTrigger,
+    PlatformEventTriggerRequest,
+    PlatformEventTriggerResponse,
+    PlatformEventTriggerResponseBody,
+    PlatformEventTriggerUpdate,
+    ScheduleTriggerRequest,
+    ScheduleTriggerResponse,
+    ScheduleTriggerResponseBody,
+    ScheduleTriggerUpdate,
+    SourceEntity,
+    TriggerDispatchErrorSeverity,
+    TriggerDispatchStatusCode,
+    TriggerExecutionInfo,
+    TriggerFilter,
+    TriggerRequest,
+    TriggerResponseBody,
+    TriggerResponseMetadata,
+    TriggerResponseResources,
+    TriggerSnapshotDispatchState,
+    TriggerUpdate,
 )
 from zenml.models.v2.core.user import (
-    UserRequest,
-    UserUpdate,
     UserFilter,
+    UserRequest,
     UserResponse,
     UserResponseBody,
     UserResponseMetadata,
+    UserUpdate,
 )
-from zenml.models.v2.core.project import (
-    ProjectRequest,
-    ProjectUpdate,
-    ProjectFilter,
-    ProjectResponse,
-    ProjectResponseBody,
-    ProjectResponseMetadata,
-)
-
-# V2 Misc
-from zenml.models.v2.misc.service_connector_type import (
-    AuthenticationMethodModel,
-    ServiceConnectorResourcesModel,
-    ServiceConnectorRequirements,
-    ServiceConnectorTypeModel,
-    ServiceConnectorTypedResourcesModel,
-    ResourceTypeModel,
-)
-from zenml.models.v2.misc.server_models import (
-    ServerDatabaseType,
-    ServerLoadInfo,
-    ServerModel,
-)
-from zenml.models.v2.misc.user_auth import UserAuthModel
-from zenml.models.v2.misc.build_item import BuildItem
-from zenml.models.v2.misc.loaded_visualization import LoadedVisualization
-from zenml.models.v2.misc.external_user import ExternalUserModel
 from zenml.models.v2.misc.auth_models import (
     OAuthDeviceAuthorizationRequest,
     OAuthDeviceAuthorizationResponse,
@@ -455,40 +433,73 @@ from zenml.models.v2.misc.auth_models import (
     OAuthRedirectResponse,
     OAuthTokenResponse,
 )
+from zenml.models.v2.misc.build_item import BuildItem
+from zenml.models.v2.misc.exception_info import ExceptionInfo
+from zenml.models.v2.misc.external_user import ExternalUserModel
+from zenml.models.v2.misc.info_models import (
+    ComponentInfo,
+    ResourcesInfo,
+    ServiceConnectorInfo,
+    ServiceConnectorResourcesInfo,
+)
+from zenml.models.v2.misc.loaded_visualization import LoadedVisualization
+from zenml.models.v2.misc.param_groups import (
+    ArtifactVersionIdentifier,
+    ModelVersionIdentifier,
+    PipelineRunIdentifier,
+    StepRunIdentifier,
+)
 from zenml.models.v2.misc.pipeline_run_dag import PipelineRunDAG
 from zenml.models.v2.misc.run_metadata import (
     RunMetadataEntry,
     RunMetadataResource,
 )
+from zenml.models.v2.misc.run_statistics import (
+    MetadataGrouping,
+    MetadataMetric,
+    RunStatisticsGroup,
+    RunStatisticsRequest,
+    RunStatisticsResponse,
+    SimpleGrouping,
+    SimpleMetric,
+    StatisticsAggregation,
+    StatisticsGrouping,
+    StatisticsGroupingType,
+    StatisticsMetric,
+    StatisticsMetricSource,
+    StatisticsTimeGranularity,
+    TimeGrouping,
+)
 from zenml.models.v2.misc.server_models import (
-    ServerModel,
     ServerDatabaseType,
     ServerDeploymentType,
+    ServerLoadInfo,
+    ServerModel,
 )
 from zenml.models.v2.misc.service import ServiceType
-from zenml.models.v2.core.server_settings import (
-    ServerActivationRequest,
-    ServerSettingsResponse,
-    ServerSettingsResponseResources,
-    ServerSettingsResponseBody,
-    ServerSettingsResponseMetadata,
-    ServerSettingsUpdate,
+
+# V2 Misc
+from zenml.models.v2.misc.service_connector_type import (
+    AuthenticationMethodModel,
+    ResourceTypeModel,
+    ServiceConnectorRequirements,
+    ServiceConnectorResourcesModel,
+    ServiceConnectorTypedResourcesModel,
+    ServiceConnectorTypeModel,
 )
 from zenml.models.v2.misc.stack_deployment import (
     DeployedStack,
     StackDeploymentConfig,
     StackDeploymentInfo,
 )
+from zenml.models.v2.misc.statistics import (
+    ProjectStatistics,
+    ServerStatistics,
+)
 from zenml.models.v2.misc.tag import (
     TagResource,
 )
-from zenml.models.v2.misc.info_models import (
-    ComponentInfo,
-    ServiceConnectorInfo,
-    ServiceConnectorResourcesInfo,
-    ResourcesInfo,
-)
-from zenml.models.v2.misc.exception_info import ExceptionInfo
+from zenml.models.v2.misc.user_auth import UserAuthModel
 
 # ----------------------------- Forward References -----------------------------
 
@@ -963,6 +974,20 @@ __all__ = [
     "RunMetadataEntry",
     "RunMetadataResource",
     "ProjectStatistics",
+    "MetadataGrouping",
+    "MetadataMetric",
+    "RunStatisticsGroup",
+    "RunStatisticsRequest",
+    "RunStatisticsResponse",
+    "SimpleGrouping",
+    "SimpleMetric",
+    "StatisticsAggregation",
+    "StatisticsGrouping",
+    "StatisticsGroupingType",
+    "StatisticsMetric",
+    "StatisticsMetricSource",
+    "StatisticsTimeGranularity",
+    "TimeGrouping",
     "PipelineRunDAG",
     "ExceptionInfo",
     "PipelineRunIdentifier",
