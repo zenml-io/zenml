@@ -61,7 +61,7 @@ class K8sAgentSandboxSettings(BaseSandboxSettings):
 
     base_image: Optional[str] = Field(
         default=None,
-        description="Container image used when synthesising an inline "
+        description="Container image used when synthesizing an inline "
         "SandboxTemplate (i.e. when ``template_name`` is unset). MUST "
         "contain the agent-sandbox runtime that exposes the sandbox "
         "HTTP API on port 8888. Per-step override on top of the "
@@ -153,7 +153,7 @@ class K8sAgentSandboxConfig(BaseSandboxConfig, K8sAgentSandboxSettings):
     )
     default_image: Optional[str] = Field(
         default=None,
-        description="Container image used when synthesising an inline "
+        description="Container image used when synthesizing an inline "
         "SandboxTemplate (i.e. when no ``template_name`` is set). MUST "
         "contain the agent-sandbox runtime that exposes the sandbox "
         "HTTP API on port 8888 — ``commands.run`` POSTs to ``/execute`` "

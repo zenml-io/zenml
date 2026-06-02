@@ -56,8 +56,12 @@ from zenml.sandboxes import (
 )
 
 if TYPE_CHECKING:
-    from k8s_agent_sandbox import SandboxClient
-    from k8s_agent_sandbox.sandbox import Sandbox
+    from k8s_agent_sandbox import (
+        SandboxClient,  # type: ignore[import-not-found]
+    )
+    from k8s_agent_sandbox.sandbox import (
+        Sandbox,  # type: ignore[import-not-found]
+    )
 
 logger = get_logger(__name__)
 
@@ -78,7 +82,7 @@ def _delete_sandbox_template(name: str, namespace: str) -> None:
         namespace: Target namespace.
     """
     from kubernetes import (
-        client as k8s_client,  # type: ignore[import-untyped]
+        client as k8s_client,
     )
 
     k8s_client.CustomObjectsApi().delete_namespaced_custom_object(
@@ -460,7 +464,7 @@ class K8sAgentSandbox(BaseSandbox):
         if connector is None:
             return None
         from kubernetes import (
-            client as k8s_client,  # type: ignore[import-untyped]
+            client as k8s_client,
         )
 
         api_client = connector.connect()
@@ -482,7 +486,7 @@ class K8sAgentSandbox(BaseSandbox):
             ValueError: If ``connection_mode=direct`` and ``api_url``
                 is not configured.
         """
-        from k8s_agent_sandbox.models import (
+        from k8s_agent_sandbox.models import (  # type: ignore[import-not-found]
             SandboxDirectConnectionConfig,
             SandboxGatewayConnectionConfig,
             SandboxInClusterConnectionConfig,
@@ -533,7 +537,7 @@ class K8sAgentSandbox(BaseSandbox):
             yield
             return
         from kubernetes import (
-            client as k8s_client,  # type: ignore[import-untyped]
+            client as k8s_client,
         )
 
         # ``Configuration._default`` is the same attribute
@@ -606,7 +610,7 @@ class K8sAgentSandbox(BaseSandbox):
                 requires an explicit image — reproducibility-first.
         """
         from kubernetes import (
-            client as k8s_client,  # type: ignore[import-untyped]
+            client as k8s_client,
         )
 
         from zenml.integrations.kubernetes.kube_utils import (
@@ -718,10 +722,10 @@ class K8sAgentSandbox(BaseSandbox):
                 diagnostics.
         """
         from kubernetes import (
-            client as k8s_client,  # type: ignore[import-untyped]
+            client as k8s_client,
         )
         from kubernetes.client.rest import (
-            ApiException,  # type: ignore[import-untyped]
+            ApiException,
         )
 
         # Full uuid4 hex (32 chars) — fan-out workflows (step.map at
