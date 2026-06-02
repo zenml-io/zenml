@@ -66,8 +66,9 @@ BuiltinFunctionTypeSource = Source(
 )
 
 
-_CUSTOM_SOURCE_ROOT: Optional[str] = None
-_CUSTOM_SOURCE_ROOT_CLEARED = False
+_CUSTOM_SOURCE_ROOT: Optional[str] = os.getenv(
+    ENV_ZENML_CUSTOM_SOURCE_ROOT, None
+)
 
 _SHARED_TEMPDIR: Optional[str] = None
 _resolved_notebook_sources: Dict[str, str] = {}
@@ -308,8 +309,6 @@ def get_source_root() -> str:
 
     The source root will be determined in the following order:
     - The manually specified custom source root if it was set.
-    - The source root specified through the environment if the custom source
-      root was not explicitly cleared.
     - The ZenML repository directory if one exists in the current working
       directory or any parent directories.
     - The parent directory of the main module file.
@@ -320,11 +319,6 @@ def get_source_root() -> str:
     if _CUSTOM_SOURCE_ROOT:
         logger.debug("Using custom source root: %s", _CUSTOM_SOURCE_ROOT)
         return _CUSTOM_SOURCE_ROOT
-
-    env_source_root = os.getenv(ENV_ZENML_CUSTOM_SOURCE_ROOT, None)
-    if env_source_root and not _CUSTOM_SOURCE_ROOT_CLEARED:
-        logger.debug("Using environment source root: %s", env_source_root)
-        return env_source_root
 
     from zenml.client import Client
 
@@ -345,16 +339,14 @@ def set_custom_source_root(source_root: Optional[str]) -> None:
     """Sets a custom source root.
 
     If set this has the highest priority and will always be used as the source
-    root. Passing `None` explicitly clears the custom source root for this
-    process, including the environment fallback.
+    root.
 
     Args:
         source_root: The source root to use.
     """
     logger.debug("Setting custom source root: %s", source_root)
-    global _CUSTOM_SOURCE_ROOT, _CUSTOM_SOURCE_ROOT_CLEARED
+    global _CUSTOM_SOURCE_ROOT
     _CUSTOM_SOURCE_ROOT = source_root
-    _CUSTOM_SOURCE_ROOT_CLEARED = source_root is None
 
 
 def is_internal_module(module_name: str) -> bool:
