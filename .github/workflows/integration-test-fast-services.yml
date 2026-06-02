@@ -41,7 +41,7 @@ on:
       python-version:
         description: Python version
         type: choice
-        options: ['3.10', '3.11', '3.12', '3.13']
+        options: ['3.10', '3.11', '3.12', '3.13', '3.14']
         required: false
         default: '3.11'
       test_environment:
@@ -115,9 +115,9 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - name: Restore uv cache
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
         with:
           path: ~/.cache/uv
           key: |
@@ -125,23 +125,23 @@ jobs:
           restore-keys: |
             uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885 # v6.1.1
+        uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885  # v6.1.1
         with:
           role-to-assume: ${{ secrets.AWS_US_EAST_1_ENV_ROLE_ARN }}
           aws-region: us-east-1
         if: contains(inputs.test_environment, 'aws')
       - name: Configure GCP credentials
-        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093  # v3.0.0
         with:
           credentials_json: ${{ secrets.GCP_US_EAST4_ENV_CREDENTIALS }}
         if: contains(inputs.test_environment, 'gcp')
       - name: Set up gcloud SDK
-        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db  # v3.0.1
         with:
           install_components: gke-gcloud-auth-plugin
         if: contains(inputs.test_environment, 'gcp')
       - name: Login to Docker Hub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -219,7 +219,7 @@ jobs:
           gcloud auth configure-docker --project zenml-ci
         if: contains(inputs.test_environment, 'gcp')
       - name: Login to Google GKE
-        uses: google-github-actions/get-gke-credentials@3da1e46a907576cefaa90c484278bb5b259dd395 # v3.0.0
+        uses: google-github-actions/get-gke-credentials@3da1e46a907576cefaa90c484278bb5b259dd395  # v3.0.0
         with:
           cluster_name: zenml-ci-cluster
           location: us-east4
@@ -227,7 +227,7 @@ jobs:
         if: contains(inputs.test_environment, 'gcp')
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}
-        uses: mxschmitt/action-tmate@c0afd6f790e3a5564914980036ebf83216678101 # v3.23
+        uses: mxschmitt/action-tmate@c0afd6f790e3a5564914980036ebf83216678101  # v3.23
         timeout-minutes: ${{ inputs.tmate_timeout }}
       - name: Sharded Integration Tests (Ubuntu) - Fast CI
         # Ubuntu integration tests run as 6 shards
@@ -238,7 +238,7 @@ jobs:
           INPUTS_TEST_ENVIRONMENT: ${{ inputs.test_environment }}
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
-        uses: mxschmitt/action-tmate@c0afd6f790e3a5564914980036ebf83216678101 # v3.23
+        uses: mxschmitt/action-tmate@c0afd6f790e3a5564914980036ebf83216678101  # v3.23
         timeout-minutes: ${{ inputs.tmate_timeout }}
       - name: Verify Python Env unaffected
         run: |-
@@ -251,8 +251,7 @@ jobs:
         env:
           MYSQL_ROOT_PASSWORD: zenml
           MYSQL_DATABASE: zenml
-        ports:
-          - 3306:3306
+        ports: [3306:3306]
         options: >-
           --health-cmd="mysqladmin ping"
           --health-interval=10s
@@ -269,8 +268,7 @@ jobs:
           ZENML_SERVER_DEPLOYMENT_TYPE: docker
           ZENML_SERVER_AUTO_ACTIVATE: 'True'
           ZENML_SERVER_AUTO_CREATE_DEFAULT_USER: 'True'
-        ports:
-          - 8080:8080
+        ports: [8080:8080]
         options: >-
           --health-cmd="curl -f http://127.0.0.1:8080/health"
           --health-interval=10s
