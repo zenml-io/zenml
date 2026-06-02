@@ -2330,7 +2330,7 @@ class SqlZenStore(BaseZenStore):
         method: Optional[str] = None,
         url: Optional[str] = None,
     ) -> ApiTransactionSchema:
-        """Retrieve or create a new API transaction.
+        """Retrieve an API transaction.
 
         Args:
             api_transaction_id: The ID of the API transaction to retrieve.
@@ -2383,17 +2383,37 @@ class SqlZenStore(BaseZenStore):
                 "the same ID already exists with a different method or URL."
             )
 
-        if (
+        return api_transaction_schema
+
+    @staticmethod
+    def _api_transaction_has_expired(
+        api_transaction_schema: ApiTransactionSchema,
+    ) -> bool:
+        """Check whether a completed API transaction has expired."""
+        return (
             api_transaction_schema.completed
             and api_transaction_schema.expired is not None
             and api_transaction_schema.expired < utc_now()
-        ):
-            session.delete(api_transaction_schema)
-            session.commit()
-            raise KeyError(
-                f"API transaction with ID {api_transaction_id} has expired."
-            )
+        )
 
+    @staticmethod
+    def _reset_expired_api_transaction(
+        api_transaction_schema: ApiTransactionSchema,
+        session: Session,
+    ) -> ApiTransactionSchema:
+        """Reset an expired API transaction for re-execution."""
+        result_schema = session.get(
+            ApiTransactionResultSchema, api_transaction_schema.id
+        )
+        if result_schema is not None:
+            session.delete(result_schema)
+
+        api_transaction_schema.completed = False
+        api_transaction_schema.expired = None
+        api_transaction_schema.updated = utc_now()
+        session.add(api_transaction_schema)
+        session.commit()
+        session.refresh(api_transaction_schema)
         return api_transaction_schema
 
     def cleanup_expired_api_transactions(
@@ -2424,9 +2444,7 @@ class SqlZenStore(BaseZenStore):
 
             result = session.execute(
                 delete(ApiTransactionSchema).where(
-                    col(ApiTransactionSchema.id).in_(
-                        expired_transaction_ids
-                    )
+                    col(ApiTransactionSchema.id).in_(expired_transaction_ids)
                 )
             )
 
@@ -2450,32 +2468,33 @@ class SqlZenStore(BaseZenStore):
                 request_model=api_transaction, session=session
             )
 
+            api_transaction_schema = ApiTransactionSchema.from_request(
+                api_transaction
+            )
             created = False
-            for attempt in range(2):
-                api_transaction_schema = ApiTransactionSchema.from_request(
-                    api_transaction
+            session.add(api_transaction_schema)
+            try:
+                session.commit()
+                created = True
+            except IntegrityError:
+                # We have to rollback the failed session first in order to
+                # continue using it.
+                session.rollback()
+                api_transaction_schema = self._get_api_transaction(
+                    api_transaction_id=api_transaction_schema.id,
+                    method=api_transaction.method,
+                    url=api_transaction.url,
+                    session=session,
                 )
-                session.add(api_transaction_schema)
-                try:
-                    session.commit()
-                    created = True
-                    break
-                except IntegrityError:
-                    # We have to rollback the failed session first in order to
-                    # continue using it
-                    session.rollback()
-                    try:
-                        api_transaction_schema = self._get_api_transaction(
-                            api_transaction_id=api_transaction_schema.id,
-                            method=api_transaction.method,
-                            url=api_transaction.url,
+
+                if self._api_transaction_has_expired(api_transaction_schema):
+                    api_transaction_schema = (
+                        self._reset_expired_api_transaction(
+                            api_transaction_schema=api_transaction_schema,
                             session=session,
                         )
-                    except KeyError:
-                        if attempt == 0:
-                            continue
-                        raise
-                    break
+                    )
+                    created = True
 
             return (
                 api_transaction_schema.to_model(

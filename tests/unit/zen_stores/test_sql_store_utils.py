@@ -1,5 +1,6 @@
 """Unit tests for SQL Zen Store utility behavior."""
 
+import gzip
 from datetime import timedelta
 from unittest.mock import MagicMock
 from uuid import uuid4
@@ -11,8 +12,14 @@ from zenml.client import Client
 from zenml.constants import ENV_ZENML_DISABLE_DATABASE_MIGRATION
 from zenml.models import ApiTransactionRequest
 from zenml.utils.time_utils import utc_now
-from zenml.zen_stores.schemas import ApiTransactionSchema
-from zenml.zen_stores.sql_zen_store import SqlZenStore
+from zenml.zen_stores.schemas import (
+    ApiTransactionResultSchema,
+    ApiTransactionSchema,
+)
+from zenml.zen_stores.sql_zen_store import (
+    SqlZenStore,
+    SqlZenStoreConfiguration,
+)
 
 
 def test_run_migrations_helper_func(monkeypatch):
@@ -68,6 +75,18 @@ def test_run_run_migrations_skipped(monkeypatch):
         store._run_migrations()
 
         fake_migrate.assert_not_called()
+
+
+def test_mysql_pool_timeout_is_passed_to_sqlalchemy_config():
+    """MySQL pool timeout is propagated to SQLAlchemy engine args."""
+    config = SqlZenStoreConfiguration(
+        url="mysql://user:password@localhost:3306/zenml",
+        pool_timeout=7,
+    )
+
+    _, _, engine_args = config.get_sqlalchemy_config()
+
+    assert engine_args["pool_timeout"] == 7
 
 
 def test_expired_api_transaction_cleanup_is_batched(clean_client):
@@ -129,8 +148,8 @@ def test_expired_api_transaction_cleanup_is_batched(clean_client):
     assert active_transaction is not None
 
 
-def test_completed_expired_api_transaction_is_recreated(clean_client):
-    """Completed expired API transactions are treated as cache misses."""
+def test_completed_expired_api_transaction_is_reset(clean_client):
+    """Completed expired API transactions are reset for re-execution."""
     store = clean_client.zen_store
 
     if not isinstance(store, SqlZenStore):
@@ -143,14 +162,20 @@ def test_completed_expired_api_transaction_is_recreated(clean_client):
     expired_at = utc_now() - timedelta(seconds=1)
 
     with Session(store.engine) as session:
+        transaction = ApiTransactionSchema(
+            id=transaction_id,
+            method="POST",
+            url="/api/retry",
+            user_id=user_id,
+            completed=True,
+            expired=expired_at,
+        )
+        session.add(transaction)
+        session.flush()
         session.add(
-            ApiTransactionSchema(
+            ApiTransactionResultSchema(
                 id=transaction_id,
-                method="POST",
-                url="/api/retry",
-                user_id=user_id,
-                completed=True,
-                expired=expired_at,
+                result=gzip.compress(b'"stale-result"'),
             )
         )
         session.commit()
@@ -169,7 +194,9 @@ def test_completed_expired_api_transaction_is_recreated(clean_client):
 
     with Session(store.engine) as session:
         transaction = session.get(ApiTransactionSchema, transaction_id)
+        result = session.get(ApiTransactionResultSchema, transaction_id)
 
     assert transaction is not None
     assert transaction.completed is False
     assert transaction.expired is None
+    assert result is None
