@@ -209,8 +209,8 @@ class _Subtasks(BaseModel):
     subtasks: list[str]
 
 
-def plan_subtasks(query: str, n: int = 3) -> list[str]:
-    """Decomposes a user goal into ``n`` independent subtasks.
+def plan_subtasks(query: str) -> list[str]:
+    """Decomposes a user goal into 3 independent subtasks.
 
     Each subtask is meant to be tackled by an isolated subagent in its
     own sandbox session — no shared state, no cross-subagent
@@ -219,7 +219,6 @@ def plan_subtasks(query: str, n: int = 3) -> list[str]:
 
     Args:
         query: The user's natural-language goal.
-        n: How many subtasks to produce.
 
     Returns:
         A list of self-contained subtask descriptions.
@@ -228,7 +227,7 @@ def plan_subtasks(query: str, n: int = 3) -> list[str]:
         "openai:gpt-4o-mini",
         output_type=_Subtasks,
         system_prompt=(
-            f"Decompose the user's task into exactly {n} fully "
+            "Decompose the user's task into exactly 3 fully "
             "independent subtasks for parallel execution. CRITICAL: "
             "each subtask runs in its OWN isolated sandbox with a "
             "separate filesystem -- subtasks cannot read each other's "
