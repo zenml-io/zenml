@@ -251,6 +251,7 @@ from zenml.models import (
     ResourcePoolUpdate,
     ResourceRequestFilter,
     ResourceRequestResponse,
+    ResourceRequestTerminateRequest,
     RunMetadataRequest,
     RunStatisticsRequest,
     RunStatisticsResponse,
@@ -1681,6 +1682,26 @@ class RestZenStore(BaseZenStore):
             resource_id=resource_request_id,
             route=RESOURCE_REQUESTS,
         )
+
+    def terminate_resource_request(
+        self,
+        resource_request_id: UUID,
+        terminate_request: ResourceRequestTerminateRequest,
+    ) -> ResourceRequestResponse:
+        """Terminate a resource request.
+
+        Args:
+            resource_request_id: The ID of the resource request to terminate.
+            terminate_request: Termination options such as force and reason.
+
+        Returns:
+            The terminated resource request.
+        """
+        response_body = self.post(
+            path=f"{RESOURCE_REQUESTS}/{resource_request_id}/terminate",
+            body=terminate_request,
+        )
+        return ResourceRequestResponse.model_validate(response_body)
 
     #  ----------------------------- Flavors -----------------------------
 

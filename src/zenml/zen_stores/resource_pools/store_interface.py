@@ -36,6 +36,7 @@ from zenml.models import (
     ResourceRequestFilter,
     ResourceRequestRequest,
     ResourceRequestResponse,
+    ResourceRequestTerminateRequest,
 )
 
 if TYPE_CHECKING:
@@ -301,8 +302,24 @@ class ResourcePoolsStoreInterface(ABC):
         """
 
     @abstractmethod
+    def terminate_resource_request(
+        self,
+        resource_request_id: UUID,
+        terminate_request: ResourceRequestTerminateRequest,
+    ) -> ResourceRequestResponse:
+        """Terminate a resource request.
+
+        Args:
+            resource_request_id: The ID of the resource request to terminate.
+            terminate_request: Termination options such as force and reason.
+
+        Returns:
+            The terminated resource request.
+        """
+
+    @abstractmethod
     def delete_resource_request(self, resource_request_id: UUID) -> None:
-        """Delete a resource request.
+        """Delete a terminal resource request from persistence.
 
         Args:
             resource_request_id: The ID of the resource request to delete.
