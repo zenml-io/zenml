@@ -3,6 +3,11 @@ description: Deploy pipelines as HTTP services for real-time execution
 icon: rocket-launch
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Pipeline Deployment
 
 Pipeline deployment allows you to run ZenML pipelines as long-running HTTP services for real-time execution, rather than traditional batch mode execution. This enables you to invoke pipelines through HTTP requests and receive immediate responses.
