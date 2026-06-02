@@ -311,6 +311,7 @@ from zenml.models import (
     ResourceRequestFilter,
     ResourceRequestRequest,
     ResourceRequestResponse,
+    ResourceRequestTerminateRequest,
     RunMetadataRequest,
     RunMetadataResource,
     RunStatisticsRequest,
@@ -4217,6 +4218,25 @@ class SqlZenStore(BaseZenStore):
             resource_request_id: The ID of the resource request to delete.
         """
         self.resource_pools.delete_resource_request(resource_request_id)
+
+    def terminate_resource_request(
+        self,
+        resource_request_id: UUID,
+        terminate_request: ResourceRequestTerminateRequest,
+    ) -> ResourceRequestResponse:
+        """Terminate a resource request.
+
+        Args:
+            resource_request_id: The ID of the resource request to terminate.
+            terminate_request: Termination options such as force and reason.
+
+        Returns:
+            The terminated resource request.
+        """
+        return self.resource_pools.terminate_resource_request(
+            resource_request_id,
+            terminate_request,
+        )
 
     # -------------------------- Devices -------------------------
 

@@ -145,6 +145,20 @@ class ResourceRequestRequest(UserScopedRequest):
     )
 
 
+class ResourceRequestTerminateRequest(BaseZenModel):
+    """Request model for terminating a resource request."""
+
+    force: bool = Field(
+        default=False,
+        title="When true, skip coordinated preemption and terminate forcefully.",
+    )
+    reason: Optional[str] = Field(
+        default=None,
+        title="Optional operator-facing explanation for soft termination.",
+        max_length=1024,
+    )
+
+
 class ResourceRequestResponseBody(UserScopedResponseBody):
     """Response body for resource requests."""
 
