@@ -50,6 +50,25 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
 
     _session: SandboxSession | None = None
 
+    @property
+    def _live_session(self) -> SandboxSession:
+        """Returns the open SandboxSession, or raises if not started.
+
+        Centralizes the "must call start() first" precondition every
+        post-start method needs, so the public methods can drop their
+        own None-checks plus the type-narrowing ceremony.
+
+        Raises:
+            RuntimeError: If the environment has not been started yet
+                (or has been stopped).
+        """
+        if self._session is None:
+            raise RuntimeError(
+                "ZenMLSandboxEnvironment used before start() (or after "
+                "stop()). Call await env.start(...) first."
+            )
+        return self._session
+
     @staticmethod
     def type() -> str:
         """Returns the environment identifier surfaced to Harbor."""
@@ -180,10 +199,6 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
         host-side via ``asyncio.wait_for`` since Modal doesn't take
         per-exec timeouts. ``user`` is not yet plumbed.
         """
-        if self._session is None:
-            raise RuntimeError(
-                "ZenMLSandboxEnvironment.exec called before start()."
-            )
         if user is not None:
             logger.debug(
                 "ZenMLSandboxEnvironment.exec ignoring user=%r — not "
@@ -191,10 +206,10 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
                 user,
             )
         merged_env = self._merge_env(env)
+        session = self._live_session
 
         def _run() -> ExecResult:
-            assert self._session is not None
-            process = self._session.exec(
+            process = session.exec(
                 ["bash", "-c", command], cwd=cwd, env=merged_env
             )
             out = process.collect()
@@ -221,24 +236,16 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
         self, source_path: Path | str, target_path: str
     ) -> None:
         """Stream a local file into the SandboxSession."""
-        if self._session is None:
-            raise RuntimeError(
-                "ZenMLSandboxEnvironment.upload_file called before start()."
-            )
         await asyncio.to_thread(
-            self._session.upload_file, str(source_path), target_path
+            self._live_session.upload_file, str(source_path), target_path
         )
 
     async def download_file(
         self, source_path: str, target_path: Path | str
     ) -> None:
         """Stream a remote file out of the SandboxSession."""
-        if self._session is None:
-            raise RuntimeError(
-                "ZenMLSandboxEnvironment.download_file called before start()."
-            )
         await asyncio.to_thread(
-            self._session.download_file, source_path, str(target_path)
+            self._live_session.download_file, source_path, str(target_path)
         )
 
     def _remote_tar_path(self, kind: str) -> str:
@@ -260,10 +267,6 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
         locally, ``upload_file`` the archive, untar inside the
         session, and remove the archive regardless of extract success.
         """
-        if self._session is None:
-            raise RuntimeError(
-                "ZenMLSandboxEnvironment.upload_dir called before start()."
-            )
         source = Path(source_dir)
         remote_tar = self._remote_tar_path("upload")
         with tempfile.TemporaryDirectory() as host_tmp:
@@ -271,7 +274,7 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
             with tarfile.open(archive, "w:gz") as tf:
                 tf.add(source, arcname=".")
             await asyncio.to_thread(
-                self._session.upload_file, str(archive), remote_tar
+                self._live_session.upload_file, str(archive), remote_tar
             )
         q_target = shlex.quote(target_dir)
         q_tar = shlex.quote(remote_tar)
@@ -287,10 +290,6 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
         self, source_dir: str, target_dir: Path | str
     ) -> None:
         """Download a directory tree via tar + ``download_file``."""
-        if self._session is None:
-            raise RuntimeError(
-                "ZenMLSandboxEnvironment.download_dir called before start()."
-            )
         remote_tar = self._remote_tar_path("download")
         await self.exec(
             f"tar czf {shlex.quote(remote_tar)} -C {shlex.quote(source_dir)} ."
@@ -301,7 +300,9 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
             with tempfile.TemporaryDirectory() as host_tmp:
                 host_tar = Path(host_tmp) / "download.tar.gz"
                 await asyncio.to_thread(
-                    self._session.download_file, remote_tar, str(host_tar)
+                    self._live_session.download_file,
+                    remote_tar,
+                    str(host_tar),
                 )
                 with tarfile.open(host_tar, "r:gz") as tf:
                     # ``filter="data"`` blocks unsafe tar entries
