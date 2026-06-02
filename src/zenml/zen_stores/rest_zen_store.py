@@ -117,6 +117,7 @@ from zenml.constants import (
     STACK_COMPONENTS,
     STACK_DEPLOYMENT,
     STACKS,
+    STATISTICS,
     STEPS,
     TAG_RESOURCES,
     TAGS,
@@ -240,6 +241,8 @@ from zenml.models import (
     ResourceRequestFilter,
     ResourceRequestResponse,
     RunMetadataRequest,
+    RunStatisticsRequest,
+    RunStatisticsResponse,
     RunTemplateFilter,
     RunTemplateRequest,
     RunTemplateResponse,
@@ -2337,6 +2340,20 @@ class RestZenStore(BaseZenStore):
                 "include_full_metadata": include_full_metadata,
             },
         )
+
+    def get_run_statistics(
+        self, request: RunStatisticsRequest
+    ) -> RunStatisticsResponse:
+        """Compute grouped statistics over pipeline runs.
+
+        Args:
+            request: Statistics request.
+
+        Returns:
+            Grouped statistics.
+        """
+        response_body = self.post(f"{RUNS}{STATISTICS}", body=request)
+        return RunStatisticsResponse.model_validate(response_body)
 
     def update_run(
         self, run_id: UUID, run_update: PipelineRunUpdate
