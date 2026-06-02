@@ -1,5 +1,18 @@
 <!-- markdown-link-check-disable -->
 
+# 0.94.6
+
+## What's Changed
+* Add version 0.94.4 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4872
+* Add 0.94.5 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4874
+* Don't require container engine when specifying skip_build by @schustmi in https://github.com/zenml-io/zenml/pull/4879
+* Fix GKE private cluster access via DNS control plane endpoint in GCP service connector by @stefannica in https://github.com/zenml-io/zenml/pull/4856
+* Include hook sources as string in snapshot config template by @schustmi in https://github.com/zenml-io/zenml/pull/4880
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.94.5...0.94.6
+
+
 > **Note:** This file is no longer actively maintained. For the latest release notes, please visit the [ZenML Changelog](https://docs.zenml.io/changelog). Historical release notes are also available in [GitHub Releases](https://github.com/zenml-io/zenml/releases).
 
 ---
