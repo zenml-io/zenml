@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import os
 import re
 import sys
 import xml.etree.ElementTree as ET
@@ -11,12 +10,19 @@ from dataclasses import dataclass
 from pathlib import Path
 
 try:
+    from scripts.ci.github_outputs import write_github_outputs
     from scripts.ci.print_junit_summary import (
+        JUnitSummary,
         parse_junit_summary,
         print_parsed_summary,
     )
 except ModuleNotFoundError:
-    from print_junit_summary import parse_junit_summary, print_parsed_summary
+    from github_outputs import write_github_outputs
+    from print_junit_summary import (  # type: ignore[no-redef]
+        JUnitSummary,
+        parse_junit_summary,
+        print_parsed_summary,
+    )
 
 INFRA_PATTERN = re.compile(
     r"(modal|sandbox|offload|rate.?limit|timeout|connection|network|"
@@ -41,10 +47,10 @@ def _is_true(value: str | None) -> bool:
     return value is not None and value.lower() in {"1", "true", "yes", "on"}
 
 
-def _has_junit_failures(junit_path: Path) -> bool:
+def _read_junit_summary(junit_path: Path) -> JUnitSummary:
     summary = parse_junit_summary(junit_path)
     print_parsed_summary(summary)
-    return summary.failures > 0 or summary.errors > 0
+    return summary
 
 
 def _infra_failure(
@@ -90,7 +96,8 @@ def classify_offload_result(
 
     if junit_exists:
         try:
-            if _has_junit_failures(junit_path):
+            summary = _read_junit_summary(junit_path)
+            if summary.failed:
                 return Classification(
                     conclusion="test_failure",
                     offload_infra_failed=False,
@@ -106,6 +113,13 @@ def classify_offload_result(
             )
 
         if exit_code in {0, 2}:
+            if summary.tests == 0:
+                return _infra_failure(
+                    "Offload produced a JUnit report with zero tests "
+                    "collected; treating as infrastructure failure rather "
+                    "than success.",
+                    junit_current=True,
+                )
             message = "Offloaded tests passed."
             if exit_code == 2:
                 message = "Offload reported flaky tests that passed on retry."
@@ -137,23 +151,17 @@ def classify_offload_result(
 
 
 def _write_github_outputs(classification: Classification) -> None:
-    output_path = os.environ.get("GITHUB_OUTPUT")
-    if not output_path:
-        return
-    with open(output_path, "a", encoding="utf-8") as output_file:
-        output_file.write(f"conclusion={classification.conclusion}\n")
-        output_file.write(
-            f"offload_infra_failed={str(classification.offload_infra_failed).lower()}\n"
-        )
-        output_file.write(
-            f"tests_failed={str(classification.tests_failed).lower()}\n"
-        )
-        output_file.write(
-            f"junit_current={str(classification.junit_current).lower()}\n"
-        )
-        output_file.write(
-            f"junit_cacheable={str(classification.junit_cacheable).lower()}\n"
-        )
+    write_github_outputs(
+        {
+            "conclusion": classification.conclusion,
+            "offload_infra_failed": str(
+                classification.offload_infra_failed
+            ).lower(),
+            "tests_failed": str(classification.tests_failed).lower(),
+            "junit_current": str(classification.junit_current).lower(),
+            "junit_cacheable": str(classification.junit_cacheable).lower(),
+        }
+    )
 
 
 def _build_parser() -> argparse.ArgumentParser:

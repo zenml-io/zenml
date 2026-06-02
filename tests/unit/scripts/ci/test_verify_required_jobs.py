@@ -23,6 +23,16 @@ def test_find_failed_jobs_reports_skipped_by_default() -> None:
     ) == ["optional: skipped"]
 
 
+def test_find_failed_jobs_rejects_empty_needs_context() -> None:
+    """A rollup with no dependencies is a broken required gate."""
+    assert find_failed_jobs({}) == ["<no required jobs found>: missing"]
+
+
+def test_find_failed_jobs_reports_missing_result_key() -> None:
+    """Malformed dependency results should fail closed."""
+    assert find_failed_jobs({"required": {}}) == ["required: missing"]
+
+
 def test_find_failed_jobs_allows_named_skipped_jobs() -> None:
     """Named skipped jobs should not fail required rollups."""
     assert find_failed_jobs(

@@ -13,6 +13,7 @@ REQUIRED_FILES = [
     "Dockerfile.ci.dockerignore",
     "pyproject.toml",
     "scripts/install-zenml-dev.sh",
+    "scripts/ci/export_offload_integration_requirements.py",
     "scripts/ci/modal_sandbox_requirements.txt",
     "src/zenml/cli/integration.py",
     "src/zenml/integrations/integration.py",
@@ -68,6 +69,34 @@ def test_image_fingerprint_changes_when_prepare_command_changes(
     config.write_text(
         config.read_text().replace("--cached", "--cached --force-build")
     )
+
+    assert _keys(root).image_key != before
+
+
+def test_image_fingerprint_changes_when_exporter_changes(
+    tmp_path: Path,
+) -> None:
+    """Generated integration requirement logic invalidates the image cache."""
+    root = _copy_key_inputs(tmp_path)
+    before = _keys(root).image_key
+
+    exporter = root / "scripts/ci/export_offload_integration_requirements.py"
+    exporter.write_text(exporter.read_text() + "\nSUPPLEMENTAL = 'changed'\n")
+
+    assert _keys(root).image_key != before
+
+
+def test_image_fingerprint_changes_when_generated_requirements_change(
+    tmp_path: Path,
+) -> None:
+    """Generated integration requirements invalidate restored images."""
+    root = _copy_key_inputs(tmp_path)
+    requirements = root / ".ci/offload/integration-requirements.txt"
+    requirements.parent.mkdir(parents=True, exist_ok=True)
+    requirements.write_text("pyyaml\n")
+    before = _keys(root).image_key
+
+    requirements.write_text("pyyaml\nmaison<2\n")
 
     assert _keys(root).image_key != before
 

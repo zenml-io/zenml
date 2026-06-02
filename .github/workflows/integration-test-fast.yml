@@ -135,6 +135,12 @@ jobs:
       run:
         shell: bash
     steps:
+      - name: Warn when Modal test environment falls back locally
+        if: inputs.test_environment == 'remote-mysql-modal' && vars.ZENML_CI_MODAL_DISABLED
+          == 'true'
+        run: >-
+          echo "::warning::ZENML_CI_MODAL_DISABLED=true; running
+          remote-mysql-modal coverage against docker-server-mysql instead."
       - name: Free disk space (Ubuntu)
         if: inputs.os == 'ubuntu-latest'
         run: |
@@ -319,11 +325,13 @@ jobs:
         if: runner.os != 'macOS' && runner.os != 'Windows'
         run: |
           if [ "${INPUTS_TEST_ENVIRONMENT}" = "remote-mysql-modal" ]; then
-            export MODAL_CI_SERVER_PASSWORD=$(python - <<'PY'
+            MODAL_CI_SERVER_PASSWORD=$(python - <<'PY'
           from scripts.ci_modal_mysql_sandbox import derive_server_password
           print(derive_server_password())
           PY
           )
+            export MODAL_CI_SERVER_PASSWORD
+            echo "::add-mask::$MODAL_CI_SERVER_PASSWORD"
           fi
           bash scripts/test-coverage-xml.sh integration ${INPUTS_TEST_ENVIRONMENT} 6 ${{ matrix.shard }}
         env:

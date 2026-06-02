@@ -40,8 +40,6 @@ on:
         default: develop
 permissions:
   contents: read
-  checks: write
-  issues: write
 concurrency:
   group: ${{ github.workflow }}-${{ inputs.git-ref || 'develop' }}
   cancel-in-progress: false
@@ -53,25 +51,8 @@ jobs:
       publish-incident: ${{ steps.ref.outputs.publish-incident }}
       qualification-target: ${{ steps.ref.outputs.qualification-target }}
     steps:
-      # using this instead of contains(github.event.pull_request.labels.*.name, 'run-slow-ci')
-      # to make it dynamic, otherwise github context is fixed at the moment of trigger event.
-      # With dynamic approach dev can set label and rerun this flow to make it running.
-      - name: Get PR labels
-        id: pr-labels
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
-        with:
-          script: |
-            const prNumber = ${{ github.event.pull_request.number }};
-            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber,
-            });
-            const labelNames = labels.map(label => label.name);
-            core.setOutput('all-labels', labelNames.join(','));
-      - name: Slow CI label not set
+      - name: Resolve qualification inputs
         id: ref
-        if: ${{ !contains(steps.pr-labels.outputs.all-labels, 'run-slow-ci') }}
         env:
           GIT_REF: ${{ inputs.git-ref || 'develop' }}
           PUBLISH_INCIDENT: ${{ inputs.publish-incident }}
@@ -358,7 +339,7 @@ jobs:
       os: ${{ matrix.os }}
       git-ref: ${{ needs.resolve-ref.outputs.git-ref }}
     secrets: inherit
-  publish-qualification-success:
+  publish-qualification:
     needs:
       - resolve-ref
       - mysql-db-migration-testing-full
@@ -373,53 +354,37 @@ jobs:
       - ubuntu-latest-integration-test
       - vscode-tutorial-pipelines-test
       - ubuntu-base-package-functionality
-    if: success()
+    if: always() && needs.resolve-ref.outputs.qualification-target == 'develop'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      issues: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
           ref: ${{ needs.resolve-ref.outputs.git-ref }}
           fetch-depth: 0
-      - name: Publish qualification Check Run
+      - name: Determine qualification conclusion
+        id: qualification
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          QUALIFICATION_TARGET: ${{ needs.resolve-ref.outputs.qualification-target }}
+          NEEDS_CONTEXT: ${{ toJSON(needs) }}
         run: >-
-          python scripts/publish_ci_qualification.py
-          --conclusion success
-          --target "$QUALIFICATION_TARGET"
-  publish-qualification-failure:
-    needs:
-      - resolve-ref
-      - mysql-db-migration-testing-full
-      - sqlite-db-migration-testing-full
-      - mariadb-db-migration-testing-full
-      - small-checks
-      - ubuntu-unit-test
-      - windows-unit-test
-      - macos-unit-test
-      - windows-integration-test
-      - macos-integration-test
-      - ubuntu-latest-integration-test
-      - vscode-tutorial-pipelines-test
-      - ubuntu-base-package-functionality
-    if: failure()
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-        with:
-          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
-          ref: ${{ needs.resolve-ref.outputs.git-ref }}
-          fetch-depth: 0
-      - name: Publish failure Check Run and incident
+          python scripts/ci/slow_qualification_result.py
+          --needs-json "$NEEDS_CONTEXT"
+      - name: Publish qualification Check Run and optional incident
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH_INCIDENT: ${{ needs.resolve-ref.outputs.publish-incident }}
           QUALIFICATION_TARGET: ${{ needs.resolve-ref.outputs.qualification-target }}
+          QUALIFICATION_CONCLUSION: ${{ steps.qualification.outputs.conclusion }}
         run: |-
-          args=(--conclusion failure --target "$QUALIFICATION_TARGET")
-          if [ "$PUBLISH_INCIDENT" = "true" ]; then
+          args=(
+            --conclusion "$QUALIFICATION_CONCLUSION"
+            --target "$QUALIFICATION_TARGET"
+          )
+          if [ "$QUALIFICATION_CONCLUSION" = "failure" ] && [ "$PUBLISH_INCIDENT" = "true" ]; then
             args+=(--incident)
           fi
           python scripts/publish_ci_qualification.py "${args[@]}"

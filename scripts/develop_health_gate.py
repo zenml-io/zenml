@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import base64
 import datetime as dt
 import json
 import os
@@ -13,13 +14,15 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-from ci_matrix_hash import compute_matrix_hash
+from ci_matrix_hash import compute_matrix_hash_from_text
+from ci_qualification_ids import parse_datetime, parse_external_id
 
 CHECK_NAME = "ci-slow-develop/qualification"
 DEFAULT_MAX_AGE_HOURS = 30
 DEFAULT_GRACE_AFTER_SCHEDULE_HOURS = 6
 DEVELOP_BRANCH = "develop"
 FIX_DEVELOP_LABEL = "fix-develop"
+SLOW_WORKFLOW_PATH = ".github/workflows/ci-slow-develop.yml"
 
 
 def _github_request(
@@ -45,7 +48,7 @@ def _github_request(
 
 def _parse_datetime(value: str) -> dt.datetime:
     """Parse a GitHub timestamp."""
-    return dt.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    return parse_datetime(value)
 
 
 def _current_develop_sha() -> str:
@@ -58,6 +61,14 @@ def _commit_datetime(sha: str) -> dt.datetime:
     """Return the commit timestamp for a SHA."""
     commit = _github_request(f"/commits/{sha}")
     return _parse_datetime(str(commit["commit"]["committer"]["date"]))
+
+
+def _repository_file_text(path: str, ref: str) -> str:
+    """Return repository file contents at a specific ref."""
+    encoded_path = urllib.parse.quote(path)
+    payload = _github_request(f"/contents/{encoded_path}", {"ref": ref})
+    content = str(payload["content"])
+    return base64.b64decode(content).decode("utf-8")
 
 
 def _qualification_check_runs(sha: str) -> list[dict[str, Any]]:
@@ -122,13 +133,7 @@ def _external_id_parts(
 ) -> tuple[str, str, dt.datetime]:
     """Parse the qualification Check Run external ID."""
     external_id = str(check_run.get("external_id") or "")
-    try:
-        run_id, matrix_hash, completed_at = external_id.split(":", 2)
-    except ValueError as exc:
-        raise RuntimeError(
-            f"Qualification Check Run has invalid external_id: {external_id!r}"
-        ) from exc
-    return run_id, matrix_hash, _parse_datetime(completed_at)
+    return parse_external_id(external_id)
 
 
 def _pass(message: str) -> None:
@@ -152,14 +157,18 @@ def main() -> None:
     )
     now = dt.datetime.now(dt.timezone.utc)
     develop_sha = _current_develop_sha()
-    expected_matrix_hash = compute_matrix_hash(
-        Path(".github/workflows/ci-slow-develop.yml")
+    expected_matrix_hash = compute_matrix_hash_from_text(
+        _repository_file_text(SLOW_WORKFLOW_PATH, develop_sha)
     )
     check_runs = _qualification_check_runs(develop_sha)
 
     if not check_runs:
         latest_schedule = _latest_nightly_schedule(now)
         develop_commit_time = _commit_datetime(develop_sha)
+        # The merge gate intentionally fails open during the nightly grace
+        # window. This avoids blocking all merges while the expected
+        # qualification is still allowed to be running, but it means those
+        # merges proceed without current slow-CI evidence for develop.
         if develop_commit_time > latest_schedule:
             _pass(
                 "No develop qualification exists yet, but develop HEAD is "

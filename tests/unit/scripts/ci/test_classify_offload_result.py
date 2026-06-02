@@ -8,6 +8,7 @@ from pathlib import Path
 from scripts.ci.classify_offload_result import classify_offload_result
 
 PASSING_JUNIT = '<testsuite tests="2" failures="0" errors="0" skipped="0" />'
+ZERO_TEST_JUNIT = '<testsuite tests="0" failures="0" errors="0" skipped="0" />'
 FAILING_JUNIT = """
 <testsuite tests="1" failures="1" errors="0">
   <testcase classname="tests.test_example" name="test_failure">
@@ -57,6 +58,20 @@ def test_exit_code_two_with_passing_junit_is_success(tmp_path: Path) -> None:
     assert result.tests_failed is False
     assert result.junit_current is True
     assert result.junit_cacheable is True
+
+
+def test_zero_test_junit_is_infrastructure_failure(tmp_path: Path) -> None:
+    """Empty JUnit reports are not successful test coverage."""
+    junit = tmp_path / "junit.xml"
+    junit.write_text(ZERO_TEST_JUNIT)
+
+    result = classify_offload_result(exit_code=0, junit_path=junit)
+
+    assert result.conclusion == "infra_failure"
+    assert result.offload_infra_failed is True
+    assert result.tests_failed is False
+    assert result.junit_current is True
+    assert result.junit_cacheable is False
 
 
 def test_missing_junit_is_infrastructure_failure(tmp_path: Path) -> None:

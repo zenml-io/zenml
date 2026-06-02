@@ -15,34 +15,25 @@ import textwrap
 import time
 import urllib.error
 import urllib.request
-from pathlib import Path
 from typing import Any
 
-GITHUB_OUTPUT = os.environ.get("GITHUB_OUTPUT")
+from scripts.ci.github_outputs import write_github_outputs
+
 DEFAULT_USERNAME = "default"
 SERVER_PORT = 8080
 START_TIMEOUT_SECONDS = 600
 SANDBOX_TIMEOUT_SECONDS = 3600
 
 
-def _is_sensitive_output_name(name: str) -> bool:
-    """Return whether an output name likely carries sensitive data."""
-    lowered = name.lower()
-    return any(
-        token in lowered for token in ("password", "token", "secret", "key")
-    )
-
-
 def _write_output(name: str, value: str) -> None:
     """Write a GitHub Actions output."""
-    if not GITHUB_OUTPUT:
-        safe_value = (
-            "***REDACTED***" if _is_sensitive_output_name(name) else value
-        )
-        print(f"{name}={safe_value}")
-        return
-    with Path(GITHUB_OUTPUT).open("a", encoding="utf-8") as output_file:
-        output_file.write(f"{name}={value}\n")
+    write_github_outputs({name: value})
+
+
+def _mask_secret(value: str) -> None:
+    """Ask GitHub Actions to mask a sensitive value in logs."""
+    if value:
+        print(f"::add-mask::{value}")
 
 
 def _get_required_env(name: str) -> str:
@@ -255,6 +246,8 @@ def start() -> None:
     ) or _get_required_env("GITHUB_SHA")
     password = derive_server_password()
     db_password = _generate_password()
+    _mask_secret(password)
+    _mask_secret(db_password)
     sandbox = _create_modal_sandbox(
         _build_server_command(repository, checkout_ref),
         environment={

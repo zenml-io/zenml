@@ -4,13 +4,17 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import tomllib
+
+try:
+    from scripts.ci.github_outputs import write_github_outputs
+except ModuleNotFoundError:
+    from github_outputs import write_github_outputs
 
 LANE_CONFIGS = {
     "default": "offload.toml",
@@ -86,6 +90,16 @@ def _image_fingerprint(root: Path) -> str:
         (
             "Dockerfile.ci.dockerignore",
             _read_file(root / "Dockerfile.ci.dockerignore"),
+        ),
+        (
+            "scripts/ci/export_offload_integration_requirements.py",
+            _read_file(
+                root / "scripts/ci/export_offload_integration_requirements.py"
+            ),
+        ),
+        (
+            ".ci/offload/integration-requirements.txt",
+            _read_file(root / ".ci/offload/integration-requirements.txt"),
         ),
         ("pyproject.toml", _read_file(root / "pyproject.toml")),
         (
@@ -176,12 +190,7 @@ def compute_offload_cache_keys(
 
 
 def _write_github_outputs(keys: OffloadCacheKeys) -> None:
-    output_path = os.environ.get("GITHUB_OUTPUT")
-    if not output_path:
-        return
-    with open(output_path, "a", encoding="utf-8") as output_file:
-        for field_name, value in keys.__dict__.items():
-            output_file.write(f"{field_name}={value}\n")
+    write_github_outputs(keys.__dict__)
 
 
 def _build_parser() -> argparse.ArgumentParser:

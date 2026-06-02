@@ -103,9 +103,9 @@ jobs:
       - name: CI config unit tests
         run: python -m pytest -p no:pytest_postgresql tests/unit/scripts/ci
   linux-fast-offload-unit:
-    if: github.event_name != 'pull_request' || (github.event.pull_request.draft ==
-      false && github.event.pull_request.head.repo.full_name == github.repository
-      && vars.ZENML_CI_MODAL_DISABLED != 'true')
+    if: vars.ZENML_CI_MODAL_DISABLED != 'true' && (github.event_name != 'pull_request'
+      || (github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name
+      == github.repository))
     uses: ./.github/workflows/linux-fast-offload.yml
     with:
       backend: modal
@@ -114,9 +114,9 @@ jobs:
       test_suite: unit
     secrets: inherit
   linux-fast-offload-default-integration:
-    if: github.event_name != 'pull_request' || (github.event.pull_request.draft ==
-      false && github.event.pull_request.head.repo.full_name == github.repository
-      && vars.ZENML_CI_MODAL_DISABLED != 'true')
+    if: vars.ZENML_CI_MODAL_DISABLED != 'true' && (github.event_name != 'pull_request'
+      || (github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name
+      == github.repository))
     uses: ./.github/workflows/linux-fast-offload.yml
     with:
       backend: modal
@@ -136,9 +136,10 @@ jobs:
       test_environment: modal-server-mysql
     secrets: inherit
   local-fallback-unit-test:
-    if: github.event_name == 'pull_request' && github.event.pull_request.draft ==
-      false && (github.event.pull_request.head.repo.full_name != github.repository
-      || vars.ZENML_CI_MODAL_DISABLED == 'true')
+    if: (vars.ZENML_CI_MODAL_DISABLED == 'true' && github.event_name != 'pull_request')
+      || (github.event_name == 'pull_request' && github.event.pull_request.draft
+      == false && (github.event.pull_request.head.repo.full_name != github.repository
+      || vars.ZENML_CI_MODAL_DISABLED == 'true'))
     uses: ./.github/workflows/unit-test.yml
     with:
       python-version: '3.13'
@@ -146,9 +147,10 @@ jobs:
       install_integrations: 'yes'
     secrets: inherit
   local-fallback-default-integration-test:
-    if: github.event_name == 'pull_request' && github.event.pull_request.draft ==
-      false && (github.event.pull_request.head.repo.full_name != github.repository
-      || vars.ZENML_CI_MODAL_DISABLED == 'true')
+    if: (vars.ZENML_CI_MODAL_DISABLED == 'true' && github.event_name != 'pull_request')
+      || (github.event_name == 'pull_request' && github.event.pull_request.draft
+      == false && (github.event.pull_request.head.repo.full_name != github.repository
+      || vars.ZENML_CI_MODAL_DISABLED == 'true'))
     uses: ./.github/workflows/integration-test-fast.yml
     with:
       python-version: '3.13'
@@ -157,9 +159,10 @@ jobs:
       ci_tier: fast
     secrets: inherit
   local-fallback-mysql-integration-test:
-    if: github.event_name == 'pull_request' && github.event.pull_request.draft ==
-      false && (github.event.pull_request.head.repo.full_name != github.repository
-      || vars.ZENML_CI_MODAL_DISABLED == 'true')
+    if: (vars.ZENML_CI_MODAL_DISABLED == 'true' && github.event_name != 'pull_request')
+      || (github.event_name == 'pull_request' && github.event.pull_request.draft
+      == false && (github.event.pull_request.head.repo.full_name != github.repository
+      || vars.ZENML_CI_MODAL_DISABLED == 'true'))
     uses: ./.github/workflows/integration-test-fast.yml
     with:
       python-version: '3.13'
@@ -278,6 +281,7 @@ jobs:
           print(derive_server_password())
           PY
           )
+          echo "::add-mask::$MODAL_CI_SERVER_PASSWORD"
           unset MODAL_TOKEN_ID MODAL_TOKEN_SECRET
           python -m pytest -p no:pytest_postgresql -v --tb=short \
             --junitxml=.ci/modal-mysql-serial/global-state-junit.xml \
@@ -301,6 +305,7 @@ jobs:
           print(derive_server_password())
           PY
           )
+          echo "::add-mask::$MODAL_CI_SERVER_PASSWORD"
           unset MODAL_TOKEN_ID MODAL_TOKEN_SECRET
           python -m pytest -p no:pytest_postgresql -v --tb=short \
             --junitxml=.ci/modal-mysql-serial/shared-state-junit.xml \
@@ -345,8 +350,8 @@ jobs:
       - name: Verify required fast CI jobs
         env:
           NEEDS_CONTEXT: ${{ toJSON(needs) }}
-          USES_LOCAL_FALLBACK: ${{ github.event_name == 'pull_request' && (github.event.pull_request.head.repo.full_name
-            != github.repository || vars.ZENML_CI_MODAL_DISABLED == 'true') }}
+          USES_LOCAL_FALLBACK: ${{ vars.ZENML_CI_MODAL_DISABLED == 'true' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name
+            != github.repository) }}
         run: |-
           args=()
           if [ "$USES_LOCAL_FALLBACK" = "true" ]; then

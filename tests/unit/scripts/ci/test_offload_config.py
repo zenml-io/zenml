@@ -140,3 +140,90 @@ def test_fast_ci_serial_modal_mysql_job_restores_excluded_tests() -> None:
         assert path in run_blocks
     assert "test_list_secrets_pagination_and_sorting" in run_blocks
     assert "test_deletion_of_links[True]" in run_blocks
+
+
+def test_modal_mysql_password_is_masked_before_artifacts_upload() -> None:
+    """Modal/MySQL credentials must not leak through CI logs or artifacts."""
+    fast_workflow = Path(".github/workflows/ci-fast.yml").read_text()
+    integration_workflow = Path(
+        ".github/workflows/integration-test-fast.yml"
+    ).read_text()
+    offload_workflow = Path(
+        ".github/workflows/linux-fast-offload.yml"
+    ).read_text()
+
+    assert 'echo "::add-mask::$MODAL_CI_SERVER_PASSWORD"' in fast_workflow
+    assert 'echo "::add-mask::$MODAL_CI_SERVER_PASSWORD"' in (
+        integration_workflow
+    )
+    assert 'echo "::add-mask::$MODAL_CI_SERVER_PASSWORD"' in offload_workflow
+    assert "Redact offload log secrets" in offload_workflow
+    assert offload_workflow.index(
+        "Redact offload log secrets"
+    ) < offload_workflow.index("Upload offload artifacts")
+
+
+def test_modal_disabled_fast_ci_uses_local_fallback_on_non_pr_events() -> None:
+    """The Modal kill-switch should not brick develop or merge queue CI."""
+    workflow_text = Path(".github/workflows/ci-fast.yml").read_text()
+
+    assert (
+        "vars.ZENML_CI_MODAL_DISABLED == 'true' && github.event_name != 'pull_request'"
+        in workflow_text
+    )
+    assert (
+        "vars.ZENML_CI_MODAL_DISABLED == 'true' || (github.event_name == 'pull_request'"
+        in workflow_text
+    )
+    assert "vars.ZENML_CI_MODAL_DISABLED != 'true' &&" in workflow_text
+
+
+def test_fast_ci_rollup_guards_offload_and_fallback_skip_modes() -> None:
+    """Fast CI should only tolerate the skipped trio for the active mode."""
+    workflow = yaml.safe_load(
+        Path(".github/workflows/ci-fast.yml").read_text()
+    )
+    rollup = workflow["jobs"]["ci-fast-required"]
+    needs = set(rollup["needs"])
+    offload_jobs = {
+        "linux-fast-offload-unit",
+        "linux-fast-offload-default-integration",
+        "linux-fast-offload-modal-mysql",
+    }
+    fallback_jobs = {
+        "local-fallback-unit-test",
+        "local-fallback-default-integration-test",
+        "local-fallback-mysql-integration-test",
+    }
+
+    assert offload_jobs.issubset(needs)
+    assert fallback_jobs.issubset(needs)
+
+    verify_step = next(
+        step
+        for step in rollup["steps"]
+        if step.get("name") == "Verify required fast CI jobs"
+    )
+    fallback_expression = verify_step["env"]["USES_LOCAL_FALLBACK"]
+    run_block = verify_step["run"]
+
+    assert "vars.ZENML_CI_MODAL_DISABLED == 'true'" in fallback_expression
+    assert "github.event.pull_request.head.repo.full_name" in (
+        fallback_expression
+    )
+    for job_name in offload_jobs:
+        assert f"--allow-skipped {job_name}" in run_block
+    for job_name in fallback_jobs:
+        assert f"--allow-skipped {job_name}" in run_block
+
+
+def test_modal_disabled_environment_substitution_is_loud() -> None:
+    """Remote Modal to local MySQL substitution should be visible in logs."""
+    workflow_text = Path(
+        ".github/workflows/integration-test-fast.yml"
+    ).read_text()
+
+    assert (
+        "Warn when Modal test environment falls back locally" in workflow_text
+    )
+    assert "::warning::ZENML_CI_MODAL_DISABLED=true" in workflow_text

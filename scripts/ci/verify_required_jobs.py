@@ -26,10 +26,13 @@ def find_failed_jobs(
     allowed_skipped_jobs: Iterable[str] = (),
 ) -> list[str]:
     """Return required dependency jobs that did not pass."""
+    if not needs_context:
+        return ["<no required jobs found>: missing"]
+
     failed: list[str] = []
     allowed_skips = set(allowed_skipped_jobs)
     for name, data in needs_context.items():
-        result = data["result"]
+        result = data.get("result", "missing")
         if result == "skipped" and name in allowed_skips:
             continue
         if result not in _ALLOWED_RESULTS:

@@ -12,6 +12,7 @@ import urllib.request
 from pathlib import Path
 
 from ci_matrix_hash import compute_matrix_hash
+from ci_qualification_ids import format_external_id
 
 CHECK_NAME = "ci-slow-develop/qualification"
 
@@ -56,6 +57,8 @@ def main() -> None:
         "--target", choices=sorted(TARGET_TITLES), default="develop"
     )
     args = parser.parse_args()
+    if args.incident and args.target != "develop":
+        parser.error("--incident can only be used with --target develop")
 
     repository = os.environ["GITHUB_REPOSITORY"]
     owner, repo = repository.split("/", 1)
@@ -93,7 +96,11 @@ def main() -> None:
             "status": "completed",
             "conclusion": args.conclusion,
             "completed_at": completed_at,
-            "external_id": f"{run_id}:{matrix_hash}:{completed_at}",
+            "external_id": format_external_id(
+                run_id=run_id,
+                matrix_hash=matrix_hash,
+                completed_at=completed_at,
+            ),
             "details_url": run_url,
             "output": {"title": title, "summary": summary},
         },

@@ -310,6 +310,7 @@ jobs:
           print(derive_server_password())
           PY
           )
+            echo "::add-mask::$MODAL_CI_SERVER_PASSWORD"
           fi
           if [ -n "$OFFLOAD_CONFIG" ] && [ "$OFFLOAD_CONFIG" != "offload.toml" ]; then
             original_offload="$(mktemp)"
@@ -457,6 +458,33 @@ jobs:
         with:
           path: .ci/offload/junit.xml
           key: ${{ steps.cache-keys.outputs.junit_save_key }}
+      - name: Redact offload log secrets
+        if: always() && inputs.test_environment == 'modal-server-mysql'
+        env:
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+          ZENML_CI_CHECKOUT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          if [ -s .ci/offload/offload.log ]; then
+            password=$(python3 - <<'PY'
+          from scripts.ci_modal_mysql_sandbox import derive_server_password
+          print(derive_server_password())
+          PY
+          )
+            echo "::add-mask::$password"
+            python3 - "$password" .ci/offload/offload.log <<'PY'
+          from pathlib import Path
+          import sys
+
+          secret = sys.argv[1]
+          log_path = Path(sys.argv[2])
+          log_path.write_text(
+              log_path.read_text(encoding="utf-8", errors="replace").replace(
+                  secret, "***REDACTED***"
+              ),
+              encoding="utf-8",
+          )
+          PY
+          fi
       - name: Upload offload artifacts
         if: always()
         uses: actions/upload-artifact@2848b2cda0e5190984587ec6bb1f36730ca78d50  # untagged
