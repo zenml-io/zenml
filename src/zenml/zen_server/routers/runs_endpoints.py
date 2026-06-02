@@ -49,6 +49,7 @@ from zenml.constants import (
     REPLAY,
     RUN_TEMPLATE_TRIGGERS_FEATURE_NAME,
     RUNS,
+    STATISTICS,
     STATUS,
     STEPS,
     STOP,
@@ -64,6 +65,8 @@ from zenml.models import (
     PipelineRunRequest,
     PipelineRunResponse,
     PipelineRunUpdate,
+    RunStatisticsRequest,
+    RunStatisticsResponse,
     StepRunFilter,
     StepRunResponse,
     StreamBatchRequest,
@@ -94,6 +97,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
     dehydrate_response_model,
+    get_allowed_resource_ids,
     verify_permission,
     verify_permission_for_model,
 )
@@ -121,6 +125,7 @@ from zenml.zen_server.utils import (
     async_handle_endpoint_errors,
     make_dependable,
     server_config,
+    set_filter_project_scope,
     stream_broadcaster,
     stream_broker,
     workload_manager,
@@ -229,6 +234,50 @@ def list_runs(
         hydrate=hydrate,
         include_full_metadata=include_full_metadata,
     )
+
+
+@router.post(
+    STATISTICS,
+    responses={
+        401: error_response,
+        403: error_response,
+        404: error_response,
+        422: error_response,
+    },
+)
+@async_fastapi_endpoint_wrapper
+def get_run_statistics(
+    request: RunStatisticsRequest,
+    auth_context: AuthContext = Security(authorize),
+) -> RunStatisticsResponse:
+    """Compute grouped statistics over pipeline runs.
+
+    Args:
+        request: Statistics request.
+        auth_context: Authentication context.
+
+    Raises:
+        ValueError: If the project scope is not set correctly.
+
+    Returns:
+        Grouped statistics.
+    """
+    set_filter_project_scope(request.filter)
+    project_id = request.filter.project
+    if not isinstance(project_id, UUID):
+        raise ValueError(
+            f"Project scope must be a UUID, got {type(project_id)}."
+        )
+
+    request.filter.configure_rbac(
+        authenticated_user_id=auth_context.user.id,
+        id=get_allowed_resource_ids(
+            resource_type=ResourceType.PIPELINE_RUN,
+            project_id=project_id,
+        ),
+    )
+
+    return zen_store().get_run_statistics(request)
 
 
 @router.get(
