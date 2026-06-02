@@ -6,17 +6,14 @@ updates:
     schedule:
       interval: weekly
       day: tuesday
-      time: "07:00"
+      time: 07:00
       timezone: Europe/Amsterdam
     reviewers: [strickvl]
     labels: [dependencies, internal, no-release-notes]
     groups:
       minor-and-patch:
-        patterns:
-          - '*'
-        update-types:
-          - minor
-          - patch
+        patterns: ['*']
+        update-types: [minor, patch]
     cooldown:
       default-days: 7
     target-branch: develop

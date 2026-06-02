@@ -35,11 +35,12 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: System :: Distributed Computing",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
 ]
-requires-python = ">=3.10,<3.14"
+requires-python = ">=3.10,<3.15"
 
 dependencies = [
     "asgiref~=3.10.0",
@@ -77,7 +78,7 @@ local = [
     "pymysql>=1.1.1,~=1.1.0",
     "sqlalchemy>=2.0.0,<3.0.0",
     "sqlalchemy_utils",
-    "sqlmodel==0.0.18",
+    "sqlmodel==0.0.38",
     "jsonschema>=4.0.0",
 ]
 server = [
@@ -87,7 +88,7 @@ server = [
     "python-multipart~=0.0.9",
     "pyjwt[crypto]==2.7.*",
     "fastapi-utils",
-    "orjson~=3.10.0",
+    "orjson>=3.10.0,<3.12.0",
     "Jinja2",
     "ipinfo>=4.4.3",
     "secure~=1.0.1",
