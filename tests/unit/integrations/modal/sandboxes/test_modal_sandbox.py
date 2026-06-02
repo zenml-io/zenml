@@ -122,8 +122,8 @@ class TestLineBuffer:
         assert list(_line_buffer(chunks)) == ["hello\n", "world\n"]
 
     def test_joins_split_lines_across_chunks(self) -> None:
-        # Split the word "alpha" across chunk boundaries — "hel" trips
-        # the CI typos check.
+        # Split the word "alpha" across chunk boundaries to exercise
+        # the partial-line buffering path.
         chunks = [b"alp", b"ha\nbe", b"ta\n"]
         assert list(_line_buffer(chunks)) == ["alpha\n", "beta\n"]
 
@@ -555,7 +555,7 @@ class TestModalLogForwarding:
 class TestModalDashboardUrl:
     """The Modal-specific _dashboard_url() override.
 
-    Generic step-metadata logging behaviour now lives on the base in
+    Generic step-metadata logging behavior now lives on the base in
     SandboxSession._on_enter (covered by tests/unit/sandboxes/). These
     tests only verify the Modal flavor's URL-resolution hook.
     """
