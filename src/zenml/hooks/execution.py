@@ -14,7 +14,9 @@
 """Hook execution."""
 
 import re
+from contextlib import nullcontext
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
@@ -33,6 +35,9 @@ from zenml.models.v2.core.hook_invocation import HOOK_NAME_PATTERN
 from zenml.utils import source_utils
 from zenml.utils.exception_utils import collect_exception_information
 from zenml.utils.time_utils import utc_now
+
+if TYPE_CHECKING:
+    from zenml.utils.logging_utils import LoggingContext
 
 logger = get_logger(__name__)
 
@@ -98,6 +103,75 @@ def _parse_hook_outputs(
     return dict(zip(output_signature.keys(), result))
 
 
+def _get_log_source_name(hook_type: HookType, name: Optional[str]) -> str:
+    """Get the log source name for a hook.
+
+    Args:
+        hook_type: The type of the hook invocation.
+        name: The resolved name of the hook invocation.
+
+    Returns:
+        The log source name.
+    """
+    if hook_type is not HookType.CUSTOM:
+        return f"hook:{hook_type.value}"
+    if name:
+        return f"hook:custom:{name}"
+    return "hook:custom"
+
+
+def setup_hook_logging_context(
+    hook_type: HookType,
+    name: Optional[str],
+) -> Optional["LoggingContext"]:
+    """Setup a logging context that captures a hook's output.
+
+    Args:
+        hook_type: The type of the hook invocation.
+        name: The resolved name of the hook invocation.
+
+    Returns:
+        The logging context.
+    """
+    from zenml.execution.pipeline.dynamic.run_context import (
+        DynamicPipelineRunContext,
+    )
+    from zenml.steps.step_context import StepContext
+    from zenml.utils.logging_utils import (
+        is_pipeline_logging_enabled,
+        is_step_logging_enabled,
+        setup_logging_context,
+    )
+
+    try:
+        source = _get_log_source_name(hook_type, name)
+        step_context = StepContext.get()
+        if step_context is not None:
+            if is_step_logging_enabled(
+                step_configuration=step_context.step_run.config,
+                pipeline_configuration=step_context.pipeline_run.config,
+            ):
+                return setup_logging_context(
+                    source=source,
+                    step_run=step_context.step_run,
+                    pipeline_run=step_context.pipeline_run,
+                    block_on_exit=False,
+                )
+        else:
+            run_context = DynamicPipelineRunContext.get()
+            if run_context is not None and is_pipeline_logging_enabled(
+                pipeline_configuration=run_context.run.config,
+            ):
+                return setup_logging_context(
+                    source=source,
+                    pipeline_run=run_context.run,
+                    block_on_exit=False,
+                )
+    except Exception as e:
+        logger.debug("Failed to set up hook logging context: %s", e)
+    return None
+
+
 def run_hook(
     func: Union[Callable[..., Any], Source],
     *args: Any,
@@ -116,8 +190,7 @@ def run_hook(
         name: Custom event name for the invocation.
         hook_type: Type of the hook invocation.
         store_return: Whether to materialize the return value as outputs.
-        track: Whether to record the invocation. When False, no pipeline run
-            context is resolved.
+        track: Whether to record the invocation and capture its logs.
 
     Raises:
         BaseException: Any exception raised by the hook function.
@@ -135,43 +208,54 @@ def run_hook(
         except Exception:
             import_path = None
 
+    resolved_name = name or _default_hook_name(loaded_func, hook_type)
+
     start_time = utc_now()
     status = ExecutionStatus.COMPLETED
     outputs: Optional[Dict[str, Any]] = None
     exception_info: Optional[ExceptionInfo] = None
-    try:
+
+    logs_context = (
+        setup_hook_logging_context(hook_type, resolved_name) if track else None
+    )
+    logs_id = logs_context.log_model.id if logs_context is not None else None
+
+    with logs_context or nullcontext():
         try:
-            result = loaded_func(*args, **(kwargs or {}))
-        except BaseException as e:
-            status = ExecutionStatus.FAILED
-            exception_info = collect_exception_information(
-                e, user_func=loaded_func
-            )
-            raise
-        # Output parsing runs after the hook succeeded, so a parsing error does
-        # not mark the invocation as FAILED or discard the hook's status.
-        if store_return:
-            outputs = _parse_hook_outputs(loaded_func, result)
-        return result
-    finally:
-        if track:
             try:
-                record_hook_invocation(
-                    name=name or _default_hook_name(loaded_func, hook_type),
-                    hook_type=hook_type,
-                    source=import_path,
-                    outputs=outputs,
-                    start_time=start_time,
-                    end_time=utc_now(),
-                    status=status,
-                    exception_info=exception_info,
+                result = loaded_func(*args, **(kwargs or {}))
+            except BaseException as e:
+                status = ExecutionStatus.FAILED
+                exception_info = collect_exception_information(
+                    e, user_func=loaded_func
                 )
-            except Exception as e:
-                logger.error(
-                    "Failed to record `%s` hook invocation: %s",
-                    hook_type.value,
-                    e,
-                )
+                raise
+            # Output parsing runs after the hook succeeded, so a parsing error
+            # does not mark the invocation as FAILED or discard the hook's
+            # status.
+            if store_return:
+                outputs = _parse_hook_outputs(loaded_func, result)
+            return result
+        finally:
+            if track:
+                try:
+                    record_hook_invocation(
+                        name=resolved_name,
+                        hook_type=hook_type,
+                        source=import_path,
+                        outputs=outputs,
+                        start_time=start_time,
+                        end_time=utc_now(),
+                        status=status,
+                        exception_info=exception_info,
+                        logs_id=logs_id,
+                    )
+                except Exception as e:
+                    logger.error(
+                        "Failed to record `%s` hook invocation: %s",
+                        hook_type.value,
+                        e,
+                    )
 
 
 def run_lifecycle_hook(

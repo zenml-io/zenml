@@ -11917,6 +11917,12 @@ class SqlZenStore(BaseZenStore):
                         session=session,
                     )
 
+            if hook_invocation.logs_id is not None:
+                logs_schema = session.get(LogsSchema, hook_invocation.logs_id)
+                if logs_schema is not None:
+                    logs_schema.hook_invocation_id = hook_invocation_schema.id
+                    session.add(logs_schema)
+
             session.commit()
             session.refresh(hook_invocation_schema)
             return hook_invocation_schema.to_model(

@@ -153,6 +153,7 @@ def record_hook_invocation(
     end_time: Optional[datetime] = None,
     status: ExecutionStatus = ExecutionStatus.COMPLETED,
     exception_info: Optional[ExceptionInfo] = None,
+    logs_id: Optional[UUID] = None,
 ) -> HookInvocationResponse:
     """Record a hook invocation for an already-completed event.
 
@@ -165,6 +166,7 @@ def record_hook_invocation(
         end_time: End time of the event.
         status: Terminal status of the event.
         exception_info: Exception information when the event failed.
+        logs_id: ID of the logs entry to link to the invocation.
 
     Returns:
         The recorded hook invocation.
@@ -194,5 +196,6 @@ def record_hook_invocation(
         step_run_id=step_run_id,
         outputs=materialized_outputs,
         exception_info=exception_info,
+        logs_id=logs_id,
     )
     return client.zen_store.create_hook_invocation(request)

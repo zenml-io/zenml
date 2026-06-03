@@ -20,18 +20,21 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from zenml.enums import ExecutionStatus, HookType
+from zenml.enums import ExecutionStatus, HookType, StackComponentType
 from zenml.models import (
     ExceptionInfo,
     HookInvocationFilter,
     HookInvocationRequest,
+    LogsRequest,
     ProjectFilter,
 )
 from zenml.zen_stores.schemas import (
     ArtifactSchema,
     ArtifactVersionSchema,
     HookInvocationOutputArtifactSchema,
+    LogsSchema,
     PipelineRunSchema,
+    StackComponentSchema,
     StepRunSchema,
 )
 from zenml.zen_stores.sql_zen_store import (
@@ -214,6 +217,100 @@ def test_create_hook_invocation_links_outputs(
 
     assert set(created.outputs.keys()) == {"output"}
     assert [v.id for v in created.outputs["output"]] == [version_id]
+
+
+def _artifact_store_id(store: SqlZenStore) -> UUID:
+    with Session(store.engine) as session:
+        component = (
+            session.query(StackComponentSchema)
+            .filter(
+                StackComponentSchema.type
+                == StackComponentType.ARTIFACT_STORE.value
+            )
+            .first()
+        )
+        assert component is not None
+        return component.id
+
+
+def _create_hook_logs(
+    store: SqlZenStore, project_id: UUID, step_run_id: UUID
+) -> UUID:
+    logs = store.create_logs(
+        LogsRequest(
+            project=project_id,
+            source="hook:custom:my_hook",
+            uri="s3://bucket/hook-logs",
+            artifact_store_id=_artifact_store_id(store),
+            step_run_id=step_run_id,
+        )
+    )
+    return logs.id
+
+
+def test_create_hook_invocation_links_logs(sql_store: SqlZenStore) -> None:
+    """Test that a logs entry links to the invocation and both run and hook."""
+    project_id = _project_id(sql_store)
+    run_id = _create_run(sql_store, project_id, "run-1")
+    step_id = _create_step_run(sql_store, project_id, run_id, "train")
+    logs_id = _create_hook_logs(sql_store, project_id, step_id)
+
+    request = HookInvocationRequest(
+        project=project_id,
+        hook_type=HookType.CUSTOM,
+        name="my_hook",
+        status=ExecutionStatus.COMPLETED,
+        start_time=datetime(2026, 1, 1),
+        end_time=datetime(2026, 1, 1),
+        pipeline_run_id=run_id,
+        step_run_id=step_id,
+        logs_id=logs_id,
+    )
+    created = sql_store.create_hook_invocation(request)
+
+    # The logs entry links back to the invocation.
+    assert sql_store.get_logs(logs_id).hook_invocation_id == created.id
+
+    # The invocation response exposes the logs as a collection.
+    assert created.log_collection is not None
+    assert [log.id for log in created.log_collection] == [logs_id]
+    fetched = sql_store.get_hook_invocation(created.id)
+    assert [log.id for log in fetched.log_collection] == [logs_id]
+
+    # The logs entry keeps its step run, so it also surfaces in the step's
+    # log collection (which is built from logs carrying its step_run_id).
+    with Session(sql_store.engine) as session:
+        log = session.get(LogsSchema, logs_id)
+        assert log is not None
+        assert log.step_run_id == step_id
+        assert log.hook_invocation_id == created.id
+
+
+def test_delete_hook_invocation_unlinks_logs(sql_store: SqlZenStore) -> None:
+    """Test that deleting a hook invocation unlinks but keeps its logs."""
+    project_id = _project_id(sql_store)
+    run_id = _create_run(sql_store, project_id, "run-1")
+    step_id = _create_step_run(sql_store, project_id, run_id, "train")
+    logs_id = _create_hook_logs(sql_store, project_id, step_id)
+
+    request = HookInvocationRequest(
+        project=project_id,
+        hook_type=HookType.CUSTOM,
+        name="my_hook",
+        status=ExecutionStatus.COMPLETED,
+        start_time=datetime(2026, 1, 1),
+        end_time=datetime(2026, 1, 1),
+        pipeline_run_id=run_id,
+        step_run_id=step_id,
+        logs_id=logs_id,
+    )
+    created = sql_store.create_hook_invocation(request)
+
+    sql_store.delete_hook_invocation(created.id)
+
+    # The logs entry survives, unlinked from the deleted invocation.
+    surviving = sql_store.get_logs(logs_id)
+    assert surviving.hook_invocation_id is None
 
 
 def test_list_hook_invocations_filters(sql_store: SqlZenStore) -> None:

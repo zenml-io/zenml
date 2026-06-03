@@ -40,6 +40,7 @@ from zenml.zen_stores.schemas.utils import jl_arg
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
+    from zenml.zen_stores.schemas.logs_schemas import LogsSchema
     from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 
@@ -106,6 +107,9 @@ class HookInvocationSchema(BaseSchema, table=True):
             sa_relationship_kwargs={"cascade": "delete"},
         )
     )
+    # No cascade delete. A hook's logs entry is shared with the step or
+    # pipeline run, so deleting the invocation only unlinks it.
+    logs: List["LogsSchema"] = Relationship(back_populates="hook_invocation")
 
     @classmethod
     def get_query_options(
@@ -134,6 +138,7 @@ class HookInvocationSchema(BaseSchema, table=True):
             options.extend(
                 [
                     selectinload(jl_arg(HookInvocationSchema.user)),
+                    selectinload(jl_arg(HookInvocationSchema.logs)),
                     selectinload(jl_arg(HookInvocationSchema.output_artifacts))
                     .joinedload(
                         jl_arg(
@@ -229,6 +234,10 @@ class HookInvocationSchema(BaseSchema, table=True):
             resources = HookInvocationResponseResources(
                 user=self.user.to_model() if self.user else None,
                 outputs=outputs,
+                log_collection=[
+                    log.to_model()
+                    for log in sorted(self.logs, key=lambda log: log.created)
+                ],
             )
 
         return HookInvocationResponse(

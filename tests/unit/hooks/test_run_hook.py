@@ -14,12 +14,13 @@
 """Unit tests for run_hook status and exception handling."""
 
 from unittest import mock
+from uuid import uuid4
 
 import pytest
 
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionStatus, HookType
 from zenml.hooks import execution as hook_execution
-from zenml.hooks.execution import run_hook
+from zenml.hooks.execution import _get_log_source_name, run_hook
 
 
 def _good_hook() -> int:
@@ -57,3 +58,66 @@ def test_run_hook_failure_records_failed_with_exception_info():
     record.assert_called_once()
     assert record.call_args.kwargs["status"] == ExecutionStatus.FAILED
     assert record.call_args.kwargs["exception_info"] is not None
+
+
+def test_hook_log_source_lifecycle_uses_type():
+    """Lifecycle hooks log under a source named after their type."""
+    assert (
+        _get_log_source_name(HookType.STEP_FAILURE, None)
+        == "hook:step_failure"
+    )
+
+
+def test_hook_log_source_custom_uses_name():
+    """A named custom hook logs under a source named after it."""
+    assert (
+        _get_log_source_name(HookType.CUSTOM, "model_call")
+        == "hook:custom:model_call"
+    )
+
+
+def test_hook_log_source_custom_without_name():
+    """An unnamed custom hook logs under the generic custom source."""
+    assert _get_log_source_name(HookType.CUSTOM, None) == "hook:custom"
+
+
+def test_run_hook_links_logs_id_from_context_to_record():
+    """The logs id is read off the logging context and linked on the record."""
+    logs_id = uuid4()
+    fake_context = mock.MagicMock()
+    fake_context.log_model.id = logs_id
+    with (
+        mock.patch.object(
+            hook_execution,
+            "setup_hook_logging_context",
+            return_value=fake_context,
+        ) as logs_context,
+        mock.patch.object(hook_execution, "record_hook_invocation") as record,
+    ):
+        run_hook(_good_hook)
+
+    logs_context.assert_called_once_with(HookType.CUSTOM, "_good_hook")
+    record.assert_called_once()
+    assert record.call_args.kwargs["logs_id"] == logs_id
+    assert record.call_args.kwargs["name"] == "_good_hook"
+    assert "hook_invocation_id" not in record.call_args.kwargs
+
+
+def test_run_hook_untracked_skips_logs_context():
+    """An untracked hook captures no logs and records nothing."""
+    with (
+        mock.patch.object(
+            hook_execution, "setup_hook_logging_context"
+        ) as logs_context,
+        mock.patch.object(hook_execution, "record_hook_invocation") as record,
+    ):
+        assert run_hook(_good_hook, track=False) == 5
+
+    logs_context.assert_not_called()
+    record.assert_not_called()
+
+
+def test_run_hook_without_run_context_still_returns():
+    """A missing run context disables log capture without breaking the hook."""
+    with mock.patch.object(hook_execution, "record_hook_invocation"):
+        assert run_hook(_good_hook) == 5

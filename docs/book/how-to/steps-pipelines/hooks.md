@@ -216,36 +216,3 @@ invocations = Client().list_hook_invocations(
 for invocation in invocations.items:
     print(invocation.name, invocation.status)
 ```
-
-Filter by `pipeline_run_id`, `step_run_id`, `hook_type`, or `name`.
-
-## Instrumenting an agent loop
-
-Recording each tool and model call as a tracked invocation gives you a timeline of
-what an agent did inside a step.
-
-```python
-from zenml import run_hook, step
-
-@step
-def agent_step(prompt: str) -> str:
-    history = []
-    while not done(history):
-        decision = run_hook(call_model, prompt, history, name="model_call")
-        if decision.tool:
-            run_hook(
-                call_tool,
-                decision.tool,
-                name=f"tool_{decision.tool}",
-                store_return=True,
-            )
-        history.append(decision)
-    return summarize(history)
-```
-
-A custom `name` must start with a letter or underscore and may contain only
-letters, digits, `_`, `.`, and `-`.
-
-Each `run_hook` call records one `HookInvocation` under the parent run, so
-`Client().list_hook_invocations(pipeline_run_id=...)` reconstructs the agent's
-timeline from the recorded timestamps.

@@ -30,6 +30,7 @@ from zenml.models.v2.base.scoped import (
     ProjectScopedResponseResources,
 )
 from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
+from zenml.models.v2.core.logs import LogsResponse
 from zenml.models.v2.misc.exception_info import ExceptionInfo
 
 HOOK_NAME_PATTERN = r"^[a-zA-Z_][a-zA-Z0-9_.\-]*$"
@@ -79,6 +80,10 @@ class HookInvocationRequest(ProjectScopedRequest):
         default=None,
         title="The exception information of the hook invocation.",
     )
+    logs_id: Optional[UUID] = Field(
+        default=None,
+        title="The ID of the logs entry to link to the hook invocation.",
+    )
 
 
 # ------------------ Response Model ------------------
@@ -125,6 +130,10 @@ class HookInvocationResponseResources(ProjectScopedResponseResources):
     outputs: Dict[str, List[ArtifactVersionResponse]] = Field(
         title="The output artifact versions of the hook invocation.",
         default_factory=dict,
+    )
+    log_collection: Optional[List[LogsResponse]] = Field(
+        title="Logs associated with this hook invocation.",
+        default=None,
     )
 
 
@@ -246,6 +255,15 @@ class HookInvocationResponse(
             the value of the property.
         """
         return self.get_resources().outputs
+
+    @property
+    def log_collection(self) -> Optional[List[LogsResponse]]:
+        """The `log_collection` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().log_collection
 
 
 # ------------------ Filter Model ------------------
