@@ -13,7 +13,20 @@
 #  permissions and limitations under the License.
 """Modal step operator implementation."""
 
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
+import math
+import os
+import threading
+from contextlib import contextmanager
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    cast,
+)
 
 import modal
 
@@ -40,6 +53,63 @@ logger = get_logger(__name__)
 
 MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY = "modal_step_operator"
 STEP_SANDBOX_ID_METADATA_KEY = "sandbox_id"
+MODAL_TOKEN_ID_ENV_VAR = "MODAL_TOKEN_ID"
+MODAL_TOKEN_SECRET_ENV_VAR = "MODAL_TOKEN_SECRET"
+MODAL_WORKSPACE_ENV_VAR = "MODAL_WORKSPACE"
+
+_modal_environment_lock = threading.Lock()
+
+
+def _normalize_optional_config_value(value: Optional[str]) -> Optional[str]:
+    """Normalize optional string config values."""
+    if value is None:
+        return None
+
+    stripped_value = value.strip()
+    return stripped_value or None
+
+
+def _modal_environment_overrides(
+    config: ModalStepOperatorConfig,
+) -> Dict[str, str]:
+    """Get Modal SDK environment variable overrides from config."""
+    token_id = _normalize_optional_config_value(config.token_id)
+    token_secret = _normalize_optional_config_value(config.token_secret)
+    workspace = _normalize_optional_config_value(config.workspace)
+
+    if bool(token_id) != bool(token_secret):
+        raise StackComponentInterfaceError(
+            "Modal token_id and token_secret must be configured together."
+        )
+
+    overrides = {}
+    if token_id and token_secret:
+        overrides[MODAL_TOKEN_ID_ENV_VAR] = token_id
+        overrides[MODAL_TOKEN_SECRET_ENV_VAR] = token_secret
+    if workspace:
+        overrides[MODAL_WORKSPACE_ENV_VAR] = workspace
+
+    return overrides
+
+
+@contextmanager
+def _temporary_modal_environment(
+    overrides: Dict[str, str],
+) -> Iterator[None]:
+    """Temporarily apply Modal SDK environment variable overrides."""
+    with _modal_environment_lock:
+        previous_values = {
+            key: os.environ.get(key) for key in overrides.keys()
+        }
+        os.environ.update(overrides)
+        try:
+            yield
+        finally:
+            for key, previous_value in previous_values.items():
+                if previous_value is None:
+                    os.environ.pop(key, None)
+                else:
+                    os.environ[key] = previous_value
 
 
 def get_gpu_values(
@@ -95,11 +165,10 @@ def get_gpu_values(
     if gpu_count == 0:
         logger.warning(
             "Modal GPU type '%s' is configured but ResourceSettings.gpu_count is 0. "
-            "Defaulting to 1 GPU. To run on CPU only, remove the GPU type or ensure "
-            "gpu_count=0 with no GPU type configured.",
+            "Ignoring the GPU type and running on CPU only.",
             gpu_type,
         )
-        return gpu_type
+        return None
 
     if gpu_count is None:
         return gpu_type
@@ -214,8 +283,10 @@ class ModalStepOperator(BaseStepOperator):
             environment: The environment variables for the step.
 
         Raises:
-            RuntimeError: If no Docker credentials are found for the container registry.
-            ValueError: If no container registry is found in the stack.
+            StackComponentInterfaceError: If Modal authentication settings are
+                incomplete.
+            ValueError: If no container registry is found in the stack or the
+                entrypoint command is empty.
         """
         settings = cast(ModalStepOperatorSettings, self.get_settings(info))
         image_name = info.get_image(key=MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY)
@@ -229,46 +300,53 @@ class ModalStepOperator(BaseStepOperator):
                 "it is correctly configured."
             )
 
+        image_kwargs = {}
         if docker_creds := stack.container_registry.credentials:
             docker_username, docker_password = docker_creds
-        else:
-            raise RuntimeError(
-                "No Docker credentials found for the container registry."
+            image_kwargs["secret"] = modal.Secret.from_dict(
+                {
+                    "REGISTRY_USERNAME": docker_username,
+                    "REGISTRY_PASSWORD": docker_password,
+                }
             )
 
-        registry_secret = modal.Secret.from_dict(
-            {
-                "REGISTRY_USERNAME": docker_username,
-                "REGISTRY_PASSWORD": docker_password,
-            }
-        )
-
         zenml_image = modal.Image.from_registry(
-            image_name, secret=registry_secret
+            image_name, **image_kwargs
         ).env(environment)
 
         resource_settings = info.config.resource_settings
         gpu_values = get_gpu_values(settings, resource_settings)
         memory_mb = resource_settings.get_memory(ByteUnit.MB)
-        memory_int = int(memory_mb) if memory_mb is not None else None
+        memory_int = math.ceil(memory_mb) if memory_mb is not None else None
 
-        app = modal.App.lookup(
-            f"zenml-{info.step_run_id}-{info.pipeline_step_name}"[:64],
-            create_if_missing=True,
+        if not entrypoint_command:
+            raise ValueError(
+                "Modal step operator received an empty entrypoint command."
+            )
+
+        modal_environment = _normalize_optional_config_value(
+            settings.modal_environment
         )
-        sandbox = modal.Sandbox.create(
-            "bash",
-            "-c",
-            " ".join(entrypoint_command),
-            app=app,
-            image=zenml_image,
-            gpu=gpu_values,
-            cpu=resource_settings.cpu_count,
-            memory=memory_int,
-            cloud=settings.cloud,
-            region=settings.region,
-            timeout=86400,  # 24h, the max Modal allows
-        )
+        with _temporary_modal_environment(
+            _modal_environment_overrides(self.config)
+        ):
+            app = modal.App.lookup(
+                f"zenml-{info.step_run_id}-{info.pipeline_step_name}"[:64],
+                create_if_missing=True,
+                environment_name=modal_environment,
+            )
+            sandbox = modal.Sandbox.create(
+                *entrypoint_command,
+                app=app,
+                image=zenml_image,
+                gpu=gpu_values,
+                cpu=resource_settings.cpu_count,
+                memory=memory_int,
+                cloud=settings.cloud,
+                region=settings.region,
+                timeout=settings.timeout,
+                environment_name=modal_environment,
+            )
         publish_step_run_metadata(
             info.step_run_id,
             {self.id: {STEP_SANDBOX_ID_METADATA_KEY: sandbox.object_id}},
@@ -287,8 +365,11 @@ class ModalStepOperator(BaseStepOperator):
             The step status.
         """
         sandbox_id = str(step_run.run_metadata[STEP_SANDBOX_ID_METADATA_KEY])
-        sandbox = modal.Sandbox.from_id(sandbox_id)
-        return_code = sandbox.poll()
+        with _temporary_modal_environment(
+            _modal_environment_overrides(self.config)
+        ):
+            sandbox = modal.Sandbox.from_id(sandbox_id)
+            return_code = sandbox.poll()
         if return_code is None:
             return ExecutionStatus.RUNNING
         if return_code == 0:
@@ -302,5 +383,8 @@ class ModalStepOperator(BaseStepOperator):
             step_run: The step run.
         """
         sandbox_id = str(step_run.run_metadata[STEP_SANDBOX_ID_METADATA_KEY])
-        sandbox = modal.Sandbox.from_id(sandbox_id)
-        sandbox.terminate()
+        with _temporary_modal_environment(
+            _modal_environment_overrides(self.config)
+        ):
+            sandbox = modal.Sandbox.from_id(sandbox_id)
+            sandbox.terminate()

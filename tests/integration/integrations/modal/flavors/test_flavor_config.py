@@ -17,6 +17,7 @@ from pydantic import ValidationError
 
 from zenml.integrations.modal.flavors.modal_step_operator_flavor import (
     DEFAULT_TIMEOUT_SECONDS,
+    ModalStepOperatorConfig,
     ModalStepOperatorSettings,
 )
 
@@ -54,3 +55,30 @@ def test_modal_settings_timeout_rejects_negative() -> None:
         ModalStepOperatorSettings(timeout=-1)
 
     assert "greater than or equal to 1" in str(exc_info.value)
+
+
+def test_modal_config_accepts_missing_or_complete_token_pair() -> None:
+    assert ModalStepOperatorConfig().token_id is None
+
+    config = ModalStepOperatorConfig(
+        token_id="ak-test",
+        token_secret="as-test",
+    )
+    assert config.token_id == "ak-test"
+    assert config.token_secret == "as-test"
+
+
+def test_modal_config_rejects_partial_token_pair() -> None:
+    with pytest.raises(ValidationError) as token_id_error:
+        ModalStepOperatorConfig(token_id="ak-test")
+
+    assert "token_id and token_secret must be configured together" in str(
+        token_id_error.value
+    )
+
+    with pytest.raises(ValidationError) as token_secret_error:
+        ModalStepOperatorConfig(token_secret="as-test")
+
+    assert "token_id and token_secret must be configured together" in str(
+        token_secret_error.value
+    )

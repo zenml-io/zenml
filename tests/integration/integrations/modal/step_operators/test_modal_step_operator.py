@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from types import SimpleNamespace
+
 import pytest
 
 # Skip this entire module if the optional dependency isn't available, because
@@ -19,8 +21,15 @@ import pytest
 pytest.importorskip("modal")
 
 from zenml.exceptions import StackComponentInterfaceError
-from zenml.integrations.modal.flavors import ModalStepOperatorSettings
+from zenml.integrations.modal.flavors import (
+    ModalStepOperatorConfig,
+    ModalStepOperatorSettings,
+)
+from zenml.integrations.modal.step_operators import (
+    modal_step_operator as modal_step_operator_module,
+)
 from zenml.integrations.modal.step_operators.modal_step_operator import (
+    ModalStepOperator,
     get_gpu_values,
 )
 
@@ -29,11 +38,17 @@ class ResourceSettingsStub:
     """Minimal stub to simulate ZenML ResourceSettings for GPU tests.
 
     We only model the `gpu_count` attribute because that's the only part the
-    helper uses. This keeps tests lightweight and avoids wider dependencies.
+    helper uses in the small targeted Modal tests. This keeps tests lightweight
+    and avoids wider dependencies.
     """
 
-    def __init__(self, gpu_count):
+    def __init__(self, gpu_count, cpu_count=None, memory_mb=None):
         self.gpu_count = gpu_count
+        self.cpu_count = cpu_count
+        self.memory_mb = memory_mb
+
+    def get_memory(self, _unit):
+        return self.memory_mb
 
 
 def test_gpu_arg_none_when_no_type_and_no_count() -> None:
@@ -69,7 +84,7 @@ def test_gpu_arg_type_with_count_returns_type_colon_count() -> None:
     assert get_gpu_values(settings, rs_one) == "A100:1"
 
 
-def test_gpu_arg_type_with_zero_count_warns_and_defaults_to_single_gpu(
+def test_gpu_arg_type_with_zero_count_warns_and_returns_cpu_only(
     caplog,
 ) -> None:
     settings = ModalStepOperatorSettings(gpu="A100")
@@ -78,8 +93,205 @@ def test_gpu_arg_type_with_zero_count_warns_and_defaults_to_single_gpu(
     with caplog.at_level("WARNING"):
         result = get_gpu_values(settings, rs)
 
-    assert result == "A100"
-    assert "Defaulting to 1 GPU" in caplog.text
+    assert result is None
+    assert "running on CPU only" in caplog.text
+
+
+def test_modal_submit_preserves_argv_and_uses_configured_timeout(
+    monkeypatch,
+) -> None:
+    settings = ModalStepOperatorSettings(
+        modal_environment="staging",
+        timeout=1234,
+    )
+    config = ModalStepOperatorConfig(
+        token_id="ak-test",
+        token_secret="as-test",
+        workspace="workspace-test",
+    )
+    resource_settings = ResourceSettingsStub(
+        gpu_count=0,
+        cpu_count=2,
+        memory_mb=1.2,
+    )
+    run_metadata = {}
+
+    class InfoStub:
+        step_run_id = "step-run-id"
+        pipeline_step_name = "train"
+        config = SimpleNamespace(resource_settings=resource_settings)
+        step_run = SimpleNamespace(run_metadata=run_metadata)
+
+        def get_image(self, key):
+            assert key == "modal_step_operator"
+            return "registry.example.com/zenml:latest"
+
+    class ContainerRegistryStub:
+        credentials = None
+
+    class StackStub:
+        container_registry = ContainerRegistryStub()
+
+    class ClientStub:
+        active_stack = StackStub()
+
+    class ImageStub:
+        def env(self, environment):
+            recorded["image_env"] = environment
+            recorded["image"] = self
+            return self
+
+    class ImageFactoryStub:
+        @staticmethod
+        def from_registry(image_name, **kwargs):
+            recorded["image_name"] = image_name
+            recorded["image_kwargs"] = kwargs
+            return ImageStub()
+
+    class AppFactoryStub:
+        @staticmethod
+        def lookup(*args, **kwargs):
+            recorded["app_lookup"] = (args, kwargs)
+            recorded["env_during_lookup"] = {
+                key: modal_step_operator_module.os.environ.get(key)
+                for key in (
+                    "MODAL_TOKEN_ID",
+                    "MODAL_TOKEN_SECRET",
+                    "MODAL_WORKSPACE",
+                )
+            }
+            return "app"
+
+    class SandboxStub:
+        object_id = "sandbox-id"
+
+    class SandboxFactoryStub:
+        @staticmethod
+        def create(*args, **kwargs):
+            recorded["sandbox_create"] = (args, kwargs)
+            return SandboxStub()
+
+    recorded = {}
+    operator = object.__new__(ModalStepOperator)
+    operator.id = "component-id"
+    operator._config = config
+    operator.get_settings = lambda _info: settings
+
+    monkeypatch.setattr(modal_step_operator_module, "Client", ClientStub)
+    monkeypatch.setattr(
+        modal_step_operator_module.modal, "Image", ImageFactoryStub
+    )
+    monkeypatch.setattr(
+        modal_step_operator_module.modal, "App", AppFactoryStub
+    )
+    monkeypatch.setattr(
+        modal_step_operator_module.modal, "Sandbox", SandboxFactoryStub
+    )
+    monkeypatch.setattr(
+        modal_step_operator_module,
+        "publish_step_run_metadata",
+        lambda *args, **kwargs: recorded.setdefault(
+            "published_metadata", (args, kwargs)
+        ),
+    )
+
+    entrypoint_command = [
+        "python",
+        "-m",
+        "zenml.entrypoints.entrypoint",
+        "--step_name",
+        "train model",
+    ]
+    environment = {"ZENML_ENV": "value"}
+
+    operator.submit(InfoStub(), entrypoint_command, environment)
+
+    assert recorded["image_name"] == "registry.example.com/zenml:latest"
+    assert recorded["image_kwargs"] == {}
+    assert recorded["image_env"] == environment
+    assert recorded["app_lookup"] == (
+        ("zenml-step-run-id-train",),
+        {"create_if_missing": True, "environment_name": "staging"},
+    )
+    assert recorded["env_during_lookup"] == {
+        "MODAL_TOKEN_ID": "ak-test",
+        "MODAL_TOKEN_SECRET": "as-test",
+        "MODAL_WORKSPACE": "workspace-test",
+    }
+    assert recorded["sandbox_create"] == (
+        tuple(entrypoint_command),
+        {
+            "app": "app",
+            "image": recorded["image"],
+            "gpu": None,
+            "cpu": 2,
+            "memory": 2,
+            "cloud": None,
+            "region": None,
+            "timeout": 1234,
+            "environment_name": "staging",
+        },
+    )
+    assert run_metadata["sandbox_id"] == "sandbox-id"
+
+
+def test_status_and_cancel_use_configured_modal_auth_context(
+    monkeypatch,
+) -> None:
+    config = ModalStepOperatorConfig(
+        token_id="ak-test",
+        token_secret="as-test",
+        workspace="workspace-test",
+    )
+    recorded = {"from_id_calls": []}
+
+    class SandboxStub:
+        def poll(self):
+            recorded["poll_env"] = {
+                key: modal_step_operator_module.os.environ.get(key)
+                for key in (
+                    "MODAL_TOKEN_ID",
+                    "MODAL_TOKEN_SECRET",
+                    "MODAL_WORKSPACE",
+                )
+            }
+            return 0
+
+        def terminate(self):
+            recorded["terminate_env"] = {
+                key: modal_step_operator_module.os.environ.get(key)
+                for key in (
+                    "MODAL_TOKEN_ID",
+                    "MODAL_TOKEN_SECRET",
+                    "MODAL_WORKSPACE",
+                )
+            }
+
+    class SandboxFactoryStub:
+        @staticmethod
+        def from_id(sandbox_id):
+            recorded["from_id_calls"].append(sandbox_id)
+            return SandboxStub()
+
+    operator = object.__new__(ModalStepOperator)
+    operator._config = config
+    step_run = SimpleNamespace(run_metadata={"sandbox_id": "sandbox-id"})
+
+    monkeypatch.setattr(
+        modal_step_operator_module.modal, "Sandbox", SandboxFactoryStub
+    )
+
+    assert operator.get_status(step_run).value == "completed"
+    operator.cancel(step_run)
+
+    expected_env = {
+        "MODAL_TOKEN_ID": "ak-test",
+        "MODAL_TOKEN_SECRET": "as-test",
+        "MODAL_WORKSPACE": "workspace-test",
+    }
+    assert recorded["from_id_calls"] == ["sandbox-id", "sandbox-id"]
+    assert recorded["poll_env"] == expected_env
+    assert recorded["terminate_env"] == expected_env
 
 
 def test_gpu_arg_invalid_negative_count_raises() -> None:

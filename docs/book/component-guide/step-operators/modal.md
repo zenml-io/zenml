@@ -39,15 +39,15 @@ To use the Modal step operator, we need:
 * An Image Builder in your stack. ZenML uses it to build the Docker image that
   runs on Modal.
 
-The Modal step operator also respects the following environment variables if set:
-- MODAL_TOKEN_ID, MODAL_TOKEN_SECRET: authentication tokens
-- MODAL_WORKSPACE: workspace name
-- MODAL_ENVIRONMENT: Modal environment name (e.g., "main")
+The Modal step operator can use Modal authentication and workspace settings from the stack component configuration. If `token_id` and `token_secret` are configured on the step operator, ZenML applies them as `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET` while it submits the Modal sandbox. If `workspace` is configured, ZenML applies it as `MODAL_WORKSPACE` during submission. If these fields are not configured, Modal falls back to its normal authentication sources, such as existing environment variables or `~/.modal.toml`.
 
 We can then register the step operator:
 
 ```shell
-zenml step-operator register <NAME> --flavor=modal
+zenml step-operator register <NAME> --flavor=modal \
+  --token_id=<MODAL_TOKEN_ID> \
+  --token_secret=<MODAL_TOKEN_SECRET> \
+  --workspace=<MODAL_WORKSPACE>
 zenml stack update -s <NAME> ...
 ```
 
@@ -81,8 +81,8 @@ modal_settings = ModalStepOperatorSettings(
     gpu="A100",           # GPU type (e.g., "T4", "A100")
     # region="us-east-1", # optional, enterprise/team only
     # cloud="aws",        # optional, enterprise/team only
-    # modal_environment="main",  # optional
-    # timeout=86400,      # optional, seconds
+    # modal_environment="main",  # optional Modal environment name
+    # timeout=86400,      # optional sandbox timeout in seconds
 )
 
 resource_settings = ResourceSettings(
@@ -104,11 +104,13 @@ def my_modal_step():
 
 Important:
 - If you request GPUs with `ResourceSettings.gpu_count > 0`, you must also specify a GPU type via `ModalStepOperatorSettings.gpu`; otherwise the run will fail with a validation error.
-- If a GPU type is set but `gpu_count == 0`, ZenML defaults to 1 GPU and logs a warning.
-- `cpu_count` must be an integer. `memory` can be a string like "32GB" or an integer amount of bytes.
+- If a GPU type is set but `gpu_count == 0`, ZenML treats the step as CPU-only and logs a warning that the GPU type is ignored.
+- If `gpu_count` is omitted and a GPU type is set, Modal uses one GPU of that type.
+- `cpu_count` is passed through from `ResourceSettings` to Modal. `memory` can be a string like "32GB" or an integer amount of bytes. ZenML passes memory to Modal in MB and rounds fractional MB values up.
+- If the active container registry exposes credentials, ZenML passes them to Modal for image pulls. If no registry credentials are configured, Modal attempts to pull the image anonymously.
 
 {% hint style="info" %}
-Note that the `cpu` parameter in `ResourceSettings` currently only accepts a single integer value. This specifies a soft minimum limit - Modal will guarantee at least this many physical cores, but the actual usage could be higher. The CPU cores/hour will also determine the minimum price paid for the compute resources.
+Note that `cpu_count` specifies a soft minimum limit - Modal will guarantee at least this many physical cores, but the actual usage could be higher. The CPU cores/hour will also determine the minimum price paid for the compute resources.
 {% endhint %}
 
 This will run `my_modal_step` on a Modal instance with 1 A100 GPU, 2 CPUs, and
@@ -119,9 +121,8 @@ full list of supported GPU types and the [SDK
 docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-modal.html)
 for more details on the available settings.
 
-The settings do allow you to specify the region and cloud provider, but these
-settings are only available for Modal Enterprise and Team plan customers.
-Moreover, certain combinations of settings are not available. It is suggested to
+The settings allow you to specify the Modal environment, region, and cloud provider. `modal_environment` selects the Modal environment used for the app lookup and sandbox submission. Region and cloud provider settings are only available for Modal Enterprise and Team plan customers.
+Certain combinations of settings are not available. It is suggested to
 err on the side of looser settings rather than more restrictive ones to avoid
 pipeline execution failures. In the case of failures, however, Modal provides
 detailed error messages that can help identify what is incompatible. See more in

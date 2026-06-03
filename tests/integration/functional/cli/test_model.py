@@ -19,7 +19,6 @@ import pytest
 
 from tests.cli_runner_utils import cli_runner
 from tests.integration.functional.cli.conftest import NAME, PREFIX
-from tests.integration.functional.cli.utils import cli_runner
 from zenml.cli.cli import cli
 from zenml.client import Client
 
