@@ -19,6 +19,7 @@ import click
 import pytest
 
 from tests.cli_runner_utils import cli_runner
+from tests.integration.functional.cli import utils as functional_cli_utils
 from zenml.cli.cli import ZenMLCLI, cli
 from zenml.cli.formatter import ZenFormatter
 from zenml.enums import StoreType
@@ -36,13 +37,30 @@ def test_cli_command_defines_a_cli_group() -> None:
 
 
 def test_cli(runner):
-    """Check that basic cli call works.
-
-    Note: Invoking CLI without a command returns exit code 2 (Click's standard
-    behavior for "no command provided"). We just verify it doesn't crash.
-    """
+    """Check that a basic CLI call returns the expected usage path."""
     result = runner.invoke(cli)
-    assert result.exit_code in (0, 2)
+
+    assert result.exit_code == 2
+    assert isinstance(result.exception, SystemExit)
+    assert "Usage:" in result.output
+    assert "COMMAND [ARGS]" in result.output
+    assert "Available ZenML Commands" in result.output
+
+
+def test_functional_cli_utils_cli_runner_passes_kwargs() -> None:
+    """Check that functional CLI utils expose compatible runner behavior."""
+    runner = functional_cli_utils.cli_runner(
+        env={"ZENML_TEST": "1"}, mix_stderr=False
+    )
+
+    assert runner.env == {"ZENML_TEST": "1"}
+
+
+def test_cli_runner_passes_kwargs() -> None:
+    """Check that the shared CLI runner still accepts normal Click kwargs."""
+    runner = cli_runner(env={"ZENML_TEST": "1"}, mix_stderr=False)
+
+    assert runner.env == {"ZENML_TEST": "1"}
 
 
 def test_ZenMLCLI_formatter():

@@ -53,6 +53,7 @@ logger = get_logger(__name__)
 
 MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY = "modal_step_operator"
 STEP_SANDBOX_ID_METADATA_KEY = "sandbox_id"
+STEP_MODAL_ENVIRONMENT_METADATA_KEY = "modal_environment"
 MODAL_TOKEN_ID_ENV_VAR = "MODAL_TOKEN_ID"
 MODAL_TOKEN_SECRET_ENV_VAR = "MODAL_TOKEN_SECRET"
 MODAL_WORKSPACE_ENV_VAR = "MODAL_WORKSPACE"
@@ -95,6 +96,19 @@ def _modal_environment_overrides(
         overrides[MODAL_ENVIRONMENT_ENV_VAR] = modal_environment
 
     return overrides
+
+
+def _get_modal_environment_from_step_run_metadata(
+    step_run: "StepRunResponse",
+) -> Optional[str]:
+    """Get the Modal environment stored for a step run."""
+    metadata_value = step_run.run_metadata.get(
+        STEP_MODAL_ENVIRONMENT_METADATA_KEY
+    )
+    if metadata_value is None:
+        return None
+
+    return _normalize_optional_config_value(str(metadata_value))
 
 
 @contextmanager
@@ -352,13 +366,12 @@ class ModalStepOperator(BaseStepOperator):
                 timeout=settings.timeout,
                 env=environment,
             )
-        publish_step_run_metadata(
-            info.step_run_id,
-            {self.id: {STEP_SANDBOX_ID_METADATA_KEY: sandbox.object_id}},
-        )
-        info.step_run.run_metadata[STEP_SANDBOX_ID_METADATA_KEY] = (
-            sandbox.object_id
-        )
+        metadata = {STEP_SANDBOX_ID_METADATA_KEY: sandbox.object_id}
+        if modal_environment:
+            metadata[STEP_MODAL_ENVIRONMENT_METADATA_KEY] = modal_environment
+
+        publish_step_run_metadata(info.step_run_id, {self.id: metadata})
+        info.step_run.run_metadata.update(metadata)
 
     def get_status(self, step_run: "StepRunResponse") -> ExecutionStatus:
         """Gets the status of a submitted Modal sandbox.
@@ -370,8 +383,13 @@ class ModalStepOperator(BaseStepOperator):
             The step status.
         """
         sandbox_id = str(step_run.run_metadata[STEP_SANDBOX_ID_METADATA_KEY])
+        modal_environment = _get_modal_environment_from_step_run_metadata(
+            step_run
+        )
         with _temporary_modal_environment(
-            _modal_environment_overrides(self.config)
+            _modal_environment_overrides(
+                self.config, modal_environment=modal_environment
+            )
         ):
             sandbox = modal.Sandbox.from_id(sandbox_id)
             return_code = sandbox.poll()
@@ -388,8 +406,13 @@ class ModalStepOperator(BaseStepOperator):
             step_run: The step run.
         """
         sandbox_id = str(step_run.run_metadata[STEP_SANDBOX_ID_METADATA_KEY])
+        modal_environment = _get_modal_environment_from_step_run_metadata(
+            step_run
+        )
         with _temporary_modal_environment(
-            _modal_environment_overrides(self.config)
+            _modal_environment_overrides(
+                self.config, modal_environment=modal_environment
+            )
         ):
             sandbox = modal.Sandbox.from_id(sandbox_id)
             sandbox.terminate()

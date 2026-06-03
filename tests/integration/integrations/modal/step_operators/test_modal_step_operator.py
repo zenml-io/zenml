@@ -261,7 +261,15 @@ def test_modal_submit_preserves_argv_config_and_runtime_env_boundary(
         ]
         == "previous-local-environment"
     )
-    assert run_metadata["sandbox_id"] == "sandbox-id"
+    expected_metadata = {
+        modal_step_operator_module.STEP_SANDBOX_ID_METADATA_KEY: "sandbox-id",
+        modal_step_operator_module.STEP_MODAL_ENVIRONMENT_METADATA_KEY: "staging",
+    }
+    assert recorded["published_metadata"] == (
+        ("step-run-id", {"component-id": expected_metadata}),
+        {},
+    )
+    assert run_metadata == expected_metadata
 
 
 def test_status_and_cancel_use_configured_modal_auth_context(
@@ -272,55 +280,76 @@ def test_status_and_cancel_use_configured_modal_auth_context(
         token_secret="as-test",
         workspace="workspace-test",
     )
-    recorded = {"from_id_calls": []}
+    recorded = {"from_id_calls": [], "from_id_env": []}
+    modal_sdk_env_vars = (
+        modal_step_operator_module.MODAL_TOKEN_ID_ENV_VAR,
+        modal_step_operator_module.MODAL_TOKEN_SECRET_ENV_VAR,
+        modal_step_operator_module.MODAL_WORKSPACE_ENV_VAR,
+        modal_step_operator_module.MODAL_ENVIRONMENT_ENV_VAR,
+    )
 
     class SandboxStub:
         def poll(self):
             recorded["poll_env"] = {
                 key: modal_step_operator_module.os.environ.get(key)
-                for key in (
-                    "MODAL_TOKEN_ID",
-                    "MODAL_TOKEN_SECRET",
-                    "MODAL_WORKSPACE",
-                )
+                for key in modal_sdk_env_vars
             }
             return 0
 
         def terminate(self):
             recorded["terminate_env"] = {
                 key: modal_step_operator_module.os.environ.get(key)
-                for key in (
-                    "MODAL_TOKEN_ID",
-                    "MODAL_TOKEN_SECRET",
-                    "MODAL_WORKSPACE",
-                )
+                for key in modal_sdk_env_vars
             }
 
     class SandboxFactoryStub:
         @staticmethod
         def from_id(sandbox_id):
             recorded["from_id_calls"].append(sandbox_id)
+            recorded["from_id_env"].append(
+                {
+                    key: modal_step_operator_module.os.environ.get(key)
+                    for key in modal_sdk_env_vars
+                }
+            )
             return SandboxStub()
 
     operator = object.__new__(ModalStepOperator)
     operator._config = config
-    step_run = SimpleNamespace(run_metadata={"sandbox_id": "sandbox-id"})
+    step_run = SimpleNamespace(
+        run_metadata={
+            modal_step_operator_module.STEP_SANDBOX_ID_METADATA_KEY: "sandbox-id",
+            modal_step_operator_module.STEP_MODAL_ENVIRONMENT_METADATA_KEY: " staging ",
+        }
+    )
 
     monkeypatch.setattr(
         modal_step_operator_module.modal, "Sandbox", SandboxFactoryStub
+    )
+    monkeypatch.setenv(
+        modal_step_operator_module.MODAL_ENVIRONMENT_ENV_VAR,
+        "previous-local-environment",
     )
 
     assert operator.get_status(step_run).value == "completed"
     operator.cancel(step_run)
 
     expected_env = {
-        "MODAL_TOKEN_ID": "ak-test",
-        "MODAL_TOKEN_SECRET": "as-test",
-        "MODAL_WORKSPACE": "workspace-test",
+        modal_step_operator_module.MODAL_TOKEN_ID_ENV_VAR: "ak-test",
+        modal_step_operator_module.MODAL_TOKEN_SECRET_ENV_VAR: "as-test",
+        modal_step_operator_module.MODAL_WORKSPACE_ENV_VAR: "workspace-test",
+        modal_step_operator_module.MODAL_ENVIRONMENT_ENV_VAR: "staging",
     }
     assert recorded["from_id_calls"] == ["sandbox-id", "sandbox-id"]
+    assert recorded["from_id_env"] == [expected_env, expected_env]
     assert recorded["poll_env"] == expected_env
     assert recorded["terminate_env"] == expected_env
+    assert (
+        modal_step_operator_module.os.environ[
+            modal_step_operator_module.MODAL_ENVIRONMENT_ENV_VAR
+        ]
+        == "previous-local-environment"
+    )
 
 
 def test_gpu_arg_invalid_negative_count_raises() -> None:

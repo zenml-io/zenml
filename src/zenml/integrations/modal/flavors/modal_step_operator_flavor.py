@@ -115,8 +115,10 @@ class ModalStepOperatorConfig(
     )
     workspace: Optional[str] = Field(
         None,
-        description="Modal workspace name for step execution. ZenML applies it as MODAL_WORKSPACE "
-        "during Modal SDK submission. If not specified, Modal uses the default workspace from its configuration.",
+        description="Optional Modal workspace value. When provided, ZenML temporarily sets "
+        "MODAL_WORKSPACE while calling the Modal SDK for compatibility with Modal's "
+        "environment-based configuration. Modal reads it using its normal resolution logic. "
+        "If omitted, Modal uses its normal configured behavior.",
     )
 
     @model_validator(mode="after")
