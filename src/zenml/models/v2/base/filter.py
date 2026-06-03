@@ -1023,13 +1023,16 @@ class BaseFilter(BaseModel):
 
         if operand == SorterOps.DESCENDING:
             sort_clause = desc(getattr(table, column))
+            tiebreaker = desc(table.id)
         else:
             sort_clause = asc(getattr(table, column))
+            tiebreaker = asc(table.id)
 
         # We always add the `id` column as a tiebreaker to ensure a stable,
         # repeatable order of items, otherwise subsequent pages might contain
-        # the same items.
-        query = query.order_by(sort_clause, asc(table.id))  # type: ignore[arg-type]
+        # the same items. The tiebreaker follows the primary sort direction so
+        # the order matches an index and avoids a filesort on descending sorts.
+        query = query.order_by(sort_clause, tiebreaker)  # type: ignore[arg-type]
 
         return query
 
