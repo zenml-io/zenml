@@ -20,7 +20,9 @@ pytest.importorskip("modal")
 
 from zenml.exceptions import StackComponentInterfaceError
 from zenml.integrations.modal.flavors import ModalStepOperatorSettings
-from zenml.integrations.modal.utils import get_gpu_values
+from zenml.integrations.modal.step_operators.modal_step_operator import (
+    get_gpu_values,
+)
 
 
 class ResourceSettingsStub:

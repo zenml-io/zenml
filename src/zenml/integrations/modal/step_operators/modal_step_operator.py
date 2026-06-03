@@ -16,12 +16,12 @@
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
 import modal
-from modal_proto import api_pb2
 
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.resource_settings import ByteUnit, ResourceSettings
 from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.exceptions import StackComponentInterfaceError
 from zenml.integrations.modal.flavors import (
     ModalStepOperatorConfig,
     ModalStepOperatorSettings,
@@ -45,19 +45,69 @@ STEP_SANDBOX_ID_METADATA_KEY = "sandbox_id"
 def get_gpu_values(
     settings: ModalStepOperatorSettings, resource_settings: ResourceSettings
 ) -> Optional[str]:
-    """Get the GPU values for the Modal step operator.
+    """Compute and validate the Modal ``gpu`` argument string.
+
+    Modal expects GPU resources as either ``None`` (CPU only), a GPU type string
+    like ``"A100"`` (implicitly a single GPU), or ``"A100:2"`` when multiple
+    GPUs of the same type are requested. Within ZenML, the GPU type is captured
+    in :class:`ModalStepOperatorSettings` while the count lives in
+    :class:`~zenml.config.resource_settings.ResourceSettings`. This helper
+    reconciles both sources.
 
     Args:
-        settings: The Modal step operator settings.
-        resource_settings: The resource settings.
+        settings: The Modal step operator settings describing the GPU type.
+        resource_settings: Resource constraints for the step, providing the GPU count.
 
     Returns:
-        The GPU string if a count is specified, otherwise the GPU type.
+        A Modal-compatible GPU specification string or ``None`` when running on CPU.
+
+    Raises:
+        StackComponentInterfaceError: If the configuration is inconsistent or invalid.
     """
-    if not settings.gpu:
-        return None
+    gpu_type_raw = settings.gpu
+    gpu_type = gpu_type_raw.strip() if gpu_type_raw is not None else None
+    if gpu_type == "":
+        gpu_type = None
+
     gpu_count = resource_settings.gpu_count
-    return f"{settings.gpu}:{gpu_count}" if gpu_count else settings.gpu
+    if gpu_count is not None:
+        try:
+            gpu_count = int(gpu_count)
+        except (TypeError, ValueError):
+            raise StackComponentInterfaceError(
+                f"Invalid GPU count '{gpu_count}'. Must be a non-negative integer."
+            )
+        if gpu_count < 0:
+            raise StackComponentInterfaceError(
+                f"Invalid GPU count '{gpu_count}'. Must be >= 0."
+            )
+
+    if gpu_type is None:
+        if gpu_count is not None and gpu_count > 0:
+            raise StackComponentInterfaceError(
+                "GPU resources requested (gpu_count > 0) but no GPU type was specified "
+                "in Modal settings. Please set a GPU type (e.g., 'T4', 'A100') via "
+                "ModalStepOperatorSettings.gpu or @step(settings={'modal': {'gpu': '<TYPE>'}}), "
+                "or set gpu_count=0 to run on CPU."
+            )
+        return None
+
+    if gpu_count == 0:
+        logger.warning(
+            "Modal GPU type '%s' is configured but ResourceSettings.gpu_count is 0. "
+            "Defaulting to 1 GPU. To run on CPU only, remove the GPU type or ensure "
+            "gpu_count=0 with no GPU type configured.",
+            gpu_type,
+        )
+        return gpu_type
+
+    if gpu_count is None:
+        return gpu_type
+
+    if gpu_count > 0:
+        return f"{gpu_type}:{gpu_count}"
+
+    return None
 
 
 class ModalStepOperator(BaseStepOperator):
@@ -186,23 +236,15 @@ class ModalStepOperator(BaseStepOperator):
                 "No Docker credentials found for the container registry."
             )
 
-        my_secret = modal.secret._Secret.from_dict(
+        registry_secret = modal.Secret.from_dict(
             {
                 "REGISTRY_USERNAME": docker_username,
                 "REGISTRY_PASSWORD": docker_password,
             }
         )
 
-        spec = modal.image.DockerfileSpec(
-            commands=[f"FROM {image_name}"], context_files={}
-        )
-
-        zenml_image = modal.Image._from_args(
-            dockerfile_function=lambda *_, **__: spec,
-            force_build=False,
-            image_registry_config=modal.image._ImageRegistryConfig(
-                api_pb2.REGISTRY_AUTH_TYPE_STATIC_CREDS, my_secret
-            ),
+        zenml_image = modal.Image.from_registry(
+            image_name, secret=registry_secret
         ).env(environment)
 
         resource_settings = info.config.resource_settings
