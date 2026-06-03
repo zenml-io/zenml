@@ -45,7 +45,7 @@ class ModalStepOperatorSettings(BaseSettings):
             Use ResourceSettings.gpu_count to specify the number of GPUs.
         region: The region to use for the step execution.
         cloud: The cloud provider to use for the step execution.
-        modal_environment: The Modal environment to use for the app lookup and step execution.
+        modal_environment: The Modal environment to use for app lookup and sandbox submission.
         timeout: Maximum execution time in seconds (default 24h).
     """
 
@@ -69,8 +69,9 @@ class ModalStepOperatorSettings(BaseSettings):
     )
     modal_environment: Optional[str] = Field(
         None,
-        description="Modal environment name for app lookup and step execution. Must be a valid environment "
-        "configured in your Modal workspace. Examples: 'main', 'staging', 'production'. "
+        description="Modal environment name for app lookup and sandbox submission. Must be a valid environment "
+        "configured in your Modal workspace. ZenML temporarily sets it as local MODAL_ENVIRONMENT "
+        "while submitting to Modal. Examples: 'main', 'staging', 'production'. "
         "If not specified, uses the default environment for the workspace",
     )
     timeout: int = Field(

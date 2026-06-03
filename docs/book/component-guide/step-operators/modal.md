@@ -152,7 +152,7 @@ full list of supported GPU types and the [SDK
 docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-modal.html)
 for more details on the available settings.
 
-The settings allow you to specify the Modal environment, region, and cloud provider. `modal_environment` selects the Modal environment used for the app lookup and sandbox submission. Region and cloud provider settings are only available for Modal Enterprise and Team plan customers.
+The settings allow you to specify the Modal environment, region, and cloud provider. `modal_environment` selects the Modal environment used for the app lookup and sandbox submission. When this setting is configured, ZenML temporarily sets local `MODAL_ENVIRONMENT` while submitting through the Modal SDK; ZenML step runtime environment variables are still passed separately to the sandbox runtime. Region and cloud provider settings are only available for Modal Enterprise and Team plan customers.
 Certain combinations of settings are not available. It is suggested to
 err on the side of looser settings rather than more restrictive ones to avoid
 pipeline execution failures. In the case of failures, however, Modal provides

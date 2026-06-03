@@ -56,6 +56,7 @@ STEP_SANDBOX_ID_METADATA_KEY = "sandbox_id"
 MODAL_TOKEN_ID_ENV_VAR = "MODAL_TOKEN_ID"
 MODAL_TOKEN_SECRET_ENV_VAR = "MODAL_TOKEN_SECRET"
 MODAL_WORKSPACE_ENV_VAR = "MODAL_WORKSPACE"
+MODAL_ENVIRONMENT_ENV_VAR = "MODAL_ENVIRONMENT"
 
 _modal_environment_lock = threading.Lock()
 
@@ -71,11 +72,13 @@ def _normalize_optional_config_value(value: Optional[str]) -> Optional[str]:
 
 def _modal_environment_overrides(
     config: ModalStepOperatorConfig,
+    modal_environment: Optional[str] = None,
 ) -> Dict[str, str]:
-    """Get Modal SDK environment variable overrides from config."""
+    """Get Modal SDK environment variable overrides."""
     token_id = _normalize_optional_config_value(config.token_id)
     token_secret = _normalize_optional_config_value(config.token_secret)
     workspace = _normalize_optional_config_value(config.workspace)
+    modal_environment = _normalize_optional_config_value(modal_environment)
 
     if bool(token_id) != bool(token_secret):
         raise StackComponentInterfaceError(
@@ -88,6 +91,8 @@ def _modal_environment_overrides(
         overrides[MODAL_TOKEN_SECRET_ENV_VAR] = token_secret
     if workspace:
         overrides[MODAL_WORKSPACE_ENV_VAR] = workspace
+    if modal_environment:
+        overrides[MODAL_ENVIRONMENT_ENV_VAR] = modal_environment
 
     return overrides
 
@@ -325,9 +330,11 @@ class ModalStepOperator(BaseStepOperator):
         modal_environment = _normalize_optional_config_value(
             settings.modal_environment
         )
-        with _temporary_modal_environment(
-            _modal_environment_overrides(self.config)
-        ):
+        modal_sdk_env_overrides = _modal_environment_overrides(
+            self.config, modal_environment=modal_environment
+        )
+
+        with _temporary_modal_environment(modal_sdk_env_overrides):
             app = modal.App.lookup(
                 f"zenml-{info.step_run_id}-{info.pipeline_step_name}"[:64],
                 create_if_missing=True,

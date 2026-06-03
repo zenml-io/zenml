@@ -104,10 +104,11 @@ def test_modal_submit_preserves_argv_config_and_runtime_env_boundary(
         modal_environment="staging",
         timeout=1234,
     )
-    modal_auth_env_vars = (
+    modal_sdk_env_vars = (
         modal_step_operator_module.MODAL_TOKEN_ID_ENV_VAR,
         modal_step_operator_module.MODAL_TOKEN_SECRET_ENV_VAR,
         modal_step_operator_module.MODAL_WORKSPACE_ENV_VAR,
+        modal_step_operator_module.MODAL_ENVIRONMENT_ENV_VAR,
     )
     config = ModalStepOperatorConfig(
         token_id="ak-test",
@@ -162,7 +163,7 @@ def test_modal_submit_preserves_argv_config_and_runtime_env_boundary(
             recorded["app_lookup"] = (args, kwargs)
             recorded["env_during_lookup"] = {
                 key: modal_step_operator_module.os.environ.get(key)
-                for key in modal_auth_env_vars
+                for key in modal_sdk_env_vars
             }
             return "app"
 
@@ -173,6 +174,10 @@ def test_modal_submit_preserves_argv_config_and_runtime_env_boundary(
         @staticmethod
         def create(*args, **kwargs):
             recorded["sandbox_create"] = (args, kwargs)
+            recorded["env_during_create"] = {
+                key: modal_step_operator_module.os.environ.get(key)
+                for key in modal_sdk_env_vars
+            }
             return SandboxStub()
 
     recorded = {}
@@ -198,6 +203,10 @@ def test_modal_submit_preserves_argv_config_and_runtime_env_boundary(
             "published_metadata", (args, kwargs)
         ),
     )
+    monkeypatch.setenv(
+        modal_step_operator_module.MODAL_ENVIRONMENT_ENV_VAR,
+        "previous-local-environment",
+    )
 
     entrypoint_command = [
         "python",
@@ -219,11 +228,14 @@ def test_modal_submit_preserves_argv_config_and_runtime_env_boundary(
         ("zenml-step-run-id-train",),
         {"create_if_missing": True, "environment_name": "staging"},
     )
-    assert recorded["env_during_lookup"] == {
+    expected_modal_sdk_env = {
         modal_step_operator_module.MODAL_TOKEN_ID_ENV_VAR: "ak-test",
         modal_step_operator_module.MODAL_TOKEN_SECRET_ENV_VAR: "as-test",
         modal_step_operator_module.MODAL_WORKSPACE_ENV_VAR: "workspace-test",
+        modal_step_operator_module.MODAL_ENVIRONMENT_ENV_VAR: "staging",
     }
+    assert recorded["env_during_lookup"] == expected_modal_sdk_env
+    assert recorded["env_during_create"] == expected_modal_sdk_env
     assert recorded["sandbox_create"] == (
         tuple(entrypoint_command),
         {
@@ -240,8 +252,15 @@ def test_modal_submit_preserves_argv_config_and_runtime_env_boundary(
     )
     sandbox_env = recorded["sandbox_create"][1]["env"]
     assert sandbox_env == environment
-    for env_var in modal_auth_env_vars:
+    for env_var in modal_sdk_env_vars:
         assert env_var not in sandbox_env
+    assert "environment_name" not in recorded["sandbox_create"][1]
+    assert (
+        modal_step_operator_module.os.environ[
+            modal_step_operator_module.MODAL_ENVIRONMENT_ENV_VAR
+        ]
+        == "previous-local-environment"
+    )
     assert run_metadata["sandbox_id"] == "sandbox-id"
 
 
