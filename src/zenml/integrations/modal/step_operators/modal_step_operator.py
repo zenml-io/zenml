@@ -345,7 +345,6 @@ class ModalStepOperator(BaseStepOperator):
                 cloud=settings.cloud,
                 region=settings.region,
                 timeout=settings.timeout,
-                environment_name=modal_environment,
             )
         publish_step_run_metadata(
             info.step_run_id,

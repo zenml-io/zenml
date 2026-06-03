@@ -229,7 +229,6 @@ def test_modal_submit_preserves_argv_and_uses_configured_timeout(
             "cloud": None,
             "region": None,
             "timeout": 1234,
-            "environment_name": "staging",
         },
     )
     assert run_metadata["sandbox_id"] == "sandbox-id"
