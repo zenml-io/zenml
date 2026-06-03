@@ -639,6 +639,19 @@ class StepConfigurationSchema(BaseSchema, table=True):
             "name",
             name="unique_step_configuration_for_snapshot_or_step_run",
         ),
+        build_index(
+            table_name=__tablename__,
+            column_names=[
+                "snapshot_id",
+                "name",
+            ],
+        ),
+        build_index(
+            table_name=__tablename__,
+            column_names=[
+                "step_run_id",
+            ],
+        ),
         CheckConstraint(
             "(snapshot_id IS NULL AND step_run_id IS NOT NULL) OR "
             "(snapshot_id IS NOT NULL AND step_run_id IS NULL)",

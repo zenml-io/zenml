@@ -97,9 +97,10 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             table_name=__tablename__,
             column_names=[
                 "project_id",
-                "cache_key",
-                "status",
+                "pipeline_run_id",
+                "name",
                 "created",
+                "id",
             ],
         ),
     )

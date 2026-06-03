@@ -51,6 +51,7 @@ class ApiTransactionSchema(BaseSchema, table=True):
             column_names=[
                 "completed",
                 "expired",
+                "id",
             ],
         ),
     )
