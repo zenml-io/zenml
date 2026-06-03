@@ -82,6 +82,10 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             table_name=__tablename__,
             column_names=["source_snapshot_id"],
         ),
+        build_index(
+            table_name=__tablename__,
+            column_names=["project_id", "created", "id", "name"],
+        ),
     )
 
     # Fields

@@ -67,6 +67,7 @@ from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.schema_utils import (
     build_foreign_key_field,
+    build_index,
 )
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -118,6 +119,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             "parent_run_id",
             "child_key",
             name="unique_child_key_for_parent_run_id",
+        ),
+        build_index(
+            table_name=__tablename__,
+            column_names=["project_id", "created", "id"],
         ),
     )
 
