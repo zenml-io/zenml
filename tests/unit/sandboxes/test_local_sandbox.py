@@ -249,7 +249,7 @@ class TestOptionalMethods:
         session = _make_local_sandbox().create_session()
         try:
             with pytest.raises(NotImplementedError):
-                session.snapshot()
+                session.create_snapshot()
         finally:
             session.close()
 
