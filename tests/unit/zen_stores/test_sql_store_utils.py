@@ -200,3 +200,67 @@ def test_completed_expired_api_transaction_is_reset(clean_client):
     assert transaction.completed is False
     assert transaction.expired is None
     assert result is None
+
+
+def test_expired_api_transaction_reset_requires_atomic_claim(clean_client):
+    """Expired API transaction reset only succeeds for one claimant."""
+    store = clean_client.zen_store
+
+    if not isinstance(store, SqlZenStore):
+        pytest.skip(
+            "API transaction recreation is testable only for SQL ZenML store"
+        )
+
+    transaction_id = uuid4()
+    user_id = clean_client.active_user.id
+    expired_at = utc_now() - timedelta(seconds=1)
+
+    with Session(store.engine) as session:
+        transaction = ApiTransactionSchema(
+            id=transaction_id,
+            method="POST",
+            url="/api/retry",
+            user_id=user_id,
+            completed=True,
+            expired=expired_at,
+        )
+        session.add(transaction)
+        session.flush()
+        session.add(
+            ApiTransactionResultSchema(
+                id=transaction_id,
+                result=gzip.compress(b'"stale-result"'),
+            )
+        )
+        session.commit()
+
+    with Session(store.engine) as stale_session:
+        stale_transaction = stale_session.get(
+            ApiTransactionSchema, transaction_id
+        )
+        assert stale_transaction is not None
+
+        with Session(store.engine) as winning_session:
+            winning_transaction = winning_session.get(
+                ApiTransactionSchema, transaction_id
+            )
+            assert winning_transaction is not None
+            winning_transaction.completed = False
+            winning_transaction.expired = None
+            winning_session.add(winning_transaction)
+            winning_session.commit()
+
+        claimed_transaction = store._claim_expired_api_transaction(
+            stale_transaction, session=stale_session
+        )
+
+    assert claimed_transaction is None
+
+    with Session(store.engine) as session:
+        transaction = session.get(ApiTransactionSchema, transaction_id)
+        result = session.get(ApiTransactionResultSchema, transaction_id)
+
+    assert transaction is not None
+    assert transaction.completed is False
+    assert transaction.expired is None
+    assert result is not None

@@ -2399,21 +2399,30 @@ class SqlZenStore(BaseZenStore):
         )
 
     @staticmethod
-    def _reset_expired_api_transaction(
+    def _claim_expired_api_transaction(
         api_transaction_schema: ApiTransactionSchema,
         session: Session,
-    ) -> ApiTransactionSchema:
-        """Reset an expired API transaction for re-execution."""
+    ) -> Optional[ApiTransactionSchema]:
+        """Atomically claim an expired API transaction for re-execution."""
+        now = utc_now()
+        result = session.execute(
+            update(ApiTransactionSchema)
+            .where(ApiTransactionSchema.id == api_transaction_schema.id)
+            .where(col(ApiTransactionSchema.completed))
+            .where(col(ApiTransactionSchema.expired) < now)
+            .values(completed=False, expired=None, updated=now)
+        )
+
+        if result.rowcount != 1:
+            session.rollback()
+            return None
+
         result_schema = session.get(
             ApiTransactionResultSchema, api_transaction_schema.id
         )
         if result_schema is not None:
             session.delete(result_schema)
 
-        api_transaction_schema.completed = False
-        api_transaction_schema.expired = None
-        api_transaction_schema.updated = utc_now()
-        session.add(api_transaction_schema)
         session.commit()
         session.refresh(api_transaction_schema)
         return api_transaction_schema
@@ -2490,13 +2499,21 @@ class SqlZenStore(BaseZenStore):
                 )
 
                 if self._api_transaction_has_expired(api_transaction_schema):
-                    api_transaction_schema = (
-                        self._reset_expired_api_transaction(
-                            api_transaction_schema=api_transaction_schema,
-                            session=session,
+                    claimed_transaction_schema = (
+                        self._claim_expired_api_transaction(
+                            api_transaction_schema, session=session
                         )
                     )
-                    created = True
+                    if claimed_transaction_schema is not None:
+                        api_transaction_schema = claimed_transaction_schema
+                        created = True
+                    else:
+                        api_transaction_schema = self._get_api_transaction(
+                            api_transaction_id=api_transaction_schema.id,
+                            method=api_transaction.method,
+                            url=api_transaction.url,
+                            session=session,
+                        )
 
             return (
                 api_transaction_schema.to_model(
