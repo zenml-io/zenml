@@ -21,6 +21,7 @@ from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
 import pytest
+from pydantic import ValidationError
 
 from zenml.enums import StackComponentType
 from zenml.sandboxes import (
@@ -28,11 +29,11 @@ from zenml.sandboxes import (
     BaseSandboxConfig,
     BaseSandboxFlavor,
     BaseSandboxSettings,
-    BaseSandboxSnapshot,
     SandboxExecError,
     SandboxOutput,
     SandboxProcess,
     SandboxSession,
+    SandboxSnapshot,
 )
 
 
@@ -85,7 +86,7 @@ class _FakeSession(SandboxSession):
 
     def close(self) -> None:
         self.closed = True
-        self._close_log_ctx()
+        self._close_logging_context()
 
 
 class _FakeSandbox(BaseSandbox):
@@ -149,46 +150,26 @@ class TestConfig:
 class TestSettings:
     def test_defaults(self) -> None:
         s = BaseSandboxSettings()
-        assert s.environment == {}
-        assert s.copy_local_env is False
+        assert s.sandbox_environment == {}
 
 
 class TestSnapshotModel:
     def test_round_trip(self) -> None:
-        snap = BaseSandboxSnapshot(
-            sandbox_flavor="fake",
+        snap = SandboxSnapshot(
+            sandbox_id=uuid4(),
             ref="snap-123",
             metadata={"size_mb": 42},
         )
-        restored = BaseSandboxSnapshot.model_validate_json(
-            snap.model_dump_json()
-        )
+        restored = SandboxSnapshot.model_validate_json(snap.model_dump_json())
         assert restored == snap
 
     def test_metadata_defaults_empty(self) -> None:
-        snap = BaseSandboxSnapshot(sandbox_flavor="fake", ref="r")
+        snap = SandboxSnapshot(sandbox_id=uuid4(), ref="r")
         assert snap.metadata == {}
-        assert snap.component_id is None
 
-    def test_legacy_provider_alias_accepted(self) -> None:
-        # Snapshots persisted before the field rename used `provider`.
-        # The model_validator must accept legacy JSON so loaded
-        # artifacts still round-trip.
-        legacy_json = '{"provider":"fake","ref":"snap-legacy"}'
-        snap = BaseSandboxSnapshot.model_validate_json(legacy_json)
-        assert snap.sandbox_flavor == "fake"
-        assert snap.ref == "snap-legacy"
-
-    def test_legacy_provider_does_not_override_new_field(self) -> None:
-        # If both fields are present, sandbox_flavor wins.
-        snap = BaseSandboxSnapshot.model_validate(
-            {
-                "provider": "old",
-                "sandbox_flavor": "new",
-                "ref": "r",
-            }
-        )
-        assert snap.sandbox_flavor == "new"
+    def test_sandbox_id_is_required(self) -> None:
+        with pytest.raises(ValidationError):
+            SandboxSnapshot(ref="r")
 
 
 class TestSessionContextManager:
@@ -200,7 +181,7 @@ class TestSessionContextManager:
         assert session.closed is True
 
     def test_exit_flushes_log_ctx_when_close_raises(self) -> None:
-        # The base __exit__ must call _close_log_ctx() even when the
+        # The base __exit__ must call _close_logging_context() even when the
         # subclass close() raises. That's the W5 fix: log cleanup is
         # base-owned, not delegated to subclasses that may forget or
         # error out before reaching the call.
@@ -224,7 +205,7 @@ class TestSessionContextManager:
                 raise RuntimeError("close failed")
 
         session = _RaisingSession()
-        with patch.object(session, "_close_log_ctx") as fake_close_log:
+        with patch.object(session, "_close_logging_context") as fake_close_log:
             with pytest.raises(RuntimeError, match="close failed"):
                 with session:
                     pass
@@ -232,19 +213,27 @@ class TestSessionContextManager:
 
 
 class TestSessionMetadata:
-    """SandboxSession._on_enter publishes session-scoped step metadata.
+    """SandboxSession publishes session-scoped step metadata on creation.
 
     Keys are suffixed with the session id so steps that open multiple
     sandbox sessions don't overwrite each other.
     """
 
+    def test_publishes_on_construction(self) -> None:
+        with patch("zenml.utils.metadata_utils.log_metadata") as log_meta:
+            _FakeSession(session_id="sb-new")
+        published = [
+            c.kwargs.get("metadata", {}) for c in log_meta.call_args_list
+        ]
+        assert any("sandbox.sb-new.flavor" in m for m in published)
+
     def test_logs_flavor_and_dashboard_url_keyed_by_session_id(
         self,
     ) -> None:
         session = _FakeSession(session_id="sb-test-1")
-        session._dashboard_url = lambda: "https://example/sb-test-1"  # type: ignore[method-assign]
+        session._get_dashboard_url = lambda: "https://example/sb-test-1"  # type: ignore[method-assign]
         with patch("zenml.utils.metadata_utils.log_metadata") as log_meta:
-            session._on_enter()
+            session._publish_sandbox_metadata()
         from zenml.metadata.metadata_types import Uri
 
         payload = log_meta.call_args.kwargs["metadata"]
@@ -254,10 +243,10 @@ class TestSessionMetadata:
     def test_two_sessions_produce_disjoint_keys(self) -> None:
         s1 = _FakeSession(session_id="sb-1")
         s2 = _FakeSession(session_id="sb-2")
-        s2._dashboard_url = lambda: "https://example/sb-2"  # type: ignore[method-assign]
+        s2._get_dashboard_url = lambda: "https://example/sb-2"  # type: ignore[method-assign]
         with patch("zenml.utils.metadata_utils.log_metadata") as log_meta:
-            s1._on_enter()
-            s2._on_enter()
+            s1._publish_sandbox_metadata()
+            s2._publish_sandbox_metadata()
         first = log_meta.call_args_list[0].kwargs["metadata"]
         second = log_meta.call_args_list[1].kwargs["metadata"]
         assert "sandbox.sb-1.flavor" in first
@@ -268,7 +257,7 @@ class TestSessionMetadata:
     def test_omits_dashboard_url_when_hook_returns_none(self) -> None:
         session = _FakeSession(session_id="sb-x")
         with patch("zenml.utils.metadata_utils.log_metadata") as log_meta:
-            session._on_enter()
+            session._publish_sandbox_metadata()
         payload = log_meta.call_args.kwargs["metadata"]
         assert "sandbox.sb-x.dashboard_url" not in payload
 
@@ -281,7 +270,7 @@ class TestSessionMetadata:
             patch("zenml.sandboxes.session.logger.debug") as dbg,
             patch("zenml.sandboxes.session.logger.warning") as warn,
         ):
-            _FakeSession()._on_enter()
+            _FakeSession()._publish_sandbox_metadata()
         dbg.assert_called()
         warn.assert_not_called()
 
@@ -293,7 +282,7 @@ class TestSessionMetadata:
             ),
             patch("zenml.sandboxes.session.logger.warning") as warn,
         ):
-            _FakeSession()._on_enter()
+            _FakeSession()._publish_sandbox_metadata()
         warn.assert_called()
 
 
@@ -309,7 +298,7 @@ class TestSessionOptionalMethods:
 
     def test_snapshot_default_raises(self) -> None:
         with pytest.raises(NotImplementedError):
-            _FakeSession().snapshot()
+            _FakeSession().create_snapshot()
 
     def test_upload_file_default_raises(self) -> None:
         with pytest.raises(NotImplementedError):
@@ -330,94 +319,45 @@ class TestSandboxOptionalMethods:
             _make_sandbox().attach("sess-1")
 
 
-class TestRestoreProviderGuard:
-    def test_validate_snapshot_provider_rejects_cross_provider(self) -> None:
+class TestRestoreSnapshotGuard:
+    def test_validate_rejects_snapshot_from_other_sandbox(self) -> None:
         sandbox = _make_sandbox(flavor="fake")
-        wrong_snap = BaseSandboxSnapshot(sandbox_flavor="other", ref="r")
-        with pytest.raises(ValueError, match="flavor 'other'"):
-            sandbox._validate_snapshot_provider(wrong_snap)
+        wrong_snap = SandboxSnapshot(sandbox_id=uuid4(), ref="r")
+        with pytest.raises(ValueError, match="different sandbox"):
+            sandbox._validate_snapshot(wrong_snap)
 
-    def test_validate_snapshot_provider_passes_on_match(self) -> None:
+    def test_validate_passes_on_matching_sandbox_id(self) -> None:
         sandbox = _make_sandbox(flavor="fake")
-        matching_snap = BaseSandboxSnapshot(sandbox_flavor="fake", ref="r")
+        matching_snap = SandboxSnapshot(sandbox_id=sandbox.id, ref="r")
         # Returns None; no exception.
-        assert sandbox._validate_snapshot_provider(matching_snap) is None
-
-    def test_validate_rejects_cross_component_when_id_set(self) -> None:
-        sandbox = _make_sandbox(flavor="fake")
-        other_snap = BaseSandboxSnapshot(
-            sandbox_flavor="fake",
-            ref="r",
-            component_id=uuid4(),
-        )
-        with pytest.raises(ValueError, match="different component"):
-            sandbox._validate_snapshot_provider(other_snap)
+        assert sandbox._validate_snapshot(matching_snap) is None
 
     def test_restore_default_raises_not_implemented(self) -> None:
         # Base restore() is opt-in. Flavors override; default raises.
         sandbox = _make_sandbox(flavor="fake")
-        snap = BaseSandboxSnapshot(sandbox_flavor="fake", ref="r")
+        snap = SandboxSnapshot(sandbox_id=sandbox.id, ref="r")
         with pytest.raises(NotImplementedError):
             sandbox.restore(snap)
 
 
 class TestResolveSessionEnvironment:
-    def test_component_env_alone(self) -> None:
-        sb = _make_sandbox(environment={"A": "1"})
-        merged = sb._resolve_session_environment(None)
+    def test_empty_settings_returns_empty(self) -> None:
+        merged = _make_sandbox()._resolve_session_environment(
+            BaseSandboxSettings()
+        )
+        assert merged == {}
+
+    def test_returns_settings_environment(self) -> None:
+        settings = BaseSandboxSettings(sandbox_environment={"A": "1"})
+        merged = _make_sandbox()._resolve_session_environment(settings)
         assert merged == {"A": "1"}
 
-    def test_settings_env_overrides_component(self) -> None:
-        sb = _make_sandbox(environment={"A": "1", "B": "1"})
-        settings = BaseSandboxSettings(environment={"A": "2"})
-        merged = sb._resolve_session_environment(settings)
-        assert merged == {"A": "2", "B": "1"}
-
-    def test_secrets_exploded_between_component_and_settings(self) -> None:
-        # Component secret defines API_KEY; Settings overrides.
-        fake_secret = MagicMock(secret_values={"API_KEY": "from_secret"})
-        fake_client = MagicMock()
-        fake_client.get_secret.return_value = fake_secret
-        sb = _make_sandbox(secrets=["secret-uuid"])
-        settings = BaseSandboxSettings(environment={"API_KEY": "from_step"})
-        with patch("zenml.utils.env_utils.Client", return_value=fake_client):
-            merged = sb._resolve_session_environment(settings)
-        assert merged["API_KEY"] == "from_step"  # settings wins
-
-    def test_copy_local_env_fills_in_non_collisions(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        monkeypatch.setenv("FROM_LOCAL", "local-val")
-        sb = _make_sandbox(environment={"COMPONENT": "yes"})
-        settings = BaseSandboxSettings(copy_local_env=True)
-        merged = sb._resolve_session_environment(settings)
-        assert merged["COMPONENT"] == "yes"
-        assert merged["FROM_LOCAL"] == "local-val"
-
-    def test_component_env_wins_over_copy_local_env(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        # Explicit component-level env must not be silently clobbered by
-        # the local-env layer — even when the same key exists locally.
-        monkeypatch.setenv("API_KEY", "from-local-env")
-        sb = _make_sandbox(environment={"API_KEY": "from-component"})
-        settings = BaseSandboxSettings(copy_local_env=True)
-        merged = sb._resolve_session_environment(settings)
-        assert merged["API_KEY"] == "from-component"
-
-    def test_settings_env_wins_over_copy_local_env(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        # Per-step settings.environment is the most-specific layer and must
-        # win over copy_local_env even when both set the same key.
-        monkeypatch.setenv("DEBUG", "from-local-env")
-        sb = _make_sandbox()
-        settings = BaseSandboxSettings(
-            environment={"DEBUG": "from-step"},
-            copy_local_env=True,
-        )
-        merged = sb._resolve_session_environment(settings)
-        assert merged["DEBUG"] == "from-step"
+    def test_component_env_and_secrets_not_injected(self) -> None:
+        # Only settings.sandbox_environment flows into the session env;
+        # component env vars and secrets do not.
+        sb = _make_sandbox(environment={"A": "1"}, secrets=["secret-uuid"])
+        settings = BaseSandboxSettings(sandbox_environment={"B": "2"})
+        assert sb._resolve_session_environment(settings) == {"B": "2"}
 
 
 class TestSandboxLogEmission:
@@ -427,22 +367,22 @@ class TestSandboxLogEmission:
     """
 
     def _patched_session(self) -> "_FakeSession":
-        """Builds a session with a mock ``LoggingContext`` short-circuiting setup.
+        """Builds a session with a mock LoggingContext short-circuiting setup.
 
-        The real ``_ensure_log_ctx`` calls ``setup_logging_context`` +
-        ``ctx.begin()`` which require an active stack. We bypass both
-        by injecting a mock context that supports ``emit_to`` and
-        ``end``.
+        The real `_get_logging_context` calls `setup_logging_context` +
+        `ctx.begin()` which require an active stack. We bypass both by
+        injecting a mock context that supports `emit` and `end`.
         """
         session = _FakeSession()
-        session._log_ctx = MagicMock()
+        session._logging_context = MagicMock()
         return session
 
     def test_log_command_emits_dollar_prefix(self) -> None:
         session = self._patched_session()
         session._log_command(["python", "-c", "print('hi')"])
         records = [
-            call.args[0] for call in session._log_ctx.emit_to.call_args_list
+            call.args[0]
+            for call in session._logging_context.emit.call_args_list
         ]
         assert len(records) == 1
         assert records[0].getMessage().startswith("$ ")
@@ -451,52 +391,46 @@ class TestSandboxLogEmission:
     def test_log_exec_result_success(self) -> None:
         session = self._patched_session()
         session._log_exec_result(exit_code=0, started_at=time.time() - 1.5)
-        record = session._log_ctx.emit_to.call_args.args[0]
+        record = session._logging_context.emit.call_args.args[0]
         msg = record.getMessage()
-        assert msg.startswith("OK exit 0 in ")
+        assert msg.startswith("OK exit code 0 in ")
         assert msg.endswith("s")
         assert record.levelno == logging.INFO
 
-    def test_log_exec_result_failure_goes_to_warning(self) -> None:
+    def test_log_exec_result_failure_goes_to_error(self) -> None:
         session = self._patched_session()
         session._log_exec_result(exit_code=1, started_at=time.time())
-        record = session._log_ctx.emit_to.call_args.args[0]
-        assert record.getMessage().startswith("FAIL exit 1 in ")
-        assert record.levelno == logging.WARNING
-
-    def test_log_exec_result_without_started_at_omits_duration(self) -> None:
-        session = self._patched_session()
-        session._log_exec_result(exit_code=0, started_at=None)
-        record = session._log_ctx.emit_to.call_args.args[0]
-        assert record.getMessage() == "OK exit 0"
+        record = session._logging_context.emit.call_args.args[0]
+        assert record.getMessage().startswith("FAIL exit code 1 in ")
+        assert record.levelno == logging.ERROR
 
     def test_wrap_stream_emits_each_line(self) -> None:
         session = self._patched_session()
-        out = list(session._wrap_stream(iter(["a\n", "b\n"]), stream="stdout"))
+        out = list(session._wrap_stream(iter(["a\n", "b\n"])))
         assert out == ["a\n", "b\n"]  # passthrough preserved
         records = [
-            call.args[0] for call in session._log_ctx.emit_to.call_args_list
+            call.args[0]
+            for call in session._logging_context.emit.call_args_list
         ]
         assert [r.getMessage() for r in records] == ["a", "b"]
         assert all(r.levelno == logging.INFO for r in records)
 
-    def test_wrap_stream_stderr_emits_at_info(self) -> None:
-        # Sandbox stderr is diagnostic output, not an application-level
-        # warning; both streams emit at INFO. Stream attribution is
-        # preserved on the signature for future routing decisions.
+    def test_wrap_stream_emits_at_given_log_level(self) -> None:
+        # Stream lines are emitted at the level the caller passes; the
+        # local flavor wraps stderr at ERROR.
         session = self._patched_session()
-        list(session._wrap_stream(iter(["oops\n"]), stream="stderr"))
-        record = session._log_ctx.emit_to.call_args.args[0]
-        assert record.levelno == logging.INFO
+        list(session._wrap_stream(iter(["oops\n"]), log_level=logging.ERROR))
+        record = session._logging_context.emit.call_args.args[0]
+        assert record.levelno == logging.ERROR
         assert record.getMessage() == "oops"
 
     def test_wrap_stream_passthrough_after_latch(self) -> None:
         """When the origin setup has latched off, lines pass through unmodified."""
         session = _FakeSession()
-        session._log_forwarding_disabled = True
-        out = list(session._wrap_stream(iter(["a", "b"]), stream="stdout"))
+        session._logging_disabled = True
+        out = list(session._wrap_stream(iter(["a", "b"])))
         assert out == ["a", "b"]
-        assert session._log_ctx is None
+        assert session._logging_context is None
 
     def test_emit_failure_latches_forwarding_off(self) -> None:
         """If LoggingContext setup fails once, we don't retry on every emit."""
@@ -505,22 +439,33 @@ class TestSandboxLogEmission:
             "zenml.utils.logging_utils.setup_logging_context",
             side_effect=RuntimeError("no log store"),
         ):
-            session._emit_sandbox("ignored")
-        assert session._log_forwarding_disabled is True
-        assert session._log_ctx is None
+            session._emit_log("ignored")
+        assert session._logging_disabled is True
+        assert session._logging_context is None
+
+    def test_no_step_context_disables_forwarding(self) -> None:
+        # With no active step there is nothing to attach logs to, so
+        # forwarding latches off instead of creating an orphan logs record.
+        session = _FakeSession()
+        with patch(
+            "zenml.steps.step_context.StepContext.get", return_value=None
+        ):
+            assert session._get_logging_context() is None
+        assert session._logging_disabled is True
+        assert session._logging_context is None
 
     def test_close_log_ctx_calls_end(self) -> None:
         session = self._patched_session()
-        ctx = session._log_ctx
-        session._close_log_ctx()
+        ctx = session._logging_context
+        session._close_logging_context()
         ctx.end.assert_called_once()
-        assert session._log_ctx is None
+        assert session._logging_context is None
 
     def test_close_log_ctx_is_idempotent(self) -> None:
         session = self._patched_session()
-        session._close_log_ctx()
-        session._close_log_ctx()  # second call must be a no-op
-        assert session._log_ctx is None
+        session._close_logging_context()
+        session._close_logging_context()  # second call must be a no-op
+        assert session._logging_context is None
 
 
 class TestSandboxProcessCollect:
@@ -548,7 +493,9 @@ class TestSandboxProcessCollect:
             def exit_code(self) -> Optional[int]:
                 return code
 
-        return _Proc()
+        return _Proc(
+            session=MagicMock(spec=SandboxSession), started_at=time.time()
+        )
 
     def test_drains_both_streams_and_returns_exit_code(self) -> None:
         proc = self._proc_returning(
@@ -616,7 +563,9 @@ class TestSandboxProcessCollect:
             def exit_code(self) -> Optional[int]:
                 return 0
 
-        _Proc().collect(max_chars=10)
+        _Proc(
+            session=MagicMock(spec=SandboxSession), started_at=time.time()
+        ).collect(max_chars=10)
         # All three chunks were consumed, even though only the first
         # fit under the cap.
         assert len(consumed) == 3
@@ -662,7 +611,10 @@ class TestSandboxProcessCollect:
                 return 0
 
         with pytest.raises(RuntimeError, match="stream blew up"):
-            _RaisingProc().collect()
+            _RaisingProc(
+                session=MagicMock(spec=SandboxSession),
+                started_at=time.time(),
+            ).collect()
         assert kill_called[0] is True
 
     def test_concurrent_drain_on_both_streams_at_volume(self) -> None:
