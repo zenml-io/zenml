@@ -1,0 +1,3 @@
+zenml[server]>=0.93.1
+pydantic-ai>=0.0.15
+openai>=1.0.0

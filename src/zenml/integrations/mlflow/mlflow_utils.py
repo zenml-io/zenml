@@ -92,11 +92,13 @@ def get_missing_mlflow_experiment_tracker_error() -> ValueError:
 def get_tracking_uri() -> str:
     """Gets the MLflow tracking URI from the active experiment tracking stack component.
 
-    # noqa: DAR401
-
     Returns:
         MLflow tracking URI.
-    """
+
+    Raises:
+        ValueError: If no MLflow experiment tracker is registered in the
+            active stack.
+    """  # noqa: DOC503
     from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
         MLFlowExperimentTracker,
     )

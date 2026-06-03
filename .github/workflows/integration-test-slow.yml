@@ -41,7 +41,7 @@ on:
       python-version:
         description: Python version
         type: choice
-        options: ['3.10', '3.11', '3.12', '3.13']
+        options: ['3.10', '3.11', '3.12', '3.13', '3.14']
         required: false
         default: '3.11'
       test_environment:
@@ -90,6 +90,8 @@ jobs:
     env:
       ZENML_DEBUG: 1
       ZENML_ANALYTICS_OPT_IN: false
+      ZENML_ENABLE_RICH_TRACEBACK: false
+      WHYLOGS_NO_ANALYTICS: 'True'
       PYTHONIOENCODING: utf-8
       UV_HTTP_TIMEOUT: 600
       # on MAC OS, we need to set this environment variable
@@ -105,49 +107,94 @@ jobs:
       GCP_US_EAST4_SERVER_USERNAME: ${{ secrets.GCP_US_EAST4_SERVER_USERNAME }}
       GCP_US_EAST4_SERVER_PASSWORD: ${{ secrets.GCP_US_EAST4_SERVER_PASSWORD }}
       PYTEST_RERUNS: ${{ inputs.reruns }}
-    # TODO: add Windows testing for Python 3.11 3.12 and 3.13 back in
-    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.11') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.12') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.13') }}
+    # TODO: add Windows testing for Python 3.11 3.12 3.13 and 3.14 back in
+    if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.11') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.12') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.13') && ! (inputs.os == 'windows-latest' && inputs.python-version == '3.14') }}
     defaults:
       run:
         shell: bash
     steps:
-      - name: Maximize space for Docker
-        uses: easimon/maximize-build-space@v10
-        with:
-          root-reserve-mb: 20000
-          swap-size-mb: 1024
-          remove-dotnet: 'true'
-          remove-android: 'true'
-          remove-haskell: 'true'
-          build-mount-path: /var/lib/docker/
+      - name: Free disk space (Ubuntu)
         if: inputs.os == 'ubuntu-latest'
-      - name: Reload Docker
-        run: sudo systemctl restart docker
+        run: |
+          set -euxo pipefail
+          echo "Before cleanup:"
+          df -h
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /opt/hostedtoolcache/CodeQL || true
+          sudo docker image prune --all --force || true
+          echo "After cleanup:"
+          df -h
+      - name: Set uv cache + temp dirs (/opt)
+        if: inputs.os == 'ubuntu-latest'
+        run: |
+          sudo mkdir -p /opt/uv-cache /opt/tmp
+          sudo chown -R "$(id -u)":"$(id -g)" /opt/uv-cache /opt/tmp
+          echo "UV_CACHE_DIR=/opt/uv-cache" >> "$GITHUB_ENV"
+          echo "TMPDIR=/opt/tmp" >> "$GITHUB_ENV"
+          echo "TMP=/opt/tmp" >> "$GITHUB_ENV"
+          echo "TEMP=/opt/tmp" >> "$GITHUB_ENV"
+      - name: Move Docker data-root to /opt
         if: inputs.os == 'ubuntu-latest' && (contains(inputs.test_environment, 'docker')
           || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
           'airflow') || contains(inputs.test_environment, 'kubernetes'))
+        run: |
+          sudo mkdir -p /etc/docker
+          sudo mkdir -p /opt/docker
+
+          # Ensure Docker stores images/layers on the expanded /opt volume.
+          if [ -f /etc/docker/daemon.json ]; then
+            sudo python - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path("/etc/docker/daemon.json")
+          data = json.loads(path.read_text())
+          data["data-root"] = "/opt/docker"
+          path.write_text(json.dumps(data))
+          PY
+          else
+            echo '{"data-root":"/opt/docker"}' | sudo tee /etc/docker/daemon.json >/dev/null
+          fi
+      - name: Restart Docker (with /opt data-root)
+        if: inputs.os == 'ubuntu-latest' && (contains(inputs.test_environment, 'docker')
+          || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
+          'airflow') || contains(inputs.test_environment, 'kubernetes'))
+        run: |
+          sudo systemctl stop docker || true
+          # Free up space previously used by Docker's default root on the OS disk.
+          sudo rm -rf /var/lib/docker/* || true
+          sudo systemctl start docker
       - name: Login to Docker Hub
-        uses: docker/login-action@v3
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
         if: github.event.pull_request.head.repo.fork == false && (contains(inputs.test_environment,
           'docker') || contains(inputs.test_environment, 'kubeflow') || contains(inputs.test_environment,
           'airflow') || contains(inputs.test_environment, 'kubernetes'))
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - name: Restore uv cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
+        with:
+          path: ${{ inputs.os == 'ubuntu-latest' && '/opt/uv-cache' || '~/.cache/uv' }}
+          key: |
+            uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
+          restore-keys: |
+            uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885  # v6.1.1
         with:
           role-to-assume: ${{ secrets.AWS_US_EAST_1_ENV_ROLE_ARN }}
           aws-region: us-east-1
         if: contains(inputs.test_environment, 'aws')
       - name: Configure GCP credentials
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093  # v3.0.0
         with:
           credentials_json: ${{ secrets.GCP_US_EAST4_ENV_CREDENTIALS }}
         if: contains(inputs.test_environment, 'gcp')
       - name: Set up gcloud SDK
-        uses: google-github-actions/setup-gcloud@v1
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db  # v3.0.1
         with:
           install_components: gke-gcloud-auth-plugin
         if: contains(inputs.test_environment, 'gcp')
@@ -168,12 +215,12 @@ jobs:
         run: brew install libomp
       - name: Install kubectl on Linux
         run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          curl -LO "https://dl.k8s.io/release/v1.35.0/bin/linux/amd64/kubectl"
           sudo install -o root -g 0 -m 0755 kubectl /usr/local/bin/kubectl
         if: (inputs.os == 'ubuntu-latest' || inputs.os == 'arc-runner-set')
       - name: Install kubectl on MacOS
         run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/darwin/amd64/kubectl"
+          curl -LO "https://dl.k8s.io/release/v1.35.0/bin/darwin/amd64/kubectl"
           sudo install -o root -g 0 -m 0755 kubectl /usr/local/bin/kubectl
         if: runner.os=='macOS'
       - name: Install K3D
@@ -195,7 +242,7 @@ jobs:
           gcloud auth configure-docker --project zenml-ci
         if: contains(inputs.test_environment, 'gcp')
       - name: Login to Google GKE
-        uses: google-github-actions/get-gke-credentials@v2
+        uses: google-github-actions/get-gke-credentials@3da1e46a907576cefaa90c484278bb5b259dd395  # v3.0.0
         with:
           cluster_name: zenml-ci-cluster
           location: us-east4
@@ -203,14 +250,16 @@ jobs:
         if: contains(inputs.test_environment, 'gcp')
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}
-        uses: mxschmitt/action-tmate@v3.17
+        uses: mxschmitt/action-tmate@c0afd6f790e3a5564914980036ebf83216678101  # v3.23
         timeout-minutes: ${{ inputs.tmate_timeout }}
       - name: Integration Tests - Slow CI
         run: |
-          bash scripts/test-coverage-xml.sh integration ${{ inputs.test_environment }}
+          bash scripts/test-coverage-xml.sh integration ${INPUTS_TEST_ENVIRONMENT}
+        env:
+          INPUTS_TEST_ENVIRONMENT: ${{ inputs.test_environment }}
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
-        uses: mxschmitt/action-tmate@v3.17
+        uses: mxschmitt/action-tmate@c0afd6f790e3a5564914980036ebf83216678101  # v3.23
         timeout-minutes: ${{ inputs.tmate_timeout }}
       - name: Verify Python Env unaffected
         run: |-

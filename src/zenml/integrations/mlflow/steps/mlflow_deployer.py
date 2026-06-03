@@ -63,7 +63,7 @@ def mlflow_model_deployer_step(
     This step deploys a model logged in the MLflow artifact store to a
     deployment service. The user would typically use this step in a pipeline
     that deploys a model that was already registered in the MLflow model
-    registr either manually or by using the `mlflow_model_registry_step`.
+    registry either manually or by using the `mlflow_model_registry_step`.
 
     Args:
         deploy_decision: whether to deploy the model or not
@@ -225,9 +225,8 @@ def mlflow_model_registry_deployer_step(
 
     Raises:
         ValueError: if neither registry_model_version nor registry_model_stage
-            is not provided
-        ValueError: if No MLflow experiment tracker is found in the current
-            active stack
+            is provided, or if no MLflow experiment tracker is found in the
+            current active stack.
         LookupError: if no model version is found in the MLflow model registry.
     """
     if not registry_model_version and not registry_model_stage:

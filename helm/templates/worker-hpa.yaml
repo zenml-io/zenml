@@ -1,0 +1,38 @@
+{{- range $name, $worker := .Values.workerDeployments }}
+{{- if or (not (hasKey $worker "enabled")) $worker.enabled }}
+{{- if and $worker.autoscaling $worker.autoscaling.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "zenml.fullname" $ }}-worker-{{ $name }}
+  labels:
+    {{- include "zenml.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: worker-{{ $name }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "zenml.fullname" $ }}-worker-{{ $name }}
+  minReplicas: {{ $worker.autoscaling.minReplicas | default 1 }}
+  maxReplicas: {{ $worker.autoscaling.maxReplicas | default 10 }}
+  metrics:
+    {{- if $worker.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $worker.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if $worker.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ $worker.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

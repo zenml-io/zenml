@@ -46,7 +46,10 @@ from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
-from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.schema_utils import (
+    build_foreign_key_field,
+    build_index,
+)
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.tag_schemas import TagSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -74,6 +77,10 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             "pipeline_id",
             "name",
             name="unique_name_for_pipeline_id",
+        ),
+        build_index(
+            table_name=__tablename__,
+            column_names=["source_snapshot_id"],
         ),
     )
 
@@ -459,6 +466,19 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         self.updated = utc_now()
         return self
 
+    @property
+    def is_runnable(self) -> bool:
+        """Implements the `is_runnable` property.
+
+        Returns:
+            True if the snapshot is runnable from server.
+        """
+        return (
+            self.build is not None
+            and not self.build.is_local
+            and self.build.stack_id is not None
+        )
+
     def to_model(
         self,
         include_metadata: bool = False,
@@ -483,10 +503,6 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         Returns:
             The response.
         """
-        runnable = False
-        if self.build and not self.build.is_local and self.build.stack_id:
-            runnable = True
-
         deployable = False
         if self.build and self.stack and self.stack.has_deployer:
             deployable = True
@@ -496,7 +512,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             project_id=self.project_id,
             created=self.created,
             updated=self.updated,
-            runnable=runnable,
+            runnable=self.is_runnable,
             deployable=deployable,
             is_dynamic=self.is_dynamic,
         )

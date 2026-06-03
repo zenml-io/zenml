@@ -339,7 +339,7 @@ class KubernetesDeployer(ContainerizedDeployer):
                 # Go through all stack components and identify those that
                 # advertise a local path where they persist information that
                 # they need to be available when running deployments.
-                for stack_comp in stack.components.values():
+                for stack_comp in stack.all_components:
                     if stack_comp.local_path is None:
                         continue
                     return False, (
@@ -610,6 +610,7 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         Raises:
             DeploymentProvisionError: If any deployment doesn't become ready in time.
+            RuntimeError: If a deployment or service has no namespace.
         """
         if timeout <= 0:
             return
@@ -746,7 +747,7 @@ class KubernetesDeployer(ContainerizedDeployer):
 
         labels = {
             "zenml-deployment-id": deployment_id,
-            "zenml-deployment-name": kube_utils.sanitize_label(
+            "zenml-deployment-name": kube_utils.sanitize_label_value(
                 deployment.name
             ),
             "managed-by": "zenml",
@@ -1035,7 +1036,8 @@ class KubernetesDeployer(ContainerizedDeployer):
             The operational state.
 
         Raises:
-            DeploymentNotFoundError: If no deployment resources found in cluster.
+            DeploymentNotFoundError: If no deployment resources found
+                in cluster.
             DeployerError: If an error occurs checking resources.
         """
         deployment_items = [

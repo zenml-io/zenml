@@ -17,11 +17,10 @@ from datetime import datetime, timedelta
 from typing import Any, Optional
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column, String
-from sqlalchemy.dialects.mysql import MEDIUMTEXT
-from sqlmodel import Field
+from sqlalchemy import TEXT, Column, LargeBinary
+from sqlalchemy.dialects.mysql import MEDIUMBLOB
+from sqlmodel import Field, SQLModel
 
-from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.models import (
     ApiTransactionRequest,
     ApiTransactionResponse,
@@ -38,7 +37,12 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 
 class ApiTransactionSchema(BaseSchema, table=True):
-    """SQL Model for API transactions."""
+    """SQL Model for API transactions.
+
+    The result payload is stored in a separate table to keep this table
+    small and fast for cleanup operations. Deleting rows with large blobs
+    is expensive because the entire row must be copied to the undo log.
+    """
 
     __tablename__ = "api_transaction"
     __table_args__ = (
@@ -53,15 +57,6 @@ class ApiTransactionSchema(BaseSchema, table=True):
     method: str
     url: str = Field(sa_column=Column(TEXT, nullable=False))
     completed: bool = Field(default=False)
-    result: Optional[str] = Field(
-        default=None,
-        sa_column=Column(
-            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
-                MEDIUMTEXT, "mysql"
-            ),
-            nullable=True,
-        ),
-    )
     expired: Optional[datetime] = Field(default=None, nullable=True)
 
     user_id: UUID = build_foreign_key_field(
@@ -121,8 +116,6 @@ class ApiTransactionSchema(BaseSchema, table=True):
                 completed=self.completed,
             ),
         )
-        if self.result is not None:
-            response.set_result(self.result)
         return response
 
     def update(self, update: ApiTransactionUpdate) -> "ApiTransactionSchema":
@@ -134,8 +127,29 @@ class ApiTransactionSchema(BaseSchema, table=True):
         Returns:
             The API transaction schema.
         """
-        if update.result is not None:
-            self.result = update.get_result()
         self.updated = utc_now()
         self.expired = self.updated + timedelta(seconds=update.cache_time)
         return self
+
+
+class ApiTransactionResultSchema(SQLModel, table=True):
+    """SQL Model for API transaction results."""
+
+    __tablename__ = "api_transaction_result"
+
+    id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ApiTransactionSchema.__tablename__,
+        source_column="id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
+    )
+
+    result: bytes = Field(
+        sa_column=Column(
+            LargeBinary().with_variant(MEDIUMBLOB, "mysql"),
+            nullable=False,
+        ),
+    )

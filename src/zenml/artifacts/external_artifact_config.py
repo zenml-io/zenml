@@ -56,10 +56,9 @@ class ExternalArtifactConfiguration(BaseModel):
             The artifact ID.
 
         Raises:
-            RuntimeError: If the artifact store of the referenced artifact
-                is not the same as the one in the active stack.
             RuntimeError: If neither the ID nor the name of the artifact was
-                provided.
+                provided, or if the artifact store of the referenced artifact
+                is not the same as the one in the active stack.
         """
         from zenml.client import Client
 

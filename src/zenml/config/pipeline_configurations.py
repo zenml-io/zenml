@@ -14,7 +14,15 @@
 """Pipeline configuration classes."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Set,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import SerializeAsAny
@@ -27,7 +35,7 @@ from zenml.config.constants import (
 )
 from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.retry_config import StepRetryConfig
-from zenml.config.source import SourceWithValidator
+from zenml.config.source import StringSerializableSource
 from zenml.enums import ExecutionMode
 from zenml.model.model import Model
 from zenml.utils.tag_utils import Tag
@@ -50,6 +58,7 @@ class PipelineConfigurationUpdate(FrozenBaseModel):
     enable_artifact_metadata: Optional[bool] = None
     enable_artifact_visualization: Optional[bool] = None
     enable_step_logs: Optional[bool] = None
+    enable_heartbeat: Optional[bool] = None
     environment: Dict[str, Any] = {}
     secrets: List[Union[str, UUID]] = []
     enable_pipeline_logs: Optional[bool] = None
@@ -57,11 +66,11 @@ class PipelineConfigurationUpdate(FrozenBaseModel):
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     tags: Optional[List[Union[str, "Tag"]]] = None
     extra: Dict[str, Any] = {}
-    failure_hook_source: Optional[SourceWithValidator] = None
-    success_hook_source: Optional[SourceWithValidator] = None
-    init_hook_source: Optional[SourceWithValidator] = None
+    failure_hook_source: Optional[StringSerializableSource] = None
+    success_hook_source: Optional[StringSerializableSource] = None
+    init_hook_source: Optional[StringSerializableSource] = None
     init_hook_kwargs: Optional[Dict[str, Any]] = None
-    cleanup_hook_source: Optional[SourceWithValidator] = None
+    cleanup_hook_source: Optional[StringSerializableSource] = None
     model: Optional[Model] = None
     parameters: Optional[Dict[str, Any]] = None
     retry: Optional[StepRetryConfig] = None
@@ -99,6 +108,9 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
 
     name: str
     execution_mode: ExecutionMode = ExecutionMode.CONTINUE_ON_FAILURE
+    steps_to_skip: Set[str] = set()
+    skip_successful_steps: bool = False
+    step_input_overrides: Dict[str, Dict[str, UUID]] = {}
 
     @property
     def docker_settings(self) -> "DockerSettings":

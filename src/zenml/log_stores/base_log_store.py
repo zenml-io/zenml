@@ -24,8 +24,6 @@ from zenml.models import LogsResponse
 from zenml.stack import Flavor, StackComponent, StackComponentConfig
 from zenml.utils.logging_utils import LogEntry
 
-MAX_ENTRIES_PER_REQUEST = 20000
-
 
 class BaseLogStoreConfig(StackComponentConfig):
     """Base configuration for all log stores."""
@@ -194,9 +192,9 @@ class BaseLogStore(StackComponent, ABC):
     def fetch(
         self,
         logs_model: LogsResponse,
+        limit: int,
         start_time: Optional[datetime] = None,
         end_time: Optional[datetime] = None,
-        limit: int = MAX_ENTRIES_PER_REQUEST,
     ) -> List[LogEntry]:
         """Fetch logs from the log store.
 

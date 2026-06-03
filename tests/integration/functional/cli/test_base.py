@@ -17,8 +17,8 @@ import platform
 from pathlib import Path
 
 import pytest
-from click.testing import CliRunner
 
+from tests.cli_runner_utils import cli_runner
 from zenml.cli.base import ZENML_PROJECT_TEMPLATES, clean, init
 from zenml.constants import CONFIG_FILE_NAME, REPOSITORY_DIRECTORY_NAME
 from zenml.utils import yaml_utils
@@ -27,9 +27,8 @@ from zenml.utils.io_utils import get_global_config_directory
 
 def test_init_creates_zen_folder(tmp_path: Path) -> None:
     """Check that init command creates a .zen folder."""
-    runner = CliRunner()
-    result = runner.invoke(init, ["--path", str(tmp_path)])
-    assert result.exit_code == 0, f"init failed: {result.output}"
+    runner = cli_runner()
+    runner.invoke(init, ["--path", str(tmp_path)])
     assert (tmp_path / REPOSITORY_DIRECTORY_NAME).exists()
 
 
@@ -45,7 +44,7 @@ def test_init_creates_from_templates(
     tmp_path: Path, template_name: str
 ) -> None:
     """Check that init command checks-out template."""
-    runner = CliRunner()
+    runner = cli_runner()
     result = runner.invoke(
         init,
         [
@@ -54,17 +53,11 @@ def test_init_creates_from_templates(
             "--template",
             template_name,
             "--template-with-defaults",
-            "--test",
         ],
     )
-    assert result.exit_code == 0, (
-        f"init command failed with exit code {result.exit_code}.\n"
-        f"Output: {result.output}\n"
-        f"Exception: {result.exception}"
-    )
-    assert (tmp_path / REPOSITORY_DIRECTORY_NAME).exists(), (
-        f".zen directory not created. Files in tmp_path: {os.listdir(tmp_path)}"
-    )
+
+    assert result.exit_code == 0
+    assert (tmp_path / REPOSITORY_DIRECTORY_NAME).exists()
     files_in_top_level = set([f.lower() for f in os.listdir(str(tmp_path))])
     must_have_files = {
         ".copier-answers.yml",
@@ -84,7 +77,7 @@ def test_clean_user_config(clean_client) -> None:
     user_id = yaml_contents["user_id"]
     analytics_opt_in = yaml_contents["analytics_opt_in"]
     version = yaml_contents["version"]
-    runner = CliRunner()
+    runner = cli_runner()
     runner.invoke(clean, ["--yes", True])
     new_yaml_contents = yaml_utils.read_yaml(str(global_zen_config_yaml))
     assert user_id == new_yaml_contents["user_id"]

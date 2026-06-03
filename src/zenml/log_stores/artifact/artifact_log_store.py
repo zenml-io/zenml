@@ -33,10 +33,7 @@ from zenml.artifact_stores import BaseArtifactStore
 from zenml.enums import LoggingLevels, StackComponentType
 from zenml.exceptions import DoesNotExistException
 from zenml.log_stores import BaseLogStore
-from zenml.log_stores.base_log_store import (
-    MAX_ENTRIES_PER_REQUEST,
-    BaseLogStoreOrigin,
-)
+from zenml.log_stores.base_log_store import BaseLogStoreOrigin
 from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig
 from zenml.log_stores.otel.otel_log_store import (
     OtelLogStore,
@@ -94,7 +91,7 @@ def remove_ansi_escape_codes(text: str) -> str:
 def fetch_log_records(
     artifact_store: "BaseArtifactStore",
     logs_uri: str,
-    limit: int = MAX_ENTRIES_PER_REQUEST,
+    limit: int,
 ) -> List[LogEntry]:
     """Fetches log entries.
 
@@ -329,9 +326,9 @@ class ArtifactLogStore(OtelLogStore):
     def fetch(
         self,
         logs_model: "LogsResponse",
+        limit: int,
         start_time: Optional[datetime] = None,
         end_time: Optional[datetime] = None,
-        limit: int = MAX_ENTRIES_PER_REQUEST,
     ) -> List["LogEntry"]:
         """Fetch logs from the artifact store.
 

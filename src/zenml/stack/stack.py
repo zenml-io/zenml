@@ -16,6 +16,7 @@
 import itertools
 import json
 import os
+from collections import defaultdict
 from datetime import datetime
 from typing import (
     TYPE_CHECKING,
@@ -23,11 +24,15 @@ from typing import (
     Any,
     Dict,
     List,
+    Mapping,
     NoReturn,
     Optional,
+    Sequence,
     Set,
     Tuple,
     Type,
+    Union,
+    cast,
 )
 from uuid import UUID
 
@@ -103,11 +108,15 @@ class Stack:
         orchestrator: "BaseOrchestrator",
         artifact_store: "BaseArtifactStore",
         container_registry: Optional["BaseContainerRegistry"] = None,
-        step_operator: Optional["BaseStepOperator"] = None,
+        step_operator: Optional[
+            Union["BaseStepOperator", List["BaseStepOperator"]]
+        ] = None,
         feature_store: Optional["BaseFeatureStore"] = None,
         model_deployer: Optional["BaseModelDeployer"] = None,
-        experiment_tracker: Optional["BaseExperimentTracker"] = None,
-        alerter: Optional["BaseAlerter"] = None,
+        experiment_tracker: Optional[
+            Union["BaseExperimentTracker", List["BaseExperimentTracker"]]
+        ] = None,
+        alerter: Optional[Union["BaseAlerter", List["BaseAlerter"]]] = None,
         annotator: Optional["BaseAnnotator"] = None,
         data_validator: Optional["BaseDataValidator"] = None,
         image_builder: Optional["BaseImageBuilder"] = None,
@@ -143,20 +152,36 @@ class Stack:
         self._name = name
         self._environment = environment or {}
         self._secrets = secrets or []
-        self._orchestrator = orchestrator
-        self._artifact_store = artifact_store
-        self._container_registry = container_registry
-        self._step_operator = step_operator
-        self._feature_store = feature_store
-        self._model_deployer = model_deployer
-        self._experiment_tracker = experiment_tracker
-        self._alerter = alerter
-        self._annotator = annotator
-        self._data_validator = data_validator
-        self._model_registry = model_registry
-        self._image_builder = image_builder
-        self._deployer = deployer
-        self._log_store = log_store
+
+        self._components: Dict[StackComponentType, List["StackComponent"]] = (
+            defaultdict(list)
+        )
+
+        for component_input in [
+            orchestrator,
+            artifact_store,
+            container_registry,
+            step_operator,
+            feature_store,
+            model_deployer,
+            experiment_tracker,
+            alerter,
+            annotator,
+            data_validator,
+            image_builder,
+            model_registry,
+            deployer,
+            log_store,
+        ]:
+            components: List["StackComponent"] = list()
+            if component_input:
+                if isinstance(component_input, list):
+                    components.extend(component_input)
+                else:
+                    components.append(component_input)
+
+                for component in components:
+                    self._components[component.type].append(component)
 
     @classmethod
     def from_model(cls, stack_model: "StackResponse") -> "Stack":
@@ -167,6 +192,9 @@ class Stack:
 
         Returns:
             The created Stack instance.
+
+        Raises:
+            ImportError: If a stack component's dependencies cannot be imported.
         """
         global _STACK_CACHE
         key = (stack_model.id, stack_model.updated)
@@ -176,17 +204,33 @@ class Stack:
         from zenml.stack import StackComponent
 
         # Run a hydrated list call once to avoid one request per component
-        component_models = pagination_utils.depaginate(
+        hydrated_component_models = pagination_utils.depaginate(
             Client().list_stack_components,
             stack_id=stack_model.id,
             hydrate=True,
         )
 
-        stack_components = {
-            model.type: StackComponent.from_model(model)
-            for model in component_models
-        }
-        stack = Stack.from_components(
+        try:
+            stack_components: Dict[
+                StackComponentType, List["StackComponent"]
+            ] = defaultdict(list)
+
+            for component in hydrated_component_models:
+                stack_components[component.type].append(
+                    StackComponent.from_model(component)
+                )
+        except ImportError as e:
+            stack_hint = (
+                "\n\nTo install all requirements for this stack at "
+                "once, run:\n\n"
+                f"  zenml stack export-requirements "
+                f"'{stack_model.name}' -o stack-requirements.txt\n"
+                "  pip install -r stack-requirements.txt"
+            )
+            e.args = (e.args[0] + stack_hint,) + e.args[1:]
+            raise
+
+        stack = Stack.from_components_v2(
             id=stack_model.id,
             name=stack_model.name,
             environment=stack_model.environment,
@@ -216,8 +260,6 @@ class Stack:
     ) -> "Stack":
         """Creates a stack instance from a dict of stack components.
 
-        # noqa: DAR402
-
         Args:
             id: Unique ID of the stack.
             name: The name of the stack.
@@ -233,7 +275,12 @@ class Stack:
         Raises:
             TypeError: If a required component is missing or a component
                 doesn't inherit from the expected base class.
-        """
+        """  # noqa: DOC502
+        logger.warning(
+            "The class method `Stack.from_components(...)` has been deprecated. "
+            "Please use `Stack.from_components_v2(...)` instead."
+        )
+
         from zenml.alerter import BaseAlerter
         from zenml.annotators import BaseAnnotator
         from zenml.artifact_stores import BaseArtifactStore
@@ -364,6 +411,255 @@ class Stack:
             log_store=log_store,
         )
 
+    @classmethod
+    def from_components_v2(
+        cls,
+        id: UUID,
+        name: str,
+        components: Mapping[StackComponentType, List["StackComponent"]],
+        environment: Optional[Dict[str, str]] = None,
+        secrets: Optional[List[UUID]] = None,
+    ) -> "Stack":
+        """Creates a stack instance from a dict of stack components.
+
+        Args:
+            id: Unique ID of the stack.
+            name: The name of the stack.
+            components: The components of the stack grouped by type. Callers may
+                pass either a single component per type or a list. The first
+                component in a repeatable component list is treated as the
+                default component for that type.
+            environment: Environment variables to set when running on this
+                stack.
+            secrets: Secrets to set as environment variables when running on
+                this stack.
+
+        Returns:
+            A stack instance consisting of the given components.
+
+        Raises:
+            TypeError: If a required component is missing or a component
+                doesn't inherit from the expected base class.
+        """  # noqa: DOC502
+        from zenml.alerter import BaseAlerter
+        from zenml.annotators import BaseAnnotator
+        from zenml.artifact_stores import BaseArtifactStore
+        from zenml.container_registries import BaseContainerRegistry
+        from zenml.data_validators import BaseDataValidator
+        from zenml.deployers import BaseDeployer
+        from zenml.experiment_trackers import BaseExperimentTracker
+        from zenml.feature_stores import BaseFeatureStore
+        from zenml.image_builders import BaseImageBuilder
+        from zenml.log_stores import BaseLogStore
+        from zenml.model_deployers import BaseModelDeployer
+        from zenml.model_registries import BaseModelRegistry
+        from zenml.orchestrators import BaseOrchestrator
+        from zenml.step_operators import BaseStepOperator
+
+        def _raise_type_error(
+            component: Optional["StackComponent"], expected_class: Type[Any]
+        ) -> NoReturn:
+            """Raises a TypeError that the component has an unexpected type.
+
+            Args:
+                component: The component that has an unexpected type.
+                expected_class: The expected type of the component.
+
+            Raises:
+                TypeError: If the component has an unexpected type.
+            """
+            raise TypeError(
+                f"Unable to create stack: Wrong stack component type "
+                f"`{component.__class__.__name__}` (expected: subclass "
+                f"of `{expected_class.__name__}`)"
+            )
+
+        # Orchestrator
+        orchestrator = components.get(StackComponentType.ORCHESTRATOR)
+        if not orchestrator:
+            raise TypeError("No orchestrator found in the stack.")
+        if len(orchestrator) > 1:
+            raise TypeError("Multiple orchestrators are not supported.")
+
+        if not isinstance(orchestrator[0], BaseOrchestrator):
+            _raise_type_error(orchestrator[0], BaseOrchestrator)
+
+        # Artifact Store
+        artifact_store = components.get(StackComponentType.ARTIFACT_STORE)
+        if not artifact_store:
+            raise TypeError("No artifact store found in the stack.")
+        if len(artifact_store) > 1:
+            raise TypeError("Multiple artifact stores are not supported.")
+
+        if not isinstance(artifact_store[0], BaseArtifactStore):
+            _raise_type_error(artifact_store[0], BaseArtifactStore)
+
+        # Container Registry
+        container_registry = components.get(
+            StackComponentType.CONTAINER_REGISTRY
+        )
+        if container_registry:
+            if len(container_registry) > 1:
+                raise TypeError(
+                    "Multiple container registries are not supported."
+                )
+            if not isinstance(container_registry[0], BaseContainerRegistry):
+                _raise_type_error(container_registry[0], BaseContainerRegistry)
+
+        # Step Operator
+        step_operator = components.get(StackComponentType.STEP_OPERATOR)
+        if step_operator is not None and not isinstance(step_operator, list):
+            step_operator = [step_operator]
+        for so in step_operator or []:
+            if not isinstance(so, BaseStepOperator):
+                _raise_type_error(so, BaseStepOperator)
+
+        # Feature Store
+        feature_store = components.get(StackComponentType.FEATURE_STORE)
+        if feature_store:
+            if len(feature_store) > 1:
+                raise TypeError("Multiple feature stores are not supported.")
+
+            if not isinstance(feature_store[0], BaseFeatureStore):
+                _raise_type_error(feature_store[0], BaseFeatureStore)
+
+        # Model Deployer
+        model_deployer = components.get(StackComponentType.MODEL_DEPLOYER)
+        if model_deployer:
+            if len(model_deployer) > 1:
+                raise TypeError("Multiple model deployers are not supported.")
+            if not isinstance(model_deployer[0], BaseModelDeployer):
+                _raise_type_error(model_deployer[0], BaseModelDeployer)
+
+        # Experiment Tracker
+        experiment_tracker = components.get(
+            StackComponentType.EXPERIMENT_TRACKER
+        )
+        if experiment_tracker is not None and not isinstance(
+            experiment_tracker, list
+        ):
+            experiment_tracker = [experiment_tracker]
+
+        for et in experiment_tracker or []:
+            if not isinstance(et, BaseExperimentTracker):
+                _raise_type_error(et, BaseExperimentTracker)
+
+        # Alerter
+        alerter = components.get(StackComponentType.ALERTER)
+        if alerter is not None and not isinstance(alerter, list):
+            alerter = [alerter]
+        for a in alerter or []:
+            if not isinstance(a, BaseAlerter):
+                _raise_type_error(a, BaseAlerter)
+
+        # Annotator
+        annotator = components.get(StackComponentType.ANNOTATOR)
+        if annotator:
+            if len(annotator) > 1:
+                raise TypeError("Multiple annotators are not supported.")
+            if not isinstance(annotator[0], BaseAnnotator):
+                _raise_type_error(annotator[0], BaseAnnotator)
+
+        # Data Validator
+        data_validator = components.get(StackComponentType.DATA_VALIDATOR)
+        if data_validator:
+            if len(data_validator) > 1:
+                raise TypeError("Multiple data validators are not supported.")
+            if not isinstance(data_validator[0], BaseDataValidator):
+                _raise_type_error(data_validator[0], BaseDataValidator)
+
+        # Image Builder
+        image_builder = components.get(StackComponentType.IMAGE_BUILDER)
+        if image_builder:
+            if len(image_builder) > 1:
+                raise TypeError("Multiple image builders are not supported.")
+
+            if not isinstance(image_builder[0], BaseImageBuilder):
+                _raise_type_error(image_builder[0], BaseImageBuilder)
+
+        # Model Registry
+        model_registry = components.get(StackComponentType.MODEL_REGISTRY)
+        if model_registry:
+            if len(model_registry) > 1:
+                raise TypeError("Multiple model registries are not supported.")
+            if not isinstance(model_registry[0], BaseModelRegistry):
+                _raise_type_error(model_registry[0], BaseModelRegistry)
+
+        # Deployer
+        deployer = components.get(StackComponentType.DEPLOYER)
+        if deployer:
+            if len(deployer) > 1:
+                raise TypeError("Multiple deployers are not supported.")
+            if not isinstance(deployer[0], BaseDeployer):
+                _raise_type_error(deployer[0], BaseDeployer)
+
+        # Log Store
+        log_store = components.get(StackComponentType.LOG_STORE)
+        if log_store:
+            if len(log_store) > 1:
+                raise TypeError("Multiple log stores are not supported.")
+            if not isinstance(log_store[0], BaseLogStore):
+                _raise_type_error(log_store[0], BaseLogStore)
+
+        return Stack(
+            id=id,
+            name=name,
+            environment=environment,
+            secrets=secrets,
+            orchestrator=orchestrator[0],
+            artifact_store=artifact_store[0],
+            container_registry=cast(
+                Optional["BaseContainerRegistry"],
+                container_registry[0] if container_registry else None,
+            ),
+            step_operator=cast(
+                Optional[Union["BaseStepOperator", List["BaseStepOperator"]]],
+                step_operator,
+            ),
+            feature_store=cast(
+                Optional["BaseFeatureStore"],
+                feature_store[0] if feature_store else None,
+            ),
+            model_deployer=cast(
+                Optional["BaseModelDeployer"],
+                model_deployer[0] if model_deployer else None,
+            ),
+            experiment_tracker=cast(
+                Optional[
+                    Union[
+                        "BaseExperimentTracker",
+                        List["BaseExperimentTracker"],
+                    ]
+                ],
+                experiment_tracker,
+            ),
+            alerter=cast(
+                Optional[Union["BaseAlerter", List["BaseAlerter"]]],
+                alerter,
+            ),
+            annotator=cast(
+                Optional["BaseAnnotator"], annotator[0] if annotator else None
+            ),
+            data_validator=cast(
+                Optional["BaseDataValidator"],
+                data_validator[0] if data_validator else None,
+            ),
+            image_builder=cast(
+                Optional["BaseImageBuilder"],
+                image_builder[0] if image_builder else None,
+            ),
+            model_registry=cast(
+                Optional["BaseModelRegistry"],
+                model_registry[0] if model_registry else None,
+            ),
+            deployer=cast(
+                Optional["BaseDeployer"], deployer[0] if deployer else None
+            ),
+            log_store=cast(
+                Optional["BaseLogStore"], log_store[0] if log_store else None
+            ),
+        )
+
     @property
     def components(self) -> Dict[StackComponentType, "StackComponent"]:
         """All components of the stack.
@@ -371,26 +667,56 @@ class Stack:
         Returns:
             A dictionary of all components of the stack.
         """
+        logger.warning(
+            "The property `Stack.components` has been deprecated and will "
+            "be removed in a future version. For now, it is returning only "
+            "the default/first component of each type."
+        )
         return {
-            component.type: component
-            for component in [
-                self.orchestrator,
-                self.artifact_store,
-                self.container_registry,
-                self.step_operator,
-                self.feature_store,
-                self.model_deployer,
-                self.experiment_tracker,
-                self.alerter,
-                self.annotator,
-                self.data_validator,
-                self.image_builder,
-                self.model_registry,
-                self.deployer,
-                self.log_store,
-            ]
-            if component is not None
+            component_type: component_list[0]
+            for component_type, component_list in self._components.items()
+            if component_list
         }
+
+    @property
+    def all_components(self) -> List["StackComponent"]:
+        """All attached components of the stack.
+
+        Returns:
+            A flat list of all components attached to the stack.
+        """
+        return [
+            component
+            for components in self._components.values()
+            for component in components
+        ]
+
+    def get_components_by_type(
+        self, component_type: StackComponentType
+    ) -> Sequence["StackComponent"]:
+        """Returns all components of a given type.
+
+        Args:
+            component_type: The component type to fetch.
+
+        Returns:
+            A list of attached components of the given type.
+        """
+        return self._components.get(component_type, [])
+
+    def _get_default_component(
+        self, component_type: StackComponentType
+    ) -> Optional["StackComponent"]:
+        """Returns the default component for a type, if available.
+
+        Args:
+            component_type: The component type to fetch.
+
+        Returns:
+            The default component for the type.
+        """
+        components = self.get_components_by_type(component_type)
+        return components[0] if components else None
 
     @property
     def id(self) -> UUID:
@@ -417,7 +743,40 @@ class Stack:
         Returns:
             The orchestrator of the stack.
         """
-        return self._orchestrator
+        from zenml.execution.utils import DebugModeContext
+        from zenml.orchestrators import (
+            LocalOrchestrator,
+            LocalOrchestratorConfig,
+        )
+
+        if not DebugModeContext.is_active():
+            orchestrator = self._get_default_component(
+                StackComponentType.ORCHESTRATOR
+            )
+            assert orchestrator is not None
+            return cast(LocalOrchestrator, orchestrator)
+
+        now = utc_now()
+
+        default_orchestrator = self._get_default_component(
+            StackComponentType.ORCHESTRATOR
+        )
+        assert default_orchestrator is not None
+
+        return LocalOrchestrator(
+            id=UUID("00000000-0000-0000-0000-000000000000"),
+            name="local-debug",
+            config=LocalOrchestratorConfig(),
+            flavor="local",
+            type=StackComponentType.ORCHESTRATOR,
+            user=None,
+            created=now,
+            updated=now,
+            # Use the environment and secrets of the actual orchestrator in
+            # the debug case
+            environment=default_orchestrator.environment,
+            secrets=default_orchestrator.secrets,
+        )
 
     @property
     def artifact_store(self) -> "BaseArtifactStore":
@@ -426,7 +785,10 @@ class Stack:
         Returns:
             The artifact store of the stack.
         """
-        return self._artifact_store
+        return cast(
+            "BaseArtifactStore",
+            self._get_default_component(StackComponentType.ARTIFACT_STORE),
+        )
 
     @property
     def container_registry(self) -> Optional["BaseContainerRegistry"]:
@@ -436,7 +798,10 @@ class Stack:
             The container registry of the stack or None if the stack does not
             have a container registry.
         """
-        return self._container_registry
+        return cast(
+            "BaseContainerRegistry",
+            self._get_default_component(StackComponentType.CONTAINER_REGISTRY),
+        )
 
     @property
     def step_operator(self) -> Optional["BaseStepOperator"]:
@@ -445,7 +810,24 @@ class Stack:
         Returns:
             The step operator of the stack.
         """
-        return self._step_operator
+        return cast(
+            "BaseStepOperator",
+            self._get_default_component(StackComponentType.STEP_OPERATOR),
+        )
+
+    @property
+    def step_operators(self) -> Dict[str, "BaseStepOperator"]:
+        """All attached step operators keyed by component name.
+
+        Returns:
+            The stack step operators keyed by their names.
+        """
+        return {
+            component.name: cast("BaseStepOperator", component)
+            for component in self.get_components_by_type(
+                StackComponentType.STEP_OPERATOR
+            )
+        }
 
     @property
     def feature_store(self) -> Optional["BaseFeatureStore"]:
@@ -454,7 +836,10 @@ class Stack:
         Returns:
             The feature store of the stack.
         """
-        return self._feature_store
+        return cast(
+            "BaseFeatureStore",
+            self._get_default_component(StackComponentType.FEATURE_STORE),
+        )
 
     @property
     def model_deployer(self) -> Optional["BaseModelDeployer"]:
@@ -463,7 +848,10 @@ class Stack:
         Returns:
             The model deployer of the stack.
         """
-        return self._model_deployer
+        return cast(
+            "BaseModelDeployer",
+            self._get_default_component(StackComponentType.MODEL_DEPLOYER),
+        )
 
     @property
     def experiment_tracker(self) -> Optional["BaseExperimentTracker"]:
@@ -472,7 +860,24 @@ class Stack:
         Returns:
             The experiment tracker of the stack.
         """
-        return self._experiment_tracker
+        return cast(
+            "BaseExperimentTracker",
+            self._get_default_component(StackComponentType.EXPERIMENT_TRACKER),
+        )
+
+    @property
+    def experiment_trackers(self) -> Dict[str, "BaseExperimentTracker"]:
+        """All attached experiment trackers keyed by component name.
+
+        Returns:
+            The stack experiment trackers keyed by their names.
+        """
+        return {
+            component.name: cast("BaseExperimentTracker", component)
+            for component in self.get_components_by_type(
+                StackComponentType.EXPERIMENT_TRACKER
+            )
+        }
 
     @property
     def alerter(self) -> Optional["BaseAlerter"]:
@@ -481,7 +886,24 @@ class Stack:
         Returns:
             The alerter of the stack.
         """
-        return self._alerter
+        return cast(
+            "BaseAlerter",
+            self._get_default_component(StackComponentType.ALERTER),
+        )
+
+    @property
+    def alerters(self) -> Dict[str, "BaseAlerter"]:
+        """All attached alerters keyed by component name.
+
+        Returns:
+            The stack alerters keyed by their names.
+        """
+        return {
+            component.name: cast("BaseAlerter", component)
+            for component in self.get_components_by_type(
+                StackComponentType.ALERTER
+            )
+        }
 
     @property
     def annotator(self) -> Optional["BaseAnnotator"]:
@@ -490,7 +912,10 @@ class Stack:
         Returns:
             The annotator of the stack.
         """
-        return self._annotator
+        return cast(
+            "BaseAnnotator",
+            self._get_default_component(StackComponentType.ANNOTATOR),
+        )
 
     @property
     def data_validator(self) -> Optional["BaseDataValidator"]:
@@ -499,7 +924,10 @@ class Stack:
         Returns:
             The data validator of the stack.
         """
-        return self._data_validator
+        return cast(
+            "BaseDataValidator",
+            self._get_default_component(StackComponentType.DATA_VALIDATOR),
+        )
 
     @property
     def image_builder(self) -> Optional["BaseImageBuilder"]:
@@ -508,7 +936,10 @@ class Stack:
         Returns:
             The image builder of the stack.
         """
-        return self._image_builder
+        return cast(
+            "BaseImageBuilder",
+            self._get_default_component(StackComponentType.IMAGE_BUILDER),
+        )
 
     @property
     def model_registry(self) -> Optional["BaseModelRegistry"]:
@@ -517,7 +948,10 @@ class Stack:
         Returns:
             The model registry of the stack.
         """
-        return self._model_registry
+        return cast(
+            "BaseModelRegistry",
+            self._get_default_component(StackComponentType.MODEL_REGISTRY),
+        )
 
     @property
     def deployer(self) -> Optional["BaseDeployer"]:
@@ -526,7 +960,10 @@ class Stack:
         Returns:
             The deployer of the stack.
         """
-        return self._deployer
+        return cast(
+            "BaseDeployer",
+            self._get_default_component(StackComponentType.DEPLOYER),
+        )
 
     @property
     def log_store(self) -> "BaseLogStore":
@@ -535,11 +972,15 @@ class Stack:
         Returns:
             The log store of the stack.
         """
-        if not self._log_store:
+        if StackComponentType.LOG_STORE not in self._components:
             self.validate_log_store()
 
-        assert self._log_store is not None
-        return self._log_store
+        assert self._components.get(StackComponentType.LOG_STORE, None)
+
+        return cast(
+            "BaseLogStore",
+            self._get_default_component(StackComponentType.LOG_STORE),
+        )
 
     def dict(self) -> Dict[str, str]:
         """Converts the stack into a dictionary.
@@ -549,9 +990,13 @@ class Stack:
         """
         component_dict = {
             component_type.value: json.dumps(
-                component.config.model_dump(mode="json"), sort_keys=True
+                [
+                    component.config.model_dump(mode="json")
+                    for component in components
+                ],
+                sort_keys=True,
             )
-            for component_type, component in self.components.items()
+            for component_type, components in self._components.items()
         }
         component_dict.update({"name": self.name})
         return component_dict
@@ -575,7 +1020,7 @@ class Stack:
         exclude_components = exclude_components or set()
         requirements = [
             component.requirements
-            for component in self.components.values()
+            for component in self.all_components
             if component.type not in exclude_components
         ]
         return set.union(*requirements) if requirements else set()
@@ -589,7 +1034,7 @@ class Stack:
         """
         return [
             package
-            for component in self.components.values()
+            for component in self.all_components
             for package in component.apt_packages
         ]
 
@@ -630,7 +1075,7 @@ class Stack:
         # a local path where they persist information that they need to be
         # available when running pipelines.
         has_local_paths = False
-        for stack_comp in self.components.values():
+        for stack_comp in self.all_components:
             local_path = stack_comp.local_path
             if not local_path:
                 continue
@@ -655,7 +1100,7 @@ class Stack:
         """
         secrets = [
             component.config.required_secrets
-            for component in self.components.values()
+            for component in self.all_components
         ]
         return set.union(*secrets) if secrets else set()
 
@@ -667,11 +1112,62 @@ class Stack:
             All setting classes and their respective keys.
         """
         setting_classes = {}
-        for component in self.components.values():
-            if component.settings_class:
-                key = settings_utils.get_stack_component_setting_key(component)
-                setting_classes[key] = component.settings_class
+        for component_type, components in self._components.items():
+            components_with_settings = [
+                component
+                for component in components
+                if component.settings_class
+            ]
+            if not components_with_settings:
+                continue
+
+            default_component = components[0]
+            if default_component.settings_class:
+                setting_classes[str(component_type)] = (
+                    default_component.settings_class
+                )
+
+            flavor_groups: Dict[str, List["StackComponent"]] = defaultdict(
+                list
+            )
+            for component in components_with_settings:
+                settings_cls = component.settings_class
+                assert settings_cls is not None
+                setting_classes[
+                    settings_utils.get_stack_component_name_setting_key(
+                        component
+                    )
+                ] = settings_cls
+                flavor_groups[component.flavor].append(component)
+
+            for flavor_components in flavor_groups.values():
+                if len(flavor_components) == 1:
+                    component = flavor_components[0]
+                    settings_cls = component.settings_class
+                    assert settings_cls is not None
+                    setting_classes[
+                        settings_utils.get_stack_component_setting_key(
+                            component
+                        )
+                    ] = settings_cls
+
         return setting_classes
+
+    @property
+    def component_flavor_metadata(self) -> Dict[str, str]:
+        """Flavor metadata for attached components grouped by type.
+
+        Returns:
+            A mapping from stack component type values to comma-separated
+            flavor names. Repeated flavors are only included once and the
+            component order is preserved.
+        """
+        return {
+            component_type.value: ",".join(
+                dict.fromkeys(component.flavor for component in components)
+            )
+            for component_type, components in self._components.items()
+        }
 
     @property
     def requires_remote_server(self) -> bool:
@@ -684,8 +1180,10 @@ class Stack:
             If the stack requires a remote ZenServer to run.
         """
         return self.orchestrator.config.is_remote or (
-            self.step_operator is not None
-            and self.step_operator.config.is_remote
+            any(
+                step_operator.config.is_remote
+                for step_operator in self.step_operators.values()
+            )
         )
 
     def _validate_secrets(self, raise_exception: bool) -> None:
@@ -698,7 +1196,7 @@ class Stack:
         # noqa: DAR402
         Raises:
             StackValidationError: If a secret is missing.
-        """
+        """  # noqa: DOC502
         env_value = os.getenv(
             ENV_ZENML_SECRET_VALIDATION_LEVEL,
             default=SecretValidationLevel.SECRET_AND_KEY_EXISTS.value,
@@ -794,7 +1292,7 @@ class Stack:
 
         self.validate_image_builder()
         self.validate_log_store()
-        for component in self.components.values():
+        for component in self.all_components:
             if component.validator:
                 component.validator.validate(stack=self)
 
@@ -845,18 +1343,20 @@ class Stack:
                 secrets=[],
             )
 
-            self._image_builder = image_builder
+            self._components[StackComponentType.IMAGE_BUILDER] = [
+                image_builder
+            ]
 
     def validate_log_store(self) -> None:
         """Validates that the stack has a log store."""
-        from zenml.log_stores import ArtifactLogStore
-
-        if self._log_store:
+        if self._get_default_component(StackComponentType.LOG_STORE):
             return
 
-        self._log_store = ArtifactLogStore.from_artifact_store(
-            self.artifact_store
-        )
+        from zenml.log_stores import ArtifactLogStore
+
+        self._components[StackComponentType.LOG_STORE] = [
+            ArtifactLogStore.from_artifact_store(self.artifact_store),
+        ]
 
     def prepare_pipeline_submission(
         self, snapshot: "PipelineSnapshotResponse"
@@ -898,7 +1398,7 @@ class Stack:
         return list(
             itertools.chain.from_iterable(
                 component.get_docker_builds(snapshot=snapshot)
-                for component in self.components.values()
+                for component in self.all_components
             )
         )
 
@@ -952,7 +1452,7 @@ class Stack:
 
     def _get_active_components_for_step(
         self, step_config: "StepConfiguration"
-    ) -> Dict[StackComponentType, "StackComponent"]:
+    ) -> List["StackComponent"]:
         """Gets all the active stack components for a stack.
 
         Args:
@@ -960,7 +1460,7 @@ class Stack:
                 components.
 
         Returns:
-            Dictionary of active stack components.
+            List of active stack components.
         """
 
         def _is_active(component: "StackComponent") -> bool:
@@ -973,6 +1473,11 @@ class Stack:
                 If the component is used in this step.
             """
             if component.type == StackComponentType.STEP_OPERATOR:
+                if step_config.step_operator is True:
+                    return (
+                        self.step_operator is not None
+                        and component.id == self.step_operator.id
+                    )
                 return step_config.uses_step_operator(component.name)
 
             if component.type == StackComponentType.EXPERIMENT_TRACKER:
@@ -980,11 +1485,11 @@ class Stack:
 
             return True
 
-        return {
-            component_type: component
-            for component_type, component in self.components.items()
+        return [
+            component
+            for component in self.all_components
             if _is_active(component)
-        }
+        ]
 
     def prepare_step_run(self, info: "StepRunInfo") -> None:
         """Prepares running a step.
@@ -992,9 +1497,7 @@ class Stack:
         Args:
             info: Info about the step that will be executed.
         """
-        for component in self._get_active_components_for_step(
-            info.config
-        ).values():
+        for component in self._get_active_components_for_step(info.config):
             component.prepare_step_run(info=info)
 
     def get_pipeline_run_metadata(
@@ -1009,7 +1512,7 @@ class Stack:
             A dictionary mapping component IDs to the metadata they created.
         """
         pipeline_run_metadata: Dict[UUID, Dict[str, MetadataType]] = {}
-        for component in self.components.values():
+        for component in self.all_components:
             try:
                 component_metadata = component.get_pipeline_run_metadata(
                     run_id=run_id
@@ -1035,9 +1538,7 @@ class Stack:
             A dictionary mapping component IDs to the metadata they created.
         """
         step_run_metadata: Dict[UUID, Dict[str, MetadataType]] = {}
-        for component in self._get_active_components_for_step(
-            info.config
-        ).values():
+        for component in self._get_active_components_for_step(info.config):
             try:
                 component_metadata = component.get_step_run_metadata(info=info)
                 if component_metadata:
@@ -1056,7 +1557,5 @@ class Stack:
             info: Info about the step that was executed.
             step_failed: Whether the step failed.
         """
-        for component in self._get_active_components_for_step(
-            info.config
-        ).values():
+        for component in self._get_active_components_for_step(info.config):
             component.cleanup_step_run(info=info, step_failed=step_failed)

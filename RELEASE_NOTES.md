@@ -4,6 +4,348 @@
 
 ---
 
+# 0.94.6
+
+## What's Changed
+* Add version 0.94.4 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4872
+* Add 0.94.5 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4874
+* Don't require container engine when specifying skip_build by @schustmi in https://github.com/zenml-io/zenml/pull/4879
+* Fix GKE private cluster access via DNS control plane endpoint in GCP service connector by @stefannica in https://github.com/zenml-io/zenml/pull/4856
+* Include hook sources as string in snapshot config template by @schustmi in https://github.com/zenml-io/zenml/pull/4880
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.94.5...0.94.6
+
+# 0.94.5
+
+## What's Changed
+* Add version 0.94.3 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4828
+* Document the organization trusted domain feature by @stefannica in https://github.com/zenml-io/zenml/pull/4819
+* Add 0.94.4 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4829
+* Add option to mount build cache during python package installation by @schustmi in https://github.com/zenml-io/zenml/pull/4820
+* Fix CLI page info formatting by @strickvl in https://github.com/zenml-io/zenml/pull/4834
+* Fail a pipeline run if failing to import the user pipeline function by @schustmi in https://github.com/zenml-io/zenml/pull/4832
+* Only run DB backup/restore tests on local code version by @schustmi in https://github.com/zenml-io/zenml/pull/4831
+* Improved keyboard interrupt handling in active wait conditions by @schustmi in https://github.com/zenml-io/zenml/pull/4835
+* Bump the minor-and-patch group across 1 directory with 5 updates by @dependabot[bot] in https://github.com/zenml-io/zenml/pull/4847
+* Support string type annotations by @schustmi in https://github.com/zenml-io/zenml/pull/4843
+* Add agentic human-in-the-loop pipeline example by @htahir1 in https://github.com/zenml-io/zenml/pull/4849
+* Better string parsing during interactive wait condition resolving by @schustmi in https://github.com/zenml-io/zenml/pull/4845
+* Fix CLI tests in CI by @schustmi in https://github.com/zenml-io/zenml/pull/4850
+* Fixes for the logging env variables by @bcdurak in https://github.com/zenml-io/zenml/pull/4851
+* Fix GCP Cloud Run deployer timeout for internal/authenticated services by @safoinme in https://github.com/zenml-io/zenml/pull/4700
+* Structured logs and OTel Instrumentation for ZenML Server by @amitvikramraj in https://github.com/zenml-io/zenml/pull/4781
+* made shutdown_otel function idempotent and added support for individually enabling otel signals by @amitvikramraj in https://github.com/zenml-io/zenml/pull/4857
+* Bump actions/github-script from 8.0.0 to 9.0.0 by @dependabot[bot] in https://github.com/zenml-io/zenml/pull/4750
+* Allow streaming events while running a pipeline by @schustmi in https://github.com/zenml-io/zenml/pull/4804
+* fix: scoped sqlalchemy otel instrumentation to server sql engine by @amitvikramraj in https://github.com/zenml-io/zenml/pull/4858
+* fix(users): correct copy-paste bug in active status update by @sebastiondev in https://github.com/zenml-io/zenml/pull/4839
+* feat: supporting standard OTel env vars for zenml-server OTel configuration by @amitvikramraj in https://github.com/zenml-io/zenml/pull/4861
+* Richer WanDB integration by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4838
+* Run statistics endpoint by @schustmi in https://github.com/zenml-io/zenml/pull/4860
+
+## New Contributors
+* @sebastiondev made their first contribution in https://github.com/zenml-io/zenml/pull/4839
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.94.4...0.94.5
+
+
+# 0.94.4
+
+## What's Changed
+* Add version 0.94.2 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4766
+* Add 0.94.3 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4768
+* Revise Run:AI service account setup and troubleshooting by @safoinme in https://github.com/zenml-io/zenml/pull/4772
+* Update dynamic pipelines docs by @schustmi in https://github.com/zenml-io/zenml/pull/4776
+* Misc release-testing fixes by @schustmi in https://github.com/zenml-io/zenml/pull/4770
+* Increase the max size of zenml secrets stored in the SQL secrets store by @stefannica in https://github.com/zenml-io/zenml/pull/4769
+* Create run metadata for isolated steps (dynamic) by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4785
+* Better signal handling during step execution by @schustmi in https://github.com/zenml-io/zenml/pull/4784
+* Bump the minor-and-patch group across 1 directory with 9 updates by @dependabot[bot] in https://github.com/zenml-io/zenml/pull/4795
+* Fix O(N) global scan in artifact-version delete by @joaquinhuigomez in https://github.com/zenml-io/zenml/pull/4686
+* Fix multiple RBAC calls during dehydration by @schustmi in https://github.com/zenml-io/zenml/pull/4797
+* Clarify that DynamicPipelineRunner.wait() timeout is a soft timeout by @shaun0927 in https://github.com/zenml-io/zenml/pull/4741
+* Fix typo in step creation error message by @shaun0927 in https://github.com/zenml-io/zenml/pull/4736
+* Allow keyword only args in step function by @schustmi in https://github.com/zenml-io/zenml/pull/4798
+* Kubernetes label sanitization by @bcdurak in https://github.com/zenml-io/zenml/pull/4756
+* Allow non module-level definitions of steps and dynamic pipelines by @schustmi in https://github.com/zenml-io/zenml/pull/4799
+* Added ability to get help with flavor specific configurations by @AlexejPenner in https://github.com/zenml-io/zenml/pull/4662
+* Extract projects-backend release dispatch into dedicated workflow  by @safoinme in https://github.com/zenml-io/zenml/pull/4720
+* Fixing orchestrator setting resolution by @bcdurak in https://github.com/zenml-io/zenml/pull/4803
+* Fix notify projects backend zizmor scan by @strickvl in https://github.com/zenml-io/zenml/pull/4808
+* Fix `Check Links` workflow failures (`runai.md` + dangling preemption refs + Slack 403) by @strickvl in https://github.com/zenml-io/zenml/pull/4807
+* Fix nightly PyPI trusted publishing by @strickvl in https://github.com/zenml-io/zenml/pull/4806
+* Add `uv.lock` to .gitignore by @strickvl in https://github.com/zenml-io/zenml/pull/4811
+* Nested dynamic pipelines by @schustmi in https://github.com/zenml-io/zenml/pull/4775
+* Refresh agent guidance docs by @strickvl in https://github.com/zenml-io/zenml/pull/4817
+* Fix MLflow deployment healthcheck method by @strickvl in https://github.com/zenml-io/zenml/pull/4816
+* Update docs for recent feature drift by @strickvl in https://github.com/zenml-io/zenml/pull/4818
+* Add advanced Run:AI training workload settings by @safoinme in https://github.com/zenml-io/zenml/pull/4780
+* Fix deployment invocation request fields by @schustmi in https://github.com/zenml-io/zenml/pull/4809
+* Extra info on kubernetes-killed jobs by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4800
+* Introduce new Databricks step-operator and fix `tags` and `custom-tags` by @safoinme in https://github.com/zenml-io/zenml/pull/4648
+
+## New Contributors
+* @joaquinhuigomez made their first contribution in https://github.com/zenml-io/zenml/pull/4686
+* @shaun0927 made their first contribution in https://github.com/zenml-io/zenml/pull/4741
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.94.3...0.94.4
+
+# 0.94.3
+
+## What's Changed
+* Add version 0.94.1 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4701
+* Bump the minor-and-patch group with 2 updates by @dependabot[bot] in https://github.com/zenml-io/zenml/pull/4705
+* Fix zizmor SHA/version mismatch and add zizmor to `lint.sh` by @strickvl in https://github.com/zenml-io/zenml/pull/4703
+* Fix broken docs header - triggers by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4707
+* Misc kitaru extensions by @schustmi in https://github.com/zenml-io/zenml/pull/4715
+* Introduce a container engine abstraction and add podman support by @stefannica in https://github.com/zenml-io/zenml/pull/4651
+* Include wait condition resolved at in DAG response by @schustmi in https://github.com/zenml-io/zenml/pull/4717
+* Replace darglint with pydoclint for docstring linting by @strickvl in https://github.com/zenml-io/zenml/pull/4721
+* Bump the minor-and-patch group with 4 updates by @dependabot[bot] in https://github.com/zenml-io/zenml/pull/4725
+* Fix empty PR number in Claude Code review workflow by @strickvl in https://github.com/zenml-io/zenml/pull/4735
+* Resource pools by @schustmi in https://github.com/zenml-io/zenml/pull/4465
+* Feature/event triggers by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4692
+* Helper endpoint: Trigger SourceType supported events by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4745
+* Don't resolve zenml pypi version on flavor model generation by @stefannica in https://github.com/zenml-io/zenml/pull/4744
+* Document Kubernetes permissions for various roles in running k8s pipelines by @stefannica in https://github.com/zenml-io/zenml/pull/4746
+* Add docs for on-prem deployment of optional Pro features by @stefannica in https://github.com/zenml-io/zenml/pull/4751
+* Remove the unique constraint from the `LogsSchema` by @bcdurak in https://github.com/zenml-io/zenml/pull/4729
+* Add `memory_call` step type by @strickvl in https://github.com/zenml-io/zenml/pull/4724
+* Add acknowledgeable trigger dispatch status and improve CLI commands by @stefannica in https://github.com/zenml-io/zenml/pull/4743
+* Support for max-runs stop criteria by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4752
+* Fix making a secret public using CLI/client by @schustmi in https://github.com/zenml-io/zenml/pull/4755
+* Feature/add k8s gateway support by @safoinme in https://github.com/zenml-io/zenml/pull/4726
+* Fix run status update condition by @schustmi in https://github.com/zenml-io/zenml/pull/4747
+* Fix broken tests by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4758
+* Fix StrEnum import breaking 3.10 by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4763
+* Don't block while waiting for concurrent step inputs by @schustmi in https://github.com/zenml-io/zenml/pull/4699
+* Fix python package fetching by @schustmi in https://github.com/zenml-io/zenml/pull/4762
+* Allowing multiple components of the same type for a stack by @bcdurak in https://github.com/zenml-io/zenml/pull/4671
+* Server-side replays by @schustmi in https://github.com/zenml-io/zenml/pull/4716
+* Fix pydantic materializer double encoding by @schustmi in https://github.com/zenml-io/zenml/pull/4760
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.94.2...0.94.3
+
+# 0.94.2
+
+## What's Changed
+* Add version 0.94.0 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4630
+* Add 0.94.1 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4632
+* Optuna Hyperparameter Tuning with ZenML by @amitvikramraj in https://github.com/zenml-io/zenml/pull/4545
+* Renamed helm chart top-level key from `zenml` to `server`, maintains backwards compatibility by @amitvikramraj in https://github.com/zenml-io/zenml/pull/4637
+* Hydra Config Management with ZenML by @amitvikramraj in https://github.com/zenml-io/zenml/pull/4544
+* Bugfix/archived schedule issues by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4641
+* Follow snapshot.source pattern for triggered runs by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4610
+* Only group minor/patch dependabot action updates by @strickvl in https://github.com/zenml-io/zenml/pull/4653
+* Bump core GitHub Actions to latest major versions by @strickvl in https://github.com/zenml-io/zenml/pull/4655
+* Bump minor/patch GitHub Action versions by @strickvl in https://github.com/zenml-io/zenml/pull/4654
+* Dynamically reduce chunk size if running into 414 error by @schustmi in https://github.com/zenml-io/zenml/pull/4553
+* Bump cloud provider GitHub Actions to latest major versions by @strickvl in https://github.com/zenml-io/zenml/pull/4656
+* Bump third-party GitHub Actions to latest major versions by @strickvl in https://github.com/zenml-io/zenml/pull/4657
+* Bump the all-actions group across 1 directory with 7 updates by @dependabot[bot] in https://github.com/zenml-io/zenml/pull/4666
+* Fix incorrect version comments on SHA-pinned GitHub Actions by @strickvl in https://github.com/zenml-io/zenml/pull/4667
+* Configurable dashboard files directory by @schustmi in https://github.com/zenml-io/zenml/pull/4660
+* Add extra analytics coverage by @strickvl in https://github.com/zenml-io/zenml/pull/4677
+* Add Kitaru mention to README by @strickvl in https://github.com/zenml-io/zenml/pull/4688
+* Allow artifact name substitutions for dynamic pipelines by @schustmi in https://github.com/zenml-io/zenml/pull/4668
+* Fix duplicate 'the the' typos in docstrings and log messages by @strickvl in https://github.com/zenml-io/zenml/pull/4681
+* Fix broken filter snapshots by trigger by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4693
+* Differentiate scalar input artifacts against single item lists by @schustmi in https://github.com/zenml-io/zenml/pull/4679
+* Fix deployer dashboard HTML when Jinja2/Starlette template loading breaks by @stefannica in https://github.com/zenml-io/zenml/pull/4649
+* Add supply chain security cooldowns for Dependabot and uv by @strickvl in https://github.com/zenml-io/zenml/pull/4659
+
+## New Contributors
+* @amitvikramraj made their first contribution in https://github.com/zenml-io/zenml/pull/4545
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.94.1...0.94.2
+
+# 0.94.1
+
+## What's Changed
+* Add version 0.93.3 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4556
+* Add 0.94.0 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4564
+* Fix kubernetes service selector by @schustmi in https://github.com/zenml-io/zenml/pull/4567
+* Update contribution guidelines for PRs and commits by @strickvl in https://github.com/zenml-io/zenml/pull/4587
+* Only show named snapshots in CLI by @schustmi in https://github.com/zenml-io/zenml/pull/4583
+* Allow helm env vars to override computed settings by @stefannica in https://github.com/zenml-io/zenml/pull/4595
+* Enhance changelog workflow to dispatch new release to zenml-projects-backend by @safoinme in https://github.com/zenml-io/zenml/pull/4592
+* Adjusted helm chart to have the right permissions for PVC by @AlexejPenner in https://github.com/zenml-io/zenml/pull/4225
+* Replaced pngs with avif by @AlexejPenner in https://github.com/zenml-io/zenml/pull/4413
+* Handle activation exceptions for individual integrations by @strickvl in https://github.com/zenml-io/zenml/pull/4490
+* Update `CLAUDE.md` and `AGENTS.md` for recent codebase changes by @strickvl in https://github.com/zenml-io/zenml/pull/4585
+* Fix S3 double-close AssertionError on cleanup by @strickvl in https://github.com/zenml-io/zenml/pull/4593
+* Bugfix/runner logs for triggered runs by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4601
+* Add dataclass materializer by @schustmi in https://github.com/zenml-io/zenml/pull/4600
+* Store step parameter schemas by @schustmi in https://github.com/zenml-io/zenml/pull/4591
+* Raise correct exceptions for isolated steps and pipeline retries by @schustmi in https://github.com/zenml-io/zenml/pull/4589
+* Better gcsfs credentials refresh by @schustmi in https://github.com/zenml-io/zenml/pull/4527
+* Step types by @schustmi in https://github.com/zenml-io/zenml/pull/4608
+* Allow overwriting step inputs for pipeline replays by @schustmi in https://github.com/zenml-io/zenml/pull/4590
+* Update pydantic version to 2.12.5 by @htahir1 in https://github.com/zenml-io/zenml/pull/4552
+* Fix `api_request_timeout` typing in K8S orchestrator by @avishniakov in https://github.com/zenml-io/zenml/pull/4605
+* Pricing details on trigger doc page by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4611
+* Improve error when not having local extra installed by @schustmi in https://github.com/zenml-io/zenml/pull/4613
+* Heartbeat logs and neptune update by @bcdurak in https://github.com/zenml-io/zenml/pull/4581
+* Add `ARG` instructions to Dockerfile for build arguments defined in DockerSettings by @jlamperez in https://github.com/zenml-io/zenml/pull/4612
+* Don't pass pipeline run and step run ids to logs request by @schustmi in https://github.com/zenml-io/zenml/pull/4614
+* Fix broken image link in self-hosted K8s deploy docs by @strickvl in https://github.com/zenml-io/zenml/pull/4617
+* Fix dict size change during iteration error by @schustmi in https://github.com/zenml-io/zenml/pull/4619
+* Fix log keys by @schustmi in https://github.com/zenml-io/zenml/pull/4620
+* Pause and resume pipeline runs by @schustmi in https://github.com/zenml-io/zenml/pull/4588
+* Fix running property of dynamic runner futures by @schustmi in https://github.com/zenml-io/zenml/pull/4622
+* Use step parameters from config template over function defaults by @schustmi in https://github.com/zenml-io/zenml/pull/4624
+* Add a way to inject secret environment variables into the server deployment (helm) by @spwoodcock in https://github.com/zenml-io/zenml/pull/4606
+* Add LakeFS data versioning example by @htahir1 in https://github.com/zenml-io/zenml/pull/4559
+* Feature/kitaru analytics support by @safoinme in https://github.com/zenml-io/zenml/pull/4618
+* Configurable repository directory by @schustmi in https://github.com/zenml-io/zenml/pull/4623
+
+## New Contributors
+* @jlamperez made their first contribution in https://github.com/zenml-io/zenml/pull/4612
+* @spwoodcock made their first contribution in https://github.com/zenml-io/zenml/pull/4606
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.94.0...0.94.1
+
+# 0.94.0
+
+## What's Changed
+* Add version 0.93.2 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4504
+* Add 0.93.3 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4505
+* Clarify Snapshots vs Deployments in documentation by @strickvl in https://github.com/zenml-io/zenml/pull/4497
+* Improve dynamic pipeline step monitoring by @schustmi in https://github.com/zenml-io/zenml/pull/4369
+* add ENV_ZENML_CONTAINER_PYTHON_EXECUTABLE support by @avishniakov in https://github.com/zenml-io/zenml/pull/4501
+* Run:AI Integration - Step Operator by @safoinme in https://github.com/zenml-io/zenml/pull/4439
+* Remove Discord notification from release prep and reduce CI runner waste by @strickvl in https://github.com/zenml-io/zenml/pull/4500
+* Add RLM document analysis example with dynamic pipelines by @strickvl in https://github.com/zenml-io/zenml/pull/4491
+* Update skypilot Integrations by @safoinme in https://github.com/zenml-io/zenml/pull/4462
+* Update `.gitignore` to include Codex settings by @strickvl in https://github.com/zenml-io/zenml/pull/4513
+* Fix azure integration dependencies by @schustmi in https://github.com/zenml-io/zenml/pull/4516
+* Run release test pipeline using kubernetes orchestrator by @schustmi in https://github.com/zenml-io/zenml/pull/4517
+* Allow filtering step runs by version by @schustmi in https://github.com/zenml-io/zenml/pull/4518
+* Attach log context to run in dynamic pipelines by @schustmi in https://github.com/zenml-io/zenml/pull/4519
+* Fix broken docs links found via lychee link checker by @strickvl in https://github.com/zenml-io/zenml/pull/4526
+* Remove wrong error message when running dynamic snapshots by @schustmi in https://github.com/zenml-io/zenml/pull/4533
+* Split step operator submission and monitoring by @schustmi in https://github.com/zenml-io/zenml/pull/4515
+* Suggest installing all stack requirements in import error by @AlexejPenner in https://github.com/zenml-io/zenml/pull/4530
+* Fix handling of variadic keyword args in pipeline function by @schustmi in https://github.com/zenml-io/zenml/pull/4528
+* Update `Run:AI` Step-Operator for new submit logic by @safoinme in https://github.com/zenml-io/zenml/pull/4535
+* Improve k8s client retries by @avishniakov in https://github.com/zenml-io/zenml/pull/4525
+* Preselect organization and workspace upon `zenml login` by @bcdurak in https://github.com/zenml-io/zenml/pull/4531
+* Add `PathMaterializer` documentation to materializers page by @strickvl in https://github.com/zenml-io/zenml/pull/4534
+* Fix broken Evidently and W&B documentation links by @strickvl in https://github.com/zenml-io/zenml/pull/4538
+* Fix logging of existing job status in Kubernetes orchestrator by @kshitijrajsharma in https://github.com/zenml-io/zenml/pull/4549
+* Feature/triggers v2 and native schedules by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4482
+* Misc fixes by @schustmi in https://github.com/zenml-io/zenml/pull/4551
+* Step/Pipeline replays by @schustmi in https://github.com/zenml-io/zenml/pull/4456
+* !fixup: disable flaky tests by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4554
+* Include git submodule files in code archive by @apoorvdarshan in https://github.com/zenml-io/zenml/pull/4496
+* Add docs references for `zenml-scoping` and `zenml-pipeline-authoring` skills by @strickvl in https://github.com/zenml-io/zenml/pull/4539
+* Prepare release 0.94.0rc0 by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4555
+* Fix for SDK docs release by @bcdurak in https://github.com/zenml-io/zenml/pull/4560
+* Small schedule fixes by @schustmi in https://github.com/zenml-io/zenml/pull/4561
+
+## New Contributors
+* @kshitijrajsharma made their first contribution in https://github.com/zenml-io/zenml/pull/4549
+* @apoorvdarshan made their first contribution in https://github.com/zenml-io/zenml/pull/4496
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.93.3...0.94.0
+
+# 0.93.3
+
+## What's Changed
+* Add version 0.93.1 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4444
+* Fix `codeql-action` paths and Dependabot config by @strickvl in https://github.com/zenml-io/zenml/pull/4435
+* Pin qwen-agent<0.0.32 to fix CI import error by @strickvl in https://github.com/zenml-io/zenml/pull/4441
+* Add 0.93.2 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4446
+* Fix data loss in artifact downloads for files larger than 8KB by @anshishrivastava in https://github.com/zenml-io/zenml/pull/4422
+* Rewrite the filtering queries to be more efficient by @stefannica in https://github.com/zenml-io/zenml/pull/4449
+* Add an example of a hierarchical search agent by @htahir1 in https://github.com/zenml-io/zenml/pull/4427
+* Improve API transaction management for better scalability by @stefannica in https://github.com/zenml-io/zenml/pull/4453
+* Add zizmor CI workflow for GitHub Actions security scanning by @strickvl in https://github.com/zenml-io/zenml/pull/4451
+* Add AGENTS.md for database migrations by @strickvl in https://github.com/zenml-io/zenml/pull/4450
+* Updates to the dashboard page by @bcdurak in https://github.com/zenml-io/zenml/pull/4458
+* Add Linux Foundation and CNCF Silver Member logos to README by @strickvl in https://github.com/zenml-io/zenml/pull/4460
+* Fixes around the logging context and more by @bcdurak in https://github.com/zenml-io/zenml/pull/4405
+* Add `--output` flag to stack and component describe commands by @strickvl in https://github.com/zenml-io/zenml/pull/4454
+* Fix the SQL statement used to delete API transactions by @stefannica in https://github.com/zenml-io/zenml/pull/4470
+* Reject cookies of local user accounts when enrolled in ZenML Pro by @stefannica in https://github.com/zenml-io/zenml/pull/4473
+* Self-hosted ZenML Pro documentation update by @stefannica in https://github.com/zenml-io/zenml/pull/4472
+* Fall back to uv pip freeze when pip is missing by @htahir1 in https://github.com/zenml-io/zenml/pull/4484
+* Fix duplicate run status (heartbeat response) by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4489
+* Add `concurrency_policy` and `starting_deadline_seconds` to K8s `CronJob` config by @strickvl in https://github.com/zenml-io/zenml/pull/4483
+* Exclude `grpcio` 1.68.0-1.70.x in GCP integration to fix shutdown warnings by @strickvl in https://github.com/zenml-io/zenml/pull/4464
+* Fix systemic CI flakiness across multiple test clusters by @strickvl in https://github.com/zenml-io/zenml/pull/4471
+* Refresh kubernetes credentials while monitoring jobs by @schustmi in https://github.com/zenml-io/zenml/pull/4493
+* Logging Metadata Fixes & Additions by @bcdurak in https://github.com/zenml-io/zenml/pull/4467
+
+## New Contributors
+* @anshishrivastava made their first contribution in https://github.com/zenml-io/zenml/pull/4422
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.93.2...0.93.3
+
+
+# 0.93.2
+
+## What's Changed
+* Add version 0.93.0 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4391
+* Add 0.93.1 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4393
+* Add documentation for schedule activate/deactivate and archiving by @strickvl in https://github.com/zenml-io/zenml/pull/4396
+* Fix release flow by @schustmi in https://github.com/zenml-io/zenml/pull/4394
+* Disable the use of secure cookies with HTTP by @stefannica in https://github.com/zenml-io/zenml/pull/4399
+* Fix incorrect claims about ZenML not supporting schedule updates by @strickvl in https://github.com/zenml-io/zenml/pull/4400
+* Fix broken Neptune documentation links and add deprecation notice by @strickvl in https://github.com/zenml-io/zenml/pull/4403
+* Optimize Claude Code workflow to skip early without `@claude` mention by @strickvl in https://github.com/zenml-io/zenml/pull/4404
+* Much better Pro docs by @AlexejPenner in https://github.com/zenml-io/zenml/pull/4263
+* Store ZenML version in environment dict by @schustmi in https://github.com/zenml-io/zenml/pull/4415
+* Implement endpoint to download snapshot code by @schustmi in https://github.com/zenml-io/zenml/pull/4401
+* DAG step groups by @schustmi in https://github.com/zenml-io/zenml/pull/4375
+* Document private secrets behavior in secrets documentation by @strickvl in https://github.com/zenml-io/zenml/pull/4417
+* Track exception info for dynamic pipeline runs by @schustmi in https://github.com/zenml-io/zenml/pull/4395
+* Set pipeline environment for dynamic pipelines by @schustmi in https://github.com/zenml-io/zenml/pull/4420
+* Fix snack-it workflow permission to comment on PRs by @strickvl in https://github.com/zenml-io/zenml/pull/4425
+* Fix unknown column warning in schedule list CLI by @strickvl in https://github.com/zenml-io/zenml/pull/4429
+* Add ZenML Quick Wins skill for Claude Code by @strickvl in https://github.com/zenml-io/zenml/pull/4426
+* Add missing index to the snapshot table by @stefannica in https://github.com/zenml-io/zenml/pull/4431
+* Add comprehensive GitHub Actions security hardening with zizmor by @strickvl in https://github.com/zenml-io/zenml/pull/4421
+* Faster merging of step and pipeline config by @schustmi in https://github.com/zenml-io/zenml/pull/4434
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.93.1...0.93.2
+
+
+# 0.93.1
+
+## What's Changed
+* Add version 0.92.0 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4356
+* Misc release workflow fixes by @schustmi in https://github.com/zenml-io/zenml/pull/4353
+* Add 0.93.0 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4357
+* Stop & Resume schedule on Kubernetes by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4328
+* Enable orchestration environment restarts for dynamic pipelines by @schustmi in https://github.com/zenml-io/zenml/pull/4270
+* Remove remaining unlisted runs references by @schustmi in https://github.com/zenml-io/zenml/pull/4352
+* Fix the run count DB migration by @stefannica in https://github.com/zenml-io/zenml/pull/4360
+* Apply per-step compute settings if available by @htahir1 in https://github.com/zenml-io/zenml/pull/4362
+* Allow image template for kubernetes init containers by @schustmi in https://github.com/zenml-io/zenml/pull/4361
+* Misc improvements by @schustmi in https://github.com/zenml-io/zenml/pull/4359
+* Support for dynamic pipelines on AzureML by @bcdurak in https://github.com/zenml-io/zenml/pull/4363
+* Schedule archiving support by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4339
+* Minor typos in cli commands from documentation by @tmorgansl in https://github.com/zenml-io/zenml/pull/4374
+* Add mydumper/myloader DB backup and restore support by @stefannica in https://github.com/zenml-io/zenml/pull/4358
+* Fix Azure dependencies in server image by @schustmi in https://github.com/zenml-io/zenml/pull/4383
+* Merge Claude workflows into single flexible workflow by @strickvl in https://github.com/zenml-io/zenml/pull/4343
+* Document MCP Settings page in dashboard by @strickvl in https://github.com/zenml-io/zenml/pull/4364
+* Improve bot detection for Segment analytics by @strickvl in https://github.com/zenml-io/zenml/pull/4381
+* Allow configuring parent image at runtime by @schustmi in https://github.com/zenml-io/zenml/pull/4377
+* Kubernetes orchestrator caching efficiency + reliability by @schustmi in https://github.com/zenml-io/zenml/pull/4368
+* Misc fixes by @schustmi in https://github.com/zenml-io/zenml/pull/4379
+* Heartbeat - performance improvements by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4372
+
+## New Contributors
+* @tmorgansl made their first contribution in https://github.com/zenml-io/zenml/pull/4374
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.93.0...0.93.1
+
+
 # 0.93.0
 
 ## ⚠️ Breaking Changes
@@ -6855,7 +7197,7 @@ zenml init
 * Run pre commit in local environment by @schustmi in https://github.com/zenml-io/zenml/pull/260
 * Hamza/eng 269 move beam out by @htahir1 in https://github.com/zenml-io/zenml/pull/262
 * Update docs by @alex-zenml in https://github.com/zenml-io/zenml/pull/261
-* Hamza/update readme with contribitions by @htahir1 in https://github.com/zenml-io/zenml/pull/271
+* Hamza/update readme with contributions by @htahir1 in https://github.com/zenml-io/zenml/pull/271
 * Hamza/eng 256 backoff analytics by @htahir1 in https://github.com/zenml-io/zenml/pull/270
 * Add spellcheck by @alex-zenml in https://github.com/zenml-io/zenml/pull/264
 * Using the pipeline run name to explicitly access when explaining the … by @AlexejPenner in https://github.com/zenml-io/zenml/pull/263

@@ -241,6 +241,9 @@ class BaseModelRegistry(StackComponent, ABC):
             metadata: The metadata associated with the registered model.
             remove_metadata: The metadata to remove from the registered model.
 
+        Returns:
+            The updated registered model.
+
         Raises:
             KeyError: If the model does not exist.
             RuntimeError: If update fails.

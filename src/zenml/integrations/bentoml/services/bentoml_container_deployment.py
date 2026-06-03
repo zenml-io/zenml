@@ -23,6 +23,7 @@ from bentoml.client import Client
 
 from zenml.client import Client as ZenMLClient
 from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
+from zenml.container_engines import get_container_engine
 from zenml.enums import ServiceState
 from zenml.integrations.bentoml.constants import (
     BENTOML_DEFAULT_PORT,
@@ -281,17 +282,18 @@ class BentoMLContainerDeploymentService(
             logger.error(f"Error containerizing the bento: {e}")
             raise e
 
-        if container_registry:
-            logger.info(
-                f"Pushing bento to container registry {container_registry.config.uri}"
-            )
-            # push the bento to the image registry
-            container_registry.push_image(self.config.image)
-        else:
+        if not container_registry:
             logger.warning(
                 "No container registry found in the active stack. "
                 "Please add a container registry to your stack to push "
                 "the bento to an image registry."
+            )
+        else:
+            logger.info(
+                f"Pushing bento to container registry {container_registry.config.uri}"
+            )
+            get_container_engine().push_image(
+                self.config.image, container_registry
             )
 
     def provision(self) -> None:

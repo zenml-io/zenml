@@ -21,7 +21,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    Type,
     TypeVar,
     Union,
 )
@@ -43,8 +42,6 @@ from zenml.models.v2.base.scoped import (
 from zenml.models.v2.misc.service import ServiceType
 
 if TYPE_CHECKING:
-    from sqlalchemy.sql.elements import ColumnElement
-
     from zenml.models.v2.core.model_version import ModelVersionResponse
     from zenml.models.v2.core.pipeline_run import PipelineRunResponse
     from zenml.zen_stores.schemas import BaseSchema
@@ -476,11 +473,7 @@ class ServiceFilter(ProjectScopedFilter):
     # Artifact name and type are not DB fields and need to be handled separately
     FILTER_EXCLUDE_FIELDS = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
-        "flavor",
-        "type",
-        "pipeline_step_name",
         "running",
-        "pipeline_name",
         "config",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
@@ -491,42 +484,3 @@ class ServiceFilter(ProjectScopedFilter):
         "running",
         "pipeline_name",
     ]
-
-    def generate_filter(
-        self, table: Type["AnySchema"]
-    ) -> Union["ColumnElement[bool]"]:
-        """Generate the filter for the query.
-
-        Services can be scoped by type to narrow the search.
-
-        Args:
-            table: The Table that is being queried from.
-
-        Returns:
-            The filter expression for the query.
-        """
-        from sqlmodel import and_
-
-        base_filter = super().generate_filter(table)
-
-        if self.type:
-            type_filter = getattr(table, "type") == self.type
-            base_filter = and_(base_filter, type_filter)
-
-        if self.flavor:
-            flavor_filter = getattr(table, "flavor") == self.flavor
-            base_filter = and_(base_filter, flavor_filter)
-
-        if self.pipeline_name:
-            pipeline_name_filter = (
-                getattr(table, "pipeline_name") == self.pipeline_name
-            )
-            base_filter = and_(base_filter, pipeline_name_filter)
-
-        if self.pipeline_step_name:
-            pipeline_step_name_filter = (
-                getattr(table, "pipeline_step_name") == self.pipeline_step_name
-            )
-            base_filter = and_(base_filter, pipeline_step_name_filter)
-
-        return base_filter

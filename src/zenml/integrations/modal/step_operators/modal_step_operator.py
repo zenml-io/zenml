@@ -13,36 +13,51 @@
 #  permissions and limitations under the License.
 """Modal step operator implementation."""
 
-import asyncio
-from typing import TYPE_CHECKING, Dict, List, Optional, Type, cast
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
 import modal
+from modal_proto import api_pb2
 
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
-from zenml.config.resource_settings import ByteUnit
+from zenml.config.resource_settings import ByteUnit, ResourceSettings
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.integrations.modal.flavors import (
     ModalStepOperatorConfig,
     ModalStepOperatorSettings,
 )
-from zenml.integrations.modal.utils import (
-    build_modal_image,
-    get_gpu_values,
-    get_modal_stack_validator,
-    setup_modal_client,
-)
 from zenml.logger import get_logger
-from zenml.stack import StackValidator
+from zenml.orchestrators.publish_utils import publish_step_run_metadata
+from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.step_run_info import StepRunInfo
-    from zenml.models import PipelineSnapshotBase
+    from zenml.models import PipelineSnapshotBase, StepRunResponse
 
 logger = get_logger(__name__)
 
 MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY = "modal_step_operator"
+STEP_SANDBOX_ID_METADATA_KEY = "sandbox_id"
+
+
+def get_gpu_values(
+    settings: ModalStepOperatorSettings, resource_settings: ResourceSettings
+) -> Optional[str]:
+    """Get the GPU values for the Modal step operator.
+
+    Args:
+        settings: The Modal step operator settings.
+        resource_settings: The resource settings.
+
+    Returns:
+        The GPU string if a count is specified, otherwise the GPU type.
+    """
+    if not settings.gpu:
+        return None
+    gpu_count = resource_settings.gpu_count
+    return f"{settings.gpu}:{gpu_count}" if gpu_count else settings.gpu
 
 
 class ModalStepOperator(BaseStepOperator):
@@ -77,7 +92,40 @@ class ModalStepOperator(BaseStepOperator):
         Returns:
             The stack validator.
         """
-        return get_modal_stack_validator()
+
+        def _validate_remote_components(stack: "Stack") -> Tuple[bool, str]:
+            if stack.artifact_store.config.is_local:
+                return False, (
+                    "The Modal step operator runs code remotely and "
+                    "needs to write files into the artifact store, but the "
+                    f"artifact store `{stack.artifact_store.name}` of the "
+                    "active stack is local. Please ensure that your stack "
+                    "contains a remote artifact store when using the Modal "
+                    "step operator."
+                )
+
+            container_registry = stack.container_registry
+            assert container_registry is not None
+
+            if container_registry.config.is_local:
+                return False, (
+                    "The Modal step operator runs code remotely and "
+                    "needs to push/pull Docker images, but the "
+                    f"container registry `{container_registry.name}` of the "
+                    "active stack is local. Please ensure that your stack "
+                    "contains a remote container registry when using the "
+                    "Modal step operator."
+                )
+
+            return True, ""
+
+        return StackValidator(
+            required_components={
+                StackComponentType.CONTAINER_REGISTRY,
+                StackComponentType.IMAGE_BUILDER,
+            },
+            custom_validation_function=_validate_remote_components,
+        )
 
     def get_docker_builds(
         self, snapshot: "PipelineSnapshotBase"
@@ -102,13 +150,13 @@ class ModalStepOperator(BaseStepOperator):
 
         return builds
 
-    def launch(
+    def submit(
         self,
         info: "StepRunInfo",
         entrypoint_command: List[str],
         environment: Dict[str, str],
     ) -> None:
-        """Launch a step run on Modal.
+        """Submits a step run to Modal.
 
         Args:
             info: The step run information.
@@ -116,85 +164,101 @@ class ModalStepOperator(BaseStepOperator):
             environment: The environment variables for the step.
 
         Raises:
-            RuntimeError: If Modal image construction fails, sandbox creation fails,
-                sandbox execution fails, or Modal application initialization fails.
+            RuntimeError: If no Docker credentials are found for the container registry.
+            ValueError: If no container registry is found in the stack.
         """
         settings = cast(ModalStepOperatorSettings, self.get_settings(info))
         image_name = info.get_image(key=MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY)
         zc = Client()
         stack = zc.active_stack
 
-        setup_modal_client(
-            token_id=self.config.token_id,
-            token_secret=self.config.token_secret,
-            workspace=self.config.workspace,
-            environment=settings.modal_environment
-            or self.config.modal_environment,
+        if not stack.container_registry:
+            raise ValueError(
+                "No Container registry found in the stack. "
+                "Please add a container registry and ensure "
+                "it is correctly configured."
+            )
+
+        if docker_creds := stack.container_registry.credentials:
+            docker_username, docker_password = docker_creds
+        else:
+            raise RuntimeError(
+                "No Docker credentials found for the container registry."
+            )
+
+        my_secret = modal.secret._Secret.from_dict(
+            {
+                "REGISTRY_USERNAME": docker_username,
+                "REGISTRY_PASSWORD": docker_password,
+            }
         )
 
-        try:
-            modal_image = build_modal_image(image_name, stack, environment)
-        except Exception as e:
-            raise RuntimeError(
-                "Failed to construct Modal execution environment from your Docker image. "
-                "Action required: verify that Modal can access your container registry (check network connectivity "
-                "and registry permissions), and that the Docker image can be pulled and extended with additional dependencies. "
-                f"Context: image='{image_name}'."
-            ) from e
+        spec = modal.image.DockerfileSpec(
+            commands=[f"FROM {image_name}"], context_files={}
+        )
+
+        zenml_image = modal.Image._from_args(
+            dockerfile_function=lambda *_, **__: spec,
+            force_build=False,
+            image_registry_config=modal.image._ImageRegistryConfig(
+                api_pb2.REGISTRY_AUTH_TYPE_STATIC_CREDS, my_secret
+            ),
+        ).env(environment)
 
         resource_settings = info.config.resource_settings
-
         gpu_values = get_gpu_values(settings, resource_settings)
+        memory_mb = resource_settings.get_memory(ByteUnit.MB)
+        memory_int = int(memory_mb) if memory_mb is not None else None
 
-        memory_int = (
-            int(mb)
-            if (mb := resource_settings.get_memory(ByteUnit.MB))
-            else None
+        app = modal.App.lookup(
+            f"zenml-{info.step_run_id}-{info.pipeline_step_name}"[:64],
+            create_if_missing=True,
+        )
+        sandbox = modal.Sandbox.create(
+            "bash",
+            "-c",
+            " ".join(entrypoint_command),
+            app=app,
+            image=zenml_image,
+            gpu=gpu_values,
+            cpu=resource_settings.cpu_count,
+            memory=memory_int,
+            cloud=settings.cloud,
+            region=settings.region,
+            timeout=86400,  # 24h, the max Modal allows
+        )
+        publish_step_run_metadata(
+            info.step_run_id,
+            {self.id: {STEP_SANDBOX_ID_METADATA_KEY: sandbox.object_id}},
+        )
+        info.step_run.run_metadata[STEP_SANDBOX_ID_METADATA_KEY] = (
+            sandbox.object_id
         )
 
-        app = modal.App(
-            f"zenml-{info.run_name}-{info.step_run_id}-{info.pipeline_step_name}"
-        )
+    def get_status(self, step_run: "StepRunResponse") -> ExecutionStatus:
+        """Gets the status of a submitted Modal sandbox.
 
-        async def run_sandbox() -> None:
-            with modal.enable_output():
-                try:
-                    async with app.run():
-                        try:
-                            sb = await modal.Sandbox.create.aio(
-                                *entrypoint_command,
-                                image=modal_image,
-                                gpu=gpu_values,
-                                cpu=resource_settings.cpu_count,
-                                memory=memory_int,
-                                cloud=settings.cloud,
-                                region=settings.region,
-                                app=app,
-                                timeout=settings.timeout,
-                            )
-                        except Exception as e:
-                            raise RuntimeError(
-                                "Failed to create a Modal sandbox. "
-                                "Action required: verify that the referenced Docker image is accessible, "
-                                "the requested resources are available (gpu/region/cloud), and your Modal workspace "
-                                "permissions allow sandbox creation. "
-                                f"Context: image='{image_name}', gpu='{gpu_values}', region='{settings.region}', cloud='{settings.cloud}'."
-                            ) from e
+        Args:
+            step_run: The step run.
 
-                        try:
-                            await sb.wait.aio()
-                        except Exception as e:
-                            raise RuntimeError(
-                                "Modal sandbox execution failed. "
-                                "Action required: inspect the step logs in Modal, and confirm that "
-                                "dependencies are available in the image/environment."
-                            ) from e
-                except Exception as e:
-                    raise RuntimeError(
-                        "Failed to initialize Modal application context (authentication / workspace / environment). "
-                        "Action required: make sure you're authenticated with Modal (run 'modal token new' or set "
-                        "MODAL_TOKEN_ID and MODAL_TOKEN_SECRET), and that the configured workspace/environment exist "
-                        "and you have access to them."
-                    ) from e
+        Returns:
+            The step status.
+        """
+        sandbox_id = str(step_run.run_metadata[STEP_SANDBOX_ID_METADATA_KEY])
+        sandbox = modal.Sandbox.from_id(sandbox_id)
+        return_code = sandbox.poll()
+        if return_code is None:
+            return ExecutionStatus.RUNNING
+        if return_code == 0:
+            return ExecutionStatus.COMPLETED
+        return ExecutionStatus.FAILED
 
-        asyncio.run(run_sandbox())
+    def cancel(self, step_run: "StepRunResponse") -> None:
+        """Cancels a submitted Modal sandbox.
+
+        Args:
+            step_run: The step run.
+        """
+        sandbox_id = str(step_run.run_metadata[STEP_SANDBOX_ID_METADATA_KEY])
+        sandbox = modal.Sandbox.from_id(sandbox_id)
+        sandbox.terminate()

@@ -185,3 +185,34 @@ def test_kubernetes_orchestrator_uses_service_account_from_settings(mocker):
         orchestrator._get_service_account_name(settings)
         == service_account_name
     )
+
+
+@pytest.mark.parametrize(
+    "input_value,expected",
+    [
+        ("Allow", "Allow"),
+        ("Forbid", "Forbid"),
+        ("Replace", "Replace"),
+        ("allow", "Allow"),
+        ("forbid", "Forbid"),
+        ("REPLACE", "Replace"),
+        ("  Forbid  ", "Forbid"),
+        (None, None),
+    ],
+)
+def test_concurrency_policy_validation_accepts_valid_values(
+    input_value, expected
+):
+    """Test that concurrency_policy validator normalizes valid values."""
+    settings = KubernetesOrchestratorSettings(concurrency_policy=input_value)
+    assert settings.concurrency_policy == expected
+
+
+@pytest.mark.parametrize(
+    "input_value",
+    ["Invalid", "never", "always", ""],
+)
+def test_concurrency_policy_validation_rejects_invalid_values(input_value):
+    """Test that concurrency_policy validator rejects invalid values."""
+    with pytest.raises(Exception):
+        KubernetesOrchestratorSettings(concurrency_policy=input_value)

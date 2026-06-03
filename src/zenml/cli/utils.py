@@ -102,6 +102,7 @@ from zenml.services import BaseService
 from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
 from zenml.utils import secret_utils
+from zenml.utils.json_utils import pydantic_encoder
 from zenml.utils.package_utils import requirement_installed
 from zenml.utils.time_utils import expires_in
 from zenml.utils.typing_utils import get_origin, is_union
@@ -124,6 +125,7 @@ if TYPE_CHECKING:
         PipelineSnapshotResponse,
         ProjectResponse,
         ResourceTypeModel,
+        ScheduleResponse,
         ServiceConnectorRequest,
         ServiceConnectorResourcesModel,
         ServiceConnectorResponse,
@@ -488,13 +490,45 @@ def format_integration_list(
     return list_of_dicts
 
 
-def print_stack_configuration(stack: "StackResponse", active: bool) -> None:
+def print_stack_configuration(
+    stack: "StackResponse",
+    active: bool,
+    output_format: OutputFormat = "table",
+    dashboard_url: Optional[str] = None,
+) -> None:
     """Prints the configuration options of a stack.
 
     Args:
         stack: Instance of a stack model.
         active: Whether the stack is active.
+        output_format: Output format (table, json, yaml, csv, tsv).
+        dashboard_url: Optional dashboard URL to include in non-table outputs.
     """
+    if output_format != "table":
+        data: Dict[str, Any] = {
+            "id": str(stack.id),
+            "name": stack.name,
+            "active": active,
+            "owner": stack.user.name if stack.user else None,
+            "labels": stack.labels or {},
+            "components": {
+                (ct.value if hasattr(ct, "value") else str(ct)): [
+                    {
+                        "id": str(component.id),
+                        "name": component.name,
+                        "flavor": component.flavor_name,
+                    }
+                    for component in components
+                ]
+                for ct, components in stack.components.items()
+                if components
+            },
+        }
+        if dashboard_url:
+            data["dashboard_url"] = dashboard_url
+        handle_output_single(data, output_format)
+        return
+
     stack_caption = f"'{stack.name}' stack"
     if active:
         stack_caption += " (ACTIVE)"
@@ -507,7 +541,11 @@ def print_stack_configuration(stack: "StackResponse", active: bool) -> None:
     rich_table.add_column("COMPONENT_TYPE", overflow="fold")
     rich_table.add_column("COMPONENT_NAME", overflow="fold")
     for component_type, components in stack.components.items():
-        rich_table.add_row(component_type, components[0].name)
+        for index, component in enumerate(components):
+            rich_table.add_row(
+                component_type if index == 0 else "",
+                component.name,
+            )
 
     rich_table.columns[0]._cells = [
         component.upper()  # type: ignore[union-attr]
@@ -562,6 +600,8 @@ def print_stack_component_configuration(
     component: "ComponentResponse",
     active_status: bool,
     connector_requirements: Optional[ServiceConnectorRequirements] = None,
+    output_format: OutputFormat = "table",
+    dashboard_url: Optional[str] = None,
 ) -> None:
     """Prints the configuration options of a stack component.
 
@@ -571,7 +611,45 @@ def print_stack_component_configuration(
         connector_requirements: Connector requirements for the component, taken
             from the component flavor. Only needed if the component has a
             connector.
+        output_format: Output format (table, json, yaml, csv, tsv).
+        dashboard_url: Optional dashboard URL to include in non-table outputs.
     """
+    if output_format != "table":
+        connector_data: Optional[Dict[str, Any]] = None
+        if component.connector:
+            resource_type = (
+                connector_requirements.resource_type
+                if connector_requirements
+                else component.connector.resource_types[0]
+            )
+            connector_data = {
+                "id": str(component.connector.id),
+                "name": component.connector.name,
+                "type": component.connector.type,
+                "resource_type": resource_type,
+                "resource_name": (
+                    component.connector_resource_id
+                    or component.connector.resource_id
+                    or None
+                ),
+            }
+
+        data: Dict[str, Any] = {
+            "id": str(component.id),
+            "name": component.name,
+            "type": component.type.value,
+            "flavor": component.flavor_name,
+            "active": active_status,
+            "owner": _get_user_name(component.user),
+            "configuration": component.configuration or {},
+            "labels": component.labels or {},
+            "service_connector": connector_data,
+        }
+        if dashboard_url:
+            data["dashboard_url"] = dashboard_url
+        handle_output_single(data, output_format)
+        return
+
     user_name = _get_user_name(component.user)
 
     declare(
@@ -953,7 +1031,7 @@ def install_packages(
         use_uv: Whether to use uv for package installation.
 
     Raises:
-        e: If the package installation fails.
+        subprocess.CalledProcessError: If the package installation fails.
     """
     if "neptune" in packages:
         declare(
@@ -1278,43 +1356,148 @@ def print_served_model_configuration(
     console.print(rich_table)
 
 
-def describe_pydantic_object(schema_json: Dict[str, Any]) -> None:
-    """Describes a Pydantic object based on the dict-representation of its schema.
+_JSON_SCHEMA_TYPE_TO_METAVAR: Dict[str, str] = {
+    "string": "TEXT",
+    "boolean": "BOOLEAN",
+    "integer": "INTEGER",
+    "number": "NUMBER",
+    "array": "LIST",
+    "object": "JSON",
+}
+
+
+def _resolve_schema_property_type(
+    prop_schema: Dict[str, Any],
+) -> str:
+    """Resolve a JSON-schema property to a simple type string.
+
+    Handles plain ``type``, ``anyOf`` (picks the first non-null
+    variant), and falls back to ``"object"``.  Used by both
+    ``describe_json_schema`` and
+    ``flavor_config_schema_click_help_dl`` so that type resolution
+    stays consistent.
 
     Args:
-        schema_json: str, represents the schema of a Pydantic object, which
-            can be obtained through BaseModelClass.schema_json()
+        prop_schema: Single property definition from a JSON schema.
+
+    Returns:
+        A lower-case type string such as ``"string"`` or
+        ``"object"``.
+    """
+    if "type" in prop_schema:
+        return str(prop_schema["type"])
+    if "enum" in prop_schema:
+        return "string"
+    if "anyOf" in prop_schema:
+        non_null = [
+            p.get("type", "object")
+            for p in prop_schema["anyOf"]
+            if p.get("type") != "null"
+        ]
+        if non_null:
+            return str(non_null[0])
+    return "object"
+
+
+def _iter_schema_properties(
+    schema_json: Dict[str, Any],
+) -> Iterator[Tuple[str, str, bool, str]]:
+    """Yield ``(name, type, is_required, description)`` for each non-ref property.
+
+    Provides a single iteration helper for walking a Pydantic / JSON
+    schema ``properties`` dict so that callers do not duplicate the
+    skip-``$ref`` / resolve-type / check-required logic.
+
+    Args:
+        schema_json: Top-level JSON schema dict (must contain a
+            ``properties`` key).
+
+    Yields:
+        Tuples of ``(property_name, resolved_type, is_required,
+        description)``.
+    """
+    required = set(schema_json.get("required", []))
+    for name, prop_schema in schema_json.get("properties", {}).items():
+        if "$ref" in prop_schema:
+            continue
+        prop_type = _resolve_schema_property_type(prop_schema)
+        desc = prop_schema.get("description", "") or ""
+        yield name, prop_type, name in required, desc
+
+
+def _type_to_metavar(prop_type: str) -> str:
+    """Map a resolved type string to a Click-style metavar.
+
+    Args:
+        prop_type: Type string as returned by
+            :func:`_resolve_schema_property_type`.
+
+    Returns:
+        A metavar such as ``TEXT``, ``BOOLEAN``, or ``JSON``.
+    """
+    return _JSON_SCHEMA_TYPE_TO_METAVAR.get(prop_type, "TEXT")
+
+
+def flavor_config_schema_click_help_dl(
+    flavor: "FlavorResponse",
+) -> List[Tuple[str, str]]:
+    """Build Click-style help rows from a flavor config JSON schema.
+
+    Matches how stack components accept configuration:
+    ``--field=value`` in ARGS, parallel to built-in Click options.
+
+    Args:
+        flavor: Registered flavor.
+
+    Returns:
+        Rows for :meth:`click.formatting.HelpFormatter.write_dl`.
+    """
+    rows: List[Tuple[str, str]] = []
+    for name, prop_type, is_required, desc in _iter_schema_properties(
+        flavor.config_schema
+    ):
+        metavar = _type_to_metavar(prop_type)
+        left = f"--{name} {metavar}"
+        if is_required:
+            desc = f"{desc} [required]" if desc else "[required]"
+        rows.append((left, desc.strip()))
+    return rows
+
+
+def describe_json_schema(
+    schema_json: Dict[str, Any],
+) -> None:
+    """Describe a JSON schema in a human-readable format.
+
+    Args:
+        schema_json: JSON schema dict, e.g. from
+            ``BaseModel.model_json_schema()``.
     """
     schema_title = schema_json["title"]
-    required = schema_json.get("required", [])
     description = schema_json.get("description", "")
-    properties = schema_json.get("properties", {})
 
     warning(f"Configuration class: {schema_title}\n", bold=True)
 
     if description:
         declare(f"{description}\n")
 
-    if properties:
-        warning("Properties", bold=True)
-        for prop, prop_schema in properties.items():
-            if "$ref" not in prop_schema.keys():
-                if "type" in prop_schema.keys():
-                    prop_type = prop_schema["type"]
-                elif "anyOf" in prop_schema.keys():
-                    prop_type = ", ".join(
-                        [p.get("type", "object") for p in prop_schema["anyOf"]]
-                    )
-                    prop_type = f"one of: {prop_type}"
-                else:
-                    prop_type = "object"
-                warning(
-                    f"{prop}, {prop_type}"
-                    f"{', REQUIRED' if prop in required else ''}"
-                )
+    properties = schema_json.get("properties", {})
+    if not properties:
+        return
 
-            if "description" in prop_schema:
-                declare(f"  {prop_schema['description']}", width=80)
+    warning("Properties", bold=True)
+    for name, prop_type, is_required, desc in _iter_schema_properties(
+        schema_json
+    ):
+        if "anyOf" in properties.get(name, {}):
+            prop_type = ", ".join(
+                p.get("type", "object") for p in properties[name]["anyOf"]
+            )
+            prop_type = f"one of: {prop_type}"
+        required_suffix = ", REQUIRED" if is_required else ""
+        warning(f"{name}, {prop_type}{required_suffix}")
+        if desc:
+            declare(f"  {desc}", width=80)
 
 
 def get_boolean_emoji(value: bool) -> str:
@@ -1972,13 +2155,16 @@ def get_execution_status_emoji(status: "ExecutionStatus") -> str:
 
     Returns:
         An emoji representing the given execution status.
-
-    Raises:
-        RuntimeError: If the given execution status is not supported.
     """
     from zenml.enums import ExecutionStatus
 
-    if status in {ExecutionStatus.INITIALIZING, ExecutionStatus.PROVISIONING}:
+    if status in {
+        ExecutionStatus.INITIALIZING,
+        ExecutionStatus.PROVISIONING,
+        ExecutionStatus.QUEUED,
+        ExecutionStatus.RESUMING,
+        ExecutionStatus.RETRYING,
+    }:
         return ":hourglass_flowing_sand:"
     if status == ExecutionStatus.FAILED:
         return ":x:"
@@ -1988,9 +2174,17 @@ def get_execution_status_emoji(status: "ExecutionStatus") -> str:
         return ":white_check_mark:"
     if status == ExecutionStatus.CACHED:
         return ":package:"
-    if status == ExecutionStatus.STOPPED or status == ExecutionStatus.STOPPING:
+    if status in {
+        ExecutionStatus.STOPPED,
+        ExecutionStatus.STOPPING,
+        ExecutionStatus.CANCELLING,
+        ExecutionStatus.CANCELLED,
+    }:
         return ":stop_sign:"
-    raise RuntimeError(f"Unknown status: {status}")
+    if status == ExecutionStatus.PAUSED:
+        return ":pause_button:"
+
+    return ":question:"
 
 
 def fetch_snapshot(
@@ -2100,6 +2294,9 @@ def _get_extra_columns_for_filter(filter_name: str) -> List[str]:
             "resource_types",
             "auth_method",
         ],
+        "ScheduleFilter": [
+            "pipeline",
+        ],
     }
     return extra_columns_map.get(filter_name, [])
 
@@ -2175,7 +2372,11 @@ def generate_stack_row(
             header = component_type.value.upper().replace("_", " ")
         else:
             header = component_type.value
-        row[header] = components[0].name if components else "-"
+        row[header] = (
+            ", ".join([component.name for component in components])
+            if components
+            else "-"
+        )
 
     return row
 
@@ -2251,6 +2452,32 @@ def generate_pipeline_run_row(
         "status": status_emoji if output_format == "table" else str(status),
         "stack": stack_name,
         "owner": user_name,
+    }
+
+
+def generate_schedule_row(
+    schedule: "ScheduleResponse",
+    output_format: OutputFormat,
+) -> Dict[str, Any]:
+    """Generate row data for schedule display.
+
+    Args:
+        schedule: The schedule response.
+        output_format: The output format.
+
+    Returns:
+        Dict with schedule data for display including resolved pipeline name.
+    """
+    pipeline_name: str = "N/A"
+    if schedule.pipeline_id:
+        try:
+            pipeline = Client().get_pipeline(schedule.pipeline_id)
+            pipeline_name = pipeline.name
+        except Exception:
+            pipeline_name = str(schedule.pipeline_id)
+
+    return {
+        "pipeline": pipeline_name,
     }
 
 
@@ -2527,8 +2754,8 @@ def print_page_info(page: "Page[Any]") -> None:
         page: The page object containing pagination information.
     """
     declare(
-        f"Page `({page.index}/{page.total_pages})`, "
-        f"`{page.total}` items found for the applied filters."
+        f"Page [cyan]({page.index}/{page.total_pages})[/cyan], "
+        f"[cyan]{page.total}[/cyan] items found for the applied filters."
     )
 
 
@@ -3371,6 +3598,13 @@ def _syntax_highlight(content: str, lexer: str) -> str:
     return output_buffer.getvalue().rstrip()
 
 
+def _json_encoder(obj: Any) -> Any:
+    try:
+        return pydantic_encoder(obj)
+    except TypeError:
+        return str(obj)
+
+
 def _render_json(
     data: List[Dict[str, Any]],
     pagination: Optional[Dict[str, Any]] = None,
@@ -3389,7 +3623,7 @@ def _render_json(
     if pagination:
         output["pagination"] = pagination
 
-    json_str = json.dumps(output, indent=2, default=str)
+    json_str = json.dumps(output, indent=2, default=_json_encoder)
     return _syntax_highlight(json_str, "json")
 
 
@@ -3411,7 +3645,10 @@ def _render_yaml(
     if pagination:
         output["pagination"] = pagination
 
-    yaml_str = yaml.dump(output, default_flow_style=False)
+    safe_output = json.loads(json.dumps(output, default=_json_encoder))
+    yaml_str = yaml.dump(
+        safe_output, default_flow_style=False, sort_keys=False
+    )
     return _syntax_highlight(yaml_str, "yaml")
 
 
@@ -3466,6 +3703,73 @@ def _render_csv(data: List[Dict[str, Any]]) -> str:
         CSV string representation of the data
     """
     return _render_delimited(data, delimiter=",")
+
+
+def prepare_output_single(
+    data: Dict[str, Any],
+    output_format: OutputFormat = "table",
+) -> str:
+    """Render a single object in the specified format.
+
+    Unlike prepare_output which wraps data in {"items": [...]}, this function
+    outputs the object directly at the root level for cleaner single-item output.
+
+    Args:
+        data: Dictionary to render.
+        output_format: Output format (`table`, `json`, `yaml`, `csv`, `tsv`).
+
+    Returns:
+        The rendered output in the specified format, or empty string if
+        no data is provided.
+
+    Raises:
+        ValueError: If an unsupported output format is provided.
+    """
+    if not data:
+        return ""
+
+    if output_format == "json":
+        json_str = json.dumps(data, indent=2, default=_json_encoder)
+        return _syntax_highlight(json_str, "json")
+    elif output_format == "yaml":
+        # Use JSON roundtrip to ensure all values are YAML-safe primitives
+        # (avoids !!python/object tags for UUIDs, enums, etc.)
+        safe_data = json.loads(json.dumps(data, default=_json_encoder))
+        yaml_str = yaml.dump(
+            safe_data, default_flow_style=False, sort_keys=False
+        )
+        return _syntax_highlight(yaml_str, "yaml")
+    elif output_format in {"csv", "tsv"}:
+        delimiter = "\t" if output_format == "tsv" else ","
+        return _render_delimited([data], delimiter=delimiter)
+    elif output_format == "table":
+        return _render_table([data])
+    else:
+        raise ValueError(f"Unsupported output format: {output_format}")
+
+
+def handle_output_single(
+    data: Dict[str, Any],
+    output_format: OutputFormat,
+) -> None:
+    """Handle output formatting for single-object CLI commands (like describe).
+
+    This function renders a single object and outputs it through the CLI's
+    clean output mechanism.
+
+    Args:
+        data: Dictionary to render.
+        output_format: Output format (table, json, yaml, tsv, csv).
+    """
+    cli_output = prepare_output_single(data=data, output_format=output_format)
+    if cli_output:
+        from zenml_cli import clean_output
+
+        try:
+            clean_output(cli_output)
+        except (IOError, OSError) as err:
+            logger.warning("Failed to write clean output: %s", err)
+            print(cli_output)
 
 
 def _get_terminal_width() -> Optional[int]:

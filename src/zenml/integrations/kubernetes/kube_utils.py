@@ -53,6 +53,7 @@ from typing import (
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 from kubernetes.client.rest import ApiException
+from urllib3.exceptions import ReadTimeoutError
 
 from zenml.config.resource_settings import ByteUnit
 from zenml.integrations.kubernetes.constants import (
@@ -91,7 +92,7 @@ class PatchedFailurePolicyRule(k8s_client.V1PodFailurePolicyRule):  # type: igno
 
         Returns:
             On pod conditions.
-        """
+        """  # noqa: DOC106, DOC107
         return self._on_pod_conditions
 
     @on_pod_conditions.setter
@@ -100,7 +101,7 @@ class PatchedFailurePolicyRule(k8s_client.V1PodFailurePolicyRule):  # type: igno
 
         Args:
             on_pod_conditions: On pod conditions.
-        """
+        """  # noqa: DOC106, DOC107
         self._on_pod_conditions = on_pod_conditions
 
 
@@ -160,15 +161,20 @@ def load_kube_config(
 
 
 def sanitize_label(label: str) -> str:
-    """Sanitize a label for a Kubernetes resource.
+    """Sanitize a string for use as a Kubernetes `metadata.name` DNS label.
+
+    Matches RFC 1123-style DNS labels: lowercase alphanumerics and hyphens,
+    starting and ending with alphanumeric. For Kubernetes *label values*, use
+    `sanitize_label_value` instead, which allows `_`, `.`, and mixed case.
+
+    See https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-label-names
 
     Args:
-        label: The label to sanitize.
+        label: The label name to sanitize.
 
     Returns:
-        The sanitized label.
+        The sanitized label name.
     """
-    # https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#rfc-1035-label-names
     label = re.sub(r"[^a-z0-9-]", "-", label.lower())
     label = re.sub(r"^[-]+", "", label)
     label = re.sub(r"[-]+", "-", label)
@@ -177,6 +183,32 @@ def sanitize_label(label: str) -> str:
     # alphanumeric character
     label = re.sub(r"[-]+$", "", label)
 
+    return label
+
+
+def sanitize_label_value(label: str) -> str:
+    """Sanitize a string for use as a Kubernetes label `value`.
+
+    Follows the label value rules (63 characters max; non-empty values must
+    start and end with `[A-Za-z0-9]`; `-`, `_`, `.`, and alphanumerics
+    are allowed between).
+
+    See https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
+
+    Args:
+        label: The label value to sanitize.
+
+    Returns:
+        The sanitized label value (at most 63 characters; may be empty).
+    """
+    label = re.sub(r"[^A-Za-z0-9._-]+", "-", label)
+    label = label.strip("._-")
+    if not label:
+        return ""
+
+    label = label[:63]
+    label = re.sub(r"[^A-Za-z0-9]+$", "", label)
+    label = re.sub(r"^[^A-Za-z0-9]+", "", label)
     return label
 
 
@@ -217,7 +249,10 @@ def pod_is_done(pod: k8s_client.V1Pod) -> bool:
 
 
 def get_pod(
-    core_api: k8s_client.CoreV1Api, pod_name: str, namespace: str
+    core_api: k8s_client.CoreV1Api,
+    pod_name: str,
+    namespace: str,
+    api_request_timeout: Optional[int] = None,
 ) -> Optional[k8s_client.V1Pod]:
     """Get a pod from Kubernetes metadata API.
 
@@ -225,6 +260,7 @@ def get_pod(
         core_api: Client of `CoreV1Api` of Kubernetes API.
         pod_name: The name of the pod.
         namespace: The namespace of the pod.
+        api_request_timeout: The request timeout in seconds.
 
     Raises:
         RuntimeError: When it sees unexpected errors from Kubernetes API.
@@ -233,9 +269,10 @@ def get_pod(
         The found pod object. None if it's not found.
     """
     try:
-        return retry_on_api_exception(core_api.read_namespaced_pod)(
-            name=pod_name, namespace=namespace
-        )
+        return retry_on_api_exception(
+            core_api.read_namespaced_pod,
+            api_request_timeout=api_request_timeout,
+        )(name=pod_name, namespace=namespace)
     except k8s_client.rest.ApiException as e:
         if e.status == 404:
             return None
@@ -250,6 +287,7 @@ def wait_pod(
     timeout_sec: int = 0,
     exponential_backoff: bool = False,
     stream_logs: bool = False,
+    api_request_timeout: Optional[int] = None,
 ) -> k8s_client.V1Pod:
     """Wait for a pod to meet an exit condition.
 
@@ -271,6 +309,7 @@ def wait_pod(
             Defaults to False.
         stream_logs: Whether to stream the pod logs to
             `zenml.logger.info()`. Defaults to False.
+        api_request_timeout: The request timeout in seconds.
 
     Raises:
         RuntimeError: when the function times out.
@@ -291,7 +330,12 @@ def wait_pod(
         kube_client = kube_client_fn()
         core_api = k8s_client.CoreV1Api(kube_client)
 
-        resp = get_pod(core_api, pod_name, namespace)
+        resp = get_pod(
+            core_api,
+            pod_name,
+            namespace,
+            api_request_timeout=api_request_timeout,
+        )
 
         if resp is None:
             raise RuntimeError(f"Pod `{namespace}:{pod_name}` not found.")
@@ -507,6 +551,7 @@ def create_and_wait_for_pod_to_start(
     startup_failure_delay: float,
     startup_failure_backoff: float,
     startup_timeout: float,
+    api_request_timeout: Optional[int] = None,
 ) -> None:
     """Create a pod and wait for it to reach a desired state.
 
@@ -520,6 +565,7 @@ def create_and_wait_for_pod_to_start(
         startup_failure_delay: The delay between retries for the pod startup.
         startup_failure_backoff: The backoff factor for the pod startup.
         startup_timeout: The maximum time to wait for the pod to start.
+        api_request_timeout: The request timeout in seconds.
 
     Raises:
         TimeoutError: If the pod is still in a pending state after the maximum
@@ -574,6 +620,7 @@ def create_and_wait_for_pod_to_start(
             core_api=core_api,
             pod_name=pod_name,
             namespace=namespace,
+            api_request_timeout=api_request_timeout,
         )
         if not pod or pod_is_not_pending(pod):
             break
@@ -600,7 +647,10 @@ def create_and_wait_for_pod_to_start(
 
 
 def get_pod_owner_references(
-    core_api: k8s_client.CoreV1Api, pod_name: str, namespace: str
+    core_api: k8s_client.CoreV1Api,
+    pod_name: str,
+    namespace: str,
+    api_request_timeout: Optional[int] = None,
 ) -> List[k8s_client.V1OwnerReference]:
     """Get owner references for a pod.
 
@@ -608,11 +658,17 @@ def get_pod_owner_references(
         core_api: Kubernetes CoreV1Api client.
         pod_name: Name of the pod.
         namespace: Kubernetes namespace.
+        api_request_timeout: The request timeout in seconds.
 
     Returns:
         List of owner references.
     """
-    pod = get_pod(core_api=core_api, pod_name=pod_name, namespace=namespace)
+    pod = get_pod(
+        core_api=core_api,
+        pod_name=pod_name,
+        namespace=namespace,
+        api_request_timeout=api_request_timeout,
+    )
 
     if not pod or not pod.metadata or not pod.metadata.owner_references:
         return []
@@ -628,6 +684,7 @@ def retry_on_api_exception(
     delay: float = 1,
     backoff: float = 1,
     fail_on_status_codes: Tuple[int, ...] = (404,),
+    api_request_timeout: Optional[int] = None,
 ) -> Callable[..., R]:
     """Retry a function on API exceptions.
 
@@ -637,6 +694,7 @@ def retry_on_api_exception(
         delay: The delay between retries.
         backoff: The backoff factor.
         fail_on_status_codes: The status codes to fail on immediately.
+        api_request_timeout: The request timeout in seconds.
 
     Returns:
         The wrapped function with retry logic.
@@ -648,9 +706,14 @@ def retry_on_api_exception(
         retries = 0
         while retries <= max_retries:
             try:
+                if api_request_timeout and "_request_timeout" not in kwargs:
+                    kwargs["_request_timeout"] = api_request_timeout
                 return func(*args, **kwargs)
-            except ApiException as e:
-                if e.status in fail_on_status_codes:
+            except (ApiException, ReadTimeoutError) as e:
+                if (
+                    isinstance(e, ApiException)
+                    and e.status in fail_on_status_codes
+                ):
                     raise
 
                 retries += 1
@@ -674,6 +737,7 @@ def create_job(
     batch_api: k8s_client.BatchV1Api,
     namespace: str,
     job_manifest: k8s_client.V1Job,
+    api_request_timeout: Optional[int] = None,
 ) -> None:
     """Create a Kubernetes job.
 
@@ -681,8 +745,12 @@ def create_job(
         batch_api: Kubernetes batch api.
         namespace: Kubernetes namespace.
         job_manifest: The manifest of the job to create.
+        api_request_timeout: The request timeout in seconds.
     """
-    retry_on_api_exception(batch_api.create_namespaced_job)(
+    retry_on_api_exception(
+        batch_api.create_namespaced_job,
+        api_request_timeout=api_request_timeout,
+    )(
         namespace=namespace,
         body=job_manifest,
     )
@@ -692,6 +760,7 @@ def get_job(
     batch_api: k8s_client.BatchV1Api,
     namespace: str,
     job_name: str,
+    api_request_timeout: Optional[int] = None,
 ) -> k8s_client.V1Job:
     """Get a job by name.
 
@@ -699,19 +768,21 @@ def get_job(
         batch_api: Kubernetes batch api.
         namespace: Kubernetes namespace.
         job_name: The name of the job to get.
+        api_request_timeout: The request timeout in seconds.
 
     Returns:
         The job.
     """
-    return retry_on_api_exception(batch_api.read_namespaced_job)(
-        name=job_name, namespace=namespace
-    )
+    return retry_on_api_exception(
+        batch_api.read_namespaced_job, api_request_timeout=api_request_timeout
+    )(name=job_name, namespace=namespace)
 
 
 def list_jobs(
     batch_api: k8s_client.BatchV1Api,
     namespace: str,
     label_selector: Optional[str] = None,
+    api_request_timeout: Optional[int] = None,
 ) -> k8s_client.V1JobList:
     """List jobs in a namespace.
 
@@ -719,11 +790,14 @@ def list_jobs(
         batch_api: Kubernetes batch api.
         namespace: Kubernetes namespace.
         label_selector: The label selector to use.
+        api_request_timeout: The request timeout in seconds.
 
     Returns:
         The job list.
     """
-    return retry_on_api_exception(batch_api.list_namespaced_job)(
+    return retry_on_api_exception(
+        batch_api.list_namespaced_job, api_request_timeout=api_request_timeout
+    )(
         namespace=namespace,
         label_selector=label_selector,
     )
@@ -734,6 +808,7 @@ def update_job(
     namespace: str,
     job_name: str,
     annotations: Dict[str, str],
+    api_request_timeout: Optional[int] = None,
 ) -> k8s_client.V1Job:
     """Update a job.
 
@@ -742,11 +817,14 @@ def update_job(
         namespace: Kubernetes namespace.
         job_name: The name of the job to update.
         annotations: The annotations to update.
+        api_request_timeout: The request timeout in seconds.
 
     Returns:
         The updated job.
     """
-    return retry_on_api_exception(batch_api.patch_namespaced_job)(
+    return retry_on_api_exception(
+        batch_api.patch_namespaced_job, api_request_timeout=api_request_timeout
+    )(
         name=job_name,
         namespace=namespace,
         body={"metadata": {"annotations": annotations}},
@@ -812,9 +890,61 @@ def get_container_termination_reason(
     )
 
 
+def get_pod_failure_details(
+    pod: k8s_client.V1Pod, container_name: str
+) -> Optional[str]:
+    """Get best-effort pod failure details.
+
+    Args:
+        pod: The pod to get failure details for.
+        container_name: The container name.
+
+    Returns:
+        Failure details for the pod, if available.
+    """
+    try:
+        details: List[str] = []
+        container_state = get_container_status(pod, container_name)
+        if container_state and container_state.terminated:
+            terminated = container_state.terminated
+            container_details = [
+                terminated.reason or "Unknown",
+                f"exit_code={terminated.exit_code}",
+            ]
+            if terminated.message:
+                container_details.append(f"message={terminated.message}")
+            details.append(
+                f"container failure reason: {', '.join(container_details)}"
+            )
+        elif container_state and container_state.waiting:
+            waiting = container_state.waiting
+            container_details = [waiting.reason or "Unknown"]
+            if waiting.message:
+                container_details.append(f"message={waiting.message}")
+            details.append(
+                f"container waiting reason: {', '.join(container_details)}"
+            )
+
+        if pod.status:
+            pod_details = []
+            if pod.status.reason:
+                pod_details.append(pod.status.reason)
+            if pod.status.message:
+                pod_details.append(f"message={pod.status.message}")
+
+            if pod_details:
+                details.append(f"pod failure reason: {', '.join(pod_details)}")
+
+        if details:
+            return "; ".join(details)
+    except Exception:
+        logger.debug("Failed to extract pod failure details.", exc_info=True)
+
+    return None
+
+
 def wait_for_job_to_finish(
-    batch_api: k8s_client.BatchV1Api,
-    core_api: k8s_client.CoreV1Api,
+    get_client: Callable[[], k8s_client.ApiClient],
     namespace: str,
     job_name: str,
     backoff_interval: float = 1,
@@ -823,12 +953,12 @@ def wait_for_job_to_finish(
     fail_on_container_waiting_reasons: Optional[List[str]] = None,
     stream_logs: bool = True,
     container_name: Optional[str] = None,
+    api_request_timeout: Optional[int] = None,
 ) -> None:
     """Wait for a job to finish.
 
     Args:
-        batch_api: Kubernetes BatchV1Api client.
-        core_api: Kubernetes CoreV1Api client.
+        get_client: A function that returns a Kubernetes API client.
         namespace: Kubernetes namespace.
         job_name: Name of the job for which to wait.
         backoff_interval: The interval to wait between polling the job status.
@@ -839,6 +969,7 @@ def wait_for_job_to_finish(
             that will cause the job to fail.
         stream_logs: Whether to stream the job logs.
         container_name: Name of the container to stream logs from.
+        api_request_timeout: The request timeout in seconds.
 
     Raises:
         RuntimeError: If the job failed or timed out.
@@ -847,8 +978,13 @@ def wait_for_job_to_finish(
     finished_pods = set()
 
     while True:
+        client = get_client()
+        batch_api = k8s_client.BatchV1Api(client)
+        core_api = k8s_client.CoreV1Api(client)
+
         job: k8s_client.V1Job = retry_on_api_exception(
-            batch_api.read_namespaced_job
+            batch_api.read_namespaced_job,
+            api_request_timeout=api_request_timeout,
         )(name=job_name, namespace=namespace)
 
         if job.status.conditions:
@@ -863,7 +999,8 @@ def wait_for_job_to_finish(
 
         if fail_on_container_waiting_reasons:
             pod_list: k8s_client.V1PodList = retry_on_api_exception(
-                core_api.list_namespaced_pod
+                core_api.list_namespaced_pod,
+                api_request_timeout=api_request_timeout,
             )(
                 namespace=namespace,
                 label_selector=f"job-name={job_name}",
@@ -880,7 +1017,10 @@ def wait_for_job_to_finish(
                     and waiting_state.reason
                     in fail_on_container_waiting_reasons
                 ):
-                    retry_on_api_exception(batch_api.delete_namespaced_job)(
+                    retry_on_api_exception(
+                        batch_api.delete_namespaced_job,
+                        api_request_timeout=api_request_timeout,
+                    )(
                         name=job_name,
                         namespace=namespace,
                         propagation_policy="Foreground",
@@ -961,6 +1101,7 @@ def check_job_status(
     job_name: str,
     fail_on_container_waiting_reasons: Optional[List[str]] = None,
     container_name: Optional[str] = None,
+    api_request_timeout: Optional[int] = None,
 ) -> Tuple[JobStatus, Optional[str]]:
     """Check the status of a job.
 
@@ -972,12 +1113,13 @@ def check_job_status(
         fail_on_container_waiting_reasons: List of container waiting reasons
             that will cause the job to fail.
         container_name: Name of the container to check for failure.
+        api_request_timeout: The request timeout in seconds.
 
     Returns:
         The status of the job and an error message if the job failed.
     """
     job: k8s_client.V1Job = retry_on_api_exception(
-        batch_api.read_namespaced_job
+        batch_api.read_namespaced_job, api_request_timeout=api_request_timeout
     )(name=job_name, namespace=namespace)
 
     if job.status.conditions:
@@ -986,7 +1128,7 @@ def check_job_status(
                 return JobStatus.SUCCEEDED, None
             if condition.type == "Failed" and condition.status == "True":
                 error_message = condition.message or "Unknown"
-                container_failure_reason = None
+                pod_failure_details = None
                 try:
                     pods = core_api.list_namespaced_pod(
                         label_selector=f"job-name={job_name}",
@@ -997,28 +1139,21 @@ def check_job_status(
                         key=lambda pod: pod.metadata.creation_timestamp,
                     )
                     if pods:
-                        if (
-                            termination_reason
-                            := get_container_termination_reason(
-                                pods[-1], container_name or "main"
-                            )
-                        ):
-                            exit_code, reason = termination_reason
-                            if exit_code != 0:
-                                container_failure_reason = (
-                                    f"{reason}, exit_code={exit_code}"
-                                )
+                        pod_failure_details = get_pod_failure_details(
+                            pods[-1], container_name or "main"
+                        )
                 except Exception:
                     pass
 
-                if container_failure_reason:
-                    error_message += f" (container failure reason: {container_failure_reason})"
+                if pod_failure_details:
+                    error_message += f" ({pod_failure_details})"
 
                 return JobStatus.FAILED, error_message
 
     if fail_on_container_waiting_reasons:
         pod_list: k8s_client.V1PodList = retry_on_api_exception(
-            core_api.list_namespaced_pod
+            core_api.list_namespaced_pod,
+            api_request_timeout=api_request_timeout,
         )(
             namespace=namespace,
             label_selector=f"job-name={job_name}",
@@ -1034,7 +1169,10 @@ def check_job_status(
                 and (waiting_state := container_state.waiting)
                 and waiting_state.reason in fail_on_container_waiting_reasons
             ):
-                retry_on_api_exception(batch_api.delete_namespaced_job)(
+                retry_on_api_exception(
+                    batch_api.delete_namespaced_job,
+                    api_request_timeout=api_request_timeout,
+                )(
                     name=job_name,
                     namespace=namespace,
                     propagation_policy="Foreground",
@@ -1052,6 +1190,7 @@ def create_config_map(
     namespace: str,
     name: str,
     data: Dict[str, str],
+    api_request_timeout: Optional[int] = None,
 ) -> None:
     """Create a Kubernetes config map.
 
@@ -1060,8 +1199,12 @@ def create_config_map(
         namespace: Kubernetes namespace.
         name: Name of the config map to create.
         data: Data to store in the config map.
+        api_request_timeout: The request timeout in seconds.
     """
-    retry_on_api_exception(core_api.create_namespaced_config_map)(
+    retry_on_api_exception(
+        core_api.create_namespaced_config_map,
+        api_request_timeout=api_request_timeout,
+    )(
         namespace=namespace,
         body=k8s_client.V1ConfigMap(metadata={"name": name}, data=data),
     )
@@ -1072,6 +1215,7 @@ def update_config_map(
     namespace: str,
     name: str,
     data: Dict[str, str],
+    api_request_timeout: Optional[int] = None,
 ) -> None:
     """Update a Kubernetes config map.
 
@@ -1080,8 +1224,12 @@ def update_config_map(
         namespace: Kubernetes namespace.
         name: Name of the config map to update.
         data: Data to store in the config map.
+        api_request_timeout: The request timeout in seconds.
     """
-    retry_on_api_exception(core_api.patch_namespaced_config_map)(
+    retry_on_api_exception(
+        core_api.patch_namespaced_config_map,
+        api_request_timeout=api_request_timeout,
+    )(
         namespace=namespace,
         name=name,
         body=k8s_client.V1ConfigMap(data=data),
@@ -1092,6 +1240,7 @@ def get_config_map(
     core_api: k8s_client.CoreV1Api,
     namespace: str,
     name: str,
+    api_request_timeout: Optional[int] = None,
 ) -> k8s_client.V1ConfigMap:
     """Get a Kubernetes config map.
 
@@ -1099,11 +1248,15 @@ def get_config_map(
         core_api: Kubernetes CoreV1Api client.
         namespace: Kubernetes namespace.
         name: Name of the config map to get.
+        api_request_timeout: The request timeout in seconds.
 
     Returns:
         The config map.
     """
-    return retry_on_api_exception(core_api.read_namespaced_config_map)(
+    return retry_on_api_exception(
+        core_api.read_namespaced_config_map,
+        api_request_timeout=api_request_timeout,
+    )(
         namespace=namespace,
         name=name,
     )
@@ -1113,6 +1266,7 @@ def delete_config_map(
     core_api: k8s_client.CoreV1Api,
     namespace: str,
     name: str,
+    api_request_timeout: Optional[int] = None,
 ) -> None:
     """Delete a Kubernetes config map.
 
@@ -1120,8 +1274,12 @@ def delete_config_map(
         core_api: Kubernetes CoreV1Api client.
         namespace: Kubernetes namespace.
         name: Name of the config map to delete.
+        api_request_timeout: The request timeout in seconds.
     """
-    retry_on_api_exception(core_api.delete_namespaced_config_map)(
+    retry_on_api_exception(
+        core_api.delete_namespaced_config_map,
+        api_request_timeout=api_request_timeout,
+    )(
         namespace=namespace,
         name=name,
     )
@@ -1131,6 +1289,7 @@ def get_parent_job_name(
     core_api: k8s_client.CoreV1Api,
     pod_name: str,
     namespace: str,
+    api_request_timeout: Optional[int] = None,
 ) -> Optional[str]:
     """Get the name of the job that created a pod.
 
@@ -1138,12 +1297,18 @@ def get_parent_job_name(
         core_api: Kubernetes CoreV1Api client.
         pod_name: Name of the pod.
         namespace: Kubernetes namespace.
+        api_request_timeout: The request timeout in seconds.
 
     Returns:
         The name of the job that created the pod, or None if the pod is not
         associated with a job.
     """
-    pod = get_pod(core_api, pod_name=pod_name, namespace=namespace)
+    pod = get_pod(
+        core_api,
+        pod_name=pod_name,
+        namespace=namespace,
+        api_request_timeout=api_request_timeout,
+    )
     if (
         pod
         and pod.metadata

@@ -26,7 +26,6 @@ from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.resources import Resource
 
 from zenml.log_stores.base_log_store import (
-    MAX_ENTRIES_PER_REQUEST,
     BaseLogStore,
     BaseLogStoreOrigin,
 )
@@ -87,8 +86,6 @@ class OtelLogStoreOrigin(BaseLogStoreOrigin):
             metadata: Additional metadata to attach to all log entries that will
                 be emitted by this origin.
         """
-        metadata = {f"zenml.{key}": value for key, value in metadata.items()}
-
         metadata.update(
             {
                 "zenml.log.id": str(log_model.id),
@@ -313,9 +310,9 @@ class OtelLogStore(BaseLogStore):
     def fetch(
         self,
         logs_model: "LogsResponse",
+        limit: int,
         start_time: Optional[datetime] = None,
         end_time: Optional[datetime] = None,
-        limit: int = MAX_ENTRIES_PER_REQUEST,
     ) -> List["LogEntry"]:
         """Fetch logs from the OpenTelemetry backend.
 
@@ -328,6 +325,9 @@ class OtelLogStore(BaseLogStore):
             start_time: Filter logs after this time.
             end_time: Filter logs before this time.
             limit: Maximum number of log entries to return.
+
+        Returns:
+            A list of log entries.
 
         Raises:
             NotImplementedError: Log fetching is not supported by the OTEL log

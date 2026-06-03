@@ -254,7 +254,7 @@ class StackComponentConfig(BaseModel, ABC):
         """
         from zenml.client import Client
 
-        for component in Client().active_stack.components.values():
+        for component in Client().active_stack.all_components:
             if component.config == self:
                 return True
         return False
@@ -448,7 +448,8 @@ class StackComponent:
             from zenml.integrations.registry import integration_registry
 
             integration_requirements = " ".join(
-                integration_registry.select_integration_requirements(
+                f"'{req}'"
+                for req in integration_registry.select_integration_requirements(
                     flavor_model.integration
                 )
             )
@@ -534,7 +535,10 @@ class StackComponent:
                 "and try again."
             )
 
-        key = settings_utils.get_stack_component_setting_key(self)
+        canonical_key = settings_utils.get_stack_component_name_setting_key(
+            self
+        )
+        legacy_key = settings_utils.get_stack_component_setting_key(self)
 
         all_settings = (
             container.config.settings
@@ -548,8 +552,10 @@ class StackComponent:
         # Use the current config as a base
         settings_dict = self.config.model_dump(exclude_unset=True)
 
-        if key in all_settings:
-            settings_dict.update(dict(all_settings[key]))
+        if canonical_key in all_settings:
+            settings_dict.update(dict(all_settings[canonical_key]))
+        elif legacy_key in all_settings:
+            settings_dict.update(dict(all_settings[legacy_key]))
 
         return self.settings_class.model_validate(settings_dict)
 

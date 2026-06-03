@@ -19,7 +19,7 @@ import socket
 import threading
 import time
 from contextlib import nullcontext
-from typing import List, Optional, Tuple, cast
+from typing import Any, ContextManager, Dict, List, Optional, Tuple, cast
 from uuid import UUID
 
 from kubernetes import client as k8s_client
@@ -62,6 +62,7 @@ from zenml.models import (
     PipelineRunUpdate,
     PipelineSnapshotResponse,
     RunMetadataResource,
+    StepRunResponse,
 )
 from zenml.orchestrators import publish_utils
 from zenml.orchestrators.step_run_utils import (
@@ -75,9 +76,11 @@ from zenml.orchestrators.utils import (
 from zenml.pipelines.run_utils import create_placeholder_run
 from zenml.utils import env_utils
 from zenml.utils.logging_utils import (
+    LoggingContext,
     is_pipeline_logging_enabled,
-    setup_run_logging,
+    setup_logging_context,
 )
+from zenml.utils.time_utils import utc_now
 
 logger = get_logger(__name__)
 
@@ -95,7 +98,10 @@ def parse_args() -> argparse.Namespace:
 
 
 def _get_orchestrator_job_state(
-    batch_api: k8s_client.BatchV1Api, namespace: str, job_name: str
+    batch_api: k8s_client.BatchV1Api,
+    namespace: str,
+    job_name: str,
+    api_request_timeout: Optional[int],
 ) -> Tuple[Optional[UUID], Optional[str]]:
     """Get the existing status of the orchestrator job.
 
@@ -103,6 +109,7 @@ def _get_orchestrator_job_state(
         batch_api: The batch api.
         namespace: The namespace.
         job_name: The name of the orchestrator job.
+        api_request_timeout: The request timeout in seconds.
 
     Returns:
         The run id and orchestrator run id.
@@ -114,6 +121,7 @@ def _get_orchestrator_job_state(
         batch_api=batch_api,
         namespace=namespace,
         job_name=job_name,
+        api_request_timeout=api_request_timeout,
     )
 
     if job.metadata and job.metadata.annotations:
@@ -132,6 +140,7 @@ def _reconstruct_nodes(
     pipeline_run: PipelineRunResponse,
     namespace: str,
     batch_api: k8s_client.BatchV1Api,
+    api_request_timeout: Optional[int] = None,
 ) -> List[Node]:
     """Reconstruct the nodes from the pipeline run.
 
@@ -140,6 +149,7 @@ def _reconstruct_nodes(
         pipeline_run: The pipeline run.
         namespace: The namespace.
         batch_api: The batch api.
+        api_request_timeout: The request timeout in seconds.
 
     Returns:
         The reconstructed nodes.
@@ -160,6 +170,7 @@ def _reconstruct_nodes(
         batch_api=batch_api,
         namespace=namespace,
         label_selector=f"run_id={pipeline_run.id}",
+        api_request_timeout=api_request_timeout,
     )
     for job in job_list.items:
         annotations = job.metadata.annotations or {}
@@ -191,7 +202,7 @@ def _reconstruct_nodes(
                 node.status = node_status
                 logger.debug(
                     "Existing job for step `%s` status: %s.",
-                    step_name,
+                    step_name_annotation,
                     node_status,
                 )
 
@@ -204,102 +215,110 @@ def main() -> None:
     Raises:
         RuntimeError: If the orchestrator pod is not associated with a job.
     """
-    logger.info("Orchestrator pod started.")
-
     args = parse_args()
 
     orchestrator_pod_name = socket.gethostname()
 
     client = Client()
     snapshot = client.get_snapshot(args.snapshot_id)
-    active_stack = client.active_stack
-    orchestrator = active_stack.orchestrator
-    assert isinstance(orchestrator, KubernetesOrchestrator)
-    namespace = orchestrator.config.kubernetes_namespace
 
-    pipeline_settings = cast(
-        KubernetesOrchestratorSettings,
-        orchestrator.get_settings(snapshot),
-    )
+    logs_context: ContextManager[Any] = nullcontext()
+    if is_pipeline_logging_enabled(snapshot.pipeline_configuration):
+        logs_context = setup_logging_context(source="orchestrator")
 
-    # Get a Kubernetes client from the active Kubernetes orchestrator, but
-    # override the `incluster` setting to `True` since we are running inside
-    # the Kubernetes cluster.
-    api_client_config = orchestrator.get_kube_client(
-        incluster=True
-    ).configuration
-    api_client_config.connection_pool_maxsize = (
-        pipeline_settings.max_parallelism
-    )
-    kube_client = k8s_client.ApiClient(api_client_config)
-    core_api = k8s_client.CoreV1Api(kube_client)
-    batch_api = k8s_client.BatchV1Api(kube_client)
+    with logs_context:
+        logger.info("Orchestrator pod started.")
 
-    job_name = kube_utils.get_parent_job_name(
-        core_api=core_api,
-        pod_name=orchestrator_pod_name,
-        namespace=namespace,
-    )
-    if not job_name:
-        raise RuntimeError("Failed to fetch job name for orchestrator pod.")
+        active_stack = client.active_stack
+        orchestrator = active_stack.orchestrator
+        assert isinstance(orchestrator, KubernetesOrchestrator)
+        namespace = orchestrator.config.kubernetes_namespace
 
-    run_id, orchestrator_run_id = _get_orchestrator_job_state(
-        batch_api=batch_api,
-        namespace=namespace,
-        job_name=job_name,
-    )
-
-    if run_id and orchestrator_run_id:
-        logger.info("Continuing existing run `%s`.", run_id)
-        pipeline_run = client.get_pipeline_run(run_id)
-        nodes = _reconstruct_nodes(
-            snapshot=snapshot,
-            pipeline_run=pipeline_run,
-            namespace=namespace,
-            batch_api=batch_api,
+        pipeline_settings = cast(
+            KubernetesOrchestratorSettings,
+            orchestrator.get_settings(snapshot),
         )
-        logger.debug("Reconstructed nodes: %s", nodes)
 
-    else:
-        orchestrator_run_id = orchestrator_pod_name
+        # Get a Kubernetes client from the active Kubernetes orchestrator, but
+        # override the `incluster` setting to `True` since we are running inside
+        # the Kubernetes cluster.
+        api_client_config = orchestrator.get_kube_client(
+            incluster=True
+        ).configuration
+        api_client_config.connection_pool_maxsize = (
+            pipeline_settings.max_parallelism
+        )
+        kube_client = k8s_client.ApiClient(api_client_config)
+        core_api = k8s_client.CoreV1Api(kube_client)
+        batch_api = k8s_client.BatchV1Api(kube_client)
 
-        if args.run_id:
-            pipeline_run = client.zen_store.update_run(
-                run_id=args.run_id,
-                run_update=PipelineRunUpdate(
-                    orchestrator_run_id=orchestrator_run_id
-                ),
+        job_name = kube_utils.get_parent_job_name(
+            core_api=core_api,
+            pod_name=orchestrator_pod_name,
+            namespace=namespace,
+            api_request_timeout=pipeline_settings.api_request_timeout,
+        )
+        if not job_name:
+            raise RuntimeError(
+                "Failed to fetch job name for orchestrator pod."
             )
-        else:
-            pipeline_run = create_placeholder_run(
-                snapshot=snapshot,
-                orchestrator_run_id=orchestrator_run_id,
-            )
 
-        # Store in the job annotations so we can continue the run if the pod
-        # is restarted
-        kube_utils.update_job(
+        run_id, orchestrator_run_id = _get_orchestrator_job_state(
             batch_api=batch_api,
             namespace=namespace,
             job_name=job_name,
-            annotations={
-                RUN_ID_ANNOTATION_KEY: str(pipeline_run.id),
-                ORCHESTRATOR_RUN_ID_ANNOTATION_KEY: orchestrator_run_id,
-            },
-        )
-        nodes = [
-            Node(id=step_name, upstream_nodes=step.spec.upstream_steps)
-            for step_name, step in snapshot.step_configurations.items()
-        ]
-
-    logs_context = nullcontext()
-    if is_pipeline_logging_enabled(snapshot.pipeline_configuration):
-        logs_context = setup_run_logging(
-            pipeline_run=pipeline_run,
-            source="orchestrator",
+            api_request_timeout=pipeline_settings.api_request_timeout,
         )
 
-    with logs_context:
+        if run_id and orchestrator_run_id:
+            logger.info("Continuing existing run `%s`.", run_id)
+            pipeline_run = client.get_pipeline_run(run_id)
+            nodes = _reconstruct_nodes(
+                snapshot=snapshot,
+                pipeline_run=pipeline_run,
+                namespace=namespace,
+                batch_api=batch_api,
+                api_request_timeout=pipeline_settings.api_request_timeout,
+            )
+            logger.debug("Reconstructed nodes: %s", nodes)
+
+        else:
+            orchestrator_run_id = orchestrator_pod_name
+
+            if args.run_id:
+                pipeline_run = client.zen_store.update_run(
+                    run_id=args.run_id,
+                    run_update=PipelineRunUpdate(
+                        orchestrator_run_id=orchestrator_run_id
+                    ),
+                )
+            else:
+                pipeline_run = create_placeholder_run(
+                    snapshot=snapshot,
+                    orchestrator_run_id=orchestrator_run_id,
+                )
+
+            # Store in the job annotations so we can continue the run if the pod
+            # is restarted
+            kube_utils.update_job(
+                batch_api=batch_api,
+                namespace=namespace,
+                job_name=job_name,
+                annotations={
+                    RUN_ID_ANNOTATION_KEY: str(pipeline_run.id),
+                    ORCHESTRATOR_RUN_ID_ANNOTATION_KEY: orchestrator_run_id,
+                },
+                api_request_timeout=pipeline_settings.api_request_timeout,
+            )
+            nodes = [
+                Node(id=step_name, upstream_nodes=step.spec.upstream_steps)
+                for step_name, step in snapshot.step_configurations.items()
+            ]
+
+        if isinstance(logs_context, LoggingContext):
+            logs_context.update(pipeline_run=pipeline_run)
+            logs_context.attach(pipeline_run)
+
         step_command = StepEntrypointConfiguration.get_entrypoint_command()
         mount_local_stores = active_stack.orchestrator.config.is_local
 
@@ -313,6 +332,7 @@ def main() -> None:
                     core_api=core_api,
                     pod_name=orchestrator_pod_name,
                     namespace=namespace,
+                    api_request_timeout=pipeline_settings.api_request_timeout,
                 )
                 # Make sure None of the owner references are marked as
                 # controllers of the created pod, which messes with the
@@ -327,16 +347,22 @@ def main() -> None:
             pipeline_run=pipeline_run,
             stack=active_stack,
         )
-        step_runs = {}
+        step_runs: Dict[str, StepRunResponse] = {}
 
         base_labels = {
-            "project_id": kube_utils.sanitize_label(str(snapshot.project_id)),
-            "run_id": kube_utils.sanitize_label(str(pipeline_run.id)),
-            "run_name": kube_utils.sanitize_label(str(pipeline_run.name)),
-            "pipeline": kube_utils.sanitize_label(
+            "project_id": kube_utils.sanitize_label_value(
+                str(snapshot.project_id)
+            ),
+            "run_id": kube_utils.sanitize_label_value(str(pipeline_run.id)),
+            "run_name": kube_utils.sanitize_label_value(
+                str(pipeline_run.name)
+            ),
+            "pipeline": kube_utils.sanitize_label_value(
                 snapshot.pipeline_configuration.name
             ),
         }
+
+        step_run_skip_hb_set = set()
 
         def _cache_step_run_if_possible(step_name: str) -> bool:
             if not step_run_request_factory.has_caching_enabled(step_name):
@@ -346,7 +372,9 @@ def main() -> None:
                 step_name
             )
             try:
-                step_run_request_factory.populate_request(step_run_request)
+                step_run_request_factory.populate_request(
+                    step_run_request, step_runs=step_runs
+                )
             except Exception as e:
                 logger.error(
                     f"Failed to populate step run request for step {step_name}: {e}"
@@ -363,6 +391,52 @@ def main() -> None:
 
             return False
 
+        def _handle_failed_job(step_name: str) -> NodeStatus:
+            steps = Client().list_run_steps(
+                name=step_name, pipeline_run_id=pipeline_run.id
+            )
+            if steps.total > 0:
+                step_run = steps[0]
+
+                if step_run.status.is_successful:
+                    # If the step run is successful in the DB, we override the
+                    # failed job status.
+                    logger.info(
+                        "Found successful step run in the DB for failed job "
+                        "of step `%s`, overriding failed job status.",
+                        step_name,
+                    )
+                    return NodeStatus.COMPLETED
+                else:
+                    return NodeStatus.FAILED
+
+            step_run_request = step_run_request_factory.create_request(
+                step_name
+            )
+            try:
+                step_run_request_factory.populate_request(
+                    step_run_request, step_runs=step_runs
+                )
+            except Exception as e:
+                logger.error(
+                    "Failed to populate step run request for step `%s`: %s",
+                    step_name,
+                    e,
+                )
+                return NodeStatus.FAILED
+
+            step_run_request.status = ExecutionStatus.FAILED
+            step_run_request.end_time = utc_now()
+
+            try:
+                Client().zen_store.create_run_step(step_run_request)
+            except Exception as e:
+                logger.error(
+                    "Failed to publish failed step run `%s`: %s", step_name, e
+                )
+
+            return NodeStatus.FAILED
+
         startup_lock = threading.Lock()
         last_startup_time: float = 0.0
 
@@ -377,26 +451,28 @@ def main() -> None:
             """
             step_name = node.id
             step_config = snapshot.step_configurations[step_name].config
-            settings = step_config.settings.get(
-                "orchestrator.kubernetes", None
-            )
-            settings = KubernetesOrchestratorSettings.model_validate(
-                settings.model_dump() if settings else {}
+            settings = cast(
+                KubernetesOrchestratorSettings,
+                orchestrator.get_settings(
+                    snapshot.step_configurations[step_name]
+                ),
             )
             if not pipeline_settings.prevent_orchestrator_pod_caching:
                 if _cache_step_run_if_possible(step_name):
                     return NodeStatus.COMPLETED
 
             step_labels = base_labels.copy()
-            step_labels["step_name"] = kube_utils.sanitize_label(step_name)
+            step_labels["step_name"] = kube_utils.sanitize_label_value(
+                step_name
+            )
             step_annotations = {
                 STEP_NAME_ANNOTATION_KEY: step_name,
             }
 
             step_env = shared_env.copy()
             step_env.update(
-                env_utils.get_step_environment(
-                    step_config=step_config, stack=active_stack
+                env_utils.get_runtime_environment(
+                    config=step_config, stack=active_stack
                 )
             )
 
@@ -523,17 +599,25 @@ def main() -> None:
                 batch_api=batch_api,
                 namespace=namespace,
                 job_manifest=job_manifest,
+                api_request_timeout=settings.api_request_timeout,
             )
 
-            Client().create_run_metadata(
-                metadata={"step_jobs": {step_name: job_name}},
-                resources=[
-                    RunMetadataResource(
-                        id=pipeline_run.id,
-                        type=MetadataResourceTypes.PIPELINE_RUN,
-                    )
-                ],
-            )
+            try:
+                Client().create_run_metadata(
+                    metadata={"step_jobs": {step_name: job_name}},
+                    resources=[
+                        RunMetadataResource(
+                            id=pipeline_run.id,
+                            type=MetadataResourceTypes.PIPELINE_RUN,
+                        )
+                    ],
+                )
+            except Exception as e:
+                logger.warning(
+                    "Failed to create run metadata for step `%s`: %s",
+                    step_name,
+                    str(e),
+                )
 
             node.metadata["job_name"] = job_name
 
@@ -548,8 +632,8 @@ def main() -> None:
             step_name = node.id
 
             label_selector = (
-                f"run_id={kube_utils.sanitize_label(str(pipeline_run.id))},"
-                f"step_name={kube_utils.sanitize_label(node.id)}"
+                f"run_id={kube_utils.sanitize_label_value(str(pipeline_run.id))},"
+                f"step_name={kube_utils.sanitize_label_value(node.id)}"
             )
 
             try:
@@ -615,11 +699,20 @@ def main() -> None:
         def is_node_heartbeat_unhealthy(node: Node) -> bool:
             from zenml.steps.heartbeat import is_heartbeat_unhealthy
 
+            if node.id in step_run_skip_hb_set:
+                return False
+
             sr_ = client.list_run_steps(
-                name=node.id, pipeline_run_id=pipeline_run.id, hydrate=True
+                name=node.id, pipeline_run_id=pipeline_run.id, hydrate=False
             )
 
             if sr_.items:
+                if (
+                    sr_.items[0].heartbeat_threshold is None
+                ):  # heartbeat disabled/unset - skip next checks
+                    step_run_skip_hb_set.add(node.id)
+                    return False
+
                 return is_heartbeat_unhealthy(
                     step_run_id=sr_.items[0].id,
                     status=sr_.items[0].status,
@@ -647,12 +740,11 @@ def main() -> None:
                 )
                 return NodeStatus.FAILED
 
-            step_config = snapshot.step_configurations[step_name].config
-            settings = step_config.settings.get(
-                "orchestrator.kubernetes", None
-            )
-            settings = KubernetesOrchestratorSettings.model_validate(
-                settings.model_dump() if settings else {}
+            settings = cast(
+                KubernetesOrchestratorSettings,
+                orchestrator.get_settings(
+                    snapshot.step_configurations[step_name]
+                ),
             )
             status, error_message = kube_utils.check_job_status(
                 batch_api=batch_api,
@@ -660,6 +752,7 @@ def main() -> None:
                 namespace=namespace,
                 job_name=job_name,
                 fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
+                api_request_timeout=settings.api_request_timeout,
             )
             if status == kube_utils.JobStatus.SUCCEEDED:
                 return NodeStatus.COMPLETED
@@ -669,8 +762,11 @@ def main() -> None:
                     step_name,
                     error_message,
                 )
-                return NodeStatus.FAILED
-            elif is_node_heartbeat_unhealthy(node):
+                return _handle_failed_job(step_name)
+            elif (
+                snapshot.pipeline_configuration.enable_heartbeat
+                and is_node_heartbeat_unhealthy(node)
+            ):
                 logger.error(
                     "Heartbeat for step `%s` indicates unhealthy status.",
                     step_name,
@@ -806,11 +902,16 @@ def main() -> None:
 
             # If any steps failed and the pipeline run is still in a transient
             # state, we need to mark it as failed.
-            if pipeline_failed and pipeline_run.status in {
-                ExecutionStatus.INITIALIZING,
-                ExecutionStatus.RUNNING,
-            }:
-                publish_utils.publish_failed_pipeline_run(pipeline_run.id)
+            if pipeline_failed:
+                # refresh the run
+                pipeline_run = client.get_pipeline_run(pipeline_run.id)
+
+                if pipeline_run.status in {
+                    ExecutionStatus.INITIALIZING,
+                    ExecutionStatus.PROVISIONING,
+                    ExecutionStatus.RUNNING,
+                }:
+                    publish_utils.publish_failed_pipeline_run(pipeline_run.id)
         except AuthorizationException:
             # If a step of the pipeline failed or all of them completed
             # successfully, the pipeline run will be finished and the API token

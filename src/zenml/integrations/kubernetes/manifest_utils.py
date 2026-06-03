@@ -486,6 +486,8 @@ def build_cron_job_manifest(
     cron_expression: str,
     successful_jobs_history_limit: Optional[int] = None,
     failed_jobs_history_limit: Optional[int] = None,
+    concurrency_policy: Optional[str] = None,
+    starting_deadline_seconds: Optional[int] = None,
 ) -> k8s_client.V1CronJob:
     """Build a Kubernetes cron job manifest.
 
@@ -494,6 +496,10 @@ def build_cron_job_manifest(
         cron_expression: The cron expression to use for the cron job.
         successful_jobs_history_limit: The number of successful jobs to keep.
         failed_jobs_history_limit: The number of failed jobs to keep.
+        concurrency_policy: The concurrency policy for the cron job
+            (Allow, Forbid, or Replace).
+        starting_deadline_seconds: The deadline in seconds for starting
+            a job if it misses its scheduled time.
 
     Returns:
         The Kubernetes cron job manifest.
@@ -502,6 +508,8 @@ def build_cron_job_manifest(
         schedule=cron_expression,
         successful_jobs_history_limit=successful_jobs_history_limit,
         failed_jobs_history_limit=failed_jobs_history_limit,
+        concurrency_policy=concurrency_policy,
+        starting_deadline_seconds=starting_deadline_seconds,
         job_template=job_template,
     )
 

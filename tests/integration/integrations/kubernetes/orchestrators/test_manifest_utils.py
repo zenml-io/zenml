@@ -15,13 +15,18 @@
 
 import pytest
 from kubernetes.client import (
+    V1CronJob,
+    V1JobSpec,
+    V1JobTemplateSpec,
     V1ObjectMeta,
     V1Pod,
     V1PodSpec,
+    V1PodTemplateSpec,
     V1Toleration,
 )
 
 from zenml.integrations.kubernetes.manifest_utils import (
+    build_cron_job_manifest,
     build_pod_manifest,
 )
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
@@ -110,3 +115,52 @@ def test_build_pod_manifest_pod_settings(
     assert manifest.spec.tolerations[0]["key"] == "node.kubernetes.io/name"
     assert manifest.spec.containers[0].resources["requests"]["memory"] == "2G"
     assert manifest.spec.containers[0].security_context.privileged is False
+
+
+@pytest.fixture
+def minimal_job_template() -> V1JobTemplateSpec:
+    """Build a minimal V1JobTemplateSpec fixture for CronJob tests."""
+    pod_template = V1PodTemplateSpec(
+        metadata=V1ObjectMeta(name="test-pod"),
+        spec=V1PodSpec(containers=[], restart_policy="Never"),
+    )
+    return V1JobTemplateSpec(
+        metadata=V1ObjectMeta(name="test-job"),
+        spec=V1JobSpec(template=pod_template),
+    )
+
+
+def test_build_cron_job_manifest_with_cronjob_spec_fields(
+    minimal_job_template: V1JobTemplateSpec,
+):
+    """Test that concurrency_policy and starting_deadline_seconds are set."""
+    manifest: V1CronJob = build_cron_job_manifest(
+        job_template=minimal_job_template,
+        cron_expression="0 2 * * *",
+        successful_jobs_history_limit=2,
+        failed_jobs_history_limit=1,
+        concurrency_policy="Forbid",
+        starting_deadline_seconds=20,
+    )
+    assert isinstance(manifest, V1CronJob)
+    assert manifest.spec.schedule == "0 2 * * *"
+    assert manifest.spec.concurrency_policy == "Forbid"
+    assert manifest.spec.starting_deadline_seconds == 20
+    assert manifest.spec.successful_jobs_history_limit == 2
+    assert manifest.spec.failed_jobs_history_limit == 1
+
+
+def test_build_cron_job_manifest_defaults_none(
+    minimal_job_template: V1JobTemplateSpec,
+):
+    """Test that omitting new fields preserves backwards-compatible behavior."""
+    manifest: V1CronJob = build_cron_job_manifest(
+        job_template=minimal_job_template,
+        cron_expression="0 0 * * *",
+    )
+    assert isinstance(manifest, V1CronJob)
+    assert manifest.spec.schedule == "0 0 * * *"
+    assert manifest.spec.concurrency_policy is None
+    assert manifest.spec.starting_deadline_seconds is None
+    assert manifest.spec.successful_jobs_history_limit is None
+    assert manifest.spec.failed_jobs_history_limit is None

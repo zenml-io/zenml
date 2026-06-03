@@ -1,0 +1,32 @@
+# Remote orchestrator config (Kubernetes, Vertex AI, SageMaker, etc.)
+#
+# When running on a remote orchestrator, each step executes in a separate
+# container. Those containers need:
+#   1. The pip packages to talk to LakeFS (lakefs-sdk, boto3, etc.)
+#   2. Environment variables with LakeFS credentials
+#
+# Fill in the environment values below with your LakeFS deployment details.
+# For production, consider using ZenML secrets instead of plain env vars:
+#   https://docs.zenml.io/how-to/interact-with-secrets
+
+enable_cache: true
+
+parameters:
+  n_rows: 10000
+  lakefs_repo: robot-data
+
+settings:
+  docker:
+    requirements:
+      - lakefs-sdk>=1.0.0
+      - boto3>=1.28.0
+      - pandas>=2.0.0
+      - scikit-learn>=1.3.0
+      - pyarrow>=14.0.0
+      - numpy>=1.24.0
+    environment:
+      LAKEFS_ENDPOINT: https://your-lakefs-instance.example.com
+      LAKEFS_ACCESS_KEY_ID: your-access-key
+      LAKEFS_SECRET_ACCESS_KEY: your-secret-key
+      LAKEFS_STORAGE_NAMESPACE: s3://your-bucket/lakefs
+    python_package_installer: uv

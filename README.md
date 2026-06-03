@@ -144,6 +144,24 @@ Stop clicking through dashboards to understand your ML workflows. The **[ZenML M
 
 The MCP (Model Context Protocol) integration transforms your ZenML metadata into conversational insights, making pipeline debugging and analysis as easy as asking a question. Perfect for teams who want to democratize access to ML operations without requiring dashboard expertise.
 
+## 🤖 Kitaru: Durable AI Agents
+
+Building AI agents that need to survive crashes, pause for human approval, or run on cloud infrastructure? **[Kitaru](https://kitaru.ai)** is our open-source sister project for making Python agents durable.
+
+- **Crash recovery** — checkpoint and replay from failure, not from scratch
+- **Human-in-the-loop** — built-in approval gates and wait points
+- **Persistent memory** — versioned, durable state across agent runs with full audit trail
+- **Framework agnostic** — works with PydanticAI, CrewAI, or raw Python
+- **Runs anywhere** — local, Kubernetes, Vertex AI, SageMaker, AzureML
+
+Built on the same infrastructure that powers ZenML. Two decorators (`@flow` + `@checkpoint`) and you're done.
+
+```bash
+pip install kitaru
+```
+
+👉 **[kitaru.ai](https://kitaru.ai)** · **[GitHub](https://github.com/zenml-io/kitaru)** · **[Docs](https://kitaru.ai/docs)**
+
 ### 🎓 Books & Resources
 
 <div align="center">
@@ -215,3 +233,13 @@ Install from [VS Code Marketplace](https://marketplace.visualstudio.com/items?it
 
 ZenML is distributed under the terms of the Apache License Version 2.0. See
 [LICENSE](LICENSE) for details.
+
+---
+
+<div align="center">
+  <a href="https://www.linuxfoundation.org/"><img src="docs/book/.gitbook/assets/lf-member-silver.svg" alt="Linux Foundation Silver Member" height="100"/></a>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <a href="https://www.cncf.io/"><img src="docs/book/.gitbook/assets/cncf-member-silver.svg" alt="CNCF Silver Member" height="100"/></a>
+</div>
+
+<img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=0fcbab94-8fbe-4a38-93e8-c2348450a42e" />

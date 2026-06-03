@@ -74,8 +74,7 @@ def generate_cache_key(
 
     Raises:
         ValueError: If some file dependencies are outside the source root or
-            missing.
-        ValueError: If the cache function is invalid.
+            missing, or if the cache function is invalid.
         RuntimeError: If executing the cache function failed.
 
     Returns:
@@ -244,6 +243,7 @@ def get_cached_step_run(cache_key: str) -> Optional["StepRunResponse"]:
         status=ExecutionStatus.COMPLETED,
         sort_by=f"{SorterOps.DESCENDING}:created",
         size=1,
+        hydrate=True,
     ).items
 
     if cache_candidates:

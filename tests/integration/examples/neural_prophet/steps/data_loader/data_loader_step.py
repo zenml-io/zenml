@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from pathlib import Path
 from typing import Tuple
 
 import pandas as pd
@@ -19,15 +20,18 @@ from typing_extensions import Annotated
 
 from zenml import step
 
-DATA_LOCATION = "https://raw.githubusercontent.com/ourownstory/neuralprophet-data/main/datasets/"
-
 
 @step
 def data_loader() -> Tuple[
     Annotated[pd.DataFrame, "df_train"], Annotated[pd.DataFrame, "df_test"]
 ]:
     """Return the renewable energy dataset as pandas dataframes."""
-    sf_pv_df = pd.read_csv(DATA_LOCATION + "energy/SF_PV.csv", nrows=100)
+    data_path = (
+        Path(__file__).resolve().parent.parent.parent / "data" / "SF_PV.csv"
+    )
+    sf_pv_df = pd.read_csv(data_path, nrows=100)
+    sf_pv_df["ds"] = pd.to_datetime(sf_pv_df["ds"])
+    sf_pv_df["y"] = sf_pv_df["y"].astype("float64")
     df_train, df_test = NeuralProphet().split_df(
         sf_pv_df, freq="H", valid_p=1.0 / 12
     )

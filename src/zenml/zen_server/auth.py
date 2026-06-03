@@ -23,6 +23,7 @@ from uuid import UUID, uuid4
 import anyio.to_thread
 import requests
 from anyio import CapacityLimiter
+from cachetools.func import ttl_cache
 from fastapi import Depends, Response
 from fastapi.security import (
     HTTPBasic,
@@ -75,7 +76,6 @@ from zenml.models import (
     UserUpdate,
 )
 from zenml.utils.time_utils import utc_now
-from zenml.zen_server.cache import cache_result
 from zenml.zen_server.csrf import CSRFToken
 from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_server.jwt import JWTToken
@@ -205,6 +205,7 @@ def authenticate_credentials(
     Raises:
         CredentialsNotValid: If the credentials are invalid.
     """
+    config = server_config()
     user: Optional[UserAuthModel] = None
     auth_context: Optional[AuthContext] = None
     if user_name_or_id:
@@ -311,6 +312,18 @@ def authenticate_credentials(
             logger.error(error)
             raise CredentialsNotValid(error)
 
+        if (
+            config.auth_scheme == AuthScheme.EXTERNAL
+            and not user_model.external_user_id
+            and not user_model.is_service_account
+        ):
+            error = (
+                f"Authentication error: local account {user_model.name} is not "
+                f"allowed to authenticate with external authentication"
+            )
+            logger.error(error)
+            raise CredentialsNotValid(error)
+
         api_key_model: Optional[APIKeyInternalResponse] = None
         if decoded_token.api_key_id:
             # The API token was generated from an API key. We still have to
@@ -320,7 +333,7 @@ def authenticate_credentials(
 
         device_model: Optional[OAuthDeviceInternalResponse] = None
         if decoded_token.device_id:
-            if server_config().auth_scheme in [
+            if config.auth_scheme in [
                 AuthScheme.NO_AUTH,
                 AuthScheme.EXTERNAL,
             ]:
@@ -387,7 +400,10 @@ def authenticate_credentials(
             # of the schedule active status to avoid unnecessary database
             # queries.
 
-            @cache_result(expiry=30)
+            @ttl_cache(
+                maxsize=config.memcache_max_capacity,
+                ttl=config.memcache_default_expiry,
+            )
             def get_schedule_active(schedule_id: UUID) -> Optional[bool]:
                 """Get the active status of a schedule.
 
@@ -430,7 +446,10 @@ def authenticate_credentials(
             # not concluded. We use a cached version of the pipeline run status
             # to avoid unnecessary database queries.
 
-            @cache_result(expiry=30)
+            @ttl_cache(
+                maxsize=config.memcache_max_capacity,
+                ttl=config.memcache_default_expiry,
+            )
             def check_if_pipeline_run_in_progress(
                 pipeline_run_id: UUID,
             ) -> Tuple[Optional[bool], Optional[datetime]]:
@@ -508,7 +527,7 @@ def authenticate_credentials(
         # continue without any credentials (i.e. no password, activation
         # token or access token) is if authentication is explicitly disabled
         # by setting the auth_scheme to NO_AUTH.
-        if server_config().auth_scheme != AuthScheme.NO_AUTH:
+        if config.auth_scheme != AuthScheme.NO_AUTH:
             error = "Authentication error: no credentials provided"
             logger.error(error)
             raise CredentialsNotValid(error)
@@ -1015,6 +1034,7 @@ def generate_access_token(
 
     # Figure out if this is a same-site request or a cross-site request
     same_site = True
+    secure = True
     if response and request:
         # Extract the origin domain from the request; use the referer as a
         # fallback
@@ -1045,6 +1065,10 @@ def generate_access_token(
         if origin_domain and server_domain:
             same_site = is_same_or_subdomain(origin_domain, server_domain)
 
+        # For http only requests, we can't use the secure flag
+        if config.server_url and urlparse(config.server_url).scheme == "http":
+            secure = False
+
     csrf_token: Optional[str] = None
     session_id: Optional[UUID] = None
     if not same_site:
@@ -1070,8 +1094,8 @@ def generate_access_token(
             key=config.get_auth_cookie_name(),
             value=access_token,
             httponly=True,
-            secure=not same_site,
-            samesite="lax" if same_site else "none",
+            secure=not same_site and secure,
+            samesite="lax" if same_site or not secure else "none",
             max_age=config.jwt_token_expire_minutes * 60
             if config.jwt_token_expire_minutes
             else None,
@@ -1178,8 +1202,9 @@ def http_authentication(
     Returns:
         The authentication context reflecting the authenticated user.
 
-    # noqa: DAR401
-    """
+    Raises:
+        HTTPException: If the credentials are invalid.
+    """  # noqa: DOC503
     try:
         return authenticate_credentials(
             user_name_or_id=credentials.username, password=credentials.password
@@ -1235,8 +1260,9 @@ def oauth2_authentication(
     Returns:
         The authentication context reflecting the authenticated user.
 
-    # noqa: DAR401
-    """
+    Raises:
+        HTTPException: If the credentials are invalid.
+    """  # noqa: DOC503
     csrf_token = request.headers.get("X-CSRF-Token")
     try:
         auth_context = authenticate_credentials(
@@ -1297,7 +1323,7 @@ def get_authorization_provider() -> Callable[..., Awaitable[AuthContext]]:
 
     @wraps(provider)
     async def async_authorize_fn(*args: Any, **kwargs: Any) -> AuthContext:
-        from zenml.zen_server.utils import get_system_metrics_log_str
+        from zenml.zen_server.utils import get_system_metrics
 
         request_context = request_manager().current_request
 
@@ -1306,10 +1332,8 @@ def get_authorization_provider() -> Callable[..., Awaitable[AuthContext]]:
             assert request_context is not None
 
             logger.debug(
-                f"[{request_context.log_request_id}] API STATS - "
-                f"{request_context.log_request} "
-                f"AUTHORIZING "
-                f"{get_system_metrics_log_str(request_context.request)}"
+                "request.authorizing",
+                extra=get_system_metrics(),
             )
 
             try:
@@ -1318,10 +1342,8 @@ def get_authorization_provider() -> Callable[..., Awaitable[AuthContext]]:
                 return auth_context
             finally:
                 logger.debug(
-                    f"[{request_context.log_request_id}] API STATS - "
-                    f"{request_context.log_request} "
-                    f"AUTHORIZED "
-                    f"{get_system_metrics_log_str(request_context.request)}"
+                    "request.authorized",
+                    extra=get_system_metrics(),
                 )
 
         func = functools.partial(sync_authorize_fn, *args, **kwargs)

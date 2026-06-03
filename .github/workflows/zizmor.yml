@@ -1,0 +1,56 @@
+---
+name: GitHub Actions Security Analysis
+on:
+  push:
+    branches: [main, develop]
+    paths: [.github/workflows/**, .github/zizmor.yml]
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - .github/workflows/**
+      - .github/zizmor.yml
+  # Weekly safety net to catch drift (runs Monday 3am UTC)
+  schedule:
+    - cron: 0 3 * * 1
+  # Allow manual triggering
+  workflow_dispatch:
+permissions: {}
+jobs:
+  zizmor:
+    name: Scan workflows with zizmor
+    runs-on: ubuntu-latest
+    # Only run on the main repo, not forks (scheduled runs would fail on forks)
+    if: github.repository == 'zenml-io/zenml'
+    permissions:
+      contents: read
+      actions: read
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
+      - name: Run zizmor
+        run: |
+          echo "============================================================"
+          echo "🔒 Zizmor: GitHub Actions Security Scanner"
+          echo "============================================================"
+          echo ""
+          echo "This check scans workflow files for security issues like:"
+          echo "  • Unpinned actions (supply chain risk)"
+          echo "  • SHA/version comment mismatches"
+          echo "  • Template injection vulnerabilities"
+          echo ""
+          echo "📖 To run locally and see detailed output:"
+          echo ""
+          echo "    GH_TOKEN=\$(gh auth token) uvx zizmor --config=.github/zizmor.yml .github/workflows/"
+          echo ""
+          echo "📖 Documentation: https://docs.zizmor.sh/"
+          echo "📖 Config: .github/zizmor.yml"
+          echo "============================================================"
+          echo ""
+          uvx zizmor --format=github --config=.github/zizmor.yml .github/workflows/
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

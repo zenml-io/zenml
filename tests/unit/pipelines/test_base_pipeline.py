@@ -34,6 +34,7 @@ from zenml.models import (
 from zenml.pipelines import Schedule, pipeline
 from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.steps import step
+from zenml.utils import source_utils
 
 
 def _compile_spec(p: Pipeline) -> PipelineSpec:
@@ -78,6 +79,11 @@ def s2(input: int) -> int:
     return input + 1
 
 
+@step
+def step_with_parameters(a: int, b: str = "default") -> None:
+    pass
+
+
 def test_spec_compilation(local_stack):
     """Tests the compilation of the pipeline spec."""
 
@@ -105,6 +111,7 @@ def test_spec_compilation(local_stack):
                     "source": "tests.unit.pipelines.test_base_pipeline.s1",
                     "upstream_steps": [],
                     "invocation_id": "s1",
+                    "parameter_spec": {},
                 },
                 {
                     "source": "tests.unit.pipelines.test_base_pipeline.s2",
@@ -116,6 +123,7 @@ def test_spec_compilation(local_stack):
                         }
                     },
                     "invocation_id": "s2",
+                    "parameter_spec": {},
                 },
             ],
         }
@@ -123,6 +131,35 @@ def test_spec_compilation(local_stack):
 
     assert spec == expected_spec
     assert other_spec == expected_spec
+
+
+def test_step_parameter_spec_compilation(local_stack):
+    """Tests that step parameter specs are included in compiled pipeline specs."""
+
+    @pipeline
+    def pipeline_instance():
+        step_with_parameters(a=1)
+
+    pipeline_instance.prepare()
+    spec = (
+        Compiler()
+        .compile(
+            pipeline=pipeline_instance,
+            stack=local_stack,
+            run_configuration=PipelineRunConfiguration(),
+        )
+        .pipeline_spec
+    )
+
+    step_spec = next(
+        step_spec
+        for step_spec in spec.steps
+        if step_spec.invocation_id == "step_with_parameters"
+    )
+
+    assert step_spec.parameter_spec["additionalProperties"] is False
+    assert step_spec.parameter_spec["properties"]["a"]["default"] == 1
+    assert step_spec.parameter_spec["properties"]["b"]["default"] == "default"
 
 
 def test_calling_a_pipeline_twice_raises_no_exception(
@@ -643,7 +680,7 @@ def test_running_pipeline_creates_and_uses_placeholder_run(
     # assert run.deployment_id
 
 
-def test_rerunning_deloyment_does_not_fail(
+def test_rerunning_deployment_does_not_fail(
     mocker,
     clean_client,
     empty_pipeline,  # noqa: F811
@@ -759,3 +796,26 @@ def test_run_tagging(clean_client, tmp_path, empty_pipeline):  # noqa: F811
     run = p()
 
     assert {tag.name for tag in run.tags} == {"tag_1", "tag_2", "tag_3"}
+
+
+@step
+def stringized_annotations_step() -> "int":
+    return 42
+
+
+@pipeline(enable_cache=False)
+def stringized_annotations_pipeline() -> None:
+    stringized_annotations_step()
+
+
+def test_pipeline_with_stringized_annotations(clean_client):
+    """Tests that stringized type annotations resolve correctly at runtime."""
+    stringized_annotations_pipeline()
+
+    last_run = stringized_annotations_pipeline.model.last_run
+    assert last_run.status == ExecutionStatus.COMPLETED
+
+    artifact = last_run.steps["stringized_annotations_step"].outputs["output"][
+        0
+    ]
+    assert source_utils.load(artifact.data_type) is int

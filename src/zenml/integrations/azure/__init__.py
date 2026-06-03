@@ -46,6 +46,10 @@ class AzureIntegration(Integration):
         "azure-identity",
         "azureml-core==1.56.0",
         "azure-mgmt-containerservice>=20.0.0",
+        # The 25.0.0 release splits the azure-mgmt-resource package into
+        # multiple packages, some of which don't have a stable (non-prerelease)
+        # version yet. See https://github.com/Azure/azure-sdk-for-python/releases/tag/azure-mgmt-resource_25.0.0
+        "azure-mgmt-resource<25.0.0",
         "azure-storage-blob==12.17.0",  # temporary fix for https://github.com/Azure/azure-sdk-for-python/issues/32056
         "kubernetes",
         "azure-ai-ml==1.23.1",

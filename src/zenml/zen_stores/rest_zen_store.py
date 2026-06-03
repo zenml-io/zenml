@@ -50,10 +50,12 @@ from requests.adapters import HTTPAdapter, Retry
 import zenml
 from zenml.analytics import source_context
 from zenml.config.global_config import GlobalConfiguration
-from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
+from zenml.config.pipeline_run_configuration import (
+    PipelineRunConfiguration,
+    ReplayRunConfiguration,
+)
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
-    ACTIONS,
     API,
     API_KEY_ROTATE,
     API_KEYS,
@@ -72,8 +74,9 @@ from zenml.constants import (
     DEPLOYMENTS,
     DEVICES,
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
+    DISABLE_HEARTBEAT,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
-    EVENT_SOURCES,
+    EVENTS,
     FLAVORS,
     HEARTBEAT,
     INFO,
@@ -87,8 +90,14 @@ from zenml.constants import (
     PIPELINE_SNAPSHOTS,
     PIPELINES,
     PROJECTS,
+    REPLAY,
+    RESOLVE,
+    RESOURCE_POOL_SUBJECT_POLICIES,
+    RESOURCE_POOLS,
+    RESOURCE_REQUESTS,
     RUN_METADATA,
     RUN_TEMPLATES,
+    RUN_WAIT_CONDITIONS,
     RUNS,
     SCHEDULES,
     SECRETS,
@@ -108,10 +117,11 @@ from zenml.constants import (
     STACK_COMPONENTS,
     STACK_DEPLOYMENT,
     STACKS,
+    STATISTICS,
     STEPS,
     TAG_RESOURCES,
     TAGS,
-    TRIGGER_EXECUTIONS,
+    TRIGGER_SNAPSHOT_DISPATCH_STATE,
     TRIGGERS,
     USERS,
     VERSION_1,
@@ -120,6 +130,7 @@ from zenml.constants import (
 from zenml.enums import (
     APITokenType,
     OAuthGrantTypes,
+    RunWaitConditionStatus,
     StackDeploymentProvider,
     StoreType,
 )
@@ -138,10 +149,7 @@ from zenml.login.pro.utils import (
     get_troubleshooting_instructions,
 )
 from zenml.models import (
-    ActionFilter,
-    ActionRequest,
-    ActionResponse,
-    ActionUpdate,
+    TRIGGER_RETURN_TYPE_UNION,
     APIKeyFilter,
     APIKeyRequest,
     APIKeyResponse,
@@ -176,15 +184,13 @@ from zenml.models import (
     DeploymentRequest,
     DeploymentResponse,
     DeploymentUpdate,
-    EventSourceFilter,
-    EventSourceRequest,
-    EventSourceResponse,
-    EventSourceUpdate,
     FlavorFilter,
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    LogsRequest,
     LogsResponse,
+    LogsUpdate,
     ModelFilter,
     ModelRequest,
     ModelResponse,
@@ -224,11 +230,28 @@ from zenml.models import (
     ProjectRequest,
     ProjectResponse,
     ProjectUpdate,
+    ResourcePoolFilter,
+    ResourcePoolRequest,
+    ResourcePoolResponse,
+    ResourcePoolSubjectPolicyFilter,
+    ResourcePoolSubjectPolicyRequest,
+    ResourcePoolSubjectPolicyResponse,
+    ResourcePoolSubjectPolicyUpdate,
+    ResourcePoolUpdate,
+    ResourceRequestFilter,
+    ResourceRequestResponse,
     RunMetadataRequest,
+    RunStatisticsRequest,
+    RunStatisticsResponse,
     RunTemplateFilter,
     RunTemplateRequest,
     RunTemplateResponse,
     RunTemplateUpdate,
+    RunWaitConditionFilter,
+    RunWaitConditionLeaseUpdate,
+    RunWaitConditionRequest,
+    RunWaitConditionResolveRequest,
+    RunWaitConditionResponse,
     ScheduleFilter,
     ScheduleRequest,
     ScheduleResponse,
@@ -265,17 +288,16 @@ from zenml.models import (
     StepRunRequest,
     StepRunResponse,
     StepRunUpdate,
+    StreamBatchRequest,
+    StreamBatchResponse,
     TagFilter,
     TagRequest,
     TagResourceRequest,
     TagResourceResponse,
     TagResponse,
     TagUpdate,
-    TriggerExecutionFilter,
-    TriggerExecutionResponse,
     TriggerFilter,
     TriggerRequest,
-    TriggerResponse,
     TriggerUpdate,
     UserFilter,
     UserRequest,
@@ -284,6 +306,9 @@ from zenml.models import (
 )
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
+)
+from zenml.triggers.registry import (
+    TYPE_TO_RESPONSE_MAPPING,
 )
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
@@ -601,100 +626,6 @@ class RestZenStore(BaseZenStore):
         """
         response_body = self.put(SERVER_SETTINGS, body=settings_update)
         return ServerSettingsResponse.model_validate(response_body)
-
-    # -------------------- Actions  --------------------
-
-    def create_action(self, action: ActionRequest) -> ActionResponse:
-        """Create an action.
-
-        Args:
-            action: The action to create.
-
-        Returns:
-            The created action.
-        """
-        return self._create_resource(
-            resource=action,
-            route=ACTIONS,
-            response_model=ActionResponse,
-        )
-
-    def get_action(
-        self,
-        action_id: UUID,
-        hydrate: bool = True,
-    ) -> ActionResponse:
-        """Get an action by ID.
-
-        Args:
-            action_id: The ID of the action to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The action.
-        """
-        return self._get_resource(
-            resource_id=action_id,
-            route=ACTIONS,
-            response_model=ActionResponse,
-            params={"hydrate": hydrate},
-        )
-
-    def list_actions(
-        self,
-        action_filter_model: ActionFilter,
-        hydrate: bool = False,
-    ) -> Page[ActionResponse]:
-        """List all actions matching the given filter criteria.
-
-        Args:
-            action_filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all actions matching the filter criteria.
-        """
-        return self._list_paginated_resources(
-            route=ACTIONS,
-            response_model=ActionResponse,
-            filter_model=action_filter_model,
-            params={"hydrate": hydrate},
-        )
-
-    def update_action(
-        self,
-        action_id: UUID,
-        action_update: ActionUpdate,
-    ) -> ActionResponse:
-        """Update an existing action.
-
-        Args:
-            action_id: The ID of the action to update.
-            action_update: The update to be applied to the action.
-
-        Returns:
-            The updated action.
-        """
-        return self._update_resource(
-            resource_id=action_id,
-            resource_update=action_update,
-            route=ACTIONS,
-            response_model=ActionResponse,
-        )
-
-    def delete_action(self, action_id: UUID) -> None:
-        """Delete an action.
-
-        Args:
-            action_id: The ID of the action to delete.
-        """
-        self._delete_resource(
-            resource_id=action_id,
-            route=ACTIONS,
-        )
 
     # ----------------------------- API Keys -----------------------------
 
@@ -1366,6 +1297,237 @@ class RestZenStore(BaseZenStore):
             route=STACK_COMPONENTS,
         )
 
+    # -------------------- Resource Pools -------------
+
+    def create_resource_pool(
+        self, resource_pool: ResourcePoolRequest
+    ) -> ResourcePoolResponse:
+        """Create a resource pool.
+
+        Args:
+            resource_pool: The resource pool to create.
+
+        Returns:
+            The created resource pool.
+        """
+        return self._create_resource(
+            resource=resource_pool,
+            route=RESOURCE_POOLS,
+            response_model=ResourcePoolResponse,
+        )
+
+    def get_resource_pool(
+        self, resource_pool_id: UUID, hydrate: bool = True
+    ) -> ResourcePoolResponse:
+        """Get a resource pool by ID.
+
+        Args:
+            resource_pool_id: The ID of the resource pool to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The resource pool.
+        """
+        return self._get_resource(
+            resource_id=resource_pool_id,
+            route=RESOURCE_POOLS,
+            response_model=ResourcePoolResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_resource_pools(
+        self, filter_model: ResourcePoolFilter, hydrate: bool = False
+    ) -> Page[ResourcePoolResponse]:
+        """List all resource pools matching the given filter criteria.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all resource pools matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=RESOURCE_POOLS,
+            response_model=ResourcePoolResponse,
+            filter_model=filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_resource_pool(
+        self, resource_pool_id: UUID, update: ResourcePoolUpdate
+    ) -> ResourcePoolResponse:
+        """Update an existing resource pool.
+
+        Args:
+            resource_pool_id: The ID of the resource pool to update.
+            update: The update to be applied to the resource pool.
+
+        Returns:
+            The updated resource pool.
+        """
+        return self._update_resource(
+            resource_id=resource_pool_id,
+            resource_update=update,
+            route=RESOURCE_POOLS,
+            response_model=ResourcePoolResponse,
+        )
+
+    def delete_resource_pool(self, resource_pool_id: UUID) -> None:
+        """Delete a resource pool.
+
+        Args:
+            resource_pool_id: The ID of the resource pool to delete.
+        """
+        self._delete_resource(
+            resource_id=resource_pool_id,
+            route=RESOURCE_POOLS,
+        )
+
+    def create_resource_pool_subject_policy(
+        self, policy: ResourcePoolSubjectPolicyRequest
+    ) -> ResourcePoolSubjectPolicyResponse:
+        """Create a resource pool subject policy.
+
+        Args:
+            policy: The policy to create.
+
+        Returns:
+            The created policy.
+        """
+        return self._create_resource(
+            resource=policy,
+            route=RESOURCE_POOL_SUBJECT_POLICIES,
+            response_model=ResourcePoolSubjectPolicyResponse,
+        )
+
+    def get_resource_pool_subject_policy(
+        self, policy_id: UUID, hydrate: bool = True
+    ) -> ResourcePoolSubjectPolicyResponse:
+        """Get a resource pool subject policy by ID.
+
+        Args:
+            policy_id: The ID of the policy to get.
+            hydrate: Flag deciding whether to hydrate the output model(s).
+
+        Returns:
+            The policy.
+        """
+        return self._get_resource(
+            resource_id=policy_id,
+            route=RESOURCE_POOL_SUBJECT_POLICIES,
+            response_model=ResourcePoolSubjectPolicyResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_resource_pool_subject_policies(
+        self,
+        filter_model: ResourcePoolSubjectPolicyFilter,
+        hydrate: bool = False,
+    ) -> Page[ResourcePoolSubjectPolicyResponse]:
+        """List resource pool subject policies.
+
+        Args:
+            filter_model: All filter parameters including pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s).
+
+        Returns:
+            Matching policies.
+        """
+        return self._list_paginated_resources(
+            route=RESOURCE_POOL_SUBJECT_POLICIES,
+            response_model=ResourcePoolSubjectPolicyResponse,
+            filter_model=filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def update_resource_pool_subject_policy(
+        self, policy_id: UUID, update: ResourcePoolSubjectPolicyUpdate
+    ) -> ResourcePoolSubjectPolicyResponse:
+        """Update an existing resource pool subject policy.
+
+        Args:
+            policy_id: The ID of the policy to update.
+            update: The update to be applied to the policy.
+
+        Returns:
+            The updated policy.
+        """
+        return self._update_resource(
+            resource_id=policy_id,
+            resource_update=update,
+            route=RESOURCE_POOL_SUBJECT_POLICIES,
+            response_model=ResourcePoolSubjectPolicyResponse,
+        )
+
+    def delete_resource_pool_subject_policy(self, policy_id: UUID) -> None:
+        """Delete a resource pool subject policy.
+
+        Args:
+            policy_id: The ID of the policy to delete.
+        """
+        self._delete_resource(
+            resource_id=policy_id,
+            route=RESOURCE_POOL_SUBJECT_POLICIES,
+        )
+
+    # -------------------- Resource Requests -------------
+
+    def get_resource_request(
+        self, resource_request_id: UUID, hydrate: bool = True
+    ) -> ResourceRequestResponse:
+        """Get a resource request by ID.
+
+        Args:
+            resource_request_id: The ID of the resource request to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The resource request.
+        """
+        return self._get_resource(
+            resource_id=resource_request_id,
+            route=RESOURCE_REQUESTS,
+            response_model=ResourceRequestResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_resource_requests(
+        self, filter_model: ResourceRequestFilter, hydrate: bool = False
+    ) -> Page[ResourceRequestResponse]:
+        """List all resource requests matching the given filter criteria.
+
+        Args:
+            filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all resource requests matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=RESOURCE_REQUESTS,
+            response_model=ResourceRequestResponse,
+            filter_model=filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def delete_resource_request(self, resource_request_id: UUID) -> None:
+        """Delete a resource request.
+
+        Args:
+            resource_request_id: The ID of the resource request to delete.
+        """
+        self._delete_resource(
+            resource_id=resource_request_id,
+            route=RESOURCE_REQUESTS,
+        )
+
     #  ----------------------------- Flavors -----------------------------
 
     def create_flavor(self, flavor: FlavorRequest) -> FlavorResponse:
@@ -1474,6 +1636,40 @@ class RestZenStore(BaseZenStore):
             route=LOGS,
             response_model=LogsResponse,
             params={"hydrate": hydrate},
+        )
+
+    def create_logs(self, logs: LogsRequest) -> LogsResponse:
+        """Create a logs entry.
+
+        Args:
+            logs: The logs entry to create.
+
+        Returns:
+            The created logs entry.
+        """
+        return self._create_resource(
+            resource=logs,
+            route=LOGS,
+            response_model=LogsResponse,
+        )
+
+    def update_logs(
+        self, logs_id: UUID, logs_update: LogsUpdate
+    ) -> LogsResponse:
+        """Update an existing logs entry.
+
+        Args:
+            logs_id: The ID of the logs entry to update.
+            logs_update: The update to be applied to the logs entry.
+
+        Returns:
+            The updated logs entry.
+        """
+        return self._update_resource(
+            resource_id=logs_id,
+            resource_update=logs_update,
+            route=LOGS,
+            response_model=LogsResponse,
         )
 
     # ----------------------------- Pipelines -----------------------------
@@ -2065,102 +2261,6 @@ class RestZenStore(BaseZenStore):
 
         return PipelineRunResponse.model_validate(response_body)
 
-    # -------------------- Event Sources  --------------------
-
-    def create_event_source(
-        self, event_source: EventSourceRequest
-    ) -> EventSourceResponse:
-        """Create an event_source.
-
-        Args:
-            event_source: The event_source to create.
-
-        Returns:
-            The created event_source.
-        """
-        return self._create_resource(
-            resource=event_source,
-            route=EVENT_SOURCES,
-            response_model=EventSourceResponse,
-        )
-
-    def get_event_source(
-        self,
-        event_source_id: UUID,
-        hydrate: bool = True,
-    ) -> EventSourceResponse:
-        """Get an event_source by ID.
-
-        Args:
-            event_source_id: The ID of the event_source to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The event_source.
-        """
-        return self._get_resource(
-            resource_id=event_source_id,
-            route=EVENT_SOURCES,
-            response_model=EventSourceResponse,
-            params={"hydrate": hydrate},
-        )
-
-    def list_event_sources(
-        self,
-        event_source_filter_model: EventSourceFilter,
-        hydrate: bool = False,
-    ) -> Page[EventSourceResponse]:
-        """List all event_sources matching the given filter criteria.
-
-        Args:
-            event_source_filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all event_sources matching the filter criteria.
-        """
-        return self._list_paginated_resources(
-            route=EVENT_SOURCES,
-            response_model=EventSourceResponse,
-            filter_model=event_source_filter_model,
-            params={"hydrate": hydrate},
-        )
-
-    def update_event_source(
-        self,
-        event_source_id: UUID,
-        event_source_update: EventSourceUpdate,
-    ) -> EventSourceResponse:
-        """Update an existing event_source.
-
-        Args:
-            event_source_id: The ID of the event_source to update.
-            event_source_update: The update to be applied to the event_source.
-
-        Returns:
-            The updated event_source.
-        """
-        return self._update_resource(
-            resource_id=event_source_id,
-            resource_update=event_source_update,
-            route=EVENT_SOURCES,
-            response_model=EventSourceResponse,
-        )
-
-    def delete_event_source(self, event_source_id: UUID) -> None:
-        """Delete an event_source.
-
-        Args:
-            event_source_id: The ID of the event_source to delete.
-        """
-        self._delete_resource(
-            resource_id=event_source_id,
-            route=EVENT_SOURCES,
-        )
-
     # ----------------------------- Pipeline runs -----------------------------
 
     def get_or_create_run(
@@ -2241,6 +2341,20 @@ class RestZenStore(BaseZenStore):
             },
         )
 
+    def get_run_statistics(
+        self, request: RunStatisticsRequest
+    ) -> RunStatisticsResponse:
+        """Compute grouped statistics over pipeline runs.
+
+        Args:
+            request: Statistics request.
+
+        Returns:
+            Grouped statistics.
+        """
+        response_body = self.post(f"{RUNS}{STATISTICS}", body=request)
+        return RunStatisticsResponse.model_validate(response_body)
+
     def update_run(
         self, run_id: UUID, run_update: PipelineRunUpdate
     ) -> PipelineRunResponse:
@@ -2272,6 +2386,156 @@ class RestZenStore(BaseZenStore):
             route=RUNS,
         )
 
+    def replay_run(
+        self, run_id: UUID, run_configuration: ReplayRunConfiguration
+    ) -> PipelineRunResponse:
+        """Replay a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to replay.
+            run_configuration: Replay configuration.
+
+        Raises:
+            RuntimeError: If the server does not support replaying a run.
+
+        Returns:
+            The replayed pipeline run.
+        """
+        try:
+            response_body = self.post(
+                f"{RUNS}/{run_id}{REPLAY}", body=run_configuration
+            )
+        except MethodNotAllowedError as e:
+            raise RuntimeError(
+                "Replaying a run is not supported for this server."
+            ) from e
+
+        return PipelineRunResponse.model_validate(response_body)
+
+    def disable_run_heartbeat(self, run_id: UUID) -> None:
+        """Disables heartbeat for a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run.
+        """
+        self.put(
+            path=f"{RUNS}/{str(run_id)}{DISABLE_HEARTBEAT}",
+        )
+
+    def publish_run_events(
+        self, pipeline_run_id: UUID, batch: StreamBatchRequest
+    ) -> StreamBatchResponse:
+        """Publish a batch of live events to a pipeline run's stream.
+
+        Args:
+            pipeline_run_id: The ID of the run the events belong to.
+            batch: The batch of events to publish.
+
+        Returns:
+            The server-side ingest response.
+        """
+        response_body = self.post(
+            f"{RUNS}/{pipeline_run_id}{EVENTS}", body=batch
+        )
+        return StreamBatchResponse.model_validate(response_body)
+
+    def create_run_wait_condition(
+        self, run_wait_condition: RunWaitConditionRequest
+    ) -> RunWaitConditionResponse:
+        """Create a run wait condition.
+
+        Args:
+            run_wait_condition: Wait condition creation payload.
+
+        Returns:
+            The created wait condition.
+        """
+        response_body = self.post(
+            RUN_WAIT_CONDITIONS,
+            body=run_wait_condition,
+        )
+        return RunWaitConditionResponse.model_validate(response_body)
+
+    def get_run_wait_condition(
+        self, run_wait_condition_id: UUID, hydrate: bool = True
+    ) -> RunWaitConditionResponse:
+        """Get a run wait condition.
+
+        Args:
+            run_wait_condition_id: Wait condition ID.
+            hydrate: Whether to hydrate metadata/resources.
+
+        Returns:
+            The requested wait condition.
+        """
+        return self._get_resource(
+            resource_id=run_wait_condition_id,
+            route=RUN_WAIT_CONDITIONS,
+            response_model=RunWaitConditionResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_run_wait_conditions(
+        self,
+        run_wait_condition_filter_model: RunWaitConditionFilter,
+        hydrate: bool = False,
+    ) -> Page[RunWaitConditionResponse]:
+        """List run wait conditions.
+
+        Args:
+            run_wait_condition_filter_model: Wait condition filter model.
+            hydrate: Whether to hydrate metadata/resources.
+
+        Returns:
+            A page of wait conditions.
+        """
+        return self._list_paginated_resources(
+            route=RUN_WAIT_CONDITIONS,
+            response_model=RunWaitConditionResponse,
+            filter_model=run_wait_condition_filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def resolve_run_wait_condition(
+        self,
+        run_wait_condition_id: UUID,
+        resolve_request: RunWaitConditionResolveRequest,
+    ) -> RunWaitConditionResponse:
+        """Resolve a run wait condition.
+
+        Args:
+            run_wait_condition_id: Wait condition ID.
+            resolve_request: Resolution payload.
+
+        Returns:
+            The resolved wait condition.
+        """
+        response_body = self.put(
+            path=f"{RUN_WAIT_CONDITIONS}/{run_wait_condition_id}{RESOLVE}",
+            body=resolve_request,
+        )
+        return RunWaitConditionResponse.model_validate(response_body)
+
+    def update_run_wait_condition_lease(
+        self,
+        run_wait_condition_id: UUID,
+        lease_update: RunWaitConditionLeaseUpdate,
+    ) -> RunWaitConditionStatus:
+        """Update a run wait condition polling lease.
+
+        Args:
+            run_wait_condition_id: Wait condition ID.
+            lease_update: Lease refresh payload.
+
+        Returns:
+            The current wait condition status after attempting the lease update.
+        """
+        response_body = self.put(
+            path=f"{RUN_WAIT_CONDITIONS}/{run_wait_condition_id}",
+            body=lease_update,
+        )
+        return RunWaitConditionStatus(response_body)
+
     # ----------------------------- Run Metadata -----------------------------
 
     def create_run_metadata(self, run_metadata: RunMetadataRequest) -> None:
@@ -2281,6 +2545,188 @@ class RestZenStore(BaseZenStore):
             run_metadata: The run metadata to create.
         """
         self.post(RUN_METADATA, body=run_metadata)
+
+    # ----------------------------- Triggers ------------------------------
+
+    def create_trigger(
+        self, trigger: TriggerRequest
+    ) -> TRIGGER_RETURN_TYPE_UNION:
+        """Creates a new trigger.
+
+        Args:
+            trigger: The trigger to create.
+
+        Returns:
+            The created trigger.
+
+        Raises:
+            ValueError: If an unexpected payload is retrieved.
+        """
+        body: dict[str, Any] = self.post(TRIGGERS, body=trigger)  # type: ignore[assignment]
+
+        try:
+            response_model = TYPE_TO_RESPONSE_MAPPING[body["body"]["type"]]
+            return response_model.model_validate(body)
+        except (KeyError, TypeError):
+            raise ValueError("Bad response, expected a trigger type object.")
+
+    def get_trigger(
+        self, trigger_id: UUID, hydrate: bool = True
+    ) -> TRIGGER_RETURN_TYPE_UNION:
+        """Retrieves a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+
+        Returns:
+            The trigger.
+
+        Raises:
+            ValueError: In case of bad response.
+        """
+        body: dict[str, Any] = self.get(  # type: ignore[assignment]
+            f"{TRIGGERS}/{str(trigger_id)}", params={"hydrate": hydrate}
+        )
+
+        try:
+            response_model = TYPE_TO_RESPONSE_MAPPING[body["body"]["type"]]
+            return response_model.model_validate(body)
+        except (KeyError, TypeError):
+            raise ValueError("Bad response, expected a trigger type object.")
+
+    def list_triggers(
+        self, triggers_filter_model: TriggerFilter, hydrate: bool = False
+    ) -> Page[TRIGGER_RETURN_TYPE_UNION]:
+        """List all triggers.
+
+        Args:
+            triggers_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of triggers matching the filter criteria.
+
+        Raises:
+            ValueError: In case of bad response.
+        """
+        body: dict[str, Any] = self.get(  # type: ignore[assignment]
+            TRIGGERS,
+            params={
+                "hydrate": hydrate,
+                **triggers_filter_model.model_dump(exclude_none=True),
+            },
+        )
+
+        page_of_items: Page[AnyResponse] = Page.model_validate(body)  # type: ignore[valid-type]
+
+        if not page_of_items.items:
+            return page_of_items
+
+        try:
+            page_of_items.items = [
+                TYPE_TO_RESPONSE_MAPPING[
+                    generic_item["body"]["type"]
+                ].model_validate(generic_item)
+                for generic_item in body["items"]
+            ]
+        except (KeyError, TypeError):
+            raise ValueError("Bad response, expected a trigger type object.")
+
+        return page_of_items
+
+    def update_trigger(
+        self, trigger_id: UUID, trigger_update: TriggerUpdate
+    ) -> TRIGGER_RETURN_TYPE_UNION:
+        """Updates a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger to update.
+            trigger_update: The update to be applied to the trigger.
+
+        Returns:
+            The updated trigger.
+
+        Raises:
+            ValueError: In case of bad response.
+        """
+        body: dict[str, Any] = self.put(  # type: ignore[assignment]
+            f"{TRIGGERS}/{trigger_id}",
+            body=trigger_update,
+            params=None,
+            exclude_unset=False,
+        )
+        try:
+            response_model = TYPE_TO_RESPONSE_MAPPING[body["body"]["type"]]
+            return response_model.model_validate(body)
+        except (KeyError, TypeError):
+            raise ValueError("Bad response, expected a trigger type object.")
+
+    def delete_trigger(self, trigger_id: UUID, soft: bool = True) -> None:
+        """Deletes a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            soft: Flag deciding whether to soft-delete the trigger.
+        """
+        self._delete_resource(
+            resource_id=trigger_id,
+            route=TRIGGERS,
+            params={"soft": soft},
+        )
+
+    def attach_trigger_to_snapshot(
+        self,
+        trigger_id: UUID,
+        snapshot_id: UUID,
+        run_configuration: PipelineRunConfiguration | None = None,
+        allow_replace: bool = False,
+    ) -> None:
+        """Attaches (links) a trigger to a snapshot.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            snapshot_id: The ID of the snapshot.
+            run_configuration: The configuration applied to subsequent runs of this trigger & snapshot.
+            allow_replace: Allow replacement if attachment already exists.
+        """
+        self.put(
+            path=f"{TRIGGERS}/{trigger_id}{PIPELINE_SNAPSHOTS}/{snapshot_id}",
+            body=run_configuration,
+            params={"allow_replace": allow_replace},
+        )
+
+    def detach_trigger_from_snapshot(
+        self, trigger_id: UUID, snapshot_id: UUID
+    ) -> None:
+        """Detaches (unlinks) a trigger from a snapshot.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            snapshot_id: The ID of the snapshot.
+        """
+        self.delete(
+            path=f"{TRIGGERS}/{trigger_id}{PIPELINE_SNAPSHOTS}/{snapshot_id}",
+        )
+
+    def clear_trigger_dispatch_error(
+        self,
+        trigger_id: UUID,
+        snapshot_id: UUID | None = None,
+    ) -> None:
+        """Clear dispatch error details for trigger dispatch associations.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            snapshot_id: Optional snapshot ID filter.
+        """
+        params = {"snapshot_id": str(snapshot_id)} if snapshot_id else None
+        self.delete(
+            path=f"{TRIGGERS}/{trigger_id}{TRIGGER_SNAPSHOT_DISPATCH_STATE}",
+            params=params,
+        )
 
     # ----------------------------- Schedules -----------------------------
 
@@ -3405,158 +3851,6 @@ class RestZenStore(BaseZenStore):
         )
 
         return StepHeartbeatResponse.model_validate(response_body)
-
-    # -------------------- Triggers  --------------------
-
-    def create_trigger(self, trigger: TriggerRequest) -> TriggerResponse:
-        """Create an trigger.
-
-        Args:
-            trigger: The trigger to create.
-
-        Returns:
-            The created trigger.
-        """
-        return self._create_resource(
-            resource=trigger,
-            route=TRIGGERS,
-            response_model=TriggerResponse,
-        )
-
-    def get_trigger(
-        self,
-        trigger_id: UUID,
-        hydrate: bool = True,
-    ) -> TriggerResponse:
-        """Get a trigger by ID.
-
-        Args:
-            trigger_id: The ID of the trigger to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The trigger.
-        """
-        return self._get_resource(
-            resource_id=trigger_id,
-            route=TRIGGERS,
-            response_model=TriggerResponse,
-            params={"hydrate": hydrate},
-        )
-
-    def list_triggers(
-        self,
-        trigger_filter_model: TriggerFilter,
-        hydrate: bool = False,
-    ) -> Page[TriggerResponse]:
-        """List all triggers matching the given filter criteria.
-
-        Args:
-            trigger_filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all triggers matching the filter criteria.
-        """
-        return self._list_paginated_resources(
-            route=TRIGGERS,
-            response_model=TriggerResponse,
-            filter_model=trigger_filter_model,
-            params={"hydrate": hydrate},
-        )
-
-    def update_trigger(
-        self,
-        trigger_id: UUID,
-        trigger_update: TriggerUpdate,
-    ) -> TriggerResponse:
-        """Update an existing trigger.
-
-        Args:
-            trigger_id: The ID of the trigger to update.
-            trigger_update: The update to be applied to the trigger.
-
-        Returns:
-            The updated trigger.
-        """
-        return self._update_resource(
-            resource_id=trigger_id,
-            resource_update=trigger_update,
-            route=TRIGGERS,
-            response_model=TriggerResponse,
-        )
-
-    def delete_trigger(self, trigger_id: UUID) -> None:
-        """Delete an trigger.
-
-        Args:
-            trigger_id: The ID of the trigger to delete.
-        """
-        self._delete_resource(
-            resource_id=trigger_id,
-            route=TRIGGERS,
-        )
-
-    # -------------------- Trigger Executions --------------------
-
-    def get_trigger_execution(
-        self,
-        trigger_execution_id: UUID,
-        hydrate: bool = True,
-    ) -> TriggerExecutionResponse:
-        """Get an trigger execution by ID.
-
-        Args:
-            trigger_execution_id: The ID of the trigger execution to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The trigger execution.
-        """
-        return self._get_resource(
-            resource_id=trigger_execution_id,
-            route=TRIGGER_EXECUTIONS,
-            response_model=TriggerExecutionResponse,
-            params={"hydrate": hydrate},
-        )
-
-    def list_trigger_executions(
-        self,
-        trigger_execution_filter_model: TriggerExecutionFilter,
-        hydrate: bool = False,
-    ) -> Page[TriggerExecutionResponse]:
-        """List all trigger executions matching the given filter criteria.
-
-        Args:
-            trigger_execution_filter_model: All filter parameters including
-                pagination params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all trigger executions matching the filter criteria.
-        """
-        return self._list_paginated_resources(
-            route=TRIGGER_EXECUTIONS,
-            response_model=TriggerExecutionResponse,
-            filter_model=trigger_execution_filter_model,
-            params={"hydrate": hydrate},
-        )
-
-    def delete_trigger_execution(self, trigger_execution_id: UUID) -> None:
-        """Delete a trigger execution.
-
-        Args:
-            trigger_execution_id: The ID of the trigger execution to delete.
-        """
-        self._delete_resource(
-            resource_id=trigger_execution_id,
-            route=TRIGGER_EXECUTIONS,
-        )
 
     # ----------------------------- Users -----------------------------
 
@@ -4943,6 +5237,7 @@ class RestZenStore(BaseZenStore):
         body: Optional[BaseModel] = None,
         params: Optional[Dict[str, Any]] = None,
         timeout: Optional[int] = None,
+        exclude_unset: bool = True,
         **kwargs: Any,
     ) -> Json:
         """Make a PUT request to the given endpoint path.
@@ -4952,13 +5247,16 @@ class RestZenStore(BaseZenStore):
             body: The body to send.
             params: The query parameters to pass to the endpoint.
             timeout: The request timeout in seconds.
+            exclude_unset: Exclude unset fields, defaults to True.
             kwargs: Additional keyword arguments to pass to the request.
 
         Returns:
             The response body.
         """
         json = (
-            body.model_dump(mode="json", exclude_unset=True) if body else None
+            body.model_dump(mode="json", exclude_unset=exclude_unset)
+            if body
+            else None
         )
         return self._request(
             "PUT",

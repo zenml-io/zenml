@@ -13,11 +13,11 @@ The image builder is needed whenever other components of your stack need to buil
 
 ### Image Builder Flavors
 
-Out of the box, ZenML comes with a `local` image builder that builds Docker images on your client machine. Additional image builders are provided by integrations:
+Out of the box, ZenML comes with a `local` image builder that builds OCI images on your client machine using Docker or Podman, depending on your [global container engine setting](../../how-to/containerization/containerization.md#choosing-the-container-engine). Additional image builders are provided by integrations:
 
 | Image Builder                      | Flavor   | Integration | Notes                                                                    |
 | ---------------------------------- | -------- | ----------- | ------------------------------------------------------------------------ |
-| [LocalImageBuilder](local.md)      | `local`  | _built-in_  | Builds your Docker images locally.                                       |
+| [LocalImageBuilder](local.md)      | `local`  | _built-in_  | Builds images locally (Docker or Podman).                                |
 | [KanikoImageBuilder](kaniko.md)    | `kaniko` | `kaniko`    | Builds your Docker images in Kubernetes using Kaniko. **Note: Kaniko project was archived in June 2025.**  |
 | [GCPImageBuilder](gcp.md)          | `gcp`    | `gcp`       | Builds your Docker images using Google Cloud Build.                      |
 | [AWSImageBuilder](aws.md)          | `aws`    | `aws`       | Builds your Docker images using AWS Code Build.                          |

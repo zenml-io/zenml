@@ -14,9 +14,12 @@
 """Entrypoint of the Skypilot master/orchestrator VM."""
 
 import argparse
+import hashlib
+import json
+import shlex
 import socket
 import time
-from typing import Dict, cast
+from typing import Any, Dict, Optional, cast
 
 import sky
 
@@ -42,6 +45,7 @@ from zenml.integrations.skypilot.utils import (
     sky_job_get,
 )
 from zenml.logger import get_logger
+from zenml.models import PipelineRunResponse
 from zenml.orchestrators.dag_runner import NodeStatus, ThreadedDagRunner
 from zenml.orchestrators.publish_utils import (
     publish_failed_pipeline_run,
@@ -50,6 +54,9 @@ from zenml.orchestrators.utils import get_config_environment_vars
 from zenml.utils import env_utils
 
 logger = get_logger(__name__)
+
+_MAX_CLUSTER_NAME_LENGTH = 63
+_CLUSTER_HASH_LENGTH = 16
 
 
 def parse_args() -> argparse.Namespace:
@@ -61,7 +68,151 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run_name", type=str, required=True)
     parser.add_argument("--snapshot_id", type=str, required=True)
+    parser.add_argument("--run_id", type=str, required=False)
     return parser.parse_args()
+
+
+def _normalize_for_json(value: Any) -> Any:
+    """Converts nested values into deterministic JSON-serializable objects.
+
+    Args:
+        value: Value to normalize.
+
+    Returns:
+        A normalized representation safe for deterministic JSON serialization.
+    """
+    if isinstance(value, dict):
+        return {
+            str(key): _normalize_for_json(item)
+            for key, item in sorted(
+                value.items(), key=lambda entry: str(entry[0])
+            )
+        }
+    if isinstance(value, (list, tuple)):
+        return [_normalize_for_json(item) for item in value]
+    if isinstance(value, set):
+        normalized_items = [_normalize_for_json(item) for item in value]
+        return sorted(
+            normalized_items,
+            key=lambda item: json.dumps(item, sort_keys=True),
+        )
+    return value
+
+
+def _resource_config_digest(
+    settings: SkypilotBaseOrchestratorSettings,
+    default_instance_type: Optional[str],
+) -> str:
+    """Builds a stable digest for resource-affecting settings.
+
+    Args:
+        settings: Step-specific SkyPilot settings.
+        default_instance_type: Default instance type of the orchestrator.
+
+    Returns:
+        A short deterministic hash for the resource configuration.
+    """
+    resource_config = {
+        "instance_type": settings.instance_type or default_instance_type,
+        "cpus": settings.cpus,
+        "memory": settings.memory,
+        "accelerators": settings.accelerators,
+        "accelerator_args": settings.accelerator_args,
+        "use_spot": settings.use_spot,
+        "job_recovery": settings.job_recovery,
+        "region": settings.region,
+        "zone": settings.zone,
+        "image_id": settings.image_id,
+        "disk_size": settings.disk_size,
+        "disk_tier": settings.disk_tier,
+        "network_tier": settings.network_tier,
+        "infra": settings.infra,
+        "num_nodes": settings.num_nodes,
+        "ports": settings.ports,
+        "labels": settings.labels,
+        "any_of": settings.any_of,
+        "ordered": settings.ordered,
+        "resources_settings": settings.resources_settings,
+    }
+    serialized = json.dumps(
+        _normalize_for_json(resource_config),
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()[
+        :_CLUSTER_HASH_LENGTH
+    ]
+
+
+def _generate_cluster_name(
+    orchestrator_run_id: str,
+    settings: SkypilotBaseOrchestratorSettings,
+    default_instance_type: Optional[str],
+) -> str:
+    """Generates a deterministic cluster name for a resource configuration.
+
+    Args:
+        orchestrator_run_id: Orchestrator run identifier.
+        settings: Step-specific SkyPilot settings.
+        default_instance_type: Default instance type of the orchestrator.
+
+    Returns:
+        Deterministic cluster name within the configured max length.
+    """
+    run_part = sanitize_cluster_name(orchestrator_run_id) or "run"
+    digest = _resource_config_digest(settings, default_instance_type)
+
+    max_run_part_len = (
+        _MAX_CLUSTER_NAME_LENGTH - len("cluster--") - _CLUSTER_HASH_LENGTH
+    )
+    run_part = run_part[:max_run_part_len]
+
+    return sanitize_cluster_name(f"cluster-{run_part}-{digest}")
+
+
+def _resolve_pipeline_run(
+    client: Client,
+    run_name: str,
+    snapshot_id: str,
+    run_id: Optional[str],
+) -> PipelineRunResponse:
+    """Resolves the pipeline run for the orchestrator entrypoint.
+
+    Args:
+        client: Active ZenML client.
+        run_name: Name passed to the entrypoint.
+        snapshot_id: Snapshot ID of the run.
+        run_id: Optional concrete run ID.
+
+    Returns:
+        The resolved pipeline run object.
+
+    Raises:
+        RuntimeError: If no matching run can be found.
+    """
+    if run_id:
+        try:
+            return client.get_pipeline_run(run_id)
+        except Exception as e:
+            raise RuntimeError(
+                f"Unable to fetch pipeline run `{run_id}` passed via --run_id."
+            ) from e
+
+    runs = client.list_pipeline_runs(
+        sort_by="desc:created",
+        size=1,
+        snapshot_id=snapshot_id,
+        status=ExecutionStatus.INITIALIZING,
+    )
+
+    if getattr(runs, "total", None) == 0:
+        raise RuntimeError(
+            "Unable to resolve a pipeline run for snapshot "
+            f"`{snapshot_id}` (run name `{run_name}`). Pass --run_id to "
+            "the entrypoint to avoid race conditions."
+        )
+
+    return runs[0]
 
 
 def main() -> None:
@@ -80,26 +231,25 @@ def main() -> None:
         ValueError: If the active stack's container registry is None.
         Exception: If the orchestration or one of the steps fails.
     """
-    # Log to the container's stdout so it can be streamed by the client.
     logger.info("Skypilot orchestrator VM started.")
 
-    # Parse / extract args.
     args = parse_args()
     orchestrator_run_id = socket.gethostname()
 
     run = None
 
     try:
-        snapshot = Client().get_snapshot(args.snapshot_id)
+        client = Client()
+        snapshot = client.get_snapshot(args.snapshot_id)
 
         pipeline_dag = {
             step_name: step.spec.upstream_steps
             for step_name, step in snapshot.step_configurations.items()
         }
         step_command = StepEntrypointConfiguration.get_entrypoint_command()
-        entrypoint_str = " ".join(step_command)
+        entrypoint_str = " ".join(shlex.quote(token) for token in step_command)
 
-        active_stack = Client().active_stack
+        active_stack = client.active_stack
 
         orchestrator = active_stack.orchestrator
         if not isinstance(orchestrator, SkypilotBaseOrchestrator):
@@ -107,18 +257,14 @@ def main() -> None:
                 "The active stack's orchestrator is not an instance of SkypilotBaseOrchestrator."
             )
 
-        # Set up credentials
         orchestrator.setup_credentials()
 
-        # Set the service connector AWS profile ENV variable
         orchestrator.prepare_environment_variable(set=True)
 
-        # get active container registry
         container_registry = active_stack.container_registry
         if container_registry is None:
             raise ValueError("Container registry cannot be None.")
 
-        # Prepare Docker setup
         setup, task_envs = prepare_docker_setup(
             container_registry_uri=container_registry.config.uri,
             credentials=container_registry.credentials,
@@ -131,43 +277,19 @@ def main() -> None:
                 SkypilotBaseOrchestratorSettings,
                 orchestrator.get_settings(step),
             )
-            # Handle both str and Dict[str, int] types for accelerators
-            if isinstance(settings.accelerators, dict):
-                accelerators_hashable = frozenset(
-                    settings.accelerators.items()
-                )
-            elif isinstance(settings.accelerators, str):
-                accelerators_hashable = frozenset({(settings.accelerators, 1)})
-            else:
-                accelerators_hashable = None
-            resource_config = (
-                settings.instance_type,
-                settings.cpus,
-                settings.memory,
-                settings.disk_size,  # Assuming disk_size is part of the settings
-                settings.disk_tier,  # Assuming disk_tier is part of the settings
-                settings.use_spot,
-                settings.job_recovery,
-                settings.region,
-                settings.zone,
-                accelerators_hashable,
-            )
-            cluster_name_parts = [
-                sanitize_cluster_name(str(part))
-                for part in resource_config
-                if part is not None
-            ]
-            cluster_name = f"cluster-{orchestrator_run_id}" + "-".join(
-                cluster_name_parts
+            cluster_name = _generate_cluster_name(
+                orchestrator_run_id=orchestrator_run_id,
+                settings=settings,
+                default_instance_type=orchestrator.DEFAULT_INSTANCE_TYPE,
             )
             unique_resource_configs[step_name] = cluster_name
 
-        run = Client().list_pipeline_runs(
-            sort_by="asc:created",
-            size=1,
+        run = _resolve_pipeline_run(
+            client=client,
+            run_name=args.run_name,
             snapshot_id=args.snapshot_id,
-            status=ExecutionStatus.INITIALIZING,
-        )[0]
+            run_id=args.run_id,
+        )
 
         logger.info("Fetching pipeline run: %s", run.id)
 
@@ -198,7 +320,9 @@ def main() -> None:
                         step_name=step_name, snapshot_id=snapshot.id
                     )
                 )
-                arguments_str = " ".join(step_args)
+                arguments_str = " ".join(
+                    shlex.quote(token) for token in step_args
+                )
 
                 step = snapshot.step_configurations[step_name]
                 settings = cast(
@@ -207,14 +331,12 @@ def main() -> None:
                 )
                 step_env = shared_env.copy()
                 step_env.update(
-                    env_utils.get_step_environment(
-                        step_config=step.config, stack=active_stack
+                    env_utils.get_runtime_environment(
+                        config=step.config, stack=active_stack
                     )
                 )
-                # For now, we don't support separating secrets from environment
                 step_env.update(secrets)
 
-                # Create the Docker run command
                 run_command = create_docker_run_command(
                     image=image,
                     entrypoint_str=entrypoint_str,
@@ -226,18 +348,18 @@ def main() -> None:
 
                 task_name = f"{snapshot.id}-{step_name}-{time.time()}"
 
-                # Create task kwargs
+                step_task_envs = step_env.copy()
+                step_task_envs.update(task_envs)
                 task_kwargs = prepare_task_kwargs(
                     settings=settings,
                     run_command=run_command,
                     setup=setup,
-                    task_envs=task_envs,
+                    task_envs=step_task_envs,
                     task_name=task_name,
                 )
 
                 task = sky.Task(**task_kwargs)
 
-                # Set resources
                 resources_kwargs = prepare_resources_kwargs(
                     cloud=orchestrator.cloud,
                     settings=settings,
@@ -246,10 +368,7 @@ def main() -> None:
 
                 task = task.set_resources(sky.Resources(**resources_kwargs))
 
-                # Prepare launch parameters
-                launch_kwargs = prepare_launch_kwargs(
-                    settings=settings,
-                )
+                launch_kwargs = prepare_launch_kwargs(settings=settings)
 
                 # sky.launch now returns a request ID (async). Capture it so we can
                 # optionally stream logs and block until completion when desired.
@@ -258,27 +377,34 @@ def main() -> None:
                     cluster_name,
                     **launch_kwargs,
                 )
-                sky_job_get(launch_request_id, True, cluster_name)
+                sky_job_get(
+                    launch_request_id, settings.stream_logs, cluster_name
+                )
 
                 # Pop the resource configuration for this step
                 unique_resource_configs.pop(step_name)
 
                 if cluster_name in unique_resource_configs.values():
-                    # If there are more steps using this configuration, skip deprovisioning the cluster
                     logger.info(
                         f"Resource configuration for cluster '{cluster_name}' "
                         "is used by subsequent steps. Skipping the deprovisioning of "
                         "the cluster."
                     )
                 else:
-                    # If there are no more steps using this configuration, down the cluster
                     logger.info(
                         f"Resource configuration for cluster '{cluster_name}' "
                         "is not used by subsequent steps. deprovisioning the cluster."
                     )
-                    down_request_id = sky.down(cluster_name)
-                    # Wait for the cluster to be terminated
-                    sky.stream_and_get(down_request_id)
+                    try:
+                        down_request_id = sky.down(cluster_name)
+                        sky.stream_and_get(down_request_id)
+                    except Exception as cleanup_error:
+                        logger.error(
+                            "Failed to deprovision cluster "
+                            f"'{cluster_name}': {cleanup_error}. "
+                            f"Resources may still be running. Run `sky down "
+                            f"{cluster_name}` manually to clean up."
+                        )
 
                 logger.info(
                     f"Running step `{step_name}` on a VM is completed."

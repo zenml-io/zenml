@@ -15,7 +15,7 @@
 import socket
 
 import hypothesis.strategies as st
-from hypothesis import given
+from hypothesis import assume, given
 
 from zenml.utils import networking_utils
 
@@ -79,6 +79,7 @@ def test_replace_internal_hostname_works(
     sample_text,
 ):
     """Test method returns url when not internal hostname."""
+    assume(sample_text not in ("host.docker.internal", "host.k3d.internal"))
     response1 = networking_utils.replace_internal_hostname_with_localhost(
         sample_text
     )

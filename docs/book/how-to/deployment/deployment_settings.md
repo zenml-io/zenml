@@ -238,7 +238,7 @@ settings = DeploymentSettings(
 A rudimentary playground dashboard is included with the ZenML python package that features a simple UI useful for sending pipeline invocations and viewing the pipeline's response.
 
 {% hint style="info" %}
-When supplying your own custom dashboard, you may also need to [customize the security headers](./deployment_settings#secure-headers) to allow the dashboard to access various resources. For example, you may want to tweak the `Content-Security-Policy` header to allow the dashboard to access external javascript libraries, images, etc.
+When supplying your own custom dashboard, you may also need to [customize the security headers](./deployment_settings.md#secure-headers) to allow the dashboard to access various resources. For example, you may want to tweak the `Content-Security-Policy` header to allow the dashboard to access external javascript libraries, images, etc.
 {% endhint %}
 
 #### Jinja2 templates
@@ -1081,3 +1081,5 @@ components using the following `DeploymentSettings` fields:
 
 Both accept loadable sources or objects. We cover how to implement custom
 runner flavors and services in a dedicated guide.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

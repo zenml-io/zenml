@@ -22,11 +22,19 @@ from zenml.constants import (
     LOGS,
     VERSION_1,
 )
-from zenml.models.v2.core.logs import LogsResponse
+from zenml.exceptions import IllegalOperationError
+from zenml.models import LogsRequest, LogsResponse, LogsUpdate
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
-    verify_permissions_and_get_entity,
+    verify_permissions_and_create_entity,
+    verify_permissions_and_update_entity,
+)
+from zenml.zen_server.rbac.models import Action
+from zenml.zen_server.rbac.utils import (
+    batch_verify_permissions_for_models,
+    dehydrate_response_model,
+    verify_permission_for_model,
 )
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
@@ -40,6 +48,64 @@ router = APIRouter(
 )
 
 
+@router.post(
+    "",
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def create_logs(
+    logs: LogsRequest,
+    _: AuthContext = Security(authorize),
+) -> LogsResponse:
+    """Create a new log model.
+
+    Args:
+        logs: The log model to create.
+
+    Returns:
+        The created log model.
+    """
+    if logs.pipeline_run_id:
+        verify_permission_for_model(
+            model=zen_store().get_run(
+                run_id=logs.pipeline_run_id, hydrate=False
+            ),
+            action=Action.UPDATE,
+        )
+    elif logs.step_run_id:
+        step = zen_store().get_run_step(logs.step_run_id)
+        verify_permission_for_model(
+            model=zen_store().get_run(
+                run_id=step.pipeline_run_id, hydrate=False
+            ),
+            action=Action.UPDATE,
+        )
+
+    read_verify_models = []
+    if logs.artifact_store_id:
+        read_verify_models.append(
+            zen_store().get_stack_component(
+                component_id=logs.artifact_store_id, hydrate=False
+            )
+        )
+    if logs.log_store_id:
+        read_verify_models.append(
+            zen_store().get_stack_component(
+                component_id=logs.log_store_id, hydrate=False
+            )
+        )
+
+    batch_verify_permissions_for_models(
+        models=read_verify_models,
+        action=Action.READ,
+    )
+
+    return verify_permissions_and_create_entity(
+        request_model=logs,
+        create_method=zen_store().create_logs,
+    )
+
+
 @router.get(
     "/{logs_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
@@ -50,16 +116,91 @@ def get_logs(
     hydrate: bool = True,
     _: AuthContext = Security(authorize),
 ) -> LogsResponse:
-    """Returns the requested logs.
+    """Returns the requested log model.
 
     Args:
-        logs_id: ID of the logs.
+        logs_id: ID of the log model.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
     Returns:
-        The requested logs.
+        The requested log model.
+
+    Raises:
+        IllegalOperationError: If the logs are not associated
+            with a pipeline run or step run before fetching.
     """
-    return verify_permissions_and_get_entity(
-        id=logs_id, get_method=zen_store().get_logs, hydrate=hydrate
+    logs = zen_store().get_logs(logs_id, hydrate=True)
+
+    if logs.pipeline_run_id:
+        verify_permission_for_model(
+            model=zen_store().get_run(
+                run_id=logs.pipeline_run_id, hydrate=False
+            ),
+            action=Action.READ,
+        )
+    elif logs.step_run_id:
+        step = zen_store().get_run_step(
+            step_run_id=logs.step_run_id, hydrate=False
+        )
+        verify_permission_for_model(
+            model=zen_store().get_run(
+                run_id=step.pipeline_run_id, hydrate=False
+            ),
+            action=Action.READ,
+        )
+    else:
+        raise IllegalOperationError(
+            "Logs must be associated with a pipeline run or step run "
+            "before fetching."
+        )
+
+    if hydrate is False:
+        logs.metadata = None
+
+    return dehydrate_response_model(logs)
+
+
+@router.put(
+    "/{logs_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def update_logs(
+    logs_id: UUID,
+    logs_update: LogsUpdate,
+    _: AuthContext = Security(authorize),
+) -> LogsResponse:
+    """Update an existing log model.
+
+    Args:
+        logs_id: ID of the log model to update.
+        logs_update: Update to apply to the log model.
+
+    Returns:
+        The updated log model.
+    """
+    if logs_update.pipeline_run_id:
+        verify_permission_for_model(
+            model=zen_store().get_run(
+                run_id=logs_update.pipeline_run_id, hydrate=False
+            ),
+            action=Action.UPDATE,
+        )
+    elif logs_update.step_run_id:
+        step = zen_store().get_run_step(
+            step_run_id=logs_update.step_run_id, hydrate=False
+        )
+        verify_permission_for_model(
+            model=zen_store().get_run(
+                run_id=step.pipeline_run_id, hydrate=False
+            ),
+            action=Action.UPDATE,
+        )
+
+    return verify_permissions_and_update_entity(
+        id=logs_id,
+        update_model=logs_update,
+        get_method=zen_store().get_logs,
+        update_method=zen_store().update_logs,
     )

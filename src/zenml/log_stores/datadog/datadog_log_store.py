@@ -19,7 +19,6 @@ from typing import Any, Dict, List, Optional, cast
 import requests
 
 from zenml.enums import LoggingLevels
-from zenml.log_stores.base_log_store import MAX_ENTRIES_PER_REQUEST
 from zenml.log_stores.datadog.datadog_flavor import DatadogLogStoreConfig
 from zenml.log_stores.datadog.datadog_log_exporter import DatadogLogExporter
 from zenml.log_stores.otel.otel_log_store import OtelLogStore
@@ -75,9 +74,9 @@ class DatadogLogStore(OtelLogStore):
     def fetch(
         self,
         logs_model: "LogsResponse",
+        limit: int,
         start_time: Optional[datetime] = None,
         end_time: Optional[datetime] = None,
-        limit: int = MAX_ENTRIES_PER_REQUEST,
     ) -> List["LogEntry"]:
         """Fetch logs from Datadog's API.
 

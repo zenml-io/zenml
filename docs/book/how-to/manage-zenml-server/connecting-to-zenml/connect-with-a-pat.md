@@ -13,3 +13,5 @@ If you are using ZenML Pro and need to call the ZenML Pro workspace API from a n
 
 If you are using ZenML OSS and need to call the ZenML OSS API from a non-interactive environment, you can use a service account and an API key. See the [Connect with a service account](./connect-with-a-service-account.md) documentation for more information.
 {% endhint %}
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

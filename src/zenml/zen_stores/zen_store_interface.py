@@ -18,13 +18,13 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple, Union
 from uuid import UUID
 
-from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
-from zenml.enums import StackDeploymentProvider
+from zenml.config.pipeline_run_configuration import (
+    PipelineRunConfiguration,
+    ReplayRunConfiguration,
+)
+from zenml.enums import RunWaitConditionStatus, StackDeploymentProvider
 from zenml.models import (
-    ActionFilter,
-    ActionRequest,
-    ActionResponse,
-    ActionUpdate,
+    TRIGGER_RETURN_TYPE_UNION,
     APIKeyFilter,
     APIKeyRequest,
     APIKeyResponse,
@@ -56,15 +56,13 @@ from zenml.models import (
     DeploymentRequest,
     DeploymentResponse,
     DeploymentUpdate,
-    EventSourceFilter,
-    EventSourceRequest,
-    EventSourceResponse,
-    EventSourceUpdate,
     FlavorFilter,
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    LogsRequest,
     LogsResponse,
+    LogsUpdate,
     ModelFilter,
     ModelRequest,
     ModelResponse,
@@ -104,10 +102,17 @@ from zenml.models import (
     ProjectResponse,
     ProjectUpdate,
     RunMetadataRequest,
+    RunStatisticsRequest,
+    RunStatisticsResponse,
     RunTemplateFilter,
     RunTemplateRequest,
     RunTemplateResponse,
     RunTemplateUpdate,
+    RunWaitConditionFilter,
+    RunWaitConditionLeaseUpdate,
+    RunWaitConditionRequest,
+    RunWaitConditionResolveRequest,
+    RunWaitConditionResponse,
     ScheduleFilter,
     ScheduleRequest,
     ScheduleResponse,
@@ -144,26 +149,28 @@ from zenml.models import (
     StepRunRequest,
     StepRunResponse,
     StepRunUpdate,
+    StreamBatchRequest,
+    StreamBatchResponse,
     TagFilter,
     TagRequest,
     TagResourceRequest,
     TagResourceResponse,
     TagResponse,
     TagUpdate,
-    TriggerExecutionFilter,
-    TriggerExecutionResponse,
     TriggerFilter,
     TriggerRequest,
-    TriggerResponse,
     TriggerUpdate,
     UserFilter,
     UserRequest,
     UserResponse,
     UserUpdate,
 )
+from zenml.zen_stores.resource_pools.store_interface import (
+    ResourcePoolsStoreInterface,
+)
 
 
-class ZenStoreInterface(ABC):
+class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
     """ZenML store interface.
 
     All ZenML stores must implement the methods in this interface.
@@ -278,87 +285,6 @@ class ZenStoreInterface(ABC):
 
         Returns:
             The updated server settings.
-        """
-
-    # -------------------- Actions  --------------------
-
-    @abstractmethod
-    def create_action(self, action: ActionRequest) -> ActionResponse:
-        """Create an action.
-
-        Args:
-            action: The action to create.
-
-        Returns:
-            The created action.
-        """
-
-    @abstractmethod
-    def get_action(
-        self,
-        action_id: UUID,
-        hydrate: bool = True,
-    ) -> ActionResponse:
-        """Get an action by ID.
-
-        Args:
-            action_id: The ID of the action to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The action.
-
-        Raises:
-            KeyError: If the action doesn't exist.
-        """
-
-    @abstractmethod
-    def list_actions(
-        self,
-        action_filter_model: ActionFilter,
-        hydrate: bool = False,
-    ) -> Page[ActionResponse]:
-        """List all actions matching the given filter criteria.
-
-        Args:
-            action_filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all actions matching the filter criteria.
-        """
-
-    @abstractmethod
-    def update_action(
-        self,
-        action_id: UUID,
-        action_update: ActionUpdate,
-    ) -> ActionResponse:
-        """Update an existing action.
-
-        Args:
-            action_id: The ID of the action to update.
-            action_update: The update to be applied to the action.
-
-        Returns:
-            The updated action.
-
-        Raises:
-            KeyError: If the action doesn't exist.
-        """
-
-    @abstractmethod
-    def delete_action(self, action_id: UUID) -> None:
-        """Delete an action.
-
-        Args:
-            action_id: The ID of the action to delete.
-
-        Raises:
-            KeyError: If the action doesn't exist.
         """
 
     # -------------------- API Keys --------------------
@@ -1119,6 +1045,17 @@ class ZenStoreInterface(ABC):
 
     # -------------------- Logs --------------------
     @abstractmethod
+    def create_logs(self, logs: LogsRequest) -> LogsResponse:
+        """Create a logs entry.
+
+        Args:
+            logs: The logs entry to create.
+
+        Returns:
+            The created logs entry.
+        """
+
+    @abstractmethod
     def get_logs(self, logs_id: UUID, hydrate: bool = True) -> LogsResponse:
         """Get logs by its unique ID.
 
@@ -1132,6 +1069,20 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: if the logs doesn't exist.
+        """
+
+    @abstractmethod
+    def update_logs(
+        self, logs_id: UUID, logs_update: LogsUpdate
+    ) -> LogsResponse:
+        """Update an existing logs entry.
+
+        Args:
+            logs_id: The ID of the logs entry to update.
+            logs_update: The update to be applied to the logs entry.
+
+        Returns:
+            The updated logs entry.
         """
 
     # -------------------- Pipelines --------------------
@@ -1630,89 +1581,6 @@ class ZenStoreInterface(ABC):
             Model of the pipeline run.
         """
 
-    # -------------------- Event Sources  --------------------
-
-    @abstractmethod
-    def create_event_source(
-        self, event_source: EventSourceRequest
-    ) -> EventSourceResponse:
-        """Create an event_source.
-
-        Args:
-            event_source: The event_source to create.
-
-        Returns:
-            The created event_source.
-        """
-
-    @abstractmethod
-    def get_event_source(
-        self,
-        event_source_id: UUID,
-        hydrate: bool = True,
-    ) -> EventSourceResponse:
-        """Get an event_source by ID.
-
-        Args:
-            event_source_id: The ID of the event_source to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The event_source.
-
-        Raises:
-            KeyError: if the stack event_source doesn't exist.
-        """
-
-    @abstractmethod
-    def list_event_sources(
-        self,
-        event_source_filter_model: EventSourceFilter,
-        hydrate: bool = False,
-    ) -> Page[EventSourceResponse]:
-        """List all event_sources matching the given filter criteria.
-
-        Args:
-            event_source_filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all event_sources matching the filter criteria.
-        """
-
-    @abstractmethod
-    def update_event_source(
-        self,
-        event_source_id: UUID,
-        event_source_update: EventSourceUpdate,
-    ) -> EventSourceResponse:
-        """Update an existing event_source.
-
-        Args:
-            event_source_id: The ID of the event_source to update.
-            event_source_update: The update to be applied to the event_source.
-
-        Returns:
-            The updated event_source.
-
-        Raises:
-            KeyError: if the event_source doesn't exist.
-        """
-
-    @abstractmethod
-    def delete_event_source(self, event_source_id: UUID) -> None:
-        """Delete an event_source.
-
-        Args:
-            event_source_id: The ID of the event_source to delete.
-
-        Raises:
-            KeyError: if the event_source doesn't exist.
-        """
-
     # -------------------- Pipeline runs --------------------
 
     @abstractmethod
@@ -1777,6 +1645,19 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
+    def get_run_statistics(
+        self, request: RunStatisticsRequest
+    ) -> RunStatisticsResponse:
+        """Compute grouped statistics over pipeline runs.
+
+        Args:
+            request: Statistics request.
+
+        Returns:
+            Grouped statistics.
+        """
+
+    @abstractmethod
     def update_run(
         self, run_id: UUID, run_update: PipelineRunUpdate
     ) -> PipelineRunResponse:
@@ -1804,6 +1685,126 @@ class ZenStoreInterface(ABC):
             KeyError: if the pipeline run doesn't exist.
         """
 
+    @abstractmethod
+    def replay_run(
+        self,
+        run_id: UUID,
+        run_configuration: ReplayRunConfiguration,
+    ) -> PipelineRunResponse:
+        """Replay a pipeline run.
+
+        Args:
+            run_id: The ID of the pipeline run to replay.
+            run_configuration: Replay configuration.
+
+        Returns:
+            The replayed pipeline run.
+        """
+
+    @abstractmethod
+    def disable_run_heartbeat(self, run_id: UUID) -> None:
+        """Disables the run's heartbeat.
+
+        Args:
+            run_id: The ID of the pipeline run to delete.
+
+        Returns:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
+    @abstractmethod
+    def publish_run_events(
+        self, pipeline_run_id: UUID, batch: StreamBatchRequest
+    ) -> StreamBatchResponse:
+        """Publish a batch of live events to a pipeline run's stream.
+
+        Args:
+            pipeline_run_id: The ID of the run the events belong to.
+            batch: The batch of events to publish.
+
+        Returns:
+            The server-side ingest response.
+
+        Raises:
+            NotImplementedError: If streaming is not configured on the
+                target store.
+        """
+
+    @abstractmethod
+    def create_run_wait_condition(
+        self, run_wait_condition: RunWaitConditionRequest
+    ) -> RunWaitConditionResponse:
+        """Create a run wait condition.
+
+        Args:
+            run_wait_condition: The wait condition to create.
+
+        Returns:
+            The created wait condition.
+        """
+
+    @abstractmethod
+    def get_run_wait_condition(
+        self, run_wait_condition_id: UUID, hydrate: bool = True
+    ) -> RunWaitConditionResponse:
+        """Get a run wait condition by ID.
+
+        Args:
+            run_wait_condition_id: The ID of the wait condition.
+            hydrate: Whether to hydrate nested metadata/resources.
+
+        Returns:
+            The run wait condition.
+        """
+
+    @abstractmethod
+    def list_run_wait_conditions(
+        self,
+        run_wait_condition_filter_model: RunWaitConditionFilter,
+        hydrate: bool = False,
+    ) -> Page[RunWaitConditionResponse]:
+        """List run wait conditions matching the filter criteria.
+
+        Args:
+            run_wait_condition_filter_model: Filter and pagination model.
+            hydrate: Whether to hydrate nested metadata/resources.
+
+        Returns:
+            A page of wait conditions.
+        """
+
+    @abstractmethod
+    def resolve_run_wait_condition(
+        self,
+        run_wait_condition_id: UUID,
+        resolve_request: RunWaitConditionResolveRequest,
+    ) -> RunWaitConditionResponse:
+        """Resolve a run wait condition.
+
+        Args:
+            run_wait_condition_id: The wait condition ID.
+            resolve_request: Resolution payload.
+
+        Returns:
+            The updated wait condition.
+        """
+
+    @abstractmethod
+    def update_run_wait_condition_lease(
+        self,
+        run_wait_condition_id: UUID,
+        lease_update: RunWaitConditionLeaseUpdate,
+    ) -> RunWaitConditionStatus:
+        """Update a run wait condition polling lease.
+
+        Args:
+            run_wait_condition_id: The wait condition ID.
+            lease_update: Lease update payload.
+
+        Returns:
+            The latest persisted wait condition status.
+        """
+
     # -------------------- Run metadata --------------------
 
     @abstractmethod
@@ -1815,6 +1816,135 @@ class ZenStoreInterface(ABC):
 
         Returns:
             None
+        """
+
+    # -------------------- Triggers ---------------------
+
+    @abstractmethod
+    def create_trigger(
+        self, trigger: TriggerRequest
+    ) -> TRIGGER_RETURN_TYPE_UNION:
+        """Creates a new trigger.
+
+        Args:
+            trigger: The trigger to create.
+
+        Returns:
+            The created trigger.
+        """
+
+    @abstractmethod
+    def get_trigger(
+        self, trigger_id: UUID, hydrate: bool = True
+    ) -> TRIGGER_RETURN_TYPE_UNION:
+        """Retrieves a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+
+        Returns:
+            The trigger.
+
+        Raises:
+            KeyError: if the trigger does not exist.
+        """
+
+    @abstractmethod
+    def list_triggers(
+        self,
+        triggers_filter_model: TriggerFilter,
+        hydrate: bool = False,
+    ) -> Page[TRIGGER_RETURN_TYPE_UNION]:
+        """List all triggers.
+
+        Args:
+            triggers_filter_model: All filter parameters including pagination
+                params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of triggers matching the filter criteria.
+        """
+
+    @abstractmethod
+    def update_trigger(
+        self, trigger_id: UUID, trigger_update: TriggerUpdate
+    ) -> TRIGGER_RETURN_TYPE_UNION:
+        """Updates a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger to update.
+            trigger_update: The update to be applied to the trigger.
+
+        Returns:
+            The updated trigger.
+
+        Raises:
+            KeyError: if the schedule doesn't exist.
+        """
+
+    @abstractmethod
+    def delete_trigger(self, trigger_id: UUID, soft: bool = True) -> None:
+        """Deletes a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            soft: Flag deciding whether to soft-delete the trigger.
+
+        Raises:
+            KeyError: if the schedule doesn't exist.
+        """
+
+    @abstractmethod
+    def attach_trigger_to_snapshot(
+        self,
+        trigger_id: UUID,
+        snapshot_id: UUID,
+        run_configuration: PipelineRunConfiguration | None = None,
+        allow_replace: bool = False,
+    ) -> None:
+        """Attaches (links) a trigger to a snapshot.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            snapshot_id: The ID of the snapshot.
+            run_configuration: The configuration applied to subsequent runs.
+            allow_replace: Allow replacement if attachment already exists.
+
+        Raises:
+            KeyError: if the entities don't exist.
+        """
+        pass
+
+    @abstractmethod
+    def detach_trigger_from_snapshot(
+        self, trigger_id: UUID, snapshot_id: UUID
+    ) -> None:
+        """Detaches (unlinks) a trigger from a snapshot.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            snapshot_id: The ID of the snapshot.
+
+        Raises:
+            KeyError: if the entities don't exist.
+        """
+
+    @abstractmethod
+    def clear_trigger_dispatch_error(
+        self,
+        trigger_id: UUID,
+        snapshot_id: UUID | None = None,
+    ) -> None:
+        """Clear recorded dispatch errors for a trigger.
+
+        Args:
+            trigger_id: The ID of the trigger.
+            snapshot_id: Optional snapshot ID. If provided, clear only this
+                snapshot association. If omitted, clear all associated
+                snapshot dispatch errors for the trigger.
         """
 
     # -------------------- Schedules --------------------
@@ -2594,138 +2724,6 @@ class ZenStoreInterface(ABC):
 
         Returns:
             The step heartbeat response.
-        """
-
-    # -------------------- Triggers  --------------------
-
-    @abstractmethod
-    def create_trigger(self, trigger: TriggerRequest) -> TriggerResponse:
-        """Create an trigger.
-
-        Args:
-            trigger: The trigger to create.
-
-        Returns:
-            The created trigger.
-        """
-
-    @abstractmethod
-    def get_trigger(
-        self,
-        trigger_id: UUID,
-        hydrate: bool = True,
-    ) -> TriggerResponse:
-        """Get an trigger by ID.
-
-        Args:
-            trigger_id: The ID of the trigger to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The trigger.
-
-        Raises:
-            KeyError: if the stack trigger doesn't exist.
-        """
-
-    @abstractmethod
-    def list_triggers(
-        self,
-        trigger_filter_model: TriggerFilter,
-        hydrate: bool = False,
-    ) -> Page[TriggerResponse]:
-        """List all triggers matching the given filter criteria.
-
-        Args:
-            trigger_filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all triggers matching the filter criteria.
-        """
-
-    @abstractmethod
-    def update_trigger(
-        self,
-        trigger_id: UUID,
-        trigger_update: TriggerUpdate,
-    ) -> TriggerResponse:
-        """Update an existing trigger.
-
-        Args:
-            trigger_id: The ID of the trigger to update.
-            trigger_update: The update to be applied to the trigger.
-
-        Returns:
-            The updated trigger.
-
-        Raises:
-            KeyError: if the trigger doesn't exist.
-        """
-
-    @abstractmethod
-    def delete_trigger(self, trigger_id: UUID) -> None:
-        """Delete an trigger.
-
-        Args:
-            trigger_id: The ID of the trigger to delete.
-
-        Raises:
-            KeyError: if the trigger doesn't exist.
-        """
-
-    # -------------------- Trigger Executions --------------------
-
-    @abstractmethod
-    def get_trigger_execution(
-        self,
-        trigger_execution_id: UUID,
-        hydrate: bool = True,
-    ) -> TriggerExecutionResponse:
-        """Get a trigger execution by ID.
-
-        Args:
-            trigger_execution_id: The ID of the trigger execution to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The trigger execution.
-
-        Raises:
-            KeyError: If the trigger execution doesn't exist.
-        """
-
-    @abstractmethod
-    def list_trigger_executions(
-        self,
-        trigger_execution_filter_model: TriggerExecutionFilter,
-        hydrate: bool = False,
-    ) -> Page[TriggerExecutionResponse]:
-        """List all trigger executions matching the given filter criteria.
-
-        Args:
-            trigger_execution_filter_model: All filter parameters including
-                pagination params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all trigger executions matching the filter criteria.
-        """
-
-    @abstractmethod
-    def delete_trigger_execution(self, trigger_execution_id: UUID) -> None:
-        """Delete a trigger execution.
-
-        Args:
-            trigger_execution_id: The ID of the trigger execution to delete.
-
-        Raises:
-            KeyError: If the trigger execution doesn't exist.
         """
 
     # -------------------- Users --------------------

@@ -98,11 +98,7 @@ class AzureMLComputeSettings(BaseSettings):
 
         Returns:
             the instance itself.
-
-        Raises:
-            AssertionError: if a name is not provided when working with
-                instances and clusters.
-        """
+        """  # noqa: DOC502
         viable_configuration_fields = {
             AzureMLComputeTypes.SERVERLESS: {"mode", "shm_size"},
             AzureMLComputeTypes.COMPUTE_INSTANCE: {

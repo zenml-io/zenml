@@ -28,20 +28,36 @@ class BaseStepOperatorConfig(StackComponentConfig):
 class BaseStepOperator(StackComponent, ABC):
     """Base class for all ZenML step operators."""
 
-    @abstractmethod
-    def launch(
-            self,
-            info: StepRunInfo,
-            entrypoint_command: List[str],
+    def submit(
+        self,
+        info: "StepRunInfo",
+        entrypoint_command: List[str],
+        environment: Dict[str, str],
     ) -> None:
-        """Abstract method to execute a step.
+        """Submit a step run.
 
-        Subclasses must implement this method and launch a **synchronous**
-        job that executes the `entrypoint_command`.
+        This method should submit the step run and return without waiting for
+        it to finish.
 
         Args:
             info: Information about the step run.
             entrypoint_command: Command that executes the step.
+            environment: Environment variables to set in the step operator
+                environment.
+        """
+    
+    def get_status(self, step_run: "StepRunResponse") -> ExecutionStatus:
+        """Get the status of a step run.
+
+        Args:
+            step_run: The step run to get the status of.
+        """
+
+    def cancel(self, step_run: "StepRunResponse") -> None:
+        """Cancel a step run.
+
+        Args:
+            step_run: The step run to cancel.
         """
 
 
@@ -77,10 +93,11 @@ This is a slimmed-down version of the base implementation which aims to highligh
 
 If you want to create your own custom flavor for a step operator, you can follow the following steps:
 
-1. Create a class that inherits from the `BaseStepOperator` class and implement the abstract `launch` method. This method has two main responsibilities:
-   * Preparing a suitable execution environment (e.g. a Docker image): The general environment is highly dependent on the concrete step operator implementation, but for ZenML to be able to run the step it requires you to install some `pip` dependencies. The list of requirements needed to successfully execute the step can be found via the Docker settings `info.pipeline.docker_settings` passed to the `launch()` method. Additionally, you'll have to make sure that all the source code of your ZenML step and pipeline are available within this execution environment.
-   * Running the entrypoint command: Actually running a single step of a pipeline requires knowledge of many ZenML internals and is implemented in the `zenml.step_operators.step_operator_entrypoint_configuration` module. As long as your environment was set up correctly (see the previous bullet point), you can run the step using the command provided via the `entrypoint_command` argument of the `launch()` method.
-2. If your step operator allows the specification of per-step resources, make sure to handle the resources defined on the step (`info.config.resource_settings`) that was passed to the `launch()` method.
+1. Create a class that inherits from the `BaseStepOperator` class and implement the abstract `submit`, `get_status` and `cancel` methods:
+   * The `submit()` method should prepare a suitable execution environment (e.g. a Docker image): The general environment is highly dependent on the concrete step operator implementation, but for ZenML to be able to run the step it requires you to install some `pip` dependencies. The list of requirements needed to successfully execute the step can be found via the Docker settings `info.pipeline.docker_settings` passed to the `submit()` method. Additionally, you'll have to make sure that all the source code of your ZenML step and pipeline are available within this execution environment. It should then run the entrypoint command: Actually running a single step of a pipeline requires knowledge of many ZenML internals and is implemented in the `zenml.step_operators.step_operator_entrypoint_configuration` module. As long as your environment was set up correctly (see the previous bullet point), you can run the step using the command provided via the `entrypoint_command` argument of the `submit()` method.
+   * The `get_status()` method should get the infrastructure status of a specific step that was submitted to the step operator.
+   * The `cancel()` method should cancel a specific step that was submitted to the step operator.
+2. If your step operator allows the specification of per-step resources, make sure to handle the resources defined on the step (`info.config.resource_settings`) that was passed to the `submit()` method.
 3. If you need to provide any configuration, create a class that inherits from the `BaseStepOperatorConfig` class adds your configuration parameters.
 4. Bring both the implementation and the configuration together by inheriting from the `BaseStepOperatorFlavor` class. Make sure that you give a `name` to the flavor through its abstract property.
 

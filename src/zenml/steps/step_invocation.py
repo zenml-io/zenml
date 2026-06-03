@@ -34,7 +34,9 @@ class StepInvocation:
         self,
         id: str,
         step: "BaseStep",
-        input_artifacts: Dict[str, List["StepArtifact"]],
+        input_artifacts: Dict[
+            str, Union["StepArtifact", List["StepArtifact"]]
+        ],
         external_artifacts: Dict[
             str, Union["ExternalArtifact", "ArtifactVersionResponse"]
         ],
@@ -115,7 +117,7 @@ class StepInvocation:
                     id=artifact.id
                 )
             else:
-                if artifact.value is not None:
+                if artifact.id is None:
                     artifact.upload_by_value()
                 external_artifacts[key] = artifact.config
 

@@ -125,8 +125,6 @@ def create_project(
 ) -> ProjectResponse:
     """Creates a project based on the requestBody.
 
-    # noqa: DAR401
-
     Args:
         project_request: Project to create.
 
@@ -156,8 +154,6 @@ def get_project(
     _: AuthContext = Security(authorize),
 ) -> ProjectResponse:
     """Get a project for given name.
-
-    # noqa: DAR401
 
     Args:
         project_name_or_id: Name or ID of the project.
@@ -191,8 +187,6 @@ def update_project(
     _: AuthContext = Security(authorize),
 ) -> ProjectResponse:
     """Get a project for given name.
-
-    # noqa: DAR401
 
     Args:
         project_name_or_id: Name or ID of the project to update.
@@ -255,8 +249,6 @@ def get_project_statistics(
     auth_context: AuthContext = Security(authorize),
 ) -> ProjectStatistics:
     """Gets statistics of a project.
-
-    # noqa: DAR401
 
     Args:
         project_name_or_id: Name or ID of the project to get statistics for.

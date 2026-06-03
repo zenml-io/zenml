@@ -1,6 +1,7 @@
 """Utility functions for Skypilot orchestrators."""
 
 import re
+import shlex
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 import sky
@@ -15,6 +16,15 @@ logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from sky.clouds.cloud import Cloud
+
+UNSUPPORTED_LAUNCH_SETTINGS_KEYS = (
+    "stream_logs",
+    "detach_setup",
+    "detach_run",
+    "num_nodes",
+)
+
+_ENV_VAR_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 def sanitize_cluster_name(name: str) -> str:
@@ -52,9 +62,11 @@ def prepare_docker_setup(
     if credentials:
         docker_username, docker_password = credentials
         sudo_prefix = "sudo " if use_sudo else ""
+        quoted_registry_uri = shlex.quote(container_registry_uri)
         setup = (
-            f"{sudo_prefix}docker login --username $DOCKER_USERNAME --password "
-            f"$DOCKER_PASSWORD {container_registry_uri}"
+            f'echo "$DOCKER_PASSWORD" | {sudo_prefix}docker login '
+            f'--username "$DOCKER_USERNAME" '
+            f"--password-stdin {quoted_registry_uri}"
         )
         task_envs = {
             "DOCKER_USERNAME": docker_username,
@@ -87,16 +99,32 @@ def create_docker_run_command(
 
     Returns:
         Docker run command as string.
+
+    Raises:
+        ValueError: If any environment variable key does not match
+            Docker's supported environment variable name pattern.
     """
+    invalid_env_keys = [
+        key for key in environment if not _ENV_VAR_PATTERN.fullmatch(key)
+    ]
+    if invalid_env_keys:
+        raise ValueError(
+            "Invalid environment variable name(s) for docker run: "
+            f"{', '.join(invalid_env_keys)}."
+        )
+
     docker_environment_str = " ".join(
-        f"-e {k}={v}" for k, v in environment.items()
+        f"-e {shlex.quote(k)}" for k in environment
     )
-    custom_run_args = " ".join(docker_run_args)
+    custom_run_args = " ".join(shlex.quote(arg) for arg in docker_run_args)
     if custom_run_args:
         custom_run_args += " "
 
     sudo_prefix = "sudo " if use_sudo else ""
-    return f"{sudo_prefix}docker run --rm {custom_run_args}{docker_environment_str} {image} {entrypoint_str} {arguments_str}"
+    return (
+        f"{sudo_prefix}docker run --rm {custom_run_args}{docker_environment_str} "
+        f"{shlex.quote(image)} {entrypoint_str} {arguments_str}"
+    )
 
 
 def prepare_task_kwargs(
@@ -118,14 +146,9 @@ def prepare_task_kwargs(
     Returns:
         Task keyword arguments dictionary.
     """
-    # Merge envs from settings with existing task_envs
     merged_envs = {}
-
-    # First add user-provided envs
     if settings.envs:
         merged_envs.update(settings.envs)
-
-    # Then add task_envs which take precedence
     if task_envs:
         merged_envs.update(task_envs)
 
@@ -134,6 +157,7 @@ def prepare_task_kwargs(
         "setup": setup,
         "envs": merged_envs,
         "name": settings.task_name or task_name,
+        "num_nodes": settings.num_nodes,
         "workdir": settings.workdir,
         "file_mounts_mapping": settings.file_mounts,
         **settings.task_settings,  # Add any arbitrary task settings
@@ -159,9 +183,25 @@ def prepare_resources_kwargs(
 
     Returns:
         Resources keyword arguments dictionary.
+
+    Raises:
+        ValueError: If `infra` is combined with any of the
+            `resources_settings` keys `cloud`, `region`, or `zone`.
     """
+    if settings.infra:
+        invalid_resource_keys = [
+            key
+            for key in ("cloud", "region", "zone")
+            if key in settings.resources_settings
+        ]
+        if invalid_resource_keys:
+            raise ValueError(
+                "The `infra` setting cannot be combined with "
+                f"`resources_settings` keys {invalid_resource_keys}."
+            )
+
     resources_kwargs = {
-        "cloud": cloud,
+        "cloud": None if settings.infra else cloud,
         "instance_type": settings.instance_type or default_instance_type,
         "cpus": settings.cpus,
         "memory": settings.memory,
@@ -169,17 +209,19 @@ def prepare_resources_kwargs(
         "accelerator_args": settings.accelerator_args,
         "use_spot": settings.use_spot,
         "job_recovery": settings.job_recovery,
-        "region": settings.region,
-        "zone": settings.zone,
+        "region": None if settings.infra else settings.region,
+        "zone": None if settings.infra else settings.zone,
         "image_id": kubernetes_image
         if kubernetes_image
         else settings.image_id,
         "disk_size": settings.disk_size,
         "disk_tier": settings.disk_tier,
+        "network_tier": settings.network_tier,
         "ports": settings.ports,
         "labels": settings.labels,
         "any_of": settings.any_of,
         "ordered": settings.ordered,
+        "infra": settings.infra,
         **settings.resources_settings,  # Add any arbitrary resource settings
     }
 
@@ -202,7 +244,6 @@ def prepare_launch_kwargs(
     Returns:
         Launch keyword arguments dictionary.
     """
-    # Determine values falling back to settings where applicable
     down_value = down if down is not None else settings.down
     idle_value = (
         idle_minutes_to_autostop
@@ -210,11 +251,8 @@ def prepare_launch_kwargs(
         else settings.idle_minutes_to_autostop
     )
 
-    # The following parameters were removed from sky.launch in versions > 0.8.
-    # We therefore no longer include them in the kwargs passed to the call.
-    # • stream_logs – handled by explicitly calling sky.stream_and_get
-    # • detach_setup / detach_run – setup/run are now detached by default
-
+    # SkyPilot ≥0.11 made launch/exec async and removed stream/log flags.
+    # Keep only supported keys here; exec should use its own kwargs.
     launch_kwargs = {
         "retry_until_up": settings.retry_until_up,
         "idle_minutes_to_autostop": idle_value,
@@ -223,21 +261,14 @@ def prepare_launch_kwargs(
         **settings.launch_settings,  # Keep user-provided extras
     }
 
-    # Remove keys that are no longer supported by sky.launch.
-    for _deprecated in (
-        "stream_logs",
-        "detach_setup",
-        "detach_run",
-        "num_nodes",
-    ):
+    for _deprecated in UNSUPPORTED_LAUNCH_SETTINGS_KEYS:
         launch_kwargs.pop(_deprecated, None)
 
-    # Remove None values to avoid overriding SkyPilot defaults
     return {k: v for k, v in launch_kwargs.items() if v is not None}
 
 
 def sky_job_get(
-    request_id: str, stream_logs: bool, cluster_name: str
+    request_id: Any, stream_logs: bool, cluster_name: str
 ) -> Optional[SubmissionResult]:
     """Handle SkyPilot request results based on stream_logs setting.
 
@@ -253,25 +284,38 @@ def sky_job_get(
 
     Returns:
         Optional submission result.
+
+    Raises:
+        RuntimeError: If the SkyPilot request result is malformed or does not
+            contain an integer job ID.
     """
     if stream_logs:
-        # Stream logs and wait for completion
-        job_id, _ = sky.stream_and_get(request_id)
+        result = sky.stream_and_get(request_id)
     else:
-        # Just wait for completion without streaming logs
-        job_id, _ = sky.get(request_id)
+        result = sky.get(request_id)
 
-    _wait_for_completion = None
-    if stream_logs:
+    if not isinstance(result, tuple) or not result:
+        raise RuntimeError(
+            "Failed to get SkyPilot job result for request "
+            f"{request_id!r}: expected a non-empty tuple, got {result!r}."
+        )
 
-        def _wait_for_completion() -> None:
-            status = 0  # 0=Successful, 100=Failed
-            status = sky.tail_logs(
-                cluster_name=cluster_name, job_id=job_id, follow=True
+    job_id = result[0]
+    if type(job_id) is not int:
+        raise RuntimeError(
+            "Failed to parse SkyPilot job ID for request "
+            f"{request_id!r}: expected int, got {job_id!r}."
+        )
+
+    def _wait_for_completion() -> None:
+        status = sky.tail_logs(
+            cluster_name=cluster_name, job_id=job_id, follow=True
+        )
+        if status != 0:
+            raise Exception(
+                f"SkyPilot job {job_id} failed with status {status}"
             )
-            if status != 0:
-                raise Exception(
-                    f"SkyPilot job {job_id} failed with status {status}"
-                )
 
-    return SubmissionResult(wait_for_completion=_wait_for_completion)
+    return SubmissionResult(
+        wait_for_completion=_wait_for_completion if stream_logs else None
+    )

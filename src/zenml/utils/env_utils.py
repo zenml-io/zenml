@@ -16,6 +16,7 @@
 import contextlib
 import os
 import re
+from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -25,15 +26,21 @@ from typing import (
     Match,
     Optional,
     TypeVar,
+    Union,
     cast,
 )
+
+from pydantic import BaseModel
+from typing_extensions import Self
 
 from zenml.client import Client
 from zenml.logger import get_logger
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
+    from zenml.config.pipeline_configurations import PipelineConfiguration
     from zenml.config.step_configurations import StepConfiguration
+    from zenml.models import StackResponse
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -203,24 +210,33 @@ def temporary_environment(environment: Dict[str, str]) -> Iterator[None]:
                     os.environ[key] = previous_value
 
 
-def get_step_environment(
-    step_config: "StepConfiguration", stack: "Stack"
+def get_runtime_environment(
+    config: Union["PipelineConfiguration", "StepConfiguration"],
+    stack: Union["Stack", "StackResponse"],
 ) -> Dict[str, str]:
-    """Get the environment variables for a step.
+    """Get the runtime environment variables.
 
     Args:
-        step_config: The step configuration.
-        stack: The stack on which the step will run.
+        config: The configuration.
+        stack: The stack on which the pipeline/step will run.
 
     Returns:
         A dictionary of environment variables.
     """
     environment = {}
-    for component in stack.components.values():
-        environment.update(component.environment)
+
+    from zenml.stack import Stack
+
+    if isinstance(stack, Stack):
+        for component in stack.all_components:
+            environment.update(component.environment)
+    else:
+        for component_list in stack.components.values():
+            for component_response in component_list:
+                environment.update(component_response.environment)
 
     environment.update(stack.environment)
-    environment.update(step_config.environment)
+    environment.update(config.environment)
 
     for key, value in environment.items():
         environment[key] = str(value)
@@ -228,26 +244,35 @@ def get_step_environment(
     return environment
 
 
-def get_step_secret_environment(
-    step_config: "StepConfiguration", stack: "Stack"
+def get_runtime_secret_environment(
+    config: Union["PipelineConfiguration", "StepConfiguration"],
+    stack: Union["Stack", "StackResponse"],
 ) -> Dict[str, str]:
-    """Get the environment variables for a step.
+    """Get the runtime secret environment variables.
 
     Args:
-        step_config: The step configuration.
-        stack: The stack on which the step will run.
+        config: The configuration.
+        stack: The stack on which the pipeline/step will run.
 
     Returns:
         A dictionary of environment variables.
     """
-    # The step secrets contain the pipeline secrets first, followed by the
-    # actual secrets defined on the step. We reverse the list to make sure the
-    # step secrets override the pipeline secrets.
-    secrets = list(reversed(step_config.secrets))
+    # We reverse the secrets to make sure the last defined secrets
+    # override previous ones.
+    # In the case of a step, the secrets will be the pipeline secrets followed
+    # by the step secrets.
+    secrets = list(reversed(config.secrets))
     secrets.extend(stack.secrets)
 
-    for component in stack.components.values():
-        secrets.extend(component.secrets)
+    from zenml.stack import Stack
+
+    if isinstance(stack, Stack):
+        for component in stack.all_components:
+            secrets.extend(component.secrets)
+    else:
+        for components_list in stack.components.values():
+            for component_response in components_list:
+                secrets.extend(component_response.secrets)
 
     # Removes duplicates while preserving order, only the first occurrence of
     # each secret will be kept. We then reverse the list to make sure the
@@ -281,3 +306,114 @@ def get_step_secret_environment(
             environment[key] = str(value)
 
     return environment
+
+
+@contextlib.contextmanager
+def temporary_runtime_environment(
+    config: Union["PipelineConfiguration", "StepConfiguration"],
+    stack: Union["Stack", "StackResponse"],
+) -> Iterator[None]:
+    """Temporarily set runtime environment variables.
+
+    Args:
+        config: The configuration.
+        stack: The stack on which the pipeline/step will run.
+
+    Yields:
+        Nothing.
+    """
+    env = get_runtime_environment(config, stack)
+    secret_env = get_runtime_secret_environment(config, stack)
+    env.update(secret_env)
+
+    with temporary_environment(env):
+        yield
+
+
+class ConfigBase(BaseModel, ABC):
+    """Base class for configuration objects. Useful for config inheritance."""
+
+    @staticmethod
+    @abstractmethod
+    def prefixes() -> list[str]:
+        """Prefixes to use for env var name resolution.
+
+        Returns:
+            A list of prefixes to use for env var name resolution.
+
+        Raises:
+            NotImplementedError: If the method is not implemented.
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def get_env_vars(cls) -> dict[str, str]:
+        """Method resolving the class variables from the environment.
+
+        Notes:
+        - Beware of variable name conflicts when composing configs via
+        inheritance. For instance, if you have DB and Cache env vars with a
+        different prefix (e.g. {ZENML_REDIS_}CONN_URL, {ZENML_DB_}CONN_URL) this
+        may lead to a conflict in naming when combining the 2 individual config
+        objects (We get 2 variables named conn_url).
+        - To avoid generating ambiguous configs the function detects duplicates and fails eagerly.
+        You can avoid such behaviors by using more generic prefixes and more precise
+        variable names (e.g. prefix = ZENML_, variable = db_conn_url) or by controlling
+        inheritance (try not to combine too many config classes, especially with common variable names).
+        - Why not use pydantic_settings.BaseSettings? Because - while neat - it doesn't provide the
+        ability to compose config objects with different prefixes via inheritance.
+
+        Returns:
+            A dictionary of config variables.
+
+        Raises:
+            RuntimeError: If config has conflicting variable names.
+        """
+        sorted_prefixes = sorted(
+            set(cls.prefixes()), key=lambda p: (-len(p), p)
+        )
+        logger.info("Config resolving prefixes: %s", sorted_prefixes)
+
+        env_vars: dict[str, str] = os.environ.copy()
+        parameters: dict[str, str] = {}
+        sources: dict[str, str] = {}  # variable_name -> env key
+
+        for prefix in sorted_prefixes:
+            found_keys: set[str] = set()
+
+            for key, value in env_vars.items():
+                if not key.startswith(prefix):
+                    continue
+
+                found_keys.add(key)
+                variable_name = key.removeprefix(prefix).lower()
+
+                if variable_name in parameters:
+                    raise RuntimeError(
+                        f"Environment variable extraction failed for {cls.__name__}. "
+                        f"Variable '{variable_name}' is not uniquely defined; it maps to both "
+                        f"{sources[variable_name]!r} and {key!r}."
+                    )
+
+                parameters[variable_name] = value
+                sources[variable_name] = key
+
+            env_vars = {
+                k: v for k, v in env_vars.items() if k not in found_keys
+            }
+
+        return parameters
+
+    @classmethod
+    def load_from_env(cls) -> Self:
+        """Resolve the environment and instantiate a new instance of the class.
+
+        Returns:
+            An instance of the class.
+        """
+        env_vars = cls.get_env_vars()
+        logger.info(
+            "Config identified the following variables: %s",
+            list(env_vars.keys()),
+        )
+        return cls(**env_vars)

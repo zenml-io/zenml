@@ -29,7 +29,7 @@ from typing import (
 )
 from uuid import UUID
 
-from zenml.enums import StepRuntime
+from zenml.enums import StepRuntime, StepType
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
@@ -37,6 +37,7 @@ if TYPE_CHECKING:
     from zenml.config.cache_policy import CachePolicyOrString
     from zenml.config.retry_config import StepRetryConfig
     from zenml.config.source import Source
+    from zenml.config.step_configurations import GroupInfo
     from zenml.materializers.base_materializer import BaseMaterializer
     from zenml.model.model import Model
     from zenml.steps import BaseStep
@@ -64,6 +65,7 @@ def step(_func: "F") -> "BaseStep": ...
 def step(
     *,
     name: Optional[str] = None,
+    step_type: Optional[StepType] = None,
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
     enable_artifact_visualization: Optional[bool] = None,
@@ -83,6 +85,7 @@ def step(
     cache_policy: Optional["CachePolicyOrString"] = None,
     runtime: Optional[StepRuntime] = None,
     heartbeat_healthy_threshold: Optional[int] = None,
+    group: Optional[Union["GroupInfo", str]] = None,
 ) -> Callable[["F"], "BaseStep"]: ...
 
 
@@ -90,6 +93,7 @@ def step(
     _func: Optional["F"] = None,
     *,
     name: Optional[str] = None,
+    step_type: Optional[StepType] = None,
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
     enable_artifact_visualization: Optional[bool] = None,
@@ -109,6 +113,7 @@ def step(
     cache_policy: Optional["CachePolicyOrString"] = None,
     runtime: Optional[StepRuntime] = None,
     heartbeat_healthy_threshold: Optional[int] = None,
+    group: Optional[Union["GroupInfo", str]] = None,
 ) -> Union["BaseStep", Callable[["F"], "BaseStep"]]:
     """Decorator to create a ZenML step.
 
@@ -116,6 +121,7 @@ def step(
         _func: The decorated function.
         name: The name of the step. If left empty, the name of the decorated
             function will be used as a fallback.
+        step_type: The type of this step.
         enable_cache: Specify whether caching is enabled for this step. If no
             value is passed, caching is enabled by default.
         enable_artifact_metadata: Specify whether metadata is enabled for this
@@ -151,7 +157,8 @@ def step(
             pipelines.
         heartbeat_healthy_threshold: The amount of time (in minutes) that a
             running step has not received heartbeat and is considered healthy.
-            By default, set to the maximum value (30 minutes).",
+            By default, set to 30 minutes.
+        group: The group information for this step.
 
     Returns:
         The step instance.
@@ -172,6 +179,7 @@ def step(
 
         step_instance = class_(
             name=name or func.__name__,
+            step_type=step_type,
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
             enable_artifact_visualization=enable_artifact_visualization,
@@ -191,6 +199,7 @@ def step(
             cache_policy=cache_policy,
             runtime=runtime,
             heartbeat_healthy_threshold=heartbeat_healthy_threshold,
+            group=group,
         )
 
         return step_instance

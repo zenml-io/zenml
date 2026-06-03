@@ -25,7 +25,7 @@ jobs:
       ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           ref: ${{ inputs.zenml_nightly && 'develop' || github.ref }}
       - name: Determine version
@@ -41,7 +41,10 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Determined VERSION=$VERSION"
       # Setup gcloud CLI
-      - uses: google-github-actions/setup-gcloud@v0
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093  # v3.0.0
+        with:
+          credentials_json: ${{ secrets.GCP_CLOUDBUILD_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db  # v3.0.1
         with:
           service_account_email: ${{ secrets.GCP_CLOUDBUILD_EMAIL }}
           service_account_key: ${{ secrets.GCP_CLOUDBUILD_KEY }}
@@ -50,8 +53,10 @@ jobs:
       # Cloudbuild
       - name: Build docker images
         run: |-
-          echo "Building Docker image with tag: ${{ env.VERSION }}"
+          echo "Building Docker image with tag: ${VERSION}"
           gcloud builds submit \
             --quiet \
-            --config=${{inputs.config_file}} \
+            --config=${INPUTS_CONFIG_FILE} \
             --substitutions=TAG_NAME=$VERSION
+        env:
+          INPUTS_CONFIG_FILE: ${{inputs.config_file}}

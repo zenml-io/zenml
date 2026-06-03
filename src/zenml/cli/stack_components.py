@@ -15,10 +15,11 @@
 
 import time
 from importlib import import_module
-from typing import Any, Callable, List, Optional, Tuple, cast
+from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, cast
 from uuid import UUID
 
 import click
+from click.formatting import HelpFormatter
 from rich.markdown import Markdown
 
 from zenml.cli import utils as cli_utils
@@ -30,6 +31,7 @@ from zenml.cli.served_model import register_model_deployer_subcommands
 from zenml.cli.utils import (
     OutputFormat,
     _component_display_name,
+    get_default_output_format,
     is_sorted_or_filtered,
     list_options,
     print_model_url,
@@ -39,12 +41,187 @@ from zenml.console import console
 from zenml.enums import CliCategories, StackComponentType
 from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.io import fileio
+from zenml.logger import get_logger
 from zenml.models import (
     ComponentFilter,
     ServiceConnectorResourcesModel,
 )
 from zenml.utils import source_utils
 from zenml.utils.dashboard_utils import get_component_url
+
+logger = get_logger(__name__)
+
+
+class StackComponentConfigHelpCommand(click.Command):
+    """Appends flavor config schema to ``--help`` when the flavor or name is known."""
+
+    _ARGV_STASH_KEY = "zenml_stack_component_argv_for_help__{cmd_name}"
+
+    def __init__(
+        self,
+        name: Optional[str],
+        component_type: StackComponentType,
+        mode: Literal["register", "update", "remove-attribute"],
+        **kwargs: Any,
+    ) -> None:
+        """Initialize the command.
+
+        Args:
+            name: Click command name (e.g. ``"register"``).
+            component_type: Stack component type this command
+                operates on.
+            mode: Whether this is a ``register``, ``update``, or
+                ``remove-attribute`` command — controls how the
+                flavor is resolved and how help text is presented.
+            **kwargs: Forwarded to :class:`click.Command`.
+        """
+        self._component_type = component_type
+        self._mode = mode
+        super().__init__(name=name, **kwargs)
+
+    # --- Click overrides -------------------------------------------
+
+    def parse_args(self, ctx: click.Context, args: List[str]) -> List[str]:
+        """Stash raw args before eager ``--help`` exits.
+
+        The stashed list is later read by
+        :meth:`_get_stashed_argv_tail` so that ``-f`` / component
+        name are available even though ``--help`` fires before Click
+        populates ``ctx.params``.
+
+        Args:
+            ctx: Click context for the current invocation.
+            args: Raw argument tokens passed to this command.
+
+        Returns:
+            Remaining args after Click parameter consumption.
+        """
+        if self.name:
+            key = self._ARGV_STASH_KEY.format(cmd_name=self.name)
+            ctx.meta[key] = list(args)
+        return super().parse_args(ctx, args)
+
+    def format_help(
+        self, ctx: click.Context, formatter: HelpFormatter
+    ) -> None:
+        """Write standard help and append flavor config schema.
+
+        Args:
+            ctx: Click context for the current invocation.
+            formatter: Help text formatter to write into.
+        """
+        super().format_help(ctx, formatter)
+        rows = self._build_config_schema_rows(ctx)
+        if not rows:
+            return
+        with formatter.section("Flavor configuration"):
+            if self._mode == "remove-attribute":
+                formatter.write_text(
+                    "Pass each field name as a positional ARGS"
+                    " value to remove it from the component."
+                )
+            else:
+                formatter.write_text(
+                    "Pass each field as `--name=value` in ARGS"
+                    " (in addition to the flags listed"
+                    " under Options)."
+                )
+            formatter.write_paragraph()
+            formatter.write_dl(rows, col_max=48)
+
+    # --- Private helpers -------------------------------------------
+
+    def _get_stashed_argv_tail(
+        self, ctx: click.Context
+    ) -> Optional[List[str]]:
+        """Retrieve the raw args stashed by :meth:`parse_args`.
+
+        Args:
+            ctx: Click context that may contain the stash.
+
+        Returns:
+            Copy of the stashed args, or ``None`` if unavailable.
+        """
+        if not self.name:
+            return None
+        key = self._ARGV_STASH_KEY.format(cmd_name=self.name)
+        raw = ctx.meta.get(key)
+        if raw is None:
+            return None
+        return list(raw)
+
+    def _parse_argv_for_help(self, argv_tail: List[str]) -> Dict[str, Any]:
+        """Parse register/update argv tail with resilient parsing.
+
+        Uses :meth:`click.Command.make_context` with
+        ``resilient_parsing=True`` so that
+        ``ignore_unknown_options`` and other context settings from
+        the real command are respected.
+
+        Args:
+            argv_tail: Raw args (``--help`` / ``-h`` stripped).
+
+        Returns:
+            Partially-parsed params dict (empty on failure).
+        """
+        stripped = [x for x in argv_tail if x not in ("--help", "-h")]
+        try:
+            ctx = self.make_context(
+                "_help_parse",
+                list(stripped),
+                resilient_parsing=True,
+            )
+        except (SystemExit, Exception):
+            return {}
+        return dict(ctx.params)
+
+    def _build_config_schema_rows(
+        self, ctx: click.Context
+    ) -> Optional[List[Tuple[str, str]]]:
+        """Load flavor schema and return Click help rows.
+
+        Args:
+            ctx: Click context for the current invocation.
+
+        Returns:
+            Rows for ``HelpFormatter.write_dl``, or ``None``
+            when the flavor cannot be determined.
+        """
+        tail = self._get_stashed_argv_tail(ctx)
+        if tail is None:
+            return None
+        parsed = self._parse_argv_for_help(tail)
+        if not parsed:
+            return None
+        client = Client()
+        try:
+            if self._mode == "register":
+                flavor = parsed.get("flavor")
+                if not flavor or not isinstance(flavor, str):
+                    return None
+                flavor_model = client.get_flavor_by_name_and_type(
+                    name=flavor,
+                    component_type=self._component_type,
+                )
+            else:
+                name_or_id = parsed.get("name_id_or_prefix")
+                if not name_or_id or not isinstance(name_or_id, str):
+                    return None
+                component = client.get_stack_component(
+                    name_id_or_prefix=name_or_id,
+                    component_type=self._component_type,
+                )
+                flavor_model = component.flavor
+        except KeyError:
+            return None
+        except Exception:
+            logger.debug(
+                "Could not load flavor schema for --help",
+                exc_info=True,
+            )
+            return None
+        rows = cli_utils.flavor_config_schema_click_help_dl(flavor_model)
+        return rows or None
 
 
 def generate_stack_component_get_command(
@@ -84,7 +261,7 @@ def generate_stack_component_get_command(
 
 def generate_stack_component_describe_command(
     component_type: StackComponentType,
-) -> Callable[[str], None]:
+) -> Callable[..., None]:
     """Generates a `describe` command for the specific stack component type.
 
     Args:
@@ -94,17 +271,32 @@ def generate_stack_component_describe_command(
         A function that can be used as a `click` command.
     """
 
+    @click.option(
+        "--output",
+        "-o",
+        "output_format",
+        type=click.Choice(["table", "json", "yaml", "csv", "tsv"]),
+        default=None,
+        help="Output format for the describe output. Uses ZENML_DEFAULT_OUTPUT env var if set, otherwise defaults to 'table'.",
+    )
     @click.argument(
         "name_id_or_prefix",
         type=str,
         required=False,
     )
-    def describe_stack_component_command(name_id_or_prefix: str) -> None:
+    def describe_stack_component_command(
+        name_id_or_prefix: Optional[str] = None,
+        output_format: Optional[OutputFormat] = None,
+    ) -> None:
         """Prints details about the active/specified component.
 
         Args:
             name_id_or_prefix: Name or id of the component to describe.
+            output_format: Output format (table, json, yaml, csv, tsv).
         """
+        if output_format is None:
+            output_format = get_default_output_format()
+
         client = Client()
         try:
             component_ = client.get_stack_component(
@@ -129,13 +321,17 @@ def generate_stack_component_describe_command(
             else:
                 connector_requirements = None
 
+            url = get_component_url(component_)
             cli_utils.print_stack_component_configuration(
                 component=component_,
                 active_status=component_.id == active_component_id,
                 connector_requirements=connector_requirements,
+                output_format=output_format,
+                dashboard_url=url if output_format != "table" else None,
             )
 
-            print_model_url(get_component_url(component_))
+            if output_format == "table":
+                print_model_url(url)
 
     return describe_stack_component_command
 
@@ -927,7 +1123,7 @@ def generate_stack_component_flavor_describe_command(
                 name=name, component_type=component_type
             )
 
-            cli_utils.describe_pydantic_object(flavor_model.config_schema)
+            cli_utils.describe_json_schema(flavor_model.config_schema)
             resources = flavor_model.connector_requirements
             if resources:
                 resources_str = f"a '{resources.resource_type}' resource"
@@ -1300,6 +1496,9 @@ def register_single_stack_component_cli_commands(
     context_settings = {"ignore_unknown_options": True}
     command_group.command(
         "register",
+        cls=StackComponentConfigHelpCommand,
+        component_type=component_type,
+        mode="register",
         context_settings=context_settings,
         help=f"Register a new {singular_display_name}.",
     )(register_command)
@@ -1309,6 +1508,9 @@ def register_single_stack_component_cli_commands(
     context_settings = {"ignore_unknown_options": True}
     command_group.command(
         "update",
+        cls=StackComponentConfigHelpCommand,
+        component_type=component_type,
+        mode="update",
         context_settings=context_settings,
         help=f"Update a registered {singular_display_name}.",
     )(update_command)
@@ -1320,6 +1522,9 @@ def register_single_stack_component_cli_commands(
     context_settings = {"ignore_unknown_options": True}
     command_group.command(
         "remove-attribute",
+        cls=StackComponentConfigHelpCommand,
+        component_type=component_type,
+        mode="remove-attribute",
         context_settings=context_settings,
         help=f"Remove attributes from a registered {singular_display_name}.",
     )(remove_attribute_command)

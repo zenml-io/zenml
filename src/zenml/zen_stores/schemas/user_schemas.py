@@ -39,13 +39,11 @@ from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
-        ActionSchema,
         APIKeySchema,
         ArtifactSchema,
         ArtifactVersionSchema,
         CodeRepositorySchema,
         DeploymentSchema,
-        EventSourceSchema,
         FlavorSchema,
         ModelSchema,
         ModelVersionSchema,
@@ -104,16 +102,6 @@ class UserSchema(NamedSchema, table=True):
         back_populates="user",
     )
     flavors: List["FlavorSchema"] = Relationship(back_populates="user")
-    actions: List["ActionSchema"] = Relationship(
-        back_populates="user",
-        sa_relationship_kwargs={
-            "cascade": "delete",
-            "primaryjoin": "UserSchema.id==ActionSchema.user_id",
-        },
-    )
-    event_sources: List["EventSourceSchema"] = Relationship(
-        back_populates="user"
-    )
     pipelines: List["PipelineSchema"] = Relationship(back_populates="user")
     schedules: List["ScheduleSchema"] = Relationship(
         back_populates="user",
@@ -134,20 +122,6 @@ class UserSchema(NamedSchema, table=True):
     secrets: List["SecretSchema"] = Relationship(
         back_populates="user",
         sa_relationship_kwargs={"cascade": "delete"},
-    )
-    triggers: List["TriggerSchema"] = Relationship(
-        back_populates="user",
-        sa_relationship_kwargs={
-            "cascade": "delete",
-            "primaryjoin": "UserSchema.id==TriggerSchema.user_id",
-        },
-    )
-    auth_actions: List["ActionSchema"] = Relationship(
-        back_populates="service_account",
-        sa_relationship_kwargs={
-            "cascade": "delete",
-            "primaryjoin": "UserSchema.id==ActionSchema.service_account_id",
-        },
     )
     snapshots: List["PipelineSnapshotSchema"] = Relationship(
         back_populates="user",
@@ -177,6 +151,9 @@ class UserSchema(NamedSchema, table=True):
         back_populates="user",
     )
     tags: List["TagSchema"] = Relationship(
+        back_populates="user",
+    )
+    triggers: List["TriggerSchema"] = Relationship(
         back_populates="user",
     )
 

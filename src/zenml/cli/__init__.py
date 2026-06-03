@@ -2564,6 +2564,8 @@ from zenml.cli.login import *
 from zenml.cli.model import *  # noqa
 from zenml.cli.model_registry import *  # noqa
 from zenml.cli.pipeline import *  # noqa
+from zenml.cli.resource_pool import *  # noqa
+from zenml.cli.resource_request import *  # noqa
 from zenml.cli.secret import *  # noqa
 from zenml.cli.served_model import *  # noqa
 from zenml.cli.server import *  # noqa
@@ -2574,3 +2576,4 @@ from zenml.cli.stack_components import *  # noqa
 from zenml.cli.user_management import *  # noqa
 from zenml.cli.project import *  # noqa
 from zenml.cli.tag import *  # noqa
+from zenml.cli.trigger import *  # noqa

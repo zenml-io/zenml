@@ -14,6 +14,7 @@
 
 import platform
 
+import zenml
 from zenml.constants import VALID_OPERATING_SYSTEMS
 from zenml.environment import (
     Environment,
@@ -39,6 +40,8 @@ def test_get_run_environment_dict():
     assert environment_dict["os"] == Environment.get_system_info()["os"]
     assert "python_version" in environment_dict
     assert environment_dict["python_version"] == Environment.python_version()
+    assert "zenml_version" in environment_dict
+    assert environment_dict["zenml_version"] == zenml.__version__
 
 
 def test_environment_platform_info_correctness():

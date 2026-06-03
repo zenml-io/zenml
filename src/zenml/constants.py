@@ -16,11 +16,14 @@
 import json
 import logging
 import os
+from pathlib import PurePosixPath, PureWindowsPath
 from typing import Any, List, Optional, Type, TypeVar
 
 from zenml.enums import AuthScheme
 
 T = TypeVar("T")
+
+DEFAULT_ZENML_SERVER_OTEL_SERVICE_NAME = "zenml-server"
 
 
 def handle_json_env_var(
@@ -93,6 +96,37 @@ def is_false_string_value(value: Any) -> bool:
     return value in ["0", "n", "no", "False", "false"]
 
 
+def validate_directory_name(name: str) -> str:
+    """Validate a directory name.
+
+    Args:
+        name: The directory name to validate.
+
+    Raises:
+        ValueError: If the name is not a valid directory name.
+
+    Returns:
+        The validated directory name.
+    """
+    if not name:
+        raise ValueError("Directory name cannot be empty.")
+
+    if name in {".", ".."}:
+        raise ValueError(
+            "Directory name must not point to the current or parent directory."
+        )
+
+    if PurePosixPath(name).parts != (name,) or PureWindowsPath(name).parts != (
+        name,
+    ):
+        raise ValueError(
+            "Directory name must be a single path component without nested "
+            "levels."
+        )
+
+    return name
+
+
 def handle_bool_env_var(var: str, default: bool = False) -> bool:
     """Converts normal env var to boolean.
 
@@ -128,18 +162,38 @@ def handle_int_env_var(var: str, default: int = 0) -> int:
         return default
 
 
+def handle_float_env_var(var: str, default: float = 0.0) -> float:
+    """Converts normal env var to float.
+
+    Args:
+        var: The environment variable to convert.
+        default: The default value to return if the env var is not set.
+
+    Returns:
+        The converted value.
+    """
+    value = os.getenv(var, "")
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return default
+
+
 # Global constants
 APP_NAME = "zenml"
 
 # Environment variables
 ENV_ZENML_LOGGING_COLORS_DISABLED = "ZENML_LOGGING_COLORS_DISABLED"
 ENV_ZENML_ANALYTICS_OPT_IN = "ZENML_ANALYTICS_OPT_IN"
+ENV_ZENML_CONTAINER_ENGINE = "ZENML_CONTAINER_ENGINE"
 ENV_ZENML_USER_ID = "ZENML_USER_ID"
 ENV_ZENML_CONFIG_PATH = "ZENML_CONFIG_PATH"
 ENV_ZENML_DEBUG = "ZENML_DEBUG"
 ENV_ZENML_LOGGING_VERBOSITY = "ZENML_LOGGING_VERBOSITY"
+ENV_ZENML_CONSOLE_LOGGING_FORMAT = "ZENML_CONSOLE_LOGGING_FORMAT"
 ENV_ZENML_LOGGING_FORMAT = "ZENML_LOGGING_FORMAT"
 ENV_ZENML_REPOSITORY_PATH = "ZENML_REPOSITORY_PATH"
+ENV_ZENML_REPOSITORY_DIRECTORY_NAME = "ZENML_REPOSITORY_DIRECTORY_NAME"
 ENV_ZENML_ENABLE_RICH_TRACEBACK = "ZENML_ENABLE_RICH_TRACEBACK"
 ENV_ZENML_ACTIVE_STACK_ID = "ZENML_ACTIVE_STACK_ID"
 ENV_ZENML_ACTIVE_PROJECT_ID = "ZENML_ACTIVE_PROJECT_ID"
@@ -157,6 +211,7 @@ ENV_ZENML_AUTO_OPEN_DASHBOARD = "ZENML_AUTO_OPEN_DASHBOARD"
 ENV_ZENML_DISABLE_DATABASE_MIGRATION = "DISABLE_DATABASE_MIGRATION"
 ENV_ZENML_LOCAL_STORES_PATH = "ZENML_LOCAL_STORES_PATH"
 ENV_ZENML_CONTAINER = "ZENML_CONTAINER"
+ENV_ZENML_CONTAINER_PYTHON_EXECUTABLE = "ZENML_CONTAINER_PYTHON_EXECUTABLE"
 ENV_ZENML_PAGINATION_DEFAULT_LIMIT = "ZENML_PAGINATION_DEFAULT_LIMIT"
 ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING = (
     "ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING"
@@ -169,6 +224,7 @@ ENV_ZENML_SERVER_ALLOW_LOCAL_FILE_ACCESS = (
 )
 ENV_ZENML_ENFORCE_TYPE_ANNOTATIONS = "ZENML_ENFORCE_TYPE_ANNOTATIONS"
 ENV_ZENML_ENABLE_IMPLICIT_AUTH_METHODS = "ZENML_ENABLE_IMPLICIT_AUTH_METHODS"
+ENV_ZENML_DISABLE_INTERACTIVE_INPUT = "ZENML_DISABLE_INTERACTIVE_INPUT"
 ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE = "ZENML_DISABLE_PIPELINE_LOGS_STORAGE"
 ENV_ZENML_DISABLE_STEP_LOGS_STORAGE = "ZENML_DISABLE_STEP_LOGS_STORAGE"
 ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS = "ZENML_DISABLE_STEP_NAMES_IN_LOGS"
@@ -176,7 +232,7 @@ ENV_ZENML_STORAGE_LOGGING_VERBOSITY = "ZENML_STORAGE_LOGGING_VERBOSITY"
 ENV_ZENML_CAPTURE_PRINTS = "ZENML_CAPTURE_PRINTS"
 ENV_ZENML_LOGS_STORAGE_MAX_QUEUE_SIZE = "ZENML_LOGS_STORAGE_MAX_QUEUE_SIZE"
 ENV_ZENML_LOGS_STORAGE_QUEUE_TIMEOUT = "ZENML_LOGS_STORAGE_QUEUE_TIMEOUT"
-
+ENV_ZENML_LOGS_MAX_ENTRIES_PER_REQUEST = "ZENML_LOGS_MAX_ENTRIES_PER_REQUEST"
 ENV_ZENML_LOGS_WRITE_INTERVAL_SECONDS = "ZENML_LOGS_WRITE_INTERVAL_SECONDS"
 ENV_ZENML_LOGS_MERGE_INTERVAL_SECONDS = "ZENML_LOGS_MERGE_INTERVAL_SECONDS"
 
@@ -200,6 +256,9 @@ ENV_ZENML_DISABLE_PATH_MATERIALIZER = "ZENML_DISABLE_PATH_MATERIALIZER"
 # ZenML Server environment variables
 ENV_ZENML_SERVER_PREFIX = "ZENML_SERVER_"
 ENV_ZENML_SERVER_PRO_PREFIX = "ZENML_SERVER_PRO_"
+ENV_ZENML_PRODUCER_PREFIX = "ZENML_PRODUCER_"
+ENV_ZENML_CONSUMER_PREFIX = "ZENML_CONSUMER_"
+ENV_ZENML_CONSUMER_POLLING_PREFIX = "ZENML_CONSUMER_POLLING_"
 ENV_ZENML_SERVER_DEPLOYMENT_TYPE = f"{ENV_ZENML_SERVER_PREFIX}DEPLOYMENT_TYPE"
 ENV_ZENML_SERVER_AUTH_SCHEME = f"{ENV_ZENML_SERVER_PREFIX}AUTH_SCHEME"
 ENV_ZENML_SERVER_AUTO_ACTIVATE = f"{ENV_ZENML_SERVER_PREFIX}AUTO_ACTIVATE"
@@ -218,7 +277,20 @@ ENV_ZENML_WORKLOAD_TOKEN_EXPIRATION_LEEWAY = (
 )
 
 ENV_ZENML_DEFAULT_OUTPUT = "ZENML_DEFAULT_OUTPUT"
+ENV_ZENML_DEFAULT_ANALYTICS_SOURCE = "ZENML_DEFAULT_ANALYTICS_SOURCE"
 ENV_ZENML_CLI_COLUMN_WIDTH = "ZENML_CLI_COLUMN_WIDTH"
+
+ENV_ZENML_DYNAMIC_PIPELINE_WORKER_COUNT = "ZENML_DYNAMIC_PIPELINE_WORKER_COUNT"
+ENV_ZENML_DYNAMIC_PIPELINE_MONITORING_INTERVAL = (
+    "ZENML_DYNAMIC_PIPELINE_MONITORING_INTERVAL"
+)
+ENV_ZENML_DYNAMIC_PIPELINE_MONITORING_DELAY = (
+    "ZENML_DYNAMIC_PIPELINE_MONITORING_DELAY"
+)
+ENV_ZENML_STEP_RUNS_FETCH_MAX_CHUNK_LENGTH = (
+    "ZENML_STEP_RUNS_FETCH_MAX_CHUNK_LENGTH"
+)
+ENV_ZENML_STREAM_PUBLISHER_BATCH_SIZE = "ZENML_STREAM_PUBLISHER_BATCH_SIZE"
 
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
@@ -250,7 +322,9 @@ REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://", "az://", "abfs://"]
 ANALYTICS_SERVER_URL = "https://analytics.zenml.io/"
 
 # Repository and local store directory paths:
-REPOSITORY_DIRECTORY_NAME = ".zen"
+REPOSITORY_DIRECTORY_NAME = validate_directory_name(
+    os.getenv(ENV_ZENML_REPOSITORY_DIRECTORY_NAME, ".zen")
+)
 LOCAL_STORES_DIRECTORY_NAME = "local_stores"
 
 # Config file name
@@ -314,6 +388,8 @@ DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_MAX_LIFETIME = (
 DEFAULT_ZENML_SERVER_FILE_DOWNLOAD_SIZE_LIMIT = 2 * 1024 * 1024 * 1024  # 20 GB
 DEFAULT_ZENML_SERVER_MAX_CONCURRENT_SNAPSHOT_RUNS = 2
 
+DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_INTERVAL = 15  # seconds
+
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_HSTS = (
     "max-age=63072000; includeSubdomains"
 )
@@ -369,7 +445,6 @@ RUN_TEMPLATE_TRIGGERS_FEATURE_NAME = "template_run"
 
 # API Endpoint paths:
 ACTIVATE = "/activate"
-ACTIONS = "/actions"
 API = "/api"
 API_KEYS = "/api_keys"
 API_KEY_ROTATE = "/rotate"
@@ -379,6 +454,7 @@ ARTIFACT_VERSIONS = "/artifact_versions"
 ARTIFACT_VISUALIZATIONS = "/artifact_visualizations"
 AUTH = "/auth"
 BATCH = "/batch"
+CODE = "/code"
 CODE_REFERENCES = "/code_references"
 CODE_REPOSITORIES = "/code_repositories"
 COMPONENT_TYPES = "/component-types"
@@ -389,10 +465,10 @@ DEACTIVATE = "/deactivate"
 DEVICES = "/devices"
 DEVICE_AUTHORIZATION = "/device_authorization"
 DEVICE_VERIFY = "/verify"
+DISABLE_HEARTBEAT = "/disable_heartbeat"
 DOWNLOAD_TOKEN = "/download-token"
 EMAIL_ANALYTICS = "/email-opt-in"
 EVENT_FLAVORS = "/event-flavors"
-EVENT_SOURCES = "/event-sources"
 FLAVORS = "/flavors"
 HEALTH = "/health"
 READY = "/ready"
@@ -409,12 +485,18 @@ CURATED_VISUALIZATIONS = "/curated_visualizations"
 PIPELINE_SNAPSHOTS = "/pipeline_snapshots"
 PIPELINES = "/pipelines"
 PIPELINE_SPEC = "/pipeline-spec"
-PLUGIN_FLAVORS = "/plugin-flavors"
+RESOURCE_POOLS = "/resource_pools"
+RESOURCE_POOL_SUBJECT_POLICIES = "/resource_pool_subject_policies"
+RESOURCE_REQUESTS = "/resource_requests"
 PROJECTS = "/projects"
 REFRESH = "/refresh"
+RESOLVE = "/resolve"
 RUNS = "/runs"
+EVENTS = "/events"
+EVENTS_STREAM = "/events/stream"
 RUN_TEMPLATES = "/run_templates"
 RUN_METADATA = "/run-metadata"
+RUN_WAIT_CONDITIONS = "/run_wait_conditions"
 SCHEDULES = "/schedules"
 SECRETS = "/secrets"
 SECRETS_OPERATIONS = "/secrets_operations"
@@ -442,11 +524,12 @@ STATUS = "/status"
 STEP_CONFIGURATION = "/step-configuration"
 STEPS = "/steps"
 HEARTBEAT = "/heartbeat"
+REPLAY = "/replay"
 STOP = "/stop"
 TAGS = "/tags"
 TAG_RESOURCES = "/tag_resources"
 TRIGGERS = "/triggers"
-TRIGGER_EXECUTIONS = "/trigger_executions"
+TRIGGER_SNAPSHOT_DISPATCH_STATE = "/dispatch_state"
 ONBOARDING_STATE = "/onboarding_state"
 USERS = "/users"
 URL = "/url"
@@ -461,6 +544,7 @@ MODEL_METADATA_YAML_FILE_NAME = "model_metadata.yaml"
 
 # orchestrator constants
 ORCHESTRATOR_DOCKER_IMAGE_KEY = "orchestrator"
+ENV_ZENML_DAG_RUNNER_WORKER_COUNT = "ZENML_DAG_RUNNER_WORKER_COUNT"
 
 # deployer constants
 DEPLOYER_DOCKER_IMAGE_KEY = "deployer"
@@ -493,6 +577,7 @@ MLFLOW_MODEL_FORMAT = "MLflow"
 
 # Service connector constants
 DOCKER_REGISTRY_RESOURCE_TYPE = "docker-registry"
+DOCKERHUB_REGISTRY_URI = "docker.io"
 KUBERNETES_CLUSTER_RESOURCE_TYPE = "kubernetes-cluster"
 
 # Stack Recipe constants
@@ -503,7 +588,6 @@ TEXT_FIELD_MAX_LENGTH = 65535
 STR_ID_FIELD_MAX_LENGTH = 50
 STR_FIELD_MAX_LENGTH = 255
 MEDIUMTEXT_MAX_LENGTH = 2**24 - 1
-
 # Model Control Plane constants
 LATEST_MODEL_VERSION_PLACEHOLDER = "__latest__"
 
@@ -529,11 +613,16 @@ ZENML_PIPELINE_RUN_API_TOKEN_EXPIRATION = handle_int_env_var(
     ENV_ZENML_PIPELINE_RUN_API_TOKEN_EXPIRATION, default=0
 )
 
-# Logs storage constants
+# Logs constants
 # Maximum number of log batches to queue.
 LOGS_STORAGE_MAX_QUEUE_SIZE = handle_int_env_var(
     ENV_ZENML_LOGS_STORAGE_MAX_QUEUE_SIZE, default=100000
 )
+
+LOGS_MAX_ENTRIES_PER_REQUEST = handle_int_env_var(
+    ENV_ZENML_LOGS_MAX_ENTRIES_PER_REQUEST, default=50000
+)
+
 # Queue timeout controls log dropping vs application blocking:
 # - Positive value (e.g., 30): Wait N seconds, then drop logs if queue full
 # - Negative value (e.g., -1): Block indefinitely until queue has space (never drop logs)
@@ -571,4 +660,17 @@ LOGS_OTEL_MAX_EXPORT_BATCH_SIZE = handle_int_env_var(
 )
 LOGS_OTEL_EXPORT_TIMEOUT_MILLIS = handle_int_env_var(
     ENV_ZENML_LOGS_OTEL_EXPORT_TIMEOUT_MILLIS, default=15000
+)
+
+# Subscription-based features
+SCHEDULE_FEATURE = "schedule"
+RESOURCE_POOL_FEATURE = "resource_pool"
+
+LOGS_RUNNER_SOURCE = "runner"
+
+# Streaming
+STREAM_EVENT_MAX_BATCH_SIZE = 1000
+STREAM_EVENT_PAYLOAD_BYTES_MAX = 64 * 1024
+STREAM_PUBLISHER_BATCH_SIZE = max(
+    1, handle_int_env_var(ENV_ZENML_STREAM_PUBLISHER_BATCH_SIZE, default=64)
 )

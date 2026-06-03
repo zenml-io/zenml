@@ -12,17 +12,23 @@ on:
 jobs:
   check-team-member:
     runs-on: ubuntu-latest
+    # Skip early if @claude is not mentioned - avoids running checkout/grep unnecessarily
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
     outputs:
       is-team-member: ${{ steps.check.outputs.is-member }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           fetch-depth: 1
       - name: Check if actor is team member
         id: check
         run: |
-          ACTOR="${{ github.actor }}"
+          ACTOR="${GITHUB_ACTOR}"
           if grep -q "@${ACTOR}" .github/teams.yml; then
             echo "is-member=true" >> $GITHUB_OUTPUT
             echo "✅ $ACTOR is a team member"
@@ -54,12 +60,12 @@ jobs:
       actions: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           fetch-depth: 1
       - name: Run Claude Code
         id: claude
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@f4fb5c6cdccc1ee7af63692f5d08d56efaa64cc8  # v1.0.121
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         with:
@@ -69,19 +75,16 @@ jobs:
             actions: read
           prompt: |
             You are a helpful assistant for the ZenML repository. Help the user with whatever they asked.
-
             If the user is asking for a code review (e.g., "@claude /full-review", "@claude review this", or similar), follow the detailed review guidelines below. Otherwise, just help them with their question or request.
-
             ---
             CODE REVIEW GUIDELINES (use when reviewing PRs):
-
             Focus on ensuring the changes are sound, clean, intentional, and void of regressions.
             REPO: ${{ github.repository }}
-            PR NUMBER: ${{ github.event.pull_request.number }}
+            PR NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
             Context:
             - You can fetch additional PR context via:
-              - gh pr view ${{ github.event.pull_request.number }} --json title,body,author,headRefName,baseRefName,commits
-              - gh pr diff ${{ github.event.pull_request.number }} --name-only
+              - gh pr view ${{ github.event.issue.number || github.event.pull_request.number }} --json title,body,author,headRefName,baseRefName,commits
+              - gh pr diff ${{ github.event.issue.number || github.event.pull_request.number }} --name-only
             - Use the repository's CLAUDE.md (if present) and existing code patterns for conventions.
             Primary Review Goals:
             1) Verify Change Correctness
@@ -112,7 +115,7 @@ jobs:
                - Documentation gaps for complex logic
             Documentation & Release Notes Review:
             - Determine if user-facing behavior, APIs, CLI commands/flags, configuration options, or defaults have changed.
-            - Heuristics (run): gh pr diff ${{ github.event.pull_request.number }} --name-only
+            - Heuristics (run): gh pr diff ${{ github.event.issue.number || github.event.pull_request.number }} --name-only
               - If code changes are present under src/ or cli/ or other user-facing modules but docs/ are not updated, flag as "docs update needed".
               - If docs/ changes exist, check if they match the code changes and are placed in the correct sections (e.g., docs/book/, docs/how-to/, docs/reference/).
               - If CLI or config flags changed, ensure corresponding docs and examples are updated (including any README or quickstart sections if applicable).

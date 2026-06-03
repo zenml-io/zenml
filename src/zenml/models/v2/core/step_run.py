@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing steps runs."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import (
     TYPE_CHECKING,
     ClassVar,
@@ -34,6 +34,7 @@ from zenml.enums import (
     ArtifactSaveType,
     ExecutionStatus,
     StepRunInputArtifactType,
+    StepType,
 )
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
@@ -58,6 +59,7 @@ if TYPE_CHECKING:
         LogsRequest,
         LogsResponse,
     )
+    from zenml.models.v2.core.resource_request import ResourceRequestResponse
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -157,7 +159,7 @@ class StepRunRequest(ProjectScopedRequest):
         title="The IDs of the output artifact versions of the step run.",
         default_factory=dict,
     )
-    logs: Optional["LogsRequest"] = Field(
+    logs: Optional[Union[UUID, "LogsRequest"]] = Field(
         title="Logs associated with this step run.",
         default=None,
     )
@@ -167,6 +169,11 @@ class StepRunRequest(ProjectScopedRequest):
     )
     dynamic_config: Optional["Step"] = Field(
         title="The dynamic configuration of the step run.",
+        default=None,
+    )
+    resource_requester: Optional[UUID] = Field(
+        title="The ID of the component that requested the resources for the "
+        "step run.",
         default=None,
     )
 
@@ -214,6 +221,10 @@ class StepRunUpdate(BaseUpdate):
 class StepRunResponseBody(ProjectScopedResponseBody):
     """Response body for step runs."""
 
+    type: Optional[StepType] = Field(
+        title="The type of the step.",
+        default=None,
+    )
     status: ExecutionStatus = Field(title="The status of the step.")
     version: int = Field(
         title="The version of the step run.",
@@ -241,6 +252,10 @@ class StepRunResponseBody(ProjectScopedResponseBody):
     substitutions: Dict[str, str] = Field(
         title="The substitutions of the step run.",
         default={},
+    )
+    heartbeat_threshold: Optional[int] = Field(
+        title="The applied heartbeat healthiness threshold ",
+        default=None,
     )
     model_config = ConfigDict(protected_namespaces=())
 
@@ -326,6 +341,10 @@ class StepRunResponseResources(ProjectScopedResponseResources):
     outputs: Dict[str, List[ArtifactVersionResponse]] = Field(
         title="The output artifact versions of the step run.",
         default_factory=dict,
+    )
+    resource_request: Optional["ResourceRequestResponse"] = Field(
+        title="The resource request of the step run.",
+        default=None,
     )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
@@ -460,6 +479,16 @@ class StepRunResponse(
         return result
 
     # Body and metadata properties
+
+    @property
+    def type(self) -> Optional[StepType]:
+        """The `type` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().type
+
     @property
     def status(self) -> ExecutionStatus:
         """The `status` property.
@@ -605,6 +634,17 @@ class StepRunResponse(
         return self.get_body().end_time
 
     @property
+    def duration(self) -> Optional[timedelta]:
+        """The `duration` property.
+
+        Returns:
+            The duration of the step run.
+        """
+        if self.end_time is None or self.start_time is None:
+            return None
+        return self.end_time - self.start_time
+
+    @property
     def latest_heartbeat(self) -> Optional[datetime]:
         """The `latest_heartbeat` property.
 
@@ -620,9 +660,7 @@ class StepRunResponse(
         Returns:
             the value of the property.
         """
-        if self.get_metadata().spec.enable_heartbeat:
-            return self.get_metadata().config.heartbeat_healthy_threshold
-        return None
+        return self.get_body().heartbeat_threshold
 
     @property
     def snapshot_id(self) -> UUID:
@@ -661,6 +699,15 @@ class StepRunResponse(
         return self.get_metadata().parent_step_ids
 
     @property
+    def exception_info(self) -> Optional[ExceptionInfo]:
+        """The `exception_info` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().exception_info
+
+    @property
     def run_metadata(self) -> Dict[str, MetadataType]:
         """The `run_metadata` property.
 
@@ -686,6 +733,15 @@ class StepRunResponse(
             the value of the property.
         """
         return self.get_resources().model_version
+
+    @property
+    def resource_request(self) -> Optional["ResourceRequestResponse"]:
+        """The `resource_request` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().resource_request
 
 
 # ------------------ Filter Model ------------------
@@ -763,6 +819,11 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
     model: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Name/ID of the model associated with the step run.",
+    )
+    version: Union[int, str, None] = Field(
+        default=None,
+        description="Version of the step run.",
+        union_mode="left_to_right",
     )
     exclude_retried: Optional[bool] = Field(
         default=None,
@@ -842,3 +903,4 @@ class StepHeartbeatResponse(BaseModel, use_enum_values=True):
     status: ExecutionStatus
     latest_heartbeat: datetime
     pipeline_run_status: ExecutionStatus | None = None
+    heartbeat_enabled: bool

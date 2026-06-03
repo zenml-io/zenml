@@ -62,7 +62,7 @@ def test_running_a_successful_step(
         "zenml.orchestrators.step_runner.publish_successful_step_run"
     )
     mocker.patch(
-        "zenml.orchestrators.step_runner.setup_step_logging",
+        "zenml.orchestrators.step_runner.setup_logging_context",
         return_value=mocker.MagicMock(
             __enter__=lambda s: None, __exit__=lambda s, *a: None
         ),
@@ -90,6 +90,7 @@ def test_running_a_successful_step(
         pipeline=pipeline_config,
         snapshot=sample_snapshot_response_model,
         force_write_logs=lambda: None,
+        step_run=sample_step_run,
     )
 
     runner = StepRunner(step=step, stack=local_stack)
@@ -126,8 +127,11 @@ def test_running_a_failing_step(
     mock_publish_successful_step_run = mocker.patch(
         "zenml.orchestrators.step_runner.publish_successful_step_run"
     )
+    mock_publish_failed_step_run = mocker.patch(
+        "zenml.orchestrators.step_runner.publish_failed_step_run"
+    )
     mocker.patch(
-        "zenml.orchestrators.step_runner.setup_step_logging",
+        "zenml.orchestrators.step_runner.setup_logging_context",
         return_value=mocker.MagicMock(
             __enter__=lambda s: None, __exit__=lambda s, *a: None
         ),
@@ -155,6 +159,7 @@ def test_running_a_failing_step(
         pipeline=pipeline_config,
         snapshot=sample_snapshot_response_model,
         force_write_logs=lambda: None,
+        step_run=sample_step_run,
     )
 
     runner = StepRunner(step=step, stack=local_stack)
@@ -170,6 +175,9 @@ def test_running_a_failing_step(
     mock_prepare_step_run.assert_called_with(info=step_run_info)
     mock_cleanup_step_run.assert_called_with(
         info=step_run_info, step_failed=True
+    )
+    mock_publish_failed_step_run.assert_called_with(
+        step_run_id=step_run_info.step_run_id
     )
     mock_publish_successful_step_run.assert_not_called()
 

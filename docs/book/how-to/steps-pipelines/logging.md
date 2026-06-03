@@ -27,7 +27,7 @@ def my_step() -> None:
 All these logs are stored within the respective artifact store of your stack. You can visualize the pipeline run logs and step logs in the dashboard as follows:
 
 * Local ZenML server (`zenml login --local`): Both local and remote artifact stores may be accessible
-* Deployed ZenML server: Local artifact store logs won't be accessible; remote artifact store logs require [service connector](https://docs.zenml.io//how-to/infrastructure-deployment/auth-management/service-connectors-guide) configuration (see [remote storage guide](https://docs.zenml.io/user-guides/production-guide/remote-storage))
+* Deployed ZenML server: Local artifact store logs won't be accessible; remote artifact store logs require [service connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide) configuration (see [remote storage guide](https://docs.zenml.io/user-guides/production-guide/remote-storage))
 
 {% hint style="warning" %}
 In order for logs to be visible in the dashboard with a deployed ZenML server, you must configure both a remote artifact store and the appropriate service connector to access it. Without this configuration, your logs won't be accessible through the dashboard.
@@ -171,15 +171,84 @@ my_pipeline = my_pipeline.with_options(
 )
 ```
 
-### Setting Logging Format
+### Setting Console Logging Format
 
-Change the default logging format with:
+Change the console/stdout logging format with:
 
 ```bash
-export ZENML_LOGGING_FORMAT='%(asctime)s %(message)s'
+export ZENML_CONSOLE_LOGGING_FORMAT=console
 ```
 
-The format must use `%`-string formatting style. See [available attributes](https://docs.python.org/3/library/logging.html#logrecord-attributes).
+Options:
+
+- `console` (default): Human-readable console output. Client-side `INFO` logs use a compact layout, while `DEBUG` logs and server logs use a full structured text layout.
+- `json`: JSON formatted console/stdout logs.
+- Any other valid Python `%`-style logging format string, such as `%(asctime)s - %(message)s`, for custom console output.
+
+
+```bash
+export ZENML_CONSOLE_LOGGING_FORMAT='%(asctime)s %(message)s'
+```
+
+The format must use `%`-string formatting style. See the [available LogRecord attributes](https://docs.python.org/3/library/logging.html#logrecord-attributes). This only changes terminal output; stored logs keep their raw message and structured metadata.
+
+{% hint style="warning" %}
+The older `ZENML_LOGGING_FORMAT` environment variable is deprecated and will be removed in a future version. Use `ZENML_CONSOLE_LOGGING_FORMAT` instead. Existing configurations such as `ZENML_LOGGING_FORMAT='%(asctime)s %(message)s'` continue to work during the deprecation period.
+{% endhint %}
+
+The compact client console layout is:
+
+```text
+<message> | <extras as JSON, if any>
+[traceback and stack_info if any]
+```
+
+The full structured console layout for `DEBUG` logs is:
+
+```text
+<time> | <loglevel> | <logger-name>:<function-name>:<line-number> | <message> | <extras as JSON, if any>
+[traceback and stack_info if any]
+```
+
+The JSON format emits the same information as fields:
+
+```json
+{
+  "timestamp": "2026-05-21 13:09:55,515",
+  "level": "INFO",
+  "logger": "__main__",
+  "function": "loader",
+  "line": 15,
+  "message": "Training started",
+  "dataset": "mnist",
+  "epochs": 10,
+  "step": "loader"
+}
+```
+
+When an exception is logged, the JSON output includes an `exception` object with the exception type, message, and stack trace.
+
+### Adding Structured Fields
+
+ZenML uses Python's standard `logging` module. If you want to attach structured fields to a log record, use the standard `extra` argument:
+
+```python
+import logging
+
+logger = logging.getLogger(__name__)
+
+logger.info(
+    "training.started",
+    extra={"dataset": "mnist", "epochs": 10},
+)
+```
+
+
+Avoid using Python `LogRecord` attribute names such as `name`, `message`, `levelname`, `filename`, or `lineno` as keys in `extra` because they are reserved for Python's internal use.
+
+{% hint style="warning" %}
+When a custom console format string is configured, ZenML uses that format as-is for console output. It does not append structured `extra` fields or apply ZenML's default console coloring and highlighting to that custom layout.
+{% endhint %}
 
 ### Disabling Rich Traceback Output
 
@@ -191,15 +260,21 @@ export ZENML_ENABLE_RICH_TRACEBACK=false
 
 ### Disabling Colorful Logging
 
-Disable colorful logging with:
+Console logs use colors by default. Disable colorful logging with:
 
 ```bash
 ZENML_LOGGING_COLORS_DISABLED=true
 ```
 
-### Disabling Step Names in Logs
+### Showing Step Names in Logs
 
-By default, ZenML adds step name prefixes to console logs:
+ZenML hides step name prefixes in console logs by default. You can show them with:
+
+```bash
+ZENML_DISABLE_STEP_NAMES_IN_LOGS=false
+```
+
+When enabled, console logs include the step name as a prefix:
 
 ```
 [data_loader] Loading data from source...
@@ -207,11 +282,85 @@ By default, ZenML adds step name prefixes to console logs:
 [model_trainer] Training model with parameters...
 ```
 
-These prefixes only appear in console output, not in stored logs. Disable them with:
+These prefixes only appear in console output, not in stored logs. You can disable the step name prefixes in console with:
 
 ```bash
 ZENML_DISABLE_STEP_NAMES_IN_LOGS=true
 ```
+
+## Limitations
+
+### on Steps and pipelines
+
+When running steps and pipelines, ZenML only captures logs emitted from the
+thread that executes the corresponding function. If your step code spawns additional
+threads or runs async code, logs from those execution contexts may not be captured.
+
+For instance, only the log emitted directly in the step function is captured:
+
+```python
+import logging
+import threading
+
+from zenml import step
+
+logger = logging.getLogger(__name__)
+
+
+@step
+def async_step() -> None:
+    def _process() -> None:
+        logger.info("This log is NOT captured")
+
+    logger.info("This log is captured")
+    thread = threading.Thread(target=_process)
+    thread.start()
+    thread.join()
+```
+
+As a workaround, you can run it under the copied `contextvars` context so
+ZenML can associate the log records with the running step:
+
+```python
+import contextvars
+import logging
+import threading
+
+from zenml import step
+
+logger = logging.getLogger(__name__)
+
+
+@step
+def async_step() -> None:
+    def _process() -> None:
+        logger.info("This log is now captured")
+
+    ctx = contextvars.copy_context()
+    thread = threading.Thread(target=lambda: ctx.run(_process))
+    thread.start()
+    thread.join()
+```
+
+### on the Dashboard
+
+When viewing logs in the dashboard, ZenML currently loads logs **in bulk** and
+pagination/filtering happens on the client side. To keep the response size and
+server memory usage bounded (especially when logs are stored in remote artifact
+stores), the dashboard is limited to **500 pages** (**100 log entries per
+page**, i.e. **50,000 entries** total) by default.
+
+You can adjust this limit by setting `ZENML_LOGS_MAX_ENTRIES_PER_REQUEST` in the
+environment when you are deploying your ZenML workspace.
+
+Downloading logs from the dashboard will also only include up to this limit.
+
+{% hint style="info" %}
+We’re actively working on improving log loading to remove the need for this cap.
+We'll update the documentation as this evolves with future releases.
+{% endhint %}
+
+
 
 ## Best Practices for Logging
 
@@ -232,3 +381,5 @@ ZENML_DISABLE_STEP_NAMES_IN_LOGS=true
 - [Steps & Pipelines](./steps_and_pipelines.md)
 - [YAML Configuration](./yaml_configuration.md)
 - [Advanced Features](./advanced_features.md) 
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -18,7 +18,9 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
 from google.api_core.exceptions import ServerError
 from google.cloud import aiplatform
+from google.cloud.aiplatform_v1.types.job_state import JobState
 
+from zenml.enums import ExecutionStatus
 from zenml.integrations.gcp.constants import (
     CONNECTION_ERROR_RETRY_LIMIT,
     POLLING_INTERVAL_IN_SECONDS,
@@ -184,3 +186,40 @@ def build_job_request(
         if encryption_spec_key_name
         else {},
     }
+
+
+def convert_job_state(state: JobState) -> ExecutionStatus:
+    """Converts a job state to an execution status.
+
+    Args:
+        state: The job state.
+
+    Returns:
+        The execution status.
+    """
+    if state in [
+        JobState.JOB_STATE_QUEUED,
+        JobState.JOB_STATE_PENDING,
+    ]:
+        return ExecutionStatus.PROVISIONING
+    elif state in [
+        JobState.JOB_STATE_RUNNING,
+        JobState.JOB_STATE_PAUSED,
+        JobState.JOB_STATE_UPDATING,
+    ]:
+        return ExecutionStatus.RUNNING
+    elif state == JobState.JOB_STATE_SUCCEEDED:
+        return ExecutionStatus.COMPLETED
+    elif state == JobState.JOB_STATE_CANCELLING:
+        return ExecutionStatus.STOPPING
+    elif state == JobState.JOB_STATE_CANCELLED:
+        return ExecutionStatus.STOPPED
+    elif state in [
+        JobState.JOB_STATE_FAILED,
+        JobState.JOB_STATE_EXPIRED,
+        JobState.JOB_STATE_PARTIALLY_SUCCEEDED,
+    ]:
+        return ExecutionStatus.FAILED
+    else:
+        logger.warning(f"Unknown job state: {state}")
+        return ExecutionStatus.RUNNING

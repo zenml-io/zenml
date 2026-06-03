@@ -15,6 +15,7 @@
 
 import pytest
 
+from tests.cli_runner_utils import cli_runner
 from tests.integration.functional.cli.utils import (
     cli_runner,
     random_resource_name,

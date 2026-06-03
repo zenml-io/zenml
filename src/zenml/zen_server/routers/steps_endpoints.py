@@ -13,23 +13,22 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for steps (and artifacts) of pipeline runs."""
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Security
+from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
     HEARTBEAT,
     LOGS,
+    LOGS_MAX_ENTRIES_PER_REQUEST,
     STATUS,
     STEP_CONFIGURATION,
     STEPS,
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus
-from zenml.exceptions import AuthorizationException
-from zenml.log_stores.base_log_store import MAX_ENTRIES_PER_REQUEST
 from zenml.models import (
     Page,
     StepRunFilter,
@@ -41,6 +40,7 @@ from zenml.models.v2.core.step_run import StepHeartbeatResponse
 from zenml.utils.logging_utils import (
     LogEntry,
     fetch_logs,
+    search_logs_by_id,
     search_logs_by_source,
 )
 from zenml.zen_server.auth import (
@@ -130,7 +130,6 @@ def create_run_step(
 
     Args:
         step: The run step to create.
-        _: Authentication context.
 
     Returns:
         The created run step.
@@ -210,7 +209,7 @@ def update_step(
     "/{step_run_id}" + HEARTBEAT,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
-@async_fastapi_endpoint_wrapper(deduplicate=True)
+@async_fastapi_endpoint_wrapper(deduplicate=False)
 def update_heartbeat(
     step_run_id: UUID,
     auth_context: AuthContext = Security(authorize),
@@ -223,47 +222,12 @@ def update_heartbeat(
 
     Returns:
         The step heartbeat response (id, status, last_heartbeat).
-
-    Raises:
-        HTTPException: If the step is finished raises with 422 status code.
     """
-    step = zen_store().get_run_step(step_run_id, hydrate=False)
-
-    if step.status.is_finished:
-        raise HTTPException(
-            status_code=422,
-            detail=f"Step {step.id} is finished - can not update heartbeat.",
-        )
-
-    pipeline_run = zen_store().get_run(step.pipeline_run_id, hydrate=False)
-
-    def validate_token_access(ctx: AuthContext) -> None:
-        token_run_id = ctx.access_token.pipeline_run_id  # type: ignore[union-attr]
-        token_schedule_id = ctx.access_token.schedule_id  # type: ignore[union-attr]
-
-        if token_run_id:
-            if step.pipeline_run_id != token_run_id:
-                raise AuthorizationException(
-                    f"Authentication token provided is invalid for step: {step.id}"
-                )
-        elif token_schedule_id:
-            if not (
-                pipeline_run.schedule
-                and pipeline_run.schedule.id == token_schedule_id
-            ):
-                raise AuthorizationException(
-                    f"Authentication token provided is invalid for step: {step.id}"
-                )
-        else:
-            # un-scoped token. Soon to-be-deprecated, we will ignore validation temporarily.
-            pass
-
-    validate_token_access(ctx=auth_context)
-
-    hb = zen_store().update_step_heartbeat(step_run_id=step_run_id)
-    hb.pipeline_run_status = pipeline_run.status
-
-    return hb
+    return zen_store().validate_and_update_heartbeat(
+        step_run_id=step_run_id,
+        token_run_id=auth_context.access_token.pipeline_run_id,  # type: ignore[union-attr]
+        token_schedule_id=auth_context.access_token.schedule_id,  # type: ignore[union-attr]
+    )
 
 
 @router.get(
@@ -326,21 +290,30 @@ def get_step_status(
 @async_fastapi_endpoint_wrapper
 def get_step_logs(
     step_id: UUID,
-    source: str = "step",
+    source: Optional[str] = None,
+    logs_id: Optional[UUID] = None,
     _: AuthContext = Security(authorize),
 ) -> List[LogEntry]:
     """Get log entries for a step.
 
     Args:
         step_id: ID of the step for which to get the logs.
-        source: The source of the logs to get. Default is "step".
+        source: The source of the logs to get.
+        logs_id: The ID of the logs to get.
 
     Returns:
         List of log entries.
 
     Raises:
+        ValueError: If both source and logs_id are provided.
         KeyError: If no logs are available for this step.
     """
+    if source is None and logs_id is None:
+        raise ValueError("Either source or logs_id must be provided.")
+
+    if source is not None and logs_id is not None:
+        raise ValueError("Only one of source or logs_id must be provided.")
+
     store = zen_store()
 
     step = store.get_run_step(step_id, hydrate=True)
@@ -353,11 +326,30 @@ def get_step_logs(
     )
 
     if step.log_collection:
-        if logs := search_logs_by_source(step.log_collection, source):
-            return fetch_logs(
-                logs=logs,
-                zen_store=store,
-                limit=MAX_ENTRIES_PER_REQUEST,
-            )
+        if source:
+            if logs := search_logs_by_source(step.log_collection, source):
+                return fetch_logs(
+                    logs=logs,
+                    zen_store=store,
+                    limit=LOGS_MAX_ENTRIES_PER_REQUEST,
+                )
+            else:
+                raise KeyError(
+                    f"No logs found for source '{source}' in step {step_id}"
+                )
 
-    raise KeyError(f"No logs found for source '{source}' in step {step_id}")
+        elif logs_id:
+            if logs := search_logs_by_id(step.log_collection, logs_id):
+                return fetch_logs(
+                    logs=logs,
+                    zen_store=store,
+                    limit=LOGS_MAX_ENTRIES_PER_REQUEST,
+                )
+            else:
+                raise KeyError(
+                    f"No logs found for ID '{logs_id}' in step {step_id}"
+                )
+        else:
+            raise ValueError("Either source or logs_id must be provided.")
+    else:
+        raise KeyError(f"No logs found for step {step_id}.")

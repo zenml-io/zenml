@@ -233,3 +233,5 @@ Supported combinations (as of October 2025) include:
 
 By default, specifying `cpu_count` and `memory` values that are not valid according to these rules will **not** result in an error when deploying the pipeline. Instead, the values will be automatically adjusted to the nearest matching valid combination using an algorithm that prioritizes CPU requirements over memory requirements and aims to minimize waste. You can enable `strict_resource_matching=True` in the deployer settings to enforce exact matches and raise an error if no valid combination is found. You can also override and configure your own allowed resource combinations in the deployer's configuration via the `resource_combinations` option.
 {% endhint %}
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

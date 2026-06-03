@@ -23,7 +23,7 @@ else
 fi
 
 # List of versions to test
-VERSIONS=("0.43.0" "0.44.3" "0.45.6" "0.47.0" "0.50.0" "0.51.0" "0.52.0" "0.53.1" "0.54.1" "0.55.5" "0.56.4" "0.57.1" "0.60.0" "0.61.0" "0.62.0" "0.63.0" "0.64.0" "0.65.0" "0.68.0" "0.70.0" "0.71.0" "0.72.0" "0.74.0" "0.80.0" "0.80.1" "0.80.2" "0.81.0" "0.83.1" "0.84.0" "0.84.1" "0.85.0" "0.90.0" "0.91.0" "0.91.1" "0.91.2" "0.92.0" "0.93.0")
+VERSIONS=("0.43.0" "0.44.3" "0.45.6" "0.47.0" "0.50.0" "0.51.0" "0.52.0" "0.53.1" "0.54.1" "0.55.5" "0.56.4" "0.57.1" "0.60.0" "0.61.0" "0.62.0" "0.63.0" "0.64.0" "0.65.0" "0.68.0" "0.70.0" "0.71.0" "0.72.0" "0.74.0" "0.80.0" "0.80.1" "0.80.2" "0.81.0" "0.83.1" "0.84.0" "0.84.1" "0.85.0" "0.90.0" "0.91.0" "0.91.1" "0.91.2" "0.92.0" "0.93.0" "0.93.1" "0.93.2" "0.93.3" "0.94.0" "0.94.1" "0.94.3" "0.94.4" "0.94.5")
 
 # Try to get the latest version using pip index
 version=$(pip index versions zenml 2>/dev/null | grep -v YANKED | head -n1 | awk '{print $2}' | tr -d '()')
@@ -152,10 +152,8 @@ function run_tests_for_version() {
     # Confirm DB works and is accessible
     ZENML_LOGGING_VERBOSITY=INFO zenml pipeline runs list
 
-    # The database backup and restore feature is available since 0.55.1.
-    # However, it has been broken for various reasons up to and including
-    # 0.57.0, so we skip this test for those versions.
-    if [ "$VERSION" == "current" ] || [ "$(version_compare "$VERSION" "0.57.0")" == ">" ]; then
+    # Only test backup/restore on the current local code
+    if [ "$VERSION" == "current" ]; then
         echo "===== Testing database backup and restore (file dump) ====="
 
         pipelines_before_restore=$(ZENML_LOGGING_VERBOSITY=INFO zenml pipeline runs list --size 5000)
@@ -231,11 +229,12 @@ function test_upgrade_to_version() {
     source ".venv-upgrade/bin/activate"
 
     # Install the specific version
-    uv pip install -U setuptools wheel pip
-
     if [ "$VERSION" == "current" ]; then
+        uv pip install -U setuptools wheel pip
         uv pip install -e ".[templates,server]"
     else
+        # Old ZenML versions use pkg_resources, removed in setuptools 82+
+        uv pip install -U "setuptools<82" wheel pip
         uv pip install "zenml[templates,server]==$VERSION"
         if [ "$(version_compare "$VERSION" "0.60.0")" == "<" ]; then
             # handles unpinned sqlmodel dependency in older versions

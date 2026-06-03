@@ -1,7 +1,15 @@
 ---
 icon: robot
-description: Access ZenML documentation via MCP server or llms.txt
+description: LLM tooling for ZenML - MCP servers, llms.txt, and Agent Skills
 ---
+
+# LLM Tooling
+
+ZenML provides multiple ways to enhance your AI-assisted development workflow:
+
+- **MCP servers** for real-time doc queries and server interaction
+- **llms.txt** for grounding LLMs with ZenML documentation
+- **Agent Skills** for guided implementation of ZenML features
 
 ## About llms.txt
 The llms.txt file format was proposed by [llmstxt.org](https://llmstxt.org/) as a standard way to provide information to help LLMs answer questions about a product/website. From their website:
@@ -80,3 +88,143 @@ following tools:
 - [GitMCP](https://gitmcp.io/) - A way to quickly create an MCP server for a github repository (e.g. for `zenml-io/zenml`)
 - [mcp-llms](https://github.com/parlance-labs/mcp-llms.txt/) - This shows how to use an MCP server to iteratively explore the llms.txt file with your MCP client
 - [mcp-llms-txt-explorer](https://github.com/thedaviddias/mcp-llms-txt-explorer) -  A tool to help you explore and discover websites that have llms.txt files
+
+## ZenML Agent Skills
+
+Agent Skills are modular capabilities that help AI coding agents perform specific tasks. ZenML publishes skills through a plugin marketplace that works with many popular agentic coding tools.
+
+### Supported tools
+
+ZenML skills work with tools that support the Agent Skills format:
+
+| Tool | Type | Skills support |
+|------|------|----------------|
+| [Claude Code](https://code.claude.com/) | Anthropic's CLI agent | Native plugin marketplace |
+| [OpenAI Codex CLI](https://github.com/openai/codex) | OpenAI's terminal agent | Native skills support |
+| [GitHub Copilot](https://github.com/features/copilot) | IDE coding assistant | Agent Skills integration |
+| [OpenCode](https://github.com/opencode-ai/opencode) | Open source AI agent | Native skills support |
+| [Amp](https://amp.dev) | AI coding assistant | Agent Skills integration |
+| [Cursor](https://cursor.sh) | AI-powered IDE | Via settings configuration |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | Google's terminal agent | Skills support |
+
+### Installing ZenML skills
+
+#### Claude Code
+
+```bash
+# Add the ZenML marketplace (one-time setup)
+/plugin marketplace add zenml-io/skills
+
+# Install any available skill (repeat for each skill you want)
+/plugin install zenml-scoping@zenml
+/plugin install zenml-pipeline-authoring@zenml
+/plugin install zenml-quick-wins@zenml
+```
+
+#### OpenAI Codex CLI
+
+```bash
+# Add the ZenML marketplace
+codex plugin add zenml-io/skills
+
+# Install skills
+codex plugin install zenml-scoping@zenml
+codex plugin install zenml-pipeline-authoring@zenml
+codex plugin install zenml-quick-wins@zenml
+```
+
+### Available skills
+
+| Skill | What it's for | When to use it |
+|-------|---------------|----------------|
+| `zenml-scoping` | Structured interview to turn a big ML/LLM idea into a realistic multi-pipeline ZenML architecture | When requirements are fuzzy, ambitious, or likely "too much in one pipeline" |
+| `zenml-pipeline-authoring` | Hands-on guidance to write/refactor ZenML steps/pipelines, config, Docker settings, materializers, metadata, secrets, and visualizations | When you're actively implementing a pipeline (or debugging "works local, fails on cloud") |
+| `zenml-quick-wins` | Repo/stack-aware recommendations of high-impact ZenML improvements, then guided implementation | When you already have a project and want best-practice upgrades fast |
+
+#### `zenml-scoping`
+
+Scopes and decomposes ML workflow ideas into realistic ZenML pipeline architectures through an in-depth interview process. Produces a `pipeline_architecture.md` spec you can implement incrementally.
+
+**Use when:**
+- You have an "end-to-end" idea (ingest → train → deploy → monitor → retrain) and need a sane MVP
+- You're unsure what should be one pipeline vs multiple pipelines
+- You want explicit cross-pipeline data flow (e.g., via the Model Control Plane)
+
+**What it does:**
+1. Interviews you to capture goals, data sources, and operational needs
+2. Classifies components (pipeline vs deployed pipeline vs not-a-pipeline)
+3. Produces a decomposed architecture with an MVP recommendation (`pipeline_architecture.md`)
+
+**Example prompts:**
+```
+Use zenml-scoping to turn my idea into a realistic ZenML pipeline architecture and write pipeline_architecture.md.
+
+Use zenml-scoping to decide whether this should be one pipeline or multiple pipelines, and propose the MVP.
+```
+
+#### `zenml-pipeline-authoring`
+
+Authors ZenML pipelines with steps, artifacts, Docker settings, materializers, metadata logging, secrets management, YAML configuration, and custom visualizations.
+
+**Use when:**
+- You want to write or refactor ZenML `@step` / `@pipeline` code with correct artifact flow and typing
+- You're implementing dynamic pipelines (`@pipeline(dynamic=True)`)
+- You're moving from local to remote execution (Kubernetes / Vertex / SageMaker) and hit portability issues
+
+**What it does:**
+1. Clarifies requirements (static vs dynamic, local vs remote, data sources, custom types)
+2. Guides step/pipeline structure and artifact flow
+3. Helps with configuration (YAML), Docker settings, materializers, metadata, and secrets
+
+**Example prompts:**
+```
+Use zenml-pipeline-authoring to implement the MVP pipeline described in pipeline_architecture.md.
+
+Use zenml-pipeline-authoring to refactor this pipeline so it works on Kubernetes/Vertex/SageMaker (fix artifact flow + Docker settings).
+```
+
+#### `zenml-quick-wins`
+
+Guides you through discovering and implementing high-impact ZenML features. The skill investigates your current setup, recommends priorities based on your stack, and helps implement improvements interactively.
+
+**Use when:**
+- You want to improve your ZenML setup
+- You're looking for MLOps best practices to adopt
+- You need help with features like experiment tracking, alerting, scheduling, or model governance
+
+**What it does:**
+1. **Investigate** - Analyzes your stack configuration and codebase
+2. **Recommend** - Prioritizes quick wins based on your current setup
+3. **Implement** - Helps you apply selected improvements
+4. **Verify** - Confirms the implementation works
+
+**Example prompts:**
+```
+Use zenml-quick-wins to analyze this repo and recommend the top 3 quick wins.
+
+Implement metadata logging and tags across my pipelines.
+
+Set up Slack alerts for pipeline failures.
+```
+
+See the [Quick Wins guide](../user-guide/best-practices/quick-wins.md) for the full catalog of improvements this skill can help implement.
+
+### Coming soon
+
+We're developing additional skills to help with common ZenML workflows:
+
+- **Stack setup** - Guided stack component configuration
+- **Debugging** - Investigating pipeline failures and performance issues
+- **Migration** - Migrating from other MLOps platforms and orchestrators to ZenML
+
+### Combining MCP + Skills
+
+For the best AI-assisted ZenML development experience, combine:
+
+1. **GitBook MCP server** (`https://docs.zenml.io/~gitbook/mcp`) - For doc-grounded answers
+2. **ZenML server MCP** ([setup guide](../user-guide/best-practices/mcp-chat-with-server.md)) - For querying your live pipelines, runs, and stacks
+3. **Agent Skills** - For guided implementation of features
+
+This gives your AI assistant access to documentation, your actual ZenML data, and structured workflows for making changes.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

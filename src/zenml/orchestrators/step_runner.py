@@ -16,11 +16,11 @@
 
 import copy
 import inspect
-import os
 from contextlib import nullcontext
 from typing import (
     TYPE_CHECKING,
     Any,
+    ContextManager,
     Dict,
     List,
     Tuple,
@@ -32,9 +32,6 @@ from zenml.artifacts.utils import _store_artifact_data_and_prepare_request
 from zenml.client import Client
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
-from zenml.constants import (
-    ENV_ZENML_STEP_OPERATOR,
-)
 from zenml.enums import ArtifactSaveType, ExecutionStatus
 from zenml.exceptions import StepInterfaceError
 from zenml.hooks.hook_validators import load_and_run_hook
@@ -46,6 +43,7 @@ from zenml.models.v2.core.step_run import (
     StepRunUpdate,
 )
 from zenml.orchestrators.publish_utils import (
+    publish_failed_step_run,
     publish_step_run_metadata,
     publish_successful_step_run,
     step_exception_info,
@@ -63,6 +61,7 @@ from zenml.steps.step_context import (
 )
 from zenml.steps.utils import (
     OutputSignature,
+    get_resolved_signature,
     parse_return_type_annotations,
     resolve_type_annotation,
 )
@@ -76,7 +75,7 @@ from zenml.utils import (
 )
 from zenml.utils.logging_utils import (
     is_step_logging_enabled,
-    setup_step_logging,
+    setup_logging_context,
 )
 from zenml.utils.typing_utils import get_args, get_origin, is_union
 
@@ -144,23 +143,25 @@ class StepRunner:
         """
         from zenml.deployers.server import runtime
 
-        logs_context = nullcontext()
-        if is_step_logging_enabled(step_run.config, pipeline_run.config):
-            logs_context = setup_step_logging(
-                step_run=step_run,
-                pipeline_run=pipeline_run,
-                source="step",
+        logs_context: ContextManager[Any] = nullcontext()
+        if is_step_logging_enabled(
+            step_configuration=step_run.config,
+            pipeline_configuration=pipeline_run.config,
+        ):
+            logs_context = setup_logging_context(
+                source="step", step_run=step_run, pipeline_run=pipeline_run
             )
 
         with logs_context:
             step_instance = self._load_step()
             output_materializers = self._load_output_materializers()
-            spec = inspect.getfullargspec(
-                inspect.unwrap(step_instance.entrypoint)
+            resolved_signature = get_resolved_signature(
+                step_instance.entrypoint
             )
 
             output_annotations = parse_return_type_annotations(
-                func=step_instance.entrypoint
+                func=step_instance.entrypoint,
+                resolved_signature=resolved_signature,
             )
 
             self._evaluate_artifact_names_in_collections(
@@ -186,8 +187,7 @@ class StepRunner:
 
             with step_context:
                 function_params = self._parse_inputs(
-                    args=spec.args,
-                    annotations=spec.annotations,
+                    signature=resolved_signature,
                     input_artifacts=input_artifacts,
                 )
 
@@ -196,11 +196,11 @@ class StepRunner:
                 # orchestrator. But for some orchestrators, this is not possible and
                 # we therefore make sure to set them here so they're at least
                 # available for the user code.
-                step_environment = env_utils.get_step_environment(
-                    step_config=step_run.config, stack=self._stack
+                step_environment = env_utils.get_runtime_environment(
+                    config=step_run.config, stack=self._stack
                 )
-                secret_environment = env_utils.get_step_secret_environment(
-                    step_config=step_run.config, stack=self._stack
+                secret_environment = env_utils.get_runtime_secret_environment(
+                    config=step_run.config, stack=self._stack
                 )
                 step_environment.update(secret_environment)
 
@@ -230,6 +230,12 @@ class StepRunner:
                             snapshot=pipeline_run.snapshot
                         )
 
+                    # Get all step environment variables. For most
+                    # orchestrators, the non-secret environment variables have
+                    # been set before by the orchestrator. But for some
+                    # orchestrators, this is not possible and we therefore make
+                    # sure to set them here so they're at least available for
+                    # the user code.
                     with env_utils.temporary_environment(step_environment):
                         return_values = step_instance.call_entrypoint(
                             **function_params
@@ -240,12 +246,19 @@ class StepRunner:
                         isinstance(step_exception, KeyboardInterrupt)
                         and heartbeat_worker.is_terminated
                     ):
-                        Client().zen_store.update_run_step(
+                        step_run = Client().get_run_step(
                             step_run_id=step_run_info.step_run_id,
-                            step_run_update=StepRunUpdate(
-                                status=ExecutionStatus.STOPPING,
-                            ),
+                            hydrate=False,
                         )
+                        if step_run.status == ExecutionStatus.RUNNING:
+                            # Only update the status if the step status hasn't
+                            # been changed by the server yet.
+                            Client().zen_store.update_run_step(
+                                step_run_id=step_run_info.step_run_id,
+                                step_run_update=StepRunUpdate(
+                                    status=ExecutionStatus.STOPPING,
+                                ),
+                            )
 
                         raise StepHeartBeatTerminationException(
                             "Remotely stopped step - terminating execution."
@@ -253,22 +266,13 @@ class StepRunner:
                     else:
                         exception_info = (
                             exception_utils.collect_exception_information(
-                                step_exception, step_instance
+                                step_exception, step_instance.entrypoint
                             )
                         )
-
-                        if ENV_ZENML_STEP_OPERATOR in os.environ:
-                            # We're running in a step operator environment, so we can't
-                            # depend on the step launcher to publish the exception info
-                            Client().zen_store.update_run_step(
-                                step_run_id=step_run_info.step_run_id,
-                                step_run_update=StepRunUpdate(
-                                    exception_info=exception_info,
-                                ),
-                            )
-                        else:
-                            # This will be published by the step launcher
-                            step_exception_info.set(exception_info)
+                        step_exception_info.set(exception_info)
+                        step_run = publish_failed_step_run(
+                            step_run_id=step_run_info.step_run_id
+                        )
 
                         if not step_run.is_retriable:
                             if (
@@ -438,15 +442,13 @@ class StepRunner:
 
     def _parse_inputs(
         self,
-        args: List[str],
-        annotations: Dict[str, Any],
+        signature: inspect.Signature,
         input_artifacts: Dict[str, List["StepRunInputResponse"]],
     ) -> Dict[str, Any]:
         """Parses the inputs for a step entrypoint function.
 
         Args:
-            args: The arguments of the step entrypoint function.
-            annotations: The annotations of the step entrypoint function.
+            signature: The resolved signature of the step entrypoint function.
             input_artifacts: The input artifact versions of the step.
 
         Raises:
@@ -458,17 +460,33 @@ class StepRunner:
         """
         function_params: Dict[str, Any] = {}
 
-        if args and args[0] == "self":
-            args.pop(0)
+        for arg, parameter in signature.parameters.items():
+            if parameter.kind in {
+                inspect.Parameter.VAR_POSITIONAL,
+                inspect.Parameter.VAR_KEYWORD,
+            }:
+                continue
 
-        for arg in args:
-            annotation = annotations.get(arg, None)
+            annotation = (
+                parameter.annotation
+                if parameter.annotation is not inspect.Parameter.empty
+                else None
+            )
             arg_type = resolve_type_annotation(annotation)
 
             if arg in input_artifacts:
                 artifact_list = input_artifacts[arg]
 
-                if len(artifact_list) == 1:
+                if (
+                    arg not in self._step.spec.inputs
+                    or self._step.spec.is_scalar_input(arg)
+                ):
+                    # External/lazy loaded artifacts can never be collections,
+                    # so we can safely load them as a scalar artifact.
+                    if len(artifact_list) != 1:
+                        raise StepInterfaceError(
+                            f"Expected a single artifact for step input `{arg}`."
+                        )
                     function_params[arg] = self._load_input_artifact(
                         artifact_list[0], arg_type
                     )
@@ -756,6 +774,7 @@ class StepRunner:
                 data=return_value,
                 materializer_class=materializer_class,
                 uri=uri,
+                artifact_store=self._stack.artifact_store,
                 artifact_type=artifact_type,
                 store_metadata=artifact_metadata_enabled,
                 store_visualizations=artifact_visualization_enabled,

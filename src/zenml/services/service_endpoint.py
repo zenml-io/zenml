@@ -123,7 +123,7 @@ class BaseServiceEndpoint(BaseTypedModel):
         self.config.name = self.config.name or self.__class__.__name__
 
     def check_status(self) -> Tuple[ServiceState, str]:
-        """Check the the current operational state of the external service endpoint.
+        """Check the current operational state of the external service endpoint.
 
         Returns:
             The operational state of the external service endpoint and a
@@ -138,7 +138,7 @@ class BaseServiceEndpoint(BaseTypedModel):
         return self.monitor.check_endpoint_status(self)
 
     def update_status(self) -> None:
-        """Check the the current operational state of the external service endpoint.
+        """Check the current operational state of the external service endpoint.
 
         It updates the local operational status information accordingly.
         """

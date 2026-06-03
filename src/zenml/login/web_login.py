@@ -17,6 +17,7 @@ import platform
 import time
 import webbrowser
 from typing import Optional, Union
+from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import requests
 
@@ -43,6 +44,7 @@ def web_login(
     url: Optional[str] = None,
     verify_ssl: Optional[Union[str, bool]] = None,
     pro_api_url: Optional[str] = None,
+    preferred_workspace: Optional[str] = None,
 ) -> APIToken:
     """Implements the OAuth2 Device Authorization Grant flow.
 
@@ -65,6 +67,8 @@ def web_login(
             file.
         pro_api_url: The URL of the ZenML Pro API server. If not provided, the
             default ZenML Pro API server URL is used.
+        preferred_workspace: Optional ZenML Pro workspace hint (UUID or name)
+            to pass to the browser verification URL.
 
     Returns:
         The response returned by the OAuth2 server.
@@ -175,6 +179,17 @@ def web_login(
         # If the verification URI is a relative path, we need to add the base
         # URL to it
         verification_uri = base_url + verification_uri
+
+    # If a workspace identifier is provided, we add it to the verification URL
+    # as a query parameter, so the dashboard can preselect it.
+    if preferred_workspace:
+        parsed_uri = urlparse(verification_uri)
+        query_params = dict(parse_qsl(parsed_uri.query))
+        query_params["workspace"] = preferred_workspace
+        verification_uri = urlunparse(
+            parsed_uri._replace(query=urlencode(query_params))
+        )
+
     webbrowser.open(verification_uri)
 
     # Display the verification URL without panel styling

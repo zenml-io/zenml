@@ -20,6 +20,7 @@ from typing import (
     List,
     Mapping,
     Optional,
+    Set,
     Tuple,
     Union,
 )
@@ -43,19 +44,31 @@ from zenml.config.cache_policy import CachePolicy, CachePolicyWithValidator
 from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.retry_config import StepRetryConfig
-from zenml.config.source import Source, SourceWithValidator
-from zenml.enums import StepRuntime
+from zenml.config.source import (
+    Source,
+    SourceWithValidator,
+    StringSerializableSource,
+)
+from zenml.enums import GroupType, StepRuntime, StepType
 from zenml.logger import get_logger
 from zenml.model.lazy_load import ModelVersionDataLazyLoader
 from zenml.model.model import Model
-from zenml.utils import deprecation_utils
-from zenml.utils.pydantic_utils import before_validator_handler, update_model
+from zenml.utils import deprecation_utils, dict_utils
+from zenml.utils.pydantic_utils import before_validator_handler
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings, ResourceSettings
     from zenml.config.pipeline_configurations import PipelineConfiguration
 
 logger = get_logger(__name__)
+
+
+class GroupInfo(FrozenBaseModel):
+    """Class representing group information."""
+
+    id: str
+    name: Optional[str] = None
+    type: GroupType = GroupType.MANUAL
 
 
 class PartialArtifactConfiguration(FrozenBaseModel):
@@ -191,11 +204,11 @@ class StepConfigurationUpdate(FrozenBaseModel):
         default=None,
         description="Extra configurations for the step.",
     )
-    failure_hook_source: Optional[SourceWithValidator] = Field(
+    failure_hook_source: Optional[StringSerializableSource] = Field(
         default=None,
         description="The failure hook source for the step.",
     )
-    success_hook_source: Optional[SourceWithValidator] = Field(
+    success_hook_source: Optional[StringSerializableSource] = Field(
         default=None,
         description="The success hook source for the step.",
     )
@@ -225,9 +238,13 @@ class StepConfigurationUpdate(FrozenBaseModel):
         default=30,
         description="The amount of time (in minutes) that a running step "
         "has not received heartbeat and is considered healthy. By default, "
-        "set to the maximum value (30 minutes).",
-        ge=1,
-        le=30,
+        "set to 30 minutes.",
+        ge=10,
+        le=60,
+    )
+    group: Optional[GroupInfo] = Field(
+        default=None,
+        description="The group information for the step.",
     )
 
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
@@ -269,6 +286,7 @@ class PartialStepConfiguration(StepConfigurationUpdate):
     """Class representing a partial step configuration."""
 
     name: str
+    step_type: Optional[StepType] = None
     # TODO: maybe move to spec?
     template: Optional[str] = None
     parameters: Dict[str, Any] = {}
@@ -380,34 +398,10 @@ class StepConfiguration(PartialStepConfiguration):
             },
             exclude_none=True,
         )
-        if pipeline_values:
-            original_values = self.model_dump(
-                include={
-                    "settings",
-                    "extra",
-                    "failure_hook_source",
-                    "success_hook_source",
-                    "retry",
-                    "substitutions",
-                    "environment",
-                    "secrets",
-                    "cache_policy",
-                },
-                exclude_none=True,
-            )
-
-            original_values["secrets"] = pipeline_values.get(
-                "secrets", []
-            ) + original_values.get("secrets", [])
-
-            updated_config_dict = {
-                **self.model_dump(),
-                **pipeline_values,
-            }
-            updated_config = self.model_validate(updated_config_dict)
-            return update_model(updated_config, original_values)
-        else:
-            return self.model_copy(deep=True)
+        merged_config_dict = _apply_pipeline_configuration(
+            self.model_dump(), pipeline_values
+        )
+        return self.model_validate(merged_config_dict)
 
 
 class InputSpec(FrozenBaseModel):
@@ -424,12 +418,10 @@ class StepSpec(FrozenBaseModel):
 
     source: SourceWithValidator
     upstream_steps: List[str]
-    # TODO: This should be `Dict[str, List[InputSpec]]`, but that would break
-    # client-server compatibility. In the next major release, change this and
-    # uncomment the code that migrates legacy specs.
-    inputs: Dict[str, Union[List[InputSpec], InputSpec]] = {}
+    inputs: Dict[str, Union[InputSpec, List[InputSpec]]] = {}
     invocation_id: str
     enable_heartbeat: bool = False
+    parameter_spec: Optional[Dict[str, Any]] = None
 
     @model_validator(mode="before")
     @classmethod
@@ -438,29 +430,30 @@ class StepSpec(FrozenBaseModel):
         if "invocation_id" not in data:
             data["invocation_id"] = data.pop("pipeline_parameter_name", "")
 
-        # converted_inputs = {}
-        # for key, value in data.get("inputs", {}).items():
-        #     if isinstance(value, (InputSpec, dict)):
-        #         converted_inputs[key] = [value]
-        #     else:
-        #         converted_inputs[key] = value
-        # data["inputs"] = converted_inputs
-
         return data
 
-    # TODO: Remove this and use the `inputs` property once we change the type
-    # of the `inputs` field.
     @property
-    def inputs_v2(self) -> Dict[str, List[InputSpec]]:
-        """Inputs of the step spec in v2 format.
+    def normalized_inputs(self) -> Dict[str, List[InputSpec]]:
+        """Inputs of the step spec normalized to a list of input specs.
 
         Returns:
-            The inputs of the step spec in v2 format.
+            The inputs of the step spec normalized to a list of input specs.
         """
         return {
             key: [value] if isinstance(value, InputSpec) else value
             for key, value in self.inputs.items()
         }
+
+    def is_scalar_input(self, name: str) -> bool:
+        """Returns whether an input is a scalar artifact.
+
+        Args:
+            name: The input name.
+
+        Returns:
+            `True` if the input is a scalar artifact.
+        """
+        return isinstance(self.inputs[name], InputSpec)
 
     def __eq__(self, other: Any) -> bool:
         """Returns whether the other object is referring to the same step.
@@ -481,7 +474,10 @@ class StepSpec(FrozenBaseModel):
             if self.upstream_steps != other.upstream_steps:
                 return False
 
-            if self.inputs_v2 != other.inputs_v2:
+            if self.normalized_inputs != other.normalized_inputs:
+                return False
+
+            if self.parameter_spec != other.parameter_spec:
                 return False
 
             if self.invocation_id != other.invocation_id:
@@ -544,25 +540,80 @@ class Step(FrozenBaseModel):
             The instantiated object.
         """
         if "config" not in data:
-            config = StepConfiguration.model_validate(
-                data["step_config_overrides"]
+            pipeline_dict = pipeline_configuration.model_dump(
+                include={
+                    "settings",
+                    "extra",
+                    "failure_hook_source",
+                    "success_hook_source",
+                    "retry",
+                    "substitutions",
+                    "environment",
+                    "secrets",
+                    "cache_policy",
+                },
+                exclude_none=True,
             )
-            data["config"] = config.apply_pipeline_configuration(
-                pipeline_configuration
+
+            merged_config_dict = _apply_pipeline_configuration(
+                data["step_config_overrides"], pipeline_dict
             )
+            data["config"] = merged_config_dict
         else:
             # We still need to apply the pipeline substitutions for legacy step
             # objects which include the full config object.
-            from zenml.config.pipeline_configurations import (
-                PipelineConfiguration,
+            merged_config_dict = _apply_pipeline_configuration(
+                data["config"],
+                {"substitutions": pipeline_configuration.substitutions},
             )
-
-            config = StepConfiguration.model_validate(data["config"])
-            data["config"] = config.apply_pipeline_configuration(
-                PipelineConfiguration(
-                    name=pipeline_configuration.name,
-                    substitutions=pipeline_configuration.substitutions,
-                )
-            )
+            data["config"] = merged_config_dict
 
         return cls.model_validate(data)
+
+    @property
+    def available_input_keys(self) -> Set[str]:
+        """Available input keys for the step.
+
+        Returns:
+            The available input keys for the step.
+        """
+        return (
+            set(self.spec.normalized_inputs)
+            | set(self.config.parameters)
+            | set(self.config.model_artifacts_or_metadata)
+            | set(self.config.external_input_artifacts)
+            | set(self.config.client_lazy_loaders)
+        )
+
+
+def _apply_pipeline_configuration(
+    config_dict: Dict[str, Any], pipeline_dict: Dict[str, Any]
+) -> Dict[str, Any]:
+    """Apply the pipeline configuration to the step config dictionary.
+
+    Args:
+        config_dict: The config dictionary to apply the pipeline configuration to.
+        pipeline_dict: The pipeline configuration dictionary.
+
+    Returns:
+        The merged config dictionary.
+    """
+    if not pipeline_dict:
+        return config_dict
+
+    combined_dict = {
+        **config_dict,
+        **pipeline_dict,
+    }
+    step_overrides = {
+        key: value
+        for key, value in config_dict.items()
+        if key in pipeline_dict and value is not None
+    }
+    step_overrides["secrets"] = pipeline_dict.get(
+        "secrets", []
+    ) + step_overrides.get("secrets", [])
+    merged_config_dict = dict_utils.recursive_update(
+        combined_dict, update=step_overrides, ignore_none=True
+    )
+    return merged_config_dict

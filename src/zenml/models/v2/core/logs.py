@@ -16,21 +16,22 @@
 from typing import Any, Optional
 from uuid import UUID, uuid4
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
-from zenml.constants import TEXT_FIELD_MAX_LENGTH
-from zenml.models.v2.base.base import (
-    BaseDatedResponseBody,
-    BaseIdentifiedResponse,
-    BaseRequest,
-    BaseResponseMetadata,
-    BaseResponseResources,
+from zenml.constants import LOGS_RUNNER_SOURCE, TEXT_FIELD_MAX_LENGTH
+from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.scoped import (
+    ProjectScopedRequest,
+    ProjectScopedResponse,
+    ProjectScopedResponseBody,
+    ProjectScopedResponseMetadata,
+    ProjectScopedResponseResources,
 )
 
 # ------------------ Request Model ------------------
 
 
-class LogsRequest(BaseRequest):
+class LogsRequest(ProjectScopedRequest):
     """Request model for logs."""
 
     id: UUID = Field(
@@ -41,6 +42,14 @@ class LogsRequest(BaseRequest):
         default=None,
         title="The URI of the logs file (for artifact store logs)",
     )
+
+    # TODO: This is being added for backwards compatibility with clients <0.84.0.
+    # We can remove this with the upcoming breaking changes.
+    project: Optional[UUID] = Field(  # type: ignore[assignment]
+        default=None,
+        title="The project to which this resource belongs.",
+    )
+
     # TODO: Remove default value when not supporting clients <0.84.0 anymore
     source: str = Field(default="", title="The source of the logs file")
     artifact_store_id: Optional[UUID] = Field(
@@ -50,6 +59,14 @@ class LogsRequest(BaseRequest):
     log_store_id: Optional[UUID] = Field(
         default=None,
         title="The log store ID that collected these logs",
+    )
+    pipeline_run_id: Optional[UUID] = Field(
+        default=None,
+        title="The pipeline run ID to associate the logs with.",
+    )
+    step_run_id: Optional[UUID] = Field(
+        default=None,
+        title="The step run ID to associate the logs with.",
     )
 
     @field_validator("uri")
@@ -66,7 +83,7 @@ class LogsRequest(BaseRequest):
         Raises:
             AssertionError: if the length of the field is longer than the
                 maximum threshold.
-        """
+        """  # noqa: DOC502
         if value is not None:
             assert len(str(value)) < TEXT_FIELD_MAX_LENGTH, (
                 "The length of the value for this field can not "
@@ -74,15 +91,79 @@ class LogsRequest(BaseRequest):
             )
         return value
 
+    @model_validator(mode="after")
+    def validate_stack_component_ids(self) -> "LogsRequest":
+        """Validate the stack component IDs.
+
+        Raises:
+            ValueError: If both `artifact_store_id` and `log_store_id` are not set.
+
+        Returns:
+            self
+        """
+        if (
+            self.artifact_store_id is None
+            and self.log_store_id is None
+            and self.source != LOGS_RUNNER_SOURCE
+        ):
+            raise ValueError(
+                "Either an `artifact_store_id` or a `log_store_id` must be set."
+            )
+        return self
+
+    @model_validator(mode="after")
+    def validate_pipeline_id_and_step_id(self) -> "LogsRequest":
+        """Validate the log key.
+
+        Returns:
+            self
+
+        Raises:
+            ValueError: If two different IDs are set at the same time.
+        """
+        if self.step_run_id and self.pipeline_run_id:
+            raise ValueError(
+                "Two different IDs can not be set at the same time."
+            )
+        return self
+
 
 # ------------------ Update Model ------------------
 
-# There is no update model for logs.
+
+class LogsUpdate(BaseUpdate):
+    """Update model for logs."""
+
+    pipeline_run_id: Optional[UUID] = Field(
+        default=None,
+        title="The pipeline run ID to associate the logs with.",
+    )
+    step_run_id: Optional[UUID] = Field(
+        default=None,
+        title="The step run ID to associate the logs with.",
+    )
+
+    @model_validator(mode="after")
+    def validate_pipeline_id_and_step_id(self) -> "LogsUpdate":
+        """Validate the log key.
+
+        Returns:
+            self
+
+        Raises:
+            ValueError: If two different IDs are set at the same time.
+        """
+        if self.step_run_id and self.pipeline_run_id:
+            raise ValueError(
+                "Two different IDs can not be set at the same time."
+            )
+        return self
+
 
 # ------------------ Response Model ------------------
 
 
-class LogsResponseBody(BaseDatedResponseBody):
+class LogsResponseBody(ProjectScopedResponseBody):
     """Response body for logs."""
 
     uri: Optional[str] = Field(
@@ -96,7 +177,7 @@ class LogsResponseBody(BaseDatedResponseBody):
     )
 
 
-class LogsResponseMetadata(BaseResponseMetadata):
+class LogsResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for logs."""
 
     step_run_id: Optional[UUID] = Field(
@@ -119,12 +200,12 @@ class LogsResponseMetadata(BaseResponseMetadata):
     )
 
 
-class LogsResponseResources(BaseResponseResources):
+class LogsResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the Logs entity."""
 
 
 class LogsResponse(
-    BaseIdentifiedResponse[
+    ProjectScopedResponse[
         LogsResponseBody, LogsResponseMetadata, LogsResponseResources
     ]
 ):

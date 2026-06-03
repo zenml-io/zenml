@@ -22,6 +22,10 @@ from typing import Any, Callable, Dict, List, Optional
 
 from pydantic import BaseModel
 
+from zenml.constants import (
+    ENV_ZENML_DAG_RUNNER_WORKER_COUNT,
+    handle_int_env_var,
+)
 from zenml.logger import get_logger
 from zenml.utils.enum_utils import StrEnum
 
@@ -135,8 +139,11 @@ class DagRunner:
         self.interrupt_check_interval = interrupt_check_interval
         self.max_parallelism = max_parallelism
         self.shutdown_event = threading.Event()
+        worker_count = handle_int_env_var(
+            ENV_ZENML_DAG_RUNNER_WORKER_COUNT, 10
+        )
         self.startup_executor = ThreadPoolExecutor(
-            max_workers=10, thread_name_prefix="DagRunner-Startup"
+            max_workers=worker_count, thread_name_prefix="DagRunner-Startup"
         )
 
     @property

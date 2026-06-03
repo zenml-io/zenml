@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Any, Dict, Generator, Optional, Set, Union
 
 from zenml.client import Client
 from zenml.config.step_configurations import StepConfigurationUpdate
+from zenml.enums import ExecutionStatus
 from zenml.exceptions import RunMonitoringError
 from zenml.logger import get_logger
 from zenml.models import (
@@ -32,7 +33,6 @@ if TYPE_CHECKING:
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
     ]
-    from zenml.steps import BaseStep
 
 logger = get_logger(__name__)
 
@@ -77,11 +77,10 @@ def submit_pipeline(
         stack: The stack on which to submit the snapshot.
         placeholder_run: An optional placeholder run for the snapshot.
 
-    # noqa: DAR401
     Raises:
         BaseException: Any exception that happened while submitting or running
             (in case it happens synchronously) the pipeline.
-    """
+    """  # noqa: DOC502, DOC503
     # Prevent execution of nested pipelines which might lead to
     # unexpected behavior
     with prevent_pipeline_execution():
@@ -111,38 +110,149 @@ def submit_pipeline(
 
 def compute_invocation_id(
     existing_invocations: Set[str],
-    step: "BaseStep",
-    custom_id: Optional[str] = None,
+    base_name: str,
     allow_suffix: bool = True,
 ) -> str:
     """Compute the invocation ID.
 
     Args:
         existing_invocations: The existing invocation IDs.
-        step: The step for which to compute the ID.
-        custom_id: Custom ID to use for the invocation.
+        base_name: Base name for the invocation. Used as the ID directly when
+            unique, otherwise suffixed with `_2`, `_3`, ... until a free slot
+            is found (when `allow_suffix=True`).
         allow_suffix: Whether a suffix can be appended to the invocation
             ID.
 
     Raises:
         RuntimeError: If no ID suffix is allowed and an invocation for the
-            same ID already exists.
-        RuntimeError: If no unique invocation ID can be found.
+            same ID already exists, or if no unique invocation ID can be
+            found.
 
     Returns:
         The invocation ID.
     """
-    base_id = id_ = custom_id or step.name
+    base_id = id_ = base_name
 
     if id_ not in existing_invocations:
         return id_
 
     if not allow_suffix:
-        raise RuntimeError(f"Duplicate step ID `{id_}`")
+        raise RuntimeError(f"Duplicate invocation ID `{id_}`")
 
     for index in range(2, 10000):
         id_ = f"{base_id}_{index}"
         if id_ not in existing_invocations:
             return id_
 
-    raise RuntimeError("Unable to find step ID")
+    raise RuntimeError("Unable to find invocation ID")
+
+
+def skip_steps_and_prune_snapshot(
+    snapshot: "PipelineSnapshotResponse",
+    pipeline_run: "PipelineRunResponse",
+) -> bool:
+    """Skip steps and prune the snapshot.
+
+    Args:
+        snapshot: The snapshot to prune.
+        pipeline_run: The pipeline run to skip steps for.
+
+    Raises:
+        RuntimeError: If the pipeline run is not a replayed run, if a step
+            has an upstream step that is not skipped, or if a step run
+            request cannot be populated.
+
+    Returns:
+        Whether a pipeline run is still required.
+    """
+    from zenml.orchestrators.step_run_utils import StepRunRequestFactory
+
+    if snapshot.is_dynamic:
+        # In dynamic pipelines, the steps will be skipped at runtime.
+        return True
+
+    if not pipeline_run.original_run:
+        raise RuntimeError(
+            "Unable to skip steps because the pipeline run is not a "
+            "replayed run."
+        )
+
+    logger.debug("Skipping steps and pruning snapshot.")
+
+    client = Client()
+    request_factory = StepRunRequestFactory(
+        snapshot=snapshot,
+        pipeline_run=pipeline_run,
+        stack=client.active_stack,
+    )
+
+    explicitly_skipped_steps = set(pipeline_run.config.steps_to_skip)
+    skipped_invocations: Set[str] = set()
+
+    for invocation_id, step in snapshot.step_configurations.items():
+        explicitly_skipped = invocation_id in explicitly_skipped_steps
+        should_skip = request_factory.should_skip_step(invocation_id)
+
+        if not should_skip:
+            continue
+
+        unskipped_upstream_steps = (
+            set(step.spec.upstream_steps) - skipped_invocations
+        )
+
+        if unskipped_upstream_steps:
+            if not explicitly_skipped:
+                logger.debug(
+                    "Not skipping successful step `%s` because upstream "
+                    "steps `%s` are not skipped.",
+                    invocation_id,
+                    ", ".join(unskipped_upstream_steps),
+                )
+                continue
+
+            raise RuntimeError(
+                f"Unable to skip step `{invocation_id}` because it has "
+                f"upstream steps `{', '.join(unskipped_upstream_steps)}` that "
+                "are not skipped."
+            )
+
+        request = request_factory.create_request(invocation_id)
+        try:
+            request_factory.populate_request(request)
+        except Exception as e:
+            # We failed to populate the step run request. This might be due
+            # to some input resolution error, or an error importing the step
+            # source (there might be some missing dependencies). We do not want
+            # the orchestrator to spin up an environment for this step, so we
+            # fail early here.
+            raise RuntimeError(
+                "Failed to populate step run request for step "
+                f"`{invocation_id}`: {str(e)}"
+            ) from e
+
+        if request.status != ExecutionStatus.SKIPPED:
+            # This shouldn't happen, but just in case.
+            raise RuntimeError(
+                f"Expected step request `{invocation_id}` to have status "
+                f"`{ExecutionStatus.SKIPPED}`, but got `{request.status}`."
+            )
+
+        client.zen_store.create_run_step(request)
+        skipped_invocations.add(invocation_id)
+        logger.info("Skipping step `%s`.", invocation_id)
+
+    for invocation_id in skipped_invocations:
+        # Remove the skipped step invocations from the snapshot so
+        # the orchestrator does not try to run them
+        snapshot.step_configurations.pop(invocation_id)
+
+    for step in snapshot.step_configurations.values():
+        for invocation_id in skipped_invocations:
+            if invocation_id in step.spec.upstream_steps:
+                step.spec.upstream_steps.remove(invocation_id)
+
+    if len(snapshot.step_configurations) == 0:
+        logger.info("All steps were skipped.")
+        return False
+
+    return True

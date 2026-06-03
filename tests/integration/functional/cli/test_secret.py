@@ -15,7 +15,8 @@
 
 import os
 
-from tests.integration.functional.cli.utils import cleanup_secrets, cli_runner
+from tests.cli_runner_utils import cli_runner
+from tests.integration.functional.cli.utils import cleanup_secrets
 from tests.integration.functional.utils import sample_name
 from zenml.cli.cli import cli
 from zenml.client import Client
@@ -88,7 +89,7 @@ def test_list_secret_works():
     # Save original _original_stdout for cleanup
     original_stdout = zenml_cli._original_stdout
 
-    runner = cli_runner(mix_stderr=False)
+    runner = cli_runner()
     try:
         with cleanup_secrets() as secret_name:
             # Capture clean_output writes by replacing _original_stdout
@@ -129,7 +130,7 @@ def test_get_secret_works():
             [secret_name],
         )
         assert result1.exit_code != 0
-        assert "Could not find a secret" in result1.output
+        assert "Could not find a secret" in result1.stderr
 
         runner.invoke(
             secret_create_command,
@@ -155,7 +156,7 @@ def test_get_secret_with_prefix_works():
             [secret_name_prefix],
         )
         assert result1.exit_code != 0
-        assert "Could not find a secret" in result1.output
+        assert "Could not find a secret" in result1.stderr
 
         runner.invoke(
             secret_create_command,
@@ -184,21 +185,21 @@ def test_get_private_secret():
             [secret_name],
         )
         assert result1.exit_code != 0
-        assert "Could not find a secret" in result1.output
+        assert "Could not find a secret" in result1.stderr
 
         result1 = runner.invoke(
             secret_get_command,
             [secret_name, "--private", "true"],
         )
         assert result1.exit_code != 0
-        assert "Could not find a secret" in result1.output
+        assert "Could not find a secret" in result1.stderr
 
         result1 = runner.invoke(
             secret_get_command,
             [secret_name, "--private", "false"],
         )
         assert result1.exit_code != 0
-        assert "Could not find a secret" in result1.output
+        assert "Could not find a secret" in result1.stderr
 
         runner.invoke(
             secret_create_command,
@@ -231,7 +232,7 @@ def test_get_private_secret():
             [secret_name, "--private", "false"],
         )
         assert result3.exit_code != 0
-        assert "Could not find a secret" in result3.output
+        assert "Could not find a secret" in result3.stderr
 
 
 def _check_deleting_nonexistent_secret_fails(runner, secret_name):
@@ -241,7 +242,7 @@ def _check_deleting_nonexistent_secret_fails(runner, secret_name):
         [secret_name, "-y"],
     )
     assert result1.exit_code != 0
-    assert "not exist" in result1.output
+    assert "not exist" in result1.stderr
 
 
 def test_delete_secret_works():
@@ -276,7 +277,7 @@ def test_rename_secret_works():
                 [secret_name, "-n", new_secret_name],
             )
             assert result1.exit_code != 0
-            assert "not exist" in result1.output
+            assert "not exist" in result1.stderr
 
             runner.invoke(
                 secret_create_command,
@@ -303,7 +304,7 @@ def test_rename_secret_works():
                 [new_secret_name, "-n", "name"],
             )
             assert result4.exit_code != 0
-            assert "cannot be called" in result4.output
+            assert "cannot be called" in result4.stderr
 
 
 def test_update_secret_works():
@@ -317,7 +318,7 @@ def test_update_secret_works():
             [secret_name, "--test_value=aria", "--test_value2=axl"],
         )
         assert result1.exit_code != 0
-        assert "not exist" in result1.output
+        assert "not exist" in result1.stderr
 
         runner.invoke(
             secret_create_command,

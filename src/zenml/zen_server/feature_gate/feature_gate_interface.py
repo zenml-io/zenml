@@ -28,8 +28,8 @@ class FeatureGateInterface(ABC):
             feature: The feature the user wants to use.
 
         Raises:
-            UpgradeRequiredError in case a subscription limit is reached
-        """
+            UpgradeRequiredError: In case a subscription limit is reached.
+        """  # noqa: DOC502
 
     @abstractmethod
     def report_event(

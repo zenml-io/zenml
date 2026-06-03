@@ -23,6 +23,7 @@ class NeuralProphetIntegration(Integration):
     NAME = NEURAL_PROPHET
     REQUIREMENTS = [
         "neuralprophet>=0.3.2,<0.5.0",
+        "pandas<3",  # neuralprophet uses Series.view() removed in pandas 3.0
         "holidays>=0.4.1,<0.25.0",
         "tenacity!=8.4.0",  # https://github.com/jd/tenacity/issues/471
     ]
@@ -32,4 +33,3 @@ class NeuralProphetIntegration(Integration):
     def activate(cls) -> None:
         """Activates the integration."""
         from zenml.integrations.neural_prophet import materializers  # noqa
-

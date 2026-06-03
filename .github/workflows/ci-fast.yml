@@ -5,32 +5,27 @@ on:
   workflow_call:
   push:
     branches: [main]
-    paths-ignore: [docs/**, '*', '!pyproject.toml', '**.md']
+    paths-ignore:
+      - docs/**
+      - '*'
+      - '!pyproject.toml'
+      - '**.md'
+      - .github/workflows/claude.yml
+      - .claude/**
   pull_request:
     types: [opened, synchronize, ready_for_review]
-    paths-ignore: [docs/**, '*', '!pyproject.toml', '**.md']
+    paths-ignore:
+      - docs/**
+      - '*'
+      - '!pyproject.toml'
+      - '**.md'
+      - .github/workflows/claude.yml
+      - .claude/**
 concurrency:
   # New commit on branch cancels running workflows of the same branch
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  docstring-check:
-    if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4.2.2
-      - name: Set up Python
-        uses: actions/setup-python@v5.3.0
-        with:
-          python-version: '3.10'
-      - name: Install darglint using uv
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          source $HOME/.cargo/env
-          uv pip install --system darglint
-      - name: Check docstrings
-        run: bash scripts/docstring.sh
   sqlite-db-migration-testing-random:
     runs-on: ubuntu-latest
     env:
@@ -40,11 +35,11 @@ jobs:
     if: github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           fetch-depth: 0
       - name: Set up Python 3.10
-        uses: actions/setup-python@v5.3.0
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
           python-version: '3.10'
       - name: Test migrations across versions
@@ -54,9 +49,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - name: Spelling checker
-        uses: crate-ci/typos@v1.27.0
+        uses: crate-ci/typos@5374cbf686e897b15713110e233094e2874de7ef  # v1.46.1
         with:
           files: .
           config: ./.typos.toml
@@ -65,9 +60,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5.3.0
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
           python-version: '3.11'
       - name: Test API docs buildable
