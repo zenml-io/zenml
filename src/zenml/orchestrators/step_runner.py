@@ -562,6 +562,7 @@ class StepRunner:
             materializer: BaseMaterializer = materializer_class(
                 uri=artifact.uri, artifact_store=artifact_store
             )
+            materializer.expected_content_hash = artifact.content_hash
 
             if artifact.chunk_index is not None:
                 # We need to skip the type compatibility check here because

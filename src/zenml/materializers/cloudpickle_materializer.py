@@ -13,8 +13,10 @@
 #  permissions and limitations under the License.
 """Implementation of ZenML's cloudpickle materializer."""
 
+import hashlib
+import hmac
 import os
-from typing import Any, ClassVar, Tuple, Type
+from typing import Any, ClassVar, Optional, Tuple, Type
 
 import cloudpickle
 
@@ -31,6 +33,9 @@ logger = get_logger(__name__)
 
 DEFAULT_FILENAME = "artifact.pkl"
 DEFAULT_PYTHON_VERSION_FILENAME = "python_version.txt"
+
+# Chunk size used when streaming the stored artifact to compute its hash.
+_HASH_CHUNK_SIZE = 65536
 
 
 class CloudpickleMaterializer(BaseMaterializer):
@@ -51,11 +56,18 @@ class CloudpickleMaterializer(BaseMaterializer):
     def load(self, data_type: Type[Any]) -> Any:
         """Reads an artifact from a cloudpickle file.
 
+        When a content hash was recorded for this artifact version, the stored
+        file is checked against it before it is read back.
+
         Args:
             data_type: The data type of the artifact.
 
         Returns:
             The loaded artifact data.
+
+        Raises:
+            RuntimeError: If the stored file does not match the recorded content
+                hash.
         """
         # validate python version
         source_python_version = self._load_python_version()
@@ -69,11 +81,22 @@ class CloudpickleMaterializer(BaseMaterializer):
                 "versions. Attempting to load anyway..."
             )
 
-        # load data
         filepath = os.path.join(self.uri, DEFAULT_FILENAME)
         with self.artifact_store.open(filepath, "rb") as fid:
-            data = cloudpickle.load(fid)
-        return data
+            serialized_data = fid.read()
+
+        expected_content_hash = self.expected_content_hash
+        if expected_content_hash is not None:
+            actual_content_hash = hashlib.sha256(serialized_data).hexdigest()
+            if not hmac.compare_digest(
+                actual_content_hash, expected_content_hash
+            ):
+                raise RuntimeError(
+                    f"The artifact at '{self.uri}' does not match the content "
+                    f"hash recorded for it and was not loaded."
+                )
+
+        return cloudpickle.loads(serialized_data)
 
     def _load_python_version(self) -> str:
         """Loads the Python version that was used to materialize the artifact.
@@ -118,3 +141,32 @@ class CloudpickleMaterializer(BaseMaterializer):
         filepath = os.path.join(self.uri, DEFAULT_PYTHON_VERSION_FILENAME)
         current_python_version = Environment().python_version()
         write_file_contents_as_string(filepath, current_python_version)
+
+    def compute_content_hash(self, data: Any) -> Optional[str]:
+        """Compute a hash of the stored artifact file.
+
+        The hash is taken over the bytes written to the store (not over `data`)
+        so it can be recomputed on load without reading the object back.
+
+        Args:
+            data: The saved data. Unused; the hash is taken over the stored file.
+
+        Returns:
+            The hex-encoded SHA-256 of the stored file, or `None` if it cannot
+            be read.
+        """
+        filepath = os.path.join(self.uri, DEFAULT_FILENAME)
+        try:
+            digest = hashlib.sha256()
+            with self.artifact_store.open(filepath, "rb") as fid:
+                for chunk in iter(lambda: fid.read(_HASH_CHUNK_SIZE), b""):
+                    digest.update(chunk)
+            return digest.hexdigest()
+        except Exception as e:
+            logger.warning(
+                "Could not compute the content hash for the artifact at "
+                "'%s'. (%s)",
+                self.uri,
+                e,
+            )
+            return None

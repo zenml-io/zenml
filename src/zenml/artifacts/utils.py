@@ -582,6 +582,7 @@ def load_artifact_from_response(artifact: "ArtifactVersionResponse") -> Any:
         data_type=artifact.data_type,
         uri=artifact.uri,
         artifact_store=artifact_store,
+        expected_content_hash=artifact.content_hash,
     )
 
 
@@ -765,6 +766,7 @@ def _load_artifact_from_uri(
     data_type: Union["Source", str],
     uri: str,
     artifact_store: Optional["BaseArtifactStore"] = None,
+    expected_content_hash: Optional[str] = None,
 ) -> Any:
     """Load an artifact using the given materializer.
 
@@ -773,6 +775,8 @@ def _load_artifact_from_uri(
         data_type: The source of the artifact data type.
         uri: The uri of the artifact.
         artifact_store: The artifact store used to store this artifact.
+        expected_content_hash: Content hash recorded for this artifact version,
+            forwarded to the materializer to validate the stored file on load.
 
     Returns:
         The artifact loaded into memory.
@@ -821,6 +825,7 @@ def _load_artifact_from_uri(
     materializer_object: BaseMaterializer = materializer_class(
         uri, artifact_store
     )
+    materializer_object.expected_content_hash = expected_content_hash
     artifact = materializer_object.load(artifact_class)
     logger.debug("Artifact loaded successfully.")
 
@@ -1039,12 +1044,14 @@ def load_model_from_metadata(model_uri: str) -> Any:
     """
     # Load the model from its metadata
     artifact_versions_by_uri = Client().list_artifact_versions(uri=model_uri)
+    expected_content_hash: Optional[str] = None
     if artifact_versions_by_uri.total == 1:
         artifact_store = (
             _get_artifact_store_from_response_or_from_active_stack(
                 artifact_versions_by_uri.items[0]
             )
         )
+        expected_content_hash = artifact_versions_by_uri.items[0].content_hash
     else:
         artifact_store = Client().active_stack.artifact_store
 
@@ -1059,6 +1066,7 @@ def load_model_from_metadata(model_uri: str) -> Any:
         data_type=data_type,
         uri=model_uri,
         artifact_store=artifact_store,
+        expected_content_hash=expected_content_hash,
     )
 
     # Switch to eval mode if the model is a torch model

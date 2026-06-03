@@ -108,6 +108,12 @@ def _test_materializer(
             assert isinstance(key, str)
             assert isinstance(value, MetadataTypeTuple)
 
+        # Mirror the loading machinery, which feeds the recorded content hash
+        # back to the materializer before load.
+        materializer.expected_content_hash = materializer.compute_content_hash(
+            step_output
+        )
+
         # Assert that materializer loads the data with the correct type
         loaded_data = materializer.load(step_output_type)
         if assert_data_type:

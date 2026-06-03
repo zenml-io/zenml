@@ -122,6 +122,11 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
 
     _DOCS_BUILDING_MODE: ClassVar[bool] = False
 
+    # Content hash recorded for this artifact version, if known. Set by the
+    # loading machinery before `load` so materializers can validate the stored
+    # file against it. `None` means no hash is available.
+    expected_content_hash: Optional[str] = None
+
     def __init__(
         self, uri: str, artifact_store: Optional[BaseArtifactStore] = None
     ):
