@@ -67,6 +67,35 @@ def trainer(...) -> ...:
 ZenML will build a Docker image which includes your code and use it to run your steps in Modal. Check out [this page](https://docs.zenml.io/how-to/customize-docker-builds) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
+{% hint style="warning" %}
+Modal requires images imported from a registry to be built for `linux/amd64`. If you build locally on Apple Silicon, Docker may produce an `arm64` image by default, which Modal will reject during image import. Configure your Docker settings to build for `linux/amd64`, and prevent build reuse once while replacing any previously built `arm64` image:
+
+```python
+from zenml.config import DockerSettings
+from zenml.config.docker_settings import DockerBuildConfig, DockerBuildOptions
+
+amd64_build_config = DockerBuildConfig(
+    build_options=DockerBuildOptions(platform="linux/amd64")
+)
+
+docker_settings = DockerSettings(
+    # your existing Docker settings...
+    parent_image_build_config=amd64_build_config,
+    build_config=amd64_build_config,
+    prevent_build_reuse=True,
+)
+```
+
+If Docker still fails locally with a platform error while building a multi-stage image, make sure the local image builder uses the Docker CLI/BuildKit path instead of the Docker Python SDK path:
+
+```shell
+export DOCKER_BUILDKIT=1
+zenml image-builder update <LOCAL_IMAGE_BUILDER_NAME> --use_subprocess_call=True
+```
+
+You can remove `prevent_build_reuse=True` again after ZenML has built and pushed a fresh `linux/amd64` image.
+{% endhint %}
+
 #### Additional configuration
 
 You can specify the hardware requirements for each step using the
