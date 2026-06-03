@@ -44,7 +44,11 @@ from zenml.config.cache_policy import CachePolicy, CachePolicyWithValidator
 from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.retry_config import StepRetryConfig
-from zenml.config.source import Source, SourceWithValidator
+from zenml.config.source import (
+    Source,
+    SourceWithValidator,
+    StringSerializableSource,
+)
 from zenml.enums import GroupType, StepRuntime, StepType
 from zenml.logger import get_logger
 from zenml.model.lazy_load import ModelVersionDataLazyLoader
@@ -200,11 +204,11 @@ class StepConfigurationUpdate(FrozenBaseModel):
         default=None,
         description="Extra configurations for the step.",
     )
-    failure_hook_source: Optional[SourceWithValidator] = Field(
+    failure_hook_source: Optional[StringSerializableSource] = Field(
         default=None,
         description="The failure hook source for the step.",
     )
-    success_hook_source: Optional[SourceWithValidator] = Field(
+    success_hook_source: Optional[StringSerializableSource] = Field(
         default=None,
         description="The success hook source for the step.",
     )
