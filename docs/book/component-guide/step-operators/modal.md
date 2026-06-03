@@ -41,6 +41,8 @@ To use the Modal step operator, we need:
 
 The Modal step operator can use Modal authentication and workspace settings from the stack component configuration. If `token_id` and `token_secret` are configured on the step operator, ZenML applies them as `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET` while it submits the Modal sandbox. If `workspace` is configured, ZenML applies it as `MODAL_WORKSPACE` during submission. If these fields are not configured, Modal falls back to its normal authentication sources, such as existing environment variables or `~/.modal.toml`.
 
+ZenML step runtime environment variables, including values needed by the step to connect back to the ZenML server, are passed to the Modal sandbox when the step starts. They are not added to the Modal image definition. Modal authentication settings used to submit the sandbox and container registry credentials used to pull the image are handled separately.
+
 We can then register the step operator:
 
 ```shell

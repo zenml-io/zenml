@@ -97,12 +97,17 @@ def test_gpu_arg_type_with_zero_count_warns_and_returns_cpu_only(
     assert "running on CPU only" in caplog.text
 
 
-def test_modal_submit_preserves_argv_and_uses_configured_timeout(
+def test_modal_submit_preserves_argv_config_and_runtime_env_boundary(
     monkeypatch,
 ) -> None:
     settings = ModalStepOperatorSettings(
         modal_environment="staging",
         timeout=1234,
+    )
+    modal_auth_env_vars = (
+        modal_step_operator_module.MODAL_TOKEN_ID_ENV_VAR,
+        modal_step_operator_module.MODAL_TOKEN_SECRET_ENV_VAR,
+        modal_step_operator_module.MODAL_WORKSPACE_ENV_VAR,
     )
     config = ModalStepOperatorConfig(
         token_id="ak-test",
@@ -137,16 +142,19 @@ def test_modal_submit_preserves_argv_and_uses_configured_timeout(
 
     class ImageStub:
         def env(self, environment):
-            recorded["image_env"] = environment
-            recorded["image"] = self
-            return self
+            raise AssertionError(
+                "ZenML runtime env must be passed to "
+                "Sandbox.create(env=...), not Image.env(...)."
+            )
 
     class ImageFactoryStub:
         @staticmethod
         def from_registry(image_name, **kwargs):
             recorded["image_name"] = image_name
             recorded["image_kwargs"] = kwargs
-            return ImageStub()
+            image = ImageStub()
+            recorded["image"] = image
+            return image
 
     class AppFactoryStub:
         @staticmethod
@@ -154,11 +162,7 @@ def test_modal_submit_preserves_argv_and_uses_configured_timeout(
             recorded["app_lookup"] = (args, kwargs)
             recorded["env_during_lookup"] = {
                 key: modal_step_operator_module.os.environ.get(key)
-                for key in (
-                    "MODAL_TOKEN_ID",
-                    "MODAL_TOKEN_SECRET",
-                    "MODAL_WORKSPACE",
-                )
+                for key in modal_auth_env_vars
             }
             return "app"
 
@@ -202,21 +206,23 @@ def test_modal_submit_preserves_argv_and_uses_configured_timeout(
         "--step_name",
         "train model",
     ]
-    environment = {"ZENML_ENV": "value"}
+    environment = {
+        "ZENML_ENV": "value",
+        "ZENML_STORE_API_TOKEN": "sensitive-token",
+    }
 
     operator.submit(InfoStub(), entrypoint_command, environment)
 
     assert recorded["image_name"] == "registry.example.com/zenml:latest"
     assert recorded["image_kwargs"] == {}
-    assert recorded["image_env"] == environment
     assert recorded["app_lookup"] == (
         ("zenml-step-run-id-train",),
         {"create_if_missing": True, "environment_name": "staging"},
     )
     assert recorded["env_during_lookup"] == {
-        "MODAL_TOKEN_ID": "ak-test",
-        "MODAL_TOKEN_SECRET": "as-test",
-        "MODAL_WORKSPACE": "workspace-test",
+        modal_step_operator_module.MODAL_TOKEN_ID_ENV_VAR: "ak-test",
+        modal_step_operator_module.MODAL_TOKEN_SECRET_ENV_VAR: "as-test",
+        modal_step_operator_module.MODAL_WORKSPACE_ENV_VAR: "workspace-test",
     }
     assert recorded["sandbox_create"] == (
         tuple(entrypoint_command),
@@ -229,8 +235,13 @@ def test_modal_submit_preserves_argv_and_uses_configured_timeout(
             "cloud": None,
             "region": None,
             "timeout": 1234,
+            "env": environment,
         },
     )
+    sandbox_env = recorded["sandbox_create"][1]["env"]
+    assert sandbox_env == environment
+    for env_var in modal_auth_env_vars:
+        assert env_var not in sandbox_env
     assert run_metadata["sandbox_id"] == "sandbox-id"
 
 

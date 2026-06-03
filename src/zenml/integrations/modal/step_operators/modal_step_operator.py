@@ -310,9 +310,7 @@ class ModalStepOperator(BaseStepOperator):
                 }
             )
 
-        zenml_image = modal.Image.from_registry(
-            image_name, **image_kwargs
-        ).env(environment)
+        zenml_image = modal.Image.from_registry(image_name, **image_kwargs)
 
         resource_settings = info.config.resource_settings
         gpu_values = get_gpu_values(settings, resource_settings)
@@ -345,6 +343,7 @@ class ModalStepOperator(BaseStepOperator):
                 cloud=settings.cloud,
                 region=settings.region,
                 timeout=settings.timeout,
+                env=environment,
             )
         publish_step_run_metadata(
             info.step_run_id,
