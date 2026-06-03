@@ -23,7 +23,7 @@ from zenml.config.cache_policy import CachePolicyWithValidator
 from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.schedule import Schedule
-from zenml.config.source import SourceWithValidator
+from zenml.config.source import StringSerializableSource
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import ExecutionMode
 from zenml.model.model import Model
@@ -106,11 +106,11 @@ class PipelineRunConfiguration(
         default=None,
         description="The retry configuration for all steps of the pipeline run.",
     )
-    failure_hook_source: Optional[SourceWithValidator] = Field(
+    failure_hook_source: Optional[StringSerializableSource] = Field(
         default=None,
         description="The failure hook source for all steps of the pipeline run.",
     )
-    init_hook_source: Optional[SourceWithValidator] = Field(
+    init_hook_source: Optional[StringSerializableSource] = Field(
         default=None,
         description="The init hook source for the pipeline run.",
     )
@@ -118,11 +118,11 @@ class PipelineRunConfiguration(
         default=None,
         description="The init hook args for the pipeline run.",
     )
-    cleanup_hook_source: Optional[SourceWithValidator] = Field(
+    cleanup_hook_source: Optional[StringSerializableSource] = Field(
         default=None,
         description="The cleanup hook source for the pipeline run.",
     )
-    success_hook_source: Optional[SourceWithValidator] = Field(
+    success_hook_source: Optional[StringSerializableSource] = Field(
         default=None,
         description="The success hook source for all steps of the pipeline run.",
     )

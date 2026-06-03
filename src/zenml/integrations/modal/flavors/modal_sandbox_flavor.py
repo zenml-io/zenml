@@ -48,6 +48,22 @@ class ModalSandboxSettings(BaseSandboxSettings, ModalStepOperatorSettings):
     surface as Modal API errors at session creation time.
     """
 
+    base_image: Optional[str] = Field(
+        default=None,
+        description="Container image override for the Modal sandbox. Accepts "
+        "any registry reference Modal can pull (e.g. 'python:3.11-slim', "
+        "'my-registry/my-image:tag'). Pass the module-local sentinel "
+        "'<step>' to reuse the active step's containerized-orchestrator "
+        "image. When None, the component's 'default_image' is used.",
+    )
+    timeout_seconds: Optional[int] = Field(
+        default=None,
+        description="Per-session TTL (in seconds) passed to Modal as the "
+        "Sandbox timeout. Modal terminates the Sandbox after this many "
+        "seconds regardless of in-flight execs. Example: 3600 for a "
+        "1-hour cap. When None, Modal's own default applies.",
+    )
+
 
 class ModalSandboxConfig(BaseSandboxConfig, ModalSandboxSettings):
     """Configuration for the Modal sandbox component.
@@ -72,8 +88,9 @@ class ModalSandboxConfig(BaseSandboxConfig, ModalSandboxSettings):
     default_image: str = Field(
         default="python:3.11-slim",
         description="Docker image used when neither the component nor the "
-        "per-step settings specify a base_image. Fallback for the "
-        "STEP_IMAGE sentinel when not in a containerized step.",
+        "per-step settings specify a base_image. Also the fallback when the "
+        "'<step>' sentinel is requested but no containerized step image is "
+        "available. Example: 'python:3.11-slim'.",
     )
 
     @property

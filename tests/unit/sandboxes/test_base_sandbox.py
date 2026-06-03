@@ -24,7 +24,6 @@ import pytest
 
 from zenml.enums import StackComponentType
 from zenml.sandboxes import (
-    STEP_IMAGE,
     BaseSandbox,
     BaseSandboxConfig,
     BaseSandboxFlavor,
@@ -131,16 +130,6 @@ def _make_sandbox(
     )
 
 
-class TestStepImageSentinel:
-    def test_sentinel_is_a_string(self) -> None:
-        assert isinstance(STEP_IMAGE, str)
-
-    def test_sentinel_value_matches_module_export(self) -> None:
-        from zenml.sandboxes.base import STEP_IMAGE as direct
-
-        assert STEP_IMAGE == direct
-
-
 class TestFlavor:
     def test_flavor_type_is_sandbox(self) -> None:
         assert _FakeSandboxFlavor().type == StackComponentType.SANDBOX
@@ -160,20 +149,14 @@ class TestConfig:
 class TestSettings:
     def test_defaults(self) -> None:
         s = BaseSandboxSettings()
-        assert s.base_image is None
         assert s.environment == {}
         assert s.copy_local_env is False
-        assert s.timeout_seconds is None
-
-    def test_step_image_sentinel_accepted(self) -> None:
-        s = BaseSandboxSettings(base_image=STEP_IMAGE)
-        assert s.base_image == STEP_IMAGE
 
 
 class TestSnapshotModel:
     def test_round_trip(self) -> None:
         snap = BaseSandboxSnapshot(
-            provider="fake",
+            sandbox_flavor="fake",
             ref="snap-123",
             metadata={"size_mb": 42},
         )
@@ -183,8 +166,29 @@ class TestSnapshotModel:
         assert restored == snap
 
     def test_metadata_defaults_empty(self) -> None:
-        snap = BaseSandboxSnapshot(provider="fake", ref="r")
+        snap = BaseSandboxSnapshot(sandbox_flavor="fake", ref="r")
         assert snap.metadata == {}
+        assert snap.component_id is None
+
+    def test_legacy_provider_alias_accepted(self) -> None:
+        # Snapshots persisted before the field rename used `provider`.
+        # The model_validator must accept legacy JSON so loaded
+        # artifacts still round-trip.
+        legacy_json = '{"provider":"fake","ref":"snap-legacy"}'
+        snap = BaseSandboxSnapshot.model_validate_json(legacy_json)
+        assert snap.sandbox_flavor == "fake"
+        assert snap.ref == "snap-legacy"
+
+    def test_legacy_provider_does_not_override_new_field(self) -> None:
+        # If both fields are present, sandbox_flavor wins.
+        snap = BaseSandboxSnapshot.model_validate(
+            {
+                "provider": "old",
+                "sandbox_flavor": "new",
+                "ref": "r",
+            }
+        )
+        assert snap.sandbox_flavor == "new"
 
 
 class TestSessionContextManager:
@@ -194,6 +198,37 @@ class TestSessionContextManager:
             assert s is session
             assert session.closed is False
         assert session.closed is True
+
+    def test_exit_flushes_log_ctx_when_close_raises(self) -> None:
+        # The base __exit__ must call _close_log_ctx() even when the
+        # subclass close() raises. That's the W5 fix: log cleanup is
+        # base-owned, not delegated to subclasses that may forget or
+        # error out before reaching the call.
+        class _RaisingSession(SandboxSession):
+            def __init__(self) -> None:
+                super().__init__(
+                    id="raise-test",
+                    parent=MagicMock(spec=BaseSandbox, flavor="fake"),
+                )
+
+            def exec(
+                self,
+                command: Union[str, List[str]],
+                *,
+                cwd: Optional[str] = None,
+                env: Optional[Dict[str, str]] = None,
+            ) -> SandboxProcess:
+                return _FakeProcess()
+
+            def close(self) -> None:
+                raise RuntimeError("close failed")
+
+        session = _RaisingSession()
+        with patch.object(session, "_close_log_ctx") as fake_close_log:
+            with pytest.raises(RuntimeError, match="close failed"):
+                with session:
+                    pass
+        fake_close_log.assert_called_once()
 
 
 class TestSessionMetadata:
@@ -298,20 +333,30 @@ class TestSandboxOptionalMethods:
 class TestRestoreProviderGuard:
     def test_validate_snapshot_provider_rejects_cross_provider(self) -> None:
         sandbox = _make_sandbox(flavor="fake")
-        wrong_snap = BaseSandboxSnapshot(provider="other", ref="r")
-        with pytest.raises(ValueError, match="provider 'other'"):
+        wrong_snap = BaseSandboxSnapshot(sandbox_flavor="other", ref="r")
+        with pytest.raises(ValueError, match="flavor 'other'"):
             sandbox._validate_snapshot_provider(wrong_snap)
 
     def test_validate_snapshot_provider_passes_on_match(self) -> None:
         sandbox = _make_sandbox(flavor="fake")
-        matching_snap = BaseSandboxSnapshot(provider="fake", ref="r")
+        matching_snap = BaseSandboxSnapshot(sandbox_flavor="fake", ref="r")
         # Returns None; no exception.
         assert sandbox._validate_snapshot_provider(matching_snap) is None
+
+    def test_validate_rejects_cross_component_when_id_set(self) -> None:
+        sandbox = _make_sandbox(flavor="fake")
+        other_snap = BaseSandboxSnapshot(
+            sandbox_flavor="fake",
+            ref="r",
+            component_id=uuid4(),
+        )
+        with pytest.raises(ValueError, match="different component"):
+            sandbox._validate_snapshot_provider(other_snap)
 
     def test_restore_default_raises_not_implemented(self) -> None:
         # Base restore() is opt-in. Flavors override; default raises.
         sandbox = _make_sandbox(flavor="fake")
-        snap = BaseSandboxSnapshot(provider="fake", ref="r")
+        snap = BaseSandboxSnapshot(sandbox_flavor="fake", ref="r")
         with pytest.raises(NotImplementedError):
             sandbox.restore(snap)
 
@@ -335,7 +380,7 @@ class TestResolveSessionEnvironment:
         fake_client.get_secret.return_value = fake_secret
         sb = _make_sandbox(secrets=["secret-uuid"])
         settings = BaseSandboxSettings(environment={"API_KEY": "from_step"})
-        with patch("zenml.client.Client", return_value=fake_client):
+        with patch("zenml.utils.env_utils.Client", return_value=fake_client):
             merged = sb._resolve_session_environment(settings)
         assert merged["API_KEY"] == "from_step"  # settings wins
 
@@ -408,7 +453,7 @@ class TestSandboxLogEmission:
         session._log_exec_result(exit_code=0, started_at=time.time() - 1.5)
         record = session._log_ctx.emit_to.call_args.args[0]
         msg = record.getMessage()
-        assert msg.startswith("✓ exit 0 in ")
+        assert msg.startswith("OK exit 0 in ")
         assert msg.endswith("s")
         assert record.levelno == logging.INFO
 
@@ -416,14 +461,14 @@ class TestSandboxLogEmission:
         session = self._patched_session()
         session._log_exec_result(exit_code=1, started_at=time.time())
         record = session._log_ctx.emit_to.call_args.args[0]
-        assert record.getMessage().startswith("✗ exit 1 in ")
+        assert record.getMessage().startswith("FAIL exit 1 in ")
         assert record.levelno == logging.WARNING
 
     def test_log_exec_result_without_started_at_omits_duration(self) -> None:
         session = self._patched_session()
         session._log_exec_result(exit_code=0, started_at=None)
         record = session._log_ctx.emit_to.call_args.args[0]
-        assert record.getMessage() == "✓ exit 0"
+        assert record.getMessage() == "OK exit 0"
 
     def test_wrap_stream_emits_each_line(self) -> None:
         session = self._patched_session()
@@ -435,11 +480,14 @@ class TestSandboxLogEmission:
         assert [r.getMessage() for r in records] == ["a", "b"]
         assert all(r.levelno == logging.INFO for r in records)
 
-    def test_wrap_stream_stderr_uses_warning_level(self) -> None:
+    def test_wrap_stream_stderr_emits_at_info(self) -> None:
+        # Sandbox stderr is diagnostic output, not an application-level
+        # warning; both streams emit at INFO. Stream attribution is
+        # preserved on the signature for future routing decisions.
         session = self._patched_session()
         list(session._wrap_stream(iter(["oops\n"]), stream="stderr"))
         record = session._log_ctx.emit_to.call_args.args[0]
-        assert record.levelno == logging.WARNING
+        assert record.levelno == logging.INFO
         assert record.getMessage() == "oops"
 
     def test_wrap_stream_passthrough_after_latch(self) -> None:
@@ -572,6 +620,68 @@ class TestSandboxProcessCollect:
         # All three chunks were consumed, even though only the first
         # fit under the cap.
         assert len(consumed) == 3
+
+    def test_collect_called_twice_logs_exec_result_only_once(self) -> None:
+        # Repeated collect() must not double-emit the OK/FAIL marker.
+        # Streams are already drained on the 2nd call so captured
+        # strings are empty, and the _collected latch prevents the
+        # session._log_exec_result fire.
+        proc = self._proc_returning(
+            stdout_lines=["x\n"], stderr_lines=[], code=0
+        )
+        fake_session = MagicMock(spec=SandboxSession)
+        proc._session = fake_session
+        proc.collect()
+        proc.collect()
+        assert fake_session._log_exec_result.call_count == 1
+
+    def test_drain_exception_kills_process_and_reraises(self) -> None:
+        # If a stream iterator raises mid-iteration, collect() must
+        # NOT silently swallow it (would return empty output and a
+        # potentially-deadlocked wait() on an undrained pipe). Instead
+        # the drain thread captures the exception, collect() kills the
+        # process, then re-raises so the caller sees the failure.
+        kill_called = [False]
+
+        class _RaisingProc(SandboxProcess):
+            def stdout(self) -> Iterator[str]:
+                yield "ok\n"
+                raise RuntimeError("stream blew up")
+
+            def stderr(self) -> Iterator[str]:
+                return iter(())
+
+            def wait(self, timeout: Optional[float] = None) -> int:
+                return 0
+
+            def kill(self) -> None:
+                kill_called[0] = True
+
+            @property
+            def exit_code(self) -> Optional[int]:
+                return 0
+
+        with pytest.raises(RuntimeError, match="stream blew up"):
+            _RaisingProc().collect()
+        assert kill_called[0] is True
+
+    def test_concurrent_drain_on_both_streams_at_volume(self) -> None:
+        # The original B2 bug was reported as concurrent drain on both
+        # streams: the new threaded drain should handle this without
+        # deadlock or interleaving issues. We don't have a real pipe
+        # here (that's covered in test_local_sandbox.py), but verify
+        # the iterator-level behavior: 1000 lines on each stream are
+        # all captured.
+        out_lines = [f"out-{i}\n" for i in range(1000)]
+        err_lines = [f"err-{i}\n" for i in range(1000)]
+        proc = self._proc_returning(
+            stdout_lines=out_lines, stderr_lines=err_lines, code=0
+        )
+        out = proc.collect()
+        assert out.stdout.count("\n") == 1000
+        assert out.stderr.count("\n") == 1000
+        assert out.stdout.endswith("out-999\n")
+        assert out.stderr.endswith("err-999\n")
 
 
 class TestSandboxExecError:

@@ -17,16 +17,8 @@
    This flavor provides **no isolation**. Code runs as the same OS user
    that started the step, with full access to the local filesystem,
    network, and any credentials in the environment. It is intended for
-   development, quick-start examples, and unit tests — **not for
-   running untrusted LLM-generated code in production**.
-
-   For real isolation, use a flavor that boots a container or microVM
-   (e.g. ``modal``).
-
-Streams output via ``subprocess.PIPE`` and exposes the same
-``BaseSandbox`` / ``SandboxSession`` / ``SandboxProcess`` surface every
-other flavor implements, so example code written against the abstraction
-works against this flavor without changes.
+   development, quick-start examples, and unit tests, not for running
+   untrusted LLM-generated code in production.
 """
 
 import os
@@ -40,7 +32,6 @@ from typing import Dict, Iterator, List, Optional, Type, Union, cast
 
 from zenml.logger import get_logger
 from zenml.sandboxes.base import (
-    STEP_IMAGE,
     BaseSandbox,
     BaseSandboxConfig,
     BaseSandboxFlavor,
@@ -55,64 +46,64 @@ LOCAL_SANDBOX_FLAVOR = "local"
 
 _NO_ISOLATION_WARNING = (
     "LocalSandbox provides NO isolation: LLM-generated code runs as the "
-    "current user with full filesystem and network access. Use a "
-    "container-backed flavor (e.g. 'modal') for real isolation."
+    "current user with full filesystem and network access, including "
+    "credentials in the local environment. Use a container-backed "
+    "flavor (e.g. 'modal') for real isolation."
 )
-
-
-class LocalSandboxConfig(BaseSandboxConfig):
-    """Configuration for the local subprocess sandbox.
-
-    No fields. Env vars and secrets flow through the standard
-    ``StackComponent.environment`` / ``.secrets`` mechanism inherited
-    from ``BaseSandboxConfig``.
-    """
 
 
 class LocalSandboxSettings(BaseSandboxSettings):
     """Per-step settings for the local subprocess sandbox.
 
-    Inherits from ``BaseSandboxSettings``. The base ``base_image`` field
-    is accepted but ignored — there is no image concept locally; a
-    warning is emitted at session creation if a non-None / non-STEP_IMAGE
-    value is set.
-
-    Overrides ``copy_local_env`` default to ``True``: LocalSandbox runs
-    in the same shell environment as the step (no isolation), so
-    propagating PATH and friends matches user expectations. Explicit
-    settings still override.
+    Inherits from `BaseSandboxSettings`. Overrides `copy_local_env`
+    default to `True`: LocalSandbox runs in the same shell environment
+    as the step (no isolation), so propagating PATH and friends matches
+    user expectations.
     """
 
     copy_local_env: bool = True
 
 
+class LocalSandboxConfig(LocalSandboxSettings, BaseSandboxConfig):
+    """Configuration for the local subprocess sandbox.
+
+    Inherits from `LocalSandboxSettings` so settings act as
+    component-level defaults. Env vars and secrets flow through the
+    standard `StackComponent.environment` / `.secrets` mechanism.
+    """
+
+
 class LocalSandboxProcess(SandboxProcess):
-    """Wraps ``subprocess.Popen`` in the ``SandboxProcess`` interface."""
+    """Wraps `subprocess.Popen` in the `SandboxProcess` interface."""
 
     def __init__(
         self,
         process: "subprocess.Popen[str]",
         *,
         session: Optional["LocalSandboxSession"] = None,
+        started_at: Optional[float] = None,
     ) -> None:
         """Initializes the process wrapper.
 
         Args:
-            process: A live ``subprocess.Popen`` opened with text-mode
+            process: A live `subprocess.Popen` opened with text-mode
                 stdout/stderr pipes.
             session: Owning session. When provided, stdout/stderr lines
-                are forwarded through ``session._wrap_stream`` so they
+                are forwarded through `session._wrap_stream` so they
                 land in the per-session sandbox log source.
+            started_at: Wall-clock time the launch began, forwarded to
+                the base class for duration reporting.
         """
         self._process = process
         self._session = session
+        self._started_at = started_at
 
     def _raw_stdout(self) -> Iterator[str]:
         """Yields stdout one line at a time from the underlying Popen.
 
         Yields:
-            Each line of stdout, including the trailing newline when
-            present (matches the base ``SandboxProcess`` contract).
+            Each line of stdout including the trailing newline when
+            present.
         """
         if self._process.stdout is None:
             return
@@ -123,7 +114,7 @@ class LocalSandboxProcess(SandboxProcess):
         """Yields stderr one line at a time from the underlying Popen.
 
         Yields:
-            Each line of stderr, including the trailing newline when
+            Each line of stderr including the trailing newline when
             present.
         """
         if self._process.stderr is None:
@@ -136,7 +127,7 @@ class LocalSandboxProcess(SandboxProcess):
 
         Returns:
             Plain stdout iterator when no session is attached; otherwise
-            wrapped via ``session._wrap_stream`` so each line is also
+            wrapped via `session._wrap_stream` so each line is also
             emitted to the sandbox log source.
         """
         lines = self._raw_stdout()
@@ -149,8 +140,8 @@ class LocalSandboxProcess(SandboxProcess):
 
         Returns:
             Plain stderr iterator when no session is attached; otherwise
-            wrapped via ``session._wrap_stream`` so each line is also
-            emitted to the sandbox log source at WARNING level.
+            wrapped via `session._wrap_stream` so each line is also
+            emitted to the sandbox log source.
         """
         lines = self._raw_stderr()
         if self._session is None:
@@ -162,7 +153,7 @@ class LocalSandboxProcess(SandboxProcess):
 
         Args:
             timeout: Optional seconds to wait before raising
-                ``subprocess.TimeoutExpired``.
+                `subprocess.TimeoutExpired`.
 
         Returns:
             The exit code.
@@ -185,10 +176,10 @@ class LocalSandboxProcess(SandboxProcess):
 
     @property
     def exit_code(self) -> Optional[int]:
-        """Exit code, or ``None`` if the subprocess is still running.
+        """Exit code, or `None` if the subprocess is still running.
 
         Returns:
-            The exit code or ``None``.
+            The exit code or `None`.
         """
         return self._process.returncode
 
@@ -198,7 +189,7 @@ class LocalSandboxSession(SandboxSession):
 
     Each Session owns a working directory under the system temp dir.
     Files written by exec'd commands persist there for the session
-    lifetime; ``close()`` cleans the directory up.
+    lifetime; `close()` cleans the directory up.
     """
 
     def __init__(
@@ -211,9 +202,9 @@ class LocalSandboxSession(SandboxSession):
         """Initializes the local Session.
 
         Args:
-            workdir: Path to the per-session working directory.
+            workdir: Absolute path to the per-session working directory.
             env: Resolved env vars to set for every exec'd subprocess.
-            parent: The owning ``BaseSandbox`` component.
+            parent: The owning `BaseSandbox` component.
         """
         super().__init__(
             id=f"local-{uuid.uuid4().hex[:12]}",
@@ -233,19 +224,22 @@ class LocalSandboxSession(SandboxSession):
         """Spawns a subprocess in the Session's working directory.
 
         Args:
-            command: Argv list (no shell escaping needed) or shell string
-                (split via ``shlex.split``).
-            cwd: Optional working directory override (relative paths are
-                resolved against the session workdir).
+            command: Argv list (no shell escaping needed) or shell
+                string (split via `shlex.split`).
+            cwd: Optional working directory override. Relative paths
+                are resolved against the session workdir. When `None`,
+                the session workdir is used.
             env: Optional per-exec env vars layered on top of the
                 Session-level env.
 
         Returns:
-            A ``LocalSandboxProcess`` wrapping the live ``subprocess.Popen``.
+            A `LocalSandboxProcess` wrapping the live
+            `subprocess.Popen`.
 
         Raises:
-            SandboxExecError: If ``subprocess.Popen`` fails to launch
-                the command (FileNotFoundError, etc.).
+            SandboxExecError: If `subprocess.Popen` fails to launch
+                the command (`FileNotFoundError`, etc.) or the session
+                is already closed.
         """
         if self._closed:
             raise SandboxExecError(
@@ -261,9 +255,12 @@ class LocalSandboxSession(SandboxSession):
         # session: `$ <command>` line followed by its stdout/stderr.
         self._log_command(argv)
 
-        effective_cwd = cwd or self._workdir
-        if not os.path.isabs(effective_cwd):
-            effective_cwd = os.path.join(self._workdir, effective_cwd)
+        if cwd is None:
+            effective_cwd = self._workdir
+        elif os.path.isabs(cwd):
+            effective_cwd = cwd
+        else:
+            effective_cwd = os.path.join(self._workdir, cwd)
 
         effective_env = dict(self._env)
         if env:
@@ -284,19 +281,18 @@ class LocalSandboxSession(SandboxSession):
             raise SandboxExecError(
                 f"LocalSandbox exec failed to launch ({type(e).__name__}): {e}"
             ) from e
-        process = LocalSandboxProcess(popen, session=self)
-        process._started_at = started_at
-        return process
+
+        return LocalSandboxProcess(popen, session=self, started_at=started_at)
 
     def close(self) -> None:
-        """Flushes the sandbox log source and removes the workdir.
+        """Removes the workdir. Idempotent.
 
-        Idempotent — safe to call multiple times.
+        The sandbox log source is flushed by the base `__exit__` via
+        `_close_log_ctx()`.
         """
         if self._closed:
             return
         self._closed = True
-        self._close_log_ctx()
         try:
             shutil.rmtree(self._workdir, ignore_errors=True)
         except Exception as e:
@@ -306,7 +302,7 @@ class LocalSandboxSession(SandboxSession):
             )
 
     def destroy(self) -> None:
-        """Same as ``close()`` for the local flavor.
+        """Same as `close()` for the local flavor.
 
         There is no separate provider lifetime to terminate; closing
         the local Session already removes its workdir.
@@ -317,9 +313,9 @@ class LocalSandboxSession(SandboxSession):
 class LocalSandbox(BaseSandbox):
     """Subprocess-based Sandbox.
 
-    **Warning:** does NOT isolate code execution. Suitable for examples,
-    tests, and development against the Sandbox abstraction; not for
-    running untrusted code.
+    Does NOT isolate code execution. Suitable for examples, tests, and
+    development against the Sandbox abstraction. Not for running
+    untrusted code.
     """
 
     @property
@@ -336,7 +332,7 @@ class LocalSandbox(BaseSandbox):
         """Settings class for per-step overrides.
 
         Returns:
-            ``LocalSandboxSettings``.
+            `LocalSandboxSettings`.
         """
         return LocalSandboxSettings
 
@@ -346,23 +342,18 @@ class LocalSandbox(BaseSandbox):
         """Creates a Session backed by a fresh tmpdir.
 
         Args:
-            settings: Optional per-step ``BaseSandboxSettings`` /
-                ``LocalSandboxSettings``.
+            settings: Optional per-step `BaseSandboxSettings` /
+                `LocalSandboxSettings`.
 
         Returns:
-            A ``LocalSandboxSession`` ready for ``exec()``.
+            A `LocalSandboxSession` ready for `exec()`.
         """
         logger.warning(_NO_ISOLATION_WARNING)
 
-        eff = cast(LocalSandboxSettings, self.resolve_settings(settings))
-        if eff.base_image not in (None, STEP_IMAGE):
-            logger.warning(
-                "LocalSandbox ignores base_image=%r — there is no image "
-                "concept for the local subprocess flavor.",
-                eff.base_image,
-            )
-
-        env = self._resolve_session_environment(eff)
+        effective_settings = cast(
+            LocalSandboxSettings, self.resolve_settings(settings)
+        )
+        env = self._resolve_session_environment(effective_settings)
         workdir = tempfile.mkdtemp(prefix="zenml-local-sandbox-")
 
         return LocalSandboxSession(
@@ -380,7 +371,7 @@ class LocalSandboxFlavor(BaseSandboxFlavor):
         """Flavor name.
 
         Returns:
-            ``"local"``.
+            `"local"`.
         """
         return LOCAL_SANDBOX_FLAVOR
 
@@ -409,14 +400,17 @@ class LocalSandboxFlavor(BaseSandboxFlavor):
         Returns:
             The flavor logo URL.
         """
-        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/local.png"
+        return (
+            "https://public-flavor-logos.s3.eu-central-1.amazonaws.com"
+            "/orchestrator/local.png"
+        )
 
     @property
     def config_class(self) -> Type[LocalSandboxConfig]:
         """Config class.
 
         Returns:
-            ``LocalSandboxConfig``.
+            `LocalSandboxConfig`.
         """
         return LocalSandboxConfig
 
@@ -425,6 +419,6 @@ class LocalSandboxFlavor(BaseSandboxFlavor):
         """Implementation class.
 
         Returns:
-            ``LocalSandbox``.
+            `LocalSandbox`.
         """
         return LocalSandbox
