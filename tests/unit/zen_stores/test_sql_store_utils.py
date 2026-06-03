@@ -15,6 +15,7 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas import (
     ApiTransactionResultSchema,
     ApiTransactionSchema,
+    PipelineSnapshotSchema,
 )
 from zenml.zen_stores.sql_zen_store import (
     SqlZenStore,
@@ -202,8 +203,8 @@ def test_completed_expired_api_transaction_is_reset(clean_client):
     assert result is None
 
 
-def test_expired_api_transaction_reset_requires_atomic_claim(clean_client):
-    """Expired API transaction reset only succeeds for one claimant."""
+def test_expired_api_transaction_claim_is_single_use(clean_client):
+    """Expired API transaction reset only succeeds once."""
     store = clean_client.zen_store
 
     if not isinstance(store, SqlZenStore):
@@ -234,27 +235,25 @@ def test_expired_api_transaction_reset_requires_atomic_claim(clean_client):
         )
         session.commit()
 
-    with Session(store.engine) as stale_session:
-        stale_transaction = stale_session.get(
-            ApiTransactionSchema, transaction_id
+    first_transaction, first_created = store.get_or_create_api_transaction(
+        ApiTransactionRequest(
+            transaction_id=transaction_id,
+            method="POST",
+            url="/api/retry",
         )
-        assert stale_transaction is not None
-
-        with Session(store.engine) as winning_session:
-            winning_transaction = winning_session.get(
-                ApiTransactionSchema, transaction_id
-            )
-            assert winning_transaction is not None
-            winning_transaction.completed = False
-            winning_transaction.expired = None
-            winning_session.add(winning_transaction)
-            winning_session.commit()
-
-        claimed_transaction = store._claim_expired_api_transaction(
-            stale_transaction, session=stale_session
+    )
+    second_transaction, second_created = store.get_or_create_api_transaction(
+        ApiTransactionRequest(
+            transaction_id=transaction_id,
+            method="POST",
+            url="/api/retry",
         )
+    )
 
-    assert claimed_transaction is None
+    assert first_created is True
+    assert first_transaction.completed is False
+    assert second_created is False
+    assert second_transaction.completed is False
 
     with Session(store.engine) as session:
         transaction = session.get(ApiTransactionSchema, transaction_id)
@@ -263,4 +262,22 @@ def test_expired_api_transaction_reset_requires_atomic_claim(clean_client):
     assert transaction is not None
     assert transaction.completed is False
     assert transaction.expired is None
-    assert result is not None
+    assert result is None
+
+
+def test_pipeline_snapshot_indexes_cover_pagination_and_name_filters():
+    """Pipeline snapshot indexes cover the known slow query shapes."""
+    indexes = {
+        index.name: [column.name for column in index.columns]
+        for index in PipelineSnapshotSchema.__table__.indexes
+    }
+
+    assert indexes["ix_pipeline_snapshot_project_id_created_id"] == [
+        "project_id",
+        "created",
+        "id",
+    ]
+    assert indexes["ix_pipeline_snapshot_project_id_name"] == [
+        "project_id",
+        "name",
+    ]

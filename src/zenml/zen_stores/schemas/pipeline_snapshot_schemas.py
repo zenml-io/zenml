@@ -84,7 +84,11 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         ),
         build_index(
             table_name=__tablename__,
-            column_names=["project_id", "created", "id", "name"],
+            column_names=["project_id", "created", "id"],
+        ),
+        build_index(
+            table_name=__tablename__,
+            column_names=["project_id", "name"],
         ),
     )
 

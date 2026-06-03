@@ -70,10 +70,19 @@ def upgrade() -> None:
         ["project_id", "created", "id"],
     )
 
-    _create_index_if_missing(
+    _drop_index_if_exists(
         "pipeline_snapshot",
         "ix_pipeline_snapshot_project_id_created_id_name",
-        ["project_id", "created", "id", "name"],
+    )
+    _create_index_if_missing(
+        "pipeline_snapshot",
+        "ix_pipeline_snapshot_project_id_created_id",
+        ["project_id", "created", "id"],
+    )
+    _create_index_if_missing(
+        "pipeline_snapshot",
+        "ix_pipeline_snapshot_project_id_name",
+        ["project_id", "name"],
     )
 
     _create_index_if_missing(
@@ -110,6 +119,14 @@ def downgrade() -> None:
         "step_configuration", "ix_step_configuration_snapshot_id_name"
     )
 
+    _drop_index_if_exists(
+        "pipeline_snapshot",
+        "ix_pipeline_snapshot_project_id_name",
+    )
+    _drop_index_if_exists(
+        "pipeline_snapshot",
+        "ix_pipeline_snapshot_project_id_created_id",
+    )
     _drop_index_if_exists(
         "pipeline_snapshot",
         "ix_pipeline_snapshot_project_id_created_id_name",
