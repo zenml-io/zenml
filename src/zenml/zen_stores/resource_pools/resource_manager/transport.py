@@ -296,6 +296,12 @@ class RMResourceRequestTerminateRequest(BaseModel):
     reason: Optional[str] = None
 
 
+class RMResourceRequestRenewalRequest(BaseModel):
+    """Runtime resource request renewal payload for the Resource Manager API."""
+
+    lease_expires_at: datetime
+
+
 class RMResourceRequestResponse(BaseModel):
     """Runtime resource request response from the Resource Manager API."""
 

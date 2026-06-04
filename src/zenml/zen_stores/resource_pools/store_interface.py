@@ -38,6 +38,9 @@ from zenml.models import (
     ResourceRequestResponse,
     ResourceRequestTerminateRequest,
 )
+from zenml.models.v2.core.resource_request import (
+    ResourceRequestRenewalRequest,
+)
 
 if TYPE_CHECKING:
     from zenml.zen_stores.sql_zen_store import Session, SqlZenStore
@@ -315,6 +318,22 @@ class ResourcePoolsStoreInterface(ABC):
 
         Returns:
             The terminated resource request.
+        """
+
+    @abstractmethod
+    def renew_resource_request(
+        self,
+        resource_request_id: UUID,
+        renewal_request: ResourceRequestRenewalRequest,
+    ) -> ResourceRequestResponse:
+        """Renew a resource request lease.
+
+        Args:
+            resource_request_id: The ID of the resource request to renew.
+            renewal_request: The renewed lease expiration timestamp.
+
+        Returns:
+            The renewed resource request.
         """
 
     @abstractmethod

@@ -21,6 +21,7 @@ from zenml.constants import API, RESOURCE_REQUESTS, VERSION_1
 from zenml.models import (
     Page,
     ResourceRequestFilter,
+    ResourceRequestRenewalRequest,
     ResourceRequestResponse,
     ResourceRequestTerminateRequest,
 )
@@ -90,6 +91,31 @@ def get_resource_request(
     """
     return zen_store().get_resource_request(
         resource_request_id, hydrate=hydrate
+    )
+
+
+@router.post(
+    "/{resource_request_id}/renew",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def renew_resource_request(
+    resource_request_id: UUID,
+    renewal_request: ResourceRequestRenewalRequest,
+    _: AuthContext = Security(authorize),
+) -> ResourceRequestResponse:
+    """Renew a resource request lease.
+
+    Args:
+        resource_request_id: ID of the resource request.
+        renewal_request: Renewed lease expiration timestamp.
+
+    Returns:
+        The renewed resource request.
+    """
+    return zen_store().renew_resource_request(
+        resource_request_id,
+        renewal_request,
     )
 
 

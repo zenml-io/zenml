@@ -69,6 +69,9 @@ from zenml.models import (
     ResourceRequestResponseResources,
     ResourceRequestTerminateRequest,
 )
+from zenml.models.v2.core.resource_request import (
+    ResourceRequestRenewalRequest,
+)
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.resource_pools.resource_manager.client import (
     ResourceManagerClient,
@@ -597,6 +600,26 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         )
         return self._to_request_response(response)
 
+    def renew_resource_request(
+        self,
+        resource_request_id: UUID,
+        renewal_request: ResourceRequestRenewalRequest,
+    ) -> ResourceRequestResponse:
+        """Renew a resource request lease through Resource Manager.
+
+        Args:
+            resource_request_id: The request ID.
+            renewal_request: Renewal payload.
+
+        Returns:
+            The renewed resource request.
+        """
+        response = self._client.renew_request(
+            resource_request_id,
+            lease_expires_at=renewal_request.lease_expires_at,
+        )
+        return self._to_request_response(response)
+
     def delete_resource_request(self, resource_request_id: UUID) -> None:
         """Delete a terminal resource request through Resource Manager.
 
@@ -621,11 +644,7 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         if step_run is None or step_run.resource_request_id is None:
             return
 
-        self._client.terminate_request(
-            step_run.resource_request_id,
-            force=True,
-            reason="Resource request released by ZenML step run.",
-        )
+        self._client.release_request(step_run.resource_request_id)
 
     def delete_component_subject(
         self, session: "Session", component_id: UUID

@@ -34,6 +34,7 @@ from zenml.enums import (
     ArtifactSaveType,
     ExecutionStatus,
     StepRunInputArtifactType,
+    StepRuntime,
     StepType,
 )
 from zenml.metadata.metadata_types import MetadataType
@@ -180,6 +181,10 @@ class StepRunRequest(ProjectScopedRequest):
     resource_requester: Optional[UUID] = Field(
         title="The ID of the component that requested the resources for the "
         "step run.",
+        default=None,
+    )
+    resource_request_runtime: Optional[StepRuntime] = Field(
+        title="The runtime mode used to decide resource request semantics.",
         default=None,
     )
 

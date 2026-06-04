@@ -299,6 +299,7 @@ from zenml.models.v2.core.resource_request import (
     ResourceRequestResponseBody,
     ResourceRequestResponseMetadata,
     ResourceRequestResponseResources,
+    ResourceRequestRenewalRequest,
     ResourceRequestTerminateRequest,
 )
 from zenml.models.v2.core.run_metadata import (
@@ -399,9 +400,9 @@ from zenml.models.v2.core.step_run import (
     StepRunUpdate,
 )
 from zenml.models.v2.core.stream_event import (
-    StreamEvent,
     StreamBatchRequest,
     StreamBatchResponse,
+    StreamEvent,
 )
 from zenml.models.v2.core.tag import (
     TagFilter,
@@ -881,6 +882,7 @@ __all__ = [
     "ResourcePolicyUpdate",
     "ResourceRequestDemand",
     "ResourceRequestRequest",
+    "ResourceRequestRenewalRequest",
     "ResourceRequestTerminateRequest",
     "ResourceRequestReclaimTolerance",
     "ResourceRequestFilter",

@@ -18,12 +18,12 @@ import contextvars
 import logging
 import threading
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 from uuid import UUID
 
 from zenml.enums import ExecutionStatus
-from zenml.utils.time_utils import to_utc_timezone
+from zenml.utils.time_utils import to_utc_timezone, utc_now
 
 if TYPE_CHECKING:
     pass
@@ -40,10 +40,21 @@ class StepHeartBeatTerminationException(Exception):
 class StepHeartbeatWorker:
     """Worker class implementing heartbeat polling and remote termination."""
 
-    STEP_HEARTBEAT_INTERVAL_SECONDS = 15  # submit heartbeats every 2 minutes.
+    STEP_HEARTBEAT_INTERVAL_SECONDS = 15
 
     MAX_HEARTBEAT_INTERVAL_SECONDS = 60 * 5
     MAX_CONSECUTIVE_FAILURES = 3
+
+    @classmethod
+    def resource_request_lease_expires_at(cls) -> datetime:
+        """Compute the next resource-request lease expiration timestamp.
+
+        Returns:
+            UTC timestamp for a renewed resource request lease.
+        """
+        return utc_now() + timedelta(
+            seconds=cls.STEP_HEARTBEAT_INTERVAL_SECONDS * 3
+        )
 
     def __init__(self, step_id: UUID):
         """Heartbeat worker constructor.
@@ -56,6 +67,7 @@ class StepHeartbeatWorker:
         self._thread: threading.Thread | None = None
         self._running: bool = False
         self._terminated: bool = False
+        self._interrupt_signaled: bool = False
 
         self._consecutive_failures: int = 0
         self._heartbeat_interval_seconds: int = (
@@ -118,6 +130,7 @@ class StepHeartbeatWorker:
 
         self._running = True
         self._terminated = False
+        self._interrupt_signaled = False
 
         active_context = contextvars.copy_context()
         self._thread = threading.Thread(
@@ -153,15 +166,8 @@ class StepHeartbeatWorker:
                 try:
                     self._heartbeat()
                     self._consecutive_failures = 0
-                    # One-shot: signal the main thread and stop the loop.
                     if self._terminated:
-                        logger.info(
-                            "%s is remotely stopped, interrupting main thread",
-                            self.name,
-                        )
-                        _thread.interrupt_main()  # raises KeyboardInterrupt in main thread
-                        self._running = False
-                    # Ensure we stop our own loop as well.
+                        self._signal_main_thread_interrupt()
 
                 except Exception as exc:
                     self._consecutive_failures += 1
@@ -187,6 +193,29 @@ class StepHeartbeatWorker:
                     time.sleep(self.interval)
         finally:
             logger.debug("%s run() loop exiting", self.name)
+
+    def _signal_main_thread_interrupt(self) -> None:
+        """Request cooperative shutdown of the main thread.
+
+        ``interrupt_main`` only schedules ``KeyboardInterrupt`` for the main
+        thread; it may not wake a long-running C call such as ``time.sleep``
+        until that call returns. Keep heartbeating until ``stop()`` is called
+        from the main thread's ``finally`` block so leases stay renewed while
+        shutdown is in progress.
+        """
+        if not self._interrupt_signaled:
+            logger.info(
+                "%s is remotely stopped, interrupting main thread",
+                self.name,
+            )
+            self._interrupt_signaled = True
+        else:
+            logger.debug(
+                "%s still waiting for main thread shutdown, "
+                "re-sending interrupt",
+                self.name,
+            )
+        _thread.interrupt_main()
 
     def _heartbeat(self) -> None:
         from zenml.config.global_config import GlobalConfiguration

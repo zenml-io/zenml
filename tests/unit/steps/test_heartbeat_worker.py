@@ -92,8 +92,16 @@ def test_heartbeat_worker_with_remote_stopping(monkeypatch):
             "_thread.interrupt_main was never called"
         )
 
-        assert not worker.is_running
+        assert worker.is_running
         assert worker.is_terminated
+
+        calls_after_interrupt = fake_server._call_count
+        time.sleep(0.25)
+        assert fake_server._call_count > calls_after_interrupt
+
+        worker.stop()
+        time.sleep(0.2)
+        assert not worker.is_running
 
 
 def test_heartbeat_worker_with_eager_stopping(monkeypatch):

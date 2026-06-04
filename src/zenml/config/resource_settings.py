@@ -29,7 +29,7 @@ from pydantic import (
 )
 
 from zenml.config.base_settings import BaseSettings
-from zenml.enums import ResourceRequestReclaimTolerance
+from zenml.enums import ResourceRequestReclaimTolerance, StepRuntime
 
 if TYPE_CHECKING:
     from zenml.models import ResourceRequestDemand
@@ -73,6 +73,7 @@ class ByteUnit(Enum):
 
 
 MEMORY_REGEX = r"^[0-9]+(" + "|".join(unit.value for unit in ByteUnit) + r")$"
+BASIC_RESOURCE_KINDS = frozenset({"cpu", "gpu", "memory", "step_run"})
 
 ResourceInput = Union[
     str,
@@ -177,8 +178,9 @@ class ResourceSettings(BaseSettings):
             and ``pool_resource_demands`` inputs are still accepted and folded
             into this field.
         reclaim_tolerance: Capacity reclaim behavior tolerated by resource pool
-            requests. Defaults to ``any`` when not set. Legacy ``preemptible``
-            booleans are still accepted on input and mapped into this field.
+            requests. Defaults to ``any`` when not set. Legacy
+            ``preemptible`` booleans are still accepted on input and mapped
+            into this field.
         min_replicas: Minimum number of container instances (replicas).
             Use 0 to allow scale-to-zero on idle. Only relevant to
             deployed pipelines.
@@ -432,6 +434,46 @@ class ResourceSettings(BaseSettings):
             )
 
         return demands
+
+    @property
+    def has_basic_resource_demands(self) -> bool:
+        """Check whether settings request ZenML-known basic resources.
+
+        Returns:
+            Whether the generated demands include a basic resource kind.
+        """
+        return any(
+            demand.kind in BASIC_RESOURCE_KINDS
+            for demand in self.merged_resource_demands()
+        )
+
+    @property
+    def reclaim_tolerance_explicitly_set(self) -> bool:
+        """Check whether reclaim tolerance was provided by the user.
+
+        Returns:
+            Whether the field was explicitly set, including through the legacy
+            ``preemptible`` input.
+        """
+        return "reclaim_tolerance" in self.model_fields_set
+
+    def effective_reclaim_tolerance(
+        self, runtime: StepRuntime
+    ) -> ResourceRequestReclaimTolerance:
+        """Reclaim tolerance used when creating resource pool requests.
+
+        Args:
+            runtime: Resolved dynamic step runtime.
+
+        Returns:
+            The configured reclaim tolerance when set by the user; otherwise
+            ``none`` for inline steps and ``any`` for isolated steps.
+        """
+        if self.reclaim_tolerance_explicitly_set:
+            return self.reclaim_tolerance
+        if runtime == StepRuntime.INLINE:
+            return ResourceRequestReclaimTolerance.NONE
+        return ResourceRequestReclaimTolerance.ANY
 
     model_config = ConfigDict(
         # public attributes are immutable
