@@ -21,6 +21,7 @@ returned as a ``LogsReader`` iterable that yields byte chunks (not lines); we
 line-buffer it to satisfy ``SandboxProcess.stdout()`` / ``stderr()`` contracts.
 """
 
+import logging
 import shlex
 import time
 from typing import (
@@ -48,10 +49,10 @@ from zenml.logger import get_logger
 from zenml.sandboxes import (
     BaseSandbox,
     BaseSandboxSettings,
-    BaseSandboxSnapshot,
     SandboxExecError,
     SandboxProcess,
     SandboxSession,
+    SandboxSnapshot,
 )
 
 # Sentinel for "use the active step's containerized-orchestrator image."
@@ -67,7 +68,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class ModalSandboxSnapshot(BaseSandboxSnapshot):
+class ModalSandboxSnapshot(SandboxSnapshot):
     """Snapshot of a Modal Sandbox's filesystem.
 
     Modal's ``snapshot_filesystem()`` captures the FS only — no in-memory
@@ -121,8 +122,8 @@ class ModalSandboxProcess(SandboxProcess):
                 are forwarded through ``session._wrap_stream`` so they
                 land in the per-session sandbox log source.
         """
+        super().__init__(session=session, started_at=time.time())
         self._process = process
-        self._session = session
 
     def stdout(self) -> Iterator[str]:
         """Returns a line-buffered stdout iterator, log-wrapped when bound.
@@ -135,7 +136,7 @@ class ModalSandboxProcess(SandboxProcess):
         lines = _line_buffer(self._process.stdout)
         if self._session is None:
             return lines
-        return self._session._wrap_stream(lines, stream="stdout")
+        return self._session._wrap_stream(lines, log_level=logging.INFO)
 
     def stderr(self) -> Iterator[str]:
         """Returns a line-buffered stderr iterator, log-wrapped when bound.
@@ -148,7 +149,7 @@ class ModalSandboxProcess(SandboxProcess):
         lines = _line_buffer(self._process.stderr)
         if self._session is None:
             return lines
-        return self._session._wrap_stream(lines, stream="stderr")
+        return self._session._wrap_stream(lines, log_level=logging.ERROR)
 
     def wait(self, timeout: Optional[float] = None) -> int:
         """Blocks until the command exits.
@@ -596,7 +597,7 @@ class ModalSandbox(BaseSandbox):
             ) from e
         return ModalSandboxSession(sandbox, parent=self)
 
-    def restore(self, snapshot: BaseSandboxSnapshot) -> SandboxSession:
+    def restore(self, snapshot: SandboxSnapshot) -> SandboxSession:
         """Boots a new Session from a stored filesystem snapshot.
 
         Applies the same timeout / resource / region settings as
