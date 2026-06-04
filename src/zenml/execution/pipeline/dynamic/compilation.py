@@ -320,12 +320,12 @@ def get_step_runtime(
     if not orchestrator.can_run_isolated_steps:
         return StepRuntime.INLINE
 
-    runtime = step_config.runtime
+    if step_config.resource_settings.has_basic_resource_demands:
+        return StepRuntime.ISOLATED
 
+    runtime = step_config.runtime
     if runtime is None:
-        if not step_config.resource_settings.empty:
-            runtime = StepRuntime.ISOLATED
-        elif step_config.docker_settings != pipeline_docker_settings:
+        if step_config.docker_settings != pipeline_docker_settings:
             runtime = StepRuntime.ISOLATED
         else:
             runtime = StepRuntime.INLINE

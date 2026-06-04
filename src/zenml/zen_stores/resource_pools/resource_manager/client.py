@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Synchronous client for the ZenML Pro Resource Manager service."""
 
+from datetime import datetime
 from typing import Any, Optional, Type, TypeVar
 from uuid import UUID, uuid4
 
@@ -92,7 +93,10 @@ def _exception_from_rm_response(response: requests.Response) -> Exception:
     if status_code == 404:
         return KeyError(message)
     if status_code == 409:
-        return EntityExistsError(message)
+        lowered = message.lower()
+        if "already registered" in lowered or "duplicate" in lowered:
+            return EntityExistsError(message)
+        return IllegalOperationError(message)
     if status_code in {400, 422}:
         return ValueError(message)
     if status_code == 403:
@@ -526,6 +530,49 @@ class ResourceManagerClient:
             json=RMResourceRequestTerminateRequest(
                 force=force,
                 reason=reason,
+            ),
+        )
+
+    def release_request(self, request_id: UUID) -> RMResourceRequestResponse:
+        """Release a runtime Resource Manager request on behalf of its owner.
+
+        Args:
+            request_id: Runtime request ID.
+
+        Returns:
+            The released runtime request.
+        """
+        return self._request_model(
+            "POST",
+            f"/v1/resource-requests/{request_id}/release",
+            RMResourceRequestResponse,
+        )
+
+    def renew_request(
+        self,
+        request_id: UUID,
+        *,
+        lease_expires_at: datetime,
+    ) -> RMResourceRequestResponse:
+        """Renew a runtime Resource Manager request lease.
+
+        Args:
+            request_id: Runtime request ID.
+            lease_expires_at: Renewed lease expiration timestamp.
+
+        Returns:
+            The renewed runtime request.
+        """
+        from zenml.zen_stores.resource_pools.resource_manager.transport import (
+            RMResourceRequestRenewalRequest,
+        )
+
+        return self._request_model(
+            "POST",
+            f"/v1/resource-requests/{request_id}/renew",
+            RMResourceRequestResponse,
+            json=RMResourceRequestRenewalRequest(
+                lease_expires_at=lease_expires_at,
             ),
         )
 
