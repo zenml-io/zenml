@@ -23,10 +23,8 @@ def upgrade() -> None:
     op.create_table(
         "api_key",
         sa.Column("description", sa.TEXT(), nullable=True),
-        sa.Column(
-            "service_account_id", sqlmodel.sql.sqltypes.GUID(), nullable=False
-        ),
-        sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("service_account_id", sa.Uuid(), nullable=False),
+        sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.Column("updated", sa.DateTime(), nullable=False),
         sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),

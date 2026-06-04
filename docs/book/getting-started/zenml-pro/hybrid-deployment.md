@@ -66,6 +66,12 @@ Workspaces initiate outbound-only connections to the control plane, meaning no i
 
 Each workspace can be deployed in separate VPCs or networks, isolated per team, department, or customer. Different workspaces can be configured with different security policies and managed independently by different teams.
 
+#### Private connectivity for Google Cloud workspaces
+
+For organizations that deploy Hybrid workspaces in Google Cloud, it is now possible to connect the Google Cloud workspace VPC privately to the ZenML control plane infrastructure in AWS without sending traffic over the public internet. This can be implemented with [AWS Interconnect - multicloud](https://aws.amazon.com/about-aws/whats-new/2026/04/aws-announces-ga-AWS-interconnect-multicloud/) together with [Google Cloud Cross-Cloud Interconnect](https://docs.cloud.google.com/network-connectivity/docs/interconnect/how-to/cci/aws/connectivity-overview), giving the workspace a dedicated, private network path between Google Cloud and AWS.
+
+This option is useful when your security policy requires the workspace server and metadata store to stay in Google Cloud while control-plane communication must use private cloud networking rather than public internet routing or VPN. The exact topology depends on your Google Cloud VPC, AWS networking setup, region pairing, routing, BGP configuration, and redundancy requirements. Contact [cloud@zenml.io](mailto:cloud@zenml.io) or your ZenML representative to validate the design before implementation.
+
 ### Data Residency
 
 | Data Type | Storage Location | Purpose |
