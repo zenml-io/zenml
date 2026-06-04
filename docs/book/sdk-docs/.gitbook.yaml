@@ -5,6 +5,8 @@ structure:
   summary: toc.md
 
 redirects:
-  kitaru: kitaru-client.md
-  kitaru/client: kitaru-client.md
-  kitaru/example-usages: kitaru-example-usages.md
+  # ZenML pages moved under zenml/ when the Kitaru section was added.
+  client: zenml/client.md
+  example-usages: zenml/example-usages.md
+  # Short alias for the Kitaru section.
+  kitaru: kitaru/client.md
