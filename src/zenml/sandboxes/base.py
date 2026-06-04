@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Base abstractions for ZenML sandbox stack components."""
+"""Base sandbox flavor and component."""
 
 from abc import ABC, abstractmethod
 from typing import Dict, Optional, Type, cast
@@ -22,7 +22,7 @@ from zenml.config.base_settings import BaseSettings
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
 from zenml.sandboxes.session import SandboxSession
-from zenml.sandboxes.snapshot import BaseSandboxSnapshot
+from zenml.sandboxes.snapshot import SandboxSnapshot
 from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponent, StackComponentConfig
 
@@ -30,13 +30,11 @@ logger = get_logger(__name__)
 
 
 class BaseSandboxSettings(BaseSettings):
-    """Per-step / per-pipeline overrides for a Sandbox component."""
+    """Sandbox settings."""
 
     environment: Dict[str, str] = Field(
         default_factory=dict,
-        description="Per-step env vars merged into the Session on top of "
-        "the component's `StackComponent.environment` and resolved "
-        "secrets. Settings override on key collision.",
+        description="Environment variables to set in the sandbox.",
     )
     copy_local_env: bool = Field(
         default=False,
@@ -49,21 +47,11 @@ class BaseSandboxSettings(BaseSettings):
 
 
 class BaseSandboxConfig(BaseSandboxSettings, StackComponentConfig):
-    """Base configuration for sandbox stack components.
-
-    Inherits from `BaseSandboxSettings` so settings fields act as
-    component-level defaults; per-step `BaseSandboxSettings` overrides
-    them at session-creation time. Default env vars and secrets are
-    configured on the StackComponent itself via
-    `StackComponent.environment` / `StackComponent.secrets`.
-    """
+    """Sandbox configuration."""
 
     @property
     def is_remote(self) -> bool:
-        """Sandboxes are called from inside step code, not from the server.
-
-        Unlike orchestrators and step operators, the ZenML server does
-        not need to reach the sandbox.
+        """Whether this sandbox component is remote.
 
         Returns:
             Whether this sandbox component is remote.
@@ -72,10 +60,10 @@ class BaseSandboxConfig(BaseSandboxSettings, StackComponentConfig):
 
     @property
     def is_local(self) -> bool:
-        """Inverse of `is_remote`.
+        """Whether this sandbox component is running locally.
 
         Returns:
-            Whether this sandbox component is local-only.
+            Whether this sandbox component is running locally.
         """
         return not self.is_remote
 
@@ -85,20 +73,19 @@ class BaseSandbox(StackComponent, ABC):
 
     @property
     def config(self) -> BaseSandboxConfig:
-        """Typed sandbox component configuration.
+        """The sandbox component configuration.
 
         Returns:
-            The component's config.
+            The sandbox component configuration.
         """
         return cast(BaseSandboxConfig, self._config)
 
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
-        """Settings class for per-step / per-pipeline overrides.
+        """The sandbox settings class.
 
         Returns:
-            `BaseSandboxSettings`. Flavors may override to expose
-            flavor-specific fields.
+            The sandbox settings class.
         """
         return BaseSandboxSettings
 
@@ -106,82 +93,71 @@ class BaseSandbox(StackComponent, ABC):
     def create_session(
         self, settings: Optional[BaseSandboxSettings] = None
     ) -> SandboxSession:
-        """Creates a fresh Session, applying config + settings.
+        """Creates a fresh sandbox session.
 
-        Implementations typically delegate the settings merge to
-        `self.resolve_settings(settings)` and the env merge to
-        `self._resolve_session_environment(...)` before calling the
-        provider's primitive.
+        Args:
+            settings: The sandbox settings.
+
+        Returns:
+            A new sandbox session.
         """
 
     def attach(self, session_id: str) -> SandboxSession:
-        """Reconnects to an already-live Session by id.
-
-        No snapshot needed. Use for subagent or cross-pipeline flows.
-        Optional. Default raises NotImplementedError.
+        """Attach to a running sandbox session.
 
         Args:
-            session_id: Provider-issued id of the live session.
+            session_id: The ID of the running sandbox session.
 
         Returns:
-            A reconnected `SandboxSession`.
-
-        Raises:
-            NotImplementedError: Default. Flavors opt in by overriding.
+            Sandbox session.
         """
         raise NotImplementedError(
-            f"{type(self).__name__} does not support session attach."
+            f"{type(self).__name__} does not support attaching to a running "
+            "sandbox session."
         )
 
-    def restore(self, snapshot: BaseSandboxSnapshot) -> SandboxSession:
-        """Materializes a new Session from a stored Snapshot.
-
-        Returns a new Session with a fresh id. The original is
-        unaffected. Subclasses that support restore should call
-        `self._validate_snapshot_provider(snapshot)` first, then
-        materialize from the provider primitive.
+    def restore(self, snapshot: SandboxSnapshot) -> SandboxSession:
+        """Restore a sandbox session from a snapshot.
 
         Args:
             snapshot: The snapshot to restore from.
 
         Returns:
-            A new `SandboxSession` materialized from the snapshot.
-
-        Raises:
-            NotImplementedError: Default. Flavors opt in by overriding.
+            Sandbox session.
         """
         raise NotImplementedError(
-            f"{type(self).__name__} does not support restore."
+            f"{type(self).__name__} does not support restoring from a snapshot."
         )
 
     def resolve_settings(
         self, override: Optional[BaseSandboxSettings] = None
     ) -> BaseSandboxSettings:
-        """Returns the effective sandbox settings.
+        """Resolve the sandbox settings.
 
         Args:
-            override: Explicit per-call settings. If provided, they are
-                layered on top of the config defaults via the canonical
-                `StackComponent._merge_settings` helper. Otherwise the
-                active step context is consulted; if there is no step
-                context either, the config defaults are returned as-is.
+            override: Per-call settings override. If provided these will
+                override values in the component settings/config.
 
         Returns:
-            The effective settings for the next Session.
+            The resolved settings.
         """
         from zenml.steps.step_context import StepContext
 
+        if step_context := StepContext.get():
+            settings_dict = self.get_settings(
+                step_context.step_run
+            ).model_dump(exclude_unset=True)
+        else:
+            settings_dict = self.config.model_dump(exclude_unset=True)
+
         if override is not None:
-            return cast(
-                BaseSandboxSettings,
-                self._merge_settings(override.model_dump(exclude_unset=True)),
-            )
+            settings_dict.update(override.model_dump(exclude_unset=True))
 
-        ctx = StepContext.get()
-        if ctx is not None:
-            return cast(BaseSandboxSettings, self.get_settings(ctx.step_run))
-
-        return cast(BaseSandboxSettings, self._merge_settings({}))
+        assert self.settings_class is not None
+        return cast(
+            BaseSandboxSettings,
+            self.settings_class.model_validate(settings_dict),
+        )
 
     def _resolve_session_environment(
         self, settings: Optional[BaseSandboxSettings]
@@ -218,44 +194,24 @@ class BaseSandbox(StackComponent, ABC):
             env.update(settings.environment)
         return env
 
-    def _validate_snapshot_provider(
-        self, snapshot: BaseSandboxSnapshot
-    ) -> None:
-        """Asserts a snapshot was produced by this component.
-
-        Rejects cross-flavor snapshots, plus (when `component_id` is
-        set on the snapshot) cross-component snapshots whose
-        provider-side ref is not portable to this component. Subclasses
-        call this first in `restore` before invoking the provider's
-        restore primitive.
+    def _validate_snapshot(self, snapshot: SandboxSnapshot) -> None:
+        """Validates that a snapshot can be restored by this component.
 
         Args:
             snapshot: The snapshot to validate.
 
         Raises:
-            ValueError: If `snapshot.sandbox_flavor` does not match
-                this component's flavor, or `snapshot.component_id`
-                is set and does not match this component's id.
+            ValueError: If the snapshot cannot be restored by this component.
         """
-        if snapshot.sandbox_flavor != self.flavor:
+        if snapshot.sandbox_id != self.id:
             raise ValueError(
-                f"Cannot restore snapshot from flavor "
-                f"'{snapshot.sandbox_flavor}' on a '{self.flavor}' "
-                "sandbox component."
-            )
-        if (
-            snapshot.component_id is not None
-            and snapshot.component_id != self.id
-        ):
-            raise ValueError(
-                f"Cannot restore snapshot from component "
-                f"'{snapshot.component_id}' on a different component "
-                f"'{self.id}'."
+                f"Cannot restore snapshot from sandbox '{snapshot.sandbox_id}' "
+                f"on a different sandbox '{self.id}'."
             )
 
 
 class BaseSandboxFlavor(Flavor):
-    """Base flavor contract for sandbox implementations."""
+    """Base sandbox flavor."""
 
     @property
     def type(self) -> StackComponentType:
@@ -268,23 +224,18 @@ class BaseSandboxFlavor(Flavor):
 
     @property
     def config_class(self) -> Type[BaseSandboxConfig]:
-        """Default config class for sandbox flavors.
+        """Configuration class.
 
         Returns:
-            `BaseSandboxConfig`. Concrete flavors typically override.
+            The configuration class.
         """
         return BaseSandboxConfig
 
     @property
+    @abstractmethod
     def implementation_class(self) -> Type[BaseSandbox]:
-        """Concrete sandbox implementation class.
+        """Implementation class.
 
-        Subclasses must override and return their concrete
-        `BaseSandbox` subclass.
-
-        Raises:
-            NotImplementedError: Always. Subclasses must override.
+        Returns:
+            The implementation class.
         """
-        raise NotImplementedError(
-            "Concrete sandbox flavors must override implementation_class."
-        )
