@@ -15,6 +15,7 @@
 
 import time
 from contextlib import nullcontext
+from datetime import timedelta
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -45,6 +46,7 @@ from zenml.models import (
     PipelineRunRequest,
     PipelineRunResponse,
     PipelineSnapshotResponse,
+    ResourceRequestRenewalRequest,
     StepRunResponse,
 )
 from zenml.models.v2.core.step_run import StepRunInputResponse
@@ -54,6 +56,7 @@ from zenml.orchestrators.signal_handler import SignalHandler
 from zenml.orchestrators.step_runner import StepRunner
 from zenml.stack import Stack
 from zenml.steps import StepHeartBeatTerminationException
+from zenml.steps.heartbeat import StepHeartbeatWorker
 from zenml.utils import env_utils, exception_utils, string_utils
 from zenml.utils.logging_utils import (
     LoggingContext,
@@ -796,25 +799,20 @@ class StepLauncher:
             RuntimeError: If the resource request was not found, or
                 was rejected, preempted, or cancelled.
         """
+        resource_request_id = step_run_info.step_run.resource_request_id
         resource_request = step_run_info.step_run.resource_request
-        if not resource_request:
-            resource_request_id = step_run_info.step_run.resource_request_id
-            if not resource_request_id:
+        if not resource_request_id:
+            if resource_request is None:
                 return
-            try:
-                resource_request = Client().zen_store.get_resource_request(
-                    resource_request_id, hydrate=False
-                )
-            except KeyError as e:
-                raise RuntimeError(
-                    f"Resource request `{resource_request_id}` for step "
-                    f"`{step_run_info.pipeline_step_name}` not found. This "
-                    "is most likely because someone deleted the resource "
-                    "request."
-                ) from e
+            resource_request_id = resource_request.id
+        elif (
+            resource_request is not None
+            and resource_request.id != resource_request_id
+        ):
+            resource_request = None
 
-        if resource_request.status == ResourceRequestStatus.ALLOCATED:
-            return
+        step_name = step_run_info.pipeline_step_name
+        zen_store = Client().zen_store
 
         for delay in exponential_backoff_delays(
             initial_delay=1.0,
@@ -822,53 +820,65 @@ class StepLauncher:
             factor=2.0,
             jitter="equal",
         ):
-            try:
-                resource_request = Client().zen_store.get_resource_request(
-                    resource_request.id, hydrate=False
-                )
-            except KeyError as e:
-                raise RuntimeError(
-                    f"Resource request `{resource_request.id}` for step "
-                    f"`{step_run_info.pipeline_step_name}` not found. This "
-                    "is most likely because someone deleted the resource "
-                    "request."
-                ) from e
+            if resource_request is None:
+                try:
+                    resource_request = zen_store.renew_resource_request(
+                        resource_request_id,
+                        ResourceRequestRenewalRequest(
+                            lease_expires_at=(
+                                StepHeartbeatWorker.resource_request_lease_expires_at()
+                                + timedelta(seconds=delay)
+                            ),
+                        ),
+                    )
+                except KeyError as e:
+                    raise RuntimeError(
+                        f"Resource request `{resource_request_id}` for step "
+                        f"`{step_name}` not found. This is most likely because "
+                        "someone deleted the resource request."
+                    ) from e
 
             if resource_request.status == ResourceRequestStatus.ALLOCATED:
                 logger.info(
                     "Resource request `%s` for step `%s` was approved.",
                     resource_request.id,
-                    step_run_info.pipeline_step_name,
+                    step_name,
                 )
                 publish_utils.publish_step_run_status_update(
                     step_run_id=step_run_info.step_run_id,
                     status=ExecutionStatus.RUNNING,
                 )
                 return
-            elif resource_request.status == ResourceRequestStatus.REJECTED:
+            if resource_request.status == ResourceRequestStatus.REJECTED:
                 reason = resource_request.status_reason or "Unknown reason"
                 raise RuntimeError(
                     f"Resource request `{resource_request.id}` for step "
-                    f"`{step_run_info.pipeline_step_name}` was rejected: "
-                    f"{reason}"
+                    f"`{step_name}` was rejected: {reason}"
                 )
-            elif resource_request.status == ResourceRequestStatus.PREEMPTED:
+            if resource_request.status in {
+                ResourceRequestStatus.PREEMPTING,
+                ResourceRequestStatus.PREEMPTED,
+                ResourceRequestStatus.RELEASED,
+                ResourceRequestStatus.EXPIRED,
+            }:
                 reason = resource_request.status_reason or "Unknown reason"
                 raise RuntimeError(
                     f"Resource request `{resource_request.id}` for step "
-                    f"`{step_run_info.pipeline_step_name}` was preempted: "
-                    f"{reason}"
+                    f"`{step_name}` reached status "
+                    f"`{resource_request.status}`: {reason}"
                 )
-            elif resource_request.status == ResourceRequestStatus.CANCELLED:
+            if resource_request.status == ResourceRequestStatus.CANCELLED:
+                reason = resource_request.status_reason or "Unknown reason"
                 raise RuntimeError(
                     f"Resource request `{resource_request.id}` for step "
-                    f"`{step_run_info.pipeline_step_name}` was cancelled."
+                    f"`{step_name}` was cancelled: {reason}"
                 )
 
             logger.info(
                 "Waiting for resource request `%s` of step `%s` to be "
                 "approved...",
                 resource_request.id,
-                step_run_info.pipeline_step_name,
+                step_name,
             )
             time.sleep(delay)
+            resource_request = None

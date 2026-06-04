@@ -23,7 +23,7 @@ from zenml.config.resource_settings import (
     PoolResourceDemand,
     ResourceSettings,
 )
-from zenml.enums import ResourceRequestReclaimTolerance
+from zenml.enums import ResourceRequestReclaimTolerance, StepRuntime
 
 
 def test_unit_byte_value_defined_for_all_values():
@@ -211,10 +211,66 @@ def test_empty_property_excludes_resources() -> None:
     assert rs.empty is True
 
 
+def test_default_reclaim_tolerance_stays_any() -> None:
+    """Default reclaim tolerance remains backward-compatible."""
+    rs = ResourceSettings()
+    assert rs.reclaim_tolerance is ResourceRequestReclaimTolerance.ANY
+    assert rs.reclaim_tolerance_explicitly_set is False
+    assert (
+        rs.effective_reclaim_tolerance(StepRuntime.INLINE)
+        is ResourceRequestReclaimTolerance.NONE
+    )
+    assert (
+        rs.effective_reclaim_tolerance(StepRuntime.ISOLATED)
+        is ResourceRequestReclaimTolerance.ANY
+    )
+
+
+def test_effective_reclaim_tolerance_preserves_explicit_value() -> None:
+    """Explicit reclaim tolerance is used for runtime resource requests."""
+    rs = ResourceSettings(
+        reclaim_tolerance=ResourceRequestReclaimTolerance.ANY
+    )
+    assert rs.reclaim_tolerance_explicitly_set is True
+    assert (
+        rs.effective_reclaim_tolerance(StepRuntime.INLINE)
+        is ResourceRequestReclaimTolerance.ANY
+    )
+    assert (
+        rs.effective_reclaim_tolerance(StepRuntime.ISOLATED)
+        is ResourceRequestReclaimTolerance.ANY
+    )
+
+
+def test_basic_resource_demands_include_typed_fields() -> None:
+    """Typed CPU/GPU/memory fields are basic resource demands."""
+    assert ResourceSettings(cpu_count=1).has_basic_resource_demands is True
+    assert ResourceSettings(gpu_count=1).has_basic_resource_demands is True
+    assert ResourceSettings(memory="1GB").has_basic_resource_demands is True
+
+
+def test_basic_resource_demands_include_pool_resource_kinds() -> None:
+    """Pool resources with known kinds participate in isolation decisions."""
+    rs = ResourceSettings(
+        resources=[
+            PoolResourceDemand(name="gpu-slot", quantity=1, kind="gpu"),
+            PoolResourceDemand(name="step-slot", quantity=1, kind="step_run"),
+        ]
+    )
+    assert rs.has_basic_resource_demands is True
+
+
+def test_custom_pool_resources_are_not_basic_demands() -> None:
+    """Opaque resources do not force isolated runtime by themselves."""
+    rs = ResourceSettings(resources={"license": 1})
+    assert rs.has_basic_resource_demands is False
+
+
 def test_legacy_preemptible_maps_to_reclaim_tolerance() -> None:
     """Legacy preemptible input is accepted without storing the field."""
     rs = ResourceSettings(preemptible=True)
     assert rs.reclaim_tolerance is ResourceRequestReclaimTolerance.COORDINATED
+    assert rs.reclaim_tolerance_explicitly_set is True
     assert "preemptible" not in rs.model_dump()
 
     rs = ResourceSettings(preemptible=False)
