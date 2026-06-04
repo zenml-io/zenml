@@ -28,11 +28,11 @@ from zenml.sandboxes import (
     BaseSandboxConfig,
     BaseSandboxFlavor,
     BaseSandboxSettings,
-    BaseSandboxSnapshot,
     SandboxExecError,
     SandboxOutput,
     SandboxProcess,
     SandboxSession,
+    SandboxSnapshot,
 )
 
 
@@ -85,7 +85,7 @@ class _FakeSession(SandboxSession):
 
     def close(self) -> None:
         self.closed = True
-        self._close_log_ctx()
+        self._close_logging_context()
 
 
 class _FakeSandbox(BaseSandbox):
@@ -155,33 +155,31 @@ class TestSettings:
 
 class TestSnapshotModel:
     def test_round_trip(self) -> None:
-        snap = BaseSandboxSnapshot(
+        snap = SandboxSnapshot(
             sandbox_flavor="fake",
             ref="snap-123",
             metadata={"size_mb": 42},
         )
-        restored = BaseSandboxSnapshot.model_validate_json(
-            snap.model_dump_json()
-        )
+        restored = SandboxSnapshot.model_validate_json(snap.model_dump_json())
         assert restored == snap
 
     def test_metadata_defaults_empty(self) -> None:
-        snap = BaseSandboxSnapshot(sandbox_flavor="fake", ref="r")
+        snap = SandboxSnapshot(sandbox_flavor="fake", ref="r")
         assert snap.metadata == {}
-        assert snap.component_id is None
+        assert snap.sandbox_id is None
 
     def test_legacy_provider_alias_accepted(self) -> None:
         # Snapshots persisted before the field rename used `provider`.
         # The model_validator must accept legacy JSON so loaded
         # artifacts still round-trip.
         legacy_json = '{"provider":"fake","ref":"snap-legacy"}'
-        snap = BaseSandboxSnapshot.model_validate_json(legacy_json)
+        snap = SandboxSnapshot.model_validate_json(legacy_json)
         assert snap.sandbox_flavor == "fake"
         assert snap.ref == "snap-legacy"
 
     def test_legacy_provider_does_not_override_new_field(self) -> None:
         # If both fields are present, sandbox_flavor wins.
-        snap = BaseSandboxSnapshot.model_validate(
+        snap = SandboxSnapshot.model_validate(
             {
                 "provider": "old",
                 "sandbox_flavor": "new",
@@ -242,9 +240,9 @@ class TestSessionMetadata:
         self,
     ) -> None:
         session = _FakeSession(session_id="sb-test-1")
-        session._dashboard_url = lambda: "https://example/sb-test-1"  # type: ignore[method-assign]
+        session._get_dashboard_url = lambda: "https://example/sb-test-1"  # type: ignore[method-assign]
         with patch("zenml.utils.metadata_utils.log_metadata") as log_meta:
-            session._on_enter()
+            session._publish_sandbox_metadata()
         from zenml.metadata.metadata_types import Uri
 
         payload = log_meta.call_args.kwargs["metadata"]
@@ -254,10 +252,10 @@ class TestSessionMetadata:
     def test_two_sessions_produce_disjoint_keys(self) -> None:
         s1 = _FakeSession(session_id="sb-1")
         s2 = _FakeSession(session_id="sb-2")
-        s2._dashboard_url = lambda: "https://example/sb-2"  # type: ignore[method-assign]
+        s2._get_dashboard_url = lambda: "https://example/sb-2"  # type: ignore[method-assign]
         with patch("zenml.utils.metadata_utils.log_metadata") as log_meta:
-            s1._on_enter()
-            s2._on_enter()
+            s1._publish_sandbox_metadata()
+            s2._publish_sandbox_metadata()
         first = log_meta.call_args_list[0].kwargs["metadata"]
         second = log_meta.call_args_list[1].kwargs["metadata"]
         assert "sandbox.sb-1.flavor" in first
@@ -268,7 +266,7 @@ class TestSessionMetadata:
     def test_omits_dashboard_url_when_hook_returns_none(self) -> None:
         session = _FakeSession(session_id="sb-x")
         with patch("zenml.utils.metadata_utils.log_metadata") as log_meta:
-            session._on_enter()
+            session._publish_sandbox_metadata()
         payload = log_meta.call_args.kwargs["metadata"]
         assert "sandbox.sb-x.dashboard_url" not in payload
 
@@ -281,7 +279,7 @@ class TestSessionMetadata:
             patch("zenml.sandboxes.session.logger.debug") as dbg,
             patch("zenml.sandboxes.session.logger.warning") as warn,
         ):
-            _FakeSession()._on_enter()
+            _FakeSession()._publish_sandbox_metadata()
         dbg.assert_called()
         warn.assert_not_called()
 
@@ -293,7 +291,7 @@ class TestSessionMetadata:
             ),
             patch("zenml.sandboxes.session.logger.warning") as warn,
         ):
-            _FakeSession()._on_enter()
+            _FakeSession()._publish_sandbox_metadata()
         warn.assert_called()
 
 
@@ -309,7 +307,7 @@ class TestSessionOptionalMethods:
 
     def test_snapshot_default_raises(self) -> None:
         with pytest.raises(NotImplementedError):
-            _FakeSession().snapshot()
+            _FakeSession().create_snapshot()
 
     def test_upload_file_default_raises(self) -> None:
         with pytest.raises(NotImplementedError):
@@ -333,30 +331,30 @@ class TestSandboxOptionalMethods:
 class TestRestoreProviderGuard:
     def test_validate_snapshot_provider_rejects_cross_provider(self) -> None:
         sandbox = _make_sandbox(flavor="fake")
-        wrong_snap = BaseSandboxSnapshot(sandbox_flavor="other", ref="r")
+        wrong_snap = SandboxSnapshot(sandbox_flavor="other", ref="r")
         with pytest.raises(ValueError, match="flavor 'other'"):
-            sandbox._validate_snapshot_provider(wrong_snap)
+            sandbox._validate_snapshot(wrong_snap)
 
     def test_validate_snapshot_provider_passes_on_match(self) -> None:
         sandbox = _make_sandbox(flavor="fake")
-        matching_snap = BaseSandboxSnapshot(sandbox_flavor="fake", ref="r")
+        matching_snap = SandboxSnapshot(sandbox_flavor="fake", ref="r")
         # Returns None; no exception.
-        assert sandbox._validate_snapshot_provider(matching_snap) is None
+        assert sandbox._validate_snapshot(matching_snap) is None
 
     def test_validate_rejects_cross_component_when_id_set(self) -> None:
         sandbox = _make_sandbox(flavor="fake")
-        other_snap = BaseSandboxSnapshot(
+        other_snap = SandboxSnapshot(
             sandbox_flavor="fake",
             ref="r",
-            component_id=uuid4(),
+            sandbox_id=uuid4(),
         )
         with pytest.raises(ValueError, match="different component"):
-            sandbox._validate_snapshot_provider(other_snap)
+            sandbox._validate_snapshot(other_snap)
 
     def test_restore_default_raises_not_implemented(self) -> None:
         # Base restore() is opt-in. Flavors override; default raises.
         sandbox = _make_sandbox(flavor="fake")
-        snap = BaseSandboxSnapshot(sandbox_flavor="fake", ref="r")
+        snap = SandboxSnapshot(sandbox_flavor="fake", ref="r")
         with pytest.raises(NotImplementedError):
             sandbox.restore(snap)
 
@@ -505,21 +503,21 @@ class TestSandboxLogEmission:
             "zenml.utils.logging_utils.setup_logging_context",
             side_effect=RuntimeError("no log store"),
         ):
-            session._emit_sandbox("ignored")
+            session._emit_log("ignored")
         assert session._log_forwarding_disabled is True
         assert session._log_ctx is None
 
     def test_close_log_ctx_calls_end(self) -> None:
         session = self._patched_session()
         ctx = session._log_ctx
-        session._close_log_ctx()
+        session._close_logging_context()
         ctx.end.assert_called_once()
         assert session._log_ctx is None
 
     def test_close_log_ctx_is_idempotent(self) -> None:
         session = self._patched_session()
-        session._close_log_ctx()
-        session._close_log_ctx()  # second call must be a no-op
+        session._close_logging_context()
+        session._close_logging_context()  # second call must be a no-op
         assert session._log_ctx is None
 
 
