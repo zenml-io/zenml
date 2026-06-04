@@ -3,3 +3,4 @@
 * [Overview](README.md)
 * [Client](client.md)
 * [Example usages](example-usages.md)
+* [Kitaru SDK & CLI Reference](https://sdkdocs.kitaru.ai)

@@ -6,6 +6,10 @@ icon: plug
 
 The ZenML Client provides a programmatic interface to interact with all ZenML resources. This page organizes the client methods into thematic groups, making it easier to find the methods you need for various ZenML operations.
 
+{% hint style="info" %}
+Looking for the **Kitaru** SDK and CLI reference? Kitaru is ZenML's durable execution layer for AI agents, and its Python SDK + CLI reference is published at [sdkdocs.kitaru.ai](https://sdkdocs.kitaru.ai).
+{% endhint %}
+
 ## Session and Environment Management
 
 Methods for managing ZenML repositories and sessions:
