@@ -29,6 +29,8 @@ from typing import (
     Union,
 )
 
+from pydantic import BaseModel
+
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.constants import (
     ENV_ZENML_MATERIALIZER_ALLOW_NON_ASCII_JSON_DUMPS,
@@ -602,16 +604,37 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             try:
                 item = data_type(item)
             except Exception as e:
-                # We only log an error here, potentially pydantic can handle the
-                # conversion when validating step function inputs.
-                logger.error(
-                    "Failed to convert item `%s` to expected type `%s`. This "
-                    "is most likely due to a mismatching type annotation on "
-                    "your step function input. Error: %s",
-                    item,
-                    data_type.__name__,
-                    e,
-                )
+                # Pydantic models reject a positional payload (``Model(x)``),
+                # which is exactly how mapped lists of BaseModels arrive here
+                # (e.g. ``step.map(...)`` over ``List[MyModel]``), sometimes as a
+                # mapping and sometimes as a model of a different class identity.
+                # Fall back to ``model_validate`` for those; every other type
+                # keeps its original ``data_type(item)`` behavior unchanged.
+                recovered = False
+                if isinstance(data_type, type) and issubclass(
+                    data_type, BaseModel
+                ):
+                    try:
+                        source = (
+                            item.model_dump()
+                            if isinstance(item, BaseModel)
+                            else item
+                        )
+                        item = data_type.model_validate(source)
+                        recovered = True
+                    except Exception:
+                        pass
+                if not recovered:
+                    # We only log an error here, potentially pydantic can handle
+                    # the conversion when validating step function inputs.
+                    logger.error(
+                        "Failed to convert item `%s` to expected type `%s`. "
+                        "This is most likely due to a mismatching type "
+                        "annotation on your step function input. Error: %s",
+                        item,
+                        data_type.__name__,
+                        e,
+                    )
 
         return item
 
