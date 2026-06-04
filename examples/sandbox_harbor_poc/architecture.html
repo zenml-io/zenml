@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Harbor × ZenML — Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --paper:#F2EFE6;
+    --card:#FBFAF4;
+    --card-2:#F7F4EA;
+    --ink:#26241E;
+    --ink-soft:#56524a;
+    --faint:#938d7d;
+    --line:#E3DECF;
+    --line-2:#EDE9DD;
+    --coral:#BE5B38;        /* Claude coral */
+    --coral-soft:#F3E5DB;
+    --coral-line:#E6C9B8;
+    --clay:#6E685A;         /* muted neutral — the plain tool */
+    --clay-soft:#ECE8DB;
+    --sage:#5E7253;
+    --sage-soft:#E7ECDD;
+    --brick:#B25A4A;
+    --mono:"JetBrains Mono",ui-monospace,monospace;
+    --sans:"Hanken Grotesk",system-ui,sans-serif;
+    --serif:"Fraunces",Georgia,serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    padding:56px 30px 90px;
+    /* faint warm paper grain */
+    background-image:radial-gradient(circle at 1px 1px, rgba(120,108,82,.05) 1px, transparent 0);
+    background-size:22px 22px;
+  }
+  .wrap{max-width:1180px;margin:0 auto}
+
+  /* ---- header ---- */
+  .eyebrow{
+    font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;
+    color:var(--coral);display:flex;align-items:center;gap:11px;font-weight:500;
+  }
+  .eyebrow::before{content:"";width:24px;height:1.5px;background:var(--coral)}
+  h1{
+    font-family:var(--serif);font-weight:500;letter-spacing:-.018em;line-height:1.0;
+    font-size:clamp(36px,6vw,66px);margin:18px 0 14px;font-optical-sizing:auto;
+  }
+  h1 em{font-style:italic;color:var(--coral);font-weight:400}
+  .lede{max-width:660px;color:var(--ink-soft);font-size:18px;line-height:1.5}
+  .lede b{color:var(--ink);font-weight:600}
+
+  .legend{display:flex;flex-wrap:wrap;gap:8px 24px;margin:26px 0 6px;font-family:var(--mono);font-size:11.5px;color:var(--ink-soft)}
+  .legend span{display:inline-flex;align-items:center;gap:8px}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .dot.h{background:var(--clay)} .dot.z{background:var(--coral)} .dot.t{background:var(--sage)}
+  .dash{width:22px;border-top:1.5px dashed var(--faint)}
+
+  /* ---- columns ---- */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:34px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+
+  .col{
+    border:1px solid var(--line);border-radius:20px;padding:28px 26px 28px;
+    background:var(--card);position:relative;
+  }
+  .col.zen{background:linear-gradient(180deg,#FCF7F2,#FBFAF4);border-color:var(--coral-line);
+    box-shadow:0 1px 0 rgba(190,91,56,.05),0 24px 48px -34px rgba(190,91,56,.28)}
+
+  .col-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:3px}
+  .col-title{font-family:var(--serif);font-weight:500;font-size:26px;letter-spacing:-.01em}
+  .col.zen .col-title{color:var(--coral)}
+  .col.harbor .col-title{color:var(--ink)}
+  .tag{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+    padding:5px 10px;border-radius:999px;border:1px solid var(--line);color:var(--faint);white-space:nowrap;background:var(--card-2)}
+  .col.zen .tag{border-color:var(--coral-line);color:var(--coral);background:var(--coral-soft)}
+  .col-sub{color:var(--faint);font-size:13.5px;font-family:var(--mono);margin-bottom:22px}
+
+  /* ---- nodes / flow ---- */
+  .flow{display:flex;flex-direction:column;align-items:stretch}
+  .node{border:1px solid var(--line);border-radius:13px;background:var(--card-2);padding:14px 16px;position:relative}
+  .col.zen .node{background:#fff;border-color:#EBE3D6}
+  .node .nlabel{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--faint)}
+  .node .ntitle{font-family:var(--serif);font-weight:600;font-size:17px;margin-top:2px;color:var(--ink);letter-spacing:-.01em}
+  .node .ndesc{font-size:13.5px;color:var(--ink-soft);margin-top:6px}
+  .node code{font-family:var(--mono);font-size:12px;background:var(--paper);border:1px solid var(--line);
+    padding:2px 6px;border-radius:6px;color:var(--ink)}
+  .node.kernel{border-color:#D8D1C0;background:linear-gradient(180deg,#F4F0E4,#F7F4EA)}
+  .node.kernel .ntitle{color:var(--ink)}
+  .node.accent-z{border-color:var(--coral-line);background:linear-gradient(180deg,#FCEFE7,#FFF9F5)}
+  .node.accent-z .ntitle{color:var(--coral)}
+
+  .pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .pill{font-family:var(--mono);font-size:10.5px;color:var(--ink-soft);border:1px solid var(--line);
+    border-radius:7px;padding:3px 8px;background:var(--card)}
+  .pill.same{border-color:#C6D3B8;color:var(--sage);background:var(--sage-soft)}
+
+  .conn{height:24px;display:flex;align-items:center;justify-content:center;flex-direction:column}
+  .conn i{width:1.5px;height:11px;display:block}
+  .conn.h i{background:var(--clay)} .conn.z i{background:var(--coral)}
+  .conn::after{content:"▾";font-size:12px;line-height:1;margin-top:-3px}
+  .conn.h::after{color:var(--clay)} .conn.z::after{color:var(--coral)}
+  .conn.label{height:32px}
+  .conn .ctxt{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:.04em;margin-bottom:1px}
+
+  .ret{border:1px dashed #BBCBAE;border-radius:12px;background:var(--sage-soft);padding:11px 14px;margin-top:15px}
+  .ret .ntitle{color:var(--sage)!important}
+
+  .verdict{margin-top:20px;padding-top:18px;border-top:1px solid var(--line-2)}
+  .vrow{display:flex;gap:10px;font-size:13.5px;color:var(--ink-soft);margin-top:8px;align-items:flex-start}
+  .vrow .ic{font-family:var(--serif);font-weight:600;flex:none;margin-top:-1px;font-size:16px;line-height:1.4}
+  .vrow.bad .ic{color:var(--brick)} .vrow.good .ic{color:var(--sage)}
+  .vrow b{color:var(--ink);font-weight:600}
+
+  /* ---- bottom band ---- */
+  .band{margin-top:28px;border:1px solid var(--line);border-radius:20px;overflow:hidden;
+    display:grid;grid-template-columns:1fr 1fr;background:var(--card)}
+  @media(max-width:900px){.band{grid-template-columns:1fr}}
+  .band > div{padding:26px 28px}
+  .band .same{background:linear-gradient(180deg,#F1F2E8,#F6F5EC);border-right:1px solid var(--line)}
+  .band .adds{background:linear-gradient(180deg,#FBF0E9,#FCF8F3)}
+  @media(max-width:900px){.band .same{border-right:none;border-bottom:1px solid var(--line)}}
+  .band h3{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;margin-bottom:16px;font-weight:600}
+  .band .same h3{color:var(--sage)} .band .adds h3{color:var(--coral)}
+  .blist{list-style:none;display:flex;flex-direction:column;gap:11px}
+  .blist li{display:flex;gap:11px;font-size:14.5px;color:var(--ink-soft)}
+  .blist li::before{font-family:var(--serif);flex:none;font-size:17px;line-height:1.35;font-weight:600}
+  .same .blist li::before{content:"="; color:var(--sage)}
+  .adds .blist li::before{content:"+";color:var(--coral)}
+  .blist li b{color:var(--ink);font-weight:600}
+  .blist code{font-family:var(--mono);font-size:12px}
+
+  footer{margin-top:32px;display:flex;flex-wrap:wrap;gap:14px 26px;align-items:center;
+    font-family:var(--mono);font-size:12px;color:var(--faint)}
+  footer code{background:var(--card);border:1px solid var(--line);padding:5px 10px;border-radius:8px;color:var(--ink-soft)}
+  footer .live{display:inline-flex;align-items:center;gap:8px;color:var(--sage);font-weight:500}
+  footer .live::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--sage)}
+
+  /* ---- diagrams ---- */
+  .diagrams{margin-top:48px}
+  .diagrams .eyebrow{margin-bottom:14px}
+  .diagrams h2{font-family:var(--serif);font-weight:500;font-size:clamp(26px,4vw,38px);letter-spacing:-.018em;margin-bottom:26px}
+  .diagrams h2 em{font-style:italic;color:var(--coral)}
+  .dia{border:1px solid var(--line);border-radius:18px;background:var(--card);padding:24px 26px 26px;margin-bottom:22px}
+  .dia .dnum{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--coral);font-weight:600}
+  .dia h3{font-family:var(--serif);font-weight:600;font-size:22px;letter-spacing:-.01em;margin:4px 0 4px}
+  .dia .dcap{font-size:14px;color:var(--ink-soft);max-width:760px;margin-bottom:20px}
+  .dia .dcap b{color:var(--ink);font-weight:600}
+  .dia svg{width:100%;height:auto;display:block}
+  .dia svg text{font-family:var(--mono)}
+  .svg-card{fill:#fff;stroke:var(--line);stroke-width:1.2}
+  .svg-coral{fill:var(--coral-soft);stroke:var(--coral-line);stroke-width:1.4}
+  .svg-coral-2{fill:#FBEADF;stroke:var(--coral);stroke-width:1.6}
+  .svg-clay{fill:var(--clay-soft);stroke:#D8D1C0;stroke-width:1.2}
+  .svg-sage{fill:var(--sage-soft);stroke:#C6D3B8;stroke-width:1.2}
+  .svg-stack{fill:#F4F1E6;stroke:var(--line);stroke-width:1.2;stroke-dasharray:5 4}
+  text.s-lbl{fill:var(--faint);font-size:10px;letter-spacing:.12em}
+  text.s-ttl{font-family:var(--serif)!important;font-weight:600;fill:var(--ink);font-size:15px}
+  text.s-ttl.coral{fill:var(--coral)}
+  text.s-m{fill:var(--ink-soft);font-size:11.5px}
+  text.s-m.clay{fill:var(--clay)} text.s-m.coral{fill:var(--coral)} text.s-m.sage{fill:var(--sage)}
+  text.s-arr{fill:var(--faint);font-size:10px}
+
+  /* ---- under the hood ---- */
+  .deep{margin-top:46px}
+  .deep .eyebrow{margin-bottom:14px}
+  .deep h2{font-family:var(--serif);font-weight:500;font-size:clamp(26px,4vw,38px);letter-spacing:-.018em;margin-bottom:8px}
+  .deep h2 em{font-style:italic;color:var(--coral)}
+  .deep .dsub{color:var(--ink-soft);font-size:16px;max-width:620px;margin-bottom:26px}
+  .dgrid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  @media(max-width:900px){.dgrid{grid-template-columns:1fr}}
+  .panel{border:1px solid var(--line);border-radius:18px;background:var(--card);padding:24px 24px 22px}
+  .panel h4{font-family:var(--mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--coral);margin-bottom:6px;font-weight:600}
+  .panel .psub{font-size:13px;color:var(--faint);margin-bottom:14px}
+  .maprow{display:grid;grid-template-columns:1fr 18px 1.15fr;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--line-2);font-family:var(--mono);font-size:12px}
+  .maprow:first-of-type{border-top:none}
+  .maprow .from{color:var(--clay)}
+  .maprow .arr{color:var(--coral);text-align:center}
+  .maprow .to{color:var(--ink-soft)} .maprow .to b{color:var(--ink);font-weight:600}
+  .cap{font-size:13px;color:var(--ink-soft);margin-top:16px;padding-top:15px;border-top:1px solid var(--line-2)}
+  .cap b{color:var(--coral);font-weight:600}
+  .code{margin-top:24px;border:1px solid var(--line);border-radius:16px;background:#FBFAF3;overflow:hidden}
+  .code .bar{display:flex;align-items:center;gap:7px;padding:11px 16px;border-bottom:1px solid var(--line-2);background:var(--card-2)}
+  .code .bar i{width:9px;height:9px;border-radius:50%;display:block}
+  .code .bar i:nth-child(1){background:#D9B0A0}.code .bar i:nth-child(2){background:#D8C79E}.code .bar i:nth-child(3){background:#B6C7A6}
+  .code .bar span{font-family:var(--mono);font-size:11px;color:var(--faint);margin-left:8px;letter-spacing:.04em}
+  .code pre{margin:0;padding:20px 22px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.75;color:var(--ink)}
+  .code .c{color:var(--faint);font-style:italic}
+  .code .k{color:var(--coral);font-weight:600}
+  .code .s{color:var(--sage)}
+  .code .n{color:var(--clay)}
+
+  .rise{opacity:0;transform:translateY(13px);animation:rise .6s cubic-bezier(.2,.7,.2,1) forwards}
+  @keyframes rise{to{opacity:1;transform:none}}
+  @media(prefers-reduced-motion:reduce){.rise{animation:none;opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow rise" style="animation-delay:.02s">Harbor × ZenML · architecture brief</div>
+  <h1 class="rise" style="animation-delay:.06s">Harbor, <em>now managed</em></h1>
+  <p class="lede rise" style="animation-delay:.12s">Same eval kernel, same task format, same images — wrapped in a reproducible, governed outer loop. <b>Harbor stays the evaluator; ZenML becomes the substrate and the system of record.</b></p>
+
+  <div class="legend rise" style="animation-delay:.16s">
+    <span><i class="dot h"></i>Harbor — eval kernel</span>
+    <span><i class="dot z"></i>ZenML — orchestration &amp; substrate</span>
+    <span><i class="dot t"></i>ZenML outer loop — capture</span>
+    <span><i class="dash"></i>routed through the ZenML session</span>
+  </div>
+
+  <div class="grid">
+
+    <!-- ============ HARBOR TODAY ============ -->
+    <section class="col harbor rise" style="animation-delay:.20s">
+      <div class="col-head">
+        <div class="col-title">Harbor today</div>
+        <div class="tag">standalone CLI</div>
+      </div>
+      <div class="col-sub">great locally · brittle &amp; invisible at scale</div>
+
+      <div class="flow">
+        <div class="node">
+          <div class="nlabel">Developer</div>
+          <div class="ntitle">terminal</div>
+          <div class="ndesc"><code>harbor run -a agent -m model -p dataset</code></div>
+        </div>
+        <div class="conn h"><i></i></div>
+
+        <div class="node kernel">
+          <div class="nlabel">Harbor core</div>
+          <div class="ntitle">eval kernel</div>
+          <div class="ndesc">Task <code>task.toml</code> → Agent → Verifier → Reward / ATIF</div>
+        </div>
+        <div class="conn h"><i></i></div>
+
+        <div class="node">
+          <div class="nlabel">Environment provider</div>
+          <div class="ntitle">Docker · Daytona · K8s</div>
+          <div class="ndesc">Local builds the task Dockerfile. Remote/K8s provisions pods <em>on the fly</em> — the “SSH into each pod and submit” path.</div>
+        </div>
+        <div class="conn h"><i></i></div>
+
+        <div class="node">
+          <div class="nlabel">Runtime</div>
+          <div class="ntitle">container · task’s own image</div>
+          <div class="ndesc">Trial runs; agent edits files, verifier scores.</div>
+        </div>
+        <div class="conn h"><i></i></div>
+
+        <div class="node">
+          <div class="nlabel">Output</div>
+          <div class="ntitle">job dir on disk</div>
+          <div class="ndesc">transcripts · <code>reward.txt</code> · <code>result.json</code></div>
+        </div>
+      </div>
+
+      <div class="verdict">
+        <div class="vrow good"><span class="ic">+</span><div><b>Fast &amp; native locally</b> — perfect for early agent-feature iteration.</div></div>
+        <div class="vrow bad"><span class="ic">–</span><div>Results live <b>on disk</b>: no lineage, no versioning, no cross-run comparison.</div></div>
+        <div class="vrow bad"><span class="ic">–</span><div>K8s execution is <b>ad-hoc &amp; unstable</b>; no central cost or resource governance.</div></div>
+      </div>
+    </section>
+
+    <!-- ============ HARBOR ON ZENML ============ -->
+    <section class="col zen rise" style="animation-delay:.30s">
+      <div class="col-head">
+        <div class="col-title">Harbor on ZenML</div>
+        <div class="tag">managed &amp; governed</div>
+      </div>
+      <div class="col-sub">same kernel · wrapped, retryable, reproducible</div>
+
+      <div class="flow">
+        <div class="node">
+          <div class="nlabel">Developer / MLOps</div>
+          <div class="ntitle">one command</div>
+          <div class="ndesc"><code>python run.py --config dev.yaml</code></div>
+        </div>
+        <div class="conn z"><i></i></div>
+
+        <div class="node accent-z">
+          <div class="nlabel">ZenML pipeline · dynamic</div>
+          <div class="ntitle">build_matrix → .map → build_report</div>
+          <div class="ndesc">One <code>run_harbor_job</code> step <b>per (agent×model×task)</b> — parallel, tracked, <b>retryable</b>. No pipeline scripting: bring Harbor tasks, the harness is generic.</div>
+        </div>
+        <div class="conn z label"><span class="ctxt">each step wraps ↓</span><i></i></div>
+
+        <div class="node kernel">
+          <div class="nlabel">Harbor core — unchanged</div>
+          <div class="ntitle">same eval kernel</div>
+          <div class="ndesc">Task <code>task.toml</code> → Agent → Verifier → Reward / ATIF</div>
+          <div class="pills"><span class="pill same">native task format</span><span class="pill same">no rewrite</span></div>
+        </div>
+        <div class="conn z"><i></i></div>
+
+        <div class="node accent-z">
+          <div class="nlabel">Bridge</div>
+          <div class="ntitle">ZenMLSandboxEnvironment</div>
+          <div class="ndesc">Implements <code>harbor.BaseEnvironment</code> — Harbor’s <code>start / exec / download / stop</code> all flow through the ZenML session.</div>
+        </div>
+        <div class="conn z"><i></i></div>
+
+        <div class="node accent-z">
+          <div class="nlabel">ZenML Sandbox component</div>
+          <div class="ntitle">flavor: Modal · Local · K8s</div>
+          <div class="ndesc">Swap the flavor, the campaign is unchanged. Sandbox runs the <b>task’s own image</b> (its Dockerfile <code>FROM</code>) — <b>zero ZenML deps injected</b>.</div>
+          <div class="pills"><span class="pill same">task’s image</span><span class="pill">portable substrate</span></div>
+        </div>
+
+        <div class="ret node">
+          <div class="nlabel">↑ captured through the session</div>
+          <div class="ntitle">versioned artifacts · leaderboard</div>
+          <div class="ndesc">Full job tree → versioned ZenML artifact · per-trial metadata · <code>CampaignReport</code> + HTML leaderboard.</div>
+        </div>
+      </div>
+
+      <div class="verdict">
+        <div class="vrow good"><span class="ic">+</span><div><b>Wrapped &amp; retryable</b> — every trial a tracked step with full lineage on any orchestrator.</div></div>
+        <div class="vrow good"><span class="ic">+</span><div><b>Reproducible &amp; comparable</b> — run #47 still byte-for-byte queryable; leaderboards over time.</div></div>
+        <div class="vrow good"><span class="ic">+</span><div><b>Central governance</b> — resource pools, quotas, secrets &amp; RBAC owned by the platform team.</div></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============ DIAGRAMS ============ -->
+  <section class="diagrams">
+    <div class="eyebrow rise" style="animation-delay:.44s">architecture · three views</div>
+    <h2 class="rise" style="animation-delay:.48s">How it fits together, <em>visually</em></h2>
+
+    <!-- DIAGRAM 1 — THE BRIDGE -->
+    <div class="dia rise" style="animation-delay:.52s">
+      <div class="dnum">view 1</div>
+      <h3>The bridge — an adapter</h3>
+      <p class="dcap">Harbor only knows its own <b>environment interface</b>. The bridge implements that interface and quietly forwards every call to a managed ZenML Sandbox session — so nothing in Harbor changes, but everything now runs (and is observed) through ZenML.</p>
+      <svg viewBox="0 0 1000 400" role="img" aria-label="The bridge adapter diagram">
+        <defs>
+          <marker id="ac1" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 Z" fill="#BE5B38"/></marker>
+          <marker id="al1" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 Z" fill="#6E685A"/></marker>
+          <marker id="as1" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 Z" fill="#5E7253"/></marker>
+        </defs>
+        <!-- Harbor -->
+        <rect class="svg-clay" x="24" y="64" width="208" height="216" rx="12"/>
+        <text class="s-lbl" x="44" y="92">HARBOR</text>
+        <text class="s-ttl" x="44" y="116">BaseEnvironment</text>
+        <text class="s-m clay" x="44" y="150">start(force_build)</text>
+        <text class="s-m clay" x="44" y="174">exec(cmd, cwd, env)</text>
+        <text class="s-m clay" x="44" y="198">upload_file / dir</text>
+        <text class="s-m clay" x="44" y="222">download_file / dir</text>
+        <text class="s-m clay" x="44" y="246">stop(delete)</text>
+        <!-- arrow -->
+        <line x1="232" y1="170" x2="346" y2="170" stroke="#BE5B38" stroke-width="1.6" marker-end="url(#ac1)"/>
+        <text class="s-arr" x="240" y="161">calls the interface</text>
+        <!-- Bridge -->
+        <rect class="svg-coral-2" x="348" y="78" width="296" height="204" rx="14"/>
+        <text class="s-lbl" x="370" y="108" fill="#BE5B38">THE BRIDGE</text>
+        <text class="s-ttl coral" x="370" y="132">ZenMLSandboxEnvironment</text>
+        <text class="s-m" x="370" y="160">implements Harbor's env interface,</text>
+        <text class="s-m" x="370" y="178">delegates every call to a managed</text>
+        <text class="s-m" x="370" y="196">ZenML Sandbox session.</text>
+        <rect class="svg-card" x="370" y="216" width="196" height="32" rx="8"/>
+        <text class="s-m coral" x="384" y="236">translate · don't rebuild</text>
+        <!-- arrow -->
+        <line x1="644" y1="150" x2="748" y2="150" stroke="#BE5B38" stroke-width="1.6" marker-end="url(#ac1)"/>
+        <text class="s-arr" x="654" y="141">delegates to</text>
+        <!-- Session -->
+        <rect class="svg-coral" x="750" y="100" width="226" height="92" rx="12"/>
+        <text class="s-lbl" x="770" y="128" fill="#BE5B38">ZENML</text>
+        <text class="s-ttl" x="770" y="152">SandboxSession</text>
+        <text class="s-m" x="770" y="176">exec · transfer · lifecycle</text>
+        <!-- down arrow -->
+        <line x1="863" y1="192" x2="863" y2="222" stroke="#6E685A" stroke-width="1.6" marker-end="url(#al1)"/>
+        <!-- Sandbox -->
+        <rect class="svg-clay" x="750" y="224" width="226" height="78" rx="12"/>
+        <text class="s-ttl" x="770" y="252">Sandbox</text>
+        <text class="s-m clay" x="770" y="274">runs the task's own image</text>
+        <text class="s-m clay" x="770" y="292">Modal · Local · K8s</text>
+        <!-- result capture -->
+        <rect class="svg-sage" x="24" y="322" width="600" height="58" rx="12"/>
+        <text class="s-ttl" x="44" y="350" fill="#5E7253">Captured by ZenML</text>
+        <text class="s-m" x="44" y="370">job tree → versioned artifact   ·   stdout/stderr → live logs</text>
+        <path d="M 752 286 C 690 318, 662 351, 628 351" fill="none" stroke="#5E7253" stroke-width="1.6" marker-end="url(#as1)"/>
+        <text class="s-arr" x="636" y="312" fill="#5E7253">results flow back</text>
+      </svg>
+    </div>
+
+    <!-- DIAGRAM 2 — SANDBOX COMPONENT -->
+    <div class="dia rise" style="animation-delay:.58s">
+      <div class="dnum">view 2</div>
+      <h3>The Sandbox component — one interface, many backends</h3>
+      <p class="dcap">The Sandbox is a <b>ZenML stack component</b>, like an orchestrator or artifact store. It's an abstraction (<b>BaseSandbox</b>) with swappable flavors. Change the flavor and the same campaign runs on Modal, locally, or your K8s — no code change.</p>
+      <svg viewBox="0 0 1000 440" role="img" aria-label="The sandbox component diagram">
+        <defs>
+          <marker id="ac2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 Z" fill="#BE5B38"/></marker>
+          <marker id="al2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 Z" fill="#6E685A"/></marker>
+        </defs>
+        <!-- stack -->
+        <rect class="svg-stack" x="24" y="24" width="952" height="92" rx="14"/>
+        <text class="s-lbl" x="44" y="50">ZENML STACK</text>
+        <rect class="svg-card" x="44" y="60" width="200" height="40" rx="9"/>
+        <text class="s-m" x="74" y="85">Orchestrator</text>
+        <rect class="svg-card" x="262" y="60" width="200" height="40" rx="9"/>
+        <text class="s-m" x="288" y="85">Artifact Store</text>
+        <rect class="svg-coral" x="480" y="60" width="250" height="40" rx="9"/>
+        <text class="s-m coral" x="500" y="85">Sandbox component ✦</text>
+        <text class="s-m" x="760" y="85" fill="#938d7d">+ more…</text>
+        <!-- arrow to abstraction -->
+        <line x1="600" y1="116" x2="505" y2="150" stroke="#BE5B38" stroke-width="1.6" marker-end="url(#ac2)"/>
+        <!-- abstraction -->
+        <rect class="svg-coral-2" x="360" y="152" width="280" height="76" rx="12"/>
+        <text class="s-lbl" x="382" y="180" fill="#BE5B38">ABSTRACTION</text>
+        <text class="s-ttl coral" x="382" y="204">BaseSandbox</text>
+        <text class="s-m" x="382" y="221">one interface · many backends</text>
+        <!-- arrows to flavors -->
+        <path d="M 460 228 C 360 252, 230 262, 196 288" fill="none" stroke="#BE5B38" stroke-width="1.4" marker-end="url(#ac2)"/>
+        <line x1="500" y1="228" x2="500" y2="288" stroke="#BE5B38" stroke-width="1.4" marker-end="url(#ac2)"/>
+        <path d="M 540 228 C 640 252, 770 262, 804 288" fill="none" stroke="#BE5B38" stroke-width="1.4" marker-end="url(#ac2)"/>
+        <!-- flavors -->
+        <rect class="svg-clay" x="70" y="290" width="252" height="66" rx="12"/>
+        <text class="s-ttl" x="92" y="318">Modal</text>
+        <text class="s-m clay" x="92" y="338">modal.Sandbox + Image</text>
+        <rect class="svg-clay" x="374" y="290" width="252" height="66" rx="12"/>
+        <text class="s-ttl" x="396" y="318">Local</text>
+        <text class="s-m clay" x="396" y="338">local containers</text>
+        <rect class="svg-clay" x="678" y="290" width="252" height="66" rx="12"/>
+        <text class="s-ttl" x="700" y="318">K8s Agent Sandbox</text>
+        <text class="s-m clay" x="700" y="338">on your cluster</text>
+        <!-- to bottom bar -->
+        <line x1="196" y1="356" x2="196" y2="384" stroke="#6E685A" stroke-width="1.4" marker-end="url(#al2)"/>
+        <line x1="500" y1="356" x2="500" y2="384" stroke="#6E685A" stroke-width="1.4" marker-end="url(#al2)"/>
+        <line x1="804" y1="356" x2="804" y2="384" stroke="#6E685A" stroke-width="1.4" marker-end="url(#al2)"/>
+        <rect class="svg-sage" x="70" y="386" width="860" height="42" rx="12"/>
+        <text class="s-m" x="92" y="412" fill="#5E7253">each flavor → SandboxSession → a sandbox running the task's own image</text>
+      </svg>
+    </div>
+
+    <!-- DIAGRAM 3 — ALL TOGETHER -->
+    <div class="dia rise" style="animation-delay:.64s">
+      <div class="dnum">view 3</div>
+      <h3>All together — three planes</h3>
+      <p class="dcap">Govern centrally, orchestrate the matrix, execute on your substrate. The pipeline spins sandboxes through the component; the job tree and rewards come back through the steps, and artifacts &amp; lineage land in the control plane — <b>one place to see and govern every eval.</b></p>
+      <svg viewBox="0 0 1000 472" role="img" aria-label="Full architecture, three planes">
+        <defs>
+          <marker id="al3" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L8,4.5 L0,9 Z" fill="#6E685A"/></marker>
+          <marker id="as3" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0,0 L9,5 L0,10 Z" fill="#5E7253"/></marker>
+          <marker id="ac3" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 Z" fill="#BE5B38"/></marker>
+        </defs>
+        <!-- control plane -->
+        <rect class="svg-coral" x="24" y="20" width="952" height="104" rx="14"/>
+        <text class="s-ttl coral" x="44" y="48">Control plane · ZenML server + dashboard</text>
+        <rect class="svg-card" x="44" y="64" width="168" height="42" rx="9"/><text class="s-m" x="64" y="90">Lineage</text>
+        <rect class="svg-card" x="224" y="64" width="168" height="42" rx="9"/><text class="s-m" x="244" y="90">Leaderboard</text>
+        <rect class="svg-card" x="404" y="64" width="180" height="42" rx="9"/><text class="s-m" x="424" y="90">Resource pools</text>
+        <rect class="svg-card" x="596" y="64" width="180" height="42" rx="9"/><text class="s-m" x="616" y="90">Secrets · RBAC</text>
+        <rect class="svg-card" x="788" y="64" width="168" height="42" rx="9"/><text class="s-m" x="808" y="90">Metadata</text>
+        <!-- orchestration -->
+        <rect class="svg-stack" x="24" y="162" width="952" height="124" rx="14"/>
+        <text class="s-ttl" x="44" y="190">Orchestration · dynamic pipeline</text>
+        <rect class="svg-card" x="44" y="206" width="176" height="58" rx="11"/><text class="s-m" x="66" y="240">build_matrix</text>
+        <rect class="svg-coral-2" x="262" y="206" width="246" height="58" rx="11"/>
+        <text class="s-m coral" x="282" y="230">run_harbor_job  (.map)</text>
+        <text class="s-m" x="282" y="250" font-size="10">Harbor kernel + bridge</text>
+        <rect class="svg-card" x="550" y="206" width="190" height="58" rx="11"/><text class="s-m" x="570" y="240">parse_harbor_job</text>
+        <rect class="svg-card" x="782" y="206" width="174" height="58" rx="11"/><text class="s-m" x="802" y="240">build_report</text>
+        <line x1="220" y1="235" x2="258" y2="235" stroke="#BE5B38" stroke-width="1.4" marker-end="url(#ac3)"/>
+        <line x1="508" y1="235" x2="546" y2="235" stroke="#BE5B38" stroke-width="1.4" marker-end="url(#ac3)"/>
+        <line x1="740" y1="235" x2="778" y2="235" stroke="#BE5B38" stroke-width="1.4" marker-end="url(#ac3)"/>
+        <!-- execution -->
+        <rect class="svg-clay" x="24" y="324" width="952" height="124" rx="14"/>
+        <text class="s-ttl" x="44" y="352">Execution substrate · Sandbox component</text>
+        <rect class="svg-card" x="44" y="368" width="230" height="60" rx="11"/>
+        <text class="s-m" x="64" y="398">flavor · Modal / K8s</text>
+        <rect class="svg-card" x="330" y="368" width="150" height="60" rx="11"/><text class="s-m" x="350" y="392">sandbox</text><text class="s-m clay" x="350" y="410" font-size="10">task image</text>
+        <rect class="svg-card" x="496" y="368" width="150" height="60" rx="11"/><text class="s-m" x="516" y="392">sandbox</text><text class="s-m clay" x="516" y="410" font-size="10">task image</text>
+        <rect class="svg-card" x="662" y="368" width="150" height="60" rx="11"/><text class="s-m" x="682" y="392">sandbox</text><text class="s-m clay" x="682" y="410" font-size="10">task image</text>
+        <line x1="274" y1="398" x2="328" y2="398" stroke="#6E685A" stroke-width="1.4" marker-end="url(#al3)"/>
+        <line x1="480" y1="398" x2="494" y2="398" stroke="#6E685A" stroke-width="1.4" marker-end="url(#al3)"/>
+        <line x1="646" y1="398" x2="660" y2="398" stroke="#6E685A" stroke-width="1.4" marker-end="url(#al3)"/>
+        <!-- orchestrate downward: B -> C -->
+        <line x1="360" y1="286" x2="360" y2="322" stroke="#6E685A" stroke-width="1.6" marker-end="url(#al3)"/>
+        <text class="s-arr" x="370" y="309">spin sandboxes · exec ↓</text>
+        <!-- capture upward, step by step: C -> B (results) then B -> A (record) -->
+        <line x1="690" y1="322" x2="690" y2="288" stroke="#5E7253" stroke-width="1.6" marker-end="url(#as3)"/>
+        <text class="s-arr" x="702" y="309" fill="#5E7253">job tree + rewards ↑</text>
+        <line x1="690" y1="160" x2="690" y2="126" stroke="#5E7253" stroke-width="1.6" marker-end="url(#as3)"/>
+        <text class="s-arr" x="702" y="147" fill="#5E7253">artifacts · lineage · leaderboard ↑</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- ============ UNDER THE HOOD ============ -->
+  <section class="deep">
+    <div class="eyebrow rise" style="animation-delay:.46s">under the hood</div>
+    <h2 class="rise" style="animation-delay:.50s">One <em>interface</em>, not a rewrite</h2>
+    <p class="dsub rise" style="animation-delay:.54s">ZenML implements Harbor's <code style="font-family:var(--mono);font-size:13px">BaseEnvironment</code>. Harbor thinks it's talking to a normal environment; every call is actually a managed ZenML Sandbox session — which is how observability and governance come for free.</p>
+
+    <div class="dgrid">
+      <div class="panel rise" style="animation-delay:.58s">
+        <h4>The environment bridge</h4>
+        <div class="psub">Harbor <code style="font-family:var(--mono);font-size:11.5px">BaseEnvironment</code> → ZenML <code style="font-family:var(--mono);font-size:11.5px">SandboxSession</code></div>
+        <div class="map">
+          <div class="maprow"><span class="from">start(force_build)</span><span class="arr">→</span><span class="to"><b>create_session()</b> · ensure /logs · replay Dockerfile</span></div>
+          <div class="maprow"><span class="from">exec(cmd, cwd, env)</span><span class="arr">→</span><span class="to"><b>session.exec(["bash","-c",…])</b> · stdout/stderr → ZenML log source</span></div>
+          <div class="maprow"><span class="from">upload_file / upload_dir</span><span class="arr">→</span><span class="to"><b>session.upload_file</b> (dirs tar'd)</span></div>
+          <div class="maprow"><span class="from">download_file / download_dir</span><span class="arr">→</span><span class="to"><b>session.download_file</b> → versioned artifact</span></div>
+          <div class="maprow"><span class="from">stop(delete)</span><span class="arr">→</span><span class="to"><b>session.destroy() / close()</b></span></div>
+        </div>
+        <div class="cap">Because Harbor pulls its results out via <b>download</b>, the whole job tree passes through ZenML on the way out — so it lands as a versioned artifact, not a file on a disappearing pod.</div>
+      </div>
+
+      <div class="panel rise" style="animation-delay:.64s">
+        <h4>Honoring the task's image</h4>
+        <div class="psub">task <code style="font-family:var(--mono);font-size:11.5px">environment/Dockerfile</code> → sandbox, at runtime</div>
+        <div class="map">
+          <div class="maprow"><span class="from">FROM python:3.12-slim</span><span class="arr">→</span><span class="to"><b>base_image</b> — pulled by the flavor</span></div>
+          <div class="maprow"><span class="from">WORKDIR /app</span><span class="arr">→</span><span class="to"><b>mkdir</b> + default cwd for every exec</span></div>
+          <div class="maprow"><span class="from">RUN …</span><span class="arr">→</span><span class="to"><b>exec()</b> replayed right after start</span></div>
+          <div class="maprow"><span class="from">COPY src dst</span><span class="arr">→</span><span class="to"><b>upload</b> from the build context</span></div>
+        </div>
+        <div class="cap">The trial runs in the <b>task's own image</b> — the component pulls it and replays setup via the session. <b>No ZenML dependencies are baked into eval images.</b></div>
+      </div>
+    </div>
+
+    <p class="dsub" style="margin:30px 0 16px">In code it's about ten lines — a generic fan-out you write once (top), and the one <code style="font-family:var(--mono);font-size:13px">import_path</code> that routes Harbor through the bridge (bottom):</p>
+    <div class="code rise" style="animation-delay:.70s">
+      <div class="bar"><i></i><i></i><i></i><span>① the campaign · harbor_eval_campaign.py　　② the trial · run_harbor_job.py</span></div>
+<pre><span class="c"># Fan out one tracked, retryable step per (agent × model × task)</span>
+job_dirs  = run_harbor_job.<span class="k">map</span>(spec=matrix)
+summaries = parse_harbor_job.<span class="k">map</span>(job_dir=job_dirs, spec=matrix)
+<span class="k">return</span> build_report(job_summaries=summaries)   <span class="c"># → CampaignReport + HTML</span>
+
+<span class="c"># Inside run_harbor_job — Harbor runs *through* the bridge:</span>
+config = <span class="k">JobConfig</span>(
+    tasks=[<span class="k">TaskConfig</span>(path=task)],
+    agents=[<span class="k">AgentConfig</span>(name=agent, model_name=model)],
+    environment=<span class="k">EnvironmentConfig</span>(
+        import_path=<span class="s">"zenml_sandbox_env:ZenMLSandboxEnvironment"</span>),  <span class="c"># ← the bridge</span>
+    verifier=<span class="k">VerifierConfig</span>(),
+)
+<span class="k">await</span> Job.create(config).run()   <span class="c"># trial executes in the task's own image</span></pre>
+    </div>
+  </section>
+
+
+</div>
+</body>
+</html>
