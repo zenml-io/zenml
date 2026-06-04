@@ -3,3 +3,8 @@ root: .
 structure:
   readme: README.md
   summary: toc.md
+
+redirects:
+  kitaru: kitaru-client.md
+  kitaru/client: kitaru-client.md
+  kitaru/example-usages: kitaru-example-usages.md
