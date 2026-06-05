@@ -302,8 +302,6 @@ class ModalStepOperator(BaseStepOperator):
             environment: The environment variables for the step.
 
         Raises:
-            StackComponentInterfaceError: If Modal authentication settings are
-                incomplete.
             ValueError: If no container registry is found in the stack or the
                 entrypoint command is empty.
         """
