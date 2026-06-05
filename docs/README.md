@@ -95,6 +95,7 @@ python link_checker.py --dir docs/book --replace-links --url-mapping user-guide=
    - Validates links via HTTP requests
    - Parallel validation for better performance
    - Detailed error reporting
+   - Uses narrow default CI policies for external domains that block automated checks. These policies are status-specific: known bot-hostile documentation domains may accept `403`, and known rate-limited domains may soft-pass `429`, while statuses such as `404`, `410`, and `5xx` still fail.
 
 ### Requirements
 
