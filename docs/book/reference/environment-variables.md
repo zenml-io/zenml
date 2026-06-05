@@ -15,11 +15,15 @@ export ZENML_LOGGING_VERBOSITY=INFO
 
 Choose from `INFO`, `WARN`, `ERROR`, `CRITICAL`, `DEBUG`.
 
-## Logging format
+## Console logging format
 
 ```bash
-export ZENML_LOGGING_FORMAT='%(asctime)s %(message)s'
+export ZENML_CONSOLE_LOGGING_FORMAT=console
 ```
+
+Choose from `console` (default), `json`, or any valid Python `%`-style logging format string such as `%(asctime)s - %(message)s` for custom console output. The `console` format uses a default compact layout for client-side `INFO+` logs and full structured text layout for `DEBUG` and server logs. The `json` format emits JSON formatted console/stdout logs.
+
+This controls terminal log formatting only; stored logs keep their raw message and structured metadata. The older `ZENML_LOGGING_FORMAT` environment variable is still supported as a deprecated alias.
 
 See [this page](https://docs.zenml.io/concepts/steps_and_pipelines/logging) for more information.
 
@@ -83,7 +87,8 @@ export ZENML_ENABLE_RICH_TRACEBACK=true
 
 ## Disable colorful logging
 
-If you wish to disable colorful logging, set the following environment variable:
+Console logs use colors by default. If you wish to disable colorful logging,
+set the following environment variable:
 
 ```bash
 ZENML_LOGGING_COLORS_DISABLED=true
@@ -104,6 +109,46 @@ my_pipeline = my_pipeline.with_options(
     settings={"docker": docker_settings}
 )
 ```
+
+## Server OpenTelemetry export
+
+Set `ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT` to export ZenML server traces, metrics, and logs to an OpenTelemetry-compatible backend using OTLP/HTTP. The standard `OTEL_EXPORTER_OTLP_ENDPOINT` environment variable is also supported as a fallback:
+
+```bash
+export ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+# OR
+# export OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+```
+
+The endpoint should be the base OTLP/HTTP endpoint. ZenML appends `/v1/traces`, `/v1/metrics`, and `/v1/logs` for each signal. Standard per-signal OTLP/HTTP endpoint variables are also supported and take precedence:
+
+```bash
+export OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://otel-collector:4318/v1/traces
+export OTEL_EXPORTER_OTLP_METRICS_ENDPOINT=http://otel-collector:4318/v1/metrics
+export OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://otel-collector:4318/v1/logs
+```
+
+You can use the matching ZenML-specific names instead: `ZENML_SERVER_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`, `ZENML_SERVER_OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`, and `ZENML_SERVER_OTEL_EXPORTER_OTLP_LOGS_ENDPOINT`.
+
+If no base or per-signal endpoint is set, server OpenTelemetry instrumentation is disabled.
+
+Each signal is enabled by default when the endpoint is configured. You can disable individual signals with:
+
+```bash
+export ZENML_SERVER_OTEL_TRACES_ENABLED=false
+export ZENML_SERVER_OTEL_METRICS_ENABLED=false
+export ZENML_SERVER_OTEL_LOGS_ENABLED=false
+```
+
+You can also customize the service name reported in OpenTelemetry resource attributes. The standard `OTEL_SERVICE_NAME` environment variable is supported as well as a fallback:
+
+```bash
+export ZENML_SERVER_OTEL_SERVICE_NAME=zenml-server
+# OR
+# export OTEL_SERVICE_NAME=zenml-server
+```
+
+Standard OTLP headers, timeout, compression, trace sampler, and resource attribute environment variables are handled by the OpenTelemetry Python SDK and OTLP/HTTP exporters where supported. OTLP/gRPC protocol environment variables are not supported because ZenML configures OTLP/HTTP exporters directly. You can read more about the OpenTelemetry environment variables and SDK configuration [here](https://opentelemetry.io/docs/languages/sdk-configuration/).
 
 ## Disable stack validation
 

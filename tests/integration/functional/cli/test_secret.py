@@ -19,6 +19,7 @@ import os
 import pytest
 from click.testing import CliRunner
 
+from tests.cli_runner_utils import cli_runner
 from tests.integration.functional.cli.utils import (
     capture_clean_stdout,
     cleanup_secrets,
@@ -38,7 +39,7 @@ secret_export_command = cli.commands["secret"].commands["export"]
 
 def test_create_secret():
     """Test that creating a new secret succeeds."""
-    runner = CliRunner()
+    runner = cli_runner()
     with cleanup_secrets() as secret_name:
         result = runner.invoke(
             secret_create_command,
@@ -54,7 +55,7 @@ def test_create_secret():
 
 def test_create_private_secret():
     """Test creating private secrets."""
-    runner = CliRunner()
+    runner = cli_runner()
     with cleanup_secrets() as secret_name:
         result = runner.invoke(
             secret_create_command,
@@ -70,7 +71,7 @@ def test_create_private_secret():
 
 def test_create_secret_with_values():
     """Tests creating a secret with values."""
-    runner = CliRunner()
+    runner = cli_runner()
     with cleanup_secrets() as secret_name:
         result = runner.invoke(
             secret_create_command,
@@ -144,7 +145,7 @@ def test_create_secret_dry_run_blocks_interactive():
 
 def test_list_secret_works():
     """Test that the secret list command works."""
-    runner = CliRunner()
+    runner = cli_runner()
     with cleanup_secrets() as secret_name:
         with capture_clean_stdout() as buffer1:
             result1 = runner.invoke(secret_list_command)
@@ -168,14 +169,14 @@ def test_list_secret_works():
 
 def test_get_secret_works():
     """Test that the secret get command works."""
-    runner = CliRunner()
+    runner = cli_runner()
     with cleanup_secrets() as secret_name:
         result1 = runner.invoke(
             secret_get_command,
             [secret_name],
         )
         assert result1.exit_code != 0
-        assert "Could not find a secret" in result1.output
+        assert "Could not find a secret" in result1.stderr
 
         runner.invoke(
             secret_create_command,
@@ -193,7 +194,7 @@ def test_get_secret_works():
 
 def test_get_secret_with_prefix_works():
     """Test that the secret get command works with a prefix."""
-    runner = CliRunner()
+    runner = cli_runner()
 
     with cleanup_secrets() as secret_name_prefix:
         result1 = runner.invoke(
@@ -201,7 +202,7 @@ def test_get_secret_with_prefix_works():
             [secret_name_prefix],
         )
         assert result1.exit_code != 0
-        assert "Could not find a secret" in result1.output
+        assert "Could not find a secret" in result1.stderr
 
         runner.invoke(
             secret_create_command,
@@ -223,28 +224,28 @@ def test_get_secret_with_prefix_works():
 
 def test_get_private_secret():
     """Test that the secret get command works with a private secret."""
-    runner = CliRunner()
+    runner = cli_runner()
     with cleanup_secrets() as secret_name:
         result1 = runner.invoke(
             secret_get_command,
             [secret_name],
         )
         assert result1.exit_code != 0
-        assert "Could not find a secret" in result1.output
+        assert "Could not find a secret" in result1.stderr
 
         result1 = runner.invoke(
             secret_get_command,
             [secret_name, "--private", "true"],
         )
         assert result1.exit_code != 0
-        assert "Could not find a secret" in result1.output
+        assert "Could not find a secret" in result1.stderr
 
         result1 = runner.invoke(
             secret_get_command,
             [secret_name, "--private", "false"],
         )
         assert result1.exit_code != 0
-        assert "Could not find a secret" in result1.output
+        assert "Could not find a secret" in result1.stderr
 
         runner.invoke(
             secret_create_command,
@@ -277,7 +278,7 @@ def test_get_private_secret():
             [secret_name, "--private", "false"],
         )
         assert result3.exit_code != 0
-        assert "Could not find a secret" in result3.output
+        assert "Could not find a secret" in result3.stderr
 
 
 def test_get_secret_outputs_json_error_in_machine_mode():
@@ -350,12 +351,12 @@ def _check_deleting_nonexistent_secret_fails(runner, secret_name):
         [secret_name, "-y"],
     )
     assert result1.exit_code != 0
-    assert "not exist" in result1.output
+    assert "not exist" in result1.stderr
 
 
 def test_delete_secret_works():
     """Test that the secret delete command works."""
-    runner = CliRunner()
+    runner = cli_runner()
     with cleanup_secrets() as secret_name:
         _check_deleting_nonexistent_secret_fails(runner, secret_name)
 
@@ -397,7 +398,7 @@ def test_delete_secret_auto_confirms_in_machine_mode():
 
 def test_rename_secret_works():
     """Test that the secret rename command works."""
-    runner = CliRunner()
+    runner = cli_runner()
 
     with cleanup_secrets() as secret_name:
         with cleanup_secrets() as new_secret_name:
@@ -406,7 +407,7 @@ def test_rename_secret_works():
                 [secret_name, "-n", new_secret_name],
             )
             assert result1.exit_code != 0
-            assert "not exist" in result1.output
+            assert "not exist" in result1.stderr
 
             runner.invoke(
                 secret_create_command,
@@ -433,12 +434,12 @@ def test_rename_secret_works():
                 [new_secret_name, "-n", "name"],
             )
             assert result4.exit_code != 0
-            assert "cannot be called" in result4.output
+            assert "cannot be called" in result4.stderr
 
 
 def test_update_secret_works():
     """Test that the secret update command works."""
-    runner = CliRunner()
+    runner = cli_runner()
     client = Client()
 
     with cleanup_secrets() as secret_name:
@@ -447,7 +448,7 @@ def test_update_secret_works():
             [secret_name, "--test_value=aria", "--test_value2=axl"],
         )
         assert result1.exit_code != 0
-        assert "not exist" in result1.output
+        assert "not exist" in result1.stderr
 
         runner.invoke(
             secret_create_command,
@@ -504,7 +505,7 @@ def test_update_secret_works():
 
 def test_export_import_secret():
     """Test that exporting and importing a secret works."""
-    runner = CliRunner()
+    runner = cli_runner()
     with cleanup_secrets() as secret_name:
         # Create a secret
         result = runner.invoke(

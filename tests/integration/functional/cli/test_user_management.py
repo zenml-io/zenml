@@ -15,6 +15,7 @@ import json
 
 from click.testing import CliRunner
 
+from tests.cli_runner_utils import cli_runner
 from tests.integration.functional.cli.utils import (
     create_sample_user,
     sample_name,
@@ -32,7 +33,7 @@ from zenml.enums import StoreType
 
 def test_create_user_with_password_succeeds() -> None:
     """Test that creating a new user succeeds."""
-    runner = CliRunner()
+    runner = cli_runner()
     result = runner.invoke(
         user_create_command,
         [sample_name(), "--password=thesupercat"],
@@ -43,7 +44,7 @@ def test_create_user_with_password_succeeds() -> None:
 def test_create_user_that_exists_fails() -> None:
     """Test that creating a user which exists already, fails."""
     u = create_sample_user()
-    runner = CliRunner()
+    runner = cli_runner()
     result = runner.invoke(
         user_create_command,
         [u.name, "--password=thesupercat"],
@@ -69,7 +70,7 @@ def test_create_user_fails_fast_in_machine_mode_without_password() -> None:
 def test_update_user_with_new_name_succeeds() -> None:
     """Test that creating a new user succeeds."""
     u = create_sample_user()
-    runner = CliRunner()
+    runner = cli_runner()
     result = runner.invoke(
         user_update_command,
         [u.name, f"--name={sample_name()}"],
@@ -80,7 +81,7 @@ def test_update_user_with_new_name_succeeds() -> None:
 def test_update_user_with_new_full_name_succeeds() -> None:
     """Test that creating a new user succeeds."""
     u = create_sample_user()
-    runner = CliRunner()
+    runner = cli_runner()
     result = runner.invoke(
         user_update_command,
         [u.name, "--full_name='Aria Vanquisher of Treats'"],
@@ -91,7 +92,7 @@ def test_update_user_with_new_full_name_succeeds() -> None:
 def test_update_user_with_new_email() -> None:
     """Test that updating the personal details for an account only works locally."""
     u = create_sample_user()
-    runner = CliRunner()
+    runner = cli_runner()
     result = runner.invoke(
         user_update_command,
         [u.name, "--email='aria@catnip.io'"],
@@ -105,7 +106,7 @@ def test_update_user_with_new_email() -> None:
 def test_delete_user_succeeds() -> None:
     """Test that deleting a user succeeds."""
     u = create_sample_user()
-    runner = CliRunner()
+    runner = cli_runner()
     result = runner.invoke(
         user_delete_command,
         [u.name],

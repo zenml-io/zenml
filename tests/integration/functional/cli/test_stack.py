@@ -21,6 +21,7 @@ from uuid import UUID, uuid4
 import pytest
 from click.testing import CliRunner
 
+from tests.cli_runner_utils import cli_runner
 from tests.integration.functional.cli.utils import capture_clean_stdout
 from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStore,
@@ -88,7 +89,7 @@ def _create_local_image_builder(client: Client):
 
 def test_describe_stack_contains_local_stack() -> None:
     """Test that the stack describe command contains the default local stack."""
-    runner = CliRunner()
+    runner = cli_runner()
     describe_command = cli.commands["stack"].commands["describe"]
     result = runner.invoke(describe_command)
     assert result.exit_code == 0
@@ -100,7 +101,7 @@ def test_describe_stack_bad_input_fails(
     not_a_stack: str,
 ) -> None:
     """Test if the stack describe fails when passing in bad parameters."""
-    runner = CliRunner()
+    runner = cli_runner()
     describe_command = cli.commands["stack"].commands["describe"]
     result = runner.invoke(describe_command, [not_a_stack])
     assert result.exit_code == 1
@@ -120,7 +121,7 @@ def test_update_stack_update_on_default_fails(clean_client: "Client") -> None:
         configuration=new_artifact_store.config.model_dump(),
     )
 
-    runner = CliRunner()
+    runner = cli_runner()
     update_command = cli.commands["stack"].commands["update"]
     result = runner.invoke(
         update_command, ["default", "-a", new_artifact_store.name]
@@ -164,7 +165,7 @@ def test_update_stack_active_stack_succeeds(clean_client: "Client") -> None:
         component_type=new_artifact_store.type,
         configuration=new_artifact_store.config.model_dump(),
     )
-    runner = CliRunner()
+    runner = cli_runner()
 
     update_command = cli.commands["stack"].commands["update"]
 
@@ -251,7 +252,7 @@ def test_updating_non_active_stack_succeeds(clean_client: "Client") -> None:
         configuration=orchestrator.config.model_dump(),
     )
 
-    runner = CliRunner()
+    runner = cli_runner()
 
     stack_update_command = cli.commands["stack"].commands["update"]
 
@@ -356,7 +357,7 @@ def test_update_stack_adding_component_succeeds(
         configuration=local_image_builder.config.model_dump(),
     )
 
-    runner = CliRunner()
+    runner = cli_runner()
     update_command = cli.commands["stack"].commands["update"]
     result = runner.invoke(update_command, ["-i", local_image_builder.name])
 
@@ -404,7 +405,7 @@ def test_update_stack_adding_to_default_stack_fails(
         configuration=local_image_builder.config.model_dump(),
     )
 
-    runner = CliRunner()
+    runner = cli_runner()
     update_command = cli.commands["stack"].commands["update"]
     result = runner.invoke(
         update_command, ["default", "-i", local_image_builder_model.name]
@@ -428,7 +429,7 @@ def test_update_stack_nonexistent_stack_fails(clean_client: "Client") -> None:
         configuration=local_image_builder.config.model_dump(),
     )
 
-    runner = CliRunner()
+    runner = cli_runner()
     update_command = cli.commands["stack"].commands["update"]
     result = runner.invoke(
         update_command, ["not_a_stack", "-i", local_image_builder_model.name]
@@ -440,7 +441,7 @@ def test_update_stack_nonexistent_stack_fails(clean_client: "Client") -> None:
 
 def test_rename_stack_nonexistent_stack_fails(clean_client: "Client") -> None:
     """Test stack rename of nonexistent stack fails."""
-    runner = CliRunner()
+    runner = cli_runner()
     rename_command = cli.commands["stack"].commands["rename"]
     result = runner.invoke(rename_command, ["not_a_stack", "a_new_stack"])
     assert result.exit_code == 1
@@ -449,7 +450,7 @@ def test_rename_stack_nonexistent_stack_fails(clean_client: "Client") -> None:
 def test_rename_stack_new_name_with_existing_name_fails(
     clean_client: "Client",
 ) -> None:
-    runner = CliRunner()
+    runner = cli_runner()
     rename_command = cli.commands["stack"].commands["rename"]
     result = runner.invoke(rename_command, ["not_a_stack", "default"])
     assert result.exit_code == 1
@@ -457,7 +458,7 @@ def test_rename_stack_new_name_with_existing_name_fails(
 
 def test_rename_stack_default_stack_fails(clean_client: "Client") -> None:
     """Test stack rename of default stack fails."""
-    runner = CliRunner()
+    runner = cli_runner()
     rename_command = cli.commands["stack"].commands["rename"]
     result = runner.invoke(rename_command, ["default", "axls_new_stack"])
     assert result.exit_code == 1
@@ -486,7 +487,7 @@ def test_rename_stack_active_stack_succeeds(clean_client: "Client") -> None:
     )
     clean_client.activate_stack(new_stack.id)
 
-    runner = CliRunner()
+    runner = cli_runner()
     rename_command = cli.commands["stack"].commands["rename"]
     result = runner.invoke(rename_command, ["arias_stack", "axls_stack"])
     assert result.exit_code == 0
@@ -515,7 +516,7 @@ def test_rename_stack_non_active_stack_succeeds(
         },
     )
 
-    runner = CliRunner()
+    runner = cli_runner()
     rename_command = cli.commands["stack"].commands["rename"]
     result = runner.invoke(rename_command, ["arias_stack", "axls_stack"])
     assert result.exit_code == 0
@@ -526,7 +527,7 @@ def test_remove_component_from_nonexistent_stack_fails(
     clean_client: "Client",
 ) -> None:
     """Test stack remove-component of nonexistent stack fails."""
-    runner = CliRunner()
+    runner = cli_runner()
     remove_command = cli.commands["stack"].commands["remove-component"]
     result = runner.invoke(remove_command, ["not_a_stack", "-i"])
     assert result.exit_code == 1
@@ -561,7 +562,7 @@ def test_remove_component_core_component_fails(clean_client: "Client") -> None:
         },
     )
 
-    runner = CliRunner()
+    runner = cli_runner()
     remove_command = cli.commands["stack"].commands["remove-component"]
     result = runner.invoke(remove_command, [new_stack.name, "-o"])
     assert result.exit_code != 0
@@ -611,7 +612,7 @@ def test_remove_component_non_core_component_succeeds(
     )
     clean_client.activate_stack(new_stack.id)
 
-    runner = CliRunner()
+    runner = cli_runner()
     remove_command = cli.commands["stack"].commands["remove-component"]
     result = runner.invoke(remove_command, [new_stack.name, "-i"])
     assert result.exit_code == 0
@@ -640,7 +641,7 @@ def test_delete_stack_with_flag_succeeds(clean_client: "Client") -> None:
             StackComponentType.ORCHESTRATOR: orchestrator_name,
         },
     )
-    runner = CliRunner()
+    runner = cli_runner()
     delete_command = cli.commands["stack"].commands["delete"]
     result = runner.invoke(delete_command, [new_stack.name, "-y"])
     assert result.exit_code == 0
@@ -709,7 +710,7 @@ def test_delete_stack_default_stack_fails(clean_client: "Client") -> None:
     )
     clean_client.activate_stack(new_stack.name)
 
-    runner = CliRunner()
+    runner = cli_runner()
     delete_command = cli.commands["stack"].commands["delete"]
     result = runner.invoke(delete_command, ["default", "-y"])
     assert result.exit_code == 1
@@ -747,7 +748,7 @@ def test_delete_stack_recursively_with_flag_succeeds(
         },
     )
 
-    runner = CliRunner()
+    runner = cli_runner()
     delete_command = cli.commands["stack"].commands["delete"]
     result = runner.invoke(delete_command, [new_stack.name, "-y", "-r"])
     assert result.exit_code == 0
@@ -767,7 +768,7 @@ def test_delete_stack_recursively_with_flag_succeeds(
 
 def test_stack_export(clean_client: "Client") -> None:
     """Test exporting default stack succeeds."""
-    runner = CliRunner()
+    runner = cli_runner()
     export_command = cli.commands["stack"].commands["export"]
     result = runner.invoke(export_command, ["default", "default.yaml"])
     assert result.exit_code == 0
@@ -806,7 +807,7 @@ def test_stack_export_delete_import(clean_client: "Client") -> None:
     # export stack
     file_name = "arias_new_stack.yaml"
 
-    runner = CliRunner()
+    runner = cli_runner()
     export_command = cli.commands["stack"].commands["export"]
     result = runner.invoke(export_command, [new_stack_model.name, file_name])
     assert result.exit_code == 0
@@ -867,7 +868,7 @@ def test_stack_export_import_reuses_components(clean_client: "Client") -> None:
     # export stack
     file_name = "arias_new_stack.yaml"
 
-    runner = CliRunner()
+    runner = cli_runner()
     export_command = cli.commands["stack"].commands["export"]
     result = runner.invoke(export_command, [stack_name, file_name])
     assert result.exit_code == 0

@@ -35,7 +35,7 @@ def upgrade() -> None:
     op.create_table(
         "tag",
         sa.Column("color", sa.VARCHAR(length=255), nullable=False),
-        sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.Column("updated", sa.DateTime(), nullable=False),
         sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
@@ -76,10 +76,10 @@ def upgrade() -> None:
 
     op.create_table(
         "tag_resource",
-        sa.Column("tag_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
-        sa.Column("resource_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("tag_id", sa.Uuid(), nullable=False),
+        sa.Column("resource_id", sa.Uuid(), nullable=False),
         sa.Column("resource_type", sa.VARCHAR(length=255), nullable=False),
-        sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.Column("updated", sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(
