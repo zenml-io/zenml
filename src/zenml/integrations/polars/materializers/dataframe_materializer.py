@@ -17,8 +17,8 @@ import os
 from typing import Any, ClassVar, Tuple, Type, Union
 
 import polars as pl
-import pyarrow as pa  # type: ignore
-import pyarrow.parquet as pq  # type: ignore
+import pyarrow as pa
+import pyarrow.parquet as pq
 
 from zenml.enums import ArtifactType
 from zenml.materializers.base_materializer import BaseMaterializer

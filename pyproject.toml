@@ -429,3 +429,11 @@ ignore_missing_imports = true
 module = ["mlx.core.*"]  # workaround for failing mypy stub parsing (mlx==0.29.4 version)
 follow_imports = 'skip'
 follow_imports_for_stubs = true
+
+# pyarrow 24.0.0 ships a `py.typed` marker but leaves functions like
+# `read_table`/`write_table` unannotated, so a typed call site sees them as
+# untyped calls. Skip following pyarrow to keep behavior stable across versions.
+[[tool.mypy.overrides]]
+module = ["pyarrow.*"]
+ignore_missing_imports = true
+follow_imports = "skip"

@@ -123,8 +123,8 @@ class NumpyMaterializer(BaseMaterializer):
             )
             try:
                 # Import old materializer dependencies
-                import pyarrow as pa  # type: ignore
-                import pyarrow.parquet as pq  # type: ignore
+                import pyarrow as pa
+                import pyarrow.parquet as pq
 
                 from zenml.utils import yaml_utils
 

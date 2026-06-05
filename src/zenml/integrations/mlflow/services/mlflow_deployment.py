@@ -220,8 +220,10 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
         """Start the service.
 
         Raises:
-            ValueError: if the active stack doesn't have an MLflow experiment
+            ValueError: If the active stack doesn't have an MLflow experiment
                 tracker
+            RuntimeError: If the MLflow MLServer backend is enabled and MLflow
+                is version 3.13 or above.
         """
         logger.info(
             "Starting MLflow prediction service as blocking "
@@ -241,6 +243,15 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
             # to run the deploy the model on the local running environment
             if int(mlflow_version[0]) >= 2:
                 backend_kwargs["env_manager"] = "local"
+            # Mlflow 3.13 removed the `enable_mlserver` argument from
+            # `PyFuncBackend.serve`.
+            if (int(mlflow_version[0]), int(mlflow_version[1])) < (3, 13):
+                serve_kwargs["enable_mlserver"] = self.config.mlserver
+            elif self.config.mlserver:
+                raise RuntimeError(
+                    "The MLflow MLServer backend is not supported with MLflow "
+                    "3.13 and above. Set `mlserver=False` or downgrade MLflow."
+                )
             backend = PyFuncBackend(  # type: ignore[no-untyped-call, unused-ignore]
                 config={},
                 no_conda=True,
@@ -260,7 +271,6 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
                 model_uri=self.config.model_uri,
                 port=self.endpoint.status.port,
                 host="localhost",
-                enable_mlserver=self.config.mlserver,
                 **serve_kwargs,
             )
         except KeyboardInterrupt:
