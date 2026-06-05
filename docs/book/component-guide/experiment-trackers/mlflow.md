@@ -193,13 +193,17 @@ tracking_url = trainer_step.run_metadata["experiment_tracker_url"].value
 print(tracking_url)
 ```
 
-This will be the URL of the corresponding experiment in your deployed MLflow instance, or a link to the corresponding mlflow experiment file if you are using local MLflow.
+This will be the URL of the corresponding experiment in your deployed MLflow instance, or the local MLflow tracking URI if you are using ZenML's default local MLflow configuration.
 
 {% hint style="info" %}
-If you are using local MLflow, you can use the `mlflow ui` command to start MLflow at [`localhost:5000`](http://localhost:5000/) where you can then explore the UI in your browser.
+If you are using ZenML's default local MLflow configuration, the MLflow tracking metadata is stored in a SQLite database inside your active local artifact store, and MLflow artifacts are stored next to it. You can use the `mlflow ui` command to start MLflow at [`localhost:5000`](http://localhost:5000/) where you can then explore the UI in your browser.
+
+You can find the active artifact store path with `zenml artifact-store describe`.
 
 ```bash
-mlflow ui --backend-store-uri <TRACKING_URL>
+mlflow ui \
+  --backend-store-uri sqlite:///<PATH_TO_LOCAL_ARTIFACT_STORE>/mlflow.db \
+  --default-artifact-root file:<PATH_TO_LOCAL_ARTIFACT_STORE>/mlflow_artifacts
 ```
 {% endhint %}
 
