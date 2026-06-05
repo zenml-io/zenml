@@ -1018,21 +1018,22 @@ class BaseFilter(BaseModel):
             The query with sorting applied.
         """
         from sqlalchemy import asc, desc
+        from sqlmodel import col
 
         column, operand = self.sorting_params
 
         if operand == SorterOps.DESCENDING:
             sort_clause = desc(getattr(table, column))
-            tiebreaker = desc(table.id)
+            tiebreaker = desc(col(table.id))
         else:
             sort_clause = asc(getattr(table, column))
-            tiebreaker = asc(table.id)
+            tiebreaker = asc(col(table.id))
 
         # We always add the `id` column as a tiebreaker to ensure a stable,
         # repeatable order of items, otherwise subsequent pages might contain
         # the same items. The tiebreaker follows the primary sort direction so
         # the order matches an index and avoids a filesort on descending sorts.
-        query = query.order_by(sort_clause, tiebreaker)  # type: ignore[arg-type]
+        query = query.order_by(sort_clause, tiebreaker)
 
         return query
 
