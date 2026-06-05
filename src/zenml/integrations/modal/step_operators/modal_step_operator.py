@@ -271,17 +271,19 @@ class ModalStepOperator(BaseStepOperator):
                 "it is correctly configured."
             )
 
-        image_kwargs = {}
         if docker_creds := stack.container_registry.credentials:
             docker_username, docker_password = docker_creds
-            image_kwargs["secret"] = modal.Secret.from_dict(
+            registry_secret = modal.Secret.from_dict(
                 {
                     "REGISTRY_USERNAME": docker_username,
                     "REGISTRY_PASSWORD": docker_password,
                 }
             )
-
-        zenml_image = modal.Image.from_registry(image_name, **image_kwargs)
+            zenml_image = modal.Image.from_registry(
+                image_name, secret=registry_secret
+            )
+        else:
+            zenml_image = modal.Image.from_registry(image_name)
 
         resource_settings = info.config.resource_settings
         gpu_values = get_gpu_values(settings, resource_settings)
@@ -304,6 +306,7 @@ class ModalStepOperator(BaseStepOperator):
             environment_name=modal_environment,
             client=modal_client,
         )
+        sandbox_environment: Dict[str, Optional[str]] = dict(environment)
         sandbox = modal.Sandbox.create(
             *entrypoint_command,
             app=app,
@@ -314,10 +317,12 @@ class ModalStepOperator(BaseStepOperator):
             cloud=settings.cloud,
             region=settings.region,
             timeout=settings.timeout,
-            env=environment,
+            env=sandbox_environment,
             client=modal_client,
         )
-        metadata = {STEP_SANDBOX_ID_METADATA_KEY: sandbox.object_id}
+        metadata: Dict[str, Any] = {
+            STEP_SANDBOX_ID_METADATA_KEY: sandbox.object_id
+        }
         if modal_environment:
             metadata[STEP_MODAL_ENVIRONMENT_METADATA_KEY] = modal_environment
 
