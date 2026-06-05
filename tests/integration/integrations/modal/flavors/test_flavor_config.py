@@ -68,6 +68,10 @@ def test_modal_config_accepts_missing_or_complete_token_pair() -> None:
     assert config.token_secret == "as-test"
 
 
+def test_modal_config_does_not_expose_workspace_field() -> None:
+    assert "workspace" not in ModalStepOperatorConfig.model_fields
+
+
 def test_modal_config_rejects_partial_token_pair() -> None:
     with pytest.raises(ValidationError) as token_id_error:
         ModalStepOperatorConfig(token_id="ak-test")

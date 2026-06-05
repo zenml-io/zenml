@@ -14,19 +14,8 @@
 """Modal step operator implementation."""
 
 import math
-import os
 import threading
-from contextlib import contextmanager
-from typing import (
-    TYPE_CHECKING,
-    Dict,
-    Iterator,
-    List,
-    Optional,
-    Tuple,
-    Type,
-    cast,
-)
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 import modal
 
@@ -54,12 +43,6 @@ logger = get_logger(__name__)
 MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY = "modal_step_operator"
 STEP_SANDBOX_ID_METADATA_KEY = "sandbox_id"
 STEP_MODAL_ENVIRONMENT_METADATA_KEY = "modal_environment"
-MODAL_TOKEN_ID_ENV_VAR = "MODAL_TOKEN_ID"
-MODAL_TOKEN_SECRET_ENV_VAR = "MODAL_TOKEN_SECRET"
-MODAL_WORKSPACE_ENV_VAR = "MODAL_WORKSPACE"
-MODAL_ENVIRONMENT_ENV_VAR = "MODAL_ENVIRONMENT"
-
-_modal_environment_lock = threading.Lock()
 
 
 def _normalize_optional_config_value(value: Optional[str]) -> Optional[str]:
@@ -69,66 +52,6 @@ def _normalize_optional_config_value(value: Optional[str]) -> Optional[str]:
 
     stripped_value = value.strip()
     return stripped_value or None
-
-
-def _modal_environment_overrides(
-    config: ModalStepOperatorConfig,
-    modal_environment: Optional[str] = None,
-) -> Dict[str, str]:
-    """Get Modal SDK environment variable overrides."""
-    token_id = _normalize_optional_config_value(config.token_id)
-    token_secret = _normalize_optional_config_value(config.token_secret)
-    workspace = _normalize_optional_config_value(config.workspace)
-    modal_environment = _normalize_optional_config_value(modal_environment)
-
-    if bool(token_id) != bool(token_secret):
-        raise StackComponentInterfaceError(
-            "Modal token_id and token_secret must be configured together."
-        )
-
-    overrides = {}
-    if token_id and token_secret:
-        overrides[MODAL_TOKEN_ID_ENV_VAR] = token_id
-        overrides[MODAL_TOKEN_SECRET_ENV_VAR] = token_secret
-    if workspace:
-        overrides[MODAL_WORKSPACE_ENV_VAR] = workspace
-    if modal_environment:
-        overrides[MODAL_ENVIRONMENT_ENV_VAR] = modal_environment
-
-    return overrides
-
-
-def _get_modal_environment_from_step_run_metadata(
-    step_run: "StepRunResponse",
-) -> Optional[str]:
-    """Get the Modal environment stored for a step run."""
-    metadata_value = step_run.run_metadata.get(
-        STEP_MODAL_ENVIRONMENT_METADATA_KEY
-    )
-    if metadata_value is None:
-        return None
-
-    return _normalize_optional_config_value(str(metadata_value))
-
-
-@contextmanager
-def _temporary_modal_environment(
-    overrides: Dict[str, str],
-) -> Iterator[None]:
-    """Temporarily apply Modal SDK environment variable overrides."""
-    with _modal_environment_lock:
-        previous_values = {
-            key: os.environ.get(key) for key in overrides.keys()
-        }
-        os.environ.update(overrides)
-        try:
-            yield
-        finally:
-            for key, previous_value in previous_values.items():
-                if previous_value is None:
-                    os.environ.pop(key, None)
-                else:
-                    os.environ[key] = previous_value
 
 
 def get_gpu_values(
@@ -204,6 +127,37 @@ class ModalStepOperator(BaseStepOperator):
     This class defines code that can set up a Modal environment and run
     functions in it.
     """
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize the Modal step operator."""
+        super().__init__(*args, **kwargs)
+        self._modal_client: Optional["modal.Client"] = None
+        self._modal_client_lock = threading.Lock()
+
+    def _get_modal_client(self) -> Optional["modal.Client"]:
+        """Get an explicit Modal client when credentials are configured."""
+        token_id = _normalize_optional_config_value(self.config.token_id)
+        token_secret = _normalize_optional_config_value(
+            self.config.token_secret
+        )
+
+        if bool(token_id) != bool(token_secret):
+            raise StackComponentInterfaceError(
+                "Modal token_id and token_secret must be configured together."
+            )
+
+        if not token_id or not token_secret:
+            return None
+
+        with self._modal_client_lock:
+            modal_client = self._modal_client
+            if modal_client is None or modal_client.is_closed():
+                modal_client = modal.Client.from_credentials(
+                    token_id, token_secret
+                )
+                self._modal_client = modal_client
+
+        return modal_client
 
     @property
     def config(self) -> ModalStepOperatorConfig:
@@ -342,28 +296,27 @@ class ModalStepOperator(BaseStepOperator):
         modal_environment = _normalize_optional_config_value(
             settings.modal_environment
         )
-        modal_sdk_env_overrides = _modal_environment_overrides(
-            self.config, modal_environment=modal_environment
-        )
+        modal_client = self._get_modal_client()
 
-        with _temporary_modal_environment(modal_sdk_env_overrides):
-            app = modal.App.lookup(
-                f"zenml-{info.step_run_id}-{info.pipeline_step_name}"[:64],
-                create_if_missing=True,
-                environment_name=modal_environment,
-            )
-            sandbox = modal.Sandbox.create(
-                *entrypoint_command,
-                app=app,
-                image=zenml_image,
-                gpu=gpu_values,
-                cpu=resource_settings.cpu_count,
-                memory=memory_int,
-                cloud=settings.cloud,
-                region=settings.region,
-                timeout=settings.timeout,
-                env=environment,
-            )
+        app = modal.App.lookup(
+            f"zenml-{info.step_run_id}-{info.pipeline_step_name}"[:64],
+            create_if_missing=True,
+            environment_name=modal_environment,
+            client=modal_client,
+        )
+        sandbox = modal.Sandbox.create(
+            *entrypoint_command,
+            app=app,
+            image=zenml_image,
+            gpu=gpu_values,
+            cpu=resource_settings.cpu_count,
+            memory=memory_int,
+            cloud=settings.cloud,
+            region=settings.region,
+            timeout=settings.timeout,
+            env=environment,
+            client=modal_client,
+        )
         metadata = {STEP_SANDBOX_ID_METADATA_KEY: sandbox.object_id}
         if modal_environment:
             metadata[STEP_MODAL_ENVIRONMENT_METADATA_KEY] = modal_environment
@@ -381,16 +334,9 @@ class ModalStepOperator(BaseStepOperator):
             The step status.
         """
         sandbox_id = str(step_run.run_metadata[STEP_SANDBOX_ID_METADATA_KEY])
-        modal_environment = _get_modal_environment_from_step_run_metadata(
-            step_run
-        )
-        with _temporary_modal_environment(
-            _modal_environment_overrides(
-                self.config, modal_environment=modal_environment
-            )
-        ):
-            sandbox = modal.Sandbox.from_id(sandbox_id)
-            return_code = sandbox.poll()
+        modal_client = self._get_modal_client()
+        sandbox = modal.Sandbox.from_id(sandbox_id, client=modal_client)
+        return_code = sandbox.poll()
         if return_code is None:
             return ExecutionStatus.RUNNING
         if return_code == 0:
@@ -404,13 +350,6 @@ class ModalStepOperator(BaseStepOperator):
             step_run: The step run.
         """
         sandbox_id = str(step_run.run_metadata[STEP_SANDBOX_ID_METADATA_KEY])
-        modal_environment = _get_modal_environment_from_step_run_metadata(
-            step_run
-        )
-        with _temporary_modal_environment(
-            _modal_environment_overrides(
-                self.config, modal_environment=modal_environment
-            )
-        ):
-            sandbox = modal.Sandbox.from_id(sandbox_id)
-            sandbox.terminate()
+        modal_client = self._get_modal_client()
+        sandbox = modal.Sandbox.from_id(sandbox_id, client=modal_client)
+        sandbox.terminate()

@@ -39,17 +39,16 @@ To use the Modal step operator, we need:
 * An Image Builder in your stack. ZenML uses it to build the Docker image that
   runs on Modal.
 
-The Modal step operator can use Modal authentication settings from the stack component configuration. If `token_id` and `token_secret` are configured on the step operator, ZenML temporarily sets them as `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET` while it calls the Modal SDK. If `workspace` is configured, ZenML also temporarily sets `MODAL_WORKSPACE` for compatibility with Modal's environment-based configuration. ZenML only sets these environment variables temporarily; the Modal SDK reads them using its normal resolution logic. If these fields are not configured, Modal falls back to its normal authentication and workspace behavior, such as existing environment variables or `~/.modal.toml`.
+The Modal step operator can use Modal authentication settings from the stack component configuration. If `token_id` and `token_secret` are configured on the step operator, ZenML creates an explicit Modal SDK client from those credentials and passes that client to Modal SDK calls. If these fields are not configured, ZenML passes no explicit client and Modal uses its normal authentication behavior, such as existing environment variables or `~/.modal.toml`.
 
-ZenML step runtime environment variables, including values needed by the step to connect back to the ZenML server, are passed to the Modal sandbox when the step starts. They are not added to the Modal image definition. Modal authentication settings used to submit the sandbox and container registry credentials used to pull the image are handled separately.
+ZenML step runtime environment variables, including values needed by the step to connect back to the ZenML server, are passed to the Modal sandbox when the step starts. They are not added to the Modal image definition. Modal authentication settings used to submit the sandbox, the Modal environment used for app lookup, and container registry credentials used to pull the image are handled separately.
 
 We can then register the step operator:
 
 ```shell
 zenml step-operator register <NAME> --flavor=modal \
   --token_id=<MODAL_TOKEN_ID> \
-  --token_secret=<MODAL_TOKEN_SECRET> \
-  --workspace=<MODAL_WORKSPACE>  # optional, only if your Modal setup uses it
+  --token_secret=<MODAL_TOKEN_SECRET>
 zenml stack update -s <NAME> ...
 ```
 
@@ -152,7 +151,7 @@ full list of supported GPU types and the [SDK
 docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-modal.html)
 for more details on the available settings.
 
-The settings allow you to specify the Modal environment, region, and cloud provider. `modal_environment` selects the Modal environment used for the app lookup and sandbox submission. When this setting is configured, ZenML temporarily sets local `MODAL_ENVIRONMENT` while submitting through the Modal SDK; ZenML step runtime environment variables are still passed separately to the sandbox runtime. Region and cloud provider settings are only available for Modal Enterprise and Team plan customers.
+The settings allow you to specify the Modal environment, region, and cloud provider. `modal_environment` selects the Modal environment used for the app lookup; ZenML passes it as `environment_name` to `modal.App.lookup(...)`. The sandbox then belongs to that app, while ZenML step runtime environment variables are still passed separately to the sandbox runtime with `env=...`. Region and cloud provider settings are only available for Modal Enterprise and Team plan customers.
 Certain combinations of settings are not available. It is suggested to
 err on the side of looser settings rather than more restrictive ones to avoid
 pipeline execution failures. In the case of failures, however, Modal provides

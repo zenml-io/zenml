@@ -12,7 +12,13 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import os
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
 from types import SimpleNamespace
+from uuid import uuid4
 
 import pytest
 
@@ -20,6 +26,7 @@ import pytest
 # the module under test imports `modal` at import time.
 pytest.importorskip("modal")
 
+from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentInterfaceError
 from zenml.integrations.modal.flavors import (
     ModalStepOperatorConfig,
@@ -37,9 +44,9 @@ from zenml.integrations.modal.step_operators.modal_step_operator import (
 class ResourceSettingsStub:
     """Minimal stub to simulate ZenML ResourceSettings for GPU tests.
 
-    We only model the `gpu_count` attribute because that's the only part the
-    helper uses in the small targeted Modal tests. This keeps tests lightweight
-    and avoids wider dependencies.
+    We only model the attributes the helper and submit path use in the small
+    targeted Modal tests. This keeps tests lightweight and avoids wider
+    dependencies.
     """
 
     def __init__(self, gpu_count, cpu_count=None, memory_mb=None):
@@ -49,6 +56,142 @@ class ResourceSettingsStub:
 
     def get_memory(self, _unit):
         return self.memory_mb
+
+
+class ModalClientStub:
+    """Small stand-in for an opened Modal client."""
+
+    def __init__(self, name: str):
+        self.name = name
+        self.closed = False
+
+    def is_closed(self) -> bool:
+        return self.closed
+
+
+def _make_operator(config: ModalStepOperatorConfig) -> ModalStepOperator:
+    return ModalStepOperator(
+        name="modal",
+        id=uuid4(),
+        config=config,
+        flavor="modal",
+        type=StackComponentType.STEP_OPERATOR,
+        user=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+def _submit_with_stubs(
+    monkeypatch,
+    config: ModalStepOperatorConfig,
+    settings: ModalStepOperatorSettings,
+    modal_client: ModalClientStub | None,
+):
+    recorded = {"client_credentials": []}
+    resource_settings = ResourceSettingsStub(
+        gpu_count=0,
+        cpu_count=2,
+        memory_mb=1.2,
+    )
+    run_metadata = {}
+
+    class InfoStub:
+        step_run_id = "step-run-id"
+        pipeline_step_name = "train"
+        config = SimpleNamespace(resource_settings=resource_settings)
+        step_run = SimpleNamespace(run_metadata=run_metadata)
+
+        def get_image(self, key):
+            assert key == "modal_step_operator"
+            return "registry.example.com/zenml:latest"
+
+    class ContainerRegistryStub:
+        credentials = None
+
+    class StackStub:
+        container_registry = ContainerRegistryStub()
+
+    class ClientStub:
+        active_stack = StackStub()
+
+    class ModalClientFactoryStub:
+        @staticmethod
+        def from_credentials(token_id, token_secret):
+            recorded["client_credentials"].append((token_id, token_secret))
+            assert modal_client is not None
+            return modal_client
+
+    class ImageStub:
+        def env(self, environment):
+            raise AssertionError(
+                "ZenML runtime env must be passed to "
+                "Sandbox.create(env=...), not Image.env(...)."
+            )
+
+    class ImageFactoryStub:
+        @staticmethod
+        def from_registry(image_name, **kwargs):
+            recorded["image_name"] = image_name
+            recorded["image_kwargs"] = kwargs
+            image = ImageStub()
+            recorded["image"] = image
+            return image
+
+    class AppFactoryStub:
+        @staticmethod
+        def lookup(*args, **kwargs):
+            recorded["app_lookup"] = (args, kwargs)
+            return "app"
+
+    class SandboxStub:
+        object_id = "sandbox-id"
+
+    class SandboxFactoryStub:
+        @staticmethod
+        def create(*args, **kwargs):
+            recorded["sandbox_create"] = (args, kwargs)
+            return SandboxStub()
+
+    operator = _make_operator(config)
+    operator.id = "component-id"
+    operator.get_settings = lambda _info: settings
+
+    monkeypatch.setattr(modal_step_operator_module, "Client", ClientStub)
+    monkeypatch.setattr(
+        modal_step_operator_module.modal, "Client", ModalClientFactoryStub
+    )
+    monkeypatch.setattr(
+        modal_step_operator_module.modal, "Image", ImageFactoryStub
+    )
+    monkeypatch.setattr(
+        modal_step_operator_module.modal, "App", AppFactoryStub
+    )
+    monkeypatch.setattr(
+        modal_step_operator_module.modal, "Sandbox", SandboxFactoryStub
+    )
+    monkeypatch.setattr(
+        modal_step_operator_module,
+        "publish_step_run_metadata",
+        lambda *args, **kwargs: recorded.setdefault(
+            "published_metadata", (args, kwargs)
+        ),
+    )
+
+    entrypoint_command = [
+        "python",
+        "-m",
+        "zenml.entrypoints.entrypoint",
+        "--step_name",
+        "train model",
+    ]
+    environment = {
+        "ZENML_ENV": "value",
+        "ZENML_STORE_API_TOKEN": "sensitive-token",
+    }
+
+    operator.submit(InfoStub(), entrypoint_command, environment)
+    return recorded, run_metadata, entrypoint_command, environment
 
 
 def test_gpu_arg_none_when_no_type_and_no_count() -> None:
@@ -97,145 +240,135 @@ def test_gpu_arg_type_with_zero_count_warns_and_returns_cpu_only(
     assert "running on CPU only" in caplog.text
 
 
-def test_modal_submit_preserves_argv_config_and_runtime_env_boundary(
-    monkeypatch,
-) -> None:
-    settings = ModalStepOperatorSettings(
-        modal_environment="staging",
-        timeout=1234,
-    )
-    modal_sdk_env_vars = (
-        modal_step_operator_module.MODAL_TOKEN_ID_ENV_VAR,
-        modal_step_operator_module.MODAL_TOKEN_SECRET_ENV_VAR,
-        modal_step_operator_module.MODAL_WORKSPACE_ENV_VAR,
-        modal_step_operator_module.MODAL_ENVIRONMENT_ENV_VAR,
-    )
-    config = ModalStepOperatorConfig(
-        token_id="ak-test",
-        token_secret="as-test",
-        workspace="workspace-test",
-    )
-    resource_settings = ResourceSettingsStub(
-        gpu_count=0,
-        cpu_count=2,
-        memory_mb=1.2,
-    )
-    run_metadata = {}
+def test_modal_client_helper_preserves_ambient_auth(monkeypatch) -> None:
+    recorded = []
 
-    class InfoStub:
-        step_run_id = "step-run-id"
-        pipeline_step_name = "train"
-        config = SimpleNamespace(resource_settings=resource_settings)
-        step_run = SimpleNamespace(run_metadata=run_metadata)
-
-        def get_image(self, key):
-            assert key == "modal_step_operator"
-            return "registry.example.com/zenml:latest"
-
-    class ContainerRegistryStub:
-        credentials = None
-
-    class StackStub:
-        container_registry = ContainerRegistryStub()
-
-    class ClientStub:
-        active_stack = StackStub()
-
-    class ImageStub:
-        def env(self, environment):
+    class ModalClientFactoryStub:
+        @staticmethod
+        def from_credentials(token_id, token_secret):
+            recorded.append((token_id, token_secret))
             raise AssertionError(
-                "ZenML runtime env must be passed to "
-                "Sandbox.create(env=...), not Image.env(...)."
+                "Ambient auth must not create an explicit client."
             )
 
-    class ImageFactoryStub:
+    monkeypatch.setattr(
+        modal_step_operator_module.modal, "Client", ModalClientFactoryStub
+    )
+
+    operator = _make_operator(ModalStepOperatorConfig())
+
+    assert operator._get_modal_client() is None
+    assert recorded == []
+
+
+def test_modal_client_helper_caches_and_rebuilds_explicit_client(
+    monkeypatch,
+) -> None:
+    first_client = ModalClientStub("first")
+    second_client = ModalClientStub("second")
+    clients = [first_client, second_client]
+    recorded = []
+
+    class ModalClientFactoryStub:
         @staticmethod
-        def from_registry(image_name, **kwargs):
-            recorded["image_name"] = image_name
-            recorded["image_kwargs"] = kwargs
-            image = ImageStub()
-            recorded["image"] = image
-            return image
+        def from_credentials(token_id, token_secret):
+            recorded.append((token_id, token_secret))
+            return clients.pop(0)
 
-    class AppFactoryStub:
-        @staticmethod
-        def lookup(*args, **kwargs):
-            recorded["app_lookup"] = (args, kwargs)
-            recorded["env_during_lookup"] = {
-                key: modal_step_operator_module.os.environ.get(key)
-                for key in modal_sdk_env_vars
-            }
-            return "app"
-
-    class SandboxStub:
-        object_id = "sandbox-id"
-
-    class SandboxFactoryStub:
-        @staticmethod
-        def create(*args, **kwargs):
-            recorded["sandbox_create"] = (args, kwargs)
-            recorded["env_during_create"] = {
-                key: modal_step_operator_module.os.environ.get(key)
-                for key in modal_sdk_env_vars
-            }
-            return SandboxStub()
-
-    recorded = {}
-    operator = object.__new__(ModalStepOperator)
-    operator.id = "component-id"
-    operator._config = config
-    operator.get_settings = lambda _info: settings
-
-    monkeypatch.setattr(modal_step_operator_module, "Client", ClientStub)
     monkeypatch.setattr(
-        modal_step_operator_module.modal, "Image", ImageFactoryStub
-    )
-    monkeypatch.setattr(
-        modal_step_operator_module.modal, "App", AppFactoryStub
-    )
-    monkeypatch.setattr(
-        modal_step_operator_module.modal, "Sandbox", SandboxFactoryStub
-    )
-    monkeypatch.setattr(
-        modal_step_operator_module,
-        "publish_step_run_metadata",
-        lambda *args, **kwargs: recorded.setdefault(
-            "published_metadata", (args, kwargs)
-        ),
-    )
-    monkeypatch.setenv(
-        modal_step_operator_module.MODAL_ENVIRONMENT_ENV_VAR,
-        "previous-local-environment",
+        modal_step_operator_module.modal, "Client", ModalClientFactoryStub
     )
 
-    entrypoint_command = [
-        "python",
-        "-m",
-        "zenml.entrypoints.entrypoint",
-        "--step_name",
-        "train model",
+    operator = _make_operator(
+        ModalStepOperatorConfig(
+            token_id="ak-test",
+            token_secret="as-test",
+        )
+    )
+
+    assert operator._get_modal_client() is first_client
+    assert operator._get_modal_client() is first_client
+
+    first_client.closed = True
+
+    assert operator._get_modal_client() is second_client
+    assert recorded == [
+        ("ak-test", "as-test"),
+        ("ak-test", "as-test"),
     ]
-    environment = {
-        "ZENML_ENV": "value",
-        "ZENML_STORE_API_TOKEN": "sensitive-token",
-    }
 
-    operator.submit(InfoStub(), entrypoint_command, environment)
 
+def test_modal_client_helper_uses_lock_for_concurrent_creation(
+    monkeypatch,
+) -> None:
+    modal_client = ModalClientStub("explicit")
+    creation_lock = threading.Lock()
+    creation_count = 0
+
+    class ModalClientFactoryStub:
+        @staticmethod
+        def from_credentials(token_id, token_secret):
+            nonlocal creation_count
+            assert (token_id, token_secret) == ("ak-test", "as-test")
+            time.sleep(0.05)
+            with creation_lock:
+                creation_count += 1
+            return modal_client
+
+    monkeypatch.setattr(
+        modal_step_operator_module.modal, "Client", ModalClientFactoryStub
+    )
+
+    operator = _make_operator(
+        ModalStepOperatorConfig(
+            token_id="ak-test",
+            token_secret="as-test",
+        )
+    )
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        clients = list(
+            executor.map(lambda _: operator._get_modal_client(), range(8))
+        )
+
+    assert clients == [modal_client] * 8
+    assert creation_count == 1
+
+
+def test_modal_submit_passes_explicit_client_and_runtime_env_boundary(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("MODAL_TOKEN_ID", "ambient-token-id")
+    monkeypatch.setenv("MODAL_TOKEN_SECRET", "ambient-token-secret")
+    monkeypatch.setenv("MODAL_ENVIRONMENT", "ambient-environment")
+
+    modal_client = ModalClientStub("explicit")
+    recorded, run_metadata, entrypoint_command, environment = (
+        _submit_with_stubs(
+            monkeypatch=monkeypatch,
+            config=ModalStepOperatorConfig(
+                token_id="ak-test",
+                token_secret="as-test",
+            ),
+            settings=ModalStepOperatorSettings(
+                modal_environment="staging",
+                timeout=1234,
+            ),
+            modal_client=modal_client,
+        )
+    )
+
+    assert recorded["client_credentials"] == [("ak-test", "as-test")]
     assert recorded["image_name"] == "registry.example.com/zenml:latest"
     assert recorded["image_kwargs"] == {}
     assert recorded["app_lookup"] == (
         ("zenml-step-run-id-train",),
-        {"create_if_missing": True, "environment_name": "staging"},
+        {
+            "create_if_missing": True,
+            "environment_name": "staging",
+            "client": modal_client,
+        },
     )
-    expected_modal_sdk_env = {
-        modal_step_operator_module.MODAL_TOKEN_ID_ENV_VAR: "ak-test",
-        modal_step_operator_module.MODAL_TOKEN_SECRET_ENV_VAR: "as-test",
-        modal_step_operator_module.MODAL_WORKSPACE_ENV_VAR: "workspace-test",
-        modal_step_operator_module.MODAL_ENVIRONMENT_ENV_VAR: "staging",
-    }
-    assert recorded["env_during_lookup"] == expected_modal_sdk_env
-    assert recorded["env_during_create"] == expected_modal_sdk_env
     assert recorded["sandbox_create"] == (
         tuple(entrypoint_command),
         {
@@ -248,19 +381,21 @@ def test_modal_submit_preserves_argv_config_and_runtime_env_boundary(
             "region": None,
             "timeout": 1234,
             "env": environment,
+            "client": modal_client,
         },
     )
     sandbox_env = recorded["sandbox_create"][1]["env"]
     assert sandbox_env == environment
-    for env_var in modal_sdk_env_vars:
+    for env_var in (
+        "MODAL_TOKEN_ID",
+        "MODAL_TOKEN_SECRET",
+        "MODAL_ENVIRONMENT",
+    ):
         assert env_var not in sandbox_env
+    assert os.environ["MODAL_TOKEN_ID"] == "ambient-token-id"
+    assert os.environ["MODAL_TOKEN_SECRET"] == "ambient-token-secret"
+    assert os.environ["MODAL_ENVIRONMENT"] == "ambient-environment"
     assert "environment_name" not in recorded["sandbox_create"][1]
-    assert (
-        modal_step_operator_module.os.environ[
-            modal_step_operator_module.MODAL_ENVIRONMENT_ENV_VAR
-        ]
-        == "previous-local-environment"
-    )
     expected_metadata = {
         modal_step_operator_module.STEP_SANDBOX_ID_METADATA_KEY: "sandbox-id",
         modal_step_operator_module.STEP_MODAL_ENVIRONMENT_METADATA_KEY: "staging",
@@ -272,84 +407,132 @@ def test_modal_submit_preserves_argv_config_and_runtime_env_boundary(
     assert run_metadata == expected_metadata
 
 
-def test_status_and_cancel_use_configured_modal_auth_context(
+def test_modal_submit_preserves_ambient_auth_with_client_none(
     monkeypatch,
 ) -> None:
-    config = ModalStepOperatorConfig(
-        token_id="ak-test",
-        token_secret="as-test",
-        workspace="workspace-test",
+    recorded, _, _, _ = _submit_with_stubs(
+        monkeypatch=monkeypatch,
+        config=ModalStepOperatorConfig(),
+        settings=ModalStepOperatorSettings(
+            modal_environment="staging",
+            timeout=1234,
+        ),
+        modal_client=None,
     )
-    recorded = {"from_id_calls": [], "from_id_env": []}
-    modal_sdk_env_vars = (
-        modal_step_operator_module.MODAL_TOKEN_ID_ENV_VAR,
-        modal_step_operator_module.MODAL_TOKEN_SECRET_ENV_VAR,
-        modal_step_operator_module.MODAL_WORKSPACE_ENV_VAR,
-        modal_step_operator_module.MODAL_ENVIRONMENT_ENV_VAR,
-    )
+
+    assert recorded["client_credentials"] == []
+    assert recorded["app_lookup"][1]["environment_name"] == "staging"
+    assert recorded["app_lookup"][1]["client"] is None
+    assert recorded["sandbox_create"][1]["client"] is None
+    assert "environment_name" not in recorded["sandbox_create"][1]
+
+
+def test_status_and_cancel_use_cached_explicit_modal_client(
+    monkeypatch,
+) -> None:
+    modal_client = ModalClientStub("explicit")
+    recorded = {"client_credentials": [], "from_id_calls": []}
+
+    class ModalClientFactoryStub:
+        @staticmethod
+        def from_credentials(token_id, token_secret):
+            recorded["client_credentials"].append((token_id, token_secret))
+            return modal_client
 
     class SandboxStub:
         def poll(self):
-            recorded["poll_env"] = {
-                key: modal_step_operator_module.os.environ.get(key)
-                for key in modal_sdk_env_vars
-            }
+            recorded["poll_called"] = True
             return 0
 
         def terminate(self):
-            recorded["terminate_env"] = {
-                key: modal_step_operator_module.os.environ.get(key)
-                for key in modal_sdk_env_vars
-            }
+            recorded["terminate_called"] = True
 
     class SandboxFactoryStub:
         @staticmethod
-        def from_id(sandbox_id):
-            recorded["from_id_calls"].append(sandbox_id)
-            recorded["from_id_env"].append(
-                {
-                    key: modal_step_operator_module.os.environ.get(key)
-                    for key in modal_sdk_env_vars
-                }
-            )
+        def from_id(sandbox_id, **kwargs):
+            recorded["from_id_calls"].append((sandbox_id, kwargs))
             return SandboxStub()
 
-    operator = object.__new__(ModalStepOperator)
-    operator._config = config
+    operator = _make_operator(
+        ModalStepOperatorConfig(
+            token_id="ak-test",
+            token_secret="as-test",
+        )
+    )
     step_run = SimpleNamespace(
         run_metadata={
-            modal_step_operator_module.STEP_SANDBOX_ID_METADATA_KEY: "sandbox-id",
-            modal_step_operator_module.STEP_MODAL_ENVIRONMENT_METADATA_KEY: " staging ",
+            modal_step_operator_module.STEP_SANDBOX_ID_METADATA_KEY: "sandbox-id"
         }
     )
 
     monkeypatch.setattr(
-        modal_step_operator_module.modal, "Sandbox", SandboxFactoryStub
+        modal_step_operator_module.modal, "Client", ModalClientFactoryStub
     )
-    monkeypatch.setenv(
-        modal_step_operator_module.MODAL_ENVIRONMENT_ENV_VAR,
-        "previous-local-environment",
+    monkeypatch.setattr(
+        modal_step_operator_module.modal, "Sandbox", SandboxFactoryStub
     )
 
     assert operator.get_status(step_run).value == "completed"
     operator.cancel(step_run)
 
-    expected_env = {
-        modal_step_operator_module.MODAL_TOKEN_ID_ENV_VAR: "ak-test",
-        modal_step_operator_module.MODAL_TOKEN_SECRET_ENV_VAR: "as-test",
-        modal_step_operator_module.MODAL_WORKSPACE_ENV_VAR: "workspace-test",
-        modal_step_operator_module.MODAL_ENVIRONMENT_ENV_VAR: "staging",
-    }
-    assert recorded["from_id_calls"] == ["sandbox-id", "sandbox-id"]
-    assert recorded["from_id_env"] == [expected_env, expected_env]
-    assert recorded["poll_env"] == expected_env
-    assert recorded["terminate_env"] == expected_env
-    assert (
-        modal_step_operator_module.os.environ[
-            modal_step_operator_module.MODAL_ENVIRONMENT_ENV_VAR
-        ]
-        == "previous-local-environment"
+    assert recorded["client_credentials"] == [("ak-test", "as-test")]
+    assert recorded["from_id_calls"] == [
+        ("sandbox-id", {"client": modal_client}),
+        ("sandbox-id", {"client": modal_client}),
+    ]
+    assert recorded["poll_called"] is True
+    assert recorded["terminate_called"] is True
+
+
+def test_status_and_cancel_preserve_ambient_auth_with_client_none(
+    monkeypatch,
+) -> None:
+    recorded = {"client_credentials": [], "from_id_calls": []}
+
+    class ModalClientFactoryStub:
+        @staticmethod
+        def from_credentials(token_id, token_secret):
+            recorded["client_credentials"].append((token_id, token_secret))
+            raise AssertionError(
+                "Ambient auth must not create an explicit client."
+            )
+
+    class SandboxStub:
+        def poll(self):
+            return None
+
+        def terminate(self):
+            recorded["terminate_called"] = True
+
+    class SandboxFactoryStub:
+        @staticmethod
+        def from_id(sandbox_id, **kwargs):
+            recorded["from_id_calls"].append((sandbox_id, kwargs))
+            return SandboxStub()
+
+    operator = _make_operator(ModalStepOperatorConfig())
+    step_run = SimpleNamespace(
+        run_metadata={
+            modal_step_operator_module.STEP_SANDBOX_ID_METADATA_KEY: "sandbox-id"
+        }
     )
+
+    monkeypatch.setattr(
+        modal_step_operator_module.modal, "Client", ModalClientFactoryStub
+    )
+    monkeypatch.setattr(
+        modal_step_operator_module.modal, "Sandbox", SandboxFactoryStub
+    )
+
+    assert operator.get_status(step_run).value == "running"
+    operator.cancel(step_run)
+
+    assert recorded["client_credentials"] == []
+    assert recorded["from_id_calls"] == [
+        ("sandbox-id", {"client": None}),
+        ("sandbox-id", {"client": None}),
+    ]
+    assert recorded["terminate_called"] is True
 
 
 def test_gpu_arg_invalid_negative_count_raises() -> None:

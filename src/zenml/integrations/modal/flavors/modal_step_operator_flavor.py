@@ -45,7 +45,7 @@ class ModalStepOperatorSettings(BaseSettings):
             Use ResourceSettings.gpu_count to specify the number of GPUs.
         region: The region to use for the step execution.
         cloud: The cloud provider to use for the step execution.
-        modal_environment: The Modal environment to use for app lookup and sandbox submission.
+        modal_environment: The Modal environment to use for app lookup.
         timeout: Maximum execution time in seconds (default 24h).
     """
 
@@ -69,10 +69,10 @@ class ModalStepOperatorSettings(BaseSettings):
     )
     modal_environment: Optional[str] = Field(
         None,
-        description="Modal environment name for app lookup and sandbox submission. Must be a valid environment "
-        "configured in your Modal workspace. ZenML temporarily sets it as local MODAL_ENVIRONMENT "
-        "while submitting to Modal. Examples: 'main', 'staging', 'production'. "
-        "If not specified, uses the default environment for the workspace",
+        description="Modal environment name for app lookup. Must be a valid environment "
+        "configured in Modal. ZenML passes it as the Modal SDK App.lookup "
+        "environment_name argument. Examples: 'main', 'staging', 'production'. "
+        "If not specified, Modal uses the default environment.",
     )
     timeout: int = Field(
         DEFAULT_TIMEOUT_SECONDS,
@@ -92,7 +92,6 @@ class ModalStepOperatorConfig(
     Attributes:
         token_id: Modal API token ID (ak-xxxxx format) for authentication.
         token_secret: Modal API token secret (as-xxxxx format) for authentication.
-        workspace: Modal workspace name (optional).
 
     Note: If token_id and token_secret are provided, both fields must be set.
     If they are not provided, Modal falls back to its default authentication
@@ -104,21 +103,16 @@ class ModalStepOperatorConfig(
     token_id: Optional[str] = SecretField(
         default=None,
         description="Modal API token ID for authentication. Must be configured together with token_secret. "
-        "ZenML applies it as MODAL_TOKEN_ID during Modal SDK submission. If not provided, Modal falls "
-        "back to its default authentication from environment variables or ~/.modal.toml.",
+        "When token_id and token_secret are both provided, ZenML creates an explicit Modal SDK "
+        "client from those credentials. If not provided, Modal falls back to its default "
+        "authentication from environment variables or ~/.modal.toml.",
     )
     token_secret: Optional[str] = SecretField(
         default=None,
         description="Modal API token secret for authentication. Must be configured together with token_id. "
-        "ZenML applies it as MODAL_TOKEN_SECRET during Modal SDK submission. If not provided, Modal falls "
-        "back to its default authentication from environment variables or ~/.modal.toml.",
-    )
-    workspace: Optional[str] = Field(
-        None,
-        description="Optional Modal workspace value. When provided, ZenML temporarily sets "
-        "MODAL_WORKSPACE while calling the Modal SDK for compatibility with Modal's "
-        "environment-based configuration. Modal reads it using its normal resolution logic. "
-        "If omitted, Modal uses its normal configured behavior.",
+        "When token_id and token_secret are both provided, ZenML creates an explicit Modal SDK "
+        "client from those credentials. If not provided, Modal falls back to its default "
+        "authentication from environment variables or ~/.modal.toml.",
     )
 
     @model_validator(mode="after")
