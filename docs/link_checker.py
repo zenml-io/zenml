@@ -59,7 +59,7 @@ Arguments:
 
 Note:
     Status-specific policies may accept known bot-hostile responses such as 403
-    while still failing 404/410/5xx.
+    while still failing non-exempt hard failures such as 404 and 410.
 
     The 'requests' package is required for link validation. Install it with:
     pip install requests
@@ -98,6 +98,12 @@ except ImportError:
 EXEMPT_URL_STATUS: Dict[str, set] = {
     # Requires authentication; often returns 403 to unauthenticated HEAD/GET.
     "https://huggingface.co/settings/tokens": {403},
+    # Modal and Segment reject automated requests for these approved docs links.
+    "https://modal.com": {403, 406},
+    "https://modal.com/docs/guide/gpu": {403, 406},
+    "https://modal.com/docs/guide/region-selection": {403, 406},
+    "https://modal.com/signup": {403, 406},
+    "https://segment.com": {403},
     # zenml.io/slack and /slack-invite redirect to a zenml.slack.com invite URL.
     # Slack returns 403 to any unauthenticated request to those invite URLs by
     # design, regardless of User-Agent or HEAD/GET. A real takedown would
@@ -113,14 +119,9 @@ EXEMPT_DOMAIN_STATUS: Dict[str, set] = {
     "terraform.io": {429},
     "www.terraform.io": {429},
     # AWS documentation and SDK reference hosts often reject CI traffic.
-    "aws.amazon.com": {403},
     "boto3.amazonaws.com": {403},
     "botocore.amazonaws.com": {403},
     "docs.aws.amazon.com": {403},
-    # Modal docs return 406 Not Acceptable or 403 to automated requests.
-    "modal.com": {403, 406},
-    # Segment can reject automated requests while keeping the public page valid.
-    "segment.com": {403},
     # ghcr.io is a container registry API, not a web page; returns 502 to browsers.
     "ghcr.io": {502},
 }
