@@ -456,6 +456,7 @@ from zenml.zen_stores.schemas.utils import (
 )
 from zenml.zen_stores.secrets_stores.base_secrets_store import BaseSecretsStore
 from zenml.zen_stores.secrets_stores.sql_secrets_store import (
+    SqlSecretsStore,
     SqlSecretsStoreConfiguration,
 )
 
@@ -9666,6 +9667,35 @@ class SqlZenStore(BaseZenStore):
                     if ignore_errors:
                         continue
                     raise
+
+    def reencrypt_sql_secrets(
+        self,
+        limit: Optional[int] = None,
+        ignore_errors: bool = False,
+    ) -> Dict[str, int]:
+        """Re-encrypt SQL secrets that still require the previous key.
+
+        Args:
+            limit: Optional maximum number of secret rows to scan.
+            ignore_errors: Whether to continue after an undecryptable row.
+
+        Returns:
+            Migration counters for scanned, re-encrypted, skipped, and failed
+            secret rows.
+
+        Raises:
+            NotImplementedError: If the primary secrets store is not SQL.
+        """
+        if not isinstance(self.secrets_store, SqlSecretsStore):
+            raise NotImplementedError(
+                "SQL secret re-encryption is only supported for SQL secrets "
+                "stores."
+            )
+
+        return self.secrets_store.reencrypt_secrets_with_current_key(
+            limit=limit,
+            ignore_errors=ignore_errors,
+        ).as_dict()
 
     # ------------------------- Service Accounts -------------------------
 

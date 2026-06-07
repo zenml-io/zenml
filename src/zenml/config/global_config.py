@@ -42,7 +42,7 @@ from zenml.constants import (
     ENV_ZENML_STORE_PREFIX,
     LOCAL_STORES_DIRECTORY_NAME,
 )
-from zenml.enums import ContainerEngineType, StoreType
+from zenml.enums import ContainerEngineType, SecretsStoreType, StoreType
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils, yaml_utils
@@ -54,6 +54,25 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 CONFIG_ENV_VAR_PREFIX = "ZENML_"
+
+
+def _validate_secrets_store_configuration(
+    config: Dict[str, Any],
+) -> SecretsStoreConfiguration:
+    """Validate a secrets-store config into its concrete config type."""
+    from zenml.zen_stores.secrets_stores.base_secrets_store import (
+        BaseSecretsStore,
+    )
+
+    generic_config = SecretsStoreConfiguration(**config)
+    if generic_config.type in {
+        SecretsStoreType.CUSTOM,
+        SecretsStoreType.NONE,
+    }:
+        return generic_config
+
+    store_class = BaseSecretsStore.get_store_class(generic_config)
+    return store_class.CONFIG_TYPE(**config)
 
 
 class GlobalConfigMetaClass(ModelMetaclass):
@@ -462,7 +481,9 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                     value
                 )
 
-        store_dict = self.store_configuration.model_dump(exclude_none=True)
+        store_dict = self.store_configuration.model_dump(
+            exclude_none=True, mode="json"
+        )
 
         # The secrets store and backup secrets store configurations use their
         # own environment variables naming scheme
@@ -613,16 +634,22 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                         "Using environment variables to configure the secrets "
                         "store"
                     )
-                    store.secrets_store = SecretsStoreConfiguration(
-                        **env_secrets_store_config
+                    store.secrets_store = (
+                        _validate_secrets_store_configuration(
+                            env_secrets_store_config
+                        )
                     )
                 elif store.secrets_store:
                     logger.debug(
                         "Using environment variables to update the secrets "
                         "store"
                     )
-                    store.secrets_store = store.secrets_store.model_copy(
-                        update=env_secrets_store_config, deep=True
+                    secrets_store_config = store.secrets_store.model_dump(
+                        mode="python"
+                    )
+                    secrets_store_config.update(env_secrets_store_config)
+                    store.secrets_store = type(store.secrets_store)(
+                        **secrets_store_config,
                     )
 
             if len(env_backup_secrets_store_config):
@@ -631,17 +658,25 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
                         "Using environment variables to configure the backup "
                         "secrets store"
                     )
-                    store.backup_secrets_store = SecretsStoreConfiguration(
-                        **env_backup_secrets_store_config
+                    store.backup_secrets_store = (
+                        _validate_secrets_store_configuration(
+                            env_backup_secrets_store_config
+                        )
                     )
                 elif store.backup_secrets_store:
                     logger.debug(
                         "Using environment variables to update the backup "
                         "secrets store"
                     )
+                    backup_secrets_store_config = (
+                        store.backup_secrets_store.model_dump(mode="python")
+                    )
+                    backup_secrets_store_config.update(
+                        env_backup_secrets_store_config
+                    )
                     store.backup_secrets_store = (
-                        store.backup_secrets_store.model_copy(
-                            update=env_backup_secrets_store_config, deep=True
+                        type(store.backup_secrets_store)(
+                            **backup_secrets_store_config,
                         )
                     )
 

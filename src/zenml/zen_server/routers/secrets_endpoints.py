@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for pipeline run secrets."""
 
-from typing import Optional, Union
+from typing import Dict, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -23,6 +23,7 @@ from zenml.constants import (
     SECRETS,
     SECRETS_BACKUP,
     SECRETS_OPERATIONS,
+    SECRETS_REENCRYPT_SQL,
     SECRETS_RESTORE,
     VERSION_1,
 )
@@ -300,4 +301,35 @@ def restore_secrets(
 
     zen_store().restore_secrets(
         ignore_errors=ignore_errors, delete_secrets=delete_secrets
+    )
+
+
+@op_router.put(
+    SECRETS_REENCRYPT_SQL,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def reencrypt_sql_secrets(
+    limit: Optional[int] = None,
+    ignore_errors: bool = False,
+    _: AuthContext = Security(authorize),
+) -> Dict[str, int]:
+    """Re-encrypt SQL secrets that still require the previous key.
+
+    Args:
+        limit: Optional maximum number of secret rows to scan.
+        ignore_errors: Whether to continue after an undecryptable row.
+
+    Returns:
+        Migration counters for scanned, re-encrypted, skipped, and failed
+        secret rows.
+    """
+    verify_permission(
+        resource_type=ResourceType.SECRET,
+        action=Action.BACKUP_RESTORE,
+    )
+
+    return zen_store().reencrypt_sql_secrets(
+        limit=limit,
+        ignore_errors=ignore_errors,
     )

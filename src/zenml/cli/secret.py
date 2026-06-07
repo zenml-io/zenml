@@ -623,3 +623,51 @@ def restore_secrets(
             declare("Secrets successfully restored.")
         except NotImplementedError as e:
             error(f"Could not restore secrets: {str(e)}")
+
+
+@secret.command(
+    "reencrypt-sql",
+    help="Re-encrypt SQL secrets that still require the previous key.",
+)
+@click.option(
+    "--limit",
+    type=click.INT,
+    default=None,
+    help="Optional maximum number of secret rows to scan.",
+)
+@click.option(
+    "--ignore-errors",
+    "-i",
+    is_flag=True,
+    default=False,
+    help="Whether to continue after undecryptable secret rows.",
+)
+def reencrypt_sql_secrets(
+    limit: Optional[int] = None,
+    ignore_errors: bool = False,
+) -> None:
+    """Re-encrypt SQL secrets that still require the previous key.
+
+    Args:
+        limit: Optional maximum number of secret rows to scan.
+        ignore_errors: Whether to continue after undecryptable secret rows.
+    """
+    client = Client()
+
+    with console.status("Re-encrypting SQL secrets..."):
+        try:
+            stats = client.reencrypt_sql_secrets(
+                limit=limit,
+                ignore_errors=ignore_errors,
+            )
+        except NotImplementedError as e:
+            error(f"Could not re-encrypt SQL secrets: {str(e)}")
+            return
+
+    declare(
+        "SQL secrets re-encryption finished: "
+        f"scanned={stats['scanned']}, "
+        f"reencrypted={stats['reencrypted']}, "
+        f"skipped={stats['skipped']}, "
+        f"failed={stats['failed']}."
+    )

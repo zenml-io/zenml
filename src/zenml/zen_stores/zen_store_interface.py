@@ -15,7 +15,7 @@
 
 import datetime
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 from uuid import UUID
 
 from zenml.config.pipeline_run_configuration import (
@@ -2174,6 +2174,23 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
         Raises:
             BackupSecretsStoreNotConfiguredError: if no backup secrets store is
                 configured.
+        """
+
+    @abstractmethod
+    def reencrypt_sql_secrets(
+        self,
+        limit: Optional[int] = None,
+        ignore_errors: bool = False,
+    ) -> Dict[str, int]:
+        """Re-encrypt SQL secrets that still require the previous key.
+
+        Args:
+            limit: Optional maximum number of secret rows to scan.
+            ignore_errors: Whether to continue after an undecryptable row.
+
+        Returns:
+            Migration counters for scanned, re-encrypted, skipped, and failed
+            secret rows.
         """
 
     # --------------------  Service Accounts --------------------

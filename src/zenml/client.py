@@ -6471,6 +6471,26 @@ class Client(metaclass=ClientMetaClass):
             ignore_errors=ignore_errors, delete_secrets=delete_secrets
         )
 
+    def reencrypt_sql_secrets(
+        self,
+        limit: Optional[int] = None,
+        ignore_errors: bool = False,
+    ) -> Dict[str, int]:
+        """Re-encrypt SQL secrets that still require the previous key.
+
+        Args:
+            limit: Optional maximum number of secret rows to scan.
+            ignore_errors: Whether to continue after an undecryptable row.
+
+        Returns:
+            Migration counters for scanned, re-encrypted, skipped, and failed
+            secret rows.
+        """
+        return self.zen_store.reencrypt_sql_secrets(
+            limit=limit,
+            ignore_errors=ignore_errors,
+        )
+
     # --------------------------- Code repositories ---------------------------
 
     @staticmethod

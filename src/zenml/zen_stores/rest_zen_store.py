@@ -103,6 +103,7 @@ from zenml.constants import (
     SECRETS,
     SECRETS_BACKUP,
     SECRETS_OPERATIONS,
+    SECRETS_REENCRYPT_SQL,
     SECRETS_RESTORE,
     SERVER_SETTINGS,
     SERVICE_ACCOUNTS,
@@ -2979,6 +2980,30 @@ class RestZenStore(BaseZenStore):
         }
         self.put(
             f"{SECRETS_OPERATIONS}{SECRETS_RESTORE}",
+            params=params,
+        )
+
+    def reencrypt_sql_secrets(
+        self,
+        limit: Optional[int] = None,
+        ignore_errors: bool = False,
+    ) -> Dict[str, int]:
+        """Re-encrypt SQL secrets that still require the previous key.
+
+        Args:
+            limit: Optional maximum number of secret rows to scan.
+            ignore_errors: Whether to continue after an undecryptable row.
+
+        Returns:
+            Migration counters for scanned, re-encrypted, skipped, and failed
+            secret rows.
+        """
+        params: Dict[str, Any] = {"ignore_errors": ignore_errors}
+        if limit is not None:
+            params["limit"] = limit
+
+        return self.put(
+            f"{SECRETS_OPERATIONS}{SECRETS_REENCRYPT_SQL}",
             params=params,
         )
 

@@ -24,6 +24,7 @@ except ImportError:
         "* If you want to connect to a server, run `zenml login`"
     ) from None
 
+from dataclasses import dataclass
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -64,6 +65,25 @@ if TYPE_CHECKING:
     from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
+@dataclass
+class SqlSecretKeyMigrationStats:
+    """Stats for SQL secrets-store key migration."""
+
+    scanned: int = 0
+    reencrypted: int = 0
+    skipped: int = 0
+    failed: int = 0
+
+    def as_dict(self) -> Dict[str, int]:
+        """Return stats as a JSON-serializable dictionary."""
+        return {
+            "scanned": self.scanned,
+            "reencrypted": self.reencrypted,
+            "skipped": self.skipped,
+            "failed": self.failed,
+        }
+
+
 class SqlSecretsStoreConfiguration(SecretsStoreConfiguration):
     """SQL secrets store configuration.
 
@@ -71,10 +91,14 @@ class SqlSecretsStoreConfiguration(SecretsStoreConfiguration):
         type: The type of the store.
         encryption_key: The encryption key to use for the SQL secrets store.
             If not set, the passwords will not be encrypted in the database.
+        previous_encryption_key: Previous encryption key to try when reading
+            existing SQL secrets during a key rotation window. New or updated
+            secrets are always written with `encryption_key`.
     """
 
     type: SecretsStoreType = SecretsStoreType.SQL
     encryption_key: Optional[PlainSerializedSecretStr] = None
+    previous_encryption_key: Optional[PlainSerializedSecretStr] = None
     model_config = ConfigDict(
         # Don't validate attributes when assigning them. This is necessary
         # because the certificate attributes can be expanded to the contents
@@ -104,6 +128,7 @@ class SqlSecretsStore(BaseSecretsStore):
     )
 
     _encryption_engine: Optional[AesGcmEngine] = None
+    _previous_encryption_engine: Optional[AesGcmEngine] = None
 
     def __init__(
         self,
@@ -168,15 +193,145 @@ class SqlSecretsStore(BaseSecretsStore):
         """Initialize the secrets SQL store."""
         logger.debug("Initializing SqlSecretsStore")
 
-        # Initialize the encryption engine
-        if self.config.encryption_key:
-            self._encryption_engine = AesGcmEngine()
-            self._encryption_engine._update_key(
-                self.config.encryption_key.get_secret_value()
-            )
+        # Initialize the encryption engines
+        self._encryption_engine = self._create_encryption_engine(
+            self.config.encryption_key
+        )
+        self._previous_encryption_engine = self._create_encryption_engine(
+            self.config.previous_encryption_key
+        )
 
         # Nothing else to do here, the SQL ZenML store back-end is already
         # initialized
+
+    @staticmethod
+    def _create_encryption_engine(
+        encryption_key: Optional[PlainSerializedSecretStr],
+    ) -> Optional[AesGcmEngine]:
+        """Create an encryption engine for a configured SQL secrets key."""
+        if not encryption_key:
+            return None
+
+        encryption_engine = AesGcmEngine()
+        encryption_engine._update_key(encryption_key.get_secret_value())
+        return encryption_engine
+
+    def _read_encryption_engines(self) -> list[Optional[AesGcmEngine]]:
+        """Return encryption engines to try when reading secret values."""
+        engines = [self._encryption_engine]
+        if self._previous_encryption_engine is not None:
+            engines.append(self._previous_encryption_engine)
+        return engines
+
+    def _get_secret_values_with_fallback(
+        self,
+        secret_in_db: SecretSchema,
+    ) -> Dict[str, str]:
+        """Get secret values using the current key, then the previous key."""
+        decode_error: Optional[SecretDecodeError] = None
+        for encryption_engine in self._read_encryption_engines():
+            try:
+                return secret_in_db.get_secret_values(
+                    encryption_engine=encryption_engine,
+                )
+            except SecretDecodeError as e:
+                decode_error = e
+
+        if decode_error:
+            raise decode_error
+
+        # This should be unreachable because `_read_encryption_engines` always
+        # contains at least the current engine, even when it is None.
+        return secret_in_db.get_secret_values(
+            encryption_engine=self._encryption_engine,
+        )
+
+    def _reencrypt_secret_with_current_key(
+        self,
+        secret_in_db: SecretSchema,
+    ) -> bool:
+        """Re-encrypt one previous-key secret row with the current key."""
+        if self._previous_encryption_engine is None:
+            return False
+        if self._encryption_engine is None:
+            raise ValueError(
+                "Cannot re-encrypt SQL secret rows without a current "
+                "encryption key."
+            )
+
+        try:
+            secret_in_db.get_secret_values(
+                encryption_engine=self._encryption_engine,
+            )
+            return False
+        except SecretDecodeError:
+            secret_values = secret_in_db.get_secret_values(
+                encryption_engine=self._previous_encryption_engine,
+            )
+            secret_in_db.set_secret_values(
+                secret_values=secret_values,
+                encryption_engine=self._encryption_engine,
+            )
+            return True
+
+    def reencrypt_secrets_with_current_key(
+        self,
+        *,
+        limit: Optional[int] = None,
+        ignore_errors: bool = False,
+    ) -> SqlSecretKeyMigrationStats:
+        """Re-encrypt SQL secret rows that still require the previous key.
+
+        Args:
+            limit: Optional maximum number of secret rows to scan.
+            ignore_errors: Whether to continue after an undecryptable row.
+
+        Returns:
+            Migration counters for scanned, re-encrypted, skipped, and failed
+            secret rows.
+
+        Raises:
+            ValueError: If `limit` is not a positive integer.
+            SecretDecodeError: If a row cannot be decrypted and
+                `ignore_errors` is False.
+        """
+        if limit is not None and limit < 1:
+            raise ValueError("limit must be a positive integer.")
+
+        stats = SqlSecretKeyMigrationStats()
+        if self._previous_encryption_engine is None:
+            return stats
+
+        with Session(self.engine) as session:
+            query = select(SecretSchema)
+            if limit is not None:
+                query = query.limit(limit)
+
+            secrets_in_db = session.exec(query).all()
+            for secret_in_db in secrets_in_db:
+                if not secret_in_db.values:
+                    continue
+
+                stats.scanned += 1
+                try:
+                    reencrypted = self._reencrypt_secret_with_current_key(
+                        secret_in_db
+                    )
+                except SecretDecodeError:
+                    stats.failed += 1
+                    if not ignore_errors:
+                        raise
+                    continue
+
+                if reencrypted:
+                    stats.reencrypted += 1
+                    session.add(secret_in_db)
+                else:
+                    stats.skipped += 1
+
+            session.commit()
+
+        return stats
 
     # ------
     # Secrets
@@ -232,9 +387,7 @@ class SqlSecretsStore(BaseSecretsStore):
             if secret_in_db is None:
                 raise KeyError(f"Secret with ID {secret_id} not found.")
             try:
-                return secret_in_db.get_secret_values(
-                    encryption_engine=self._encryption_engine,
-                )
+                return self._get_secret_values_with_fallback(secret_in_db)
             except SecretDecodeError:
                 raise KeyError(
                     f"Secret values for secret {secret_id} could not be "
