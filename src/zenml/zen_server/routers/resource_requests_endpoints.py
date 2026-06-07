@@ -18,10 +18,12 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, RESOURCE_REQUESTS, VERSION_1
+from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     Page,
     ResourceRequestFilter,
     ResourceRequestRenewalRequest,
+    ResourceRequestRequest,
     ResourceRequestResponse,
     ResourceRequestTerminateRequest,
 )
@@ -67,6 +69,38 @@ def list_resource_requests(
         filter_model=resource_request_filter_model,
         hydrate=hydrate,
     )
+
+
+@router.post(
+    "",
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def create_resource_request(
+    resource_request: ResourceRequestRequest,
+    _: AuthContext = Security(authorize),
+) -> ResourceRequestResponse:
+    """Create a resource request for the authenticated caller.
+
+    Step-run fields must not be supplied through this endpoint.
+
+    Args:
+        resource_request: Resource request payload with demands and optional
+            lease settings.
+
+    Returns:
+        The created resource request.
+
+    Raises:
+        IllegalOperationError: If component_ids or step_run_id are supplied.
+    """
+    if resource_request.component_ids or resource_request.step_run_id:
+        raise IllegalOperationError(
+            "component_ids and step_run_id must not be supplied when creating "
+            "resource requests through the API."
+        )
+
+    return zen_store().create_resource_request(resource_request)
 
 
 @router.get(

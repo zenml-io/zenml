@@ -170,6 +170,7 @@ class ResourceManagerClient:
         *,
         resource_id: Optional[UUID] = None,
         name: Optional[str] = None,
+        kind: Optional[str] = None,
         metadata: Optional[dict[str, str]] = None,
     ) -> RMResourceListResponse:
         """List Resource Manager resource descriptors.
@@ -177,6 +178,7 @@ class ResourceManagerClient:
         Args:
             resource_id: When set, return only the descriptor with this id.
             name: When set, return only descriptors with this exact name.
+            kind: When set, return only descriptors with this exact kind.
             metadata: Optional exact-match filters against opaque entity
                 metadata. Each entry is sent as ``metadata[key]=value``.
 
@@ -184,8 +186,8 @@ class ResourceManagerClient:
             A list wrapper containing matching descriptors.
         """
         params = self._list_params(
-            resource_id=resource_id,
-            name=name,
+            resource=resource_id if resource_id is not None else name,
+            kind=kind,
             metadata=metadata,
         )
         return self._request_model(
@@ -264,8 +266,7 @@ class ResourceManagerClient:
             A list wrapper containing matching pools.
         """
         params = self._list_params(
-            pool_id=pool_id,
-            name=name,
+            pool=pool_id if pool_id is not None else name,
             metadata=metadata,
         )
         return self._request_model(
@@ -356,8 +357,7 @@ class ResourceManagerClient:
         """
         params = self._list_params(
             policy_id=policy_id,
-            pool_id=pool_id,
-            pool=pool,
+            pool=pool_id if pool_id is not None else pool,
             subject_id=subject_id,
             priority=priority,
             metadata=metadata,
@@ -489,7 +489,7 @@ class ResourceManagerClient:
             request_id=request_id,
             subject_id=subject_id,
             statuses=statuses,
-            pool_id=pool_id,
+            pool=pool_id,
             reclaim_tolerance=reclaim_tolerance,
             preemption_initiated_by_id=preemption_initiated_by_id,
             metadata=metadata,
