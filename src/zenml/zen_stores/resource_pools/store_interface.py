@@ -344,6 +344,20 @@ class ResourcePoolsStoreInterface(ABC):
             resource_request_id: The ID of the resource request to delete.
         """
 
+    @abstractmethod
+    def create_resource_request(
+        self,
+        resource_request: ResourceRequestRequest,
+    ) -> ResourceRequestResponse:
+        """Create a resource request.
+
+        Args:
+            resource_request: The resource request to create.
+
+        Returns:
+            The created resource request.
+        """
+
 
 class ResourcePoolsSQLStoreInterface(ResourcePoolsStoreInterface):
     """Resource pools SQL store interface."""
@@ -357,6 +371,22 @@ class ResourcePoolsSQLStoreInterface(ResourcePoolsStoreInterface):
         super().__init__()
         self.store = store
         store.resource_pools = self
+
+    @abstractmethod
+    def create_resource_request_for_step_run(
+        self,
+        session: "Session",
+        resource_request: ResourceRequestRequest,
+    ) -> ResourceRequestResponse:
+        """Create a step-run resource request with SQL session-backed metadata.
+
+        Args:
+            session: DB session used to enrich step-run metadata.
+            resource_request: The resource request to create.
+
+        Returns:
+            The created resource request.
+        """
 
     @abstractmethod
     def release_step_run_resources(
@@ -378,18 +408,4 @@ class ResourcePoolsSQLStoreInterface(ResourcePoolsStoreInterface):
         Args:
             session: DB session.
             component_id: The ID of the stack component being deleted.
-        """
-
-    @abstractmethod
-    def create_resource_request(
-        self, session: "Session", resource_request: ResourceRequestRequest
-    ) -> ResourceRequestResponse:
-        """Create a resource request.
-
-        Args:
-            session: DB session.
-            resource_request: The resource request to create.
-
-        Returns:
-            The created resource request or None if the feature is not enabled.
         """

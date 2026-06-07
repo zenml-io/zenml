@@ -251,6 +251,7 @@ from zenml.models import (
     ResourcePoolUpdate,
     ResourceRequestFilter,
     ResourceRequestRenewalRequest,
+    ResourceRequestRequest,
     ResourceRequestResponse,
     ResourceRequestTerminateRequest,
     RunMetadataRequest,
@@ -1650,6 +1651,24 @@ class RestZenStore(BaseZenStore):
             route=RESOURCE_REQUESTS,
             response_model=ResourceRequestResponse,
             params={"hydrate": hydrate},
+        )
+
+    def create_resource_request(
+        self,
+        resource_request: ResourceRequestRequest,
+    ) -> ResourceRequestResponse:
+        """Create a resource request.
+
+        Args:
+            resource_request: The resource request to create.
+
+        Returns:
+            The created resource request.
+        """
+        return self._create_resource(
+            resource=resource_request,
+            route=RESOURCE_REQUESTS,
+            response_model=ResourceRequestResponse,
         )
 
     def list_resource_requests(

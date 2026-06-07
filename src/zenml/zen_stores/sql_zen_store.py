@@ -4225,6 +4225,36 @@ class SqlZenStore(BaseZenStore):
         """
         self.resource_pools.delete_resource_request(resource_request_id)
 
+    def create_resource_request(
+        self,
+        resource_request: ResourceRequestRequest,
+    ) -> ResourceRequestResponse:
+        """Create a resource request.
+
+        Args:
+            resource_request: The resource request to create.
+
+        Returns:
+            The created resource request.
+
+        Raises:
+            IllegalOperationError: If the request owner has no external
+                account ID configured for account-initiated requests.
+        """
+        if resource_request.user is None:
+            with Session(self.engine) as user_session:
+                self._set_request_user_id(resource_request, user_session)
+
+        if not resource_request.component_ids:
+            owner = self.get_user(resource_request.user, hydrate=False)
+            if owner.external_user_id is None:
+                raise IllegalOperationError(
+                    "The authenticated identity has no external account id "
+                    "configured."
+                )
+
+        return self.resource_pools.create_resource_request(resource_request)
+
     def terminate_resource_request(
         self,
         resource_request_id: UUID,
@@ -12180,9 +12210,9 @@ class SqlZenStore(BaseZenStore):
                             self._resource_request_lease_expires_at()
                         )
 
-                    request = self.resource_pools.create_resource_request(
-                        session=session,
-                        resource_request=ResourceRequestRequest(
+                    request = self.resource_pools.create_resource_request_for_step_run(
+                        session,
+                        ResourceRequestRequest(
                             user=step_run.user,
                             component_ids=[step_run.resource_requester],
                             step_run_id=step_schema.id,
