@@ -59,6 +59,13 @@ This tells you:
 
 ## Common Migration Patterns
 
+### Replayable Index Changes
+When adding or removing indexes that may already exist in long-running
+environments, use the helpers in `zenml.zen_stores.migrations.utils`:
+`create_index_if_missing(...)` and `drop_index_if_exists(...)`. This keeps
+migrations replayable across databases where an operational hotfix may have
+created the index before the release migration runs.
+
 ### Association Tables
 When introducing many-to-many relationships (e.g., trigger-snapshot associations), create a new table with composite primary keys referencing both sides. See `3855b5d051cd_add_v2_of_trigger_schemas.py` for a reference.
 

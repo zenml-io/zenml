@@ -93,6 +93,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 "cache_key",
             ],
         ),
+        # Optimizes hydrated step-run list queries scoped by project, run, and
+        # step name, then paginated by creation time and ID.
         build_index(
             table_name=__tablename__,
             column_names=[

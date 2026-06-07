@@ -2403,7 +2403,14 @@ class SqlZenStore(BaseZenStore):
         api_transaction_schema: ApiTransactionSchema,
         session: Session,
     ) -> Optional[ApiTransactionSchema]:
-        """Atomically claim an expired API transaction for re-execution."""
+        """Atomically claim an expired API transaction for re-execution.
+
+        The conditional UPDATE is the claim. It transitions a completed,
+        expired transaction back to pending only if no other worker already
+        claimed it. Concurrent workers that see ``rowcount == 0`` lost the
+        claim and must treat the transaction as in-flight instead of executing
+        the mutation again.
+        """
         now = utc_now()
         result = session.execute(
             update(ApiTransactionSchema)
@@ -2433,6 +2440,8 @@ class SqlZenStore(BaseZenStore):
     ) -> int:
         """Delete completed API transactions that have expired."""
         with Session(self.engine) as session:
+            # Select a bounded batch first so MySQL can skip rows locked by
+            # other cleanup workers instead of blocking a full delete scan.
             query = (
                 select(ApiTransactionSchema.id)
                 .where(
