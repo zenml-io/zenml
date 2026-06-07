@@ -172,6 +172,7 @@ from zenml.models import (
     ResourcePoolResponse,
     ResourcePoolUpdate,
     ResourceRequestFilter,
+    ResourceRequestRequest,
     ResourceRequestResponse,
     RunMetadataRequest,
     RunMetadataResource,
@@ -2589,30 +2590,39 @@ class Client(metaclass=ClientMetaClass):
 
     def create_resource_policy(
         self,
-        component_id: UUID,
-        pool_id: Optional[UUID],
-        priority: int,
-        grants: List[ResourcePolicyGrant],
+        pool_id: Optional[UUID] = None,
+        priority: Optional[int] = None,
+        grants: Optional[List[ResourcePolicyGrant]] = None,
         pool: Optional[str] = None,
+        *,
+        component_id: Optional[UUID] = None,
+        account_id: Optional[UUID] = None,
+        priority_lane: bool = False,
     ) -> ResourcePolicyResponse:
         """Create a resource policy.
 
         Args:
-            component_id: The component ID this policy applies to.
             pool_id: The pool ID this policy belongs to.
-            priority: The policy priority.
-            grants: Resource policy grants.
+            priority: The policy priority when priority_lane is false.
+            grants: Resource policy grants. Omit or pass an empty list for
+                grantless policies.
             pool: The pool name this policy belongs to.
+            component_id: Stack component ID for component policies.
+            account_id: External account ID for user or service account
+                policies.
+            priority_lane: Whether this policy uses the maximum priority lane.
 
         Returns:
             The created policy.
         """
         request = ResourcePolicyRequest(
             component_id=component_id,
+            account_id=account_id,
             pool_id=pool_id,
             pool=pool,
+            priority_lane=priority_lane,
             priority=priority,
-            grants=grants,
+            grants=grants or [],
         )
         return self.zen_store.create_resource_policy(policy=request)
 
@@ -2691,6 +2701,9 @@ class Client(metaclass=ClientMetaClass):
         component_id: Optional[UUID] = None,
         priority: Optional[int] = None,
         grants: Optional[List[ResourcePolicyGrant]] = None,
+        *,
+        account_id: Optional[UUID] = None,
+        priority_lane: Optional[bool] = None,
     ) -> ResourcePolicyResponse:
         """Update a resource policy.
 
@@ -2701,6 +2714,8 @@ class Client(metaclass=ClientMetaClass):
             component_id: Updated component ID.
             priority: Updated priority.
             grants: Updated full replacement grants.
+            account_id: Updated external account ID.
+            priority_lane: Updated priority-lane flag.
 
         Returns:
             The updated policy.
@@ -2709,6 +2724,8 @@ class Client(metaclass=ClientMetaClass):
             pool_id=pool_id,
             pool=pool,
             component_id=component_id,
+            account_id=account_id,
+            priority_lane=priority_lane,
             priority=priority,
             grants=grants,
         )
@@ -2806,6 +2823,23 @@ class Client(metaclass=ClientMetaClass):
             filter_model=filter_model,
             hydrate=hydrate,
         )
+
+    def create_resource_request(
+        self,
+        resource_request: ResourceRequestRequest,
+    ) -> ResourceRequestResponse:
+        """Create a resource request for the authenticated caller.
+
+        The request subject is always the caller's external account identity.
+
+        Args:
+            resource_request: Resource request payload with demands and
+                optional lease settings.
+
+        Returns:
+            The created resource request.
+        """
+        return self.zen_store.create_resource_request(resource_request)
 
     # --------------------------------- Flavors --------------------------------
 

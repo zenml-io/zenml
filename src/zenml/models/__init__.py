@@ -267,6 +267,8 @@ from zenml.models.v2.core.resource_descriptor import (
     ResourceDescriptorUpdate,
 )
 from zenml.models.v2.core.resource_policy import (
+    MAX_USER_POLICY_PRIORITY,
+    PRIORITY_LANE_PRIORITY,
     ResourcePolicyFilter,
     ResourcePolicyGrant,
     ResourcePolicyRequest,
@@ -880,6 +882,8 @@ __all__ = [
     "ResourcePolicyResponseMetadata",
     "ResourcePolicyResponseResources",
     "ResourcePolicyUpdate",
+    "MAX_USER_POLICY_PRIORITY",
+    "PRIORITY_LANE_PRIORITY",
     "ResourceRequestDemand",
     "ResourceRequestRequest",
     "ResourceRequestRenewalRequest",

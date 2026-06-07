@@ -31,6 +31,7 @@ from zenml.models.v2.base.filter import (
     EnumFilterOption,
     UUIDFilterOption,
 )
+from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import (
     ResourceRequestReclaimTolerance,
     ResourceRequestStatus,
@@ -122,18 +123,32 @@ class ResourceRequestDemand(BaseZenModel):
 
 
 class ResourceRequestRequest(UserScopedRequest):
-    """Request model for resource requests."""
+    """Request model for creating resource requests."""
 
-    component_ids: list[UUID] = Field(
-        min_length=1,
+    component_ids: Optional[list[UUID]] = Field(
+        default=None,
         title="Stack components that may satisfy the request.",
     )
-    step_run_id: UUID = Field(
+    step_run_id: Optional[UUID] = Field(
+        default=None,
         title="The step run that is requesting the resources.",
     )
     demands: list[ResourceRequestDemand] = Field(
         min_length=1,
         title="The resource demands requested.",
+    )
+    pool_id: Optional[UUID] = Field(
+        default=None,
+        title="The exact resource pool ID.",
+    )
+    pool: Optional[str] = Field(
+        default=None,
+        title="The exact resource pool name.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    pool_selector: Optional[dict[str, Any]] = Field(
+        default=None,
+        title="Selector over pool attributes.",
     )
     reclaim_tolerance: ResourceRequestReclaimTolerance = Field(
         default=ResourceRequestReclaimTolerance.ANY,
@@ -143,6 +158,30 @@ class ResourceRequestRequest(UserScopedRequest):
         default=None,
         title="The optional initial lease expiration timestamp.",
     )
+    metadata: dict[str, Any] = Field(
+        default_factory=dict,
+        title="Optional opaque metadata attached to the request.",
+    )
+
+    @model_validator(mode="after")
+    def _validate_step_run_fields(self) -> "ResourceRequestRequest":
+        """Validate step-run component and step_run_id fields.
+
+        Returns:
+            The validated resource request.
+
+        Raises:
+            ValueError: If step-run fields are inconsistent.
+        """
+        if self.component_ids and self.step_run_id is None:
+            raise ValueError(
+                "step_run_id is required when component_ids are set."
+            )
+        if self.step_run_id is not None and not self.component_ids:
+            raise ValueError(
+                "component_ids are required when step_run_id is set."
+            )
+        return self
 
 
 class ResourceRequestTerminateRequest(BaseZenModel):
@@ -201,6 +240,10 @@ class ResourceRequestResponseBody(UserScopedResponseBody):
     pool_name: Optional[str] = Field(
         default=None,
         title="The resource pool name selected for the resource request.",
+    )
+    pool_selector: Optional[dict[str, Any]] = Field(
+        default=None,
+        title="Selector over pool attributes requested for the resource request.",
     )
     demands: list[ResourceRequestDemand] = Field(
         default_factory=list,

@@ -17,7 +17,13 @@ from datetime import datetime
 from typing import Any, ClassVar, List, Optional, Union
 from uuid import UUID
 
-from pydantic import ConfigDict, Field, NonNegativeInt, PositiveInt
+from pydantic import (
+    ConfigDict,
+    Field,
+    NonNegativeInt,
+    PositiveInt,
+    model_validator,
+)
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import BaseUpdate
@@ -99,6 +105,22 @@ class ResourcePoolCapacityClass(BaseZenModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
+    @model_validator(mode="after")
+    def _validate_resource_reference(self) -> "ResourcePoolCapacityClass":
+        """Validate that the capacity entry references a resource.
+
+        Returns:
+            The validated capacity entry.
+
+        Raises:
+            ValueError: If neither resource ID nor name is set.
+        """
+        if self.resource_id is None and self.resource is None:
+            raise ValueError(
+                "A capacity class requires a resource ID or name."
+            )
+        return self
+
 
 class ResourcePoolLedgerOccupied(BaseZenModel):
     """Occupied resource pool capacity entry."""
@@ -131,6 +153,10 @@ class ResourcePoolRequest(UserScopedRequest):
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
+    attributes: dict[str, Any] = Field(
+        default_factory=dict,
+        title="Selector-visible pool attributes for request planning.",
+    )
     capacity: list[ResourcePoolCapacityClass] = Field(
         title="The full capacity declaration for the resource pool.",
         min_length=1,
@@ -154,6 +180,10 @@ class ResourcePoolUpdate(BaseUpdate):
         default=False,
         title="Whether to clear the resource pool description.",
     )
+    attributes: Optional[dict[str, Any]] = Field(
+        default=None,
+        title="Replacement selector-visible pool attributes.",
+    )
     capacity: Optional[list[ResourcePoolCapacityClass]] = Field(
         title="The full replacement capacity declaration.",
         default=None,
@@ -163,6 +193,10 @@ class ResourcePoolUpdate(BaseUpdate):
 class ResourcePoolResponseBody(UserScopedResponseBody):
     """Response body for resource pools."""
 
+    attributes: dict[str, Any] = Field(
+        default_factory=dict,
+        title="Selector-visible pool attributes for request planning.",
+    )
     capacity: list[ResourcePoolCapacityClass] = Field(
         title="The full capacity declaration for the resource pool.",
     )
@@ -223,6 +257,15 @@ class ResourcePoolResponse(
         return self.get_metadata().description
 
     @property
+    def attributes(self) -> dict[str, Any]:
+        """Resource pool selector-visible attributes.
+
+        Returns:
+            Pool attributes used by request pool selectors.
+        """
+        return self.get_body().attributes
+
+    @property
     def capacity(self) -> list[ResourcePoolCapacityClass]:
         """Resource pool capacity declaration.
 
@@ -262,6 +305,10 @@ class ResourcePoolQueueItem(BaseZenModel):
     )
     policy_id: UUID = Field(title="The resource policy ID.")
     priority: int = Field(title="The priority snapshot for this queue item.")
+    priority_lane: bool = Field(
+        default=False,
+        title="Whether this queue item uses the priority lane.",
+    )
     enqueued_at: datetime = Field(title="The queue insertion timestamp.")
     created: Optional[datetime] = Field(
         default=None,
@@ -305,9 +352,23 @@ class ResourcePoolAllocation(BaseZenModel):
         title="The allocated quantity converted to the descriptor base unit.",
     )
     policy_id: UUID = Field(title="The policy that admitted this allocation.")
-    grant_id: UUID = Field(title="The policy grant that matched the demand.")
+    grant_id: Optional[UUID] = Field(
+        default=None,
+        title="The policy grant that matched the demand, if any.",
+    )
     priority: int = Field(title="The priority snapshot for this allocation.")
-    component_id: UUID = Field(title="The selected stack component ID.")
+    priority_lane: bool = Field(
+        default=False,
+        title="Whether this allocation uses the priority lane.",
+    )
+    component_id: Optional[UUID] = Field(
+        default=None,
+        title="The stack component ID selected for this allocation.",
+    )
+    account_id: Optional[UUID] = Field(
+        default=None,
+        title="The external account ID selected for this allocation.",
+    )
     component_settings: list[ResourcePoolCapacityComponentSettings] = Field(
         default_factory=list,
         title="Stack component settings applied for this allocation.",
@@ -331,6 +392,22 @@ class ResourcePoolAllocation(BaseZenModel):
     )
 
     model_config = ConfigDict(populate_by_name=True)
+
+    @model_validator(mode="after")
+    def _validate_subject_reference(self) -> "ResourcePoolAllocation":
+        """Validate that the allocation references a subject.
+
+        Returns:
+            The validated allocation.
+
+        Raises:
+            ValueError: If neither component ID nor account ID is set.
+        """
+        if self.component_id is None and self.account_id is None:
+            raise ValueError(
+                "An allocation requires component_id or account_id."
+            )
+        return self
 
 
 class ResourcePoolFilter(UserScopedFilter):

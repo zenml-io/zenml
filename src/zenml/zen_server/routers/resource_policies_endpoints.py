@@ -33,6 +33,12 @@ from zenml.models import (
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.feature_gate.endpoint_utils import check_entitlement
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
+    verify_permissions_and_update_entity,
+)
+from zenml.zen_server.rbac.models import Action
+from zenml.zen_server.rbac.utils import verify_permission_for_model
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     make_dependable,
@@ -58,14 +64,24 @@ def create_resource_policy(
     """Create a resource policy.
 
     Args:
-        policy: Resource policy payload using ZenML component IDs and grants.
+        policy: Resource policy payload using component or account references
+            and grants.
 
     Returns:
         The created resource policy.
     """
     check_entitlement(feature=RESOURCE_POOL_FEATURE)
 
-    return zen_store().create_resource_policy(policy)
+    if policy.component_id is not None:
+        component = zen_store().get_stack_component(
+            policy.component_id, hydrate=False
+        )
+        verify_permission_for_model(model=component, action=Action.READ)
+
+    return verify_permissions_and_create_entity(
+        request_model=policy,
+        create_method=zen_store().create_resource_policy,
+    )
 
 
 @router.get(
@@ -116,7 +132,9 @@ def get_resource_policy(
     Returns:
         The requested resource policy.
     """
-    return zen_store().get_resource_policy(policy_id, hydrate=hydrate)
+    policy = zen_store().get_resource_policy(policy_id, hydrate=hydrate)
+    verify_permission_for_model(model=policy, action=Action.READ)
+    return policy
 
 
 @router.put(
@@ -141,9 +159,17 @@ def update_resource_policy(
     """
     check_entitlement(feature=RESOURCE_POOL_FEATURE)
 
-    return zen_store().update_resource_policy(
-        policy_id=policy_id,
-        update=policy_update,
+    if policy_update.component_id is not None:
+        component = zen_store().get_stack_component(
+            policy_update.component_id, hydrate=False
+        )
+        verify_permission_for_model(model=component, action=Action.READ)
+
+    return verify_permissions_and_update_entity(
+        id=policy_id,
+        update_model=policy_update,
+        get_method=zen_store().get_resource_policy,
+        update_method=zen_store().update_resource_policy,
     )
 
 

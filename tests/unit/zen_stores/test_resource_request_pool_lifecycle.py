@@ -164,6 +164,7 @@ def _create_resource_request(
 
     return clean_client.zen_store.create_resource_request(
         ResourceRequestRequest(
+            user=clean_client.active_user.id,
             component_ids=[component_id],
             step_run_id=step_run_id,
             demands=[
