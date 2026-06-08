@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Process abstraction for sandbox-executed commands."""
+"""Sandbox process."""
 
 import threading
 from abc import ABC, abstractmethod
@@ -25,20 +25,11 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-# Default cap for `SandboxProcess.collect`: 1 Mi characters per stream
-# (counted via `len(line)` on the decoded UTF-8 string, so it's actually
-# a code-point count, not a byte count). 1 Mi covers typical agent tool
-# output (a printed answer, an exception traceback, a small dataframe
-# dump) without swamping the LLM's context window.
-_DEFAULT_COLLECT_CHARS = 1_048_576
+_DEFAULT_COLLECT_CHAR_COUNT = 1_048_576
 
 
 class SandboxExecError(RuntimeError):
-    """Raised when a sandbox command fails to launch.
-
-    Once a `SandboxProcess` has been returned by `exec()`, runtime errors
-    flow through `exit_code` / `stderr()` instead of this exception.
-    """
+    """Raised when a sandbox command fails to launch."""
 
 
 @dataclass(frozen=True)
@@ -53,37 +44,41 @@ class SandboxOutput:
 
 
 class SandboxProcess(ABC):
-    """Handle to a running command inside a Session.
+    """Handle to a command being executed inside a sandbox session."""
 
-    Output streams are line-delimited iterators of decoded UTF-8 text. A
-    trailing line without a newline is yielded once the underlying reader
-    closes. Binary-stream consumers should use a different abstraction.
+    def __init__(self, session: "SandboxSession", started_at: float) -> None:
+        """Initialize the sandbox process.
 
-    Flavor subclasses may populate `_session` and `_started_at` so
-    `collect()` can emit a per-exec exit-code + duration marker into
-    the session's sandbox log. Both default to `None` for processes
-    constructed outside a session context (rare, mostly test paths).
-    """
-
-    _session: Optional["SandboxSession"] = None
-    _started_at: Optional[float] = None
-    _collected: bool = False
+        Args:
+            session: The owning session.
+            started_at: The wall-clock time the process started.
+        """
+        self._session = session
+        self._started_at = started_at
+        self._collected = False
 
     @abstractmethod
     def stdout(self) -> Iterator[str]:
-        """Yields stdout one line at a time as the command produces output."""
+        """Yields stdout lines."""
 
     @abstractmethod
     def stderr(self) -> Iterator[str]:
-        """Yields stderr one line at a time as the command produces output."""
+        """Yields stderr lines."""
 
     @abstractmethod
     def wait(self, timeout: Optional[float] = None) -> int:
-        """Blocks until the command finishes and returns the exit code."""
+        """Blocks until the process exits.
+
+        Args:
+            timeout: Timeout in seconds to wait.
+
+        Returns:
+            The exit code.
+        """
 
     @abstractmethod
     def kill(self) -> None:
-        """Terminates this command. Safe to call after the process exits."""
+        """Terminates the process."""
 
     @property
     @abstractmethod
@@ -91,71 +86,49 @@ class SandboxProcess(ABC):
         """Exit code, or `None` if the command is still running."""
 
     def collect(
-        self, *, max_chars: int = _DEFAULT_COLLECT_CHARS
+        self, *, max_chars: int = _DEFAULT_COLLECT_CHAR_COUNT
     ) -> SandboxOutput:
-        """Fully drains stdout + stderr, blocks until exit, returns everything.
-
-        Both streams are drained concurrently in daemon threads. Serial
-        draining deadlocks when a child writes more than one OS pipe
-        buffer (~64KB on Linux) to one stream before the other closes,
-        because the child blocks on write() while we're stuck on the
-        other read(). Once the cap is hit on a stream, subsequent whole
-        lines are dropped and the `*_truncated` flag is set.
-
-        For full streaming control, iterate `stdout()` / `stderr()`
-        directly instead, but drain both concurrently or the same
-        pipe-buffer deadlock applies.
-
-        Calling `collect()` more than once on the same process returns
-        a fresh `SandboxOutput` but emits the exec-result log marker
-        only on the first call (the streams are already drained on
-        subsequent calls, so the captured strings are empty).
-
-        Note: blocks indefinitely on `wait()`. If you need a wall-clock
-        bound, iterate the streams yourself and call `kill()` on
-        timeout.
+        """Wait for the process to exit and return the output.
 
         Args:
-            max_chars: Soft cap per stream, counted by `len(line)` on
-                the decoded text (i.e. code points). Default 1 Mi. A
-                single line larger than the cap is dropped entirely.
-                We never emit partial lines.
-
-        Returns:
-            A `SandboxOutput` with captured stdout, stderr, exit code,
-            and per-stream truncation flags.
+            max_chars: Maximum number of characters to collect per stream.
 
         Raises:
-            drain_err: Re-raised when a drain thread caught an
-                exception while iterating `stdout()` / `stderr()`. The
-                process is killed first so an undrained pipe can't
-                re-introduce the deadlock via `wait()`.
+            drain_exception: Re-raised from a failed stdout or stderr drain.
+
+        Returns:
+            The output of the process.
         """
         results: List[Optional[Tuple[str, bool]]] = [None, None]
         errors: List[Optional[BaseException]] = [None, None]
 
         def _drain(idx: int, stream: Iterator[str]) -> None:
             try:
-                results[idx] = _drain_capped(stream, max_chars)
+                results[idx] = _drain_stream(stream, max_chars=max_chars)
             except BaseException as e:  # noqa: BLE001
                 errors[idx] = e
 
-        t_out = threading.Thread(
+        # Drain both streams concurrently to avoid deadlocks. Serial
+        # draining deadlocks when a child writes more than one OS pipe
+        # buffer (~64KB on Linux) to one stream before the other closes,
+        # because the child blocks on write() while we're stuck on the
+        # other read().
+        stdout_drain_thread = threading.Thread(
             target=_drain, args=(0, self.stdout()), daemon=True
         )
-        t_err = threading.Thread(
+        stderr_drain_thread = threading.Thread(
             target=_drain, args=(1, self.stderr()), daemon=True
         )
-        t_out.start()
-        t_err.start()
-        t_out.join()
-        t_err.join()
+        stdout_drain_thread.start()
+        stderr_drain_thread.start()
+        stdout_drain_thread.join()
+        stderr_drain_thread.join()
 
         # If a drain raised, the corresponding pipe is undrained. wait()
         # below would re-deadlock on a child still writing. Kill the
         # process first, then re-raise the original drain exception.
-        drain_err = errors[0] or errors[1]
-        if drain_err is not None:
+        drain_exception = errors[0] or errors[1]
+        if drain_exception is not None:
             try:
                 self.kill()
             except Exception:
@@ -163,6 +136,7 @@ class SandboxProcess(ABC):
                     "kill() failed during drain-error cleanup",
                     exc_info=True,
                 )
+
             try:
                 self.wait()
             except Exception:
@@ -170,18 +144,19 @@ class SandboxProcess(ABC):
                     "wait() failed during drain-error cleanup",
                     exc_info=True,
                 )
-            raise drain_err
+
+            raise drain_exception
 
         stdout, stdout_truncated = results[0] or ("", False)
         stderr, stderr_truncated = results[1] or ("", False)
 
         exit_code = self.wait()
-        if self._session is not None and not self._collected:
+        if not self._collected:
             self._collected = True
             self._session._log_exec_result(
-                exit_code=exit_code,
-                started_at=self._started_at,
+                exit_code=exit_code, started_at=self._started_at
             )
+
         return SandboxOutput(
             stdout=stdout,
             stderr=stderr,
@@ -191,24 +166,17 @@ class SandboxProcess(ABC):
         )
 
 
-def _drain_capped(stream: Iterator[str], max_chars: int) -> Tuple[str, bool]:
-    """Drain a line iterator fully, capping the returned string at `max_chars`.
-
-    Always consumes to completion (StopIteration) so the underlying
-    provider's wait() is not blocked. Once the running total of captured
-    characters would exceed `max_chars`, no further lines are appended
-    and the `truncated` flag is set. Iteration continues so the pipe
-    drains.
+def _drain_stream(stream: Iterator[str], max_chars: int) -> Tuple[str, bool]:
+    """Drain a stream of lines, capping the returned string at `max_chars`.
 
     Args:
-        stream: Source iterator (line-delimited strings).
-        max_chars: Soft cap on the returned string length (in
-            characters, not bytes, counted via `len(line)`).
+        stream: Line-delimited string iterator.
+        max_chars: Maximum number of characters to collect.
 
     Returns:
-        Tuple of `(joined_string, truncated_flag)`.
+        The joined string and whether it was truncated.
     """
-    parts: List[str] = []
+    lines: List[str] = []
     total = 0
     truncated = False
     for line in stream:
@@ -218,5 +186,6 @@ def _drain_capped(stream: Iterator[str], max_chars: int) -> Tuple[str, bool]:
         if total > max_chars:
             truncated = True
             continue
-        parts.append(line)
-    return "".join(parts), truncated
+        lines.append(line)
+
+    return "".join(lines), truncated

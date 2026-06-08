@@ -12,9 +12,7 @@ It is intended for:
 - Unit tests of code that consumes the `BaseSandbox` interface.
 - Local development against the abstraction.
 
-It is **not** intended for running untrusted LLM-generated code. For real isolation, use a container-based flavor (Modal, Agent Substrate, E2B, Daytona) once they ship.
-
-A loud warning is emitted on every `create_session()` call to make the no-isolation property impossible to miss.
+It is **not** intended for running untrusted LLM-generated code. For real isolation, use a different sandbox flavor.
 
 ## How to register
 
@@ -23,13 +21,14 @@ zenml sandbox register local-sb --flavor=local
 zenml stack update --sandbox local-sb
 ```
 
-No deps, no setup, no API keys. Works wherever Python runs.
-
 ## Settings
 
-The Local sandbox inherits the base `BaseSandboxSettings` (`environment`, `copy_local_env`). `copy_local_env` defaults to `True` so PATH/HOME flow into the subprocess. Since there is no isolation, this matches user expectation, but it does mean the executed code sees every variable in your local environment (credentials, tokens). Set `copy_local_env=False` when running untrusted code.
+The Local sandbox inherits `BaseSandboxSettings` and adds `forward_env`.
 
-Component-level `environment` and `secrets` (set via `zenml sandbox register --env ... --secret ...`) flow into every subprocess.
+- `sandbox_environment`: explicit environment variables to set inside the subprocess.
+- `forward_env`: which parent-process variables are forwarded into the session. Set `forward_env=True` to forward the entire parent environment, `False` to forward nothing, or pass a list of names to forward exactly those. It defaults to a set that keeps command resolution and UTF-8 stdio working: `PATH`, `HOME`, `LANG`, `LC_ALL`, `TMPDIR`, `TERM`.
+
+Secrets in the parent environment stay isolated from the session unless `forward_env` is `True` or names them explicitly. `sandbox_environment` is layered on top and overrides forwarded variables on a key collision.
 
 ## What it doesn't support
 
@@ -39,7 +38,7 @@ Component-level `environment` and `secrets` (set via `zenml sandbox register --e
 | `attach(session_id)` | ❌ | Sessions are bound to the parent process; not re-attachable. |
 | `upload_file` / `download_file` | ❌ | Files live in the session workdir already; use plain Python file I/O. |
 | Streaming output | ✅ | `subprocess.PIPE` line-buffered. |
-| Sandbox log forwarding | ✅ | Each `exec` emits a `$ <command>` marker plus stdout/stderr lines + a `✓ exit <code>` trailer into the step's `sandbox:<id>` log source. |
+| Sandbox log forwarding | ✅ | Each `exec` emits a `$ <command>` marker plus stdout/stderr lines + an `OK`/`FAIL exit code <code>` trailer into the step's `sandbox:<id>` log source. |
 | `destroy()` | ✅ | Delegates to `close()`; removes the session workdir. |
 
 ## When to use it

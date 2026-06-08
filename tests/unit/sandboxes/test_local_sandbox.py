@@ -62,13 +62,6 @@ class TestFlavor:
         assert LocalSandboxConfig().is_remote is False
 
 
-class TestSettings:
-    def test_copy_local_env_default_is_true(self) -> None:
-        # LocalSandbox flips the base default because there's no
-        # isolation; PATH/HOME need to flow into the subprocess.
-        assert LocalSandboxSettings().copy_local_env is True
-
-
 class TestCreateSession:
     def test_warns_on_no_isolation(
         self, caplog: pytest.LogCaptureFixture
@@ -79,9 +72,9 @@ class TestCreateSession:
             session = _make_local_sandbox().create_session()
             try:
                 assert any(
-                    "NO isolation" in record.message
+                    "does not provide any isolation" in record.message
                     for record in caplog.records
-                ), f"Expected NO isolation warning, got: {caplog.records}"
+                ), f"Expected no-isolation warning, got: {caplog.records}"
             finally:
                 session.close()
 
@@ -164,15 +157,18 @@ class TestExec:
 
 
 class TestEnvAndCwd:
-    def test_component_env_propagates_to_subprocess(self) -> None:
-        sandbox = _make_local_sandbox(environment={"FROM_COMPONENT": "yes"})
-        session = sandbox.create_session()
+    def test_settings_env_propagates_to_subprocess(self) -> None:
+        sandbox = _make_local_sandbox()
+        settings = LocalSandboxSettings(
+            sandbox_environment={"FROM_SETTINGS": "yes"}
+        )
+        session = sandbox.create_session(settings=settings)
         try:
             process = session.exec(
                 [
                     sys.executable,
                     "-c",
-                    "import os; print(os.environ.get('FROM_COMPONENT', ''))",
+                    "import os; print(os.environ.get('FROM_SETTINGS', ''))",
                 ]
             )
             stdout = list(process.stdout())
@@ -181,23 +177,12 @@ class TestEnvAndCwd:
         finally:
             session.close()
 
-    def test_settings_env_overrides_component_env(self) -> None:
-        sandbox = _make_local_sandbox(environment={"K": "from-component"})
-        settings = LocalSandboxSettings(environment={"K": "from-settings"})
-        session = sandbox.create_session(settings=settings)
-        try:
-            process = session.exec(
-                [sys.executable, "-c", "import os; print(os.environ['K'])"]
-            )
-            stdout = list(process.stdout())
-            process.wait()
-            assert stdout == ["from-settings\n"]
-        finally:
-            session.close()
-
     def test_per_exec_env_overrides_session_env(self) -> None:
-        sandbox = _make_local_sandbox(environment={"K": "from-session"})
-        session = sandbox.create_session()
+        sandbox = _make_local_sandbox()
+        settings = LocalSandboxSettings(
+            sandbox_environment={"K": "from-session"}
+        )
+        session = sandbox.create_session(settings=settings)
         try:
             process = session.exec(
                 [sys.executable, "-c", "import os; print(os.environ['K'])"],
@@ -208,6 +193,129 @@ class TestEnvAndCwd:
             assert stdout == ["from-exec\n"]
         finally:
             session.close()
+
+    def test_core_path_forwarded_by_default(self) -> None:
+        session = _make_local_sandbox().create_session()
+        try:
+            process = session.exec(
+                [
+                    sys.executable,
+                    "-c",
+                    "import os; print(bool(os.environ.get('PATH')))",
+                ]
+            )
+            stdout = list(process.stdout())
+            process.wait()
+            assert stdout == ["True\n"]
+        finally:
+            session.close()
+
+    def test_secret_parent_env_not_forwarded_by_default(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("MY_SECRET_TOKEN", "leaked")
+        session = _make_local_sandbox().create_session()
+        try:
+            process = session.exec(
+                [
+                    sys.executable,
+                    "-c",
+                    "import os; print(os.environ.get('MY_SECRET_TOKEN', ''))",
+                ]
+            )
+            stdout = list(process.stdout())
+            process.wait()
+            assert stdout == ["\n"]
+        finally:
+            session.close()
+
+    def test_forward_env_true_forwards_secret(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("MY_SECRET_TOKEN", "leaked")
+        sandbox = _make_local_sandbox()
+        settings = LocalSandboxSettings(forward_env=True)
+        session = sandbox.create_session(settings=settings)
+        try:
+            process = session.exec(
+                [
+                    sys.executable,
+                    "-c",
+                    "import os; print(os.environ.get('MY_SECRET_TOKEN', ''))",
+                ]
+            )
+            stdout = list(process.stdout())
+            process.wait()
+            assert stdout == ["leaked\n"]
+        finally:
+            session.close()
+
+    def test_forward_env_list_forwards_named_var_only(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("FORWARD_ME", "yes")
+        monkeypatch.setenv("KEEP_SECRET", "no")
+        sandbox = _make_local_sandbox()
+        settings = LocalSandboxSettings(forward_env=["FORWARD_ME"])
+        session = sandbox.create_session(settings=settings)
+        try:
+            process = session.exec(
+                [
+                    sys.executable,
+                    "-c",
+                    "import os; print(os.environ.get('FORWARD_ME', ''), "
+                    "os.environ.get('KEEP_SECRET', ''))",
+                ]
+            )
+            stdout = list(process.stdout())
+            process.wait()
+            assert stdout == ["yes \n"]
+        finally:
+            session.close()
+
+    def test_sandbox_environment_overrides_core(self) -> None:
+        sandbox = _make_local_sandbox()
+        settings = LocalSandboxSettings(
+            sandbox_environment={"PATH": "/custom"}
+        )
+        session = sandbox.create_session(settings=settings)
+        try:
+            process = session.exec(
+                [sys.executable, "-c", "import os; print(os.environ['PATH'])"]
+            )
+            stdout = list(process.stdout())
+            process.wait()
+            assert stdout == ["/custom\n"]
+        finally:
+            session.close()
+
+    def test_resolve_session_environment_isolation(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv("PATH", "/usr/bin")
+        monkeypatch.setenv("MY_SECRET", "x")
+        sandbox = _make_local_sandbox()
+
+        default_env = sandbox._resolve_session_environment(
+            LocalSandboxSettings()
+        )
+        assert default_env.get("PATH") == "/usr/bin"
+        assert "MY_SECRET" not in default_env
+
+        all_env = sandbox._resolve_session_environment(
+            LocalSandboxSettings(forward_env=True)
+        )
+        assert all_env.get("MY_SECRET") == "x"
+
+        listed_env = sandbox._resolve_session_environment(
+            LocalSandboxSettings(forward_env=["MY_SECRET"])
+        )
+        assert listed_env == {"MY_SECRET": "x"}
+
+        none_env = sandbox._resolve_session_environment(
+            LocalSandboxSettings(forward_env=False)
+        )
+        assert none_env == {}
 
     def test_workdir_is_session_tmpdir(self) -> None:
         session = _make_local_sandbox().create_session()
@@ -249,7 +357,7 @@ class TestOptionalMethods:
         session = _make_local_sandbox().create_session()
         try:
             with pytest.raises(NotImplementedError):
-                session.snapshot()
+                session.create_snapshot()
         finally:
             session.close()
 
@@ -269,15 +377,14 @@ class TestOptionalMethods:
 class TestSettingsCoercion:
     def test_base_settings_coerced_to_local(self) -> None:
         sandbox = _make_local_sandbox()
-        base = BaseSandboxSettings(environment={"K": "v"})
+        base = BaseSandboxSettings(sandbox_environment={"K": "v"})
         eff = sandbox.resolve_settings(base)
         assert isinstance(eff, LocalSandboxSettings)
-        assert eff.environment == {"K": "v"}
+        assert eff.sandbox_environment == {"K": "v"}
 
     def test_none_returns_defaults(self) -> None:
         eff = _make_local_sandbox().resolve_settings(None)
-        assert eff.environment == {}
-        assert eff.copy_local_env is True
+        assert eff.sandbox_environment == {}
 
 
 class TestBuiltinFlavorRegistration:

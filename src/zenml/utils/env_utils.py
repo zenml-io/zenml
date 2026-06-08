@@ -281,32 +281,27 @@ def get_runtime_secret_environment(
     # overrides are applied in the correct order.
     secrets = list(reversed(dict.fromkeys(secrets)))
 
-    return resolve_secrets_to_env(secrets)
+    return resolve_secrets(secrets)
 
 
-def resolve_secrets_to_env(
-    secret_ids: Sequence[Union[str, UUID]],
+def resolve_secrets(
+    secrets: Sequence[Union[str, UUID]],
 ) -> Dict[str, str]:
-    """Resolves a list of secret IDs/names into a flat env-var dict.
+    """Resolves secrets into a flat dictionary.
 
-    For each secret, fetches via `Client().get_secret(...)` and skips
-    with a WARNING on fetch errors (network / permission / not-found)
-    or empty `secret_values` (typically a permissions issue where the
-    caller can read the secret metadata but not its values). Values
-    are coerced via `str(value)` so non-string secret values don't
-    break downstream env injection.
+    If a secret cannot be resolved (doesn't exist, no permissions, no secret
+    values), it is skipped and this function does not fail.
 
-    Later secrets in `secret_ids` override earlier ones on key
-    collision. Callers are responsible for ordering.
+    Secrets later in the input override keys of earlier ones.
 
     Args:
-        secret_ids: Secret names or UUIDs to resolve.
+        secrets: Secret names or UUIDs to resolve.
 
     Returns:
-        Merged `Dict[str, str]` of all resolved secret values.
+        A dictionary of secret values.
     """
     environment: Dict[str, str] = {}
-    for secret_name_or_id in secret_ids:
+    for secret_name_or_id in secrets:
         try:
             secret = Client().get_secret(secret_name_or_id)
         except Exception as e:

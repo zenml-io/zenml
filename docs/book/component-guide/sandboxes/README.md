@@ -10,7 +10,7 @@ A **Sandbox** is a stack component that provides an isolated environment (contai
 A Sandbox is fundamentally different from a [Step Operator](../step-operators/README.md):
 
 - A **Step Operator** runs the step itself on a remote backend.
-- A **Sandbox** is a tool the step *consumes*; the step still runs wherever the orchestrator placed it, and reaches into the Sandbox from inside the step body.
+- A **Sandbox** is a tool the step *consumes*. The step still runs wherever the orchestrator placed it, and you can run code in the sandbox from within your step code.
 
 The two compose: a step running on, say, the SageMaker step operator can still grab the active stack's Sandbox and use it for code execution.
 
@@ -21,7 +21,7 @@ The two compose: a step running on, say, the SageMaker step operator can still g
 | **Sandbox component** (`BaseSandbox`) | The stack-component entity. Long-lived, configured once, registered in your stack. One Sandbox component can mint many live Sessions. |
 | **Sandbox Session** (`SandboxSession`) | A live, bounded interaction with a single isolated environment. Has an `id`, accepts many `exec` calls, can be snapshotted, is explicitly closed. |
 | **Sandbox Process** (`SandboxProcess`) | A handle to one running command inside a Session. Exposes line-delimited stdout/stderr iterators, `wait()` for the exit code, `kill()` to terminate. |
-| **Sandbox Snapshot** (`BaseSandboxSnapshot`) | A serializable, provider-specific handle to a captured Session state. Round-trips through `session.snapshot()` and `sandbox.restore(snapshot)`. |
+| **Sandbox Snapshot** (`SandboxSnapshot`) | A serializable, provider-specific handle to a captured Session state. Round-trips through `session.create_snapshot()` and `sandbox.restore(snapshot)`. |
 
 ## How to use it from a step
 
@@ -53,10 +53,10 @@ If your stack contains more than one Sandbox component, address them by name thr
 
 ### Snapshots, restore, and attach
 
-A Session can optionally be snapshotted (provider-dependent — not all backends support full state capture). The returned `BaseSandboxSnapshot` is a Pydantic model that's safe to persist as a ZenML artifact:
+A Session can optionally be snapshotted (provider-dependent — not all backends support full state capture). The returned `SandboxSnapshot` is a Pydantic model that's safe to persist as a ZenML artifact:
 
 ```python
-snap = session.snapshot()
+snap = session.create_snapshot()
 zenml.save_artifact(snap, name="agent_checkpoint")
 # ... later, possibly in a different pipeline run:
 snap = zenml.load_artifact("agent_checkpoint")
@@ -85,54 +85,37 @@ ZenML does **not** auto-close Sessions on step exit. Either use a `with` block (
 
 ## Configuration
 
-### Component-level env vars and secrets
-
-Every Sandbox component inherits the standard ZenML stack-component environment plumbing — set env vars and reference stored secrets at registration time:
-
-```bash
-zenml sandbox register my-sandbox --flavor=... \
-    --env='{"LOG_LEVEL": "debug"}' \
-    --secret=openai_creds
-```
-
-Each secret's keys are exploded into env vars in every Session created by this component. See the [Environment Variables docs](https://docs.zenml.io/concepts/environment-variables#configuring-environment-variables-on-stack-components) for the full mechanics.
-
 ### Per-step settings
 
-Step writers can override sandbox behavior on individual `@step` invocations via `BaseSandboxSettings` (or a flavor-specific subclass):
+Step writers can configure sandbox behavior on individual `@step` invocations via `BaseSandboxSettings` (or a flavor-specific subclass):
 
 | Setting | Purpose |
 |---|---|
-| `base_image` | `None` → flavor default; the sentinel `STEP_IMAGE` → reuse the image the current ZenML step is running in; any other string → an exact image URI. |
-| `environment` | Per-step env vars. Merged onto the component's `environment` and resolved secrets (Settings wins on key collision). For secret-backed values, attach a secret to the component via `--secret=...`. |
-| `copy_local_env` | If `True`, propagates the step process's full local env (incl. any resolved ZenML secrets) into the Session. Off by default for security — anything in the env is readable by code running in the Sandbox. |
-| `timeout_seconds` | Provider TTL knob for the Session. `None` lets the provider apply its own default. |
+| `sandbox_environment` | Environment variables to set inside the Session. |
+
+Flavors that boot a container or microVM add their own settings (for example image selection and a provider TTL) on a flavor-specific `BaseSandboxSettings` subclass.
 
 ### Sandbox logs
 
-Sandbox stdout/stderr automatically lands on the active step as a dedicated `sandbox:<session_id>` log source. Each `session.exec(...)` writes a `$ <command>` marker, then the process output (stdout at INFO, stderr at WARNING), then a trailing `✓ exit <code> in <seconds>s` marker — reads like a shell session. ZenML's own step-level Python logger calls stay in the regular `step` source: the sandbox source is dedicated to actual sandbox-execution events, no false attribution.
+Sandbox stdout/stderr automatically lands on the active step as a dedicated `sandbox:<session_id>` log source. Each `session.exec(...)` writes a `$ <command>` marker, then the process output (stdout at INFO, stderr at ERROR), then a trailing `OK`/`FAIL exit code <code> in <seconds>s` marker — reads like a shell session. ZenML's own step-level Python logger calls stay in the regular `step` source: the sandbox source is dedicated to actual sandbox-execution events, no false attribution.
 
 Multi-session steps don't clobber: each session's metadata (flavor, dashboard URL when the flavor exposes one) is keyed by session id (`sandbox.<id>.flavor`, `sandbox.<id>.dashboard_url`).
 
 ## Security considerations
 
-By default, every value in a Session's environment (component env vars, exploded secrets, per-step env, copied local env) is **readable by code running inside the Session**. If you run LLM-generated code in the Sandbox and care about credential isolation, treat the current Session environment as visible to the agent.
-
-A first-class auth-injecting outbound proxy (the pattern shipped by LangSmith, Vercel, and Cloudflare) is on the roadmap. Until it lands, prefer secrets that scope cleanly to the agent's intended actions, and rotate them aggressively.
+Every value you put in a Session's environment (`sandbox_environment`) is **readable by code running inside the Session**. If you run LLM-generated code in the Sandbox and care about credential isolation, treat the Session environment as visible to the agent.
 
 ## Available flavors
 
 - **[Local](local.md)** — subprocess-based; **no isolation**; built-in. Intended for examples, unit tests, and development against the abstraction.
 
-Additional flavors that boot real isolated execution environments (Modal, Agent Substrate, E2B, Daytona, ...) ship in their own integration packages and will be listed here as they land.
-
 ## Develop a custom Sandbox
 
-To build a flavor for a new backend, subclass `BaseSandbox`, `SandboxSession`, `SandboxProcess`, and optionally `BaseSandboxSnapshot`. The minimal required surface is:
+To build a flavor for a new backend, subclass `BaseSandbox`, `SandboxSession`, `SandboxProcess`, and optionally `SandboxSnapshot`. The minimal required surface is:
 
 - `BaseSandbox.create_session(settings=None) -> SandboxSession`
 - `SandboxSession.exec(...) -> SandboxProcess`
 - `SandboxSession.close()`
 - `SandboxProcess.stdout()` / `stderr()` / `wait()` / `kill()` / `exit_code`
 
-Everything else (`attach`, `snapshot`, `restore`, `aexec`, `upload_file`, `download_file`, `destroy`) is opt-in — the base raises `NotImplementedError` and you override only what your backend supports. Register your flavor via the standard `Integration.flavors()` hook.
+Everything else (`attach`, `create_snapshot`, `restore`, `aexec`, `upload_file`, `download_file`, `destroy`) is opt-in — the base raises `NotImplementedError` and you override only what your backend supports. Register your flavor via the standard `Integration.flavors()` hook.
