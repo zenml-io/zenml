@@ -127,14 +127,7 @@ class LoggingContext(context_utils.BaseContext):
         """
         self.log_model = log_model
         self._lock = threading.Lock()
-        # Per-thread re-entrancy guard. The flag was previously a plain
-        # bool, which raced when concurrent drain threads (e.g. the new
-        # SandboxProcess.collect() stdout+stderr threads) both routed
-        # through emit_to: one thread's in-flight True caused the other
-        # to drop its line silently. threading.local keeps the guard
-        # scoped to the calling thread so concurrent emits don't drop
-        # each other.
-        self._disabled = threading.local()
+        self._disabled = False
         self._log_store = Client().active_stack.log_store
         self._metadata = metadata
         self._origin: Optional["BaseLogStoreOrigin"] = None
@@ -152,25 +145,31 @@ class LoggingContext(context_utils.BaseContext):
         return self._name
 
     @classmethod
-    def emit(
+    def dispatch(
         cls,
         record: logging.LogRecord,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
-        """Emit a log record using the active logging context.
+        """Route a log record to the active logging context.
 
         Called by stdout/stderr wrappers and logging handlers to route
         records to whatever context is currently on the stack. Side-
         channel emitters (where the caller knows the target source)
-        should call ``ctx.emit_to(record, metadata)`` on a specific
-        ``LoggingContext`` instead.
+        should call `emit(record, metadata)` on a specific
+        `LoggingContext` instead.
 
         Args:
-            record: The log record to emit.
+            record: The log record to dispatch.
             metadata: Additional metadata to attach to the log entry.
         """
-        if context := LoggingContext.get():
-            context.emit_to(record, metadata)
+        context = LoggingContext.get()
+        if context is None or context._disabled:
+            return
+        context._disabled = True
+        try:
+            context.emit(record, metadata)
+        finally:
+            context._disabled = False
 
     def update(
         self,
@@ -215,12 +214,7 @@ class LoggingContext(context_utils.BaseContext):
         )
 
     def begin(self) -> None:
-        """Register the origin without joining the active-context stack.
-
-        Idempotent. Use this when emitting to this source without
-        pushing the thread-wide context stack (subprocess proxy,
-        sandbox commands).
-        """
+        """Register the origin."""
         with self._lock:
             if self._origin is not None:
                 return
@@ -231,7 +225,7 @@ class LoggingContext(context_utils.BaseContext):
             )
 
     def end(self) -> None:
-        """Deregister the origin set up by `begin()`. Idempotent."""
+        """Deregister the origin."""
         with self._lock:
             if self._origin is not None:
                 self._log_store.deregister_origin(
@@ -239,36 +233,29 @@ class LoggingContext(context_utils.BaseContext):
                 )
                 self._origin = None
 
-    def emit_to(
+    def emit(
         self,
         record: logging.LogRecord,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Emit a record to this context's origin.
 
-        Bypasses the active-context lookup that `LoggingContext.emit`
-        does. No-op when `begin()` has not been called yet (or after
-        `end()`).
-
         Args:
             record: The log record to emit.
             metadata: Additional metadata to attach to the log entry.
         """
-        if getattr(self._disabled, "value", False) or self._origin is None:
+        if self._origin is None:
             return
-        self._disabled.value = True
-        try:
-            message = record.getMessage()
-            if message and message.strip():
+        message = record.getMessage()
+        if message and message.strip():
+            try:
                 self._log_store.emit(
                     origin=self._origin,
                     record=record,
                     metadata=metadata,
                 )
-        except Exception:
-            logger.debug("Failed to emit log record", exc_info=True)
-        finally:
-            self._disabled.value = False
+            except Exception:
+                logger.debug("Failed to emit log record", exc_info=True)
 
     def __enter__(self) -> "LoggingContext":
         """Enter the context and set as active.
@@ -313,7 +300,7 @@ class LoggingContext(context_utils.BaseContext):
             exc_tb: The traceback of the exception.
         """
         if exc_type is not None:
-            LoggingContext.emit(
+            self.emit(
                 logging.LogRecord(
                     name="",
                     level=logging.ERROR,
