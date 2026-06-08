@@ -71,13 +71,13 @@ ONEOF_ERROR = (
     "the provided value is a json formatted list."
 )
 NO_VALUE_ERROR = (
-    "When using 'isempty:'/'isnotempty:', use the explicit 'operator:' form "
-    "without a value (e.g. 'isempty:')."
+    "When using 'isnull:'/'isnotnull:', use the explicit 'operator:' form "
+    "without a value (e.g. 'isnull:')."
 )
 
 VALUELESS_FILTER_OPS = {
-    GenericFilterOps.IS_EMPTY,
-    GenericFilterOps.IS_NOT_EMPTY,
+    GenericFilterOps.IS_NULL,
+    GenericFilterOps.IS_NOT_NULL,
 }
 
 
@@ -172,8 +172,8 @@ class BoolFilter(Filter):
     ALLOWED_OPS: ClassVar[List[str]] = [
         GenericFilterOps.EQUALS,
         GenericFilterOps.NOT_EQUALS,
-        GenericFilterOps.IS_EMPTY,
-        GenericFilterOps.IS_NOT_EMPTY,
+        GenericFilterOps.IS_NULL,
+        GenericFilterOps.IS_NOT_NULL,
     ]
 
     def generate_query_conditions_from_column(self, column: Any) -> Any:
@@ -188,10 +188,10 @@ class BoolFilter(Filter):
         if self.operation == GenericFilterOps.NOT_EQUALS:
             return column != self.value
 
-        if self.operation == GenericFilterOps.IS_EMPTY:
+        if self.operation == GenericFilterOps.IS_NULL:
             return column.is_(None)
 
-        if self.operation == GenericFilterOps.IS_NOT_EMPTY:
+        if self.operation == GenericFilterOps.IS_NOT_NULL:
             return column.is_not(None)
 
         return column == self.value
@@ -209,8 +209,8 @@ class StrFilter(Filter):
         GenericFilterOps.ONEOF,
         GenericFilterOps.NOT_ONEOF,
         GenericFilterOps.NOT_CONTAINS,
-        GenericFilterOps.IS_EMPTY,
-        GenericFilterOps.IS_NOT_EMPTY,
+        GenericFilterOps.IS_NULL,
+        GenericFilterOps.IS_NOT_NULL,
         GenericFilterOps.GT,
         GenericFilterOps.GTE,
         GenericFilterOps.LT,
@@ -297,10 +297,10 @@ class StrFilter(Filter):
         if self.operation == GenericFilterOps.NOT_EQUALS:
             return self._handle_not_equals(column, is_json_encoded)
 
-        if self.operation == GenericFilterOps.IS_EMPTY:
+        if self.operation == GenericFilterOps.IS_NULL:
             return column.is_(None)
 
-        if self.operation == GenericFilterOps.IS_NOT_EMPTY:
+        if self.operation == GenericFilterOps.IS_NOT_NULL:
             return column.is_not(None)
 
         # Default case (EQUALS)
@@ -539,8 +539,8 @@ class NumericFilter(Filter):
     ALLOWED_OPS: ClassVar[List[str]] = [
         GenericFilterOps.EQUALS,
         GenericFilterOps.NOT_EQUALS,
-        GenericFilterOps.IS_EMPTY,
-        GenericFilterOps.IS_NOT_EMPTY,
+        GenericFilterOps.IS_NULL,
+        GenericFilterOps.IS_NOT_NULL,
         GenericFilterOps.GT,
         GenericFilterOps.GTE,
         GenericFilterOps.LT,
@@ -566,9 +566,9 @@ class NumericFilter(Filter):
             return column < self.value
         if self.operation == GenericFilterOps.NOT_EQUALS:
             return column != self.value
-        if self.operation == GenericFilterOps.IS_EMPTY:
+        if self.operation == GenericFilterOps.IS_NULL:
             return column.is_(None)
-        if self.operation == GenericFilterOps.IS_NOT_EMPTY:
+        if self.operation == GenericFilterOps.IS_NOT_NULL:
             return column.is_not(None)
         return column == self.value
 
@@ -583,8 +583,8 @@ class DatetimeFilter(Filter):
     ALLOWED_OPS: ClassVar[List[str]] = [
         GenericFilterOps.EQUALS,
         GenericFilterOps.NOT_EQUALS,
-        GenericFilterOps.IS_EMPTY,
-        GenericFilterOps.IS_NOT_EMPTY,
+        GenericFilterOps.IS_NULL,
+        GenericFilterOps.IS_NOT_NULL,
         GenericFilterOps.GT,
         GenericFilterOps.GTE,
         GenericFilterOps.LT,
@@ -606,9 +606,9 @@ class DatetimeFilter(Filter):
             lower_bound, upper_bound = self.value
             return column.between(lower_bound, upper_bound)
 
-        if self.operation == GenericFilterOps.IS_EMPTY:
+        if self.operation == GenericFilterOps.IS_NULL:
             return column.is_(None)
-        if self.operation == GenericFilterOps.IS_NOT_EMPTY:
+        if self.operation == GenericFilterOps.IS_NOT_NULL:
             return column.is_not(None)
 
         assert isinstance(self.value, datetime)

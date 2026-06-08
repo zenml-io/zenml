@@ -78,8 +78,8 @@ def _test_filter_model(
             continue
 
         if filter_op in {
-            GenericFilterOps.IS_EMPTY,
-            GenericFilterOps.IS_NOT_EMPTY,
+            GenericFilterOps.IS_NULL,
+            GenericFilterOps.IS_NOT_NULL,
         }:
             filter_str = f"{filter_op}:"
         else:
@@ -99,8 +99,8 @@ def _test_filter_model(
         assert isinstance(model_filter, filter_class)
         assert model_filter.operation == filter_op
         if filter_op in {
-            GenericFilterOps.IS_EMPTY,
-            GenericFilterOps.IS_NOT_EMPTY,
+            GenericFilterOps.IS_NULL,
+            GenericFilterOps.IS_NOT_NULL,
         }:
             assert model_filter.value is None
         else:
@@ -230,8 +230,8 @@ def test_datetime_filter_model_fails_for_wrong_formats(
         SomeFilterModel(datetime_field=false_format_datetime)
     for filter_op in GenericFilterOps.values():
         if filter_op in {
-            GenericFilterOps.IS_EMPTY,
-            GenericFilterOps.IS_NOT_EMPTY,
+            GenericFilterOps.IS_NULL,
+            GenericFilterOps.IS_NOT_NULL,
             GenericFilterOps.ONEOF,
             GenericFilterOps.NOT_ONEOF,
         }:
@@ -301,8 +301,8 @@ def test_uuid_filter_model_succeeds_for_invalid_uuid_on_non_equality():
         if filter_op in {GenericFilterOps.ONEOF, GenericFilterOps.NOT_ONEOF}:
             continue
         if filter_op in {
-            GenericFilterOps.IS_EMPTY,
-            GenericFilterOps.IS_NOT_EMPTY,
+            GenericFilterOps.IS_NULL,
+            GenericFilterOps.IS_NOT_NULL,
         }:
             filter_str = f"{filter_op}:"
         else:
@@ -313,8 +313,8 @@ def test_uuid_filter_model_succeeds_for_invalid_uuid_on_non_equality():
         assert isinstance(model_filter, UUIDFilter)
         assert model_filter.operation == filter_op
         if filter_op in {
-            GenericFilterOps.IS_EMPTY,
-            GenericFilterOps.IS_NOT_EMPTY,
+            GenericFilterOps.IS_NULL,
+            GenericFilterOps.IS_NOT_NULL,
         }:
             assert model_filter.value is None
         else:
@@ -324,7 +324,7 @@ def test_uuid_filter_model_succeeds_for_invalid_uuid_on_non_equality():
 
 @pytest.mark.parametrize(
     "filter_op",
-    [GenericFilterOps.IS_EMPTY, GenericFilterOps.IS_NOT_EMPTY],
+    [GenericFilterOps.IS_NULL, GenericFilterOps.IS_NOT_NULL],
 )
 def test_valueless_filter_ops_reject_values(filter_op: GenericFilterOps):
     """Test that valueless operators reject values after the colon."""
@@ -344,13 +344,13 @@ def test_string_filter_model():
 
 def test_repeated_filters_support_valueless_operators() -> None:
     """Test repeated filters with value-based and valueless operators."""
-    model = SomeFilterModel(str_field=["contains:first", "isempty:"])
+    model = SomeFilterModel(str_field=["contains:first", "isnull:"])
 
     filters = [f for f in model.list_of_filters if f.column == "str_field"]
     assert len(filters) == 2
     assert [f.operation for f in filters] == [
         GenericFilterOps.CONTAINS,
-        GenericFilterOps.IS_EMPTY,
+        GenericFilterOps.IS_NULL,
     ]
     assert [f.value for f in filters] == ["first", None]
 

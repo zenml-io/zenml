@@ -486,8 +486,8 @@ class TaggableFilter(BaseFilter):
         if tag_values and any(
             self._resolve_operator(tag)[1]
             not in {
-                GenericFilterOps.IS_EMPTY,
-                GenericFilterOps.IS_NOT_EMPTY,
+                GenericFilterOps.IS_NULL,
+                GenericFilterOps.IS_NOT_NULL,
             }
             for tag in tag_values
         ):
@@ -520,7 +520,7 @@ class TaggableFilter(BaseFilter):
 
             for tag in tag_values:
                 _, operator = self._resolve_operator(tag)
-                if operator == GenericFilterOps.IS_EMPTY:
+                if operator == GenericFilterOps.IS_NULL:
                     custom_filters.append(
                         ~exists(
                             select(TagResourceSchema).where(
@@ -530,7 +530,7 @@ class TaggableFilter(BaseFilter):
                     )
                     continue
 
-                if operator == GenericFilterOps.IS_NOT_EMPTY:
+                if operator == GenericFilterOps.IS_NOT_NULL:
                     custom_filters.append(
                         exists(
                             select(TagResourceSchema).where(
@@ -663,8 +663,8 @@ class RunMetadataFilterMixin(BaseFilter):
            - endswith: String ends with value
            - oneof: Value is one of the specified options
            - notoneof: Value is not one of the specified options
-           - isempty: Value is empty
-           - isnotempty: Value is not empty
+           - isnull: Value is null
+           - isnotnull: Value is not null
            - gte: Greater than or equal to
            - gt: Greater than
            - lte: Less than or equal to
@@ -696,7 +696,7 @@ class RunMetadataFilterMixin(BaseFilter):
                         "equality comparison or 'key:filterop:value' where "
                         "filterop is one of: equals, notequals, "
                         f"contains, notcontains, startswith, endswith, "
-                        f"oneof, notoneof, isempty, isnotempty, gte, gt, "
+                        f"oneof, notoneof, isnull, isnotnull, gte, gt, "
                         f"lte, lt, in."
                     )
         return self
