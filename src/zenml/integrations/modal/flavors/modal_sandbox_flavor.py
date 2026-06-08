@@ -35,40 +35,21 @@ if TYPE_CHECKING:
 class ModalSandboxSettings(BaseSandboxSettings, ModalStepOperatorSettings):
     """Per-step settings for the Modal sandbox."""
 
-    # gpu / region / cloud / modal_environment are inherited from
-    # ModalStepOperatorSettings so the two Modal stack components share a
-    # single source of truth. cpu_count / memory / gpu_count come from the
-    # active step's ResourceSettings.
-
-    base_image: Optional[str] = Field(
-        default=None,
-        description="Container image override for the Modal sandbox. Accepts "
-        "any registry reference Modal can pull (e.g. 'python:3.11-slim', "
-        "'my-registry/my-image:tag'). Pass the module-local sentinel "
-        "'<step>' to reuse the active step's containerized-orchestrator "
-        "image. When None, the component's 'default_image' is used.",
+    image: str = Field(
+        default="python:3.11-slim",
+        description="Docker image used to boot the Modal sandbox. Accepts "
+        "any registry reference Modal can pull. Example: "
+        "'python:3.11-slim', 'my-registry/my-image:tag'.",
     )
 
 
 class ModalSandboxConfig(BaseSandboxConfig, ModalStepOperatorConfig):
     """Configuration for the Modal sandbox component."""
 
-    # Inherits from ModalStepOperatorConfig so token_id / token_secret /
-    # modal_environment / timeout / the both-or-neither validator are
-    # shared with the Modal step operator — a stack running both
-    # components only needs one set of credentials and one timeout knob.
-
     app_name: str = Field(
         default="zenml-sandbox",
         description="Name of the Modal App that hosts Sessions created by "
         "this component. Looked up (or created) lazily.",
-    )
-    default_image: str = Field(
-        default="python:3.11-slim",
-        description="Docker image used when neither the component nor the "
-        "per-step settings specify a base_image. Also the fallback when the "
-        "'<step>' sentinel is requested but no containerized step image is "
-        "available. Example: 'python:3.11-slim'.",
     )
 
 
