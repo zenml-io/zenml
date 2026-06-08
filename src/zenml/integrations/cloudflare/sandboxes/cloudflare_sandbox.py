@@ -15,6 +15,9 @@
 
 import base64
 import json
+import logging
+import os
+import posixpath
 import shlex
 import threading
 import time
@@ -24,8 +27,10 @@ from dataclasses import dataclass
 from typing import (
     TYPE_CHECKING,
     Any,
+    BinaryIO,
     Deque,
     Dict,
+    FrozenSet,
     Iterator,
     List,
     Literal,
@@ -62,22 +67,29 @@ logger = get_logger(__name__)
 # returns 413; we surface a clear error instead.
 _BRIDGE_FILE_MAX_BYTES = 32 * 1024 * 1024
 
-# Status -> retry table cribbed from openai-agents' Cloudflare bridge
-# client. 5xx-but-not-503 errors are typically non-retryable Worker bugs.
-_RETRY_STATUSES: Dict[int, bool] = {
-    400: False,
-    401: False,
-    403: False,
-    404: False,
-    413: False,
-    422: False,
-    429: True,
-    500: False,
-    502: True,
-    503: True,
-    504: True,
-}
+# Bridge status codes worth retrying. Cribbed from openai-agents' Cloudflare
+# bridge client — 5xx Worker bugs (500) are non-retryable; transient upstream
+# / rate-limit codes are.
+_RETRYABLE_STATUSES: FrozenSet[int] = frozenset({429, 502, 503, 504})
 _MAX_RETRIES = 3
+
+
+class _BridgeHTTPError(SandboxExecError):
+    """Bridge returned a non-2xx response. Carries the HTTP status code.
+
+    Used by `_CloudflareBridgeClient` so callers can branch on status code
+    structurally instead of substring-matching the message.
+    """
+
+    def __init__(self, message: str, *, status_code: int) -> None:
+        """Initialize the error.
+
+        Args:
+            message: Human-readable error description.
+            status_code: HTTP status code from the bridge.
+        """
+        super().__init__(message)
+        self.status_code = status_code
 
 
 @dataclass(frozen=True)
@@ -86,6 +98,45 @@ class _BridgeEvent:
 
     kind: Literal["stdout", "stderr", "exit", "error"]
     data: Any
+
+
+def _sanitize_remote_path(remote_path: str) -> str:
+    """Validate and normalize a file path going to the bridge.
+
+    The bridge confines paths to /workspace server-side, but a request can
+    still wind up at an unexpected URL if the client lets `..` segments
+    through unencoded (httpx / RFC3986 path-merge may re-resolve, or a
+    reverse proxy may normalize before the bridge sees it). Reject anything
+    that doesn't normalize back to itself under POSIX rules.
+
+    Args:
+        remote_path: A path inside the sandbox.
+
+    Returns:
+        The cleaned path with no leading slash, ready for URL composition.
+
+    Raises:
+        ValueError: If the path contains parent-directory segments, is
+            absolute, or otherwise doesn't normalize to a clean relative
+            path under /workspace.
+    """
+    if not remote_path or not remote_path.strip():
+        raise ValueError("Remote path must be a non-empty string.")
+    if "\x00" in remote_path:
+        raise ValueError("Remote path must not contain NUL bytes.")
+    stripped = remote_path.lstrip("/")
+    normalized = posixpath.normpath(stripped)
+    if (
+        normalized == "."
+        or normalized.startswith("..")
+        or "/.." in normalized
+        or normalized.startswith("/")
+    ):
+        raise ValueError(
+            f"Remote path '{remote_path}' resolves outside the sandbox "
+            "workspace. Use a relative path with no '..' segments."
+        )
+    return normalized
 
 
 def _parse_sse_stream(lines: Iterator[str]) -> Iterator[_BridgeEvent]:
@@ -98,50 +149,58 @@ def _parse_sse_stream(lines: Iterator[str]) -> Iterator[_BridgeEvent]:
         One ``_BridgeEvent`` per dispatch.
 
     Raises:
-        SandboxExecError: If the bridge emits an ``event: error`` frame.
+        SandboxExecError: If the bridge emits an ``event: error`` frame, or
+            if a data frame is malformed (base64 / JSON).
     """
     event: Optional[str] = None
     data_chunks: List[str] = []
 
-    for line in lines:
-        # SSE dispatch boundary.
-        if line == "":
-            if event is None and not data_chunks:
-                continue
-            raw_data = "\n".join(data_chunks)
-            kind = event or "message"
-            event = None
-            data_chunks = []
+    def _dispatch() -> Iterator[_BridgeEvent]:
+        nonlocal event, data_chunks
+        if event is None and not data_chunks:
+            return
+        raw_data = "\n".join(data_chunks)
+        kind = event or "message"
+        event = None
+        data_chunks = []
 
-            if kind == "stdout" or kind == "stderr":
-                try:
-                    decoded = base64.b64decode(raw_data).decode(
-                        "utf-8", errors="replace"
-                    )
-                except Exception as e:
-                    raise SandboxExecError(
-                        f"Malformed base64 on bridge '{kind}' frame: {e}"
-                    ) from e
-                yield _BridgeEvent(kind=kind, data=decoded)
-            elif kind == "exit":
-                try:
-                    payload = json.loads(raw_data) if raw_data else {}
-                except json.JSONDecodeError as e:
-                    raise SandboxExecError(
-                        f"Malformed JSON on bridge 'exit' frame: {e}"
-                    ) from e
-                yield _BridgeEvent(
-                    kind="exit", data=int(payload.get("exit_code", 0))
+        if kind == "stdout" or kind == "stderr":
+            try:
+                decoded = base64.b64decode(raw_data).decode(
+                    "utf-8", errors="replace"
                 )
-            elif kind == "error":
-                try:
-                    payload = json.loads(raw_data) if raw_data else {}
-                except json.JSONDecodeError:
-                    payload = {"error": raw_data}
+            except Exception as e:
                 raise SandboxExecError(
-                    f"Bridge exec error: {payload.get('error', payload)}"
+                    f"Malformed base64 on bridge '{kind}' frame: {e}"
+                ) from e
+            yield _BridgeEvent(kind=kind, data=decoded)
+        elif kind == "exit":
+            try:
+                payload = json.loads(raw_data) if raw_data else {}
+            except json.JSONDecodeError as e:
+                raise SandboxExecError(
+                    f"Malformed JSON on bridge 'exit' frame: {e}"
+                ) from e
+            if "exit_code" not in payload:
+                # Missing exit_code is a protocol bug — surface it instead
+                # of silently coercing to 0 (which would mask a failure).
+                raise SandboxExecError(
+                    f"Bridge 'exit' frame missing 'exit_code': {payload!r}"
                 )
-            # Unknown event kinds are ignored per SSE spec.
+            yield _BridgeEvent(kind="exit", data=int(payload["exit_code"]))
+        elif kind == "error":
+            try:
+                payload = json.loads(raw_data) if raw_data else {}
+            except json.JSONDecodeError:
+                payload = {"error": raw_data}
+            raise SandboxExecError(
+                f"Bridge exec error: {payload.get('error', payload)}"
+            )
+        # Unknown event kinds are ignored per SSE spec.
+
+    for line in lines:
+        if line == "":
+            yield from _dispatch()
             continue
 
         if line.startswith(":"):
@@ -155,6 +214,12 @@ def _parse_sse_stream(lines: Iterator[str]) -> Iterator[_BridgeEvent]:
                 chunk = chunk[1:]
             data_chunks.append(chunk)
         # Other field types ("id:", "retry:") are accepted but ignored.
+
+    # Flush a trailing buffered event if the stream ended without a final
+    # blank line. Without this, a bridge that closes the connection
+    # right after writing `event: exit\ndata: ...\n` would silently lose
+    # the exit frame and the caller would see exit_code=0.
+    yield from _dispatch()
 
 
 class _CloudflareBridgeClient:
@@ -266,7 +331,7 @@ class _CloudflareBridgeClient:
             if resp.status_code < 400:
                 return resp
 
-            retryable = _RETRY_STATUSES.get(resp.status_code, False)
+            retryable = resp.status_code in _RETRYABLE_STATUSES
             body_preview = ""
             if not stream:
                 try:
@@ -280,9 +345,10 @@ class _CloudflareBridgeClient:
                     pass
 
             if not retryable or attempt >= _MAX_RETRIES:
-                raise SandboxExecError(
+                raise _BridgeHTTPError(
                     f"Bridge {method} {path} returned "
-                    f"{resp.status_code}: {body_preview}"
+                    f"{resp.status_code}: {body_preview}",
+                    status_code=resp.status_code,
                 )
             time.sleep(0.25 * (2**attempt))
 
@@ -351,11 +417,15 @@ class _CloudflareBridgeClient:
             resp = self._request(
                 "POST", f"/v1/sandbox/{sandbox_id}/session", json_body=body
             )
-        except SandboxExecError as e:
-            if not env or ("400" not in str(e) and "422" not in str(e)):
+        except _BridgeHTTPError as e:
+            # Only retry without env on a body-shape rejection (400 / 422).
+            # Any other status (auth, infra, 5xx) bubbles up unchanged.
+            if not env or e.status_code not in (400, 422):
                 raise
             logger.debug(
-                "Bridge rejected env on session create; retrying without env: %s",
+                "Bridge rejected env body on session create (HTTP %d); "
+                "retrying without env: %s",
+                e.status_code,
                 e,
             )
             resp = self._request(
@@ -430,64 +500,79 @@ class _CloudflareBridgeClient:
         self,
         sandbox_id: str,
         remote_path: str,
-        data: bytes,
+        content: Union[bytes, BinaryIO],
         *,
+        size: int,
         session_id: Optional[str] = None,
     ) -> None:
-        """Upload raw bytes to a sandbox path.
+        """Upload bytes or a streamed body to a sandbox path.
 
         Args:
             sandbox_id: The sandbox to write into.
-            remote_path: Server-side path (must be under /workspace).
-            data: Raw file bytes; max 32 MiB.
+            remote_path: Path inside the sandbox workspace. Parent-directory
+                segments and absolute paths are rejected.
+            content: Raw bytes or an open binary file-like; httpx streams it
+                without copying into one buffer.
+            size: Pre-known content length, used to enforce the 32 MiB cap
+                without slurping the body.
             session_id: Optional bridge session id.
 
         Raises:
-            ValueError: If the file exceeds the bridge body limit.
+            ValueError: If the file exceeds the bridge body limit or the
+                remote path is unsafe.
         """
-        if len(data) > _BRIDGE_FILE_MAX_BYTES:
+        if size > _BRIDGE_FILE_MAX_BYTES:
             raise ValueError(
-                f"File of {len(data)} bytes exceeds the bridge limit of "
+                f"File of {size} bytes exceeds the bridge limit of "
                 f"{_BRIDGE_FILE_MAX_BYTES} bytes (32 MiB)."
             )
-        encoded = urllib.parse.quote(remote_path.lstrip("/"), safe="/")
-        headers = {"Content-Type": "application/octet-stream"}
+        safe_path = _sanitize_remote_path(remote_path)
+        encoded = urllib.parse.quote(safe_path, safe="/")
+        headers = {
+            "Content-Type": "application/octet-stream",
+            "Content-Length": str(size),
+        }
         if session_id is not None:
             headers["Session-Id"] = session_id
         self._request(
             "PUT",
             f"/v1/sandbox/{sandbox_id}/file/{encoded}",
-            content=data,
+            content=content,
             headers=headers,
         )
 
-    def get_file(
+    def get_file_stream(
         self,
         sandbox_id: str,
         remote_path: str,
         *,
         session_id: Optional[str] = None,
-    ) -> bytes:
-        """Download raw bytes from a sandbox path.
+    ) -> "httpx.Response":
+        """Download a sandbox file as a streamed response.
+
+        The caller owns the response and MUST close it (or use ``with``)
+        after consuming ``iter_bytes()`` — see ``CloudflareSandboxSession
+        .download_file`` for the canonical pattern.
 
         Args:
             sandbox_id: The sandbox to read from.
-            remote_path: Server-side path under /workspace.
+            remote_path: Path inside the sandbox workspace.
             session_id: Optional bridge session id.
 
         Returns:
-            The raw file contents.
+            The streamed httpx Response.
         """
-        encoded = urllib.parse.quote(remote_path.lstrip("/"), safe="/")
+        safe_path = _sanitize_remote_path(remote_path)
+        encoded = urllib.parse.quote(safe_path, safe="/")
         headers: Dict[str, str] = {}
         if session_id is not None:
             headers["Session-Id"] = session_id
-        resp = self._request(
+        return self._request(
             "GET",
             f"/v1/sandbox/{sandbox_id}/file/{encoded}",
             headers=headers,
+            stream=True,
         )
-        return resp.content
 
 
 class CloudflareSandboxProcess(SandboxProcess):
@@ -574,6 +659,9 @@ class CloudflareSandboxProcess(SandboxProcess):
                     elif ev.kind == "exit":
                         self._exit_code = int(cast(int, ev.data))
                     self._data_available.notify_all()
+        except GeneratorExit:
+            # kill() closed the iterator. Not an error.
+            pass
         except BaseException as e:  # noqa: BLE001
             self._pump_error = e
         finally:
@@ -602,54 +690,89 @@ class CloudflareSandboxProcess(SandboxProcess):
             yield line
 
     def stdout(self) -> Iterator[str]:
-        """Yields stdout lines as they arrive.
+        """Yields stdout lines, routed through the session log source.
 
         Returns:
-            Line iterator.
+            Line iterator wrapped via ``session._wrap_stream`` so each line
+            also lands in the per-session ``sandbox:<id>`` log.
         """
-        return self._iter_buffer(self._stdout_buf)
+        return self._session._wrap_stream(
+            self._iter_buffer(self._stdout_buf), log_level=logging.INFO
+        )
 
     def stderr(self) -> Iterator[str]:
-        """Yields stderr lines as they arrive.
+        """Yields stderr lines, routed through the session log source.
 
         Returns:
-            Line iterator.
+            Line iterator wrapped via ``session._wrap_stream`` so each line
+            also lands in the per-session ``sandbox:<id>`` log.
         """
-        return self._iter_buffer(self._stderr_buf)
+        return self._session._wrap_stream(
+            self._iter_buffer(self._stderr_buf), log_level=logging.ERROR
+        )
 
     def wait(self, timeout: Optional[float] = None) -> int:
-        """Block until the process exits.
+        """Block until the process exits, or ``timeout`` seconds pass.
 
         Args:
-            timeout: Not supported; the bridge has no per-wait timeout.
+            timeout: Optional wall-clock cap. ``None`` waits indefinitely.
 
         Returns:
-            The exit code from the bridge.
+            The exit code captured from the bridge.
 
         Raises:
-            NotImplementedError: If ``timeout`` is not ``None``.
-            SandboxExecError: If the pump captured an error.
+            TimeoutError: If ``timeout`` elapsed before the bridge sent an
+                ``exit`` frame. The pump keeps running; call ``kill()`` to
+                stop it.
+            SandboxExecError: If the pump captured an error, or if the SSE
+                stream ended without an ``exit`` frame (treated as failure,
+                NOT silently as exit code 0 — that would mask real bugs).
         """
-        if timeout is not None:
-            raise NotImplementedError(
-                "Cloudflare bridge does not support per-wait timeouts. Use "
-                "CloudflareSandboxSettings.timeout_ms to bound each exec."
+        completed = self._done.wait(timeout)
+        if not completed:
+            raise TimeoutError(
+                f"Cloudflare exec did not complete within {timeout}s. "
+                "Call process.kill() or session.destroy() to release the "
+                "bridge stream."
             )
-        self._done.wait()
         if self._pump_error is not None:
             if isinstance(self._pump_error, SandboxExecError):
                 raise self._pump_error
             raise SandboxExecError(
                 f"Bridge SSE pump failed: {self._pump_error}"
             ) from self._pump_error
-        return self._exit_code if self._exit_code is not None else 0
+        if self._exit_code is None:
+            # Stream ended cleanly but no exit frame arrived (truncated
+            # SSE, killed via kill(), bridge stalled out). Surface this
+            # as a failure rather than returning a bogus 0.
+            raise SandboxExecError(
+                "Cloudflare exec finished without an exit frame; the bridge "
+                "stream may have been truncated, killed, or stalled."
+            )
+        return self._exit_code
 
     def kill(self) -> None:
-        """Best-effort: the bridge has no per-exec kill primitive."""
-        logger.warning(
-            "Cloudflare bridge does not support per-exec kill; call "
-            "session.destroy() to terminate the whole sandbox."
-        )
+        """Stop reading the SSE stream and unblock consumers.
+
+        The bridge has no per-exec kill RPC, so this can't actually
+        terminate the in-flight command on Cloudflare's side. What we CAN
+        do is close the SSE generator (which closes the underlying httpx
+        response and unblocks the pump thread), then signal `_done` so
+        `wait()` and `stdout()`/`stderr()` consumers stop waiting.
+        Use ``session.destroy()`` to force-terminate the whole sandbox.
+        """
+        # Closing the generator triggers GeneratorExit inside
+        # exec_stream, whose finally clause closes the httpx response.
+        try:
+            self._event_iter.close()
+        except Exception:
+            logger.debug(
+                "Closing bridge SSE iterator during kill() failed",
+                exc_info=True,
+            )
+        with self._data_available:
+            self._done.set()
+            self._data_available.notify_all()
 
     @property
     def exit_code(self) -> Optional[int]:
@@ -730,17 +853,24 @@ class CloudflareSandboxSession(SandboxSession):
             if isinstance(command, list)
             else shlex.split(command)
         )
-        if env:
-            prefix = ["env", *[f"{k}={v}" for k, v in env.items()]]
-            argv = prefix + argv
-
+        # Log the user-visible command BEFORE prefixing env=KEY=VAL into argv.
+        # Per-exec env values are often secrets (API keys, tokens); logging
+        # the prefixed argv would persist them in the sandbox log source.
         self._log_command(argv)
+        if env:
+            self._emit_log(
+                f"(env: {', '.join(sorted(env))})",
+            )
+            wire_argv = ["env", *[f"{k}={v}" for k, v in env.items()], *argv]
+        else:
+            wire_argv = argv
+
         effective_cwd = cwd if cwd is not None else self._default_cwd
         started_at = time.time()
         try:
             event_iter = self._client.exec_stream(
                 self._sandbox_id,
-                argv,
+                wire_argv,
                 cwd=effective_cwd,
                 timeout_ms=self._default_timeout_ms,
                 session_id=self._bridge_session_id,
@@ -759,33 +889,49 @@ class CloudflareSandboxSession(SandboxSession):
     def upload_file(self, local_path: str, remote_path: str) -> None:
         """Upload a local file into the sandbox.
 
+        Streams the file body through httpx without buffering it into one
+        in-memory bytes object.
+
         Args:
             local_path: Source path on the caller's machine.
-            remote_path: Destination path inside the sandbox.
+            remote_path: Destination path inside the sandbox workspace.
         """
+        size = os.path.getsize(local_path)
         with open(local_path, "rb") as f:
-            data = f.read()
-        self._client.put_file(
-            self._sandbox_id,
-            remote_path,
-            data,
-            session_id=self._bridge_session_id,
-        )
+            self._client.put_file(
+                self._sandbox_id,
+                remote_path,
+                f,
+                size=size,
+                session_id=self._bridge_session_id,
+            )
 
     def download_file(self, remote_path: str, local_path: str) -> None:
         """Download a file from the sandbox.
 
+        Streams the response body chunk-by-chunk to local disk.
+
         Args:
-            remote_path: Source path inside the sandbox.
+            remote_path: Source path inside the sandbox workspace.
             local_path: Destination path on the caller's machine.
         """
-        data = self._client.get_file(
+        resp = self._client.get_file_stream(
             self._sandbox_id,
             remote_path,
             session_id=self._bridge_session_id,
         )
-        with open(local_path, "wb") as f:
-            f.write(data)
+        try:
+            with open(local_path, "wb") as f:
+                for chunk in resp.iter_bytes():
+                    f.write(chunk)
+        finally:
+            try:
+                resp.close()
+            except Exception:
+                logger.debug(
+                    "Closing bridge file-download response failed",
+                    exc_info=True,
+                )
 
     def close(self) -> None:
         """Release bridge-session state, if any. The sandbox keeps running."""
@@ -918,6 +1064,21 @@ class CloudflareSandbox(BaseSandbox):
                 )
             return self._client
 
+    def cleanup(self) -> None:
+        """Close the cached bridge HTTP client.
+
+        Called by ``Stack.cleanup`` when the stack is torn down. Without
+        this, the owned httpx.Client (and its connection pool) leaks for
+        the lifetime of the process.
+        """
+        with self._client_lock:
+            if self._client is not None:
+                try:
+                    self._client.close()
+                finally:
+                    self._client = None
+        super().cleanup()
+
     def _effective_settings(
         self, settings: Optional[BaseSandboxSettings]
     ) -> Tuple[CloudflareSandboxSettings, Dict[str, str]]:
@@ -946,9 +1107,18 @@ class CloudflareSandbox(BaseSandbox):
         """
         eff, env = self._effective_settings(settings)
 
-        # Resolve image so logs reflect the intended target even though
-        # the bridge ignores it today.
-        _resolve_image(eff.base_image, self.config.default_image)
+        # Resolve the intended image so it shows up in logs and can be
+        # cross-referenced with the bridge run; the bridge does not yet
+        # accept a custom image on POST /v1/sandbox, so the value is
+        # informational until that endpoint exposes one.
+        resolved_image = _resolve_image(
+            eff.base_image, self.config.default_image
+        )
+        logger.info(
+            "Cloudflare sandbox image (informational; bridge selects its "
+            "own image): %s",
+            resolved_image,
+        )
 
         client = self._get_client()
         sandbox_id = client.create_sandbox()

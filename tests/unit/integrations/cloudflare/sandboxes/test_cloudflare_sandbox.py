@@ -20,7 +20,8 @@ talking to a real Cloudflare Worker.
 
 import base64
 import json
-from typing import Any, Dict, List, Optional
+import threading
+from typing import Any, Dict, Iterator, List, Optional
 from unittest.mock import MagicMock
 from uuid import uuid4
 
@@ -63,6 +64,18 @@ def _make_client(handler: Any) -> _CloudflareBridgeClient:
     return _CloudflareBridgeClient(
         WORKER_URL, API_KEY, http_client=http_client
     )
+
+
+def _passthrough_session() -> MagicMock:
+    """Stub session whose ``_wrap_stream`` returns its input iterator unchanged.
+
+    The real ``SandboxSession._wrap_stream`` routes each line through the
+    per-session log source; for unit tests we just need a passthrough so
+    ``CloudflareSandboxProcess.stdout()/stderr()`` consumers can iterate.
+    """
+    session = MagicMock()
+    session._wrap_stream.side_effect = lambda lines, **_: lines
+    return session
 
 
 def _make_session(
@@ -199,6 +212,34 @@ class TestSSEParser:
         with pytest.raises(SandboxExecError):
             list(_parse_sse_stream(lines))
 
+    def test_exit_event_without_trailing_blank_line_dispatched(self) -> None:
+        # Bridge may close the connection right after the last data line
+        # without a trailing blank line — parser must flush the buffered
+        # event on EOF, otherwise wait() reports a bogus 0 exit code.
+        lines = iter(
+            [
+                "event: exit",
+                'data: {"exit_code": 137}',
+            ]
+        )
+        events = list(_parse_sse_stream(lines))
+        assert len(events) == 1
+        assert events[0].kind == "exit"
+        assert events[0].data == 137
+
+    def test_exit_event_missing_exit_code_raises(self) -> None:
+        # Defending against a malformed bridge response: missing exit_code
+        # must surface as an error, not be silently coerced to 0.
+        lines = iter(
+            [
+                "event: exit",
+                "data: {}",
+                "",
+            ]
+        )
+        with pytest.raises(SandboxExecError, match="missing 'exit_code'"):
+            list(_parse_sse_stream(lines))
+
 
 class TestBridgeClient:
     def test_auth_header_sent(self) -> None:
@@ -262,6 +303,22 @@ class TestBridgeClient:
         assert sid == "sess_1"
         assert captured["body"] == {"env": {"K": "V"}}
 
+    def test_create_bridge_session_does_not_fallback_on_500_with_422_in_body(
+        self,
+    ) -> None:
+        # Regression: an earlier impl matched the substring '400'/'422'
+        # in str(e), which would silently drop user env when a real 5xx
+        # body coincidentally contained those digits. Now we branch on
+        # the HTTP status code structurally.
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(
+                500, json={"error": "gateway timeout after 4220ms"}
+            )
+
+        client = _make_client(handler)
+        with pytest.raises(SandboxExecError, match="500"):
+            client.create_bridge_session("sb_1", env={"K": "V"})
+
     def test_create_bridge_session_falls_back_on_422(self) -> None:
         calls: List[Dict[str, Any]] = []
 
@@ -290,7 +347,10 @@ class TestBridgeClient:
         client = _make_client(handler)
         with pytest.raises(ValueError, match="exceeds the bridge limit"):
             client.put_file(
-                "sb_1", "big.bin", b"x" * (_BRIDGE_FILE_MAX_BYTES + 1)
+                "sb_1",
+                "big.bin",
+                b"x",
+                size=_BRIDGE_FILE_MAX_BYTES + 1,
             )
 
     def test_put_file_session_header(self) -> None:
@@ -302,16 +362,29 @@ class TestBridgeClient:
             return httpx.Response(200, json={"ok": True})
 
         client = _make_client(handler)
-        client.put_file("sb_1", "a/b.txt", b"hello", session_id="sess_2")
+        client.put_file(
+            "sb_1", "a/b.txt", b"hello", size=5, session_id="sess_2"
+        )
         assert captured["session"] == "sess_2"
         assert captured["path"] == "/v1/sandbox/sb_1/file/a/b.txt"
 
-    def test_get_file_returns_bytes(self) -> None:
+    def test_put_file_rejects_path_traversal(self) -> None:
+        client = _make_client(
+            lambda req: httpx.Response(200, json={"ok": True})
+        )
+        with pytest.raises(ValueError, match="resolves outside"):
+            client.put_file("sb_1", "../../etc/passwd", b"x", size=1)
+
+    def test_get_file_stream_returns_streamed_response(self) -> None:
         def handler(request: httpx.Request) -> httpx.Response:
             return httpx.Response(200, content=b"payload")
 
         client = _make_client(handler)
-        assert client.get_file("sb_1", "x.txt") == b"payload"
+        resp = client.get_file_stream("sb_1", "x.txt")
+        try:
+            assert b"".join(resp.iter_bytes()) == b"payload"
+        finally:
+            resp.close()
 
     def test_non_retryable_error_raises(self) -> None:
         def handler(request: httpx.Request) -> httpx.Response:
@@ -324,7 +397,7 @@ class TestBridgeClient:
 
 class TestProcessDemux:
     def test_stdout_and_exit(self) -> None:
-        session = MagicMock()
+        session = _passthrough_session()
         events = iter(
             [
                 type("E", (), {"kind": "stdout", "data": "line1\nline2\n"})(),
@@ -340,7 +413,7 @@ class TestProcessDemux:
         assert proc.exit_code == 0
 
     def test_stderr_demux(self) -> None:
-        session = MagicMock()
+        session = _passthrough_session()
         events = iter(
             [
                 type("E", (), {"kind": "stderr", "data": "err\n"})(),
@@ -356,7 +429,7 @@ class TestProcessDemux:
         assert "ok\n" in list(proc.stdout())
 
     def test_partial_line_flushed(self) -> None:
-        session = MagicMock()
+        session = _passthrough_session()
         events = iter(
             [
                 type("E", (), {"kind": "stdout", "data": "abc"})(),
@@ -369,15 +442,69 @@ class TestProcessDemux:
         proc.wait()
         assert list(proc.stdout()) == ["abc"]
 
-    def test_wait_with_timeout_raises(self) -> None:
-        session = MagicMock()
-        events = iter([type("E", (), {"kind": "exit", "data": 0})()])
+    def test_wait_returns_captured_exit_code(self) -> None:
+        session = _passthrough_session()
+        events = iter([type("E", (), {"kind": "exit", "data": 7})()])
         proc = CloudflareSandboxProcess(
             events, session=session, started_at=0.0
         )
-        proc.wait()
-        with pytest.raises(NotImplementedError):
-            proc.wait(timeout=1.0)
+        assert proc.wait() == 7
+
+    def test_wait_timeout_raises_timeout_error(self) -> None:
+        # Generator that never yields anything — pump hangs until kill().
+        def _block() -> Iterator[Any]:
+            evt = threading.Event()
+            evt.wait()
+            yield  # pragma: no cover
+
+        session = _passthrough_session()
+        proc = CloudflareSandboxProcess(
+            _block(), session=session, started_at=0.0
+        )
+        try:
+            with pytest.raises(TimeoutError):
+                proc.wait(timeout=0.05)
+        finally:
+            proc.kill()
+            # Pump should now be unblocked; subsequent wait must not hang.
+
+    def test_wait_raises_when_exit_frame_missing(self) -> None:
+        # Pump finishes (iterator exhausted) but never saw an exit event.
+        session = _passthrough_session()
+        events = iter(
+            [type("E", (), {"kind": "stdout", "data": "partial\n"})()]
+        )
+        proc = CloudflareSandboxProcess(
+            events, session=session, started_at=0.0
+        )
+        with pytest.raises(SandboxExecError, match="without an exit frame"):
+            proc.wait()
+
+    def test_kill_unblocks_consumers(self) -> None:
+        # Generator that yields nothing and parks until close()d.
+        opened = threading.Event()
+        released = threading.Event()
+
+        def _hang() -> Iterator[Any]:
+            opened.set()
+            try:
+                while True:
+                    released.wait(timeout=10.0)
+                    if released.is_set():
+                        return
+            except GeneratorExit:
+                return
+            yield  # pragma: no cover
+
+        session = _passthrough_session()
+        proc = CloudflareSandboxProcess(
+            _hang(), session=session, started_at=0.0
+        )
+        opened.wait(timeout=1.0)
+        proc.kill()
+        # kill() must signal _done so wait() returns / raises promptly.
+        with pytest.raises(SandboxExecError):
+            proc.wait(timeout=2.0)
 
 
 class TestSessionExec:
