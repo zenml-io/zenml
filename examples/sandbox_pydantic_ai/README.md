@@ -99,7 +99,7 @@ print(run.steps["reducer_step"].outputs["final_answer"][0].load())
 - **Make subagents independent.** The planner's system prompt insists on no shared state; if you write a leading query that implies a pipeline, the planner may still produce dependent subtasks and you'll see "file not found" errors from subagents 2+.
 - **Sandbox timeout.** The default Modal Sandbox TTL is 5 min; `ModalSandboxSettings(timeout_seconds=900)` in `run.py` lifts it to 15 min for slow agent loops. Applied to both `create_session` and `restore`.
 - **PydanticAI usage limit.** Default is 50 LLM requests per `run_sync`. The example bumps to 200 in `run_agent_in_session` since multi-step tool-using loops can chew through the budget on a slow day.
-- **Richer base image.** The default Modal image is `python:3.11-slim` — bare Python. The agent's system prompt teaches it to `pip install` on demand, and `prep_step` does this once and snapshots. To skip the snapshot dance, register the sandbox with a pre-built sci-py image: `--default_image=ghcr.io/your-org/scipy-base:latest`.
+- **Richer base image.** The default Modal image is `python:3.11-slim` — bare Python. The agent's system prompt teaches it to `pip install` on demand, and `prep_step` does this once and snapshots. To skip the snapshot dance, pass a pre-built sci-py image in `ModalSandboxSettings(image="ghcr.io/your-org/scipy-base:latest")` on the relevant step.
 
 ## Switching sandbox flavors
 
