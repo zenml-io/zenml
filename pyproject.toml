@@ -86,7 +86,7 @@ server = [
     "fastapi>=0.100,<=0.115.8",
     "uvicorn[standard]>=0.17.5",
     "python-multipart~=0.0.9",
-    "pyjwt[crypto]>=2.12.0,<2.13.0",
+    "pyjwt[crypto]>=2.13.0,<2.14.0",
     "fastapi-utils",
     "orjson>=3.11.6,<3.12.0",
     "Jinja2",
