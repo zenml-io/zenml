@@ -23,7 +23,7 @@ import sys
 from contextlib import contextmanager
 from datetime import datetime
 from typing import Any, Iterator, List
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, sentinel
 from uuid import uuid4
 
 import pytest
@@ -152,11 +152,11 @@ class TestSettingsMerge:
         sandbox = _make_modal_sandbox(
             config=ModalSandboxConfig(gpu="A100", region="us-east"),
         )
-        override = ModalSandboxSettings(timeout_seconds=600)
+        override = ModalSandboxSettings(timeout=600)
         eff = sandbox.resolve_settings(override)
         assert eff.gpu == "A100"
         assert eff.region == "us-east"
-        assert eff.timeout_seconds == 600
+        assert eff.timeout == 600
 
     def test_override_wins_on_explicit_field_collision(self) -> None:
         sandbox = _make_modal_sandbox(config=ModalSandboxConfig(gpu="A100"))
@@ -244,14 +244,19 @@ class TestModalSandboxSession:
         _make_session(fake_sandbox).exec("python -c 'print(1)'")
         fake_sandbox.exec.assert_called_once_with("python", "-c", "print(1)")
 
-    def test_exec_passes_env_kwarg(self) -> None:
-        # Modal 1.x runtime env path: env= goes directly through, no
-        # modal.Secret wrapping.
+    def test_exec_wraps_env_in_modal_secret(self) -> None:
+        # Per-exec env still rides on secrets=[modal.Secret.from_dict(...)]
+        # until Sandbox.exec(env=) is verified against Modal 1.x runtime.
         fake_sandbox = MagicMock(object_id="sb_xyz")
         fake_sandbox.exec.return_value = MagicMock()
-        _make_session(fake_sandbox).exec(["echo", "hi"], env={"FOO": "bar"})
+        with patch("modal.Secret.from_dict") as fake_from_dict:
+            fake_from_dict.return_value = sentinel.secret
+            _make_session(fake_sandbox).exec(
+                ["echo", "hi"], env={"FOO": "bar"}
+            )
+        fake_from_dict.assert_called_once_with({"FOO": "bar"})
         fake_sandbox.exec.assert_called_once_with(
-            "echo", "hi", env={"FOO": "bar"}
+            "echo", "hi", secrets=[sentinel.secret]
         )
 
     def test_exec_launch_failure_raises_sandbox_exec_error(self) -> None:
@@ -333,13 +338,6 @@ class TestGetModalClient:
         assert sandbox._get_modal_client() is None
 
     def test_returns_client_when_credentials_configured(self) -> None:
-        # token_id / token_secret only exist after strickvl's PR #4038
-        # lands on the step operator config; until then, the attributes
-        # are absent and _get_modal_client falls through to None.
-        config = ModalSandboxConfig()
-        if "token_id" not in type(config).model_fields:
-            pytest.skip("token_id field not yet present on config")
-
         sandbox = _make_modal_sandbox(
             config=ModalSandboxConfig(
                 token_id="ak-test", token_secret="as-test"
