@@ -1526,9 +1526,6 @@ class FilterGenerator:
 
         Returns:
             A Filter object.
-
-        Raises:
-            ValueError: If the value is not a valid boolean.
         """
         if operator in VALUELESS_FILTER_OPS:
             return BoolFilter(
