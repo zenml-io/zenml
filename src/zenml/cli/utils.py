@@ -2966,7 +2966,7 @@ def list_options(
 
     This decorator generates click options from a FilterModel and adds standard
     output formatting options (--columns, --output). The decorated function
-    receives these as regular parameters - no magic interception!
+    receives these as regular parameters.
 
     The function should call print_page() to render results.
 
@@ -2992,7 +2992,7 @@ def list_options(
     def inner_decorator(func: F) -> F:
         options = []
         data_type_descriptors = set()
-        multi_value_fields: Set[str] = set()
+        multi_value_fields: set[str] = set()
         for k, v in filter_model.model_fields.items():
             if k not in filter_model.CLI_EXCLUDE_FIELDS:
                 is_multiple = _is_list_field(v)
@@ -3048,8 +3048,29 @@ def list_options(
         )
 
         def wrapper(function: F) -> F:
+            """Wrap the function with the Click options.
+
+            Args:
+                function: The function to wrap.
+
+            Returns:
+                The wrapped function.
+            """
+
             @wraps(function)
             def normalized_function(*args: Any, **kwargs: Any) -> Any:
+                """Normalize Click tuples for multi-value filter options.
+
+                This is necessary because Click options for multi-value fields are
+                converted to tuples, and the client methods expect lists.
+
+                Args:
+                    args: The positional arguments.
+                    kwargs: The keyword arguments.
+
+                Returns:
+                    The wrapped function result.
+                """
                 for field_name in multi_value_fields:
                     if field_name not in kwargs:
                         continue
