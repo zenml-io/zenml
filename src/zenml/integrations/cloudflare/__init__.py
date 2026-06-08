@@ -17,6 +17,7 @@ The Cloudflare integration provides stack components backed by Cloudflare's
 developer platform: an artifact store on top of R2 (S3-compatible object
 storage) and a container registry on top of the Cloudflare managed registry.
 """
+
 from typing import List, Type
 
 from zenml.integrations.constants import CLOUDFLARE
@@ -25,6 +26,7 @@ from zenml.stack import Flavor
 
 CLOUDFLARE_R2_ARTIFACT_STORE_FLAVOR = "r2"
 CLOUDFLARE_CONTAINER_REGISTRY_FLAVOR = "cloudflare"
+CLOUDFLARE_SANDBOX_FLAVOR = "cloudflare"
 
 # Service connector type and resource types.
 CLOUDFLARE_CONNECTOR_TYPE = "cloudflare"
@@ -44,6 +46,10 @@ class CloudflareIntegration(Integration):
         # package with the same version
         "s3fs>2022.3.0,!=2025.3.1",
         "boto3",
+        # The sandbox flavor talks to the Cloudflare bridge over plain
+        # HTTP + SSE; httpx gives us a thread-safe sync client with a
+        # mockable transport for tests.
+        "httpx>=0.24",
     ]
 
     @classmethod
@@ -64,10 +70,12 @@ class CloudflareIntegration(Integration):
         """
         from zenml.integrations.cloudflare.flavors import (
             CloudflareContainerRegistryFlavor,
+            CloudflareSandboxFlavor,
             R2ArtifactStoreFlavor,
         )
 
         return [
             R2ArtifactStoreFlavor,
             CloudflareContainerRegistryFlavor,
+            CloudflareSandboxFlavor,
         ]

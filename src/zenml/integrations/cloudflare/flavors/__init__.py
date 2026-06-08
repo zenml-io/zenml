@@ -20,9 +20,17 @@ from zenml.integrations.cloudflare.flavors.cloudflare_r2_artifact_store_flavor i
     R2ArtifactStoreConfig,
     R2ArtifactStoreFlavor,
 )
+from zenml.integrations.cloudflare.flavors.cloudflare_sandbox_flavor import (
+    CloudflareSandboxConfig,
+    CloudflareSandboxFlavor,
+    CloudflareSandboxSettings,
+)
 
 __all__ = [
     "R2ArtifactStoreFlavor",
     "R2ArtifactStoreConfig",
     "CloudflareContainerRegistryFlavor",
+    "CloudflareSandboxConfig",
+    "CloudflareSandboxFlavor",
+    "CloudflareSandboxSettings",
 ]
