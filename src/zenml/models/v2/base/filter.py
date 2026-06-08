@@ -1435,7 +1435,7 @@ class FilterGenerator:
 
         try:
             value = int(value)
-        except ValueError:
+        except (ValueError, TypeError):
             raise ValueError("The int filter only works with integer values.")
 
         return NumericFilter(
