@@ -9,7 +9,6 @@ Create Date: 2023-11-25 11:01:09.217299
 from uuid import uuid4
 
 import sqlalchemy as sa
-import sqlmodel
 from alembic import op
 
 from zenml.utils.time_utils import utc_now
@@ -29,7 +28,7 @@ def upgrade() -> None:
     # Create new artifact table
     op.create_table(
         "artifact",
-        sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.Column("updated", sa.DateTime(), nullable=False),
         sa.Column("name", sa.VARCHAR(length=255), nullable=False),
@@ -39,11 +38,7 @@ def upgrade() -> None:
 
     # Add foreign key column to artifact_version, for now as nullable
     with op.batch_alter_table("artifact_version", schema=None) as batch_op:
-        batch_op.add_column(
-            sa.Column(
-                "artifact_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
-        )
+        batch_op.add_column(sa.Column("artifact_id", sa.Uuid(), nullable=True))
 
     # Find all unique artifact names and create a new artifact entry for each
     conn = op.get_bind()

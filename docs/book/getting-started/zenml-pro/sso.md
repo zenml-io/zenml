@@ -32,6 +32,10 @@ By default, the ZenML Pro control plane uses local accounts with password authen
 
 You can start with local accounts and enable SSO later without losing existing data. SSO and password authentication can also be enabled simultaneously during a transition period.
 
+## Trusted domains
+
+Trusted domains are an organization-level ZenML Pro setting. Together with SSO/OAuth sign-in, they affect **which users appear** when searching for people to invite and whether some **organization invitations** can complete automatically after login instead of an explicit accept step. Full behavior, visibility rules, and configuration paths are documented in [Trusted domains](trusted-domains.md) under Access Management.
+
 ## SSO Prerequisites
 
 ### Supported Identity Providers
@@ -138,7 +142,7 @@ Each invited SSO user should:
 
 1. Access the ZenML Pro UI
 2. Log in using the SSO authentication flow (click "Sign in with SSO" or similar)
-3. After authentication, accept any pending organization invitations
+3. After authentication, accept any pending organization invitations (unless an invitation was completed automatically; see [Trusted domains](trusted-domains.md))
 
 Once an SSO user accepts an invitation, they have full access to the organization according to their assigned roles.
 
@@ -188,6 +192,7 @@ Local user account passwords are preserved in the database even when password au
 | Users can't log in after SSO is enabled | OIDC discovery URL is not reachable from the ZenML Pro control plane | Check network connectivity and firewall rules |
 | User email doesn't match invitation | Email claim in the ID token differs from the invited email | Verify the email address format in your IdP matches what was invited |
 | SSO login works but user has no access | User hasn't accepted organization invitation | User should check for pending invitations after logging in |
+| User expected to click "Accept" but was added without it | Trusted domains and SSO auto-completion for an in-domain invitation | See [Trusted domains](trusted-domains.md); this can be expected when the invitation email matches the organization's trusted domains |
 
 ### Verifying SSO Configuration
 
@@ -215,6 +220,8 @@ A key concept for synchronization is that **invitations act as placeholders** fo
 - You can create an invitation for an email address before the user has ever logged in
 - Invitations can be assigned organization roles, workspace roles, project roles, and team memberships—just like user accounts
 - When the user logs in via SSO and accepts the invitation, all permissions linked to the invitation are **automatically transferred** to their newly created user account
+
+When trusted domains and SSO are configured for the organization, eligible invitations may complete automatically on first SSO login instead of requiring an explicit accept step. See [Trusted domains](trusted-domains.md).
 
 This allows you to pre-provision access for users based on their IdP group memberships, even before they've logged into ZenML Pro for the first time.
 

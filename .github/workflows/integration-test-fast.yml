@@ -41,7 +41,7 @@ on:
       python-version:
         description: Python version
         type: choice
-        options: ['3.10', '3.11', '3.12', '3.13']
+        options: ['3.10', '3.11', '3.12', '3.13', '3.14']
         required: false
         default: '3.11'
       test_environment:
@@ -177,7 +177,7 @@ jobs:
           restore-keys: |
             uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/integrations/*/__init__.py') }}
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37  # v6.1.0
+        uses: aws-actions/configure-aws-credentials@acca2b1b2070338fb9fd1ca27ecee81d687e58e5  # v6.1.2
         with:
           role-to-assume: ${{ secrets.AWS_US_EAST_1_ENV_ROLE_ARN }}
           aws-region: us-east-1
@@ -193,7 +193,7 @@ jobs:
           install_components: gke-gcloud-auth-plugin
         if: contains(inputs.test_environment, 'gcp')
       - name: Login to Docker Hub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee  # v4.2.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}

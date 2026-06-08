@@ -92,6 +92,7 @@ Then follow the guide in [`examples/deploying_agent`](https://github.com/zenml-i
 ### Related examples
 
 - **[agent_outer_loop](https://github.com/zenml-io/zenml/tree/main/examples/agent_outer_loop)**: Combine ML classifiers with agents for hybrid intelligent systems
+- **[agentic_hitl_pipeline](https://github.com/zenml-io/zenml/tree/main/examples/agentic_hitl_pipeline)**: Add dynamic fan-out and human approval to an agent workflow
 - **[agent_comparison](https://github.com/zenml-io/zenml/tree/main/examples/agent_comparison)**: Compare different agent architectures and LLM providers
 - **[agent_framework_integrations](https://github.com/zenml-io/zenml/tree/main/examples/agent_framework_integrations)**: Integrate with popular agent frameworks
 - **[llm_finetuning](https://github.com/zenml-io/zenml/tree/main/examples/llm_finetuning)**: Fine-tune LLMs for specialized tasks
