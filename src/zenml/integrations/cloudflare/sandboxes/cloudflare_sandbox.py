@@ -185,6 +185,28 @@ def _parse_sse_stream(lines: Iterator[str]) -> Iterator[_BridgeEvent]:
     yield from _dispatch()
 
 
+def _drain_sse_response(resp: "httpx.Response") -> Iterator[_BridgeEvent]:
+    """Yield events from an already-open SSE response, closing it at the end.
+
+    Split out from ``exec_stream`` so that function can issue the POST
+    eagerly (surfacing 4xx/auth errors at the call site) while only the
+    SSE iteration stays deferred to the consumer.
+
+    Args:
+        resp: An open streaming ``httpx.Response``.
+
+    Yields:
+        Each decoded ``_BridgeEvent`` from the response body.
+    """
+    try:
+        yield from _parse_sse_stream(resp.iter_lines())
+    finally:
+        try:
+            resp.close()
+        except Exception:
+            logger.debug("Closing bridge SSE response failed", exc_info=True)
+
+
 class _CloudflareBridgeClient:
     """HTTP wrapper around the bridge's /v1/sandbox/* surface."""
 
@@ -401,7 +423,11 @@ class _CloudflareBridgeClient:
         timeout_ms: int = DEFAULT_BRIDGE_TIMEOUT_MS,
         session_id: Optional[str] = None,
     ) -> Iterator[_BridgeEvent]:
-        """Run a command and yield decoded SSE events.
+        """Run a command and return an iterator over decoded SSE events.
+
+        The POST is issued eagerly so launch errors (4xx, auth) surface at
+        the call site instead of being deferred to the first iteration —
+        the returned generator only carries SSE-decoded events.
 
         Args:
             sandbox_id: The sandbox to exec into.
@@ -410,8 +436,8 @@ class _CloudflareBridgeClient:
             timeout_ms: Per-exec timeout in milliseconds.
             session_id: Optional bridge session id to pass via header.
 
-        Yields:
-            ``_BridgeEvent`` instances in dispatch order.
+        Returns:
+            Iterator of ``_BridgeEvent`` instances in dispatch order.
         """
         body: Dict[str, Any] = {"argv": argv, "timeout_ms": timeout_ms}
         if cwd is not None:
@@ -427,15 +453,7 @@ class _CloudflareBridgeClient:
             headers=headers,
             stream=True,
         )
-        try:
-            yield from _parse_sse_stream(resp.iter_lines())
-        finally:
-            try:
-                resp.close()
-            except Exception:
-                logger.debug(
-                    "Closing bridge SSE response failed", exc_info=True
-                )
+        return _drain_sse_response(resp)
 
     def put_file(
         self,
@@ -963,18 +981,15 @@ class CloudflareSandbox(BaseSandbox):
         client = self._get_client()
         sandbox_id = client.create_sandbox()
 
+        # Bridge-session env is the only place session-level env is sent.
+        # Letting create_bridge_session fail loud means the user sees
+        # "missing API key on bridge" instead of "my OPENAI_API_KEY
+        # mysteriously isn't visible inside the sandbox".
         bridge_session_id: Optional[str] = None
         if env:
-            try:
-                bridge_session_id = client.create_bridge_session(
-                    sandbox_id, env=env
-                )
-            except Exception as e:
-                logger.warning(
-                    "Failed to create bridge session for env scoping: %s. "
-                    "Env vars will be inlined per-exec instead.",
-                    e,
-                )
+            bridge_session_id = client.create_bridge_session(
+                sandbox_id, env=env
+            )
 
         timeout_ms = eff.timeout_ms or DEFAULT_BRIDGE_TIMEOUT_MS
         return CloudflareSandboxSession(

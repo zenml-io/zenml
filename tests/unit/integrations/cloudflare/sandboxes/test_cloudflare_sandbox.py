@@ -339,6 +339,19 @@ class TestBridgeClient:
         client = _make_client(handler)
         assert client.get_file("sb_1", "x.txt") == b"payload"
 
+    def test_exec_stream_surfaces_launch_errors_eagerly(self) -> None:
+        # Regression: exec_stream used to be a generator function, so the
+        # POST /exec was deferred to the first iteration. Bridge launch
+        # errors (401, 400 from a malformed argv, etc.) would land on the
+        # pump thread as a pump_error instead of failing fast at the
+        # session.exec() call site. The POST must happen at call time.
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(401, json={"error": "unauthorized"})
+
+        client = _make_client(handler)
+        with pytest.raises(SandboxExecError, match="401"):
+            client.exec_stream("sb_1", ["python", "-c", "print(1)"])
+
     def test_non_retryable_error_raises(self) -> None:
         def handler(request: httpx.Request) -> httpx.Response:
             return httpx.Response(400, text="bad request")
