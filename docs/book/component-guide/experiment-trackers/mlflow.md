@@ -38,6 +38,12 @@ zenml experiment-tracker register mlflow_experiment_tracker --flavor=mlflow
 zenml stack register custom_stack -e mlflow_experiment_tracker ... --set
 ```
 
+{% hint style="warning" %}
+If you use the default local MLflow configuration without setting a `tracking_uri`, ZenML stores new MLflow tracking metadata in a SQLite database at `<LOCAL_ARTIFACT_STORE>/mlflow.db` and stores MLflow artifacts in `<LOCAL_ARTIFACT_STORE>/mlflow_artifacts`.
+
+Earlier ZenML versions used MLflow's file store at `<LOCAL_ARTIFACT_STORE>/mlruns` for this default local setup. Existing local runs in that directory are not migrated automatically and won't appear in the new default SQLite-backed MLflow UI. The files remain on disk and can still be inspected separately with MLflow's file-store backend.
+{% endhint %}
+
 * [Remote Experiment Tracking with MLflow Tracking Server](https://mlflow.org/docs/latest/tracking/tutorials/remote-server.html): This scenario assumes that you have already deployed an MLflow Tracking Server enabled with proxied artifact storage access. There is no restriction regarding what other types of components it can be combined with. This option requires [authentication-related parameters](mlflow.md#authentication-methods) to be configured for the MLflow Experiment Tracker.
 
 {% hint style="warning" %}
