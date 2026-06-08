@@ -34,6 +34,7 @@
   * [Azure Blob Storage](artifact-stores/azure.md)
   * [Alibaba Cloud OSS](artifact-stores/alibaba-oss.md)
   * [MinIO](artifact-stores/minio.md)
+  * [Cloudflare R2](artifact-stores/cloudflare-r2.md)
   * [Develop a custom artifact store](artifact-stores/custom.md)
 * [Container Registries](container-registries/README.md)
   * [Default Container Registry](container-registries/default.md)
@@ -42,6 +43,7 @@
   * [Google Cloud Container Registry](container-registries/gcp.md)
   * [Azure Container Registry](container-registries/azure.md)
   * [GitHub Container Registry](container-registries/github.md)
+  * [Cloudflare Container Registry](container-registries/cloudflare.md)
   * [Develop a custom container registry](container-registries/custom.md)
 * [Log Stores](log-stores/README.md)
   * [Artifact Log Store](log-stores/artifact.md)
@@ -116,6 +118,7 @@
   * [GCP Service Connector](service-connectors/connector-types/gcp-service-connector.md)
   * [Azure Service Connector](service-connectors/connector-types/azure-service-connector.md)
   * [HyperAI Service Connector](service-connectors/connector-types/hyperai-service-connector.md)
+  * [Cloudflare Service Connector](service-connectors/connector-types/cloudflare-service-connector.md)
 
 ## Popular Stacks
 
