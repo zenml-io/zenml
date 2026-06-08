@@ -85,7 +85,10 @@ from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.orchestrators.publish_utils import publish_step_run_metadata
-from zenml.orchestrators.utils import get_orchestrator_run_name
+from zenml.orchestrators.utils import (
+    get_orchestrator_run_name,
+    get_step_entrypoint_command,
+)
 from zenml.stack import StackValidator
 from zenml.utils.env_utils import split_environment_variables
 from zenml.utils.time_utils import to_utc_timezone, utc_now_tz_aware
@@ -1086,9 +1089,14 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             SagemakerOrchestratorSettings, self.get_settings(step_run_info)
         )
 
-        command = SagemakerStepOperatorEntrypointConfiguration.get_entrypoint_command()
-        arguments = SagemakerStepOperatorEntrypointConfiguration.get_entrypoint_arguments(
-            step_name=step_run_info.pipeline_step_name,
+        step = step_run_info.snapshot.step_configurations[
+            step_run_info.pipeline_step_name
+        ]
+        command, arguments = get_step_entrypoint_command(
+            step=step,
+            entrypoint_config_class=(
+                SagemakerStepOperatorEntrypointConfiguration
+            ),
             snapshot_id=step_run_info.snapshot.id,
             step_run_id=str(step_run_info.step_run_id),
         )

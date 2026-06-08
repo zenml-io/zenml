@@ -564,6 +564,10 @@ class BaseOrchestrator(StackComponent, ABC):
     ) -> None:
         """Submit an isolated step.
 
+        Implementations should use
+        `zenml.orchestrators.utils.get_step_entrypoint_command(...)` to get
+        the command and arguments to run the step.
+
         Args:
             step_run_info: The step run information.
             environment: The environment variables to set in the execution

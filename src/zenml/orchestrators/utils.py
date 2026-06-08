@@ -15,7 +15,7 @@
 
 import os
 import random
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 from uuid import UUID
 
 from zenml.client import Client
@@ -39,6 +39,10 @@ logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+    from zenml.config.step_configurations import Step
+    from zenml.entrypoints.step_entrypoint_configuration import (
+        StepEntrypointConfiguration,
+    )
 
 
 def get_orchestrator_run_name(
@@ -226,6 +230,39 @@ def get_config_environment_vars(
     )
 
     return environment_vars, secrets
+
+
+def get_step_entrypoint_command(
+    step: "Step",
+    entrypoint_config_class: Type["StepEntrypointConfiguration"],
+    snapshot_id: UUID,
+    **entrypoint_config_kwargs: Any,
+) -> Tuple[List[str], List[str]]:
+    """Gets the entrypoint command to run a step.
+
+    Args:
+        step: The step to run.
+        entrypoint_config_class: The entrypoint configuration class used to
+            build the ZenML step entrypoint command.
+        snapshot_id: The snapshot ID to pass to the entrypoint configuration
+            class.
+        **entrypoint_config_kwargs: Additional keyword arguments to pass to the
+            entrypoint configuration class.
+
+    Returns:
+        A tuple containing command and args.
+    """
+    if step.config.command is not None:
+        return step.config.command, []
+
+    return (
+        entrypoint_config_class.get_entrypoint_command(),
+        entrypoint_config_class.get_entrypoint_arguments(
+            step_name=step.spec.invocation_id,
+            snapshot_id=snapshot_id,
+            **entrypoint_config_kwargs,
+        ),
+    )
 
 
 class register_artifact_store_filesystem:

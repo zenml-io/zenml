@@ -69,7 +69,10 @@ from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.orchestrators.publish_utils import publish_step_run_metadata
-from zenml.orchestrators.utils import get_orchestrator_run_name
+from zenml.orchestrators.utils import (
+    get_orchestrator_run_name,
+    get_step_entrypoint_command,
+)
 from zenml.pipelines.dynamic.entrypoint_configuration import (
     DynamicPipelineEntrypointConfiguration,
 )
@@ -620,15 +623,14 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         image = step_run_info.get_image(key=ORCHESTRATOR_DOCKER_IMAGE_KEY)
         env = Environment(name=f"zenml-{step_run_info.run_name}", image=image)
 
-        entrypoint_command = (
-            StepOperatorEntrypointConfiguration.get_entrypoint_command()
-        )
-        entrypoint_args = (
-            StepOperatorEntrypointConfiguration.get_entrypoint_arguments(
-                step_name=step_run_info.pipeline_step_name,
-                snapshot_id=(step_run_info.snapshot.id),
-                step_run_id=str(step_run_info.step_run_id),
-            )
+        step = step_run_info.snapshot.step_configurations[
+            step_run_info.pipeline_step_name
+        ]
+        entrypoint_command, entrypoint_args = get_step_entrypoint_command(
+            step=step,
+            entrypoint_config_class=StepOperatorEntrypointConfiguration,
+            snapshot_id=step_run_info.snapshot.id,
+            step_run_id=str(step_run_info.step_run_id),
         )
 
         compute_target = create_or_get_compute(
