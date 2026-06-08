@@ -40,10 +40,9 @@ from zenml.integrations.modal.sandboxes import (  # noqa: E402
     ModalSandboxProcess,
     ModalSandboxSession,
 )
-from zenml.integrations.modal.sandboxes.modal_sandbox import (  # noqa: E402
-    MODAL_STEP_IMAGE_SENTINEL,
-    _line_buffer,
-    _normalize_optional_config_value,
+from zenml.integrations.modal.sandboxes.utils import (  # noqa: E402
+    line_buffer,
+    normalize_optional_config_value,
 )
 from zenml.sandboxes import (  # noqa: E402
     BaseSandbox,
@@ -110,36 +109,36 @@ def _make_modal_sandbox(
 
 class TestNormalizeOptionalConfigValue:
     def test_none_returns_none(self) -> None:
-        assert _normalize_optional_config_value(None) is None
+        assert normalize_optional_config_value(None) is None
 
     def test_empty_string_returns_none(self) -> None:
-        assert _normalize_optional_config_value("") is None
-        assert _normalize_optional_config_value("   ") is None
+        assert normalize_optional_config_value("") is None
+        assert normalize_optional_config_value("   ") is None
 
     def test_strips_whitespace(self) -> None:
-        assert _normalize_optional_config_value("  foo  ") == "foo"
+        assert normalize_optional_config_value("  foo  ") == "foo"
 
 
 class TestLineBuffer:
     def test_yields_complete_lines(self) -> None:
         chunks = [b"hello\nworld\n"]
-        assert list(_line_buffer(chunks)) == ["hello\n", "world\n"]
+        assert list(line_buffer(chunks)) == ["hello\n", "world\n"]
 
     def test_joins_split_lines_across_chunks(self) -> None:
         chunks = [b"alp", b"ha\nbe", b"ta\n"]
-        assert list(_line_buffer(chunks)) == ["alpha\n", "beta\n"]
+        assert list(line_buffer(chunks)) == ["alpha\n", "beta\n"]
 
     def test_flushes_trailing_partial_line(self) -> None:
         chunks = [b"final line without newline"]
-        assert list(_line_buffer(chunks)) == ["final line without newline"]
+        assert list(line_buffer(chunks)) == ["final line without newline"]
 
     def test_handles_str_chunks(self) -> None:
         chunks = ["foo\n", "bar"]
-        assert list(_line_buffer(chunks)) == ["foo\n", "bar"]
+        assert list(line_buffer(chunks)) == ["foo\n", "bar"]
 
     def test_skips_none_chunks(self) -> None:
         chunks: List[Any] = [None, b"a\n", None]
-        assert list(_line_buffer(chunks)) == ["a\n"]
+        assert list(line_buffer(chunks)) == ["a\n"]
 
 
 # ---------------------------------------------------------------------------
@@ -175,7 +174,7 @@ class TestSettingsMerge:
 
 
 class TestModalSandboxProcess:
-    def test_stdout_line_buffered(self) -> None:
+    def test_stdoutline_buffered(self) -> None:
         fake = MagicMock()
         fake.stdout = [b"a\nb\n"]
         session = _make_session(MagicMock(object_id="sb_xyz"))
@@ -244,19 +243,21 @@ class TestModalSandboxSession:
         _make_session(fake_sandbox).exec("python -c 'print(1)'")
         fake_sandbox.exec.assert_called_once_with("python", "-c", "print(1)")
 
-    def test_exec_wraps_env_in_modal_secret(self) -> None:
-        # Per-exec env still rides on secrets=[modal.Secret.from_dict(...)]
-        # until Sandbox.exec(env=) is verified against Modal 1.x runtime.
-        fake_sandbox = MagicMock(object_id="sb_xyz")
-        fake_sandbox.exec.return_value = MagicMock()
-        with patch("modal.Secret.from_dict") as fake_from_dict:
-            fake_from_dict.return_value = sentinel.secret
+    def test_exec_passes_env(self) -> None:
+        # Confirm per-exec env vars are forwarded to modal.Sandbox.exec
+        # (currently via `secrets=` — see the comment in
+        # ModalSandboxSession.exec for the rationale).
+        with _patch_modal() as modal_mock:
+            fake_secret = MagicMock()
+            modal_mock.Secret.from_dict.return_value = fake_secret
+            fake_sandbox = MagicMock(object_id="sb_xyz")
+            fake_sandbox.exec.return_value = MagicMock()
             _make_session(fake_sandbox).exec(
                 ["echo", "hi"], env={"FOO": "bar"}
             )
-        fake_from_dict.assert_called_once_with({"FOO": "bar"})
+        modal_mock.Secret.from_dict.assert_called_once_with({"FOO": "bar"})
         fake_sandbox.exec.assert_called_once_with(
-            "echo", "hi", secrets=[sentinel.secret]
+            "echo", "hi", secrets=[fake_secret]
         )
 
     def test_exec_launch_failure_raises_sandbox_exec_error(self) -> None:
@@ -474,49 +475,17 @@ class TestModalLogForwarding:
         # Env must no longer be smuggled in via secrets=.
         assert "secrets" not in create_kwargs
 
-    def test_step_image_sentinel_resolves_via_snapshot_lookup(self) -> None:
-        with (
-            _patch_modal() as modal_mock,
-            patch(
-                "zenml.integrations.modal.sandboxes.modal_sandbox._resolve_step_image",
-                return_value="my-registry/step-image:v1",
-            ),
-        ):
+    def test_image_setting_passes_through_to_from_registry(self) -> None:
+        with _patch_modal() as modal_mock:
             modal_mock.App.lookup.return_value = MagicMock()
             modal_mock.Image.from_registry.return_value = MagicMock()
             modal_mock.Sandbox.create.return_value = MagicMock(
                 object_id="sb_new"
             )
 
-            settings = ModalSandboxSettings(
-                base_image=MODAL_STEP_IMAGE_SENTINEL
-            )
+            settings = ModalSandboxSettings(image="my-registry/app:v1")
             _make_modal_sandbox().create_session(settings=settings)
-        modal_mock.Image.from_registry.assert_called_with(
-            "my-registry/step-image:v1"
-        )
-
-    def test_step_image_sentinel_falls_back_when_unresolvable(self) -> None:
-        with (
-            _patch_modal() as modal_mock,
-            patch(
-                "zenml.integrations.modal.sandboxes.modal_sandbox._resolve_step_image",
-                return_value=None,
-            ),
-        ):
-            modal_mock.App.lookup.return_value = MagicMock()
-            modal_mock.Image.from_registry.return_value = MagicMock()
-            modal_mock.Sandbox.create.return_value = MagicMock(
-                object_id="sb_new"
-            )
-
-            settings = ModalSandboxSettings(
-                base_image=MODAL_STEP_IMAGE_SENTINEL
-            )
-            _make_modal_sandbox().create_session(settings=settings)
-        modal_mock.Image.from_registry.assert_called_with(
-            ModalSandboxConfig().default_image
-        )
+        modal_mock.Image.from_registry.assert_called_with("my-registry/app:v1")
 
 
 class TestModalDashboardUrl:
