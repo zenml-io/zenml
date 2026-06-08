@@ -506,6 +506,24 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         )
         return response.to_model()
 
+    def release_resource_request(
+        self,
+        resource_request_id: UUID,
+    ) -> ResourceRequestResponse:
+        """Release a resource request through Resource Manager.
+
+        Owner-initiated release marks allocated requests ``released``,
+        pending requests ``cancelled``, and preempting requests ``preempted``.
+
+        Args:
+            resource_request_id: The request ID.
+
+        Returns:
+            The released resource request.
+        """
+        response = self._client.release_request(resource_request_id)
+        return response.to_model()
+
     def renew_resource_request(
         self,
         resource_request_id: UUID,

@@ -1,227 +1,307 @@
 ---
 description: >-
-  Precise definitions for ZenML Pro resource pools, subject policies, and
-  resource requests.
+  Definitions for ZenML Pro resource descriptors, pools, capacity classes,
+  policies, requests, and leases.
 ---
 # Core concepts
 
-This page defines **pools**, **policies**, and **requests** for ZenML Pro.
-
-## Pools
-
-A **resource pool** is a named shared bucket. For each resource key (for
-example `gpu`), you set how many units exist in the pool. Policies on that
-pool further split that capacity among orchestrators and step operators.
-
-Steps and pools use the same keys and integer amounts. Typical keys are:
-
-| Key | Meaning |
-| --- | --- |
-| `gpu` | GPU count (requested by steps through `ResourceSettings.gpu_count`) |
-| `mcpu` | Milli-CPU (requested by steps through `ResourceSettings.cpu_count * 1000`, rounded up) |
-| `memory_mb` | Memory in megabytes (requested by steps through `ResourceSettings.memory`) |
-| `step_run` | One concurrent step run (added automatically by the server for each step) |
-
-Custom keys (for example `tpu`) can be set with `pool_resources` on the step.
-
-### CLI: pools
-
-```bash
-# Create a pool (capacity as JSON or YAML)
-zenml resource-pool create training-gpus \
-  --capacity '{"gpu": 8, "step_run": 32}' \
-  --description "Shared training GPUs for the workspace"
-
-# List pools with occupied vs total capacity
-zenml resource-pool list
-
-# Inspect one pool (name, ID prefix, or full ID)
-zenml resource-pool describe training-gpus
-
-# Shrink or grow capacity (0 removes a key from the pool)
-zenml resource-pool update training-gpus --capacity '{"gpu": 4}'
-
-# Remove a pool (use -y to skip confirmation)
-zenml resource-pool delete training-gpus --yes
-```
-
-## Policies
-
-A **policy** connects one stack component—the orchestrator or step operator that
-acts as the *resource requester* for a step—to one pool. Think of three knobs
-per resource key:
-
-* **Reserved** — How much of the pool you *label* as belonging to this component
-for accounting. Usage up to that amount counts as *in share*; anything above it
-(while the pool still has free units) is *borrowed* idle capacity. Reserved is
-not a separate pile of hardware: it is the share used to decide who is “in
-their rights” versus who is on spare capacity. Across all policies on the same
-pool, reserved totals per key cannot exceed the pool capacity. Reserved must
-also be ≤ that policy’s limit for the same key.
-
-* **Limit** — The hard ceiling on how much this component may hold from the pool
-at once for that key. Grants never go above the limit, even if the pool is
-empty. For **preemptible** workloads, the space between reserved and limit is
-where borrowing can happen (subject to pool free capacity). Non-preemptible
-work does not use that band: each requested amount per key must be **≤
-reserved**, and a higher **limit** does not raise that ceiling (limit still caps
-preemptible burst and total use).
-
-* **Priority** — A number; higher means that component’s requests are preferred in
-the queue. When the reconciler must **preempt** someone, it looks at **lower**
-priority preemptible runs first as victims (see below).
-
-{% hint style="warning" %}
-A single orchestrator or step operator may have **several policies** attached,
-each pointing at a **different pool**. The server still treats each step as one
-**resource request**. Eligibility and allocation are evaluated **per pool**
-against the **full** set of requested keys: the step may be queued on more than
-one pool, but at most **one** pool ends up owning the active allocation. ZenML
-does **not** split a request across pools (for example GPUs from one pool and
-`mcpu` from another). Every key in the request must be satisfiable from the
-**same** pool and policy that wins. See
-[Examples — Multiple pools and multi-key requests](resource-pools-examples.md#multiple-pools-and-multi-key-requests).
-{% endhint %}
-
-### CLI: policies
-
-```bash
-# Attach an orchestrator to a pool (default component type is orchestrator)
-zenml resource-pool attach-policy training-gpus my-k8s-orch \
-  --priority 10 \
-  --reserved '{"gpu": 2}' \
-  --limit '{"gpu": 4}'
-
-# Same for a step operator stack component
-zenml resource-pool attach-policy training-gpus my-remote-operator \
-  --component-type step_operator \
-  --priority 5 \
-  --reserved '{"gpu": 2}' \
-  --limit '{"gpu": 4}'
-
-# List every policy on a pool
-zenml resource-pool list-policies training-gpus
-
-# List all pools a given orchestrator is attached to
-zenml resource-pool list-policies --component my-k8s-orch
-
-# Remove that component’s policy from the pool
-zenml resource-pool detach-policy training-gpus my-k8s-orch
-```
-
-## Resource requests
-
-For eligible runs, the server builds a **resource request** from the step’s
-`ResourceSettings`, records whether the step is preemptible, and tracks status:
-queued, allocated, rejected, preempted, or cancelled.
+This page defines the building blocks of ZenML Pro resource pools. For
+step-by-step setup, see the [Admin guide](resource-pools-admin-guide.md) and
+[User guide](resource-pools-user-guide.md).
 
 {% hint style="info" %}
-Only dynamic pipelines participate in resource queuing and allocation
-waiting: the server creates resource requests and the client blocks until
-allocation when the snapshot is dynamic. Static pipelines do not use this
-path today.
+Resource pools apply only to [dynamic pipelines](https://docs.zenml.io/how-to/steps-pipelines/dynamic_pipelines).
+Static pipelines do not create resource requests or wait for pool allocation
+today.
 {% endhint %}
 
-What users set in `ResourceSettings` becomes a server-side resource request (for
-example `gpu_count` → `gpu`, `cpu_count` → `mcpu`, `memory` → `memory_mb`, plus
-an implicit concurrent `step_run` slot). The pool must define capacity for each
-key requested by the step, except for three built-in types: if the pool has no
-row for `mcpu`, `memory_mb`, or the implicit `step_run` key, ZenML Pro treats that
-dimension as **effectively unbounded** at the pool layer, so missing rows there
-do not by themselves cause rejection. For every other key (including
-`gpu` and custom keys from `pool_resources`), a missing pool row means zero
-capacity: a positive request is rejected and the step run fails to start.
+## Resource descriptors and the resource language
+
+A resource descriptor is an admin-defined entry in your organization's resource
+catalog. It describes what can be requested — not how much exists or who may
+use it.
+
+| Field | Meaning |
+| --- | --- |
+| `name` | Stable identifier used in pool capacity and exact requests (for example `h200`, `GPU`) |
+| `kind` | Generic type label used in selectors (for example `cpu`, `gpu`, `memory`) |
+| `attributes` | Descriptive key/value map (for example `vram_gb: 141`, `vendor: nvidia`) |
+| `units` | Optional unit catalog for multiple counting schemes (see [Admin guide](resource-pools-admin-guide.md#descriptor-units)) |
+
+Admins define descriptors once; the whole organization uses the same vocabulary
+in pools, policies, and (for custom resources) step requests.
+
+### Default descriptors
+
+Every organization starts with stock system descriptors:
+
+| Name | Kind | Typical use |
+| --- | --- | --- |
+| `CPU` | `cpu` | Milli-CPU and CPU units |
+| `memory` | `memory` | RAM in byte units |
+| `GPU` | `gpu` | Generic GPU accelerators |
+| `step run` | `step_run` | Concurrent step-slot throttling |
+
+These bootstrap the catalog. Admins add custom descriptors (for example `h200`,
+`training-license`) through the ZenML Pro UI.
+
+### Kind vs name
+
+Descriptors are referenced by `name` or matched by `kind`:
+
+- Use `name` when you refer to a specific descriptor (`resource: "h200"`).
+- Use `kind` when any matching descriptor of that type may satisfy the demand
+  (for example `kind: "gpu"` with optional attribute predicates).
+
+#### Default kinds and ResourceSettings
+
+ZenML's typed `ResourceSettings` fields form a unified default language. They
+always emit demands by **kind**, not by descriptor name:
+
+| ResourceSettings field | Demand kind | Matches descriptors with kind |
+| --- | --- | --- |
+| `cpu_count` | `cpu` | `cpu` (for example `CPU`) |
+| `memory` | `memory` | `memory` |
+| `gpu_count` / `gpu_class` | `gpu` | `gpu` (for example `GPU`, or custom `h200` if its kind is `gpu`) |
+| (ZenML convention) | `step_run` | `step_run` (for example `step run`) |
+
+For isolated dynamic steps, ZenML also adds a `step_run` demand (quantity 1)
+when the step did not already request one — a platform convention for
+concurrency throttling, not something authors set through a typed field.
+
+Authors who only use `cpu_count`, `gpu_count`, and `memory` never need to know
+descriptor names. Custom entries in `ResourceSettings.resources` target
+descriptors by **name** (or advanced selectors) and are required for resources
+whose kind is outside the default set (for example licenses).
+
+## Resource pools and capacity classes
+
+A resource pool is a named virtual ledger of capacity. Capacity is declared as
+a list of classes — each class is a bucket for one resource in that pool.
+
+Each capacity class entry has:
+
+| Field | Meaning |
+| --- | --- |
+| `resource` | Descriptor name (for example `h200`, `GPU`) |
+| `class` | Pool-local label (for example `reserved`, `adhoc`, `spot`) |
+| `quantity` | How many units exist in this bucket |
+| `rank` | Preference when multiple classes could satisfy a request (higher tried first) |
+| `reclaimable` | External interrupt risk: `never`, `coordinated`, or `unsafe` |
+| `attributes` | Class metadata for matching (for example `tier: tier-a-gpu`, `region: eu-west`) |
+| `component_settings` | Placement overrides when this class is allocated (for example node selectors and tolerations) |
+
+### What admins encode in classes
+
+Admins express scheduling intent through `rank` and `reclaimable`, not through
+real-world cost or availability numbers in the pool definition:
+
+| Class label (example) | Typical meaning | Typical `reclaimable` | Typical `rank` |
+| --- | --- | --- | --- |
+| `reserved` | Dedicated contract capacity | `never` | High |
+| `adhoc` | Shared on-demand burst | `never` or `coordinated` | Medium |
+| `spot` | Preemptible cloud nodes | `unsafe` | Low |
+
+`reclaimable` describes how safely capacity can be interrupted from outside
+ZenML (for example spot nodes or external reclaim). It works together with
+request `reclaim_tolerance` (see below).
+
+### Mapping pools to infrastructure
+
+One pool can hold multiple classes for the same resource. Multiple pools can
+each correspond to a Kubernetes node or node pool — for example one pool per
+node with `attributes` such as `kubernetes_node: node-a`. Policies and
+component settings then tie allocations to the right placement settings.
+
+Configure pools, classes, attributes, and component settings in the ZenML Pro
+UI. The CLI offers a simplified flat capacity map for quick starts (see
+[Admin guide](resource-pools-admin-guide.md)).
 
 {% hint style="warning" %}
-If the pool does define a key but the subject policy omits that key,
-limits fall back to the pool total and reserved defaults to zero for bounded
-keys. Non-preemptible steps must stay within their reserved capacity, so a
-positive request for a key not defined in the policy is rejected.
+Every pool should declare capacity for `CPU`, `memory`, and `step run` — not
+only scarce resources such as `GPU`. Steps always send demands for CPU, memory,
+and (for isolated dynamic steps) a `step_run` slot. There is no unbounded
+fallback: if a demand is not covered by the pool, the request is rejected.
+
+Grantless policies (`grants: []`) treat the whole pool as the subject's target
+(effective reservation 0, limit equal to pool capacity for each resource in the
+pool). A demand still must match a resource that exists in the pool.
 {% endhint %}
 
-### Step decorators: `ResourceSettings`
+## Policies and subjects
 
-Declare demand on the step; the server turns it into the resource request when
-the pipeline is **dynamic** and pooling applies to the stack.
+A policy connects a subject to a pool and defines how much capacity that subject
+may use.
 
-**Typical GPU / CPU / memory (preemptible by default):**
+### Two subject types
 
-```python
-from zenml import step
-from zenml.config import ResourceSettings
+| Subject | ZenML concept | Typical use |
+| --- | --- | --- |
+| Stack component | Orchestrator or step operator | Pipeline steps run through that component |
+| User or service account | Workspace user or service account | Direct resource requests from external workloads |
 
+Exactly one subject is set per policy: either `component_id` or `account_id`.
 
-@step(
-    settings={
-        "resources": ResourceSettings(
-            gpu_count=2,
-            cpu_count=4,
-            memory="16GiB",
-        )
-    }
-)
-def train() -> None:
-    ...
-```
+### Grants
 
-**Non-preemptible (must stay within policy reserved per key):**
+Each policy carries one or more grant line items:
 
-```python
-@step(
-    settings={
-        "resources": ResourceSettings(
-            gpu_count=1,
-            preemptible=False,
-        )
-    }
-)
-def production_train() -> None:
-    ...
-```
+| Grant field | Meaning |
+| --- | --- |
+| `resource` | Descriptor name |
+| `classes` | Which capacity classes this grant covers (for example `["reserved", "adhoc"]`) |
+| `reserved` | Guaranteed slice; non-reclaimable requests must fit here |
+| `limit` | Hard ceiling; omit or set null to track current pool capacity |
 
-**Custom pool keys** (must exist on the pool and policy when non-preemptible):
+Policy-level fields:
 
-```python
-@step(
-    settings={
-        "resources": ResourceSettings(
-            gpu_count=1,
-            pool_resources={"tensorrt_sessions": 1},
-        )
-    }
-)
-def infer() -> None:
-    ...
-```
+| Field | Meaning |
+| --- | --- |
+| `priority` | Contention ordering; higher wins (required when `priority_lane` is false) |
+| `priority_lane` | Internal maximum priority for external or critical workloads |
+| `grants` | Grant list; empty list = grantless (admit to all pool capacity) |
 
-Typed fields override the same keys if both appear in `pool_resources`. See
-[step configuration](https://docs.zenml.io/how-to/steps-pipelines/configuration)
-in the OSS docs for the full `ResourceSettings` model.
+{% hint style="warning" %}
+Each grant covers one descriptor by name. If a step's request includes a demand
+(for example `kind: cpu`, `kind: memory`, or `kind: step_run`) that is not
+covered by any grant on the policy, the request is rejected — even when the
+pool has free capacity. Grantless policies skip per-resource grants but still
+require every demand to match a resource declared in the pool.
 
-### CLI: resource requests
+Requests with `reclaim_tolerance: none` must fit within a grant's `reserved`
+amount for each demand. If reserved is 0 or the grant omits that resource, the
+request is rejected immediately.
+{% endhint %}
 
-Requests are created when dynamic steps run; you **inspect** or **clean them up**
-from the CLI (IDs come from list output or the dashboard).
+{% hint style="warning" %}
+A single orchestrator or step operator may have several policies, each pointing
+at a different pool. ZenML still treats each step as one resource request. The
+step may queue in more than one pool, but at most one pool wins. ZenML never
+splits demands across pools (for example GPUs from one pool and CPU from
+another).
 
-```bash
-# All resource requests visible to your user (see --help for filters)
-zenml resource-request list
+Every pool and policy that might win must declare and grant every resource
+authors can request on that stack. See
+[Examples — Multiple pools](resource-pools-examples.md#multiple-pools-one-request).
+{% endhint %}
 
-# Full detail for one request (status, resources, step run link)
-zenml resource-request describe 01234567-89ab-cdef-0123-456789abcdef
+## Resource requests and demands
 
-# Drop a stuck or abandoned request (use with care)
-zenml resource-request delete 01234567-89ab-cdef-0123-456789abcdef
+When a dynamic step is ready to launch (or an external client calls the API),
+ZenML creates a resource request with one or more demands.
 
-# Requests tied to a specific pool: queued only, active only, or both
-zenml resource-pool requests training-gpus --view queued
-zenml resource-pool requests training-gpus --view active
-zenml resource-pool requests training-gpus --view all
+{% hint style="info" %}
+Only dynamic pipeline steps participate in resource queuing and allocation
+waiting. The server creates the request when the step is ready to launch and
+the step launcher blocks until allocation (or a terminal status).
+{% endhint %}
+
+Each demand specifies what is needed:
+
+| Demand field | When to use |
+| --- | --- |
+| `kind` | Match any descriptor of that kind (typical for `cpu`, `gpu`, `memory` from `ResourceSettings`) |
+| `resource` | Match an exact descriptor name |
+| `resource_selector` | Match descriptors by attributes |
+| `class` / `class_selector` | Prefer or require specific capacity classes |
+| `quantity`, `unit` | How much to allocate |
+
+### From ResourceSettings to demands
+
+| Step setting | Demand shape |
+| --- | --- |
+| `gpu_count` | `kind: "gpu"`, optional `class` from `gpu_class` |
+| `cpu_count` | `kind: "cpu"`, `unit: "CPU"` |
+| `memory` | `kind: "memory"`, `unit` = byte suffix (for example `GiB`) |
+| `resources` (custom) | `resource: "<name>"` by descriptor name |
+| (automatic) | `kind: "step_run"`, quantity 1 for isolated dynamic steps when not already requested |
+
+### Reclaim tolerance vs class reclaimable
+
+Each request carries `reclaim_tolerance`:
+
+| Value | Meaning | Compatible class `reclaimable` |
+| --- | --- | --- |
+| `none` | Never interrupted for pool reasons | `never` only; must fit grant `reserved` |
+| `coordinated` | Can be stopped and retried | `never`, `coordinated` |
+| `any` | Best-effort; may use unsafe capacity | all three |
+
+Legacy `preemptible=False` maps to `reclaim_tolerance: none`;
+`preemptible=True` maps to `coordinated`. Prefer `reclaim_tolerance` in new
+code.
+
+Default when unset: isolated dynamic steps use `any`; inline dynamic steps
+use `none`.
+
+### Request statuses
+
+| Status | Meaning |
+| --- | --- |
+| `pending` | Queued, waiting for capacity |
+| `allocated` | Capacity granted; step may run |
+| `preempting` | Being stopped to free capacity for another request |
+| `preempted` | Stopped by preemption |
+| `rejected` | Cannot be satisfied (policy or capacity rules) |
+| `cancelled` | Cancelled (including lease expiry while pending) |
+| `released` | Completed; capacity returned |
+| `expired` | Lease expired while allocated |
+
+Inspect requests in the UI, or with `zenml resource-request list` and
+`zenml resource-pool requests`.
+
+## Leases
+
+Many allocations are leased — a time-bound claim tracked on the resource
+request as `lease_expires_at`. Leases let the reconciler recover capacity when
+a client stops renewing. Not every pipeline request uses a running lease:
+
+| Step pattern | Typical lease while running | Default reclaim tolerance |
+| --- | --- | --- |
+| Inline dynamic step | No lease | `none` (not preemptible for pool reasons) |
+| Isolated dynamic step with heartbeat | Yes — renewed each heartbeat | `any` when unset |
+| Isolated step, heartbeat disabled | No lease renewal | Must use `none` (validation rejects `coordinated` / `any`) |
+| External workload | Yes — client renews via API | Set on the request |
+
+While a leased workload holds capacity:
+
+- Isolated pipeline steps: the step launcher waits until `allocated`, sets an
+  initial lease for startup (`initialization_lease_seconds`), then the step
+  heartbeat renews the lease and checks for preemption signals.
+- Inline pipeline steps: no running lease; capacity is held for the step
+  duration and released when the step completes.
+- External workloads: the client renews explicitly through the API.
+
+If a lease expires without renewal (missed heartbeats, crashed client,
+abandoned request), the reconciler releases capacity back to the pool. See
+[Reconciliation process](resource-pools-reconciliation.md) and the
+[User guide](resource-pools-user-guide.md#leases-heartbeat-and-reclaim-tolerance)
+for author-facing details.
+
+## How the pieces fit together
+
+```mermaid
+flowchart TB
+    Desc[Resource descriptors<br/>Admin vocabulary]
+    Pool[Resource pool<br/>Capacity classes]
+    Policy[Resource policy<br/>Subject + grants]
+    Step[Step ResourceSettings<br/>Author intent]
+    Req[Resource request<br/>Demands + reclaim_tolerance]
+    Alloc[Allocation<br/>Pool + class + component settings]
+    Run[Step execution<br/>Orchestrator / step operator]
+
+    Desc --> Pool
+    Pool --> Policy
+    Policy --> Req
+    Step --> Req
+    Req --> Alloc
+    Alloc --> Run
 ```
 
 ## See also
 
-* [Resource pools](resource-pools.md) — overview and UX story
-* [Examples](resource-pools-examples.md) — scenarios and outcomes
-* [How preemption works](resource-pools-reconciliation.md#how-preemption-works) — behavior and ordering
-* [Resource pool reconciliation](resource-pools-reconciliation.md) — runtime flow
+* [Resource pools](resource-pools.md) — overview and walkthrough
+* [Admin guide](resource-pools-admin-guide.md) — configure descriptors, pools, policies
+* [User guide](resource-pools-user-guide.md) — annotate steps with ResourceSettings
+* [External workloads](resource-pools-external-workloads.md) — direct requests and priority lanes
+* [Examples](resource-pools-examples.md) — end-to-end scenarios
+* [Reconciliation process](resource-pools-reconciliation.md) — queueing, preemption, leases
