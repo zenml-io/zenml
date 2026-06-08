@@ -4274,6 +4274,22 @@ class SqlZenStore(BaseZenStore):
             terminate_request,
         )
 
+    def release_resource_request(
+        self,
+        resource_request_id: UUID,
+    ) -> ResourceRequestResponse:
+        """Release a resource request on behalf of its owner.
+
+        Args:
+            resource_request_id: The ID of the resource request to release.
+
+        Returns:
+            The released resource request.
+        """
+        return self.resource_pools.release_resource_request(
+            resource_request_id,
+        )
+
     def renew_resource_request(
         self,
         resource_request_id: UUID,

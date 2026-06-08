@@ -1,34 +1,49 @@
 ---
 description: >-
-  Step-by-step ZenML Pro resource pool examples: pool JSON, policy JSON,
-  ResourceSettings, and outcomes for new users.
+  End-to-end ZenML Pro resource pool examples rooted in real workload scenarios:
+  admin configuration, author ResourceSettings, and reconciler outcomes.
 ---
 # Resource pool examples (workbook)
 
-Read this page like a short course: each section is one self-contained scenario.
-You will always see three things—the pool (shared capacity), the policy (how one
-orchestrator or step operator may use that pool), and the step
-(`ResourceSettings`). Then we spell out what the server does.
+Read this page like a short course. Each section is one scenario drawn from
+common platform requirements: shared GPUs, protected production training,
+inference reclaim, evening job queues, and multi-cluster placement.
 
-**Assumptions unless stated otherwise:**
+Every section shows three layers:
 
-* Steps are preemptible by default if you omit `preemptible=False`.
-* One step run at a time when we say “no other work is running,” so you can
-  focus on a single decision.
-* Every key in a policy’s `reserved` and `limit` must exist on the pool’s
-  capacity. You cannot meter a resource in policy that the pool does not
-  define.
-* If one orchestrator or step operator has policies to several pools, the step
-  still receives at most one allocation from one pool. The whole request must be
-  eligible on that pool; resources are not split across pools for a single step.
+1. Admin — pool, classes, policies (UI JSON unless noted)
+2. Author — `ResourceSettings` on a step
+3. Outcome — what the reconciler does
 
-For definitions of reserved, limit, and priority, see
-[Core concepts](resource-pools-core-concepts.md). For preemption ordering, see
-[How preemption works](resource-pools-reconciliation.md#how-preemption-works).
+Assumptions unless stated otherwise:
 
-## Primer: from `ResourceSettings` to the resource request
+* Pipelines are dynamic.
+* One step run at a time per example unless the story is about contention.
+* Admin JSON shapes match what you configure in the ZenML Pro UI.
+* CLI examples use flat capacity and map to a single `default` class.
 
-Say a step declares:
+{% hint style="info" %}
+Resource pools apply only to dynamic pipelines. Static pipelines do not create
+resource requests or wait for allocation.
+{% endhint %}
+
+{% hint style="warning" %}
+Admin pitfalls that cause author-facing rejections:
+
+* GPU-only pools or policies — also model `CPU`, `memory`, and `step run`.
+* Grants that omit a resource the step requests — rejected even when the pool is idle.
+* `reclaim_tolerance: none` without matching reserved grants — rejected immediately.
+* Multiple pools on one component — one pool wins; every candidate pool must cover all demands.
+
+There is no unbounded fallback for CPU, memory, or step slots.
+{% endhint %}
+
+For definitions see [Core concepts](resource-pools-core-concepts.md). For
+preemption and leases see [Reconciliation process](resource-pools-reconciliation.md).
+
+---
+
+## Primer: from ResourceSettings to demands
 
 ```python
 from zenml.config import ResourceSettings
@@ -37,131 +52,144 @@ ResourceSettings(
     gpu_count=2,
     cpu_count=4,
     memory="16GiB",
-    pool_resources={"tensorrt_sessions": 1},
-    preemptible=True,
 )
 ```
 
-ZenML turns that into one resource request. Roughly:
+ZenML converts this into demands on the resource request:
 
-| Source | Request key | How the amount is derived | Example value |
-| --- | --- | --- | --- |
-| `gpu_count` | `gpu` | Same as `gpu_count` | 2 |
-| `cpu_count` | `mcpu` | `ceil(cpu_count * 1000)` | 4000 |
-| `memory` | `memory_mb` | Converted to megabytes | 17180 (for `"16GiB"`) |
-| `pool_resources` | (your names) | Copied as-is, merged with typed fields | 1 |
-| Server | `step_run` | Always 1 per step | 1 |
+| Source | Demand | Example |
+| --- | --- | --- |
+| `gpu_count` | `kind: gpu`, quantity 2 | Matches `GPU` descriptor |
+| `cpu_count` | `kind: cpu`, quantity 4, unit `CPU` | Matches `CPU` descriptor |
+| `memory` | `kind: memory`, quantity 16, unit `GiB` | Matches `memory` descriptor |
+| Server (isolated step) | `kind: step_run`, quantity 1 | Throttle concurrent steps |
 
-The pool must define capacity for bounded keys such as `gpu` and
-`tensorrt_sessions`. If the pool has no row for `mcpu`, `memory_mb`, or
-`step_run`, that dimension is unbounded at the pool layer (see the examples
-below). For everything else, a missing pool row means zero capacity. If you want
-a policy to set `reserved` / `limit` on a key, that key must appear on the pool
-first—policy keys are always a subset of pool keys.
+Typed fields use kind. Custom entries in `resources` use descriptor name.
 
 ---
 
-## Warm-up: one pool, one policy, only GPUs
+## 1. Quick start: one shared GPU pool (CLI)
 
-### Preemptible step borrows past reserved
+Teams that share one GPU pool without manual booking can bootstrap with a single
+default capacity class and a simple component policy.
 
-**Story:** The team has four GPUs “labeled” for them, but the pool is empty.
-They ask for six GPUs and allow preemption. They may borrow two idle GPUs.
+### Admin
 
-**Pool**
+```shell
+zenml resource-pool create team-gpus \
+  --capacity '{"GPU": 8}' \
+  --description "Shared team GPUs"
 
-```json
-{
-  "name": "datacenter-gpus",
-  "capacity": {
-    "gpu": 8
-  }
-}
+zenml resource-pool attach-policy team-gpus ml-k8s-orch \
+  --component-type orchestrator \
+  --priority 10 \
+  --reserved '{"GPU": 4}' \
+  --limit '{"GPU": 8}'
 ```
 
-**Policy** (orchestrator `team-ml-orch` attached to this pool)
+Under the hood: one `default` class per resource, `reclaimable: never`.
 
-```json
-{
-  "pool": "datacenter-gpus",
-  "component": "team-ml-orch",
-  "component_type": "orchestrator",
-  "priority": 10,
-  "reserved": {
-    "gpu": 4
-  },
-  "limit": {
-    "gpu": 8
-  }
-}
-```
-
-**Step**
+### Author
 
 ```python
 from zenml import step
 from zenml.config import ResourceSettings
 
-
 @step(
     settings={
-        "resources": ResourceSettings(
-            gpu_count=6,
-            preemptible=True,
-        )
+        "resources": ResourceSettings(gpu_count=2),
     }
 )
 def train() -> None:
     ...
 ```
 
-**Outcome:** Allocated immediately (no queue). Four GPUs count against the
-policy reserved share; two are borrowed from free pool capacity (between
-reserved and limit, and pool must still have free units).
+### Outcome
+
+Request demands `kind: gpu`, quantity 2. Reconciler allocates from `team-gpus`
+through `ml-k8s-orch`'s policy. If two GPUs are free, step runs immediately;
+otherwise status `pending` until release.
 
 ---
 
-### Non-preemptible step stays inside reserved
+## 2. Production reserved vs experiment burst
 
-**Story:** Same pool and policy. Production wants two GPUs and opts out of
-preemption. Two is within the four-GPU reservation.
+Keep production on reserved capacity while experiments use adhoc capacity
+opportunistically, without preemption between the two tiers.
 
-**Pool**
+### Admin (UI)
+
+Pool with reserved and adhoc classes:
 
 ```json
 {
   "name": "datacenter-gpus",
-  "capacity": {
-    "gpu": 8
-  }
+  "capacity": [
+    {
+      "resource": "GPU",
+      "class": "reserved",
+      "quantity": 8,
+      "rank": 100,
+      "reclaimable": "never"
+    },
+    {
+      "resource": "GPU",
+      "class": "adhoc",
+      "quantity": 8,
+      "rank": 50,
+      "reclaimable": "never"
+    }
+  ]
 }
 ```
 
-**Policy**
+Production policy (high priority, reserved grant):
 
 ```json
 {
   "pool": "datacenter-gpus",
-  "component": "team-ml-orch",
-  "component_type": "orchestrator",
-  "priority": 10,
-  "reserved": {
-    "gpu": 4
-  },
-  "limit": {
-    "gpu": 8
-  }
+  "component_id": "<prod-orch-uuid>",
+  "priority": 100,
+  "grants": [
+    {
+      "resource": "GPU",
+      "classes": ["reserved"],
+      "reserved": 4,
+      "limit": 4
+    }
+  ]
 }
 ```
 
-**Step**
+Sandbox policy (low priority, adhoc only):
+
+```json
+{
+  "pool": "datacenter-gpus",
+  "component_id": "<sandbox-orch-uuid>",
+  "priority": 10,
+  "grants": [
+    {
+      "resource": "GPU",
+      "classes": ["adhoc"],
+      "reserved": 0,
+      "limit": 8
+    }
+  ]
+}
+```
+
+### Author — production
 
 ```python
+from zenml.enums import ResourceRequestReclaimTolerance
+
 @step(
     settings={
         "resources": ResourceSettings(
             gpu_count=2,
-            preemptible=False,
+            gpu_class="reserved",
+            reclaim_tolerance=ResourceRequestReclaimTolerance.NONE,
         )
     }
 )
@@ -169,386 +197,385 @@ def production_train() -> None:
     ...
 ```
 
-**Outcome:** Allocated (assuming no other contention). Non-preemptible work must
-satisfy requested ≤ reserved per key; `2 ≤ 4` passes.
-
----
-
-### Non-preemptible step beyond reserved
-
-**Story:** Same pool and policy. Production asks for six GPUs but refuses
-preemption. Non-preemptible work cannot use the “borrow” band above reserved.
-
-**Pool**
-
-```json
-{
-  "name": "datacenter-gpus",
-  "capacity": {
-    "gpu": 8
-  }
-}
-```
-
-**Policy**
-
-```json
-{
-  "pool": "datacenter-gpus",
-  "component": "team-ml-orch",
-  "component_type": "orchestrator",
-  "priority": 10,
-  "reserved": {
-    "gpu": 4
-  },
-  "limit": {
-    "gpu": 8
-  }
-}
-```
-
-**Step**
+### Author — experiment
 
 ```python
 @step(
     settings={
-        "resources": ResourceSettings(
-            gpu_count=6,
-            preemptible=False,
-        )
+        "resources": ResourceSettings(gpu_count=2),
     }
 )
-def too_large_production_train() -> None:
+def eval_job() -> None:
     ...
 ```
 
-**Outcome:** Rejected immediately (dynamic run fails fast). Six exceeds reserved
-(4) for `gpu`; non-preemptible requests cannot borrow up to limit.
+### Outcomes
+
+| Case | Result |
+| --- | --- |
+| Production, 2 GPUs free in reserved | Allocated from `reserved` class |
+| Production, reserved full | `pending` — never borrows adhoc |
+| Experiment, adhoc free | Allocated from `adhoc` |
+| Experiment while production holds reserved | Runs in adhoc only; not a victim while production uses `none` tolerance |
 
 ---
 
-## CPU, memory, and step slots: unbounded vs metered
+## 3. Two teams, same priority, not enough GPUs
 
-### GPU-only pool—CPU and memory not quota’d
+When demand exceeds supply at equal priority, jobs wait in a fair queue rather
+than failing or competing outside the pool.
 
-**Story:** You only modeled GPUs on the pool and policy. The step still sends
-`mcpu` and `memory_mb` on the request, but those keys are unbounded at the pool
-layer when omitted, and this policy omits them too—so they do not block
-non-preemptible work.
+### Admin (UI)
 
-**Pool**
+Pool: 8 `GPU` in one `default` class (or use CLI from section 1).
 
-```json
-{
-  "name": "training",
-  "capacity": {
-    "gpu": 4
-  }
-}
-```
+Two policies at priority 10, each `reserved: 4`, `limit: 8` on different
+orchestrators.
 
-**Policy**
-
-```json
-{
-  "pool": "training",
-  "component": "k8s-orch",
-  "component_type": "orchestrator",
-  "priority": 10,
-  "reserved": {
-    "gpu": 2
-  },
-  "limit": {
-    "gpu": 4
-  }
-}
-```
-
-**Step**
+### Author (both teams)
 
 ```python
-@step(
-    settings={
-        "resources": ResourceSettings(
-            gpu_count=1,
-            cpu_count=32,
-            memory="64GiB",
-            preemptible=False,
-        )
-    }
-)
-def hungry_but_ok_on_gpu() -> None:
+@step(settings={"resources": ResourceSettings(gpu_count=2)})
+def train() -> None:
     ...
 ```
 
-**Outcome:** Allocated if nothing else is wrong. Only `gpu` is gated here;
-`mcpu` / `memory_mb` / `step_run` are not limited by pool or policy in this
-pattern. CPU and memory remain informational unless you add rows later.
+### Outcome
+
+Four concurrent steps fit (8 GPUs). A fifth request → `pending`. Reconciler
+orders by reserved-fit, then priority, then FIFO. As steps complete, queued
+steps allocate without manual intervention.
 
 ---
 
-### Non-preemptible CPU inside policy reserved
+## 4. Higher priority wins; lower may be preempted
 
-**Story:** You cap milli-CPU on the pool, then split it with reserved / limit
-on the policy. Non-preemptible CPU demand must fit reserved per key.
+This pattern implements priority-aware scheduling within one cluster: higher-
+priority work proceeds first and may reclaim capacity from lower-priority jobs
+that accept it.
 
-**Pool**
+### Admin (UI)
+
+Same 8-GPU pool. Production policy priority 100; sandbox priority 10. Sandbox
+grant allows adhoc burst to 8.
+
+### Flow
+
+1. Sandbox step holds 6 GPUs (`reclaim_tolerance` default `any` on isolated step).
+2. Production submits needing 4 GPUs; reserved has headroom but adhoc is tight.
+3. Reconciler preempts sandbox victims (lower priority, reclaimable).
+4. Production allocates; sandbox re-queues if retries configured.
+
+### Outcome
+
+Production proceeds. Sandbox sees `preempting` → retry or failure without
+retries. UI shows `preemption_initiated_by_id` on victim request.
+
+---
+
+## 5. Declare H200; platform picks the cluster
+
+Authors request a hardware class by descriptor name; ZenML routes the step to a
+pool and operator that expose matching capacity.
+
+### Admin (UI)
+
+Descriptor (`kind: "gpu"` so `gpu_count` applies):
 
 ```json
 {
-  "name": "training",
-  "capacity": {
-    "gpu": 4,
-    "mcpu": 32000
-  }
+  "name": "h200",
+  "kind": "gpu",
+  "attributes": {"vram_gb": 141, "vendor": "nvidia"}
 }
 ```
 
-**Policy**
+Pool (aggregate across clusters):
 
 ```json
 {
-  "pool": "training",
-  "component": "k8s-orch",
-  "component_type": "orchestrator",
-  "priority": 10,
-  "reserved": {
-    "gpu": 2,
-    "mcpu": 4000
-  },
-  "limit": {
-    "gpu": 4,
-    "mcpu": 32000
-  }
+  "name": "org-h200-gpus",
+  "capacity": [
+    {
+      "resource": "h200",
+      "class": "reserved",
+      "quantity": 24,
+      "rank": 100,
+      "reclaimable": "never"
+    }
+  ]
 }
 ```
 
-**Step**
+Policies attach the same pool to multiple step operators (`eu-west-gpu-op`,
+`eu-north-gpu-op`) with different priorities or reserved splits.
+
+Component settings on the class map each operator to its node selectors (see
+[Admin guide](resource-pools-admin-guide.md)).
+
+### Author
+
+Preferred — typed fields match any `gpu`-kind descriptor (including `h200`):
 
 ```python
 @step(
+    step_operator=["eu-west-gpu-op", "eu-north-gpu-op"],
     settings={
         "resources": ResourceSettings(
             gpu_count=1,
-            cpu_count=2,
-            preemptible=False,
+            gpu_class="reserved",
         )
-    }
+    },
 )
-def fits_reserved_cpu() -> None:
+def train() -> None:
     ...
 ```
 
-**Outcome:** Allocated. `cpu_count=2` → `mcpu` 2000 ≤ reserved 4000, and `gpu` is
-valid.
+When several `gpu`-kind descriptors exist and the author must pin a specific
+one, use the descriptor name in `resources`:
+
+```python
+ResourceSettings(resources={"h200": 1}, gpu_class="reserved")
+```
+
+### Outcome
+
+Request lists candidate step operators. Reconciler picks an eligible operator
+with policy access and free `h200` / `reserved` capacity. Author does not
+select cluster or region in code. Step run metadata shows which operator won.
 
 ---
 
-### Non-preemptible CPU over policy reserved
+## 6. Per-node pools and Kubernetes placement
 
-**Pool**
+When capacity spans several Kubernetes nodes, separate pools with placement
+settings let you target individual nodes or node groups.
 
-```json
-{
-  "name": "training",
-  "capacity": {
-    "gpu": 4,
-    "mcpu": 32000
-  }
-}
-```
+### Admin (UI)
 
-**Policy**
+Two pools:
 
 ```json
-{
-  "pool": "training",
-  "component": "k8s-orch",
-  "component_type": "orchestrator",
-  "priority": 10,
-  "reserved": {
-    "gpu": 2,
-    "mcpu": 4000
+[
+  {
+    "name": "node-a-gpus",
+    "attributes": {"kubernetes_node": "node-a"},
+    "capacity": [
+      {
+        "resource": "h200",
+        "class": "reserved",
+        "quantity": 8,
+        "rank": 100,
+        "reclaimable": "never",
+        "component_settings": [
+          {
+            "component_type": "step_operator",
+            "flavor": "kubernetes",
+            "settings": {
+              "pod_settings": {
+                "node_selectors": {"kubernetes.io/hostname": "node-a"}
+              }
+            }
+          }
+        ]
+      }
+    ]
   },
-  "limit": {
-    "gpu": 4,
-    "mcpu": 32000
+  {
+    "name": "node-b-gpus",
+    "attributes": {"kubernetes_node": "node-b"},
+    "capacity": [
+      {
+        "resource": "h200",
+        "class": "reserved",
+        "quantity": 8,
+        "rank": 100,
+        "reclaimable": "never",
+        "component_settings": [
+          {
+            "component_type": "step_operator",
+            "flavor": "kubernetes",
+            "settings": {
+              "pod_settings": {
+                "node_selectors": {"kubernetes.io/hostname": "node-b"}
+              }
+            }
+          }
+        ]
+      }
+    ]
   }
-}
+]
 ```
 
-**Step**
+One step operator policy per pool, same component, different priorities if
+primary/fallback.
+
+### Author
+
+```python
+ResourceSettings(gpu_count=1, gpu_class="reserved")
+```
+
+### Outcome
+
+Reconciler selects pool with free capacity and matching policy. Allocation
+carries `component_settings` for that node. The step operator schedules the pod
+with the configured node selector; GPU, CPU, and memory requests come from the
+author's `ResourceSettings`.
+
+---
+
+## 7. Custom scarce resource (license)
+
+The same pool model applies to scarce non-GPU resources—such as license seats—
+when you define a custom descriptor and declare pool capacity for it.
+
+### Admin (UI)
+
+Descriptor `training-license`. Pool class quantity 4. Policy grant reserved 2,
+limit 4 for the orchestrator.
+
+### Author
 
 ```python
 @step(
     settings={
         "resources": ResourceSettings(
-            gpu_count=1,
-            cpu_count=8,
-            preemptible=False,
+            resources={"training-license": 1},
+            reclaim_tolerance=ResourceRequestReclaimTolerance.NONE,
         )
     }
 )
-def exceeds_reserved_cpu() -> None:
+def licensed_train() -> None:
     ...
 ```
 
-**Outcome:** Rejected. `cpu_count=8` → `mcpu` 8000 > reserved 4000;
-non-preemptible work cannot borrow toward limit on `mcpu`.
+### Outcome
+
+Demand uses `resource: "training-license"` by name. Non-reclaimable request must
+fit grant reserved. Missing descriptor or grant → `rejected`.
 
 ---
 
-### Preemptible CPU burst with policy `mcpu` rows
+## 8. Ten sweeps at 6pm — queue the rest
 
-**Pool** and **Policy:** same as *Non-preemptible CPU inside policy reserved*
-(pool includes `gpu` and `mcpu`; policy sets both keys).
+When one engineer submits many jobs at once, work beyond immediate capacity
+waits in the pool queue until slots free up.
 
-**Step**
+### Setup
 
-```python
-@step(
-    settings={
-        "resources": ResourceSettings(
-            gpu_count=1,
-            cpu_count=8,
-            preemptible=True,
-        )
-    }
-)
-def preemptible_cpu_burst() -> None:
-    ...
+Pool with 4 GPUs. Single policy. User launches ten dynamic runs, each step
+`gpu_count=1`.
+
+### Outcome
+
+1. Four requests → `allocated` immediately.
+2. Six → `pending`.
+3. As each run finishes, next pending allocates.
+4. Morning: all ten complete without manual release.
+
+Inspect queue:
+
+```shell
+zenml resource-pool requests team-gpus --view queued
 ```
-
-**Outcome:** May allocate using headroom up to limit on `mcpu` (and pool free
-capacity), analogous to GPU borrowing.
 
 ---
 
-### Preemptible when pool lists `mcpu` but policy omits it
+## 9. Why is my run queued?
 
-**Story:** The pool caps total milli-CPU. With no `mcpu` on the policy, reserved
-defaults to 0 and limit falls back to the pool total.
+Queue and rejection states include human-readable reasons so you can see why a
+run is waiting or was denied.
 
-**Pool**
+### Situations
 
-```json
-{
-  "name": "training",
-  "capacity": {
-    "gpu": 4,
-    "mcpu": 8000
-  }
-}
+| `status_reason` (examples) | Meaning |
+| --- | --- |
+| Waiting for reserved capacity | Non-reclaimable ask; reserved slice full |
+| Waiting for any capacity | Pool full for requested class |
+| Waiting behind higher priority | Contention with higher-priority policy |
+| Blocked by external reclaim | External priority-lane activity |
+
+### Author action
+
+```shell
+zenml resource-request describe <request-id>
 ```
 
-**Policy** (only `gpu`)
+Check `status`, `status_reason`, `queued_at`, and linked step run in the UI.
 
-```json
-{
-  "pool": "training",
-  "component": "k8s-orch",
-  "component_type": "orchestrator",
-  "priority": 10,
-  "reserved": {
-    "gpu": 2
-  },
-  "limit": {
-    "gpu": 4
-  }
-}
-```
-
-**Step**
-
-```python
-@step(
-    settings={
-        "resources": ResourceSettings(
-            gpu_count=1,
-            cpu_count=4,
-            preemptible=True,
-        )
-    }
-)
-def preemptible_with_pool_mcpu() -> None:
-    ...
-```
-
-**Outcome:** Allocated or queued then allocated when possible. `mcpu` 4000 ≤
-effective limit 8000 (pool total).
+No Slack ping to the admin required for basic queue weather.
 
 ---
 
-### Non-preemptible when pool lists `mcpu` but policy omits it
+## 10. Inference scales up; eval yields the GPU
 
-**Pool** and **Policy:** same as the previous example.
+When external inference scales up on shared nodes, priority-lane policies let it
+reclaim capacity from opportunistic ZenML jobs.
 
-**Step**
+### Admin (UI)
 
-```python
-@step(
-    settings={
-        "resources": ResourceSettings(
-            gpu_count=1,
-            cpu_count=1,
-            preemptible=False,
-        )
-    }
-)
-def non_preemptible_positive_mcpu_zero_reserved() -> None:
-    ...
-```
+Per-node pool `prod-eu-node-b` (section 6). Priority-lane grantless policy for
+`external-workload-bridge` service account.
 
-**Outcome:** Rejected. Any positive `mcpu` with reserved 0 fails for
-non-preemptible work. Fix: add `mcpu` to the policy with enough reserved, or
-remove `mcpu` from the pool if you wanted fully unbounded CPU at the pool layer.
+### External client (night — eval borrowed capacity)
+
+Service account creates request for 4 `h200` on `node-b` with lease renewals
+while ZenML eval pods run on borrowed adhoc capacity.
+
+### External client (9am — inference scales)
+
+Watcher creates or renews priority-lane request needing 4 GPUs. Reconciler
+preempts lower-priority ZenML allocations with `coordinated` or `any`
+tolerance.
+
+### ZenML eval step
+
+Was running with default reclaim tolerance. Heartbeat sees `preempting` → step
+cancels → retries if configured → `pending` until night when adhoc frees.
+
+### Outcome
+
+Inference schedules immediately. Eval returns automatically when capacity
+reopens. Admin sees external request and preemption chain in UI.
+
+See [External workloads](resource-pools-external-workloads.md) for API details.
 
 ---
 
-### Capping concurrent steps with `step_run`
+## Multiple pools, one request
 
-**Story:** You want both GPUs and a ceiling on how many steps from this
-orchestrator run at once. Each step always requests one `step_run`.
+When one orchestrator or step operator is attached to pools in more than one
+region or node group, each step still produces a single request. ZenML queues
+it against every eligible pool and allocates from whichever can satisfy all
+demands first.
 
-**Pool**
+{% hint style="warning" %}
+Several policies on the same stack component mean several pools may try to
+satisfy the same request, but only one pool can win. ZenML does not take GPUs
+from one pool and CPU from another for one step.
 
-```json
-{
-  "name": "training",
-  "capacity": {
-    "gpu": 16,
-    "step_run": 10
-  }
-}
-```
+Every pool and policy must include all resources authors might request —
+`CPU`, `memory`, `step run`, GPUs, and custom descriptors — or that pool
+cannot win even if it has spare GPUs.
+{% endhint %}
 
-**Policy**
+### Admin (UI)
 
-```json
-{
-  "pool": "training",
-  "component": "k8s-orch",
-  "component_type": "orchestrator",
-  "priority": 10,
-  "reserved": {
-    "gpu": 8,
-    "step_run": 4
-  },
-  "limit": {
-    "gpu": 16,
-    "step_run": 4
-  }
-}
-```
+Primary pool `eu-west-gpus` and fallback `eu-north-gpus`. Both attach to the
+same step operator. Each pool declares `GPU`, `CPU`, `memory`, and `step run`
+capacity. Each policy grants all four resources (not GPU-only).
 
-**Step**
+### Author
 
 ```python
 @step(
     settings={
         "resources": ResourceSettings(
             gpu_count=2,
-            preemptible=True,
+            cpu_count=8,
+            memory="32GiB",
         )
     }
 )
@@ -556,123 +583,12 @@ def train() -> None:
     ...
 ```
 
-**Outcome:** The server grants only when both `gpu` and `step_run` have enough
-free units. If GPUs are free but all `step_run` slots are taken, the request
-waits in the queue.
+### Outcome
 
----
-
-## Custom keys from `pool_resources`
-
-### Custom key fully configured
-
-**Story:** You track a scarce license or device class with `pool_resources`.
-
-**Pool**
-
-```json
-{
-  "name": "inference",
-  "capacity": {
-    "gpu": 8,
-    "tensorrt_sessions": 4
-  }
-}
-```
-
-**Policy**
-
-```json
-{
-  "pool": "inference",
-  "component": "gpu-step-op",
-  "component_type": "step_operator",
-  "priority": 10,
-  "reserved": {
-    "gpu": 2,
-    "tensorrt_sessions": 2
-  },
-  "limit": {
-    "gpu": 8,
-    "tensorrt_sessions": 4
-  }
-}
-```
-
-**Step**
-
-```python
-@step(
-    settings={
-        "resources": ResourceSettings(
-            gpu_count=1,
-            pool_resources={"tensorrt_sessions": 1},
-            preemptible=False,
-        )
-    }
-)
-def infer() -> None:
-    ...
-```
-
-**Outcome:** Allocated when `1 ≤ reserved` for both `gpu` and
-`tensorrt_sessions`. Unbounded defaults do not apply to custom keys—the pool
-must list them.
-
----
-
-### Custom key on pool but missing from policy
-
-**Story:** Same pool capacity; policy only defines `gpu`.
-
-**Pool**
-
-```json
-{
-  "name": "inference",
-  "capacity": {
-    "gpu": 8,
-    "tensorrt_sessions": 2
-  }
-}
-```
-
-**Policy**
-
-```json
-{
-  "pool": "inference",
-  "component": "gpu-step-op",
-  "component_type": "step_operator",
-  "priority": 10,
-  "reserved": {
-    "gpu": 2
-  },
-  "limit": {
-    "gpu": 8
-  }
-}
-```
-
-**Step**
-
-```python
-@step(
-    settings={
-        "resources": ResourceSettings(
-            gpu_count=1,
-            pool_resources={"tensorrt_sessions": 1},
-            preemptible=False,
-        )
-    }
-)
-def infer() -> None:
-    ...
-```
-
-**Outcome:** Rejected. Missing policy row → reserved 0 for `tensorrt_sessions`;
-non-preemptible cannot ask for a positive amount. Fix: add `tensorrt_sessions` to
-the policy, or mark the step preemptible if borrowing is acceptable.
+One request with gpu, cpu, memory, and step_run demands queues in both pools.
+The reconciler picks the higher-priority policy's pool when both can satisfy
+the full request. If `eu-north-gpus` only modeled `GPU`, it never wins this
+step even when GPUs are idle there.
 
 ---
 
@@ -680,556 +596,32 @@ the policy, or mark the step preemptible if borrowing is acceptable.
 
 ### Request exceeds pool capacity
 
-**Pool**
+Author `gpu_count=10`, pool total 8 → `rejected` immediately.
 
-```json
-{
-  "name": "small",
-  "capacity": {
-    "gpu": 8
-  }
-}
-```
+### Request exceeds grant limit
 
-**Policy**
+Author `gpu_count=6`, policy limit 4 → `rejected` even if pool has 8 free.
 
-```json
-{
-  "pool": "small",
-  "component": "k8s-orch",
-  "component_type": "orchestrator",
-  "priority": 10,
-  "reserved": {
-    "gpu": 8
-  },
-  "limit": {
-    "gpu": 8
-  }
-}
-```
+### Non-reclaimable above reserved
 
-**Step**
+Author `reclaim_tolerance: none`, `gpu_count=6`, grant reserved 4 → `rejected`.
 
-```python
-@step(
-    settings={
-        "resources": ResourceSettings(
-            gpu_count=10,
-            preemptible=True,
-        )
-    }
-)
-def too_big_for_planet() -> None:
-    ...
-```
+### Demand not in pool or policy
 
-**Outcome:** Rejected immediately. Ten exceeds the pool total for `gpu`; the
-request does not join a queue.
+Author requests CPU and memory; pool or grants only cover `GPU` → `rejected`
+(no unbounded fallback for `CPU`, `memory`, or `step run`).
 
----
+### Non-reclaimable with zero reserved
 
-### Request exceeds policy limit (pool could fit)
-
-**Pool**
-
-```json
-{
-  "name": "shared",
-  "capacity": {
-    "gpu": 8
-  }
-}
-```
-
-**Policy**
-
-```json
-{
-  "pool": "shared",
-  "component": "team-a-orch",
-  "component_type": "orchestrator",
-  "priority": 10,
-  "reserved": {
-    "gpu": 2
-  },
-  "limit": {
-    "gpu": 4
-  }
-}
-```
-
-**Step**
-
-```python
-@step(
-    settings={
-        "resources": ResourceSettings(
-            gpu_count=6,
-            preemptible=True,
-        )
-    }
-)
-def over_team_limit() -> None:
-    ...
-```
-
-**Outcome:** Rejected. Six exceeds this component’s limit (4) for `gpu`, even if
-eight GPUs exist in the pool.
-
----
-
-## Contention: queues and priorities
-
-### Two teams, same priority, not enough GPUs
-
-**Story:** Red and Blue orchestrators share one pool. Policies use the same
-priority. Many preemptible steps each want 2 GPUs; the pool cannot satisfy
-everyone at once.
-
-**Pool**
-
-```json
-{
-  "name": "shared",
-  "capacity": {
-    "gpu": 8
-  }
-}
-```
-
-**Policies**
-
-```json
-[
-  {
-    "pool": "shared",
-    "component": "red-orch",
-    "component_type": "orchestrator",
-    "priority": 10,
-    "reserved": {
-      "gpu": 4
-    },
-    "limit": {
-      "gpu": 8
-    }
-  },
-  {
-    "pool": "shared",
-    "component": "blue-orch",
-    "component_type": "orchestrator",
-    "priority": 10,
-    "reserved": {
-      "gpu": 4
-    },
-    "limit": {
-      "gpu": 8
-    }
-  }
-]
-```
-
-**Step** (typical for either team)
-
-```python
-@step(
-    settings={
-        "resources": ResourceSettings(
-            gpu_count=2,
-            preemptible=True,
-        )
-    }
-)
-def train() -> None:
-    ...
-```
-
-**Outcome:** Requests wait in the pool queue until GPUs free up. Among the same
-policy priority, ordering tends to favor older waiters (FIFO-style). The
-allocator also prefers a request that still fits entirely in its unused reserved
-slice over one that must borrow when both are waiting—so a team with reservation
-headroom is not stuck behind another team that is already bursting, if the next
-grant can be served from that reserved slice. No preemption until a
-higher-priority waiter or reclaim logic forces it.
-
----
-
-### Higher priority wins; lower may be preempted
-
-**Story:** Sandbox bursts with preemptible work. Production has higher policy
-priority and needs GPUs when the pool is full.
-
-**Pool**
-
-```json
-{
-  "name": "shared",
-  "capacity": {
-    "gpu": 8
-  }
-}
-```
-
-**Policies**
-
-```json
-[
-  {
-    "pool": "shared",
-    "component": "sandbox-orch",
-    "component_type": "orchestrator",
-    "priority": 10,
-    "reserved": {
-      "gpu": 4
-    },
-    "limit": {
-      "gpu": 8
-    }
-  },
-  {
-    "pool": "shared",
-    "component": "prod-orch",
-    "component_type": "orchestrator",
-    "priority": 100,
-    "reserved": {
-      "gpu": 2
-    },
-    "limit": {
-      "gpu": 8
-    }
-  }
-]
-```
-
-**Sandbox** (already holding six GPUs, preemptible)
-
-```python
-@step(
-    settings={
-        "resources": ResourceSettings(
-            gpu_count=6,
-            preemptible=True,
-        )
-    }
-)
-def sandbox_experiment() -> None:
-    ...
-```
-
-**Prod** (new, preemptible, needs four)
-
-```python
-@step(
-    settings={
-        "resources": ResourceSettings(
-            gpu_count=4,
-            preemptible=True,
-        )
-    }
-)
-def prod_train() -> None:
-    ...
-```
-
-**Outcome:** If four GPUs cannot be granted without reclaiming space, the
-reconciler may preempt Sandbox’s preemptible runs (lower policy priority) so Prod
-can proceed. See [How preemption works](resource-pools-reconciliation.md#how-preemption-works) for victim
-ordering.
-
----
-
-### Production non-preemptible waits on reserved only
-
-**Story:** Prod uses `preemptible=False` and asks only for what is reserved. If
-another non-preemptible job on the same stack component already holds the reserved
-GPUs, this step does not borrow from Sandbox’s burst.
-
-**Pool**
-
-```json
-{
-  "name": "shared",
-  "capacity": {
-    "gpu": 8
-  }
-}
-```
-
-**Policies** (same as previous example: Sandbox priority 10, Prod priority 100)
-
-**Prod step**
-
-```python
-@step(
-    settings={
-        "resources": ResourceSettings(
-            gpu_count=2,
-            preemptible=False,
-        )
-    }
-)
-def prod_sla_job() -> None:
-    ...
-```
-
-**Outcome:** Waits in the queue if Prod’s reserved `gpu` (2) is already used by
-other non-preemptible work on `prod-orch`. It will not take Sandbox’s borrowed
-GPUs. Ways out: raise reserved for Prod, wait for the other job to finish, or
-use preemptible Prod work if policy allows.
-
----
-
-## Multiple pools and multi-key requests
-
-{% hint style="warning" %}
-Several policies on the same stack component mean several pools may try
-to satisfy the same resource request, but only one pool can win.
-Every key in the request must pass that pool’s checks; ZenML does not take
-`gpu` from one pool and `mcpu` from another for one step.
-{% endhint %}
-
-### Two pools on one orchestrator—primary pool wins
-
-**Story:** You attach two policies to the same orchestrator pointing at
-different pools. The step still produces one resource request, enqueued in every
-eligible pool; only one pool may win.
-
-**Pools**
-
-```json
-[
-  {
-    "name": "eu-west-gpu",
-    "capacity": {
-      "gpu": 16
-    }
-  },
-  {
-    "name": "eu-north-gpu",
-    "capacity": {
-      "gpu": 16
-    }
-  }
-]
-```
-
-**Policies**
-
-```json
-[
-  {
-    "pool": "eu-west-gpu",
-    "component": "regional-orch",
-    "component_type": "orchestrator",
-    "priority": 20,
-    "reserved": {
-      "gpu": 8
-    },
-    "limit": {
-      "gpu": 16
-    }
-  },
-  {
-    "pool": "eu-north-gpu",
-    "component": "regional-orch",
-    "component_type": "orchestrator",
-    "priority": 10,
-    "reserved": {
-      "gpu": 8
-    },
-    "limit": {
-      "gpu": 16
-    }
-  }
-]
-```
-
-**Step**
-
-```python
-@step(
-    settings={
-        "resources": ResourceSettings(
-            gpu_count=1,
-            preemptible=True,
-        )
-    }
-)
-def train() -> None:
-    ...
-```
-
-**Outcome:** The server tries higher policy priority first—eu-west before
-eu-north. Whichever pool grants first owns the allocation; the other queue entry
-is dropped as stale. Use this for primary/fallback or regional capacity, not for
-splitting one step across unrelated quotas.
-
----
-
-### One step must satisfy every key in each pool
-
-**Story:** Eligibility is checked per pool against all keys on the request. If a
-pool lacks a key the step needs, that pool treats it as zero capacity—the request
-is not eligible there.
-
-**Pool A** (GPUs only)
-
-```json
-{
-  "name": "gpu-only",
-  "capacity": {
-    "gpu": 8
-  }
-}
-```
-
-**Pool B** (full bundle)
-
-```json
-{
-  "name": "gpu-and-trt",
-  "capacity": {
-    "gpu": 8,
-    "tensorrt_sessions": 4
-  }
-}
-```
-
-**Policy** (example: only Pool B is attached, or imagine Pool A attached alone)
-
-**Step**
-
-```python
-@step(
-    settings={
-        "resources": ResourceSettings(
-            gpu_count=1,
-            pool_resources={"tensorrt_sessions": 1},
-            preemptible=True,
-        )
-    }
-)
-def infer() -> None:
-    ...
-```
-
-**Outcome:** A pool with only `gpu` cannot satisfy `tensorrt_sessions`—that
-dimension is zero there, so the request does not enqueue on that pool.
-
-**Lesson:** Model every scarce bounded dimension you care about on one pool (or
-ensure every candidate pool defines the same key set for those keys). The next
-section shows how `mcpu` and `memory_mb` differ: omitting them on one pool keeps
-that path eligible even when another pool meters them strictly.
-
----
-
-### Two pools: higher-priority path meters CPU/RAM; GPU-only path still wins
-
-**Story:** One orchestrator has two policies (same pattern as *Two pools on one
-orchestrator—primary pool wins*). Pool B’s capacity and policy include `mcpu` and
-`memory_mb`, with reserved amounts sized for small non-preemptible jobs. Pool A
-only defines `gpu`; it does not list `mcpu` or `memory_mb`, so those dimensions
-are unbounded at the pool layer and its policy does not reserve them. A
-non-preemptible step asks for one GPU but more CPU and RAM than Pool B’s policy
-allows. The higher-priority policy (Pool B) cannot grant that request; the
-lower-priority policy (Pool A) can, because the request’s CPU and memory demand is
-not quota’d on that path. The allocation is owned by Pool A.
-
-**Pool A** (GPUs only—no `mcpu` or `memory_mb` on the pool)
-
-```json
-{
-  "name": "gpu-only-fallback",
-  "capacity": {
-    "gpu": 8
-  }
-}
-```
-
-**Pool B** (GPUs plus metered CPU and memory)
-
-```json
-{
-  "name": "metered-cpu-mem",
-  "capacity": {
-    "gpu": 8,
-    "mcpu": 128000,
-    "memory_mb": 524288
-  }
-}
-```
-
-**Policies** (same component, different priorities—B is preferred when both can
-grant)
-
-```json
-[
-  {
-    "pool": "metered-cpu-mem",
-    "component": "k8s-orch",
-    "component_type": "orchestrator",
-    "priority": 100,
-    "reserved": {
-      "gpu": 4,
-      "mcpu": 4000,
-      "memory_mb": 8192
-    },
-    "limit": {
-      "gpu": 8,
-      "mcpu": 64000,
-      "memory_mb": 131072
-    }
-  },
-  {
-    "pool": "gpu-only-fallback",
-    "component": "k8s-orch",
-    "component_type": "orchestrator",
-    "priority": 50,
-    "reserved": {
-      "gpu": 4
-    },
-    "limit": {
-      "gpu": 8
-    }
-  }
-]
-```
-
-**Step**
-
-```python
-@step(
-    settings={
-        "resources": ResourceSettings(
-            gpu_count=1,
-            cpu_count=8,
-            memory="32GiB",
-            preemptible=False,
-        )
-    }
-)
-def train() -> None:
-    ...
-```
-
-**Outcome:** The request maps to roughly `mcpu` 8000 and tens of thousands of
-`memory_mb` for `32GiB`. For non-preemptible work, each key must be ≤ policy
-reserved on the path you use. Pool B’s policy reserves only `mcpu` 4000 and
-`memory_mb` 8192, so that path cannot satisfy the step. Pool A’s policy has no
-`mcpu` or `memory_mb` rows; with those keys absent from the pool, they are not
-treated as zero capacity, so the step remains eligible there on `gpu` alone. The
-reconciler allocates from Pool A and drops the competing queue row for Pool B.
-If you want large non-preemptible jobs to stay on the metered pool, raise
-reserved (and capacity) on Pool B for `mcpu` and `memory_mb`, or reduce demand in
-`ResourceSettings`—otherwise the GPU-only policy acts as an escape hatch for
-heavy CPU/RAM asks.
+Author `reclaim_tolerance: none`, grant has `reserved: 0` for a demanded
+resource → `rejected` immediately.
 
 ---
 
 ## See also
 
 * [Resource pools](resource-pools.md) — overview
-* [Core concepts](resource-pools-core-concepts.md) — pools, policies, requests
-* [How preemption works](resource-pools-reconciliation.md#how-preemption-works) — preemption
-  ordering
+* [Admin guide](resource-pools-admin-guide.md) — configure pools and policies
+* [User guide](resource-pools-user-guide.md) — ResourceSettings reference
+* [How preemption works](resource-pools-reconciliation.md#how-preemption-works)
 * [Step configuration](https://docs.zenml.io/how-to/steps-pipelines/configuration)
-  — full `ResourceSettings` reference

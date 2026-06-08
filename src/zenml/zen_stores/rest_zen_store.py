@@ -1723,6 +1723,27 @@ class RestZenStore(BaseZenStore):
         )
         return ResourceRequestResponse.model_validate(response_body)
 
+    def release_resource_request(
+        self,
+        resource_request_id: UUID,
+    ) -> ResourceRequestResponse:
+        """Release a resource request on behalf of its owner.
+
+        Args:
+            resource_request_id: The ID of the resource request to release.
+
+        Returns:
+            The released resource request.
+        """
+        response_body = self._request(
+            "POST",
+            self.url
+            + API
+            + VERSION_1
+            + f"{RESOURCE_REQUESTS}/{resource_request_id}/release",
+        )
+        return ResourceRequestResponse.model_validate(response_body)
+
     def renew_resource_request(
         self,
         resource_request_id: UUID,

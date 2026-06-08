@@ -154,6 +154,26 @@ def renew_resource_request(
 
 
 @router.post(
+    "/{resource_request_id}/release",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@async_fastapi_endpoint_wrapper
+def release_resource_request(
+    resource_request_id: UUID,
+    _: AuthContext = Security(authorize),
+) -> ResourceRequestResponse:
+    """Release a resource request on behalf of its owner.
+
+    Args:
+        resource_request_id: ID of the resource request.
+
+    Returns:
+        The released resource request.
+    """
+    return zen_store().release_resource_request(resource_request_id)
+
+
+@router.post(
     "/{resource_request_id}/terminate",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -163,7 +183,11 @@ def terminate_resource_request(
     terminate_request: ResourceRequestTerminateRequest | None = None,
     _: AuthContext = Security(authorize),
 ) -> ResourceRequestResponse:
-    """Terminate a resource request.
+    """Terminate a resource request as an operator or admin.
+
+    Soft termination cancels pending requests and marks reclaimable allocated
+    requests preempting. Forceful termination cancels pending requests,
+    releases other allocated requests, and completes preempting requests.
 
     Args:
         resource_request_id: ID of the resource request.
