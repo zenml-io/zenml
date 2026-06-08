@@ -14,6 +14,10 @@ Why ZenML pipelines?
 - **Observe by default**: Lineage and step metadata (e.g., latency, tokens, metrics) are tracked and visible in the dashboard.
 {% endhint %}
 
+{% hint style="info" %}
+**Plan and build pipelines with AI coding agents:** If you use Claude Code, Codex, Copilot, Cursor, or similar tools, ZenML provides Agent Skills that can scope your idea into a realistic multi-pipeline plan (`zenml-scoping`) and help you implement steps and pipelines (`zenml-pipeline-authoring`). See [LLM tooling](../reference/llms-txt.md) for installation instructions.
+{% endhint %}
+
 ---
 
 ## What do you want to build?
@@ -88,6 +92,7 @@ Then follow the guide in [`examples/deploying_agent`](https://github.com/zenml-i
 ### Related examples
 
 - **[agent_outer_loop](https://github.com/zenml-io/zenml/tree/main/examples/agent_outer_loop)**: Combine ML classifiers with agents for hybrid intelligent systems
+- **[agentic_hitl_pipeline](https://github.com/zenml-io/zenml/tree/main/examples/agentic_hitl_pipeline)**: Add dynamic fan-out and human approval to an agent workflow
 - **[agent_comparison](https://github.com/zenml-io/zenml/tree/main/examples/agent_comparison)**: Compare different agent architectures and LLM providers
 - **[agent_framework_integrations](https://github.com/zenml-io/zenml/tree/main/examples/agent_framework_integrations)**: Integrate with popular agent frameworks
 - **[llm_finetuning](https://github.com/zenml-io/zenml/tree/main/examples/llm_finetuning)**: Fine-tune LLMs for specialized tasks
@@ -305,3 +310,5 @@ Regardless of which path you choose:
 - **[Deployments](../how-to/deployment/deployment.md)** - Turn pipelines into HTTP services with built-in UIs and monitoring
 
 For deeper dives, explore the [Concepts](../how-to/steps-pipelines/steps_and_pipelines.md) section in the docs.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

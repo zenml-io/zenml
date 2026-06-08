@@ -95,7 +95,7 @@ install_zenml() {
     fi
     
     # install ZenML in editable mode
-    uv pip install $PIP_ARGS $upgrade_args -e ".[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]"
+    uv pip install $PIP_ARGS $upgrade_args -e ".[server,otel,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]"
     
     echo "✅ ZenML installation completed"
 }
@@ -108,9 +108,17 @@ install_integrations() {
 
     ignore_integrations="feast label_studio bentoml seldon pycaret skypilot_aws skypilot_gcp skypilot_azure skypilot_kubernetes skypilot_lambda pigeon prodigy argilla vllm"
 
-    # Ignore tensorflow and deepchecks only on Python 3.12 and 3.13
-    if [ "$python_version" = "3.12" ] || [ "$python_version" = "3.13" ]; then
+    # Ignore tensorflow and deepchecks only on Python 3.12, 3.13 and 3.14
+    if [ "$python_version" = "3.12" ] || [ "$python_version" = "3.13" ] || [ "$python_version" = "3.14" ]; then
         ignore_integrations="$ignore_integrations tensorflow deepchecks"
+    fi
+
+    # TODO: Revisit once pytorch Windows support stabilizes.
+    # torch DLL loading on Windows CI is unreliable (OSError / FileNotFoundError
+    # at import time). Tracked in: https://github.com/zenml-io/zenml/issues/4471
+    os_name=$(python -c "import platform; print(platform.system())")
+    if [ "$os_name" = "Windows" ]; then
+        ignore_integrations="$ignore_integrations pytorch neural_prophet pytorch_lightning"
     fi
     
     # turn the ignore integrations into a list of --ignore-integration args
@@ -162,6 +170,14 @@ install_integrations() {
     # need to uninstall this library for now until the changes make it into
     # fastapi and then need to bump the fastapi version to resolve this.
     uv pip uninstall $PIP_ARGS multipart
+
+    # `docstring_parser_fork` (required by pydoclint) ships under the same
+    # `docstring_parser/` namespace as the upstream `docstring-parser` package.
+    # Some integration dependencies pull in upstream `docstring-parser`, which
+    # then overwrites the fork's files on disk and breaks `pydoclint` with an
+    # `ImportError: cannot import name 'DocstringYields'`. Force-reinstall the
+    # fork last so its files win the namespace collision.
+    uv pip install $PIP_ARGS --force-reinstall --no-deps "docstring_parser_fork"
 }
 
 set -x

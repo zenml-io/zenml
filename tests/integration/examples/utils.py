@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING, Dict, Generator, List, Optional, Set, Tuple
 import pytest
 
 from zenml.client import Client
+from zenml.constants import ENV_ZENML_CUSTOM_SOURCE_ROOT
 from zenml.enums import ExecutionStatus
 from zenml.models import PipelineRunResponse
 from zenml.utils.pagination_utils import depaginate
@@ -37,6 +38,7 @@ if TYPE_CHECKING:
 
 DEFAULT_PIPELINE_RUN_START_TIMEOUT = 30
 DEFAULT_PIPELINE_RUN_FINISH_TIMEOUT = 300
+ENV_ZENML_DATABRICKS_WHEEL_PACKAGE = "ZENML_DATABRICKS_WHEEL_PACKAGE"
 
 
 class IntegrationTestExample:
@@ -69,10 +71,23 @@ class IntegrationTestExample:
         Raises:
             RuntimeError: If running the example fails.
         """
+        env = os.environ.copy()
+        # Disable Rich traceback in subprocesses so that if an exception
+        # occurs during interpreter shutdown, the default excepthook
+        # writes the traceback before the pipe closes (Rich's handler
+        # can fail with "Error in sys.excepthook:" on Python 3.10).
+        env.setdefault("ZENML_ENABLE_RICH_TRACEBACK", "false")
+        # Disable whylogs anonymous usage stats to avoid background HTTP
+        # threads that can raise exceptions during interpreter shutdown.
+        env.setdefault("WHYLOGS_NO_ANALYTICS", "True")
+        # Example subprocesses should resolve their source root from the copied
+        # example directory, not from unrelated Databricks wheel tests.
+        env.pop(ENV_ZENML_CUSTOM_SOURCE_ROOT, None)
+        env.pop(ENV_ZENML_DATABRICKS_WHEEL_PACKAGE, None)
         result = subprocess.run(
             [sys.executable, self.run_dot_py_file, *args],
             cwd=str(self.path),
-            env=os.environ.copy(),
+            env=env,
             capture_output=True,
             text=True,
             encoding="utf-8",

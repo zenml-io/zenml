@@ -20,6 +20,7 @@ from typing import (
     List,
     Mapping,
     Optional,
+    Set,
     Tuple,
     Union,
 )
@@ -43,8 +44,12 @@ from zenml.config.cache_policy import CachePolicy, CachePolicyWithValidator
 from zenml.config.constants import DOCKER_SETTINGS_KEY, RESOURCE_SETTINGS_KEY
 from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.retry_config import StepRetryConfig
-from zenml.config.source import Source, SourceWithValidator
-from zenml.enums import GroupType, StepRuntime
+from zenml.config.source import (
+    Source,
+    SourceWithValidator,
+    StringSerializableSource,
+)
+from zenml.enums import GroupType, StepRuntime, StepType
 from zenml.logger import get_logger
 from zenml.model.lazy_load import ModelVersionDataLazyLoader
 from zenml.model.model import Model
@@ -199,11 +204,11 @@ class StepConfigurationUpdate(FrozenBaseModel):
         default=None,
         description="Extra configurations for the step.",
     )
-    failure_hook_source: Optional[SourceWithValidator] = Field(
+    failure_hook_source: Optional[StringSerializableSource] = Field(
         default=None,
         description="The failure hook source for the step.",
     )
-    success_hook_source: Optional[SourceWithValidator] = Field(
+    success_hook_source: Optional[StringSerializableSource] = Field(
         default=None,
         description="The success hook source for the step.",
     )
@@ -281,6 +286,7 @@ class PartialStepConfiguration(StepConfigurationUpdate):
     """Class representing a partial step configuration."""
 
     name: str
+    step_type: Optional[StepType] = None
     # TODO: maybe move to spec?
     template: Optional[str] = None
     parameters: Dict[str, Any] = {}
@@ -412,12 +418,10 @@ class StepSpec(FrozenBaseModel):
 
     source: SourceWithValidator
     upstream_steps: List[str]
-    # TODO: This should be `Dict[str, List[InputSpec]]`, but that would break
-    # client-server compatibility. In the next major release, change this and
-    # uncomment the code that migrates legacy specs.
-    inputs: Dict[str, Union[List[InputSpec], InputSpec]] = {}
+    inputs: Dict[str, Union[InputSpec, List[InputSpec]]] = {}
     invocation_id: str
     enable_heartbeat: bool = False
+    parameter_spec: Optional[Dict[str, Any]] = None
 
     @model_validator(mode="before")
     @classmethod
@@ -426,29 +430,30 @@ class StepSpec(FrozenBaseModel):
         if "invocation_id" not in data:
             data["invocation_id"] = data.pop("pipeline_parameter_name", "")
 
-        # converted_inputs = {}
-        # for key, value in data.get("inputs", {}).items():
-        #     if isinstance(value, (InputSpec, dict)):
-        #         converted_inputs[key] = [value]
-        #     else:
-        #         converted_inputs[key] = value
-        # data["inputs"] = converted_inputs
-
         return data
 
-    # TODO: Remove this and use the `inputs` property once we change the type
-    # of the `inputs` field.
     @property
-    def inputs_v2(self) -> Dict[str, List[InputSpec]]:
-        """Inputs of the step spec in v2 format.
+    def normalized_inputs(self) -> Dict[str, List[InputSpec]]:
+        """Inputs of the step spec normalized to a list of input specs.
 
         Returns:
-            The inputs of the step spec in v2 format.
+            The inputs of the step spec normalized to a list of input specs.
         """
         return {
             key: [value] if isinstance(value, InputSpec) else value
             for key, value in self.inputs.items()
         }
+
+    def is_scalar_input(self, name: str) -> bool:
+        """Returns whether an input is a scalar artifact.
+
+        Args:
+            name: The input name.
+
+        Returns:
+            `True` if the input is a scalar artifact.
+        """
+        return isinstance(self.inputs[name], InputSpec)
 
     def __eq__(self, other: Any) -> bool:
         """Returns whether the other object is referring to the same step.
@@ -469,7 +474,10 @@ class StepSpec(FrozenBaseModel):
             if self.upstream_steps != other.upstream_steps:
                 return False
 
-            if self.inputs_v2 != other.inputs_v2:
+            if self.normalized_inputs != other.normalized_inputs:
+                return False
+
+            if self.parameter_spec != other.parameter_spec:
                 return False
 
             if self.invocation_id != other.invocation_id:
@@ -561,6 +569,21 @@ class Step(FrozenBaseModel):
             data["config"] = merged_config_dict
 
         return cls.model_validate(data)
+
+    @property
+    def available_input_keys(self) -> Set[str]:
+        """Available input keys for the step.
+
+        Returns:
+            The available input keys for the step.
+        """
+        return (
+            set(self.spec.normalized_inputs)
+            | set(self.config.parameters)
+            | set(self.config.model_artifacts_or_metadata)
+            | set(self.config.external_input_artifacts)
+            | set(self.config.client_lazy_loaders)
+        )
 
 
 def _apply_pipeline_configuration(

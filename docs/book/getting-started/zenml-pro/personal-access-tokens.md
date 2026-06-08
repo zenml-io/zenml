@@ -346,3 +346,5 @@ Short-lived API token associated with the deleted PAT issued for workspaces in y
 
 If you encounter issues with Personal Access Tokens, check the ZenML Pro documentation or contact your organization administrator for assistance with permissions and access control.
 {% endhint %}
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

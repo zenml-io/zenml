@@ -27,7 +27,9 @@ class DAGGeneratorHelper:
         """Initialize the DAG generator helper."""
         self.step_nodes: Dict[str, PipelineRunDAG.Node] = {}
         self.artifact_nodes: Dict[str, PipelineRunDAG.Node] = {}
+        self.wait_condition_nodes: Dict[str, PipelineRunDAG.Node] = {}
         self.triggered_run_nodes: Dict[str, PipelineRunDAG.Node] = {}
+        self.child_run_nodes: Dict[str, PipelineRunDAG.Node] = {}
         self.edges: List[PipelineRunDAG.Edge] = []
 
     def get_step_node_id(self, name: str) -> str:
@@ -76,6 +78,31 @@ class DAGGeneratorHelper:
         # Make sure there is no slashes as we use them as delimiters
         name = name.replace("/", "-")
         return f"run/{name}"
+
+    def get_wait_condition_node_id(self, name: str) -> str:
+        """Get the ID of a wait condition node.
+
+        Args:
+            name: The wait condition name.
+
+        Returns:
+            The ID of the wait condition node.
+        """
+        # Make sure there is no slashes as we use them as delimiters
+        name = name.replace("/", "-")
+        return f"wait_condition/{name}"
+
+    def get_child_run_node_id(self, name: str) -> str:
+        """Get the ID of a child pipeline run node.
+
+        Args:
+            name: The child run name.
+
+        Returns:
+            The ID of the child run node.
+        """
+        name = name.replace("/", "-")
+        return f"child_run/{name}"
 
     def add_step_node(
         self,
@@ -163,6 +190,65 @@ class DAGGeneratorHelper:
         )
         return triggered_run_node
 
+    def add_wait_condition_node(
+        self,
+        node_id: str,
+        name: str,
+        id: Optional[UUID] = None,
+        **metadata: Any,
+    ) -> PipelineRunDAG.Node:
+        """Add a wait condition node to the DAG.
+
+        Args:
+            node_id: The DAG node ID.
+            name: The wait condition display name.
+            id: The wait condition ID.
+            **metadata: Additional node metadata.
+
+        Returns:
+            The added wait condition node.
+        """
+        wait_condition_node = PipelineRunDAG.Node(
+            type="wait_condition",
+            id=id,
+            node_id=node_id,
+            name=name,
+            metadata=metadata,
+        )
+        self.wait_condition_nodes[wait_condition_node.node_id] = (
+            wait_condition_node
+        )
+        return wait_condition_node
+
+    def add_child_run_node(
+        self,
+        node_id: str,
+        name: str,
+        id: Optional[UUID] = None,
+        **metadata: Any,
+    ) -> PipelineRunDAG.Node:
+        """Add a child run node to the DAG.
+
+        Args:
+            node_id: The node ID.
+            name: The child run name.
+            id: The child run ID.
+            **metadata: Additional node metadata.
+
+        Returns:
+            The added child run node.
+        """
+        child_run_node = PipelineRunDAG.Node(
+            # TODO: change to child_run once the UI supports it
+            type="triggered_run",
+            id=id,
+            node_id=node_id,
+            name=name,
+            metadata=metadata,
+        )
+        self.child_run_nodes[child_run_node.node_id] = child_run_node
+        return child_run_node
+
     def add_edge(self, source: str, target: str, **metadata: Any) -> None:
         """Add an edge to the DAG.
 
@@ -211,6 +297,8 @@ class DAGGeneratorHelper:
             status=status,
             nodes=list(self.step_nodes.values())
             + list(self.artifact_nodes.values())
-            + list(self.triggered_run_nodes.values()),
+            + list(self.wait_condition_nodes.values())
+            + list(self.triggered_run_nodes.values())
+            + list(self.child_run_nodes.values()),
             edges=self.edges,
         )

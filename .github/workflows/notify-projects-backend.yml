@@ -1,0 +1,50 @@
+---
+name: Notify Projects Backend
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Release tag (e.g., 0.92.0)
+        required: true
+        type: string
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    # Only trigger for non-prerelease, non-draft releases (auto) or manual dispatch
+    if: github.event_name == 'workflow_dispatch' || (!github.event.release.prerelease
+      && !github.event.release.draft)
+    steps:
+      - name: Get release info
+        id: release_info
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        with:
+          script: |
+            let release;
+            if (context.eventName === 'workflow_dispatch') {
+              const tag = process.env.RELEASE_TAG;
+              release = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag: tag
+              });
+              release = release.data;
+            } else {
+              release = context.payload.release;
+            }
+            core.setOutput('tag', release.tag_name);
+            core.setOutput('url', release.html_url);
+      - name: Notify projects-backend of new release
+        uses: peter-evans/repository-dispatch@28959ce8df70de7be546dd1250a005dd32156697  # v4.0.1
+        with:
+          token: ${{ secrets.PROJECTS_BACKEND_DISPATCH_TOKEN }}
+          repository: zenml-io/zenml-projects-backend
+          event-type: zenml-release-published
+          client-payload: |-
+            {
+              "release_tag": "${{ steps.release_info.outputs.tag }}",
+              "release_url": "${{ steps.release_info.outputs.url }}"
+            }

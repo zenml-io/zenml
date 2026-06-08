@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Base orchestrator class."""
 
+import time
 from abc import ABC, abstractmethod
 from typing import (
     TYPE_CHECKING,
@@ -64,6 +65,7 @@ if TYPE_CHECKING:
         PipelineSnapshotResponse,
         ScheduleResponse,
         ScheduleUpdate,
+        StepRunResponse,
     )
 
 logger = get_logger(__name__)
@@ -249,6 +251,9 @@ class BaseOrchestrator(StackComponent, ABC):
             environment: Environment variables to set in the orchestration
                 environment. These don't need to be set if running locally.
             placeholder_run: An optional placeholder run for the deployment.
+
+        Returns:
+            An optional iterator of step metadata dictionaries.
         """
 
     def run(
@@ -288,6 +293,20 @@ class BaseOrchestrator(StackComponent, ABC):
         # TODO: for now, we don't support separate secrets from environment
         # in the orchestrator environment
         base_environment.update(secrets)
+
+        if placeholder_run and placeholder_run.original_run:
+            from zenml.execution.pipeline.utils import (
+                skip_steps_and_prune_snapshot,
+            )
+
+            run_required = skip_steps_and_prune_snapshot(
+                snapshot=snapshot,
+                pipeline_run=placeholder_run,
+            )
+
+            if not run_required:
+                self._cleanup_run()
+                return
 
         prevent_client_side_caching = handle_bool_env_var(
             ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING, default=False
@@ -450,6 +469,52 @@ class BaseOrchestrator(StackComponent, ABC):
         finally:
             self._cleanup_run()
 
+    def resume_run(
+        self,
+        snapshot: "PipelineSnapshotResponse",
+        run: "PipelineRunResponse",
+        stack: "Stack",
+        force_async: bool = False,
+    ) -> None:
+        """Resume an existing dynamic pipeline run.
+
+        Args:
+            snapshot: Snapshot backing the run.
+            run: Existing pipeline run to resume.
+            stack: Stack used for the resume.
+            force_async: Whether to skip waiting for submission completion.
+
+        Raises:
+            RuntimeError: If the snapshot does not represent a dynamic pipeline.
+        """
+        if not snapshot.is_dynamic:
+            raise RuntimeError("Cannot resume a non-dynamic pipeline.")
+
+        self._prepare_run(snapshot=snapshot)
+
+        base_environment, secrets = get_config_environment_vars(
+            pipeline_run_id=run.id,
+        )
+        base_environment.update(secrets)
+
+        try:
+            submission_result = self.submit_dynamic_pipeline(
+                snapshot=snapshot,
+                stack=stack,
+                environment=base_environment,
+                placeholder_run=run,
+            )
+
+            if submission_result:
+                if submission_result.metadata:
+                    # TODO: Do we somehow prefix the metadata here
+                    pass
+
+                if submission_result.wait_for_completion and not force_async:
+                    submission_result.wait_for_completion()
+        finally:
+            self._cleanup_run()
+
     def run_step(
         self,
         step: "Step",
@@ -490,14 +555,14 @@ class BaseOrchestrator(StackComponent, ABC):
             Whether the orchestrator can run isolated steps.
         """
         return (
-            getattr(self.run_isolated_step, "__func__", None)
-            is not BaseOrchestrator.run_isolated_step
+            getattr(self.submit_isolated_step, "__func__", None)
+            is not BaseOrchestrator.submit_isolated_step
         )
 
-    def run_isolated_step(
+    def submit_isolated_step(
         self, step_run_info: "StepRunInfo", environment: Dict[str, str]
     ) -> None:
-        """Run an isolated step.
+        """Submit an isolated step.
 
         Args:
             step_run_info: The step run information.
@@ -509,7 +574,96 @@ class BaseOrchestrator(StackComponent, ABC):
                 method.
         """
         raise NotImplementedError(
-            "Running isolated steps is not implemented for "
+            "Submitting isolated steps is not implemented for "
+            f"the {self.__class__.__name__} orchestrator."
+        )
+
+    def get_isolated_step_status(
+        self, step_run: "StepRunResponse"
+    ) -> ExecutionStatus:
+        """Get the status of an isolated step run.
+
+        Args:
+            step_run: The step run.
+
+        Returns:
+            The execution status of the isolated step run.
+
+        Raises:
+            NotImplementedError: If the orchestrator does not implement this
+                method.
+        """
+        raise NotImplementedError(
+            "Getting the status of isolated steps is not implemented for "
+            f"the {self.__class__.__name__} orchestrator."
+        )
+
+    def wait_for_isolated_step(
+        self, step_run: "StepRunResponse"
+    ) -> ExecutionStatus:
+        """Wait for an isolated step run to complete.
+
+        Args:
+            step_run: The step run.
+
+        Returns:
+            The final status of the isolated step run.
+        """
+        sleep_interval = 1
+        max_sleep_interval = 16
+
+        while True:
+            try:
+                status = self.get_isolated_step_status(step_run)
+            except Exception as e:
+                logger.error(
+                    "Failed to get orchestrator status of isolated step "
+                    "`%s`: %s",
+                    step_run.id,
+                    e,
+                )
+                # Fall back to the status of the ZenML server
+                status = (
+                    Client().get_run_step(step_run.id, hydrate=False).status
+                )
+
+            if status.is_finished or status == ExecutionStatus.RETRYING:
+                return status
+
+            logger.debug(
+                "Waiting for isolated step with ID %s to finish (current "
+                "status: %s)",
+                step_run.id,
+                status,
+            )
+            time.sleep(sleep_interval)
+            if sleep_interval < max_sleep_interval:
+                sleep_interval *= 2
+
+    @property
+    def can_stop_isolated_steps(self) -> bool:
+        """Whether the orchestrator can stop isolated steps.
+
+        Returns:
+            Whether the orchestrator can stop isolated steps.
+        """
+        return (
+            getattr(self.stop_isolated_step, "__func__", None)
+            is not BaseOrchestrator.stop_isolated_step
+        )
+
+    def stop_isolated_step(self, step_run: "StepRunResponse") -> None:
+        """Stop an isolated step run.
+
+        Args:
+            step_run: The step run to stop.
+
+        Raises:
+            NotImplementedError: If the orchestrator does not implement this
+                method.
+        """
+        raise NotImplementedError(
+            "Stopping isolated steps is not implemented for "
             f"the {self.__class__.__name__} orchestrator."
         )
 
@@ -679,6 +833,10 @@ class BaseOrchestrator(StackComponent, ABC):
         Args:
             run: A pipeline run response to fetch its status.
             include_steps: If True, also fetch the status of individual steps.
+
+        Returns:
+            A tuple of the pipeline run status and an optional dictionary of
+            step statuses.
 
         Raises:
             NotImplementedError: If any orchestrator inheriting from the base

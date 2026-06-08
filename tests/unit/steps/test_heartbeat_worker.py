@@ -1,9 +1,9 @@
+import _thread
 import logging
+import threading
 import time
 import uuid
 from datetime import datetime, timezone
-
-import pytest
 
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.source import Source, SourceType
@@ -66,10 +66,16 @@ def test_heartbeat_worker_with_remote_stopping(monkeypatch):
     assert not worker.is_terminated
     assert not worker.is_running
 
+    interrupt_called = threading.Event()
+
+    def mock_interrupt_main():
+        interrupt_called.set()
+
     with monkeypatch.context() as m:
         global_config = GlobalConfiguration()
 
         m.setattr(global_config, "_zen_store", fake_server)
+        m.setattr(_thread, "interrupt_main", mock_interrupt_main)
 
         worker.start()
 
@@ -80,10 +86,11 @@ def test_heartbeat_worker_with_remote_stopping(monkeypatch):
 
         assert fake_server._call_count >= 1
 
-        with pytest.raises(KeyboardInterrupt):
-            fake_server.execution_status = ExecutionStatus.STOPPED
+        fake_server.execution_status = ExecutionStatus.STOPPED
 
-            time.sleep(0.2)
+        assert interrupt_called.wait(timeout=2.0), (
+            "_thread.interrupt_main was never called"
+        )
 
         assert not worker.is_running
         assert worker.is_terminated

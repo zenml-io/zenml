@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Pipeline run configuration class."""
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Mapping, Optional, Set, Union
 from uuid import UUID
 
 from pydantic import Field, SerializeAsAny
@@ -23,7 +23,7 @@ from zenml.config.cache_policy import CachePolicyWithValidator
 from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.schedule import Schedule
-from zenml.config.source import SourceWithValidator
+from zenml.config.source import StringSerializableSource
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import ExecutionMode
 from zenml.model.model import Model
@@ -106,11 +106,11 @@ class PipelineRunConfiguration(
         default=None,
         description="The retry configuration for all steps of the pipeline run.",
     )
-    failure_hook_source: Optional[SourceWithValidator] = Field(
+    failure_hook_source: Optional[StringSerializableSource] = Field(
         default=None,
         description="The failure hook source for all steps of the pipeline run.",
     )
-    init_hook_source: Optional[SourceWithValidator] = Field(
+    init_hook_source: Optional[StringSerializableSource] = Field(
         default=None,
         description="The init hook source for the pipeline run.",
     )
@@ -118,11 +118,11 @@ class PipelineRunConfiguration(
         default=None,
         description="The init hook args for the pipeline run.",
     )
-    cleanup_hook_source: Optional[SourceWithValidator] = Field(
+    cleanup_hook_source: Optional[StringSerializableSource] = Field(
         default=None,
         description="The cleanup hook source for the pipeline run.",
     )
-    success_hook_source: Optional[SourceWithValidator] = Field(
+    success_hook_source: Optional[StringSerializableSource] = Field(
         default=None,
         description="The success hook source for all steps of the pipeline run.",
     )
@@ -136,4 +136,21 @@ class PipelineRunConfiguration(
     execution_mode: Optional[ExecutionMode] = Field(
         default=None,
         description="The execution mode for the pipeline run.",
+    )
+
+
+class ReplayRunConfiguration(PipelineRunConfiguration):
+    """Configuration for replaying a pipeline run."""
+
+    skip_successful_steps: Optional[bool] = Field(
+        default=None,
+        description="Whether to skip successful steps of the original run.",
+    )
+    steps_to_skip: Optional[Set[str]] = Field(
+        default=None,
+        description="The steps to skip when replaying the pipeline.",
+    )
+    step_input_overrides: Optional[Mapping[str, Mapping[str, Any]]] = Field(
+        default=None,
+        description="The step input overrides for the pipeline run.",
     )

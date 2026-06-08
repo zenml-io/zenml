@@ -45,6 +45,10 @@ Then you can add it to your stack using
 zenml stack register ... -al <ALERTER_NAME>
 ```
 
+{% hint style="info" %}
+Stacks can have multiple alerters attached. ZenML treats the first attached alerter as the default one, and singular accessors such as `Client().active_stack.alerter` resolve to that default alerter.
+{% endhint %}
+
 Afterward, you can import the alerter standard steps provided by the respective integration and directly use them in
 your pipelines.
 

@@ -91,9 +91,7 @@ If you are using a local MLflow tracking server, the path will be something like
 
 If you are using a remote MLflow tracking server, the path will be something like `s3://.../mlruns/667102566783201219/3973eabc151c41e6ab98baeb20c5323b/artifacts/model`.
 
-You can find the path of the model in the MLflow UI. Go to the `Artifacts` tab of the run that produced the model and click on the model. The path will be displayed in the URL:
-
-<img src="../../../.gitbook/assets/mlflow-ui-model-uri.png" alt="Model URI in MLflow UI" data-size="original">
+You can find the path of the model in the MLflow UI. Go to the `Artifacts` tab of the run that produced the model and click on the model. The path will be displayed in the URL.
 {% endhint %}
 
 ### Register models via the CLI

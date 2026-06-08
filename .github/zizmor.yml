@@ -1,5 +1,12 @@
 ---
 rules:
+  # impostor-commit: Skip verification for repos that block git-upload-pack
+  # mheap/github-action-required-labels returns 401 when zizmor tries to
+  # list tags, causing the audit to fail. The SHA is verified manually.
+  impostor-commit:
+    ignore:
+      - require-release-label.yml
+
   # Require SHA pinning for all actions (security best practice)
   # Ignores: First-party template repos that need to stay on main branch
   # These are ZenML's own templates and are intentionally unpinned
@@ -23,6 +30,21 @@ rules:
   # (template updates, auto-formatting). Address incrementally in future PRs.
   # TODO: Audit workflows and add persist-credentials: false where safe
   artipacked:
+    disable: true
+
+  # secrets-outside-env: Secrets used without dedicated GitHub Environments.
+  # Disabled: 89 findings across 15+ workflows. Adding GitHub Environments
+  # requires coordinating environment protection rules and is a significant
+  # change. Address incrementally in a dedicated PR.
+  # TODO: Add GitHub Environments to workflows that use secrets (see  # 4664)
+  secrets-outside-env:
+    disable: true
+
+  # superfluous-actions: Actions that duplicate built-in runner functionality.
+  # These are peter-evans/create-or-update-comment and peter-evans/find-comment
+  # which could be replaced with `gh pr comment` / `gh issue comment`.
+  # TODO: Replace with gh CLI equivalents (see  # 4664)
+  superfluous-actions:
     disable: true
 
   # Detect dangerous template expansions

@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import IO, TYPE_CHECKING, Dict, Optional
 
 from zenml.client import Client
+from zenml.constants import REPOSITORY_DIRECTORY_NAME
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import io_utils, source_utils, string_utils
@@ -109,13 +110,21 @@ class CodeArchive(Archivable):
 
         if repo := self.git_repo:
             try:
-                result = repo.git.ls_files(
+                # Split into two calls because --recurse-submodules is only
+                # compatible with --cached, not with --others or --modified.
+                tracked = repo.git.ls_files(
                     "--cached",
+                    "--recurse-submodules",
+                    "--exclude-standard",
+                    self._root,
+                )
+                untracked_and_modified = repo.git.ls_files(
                     "--others",
                     "--modified",
                     "--exclude-standard",
                     self._root,
                 )
+                result = tracked + "\n" + untracked_and_modified
             except Exception as e:
                 logger.warning(
                     "Failed to get non-ignored files from git: %s", str(e)
@@ -123,6 +132,8 @@ class CodeArchive(Archivable):
                 all_files = self._get_all_files(archive_root=self._root)
             else:
                 for file in result.split():
+                    if not file:
+                        continue
                     file_path = os.path.join(repo.working_dir, file)
                     path_in_archive = os.path.relpath(file_path, self._root)
 
@@ -146,7 +157,8 @@ class CodeArchive(Archivable):
         all_files = {
             path_in_archive: file_path
             for path_in_archive, file_path in sorted(all_files.items())
-            if ".zen" not in Path(path_in_archive).parts[:-1]
+            if REPOSITORY_DIRECTORY_NAME
+            not in Path(path_in_archive).parts[:-1]
         }
 
         return all_files

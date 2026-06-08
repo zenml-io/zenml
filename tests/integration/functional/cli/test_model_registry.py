@@ -16,8 +16,8 @@ from typing import Any, ClassVar, Dict, List, Optional, Type
 from uuid import uuid4
 
 import pytest
-from click.testing import CliRunner
 
+from tests.cli_runner_utils import cli_runner
 from zenml.cli.cli import cli
 from zenml.enums import StackComponentType
 from zenml.model_registries.base_model_registry import (
@@ -190,7 +190,7 @@ def test_list_models(
     concrete_model_registry,
 ):
     # Get the list command
-    runner = CliRunner()
+    runner = cli_runner()
     list_registered_models = (
         cli.commands["model-registry"].commands["models"].commands["list"]
     )
@@ -215,7 +215,7 @@ def test_update_model(
     concrete_model_registry,
 ):
     # Get the list command
-    runner = CliRunner()
+    runner = cli_runner()
     update_registered_model = (
         cli.commands["model-registry"].commands["models"].commands["update"]
     )
@@ -244,7 +244,7 @@ def test_get_model(
     concrete_model_registry,
 ):
     # Get the list command
-    runner = CliRunner()
+    runner = cli_runner()
     list_registered_model = (
         cli.commands["model-registry"].commands["models"].commands["get"]
     )
@@ -279,7 +279,7 @@ def test_get_model(
     )
     # Check the result
     assert result.exit_code == 1
-    assert "Error:" in result.output
+    assert "Error:" in result.stderr
 
 
 def test_list_model_versions(
@@ -288,7 +288,7 @@ def test_list_model_versions(
     concrete_model_registry,
 ):
     # Get the list command
-    runner = CliRunner()
+    runner = cli_runner()
     list_model_versions = (
         cli.commands["model-registry"]
         .commands["models"]
@@ -318,7 +318,7 @@ def test_get_model_version(
     concrete_model_registry,
 ):
     # Get the list command
-    runner = CliRunner()
+    runner = cli_runner()
     get_model_version = (
         cli.commands["model-registry"]
         .commands["models"]
@@ -361,4 +361,4 @@ def test_get_model_version(
 
     # Check the result
     assert result.exit_code == 1
-    assert "Error:" in result.output
+    assert "Error:" in result.stderr

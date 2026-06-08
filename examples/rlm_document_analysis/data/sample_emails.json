@@ -1,0 +1,542 @@
+[
+  {
+    "id": "email_001",
+    "date": "1999-06-14T09:22:00",
+    "from": "tim.belden@enron.com",
+    "to": "john.lavorato@enron.com",
+    "cc": "",
+    "subject": "Western power desk update",
+    "body": "John, the western desk had another strong quarter. We're seeing significant volatility in the Cal ISO markets which is creating good trading opportunities. Our positions in the day-ahead and real-time markets are performing well. The team has been working on some new strategies around congestion management that I think will be very profitable going forward. Happy to walk you through the details when you're in Portland next week."
+  },
+  {
+    "id": "email_002",
+    "date": "1999-07-02T14:15:00",
+    "from": "andrew.fastow@enron.com",
+    "to": "richard.causey@enron.com",
+    "cc": "ben.glisan@enron.com",
+    "subject": "LJM partnership structure",
+    "body": "Rick, I wanted to follow up on our discussion about the LJM partnership. The structure allows us to hedge certain merchant investments while moving assets off our balance sheet. The partnership will be capitalized at $15 million initially with potential to grow. I've discussed this with Skilling and he's supportive. We'll need board approval for my involvement as general partner given the conflict of interest issues. Can you review the accounting treatment and confirm we're in compliance with GAAP? Ben can provide the detailed term sheets."
+  },
+  {
+    "id": "email_003",
+    "date": "1999-07-15T10:30:00",
+    "from": "richard.causey@enron.com",
+    "to": "andrew.fastow@enron.com",
+    "cc": "",
+    "subject": "Re: LJM partnership structure",
+    "body": "Andy, I've reviewed the proposed structure with our team. The accounting treatment appears to work under current GAAP rules, specifically FAS 140 and the 3% equity requirement. The key is ensuring the outside investors maintain sufficient equity at risk. We should document the business purpose carefully. Arthur Andersen has been consulted and they're comfortable with the approach, though they noted this is a complex area. Let's schedule a meeting with Vince to discuss the risk management aspects."
+  },
+  {
+    "id": "email_004",
+    "date": "1999-08-10T08:45:00",
+    "from": "jeff.skilling@enron.com",
+    "to": "kenneth.lay@enron.com",
+    "cc": "",
+    "subject": "Q2 earnings outlook",
+    "body": "Ken, Q2 numbers are looking strong. EBS is gaining traction with the bandwidth trading platform and wholesale is performing above expectations. The mark-to-market gains on our long-term contracts are contributing significantly. I'm confident we'll meet or exceed the analyst consensus of $0.34 per share. The stock has been responding well to our growth story. I want to make sure we're setting expectations appropriately for the analyst call next week."
+  },
+  {
+    "id": "email_005",
+    "date": "1999-09-03T16:00:00",
+    "from": "vince.kaminski@enron.com",
+    "to": "jeff.skilling@enron.com",
+    "cc": "stinson.gibner@enron.com",
+    "subject": "Risk assessment concerns - Raptor vehicles",
+    "body": "Jeff, my team has completed the initial risk assessment of the Raptor hedging structures. While the concept of using Enron stock to hedge merchant investments has some theoretical merit, we have significant concerns about the circular nature of the hedges. If Enron's stock price declines, the hedges themselves become impaired at exactly the moment they are most needed. This creates a correlation risk that is difficult to quantify. I would recommend we explore alternative hedging strategies that don't depend on our own equity value. I'm happy to present our analysis to the risk committee."
+  },
+  {
+    "id": "email_006",
+    "date": "1999-09-20T11:15:00",
+    "from": "jeff.skilling@enron.com",
+    "to": "vince.kaminski@enron.com",
+    "cc": "",
+    "subject": "Re: Risk assessment concerns - Raptor vehicles",
+    "body": "Vince, thanks for the analysis. I appreciate your team's thoroughness. However, the Raptor structures have been reviewed by both Andersen and our legal team and they're comfortable with the approach. The board has approved them. While I understand the theoretical concerns about correlation, the practical reality is that our stock has been consistently strong and the structures are designed with sufficient cushion. Let's keep monitoring but I don't think we need to change course at this point."
+  },
+  {
+    "id": "email_007",
+    "date": "1999-10-12T09:00:00",
+    "from": "louise.kitchen@enron.com",
+    "to": "jeff.skilling@enron.com",
+    "cc": "greg.whalley@enron.com",
+    "subject": "EnronOnline launch update",
+    "body": "Jeff, EnronOnline is on track for the November launch. We've completed testing of the trading platform and have over 200 counterparties signed up. The platform will allow real-time trading in natural gas, power, and bandwidth products. Our technology team has built something that's truly first-of-its-kind. I believe this will transform how energy commodities are traded and will be a significant competitive advantage. We're planning a soft launch on November 29th with full rollout in December."
+  },
+  {
+    "id": "email_008",
+    "date": "1999-11-15T13:30:00",
+    "from": "andrew.fastow@enron.com",
+    "to": "ben.glisan@enron.com",
+    "cc": "",
+    "subject": "Chewco restructuring",
+    "body": "Ben, we need to address the Chewco situation. The structure was set up in 1997 to buy out CalPERS' interest in JEDI. We need to verify that the 3% outside equity test is being met. There have been some questions about whether the Barclays loan guarantee impacts the equity-at-risk calculation. If Chewco doesn't qualify for off-balance-sheet treatment, we'd need to consolidate JEDI, which would have a material impact on our financials. Please pull together the current capitalization details and the Barclays guarantee terms so we can assess."
+  },
+  {
+    "id": "email_009",
+    "date": "1999-12-01T10:00:00",
+    "from": "tim.belden@enron.com",
+    "to": "portland.shift1@enron.com",
+    "cc": "portland.shift2@enron.com",
+    "subject": "Trading strategies - Cal ISO market",
+    "body": "Team, I want to review our current strategies in the California market. We've been successfully using several approaches including inc/dec gaming and load scheduling to capture value from the ISO market design. These strategies are legal and exploit inefficiencies in the market rules. However, I want to make sure everyone is documenting their trades properly and following our compliance procedures. The California situation is getting political attention and we need to be careful about how we operate. Please schedule time with me this week to go through your books."
+  },
+  {
+    "id": "email_010",
+    "date": "2000-01-18T08:30:00",
+    "from": "kenneth.lay@enron.com",
+    "to": "all.employees@enron.com",
+    "cc": "",
+    "subject": "State of the company - 2000 outlook",
+    "body": "Team Enron, I'm pleased to report that 1999 was another outstanding year. Our revenues grew to $40 billion, up from $31 billion in 1998. EnronOnline launched successfully and is already processing significant trading volumes. Our transformation from a pipeline company to a logistics and trading company is well underway. For 2000, I expect continued strong growth driven by our wholesale business, broadband services, and international operations. Our stock price reflects the market's confidence in our strategy. I encourage all of you to continue thinking innovatively and pushing the boundaries of what's possible."
+  },
+  {
+    "id": "email_011",
+    "date": "2000-03-15T14:45:00",
+    "from": "david.delainey@enron.com",
+    "to": "jeff.skilling@enron.com",
+    "cc": "",
+    "subject": "EES revenue recognition approach",
+    "body": "Jeff, I wanted to flag an issue with how we're recognizing revenue in Energy Services. We've been booking the total estimated value of long-term contracts upfront using mark-to-market accounting. While this is consistent with our wholesale approach, the retail contracts have significantly more uncertainty in the estimated savings. Some of these contracts have 10-year terms and the actual savings may differ materially from our projections. I'm not suggesting we change our approach, but I think we should discuss the assumptions we're using and whether the reserves are adequate."
+  },
+  {
+    "id": "email_012",
+    "date": "2000-04-22T09:15:00",
+    "from": "jeff.skilling@enron.com",
+    "to": "david.delainey@enron.com",
+    "cc": "richard.causey@enron.com",
+    "subject": "Re: EES revenue recognition approach",
+    "body": "David, the mark-to-market approach is appropriate for EES. It's the same methodology we use successfully in wholesale and it's been approved by Andersen. The key is getting the valuation models right and maintaining adequate reserves. Rick's team should be working with you on the reserve calculations. I don't want us to be overly conservative here - we need to show the growth trajectory that the market expects. But I also want to make sure we're defensible if anyone questions the numbers. Let's set up a quarterly review process."
+  },
+  {
+    "id": "email_013",
+    "date": "2000-05-10T16:30:00",
+    "from": "andrew.fastow@enron.com",
+    "to": "michael.kopper@enron.com",
+    "cc": "",
+    "subject": "LJM2 co-investment opportunity",
+    "body": "Michael, LJM2 has raised $394 million from outside investors and is fully operational. We have several transactions in the pipeline that will help Enron manage its balance sheet and earnings. The returns for LJM2 investors have been strong - over 60% annualized. I need you to manage the day-to-day operations since I can't be directly involved given my CFO duties. Make sure all transactions go through the proper approval channels - we need both RAC and the Chief Accounting Officer to sign off on every deal."
+  },
+  {
+    "id": "email_014",
+    "date": "2000-06-01T11:00:00",
+    "from": "vince.kaminski@enron.com",
+    "to": "john.lavorato@enron.com",
+    "cc": "",
+    "subject": "Valuation methodology review",
+    "body": "John, I've been reviewing the valuation curves being used by the trading desks. There are some concerning discrepancies between our forward curves and market-observable prices, particularly in the longer-dated contracts. Some desks appear to be using internal models that produce higher valuations than what we'd see in a competitive market. This affects our P&L and the mark-to-market gains we're reporting. I'd recommend we establish a more rigorous independent price verification process. My team can help develop the methodology."
+  },
+  {
+    "id": "email_015",
+    "date": "2000-06-15T08:00:00",
+    "from": "tim.belden@enron.com",
+    "to": "john.lavorato@enron.com",
+    "cc": "tim.heizenrader@enron.com",
+    "subject": "California power situation escalating",
+    "body": "John, the California power situation is getting much more intense. Wholesale prices have spiked to over $100/MWh and there's talk of rolling blackouts. The utilities are under severe financial pressure because of the retail rate freeze. Our trading positions are extremely profitable right now. We're capturing significant value from the price volatility. However, I'm increasingly concerned about the political backlash. There are calls for FERC to impose price caps. If caps are imposed, some of our strategies would need to be adjusted. We should discuss contingency plans."
+  },
+  {
+    "id": "email_016",
+    "date": "2000-07-20T15:00:00",
+    "from": "kenneth.lay@enron.com",
+    "to": "jeff.skilling@enron.com",
+    "cc": "greg.whalley@enron.com",
+    "subject": "California regulatory risk",
+    "body": "Jeff, I spoke with the Governor's office today about the California situation. They're under enormous pressure from consumers and utilities. The political environment is deteriorating rapidly. While our trading operations are profitable, we need to be mindful of the long-term reputational impact. I've been publicly advocating for market-based solutions and deregulation, but the tide may be turning. Please make sure our California operations are in full compliance with all market rules. The last thing we need is a regulatory investigation into our trading practices."
+  },
+  {
+    "id": "email_017",
+    "date": "2000-08-14T10:30:00",
+    "from": "sally.beck@enron.com",
+    "to": "rick.buy@enron.com",
+    "cc": "",
+    "subject": "Back office staffing concerns",
+    "body": "Rick, I need to raise a concern about our back office operations. Trading volumes on EnronOnline have grown exponentially but our back office staffing hasn't kept pace. We're processing thousands of transactions daily with a team that was sized for a fraction of that volume. There are increasing delays in trade confirmation and settlement. I'm also concerned about our ability to properly verify positions and valuations given the volume. We need either significant additional headcount or better technology solutions. This is a risk management issue that deserves attention."
+  },
+  {
+    "id": "email_018",
+    "date": "2000-09-05T09:45:00",
+    "from": "andrew.fastow@enron.com",
+    "to": "richard.causey@enron.com",
+    "cc": "ben.glisan@enron.com",
+    "subject": "Quarter-end transactions - Raptor restructuring",
+    "body": "Rick, we need to restructure the Raptor vehicles before quarter end. The decline in our stock price has eroded the credit capacity of the structures. We need to contribute additional Enron shares to shore up the hedges. The restructured Raptors will use forward contracts on Enron stock to replenish the credit capacity. I know this increases our exposure to our own stock price, but the alternative is unwinding the hedges which would result in significant mark-to-market losses flowing through our income statement. Arthur Andersen is reviewing the restructuring and should sign off by next week."
+  },
+  {
+    "id": "email_019",
+    "date": "2000-10-01T08:00:00",
+    "from": "jeff.skilling@enron.com",
+    "to": "kenneth.lay@enron.com",
+    "cc": "",
+    "subject": "Broadband strategy update",
+    "body": "Ken, the broadband venture is scaling. We've signed the Blockbuster video-on-demand deal which I think will be transformative. The bandwidth trading market is developing - we're seeing increasing liquidity on EnronOnline for bandwidth products. Our fiber network investments are significant but I believe the long-term value creation will be substantial. The market is valuing our broadband business at approximately $30 billion based on analyst estimates. We're being aggressive with our projections but I believe the technology shift is real and we're positioned to capture it."
+  },
+  {
+    "id": "email_020",
+    "date": "2000-10-22T14:00:00",
+    "from": "ben.glisan@enron.com",
+    "to": "andrew.fastow@enron.com",
+    "cc": "",
+    "subject": "Raptor credit capacity update",
+    "body": "Andy, following the restructuring, the Raptor vehicles now have approximately $500 million in credit capacity. However, this is heavily dependent on Enron's stock price remaining above $60 per share. For every $10 decline in stock price, we lose roughly $150 million in capacity. If the stock drops below $45, we would face a situation where the hedges are completely underwater and we'd need to either contribute more shares or recognize the losses. I've run the sensitivity analysis and the downside scenarios are concerning. The correlation between our stock price and our hedging capacity creates a dangerous feedback loop."
+  },
+  {
+    "id": "email_021",
+    "date": "2000-11-08T11:30:00",
+    "from": "john.lavorato@enron.com",
+    "to": "tim.belden@enron.com",
+    "cc": "",
+    "subject": "Re: California power situation escalating",
+    "body": "Tim, your team's performance has been outstanding. The California desk generated over $800 million in revenue this year. However, I share your concerns about political risk. FERC is under pressure to act and some members of Congress are calling for investigations. We should be preparing for a scenario where price caps are imposed or where our trading strategies face scrutiny. Make sure all communications and trade documentation are clean. We should also think about diversifying our revenue base in case the California opportunity narrows."
+  },
+  {
+    "id": "email_022",
+    "date": "2000-12-05T09:00:00",
+    "from": "richard.causey@enron.com",
+    "to": "jeff.skilling@enron.com",
+    "cc": "andrew.fastow@enron.com",
+    "subject": "Year-end accounting items",
+    "body": "Jeff, several year-end items require your attention. First, we need to finalize the Raptor hedge effectiveness testing. Second, the EES contract reserves need to be reviewed - there are some contracts where actual performance is tracking below the booked estimates. Third, we have several pending LJM transactions that need to close before December 31 to achieve the desired accounting treatment. Finally, the Chewco 3% equity question has resurfaced and we may need to address it definitively. I'll schedule time with you and Andy this week to go through each item."
+  },
+  {
+    "id": "email_023",
+    "date": "2001-01-10T08:15:00",
+    "from": "jeff.skilling@enron.com",
+    "to": "all.enron@enron.com",
+    "cc": "",
+    "subject": "CEO announcement",
+    "body": "I am honored to announce that the Board of Directors has appointed me as Chief Executive Officer of Enron Corp, effective February 12, 2001. Ken Lay will continue as Chairman. This transition has been planned for some time and I'm excited to lead the company into its next phase of growth. Our strategy of transforming Enron from a traditional energy company into the world's leading logistics company is working. I'm committed to continuing our aggressive growth trajectory and delivering value to our shareholders. I look forward to working with all of you to achieve our ambitious goals."
+  },
+  {
+    "id": "email_024",
+    "date": "2001-02-05T16:00:00",
+    "from": "tim.belden@enron.com",
+    "to": "greg.whalley@enron.com",
+    "cc": "john.lavorato@enron.com",
+    "subject": "California - FERC investigation update",
+    "body": "Greg, FERC has opened a formal investigation into the California wholesale power market. They're looking at whether market manipulation contributed to the price spikes. Our team has been reviewing all of our trading strategies to ensure they comply with the tariff rules. While I believe our strategies are within the rules, some of them could be characterized unfavorably if taken out of context. The strategies we've called 'Fat Boy', 'Death Star', and 'Get Shorty' are all technically compliant but the names alone could be a PR problem. I'd recommend we stop using these names in internal communications immediately."
+  },
+  {
+    "id": "email_025",
+    "date": "2001-02-20T10:00:00",
+    "from": "vince.kaminski@enron.com",
+    "to": "stinson.gibner@enron.com",
+    "cc": "",
+    "subject": "Concerns about valuation practices",
+    "body": "Stinson, I'm increasingly uncomfortable with some of the valuation practices I'm seeing across the company. Several business units are using aggressive assumptions in their mark-to-market models that I don't think are supportable. The broadband valuations in particular seem detached from any reasonable market-based assessment. The EES contract valuations also raise concerns - the assumptions about customer savings are optimistic relative to actual performance. I've raised these issues with senior management but haven't gotten a satisfactory response. I'm documenting my concerns for our files."
+  },
+  {
+    "id": "email_026",
+    "date": "2001-03-15T14:30:00",
+    "from": "cliff.baxter@enron.com",
+    "to": "jeff.skilling@enron.com",
+    "cc": "",
+    "subject": "Personal - need to discuss",
+    "body": "Jeff, I need to talk with you about something that's been weighing on me. I have serious concerns about some of the transactions we've been doing, particularly the related-party deals with LJM. I don't think these are in the best interest of Enron shareholders. The conflicts of interest are real and the financial impact is significant. I've expressed these concerns to Andy directly but the response has been dismissive. I'm considering stepping down from my position. Can we meet privately to discuss? This is something I feel very strongly about."
+  },
+  {
+    "id": "email_027",
+    "date": "2001-04-10T09:30:00",
+    "from": "jeff.skilling@enron.com",
+    "to": "andrew.fastow@enron.com",
+    "cc": "",
+    "subject": "Analyst call preparation",
+    "body": "Andy, we need to prepare for the Q1 analyst call. The street is expecting strong numbers. I want to make sure we have a good story on several fronts: wholesale trading performance, broadband growth, international asset sales. I also want to preempt any questions about the California situation and our SPE structures. Several analysts have been asking about the related-party footnote disclosures. Let's put together talking points that are transparent enough to satisfy their concerns without revealing competitive information about our trading strategies or partnership economics."
+  },
+  {
+    "id": "email_028",
+    "date": "2001-04-17T11:45:00",
+    "from": "jeff.skilling@enron.com",
+    "to": "all.enron@enron.com",
+    "cc": "",
+    "subject": "Q1 2001 results",
+    "body": "Enron reported strong first quarter results today. Recurring earnings per diluted share were $0.47, representing 20% growth over Q1 2000. Total revenues were $50.1 billion. Our wholesale business continues to perform at record levels. EnronOnline has processed over $600 billion in transactions since its launch. I'm very pleased with our performance and believe we are well positioned for continued growth. Thank you all for your hard work in making these results possible."
+  },
+  {
+    "id": "email_029",
+    "date": "2001-05-01T15:00:00",
+    "from": "andrew.fastow@enron.com",
+    "to": "michael.kopper@enron.com",
+    "cc": "",
+    "subject": "LJM2 transaction pipeline",
+    "body": "Michael, I need an update on the current LJM2 transaction pipeline. We have several deals that need to close in Q2 to help manage Enron's quarterly earnings. The Nigerian barge transaction we completed in Q4 1999 is getting some attention from Andersen - they want additional documentation on the buyback commitment. Make sure our files are in order. Also, we need to start thinking about the Q3 pipeline. The pressure to deliver consistent earnings growth means we'll likely need LJM to step in on several deals."
+  },
+  {
+    "id": "email_030",
+    "date": "2001-05-22T10:15:00",
+    "from": "sherron.watkins@enron.com",
+    "to": "jeff.mcmahon@enron.com",
+    "cc": "",
+    "subject": "Accounting concerns",
+    "body": "Jeff, I wanted to share some concerns I have about our accounting practices, particularly around the Raptor structures and some of the related-party transactions. As someone who worked in Fastow's group before moving to my current role, I have some visibility into how these structures work. I'm worried that if our stock price continues to decline, the Raptor hedges will unwind and we'll face significant write-downs. The circular nature of using our own stock as hedge collateral seems fundamentally flawed. I haven't raised this formally yet but I wanted to get your perspective first."
+  },
+  {
+    "id": "email_031",
+    "date": "2001-06-15T08:45:00",
+    "from": "david.delainey@enron.com",
+    "to": "jeff.skilling@enron.com",
+    "cc": "",
+    "subject": "EES performance gap",
+    "body": "Jeff, I need to bring something to your attention. The gap between our booked earnings and actual cash performance in EES is widening. We booked significant mark-to-market gains on long-term contracts in prior quarters, but the actual contract performance isn't matching our original projections. The customer savings assumptions were too aggressive. We may need to take reserves or write-downs in future quarters as the contracts mature and actual performance data comes in. I think we need to have an honest conversation about how we're presenting EES to the market."
+  },
+  {
+    "id": "email_032",
+    "date": "2001-07-12T16:30:00",
+    "from": "greg.whalley@enron.com",
+    "to": "jeff.skilling@enron.com",
+    "cc": "",
+    "subject": "Wholesale performance and risk",
+    "body": "Jeff, wholesale had an exceptional quarter. Trading revenues were up significantly. However, I want to flag that our risk profile has increased. We're carrying larger positions and the mark-to-market gains include some long-dated contracts where the valuation is model-dependent rather than market-observable. The RAC team has been flagging some of these positions. I'm comfortable with our risk management but want to make sure you're aware that a meaningful portion of our reported earnings comes from model-based valuations rather than realized cash flows."
+  },
+  {
+    "id": "email_033",
+    "date": "2001-08-14T09:00:00",
+    "from": "jeff.skilling@enron.com",
+    "to": "kenneth.lay@enron.com",
+    "cc": "",
+    "subject": "Personal matter - resignation",
+    "body": "Ken, after careful consideration, I've decided to resign as CEO of Enron. This is a personal decision driven by family reasons. I want to be clear that my departure has nothing to do with the company's financial condition or outlook. Enron is in the strongest position in its history. I have complete confidence in the management team and the company's strategy. I'll work with you on the transition. I plan to sell some of my Enron shares in the coming weeks as part of normal personal financial planning."
+  },
+  {
+    "id": "email_034",
+    "date": "2001-08-15T07:30:00",
+    "from": "kenneth.lay@enron.com",
+    "to": "all.enron@enron.com",
+    "cc": "",
+    "subject": "Leadership transition",
+    "body": "I am writing to inform you that Jeff Skilling has resigned as CEO effective today. I will resume the role of CEO. I want to assure you that this decision was Jeff's personal choice and does not reflect any disagreement about the company's accounting or finances. Enron's financial condition has never been stronger. Our core businesses are performing well and our growth prospects remain excellent. I am confident in our future and committed to leading the company through this transition. I ask for your continued dedication and hard work."
+  },
+  {
+    "id": "email_035",
+    "date": "2001-08-20T14:00:00",
+    "from": "sherron.watkins@enron.com",
+    "to": "kenneth.lay@enron.com",
+    "cc": "",
+    "subject": "Summary of concerns",
+    "body": "Dear Mr. Lay, I am writing to bring to your attention a series of concerns about our company's accounting practices that I believe require immediate attention. I am incredibly nervous that we will implode in a wave of accounting scandals. Skilling's abrupt departure will raise suspicions of accounting improprieties and valuation issues. My primary concerns are: 1) The Raptor transactions are deeply flawed. We have hedged risk with an entity that is capitalized with Enron stock. When our stock declines, the hedge is worthless. 2) The Condor and other vehicles have similar structural problems. 3) The LJM partnerships present serious conflict of interest issues. I strongly recommend that you engage independent counsel and auditors to review these structures before the issues become public."
+  },
+  {
+    "id": "email_036",
+    "date": "2001-08-22T10:00:00",
+    "from": "kenneth.lay@enron.com",
+    "to": "james.derrick@enron.com",
+    "cc": "",
+    "subject": "Fwd: Summary of concerns",
+    "body": "Jim, please see the attached memo from Sherron Watkins. She raises some serious concerns about our accounting structures, particularly the Raptor vehicles and LJM transactions. I'd like your team to look into this. Please also consult with Vinson & Elkins about whether we should engage outside counsel for an independent review. I want to take these concerns seriously while also being careful not to create unnecessary alarm. Let me know your recommendation on how to proceed."
+  },
+  {
+    "id": "email_037",
+    "date": "2001-08-28T09:30:00",
+    "from": "james.derrick@enron.com",
+    "to": "kenneth.lay@enron.com",
+    "cc": "",
+    "subject": "Re: Fwd: Summary of concerns",
+    "body": "Ken, I've discussed the Watkins memo with Vinson & Elkins. They recommend conducting a limited review of the matters she raised. However, they note that a full independent investigation could be destabilizing and could create privilege issues. They suggest focusing on whether the accounting treatments are within the scope of what Arthur Andersen has previously approved. I should note that V&E has done significant work on many of the transactions in question, so there may be a conflict. My recommendation is that we proceed with the V&E review but also consider whether to engage a firm with no prior involvement for a truly independent assessment."
+  },
+  {
+    "id": "email_038",
+    "date": "2001-09-10T11:00:00",
+    "from": "andrew.fastow@enron.com",
+    "to": "richard.causey@enron.com",
+    "cc": "",
+    "subject": "Raptor unwind - URGENT",
+    "body": "Rick, we have a critical issue. The Raptor vehicles have accumulated approximately $700 million in losses on the hedged positions. Given the decline in our stock price, the credit capacity has been severely eroded. Andersen is now questioning whether the structures ever truly met the 3% test given some of the funding arrangements. We may need to unwind the Raptors entirely and recognize the losses. I need to understand the accounting impact and how we would communicate this to the market. This needs to be addressed before we file Q3 results. Please treat this as highest priority."
+  },
+  {
+    "id": "email_039",
+    "date": "2001-09-15T14:30:00",
+    "from": "richard.causey@enron.com",
+    "to": "andrew.fastow@enron.com",
+    "cc": "kenneth.lay@enron.com",
+    "subject": "Re: Raptor unwind - URGENT",
+    "body": "Andy, I've completed the analysis. The Raptor unwind would result in a pre-tax charge of approximately $544 million, reducing net income by approximately $35 million after tax. However, more significantly, we would also need to reduce shareholders' equity by approximately $1.2 billion due to the reversal of the diluted share accounting related to the Enron stock used in the structures. This is a material restatement that will require an 8-K filing and will significantly impact market confidence. Andersen has been informed and is reviewing. This will be the largest single charge in the company's history."
+  },
+  {
+    "id": "email_040",
+    "date": "2001-09-26T08:00:00",
+    "from": "kenneth.lay@enron.com",
+    "to": "all.employees@enron.com",
+    "cc": "",
+    "subject": "Company update - your questions answered",
+    "body": "I want to address some of the concerns I've been hearing from employees. Our stock price has declined along with the broader market, but the fundamentals of our business remain strong. I can assure you that Enron is in strong financial shape. Our trading operations continue to perform well and our core businesses are generating solid results. I recently purchased additional Enron stock because I believe in this company's future. I encourage you to do the same if your personal financial situation allows. We will have a company-wide meeting next week where I will address your questions directly."
+  },
+  {
+    "id": "email_041",
+    "date": "2001-10-08T10:15:00",
+    "from": "ben.glisan@enron.com",
+    "to": "andrew.fastow@enron.com",
+    "cc": "",
+    "subject": "Additional write-downs",
+    "body": "Andy, beyond the Raptor unwind, we've identified additional write-downs needed in Q3. The broadband business has impairments of approximately $180 million. The Azurix water investment needs a $287 million write-down. Combined with the Raptor charge, we're looking at total after-tax charges of over $600 million. When we report Q3 results, we'll need to explain why we're taking all these charges simultaneously. The market reaction is going to be severe. We should prepare for significant analyst scrutiny of our balance sheet and off-balance-sheet arrangements."
+  },
+  {
+    "id": "email_042",
+    "date": "2001-10-16T09:00:00",
+    "from": "kenneth.lay@enron.com",
+    "to": "all.enron@enron.com",
+    "cc": "",
+    "subject": "Q3 results announcement",
+    "body": "Today we announced third quarter results that include significant one-time charges. After these charges, our recurring earnings remain strong at $0.43 per diluted share. However, I want to be transparent about the non-recurring items. We recorded a $544 million after-tax charge related to the wind-down of certain structured finance arrangements and asset impairments. We also reduced shareholders' equity by $1.2 billion. I know these numbers are concerning. The underlying business performance remains solid. We are taking these charges to clean up our balance sheet and position the company for the future."
+  },
+  {
+    "id": "email_043",
+    "date": "2001-10-19T15:30:00",
+    "from": "richard.causey@enron.com",
+    "to": "kenneth.lay@enron.com",
+    "cc": "andrew.fastow@enron.com",
+    "subject": "SEC inquiry notification",
+    "body": "Ken, we received notice today that the SEC has opened an informal inquiry into our related-party transactions and the recent write-downs. They're requesting information about the Raptor vehicles, LJM partnerships, and the Chewco structure. We need to engage outside counsel immediately to manage the response. Arthur Andersen has been notified and is cooperating. I recommend we bring in a firm that specializes in SEC enforcement matters. This is separate from any disclosure obligations we may have regarding the inquiry itself."
+  },
+  {
+    "id": "email_044",
+    "date": "2001-10-22T11:00:00",
+    "from": "kenneth.lay@enron.com",
+    "to": "all.employees@enron.com",
+    "cc": "",
+    "subject": "Addressing the Wall Street Journal article",
+    "body": "I'm sure many of you have seen the recent Wall Street Journal articles about our company. I want to address this directly. The articles raise questions about our off-balance-sheet partnerships and the role of our CFO in managing them. We have asked Andy Fastow to take a leave of absence while these matters are reviewed. This is a precautionary measure and should not be interpreted as an admission of any wrongdoing. We remain confident in our accounting practices and are cooperating fully with the SEC inquiry. Our business operations continue uninterrupted."
+  },
+  {
+    "id": "email_045",
+    "date": "2001-10-25T08:45:00",
+    "from": "greg.whalley@enron.com",
+    "to": "kenneth.lay@enron.com",
+    "cc": "",
+    "subject": "Liquidity situation - critical",
+    "body": "Ken, our liquidity situation is deteriorating rapidly. The credit agencies have placed us on negative watch and if we're downgraded below investment grade, it will trigger cash calls on several of our partnerships and trading agreements. Our commercial paper program is essentially frozen - we can't roll our paper at any price. We're drawing down our revolving credit facilities. I've been in discussions with several banks about emergency credit lines but they're reluctant given the current uncertainty. We need to seriously consider strategic alternatives including asset sales or a merger. The clock is ticking."
+  },
+  {
+    "id": "email_046",
+    "date": "2001-10-28T10:00:00",
+    "from": "kenneth.lay@enron.com",
+    "to": "jeff.mcmahon@enron.com",
+    "cc": "greg.whalley@enron.com",
+    "subject": "Dynegy merger discussions",
+    "body": "Jeff, I've had preliminary conversations with Chuck Watson at Dynegy about a potential merger. They're interested but want significant due diligence access before making a formal proposal. Given our liquidity situation, we don't have a lot of time to negotiate. Their initial thinking is a stock-for-stock merger at a significant discount to our current price. I've also spoken to several major banks about bridge financing. Please begin preparing our data room and be ready for their team to arrive early next week. This needs to be handled with complete confidentiality."
+  },
+  {
+    "id": "email_047",
+    "date": "2001-11-01T09:15:00",
+    "from": "kenneth.lay@enron.com",
+    "to": "all.enron@enron.com",
+    "cc": "",
+    "subject": "Important company announcement",
+    "body": "I am pleased to announce that Enron and Dynegy have agreed to a merger. Dynegy will acquire Enron in a stock-for-stock transaction. In addition, Dynegy is providing $1.5 billion in immediate liquidity through an asset-backed loan. ChevronTexaco is also investing $2.5 billion. This transaction will create the premier energy company in the world. We believe this combination is in the best interest of our shareholders, employees, and customers. We expect the transaction to close in the first half of 2002, subject to regulatory and shareholder approvals."
+  },
+  {
+    "id": "email_048",
+    "date": "2001-11-08T14:00:00",
+    "from": "richard.causey@enron.com",
+    "to": "kenneth.lay@enron.com",
+    "cc": "greg.whalley@enron.com",
+    "subject": "Restatement required",
+    "body": "Ken, after extensive review with Arthur Andersen, we've concluded that the Chewco structure never qualified for off-balance-sheet treatment because the 3% equity test was not met. This means JEDI should have been consolidated on our balance sheet since 1997. The impact of restatement will reduce reported earnings by approximately $28 million for 1997, $133 million for 1998, $248 million for 1999, and $99 million for 2000. Total shareholders' equity will be reduced by an additional $258 million beyond the $1.2 billion already disclosed. Andersen is requiring us to restate our financials for these periods. We need to file an 8-K immediately."
+  },
+  {
+    "id": "email_049",
+    "date": "2001-11-19T08:30:00",
+    "from": "greg.whalley@enron.com",
+    "to": "kenneth.lay@enron.com",
+    "cc": "jeff.mcmahon@enron.com",
+    "subject": "Dynegy merger at risk",
+    "body": "Ken, I spoke with Dynegy's board representative today. They're concerned about the restatement and the additional liabilities being uncovered in due diligence. Our credit has been downgraded and the triggering events I warned about are now materializing. Trading counterparties are reducing their exposure to us and several are demanding additional collateral. Dynegy is considering reducing their offer price or walking away entirely. We need $4 billion in additional cash over the next two weeks to meet our obligations. Without the Dynegy deal, I don't see how we avoid a filing."
+  },
+  {
+    "id": "email_050",
+    "date": "2001-11-28T16:00:00",
+    "from": "kenneth.lay@enron.com",
+    "to": "all.enron@enron.com",
+    "cc": "",
+    "subject": "Dynegy merger update",
+    "body": "It is with great regret that I must inform you that Dynegy has terminated its proposed merger with Enron. We are evaluating all of our options at this time. I know this is an extremely difficult period for all of us. Many of you have dedicated years to building this company and have significant portions of your retirement savings in Enron stock. I share your pain and frustration. We are working to preserve as much value as possible and will keep you informed as the situation develops. I ask for your patience and understanding during this challenging time."
+  },
+  {
+    "id": "email_051",
+    "date": "2001-06-28T13:45:00",
+    "from": "tim.belden@enron.com",
+    "to": "john.lavorato@enron.com",
+    "cc": "",
+    "subject": "FERC document request - California trading",
+    "body": "John, FERC has issued a broad document request covering our California trading operations from January 2000 to present. They want all communications, trading records, and strategy documents related to the California ISO market. I've alerted our legal team. We need to make sure we have a comprehensive document hold in place. Some of the strategy memos could be problematic if viewed through a hostile lens. The names we used for trading strategies - I mentioned this before - are going to look terrible in a congressional hearing. We should have changed those years ago."
+  },
+  {
+    "id": "email_052",
+    "date": "2001-03-05T10:00:00",
+    "from": "sally.beck@enron.com",
+    "to": "jeff.skilling@enron.com",
+    "cc": "",
+    "subject": "Operations risk report - Q1 2001",
+    "body": "Jeff, the quarterly operations risk report highlights several areas of concern. EnronOnline transaction volumes continue to outpace our back office capabilities. We had 47 trade confirmation failures last month compared to 12 in the same month last year. Position reconciliation is also lagging. Additionally, we have identified discrepancies between front office and back office valuations on approximately 8% of our long-dated positions. The variance amount totals approximately $150 million. While not all of this represents errors - some is timing and methodology differences - it does indicate a control weakness that needs attention."
+  },
+  {
+    "id": "email_053",
+    "date": "2000-05-30T09:00:00",
+    "from": "tim.belden@enron.com",
+    "to": "portland.traders@enron.com",
+    "cc": "",
+    "subject": "New strategies - Death Star and Ricochet",
+    "body": "Team, I've outlined two new trading strategies for the Cal ISO market. 'Death Star' involves scheduling power flows on congested paths to receive congestion relief payments without actually delivering energy. This exploits a design flaw in the ISO's congestion management protocol. 'Ricochet' involves buying power from the ISO at the capped price, exporting it to a neighboring state, and reimporting it at an uncapped price. Both strategies are within the letter of the ISO tariff rules. Make sure you understand the mechanics before executing. Document everything in the standard format."
+  },
+  {
+    "id": "email_054",
+    "date": "2001-04-05T14:00:00",
+    "from": "vince.kaminski@enron.com",
+    "to": "jeff.skilling@enron.com",
+    "cc": "",
+    "subject": "Broadband valuation concerns",
+    "body": "Jeff, my team has reviewed the valuation models being used for our broadband business. The models assume bandwidth demand growth of 1000% over the next five years and market share projections that we believe are unrealistic. The Blockbuster deal, which was booked at over $100 million in value, has not generated any revenue and the technology platform is not functioning as planned. We estimate the fair value of our broadband portfolio to be approximately 30-40% of the currently booked value. I recognize this is not what people want to hear, but our job in RAC is to provide independent assessment."
+  },
+  {
+    "id": "email_055",
+    "date": "2001-07-25T11:30:00",
+    "from": "jeff.mcmahon@enron.com",
+    "to": "jeff.skilling@enron.com",
+    "cc": "",
+    "subject": "Treasury perspective on SPE risks",
+    "body": "Jeff, from a treasury perspective, I need to highlight the risks we're accumulating through our SPE structures. Many of these vehicles have triggers tied to our credit rating and stock price. If we're downgraded below BBB, several structures require us to post collateral or repay debt immediately. The total contingent liability from these triggers is approximately $3.9 billion. Our current liquidity position would not be able to absorb these calls. I've been raising this with Fastow but he's focused on using the structures to manage reported earnings rather than addressing the underlying exposure. I believe this represents a material risk to the company."
+  },
+  {
+    "id": "email_056",
+    "date": "2001-09-20T08:00:00",
+    "from": "kenneth.lay@enron.com",
+    "to": "all.employees@enron.com",
+    "cc": "",
+    "subject": "Online employee forum - your questions",
+    "body": "Thank you for the many questions you've submitted for our online forum. I want to address the most common ones directly. Regarding our stock price: I believe Enron stock is significantly undervalued and I am personally buying shares. Regarding Jeff Skilling's departure: as I've said, this was a personal decision. Regarding our SPE structures: these are standard financial tools used by many companies and have been reviewed by our auditors. Regarding the California situation: we operated within the market rules. I remain completely confident in the future of this company and I hope you share that confidence."
+  },
+  {
+    "id": "email_057",
+    "date": "2001-08-16T10:45:00",
+    "from": "sherron.watkins@enron.com",
+    "to": "kenneth.lay@enron.com",
+    "cc": "",
+    "subject": "Follow-up - additional detail on concerns",
+    "body": "Mr. Lay, following up on my memo of August 20, I want to provide additional detail. The Condor vehicle is structured similarly to the Raptors and has the same fundamental flaw - it's capitalized with Enron stock and therefore provides no genuine risk transfer. The total exposure across all related vehicles is over $1 billion. Additionally, I've learned that some of the LJM transactions were specifically timed to help Enron meet quarterly earnings targets, which raises questions about whether these are genuine arm's-length transactions. I strongly urge you to engage truly independent advisors - not Andersen (who approved the structures) and not V&E (who helped create them)."
+  },
+  {
+    "id": "email_058",
+    "date": "2001-11-30T17:00:00",
+    "from": "kenneth.lay@enron.com",
+    "to": "all.enron@enron.com",
+    "cc": "",
+    "subject": "Filing update",
+    "body": "It is with profound sadness that I must inform you that Enron Corp. and certain of its subsidiaries have today filed voluntary petitions for Chapter 11 bankruptcy protection. This action became necessary after the collapse of the Dynegy merger and the downgrading of our credit to below investment grade. Our energy trading operations in North America will continue. We are committed to emerging from this process as a stronger company. I deeply regret the impact this has on all of you, particularly those whose retirement savings were concentrated in Enron stock. This is not the outcome any of us anticipated."
+  },
+  {
+    "id": "email_059",
+    "date": "2000-08-25T10:00:00",
+    "from": "andrew.fastow@enron.com",
+    "to": "ben.glisan@enron.com",
+    "cc": "michael.kopper@enron.com",
+    "subject": "Q3 earnings management - LJM transactions",
+    "body": "Ben, we need to identify transactions that LJM can participate in to help smooth Enron's Q3 numbers. The wholesale desk had a weaker August and we need to offset. Look at what merchant assets we could sell to LJM at current book value - if the assets are later worth more, LJM benefits, which is the economic rationale for the transaction. Also review whether there are any hedges expiring that we should restructure. The key is that each transaction needs to have a legitimate business purpose and pass the accounting rules, even if the timing is driven by earnings considerations."
+  },
+  {
+    "id": "email_060",
+    "date": "2001-10-30T09:30:00",
+    "from": "greg.whalley@enron.com",
+    "to": "john.lavorato@enron.com",
+    "cc": "",
+    "subject": "Trading counterparty exposure",
+    "body": "John, counterparties are pulling back across the board. Several major banks have reduced their credit lines to us and trading partners are demanding cash collateral instead of accepting our guarantees. EnronOnline volume has dropped 40% in the past week as counterparties reduce their exposure. The situation is feeding on itself - reduced trading volume reduces our revenue, which increases concern about our viability, which causes more counterparties to pull back. We're in a potential death spiral. We need the Dynegy deal to close quickly or we need an alternative source of capital within days, not weeks."
+  }
+]

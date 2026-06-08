@@ -351,8 +351,6 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         Returns:
             A BaseDeploymentInvocationResponse describing the execution result.
         """
-        # Unused parameters for future implementation
-        _ = request.run_name, request.timeout
         parameters = request.parameters.model_dump()
         start_time = time.time()
         logger.info("Starting pipeline execution")
@@ -364,6 +362,7 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
             # pipeline execution fails.
             placeholder_run, deployment_snapshot = (
                 self._prepare_execute_with_orchestrator(
+                    run_name=request.run_name,
                     resolved_params=parameters,
                 )
             )
@@ -499,11 +498,13 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
 
     def _prepare_execute_with_orchestrator(
         self,
+        run_name: Optional[str],
         resolved_params: Dict[str, Any],
     ) -> Tuple[PipelineRunResponse, PipelineSnapshotResponse]:
         """Prepare the execution with the orchestrator.
 
         Args:
+            run_name: The name of the run.
             resolved_params: The resolved parameters.
 
         Returns:
@@ -512,6 +513,7 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         deployment_snapshot_request = (
             deployment_snapshot_request_from_source_snapshot(
                 source_snapshot=self.snapshot,
+                run_name=run_name,
                 deployment_parameters=resolved_params,
             )
         )
@@ -550,8 +552,8 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
             The in-memory outputs of the execution.
 
         Raises:
-            RuntimeError: If the orchestrator has not been initialized.
-            RuntimeError: If the pipeline cannot be executed.
+            RuntimeError: If the orchestrator has not been initialized or if
+                the pipeline cannot be executed.
         """
         logging_context = setup_logging_context(
             source="deployment",

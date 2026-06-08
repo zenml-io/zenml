@@ -31,7 +31,7 @@ from sagemaker.session import Session
 
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.integrations.aws.flavors.sagemaker_step_operator_flavor import (
     SagemakerStepOperatorConfig,
     SagemakerStepOperatorSettings,
@@ -40,7 +40,11 @@ from zenml.integrations.aws.step_operators.sagemaker_step_operator_entrypoint_co
     SAGEMAKER_ESTIMATOR_STEP_ENV_VAR_SIZE_LIMIT,
     SagemakerStepOperatorEntrypointConfiguration,
 )
+from zenml.integrations.aws.utils import (
+    convert_training_job_status,
+)
 from zenml.logger import get_logger
+from zenml.orchestrators.publish_utils import publish_step_run_metadata
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 from zenml.step_operators.step_operator_entrypoint_configuration import (
@@ -52,12 +56,13 @@ from zenml.utils.string_utils import random_str
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.step_run_info import StepRunInfo
-    from zenml.models import PipelineSnapshotBase
+    from zenml.models import PipelineSnapshotBase, StepRunResponse
 
 logger = get_logger(__name__)
 
 SAGEMAKER_DOCKER_IMAGE_KEY = "sagemaker_step_operator"
 _ENTRYPOINT_ENV_VARIABLE = "__ZENML_ENTRYPOINT"
+STEP_JOB_NAME_METADATA_KEY = "job_name"
 
 
 class SagemakerStepOperator(BaseStepOperator):
@@ -163,23 +168,58 @@ class SagemakerStepOperator(BaseStepOperator):
 
         return builds
 
-    def launch(
+    def _get_sagemaker_session(self) -> Session:
+        """Creates an authenticated Sagemaker session.
+
+        Raises:
+            RuntimeError: If the connector returns the wrong type for the
+                session.
+
+        Returns:
+            The Sagemaker session.
+        """
+        boto_session: boto3.Session
+        if connector := self.get_connector():
+            boto_session = connector.connect()
+            if not isinstance(boto_session, boto3.Session):
+                raise RuntimeError(
+                    f"Expected to receive a `boto3.Session` object from the "
+                    f"linked connector, but got type `{type(boto_session)}`."
+                )
+        else:
+            boto_session = boto3.Session()
+
+        return Session(
+            boto_session=boto_session, default_bucket=self.config.bucket
+        )
+
+    @property
+    def sagemaker_session(self) -> Session:
+        """Returns the Sagemaker session.
+
+        Returns:
+            The Sagemaker session.
+        """
+        if self.connector_has_expired():
+            self._sagemaker_session = None
+
+        if self._sagemaker_session is None:
+            self._sagemaker_session = self._get_sagemaker_session()
+        return self._sagemaker_session
+
+    def submit(
         self,
         info: "StepRunInfo",
         entrypoint_command: List[str],
         environment: Dict[str, str],
     ) -> None:
-        """Launches a step on SageMaker.
+        """Submits a step run to SageMaker.
 
         Args:
             info: Information about the step run.
             entrypoint_command: Command that executes the step.
             environment: Environment variables to set in the step operator
                 environment.
-
-        Raises:
-            RuntimeError: If the connector returns an object that is not a
-                `boto3.Session`.
         """
         if not info.config.resource_settings.empty:
             logger.warning(
@@ -212,25 +252,6 @@ class SagemakerStepOperator(BaseStepOperator):
 
         # Get and default fill SageMaker estimator arguments for full ZenML support
         estimator_args = settings.estimator_args
-
-        # Get authenticated session
-        # Option 1: Service connector
-        boto_session: boto3.Session
-        if connector := self.get_connector():
-            boto_session = connector.connect()
-            if not isinstance(boto_session, boto3.Session):
-                raise RuntimeError(
-                    f"Expected to receive a `boto3.Session` object from the "
-                    f"linked connector, but got type `{type(boto_session)}`."
-                )
-        # Option 2: Implicit configuration
-        else:
-            boto_session = boto3.Session()
-
-        session = Session(
-            boto_session=boto_session, default_bucket=self.config.bucket
-        )
-
         estimator_args.setdefault(
             "instance_type", settings.instance_type or "ml.m5.large"
         )
@@ -240,7 +261,7 @@ class SagemakerStepOperator(BaseStepOperator):
 
         estimator_args["environment"] = environment
         estimator_args["instance_count"] = 1
-        estimator_args["sagemaker_session"] = session
+        estimator_args["sagemaker_session"] = self.sagemaker_session
 
         # Create Estimator
         estimator = Estimator(image_name, self.config.role, **estimator_args)
@@ -274,8 +295,46 @@ class SagemakerStepOperator(BaseStepOperator):
             }
         info.force_write_logs()
         estimator.fit(
-            wait=True,
+            wait=False,
             inputs=inputs,
             experiment_config=experiment_config,
             job_name=sanitized_training_job_name,
         )
+        publish_step_run_metadata(
+            info.step_run_id,
+            {
+                self.id: {
+                    STEP_JOB_NAME_METADATA_KEY: sanitized_training_job_name,
+                }
+            },
+        )
+        info.step_run.run_metadata[STEP_JOB_NAME_METADATA_KEY] = (
+            sanitized_training_job_name
+        )
+
+    def get_status(self, step_run: "StepRunResponse") -> ExecutionStatus:
+        """Gets the status of a submitted step.
+
+        Args:
+            step_run: The step run.
+
+        Returns:
+            The step status.
+        """
+        job_name = step_run.run_metadata[STEP_JOB_NAME_METADATA_KEY]
+        sagemaker_client = self.sagemaker_session.sagemaker_client
+
+        status = sagemaker_client.describe_training_job(
+            TrainingJobName=job_name
+        )["TrainingJobStatus"]
+        return convert_training_job_status(status)
+
+    def cancel(self, step_run: "StepRunResponse") -> None:
+        """Cancels a submitted step.
+
+        Args:
+            step_run: The step run.
+        """
+        job_name = step_run.run_metadata[STEP_JOB_NAME_METADATA_KEY]
+        sagemaker_client = self.sagemaker_session.sagemaker_client
+        sagemaker_client.stop_training_job(TrainingJobName=job_name)

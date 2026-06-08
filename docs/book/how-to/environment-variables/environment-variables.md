@@ -27,6 +27,26 @@ Environment variables and secrets can be configured at different levels with inc
 **Precedence order**: Step configuration overrides pipeline configuration, which overrides stack configuration, which overrides stack component configuration. Additionally, secrets always take precedence over direct environment variables when both are configured with the same key.
 {% endhint %}
 
+## ZenML repository directory name
+
+By default, `zenml init` creates a `.zen` directory that marks the root of a
+ZenML repository. ZenML uses that marker later when it resolves local code, for
+example custom stack component flavors that live in your repository.
+
+If your workspace cannot use `.zen` as the marker directory name, set
+`ZENML_REPOSITORY_DIRECTORY_NAME` before initializing or discovering the
+repository:
+
+```bash
+export ZENML_REPOSITORY_DIRECTORY_NAME=.my-zenml
+zenml init
+```
+
+After that, ZenML looks for `.my-zenml` instead of `.zen`. Keep this setting
+consistent for everyone and every process that works with the repository; if one
+shell uses `.zen` and another uses `.my-zenml`, they will not agree on where the
+ZenML repository root is.
+
 ## Automatic environment variable injection
 
 When executing a pipeline, ZenML automatically scans your local environment for any variables that start with the `__ZENML__` prefix and adds them to the pipeline environment. The prefix is removed during this process.
@@ -187,3 +207,5 @@ The timing of when environment variables are set depends on the orchestrator bei
 {% hint style="info" %}
 **Environment variables from secrets** are always set right before your step code is being executed for security reasons, regardless of the orchestrator.
 {% endhint %}
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

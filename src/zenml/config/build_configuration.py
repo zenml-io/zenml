@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 from pydantic import BaseModel
 
 from zenml.config.docker_settings import DockerSettings
+from zenml.container_engines import get_container_engine
 from zenml.logger import get_logger
 from zenml.utils import json_utils
 
@@ -110,9 +111,15 @@ class BuildConfiguration(BaseModel):
                 hash_.update(f.read())
 
         if self.settings.parent_image and stack.container_registry:
-            digest = stack.container_registry.get_image_repo_digest(
-                self.settings.parent_image
-            )
+            try:
+                digest = get_container_engine().get_image_repo_digest(
+                    image_name=self.settings.parent_image,
+                    container_registry=stack.container_registry,
+                )
+            except RuntimeError:
+                # No container engine available, we can't fetch the digest.
+                digest = None
+
             if digest:
                 hash_.update(digest.encode())
             elif self.settings.skip_build:

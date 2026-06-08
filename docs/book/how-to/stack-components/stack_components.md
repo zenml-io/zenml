@@ -33,6 +33,13 @@ Stacks may also include these optional components:
 * **Alerter**: Sends notifications about pipeline events
 * **Annotator**: Manages data labeling workflows
 
+Most component types appear at most once in a stack. Three component types are
+repeatable: **step operators**, **experiment trackers**, and **alerters**. If a
+stack has more than one component of one of these types, the first attached
+component is the default. You can still choose a non-default component by name
+in step or pipeline configuration, and you can change the default later with
+`zenml stack set-default`.
+
 ## Working with Stacks
 
 ### The Active Stack
@@ -60,11 +67,41 @@ zenml stack register my-stack -a local-store -o local-orchestrator
 
 # Register a stack with additional components
 zenml stack register production-stack \
-    -artifact-store s3-store \
+    --artifact-store s3-store \
     --orchestrator kubeflow \
     --container-registry ecr-registry \
     --experiment-tracker mlflow-tracker
+
+# Attach multiple repeatable components. The first one becomes the default.
+zenml stack register training-stack \
+    --artifact-store s3-store \
+    --orchestrator kubernetes \
+    --step_operator gpu-step-operator \
+    --step_operator cpu-step-operator \
+    --experiment_tracker mlflow \
+    --experiment_tracker wandb
+
+# Promote a different attached component to be the default.
+zenml stack set-default training-stack --step_operator cpu-step-operator
 ```
+
+### Discovering flavor-specific configuration
+
+Stack component flavors have different configuration fields. A local
+orchestrator needs very little information; a Kubernetes orchestrator needs
+cluster and namespace details; an S3 artifact store needs bucket information.
+Once you pass a flavor with `-f` / `--flavor`, the CLI can show the concrete
+configuration fields for that flavor:
+
+```bash
+zenml orchestrator register -f kubernetes --help
+zenml artifact-store register -f s3 --help
+zenml step-operator update my-runai-step-operator --help
+```
+
+The help output includes a **Flavor configuration** section. For register and
+update commands, pass those fields as `--name=value` arguments. This is often
+the fastest way to answer, "what exactly does this flavor need from me?"
 
 Or through the Python API:
 
@@ -96,3 +133,5 @@ Now that you understand what stacks are, you might want to:
 * Learn about [deploying stacks](https://docs.zenml.io/stacks/deployment) on cloud platforms
 * Understand [Service Connectors](service_connectors.md) for authenticating with cloud services
 * Explore how to [register existing cloud resources](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack) as ZenML stack components
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

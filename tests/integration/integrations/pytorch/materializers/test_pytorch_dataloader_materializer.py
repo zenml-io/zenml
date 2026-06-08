@@ -12,6 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import platform
+
+import pytest
+
+if platform.system() == "Windows":
+    pytest.skip(
+        "PyTorch integration is not installed on Windows CI.",
+        allow_module_level=True,
+    )
+
 import torch
 from torch.utils.data.dataloader import DataLoader
 from torch.utils.data.dataset import TensorDataset

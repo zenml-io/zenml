@@ -24,6 +24,8 @@ Note: The MCP server indexes the latest released docs, not the develop branch. F
 
 ## Code Style & Quality Standards
 
+- **Use US English spelling** in all code, comments, docstrings, and documentation (e.g., "initialize", "stabilize", "color"). The CI enforces this via `typos` (configured in `.typos.toml`).
+
 ### Commenting policy — explain why, not what
 - Use comments to document intent, trade‑offs, constraints, invariants, and tricky edge cases—i.e., why the code is this way—rather than narrating changes. Prefer self‑explanatory code; add comments only where extra context is needed. Write for a reader 6+ months later.
 - Use for: complex logic/algorithms, non‑obvious design decisions, business rules/constraints, API purpose/contracts, edge cases.
@@ -63,14 +65,14 @@ Note: The MCP server indexes the latest released docs, not the develop branch. F
   - Automatically fixes and formats code using ruff and yamlfix
 - Check code quality with: `bash scripts/lint.sh`
   - Unlike format.sh, this doesn't auto-fix issues
-  - Runs mypy type checking on the codebase
+  - Runs Ruff, pydoclint (on `src/zenml tests/harness`), yamlfix, zizmor, and mypy
   - Note: Full mypy check is slow on the entire codebase
   - For faster checks, run mypy directly on specific files: `mypy src/zenml/path/to/file.py`
 - The primary code style is enforced by ruff, configured in `pyproject.toml`
 - YAML formatting uses yamlfix: `yamlfix .github -v`
 
 ### Python Standards
-- Use Python 3.9+ compatible code
+- Use Python 3.10+ compatible code
 - Follow Google Python style for docstrings
 - Type hint all function parameters and return values
 - Use descriptive variable names and documentation
@@ -259,6 +261,7 @@ class MyOrchestrator(BaseOrchestrator):
 1. Run `bash scripts/format.sh` before every commit
 2. Run targeted tests to verify changes (see above)
 3. Update documentation for user-facing changes (or ensure that nothing was broken)
+4. IMPORTANT: **Before opening a PR or making a large commit**, always run `/simplify` to review changed code for reuse opportunities, quality issues, and efficiency improvements. Fix any issues it finds before committing.
 
 ### Security Guidelines
 - **NEVER** commit secrets, API keys, tokens, or passwords
@@ -404,11 +407,12 @@ synchronous: bool = Field(
 - Stack components provide functionality like storage, orchestration, etc.
 
 ### Key Abstractions
-- `BaseComponent` - Base for stack components
-- `BasePipeline` - Pipeline definition
+- `StackComponent` - Base for stack components
+- `Pipeline` - Pipeline definition
 - `BaseStep` - Step implementation
 - `BaseMaterializer` - Artifact serialization
 - `BaseOrchestrator` - Pipeline execution
+- `BaseStepOperator` - Remote step execution (submit/status/wait/cancel lifecycle)
 
 ## Common Tasks
 
@@ -453,6 +457,8 @@ Quick reference for common review concerns. Detailed explanations live in the ne
 - [ ] **Import checking:** No direct SQL imports from outside `zen_stores` (`src/zenml/zen_stores/schemas/AGENTS.md`)
 - [ ] **Model changes:** Adding properties OK, deleting/making optional is breaking (`src/zenml/models/AGENTS.md`)
 - [ ] **Dependency bumps:** If dropping old version support, it's a breaking change (`src/zenml/integrations/AGENTS.md`)
+- [ ] **Scheduling changes:** Must span both legacy schedule and trigger stacks (CLI + client + server + models + schemas)
+- [ ] **Step operator changes:** Check `BaseStepOperator`, `StepLauncher`, and at least one concrete integration
 
 ## Documentation Guidelines
 

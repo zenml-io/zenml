@@ -77,19 +77,30 @@ from zenml.integrations.aws.orchestrators.sagemaker_orchestrator_entrypoint_conf
 from zenml.integrations.aws.step_operators.sagemaker_step_operator_entrypoint_config import (
     SagemakerStepOperatorEntrypointConfiguration,
 )
+from zenml.integrations.aws.utils import (
+    convert_processing_job_status,
+    convert_training_job_status,
+)
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
+from zenml.orchestrators.publish_utils import publish_step_run_metadata
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils.env_utils import split_environment_variables
 from zenml.utils.time_utils import to_utc_timezone, utc_now_tz_aware
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineRunResponse, PipelineSnapshotResponse
+    from zenml.models import (
+        PipelineRunResponse,
+        PipelineSnapshotResponse,
+        StepRunResponse,
+    )
     from zenml.stack import Stack
 
 ENV_ZENML_SAGEMAKER_RUN_ID = "ZENML_SAGEMAKER_RUN_ID"
+STEP_JOB_NAME_METADATA_KEY = "job_name"
+STEP_JOB_TYPE_METADATA_KEY = "job_type"
 MAX_POLLING_ATTEMPTS = 100
 POLLING_DELAY = 30
 
@@ -233,7 +244,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         def _validate_remote_components(
             stack: "Stack",
         ) -> Tuple[bool, str]:
-            for component in stack.components.values():
+            for component in stack.all_components:
                 if not component.config.is_local:
                     continue
 
@@ -715,6 +726,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 upstream_steps=step.spec.upstream_steps,
                 wait=False,
             )
+            assert isinstance(sagemaker_step, Step)
 
             sagemaker_steps.append(sagemaker_step)
 
@@ -1018,13 +1030,13 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                             wait=True,
                             poll=POLLING_DELAY,
                             timeout=POLLING_DELAY * MAX_POLLING_ATTEMPTS,
-                        )
+                        )  # type: ignore[no-untyped-call,unused-ignore]
                     else:
                         session.logs_for_processing_job(
                             job_name,
                             wait=True,
                             poll=POLLING_DELAY,
-                        )
+                        )  # type: ignore[no-untyped-call,unused-ignore]
 
                     logger.info("Pipeline completed successfully.")
                 except WaiterError:
@@ -1051,7 +1063,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             metadata=metadata,
         )
 
-    def run_isolated_step(
+    def submit_isolated_step(
         self, step_run_info: "StepRunInfo", environment: Dict[str, str]
     ) -> None:
         """Runs an isolated step on Sagemaker.
@@ -1081,7 +1093,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             step_run_id=str(step_run_info.step_run_id),
         )
 
-        self._create_job_or_step(
+        job, job_name = self._create_job_or_step(
             session=session,
             base_job_name=f"{step_run_info.pipeline.name}-{step_run_info.pipeline_step_name}",
             environment=environment,
@@ -1089,8 +1101,72 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             settings=settings,
             command=command,
             arguments=arguments,
-            wait=True,
+            wait=False,
         )
+        assert job_name
+        job_type = "training" if isinstance(job, Estimator) else "processing"
+        publish_step_run_metadata(
+            step_run_info.step_run_id,
+            {
+                self.id: {
+                    STEP_JOB_NAME_METADATA_KEY: job_name,
+                    STEP_JOB_TYPE_METADATA_KEY: job_type,
+                }
+            },
+        )
+        # Include the metadata in the step run response to avoid an extra
+        # API call
+        step_run_info.step_run.run_metadata[STEP_JOB_NAME_METADATA_KEY] = (
+            job_name
+        )
+        step_run_info.step_run.run_metadata[STEP_JOB_TYPE_METADATA_KEY] = (
+            job_type
+        )
+
+    def get_isolated_step_status(
+        self, step_run: "StepRunResponse"
+    ) -> ExecutionStatus:
+        """Gets the status of an isolated step on Sagemaker.
+
+        Args:
+            step_run: The step run.
+
+        Raises:
+            ValueError: If the job type is unknown.
+
+        Returns:
+            The status of the step run.
+        """
+        job_name = step_run.run_metadata[STEP_JOB_NAME_METADATA_KEY]
+        job_type = step_run.run_metadata[STEP_JOB_TYPE_METADATA_KEY]
+        sagemaker_client = self.sagemaker_session.sagemaker_client
+
+        if job_type == "training":
+            status = sagemaker_client.describe_training_job(
+                TrainingJobName=job_name
+            )["TrainingJobStatus"]
+            return convert_training_job_status(status)
+        elif job_type == "processing":
+            status = sagemaker_client.describe_processing_job(
+                ProcessingJobName=job_name
+            )["ProcessingJobStatus"]
+            return convert_processing_job_status(status)
+        else:
+            raise ValueError(f"Unknown job type: {job_type}")
+
+    def stop_isolated_step(self, step_run: "StepRunResponse") -> None:
+        """Stops an isolated step on Sagemaker.
+
+        Args:
+            step_run: The step run.
+        """
+        job_name = step_run.run_metadata[STEP_JOB_NAME_METADATA_KEY]
+        job_type = step_run.run_metadata[STEP_JOB_TYPE_METADATA_KEY]
+        sagemaker_client = self.sagemaker_session.sagemaker_client
+        if job_type == "training":
+            sagemaker_client.stop_training_job(TrainingJobName=job_name)
+        elif job_type == "processing":
+            sagemaker_client.stop_processing_job(ProcessingJobName=job_name)
 
     def get_pipeline_run_metadata(
         self, run_id: UUID
@@ -1131,11 +1207,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             Step statuses are not supported for SageMaker, so step_statuses_dict will always be None.
 
         Raises:
-            AssertionError: If the run was not executed by to this orchestrator.
-            ValueError: If it fetches an unknown state or if we can not fetch
-                the orchestrator run ID.
-            ValueError: If the orchestrator run ID cannot be used to identify
-                the pipeline type.
+            ValueError: If it fetches an unknown state, if we can not fetch
+                the orchestrator run ID, or if the orchestrator run ID cannot
+                be used to identify the pipeline type.
         """
         # Make sure that the stack exists and is accessible
         if run.stack is None:
@@ -1197,40 +1271,14 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 TrainingJobName=pipeline_name
             )["TrainingJobStatus"]
 
-            # Map the potential outputs to ZenML ExecutionStatus. Potential values:
-            # https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribeTrainingJob.html#sagemaker-DescribeTrainingJob-response-TrainingJobStatus
-            if status == "InProgress":
-                pipeline_status = ExecutionStatus.RUNNING
-            elif status == "Stopping":
-                pipeline_status = ExecutionStatus.STOPPING
-            elif status == "Completed":
-                pipeline_status = ExecutionStatus.COMPLETED
-            elif status == "Failed":
-                pipeline_status = ExecutionStatus.FAILED
-            elif status == "Stopped":
-                pipeline_status = ExecutionStatus.STOPPED
-            else:
-                raise ValueError("Unknown status for the training job.")
-
+            pipeline_status = convert_training_job_status(status)
             return pipeline_status, None
 
         elif pipeline_type == "processing":
             status = sagemaker_client.describe_processing_job(
                 ProcessingJobName=pipeline_name
             )["ProcessingJobStatus"]
-
-            # Map the potential outputs to ZenML ExecutionStatus. Potential values:
-            # https://docs.aws.amazon.com/sagemaker/latest/APIReference/API_DescribeProcessingJob.html#sagemaker-DescribeProcessingJob-response-ProcessingJobStatus
-            if status == "InProgress":
-                pipeline_status = ExecutionStatus.RUNNING
-            elif status == "Stopping":
-                pipeline_status = ExecutionStatus.STOPPING
-            elif status == "Completed":
-                pipeline_status = ExecutionStatus.COMPLETED
-            elif status == "Failed":
-                pipeline_status = ExecutionStatus.FAILED
-            else:
-                raise ValueError("Unknown status for the processing job.")
+            pipeline_status = convert_processing_job_status(status)
 
             return pipeline_status, None
 

@@ -29,8 +29,8 @@ The Hybrid deployment model is designed for organizations that need to keep sens
 | ZenML Pro Server(s) | Your Infrastructure | Handles pipeline orchestration and execution |
 | Metadata Store | Your Infrastructure | Stores all pipeline runs, model metadata, and tracking information |
 | Secrets Store | Your Infrastructure | Stores all credentials and sensitive configuration |
-| Compute Resources | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Executes pipeline steps and training jobs |
-| Data & Artifacts | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Stores datasets, models, and pipeline artifacts |
+| Compute Resources | Your infrastructure through [stacks](https://docs.zenml.io/concepts/stack_components) | Executes pipeline steps and training jobs |
+| Data & Artifacts | Your infrastructure through [stacks](https://docs.zenml.io/concepts/stack_components) | Stores datasets, models, and pipeline artifacts |
 
 {% hint style="success" %}
 All metadata, secrets, and ML artifacts remain within your infrastructure. Only authentication and authorization data flows to the ZenML control plane.
@@ -66,6 +66,12 @@ Workspaces initiate outbound-only connections to the control plane, meaning no i
 
 Each workspace can be deployed in separate VPCs or networks, isolated per team, department, or customer. Different workspaces can be configured with different security policies and managed independently by different teams.
 
+#### Private connectivity for Google Cloud workspaces
+
+For organizations that deploy Hybrid workspaces in Google Cloud, it is now possible to connect the Google Cloud workspace VPC privately to the ZenML control plane infrastructure in AWS without sending traffic over the public internet. This can be implemented with [AWS Interconnect - multicloud](https://aws.amazon.com/about-aws/whats-new/2026/04/aws-announces-ga-AWS-interconnect-multicloud/) together with [Google Cloud Cross-Cloud Interconnect](https://docs.cloud.google.com/network-connectivity/docs/interconnect/how-to/cci/aws/connectivity-overview), giving the workspace a dedicated, private network path between Google Cloud and AWS.
+
+This option is useful when your security policy requires the workspace server and metadata store to stay in Google Cloud while control-plane communication must use private cloud networking rather than public internet routing or VPN. The exact topology depends on your Google Cloud VPC, AWS networking setup, region pairing, routing, BGP configuration, and redundancy requirements. Contact [cloud@zenml.io](mailto:cloud@zenml.io) or your ZenML representative to validate the design before implementation.
+
 ### Data Residency
 
 | Data Type | Storage Location | Purpose |
@@ -88,7 +94,7 @@ Each workspace can be deployed in separate VPCs or networks, isolated per team, 
 
 Deploy ZenML workspaces in your infrastructure using one of the supported deployment backends: Kubernetes (recommended, including EKS, GKE, AKS, or self-managed clusters), AWS ECS, or other container orchestration platforms.
 
-Your infrastructure needs to provide a MySQL or PostgreSQL database, egress access to `cloud.zenml.io` for control plane communication, and compute resources for the ZenML server container.
+Your infrastructure needs to provide a MySQL database, egress access to `cloud.zenml.io` for control plane communication, and compute resources for the ZenML server container.
 
 For Kubernetes environments, we provide officially [supported Helm charts](https://artifacthub.io/packages/helm/zenml/zenml) to simplify deployment. For non-Kubernetes environments, we recommend managing the ZenML server lifecycle using infrastructure-as-code tools such as Terraform, Pulumi, or AWS CloudFormation.
 
@@ -128,7 +134,7 @@ Your subscription includes professional support with SLA, architecture consultat
 
 ### From ZenML OSS
 
-You can migrate from ZenML OSS by deploying a ZenML Pro-compatible workspace in your own infrastructure, starting from your existing ZenML OSS workspace deployment if you have one. The process involves updating your Docker image to the latest Pro Hybrid image provided by ZenML, setting required environment variables according to the ZenML Pro documentation (such as `ZENML_PRO_CONTROL_PLANE_URL`, `ZENML_PRO_CONTROL_PLANE_CLIENT_ID`, secrets, and SSO configuration), and restarting your deployment to apply these changes. After that, migrate your users and teams, then run `zenml login` to authenticate via [cloud.zenml.io](https://cloud.zenml.io) and connect your SDK clients to the new workspace.
+You can migrate from ZenML OSS by deploying a ZenML Pro-compatible workspace in your own infrastructure, starting from your existing ZenML OSS workspace deployment if you have one. The process involves updating your Docker image to the latest Pro Hybrid image provided by ZenML, setting required environment variables according to the ZenML Pro documentation and restarting your deployment to apply these changes. After that, migrate your users and teams, then run `zenml login` to authenticate via [cloud.zenml.io](https://cloud.zenml.io) and connect your SDK clients to the new workspace.
 
 ### From SaaS to Hybrid
 
@@ -144,7 +150,7 @@ A workspace deep copy feature for migrating pipelines and artifacts between work
 - [Scenarios](scenarios.md)
 - [SaaS Deployment](saas-deployment.md)
 - [Self-hosted Deployment](self-hosted-deployment.md)
-- [Configuration Details](configuration-details.md)
+- [Deployment Details](deploy-details.md)
 - [Upgrades and Updates](upgrades-updates.md)
 - [Workspaces](workspaces.md)
 - [Organizations](organization.md)
@@ -152,3 +158,5 @@ A workspace deep copy feature for migrating pipelines and artifacts between work
 ## Get Started
 
 Ready to deploy ZenML Pro in Hybrid mode? [Book a Demo](https://www.zenml.io/book-your-demo) or [contact us](mailto:cloud@zenml.io) with questions.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

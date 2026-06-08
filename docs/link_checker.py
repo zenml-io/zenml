@@ -95,6 +95,12 @@ except ImportError:
 EXEMPT_URL_STATUS: Dict[str, set] = {
     # Requires authentication; often returns 403 to unauthenticated HEAD/GET.
     "https://huggingface.co/settings/tokens": {403},
+    # zenml.io/slack and /slack-invite redirect to a zenml.slack.com invite URL.
+    # Slack returns 403 to any unauthenticated request to those invite URLs by
+    # design, regardless of User-Agent or HEAD/GET. A real takedown would
+    # surface as 404/410/5xx, which is not exempted here and would still fail.
+    "https://zenml.io/slack": {403},
+    "https://zenml.io/slack-invite": {403},
 }
 
 EXEMPT_DOMAIN_STATUS: Dict[str, set] = {
@@ -103,6 +109,10 @@ EXEMPT_DOMAIN_STATUS: Dict[str, set] = {
     "developer.hashicorp.com": {429},
     "terraform.io": {429},
     "www.terraform.io": {429},
+    # Modal docs return 406 Not Acceptable to automated requests.
+    "modal.com": {406},
+    # ghcr.io is a container registry API, not a web page; returns 502 to browsers.
+    "ghcr.io": {502},
 }
 
 # Default policies for troublesome domains that frequently rate-limit automated traffic.
@@ -116,6 +126,11 @@ DEFAULT_NO_HEAD_DOMAINS = {
     "developer.hashicorp.com",
     "terraform.io",
     "www.terraform.io",
+}
+DEFAULT_SKIP_DOMAINS: set = {
+    # Neptune.ai was acquired by OpenAI and the site returns 403s
+    "neptune.ai",
+    "app.neptune.ai",
 }
 DEFAULT_USER_AGENT = (
     "ZenML-LinkChecker/1.0 (+https://github.com/zenml-io/zenml)"
@@ -313,6 +328,7 @@ def check_link_validity(
     ignore_429_domains: Optional[set] = None,
     no_head_domains: Optional[set] = None,
     user_agent: Optional[str] = None,
+    skip_domains: Optional[set] = None,
 ) -> Tuple[str, bool, Optional[str], Optional[int]]:
     """
     Check if a URL is valid by making an HTTP request.
@@ -323,6 +339,7 @@ def check_link_validity(
         ignore_429_domains: Domains for which HTTP 429 should be considered a soft pass
         no_head_domains: Domains for which to skip HEAD and only use GET
         user_agent: Custom User-Agent header
+        skip_domains: Domains to skip entirely during validation
 
     Returns:
         Tuple of (url, is_valid, error_message, status_code)
@@ -333,6 +350,13 @@ def check_link_validity(
     # Skip GitHub links
     if "github.com" in url:
         return url, True, "GitHub link validation skipped", None
+
+    # Skip domains that are known to be defunct or block automated requests
+    if skip_domains:
+        parsed_skip = urlparse(url)
+        hostname_skip = (parsed_skip.hostname or "").lower()
+        if hostname_skip in skip_domains:
+            return url, True, f"Domain {hostname_skip} skipped", None
 
     # Clean up escaped characters in URLs
     # This helps with Markdown URLs that have escaped underscores, etc.
@@ -454,6 +478,7 @@ def validate_urls(
     ignore_429_domains: Optional[set] = None,
     no_head_domains: Optional[set] = None,
     user_agent: Optional[str] = None,
+    skip_domains: Optional[set] = None,
 ) -> Dict[str, Tuple[bool, Optional[str], Optional[int]]]:
     """
     Validate multiple URLs in parallel.
@@ -465,6 +490,7 @@ def validate_urls(
         ignore_429_domains: Domains for which HTTP 429 should be considered a soft pass
         no_head_domains: Domains for which to skip HEAD and only use GET
         user_agent: Custom User-Agent header
+        skip_domains: Domains to skip entirely during validation
 
     Returns:
         Dictionary of {url: (is_valid, error_message, status_code)}
@@ -513,6 +539,7 @@ def validate_urls(
                     ignore_429_domains=ignore_429_domains,
                     no_head_domains=no_head_domains,
                     user_agent=user_agent,
+                    skip_domains=skip_domains,
                 )
             ] = url
 
@@ -636,6 +663,7 @@ def replace_links_in_file(
     ignore_429_domains: Optional[set] = None,
     no_head_domains: Optional[set] = None,
     user_agent: Optional[str] = None,
+    skip_domains: Optional[set] = None,
 ) -> Dict[str, Tuple[str, bool, Optional[str]]]:
     """
     Replace relative links in the file with absolute URLs.
@@ -650,6 +678,7 @@ def replace_links_in_file(
         ignore_429_domains: Domains for which HTTP 429 should be considered a soft pass
         no_head_domains: Domains for which to skip HEAD and only use GET
         user_agent: Custom User-Agent header
+        skip_domains: Domains to skip entirely during validation
 
     Returns:
         Dictionary of {original_link: (new_link, is_valid, error_message)}
@@ -760,6 +789,7 @@ def replace_links_in_file(
             ignore_429_domains=ignore_429_domains,
             no_head_domains=no_head_domains,
             user_agent=user_agent,
+            skip_domains=skip_domains,
         )
 
         # Update the replacements dictionary with validation results
@@ -908,6 +938,12 @@ def main():
         help="Domain for which to skip HEAD and only use GET (can be used multiple times). Defaults include developer.hashicorp.com and terraform.io.",
     )
     parser.add_argument(
+        "--skip-domain",
+        action="append",
+        default=[],
+        help="Domain to skip entirely during validation (can be used multiple times). Defaults include neptune.ai.",
+    )
+    parser.add_argument(
         "--user-agent",
         default=DEFAULT_USER_AGENT,
         help="User-Agent to use for HTTP requests.",
@@ -954,6 +990,7 @@ def main():
     no_head_domains = DEFAULT_NO_HEAD_DOMAINS.union(
         set(args.no_head_domain or [])
     )
+    skip_domains = DEFAULT_SKIP_DOMAINS.union(set(args.skip_domain or []))
 
     if args.replace_links:
         # Replace links mode
@@ -973,6 +1010,7 @@ def main():
                     ignore_429_domains=ignore_429_domains,
                     no_head_domains=no_head_domains,
                     user_agent=args.user_agent,
+                    skip_domains=skip_domains,
                 )
                 if replacements:
                     if not args.ci_mode:
@@ -1086,6 +1124,7 @@ def main():
                 ignore_429_domains=ignore_429_domains,
                 no_head_domains=no_head_domains,
                 user_agent=args.user_agent,
+                skip_domains=skip_domains,
             )
 
             valid_count = sum(

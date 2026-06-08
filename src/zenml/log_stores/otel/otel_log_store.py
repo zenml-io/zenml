@@ -86,8 +86,6 @@ class OtelLogStoreOrigin(BaseLogStoreOrigin):
             metadata: Additional metadata to attach to all log entries that will
                 be emitted by this origin.
         """
-        metadata = {f"zenml.{key}": value for key, value in metadata.items()}
-
         metadata.update(
             {
                 "zenml.log.id": str(log_model.id),
@@ -327,6 +325,9 @@ class OtelLogStore(BaseLogStore):
             start_time: Filter logs after this time.
             end_time: Filter logs before this time.
             limit: Maximum number of log entries to return.
+
+        Returns:
+            A list of log entries.
 
         Raises:
             NotImplementedError: Log fetching is not supported by the OTEL log

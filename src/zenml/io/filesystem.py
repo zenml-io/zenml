@@ -80,7 +80,7 @@ class BaseFilesystem(ABC):
         Raises:
             FileExistsError: If a file already exists at the destination and
                 `overwrite` is not set to `True`.
-        """
+        """  # noqa: DOC502
 
     @staticmethod
     @abstractmethod
@@ -158,7 +158,7 @@ class BaseFilesystem(ABC):
 
         Raises:
             FileNotFoundError: If the file does not exist.
-        """
+        """  # noqa: DOC502
 
     @staticmethod
     @abstractmethod
@@ -175,7 +175,7 @@ class BaseFilesystem(ABC):
         Raises:
             FileExistsError: If a file already exists at the destination
                 and overwrite is not set to `True`.
-        """
+        """  # noqa: DOC502
 
     @staticmethod
     @abstractmethod

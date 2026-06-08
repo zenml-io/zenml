@@ -27,7 +27,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, model_validator
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.constants import STR_FIELD_MAX_LENGTH
@@ -54,7 +54,6 @@ from zenml.utils.tag_utils import Tag
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
 
-    from zenml.models import TriggerExecutionResponse
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.models.v2.core.code_reference import CodeReferenceResponse
     from zenml.models.v2.core.curated_visualization import (
@@ -66,9 +65,16 @@ if TYPE_CHECKING:
         PipelineBuildResponse,
     )
     from zenml.models.v2.core.pipeline_snapshot import PipelineSnapshotResponse
+    from zenml.models.v2.core.run_wait_condition import (
+        RunWaitConditionResponse,
+    )
     from zenml.models.v2.core.schedule import ScheduleResponse
     from zenml.models.v2.core.stack import StackResponse
     from zenml.models.v2.core.step_run import StepRunResponse
+    from zenml.models.v2.core.triggers import (
+        TRIGGER_RETURN_TYPE_UNION,
+        TriggerExecutionInfo,
+    )
     from zenml.zen_stores.schemas.base_schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -130,10 +136,6 @@ class PipelineRunRequest(ProjectScopedRequest):
             "(OS, Python version, etc.)."
         ),
     )
-    trigger_execution_id: Optional[UUID] = Field(
-        default=None,
-        title="ID of the trigger execution that triggered this run.",
-    )
     trigger_info: Optional[PipelineRunTriggerInfo] = Field(
         default=None,
         title="Trigger information for the pipeline run.",
@@ -150,6 +152,20 @@ class PipelineRunRequest(ProjectScopedRequest):
         default=None,
         title="The exception information of the pipeline run.",
     )
+    original_run_id: Optional[UUID] = Field(
+        default=None,
+        title="The original run ID for a replayed run.",
+    )
+    parent_run_id: Optional[UUID] = Field(
+        default=None,
+        title="The parent run ID for a nested child pipeline run.",
+    )
+    child_key: Optional[str] = Field(
+        default=None,
+        title="Stable per-parent identifier of the child pipeline call that "
+        "produced this child run.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
 
     @property
     def is_placeholder_request(self) -> bool:
@@ -162,6 +178,52 @@ class PipelineRunRequest(ProjectScopedRequest):
             ExecutionStatus.INITIALIZING,
             ExecutionStatus.PROVISIONING,
         }
+
+    @model_validator(mode="after")
+    def _validate_status(self) -> "PipelineRunRequest":
+        """Validate the status of the pipeline run request.
+
+        Raises:
+            ValueError: If the status is not valid.
+
+        Returns:
+            The pipeline run request.
+        """
+        if self.status not in {
+            ExecutionStatus.INITIALIZING,
+            ExecutionStatus.RUNNING,
+        }:
+            raise ValueError(
+                "Run must be started in the initializing or running state."
+            )
+
+        return self
+
+    @model_validator(mode="after")
+    def _validate_parent_child_pair(self) -> "PipelineRunRequest":
+        """Ensure `parent_run_id` and `child_key` are set together.
+
+        The unique constraint on `(parent_run_id, child_key)` does not catch
+        cases where one is set and the other is `NULL` (NULLs compare unequal
+        in SQL), so resume idempotency would silently break.
+
+        Raises:
+            ValueError: If only one of the two fields is set.
+
+        Returns:
+            The pipeline run request.
+        """
+        if self.parent_run_id is not None and self.child_key is None:
+            raise ValueError(
+                "`parent_run_id` is set but `child_key` is None; both "
+                "must be set together."
+            )
+        if self.child_key is not None and self.parent_run_id is None:
+            raise ValueError(
+                "`child_key` is set but `parent_run_id` is None; both "
+                "must be set together."
+            )
+        return self
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -178,15 +240,14 @@ class PipelineRunUpdate(BaseUpdate):
         title="The reason for the status of the pipeline run.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    end_time: Optional[datetime] = None
-    is_finished: Optional[bool] = Field(
-        default=None,
-        title="Whether the pipeline run is finished.",
-    )
     orchestrator_run_id: Optional[str] = None
     exception_info: Optional[ExceptionInfo] = Field(
         default=None,
         title="The exception information of the pipeline run.",
+    )
+    outputs: Optional[Dict[str, UUID]] = Field(
+        default=None,
+        title="Pipeline output artifact version IDs keyed by output name.",
     )
     # TODO: we should maybe have a different update model here, the upper
     #  attributes should only be for internal use
@@ -221,6 +282,20 @@ class PipelineRunResponseBody(ProjectScopedResponseBody):
     )
     index: int = Field(
         title="The unique index of the run within the pipeline."
+    )
+    pipeline_id: UUID | None = Field(
+        default=None,
+        title="The ID of the pipeline this run is associated with.",
+    )
+    child_key: Optional[str] = Field(
+        default=None,
+        title="Stable per-parent identifier of the child pipeline call that "
+        "produced this child run.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    root_run_id: Optional[UUID] = Field(
+        default=None,
+        title="The ID of the top-level parent run of this run's nesting tree.",
     )
 
     model_config = ConfigDict(protected_namespaces=())
@@ -294,6 +369,10 @@ class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
         default=None,
         title="The exception information of the pipeline run.",
     )
+    trigger_execution_info: Optional["TriggerExecutionInfo"] = Field(
+        default=None,
+        title="Extra information for trigger execution like upstream_run_id etc.",
+    )
 
 
 class PipelineRunResponseResources(ProjectScopedResponseResources):
@@ -316,9 +395,6 @@ class PipelineRunResponseResources(ProjectScopedResponseResources):
     code_reference: Optional["CodeReferenceResponse"] = Field(
         default=None, title="The code reference that was used for this run."
     )
-    trigger_execution: Optional["TriggerExecutionResponse"] = Field(
-        default=None, title="The trigger execution that triggered this run."
-    )
     model_version: Optional[ModelVersionResponse] = None
     tags: List[TagResponse] = Field(
         title="Tags associated with the pipeline run.",
@@ -330,6 +406,26 @@ class PipelineRunResponseResources(ProjectScopedResponseResources):
     visualizations: List["CuratedVisualizationResponse"] = Field(
         default=[],
         title="Curated visualizations associated with the pipeline run.",
+    )
+    trigger: Optional["TRIGGER_RETURN_TYPE_UNION"] = Field(
+        default=None,
+        title="The trigger that generated this pipeline run.",
+    )
+    original_run: Optional["PipelineRunResponse"] = Field(
+        default=None,
+        title="The original run that was replayed to create this run.",
+    )
+    parent_run: Optional["PipelineRunResponse"] = Field(
+        default=None,
+        title="The parent run that launched this run as a child pipeline.",
+    )
+    active_wait_condition: Optional["RunWaitConditionResponse"] = Field(
+        default=None,
+        title="The active pending wait condition associated with this run.",
+    )
+    outputs: Dict[str, "ArtifactVersionResponse"] = Field(
+        default_factory=dict,
+        title="Pipeline output artifact versions keyed by output name.",
     )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
@@ -623,15 +719,6 @@ class PipelineRunResponse(
         return self.get_resources().schedule
 
     @property
-    def trigger_execution(self) -> Optional["TriggerExecutionResponse"]:
-        """The `trigger_execution` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_resources().trigger_execution
-
-    @property
     def code_reference(self) -> Optional["CodeReferenceResponse"]:
         """The `schedule` property.
 
@@ -666,6 +753,87 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_resources().log_collection
+
+    @property
+    def trigger(self) -> Optional["TRIGGER_RETURN_TYPE_UNION"]:
+        """The `trigger` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().trigger
+
+    @property
+    def trigger_execution_info(self) -> Optional["TriggerExecutionInfo"]:
+        """The `trigger_execution_info` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().trigger_execution_info
+
+    @property
+    def outputs(self) -> Dict[str, "ArtifactVersionResponse"]:
+        """The `outputs` property.
+
+        Returns:
+            The output artifact versions keyed by output name.
+        """
+        return self.get_resources().outputs
+
+    @property
+    def original_run(self) -> Optional["PipelineRunResponse"]:
+        """The `original_run` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().original_run
+
+    @property
+    def parent_run(self) -> Optional["PipelineRunResponse"]:
+        """The `parent_run` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().parent_run
+
+    @property
+    def active_wait_condition(self) -> Optional["RunWaitConditionResponse"]:
+        """The `active_wait_condition` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().active_wait_condition
+
+    @property
+    def pipeline_id(self) -> UUID | None:
+        """The `pipeline_id` property.
+
+        Returns:
+            The ID of the pipeline this run is associated with.
+        """
+        return self.get_body().pipeline_id
+
+    @property
+    def child_key(self) -> Optional[str]:
+        """The `child_key` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().child_key
+
+    @property
+    def root_run_id(self) -> Optional[UUID]:
+        """The `root_run_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().root_run_id
 
 
 # ------------------ Filter Model ------------------
@@ -705,6 +873,8 @@ class PipelineRunFilter(
         "triggered_by_step_run_id",
         "triggered_by_deployment_id",
         "linked_to_model_version_id",
+        "trigger_id",
+        "root_runs_only",
     ]
     CLI_EXCLUDE_FIELDS = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
@@ -840,6 +1010,21 @@ class PipelineRunFilter(
         description="The ID of the deployment that triggered this pipeline run.",
         union_mode="left_to_right",
     )
+    trigger_id: UUID | str | None = Field(
+        default=None,
+        description="The ID of the trigger that generated this pipeline run.",
+        union_mode="left_to_right",
+    )
+    parent_run_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="The parent run ID for nested child pipeline runs.",
+        union_mode="left_to_right",
+    )
+    # TODO: Remove this once we support filtering for `parent_run_id is NULL`
+    root_runs_only: Optional[bool] = Field(
+        default=None,
+        description="Whether to include only root runs. Ignored if False.",
+    )
     model_config = ConfigDict(protected_namespaces=())
 
     def get_custom_filters(
@@ -874,6 +1059,7 @@ class PipelineRunFilter(
             StackCompositionSchema,
             StackSchema,
             StepRunSchema,
+            TriggerExecutionSchema,
         )
 
         if self.code_repository_id:
@@ -1066,6 +1252,20 @@ class PipelineRunFilter(
                 ),
             )
             custom_filters.append(linked_to_model_version_filter)
+
+        if self.trigger_id:
+            custom_filters.append(
+                and_(
+                    PipelineRunSchema.id
+                    == TriggerExecutionSchema.pipeline_run_id,
+                    TriggerExecutionSchema.trigger_id == self.trigger_id,
+                )
+            )
+
+        if self.root_runs_only is True:
+            custom_filters.append(
+                col(PipelineRunSchema.parent_run_id).is_(None)
+            )
 
         return custom_filters
 

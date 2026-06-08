@@ -14,8 +14,6 @@
 
 from uuid import uuid4
 
-import pytest
-
 from zenml.enums import ExecutionStatus
 from zenml.orchestrators import publish_utils
 
@@ -68,42 +66,6 @@ def test_publishing_a_failed_pipeline_run(mocker):
     _, call_kwargs = mock_update_run.call_args
     assert call_kwargs["run_id"] == pipeline_run_id
     assert call_kwargs["run_update"].status == ExecutionStatus.FAILED
-
-
-@pytest.mark.parametrize(
-    "step_statuses, num_steps, expected_run_status",
-    [
-        (
-            [ExecutionStatus.COMPLETED, ExecutionStatus.FAILED],
-            2,
-            ExecutionStatus.FAILED,
-        ),
-        ([ExecutionStatus.COMPLETED], 2, ExecutionStatus.RUNNING),
-        (
-            [ExecutionStatus.COMPLETED, ExecutionStatus.RUNNING],
-            2,
-            ExecutionStatus.RUNNING,
-        ),
-        (
-            [ExecutionStatus.COMPLETED, ExecutionStatus.COMPLETED],
-            2,
-            ExecutionStatus.COMPLETED,
-        ),
-    ],
-)
-def test_pipeline_run_status_computation(
-    step_statuses, num_steps, expected_run_status
-):
-    """Tests computing a pipeline run status from step statuses."""
-    assert (
-        publish_utils.get_pipeline_run_status(
-            run_status=ExecutionStatus.RUNNING,
-            step_statuses=step_statuses,
-            num_steps=num_steps,
-            is_dynamic_pipeline=False,
-        )
-        == expected_run_status
-    )
 
 
 def test_publish_pipeline_run_metadata(mocker):

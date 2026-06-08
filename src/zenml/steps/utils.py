@@ -24,6 +24,8 @@ from typing import (
     Any,
     Callable,
     Dict,
+    ForwardRef,
+    Mapping,
     Optional,
     Tuple,
     TypeVar,
@@ -31,7 +33,8 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, create_model
+from pydantic.errors import PydanticUndefinedAnnotation
 from typing_extensions import Annotated
 
 from zenml.artifacts.artifact_config import ArtifactConfig
@@ -104,9 +107,108 @@ def get_args(obj: Any) -> Tuple[Any, ...]:
     )
 
 
+def _resolve_annotation(annotation: Any, globalns: Mapping[str, Any]) -> Any:
+    """Resolve a single string / ForwardRef annotation to a live type.
+
+    Args:
+        annotation: The annotation to resolve. Live (non-string) annotations
+            are returned unchanged.
+        globalns: Namespace used to resolve forward references against.
+
+    Returns:
+        The resolved annotation. `Annotated[T, ...]` wrappers are
+        reconstructed so metadata (e.g. `ArtifactConfig`) survives.
+    """
+    if not isinstance(annotation, (str, ForwardRef)):
+        return annotation
+
+    model = create_model(
+        "AnnotationResolver",
+        __config__=ConfigDict(arbitrary_types_allowed=True),
+        x=(annotation, ...),
+    )
+    model.model_rebuild(_types_namespace=globalns)
+
+    field = model.model_fields["x"]
+    resolved: Any = field.annotation
+    if field.metadata:
+        resolved = Annotated[(resolved, *field.metadata)]
+    return resolved
+
+
+def get_resolved_signature(func: Callable[..., Any]) -> inspect.Signature:
+    """Return signature with string annotations resolved.
+
+    Parameter annotations that fail to resolve are replaced with `Any` and
+    a warning is logged. An unresolved return annotation raises
+    `StepInterfaceError` because picking the wrong materializer would silently
+    break the run.
+
+    Annotations are resolved against `inspect.unwrap(func).__globals__` -
+    the module where the function is defined. Locally-scoped types (e.g.
+    those defined inside a test function) are not visible and will fall back
+    to `Any` for inputs / raise for the return.
+
+    Args:
+        func: The function whose signature should be resolved.
+
+    Raises:
+        StepInterfaceError: If the return annotation cannot be resolved.
+
+    Returns:
+        The signature with string / ForwardRef annotations replaced by live
+        types where possible.
+    """
+    sig = inspect.signature(func, follow_wrapped=True)
+    globalns = getattr(inspect.unwrap(func), "__globals__", {})
+
+    new_parameters = []
+    for name, parameter in sig.parameters.items():
+        if parameter.annotation is inspect.Parameter.empty:
+            new_parameters.append(parameter)
+            continue
+        try:
+            resolved = _resolve_annotation(parameter.annotation, globalns)
+        except PydanticUndefinedAnnotation as e:
+            logger.warning(
+                "Could not resolve type annotation '%s' for input '%s' of "
+                "function '%s': %s. Falling back to `Any`. Make sure the "
+                "type is importable at runtime in the module where the "
+                "function is defined (e.g. fix typos, missing imports, or "
+                "move imports out of `if TYPE_CHECKING:` blocks).",
+                parameter.annotation,
+                name,
+                func.__name__,
+                e,
+            )
+            resolved = Any
+        new_parameters.append(parameter.replace(annotation=resolved))
+
+    return_annotation = sig.return_annotation
+    if return_annotation is not inspect.Signature.empty:
+        try:
+            return_annotation = _resolve_annotation(
+                return_annotation, globalns
+            )
+        except PydanticUndefinedAnnotation as e:
+            raise StepInterfaceError(
+                f"Could not resolve return type annotation "
+                f"'{sig.return_annotation}' for function '{func.__name__}': "
+                f"{e}. Make sure the type is importable at runtime in the "
+                f"module where the function is defined (e.g. fix typos, "
+                f"missing imports, or move imports out of "
+                f"`if TYPE_CHECKING:` blocks)."
+            ) from e
+
+    return sig.replace(
+        parameters=new_parameters, return_annotation=return_annotation
+    )
+
+
 def parse_return_type_annotations(
     func: Callable[..., Any],
     enforce_type_annotations: bool = False,
+    resolved_signature: Optional[inspect.Signature] = None,
 ) -> Dict[str, OutputSignature]:
     """Parse the return type annotation of a step function.
 
@@ -114,22 +216,26 @@ def parse_return_type_annotations(
         func: The step function.
         enforce_type_annotations: If `True`, raises an exception if a type
             annotation is missing.
+        resolved_signature: A pre-computed resolved signature for `func`. If
+            omitted, the signature is resolved here. Pass this to avoid the
+            (potentially expensive) re-resolution.
 
     Raises:
         RuntimeError: If the output annotation has variable length or contains
-            duplicate output names.
-        RuntimeError: If type annotations should be enforced and a type
-            annotation is missing.
+            duplicate output names, or if type annotations should be enforced
+            and a type annotation is missing.
 
     Returns:
         - A dictionary mapping output names to their output signatures.
     """
-    signature = inspect.signature(func, follow_wrapped=True)
+    signature = resolved_signature or get_resolved_signature(func)
     return_annotation = signature.return_annotation
     output_name: Optional[str]
 
-    # Return type annotated as `None`
-    if return_annotation is None:
+    # Return type annotated as `None`. Pydantic normalizes a `None`
+    # annotation to `type(None)` when resolving stringized annotations
+    # (e.g. under `from __future__ import annotations`), so handle both.
+    if return_annotation is None or return_annotation is type(None):
         return {}
 
     # Return type not annotated -> check whether `None` or `Any` should be used
@@ -332,7 +438,7 @@ class OnlyNoneReturnsVisitor(ReturnVisitor):
             node: The return statement to visit.
         """
         if node.value is not None:
-            if isinstance(node.value, (ast.Constant, ast.NameConstant)):
+            if isinstance(node.value, ast.Constant):
                 if node.value.value is None:
                     return
 
@@ -501,7 +607,10 @@ def log_step_metadata(
 
 
 def run_as_single_step_pipeline(
-    __step: "BaseStep", *args: Any, **kwargs: Any
+    __step: "BaseStep",
+    __pipeline_name: Optional[str],
+    *args: Any,
+    **kwargs: Any,
 ) -> Any:
     """Runs the step as a single step pipeline.
 
@@ -511,6 +620,8 @@ def run_as_single_step_pipeline(
     that was used to store them.
 
     Args:
+        __step: The step to run.
+        __pipeline_name: The name to use for the pipeline.
         *args: Entrypoint function arguments.
         **kwargs: Entrypoint function keyword arguments.
 
@@ -557,10 +668,14 @@ def run_as_single_step_pipeline(
     pipeline_settings: Any = {}
     if "synchronous" in type(orchestrator.config).model_fields:
         # Make sure the orchestrator runs sync so we stream the logs
-        key = settings_utils.get_stack_component_setting_key(orchestrator)
+        key = settings_utils.get_stack_component_name_setting_key(orchestrator)
         pipeline_settings[key] = BaseSettings(synchronous=True)
 
-    @pipeline(name=__step.name, enable_cache=False, settings=pipeline_settings)
+    @pipeline(
+        name=__pipeline_name or __step.name,
+        enable_cache=False,
+        settings=pipeline_settings,
+    )
     def single_step_pipeline() -> None:
         __step(**inputs)
 

@@ -75,19 +75,29 @@ class MaterializerRegistry:
             `BaseMaterializer` subclass that was registered for this key.
         """
         if isinstance(key, str):
+            # This shouldn't happen unless users manually call this method, as
+            # we always resolve output type annotations before trying to get a
+            # materializer.
             raise RuntimeError(
-                "String type annotations (e.g. `def my_step() -> "
-                "'np.ndarray`) are not supported yet for step outputs. Please "
-                "change to actual type annotations (e.g. `def my_step() -> "
-                "np.ndarray`) and remove any "
-                "`from __future__ import annotations` in modules where "
-                "your steps are defined."
+                "Unable to get materializer for a string type annotation. "
+                "Resolve your type annotation before calling this method."
             )
 
         for class_ in key.__mro__:
             materializer = self.materializer_types.get(class_, None)
             if materializer:
                 return materializer
+
+        # TODO: We could handle dataclasses better if the registry allowed
+        # registering materializer classes with some predicate instead of just
+        # doing superclass checks. This would also allows us to not use the
+        # pydantic materializer in cases where the pydantic object contains
+        # non-json serializable fields.
+        from zenml.materializers import DataclassMaterializer
+
+        if DataclassMaterializer.can_save_type(key):
+            return DataclassMaterializer
+
         return self.get_default_materializer()
 
     def get_default_materializer(self) -> Type["BaseMaterializer"]:
@@ -114,18 +124,6 @@ class MaterializerRegistry:
             A dictionary of registered materializer types.
         """
         return self.materializer_types
-
-    def is_registered(self, key: Type[Any]) -> bool:
-        """Returns if a materializer class is registered for the given type.
-
-        Args:
-            key: Indicates the type of object.
-
-        Returns:
-            True if a materializer is registered for the given type, False
-            otherwise.
-        """
-        return any(issubclass(key, type_) for type_ in self.materializer_types)
 
 
 materializer_registry = MaterializerRegistry()

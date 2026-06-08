@@ -53,6 +53,47 @@ model, accuracy = train_classifier.entrypoint(X_train=X_train, y_train=y_train)
 
 You can make this the default behavior by setting the `ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK` environment variable to `True`.
 
+### Step signatures, definitions, and semantic types
+
+A ZenML step is usually written as a normal Python function at module level:
+
+```python
+from zenml import step
+
+@step
+def train_model(dataset_path: str, *, epochs: int = 10) -> None:
+    ...
+```
+
+Keyword-only arguments, like `epochs` in the example above, are supported and
+are treated as normal step inputs. This is useful when you want a call site to be
+explicit about important values. Variadic signatures such as `*args` and
+`**kwargs` are not valid step inputs because ZenML needs to know the step
+interface before the pipeline runs.
+
+For production code, define the underlying Python functions for your steps and
+pipelines at module level. They are easier to import, package, test, and review
+that way. If you need a factory-style pattern, you can wrap those top-level
+functions with `@step` or `@pipeline(dynamic=True)` inside another function, but
+the decorated function itself should still be importable from a module.
+
+You can also add semantic metadata to a step with `step_type`:
+
+```python
+from zenml import step
+from zenml.enums import StepType
+
+@step(step_type=StepType.LLM_CALL)
+def summarize_prompt(prompt: str) -> str:
+    ...
+```
+
+The current step types are `StepType.TOOL_CALL`, `StepType.LLM_CALL`, and
+`StepType.MEMORY_CALL`. Think of this as a label on the step run: it does not
+change how your Python function executes, but it gives the dashboard, DAG
+metadata, and downstream consumers a clearer story about what kind of work the
+step represents.
+
 ### Asynchronous Pipeline Execution
 
 By default, pipelines run synchronously, with terminal logs displaying as the pipeline builds and runs. You can change this behavior to run pipelines asynchronously (in the background):
@@ -112,7 +153,7 @@ from zenml import pipeline
 from zenml.enums import ExecutionMode
 
 # Use the decorator
-@pipeline(execution_mode=ExecutionMode.CONTINUE_ON_ERROR)
+@pipeline(execution_mode=ExecutionMode.CONTINUE_ON_FAILURE)
 def my_pipeline():
     ...
 
@@ -759,3 +800,5 @@ These advanced features provide powerful capabilities for building sophisticated
 See also:
 - [Steps & Pipelines](./steps_and_pipelines.md) - Core building blocks
 - [YAML Configuration](./yaml_configuration.md) - YAML configuration 
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

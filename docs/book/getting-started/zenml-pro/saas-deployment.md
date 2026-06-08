@@ -29,8 +29,8 @@ In a SaaS deployment, ZenML manages all server infrastructure while your sensiti
 | Pro Control Plane | ZenML Infrastructure | Handles authentication, RBAC, and workspace management |
 | Metadata Store | ZenML Infrastructure | Stores pipeline runs, model metadata, and tracking information |
 | Secrets Store | ZenML Infrastructure (default) | Stores credentials for accessing your infrastructure |
-| Compute Resources | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Executes pipeline steps and training jobs |
-| Data & Artifacts | Your infrastructure through [stacks](https://docs.zenml.io/stacks) | Stores datasets, models, and pipeline artifacts |
+| Compute Resources | Your infrastructure through [stacks](https://docs.zenml.io/concepts/stack_components) | Executes pipeline steps and training jobs |
+| Data & Artifacts | Your infrastructure through [stacks](https://docs.zenml.io/concepts/stack_components) | Stores datasets, models, and pipeline artifacts |
 
 ## Key Benefits
 
@@ -72,11 +72,11 @@ This keeps all credentials within your infrastructure while still benefiting fro
 
 ### Core Platform
 
-ZenML Pro SaaS requires no inbound connectivity into your infrastructure. All communication is initiated from your environment to ZenML, keeping your systems protected behind your firewall.
+ZenML Pro SaaS generally requires no inbound connectivity into your infrastructure. All communication is initiated from your environment to ZenML, keeping your systems protected behind your firewall.
 
 ### Features Requiring Limited Ingress
 
-Some features require you to whitelist ZenML to access specific resources in your environment. These include artifact visualizations (which need limited access to your artifact store), step logs (which need limited access to your artifact store or log collector), and running Snapshots (which relies on limited access to your orchestration environment). You control this access by configuring appropriate cloud IAM permissions.
+Some optional features may require you to whitelist ZenML to access specific resources in your environment. These include artifact visualizations (which need limited access to your artifact store), step logs (which need limited access to your artifact store or log collector), and running Snapshots (which relies on limited access to your orchestration environment). You control this access by configuring appropriate cloud IAM permissions.
 
 ## Getting Started
 
@@ -108,9 +108,11 @@ Already running ZenML OSS? Migrating to SaaS is possible with the assistance of 
 - [Scenarios](scenarios.md)
 - [Hybrid SaaS Deployment](hybrid-deployment.md)
 - [Self-hosted Deployment](self-hosted-deployment.md)
-- [Configuration Details](configuration-details.md)
+- [Deployment Details](deploy-details.md)
 - [Upgrades and Updates](upgrades-updates.md)
 
 ## Get Started
 
 Ready to get started with ZenML Pro SaaS? [Book a Demo](https://www.zenml.io/book-your-demo) or [contact us](mailto:cloud@zenml.io) with questions.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

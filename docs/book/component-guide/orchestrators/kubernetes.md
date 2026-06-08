@@ -119,6 +119,19 @@ E.g., you can use these labels to manually delete all pods related to a specific
 kubectl delete pod -n zenml -l pipeline=kubernetes_example_pipeline
 ```
 
+ZenML sanitizes these label values before sending them to Kubernetes. Invalid
+characters are replaced, leading/trailing punctuation is removed, and values are
+truncated to fit Kubernetes label limits. In practice, a pipeline called
+`My GPU Pipeline!!!` will not appear as that exact string in a label selector.
+If a selector using the raw name does not match anything, inspect one of the
+created pods first:
+
+```shell
+kubectl get pods -n zenml --show-labels
+```
+
+Then copy the sanitized label value from Kubernetes.
+
 ### Additional configuration
 
 Some configuration options for the Kubernetes orchestrator can only be set through the orchestrator config when you register it (and cannot be changed per-run or per-step through the settings):
@@ -159,7 +172,59 @@ the chance of the server receiving the maximum amount of retry requests.
 - **`job_monitoring_interval`** (default 3): The interval in seconds to monitor the job. Each interval is used to check for container issues and streaming logs for the job pods.
 - **`max_parallelism`**: By default the Kubernetes orchestrator immediately spins up a pod for every step that can run already because all its upstream steps have finished. For pipelines with many parallel steps, it can be desirable to limit the amount of parallel steps in order to reduce the load on the Kubernetes cluster. This option can be used to specify the maximum amount of steps pods that can be running at any time.
 - **`successful_jobs_history_limit`**, **`failed_jobs_history_limit`**, **`ttl_seconds_after_finished`**: Control the cleanup behavior of jobs and pods created by the orchestrator.
+- **`concurrency_policy`**: CronJob concurrency policy for scheduled pipelines. Controls whether concurrent job executions are allowed. Valid values: `Allow` (Kubernetes default), `Forbid`, `Replace`. Only applies when a pipeline has a cron schedule.
+- **`starting_deadline_seconds`**: CronJob starting deadline in seconds for scheduled pipelines. If a scheduled run misses its trigger time, it can still start within this window. Only applies when a pipeline has a cron schedule. Note: this is different from `active_deadline_seconds`, which limits how long a *running* job can execute.
 - **`prevent_orchestrator_pod_caching`** (default: False): If `True`, the orchestrator pod will not try to compute cached steps before starting the step pods.
+
+#### Kubernetes permissions and service accounts
+
+For production setups, use separate identities for:
+
+1. the identity that starts the orchestrator job (typically via a linked Service
+   Connector),
+2. the service account used by the orchestrator pod,
+3. the service account used by step pods.
+
+Using one service account for all three works, but it is broader than
+necessary.
+
+**Starter identity (Service Connector / kubeconfig identity)**
+
+Minimum permissions to start a non-scheduled orchestrator run:
+
+- `batch/jobs`: `create`
+
+Common optional permissions:
+
+- For synchronous startup monitoring from the submitter:
+  - `batch/jobs`: `get`
+  - `core/pods`: `list`
+  - `core/pods/log`: `get`
+- For scheduled pipelines (CronJobs):
+  - `batch/cronjobs`: `create`, `patch`, `delete`
+- If `pass_zenml_token_as_secret=True`:
+  - `core/secrets`: `create`, `patch`, `delete`
+- If you let ZenML auto-create the default `zenml-service-account`:
+  - `core/serviceaccounts`: `create`
+  - `rbac.authorization.k8s.io/rolebindings`: `create`
+
+**Orchestrator pod service account (`service_account_name`)**
+
+The orchestrator pod launches and monitors step jobs. It needs:
+
+- `batch/jobs`: `create`, `get`, `list`, `patch`, `delete`
+- `core/pods`: `get`, `list`
+- `core/pods/log`: `get`
+
+If `pass_zenml_token_as_secret=True`, also grant:
+
+- `core/secrets`: `delete`
+
+**Step pod service account (`step_pod_service_account_name`)**
+
+Step containers do not need Kubernetes API access for normal execution in this
+orchestrator flow. Unless your step code explicitly calls the Kubernetes API,
+you can keep this account with no additional Kubernetes RBAC grants.
 
 ```python
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import KubernetesOrchestratorSettings
@@ -377,6 +442,35 @@ scheduled_pipeline = my_kubernetes_pipeline.with_options(schedule=schedule)
 # Run the pipeline once to register the schedule
 scheduled_pipeline()
 ```
+
+#### Customizing CronJob behavior
+
+You can customize the CronJob configuration using `KubernetesOrchestratorSettings`. This is useful when your cluster has specific policies for CronJob resources:
+
+```python
+from zenml.integrations.kubernetes.flavors import KubernetesOrchestratorSettings
+
+k8s_settings = KubernetesOrchestratorSettings(
+    concurrency_policy="Forbid",            # Prevent concurrent job executions
+    starting_deadline_seconds=20,           # Missed-schedule start window
+    successful_jobs_history_limit=2,        # Keep last 2 successful jobs
+    failed_jobs_history_limit=1,            # Keep last 1 failed job
+    active_deadline_seconds=180,            # Job runtime limit (3 minutes)
+    orchestrator_job_backoff_limit=2,       # Max retries before marking failed
+    ttl_seconds_after_finished=3600,        # Cleanup completed jobs after 1 hour
+    pod_stop_grace_period=90,               # Graceful shutdown window
+)
+
+scheduled_pipeline = my_kubernetes_pipeline.with_options(
+    schedule=schedule,
+    settings={"orchestrator.kubernetes": k8s_settings},
+)
+scheduled_pipeline()
+```
+
+{% hint style="info" %}
+`starting_deadline_seconds` controls how late a CronJob can start after its scheduled time (missed-schedule window), while `active_deadline_seconds` limits how long a running job can execute (runtime timeout). These are independent settings that apply at different stages of the job lifecycle.
+{% endhint %}
 
 Cron expressions follow the standard format (`minute hour day-of-month month day-of-week`):
 

@@ -27,6 +27,7 @@ from zenml.config.base_settings import BaseSettings
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.kubernetes import KUBERNETES_ORCHESTRATOR_FLAVOR
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
+from zenml.logger import get_logger
 from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 from zenml.utils import deprecation_utils
@@ -35,6 +36,8 @@ if TYPE_CHECKING:
     from zenml.integrations.kubernetes.orchestrators import (
         KubernetesOrchestrator,
     )
+
+logger = get_logger(__name__)
 
 
 class KubernetesOrchestratorSettings(BaseSettings):
@@ -86,6 +89,20 @@ class KubernetesOrchestratorSettings(BaseSettings):
     failed_jobs_history_limit: Optional[NonNegativeInt] = Field(
         default=None,
         description="Number of failed scheduled jobs to retain in history.",
+    )
+    concurrency_policy: Optional[str] = Field(
+        default=None,
+        description="CronJob concurrency policy for scheduled pipelines. "
+        "Controls whether concurrent job executions are allowed. "
+        "Valid values: 'Allow', 'Forbid', 'Replace'. "
+        "Only applies when a pipeline has a cron schedule",
+    )
+    starting_deadline_seconds: Optional[NonNegativeInt] = Field(
+        default=None,
+        description="CronJob starting deadline in seconds for scheduled "
+        "pipelines. If a scheduled run misses its trigger time, it can "
+        "still start within this window. Only applies when a pipeline "
+        "has a cron schedule",
     )
     ttl_seconds_after_finished: Optional[NonNegativeInt] = Field(
         default=None,
@@ -164,6 +181,10 @@ class KubernetesOrchestratorSettings(BaseSettings):
         default=30,
         description="When stopping a pipeline run, the amount of seconds to wait for a step pod to shutdown gracefully.",
     )
+    api_request_timeout: Optional[PositiveInt] = Field(
+        default=None,
+        description="Timeout for API requests in seconds. If not specified, no explicit timeout will be set. ",
+    )
 
     # Deprecated fields
     timeout: Optional[int] = Field(
@@ -212,6 +233,33 @@ class KubernetesOrchestratorSettings(BaseSettings):
         ("pod_name_prefix", "job_name_prefix"),
     )
 
+    @field_validator("concurrency_policy", mode="before")
+    @classmethod
+    def _validate_concurrency_policy(cls, value: Any) -> Any:
+        """Validates and normalizes the CronJob concurrency policy.
+
+        Args:
+            value: The concurrency policy value.
+
+        Returns:
+            The normalized value.
+
+        Raises:
+            ValueError: If the value is not a valid concurrency policy.
+        """
+        if value is None:
+            return value
+
+        allowed = {"Allow", "Forbid", "Replace"}
+        # Normalize: capitalize first letter, lowercase rest
+        normalized = str(value).strip().capitalize()
+        if normalized not in allowed:
+            raise ValueError(
+                f"Invalid concurrency policy '{value}'. "
+                f"Must be one of: {', '.join(sorted(allowed))}"
+            )
+        return normalized
+
     @field_validator("pod_failure_policy", mode="before")
     @classmethod
     def _convert_pod_failure_policy(cls, value: Any) -> Any:
@@ -231,6 +279,25 @@ class KubernetesOrchestratorSettings(BaseSettings):
             return serialization_utils.serialize_kubernetes_model(value)
         else:
             return value
+
+    @field_validator("api_request_timeout", mode="before")
+    @classmethod
+    def api_request_timeout_validator(cls, value: Any) -> Any:
+        """Validates API request timeout.
+
+        Args:
+            value: The API request timeout value.
+
+        Returns:
+            The validated value in integer format.
+        """
+        if isinstance(value, float):
+            logger.warning(
+                f"Converted `api_request_timeout` from float to int: {value} -> {int(value)}. "
+                "Consider updating the Orchestrator settings."
+            )
+            return int(value)
+        return value
 
 
 class KubernetesOrchestratorConfig(

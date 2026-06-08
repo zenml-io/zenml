@@ -94,6 +94,8 @@ elif [[ "${CLOUD}" == "azure" ]]; then
   zenml integration install azure --uv -y
 elif [[ "${CLOUD}" == "gcp" ]]; then
   zenml integration install gcp --uv -y
+elif [[ "${CLOUD}" == "kubernetes_aws" ]]; then
+  zenml integration install kubernetes aws s3 --uv -y
 fi
 
 zenml stack set "${CLOUD_STACK}"

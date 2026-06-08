@@ -22,7 +22,7 @@ micro-setup (under 5 minutes) and any tips or gotchas to anticipate.
 
 Then ask: *"Use zenml-quick-wins to analyze this repo and recommend the top 3 quick wins to implement."*
 
-See [LLM tooling](../../reference/llms-txt.md) for setup instructions across different tools.
+ZenML also provides `zenml-scoping` (architecture planning) and `zenml-pipeline-authoring` (pipeline implementation) skills. See [LLM tooling](../../reference/llms-txt.md) for setup instructions across different tools.
 {% endhint %}
 
 | Quick Win | What it does | Why you need it |
@@ -929,3 +929,5 @@ echo "Reports generated: prod_stacks.json and stack_summary.csv"
 ```
 
 Learn more: [Environment Variables](https://docs.zenml.io/reference/environment-variables#cli-output-formatting)
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

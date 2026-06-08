@@ -1,0 +1,8 @@
+# Downloaded datasets
+data/emails.json
+data/full_*.json
+
+# Python
+__pycache__/
+*.pyc
+.zenml/

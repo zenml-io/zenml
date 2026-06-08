@@ -644,6 +644,7 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         "runnable",
         "deployable",
         "deployed",
+        "trigger_id",
     ]
     CUSTOM_SORTING_OPTIONS = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
@@ -701,6 +702,10 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
     deployed: Optional[bool] = Field(
         default=None,
         description="Whether the snapshot is deployed.",
+    )
+    trigger_id: UUID | None = Field(
+        default=None,
+        description="Trigger associated with the snapshot (attached).",
     )
 
     def get_custom_filters(
@@ -861,8 +866,52 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
 
         return query
 
+    def apply_filter(
+        self, query: "AnyQuery", table: Type["AnySchema"]
+    ) -> "AnyQuery":
+        """Applies the filter to a query.
 
-# ------------------ Trigger Model ------------------
+        Args:
+            query: The query to which to apply the filter.
+            table: The query table.
+
+        Returns:
+            The query with filter applied.
+        """
+        from sqlalchemy import func
+        from sqlalchemy.orm import aliased
+        from sqlmodel import col, select
+
+        from zenml.zen_stores.schemas import (
+            PipelineSnapshotSchema,
+            TriggerSnapshotSchema,
+        )
+
+        query = super().apply_filter(query=query, table=table)
+
+        if self.trigger_id is not None:
+            source_of_trigger_snapshot = aliased(PipelineSnapshotSchema)
+            query = query.where(
+                col(PipelineSnapshotSchema.id).in_(
+                    select(
+                        func.coalesce(
+                            source_of_trigger_snapshot.source_snapshot_id,
+                            source_of_trigger_snapshot.id,
+                        )
+                    )
+                    .join(
+                        TriggerSnapshotSchema,
+                        col(TriggerSnapshotSchema.snapshot_id)
+                        == source_of_trigger_snapshot.id,
+                    )
+                    .where(
+                        col(TriggerSnapshotSchema.trigger_id)
+                        == self.trigger_id
+                    )
+                )
+            )
+
+        return query
 
 
 class PipelineSnapshotRunRequest(BaseZenModel):

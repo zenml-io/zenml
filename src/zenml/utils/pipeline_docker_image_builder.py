@@ -39,10 +39,11 @@ from zenml.constants import (
     ENV_ZENML_CONFIG_PATH,
     ENV_ZENML_ENABLE_REPO_INIT_WARNINGS,
 )
+from zenml.container_engines import ContainerEngine, get_container_engine
 from zenml.enums import OperatingSystemType
 from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
-from zenml.utils import docker_utils, io_utils, source_utils
+from zenml.utils import io_utils, source_utils
 
 if TYPE_CHECKING:
     from zenml.code_repositories import BaseCodeRepository
@@ -121,8 +122,7 @@ class PipelineDockerImageBuilder:
             RuntimeError: If the stack does not contain an image builder.
             ValueError: If no Dockerfile and/or custom parent image is
                 specified and the Docker configuration doesn't require an
-                image build.
-            ValueError: If the specified Dockerfile does not exist.
+                image build, or if the specified Dockerfile does not exist.
         """
         requirements: Optional[str] = None
         dockerfile: Optional[str] = None
@@ -209,7 +209,7 @@ class PipelineDockerImageBuilder:
                         )
 
                 repository = repository or DEFAULT_ZENML_DOCKER_REPOSITORY
-                user_image_tag = docker_utils.sanitize_tag(
+                user_image_tag = ContainerEngine.sanitize_tag(
                     f"{tag}-intermediate-build"
                 )
                 user_image_name = f"{repository}:{user_image_tag}"
@@ -252,12 +252,11 @@ class PipelineDockerImageBuilder:
                     "installed."
                 )
             else:
-                # The parent image will be used directly to run the pipeline and
-                # needs to be tagged/pushed
-                docker_utils.tag_image(parent_image, target=target_image_name)
+                engine = get_container_engine()
+                engine.tag_image(parent_image, target=target_image_name)
                 if container_registry:
-                    image_name_or_digest = container_registry.push_image(
-                        target_image_name
+                    image_name_or_digest = engine.push_image(
+                        target_image_name, container_registry
                     )
                 else:
                     image_name_or_digest = target_image_name
@@ -332,7 +331,7 @@ class PipelineDockerImageBuilder:
                 # If the image is local, we don't need to pull it. Otherwise
                 # we play it safe and always pull in case the user pushed a new
                 # image for the given name and tag
-                pull_parent_image = not docker_utils.is_local_image(
+                pull_parent_image = not get_container_engine().is_image_local(
                     parent_image
                 )
 
@@ -731,6 +730,15 @@ class PipelineDockerImageBuilder:
         """
         lines = [f"FROM {parent_image}", f"WORKDIR {DOCKER_IMAGE_WORKDIR}"]
 
+        if (
+            docker_settings.build_config
+            and docker_settings.build_config.build_options
+        ):
+            b_args = docker_settings.build_config.build_options.build_args
+            if b_args:
+                for arg_key in b_args.keys():
+                    lines.append(f"ARG {arg_key}")
+
         for key, value in docker_settings.environment.items():
             lines.append(f"ENV {key.upper()}='{value}'")
 
@@ -762,6 +770,16 @@ class PipelineDockerImageBuilder:
             **default_installer_args,
             **docker_settings.python_package_installer_args,
         }
+
+        cache_mount = docker_settings.python_package_installer_cache_mount
+        if cache_mount:
+            # Drop the default --no-cache-dir argument if a cache mount is
+            # configured
+            installer_args.pop("no-cache-dir", None)
+            run_directive = f"RUN --mount={cache_mount}"
+        else:
+            run_directive = "RUN"
+
         installer_args_string = " ".join(
             f"--{key}" if value is None else f"--{key}={value}"
             for key, value in installer_args.items()
@@ -771,7 +789,7 @@ class PipelineDockerImageBuilder:
             option_string = " ".join(options)
 
             lines.append(
-                f"RUN {install_command} {installer_args_string}"
+                f"{run_directive} {install_command} {installer_args_string}"
                 f"{option_string} -r {file}"
             )
 
@@ -785,7 +803,7 @@ class PipelineDockerImageBuilder:
 
         if docker_settings.local_project_install_command:
             lines.append(
-                f"RUN {docker_settings.local_project_install_command}"
+                f"{run_directive} {docker_settings.local_project_install_command}"
             )
 
         if docker_settings.user:

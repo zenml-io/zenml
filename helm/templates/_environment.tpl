@@ -116,18 +116,19 @@ ssl_key: {{ .ZenML.database.sslKey.value | quote }}
 {{/*
 Store configuration environment variables (non-secret values).
 
-Passes the .Values.zenml dict as input to the `zenml.storeConfigurationAttrs`
-template and converts the output into a dictionary of environment variables that
-need to be configured for the store.
+Resolves server values and passes them as input to the
+`zenml.storeConfigurationAttrs` template, converting the output into a
+dictionary of environment variables that need to be configured for the store.
 
 Args:
-  .Values: The values.yaml file for the ZenML deployment.
+  .: The root context containing .Values
 Returns:
   A dictionary with the non-secret environment variables that are configured for
   the store (i.e. keys starting with `ZENML_STORE_`).
 */}}
 {{- define "zenml.storeEnvVariables" -}}
-{{ $zenml := dict "ZenML" .Values.zenml }}
+{{- $server := include "zenml.serverValues" . | fromYaml -}}
+{{ $zenml := dict "ZenML" $server }}
 {{- range $k, $v := include "zenml.storeConfigurationAttrs" $zenml | fromYaml }}
 ZENML_STORE_{{ $k | upper }}: {{ $v | quote }}
 {{- end }}
@@ -137,18 +138,19 @@ ZENML_STORE_{{ $k | upper }}: {{ $v | quote }}
 {{/*
 Store configuration environment variables (secret values).
 
-Passes the .Values.zenml dict as input to the `zenml.storeSecretConfigurationAttrs`
-template and converts the output into a dictionary of environment variables that
-need to be configured for the store.
+Resolves server values and passes them as input to the
+`zenml.storeSecretConfigurationAttrs` template, converting the output into a
+dictionary of environment variables that need to be configured for the store.
 
 Args:
-  .Values: The values.yaml file for the ZenML deployment.
+  .: The root context containing .Values
 Returns:
   A dictionary with the secret environment variables that are configured for
   the store (i.e. keys starting with `ZENML_STORE_`).
 */}}
 {{- define "zenml.storeSecretEnvVariables" -}}
-{{ $zenml := dict "ZenML" .Values.zenml }}
+{{- $server := include "zenml.serverValues" . | fromYaml -}}
+{{ $zenml := dict "ZenML" $server }}
 {{- range $k, $v := include "zenml.storeSecretConfigurationAttrs" $zenml | fromYaml }}
 ZENML_STORE_{{ $k | upper }}: {{ $v | quote }}
 {{- end }}
@@ -238,6 +240,20 @@ request_timeout: {{ .ZenML.requestTimeout | quote }}
 {{- if .ZenML.requestCacheTimeout }}
 request_cache_timeout: {{ .ZenML.requestCacheTimeout | quote }}
 {{- end }}
+{{- if .ZenML.streaming }}
+{{- if .ZenML.streaming.streamBrokerImplementationSource }}
+stream_broker_implementation_source: {{ .ZenML.streaming.streamBrokerImplementationSource | quote }}
+{{- end }}
+{{- if .ZenML.streaming.heartbeatSeconds }}
+streaming_heartbeat_seconds: {{ .ZenML.streaming.heartbeatSeconds | quote }}
+{{- end }}
+{{- if .ZenML.streaming.maxSubscribersPerStream }}
+streaming_max_subscribers_per_stream: {{ .ZenML.streaming.maxSubscribersPerStream | quote }}
+{{- end }}
+{{- if .ZenML.streaming.broadcasterIdleGraceSeconds }}
+streaming_broadcaster_idle_grace_seconds: {{ .ZenML.streaming.broadcasterIdleGraceSeconds | quote }}
+{{- end }}
+{{- end }}
 {{- if .ZenML.auth.jwtTokenAlgorithm }}
 jwt_token_algorithm: {{ .ZenML.auth.jwtTokenAlgorithm | quote }}
 {{- end }}
@@ -286,18 +302,19 @@ secure_headers_{{ $key }}: {{ $value | quote }}
 {{/*
 Server configuration environment variables (non-secret values).
 
-Passes the .Values.zenml dict as input to the `zenml.serverConfigurationAttrs`
-template and converts the output into a dictionary of environment variables that
-need to be configured for the server.
+Resolves server values and passes them as input to the
+`zenml.serverConfigurationAttrs` template, converting the output into a
+dictionary of environment variables that need to be configured for the server.
 
 Args:
-  .Values: The values.yaml file for the ZenML deployment.
+  .: The root context containing .Values
 Returns:
   A dictionary with the non-secret environment variables that are configured for
   the server (i.e. keys starting with `ZENML_SERVER_`).
 */}}
 {{- define "zenml.serverEnvVariables" -}}
-{{ $zenml := dict "ZenML" .Values.zenml }}
+{{- $server := include "zenml.serverValues" . | fromYaml -}}
+{{ $zenml := dict "ZenML" $server }}
 {{- range $k, $v := include "zenml.serverConfigurationAttrs" $zenml | fromYaml }}
 ZENML_SERVER_{{ $k | upper }}: {{ $v | quote }}
 {{- end }}
@@ -498,19 +515,19 @@ app_secret_id: {{ .SecretsStore.hashicorp.authConfig.app_secret_id | quote }}
 {{/*
 Primary secrets store environment variables (non-secret values).
 
-Passes the .Values.zenml.secretsStore dict as input to the
-`zenml.secretsStoreEnvVariables` template and converts the output into a
-dictionary of environment variables that need to be configured for the primary
-secrets store.
+Resolves server values and passes the secretsStore config as input to the
+`zenml.secretsStoreConfigurationAttrs` template, converting the output into a
+dictionary of environment variables for the primary secrets store.
 
 Args:
-  .Values: The values.yaml file for the ZenML deployment.
+  .: The root context containing .Values
 Returns:
   A dictionary with the non-secret environment variables that are configured for
   the primary secrets store (i.e. keys starting with `ZENML_SECRETS_STORE_`).
 */}}
 {{- define "zenml.secretsStoreEnvVariables" -}}
-{{ $secretsStore := dict "SecretsStore" .Values.zenml.secretsStore }}
+{{- $server := include "zenml.serverValues" . | fromYaml -}}
+{{ $secretsStore := dict "SecretsStore" $server.secretsStore }}
 {{- range $k, $v := include "zenml.secretsStoreConfigurationAttrs" $secretsStore | fromYaml }}
 ZENML_SECRETS_STORE_{{ $k | upper }}: {{ $v | quote }}
 {{- end }}
@@ -519,19 +536,19 @@ ZENML_SECRETS_STORE_{{ $k | upper }}: {{ $v | quote }}
 {{/*
 Primary secrets store environment variables (secret values).
 
-Passes the .Values.zenml.secretsStore dict as input to the
-`zenml.secretsStoreSecretEnvVariables` template and converts the output into a
-dictionary of environment variables that need to be configured for the primary
-secrets store as secrets.
+Resolves server values and passes the secretsStore config as input to the
+`zenml.secretsStoreSecretConfigurationAttrs` template, converting the output
+into secret environment variables for the primary secrets store.
 
 Args:
-  .Values: The values.yaml file for the ZenML deployment.
+  .: The root context containing .Values
 Returns:
   A dictionary with the secret environment variables that are configured for
   the primary secrets store (i.e. keys starting with `ZENML_SECRETS_STORE_`).
 */}}
 {{- define "zenml.secretsStoreSecretEnvVariables" -}}
-{{ $secretsStore := dict "SecretsStore" .Values.zenml.secretsStore }}
+{{- $server := include "zenml.serverValues" . | fromYaml -}}
+{{ $secretsStore := dict "SecretsStore" $server.secretsStore }}
 {{- range $k, $v := include "zenml.secretsStoreSecretConfigurationAttrs" $secretsStore | fromYaml }}
 ZENML_SECRETS_STORE_{{ $k | upper }}: {{ $v | quote }}
 {{- end }}
@@ -540,20 +557,20 @@ ZENML_SECRETS_STORE_{{ $k | upper }}: {{ $v | quote }}
 {{/*
 Backup secrets store environment variables (non-secret values).
 
-Passes the .Values.zenml.secretsStore dict as input to the
-`zenml.secretsStoreEnvVariables` template and converts the output into a
-dictionary of environment variables that need to be configured for the backup
-secrets store.
+Resolves server values and passes the backupSecretsStore config as input to
+the `zenml.secretsStoreConfigurationAttrs` template, converting the output
+into environment variables for the backup secrets store.
 
 Args:
-  .Values: The values.yaml file for the ZenML deployment.
+  .: The root context containing .Values
 Returns:
   A dictionary with the non-secret environment variables that are configured for
   the backup secrets store (i.e. keys starting with
   `ZENML_BACKUP_SECRETS_STORE_`).
 */}}
 {{- define "zenml.backupSecretsStoreEnvVariables" -}}
-{{ $secretsStore := dict "SecretsStore" .Values.zenml.backupSecretsStore }}
+{{- $server := include "zenml.serverValues" . | fromYaml -}}
+{{ $secretsStore := dict "SecretsStore" $server.backupSecretsStore }}
 {{- range $k, $v := include "zenml.secretsStoreConfigurationAttrs" $secretsStore | fromYaml }}
 ZENML_BACKUP_SECRETS_STORE_{{ $k | upper }}: {{ $v | quote }}
 {{- end }}
@@ -563,21 +580,86 @@ ZENML_BACKUP_SECRETS_STORE_{{ $k | upper }}: {{ $v | quote }}
 {{/*
 Backup secrets store environment variables (secret values).
 
-Passes the .Values.zenml.secretsStore dict as input to the
-`zenml.secretsStoreSecretEnvVariables` template and converts the output into a
-dictionary of environment variables that need to be configured for the backup
-secrets store as secrets.
+Resolves server values and passes the backupSecretsStore config as input to
+the `zenml.secretsStoreSecretConfigurationAttrs` template, converting the
+output into secret environment variables for the backup secrets store.
 
 Args:
-  .Values: The values.yaml file for the ZenML deployment.
+  .: The root context containing .Values
 Returns:
   A dictionary with the secret environment variables that are configured for
   the backup secrets store (i.e. keys starting with
   `ZENML_BACKUP_SECRETS_STORE_`).
 */}}
 {{- define "zenml.backupSecretsStoreSecretEnvVariables" -}}
-{{ $secretsStore := dict "SecretsStore" .Values.zenml.backupSecretsStore }}
+{{- $server := include "zenml.serverValues" . | fromYaml -}}
+{{ $secretsStore := dict "SecretsStore" $server.backupSecretsStore }}
 {{- range $k, $v := include "zenml.secretsStoreSecretConfigurationAttrs" $secretsStore | fromYaml}}
 ZENML_BACKUP_SECRETS_STORE_{{ $k | upper }}: {{ $v | quote }}
 {{- end }}
+{{- end }}
+
+
+{{/*
+Base environment variables for ZenML deployments.
+
+Returns a dictionary with common configuration env vars.
+*/}}
+{{- define "zenml.baseEnvVariables" -}}
+{{- $server := include "zenml.serverValues" . | fromYaml -}}
+ZENML_SERVER: "True"
+NODE_OPTIONS: "--use-openssl-ca"
+{{- if or $server.certificates.customCAs $server.certificates.secretRefs }}
+REQUESTS_CA_BUNDLE: "/updated-certs/ca-certificates.crt"
+SSL_CERT_FILE: "/updated-certs/ca-certificates.crt"
+{{- end }}
+{{- if $server.debug }}
+ZENML_LOGGING_VERBOSITY: "DEBUG"
+{{- end }}
+{{- if $server.analyticsOptIn }}
+ZENML_ANALYTICS_OPT_IN: "True"
+{{- else }}
+ZENML_ANALYTICS_OPT_IN: "False"
+{{- end }}
+ZENML_DEFAULT_PROJECT_NAME: {{ $server.defaultProject | quote }}
+{{- if $server.enableImplicitAuthMethods }}
+ZENML_ENABLE_IMPLICIT_AUTH_METHODS: "True"
+{{- end }}
+{{- if $server.proxy.enabled }}
+HTTP_PROXY: {{ $server.proxy.httpProxy | quote }}
+HTTPS_PROXY: {{ $server.proxy.httpsProxy | quote }}
+NO_PROXY: {{ include "zenml.noProxyList" . | quote }}
+http_proxy: {{ $server.proxy.httpProxy | quote }}
+https_proxy: {{ $server.proxy.httpsProxy | quote }}
+no_proxy: {{ include "zenml.noProxyList" . | quote }}
+{{- end }}
+{{- end }}
+
+
+{{/*
+Complete environment variables for ZenML server and worker deployments.
+
+This template constructs a dictionary of all non-secret environment variables
+needed for ZenML deployments. It merges (in order of increasing precedence):
+1. Base configuration (zenml.baseEnvVariables)
+2. Store configuration (zenml.storeEnvVariables)
+3. Server configuration (zenml.serverEnvVariables)
+4. Secrets store configuration (zenml.secretsStoreEnvVariables)
+5. Backup secrets store configuration (zenml.backupSecretsStoreEnvVariables)
+6. User-provided environment variables (server.environment)
+
+Args:
+  .: The root context containing .Values
+Returns:
+  A dictionary of environment variables ready to be converted to name/value pairs.
+*/}}
+{{- define "zenml.envVariables" -}}
+{{- $server := include "zenml.serverValues" . | fromYaml -}}
+{{- $envVars := include "zenml.baseEnvVariables" . | fromYaml | default dict }}
+{{- $envVars = merge (include "zenml.storeEnvVariables" . | fromYaml | default dict) $envVars }}
+{{- $envVars = merge (include "zenml.serverEnvVariables" . | fromYaml | default dict) $envVars }}
+{{- $envVars = merge (include "zenml.secretsStoreEnvVariables" . | fromYaml | default dict) $envVars }}
+{{- $envVars = merge (include "zenml.backupSecretsStoreEnvVariables" . | fromYaml | default dict) $envVars }}
+{{- $envVars = merge ($server.environment | default dict) $envVars }}
+{{ $envVars | toYaml }}
 {{- end }}

@@ -29,6 +29,7 @@ from typing import (
 
 from pydantic import ConfigDict, ValidationError, create_model
 
+from zenml.config.step_configurations import InputSpec
 from zenml.constants import ENFORCE_TYPE_ANNOTATIONS
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
@@ -36,8 +37,8 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.metadata.lazy_load import LazyRunMetadataResponse
 from zenml.steps.utils import (
     OutputSignature,
+    get_resolved_signature,
     parse_return_type_annotations,
-    resolve_type_annotation,
 )
 from zenml.utils import yaml_utils
 
@@ -93,6 +94,19 @@ class StepArtifact:
             "artifacts visit https://docs.zenml.io/concepts/steps_and_pipelines#multiple-return-values."
         )
 
+    def to_spec(self) -> InputSpec:
+        """Converts the step artifact to an input spec.
+
+        Returns:
+            The corresponding input spec.
+        """
+        return InputSpec(
+            step_name=self.invocation_id,
+            output_name=self.output_name,
+            chunk_index=self.chunk_index,
+            chunk_size=self.chunk_size,
+        )
+
 
 def validate_reserved_arguments(
     signature: inspect.Signature, reserved_arguments: Sequence[str]
@@ -133,9 +147,9 @@ class EntrypointFunctionDefinition(NamedTuple):
         Raises:
             KeyError: If the function has no input for the given key.
             RuntimeError: If a parameter is passed for an input that is
-                annotated as an `UnmaterializedArtifact`.
-            RuntimeError: If the input value is not valid for the type
-                annotation provided for the function parameter.
+                annotated as an `UnmaterializedArtifact`, or if the input
+                value is not valid for the type annotation provided for
+                the function parameter.
             StepInterfaceError: If the input is a parameter and not JSON
                 serializable.
         """
@@ -242,7 +256,7 @@ def validate_entrypoint_function(
     Returns:
         A validated definition of the entrypoint function.
     """
-    signature = inspect.signature(func, follow_wrapped=True)
+    signature = get_resolved_signature(func)
     validate_reserved_arguments(
         signature=signature, reserved_arguments=reserved_arguments
     )
@@ -257,8 +271,7 @@ def validate_entrypoint_function(
                 f"{func.__name__}."
             )
 
-        annotation = parameter.annotation
-        if annotation is parameter.empty:
+        if parameter.annotation is parameter.empty:
             if ENFORCE_TYPE_ANNOTATIONS:
                 raise RuntimeError(
                     f"Missing type annotation for input '{key}' of step "
@@ -268,12 +281,12 @@ def validate_entrypoint_function(
             # If a type annotation is missing, use `Any` instead
             parameter = parameter.replace(annotation=Any)
 
-        annotation = resolve_type_annotation(annotation)
         inputs[key] = parameter
 
     outputs = parse_return_type_annotations(
         func=func,
         enforce_type_annotations=ENFORCE_TYPE_ANNOTATIONS,
+        resolved_signature=signature,
     )
 
     return EntrypointFunctionDefinition(

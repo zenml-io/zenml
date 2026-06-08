@@ -30,12 +30,13 @@ from zenml.config.step_configurations import StepConfiguration
 from zenml.constants import (
     ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE,
     ENV_ZENML_DISABLE_STEP_LOGS_STORAGE,
+    ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS,
     ENV_ZENML_SERVER,
     handle_bool_env_var,
 )
 from zenml.enums import LoggingLevels, StackComponentType
 from zenml.exceptions import DoesNotExistException
-from zenml.logger import get_logger
+from zenml.logger import get_logger, step_names_in_console
 from zenml.models import (
     LogsRequest,
     LogsResponse,
@@ -132,6 +133,7 @@ class LoggingContext(context_utils.BaseContext):
         self._origin: Optional["BaseLogStoreOrigin"] = None
         self._name = name
         self._block_on_exit = block_on_exit
+        self._step_names_token: Optional[Any] = None
 
     @property
     def name(self) -> str:
@@ -143,7 +145,11 @@ class LoggingContext(context_utils.BaseContext):
         return self._name
 
     @classmethod
-    def emit(cls, record: logging.LogRecord) -> None:
+    def emit(
+        cls,
+        record: logging.LogRecord,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
         """Emit a log record using the active logging context.
 
         This class method is called by stdout/stderr wrappers and logging
@@ -151,6 +157,7 @@ class LoggingContext(context_utils.BaseContext):
 
         Args:
             record: The log record to emit.
+            metadata: Additional metadata to attach to the log entry.
         """
         if context := LoggingContext.get():
             if context._disabled:
@@ -161,8 +168,9 @@ class LoggingContext(context_utils.BaseContext):
                 if message and message.strip():
                     if context._origin:
                         context._log_store.emit(
-                            context._origin,
-                            record,
+                            origin=context._origin,
+                            record=record,
+                            metadata=metadata,
                         )
             except Exception:
                 logger.debug("Failed to emit log record", exc_info=True)
@@ -216,14 +224,29 @@ class LoggingContext(context_utils.BaseContext):
 
         Returns:
             self
+
+        Raises:
+            Exception: If the log store registration fails.
         """
         with self._lock:
             super().__enter__()
-            self._origin = self._log_store.register_origin(
-                name=self.name,
-                log_model=self.log_model,
-                metadata=self._metadata,
+            # By default, if the env var is not set, we disable step names in console.
+            self._step_names_token = step_names_in_console.set(
+                not handle_bool_env_var(
+                    ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, True
+                )
             )
+            try:
+                self._origin = self._log_store.register_origin(
+                    name=self.name,
+                    log_model=self.log_model,
+                    metadata=self._metadata,
+                )
+            except Exception:
+                step_names_in_console.reset(self._step_names_token)
+                self._step_names_token = None
+                super().__exit__(None, None, None)
+                raise
 
         return self
 
@@ -251,16 +274,22 @@ class LoggingContext(context_utils.BaseContext):
                     func=None,
                     pathname="",
                     lineno=0,
-                )
+                ),
+                metadata={"zenml.event.type": "exception"},
             )
 
         with self._lock:
-            super().__exit__(exc_type, exc_val, exc_tb)
-            if self._origin:
-                self._log_store.deregister_origin(
-                    self._origin, blocking=self._block_on_exit
-                )
-                self._origin = None
+            try:
+                super().__exit__(exc_type, exc_val, exc_tb)
+                if self._origin:
+                    self._log_store.deregister_origin(
+                        self._origin, blocking=self._block_on_exit
+                    )
+                    self._origin = None
+            finally:
+                if self._step_names_token is not None:
+                    step_names_in_console.reset(self._step_names_token)
+                    self._step_names_token = None
 
 
 def generate_logs_request(source: str) -> LogsRequest:
@@ -362,6 +391,24 @@ def search_logs_by_source(
     return None
 
 
+def search_logs_by_id(
+    logs_collection: List[LogsResponse], logs_id: UUID
+) -> Optional[LogsResponse]:
+    """Get the logs response for a given ID.
+
+    Args:
+        logs_collection: The logs collection.
+        logs_id: The ID of the logs.
+
+    Returns:
+        The logs response for the given ID.
+    """
+    for log in logs_collection:
+        if log.id == logs_id:
+            return log
+    return None
+
+
 def get_run_log_metadata(
     pipeline_run: "PipelineRunResponse",
 ) -> Dict[str, Any]:
@@ -374,33 +421,50 @@ def get_run_log_metadata(
         The log metadata.
     """
     log_metadata = {
-        "pipeline.run.id": str(pipeline_run.id),
-        "pipeline.run.name": pipeline_run.name,
-        "project.id": str(pipeline_run.project.id),
-        "project.name": pipeline_run.project.name,
+        "zenml.pipeline.run.id": str(pipeline_run.id),
+        "zenml.pipeline.run.name": pipeline_run.name,
+        "zenml.project.id": str(pipeline_run.project.id),
+        "zenml.project.name": pipeline_run.project.name,
     }
+
+    client = Client()
+    server_info = client.zen_store.get_store_info()
+
+    if server_info.is_pro_server():
+        if server_info.pro_workspace_id:
+            log_metadata.update(
+                {
+                    "zenml.workspace.id": str(server_info.pro_workspace_id),
+                }
+            )
+        if server_info.pro_workspace_name:
+            log_metadata.update(
+                {
+                    "zenml.workspace.name": server_info.pro_workspace_name,
+                }
+            )
 
     if pipeline_run.pipeline is not None:
         log_metadata.update(
             {
-                "pipeline.id": str(pipeline_run.pipeline.id),
-                "pipeline.name": pipeline_run.pipeline.name,
+                "zenml.pipeline.id": str(pipeline_run.pipeline.id),
+                "zenml.pipeline.name": pipeline_run.pipeline.name,
             }
         )
 
     if pipeline_run.stack is not None:
         log_metadata.update(
             {
-                "stack.id": str(pipeline_run.stack.id),
-                "stack.name": pipeline_run.stack.name,
+                "zenml.stack.id": str(pipeline_run.stack.id),
+                "zenml.stack.name": pipeline_run.stack.name,
             }
         )
 
     if pipeline_run.user is not None:
         log_metadata.update(
             {
-                "user.id": str(pipeline_run.user.id),
-                "user.name": pipeline_run.user.name,
+                "zenml.user.id": str(pipeline_run.user.id),
+                "zenml.user.name": pipeline_run.user.name,
             }
         )
 
@@ -417,8 +481,8 @@ def get_step_log_metadata(step_run: "StepRunResponse") -> Dict[str, Any]:
         The log metadata.
     """
     return {
-        "step.run.id": str(step_run.id),
-        "step.run.name": step_run.name,
+        "zenml.step.run.id": str(step_run.id),
+        "zenml.step.run.name": step_run.name,
     }
 
 
@@ -544,6 +608,19 @@ def setup_logging_context(
     """
     log_metadata = {}
 
+    logs_response: Optional[LogsResponse] = None
+
+    if step_run and step_run.log_collection:
+        logs_response = search_logs_by_source(
+            logs_collection=step_run.log_collection,
+            source=source,
+        )
+    elif pipeline_run and pipeline_run.log_collection:
+        logs_response = search_logs_by_source(
+            logs_collection=pipeline_run.log_collection,
+            source=source,
+        )
+
     logs_request = generate_logs_request(source=source)
 
     if step_run:
@@ -555,7 +632,8 @@ def setup_logging_context(
         if step_run is None:
             logs_request.pipeline_run_id = pipeline_run.id
 
-    logs_response = Client().zen_store.create_logs(logs_request)
+    if logs_response is None:
+        logs_response = Client().zen_store.create_logs(logs_request)
 
     return LoggingContext(
         name=str(logs_response.id),

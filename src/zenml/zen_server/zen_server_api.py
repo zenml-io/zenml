@@ -51,8 +51,12 @@ from zenml.service_connectors.service_connector_registry import (
 from zenml.zen_server.cloud_utils import send_pro_workspace_status_update
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.middleware import add_middlewares
+from zenml.zen_server.otel import (
+    configure_otel,
+    instrument_sqlalchemy_store,
+    shutdown_otel,
+)
 from zenml.zen_server.routers import (
-    actions_endpoints,
     artifact_endpoint,
     artifact_version_endpoints,
     auth_endpoints,
@@ -60,7 +64,6 @@ from zenml.zen_server.routers import (
     curated_visualization_endpoints,
     deployment_endpoints,
     devices_endpoints,
-    event_source_endpoints,
     flavors_endpoints,
     logs_endpoints,
     model_versions_endpoints,
@@ -69,10 +72,13 @@ from zenml.zen_server.routers import (
     pipeline_deployments_endpoints,
     pipeline_snapshot_endpoints,
     pipelines_endpoints,
-    plugin_endpoints,
     projects_endpoints,
+    resource_pool_subject_policies_endpoints,
+    resource_pools_endpoints,
+    resource_requests_endpoints,
     run_metadata_endpoints,
     run_templates_endpoints,
+    run_wait_conditions_endpoints,
     runs_endpoints,
     schedule_endpoints,
     secrets_endpoints,
@@ -86,9 +92,8 @@ from zenml.zen_server.routers import (
     steps_endpoints,
     tag_resource_endpoints,
     tags_endpoints,
-    triggers_endpoints,
+    trigger_endpoints,
     users_endpoints,
-    webhook_endpoints,
 )
 from zenml.zen_server.secure_headers import (
     initialize_secure_headers,
@@ -96,32 +101,54 @@ from zenml.zen_server.secure_headers import (
 from zenml.zen_server.utils import (
     cleanup_request_manager,
     initialize_feature_gate,
-    initialize_memcache,
-    initialize_plugins,
     initialize_rbac,
     initialize_request_manager,
+    initialize_resource_pool_store,
     initialize_snapshot_executor,
+    initialize_streaming,
     initialize_workload_manager,
     initialize_zen_store,
+    register_event_handlers,
     server_config,
+    shutdown_streaming,
     snapshot_executor,
     start_event_loop_lag_monitor,
     stop_event_loop_lag_monitor,
+    zen_store,
 )
 
-DASHBOARD_DIRECTORY = "dashboard"
 
-
-def relative_path(rel: str) -> str:
-    """Get the absolute path of a path relative to the ZenML server module.
-
-    Args:
-        rel: Relative path.
+def dashboard_directory() -> str:
+    """Absolute path to the dashboard directory.
 
     Returns:
-        Absolute path.
+        The dashboard directory.
     """
-    return os.path.join(os.path.dirname(__file__), rel)
+    if dashboard_path := server_config().dashboard_files_path:
+        return os.path.abspath(dashboard_path)
+
+    return os.path.join(os.path.dirname(__file__), "dashboard")
+
+
+def _configure_uvicorn_logging() -> None:
+    """Route uvicorn records through the ZenML root logging setup."""
+    # On startup uvicorn installs its own handlers and formatters on three loggers:
+    #
+    #   "uvicorn"        – parent logger (propagate=False by default)
+    #   "uvicorn.error"  – server lifecycle and internal errors
+    #   "uvicorn.access" – per-request access log
+    #
+    # These handlers use uvicorn's own output path. Clear them and let uvicorn
+    # propagate to the root logger so its records are handled by the same
+    # ZenML handlers that render console/JSON output and export logs to OTel.
+    for _uvicorn_logger_name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
+        _uvicorn_logger = logging.getLogger(_uvicorn_logger_name)
+
+        # clear uvicorn handlers to avoid double logging
+        _uvicorn_logger.handlers.clear()
+
+        # propagate uvicorn logs to the root logger
+        _uvicorn_logger.propagate = True
 
 
 app = FastAPI(
@@ -132,6 +159,12 @@ app = FastAPI(
 )
 
 add_middlewares(app)
+
+# suppress uvicorn access logs
+_configure_uvicorn_logging()
+
+# Configure OpenTelemetry
+configure_otel(app)
 
 
 # Customize the default request validation handler that comes with FastAPI
@@ -164,14 +197,17 @@ async def initialize() -> None:
     # race conditions
     await initialize_request_manager()
     initialize_zen_store()
+    # Instrument the SQL store with OpenTelemetry after it has been initialized.
+    instrument_sqlalchemy_store(store=zen_store())
+    initialize_resource_pool_store()
     service_connector_registry.register_builtin_service_connectors()
     initialize_rbac()
     initialize_feature_gate()
     initialize_workload_manager()
+    initialize_resource_pool_store()
     initialize_snapshot_executor()
-    initialize_plugins()
+    await initialize_streaming()
     initialize_secure_headers()
-    initialize_memcache(cfg.memcache_max_capacity, cfg.memcache_default_expiry)
     if cfg.deployment_type == ServerDeploymentType.CLOUD:
         # Send a workspace status update to the Cloud API to indicate that the
         # ZenML server is running or to update the version and server URL.
@@ -180,13 +216,17 @@ async def initialize() -> None:
     if logger.isEnabledFor(logging.DEBUG):
         start_event_loop_lag_monitor()
 
+    await register_event_handlers()
+
 
 @app.on_event("shutdown")
 async def shutdown() -> None:
     """Shutdown the ZenML server."""
     if logger.isEnabledFor(logging.DEBUG):
         stop_event_loop_lag_monitor()
+    shutdown_otel()
     snapshot_executor().shutdown(wait=True)
+    await shutdown_streaming()
     await cleanup_request_manager()
 
 
@@ -201,9 +241,7 @@ if not DASHBOARD_REDIRECT_URL:
     app.mount(
         "/assets",
         StaticFiles(
-            directory=relative_path(
-                os.path.join(DASHBOARD_DIRECTORY, "assets")
-            ),
+            directory=os.path.join(dashboard_directory(), "assets"),
             check_dir=False,
         ),
     )
@@ -233,7 +271,7 @@ async def ready() -> str:
     return "OK"
 
 
-templates = Jinja2Templates(directory=relative_path(DASHBOARD_DIRECTORY))
+templates = Jinja2Templates(directory=dashboard_directory())
 
 
 @app.get("/", include_in_schema=False)
@@ -252,14 +290,13 @@ async def dashboard(request: Request) -> Any:
     if DASHBOARD_REDIRECT_URL:
         return RedirectResponse(url=DASHBOARD_REDIRECT_URL)
 
-    if not os.path.isfile(
-        os.path.join(relative_path(DASHBOARD_DIRECTORY), "index.html")
-    ):
+    if not os.path.isfile(os.path.join(dashboard_directory(), "index.html")):
         raise HTTPException(status_code=404)
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(
+        name="index.html", context={"request": request}
+    )
 
 
-app.include_router(actions_endpoints.router)
 app.include_router(artifact_endpoint.artifact_router)
 app.include_router(artifact_version_endpoints.artifact_version_router)
 app.include_router(auth_endpoints.router)
@@ -267,8 +304,6 @@ app.include_router(devices_endpoints.router)
 app.include_router(code_repositories_endpoints.router)
 app.include_router(deployment_endpoints.router)
 app.include_router(curated_visualization_endpoints.router)
-app.include_router(plugin_endpoints.plugin_router)
-app.include_router(event_source_endpoints.event_source_router)
 app.include_router(flavors_endpoints.router)
 app.include_router(logs_endpoints.router)
 app.include_router(models_endpoints.router)
@@ -281,6 +316,7 @@ app.include_router(pipeline_deployments_endpoints.router)
 app.include_router(pipeline_snapshot_endpoints.router)
 app.include_router(runs_endpoints.router)
 app.include_router(run_metadata_endpoints.router)
+app.include_router(run_wait_conditions_endpoints.router)
 app.include_router(run_templates_endpoints.router)
 app.include_router(schedule_endpoints.router)
 app.include_router(secrets_endpoints.router)
@@ -297,12 +333,14 @@ app.include_router(stack_components_endpoints.types_router)
 app.include_router(steps_endpoints.router)
 app.include_router(tags_endpoints.router)
 app.include_router(tag_resource_endpoints.router)
-app.include_router(triggers_endpoints.router)
 app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)
-app.include_router(webhook_endpoints.router)
 app.include_router(projects_endpoints.workspace_router)
 app.include_router(projects_endpoints.router)
+app.include_router(resource_pools_endpoints.router)
+app.include_router(resource_pool_subject_policies_endpoints.router)
+app.include_router(resource_requests_endpoints.router)
+app.include_router(trigger_endpoints.router)
 
 # When the auth scheme is set to EXTERNAL, users cannot be managed via the
 # API.
@@ -319,7 +357,7 @@ def get_root_static_files() -> List[str]:
     Returns:
         List of static files in the root directory.
     """
-    root_path = relative_path(DASHBOARD_DIRECTORY)
+    root_path = dashboard_directory()
     if not os.path.isdir(root_path):
         return []
     files = []
@@ -372,9 +410,11 @@ async def catch_all(request: Request, file_path: str) -> Any:
     # directory
     if file_path and file_path in root_static_files:
         logger.debug(f"Returning static file: {file_path}")
-        full_path = os.path.join(relative_path(DASHBOARD_DIRECTORY), file_path)
+        full_path = os.path.join(dashboard_directory(), file_path)
         return FileResponse(full_path)
 
     # everything else is directed to the index.html file that hosts the
     # single-page application
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(
+        name="index.html", context={"request": request}
+    )

@@ -43,6 +43,7 @@ from zenml.models.v2.core.step_run import (
     StepRunUpdate,
 )
 from zenml.orchestrators.publish_utils import (
+    publish_failed_step_run,
     publish_step_run_metadata,
     publish_successful_step_run,
     step_exception_info,
@@ -60,6 +61,7 @@ from zenml.steps.step_context import (
 )
 from zenml.steps.utils import (
     OutputSignature,
+    get_resolved_signature,
     parse_return_type_annotations,
     resolve_type_annotation,
 )
@@ -99,22 +101,15 @@ class StepRunner:
         self,
         step: "Step",
         stack: "Stack",
-        publish_exception_info: bool = True,
     ):
         """Initializes the step runner.
 
         Args:
             step: The step to run.
             stack: The stack on which the step should run.
-            publish_exception_info: Whether to publish the exception info for
-                the step run. If set to False, the exception info will be
-                stored in the `publish_utils.step_exception_info` context
-                variable instead, and the caller is responsible for publishing
-                the exception info.
         """
         self._step = step
         self._stack = stack
-        self._publish_exception_info = publish_exception_info
 
     @property
     def configuration(self) -> StepConfiguration:
@@ -160,12 +155,13 @@ class StepRunner:
         with logs_context:
             step_instance = self._load_step()
             output_materializers = self._load_output_materializers()
-            spec = inspect.getfullargspec(
-                inspect.unwrap(step_instance.entrypoint)
+            resolved_signature = get_resolved_signature(
+                step_instance.entrypoint
             )
 
             output_annotations = parse_return_type_annotations(
-                func=step_instance.entrypoint
+                func=step_instance.entrypoint,
+                resolved_signature=resolved_signature,
             )
 
             self._evaluate_artifact_names_in_collections(
@@ -191,8 +187,7 @@ class StepRunner:
 
             with step_context:
                 function_params = self._parse_inputs(
-                    args=spec.args,
-                    annotations=spec.annotations,
+                    signature=resolved_signature,
                     input_artifacts=input_artifacts,
                 )
 
@@ -251,12 +246,19 @@ class StepRunner:
                         isinstance(step_exception, KeyboardInterrupt)
                         and heartbeat_worker.is_terminated
                     ):
-                        Client().zen_store.update_run_step(
+                        step_run = Client().get_run_step(
                             step_run_id=step_run_info.step_run_id,
-                            step_run_update=StepRunUpdate(
-                                status=ExecutionStatus.STOPPING,
-                            ),
+                            hydrate=False,
                         )
+                        if step_run.status == ExecutionStatus.RUNNING:
+                            # Only update the status if the step status hasn't
+                            # been changed by the server yet.
+                            Client().zen_store.update_run_step(
+                                step_run_id=step_run_info.step_run_id,
+                                step_run_update=StepRunUpdate(
+                                    status=ExecutionStatus.STOPPING,
+                                ),
+                            )
 
                         raise StepHeartBeatTerminationException(
                             "Remotely stopped step - terminating execution."
@@ -267,16 +269,10 @@ class StepRunner:
                                 step_exception, step_instance.entrypoint
                             )
                         )
-
-                        if self._publish_exception_info:
-                            Client().zen_store.update_run_step(
-                                step_run_id=step_run_info.step_run_id,
-                                step_run_update=StepRunUpdate(
-                                    exception_info=exception_info,
-                                ),
-                            )
-                        else:
-                            step_exception_info.set(exception_info)
+                        step_exception_info.set(exception_info)
+                        step_run = publish_failed_step_run(
+                            step_run_id=step_run_info.step_run_id
+                        )
 
                         if not step_run.is_retriable:
                             if (
@@ -446,15 +442,13 @@ class StepRunner:
 
     def _parse_inputs(
         self,
-        args: List[str],
-        annotations: Dict[str, Any],
+        signature: inspect.Signature,
         input_artifacts: Dict[str, List["StepRunInputResponse"]],
     ) -> Dict[str, Any]:
         """Parses the inputs for a step entrypoint function.
 
         Args:
-            args: The arguments of the step entrypoint function.
-            annotations: The annotations of the step entrypoint function.
+            signature: The resolved signature of the step entrypoint function.
             input_artifacts: The input artifact versions of the step.
 
         Raises:
@@ -466,17 +460,33 @@ class StepRunner:
         """
         function_params: Dict[str, Any] = {}
 
-        if args and args[0] == "self":
-            args.pop(0)
+        for arg, parameter in signature.parameters.items():
+            if parameter.kind in {
+                inspect.Parameter.VAR_POSITIONAL,
+                inspect.Parameter.VAR_KEYWORD,
+            }:
+                continue
 
-        for arg in args:
-            annotation = annotations.get(arg, None)
+            annotation = (
+                parameter.annotation
+                if parameter.annotation is not inspect.Parameter.empty
+                else None
+            )
             arg_type = resolve_type_annotation(annotation)
 
             if arg in input_artifacts:
                 artifact_list = input_artifacts[arg]
 
-                if len(artifact_list) == 1:
+                if (
+                    arg not in self._step.spec.inputs
+                    or self._step.spec.is_scalar_input(arg)
+                ):
+                    # External/lazy loaded artifacts can never be collections,
+                    # so we can safely load them as a scalar artifact.
+                    if len(artifact_list) != 1:
+                        raise StepInterfaceError(
+                            f"Expected a single artifact for step input `{arg}`."
+                        )
                     function_params[arg] = self._load_input_artifact(
                         artifact_list[0], arg_type
                     )
@@ -764,6 +774,7 @@ class StepRunner:
                 data=return_value,
                 materializer_class=materializer_class,
                 uri=uri,
+                artifact_store=self._stack.artifact_store,
                 artifact_type=artifact_type,
                 store_metadata=artifact_metadata_enabled,
                 store_visualizations=artifact_visualization_enabled,

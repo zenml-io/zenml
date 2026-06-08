@@ -60,6 +60,7 @@ runs:
       shell: bash
       run: |
         scripts/install-zenml-dev.sh --system --integrations ${{ inputs.install_integrations }}
+        uv pip install --system "setuptools<82"
     - name: Check Python environment
       shell: bash
       run: |-

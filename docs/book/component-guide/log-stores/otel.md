@@ -6,6 +6,10 @@ description: Exporting logs to any OpenTelemetry-compatible backend.
 
 The OpenTelemetry (OTEL) Log Store is a log store flavor that exports logs to any OpenTelemetry-compatible backend using the OTLP/HTTP protocol with JSON encoding. Built on the [OpenTelemetry Python SDK](https://opentelemetry.io/docs/languages/python/), it provides maximum flexibility for integrating with your existing observability infrastructure.
 
+{% hint style="info" %}
+This page covers pipeline and step log export through a ZenML stack component. ZenML server observability is configured separately with `ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT` or the standard `OTEL_EXPORTER_OTLP_ENDPOINT`, which exports server traces, metrics, and logs from the deployed ZenML server process. See the deployment guides for more details.
+{% endhint %}
+
 {% hint style="warning" %}
 The OTEL Log Store is a **write-only** log store. It can export logs to an OTEL-compatible endpoint, but it cannot fetch logs back for display in the ZenML dashboard. If you need log retrieval capabilities, you can extend this log store and implement the `fetch()` method for your backend. See [Develop a Custom Log Store](custom.md) for details on how to do this.
 {% endhint %}
@@ -51,7 +55,10 @@ Each log record includes ZenML metadata as OTEL attributes:
 | `zenml.pipeline.name`        | Pipeline name                                |
 | `zenml.pipeline.run.id`        | Pipeline run ID                                |
 | `zenml.pipeline.run.name`        | Pipeline run name                                |
+| `zenml.step.run.id`     | Step ID (for step-level logs)                |
 | `zenml.step.run.name`     | Step name (for step-level logs)                |
+| `zenml.workspace.id`        | Workspace ID (when connected to a ZenML Pro workspace)                               |
+| `zenml.workspace.name`     | Workspace name (when connected to a ZenML Pro workspace)               |
 
 These attributes enable powerful filtering and querying in your observability platform.
 
@@ -157,3 +164,5 @@ This ensures reliable log delivery even in unstable network conditions.
 4. **Use secrets for credentials**: Always store API keys and tokens in ZenML secrets, not in plain text.
 
 For more information and a full list of configurable attributes, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-log_stores.html#zenml.log_stores.otel.otel_log_store).
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

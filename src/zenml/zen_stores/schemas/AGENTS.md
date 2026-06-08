@@ -211,7 +211,7 @@ class SecretSchema(NamedSchema, table=True):
         """Map ORM -> domain model. Only include extras when requested."""
         metadata = None
         if include_metadata:
-            metadata = SecretResponseMetadata(workspace=self.workspace.to_model())
+            metadata = SecretResponseMetadata(project=self.project.to_model())
         body = SecretResponseBody(
             user=self.user.to_model() if include_resources and self.user else None,
             created=self.created,
@@ -258,5 +258,5 @@ Practical Checklist for New/Updated Schemas
 - Implement to_model(...), from_request/from_model(...), and update/update_from_model(...).
 - Update src/zenml/zen_stores/schemas/__init__.py to export new schema(s).
 - Ensure updated is refreshed on mutations; avoid including heavy related resources unless requested via flags.
-- Plan and apply DB migrations for schema changes; update src/zenml/zen_stores/migrations and test upgrade/downgrade paths.
+- Plan and apply DB migrations for schema changes; update src/zenml/zen_stores/migrations and test the upgrade path. Downgrade testing is optional because ZenML does not generally support downgrades.
 - Consult domain models in src/zenml/models/v2 to keep names and types aligned.

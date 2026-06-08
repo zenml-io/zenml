@@ -15,8 +15,20 @@
 
 import inspect
 import json
+from collections import deque
 from json.decoder import JSONDecodeError
-from typing import Any, Callable, Dict, Optional, Type, TypeVar, Union, cast
+from types import GeneratorType
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Mapping,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+)
 
 import yaml
 from pydantic import (
@@ -25,12 +37,14 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     PlainValidator,
+    TypeAdapter,
     ValidationInfo,
     WrapValidator,
+    create_model,
     validate_call,
 )
 from pydantic._internal import _repr as pydantic_repr
-from pydantic.v1.utils import sequence_like
+from pydantic.fields import FieldInfo
 
 from zenml.logger import get_logger
 from zenml.utils import dict_utils, typing_utils, yaml_utils
@@ -39,6 +53,23 @@ from zenml.utils.json_utils import pydantic_encoder
 logger = get_logger(__name__)
 
 M = TypeVar("M", bound="BaseModel")
+
+
+def sequence_like(v: Any) -> bool:
+    """Check if a value is a non-string sequence-like container.
+
+    Carried over from pydantic v1
+    (https://github.com/pydantic/pydantic/blob/v1.10.14/pydantic/utils.py)
+    so we don't depend on the `pydantic.v1` compatibility shim.
+
+    Args:
+        v: The value to check.
+
+    Returns:
+        Whether the value is a list, tuple, set, frozenset, generator,
+        or deque.
+    """
+    return isinstance(v, (list, tuple, set, frozenset, GeneratorType, deque))
 
 
 def update_model(
@@ -77,6 +108,83 @@ def update_model(
         values = {**original_dict, **update_dict}
 
     return original.__class__.model_validate(values)
+
+
+def get_json_schema_for_type(value_type: Any) -> Dict[str, Any]:
+    """Get a JSON schema for a Python type using Pydantic.
+
+    Args:
+        value_type: Type annotation for which to get the JSON schema.
+
+    Returns:
+        JSON schema dictionary.
+
+    Raises:
+        ValueError: If the input value is not supported by Pydantic schema
+            generation.
+    """
+    try:
+        return TypeAdapter(value_type).json_schema()
+    except Exception as e:
+        raise ValueError(
+            f"Unsupported type `{value_type}`. Only JSON-serializable "
+            "types are supported. See the above pydantic error for more "
+            "details."
+        ) from e
+
+
+def create_parameter_model(
+    model_name: str,
+    parameters: Mapping[str, inspect.Parameter],
+    default_values: Optional[Mapping[str, Any]] = None,
+    config: Optional[ConfigDict] = None,
+) -> Type[BaseModel]:
+    """Creates a Pydantic model from function parameters.
+
+    Args:
+        model_name: Name of the generated model.
+        parameters: Mapping of parameter names to function parameters.
+        default_values: Optional override defaults keyed by parameter name.
+        config: Optional Pydantic config for the generated model.
+
+    Returns:
+        A Pydantic model representing the provided parameters.
+    """
+    fields: Dict[str, Any] = {}
+    default_values = default_values or {}
+
+    for name, parameter in parameters.items():
+        field_name = name
+        if name in default_values:
+            default_value = default_values[name]
+        elif parameter.default is not inspect.Parameter.empty:
+            default_value = parameter.default
+        else:
+            default_value = ...
+
+        if name.startswith("_"):
+            # Pydantic treats field names starting with an underscore as
+            # private attributes, so we use a sanitized field name with an
+            # alias.
+            field_name = name.lstrip("_")
+            while field_name in fields:
+                field_name = field_name + "_"
+
+            default_value = FieldInfo(
+                default=default_value,
+                validation_alias=name,
+                serialization_alias=name,
+            )
+
+        fields[field_name] = (parameter.annotation, default_value)
+
+    model_config = ConfigDict(extra="forbid")
+    if config:
+        model_config.update(config)
+    model_config["serialize_by_alias"] = True
+
+    fields["__config__"] = model_config
+    return create_model(model_name, **fields)
 
 
 class TemplateGenerator:
@@ -257,7 +365,9 @@ def validate_function_args(
     Returns:
         The validated arguments.
     """
-    signature = inspect.signature(__func)
+    from zenml.steps.utils import get_resolved_signature
+
+    signature = get_resolved_signature(__func)
 
     validated_args = ()
     validated_kwargs = {}
@@ -270,18 +380,49 @@ def validate_function_args(
         validated_kwargs = kwargs
 
     # We create a dummy function with the original function signature to run
-    # pydantic validation without actually running the function code
+    # pydantic validation without actually running the function code. We
+    # rebuild the annotations dict from the resolved signature so that we use
+    # the resolved type annotations, not any
+    # PEP 563 / `from __future__ import annotations` strings.
     f.__signature__ = signature  # type: ignore[attr-defined]
-    f.__annotations__ = __func.__annotations__
+    f.__annotations__ = {
+        name: parameter.annotation
+        for name, parameter in signature.parameters.items()
+        if parameter.annotation is not inspect.Parameter.empty
+    }
+    if signature.return_annotation is not inspect.Signature.empty:
+        f.__annotations__["return"] = signature.return_annotation
 
     validated_function = validate_call(config=__config, validate_return=False)(
         f
     )
 
-    # This raises a pydantic.ValidatonError in case the arguments are not valid
+    # This raises a pydantic.ValidationError in case the arguments are not valid
     validated_function(*args, **kwargs)
 
-    return signature.bind(*validated_args, **validated_kwargs).arguments
+    bound_arguments = dict(
+        signature.bind(*validated_args, **validated_kwargs).arguments
+    )
+
+    variadic_keyword_parameter = next(
+        (
+            parameter.name
+            for parameter in signature.parameters.values()
+            if parameter.kind is inspect.Parameter.VAR_KEYWORD
+        ),
+        None,
+    )
+    if variadic_keyword_parameter and isinstance(
+        bound_arguments.get(variadic_keyword_parameter), dict
+    ):
+        # If the function defines a variadic keyword parameter, we expand the
+        # and include them flat in the return dictionary.
+        variadic_keyword_arguments = bound_arguments.pop(
+            variadic_keyword_parameter
+        )
+        bound_arguments.update(variadic_keyword_arguments)
+
+    return bound_arguments
 
 
 def model_validator_data_handler(
