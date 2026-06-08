@@ -15,12 +15,17 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
+from pydantic import Field, model_validator
+
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.modal import MODAL_STEP_OPERATOR_FLAVOR
 from zenml.step_operators import BaseStepOperatorConfig, BaseStepOperatorFlavor
+from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.modal.step_operators import ModalStepOperator
+
+DEFAULT_TIMEOUT_SECONDS = 86400  # 24 hours
 
 
 class ModalStepOperatorSettings(BaseSettings):
@@ -36,20 +41,92 @@ class ModalStepOperatorSettings(BaseSettings):
     incompatible. See more in the Modal docs at https://modal.com/docs/guide/region-selection.
 
     Attributes:
-        gpu: The type of GPU to use for the step execution.
+        gpu: The type of GPU to use for the step execution (e.g., "T4", "A100").
+            Use ResourceSettings.gpu_count to specify the number of GPUs.
         region: The region to use for the step execution.
         cloud: The cloud provider to use for the step execution.
+        modal_environment: The Modal environment to use for app lookup.
+        timeout: Maximum execution time in seconds (default 24h).
     """
 
-    gpu: Optional[str] = None
-    region: Optional[str] = None
-    cloud: Optional[str] = None
+    gpu: Optional[str] = Field(
+        None,
+        description="GPU type for step execution. Must be a valid Modal GPU type. "
+        "Examples: 'T4' (cost-effective), 'A100' (high-performance), 'V100' (training workloads). "
+        "Use ResourceSettings.gpu_count to specify number of GPUs. If not specified, uses CPU-only execution",
+    )
+    region: Optional[str] = Field(
+        None,
+        description="Cloud region for step execution. Must be a valid region for the selected cloud provider. "
+        "Examples: 'us-east-1', 'us-west-2', 'eu-west-1'. If not specified, Modal uses default region "
+        "based on cloud provider and availability",
+    )
+    cloud: Optional[str] = Field(
+        None,
+        description="Cloud provider for step execution. Must be a valid Modal-supported cloud provider. "
+        "Examples: 'aws', 'gcp'. If not specified, Modal uses default cloud provider "
+        "based on workspace configuration",
+    )
+    modal_environment: Optional[str] = Field(
+        None,
+        description="Modal environment name for app lookup. Must be a valid environment "
+        "configured in Modal. ZenML passes it as the Modal SDK App.lookup "
+        "environment_name argument. Examples: 'main', 'staging', 'production'. "
+        "If not specified, Modal uses the default environment.",
+    )
+    timeout: int = Field(
+        DEFAULT_TIMEOUT_SECONDS,
+        ge=1,
+        le=DEFAULT_TIMEOUT_SECONDS,
+        description=f"Maximum execution time in seconds for step completion. Must be between 1 and {DEFAULT_TIMEOUT_SECONDS} seconds. "
+        f"Examples: 3600 (1 hour), 7200 (2 hours), {DEFAULT_TIMEOUT_SECONDS} (24 hours maximum). "
+        "Step execution will be terminated if it exceeds this timeout",
+    )
 
 
 class ModalStepOperatorConfig(
     BaseStepOperatorConfig, ModalStepOperatorSettings
 ):
-    """Configuration for the Modal step operator."""
+    """Configuration for the Modal step operator.
+
+    Attributes:
+        token_id: Modal API token ID (ak-xxxxx format) for authentication.
+        token_secret: Modal API token secret (as-xxxxx format) for authentication.
+
+    Note: If token_id and token_secret are provided, both fields must be set.
+    If they are not provided, Modal falls back to its default authentication
+    (~/.modal.toml or environment variables).
+    All other configuration options (modal_environment, gpu, region, etc.)
+    are inherited from ModalStepOperatorSettings.
+    """
+
+    token_id: Optional[str] = SecretField(
+        default=None,
+        description="Modal API token ID for authentication. Must be configured together with token_secret. "
+        "When token_id and token_secret are both provided, ZenML creates an explicit Modal SDK "
+        "client from those credentials. If not provided, Modal falls back to its default "
+        "authentication from environment variables or ~/.modal.toml.",
+    )
+    token_secret: Optional[str] = SecretField(
+        default=None,
+        description="Modal API token secret for authentication. Must be configured together with token_id. "
+        "When token_id and token_secret are both provided, ZenML creates an explicit Modal SDK "
+        "client from those credentials. If not provided, Modal falls back to its default "
+        "authentication from environment variables or ~/.modal.toml.",
+    )
+
+    @model_validator(mode="after")
+    def validate_modal_token_pair(self) -> "ModalStepOperatorConfig":
+        """Validate that Modal token fields are configured together."""
+        token_id = self.token_id.strip() if self.token_id else None
+        token_secret = self.token_secret.strip() if self.token_secret else None
+
+        if bool(token_id) != bool(token_secret):
+            raise ValueError(
+                "Modal token_id and token_secret must be configured together."
+            )
+
+        return self
 
     @property
     def is_remote(self) -> bool:

@@ -14,6 +14,7 @@
 """Helpers for constructing a Click ``CliRunner`` across click versions."""
 
 import inspect
+from typing import Any
 
 from click.testing import CliRunner
 
@@ -26,8 +27,11 @@ _CLI_RUNNER_SUPPORTS_MIX_STDERR = (
 )
 
 
-def cli_runner() -> CliRunner:
+def cli_runner(**kwargs: Any) -> CliRunner:
     """Create a CliRunner with stderr separated from stdout."""
     if _CLI_RUNNER_SUPPORTS_MIX_STDERR:
-        return CliRunner(mix_stderr=False)
-    return CliRunner()
+        kwargs.setdefault("mix_stderr", False)
+    else:
+        kwargs.pop("mix_stderr", None)
+
+    return CliRunner(**kwargs)
