@@ -23,6 +23,7 @@ from zenml.constants import FILTERING_DATETIME_FORMAT
 from zenml.enums import GenericFilterOps, LogicalOperators, SorterOps
 from zenml.models.v2.base.filter import (
     BaseFilter,
+    BoolFilter,
     DatetimeFilter,
     DatetimeFilterOption,
     Filter,
@@ -44,6 +45,7 @@ class SomeFilterModel(BaseFilter):
     int_field: IntegerFilterOption = None
     float_field: FloatFilterOption = None
     str_field: StringFilterOption = None
+    bool_field: bool | str | None = None
 
 
 def _test_filter_model(
@@ -249,6 +251,60 @@ def test_int_filter_model():
         filter_class=NumericFilter,
         filter_value=3,
     )
+
+
+def test_bool_filter_model():
+    """Test Filter model creation for bool fields."""
+    _test_filter_model(
+        filter_field="bool_field",
+        filter_class=BoolFilter,
+        filter_value=True,
+        ignore_operators=[
+            GenericFilterOps.CONTAINS,
+            GenericFilterOps.STARTSWITH,
+            GenericFilterOps.ENDSWITH,
+            GenericFilterOps.ONEOF,
+            GenericFilterOps.NOT_ONEOF,
+            GenericFilterOps.NOT_CONTAINS,
+            GenericFilterOps.GT,
+            GenericFilterOps.GTE,
+            GenericFilterOps.LT,
+            GenericFilterOps.LTE,
+            GenericFilterOps.IN,
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    "filter_value, expected_value",
+    [
+        ("true", True),
+        ("True", True),
+        ("YES", True),
+        ("1", True),
+        ("false", False),
+        ("False", False),
+        ("NO", False),
+        ("0", False),
+    ],
+)
+def test_bool_filter_parses_unambiguous_strings(
+    filter_value: str, expected_value: bool
+) -> None:
+    """Test that bool filters parse unambiguous string values."""
+    filter_model = SomeFilterModel(bool_field=f"equals:{filter_value}")
+
+    model_filter = filter_model.list_of_filters[0]
+    assert isinstance(model_filter, BoolFilter)
+    assert model_filter.operation == GenericFilterOps.EQUALS
+    assert model_filter.value is expected_value
+
+
+@pytest.mark.parametrize("filter_value", ["maybe", "2", "", "none"])
+def test_bool_filter_rejects_ambiguous_strings(filter_value: str) -> None:
+    """Test that bool filters reject ambiguous string values."""
+    with pytest.raises(ValueError):
+        SomeFilterModel(bool_field=f"equals:{filter_value}")
 
 
 def test_float_filter_model():

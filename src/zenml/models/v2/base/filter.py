@@ -44,6 +44,8 @@ from zenml.constants import (
     PAGE_SIZE_DEFAULT,
     PAGE_SIZE_MAXIMUM,
     PAGINATION_STARTING_PAGE,
+    is_false_string_value,
+    is_true_string_value,
 )
 from zenml.enums import GenericFilterOps, LogicalOperators, SorterOps
 from zenml.exceptions import ValidationError
@@ -175,6 +177,38 @@ class BoolFilter(Filter):
         GenericFilterOps.IS_NULL,
         GenericFilterOps.IS_NOT_NULL,
     ]
+
+    @field_validator("value", mode="before")
+    @classmethod
+    def parse_bool_value(cls, value: Any) -> Any:
+        """Parse a value for a boolean filter.
+
+        Args:
+            value: The value to parse.
+
+        Returns:
+            The parsed boolean value.
+
+        Raises:
+            ValueError: If the value is not an unambiguous boolean value.
+        """
+        if value is None:
+            return None
+
+        if isinstance(value, bool):
+            return value
+
+        if isinstance(value, str):
+            normalized_value = value.strip().lower()
+            if is_true_string_value(normalized_value):
+                return True
+            if is_false_string_value(normalized_value):
+                return False
+
+        if isinstance(value, int) and value in {0, 1}:
+            return bool(value)
+
+        raise ValueError("The bool filter only works with boolean values.")
 
     def generate_query_conditions_from_column(self, column: Any) -> Any:
         """Generate query conditions for a boolean column.
@@ -1502,11 +1536,6 @@ class FilterGenerator:
                 column=column,
                 value=None,
             )
-
-        try:
-            value = bool(value)
-        except ValueError:
-            raise ValueError("The bool filter only works with boolean values.")
 
         return BoolFilter(
             operation=GenericFilterOps(operator),
