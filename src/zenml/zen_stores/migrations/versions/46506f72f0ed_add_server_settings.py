@@ -27,7 +27,7 @@ def upgrade() -> None:
 
     op.create_table(
         "server_settings",
-        sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column(
             "server_name", sqlmodel.sql.sqltypes.AutoString(), nullable=False
         ),

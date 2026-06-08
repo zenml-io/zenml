@@ -10,13 +10,15 @@ build-backend = "uv_build"
 # NOTE: when a version is filtered out, uv does NOT mention it — resolution
 # just fails with "no compatible version found". Keep this in mind when debugging.
 exclude-newer = "3 days"
+# Don't exclude our own package which is installed in some CI jobs.
+exclude-newer-package = { zenml = false }
 
 [tool.uv.build-backend]
 module-name = ["zenml", "zenml_cli"]
 
 [project]
 name = "zenml"
-version = "0.94.3"
+version = "0.94.6"
 description = "ZenML: MLOps for Reliable AI: from Classical AI to Agents."
 authors = [{name = "ZenML GmbH", email = "info@zenml.io"}]
 readme = "README.md"
@@ -33,11 +35,12 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: System :: Distributed Computing",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Typing :: Typed",
 ]
-requires-python = ">=3.10,<3.14"
+requires-python = ">=3.10,<3.15"
 
 dependencies = [
     "asgiref~=3.10.0",
@@ -55,6 +58,7 @@ dependencies = [
     "pyyaml>=6.0.1",
     "rich>=12.0.0", # Make sure to keep the version aligned with our `jupyter` extra
     "setuptools>=70.0.0",
+    "structlog>=25.5.0",    # using stuctlog for adding context to logs
 ]
 
 [project.urls]
@@ -74,7 +78,7 @@ local = [
     "pymysql>=1.1.1,~=1.1.0",
     "sqlalchemy>=2.0.0,<3.0.0",
     "sqlalchemy_utils",
-    "sqlmodel==0.0.18",
+    "sqlmodel==0.0.38",
     "jsonschema>=4.0.0",
 ]
 server = [
@@ -93,6 +97,14 @@ server = [
     "croniter>=6.0.0",
     "cachetools>=5.3.0,<8.0.0",
 ]
+otel = [
+    # Install otel dependencies to enable OpenTelemetry instrumentation in the server
+    "opentelemetry-exporter-otlp-proto-http>=1.38.0",
+    "opentelemetry-instrumentation-fastapi>=0.59b0",
+    "opentelemetry-instrumentation-requests>=0.59b0",
+    "opentelemetry-instrumentation-sqlalchemy>=0.59b0",
+]
+server-streaming = ["redis>=7.1.0,<8.0.0"]
 jupyter = ["rich[jupyter]>=12.0.0"]
 templates = ["copier>=8.1.0", "jinja2-time>=0.2.0,<0.3.0", "ruff>=0.1.7", "pyyaml-include<2.0"]
 terraform = ["python-terraform"]

@@ -2854,15 +2854,12 @@ class Client(metaclass=ClientMetaClass):
             ZenKeyError: If multiple builds were found that match the given
                 id or prefix.
         """
-        from zenml.utils.uuid_utils import is_valid_uuid
+        from zenml.utils.uuid_utils import is_valid_uuid, to_uuid
 
         # First interpret as full UUID
         if is_valid_uuid(id_or_prefix):
-            if not isinstance(id_or_prefix, UUID):
-                id_or_prefix = UUID(id_or_prefix, version=4)
-
             return self.zen_store.get_build(
-                id_or_prefix,
+                to_uuid(id_or_prefix),
                 hydrate=hydrate,
             )
 
@@ -5149,6 +5146,8 @@ class Client(metaclass=ClientMetaClass):
         triggered_by_step_run_id: Optional[Union[UUID, str]] = None,
         triggered_by_deployment_id: Optional[Union[UUID, str]] = None,
         trigger_id: UUID | str | None = None,
+        parent_run_id: Optional[Union[str, UUID]] = None,
+        root_runs_only: Optional[bool] = None,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs.
 
@@ -5203,6 +5202,8 @@ class Client(metaclass=ClientMetaClass):
             triggered_by_deployment_id: The ID of the deployment that triggered
                 the pipeline run.
             trigger_id: The ID of the trigger that generated this run.
+            parent_run_id: The parent run ID for nested child pipeline runs.
+            root_runs_only: Whether to include only root runs. Ignored if False.
 
         Returns:
             A page with Pipeline Runs fitting the filter description
@@ -5247,6 +5248,8 @@ class Client(metaclass=ClientMetaClass):
             triggered_by_step_run_id=triggered_by_step_run_id,
             triggered_by_deployment_id=triggered_by_deployment_id,
             trigger_id=trigger_id,
+            parent_run_id=parent_run_id,
+            root_runs_only=root_runs_only,
         )
         return self.zen_store.list_runs(
             runs_filter_model=runs_filter_model,
@@ -8374,13 +8377,15 @@ class Client(metaclass=ClientMetaClass):
             ZenKeyError: If there is more than one entity with that name
                 or id prefix.
         """
-        from zenml.utils.uuid_utils import is_valid_uuid
+        from zenml.utils.uuid_utils import is_valid_uuid, to_uuid
 
         entity_label = get_method.__name__.replace("get_", "") + "s"
 
         # First interpret as full UUID
         if is_valid_uuid(name_id_or_prefix):
-            return get_method(name_id_or_prefix, hydrate=hydrate, **kwargs)
+            return get_method(
+                to_uuid(name_id_or_prefix), hydrate=hydrate, **kwargs
+            )
 
         # If not a UUID, try to find by name
         assert not isinstance(name_id_or_prefix, UUID)
@@ -8437,7 +8442,7 @@ class Client(metaclass=ClientMetaClass):
         project: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
     ) -> "AnyResponse":
-        from zenml.utils.uuid_utils import is_valid_uuid
+        from zenml.utils.uuid_utils import is_valid_uuid, to_uuid
 
         entity_label = get_method.__name__.replace("get_", "") + "s"
 
@@ -8448,10 +8453,7 @@ class Client(metaclass=ClientMetaClass):
                     f"{entity_label}. Ignoring the version and fetching the "
                     f"{entity_label} by ID."
                 )
-            if not isinstance(name_id_or_prefix, UUID):
-                name_id_or_prefix = UUID(name_id_or_prefix, version=4)
-
-            return get_method(name_id_or_prefix, hydrate=hydrate)
+            return get_method(to_uuid(name_id_or_prefix), hydrate=hydrate)
 
         assert not isinstance(name_id_or_prefix, UUID)
         list_kwargs: Dict[str, Any] = dict(

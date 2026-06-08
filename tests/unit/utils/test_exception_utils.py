@@ -4,8 +4,6 @@ import re
 import warnings
 from unittest.mock import Mock, patch
 
-import pytest
-
 from zenml.utils.exception_utils import (
     collect_exception_information,
     reconstruct_exception,

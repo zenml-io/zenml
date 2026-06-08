@@ -33,7 +33,6 @@ if TYPE_CHECKING:
     StepConfigurationUpdateOrDict = Union[
         Dict[str, Any], StepConfigurationUpdate
     ]
-    from zenml.steps import BaseStep
 
 logger = get_logger(__name__)
 
@@ -111,16 +110,16 @@ def submit_pipeline(
 
 def compute_invocation_id(
     existing_invocations: Set[str],
-    step: "BaseStep",
-    custom_id: Optional[str] = None,
+    base_name: str,
     allow_suffix: bool = True,
 ) -> str:
     """Compute the invocation ID.
 
     Args:
         existing_invocations: The existing invocation IDs.
-        step: The step for which to compute the ID.
-        custom_id: Custom ID to use for the invocation.
+        base_name: Base name for the invocation. Used as the ID directly when
+            unique, otherwise suffixed with `_2`, `_3`, ... until a free slot
+            is found (when `allow_suffix=True`).
         allow_suffix: Whether a suffix can be appended to the invocation
             ID.
 
@@ -132,20 +131,20 @@ def compute_invocation_id(
     Returns:
         The invocation ID.
     """
-    base_id = id_ = custom_id or step.name
+    base_id = id_ = base_name
 
     if id_ not in existing_invocations:
         return id_
 
     if not allow_suffix:
-        raise RuntimeError(f"Duplicate step ID `{id_}`")
+        raise RuntimeError(f"Duplicate invocation ID `{id_}`")
 
     for index in range(2, 10000):
         id_ = f"{base_id}_{index}"
         if id_ not in existing_invocations:
             return id_
 
-    raise RuntimeError("Unable to find step ID")
+    raise RuntimeError("Unable to find invocation ID")
 
 
 def skip_steps_and_prune_snapshot(
