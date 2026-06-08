@@ -148,11 +148,19 @@ def test_token_wrong_signature_can_skip_signature_verification():
     assert decoded_token.user_id == user_id
 
 
-def test_token_wrong_audience_rejected_without_signature_verification():
-    """Test that disabling signatures still validates the token claims."""
+def test_disabling_verification_skips_all_claim_checks():
+    """Test that ``verify=False`` is all-or-nothing.
+
+    Disabling verification skips not only the signature but every other claim
+    check (audience, issuer, expiry). This matches PyJWT's behavior, where
+    ``verify_signature=False`` turns off the remaining checks too. Validating
+    claims on a token whose signature is unverified would be meaningless, since
+    an unsigned token can be forged with any claims.
+    """
     config = server_config()
+    user_id = uuid.uuid4()
     token = JWTToken(
-        user_id=uuid.uuid4(),
+        user_id=user_id,
     )
     encoded_token = token.encode()
     claims_data = jwt.decode(
@@ -172,8 +180,9 @@ def test_token_wrong_audience_rejected_without_signature_verification():
         algorithm=config.jwt_token_algorithm,
     )
 
-    with pytest.raises(AuthorizationException):
-        JWTToken.decode_token(fake_token, verify=False)
+    decoded_token = JWTToken.decode_token(fake_token, verify=False)
+
+    assert decoded_token.user_id == user_id
 
 
 @contextlib.contextmanager

@@ -95,7 +95,7 @@ install_zenml() {
     fi
     
     # install ZenML in editable mode
-    uv pip install $PIP_ARGS $upgrade_args -e ".[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]"
+    uv pip install $PIP_ARGS $upgrade_args -e ".[server,otel,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]"
     
     echo "✅ ZenML installation completed"
 }
@@ -108,8 +108,8 @@ install_integrations() {
 
     ignore_integrations="feast label_studio bentoml seldon pycaret skypilot_aws skypilot_gcp skypilot_azure skypilot_kubernetes skypilot_lambda pigeon prodigy argilla vllm"
 
-    # Ignore tensorflow and deepchecks only on Python 3.12 and 3.13
-    if [ "$python_version" = "3.12" ] || [ "$python_version" = "3.13" ]; then
+    # Ignore tensorflow and deepchecks only on Python 3.12, 3.13 and 3.14
+    if [ "$python_version" = "3.12" ] || [ "$python_version" = "3.13" ] || [ "$python_version" = "3.14" ]; then
         ignore_integrations="$ignore_integrations tensorflow deepchecks"
     fi
 

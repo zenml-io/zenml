@@ -15,7 +15,9 @@
 
 import inspect
 import json
+from collections import deque
 from json.decoder import JSONDecodeError
+from types import GeneratorType
 from typing import (
     Any,
     Callable,
@@ -43,7 +45,6 @@ from pydantic import (
 )
 from pydantic._internal import _repr as pydantic_repr
 from pydantic.fields import FieldInfo
-from pydantic.v1.utils import sequence_like
 
 from zenml.logger import get_logger
 from zenml.utils import dict_utils, typing_utils, yaml_utils
@@ -52,6 +53,23 @@ from zenml.utils.json_utils import pydantic_encoder
 logger = get_logger(__name__)
 
 M = TypeVar("M", bound="BaseModel")
+
+
+def sequence_like(v: Any) -> bool:
+    """Check if a value is a non-string sequence-like container.
+
+    Carried over from pydantic v1
+    (https://github.com/pydantic/pydantic/blob/v1.10.14/pydantic/utils.py)
+    so we don't depend on the `pydantic.v1` compatibility shim.
+
+    Args:
+        v: The value to check.
+
+    Returns:
+        Whether the value is a list, tuple, set, frozenset, generator,
+        or deque.
+    """
+    return isinstance(v, (list, tuple, set, frozenset, GeneratorType, deque))
 
 
 def update_model(
@@ -347,7 +365,9 @@ def validate_function_args(
     Returns:
         The validated arguments.
     """
-    signature = inspect.signature(__func)
+    from zenml.steps.utils import get_resolved_signature
+
+    signature = get_resolved_signature(__func)
 
     validated_args = ()
     validated_kwargs = {}
@@ -360,9 +380,18 @@ def validate_function_args(
         validated_kwargs = kwargs
 
     # We create a dummy function with the original function signature to run
-    # pydantic validation without actually running the function code
+    # pydantic validation without actually running the function code. We
+    # rebuild the annotations dict from the resolved signature so that we use
+    # the resolved type annotations, not any
+    # PEP 563 / `from __future__ import annotations` strings.
     f.__signature__ = signature  # type: ignore[attr-defined]
-    f.__annotations__ = __func.__annotations__
+    f.__annotations__ = {
+        name: parameter.annotation
+        for name, parameter in signature.parameters.items()
+        if parameter.annotation is not inspect.Parameter.empty
+    }
+    if signature.return_annotation is not inspect.Signature.empty:
+        f.__annotations__["return"] = signature.return_annotation
 
     validated_function = validate_call(config=__config, validate_return=False)(
         f
