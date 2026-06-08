@@ -59,10 +59,10 @@ def _normalize_optional_config_value(value: Optional[str]) -> Optional[str]:
 
 def _split_modal_runtime_environment(
     environment: Dict[str, str],
-) -> Tuple[Dict[str, str], Dict[str, str]]:
+) -> Tuple[Dict[str, str], Dict[str, Optional[str]]]:
     """Split runtime environment variables into plain and secret values."""
-    sandbox_environment = {}
-    sensitive_environment = {}
+    sandbox_environment: Dict[str, str] = {}
+    sensitive_environment: Dict[str, Optional[str]] = {}
 
     for key, value in environment.items():
         if key in SENSITIVE_ZENML_RUNTIME_ENV_KEYS:
@@ -95,23 +95,8 @@ def get_gpu_values(
     Raises:
         StackComponentInterfaceError: If the configuration is inconsistent or invalid.
     """
-    gpu_type_raw = settings.gpu
-    gpu_type = gpu_type_raw.strip() if gpu_type_raw is not None else None
-    if gpu_type == "":
-        gpu_type = None
-
+    gpu_type = _normalize_optional_config_value(settings.gpu)
     gpu_count = resource_settings.gpu_count
-    if gpu_count is not None:
-        try:
-            gpu_count = int(gpu_count)
-        except (TypeError, ValueError):
-            raise StackComponentInterfaceError(
-                f"Invalid GPU count '{gpu_count}'. Must be a non-negative integer."
-            )
-        if gpu_count < 0:
-            raise StackComponentInterfaceError(
-                f"Invalid GPU count '{gpu_count}'. Must be >= 0."
-            )
 
     if gpu_type is None:
         if gpu_count is not None and gpu_count > 0:
@@ -157,26 +142,28 @@ class ModalStepOperator(BaseStepOperator):
 
     def _get_modal_client(self) -> Optional["modal.Client"]:
         """Get an explicit Modal client when credentials are configured."""
-        token_id = _normalize_optional_config_value(self.config.token_id)
-        token_secret = _normalize_optional_config_value(
-            self.config.token_secret
-        )
-
-        if bool(token_id) != bool(token_secret):
-            raise StackComponentInterfaceError(
-                "Modal token_id and token_secret must be configured together."
-            )
-
-        if not token_id or not token_secret:
-            return None
-
         with self._modal_client_lock:
             modal_client = self._modal_client
-            if modal_client is None or modal_client.is_closed():
-                modal_client = modal.Client.from_credentials(
-                    token_id, token_secret
+            if modal_client is not None and not modal_client.is_closed():
+                return modal_client
+
+            token_id = _normalize_optional_config_value(self.config.token_id)
+            token_secret = _normalize_optional_config_value(
+                self.config.token_secret
+            )
+
+            if bool(token_id) != bool(token_secret):
+                raise StackComponentInterfaceError(
+                    "Modal token_id and token_secret must be configured together."
                 )
-                self._modal_client = modal_client
+
+            if not token_id or not token_secret:
+                return None
+
+            modal_client = modal.Client.from_credentials(
+                token_id, token_secret
+            )
+            self._modal_client = modal_client
 
         return modal_client
 

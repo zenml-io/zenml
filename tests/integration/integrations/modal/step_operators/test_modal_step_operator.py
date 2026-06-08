@@ -342,6 +342,30 @@ def test_modal_client_helper_caches_and_rebuilds_explicit_client(
     ]
 
 
+def test_modal_client_helper_returns_open_cache_without_reading_config(
+    monkeypatch,
+) -> None:
+    class ConfigAccessStub:
+        @property
+        def token_id(self):
+            raise AssertionError("Cached clients must not read token_id.")
+
+        @property
+        def token_secret(self):
+            raise AssertionError("Cached clients must not read token_secret.")
+
+    operator = _make_operator(ModalStepOperatorConfig())
+    cached_client = ModalClientStub("cached")
+    operator._modal_client = cached_client
+    monkeypatch.setattr(
+        ModalStepOperator,
+        "config",
+        property(lambda _operator: ConfigAccessStub()),
+    )
+
+    assert operator._get_modal_client() is cached_client
+
+
 def test_modal_client_helper_uses_lock_for_concurrent_creation(
     monkeypatch,
 ) -> None:
@@ -660,22 +684,6 @@ def test_status_and_cancel_preserve_ambient_auth_with_client_none(
         ("sandbox-id", {"client": None}),
     ]
     assert recorded["terminate_called"] is True
-
-
-def test_gpu_arg_invalid_negative_count_raises() -> None:
-    settings = ModalStepOperatorSettings(gpu="T4")
-    rs = ResourceSettingsStub(gpu_count=-1)
-    with pytest.raises(StackComponentInterfaceError) as e:
-        get_gpu_values(settings, rs)
-    assert "Invalid GPU count" in str(e.value)
-
-
-def test_gpu_arg_non_integer_count_raises() -> None:
-    settings = ModalStepOperatorSettings(gpu="T4")
-    rs = ResourceSettingsStub(gpu_count="two")
-    with pytest.raises(StackComponentInterfaceError) as e:
-        get_gpu_values(settings, rs)
-    assert "Invalid GPU count" in str(e.value)
 
 
 def test_gpu_arg_whitespace_type_treated_as_none_behavior() -> None:
