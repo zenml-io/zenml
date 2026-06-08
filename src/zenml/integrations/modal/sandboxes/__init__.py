@@ -17,12 +17,10 @@ from zenml.integrations.modal.sandboxes.modal_sandbox import (
     ModalSandbox,
     ModalSandboxProcess,
     ModalSandboxSession,
-    ModalSandboxSnapshot,
 )
 
 __all__ = [
     "ModalSandbox",
     "ModalSandboxProcess",
     "ModalSandboxSession",
-    "ModalSandboxSnapshot",
 ]
