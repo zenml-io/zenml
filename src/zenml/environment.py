@@ -383,7 +383,8 @@ class Environment(metaclass=SingletonMetaClass):
         """
         try:
             output = subprocess.check_output(
-                [sys.executable, "-m", "pip", "freeze"]
+                [sys.executable, "-m", "pip", "freeze"],
+                stderr=subprocess.DEVNULL,
             ).decode()
             return output.strip().split("\n")
         except (FileNotFoundError, subprocess.CalledProcessError):
@@ -391,7 +392,8 @@ class Environment(metaclass=SingletonMetaClass):
             if shutil.which("uv"):
                 try:
                     output = subprocess.check_output(
-                        ["uv", "pip", "freeze"]
+                        ["uv", "pip", "freeze"],
+                        stderr=subprocess.DEVNULL,
                     ).decode()
                     return output.strip().split("\n")
                 except (subprocess.CalledProcessError, FileNotFoundError):

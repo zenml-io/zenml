@@ -57,7 +57,7 @@ def upgrade() -> None:
         batch_op.add_column(
             sa.Column(
                 "original_step_run_id",
-                sqlmodel.sql.sqltypes.GUID(),
+                sa.Uuid(),
                 nullable=True,
             )
         )

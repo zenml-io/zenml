@@ -15,7 +15,9 @@
 
 import inspect
 import json
+from collections import deque
 from json.decoder import JSONDecodeError
+from types import GeneratorType
 from typing import (
     Any,
     Callable,
@@ -43,7 +45,6 @@ from pydantic import (
 )
 from pydantic._internal import _repr as pydantic_repr
 from pydantic.fields import FieldInfo
-from pydantic.v1.utils import sequence_like
 
 from zenml.logger import get_logger
 from zenml.utils import dict_utils, typing_utils, yaml_utils
@@ -52,6 +53,23 @@ from zenml.utils.json_utils import pydantic_encoder
 logger = get_logger(__name__)
 
 M = TypeVar("M", bound="BaseModel")
+
+
+def sequence_like(v: Any) -> bool:
+    """Check if a value is a non-string sequence-like container.
+
+    Carried over from pydantic v1
+    (https://github.com/pydantic/pydantic/blob/v1.10.14/pydantic/utils.py)
+    so we don't depend on the `pydantic.v1` compatibility shim.
+
+    Args:
+        v: The value to check.
+
+    Returns:
+        Whether the value is a list, tuple, set, frozenset, generator,
+        or deque.
+    """
+    return isinstance(v, (list, tuple, set, frozenset, GeneratorType, deque))
 
 
 def update_model(
