@@ -11,17 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Modal sandbox flavor implementation.
+"""Modal sandbox flavor implementation."""
 
-Wraps Modal's ``Sandbox`` / ``ContainerProcess`` / ``Image`` primitives in the
-``BaseSandbox`` interface.
-
-Modal exposes a synchronous Sandbox API (modal>=0.64). Streaming output is
-returned as a ``LogsReader`` iterable that yields byte chunks (not lines); we
-line-buffer it to satisfy ``SandboxProcess.stdout()`` / ``stderr()`` contracts.
-"""
-
+import logging
+import math
 import shlex
+import threading
 import time
 from typing import (
     TYPE_CHECKING,
@@ -30,14 +25,11 @@ from typing import (
     Iterable,
     Iterator,
     List,
-    Literal,
     Optional,
     Type,
     Union,
     cast,
 )
-
-from pydantic import Field
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.modal.flavors import (
@@ -48,15 +40,15 @@ from zenml.logger import get_logger
 from zenml.sandboxes import (
     BaseSandbox,
     BaseSandboxSettings,
-    BaseSandboxSnapshot,
     SandboxExecError,
     SandboxProcess,
     SandboxSession,
+    SandboxSnapshot,
 )
 
 # Sentinel for "use the active step's containerized-orchestrator image."
-# Inlined here (rather than imported from base) so the image-resolution
-# behavior stays owned by this flavor and the base stays minimal.
+# Inlined here so the image-resolution behavior stays owned by this flavor
+# and the base stays minimal.
 MODAL_STEP_IMAGE_SENTINEL = "<step>"
 
 if TYPE_CHECKING:
@@ -67,27 +59,34 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class ModalSandboxSnapshot(BaseSandboxSnapshot):
-    """Snapshot of a Modal Sandbox's filesystem.
+def _normalize_optional_config_value(value: Optional[str]) -> Optional[str]:
+    """Strip whitespace and return None for empty strings.
 
-    Modal's ``snapshot_filesystem()`` captures the FS only — no in-memory
-    process state. ``restore`` boots a *new* Sandbox from the stored Image.
+    Args:
+        value: The raw config value.
 
-    ``sandbox_flavor`` is locked to ``"modal"`` via ``Literal`` — Pydantic
-    rejects any other value at construction time, so callers can't mint a
-    snapshot that lies about its flavor.
+    Returns:
+        Stripped non-empty string, or ``None``.
     """
-
-    sandbox_flavor: Literal["modal"] = Field(default="modal")
+    if value is None:
+        return None
+    stripped = value.strip()
+    return stripped or None
 
 
 def _line_buffer(chunks: Iterable[Any]) -> Iterator[str]:
-    """Re-emits byte/str chunks one decoded line at a time.
+    """Re-emit byte/str chunks one decoded line at a time.
 
-    Yields lines including their trailing newline when present. A final
-    line without ``\\n`` is yielded once the underlying iterable is
-    exhausted. Mirrors ``SandboxProcess.stdout()`` contract — lines, utf-8.
+    Args:
+        chunks: Source iterable yielding bytes, str, or None.
+
+    Yields:
+        Lines with trailing newline when present; a final newline-less
+        remainder is yielded once the source is exhausted.
     """
+    # Mirrors the SandboxProcess.stdout() / stderr() contract (line-delimited
+    # utf-8). Modal returns LogsReader iterables that yield byte chunks, not
+    # lines, so we line-buffer on this side.
     buffer = ""
     for chunk in chunks:
         if chunk is None:
@@ -111,54 +110,48 @@ class ModalSandboxProcess(SandboxProcess):
         self,
         process: Any,
         *,
-        session: Optional["ModalSandboxSession"] = None,
+        session: "ModalSandboxSession",
+        started_at: float,
     ) -> None:
-        """Initializes the process wrapper.
+        """Initialize the process wrapper.
 
         Args:
             process: The Modal ``ContainerProcess`` returned by ``sandbox.exec``.
-            session: Owning session. When provided, stdout/stderr lines
-                are forwarded through ``session._wrap_stream`` so they
-                land in the per-session sandbox log source.
+            session: Owning session — stdout/stderr lines forward through
+                ``session._wrap_stream`` into the per-session log source.
+            started_at: Wall-clock launch time, used by ``collect()`` to
+                report elapsed time.
         """
+        super().__init__(session=session, started_at=started_at)
         self._process = process
-        self._session = session
 
     def stdout(self) -> Iterator[str]:
-        """Returns a line-buffered stdout iterator, log-wrapped when bound.
+        """Returns a line-buffered, log-wrapped stdout iterator.
 
         Returns:
-            Plain line iterator when no session is attached; otherwise
-            wrapped via ``session._wrap_stream`` so each line is also
-            emitted to the sandbox log source.
+            Line iterator wrapped via ``session._wrap_stream``.
         """
-        lines = _line_buffer(self._process.stdout)
-        if self._session is None:
-            return lines
-        return self._session._wrap_stream(lines, stream="stdout")
+        return self._session._wrap_stream(
+            _line_buffer(self._process.stdout), log_level=logging.INFO
+        )
 
     def stderr(self) -> Iterator[str]:
-        """Returns a line-buffered stderr iterator, log-wrapped when bound.
+        """Returns a line-buffered, log-wrapped stderr iterator.
 
         Returns:
-            Plain line iterator when no session is attached; otherwise
-            wrapped via ``session._wrap_stream`` so each line is also
-            emitted to the sandbox log source.
+            Line iterator wrapped via ``session._wrap_stream``.
         """
-        lines = _line_buffer(self._process.stderr)
-        if self._session is None:
-            return lines
-        return self._session._wrap_stream(lines, stream="stderr")
+        return self._session._wrap_stream(
+            _line_buffer(self._process.stderr), log_level=logging.ERROR
+        )
 
     def wait(self, timeout: Optional[float] = None) -> int:
         """Blocks until the command exits.
 
         Args:
-            timeout: Not supported. Modal's ``ContainerProcess.wait()``
-                doesn't accept a timeout in the public API. Passing a
-                non-None value raises rather than silently ignoring —
-                use the Session-level ``timeout_seconds`` setting to
-                bound total Session lifetime.
+            timeout: Not supported by Modal's ``ContainerProcess.wait()``.
+                Use the Session-level ``timeout`` setting to bound total
+                Session lifetime.
 
         Returns:
             The exit code.
@@ -169,22 +162,18 @@ class ModalSandboxProcess(SandboxProcess):
         if timeout is not None:
             raise NotImplementedError(
                 "Modal does not support per-exec timeouts. Use "
-                "ModalSandboxSettings.timeout_seconds for Session-level "
-                "TTL, or wrap the wait call in your own watchdog."
+                "ModalSandboxSettings.timeout for Session-level TTL, or "
+                "wrap the wait call in your own watchdog."
             )
         self._process.wait()
         return int(self._process.returncode or 0)
 
     def kill(self) -> None:
-        """Best-effort process termination.
-
-        Modal's ``ContainerProcess`` does not expose a per-command kill in
-        the public API (``wait`` / ``poll`` / ``stdin`` / ``stdout`` /
-        ``stderr`` / ``attach`` only — see ``modal.container_process``).
-        We close stdin to signal EOF, which lets well-behaved processes
-        exit cleanly. For a hard kill, call ``ModalSandboxSession.destroy()``
-        to terminate the entire Sandbox.
-        """
+        """Best-effort process termination."""
+        # Modal's ContainerProcess does not expose a per-command kill —
+        # only wait / poll / stdin / stdout / stderr / attach. Closing
+        # stdin signals EOF, which lets well-behaved processes exit. For
+        # a hard kill, call ModalSandboxSession.destroy().
         try:
             if self._process.stdin is not None:
                 self._process.stdin.close()
@@ -218,31 +207,31 @@ class ModalSandboxSession(SandboxSession):
         self,
         sandbox: Any,
         *,
-        parent: "BaseSandbox",
+        parent: "ModalSandbox",
     ) -> None:
-        """Initializes the session wrapper.
+        """Initialize the session wrapper.
 
         Args:
             sandbox: The live Modal ``Sandbox`` object.
-            parent: The owning ``BaseSandbox`` component.
+            parent: The owning Modal sandbox component.
         """
-        super().__init__(
-            id=sandbox.object_id,
-            parent=parent,
-        )
+        # Assign _sandbox before super().__init__ so the dashboard hook,
+        # which is called during base __init__ via _publish_sandbox_metadata,
+        # has the state it needs.
         self._sandbox = sandbox
+        self._parent_modal = parent
+        super().__init__(id=sandbox.object_id, parent=parent)
 
-    def _dashboard_url(self) -> Optional[str]:
+    def _get_dashboard_url(self) -> Optional[str]:
         """Returns the Modal sandbox's dashboard URL, or ``None``.
 
         Returns:
-            URL string from ``Sandbox.get_dashboard_url()`` (older SDKs
-            without this API return ``None``).
+            URL string from ``Sandbox.get_dashboard_url()`` — older Modal
+            SDKs without this API return ``None``.
         """
         try:
             url = self._sandbox.get_dashboard_url()
         except Exception as e:  # noqa: BLE001
-            # Older Modal SDKs may not expose get_dashboard_url; tolerable.
             logger.debug(
                 "Could not resolve Modal sandbox dashboard URL: %s", e
             )
@@ -256,43 +245,38 @@ class ModalSandboxSession(SandboxSession):
         cwd: Optional[str] = None,
         env: Optional[Dict[str, str]] = None,
     ) -> SandboxProcess:
-        """Starts a command in the Modal Sandbox.
+        """Start a command in the Modal Sandbox.
 
         Args:
-            command: Command to run. ``List[str]`` is passed argv-style;
-                a string is shell-split with ``shlex.split``.
-            cwd: Working directory inside the sandbox. ``None`` uses the
-                Modal default.
+            command: Command to run. A list is passed argv-style; a string
+                is shell-split with ``shlex.split``.
+            cwd: Working directory inside the sandbox.
             env: Per-exec env vars (in addition to the Session-level env
                 injected at create time).
 
         Returns:
             A ``ModalSandboxProcess`` wrapping the live command handle.
-            stdout/stderr iterators emit each line into the dedicated
-            ``sandbox:<id>`` log source (alongside a ``$ <command>``
-            marker emitted right before launch).
 
         Raises:
-            SandboxExecError: If Modal rejects the launch (e.g. binary not
-                found, image broken).
+            SandboxExecError: If Modal rejects the launch.
         """
         argv: List[str] = (
             list(command)
             if isinstance(command, list)
             else shlex.split(command)
         )
-        # Shell-style marker in the sandbox log source.
         self._log_command(argv)
 
         kwargs: Dict[str, Any] = {}
         if cwd is not None:
             kwargs["workdir"] = cwd
         if env:
-            # Modal expects a ``modal.Secret`` for env injection.
+            # Modal 1.x validated env= on Sandbox.create (strickvl PR
+            # #4038) but not on ContainerProcess.exec. Stick with the
+            # secrets= path on per-exec env injection until that's
+            # verified end-to-end against a live Modal 1.x runtime.
             import modal
 
-            # Modal types env_dict as Dict[str, Optional[str]]; our env is
-            # narrower (Dict[str, str]) — valid subtype at runtime, cast for mypy.
             kwargs["secrets"] = [
                 modal.Secret.from_dict(cast(Dict[str, Optional[str]], env))
             ]
@@ -303,59 +287,54 @@ class ModalSandboxSession(SandboxSession):
             raise SandboxExecError(
                 f"Modal exec failed to launch ({type(e).__name__}): {e}"
             ) from e
-        wrapped = ModalSandboxProcess(process, session=self)
-        wrapped._started_at = started_at
-        return wrapped
+        return ModalSandboxProcess(
+            process, session=self, started_at=started_at
+        )
 
-    def snapshot(self) -> ModalSandboxSnapshot:
-        """Captures the Sandbox's filesystem as a reusable Modal Image.
+    def create_snapshot(self) -> SandboxSnapshot:
+        """Capture the Sandbox's filesystem as a reusable Modal Image.
 
         Returns:
-            A ``ModalSandboxSnapshot`` whose ``ref`` is the Modal Image id.
-            No in-memory process state is captured.
+            A ``SandboxSnapshot`` whose ``ref`` is the Modal Image id. No
+            in-memory process state is captured.
         """
         image = self._sandbox.snapshot_filesystem()
-        return ModalSandboxSnapshot(ref=image.object_id)
+        return SandboxSnapshot(
+            sandbox_id=self._parent_modal.id, ref=image.object_id
+        )
 
     def upload_file(self, local_path: str, remote_path: str) -> None:
-        """Uploads a local file into the Sandbox.
-
-        Uses Modal's ``Sandbox.filesystem.copy_from_local()`` API. The
-        older ``Sandbox.open() + FileIO.write()`` path is deprecated by
-        Modal as of 2026-03-09.
+        """Upload a local file into the Sandbox.
 
         Args:
             local_path: Path to the file on the caller's machine.
             remote_path: Destination path inside the Sandbox.
         """
+        # Uses Modal's Sandbox.filesystem.copy_from_local() API; the
+        # older Sandbox.open() + FileIO.write() path is deprecated by
+        # Modal as of 2026-03-09.
         self._sandbox.filesystem.copy_from_local(local_path, remote_path)
 
     def download_file(self, remote_path: str, local_path: str) -> None:
-        """Downloads a file from the Sandbox to local storage.
-
-        Uses Modal's ``Sandbox.filesystem.copy_to_local()`` API. The
-        older ``Sandbox.open() + FileIO.read()`` path is deprecated by
-        Modal as of 2026-03-09.
+        """Download a file from the Sandbox to local storage.
 
         Args:
             remote_path: Source path inside the Sandbox.
             local_path: Destination path on the caller's machine.
         """
+        # Uses Modal's Sandbox.filesystem.copy_to_local() API; the older
+        # Sandbox.open() + FileIO.read() path is deprecated by Modal as
+        # of 2026-03-09.
         self._sandbox.filesystem.copy_to_local(remote_path, local_path)
 
     def close(self) -> None:
-        """Releases the local handle and tears down the log-forwarding context.
-
-        Modal's ``Sandbox`` is a stateless client handle (no socket to
-        drop). Idempotent — safe to call multiple times, and safe to
-        call outside a ``with`` block. The Sandbox keeps running on
-        Modal until its TTL expires; use ``destroy()`` to force-stop
-        immediately.
-        """
-        self._close_log_ctx()
+        """No-op: Modal ``Sandbox`` has no client-side resources to drop."""
+        # The Sandbox keeps running on Modal until its TTL expires; use
+        # destroy() to force-stop immediately. Logging-context teardown
+        # is centralized in base SandboxSession.__exit__.
 
     def destroy(self) -> None:
-        """Terminates the Sandbox on Modal."""
+        """Terminate the Sandbox on Modal."""
         try:
             self._sandbox.terminate()
         except Exception as e:
@@ -369,7 +348,7 @@ class ModalSandboxSession(SandboxSession):
 
 
 def _resolve_step_image() -> Optional[str]:
-    """Looks up the active step's containerized-orchestrator image.
+    """Look up the active step's containerized-orchestrator image.
 
     Returns:
         The image URI for the active step's build, or ``None`` if no step
@@ -397,22 +376,31 @@ def _resolve_step_image() -> Optional[str]:
 
 
 def _resolve_image(
-    base_image: Optional[str], default_image: str
+    base_image: Optional[str],
+    default_image: str,
+    registry_secret: Optional[Any] = None,
 ) -> "modal.Image":
-    """Resolves a base_image setting into a concrete Modal Image.
+    """Resolve a base_image setting into a concrete Modal Image.
 
     Args:
-        base_image: The setting value (``None``, the module-local
-            ``MODAL_STEP_IMAGE_SENTINEL``, or a registry URI).
+        base_image: The setting value — ``None``, the module-local
+            ``MODAL_STEP_IMAGE_SENTINEL``, or a registry URI.
         default_image: Fallback image URI from the component config.
+        registry_secret: Optional ``modal.Secret`` carrying registry
+            credentials; passed through to ``Image.from_registry``.
 
     Returns:
         A ``modal.Image`` instance ready to pass to ``Sandbox.create``.
     """
     import modal
 
+    def _from_registry(image_uri: str) -> "modal.Image":
+        if registry_secret is not None:
+            return modal.Image.from_registry(image_uri, secret=registry_secret)
+        return modal.Image.from_registry(image_uri)
+
     if base_image is None:
-        return modal.Image.from_registry(default_image)
+        return _from_registry(default_image)
     if base_image == MODAL_STEP_IMAGE_SENTINEL:
         step_image = _resolve_step_image()
         if not step_image:
@@ -423,17 +411,28 @@ def _resolve_image(
                 "image '%s'.",
                 default_image,
             )
-            return modal.Image.from_registry(default_image)
-        return modal.Image.from_registry(step_image)
-    return modal.Image.from_registry(base_image)
+            return _from_registry(default_image)
+        return _from_registry(step_image)
+    return _from_registry(base_image)
 
 
 class ModalSandbox(BaseSandbox):
     """Sandbox flavor backed by Modal."""
 
-    # Lazily-cached Modal App handle. Looking it up is a network round-trip;
-    # we cache after the first create_session/restore call.
-    _app: Optional[Any] = None
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize the Modal sandbox component.
+
+        Args:
+            *args: Forwarded to ``StackComponent``.
+            **kwargs: Forwarded to ``StackComponent``.
+        """
+        super().__init__(*args, **kwargs)
+        # Modal App lookup is a network round-trip; cache after the first
+        # create_session / restore call.
+        self._app: Optional[Any] = None
+        # Lazy thread-safe Modal client cache, recreated when closed.
+        self._modal_client: Optional[Any] = None
+        self._modal_client_lock = threading.Lock()
 
     @property
     def config(self) -> ModalSandboxConfig:
@@ -446,15 +445,49 @@ class ModalSandbox(BaseSandbox):
 
     @property
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
-        """Settings class — Modal extends the base with gpu/cpu/memory etc.
+        """Settings class.
 
         Returns:
             ``ModalSandboxSettings``.
         """
         return ModalSandboxSettings
 
-    def _get_app(self) -> Any:
-        """Returns this component's Modal ``App``, looking it up once and caching.
+    def _get_modal_client(self) -> Optional[Any]:
+        """Return an explicit Modal client when credentials are configured.
+
+        Returns:
+            A modal.Client built from token_id / token_secret, or None
+            when no credentials are configured (Modal then uses its
+            ambient auth). The both-or-neither precondition is enforced
+            upstream by ModalStepOperatorConfig's validator.
+        """
+        token_id = _normalize_optional_config_value(self.config.token_id)
+        token_secret = _normalize_optional_config_value(
+            self.config.token_secret
+        )
+        if not token_id or not token_secret:
+            return None
+
+        import modal
+
+        with self._modal_client_lock:
+            client = self._modal_client
+            if client is None or client.is_closed():
+                client = modal.Client.from_credentials(token_id, token_secret)
+                self._modal_client = client
+
+        return client
+
+    def _get_app(
+        self,
+        environment_name: Optional[str] = None,
+        client: Optional[Any] = None,
+    ) -> Any:
+        """Return this component's Modal ``App``, caching the lookup.
+
+        Args:
+            environment_name: Modal environment to look the app up in.
+            client: Explicit Modal client; ``None`` falls back to ambient.
 
         Returns:
             The Modal App.
@@ -463,37 +496,57 @@ class ModalSandbox(BaseSandbox):
             import modal
 
             self._app = modal.App.lookup(
-                self.config.app_name, create_if_missing=True
+                self.config.app_name,
+                create_if_missing=True,
+                environment_name=environment_name,
+                client=client,
             )
         return self._app
+
+    def _registry_secret(self) -> Optional[Any]:
+        """Return a Modal Secret holding container-registry creds, if any.
+
+        Returns:
+            A ``modal.Secret`` when the stack's container registry exposes
+            credentials, otherwise ``None`` (anonymous pull).
+        """
+        try:
+            container_registry = self.stack.container_registry
+        except Exception:
+            container_registry = None
+        if container_registry is None:
+            return None
+        creds = container_registry.credentials
+        if not creds:
+            return None
+
+        import modal
+
+        username, password = creds
+        return modal.Secret.from_dict(
+            {"REGISTRY_USERNAME": username, "REGISTRY_PASSWORD": password}
+        )
 
     def _modal_sandbox_kwargs(
         self,
         eff: ModalSandboxSettings,
         *,
+        client: Optional[Any],
         with_env: bool = True,
     ) -> Dict[str, Any]:
-        """Builds the kwargs passed to ``modal.Sandbox.create``.
-
-        Used by both ``create_session`` and ``restore`` so the same
-        timeout / resource / region knobs apply uniformly. Resource
-        knobs (cpu, memory, gpu count) are read from the active step's
-        ``ResourceSettings`` and combined with this flavor's gpu
-        type via ``get_gpu_values`` — the same helper the Modal step
-        operator uses, so the two components stay consistent.
+        """Build the kwargs passed to ``modal.Sandbox.create``.
 
         Args:
             eff: Effective per-step settings.
+            client: Explicit Modal client (or ``None`` for ambient auth).
             with_env: If True, the resolved Session env is exported as
-                a Modal Secret. Skipped on the restore path where
-                injecting env into a frozen filesystem image is rarely
-                what the caller wants.
+                ``env=`` on ``Sandbox.create``. Skipped on the restore
+                path where injecting env into a frozen filesystem image
+                is rarely what the caller wants.
 
         Returns:
             Kwargs for ``modal.Sandbox.create``.
         """
-        import modal
-
         from zenml.config.resource_settings import ByteUnit
         from zenml.integrations.modal.step_operators.modal_step_operator import (
             get_gpu_values,
@@ -506,24 +559,35 @@ class ModalSandbox(BaseSandbox):
         # the "<type>:<count>" composition shared with the step operator.
         gpu_values = get_gpu_values(eff, resource_settings)
 
-        kwargs: Dict[str, Any] = {"app": self._get_app()}
+        environment_name = _normalize_optional_config_value(
+            getattr(eff, "modal_environment", None)
+        )
+
+        kwargs: Dict[str, Any] = {
+            "app": self._get_app(
+                environment_name=environment_name, client=client
+            )
+        }
+        if client is not None:
+            kwargs["client"] = client
         if with_env:
             env = self._resolve_session_environment(eff)
             if env:
-                # Modal types env_dict as Dict[str, Optional[str]]; our
-                # env is narrower (Dict[str, str]). Valid subtype at
-                # runtime, cast for mypy.
-                kwargs["secrets"] = [
-                    modal.Secret.from_dict(cast(Dict[str, Optional[str]], env))
-                ]
-        if eff.timeout_seconds is not None:
-            kwargs["timeout"] = eff.timeout_seconds
+                # Modal 1.x: pass runtime env via env= (not via secrets=).
+                # Keeps the Image build cache clean of per-step values.
+                kwargs["env"] = env
+        # `timeout` is inherited from ModalStepOperatorSettings (validated
+        # ge=1, le=86400). Single source of truth shared with the step
+        # operator — one timeout knob per stack.
+        kwargs["timeout"] = eff.timeout
         if gpu_values is not None:
             kwargs["gpu"] = gpu_values
         if resource_settings.cpu_count is not None:
             kwargs["cpu"] = resource_settings.cpu_count
         if memory_mb is not None:
-            kwargs["memory"] = int(memory_mb)
+            # Round up: Modal rejects fractional MB; truncating could
+            # under-provision a tight memory request.
+            kwargs["memory"] = math.ceil(memory_mb)
         if eff.region is not None:
             kwargs["region"] = eff.region
         if eff.cloud is not None:
@@ -532,16 +596,13 @@ class ModalSandbox(BaseSandbox):
 
     @staticmethod
     def _active_resource_settings() -> "ResourceSettings":
-        """Returns the active step's ``ResourceSettings``, or defaults.
-
-        Reads from the active ``StepContext``'s step config. When no step
-        context is available (ad-hoc sandbox usage from a script),
-        returns an empty ``ResourceSettings`` so the caller can still
-        compose Modal kwargs without erroring.
+        """Return the active step's ``ResourceSettings``, or defaults.
 
         Returns:
             The step's resource settings (cpu_count, memory, gpu_count).
         """
+        # When no step context is available (ad-hoc usage from a script)
+        # we fall back to empty settings so kwargs composition still works.
         from zenml.config import ResourceSettings
         from zenml.steps.step_context import StepContext
 
@@ -553,7 +614,7 @@ class ModalSandbox(BaseSandbox):
     def create_session(
         self, settings: Optional[BaseSandboxSettings] = None
     ) -> SandboxSession:
-        """Boots a fresh Modal Sandbox.
+        """Boot a fresh Modal Sandbox.
 
         Args:
             settings: Optional per-step overrides for image / resources / env.
@@ -564,15 +625,21 @@ class ModalSandbox(BaseSandbox):
         import modal
 
         eff = cast(ModalSandboxSettings, self.resolve_settings(settings))
-        image = _resolve_image(eff.base_image, self.config.default_image)
+        client = self._get_modal_client()
+        image = _resolve_image(
+            eff.base_image,
+            self.config.default_image,
+            registry_secret=self._registry_secret(),
+        )
 
         sandbox = modal.Sandbox.create(
-            image=image, **self._modal_sandbox_kwargs(eff)
+            image=image,
+            **self._modal_sandbox_kwargs(eff, client=client),
         )
         return ModalSandboxSession(sandbox, parent=self)
 
     def attach(self, session_id: str) -> SandboxSession:
-        """Reconnects to a still-live Modal Sandbox by id.
+        """Reconnect to a still-live Modal Sandbox by id.
 
         Args:
             session_id: The Modal sandbox object id (e.g. ``sb_xxx``).
@@ -581,14 +648,16 @@ class ModalSandbox(BaseSandbox):
             A ``ModalSandboxSession`` wrapping the existing live sandbox.
 
         Raises:
-            RuntimeError: If Modal can't find a sandbox with the given id
-                (terminated or unknown). Wraps the underlying Modal error
-                so callers get a stable exception type with a clear message.
+            RuntimeError: If Modal can't find a sandbox with the given id.
         """
         import modal
 
+        client = self._get_modal_client()
         try:
-            sandbox = modal.Sandbox.from_id(session_id)
+            if client is not None:
+                sandbox = modal.Sandbox.from_id(session_id, client=client)
+            else:
+                sandbox = modal.Sandbox.from_id(session_id)
         except Exception as e:
             raise RuntimeError(
                 f"Failed to attach to Modal sandbox '{session_id}' "
@@ -596,17 +665,12 @@ class ModalSandbox(BaseSandbox):
             ) from e
         return ModalSandboxSession(sandbox, parent=self)
 
-    def restore(self, snapshot: BaseSandboxSnapshot) -> SandboxSession:
-        """Boots a new Session from a stored filesystem snapshot.
-
-        Applies the same timeout / resource / region settings as
-        ``create_session``. Env injection is skipped: a restored
-        sandbox boots from a frozen Image and the caller almost never
-        wants to layer a fresh env merge on top.
+    def restore(self, snapshot: SandboxSnapshot) -> SandboxSession:
+        """Boot a new Session from a stored filesystem snapshot.
 
         Args:
-            snapshot: A ``ModalSandboxSnapshot`` whose ``ref`` is a Modal
-                Image id captured via ``snapshot_filesystem()``.
+            snapshot: A ``SandboxSnapshot`` whose ``ref`` is a Modal Image
+                id captured via ``snapshot_filesystem()``.
 
         Returns:
             A new ``ModalSandboxSession`` initialized from the Image. No
@@ -615,15 +679,21 @@ class ModalSandbox(BaseSandbox):
         Raises:
             RuntimeError: If Modal can't load the Image (e.g. id GC'd).
         """
-        self._validate_snapshot_provider(snapshot)
+        self._validate_snapshot(snapshot)
+        # Env injection is skipped: a restored sandbox boots from a frozen
+        # Image and the caller almost never wants to layer a fresh env
+        # merge on top.
         import modal
 
         eff = cast(ModalSandboxSettings, self.resolve_settings(None))
+        client = self._get_modal_client()
         try:
             image = modal.Image.from_id(snapshot.ref)
             sandbox = modal.Sandbox.create(
                 image=image,
-                **self._modal_sandbox_kwargs(eff, with_env=False),
+                **self._modal_sandbox_kwargs(
+                    eff, client=client, with_env=False
+                ),
             )
         except Exception as e:
             raise RuntimeError(

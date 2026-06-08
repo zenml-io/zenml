@@ -14,15 +14,16 @@
 """Unit tests for the Modal Sandbox flavor.
 
 Modal's API is heavily mocked — these tests exercise the wiring around it
-(line buffering, env merging, snapshot/restore round-trip) but do not boot a
-real Modal Sandbox.
+(line buffering, env injection, snapshot/restore round-trip) but do not boot
+a real Modal Sandbox.
 """
 
+import logging
 import sys
 from contextlib import contextmanager
 from datetime import datetime
 from typing import Any, Iterator, List
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, sentinel
 from uuid import uuid4
 
 import pytest
@@ -38,21 +39,21 @@ from zenml.integrations.modal.sandboxes import (  # noqa: E402
     ModalSandbox,
     ModalSandboxProcess,
     ModalSandboxSession,
-    ModalSandboxSnapshot,
 )
 from zenml.integrations.modal.sandboxes.modal_sandbox import (  # noqa: E402
     MODAL_STEP_IMAGE_SENTINEL,
     _line_buffer,
+    _normalize_optional_config_value,
 )
 from zenml.sandboxes import (  # noqa: E402
     BaseSandbox,
-    BaseSandboxSnapshot,
     SandboxExecError,
+    SandboxSnapshot,
 )
 
 
 def _make_session(fake_sandbox: Any) -> ModalSandboxSession:
-    """Builds a ModalSandboxSession with a fake parent for tests.
+    """Build a ModalSandboxSession with a fake parent for tests.
 
     Args:
         fake_sandbox: Mock Modal Sandbox.
@@ -60,20 +61,15 @@ def _make_session(fake_sandbox: Any) -> ModalSandboxSession:
     Returns:
         Session under test.
     """
-    return ModalSandboxSession(
-        fake_sandbox,
-        parent=MagicMock(spec=BaseSandbox, flavor="modal"),
-    )
+    parent = MagicMock(spec=BaseSandbox)
+    parent.flavor = "modal"
+    parent.id = uuid4()
+    return ModalSandboxSession(fake_sandbox, parent=parent)
 
 
 @contextmanager
 def _patch_modal() -> Iterator[MagicMock]:
-    """Substitutes the ``modal`` module with a MagicMock for ``import modal``.
-
-    The Modal sandbox impl imports ``modal`` lazily inside each function, so
-    we have to swap the real module in ``sys.modules`` for the duration of
-    the test.
-    """
+    """Substitute the ``modal`` module with a MagicMock for ``import modal``."""
     real = sys.modules.get("modal")
     fake = MagicMock(name="modal")
     sys.modules["modal"] = fake
@@ -86,21 +82,17 @@ def _patch_modal() -> Iterator[MagicMock]:
             del sys.modules["modal"]
 
 
-# ---------------------------------------------------------------------------
-# helpers
-# ---------------------------------------------------------------------------
-
-
 def _make_modal_sandbox(
     *,
     environment: dict | None = None,
     secrets: list | None = None,
+    config: ModalSandboxConfig | None = None,
 ) -> ModalSandbox:
-    """Builds a ModalSandbox without going through Stack/Client."""
+    """Build a ModalSandbox without going through Stack/Client."""
     return ModalSandbox(
         name="test-modal",
         id=uuid4(),
-        config=ModalSandboxConfig(),
+        config=config or ModalSandboxConfig(),
         flavor="modal",
         type=StackComponentType.SANDBOX,
         user=None,
@@ -112,8 +104,20 @@ def _make_modal_sandbox(
 
 
 # ---------------------------------------------------------------------------
-# _line_buffer
+# helpers
 # ---------------------------------------------------------------------------
+
+
+class TestNormalizeOptionalConfigValue:
+    def test_none_returns_none(self) -> None:
+        assert _normalize_optional_config_value(None) is None
+
+    def test_empty_string_returns_none(self) -> None:
+        assert _normalize_optional_config_value("") is None
+        assert _normalize_optional_config_value("   ") is None
+
+    def test_strips_whitespace(self) -> None:
+        assert _normalize_optional_config_value("  foo  ") == "foo"
 
 
 class TestLineBuffer:
@@ -122,8 +126,6 @@ class TestLineBuffer:
         assert list(_line_buffer(chunks)) == ["hello\n", "world\n"]
 
     def test_joins_split_lines_across_chunks(self) -> None:
-        # Split the word "alpha" across chunk boundaries to exercise
-        # the partial-line buffering path.
         chunks = [b"alp", b"ha\nbe", b"ta\n"]
         assert list(_line_buffer(chunks)) == ["alpha\n", "beta\n"]
 
@@ -141,122 +143,28 @@ class TestLineBuffer:
 
 
 # ---------------------------------------------------------------------------
-# Env merging is now BaseSandbox._resolve_session_environment — exercised
-# in tests/unit/sandboxes/test_base_sandbox.py. Modal just consumes it.
-# ---------------------------------------------------------------------------
-
-
-# ---------------------------------------------------------------------------
-# ModalSandboxSnapshot
-# ---------------------------------------------------------------------------
-
-
-class TestModalSnapshot:
-    def test_sandbox_flavor_defaults_to_modal(self) -> None:
-        snap = ModalSandboxSnapshot(ref="im-123")
-        assert snap.sandbox_flavor == "modal"
-
-    def test_sandbox_flavor_is_frozen(self) -> None:
-        # The sandbox_flavor field is frozen — callers cannot mint a
-        # snapshot that lies about which flavor it belongs to.
-        from pydantic import ValidationError
-
-        with pytest.raises(ValidationError):
-            ModalSandboxSnapshot(sandbox_flavor="other-flavor", ref="im-123")
-
-    def test_subclass_of_base_snapshot(self) -> None:
-        snap = ModalSandboxSnapshot(ref="im-123")
-        assert isinstance(snap, BaseSandboxSnapshot)
-
-    def test_round_trip(self) -> None:
-        snap = ModalSandboxSnapshot(ref="im-123", metadata={"size": 42})
-        restored = ModalSandboxSnapshot.model_validate_json(
-            snap.model_dump_json()
-        )
-        assert restored == snap
-
-
-# ---------------------------------------------------------------------------
-# Generic PydanticMaterializer handles ModalSandboxSnapshot via MRO; no
-# dedicated materializer needed.
-# ---------------------------------------------------------------------------
-
-
-class TestSnapshotMaterializationPath:
-    def test_pydantic_materializer_resolved_for_snapshot(self) -> None:
-        from zenml.materializers.materializer_registry import (
-            materializer_registry,
-        )
-        from zenml.materializers.pydantic_materializer import (
-            PydanticMaterializer,
-        )
-
-        # No explicit registration: the registry walks the MRO from
-        # ModalSandboxSnapshot -> BaseSandboxSnapshot -> BaseModel and
-        # finds PydanticMaterializer's BaseModel binding.
-        resolved = materializer_registry[ModalSandboxSnapshot]
-        assert resolved is PydanticMaterializer
-
-
-# ---------------------------------------------------------------------------
-# Settings merge — component defaults must survive a partial override
+# Settings merge
 # ---------------------------------------------------------------------------
 
 
 class TestSettingsMerge:
     def test_component_defaults_survive_partial_override(self) -> None:
-        # Build a sandbox with component-level Modal config defaults set.
-        sandbox = ModalSandbox(
-            name="test-modal",
-            id=uuid4(),
-            config=ModalSandboxConfig(
-                gpu="A100",
-                region="us-east",
-            ),
-            flavor="modal",
-            type=StackComponentType.SANDBOX,
-            user=None,
-            created=datetime.now(),
-            updated=datetime.now(),
-            environment={},
-            secrets=[],
+        sandbox = _make_modal_sandbox(
+            config=ModalSandboxConfig(gpu="A100", region="us-east"),
         )
-        # Override only timeout_seconds — gpu/region must persist.
-        override = ModalSandboxSettings(timeout_seconds=600)
+        override = ModalSandboxSettings(timeout=600)
         eff = sandbox.resolve_settings(override)
         assert eff.gpu == "A100"
         assert eff.region == "us-east"
-        assert eff.timeout_seconds == 600
+        assert eff.timeout == 600
 
     def test_override_wins_on_explicit_field_collision(self) -> None:
-        sandbox = ModalSandbox(
-            name="test-modal",
-            id=uuid4(),
-            config=ModalSandboxConfig(gpu="A100"),
-            flavor="modal",
-            type=StackComponentType.SANDBOX,
-            user=None,
-            created=datetime.now(),
-            updated=datetime.now(),
-            environment={},
-            secrets=[],
-        )
+        sandbox = _make_modal_sandbox(config=ModalSandboxConfig(gpu="A100"))
         override = ModalSandboxSettings(gpu="H100")
         assert sandbox.resolve_settings(override).gpu == "H100"
 
     def test_none_override_returns_config_defaults(self) -> None:
-        sandbox = ModalSandbox(
-            name="test-modal",
-            id=uuid4(),
-            config=ModalSandboxConfig(gpu="A100"),
-            flavor="modal",
-            type=StackComponentType.SANDBOX,
-            user=None,
-            created=datetime.now(),
-            updated=datetime.now(),
-            environment={},
-            secrets=[],
-        )
+        sandbox = _make_modal_sandbox(config=ModalSandboxConfig(gpu="A100"))
         eff = sandbox.resolve_settings(None)
         assert eff.gpu == "A100"
 
@@ -270,38 +178,47 @@ class TestModalSandboxProcess:
     def test_stdout_line_buffered(self) -> None:
         fake = MagicMock()
         fake.stdout = [b"a\nb\n"]
-        proc = ModalSandboxProcess(fake)
+        session = _make_session(MagicMock(object_id="sb_xyz"))
+        proc = ModalSandboxProcess(fake, session=session, started_at=0.0)
         assert list(proc.stdout()) == ["a\n", "b\n"]
 
     def test_wait_returns_int(self) -> None:
         fake = MagicMock()
         fake.returncode = 0
-        proc = ModalSandboxProcess(fake)
+        session = _make_session(MagicMock(object_id="sb_xyz"))
+        proc = ModalSandboxProcess(fake, session=session, started_at=0.0)
         assert proc.wait() == 0
         fake.wait.assert_called_once()
 
     def test_exit_code_none_while_running(self) -> None:
         fake = MagicMock()
         fake.returncode = None
-        proc = ModalSandboxProcess(fake)
+        session = _make_session(MagicMock(object_id="sb_xyz"))
+        proc = ModalSandboxProcess(fake, session=session, started_at=0.0)
         assert proc.exit_code is None
 
     def test_wait_with_timeout_raises_not_implemented(self) -> None:
         # Modal has no per-exec timeout; we refuse rather than silently drop.
         fake = MagicMock()
+        session = _make_session(MagicMock(object_id="sb_xyz"))
         with pytest.raises(NotImplementedError, match="timeout"):
-            ModalSandboxProcess(fake).wait(timeout=5.0)
+            ModalSandboxProcess(fake, session=session, started_at=0.0).wait(
+                timeout=5.0
+            )
 
     def test_kill_closes_stdin(self) -> None:
-        # Modal has no per-command kill — we close stdin as best-effort.
         fake = MagicMock()
-        ModalSandboxProcess(fake).kill()
+        session = _make_session(MagicMock(object_id="sb_xyz"))
+        ModalSandboxProcess(fake, session=session, started_at=0.0).kill()
         fake.stdin.close.assert_called_once()
 
     def test_kill_tolerates_stdin_close_failure(self) -> None:
         fake = MagicMock()
         fake.stdin.close.side_effect = RuntimeError("already closed")
-        ModalSandboxProcess(fake).kill()  # no raise
+        session = _make_session(MagicMock(object_id="sb_xyz"))
+        ModalSandboxProcess(
+            fake, session=session, started_at=0.0
+        ).kill()  # no raise
 
 
 # ---------------------------------------------------------------------------
@@ -325,8 +242,22 @@ class TestModalSandboxSession:
         fake_sandbox = MagicMock(object_id="sb_xyz")
         fake_sandbox.exec.return_value = MagicMock()
         _make_session(fake_sandbox).exec("python -c 'print(1)'")
-        # shlex.split → ["python", "-c", "print(1)"]
         fake_sandbox.exec.assert_called_once_with("python", "-c", "print(1)")
+
+    def test_exec_wraps_env_in_modal_secret(self) -> None:
+        # Per-exec env still rides on secrets=[modal.Secret.from_dict(...)]
+        # until Sandbox.exec(env=) is verified against Modal 1.x runtime.
+        fake_sandbox = MagicMock(object_id="sb_xyz")
+        fake_sandbox.exec.return_value = MagicMock()
+        with patch("modal.Secret.from_dict") as fake_from_dict:
+            fake_from_dict.return_value = sentinel.secret
+            _make_session(fake_sandbox).exec(
+                ["echo", "hi"], env={"FOO": "bar"}
+            )
+        fake_from_dict.assert_called_once_with({"FOO": "bar"})
+        fake_sandbox.exec.assert_called_once_with(
+            "echo", "hi", secrets=[sentinel.secret]
+        )
 
     def test_exec_launch_failure_raises_sandbox_exec_error(self) -> None:
         fake_sandbox = MagicMock(object_id="sb_xyz")
@@ -334,14 +265,16 @@ class TestModalSandboxSession:
         with pytest.raises(SandboxExecError, match="image broken"):
             _make_session(fake_sandbox).exec(["nope"])
 
-    def test_snapshot_packages_image_id(self) -> None:
+    def test_create_snapshot_packages_image_id(self) -> None:
         fake_sandbox = MagicMock(object_id="sb_xyz")
         fake_sandbox.snapshot_filesystem.return_value = MagicMock(
             object_id="im-123"
         )
-        snap = _make_session(fake_sandbox).snapshot()
-        assert snap.sandbox_flavor == "modal"
+        session = _make_session(fake_sandbox)
+        snap = session.create_snapshot()
+        assert isinstance(snap, SandboxSnapshot)
         assert snap.ref == "im-123"
+        assert snap.sandbox_id == session._parent_modal.id
 
     def test_destroy_calls_terminate(self) -> None:
         fake_sandbox = MagicMock(object_id="sb_xyz")
@@ -379,8 +312,8 @@ class TestModalSandbox:
                 _make_modal_sandbox().attach("sb_missing")
 
     def test_app_lookup_cached_across_create_sessions(self) -> None:
-        # _get_app should only call modal.App.lookup once per ModalSandbox
-        # instance; the cached App is reused on the second create_session.
+        # _get_app should call modal.App.lookup only once per ModalSandbox
+        # instance.
         with _patch_modal() as modal_mock:
             modal_mock.App.lookup.return_value = MagicMock()
             modal_mock.Image.from_registry.return_value = MagicMock()
@@ -391,6 +324,43 @@ class TestModalSandbox:
             sandbox.create_session()
             sandbox.create_session()
         assert modal_mock.App.lookup.call_count == 1
+
+
+# ---------------------------------------------------------------------------
+# _get_modal_client
+# ---------------------------------------------------------------------------
+
+
+class TestGetModalClient:
+    def test_returns_none_when_no_credentials_configured(self) -> None:
+        sandbox = _make_modal_sandbox()
+        # Default config has no token_id / token_secret.
+        assert sandbox._get_modal_client() is None
+
+    def test_returns_client_when_credentials_configured(self) -> None:
+        sandbox = _make_modal_sandbox(
+            config=ModalSandboxConfig(
+                token_id="ak-test", token_secret="as-test"
+            )
+        )
+        with _patch_modal() as modal_mock:
+            fake_client = MagicMock()
+            fake_client.is_closed.return_value = False
+            modal_mock.Client.from_credentials.return_value = fake_client
+            client = sandbox._get_modal_client()
+            assert client is fake_client
+            modal_mock.Client.from_credentials.assert_called_once_with(
+                "ak-test", "as-test"
+            )
+            # Second call returns the cached client.
+            client2 = sandbox._get_modal_client()
+            assert client2 is fake_client
+            assert modal_mock.Client.from_credentials.call_count == 1
+
+
+# ---------------------------------------------------------------------------
+# File IO
+# ---------------------------------------------------------------------------
 
 
 class TestModalSandboxFileIO:
@@ -420,25 +390,30 @@ class TestModalSandboxFileIO:
         )
 
 
-class TestModalLogForwarding:
-    """Process stdout/stderr route through session._wrap_stream.
+# ---------------------------------------------------------------------------
+# Log forwarding & sentinel resolution
+# ---------------------------------------------------------------------------
 
-    Most of the sandbox-log routing is now covered on the base side in
-    tests/unit/sandboxes/test_base_sandbox.py::TestSandboxLogEmission.
-    These tests only verify that ModalSandboxProcess passes its line
-    iterators through the session when one is attached.
-    """
+
+class TestModalLogForwarding:
+    """Process stdout/stderr route through session._wrap_stream."""
 
     def test_process_stdout_routes_through_session_wrap_stream(self) -> None:
         fake_process = MagicMock()
         fake_process.stdout = [b"hello\n", b"world\n"]
         session = _make_session(MagicMock(object_id="sb_xyz"))
         session._wrap_stream = MagicMock(  # type: ignore[method-assign]
-            side_effect=lambda lines, stream: iter(["wrapped"])
+            side_effect=lambda lines, log_level: iter(["wrapped"])
         )
-        out = list(ModalSandboxProcess(fake_process, session=session).stdout())
+        out = list(
+            ModalSandboxProcess(
+                fake_process, session=session, started_at=0.0
+            ).stdout()
+        )
         session._wrap_stream.assert_called_once()
-        assert session._wrap_stream.call_args.kwargs["stream"] == "stdout"
+        assert (
+            session._wrap_stream.call_args.kwargs["log_level"] == logging.INFO
+        )
         assert out == ["wrapped"]
 
     def test_process_stderr_routes_through_session_wrap_stream(self) -> None:
@@ -446,21 +421,23 @@ class TestModalLogForwarding:
         fake_process.stderr = [b"oops\n"]
         session = _make_session(MagicMock(object_id="sb_xyz"))
         session._wrap_stream = MagicMock(  # type: ignore[method-assign]
-            side_effect=lambda lines, stream: iter(["wrapped"])
+            side_effect=lambda lines, log_level: iter(["wrapped"])
         )
-        list(ModalSandboxProcess(fake_process, session=session).stderr())
-        assert session._wrap_stream.call_args.kwargs["stream"] == "stderr"
-
-    def test_process_without_session_yields_raw_lines(self) -> None:
-        fake_process = MagicMock()
-        fake_process.stdout = [b"raw\n"]
-        out = list(ModalSandboxProcess(fake_process, session=None).stdout())
-        assert out == ["raw\n"]
+        list(
+            ModalSandboxProcess(
+                fake_process, session=session, started_at=0.0
+            ).stderr()
+        )
+        assert (
+            session._wrap_stream.call_args.kwargs["log_level"] == logging.ERROR
+        )
 
     def test_restore_rejects_cross_provider(self) -> None:
-        wrong = BaseSandboxSnapshot(sandbox_flavor="agent_sandbox", ref="ref")
-        with pytest.raises(ValueError, match="agent_sandbox"):
-            _make_modal_sandbox().restore(wrong)
+        sandbox = _make_modal_sandbox()
+        # sandbox_id pointing at a different component must be rejected.
+        wrong = SandboxSnapshot(sandbox_id=uuid4(), ref="ref")
+        with pytest.raises(ValueError):
+            sandbox.restore(wrong)
 
     def test_restore_creates_new_sandbox_from_image_id(self) -> None:
         with _patch_modal() as modal_mock:
@@ -469,13 +446,14 @@ class TestModalLogForwarding:
             modal_mock.Sandbox.create.return_value = MagicMock(
                 object_id="sb_new"
             )
-            snap = ModalSandboxSnapshot(ref="im-old")
-            session = _make_modal_sandbox().restore(snap)
+            sandbox = _make_modal_sandbox()
+            snap = SandboxSnapshot(sandbox_id=sandbox.id, ref="im-old")
+            session = sandbox.restore(snap)
         modal_mock.Image.from_id.assert_called_once_with("im-old")
         modal_mock.Sandbox.create.assert_called_once()
         assert session.id == "sb_new"
 
-    def test_create_session_passes_merged_env_as_modal_secret(
+    def test_create_session_passes_env_kwarg(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
         with _patch_modal() as modal_mock:
@@ -484,28 +462,19 @@ class TestModalLogForwarding:
             modal_mock.Sandbox.create.return_value = MagicMock(
                 object_id="sb_new"
             )
-            modal_mock.Secret.from_dict = MagicMock(
-                side_effect=lambda d: ("SECRET", d)
-            )
 
-            sandbox = _make_modal_sandbox(environment={"COMPONENT_VAR": "x"})
+            sandbox = _make_modal_sandbox()
             settings = ModalSandboxSettings(
-                environment={"STEP_VAR": "y", "COMPONENT_VAR": "override"}
+                sandbox_environment={"STEP_VAR": "y"}
             )
             sandbox.create_session(settings=settings)
 
-        # Inspect the secrets kwarg passed to Sandbox.create
         create_kwargs = modal_mock.Sandbox.create.call_args.kwargs
-        assert "secrets" in create_kwargs
-        secret_payload = create_kwargs["secrets"][0]
-        # Our mocked from_dict returns the dict itself; unwrap.
-        env_dict = secret_payload[1]
-        assert env_dict["COMPONENT_VAR"] == "override"  # settings wins
-        assert env_dict["STEP_VAR"] == "y"
+        assert create_kwargs.get("env") == {"STEP_VAR": "y"}
+        # Env must no longer be smuggled in via secrets=.
+        assert "secrets" not in create_kwargs
 
     def test_step_image_sentinel_resolves_via_snapshot_lookup(self) -> None:
-        # When the active step's pipeline_run.snapshot has a build, the
-        # sentinel resolves to the containerized orchestrator's image.
         with (
             _patch_modal() as modal_mock,
             patch(
@@ -528,8 +497,6 @@ class TestModalLogForwarding:
         )
 
     def test_step_image_sentinel_falls_back_when_unresolvable(self) -> None:
-        # No step context / no snapshot / no build -> default image
-        # plus a warning.
         with (
             _patch_modal() as modal_mock,
             patch(
@@ -553,12 +520,7 @@ class TestModalLogForwarding:
 
 
 class TestModalDashboardUrl:
-    """The Modal-specific _dashboard_url() override.
-
-    Generic step-metadata logging behavior now lives on the base in
-    SandboxSession._on_enter (covered by tests/unit/sandboxes/). These
-    tests only verify the Modal flavor's URL-resolution hook.
-    """
+    """The Modal-specific _get_dashboard_url() override."""
 
     def test_returns_url_when_modal_provides_it(self) -> None:
         fake_sandbox = MagicMock(object_id="sb_xyz")
@@ -566,10 +528,10 @@ class TestModalDashboardUrl:
             "https://modal.com/id/sb-x"
         )
         session = _make_session(fake_sandbox)
-        assert session._dashboard_url() == "https://modal.com/id/sb-x"
+        assert session._get_dashboard_url() == "https://modal.com/id/sb-x"
 
     def test_returns_none_when_get_dashboard_url_fails(self) -> None:
         fake_sandbox = MagicMock(object_id="sb_xyz")
         fake_sandbox.get_dashboard_url.side_effect = AttributeError("old SDK")
         session = _make_session(fake_sandbox)
-        assert session._dashboard_url() is None
+        assert session._get_dashboard_url() is None

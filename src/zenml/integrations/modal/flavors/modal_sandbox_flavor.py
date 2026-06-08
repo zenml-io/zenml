@@ -19,6 +19,7 @@ from pydantic import Field
 
 from zenml.integrations.modal import MODAL_SANDBOX_FLAVOR
 from zenml.integrations.modal.flavors.modal_step_operator_flavor import (
+    ModalStepOperatorConfig,
     ModalStepOperatorSettings,
 )
 from zenml.sandboxes import (
@@ -32,21 +33,12 @@ if TYPE_CHECKING:
 
 
 class ModalSandboxSettings(BaseSandboxSettings, ModalStepOperatorSettings):
-    """Per-step settings for the Modal sandbox.
+    """Per-step settings for the Modal sandbox."""
 
-    Inherits ``gpu`` / ``region`` / ``cloud`` from
-    ``ModalStepOperatorSettings`` so the two Modal stack components
-    share one source of truth for the Modal-specific provisioning
-    knobs. For cpu count, memory, and gpu count use the standard
-    ``ResourceSettings`` instead — the sandbox reads them from the
-    active step's resource settings and combines them with the gpu
-    type via ``get_gpu_values``, the same helper the Modal step
-    operator uses.
-
-    See https://modal.com/docs/guide/region-selection for region / cloud
-    selection (Enterprise & Team plans). Combinations that aren't available
-    surface as Modal API errors at session creation time.
-    """
+    # gpu / region / cloud / modal_environment are inherited from
+    # ModalStepOperatorSettings so the two Modal stack components share a
+    # single source of truth. cpu_count / memory / gpu_count come from the
+    # active step's ResourceSettings.
 
     base_image: Optional[str] = Field(
         default=None,
@@ -56,29 +48,15 @@ class ModalSandboxSettings(BaseSandboxSettings, ModalStepOperatorSettings):
         "'<step>' to reuse the active step's containerized-orchestrator "
         "image. When None, the component's 'default_image' is used.",
     )
-    timeout_seconds: Optional[int] = Field(
-        default=None,
-        description="Per-session TTL (in seconds) passed to Modal as the "
-        "Sandbox timeout. Modal terminates the Sandbox after this many "
-        "seconds regardless of in-flight execs. Example: 3600 for a "
-        "1-hour cap. When None, Modal's own default applies.",
-    )
 
 
-class ModalSandboxConfig(BaseSandboxConfig, ModalSandboxSettings):
-    """Configuration for the Modal sandbox component.
+class ModalSandboxConfig(BaseSandboxConfig, ModalStepOperatorConfig):
+    """Configuration for the Modal sandbox component."""
 
-    Inherits per-step settings so they can be set as component-level defaults;
-    ``ModalSandboxSettings`` overrides them per step.
-
-    Modal credentials (``MODAL_TOKEN_ID`` / ``MODAL_TOKEN_SECRET``)
-    are not configured here — the Modal SDK reads them from the
-    process environment or ``~/.modal.toml``. Set them via your
-    orchestrator's env-injection mechanism (e.g.
-    ``DockerSettings(environment={"MODAL_TOKEN_ID": ...})``, a
-    Kubernetes secret mounted into the pod, or a local
-    ``modal setup``).
-    """
+    # Inherits from ModalStepOperatorConfig so token_id / token_secret /
+    # modal_environment / timeout / the both-or-neither validator are
+    # shared with the Modal step operator — a stack running both
+    # components only needs one set of credentials and one timeout knob.
 
     app_name: str = Field(
         default="zenml-sandbox",
@@ -92,15 +70,6 @@ class ModalSandboxConfig(BaseSandboxConfig, ModalSandboxSettings):
         "'<step>' sentinel is requested but no containerized step image is "
         "available. Example: 'python:3.11-slim'.",
     )
-
-    @property
-    def is_remote(self) -> bool:
-        """Modal sandboxes run on Modal's infrastructure.
-
-        Returns:
-            ``True`` — the ZenML server is not the host.
-        """
-        return True
 
 
 class ModalSandboxFlavor(BaseSandboxFlavor):
@@ -140,7 +109,7 @@ class ModalSandboxFlavor(BaseSandboxFlavor):
         Returns:
             The flavor logo URL.
         """
-        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/step_operator/modal.png"
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/sandbox/modal.png"
 
     @property
     def config_class(self) -> Type[ModalSandboxConfig]:
