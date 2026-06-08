@@ -72,6 +72,7 @@ redirects:
   orchestrators/lightning: orchestrators/lightning.md
   orchestrators/local: orchestrators/local.md
   orchestrators/local-docker: orchestrators/local-docker.md
+  orchestrators/modal: orchestrators/modal.md
   orchestrators/sagemaker: orchestrators/sagemaker.md
   orchestrators/skypilot-vm: orchestrators/skypilot-vm.md
   orchestrators/tekton: orchestrators/tekton.md
