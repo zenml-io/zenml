@@ -513,13 +513,15 @@ class UUIDFilter(StrFilter):
             if not uuid_utils.is_valid_uuid(self.value):
                 return False
 
-            return column == self.value
+            assert isinstance(self.value, (str, UUID))
+            return column == uuid_utils.to_uuid(self.value)
 
         if self.operation == GenericFilterOps.NOT_EQUALS:
             if not uuid_utils.is_valid_uuid(self.value):
                 return True
 
-            return column != self.value
+            assert isinstance(self.value, (str, UUID))
+            return column != uuid_utils.to_uuid(self.value)
 
         # For all other operations, cast and handle the column as string
         return super().generate_query_conditions_from_column(
