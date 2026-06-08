@@ -37,38 +37,21 @@ from zenml import pipeline, step, unmapped
 from zenml.client import Client
 from zenml.config import DockerSettings
 from zenml.integrations.modal.flavors import ModalSandboxSettings
-from zenml.sandboxes import BaseSandboxSnapshot
+from zenml.sandboxes import SandboxSnapshot
 
 
 def get_docker_settings(
     skip_parent_build: bool = False, **kwargs: Any
 ) -> DockerSettings:
-    """Builds ``DockerSettings`` that work with an editable ZenML install.
-
-    Sibling copy of ``examples/dynamic_test/utils.py``'s helper (kept
-    inline so this example stays self-contained — examples don't
-    cross-import each other in this repo). Adds two
-    ``allow_download_from_*`` defaults on top of the dynamic_test
-    version since the sandbox example assumes a clean step image
-    rather than runtime artifact pulls.
-
-    When this example runs against a containerized orchestrator (e.g. the
-    Kubernetes stack), the step image needs to include the current ZenML
-    source. If ZenML is installed editable from a git checkout (the dev
-    workflow), we bake a parent build that copies the editable tree into
-    the image. Otherwise we use the published wheel and just install the
-    example's requirements on top.
-
-    Harmless when running on the ``default`` orchestrator (which doesn't
-    containerize) -- the settings are simply ignored.
+    """Build DockerSettings that work with an editable ZenML install.
 
     Args:
         skip_parent_build: If True, never add the parent build even when
             ZenML appears to be an editable install.
-        **kwargs: Extra ``DockerSettings`` fields to merge in.
+        **kwargs: Extra DockerSettings fields to merge in.
 
     Returns:
-        A ``DockerSettings`` configured for this example.
+        A DockerSettings configured for this example.
     """
     settings_kwargs: dict = {
         "build_config": {
@@ -124,15 +107,8 @@ _PYTHON_DEPS = "numpy scipy"
 
 
 @step(settings={"sandbox": _AGENT_SANDBOX_SETTINGS})
-def prep_step() -> Annotated[BaseSandboxSnapshot, "scientific_image"]:
-    """Boots a sandbox, pip-installs scientific deps, snapshots.
-
-    The snapshot is materialized through ZenML's artifact store as a
-    flavor-specific subclass of ``BaseSandboxSnapshot`` (on Modal: a
-    ``ModalSandboxSnapshot`` carrying the Image id). Every downstream
-    subagent step restores from this snapshot instead of booting a bare
-    sandbox and re-installing the same deps -- one ~30s install vs
-    N×3min per subagent.
+def prep_step() -> Annotated[SandboxSnapshot, "scientific_image"]:
+    """Boot a sandbox, install scientific deps, return a snapshot.
 
     Returns:
         The sandbox snapshot with the scientific stack pre-installed.
@@ -153,7 +129,7 @@ def prep_step() -> Annotated[BaseSandboxSnapshot, "scientific_image"]:
             raise RuntimeError(
                 f"Failed to install deps (exit {out.exit_code}): {out.stderr}"
             )
-        return session.snapshot()
+        return session.create_snapshot()
 
 
 @step
@@ -171,15 +147,9 @@ def planner_step(query: str) -> Annotated[list[str], "subtasks"]:
 
 @step(settings={"sandbox": _AGENT_SANDBOX_SETTINGS})
 def subagent_step(
-    snapshot: BaseSandboxSnapshot, subtask: str
+    snapshot: SandboxSnapshot, subtask: str
 ) -> Annotated[str, "subagent_answer"]:
-    """Restores from the shared snapshot and runs the agent on one subtask.
-
-    Each fanned-out instance is its own ZenML step run with its own
-    artifact, ``sandbox:<id>`` log source, and ``sandbox.<id>.*`` step
-    metadata. The snapshot is broadcast (via ``unmapped(...)`` at the
-    call site) so all subagents share the same pre-baked environment
-    but otherwise run in fully isolated sandboxes.
+    """Restore from the shared snapshot and run the agent on one subtask.
 
     Args:
         snapshot: Shared snapshot with scientific deps pre-installed.
@@ -220,12 +190,6 @@ def reducer_step(
 )
 def sandbox_pydantic_ai_pipeline(query: str = _DEFAULT_QUERY) -> str:
     """Prep -> plan -> fan-out subagents -> reduce.
-
-    The prep step installs scientific deps once and snapshots the
-    resulting sandbox filesystem. Each subagent step restores from the
-    snapshot (cheap; ~seconds vs ~minutes for a fresh install) and
-    runs its independent subtask. The reducer LLM stitches results
-    together.
 
     Args:
         query: The natural-language goal for the agent.

@@ -110,7 +110,7 @@ zenml sandbox register my-other-sandbox --flavor=<other_flavor>
 zenml stack update --sandbox my-other-sandbox
 ```
 
-The **snapshot fan-out** part of the pipeline does need flavor-level support — `run.py` currently imports `ModalSandboxSnapshot` for the step type annotation, and `session.snapshot()` / `sandbox.restore(snap)` are only implemented on Modal today. For a fresh-session-per-subagent fan-out (no snapshot reuse), swap `subagent_step` to call `sandbox.create_session()` instead of `sandbox.restore(snapshot)` and drop the `prep_step` / `snapshot` plumbing.
+The **snapshot fan-out** part of the pipeline does need flavor-level support — `session.create_snapshot()` / `sandbox.restore(snap)` are only implemented on Modal today. For a fresh-session-per-subagent fan-out (no snapshot reuse), swap `subagent_step` to call `sandbox.create_session()` instead of `sandbox.restore(snapshot)` and drop the `prep_step` / `snapshot` plumbing.
 
 ## Cloud orchestrators
 
