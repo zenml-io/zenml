@@ -20,14 +20,8 @@ depends_on = None
 def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
     with op.batch_alter_table("logs", schema=None) as batch_op:
-        batch_op.add_column(
-            sa.Column(
-                "project_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
-        )
-        batch_op.add_column(
-            sa.Column("user_id", sqlmodel.sql.sqltypes.GUID(), nullable=True)
-        )
+        batch_op.add_column(sa.Column("project_id", sa.Uuid(), nullable=True))
+        batch_op.add_column(sa.Column("user_id", sa.Uuid(), nullable=True))
         batch_op.add_column(
             sa.Column(
                 "log_key", sqlmodel.sql.sqltypes.AutoString(), nullable=True
@@ -91,7 +85,7 @@ def upgrade() -> None:
     with op.batch_alter_table("logs", schema=None) as batch_op:
         batch_op.alter_column(
             "project_id",
-            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            existing_type=sa.Uuid(),
             nullable=False,
         )
         batch_op.create_foreign_key(
