@@ -22,6 +22,7 @@ Assumptions unless stated otherwise:
 * Admin JSON shapes match what you configure in the ZenML Pro UI.
 * CLI examples use flat capacity and map to a single `default` class.
 
+
 {% hint style="info" %}
 Resource pools apply only to dynamic pipelines. Static pipelines do not create
 resource requests or wait for allocation.
