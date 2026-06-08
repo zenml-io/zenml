@@ -240,6 +240,20 @@ request_timeout: {{ .ZenML.requestTimeout | quote }}
 {{- if .ZenML.requestCacheTimeout }}
 request_cache_timeout: {{ .ZenML.requestCacheTimeout | quote }}
 {{- end }}
+{{- if .ZenML.streaming }}
+{{- if .ZenML.streaming.streamBrokerImplementationSource }}
+stream_broker_implementation_source: {{ .ZenML.streaming.streamBrokerImplementationSource | quote }}
+{{- end }}
+{{- if .ZenML.streaming.heartbeatSeconds }}
+streaming_heartbeat_seconds: {{ .ZenML.streaming.heartbeatSeconds | quote }}
+{{- end }}
+{{- if .ZenML.streaming.maxSubscribersPerStream }}
+streaming_max_subscribers_per_stream: {{ .ZenML.streaming.maxSubscribersPerStream | quote }}
+{{- end }}
+{{- if .ZenML.streaming.broadcasterIdleGraceSeconds }}
+streaming_broadcaster_idle_grace_seconds: {{ .ZenML.streaming.broadcasterIdleGraceSeconds | quote }}
+{{- end }}
+{{- end }}
 {{- if .ZenML.auth.jwtTokenAlgorithm }}
 jwt_token_algorithm: {{ .ZenML.auth.jwtTokenAlgorithm | quote }}
 {{- end }}
