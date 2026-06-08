@@ -142,6 +142,10 @@ class ModalStepOperator(BaseStepOperator):
 
     def _get_modal_client(self) -> Optional["modal.Client"]:
         """Get an explicit Modal client when credentials are configured."""
+        modal_client = self._modal_client
+        if modal_client is not None and not modal_client.is_closed():
+            return modal_client
+
         with self._modal_client_lock:
             modal_client = self._modal_client
             if modal_client is not None and not modal_client.is_closed():
