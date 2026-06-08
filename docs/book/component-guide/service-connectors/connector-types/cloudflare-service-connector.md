@@ -76,9 +76,25 @@ Discover the R2 buckets the connector can access:
 zenml service-connector list-resources --resource-type r2-bucket
 ```
 
+{% hint style="warning" %}
+**Bucket-scoped tokens and discovery.** Account-wide discovery (the command
+above, or registering the connector with no resource ID) calls the S3
+`ListBuckets` operation, which requires an account-scoped R2 token. If your R2
+token is scoped to specific buckets — the recommended least-privilege setup — it
+cannot enumerate all buckets and `ListBuckets` returns `AccessDenied`. This is
+expected: verify and link the connector against a specific bucket instead, which
+uses `HeadBucket` and works with bucket-scoped tokens:
+
+```shell
+zenml service-connector verify cloudflare_r2 \
+    --resource-type r2-bucket --resource-id my-bucket
+```
+{% endhint %}
+
 Register an R2 artifact store and connect it to the connector. The connector
 brokers the credentials, while the artifact store supplies the R2 endpoint
-(derived from its own `account_id`):
+(derived from its own `account_id`). When linking a bucket-scoped connector,
+pass the bucket explicitly with `--resource-id`:
 
 ```shell
 zenml artifact-store register cloudflare_store \
@@ -86,7 +102,8 @@ zenml artifact-store register cloudflare_store \
     --path=r2://my-bucket/artifacts \
     --account_id=<CLOUDFLARE_ACCOUNT_ID>
 
-zenml artifact-store connect cloudflare_store --connector cloudflare_r2
+zenml artifact-store connect cloudflare_store \
+    --connector cloudflare_r2 --resource-id my-bucket
 ```
 
 For control-plane access, register a connector with a scoped API token instead:
