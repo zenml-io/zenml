@@ -27,12 +27,15 @@ from pydantic import Field, model_validator
 
 from zenml.artifact_stores import BaseArtifactStoreFlavor
 from zenml.integrations.cloudflare import (
+    CLOUDFLARE_CONNECTOR_TYPE,
     CLOUDFLARE_R2_ARTIFACT_STORE_FLAVOR,
+    CLOUDFLARE_R2_RESOURCE_TYPE,
 )
 from zenml.integrations.cloudflare.utils import split_r2_path
 from zenml.integrations.s3.flavors.s3_artifact_store_flavor import (
     S3ArtifactStoreConfig,
 )
+from zenml.models import ServiceConnectorRequirements
 
 if TYPE_CHECKING:
     from zenml.integrations.cloudflare.artifact_stores import R2ArtifactStore
@@ -131,6 +134,25 @@ class R2ArtifactStoreFlavor(BaseArtifactStoreFlavor):
             The display name of the flavor.
         """
         return "Cloudflare R2"
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector resource requirements for service connectors.
+
+        Specifies resource requirements that are used to filter the available
+        service connector types that are compatible with this flavor.
+
+        Returns:
+            Requirements for compatible service connectors, if a service
+            connector is required for this flavor.
+        """
+        return ServiceConnectorRequirements(
+            connector_type=CLOUDFLARE_CONNECTOR_TYPE,
+            resource_type=CLOUDFLARE_R2_RESOURCE_TYPE,
+            resource_id_attr="path",
+        )
 
     @property
     def docs_url(self) -> Optional[str]:

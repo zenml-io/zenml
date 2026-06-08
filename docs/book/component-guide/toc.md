@@ -116,6 +116,7 @@
   * [GCP Service Connector](service-connectors/connector-types/gcp-service-connector.md)
   * [Azure Service Connector](service-connectors/connector-types/azure-service-connector.md)
   * [HyperAI Service Connector](service-connectors/connector-types/hyperai-service-connector.md)
+  * [Cloudflare Service Connector](service-connectors/connector-types/cloudflare-service-connector.md)
 
 ## Popular Stacks
 

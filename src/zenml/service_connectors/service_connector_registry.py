@@ -259,5 +259,14 @@ class ServiceConnectorRegistry:
                     f"Could not import HyperAI service connector: {e}."
                 )
 
+            try:
+                from zenml.integrations.cloudflare.service_connectors.cloudflare_service_connector import (  # noqa
+                    CloudflareServiceConnector,
+                )
+            except ImportError as e:
+                logger.debug(
+                    f"Could not import Cloudflare service connector: {e}."
+                )
+
 
 service_connector_registry = ServiceConnectorRegistry()
