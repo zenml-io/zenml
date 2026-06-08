@@ -321,6 +321,20 @@ class ResourcePoolsStoreInterface(ABC):
         """
 
     @abstractmethod
+    def release_resource_request(
+        self,
+        resource_request_id: UUID,
+    ) -> ResourceRequestResponse:
+        """Release a resource request on behalf of its owner.
+
+        Args:
+            resource_request_id: The ID of the resource request to release.
+
+        Returns:
+            The released resource request.
+        """
+
+    @abstractmethod
     def renew_resource_request(
         self,
         resource_request_id: UUID,
