@@ -320,7 +320,7 @@ class StrFilter(Filter):
             return column.like(f"%{self.value}%")
 
         if self.operation == GenericFilterOps.NOT_CONTAINS:
-            return ~column.like(f"%{self.value}%")
+            return column.not_like(f"%{self.value}%")
 
         if self.operation == GenericFilterOps.STARTSWITH:
             return self._handle_startswith(column, is_json_encoded)
