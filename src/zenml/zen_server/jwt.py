@@ -73,7 +73,13 @@ class JWTToken(BaseModel):
 
         Args:
             token: The encoded JWT token.
-            verify: Whether to verify the signature of the token.
+            verify: Whether to verify the token. When False, no checks are
+                performed at all: the signature, expiry, audience and issuer
+                are all skipped and the raw claims are returned as-is. This is
+                deliberately all-or-nothing, because validating claims such as
+                audience on a token whose signature is not checked provides no
+                security guarantee (an unsigned token can be forged with any
+                claims).
 
         Returns:
             The decoded JWT access token.
@@ -82,6 +88,12 @@ class JWTToken(BaseModel):
             CredentialsNotValid: If the token is invalid.
         """
         config = server_config()
+        # PyJWT disables the remaining claim checks (exp, aud, iss, ...) on its
+        # own once `verify_signature` is False, so we only need to set this one
+        # flag to get all-or-nothing verification.
+        verification_options = {
+            "verify_signature": verify,
+        }
 
         try:
             claims_data = jwt.decode(
@@ -90,7 +102,7 @@ class JWTToken(BaseModel):
                 algorithms=[config.jwt_token_algorithm],
                 audience=config.get_jwt_token_audience(),
                 issuer=config.get_jwt_token_issuer(),
-                verify=verify,
+                options=verification_options,
                 leeway=timedelta(seconds=config.jwt_token_leeway_seconds),
             )
             claims = cast(Dict[str, Any], claims_data)
