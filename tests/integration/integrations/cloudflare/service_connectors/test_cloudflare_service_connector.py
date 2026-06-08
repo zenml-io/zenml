@@ -99,6 +99,8 @@ def test_r2_endpoint_url_derived_from_account():
         ("r2://my-bucket", "my-bucket"),
         ("s3://my-bucket", "my-bucket"),
         ("my-bucket", "my-bucket"),
+        # An artifact store path carries a key prefix; only the bucket matters.
+        ("r2://my-bucket/artifacts/nested", "my-bucket"),
     ],
 )
 def test_parse_r2_resource_id(raw, expected):
@@ -106,10 +108,10 @@ def test_parse_r2_resource_id(raw, expected):
     assert CloudflareServiceConnector._parse_r2_resource_id(raw) == expected
 
 
-def test_parse_r2_resource_id_rejects_nested_paths():
-    """A path with a key component is not a valid bucket reference."""
+def test_parse_r2_resource_id_rejects_empty():
+    """An empty reference cannot yield a bucket name."""
     with pytest.raises(ValueError):
-        CloudflareServiceConnector._parse_r2_resource_id("r2://bucket/key")
+        CloudflareServiceConnector._parse_r2_resource_id("r2://")
 
 
 def test_canonical_resource_id():

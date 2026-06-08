@@ -206,22 +206,26 @@ class CloudflareServiceConnector(ServiceConnector):
     def _parse_r2_resource_id(resource_id: str) -> str:
         """Extract the bare bucket name from an R2 resource ID.
 
+        The resource ID may be a bucket URI that includes a key prefix (e.g.
+        an artifact store path like `r2://my-bucket/artifacts`); only the
+        bucket name is returned.
+
         Args:
-            resource_id: An R2 bucket URI or bare bucket name (e.g.
-                `r2://my-bucket`, `s3://my-bucket` or `my-bucket`).
+            resource_id: An R2 bucket reference, e.g. `r2://my-bucket`,
+                `r2://my-bucket/prefix`, `s3://my-bucket` or `my-bucket`.
 
         Returns:
             The bare bucket name.
 
         Raises:
-            ValueError: If the resource ID is not a valid R2 bucket reference.
+            ValueError: If a bucket name cannot be extracted.
         """
         for prefix in ("r2://", "s3://"):
             if resource_id.startswith(prefix):
                 resource_id = resource_id[len(prefix) :]
                 break
-        bucket = resource_id.strip("/")
-        if not bucket or "/" in bucket:
+        bucket = resource_id.strip("/").split("/")[0]
+        if not bucket:
             raise ValueError(
                 f"Invalid R2 bucket resource ID: '{resource_id}'. Expected a "
                 "bucket name or a URI of the form 'r2://my-bucket'."
