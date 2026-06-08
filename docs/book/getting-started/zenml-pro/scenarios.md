@@ -62,6 +62,7 @@ Choose **Hybrid** if you need to keep sensitive metadata in your infrastructure 
 - 👥 Centralized user management
 - ⚖️ Balance of control and convenience
 - 🏢 Control plane and UI fully maintained and patched by ZenML
+- 🔗 Private cross-cloud networking is possible for Google Cloud workspaces using AWS Interconnect - multicloud and Google Cloud Cross-Cloud Interconnect
 - ✅ Day 1 production ready
 
 **Ideal for:** Organizations with security policies requiring metadata sovereignty, teams wanting simplified identity management without full infrastructure control.
@@ -119,4 +120,3 @@ Not sure which option is right for you? [Book a call](https://www.zenml.io/book-
 - **Require complete isolation?** [Configure Self-hosted Deployment](self-hosted-deployment.md)
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
-
