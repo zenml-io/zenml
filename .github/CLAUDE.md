@@ -40,7 +40,7 @@ Runs automatically on all PRs and pushes to main:
 
 Gated by `run-slow-ci` label (checked dynamically):
 - Multi-OS: Ubuntu, Windows, macOS
-- Multi-Python: 3.10, 3.11, 3.12, 3.13
+- Multi-Python: 3.10, 3.11, 3.12, 3.13, 3.14
 - Full database migration tests (MySQL, MariaDB, SQLite)
 - VSCode tutorial pipeline tests
 - Base package functionality tests

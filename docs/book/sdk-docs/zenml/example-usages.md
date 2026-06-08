@@ -54,7 +54,7 @@ Checkout the [documentation on fetching runs](https://docs.zenml.io/user-guides/
 
 * **Stack**: The stacks registered in your ZenML instance.
 * **Stack Components**: The stack components registered in your ZenML instance, e.g., all orchestrators, artifact stores, model deployers, ...
-* **Flavors**: The [stack component flavors](../getting-started/core-concepts.md#flavor) available to you, including:
+* **Flavors**: The [stack component flavors](../../getting-started/core-concepts.md#flavor) available to you, including:
   * Built-in flavors like the [local orchestrator](https://docs.zenml.io/stacks/orchestrators/local),
   * Integration-enabled flavors like the [Kubeflow orchestrator](https://docs.zenml.io/stacks/orchestrators/kubeflow),
   * Custom flavors that you have [created yourself](https://docs.zenml.io/stacks/contribute/custom-stack-component).

@@ -1,4 +1,5 @@
 import colorsys
+import json
 import logging
 import random
 import re
@@ -24,40 +25,33 @@ class LogType(Enum):
     """Log types."""
 
     # API stages
-    API = "api"
-    API_RECEIVED = "api_received"
-    API_QUEUED = "api_queued"
-    API_THROTTLED = "api_throttled"
-    API_ACCEPTED = "api_accepted"
-    API_COMPLETED = "api_completed"
-    API_AUTHORIZING = "api_authorizing"
-    API_AUTHORIZED = "api_authorized"
-    API_UPDATING_LAST_USER_ACTIVITY = "api_updating_last_user_activity"
-    API_UPDATED_LAST_USER_ACTIVITY = "api_updated_last_user_activity"
+    API_RECEIVED = "request.received"
+    API_COMPLETED = "request.completed"
+    API_AUTHORIZING = "request.authorizing"
+    API_AUTHORIZED = "request.authorized"
+    API_UPDATING_LAST_USER_ACTIVITY = "user_activity.updating"
+    API_UPDATED_LAST_USER_ACTIVITY = "user_activity.updated"
     CLIENT_RETRY = "client_retry"
 
     # Endpoint stages
-    ENDPOINT = "endpoint"
-    ENDPOINT_STARTED = "endpoint_started"
-    ENDPOINT_COMPLETED = "endpoint_completed"
-    ENDPOINT_ASYNC_STARTED = "endpoint_async_started"
-    ENDPOINT_ASYNC_COMPLETED = "endpoint_async_completed"
-    ENDPOINT_SYNC_STARTED = "endpoint_sync_started"
-    ENDPOINT_SYNC_COMPLETED = "endpoint_sync_completed"
-    ENDPOINT_CACHE_HIT = "endpoint_cache_hit"
-    ENDPOINT_DELAYED = "endpoint_delayed"
-    ENDPOINT_RESUMED = "endpoint_resumed"
-    ENDPOINT_TIMEOUT = "endpoint_timeout"
+    ENDPOINT_STARTED = "endpoint.started"
+    ENDPOINT_COMPLETED = "endpoint.completed"
+    ENDPOINT_ASYNC_STARTED = "endpoint.async.started"
+    ENDPOINT_ASYNC_COMPLETED = "endpoint.async.completed"
+    ENDPOINT_SYNC_STARTED = "endpoint.sync.started"
+    ENDPOINT_SYNC_COMPLETED = "endpoint.sync.completed"
+    ENDPOINT_CACHE_HIT = "endpoint.sync.cache_hit"
+    ENDPOINT_DELAYED = "endpoint.sync.delayed"
+    ENDPOINT_RESUMED = "endpoint.resumed"
+    ENDPOINT_TIMEOUT = "endpoint.timeout"
 
     # Database stages
-    SQL = "sql"
-    SQL_STARTED = "sql_started"
-    SQL_COMPLETED = "sql_completed"
+    SQL_STARTED = "sql.session.started"
+    SQL_COMPLETED = "sql.session.completed"
 
     # RBAC stages
-    RBAC = "rbac"
-    RBAC_STARTED = "rbac_started"
-    RBAC_COMPLETED = "rbac_completed"
+    RBAC_STARTED = "rbac.request.started"
+    RBAC_COMPLETED = "rbac.request.completed"
 
 
 class LogLine(BaseModel):
@@ -75,6 +69,35 @@ class LogLine(BaseModel):
     status_code: Optional[int] = None
     target: Optional[str] = None  # The code target being executed
     metrics: Dict[str, Any] = Field(default_factory=dict)
+
+    def display(self, include_metrics: bool = True) -> None:
+        """Print this log line with one field per line."""
+        from builtins import print as print
+
+        print(
+            f"timestamp: {self.timestamp.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}"
+        )
+        print(f"log_type: {self.log_type.value}")
+        print(f"request_id: {self.request_id}")
+        if self.pod:
+            print(f"pod: {self.pod}")
+        if self.transaction_id:
+            print(f"transaction_id: {self.transaction_id}")
+        if self.client_type:
+            print(f"client_type: {self.client_type}")
+        if self.api_method:
+            print(f"api_method: {self.api_method}")
+        if self.api_path:
+            print(f"api_path: {self.api_path}")
+        if self.ip_address:
+            print(f"ip_address: {self.ip_address}")
+        if self.status_code is not None:
+            print(f"status_code: {self.status_code}")
+        if self.target:
+            print(f"target: {self.target}")
+        if include_metrics:
+            for key, value in sorted(self.metrics.items()):
+                print(f"{key}: {value}")
 
 
 class LogFile(BaseModel):
@@ -117,257 +140,189 @@ class LogFile(BaseModel):
             self.request_flows[line.request_id].append(line)
 
     @staticmethod
-    def _parse_metrics(metrics_str: str) -> Dict[str, Any]:
-        """Parse metrics from the log line metrics section.
+    def _parse_json_line(
+        line: str,
+    ) -> Optional[Tuple[Optional[str], Dict[str, Any]]]:
+        """Extract optional pod prefix and JSON payload from a line."""
+        stripped_line = line.strip()
+        if not stripped_line:
+            return None
 
-        Args:
-            metrics_str: String containing metrics in "key: value" format separated by spaces
+        pod = None
+        json_part = stripped_line
 
-        Returns:
-            Dictionary containing parsed metrics
-        """
-        if not metrics_str:
-            return {}
+        if pod_match := re.match(
+            r"^\[pod/([^/]+)/[^\]]+\]\s*(.*)$", stripped_line
+        ):
+            pod = pod_match.group(1)
+            json_part = pod_match.group(2).strip()
 
-        metrics_dict = {}
+        json_start = json_part.find("{")
+        if json_start == -1:
+            return None
 
-        # Match key-value pairs where value can contain spaces until the next key or end
-        # This will look ahead to find either another key:value pair or the end of string
-        pattern = r"([^:]+):\s*([^:]*)(?=\s+[^:]+:|$)"
+        try:
+            payload = json.loads(json_part[json_start:])
+        except json.JSONDecodeError:
+            return None
 
-        # Find all matches in the metrics string
-        matches = re.finditer(pattern, metrics_str)
+        if not isinstance(payload, dict):
+            return None
 
-        for match in matches:
-            key = match.group(1).strip()
-            value = match.group(2).strip()
+        return pod, payload
 
-            # Skip empty values
-            if not value:
-                continue
+    @staticmethod
+    def _parse_json_timestamp(payload: Dict[str, Any]) -> datetime:
+        """Parse timestamp from structured log payload."""
+        raw_timestamp = payload.get("timestamp")
+        if not isinstance(raw_timestamp, str):
+            raise ValueError(f"Missing timestamp in payload: {payload}")
 
-            # Try to convert numeric values
+        try:
+            return datetime.strptime(raw_timestamp, "%Y-%m-%d %H:%M:%S,%f")
+        except ValueError:
+            pass
+
+        normalized_timestamp = raw_timestamp.replace("Z", "+00:00")
+        timestamp = datetime.fromisoformat(normalized_timestamp)
+        if timestamp.tzinfo:
+            timestamp = timestamp.astimezone().replace(tzinfo=None)
+        return timestamp
+
+    @staticmethod
+    def _parse_duration_ms(value: Any) -> Optional[float]:
+        """Parse duration values represented as float or '<float>ms'."""
+        if value is None:
+            return None
+        if isinstance(value, (int, float)):
+            return float(value)
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized.endswith("ms"):
+                normalized = normalized[:-2]
             try:
-                # Try integer first
-                if value.isdigit():
-                    metrics_dict[key] = int(value)
-                # Then try float
-                else:
-                    metrics_dict[key] = float(value)
+                return float(normalized)
             except ValueError:
-                # If not numeric, keep as string
-                metrics_dict[key] = value
+                return None
+        return None
 
-        return metrics_dict
+    @classmethod
+    def _parse_json_log_entry(cls, line: str) -> Optional[LogLine]:
+        """Parse a structured JSON log line into a LogLine."""
+        parsed_line = cls._parse_json_line(line)
+        if not parsed_line:
+            return None
 
-    @staticmethod
-    def _parse_pod_and_timestamp(line: str) -> Tuple[Optional[str], datetime]:
-        """Extract pod name and timestamp from the log line."""
-        pod_match = re.search(r"\[pod/([^/]+)/[^\]]+\]", line)
-        pod = pod_match.group(1) if pod_match else None
+        pod, payload = parsed_line
+        message = payload.get("message")
+        if not isinstance(message, str):
+            return None
 
-        # Extract timestamp
-        timestamp_match = re.search(
-            r"(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2},\d{3})", line
+        try:
+            log_type = LogType(message)
+        except ValueError:
+            return None
+
+        timestamp = cls._parse_json_timestamp(payload)
+
+        request_id_value = payload.get("request_id")
+        if not isinstance(request_id_value, str) or not request_id_value:
+            request_id_value = payload.get("current_thread_name")
+        request_id = str(request_id_value) if request_id_value else "unknown"
+
+        transaction_id = payload.get("transaction_id")
+        if transaction_id is not None:
+            transaction_id = str(transaction_id)
+
+        client_type = None
+        request_tokens = request_id.split("/")
+        if len(request_tokens) > 1:
+            request_id = request_tokens[0]
+            client_type = request_tokens[1]
+            if len(request_tokens) > 2 and transaction_id is None:
+                transaction_id = request_tokens[2]
+
+        data: Dict[str, Any] = {}
+
+        if isinstance(payload.get("method"), str):
+            data["api_method"] = payload["method"]
+        if isinstance(payload.get("path"), str):
+            data["api_path"] = payload["path"]
+        if isinstance(payload.get("client_ip"), str):
+            data["ip_address"] = payload["client_ip"]
+
+        status_code = payload.get("status_code")
+        if isinstance(status_code, (int, float)):
+            data["status_code"] = int(status_code)
+
+        if log_type in [
+            LogType.ENDPOINT_STARTED,
+            LogType.ENDPOINT_COMPLETED,
+            LogType.ENDPOINT_ASYNC_STARTED,
+            LogType.ENDPOINT_ASYNC_COMPLETED,
+            LogType.ENDPOINT_SYNC_STARTED,
+            LogType.ENDPOINT_SYNC_COMPLETED,
+            LogType.ENDPOINT_CACHE_HIT,
+            LogType.ENDPOINT_DELAYED,
+            LogType.ENDPOINT_RESUMED,
+            LogType.ENDPOINT_TIMEOUT,
+        ] and isinstance(payload.get("endpoint"), str):
+            data["target"] = payload["endpoint"]
+
+        if log_type in [
+            LogType.SQL_STARTED,
+            LogType.SQL_COMPLETED,
+        ] and isinstance(payload.get("caller"), str):
+            data["target"] = payload["caller"]
+
+        if log_type in [LogType.RBAC_STARTED, LogType.RBAC_COMPLETED]:
+            rbac_method = payload.get("rbac_method")
+            rbac_endpoint = payload.get("rbac_endpoint")
+            if isinstance(rbac_method, str):
+                data["api_method"] = rbac_method
+            if isinstance(rbac_endpoint, str):
+                data["api_path"] = rbac_endpoint
+            if isinstance(rbac_method, str) and isinstance(rbac_endpoint, str):
+                data["target"] = f"{rbac_method} {rbac_endpoint}"
+
+        excluded_metric_keys = {
+            "timestamp",
+            "level",
+            "logger",
+            "function",
+            "line",
+            "message",
+            "request_id",
+            "transaction_id",
+            "endpoint",
+            "caller",
+            "method",
+            "path",
+            "client_ip",
+            "status_code",
+            "rbac_method",
+            "rbac_endpoint",
+        }
+        metrics = {
+            key: value
+            for key, value in payload.items()
+            if key not in excluded_metric_keys
+        }
+
+        duration = cls._parse_duration_ms(payload.get("duration_ms"))
+        if duration is not None:
+            metrics["duration"] = duration
+
+        return LogLine(
+            log_type=log_type,
+            timestamp=timestamp,
+            pod=pod,
+            request_id=request_id,
+            client_type=client_type,
+            transaction_id=transaction_id,
+            metrics=metrics,
+            **data,
         )
-        if not timestamp_match:
-            raise ValueError(f"Could not parse timestamp from line: {line}")
-
-        timestamp = datetime.strptime(
-            timestamp_match.group(1), "%Y-%m-%d %H:%M:%S,%f"
-        )
-        return pod, timestamp
-
-    @staticmethod
-    def _parse_request_id(
-        line: str,
-    ) -> Tuple[str, Optional[str], Optional[str]]:
-        """Extract request ID from the log line."""
-        request_id_match = re.search(
-            r"DEBUG.*\[([^\]]+)\](\s+([A-Z]+)\s+STATS)", line
-        )
-        full_request_id = (
-            request_id_match.group(1) if request_id_match else "unknown"
-        )
-        request_tokens = full_request_id.split("/")
-        request_id = request_tokens[0]
-        client_type = request_tokens[1] if len(request_tokens) > 1 else None
-        transaction_id = request_tokens[2] if len(request_tokens) > 2 else None
-        return request_id, client_type, transaction_id
-
-    @staticmethod
-    def _parse_api_stats(line: str) -> Tuple[LogType, dict, Optional[float]]:
-        """Parse API STATS log lines."""
-        data = {}
-        duration = None
-
-        api_stats_match = re.search(
-            r"API STATS - (([0-9]+) )?([A-Z]+) ([^\s]+) from (\d+\.\d+\.\d+\.\d+) ([^\[]+)",
-            line,
-        )
-        if not api_stats_match:
-            raise ValueError(f"Could not parse API STATS from line: {line}")
-
-        data["status_code"] = (
-            int(api_stats_match.group(2)) if api_stats_match.group(2) else None
-        )
-        data["api_method"] = api_stats_match.group(3)
-        data["api_path"] = api_stats_match.group(4)
-        data["ip_address"] = api_stats_match.group(5)
-        op = api_stats_match.group(6)
-
-        # Determine log type and extract duration
-        if "RECEIVED" in op:
-            log_type = LogType.API_RECEIVED
-        elif "QUEUED" in op:
-            log_type = LogType.API_QUEUED
-        elif "THROTTLED" in op:
-            log_type = LogType.API_THROTTLED
-            if duration_match := re.search(r"after\s+([\d.]+)ms", line):
-                duration = float(duration_match.group(1))
-        elif "ACCEPTED" in op:
-            log_type = LogType.API_ACCEPTED
-            if duration_match := re.search(r"after\s+([\d.]+)ms", line):
-                duration = float(duration_match.group(1))
-        elif "AUTHORIZING" in op:
-            log_type = LogType.API_AUTHORIZING
-        elif "AUTHORIZED" in op:
-            log_type = LogType.API_AUTHORIZED
-        elif "UPDATING LAST USER ACTIVITY" in op:
-            log_type = LogType.API_UPDATING_LAST_USER_ACTIVITY
-        elif "UPDATED LAST USER ACTIVITY" in op:
-            log_type = LogType.API_UPDATED_LAST_USER_ACTIVITY
-        elif "took" in op or "COMPLETED" in op:
-            log_type = LogType.API_COMPLETED
-        else:
-            raise ValueError(f"Unknown API STATS type in line: {line}")
-
-        if duration_match := re.search(r"(after|took)\s+([\d.]+)ms", op):
-            duration = float(duration_match.group(2))
-
-        return log_type, data, duration
-
-    @staticmethod
-    def _parse_endpoint_stats(
-        line: str,
-    ) -> Tuple[LogType, dict, Optional[float]]:
-        """Parse ENDPOINT STATS log lines."""
-        data = {}
-        duration = None
-
-        endpoint_stats_match = re.search(
-            r"ENDPOINT STATS - (([A-Z]+) ([^\s]+) from (\d+\.\d+\.\d+\.\d+) )?(async|sync)?\s*([^\s]+) ([^\[]+)",
-            line,
-        )
-        if not endpoint_stats_match:
-            raise ValueError(
-                f"Could not parse endpoint stats from line: {line}"
-            )
-
-        # Extract HTTP method and path
-        data["api_method"] = endpoint_stats_match.group(2)
-        data["api_path"] = endpoint_stats_match.group(3)
-        data["ip_address"] = endpoint_stats_match.group(4)
-        sync_or_async = endpoint_stats_match.group(5)
-        data["target"] = endpoint_stats_match.group(6)
-        op = endpoint_stats_match.group(7)
-
-        # Determine log type and extract duration
-        log_type = None
-        if sync_or_async == "async":
-            if "STARTED" in op:
-                log_type = LogType.ENDPOINT_ASYNC_STARTED
-            elif "took" in op or "COMPLETED" in op:
-                log_type = LogType.ENDPOINT_ASYNC_COMPLETED
-        elif sync_or_async == "sync":
-            if "STARTED" in op:
-                log_type = LogType.ENDPOINT_SYNC_STARTED
-            elif "CACHE HIT" in op:
-                log_type = LogType.ENDPOINT_CACHE_HIT
-            elif "DELAYED" in op:
-                log_type = LogType.ENDPOINT_DELAYED
-            elif "took" in op or "COMPLETED" in op:
-                log_type = LogType.ENDPOINT_SYNC_COMPLETED
-        else:
-            if "STARTED" in op:
-                log_type = LogType.ENDPOINT_STARTED
-            elif "COMPLETED" in op or "took" in op:
-                log_type = LogType.ENDPOINT_COMPLETED
-            elif "CACHE HIT" in op:
-                log_type = LogType.ENDPOINT_CACHE_HIT
-            elif "RESUMED" in op:
-                log_type = LogType.ENDPOINT_RESUMED
-            elif "TIMEOUT" in op:
-                log_type = LogType.ENDPOINT_TIMEOUT
-            elif "DELAYED" in op:
-                log_type = LogType.ENDPOINT_DELAYED
-
-        if log_type is None:
-            raise ValueError(f"Unknown ENDPOINT STATS type in line: {line}")
-
-        if duration_match := re.search(r"(after|took)\s+([\d.]+)ms", op):
-            duration = float(duration_match.group(2))
-
-        return log_type, data, duration
-
-    @staticmethod
-    def _parse_sql_stats(line: str) -> Tuple[LogType, dict, Optional[float]]:
-        """Parse SQL STATS log lines."""
-        data = {}
-        duration = None
-
-        # Extract target operation
-        if target_match := re.search(
-            r"SQL STATS.*(([A-Z]+) ([^\s]+) from (\d+\.\d+\.\d+\.\d+) )?.*'([^']+)'",
-            line,
-        ):
-            data["api_method"] = target_match.group(2)
-            data["api_path"] = target_match.group(3)
-            data["ip_address"] = target_match.group(4)
-            data["target"] = target_match.group(5)
-
-        # Determine log type and extract duration
-        if "started" in line or "STARTED" in line:
-            log_type = LogType.SQL_STARTED
-        elif "completed" in line or "COMPLETED" in line:
-            log_type = LogType.SQL_COMPLETED
-        else:
-            raise ValueError(f"Unknown SQL STATS type in line: {line}")
-
-        if duration_match := re.search(r"in\s+([\d.]+)ms", line):
-            duration = float(duration_match.group(1))
-
-        return log_type, data, duration
-
-    @staticmethod
-    def _parse_rbac_stats(line: str) -> Tuple[LogType, dict, Optional[float]]:
-        """Parse RBAC STATS log lines."""
-        data = {}
-        duration = None
-
-        # Extract HTTP method and path
-        if method_path_match := re.search(
-            r"(GET|POST|PUT|DELETE|PATCH)\s+([^\s]+)", line
-        ):
-            data["target"] = (
-                f"{method_path_match.group(1)} {method_path_match.group(2)}"
-            )
-
-        # Determine log type and extract duration
-        if "started" in line:
-            log_type = LogType.RBAC_STARTED
-        elif "completed" in line:
-            log_type = LogType.RBAC_COMPLETED
-            if status_match := re.search(
-                r"(\d{3})\s+(?:GET|POST|PUT|DELETE|PATCH)", line
-            ):
-                data["status_code"] = int(status_match.group(1))
-            if duration_match := re.search(r"in\s+([\d.]+)ms", line):
-                duration = float(duration_match.group(1))
-        else:
-            raise ValueError(f"Unknown RBAC STATS type in line: {line}")
-
-        return log_type, data, duration
 
     @staticmethod
     def _anonymize_api_path(api_path: str) -> str:
@@ -387,52 +342,9 @@ class LogFile(BaseModel):
 
         with open(filename, "r") as f:
             for line in f:
-                # Skip lines that don't contain STATS
-                if "STATS" not in line:
-                    continue
-
                 try:
-                    # Extract common fields
-                    pod, timestamp = cls._parse_pod_and_timestamp(line)
-                    request_id, client_type, transaction_id = (
-                        cls._parse_request_id(line)
-                    )
-
-                    # Extract metrics if present
-                    metrics_match = re.search(r"\[\s+(.*)\s+\]", line)
-                    metrics = cls._parse_metrics(
-                        metrics_match.group(1) if metrics_match else None
-                    )
-
-                    # Parse based on stats type
-                    if "API STATS" in line:
-                        log_type, data, duration = cls._parse_api_stats(line)
-                    elif "ENDPOINT STATS" in line:
-                        log_type, data, duration = cls._parse_endpoint_stats(
-                            line
-                        )
-                    elif "SQL STATS" in line:
-                        log_type, data, duration = cls._parse_sql_stats(line)
-                    elif "RBAC STATS" in line:
-                        log_type, data, duration = cls._parse_rbac_stats(line)
-                    else:
-                        continue
-
-                    if duration is not None:
-                        metrics["duration"] = duration
-
-                    # Create and add log line
-                    log_line = LogLine(
-                        log_type=log_type,
-                        timestamp=timestamp,
-                        pod=pod,
-                        request_id=request_id,
-                        client_type=client_type,
-                        transaction_id=transaction_id,
-                        metrics=metrics,
-                        **data,
-                    )
-                    log_lines.append(log_line)
+                    if json_log_line := cls._parse_json_log_entry(line):
+                        log_lines.append(json_log_line)
 
                 except Exception as e:
                     # Log error but continue processing
@@ -560,15 +472,21 @@ class LogFile(BaseModel):
             elif label_attribute is not None:
                 label = getattr(line, label_attribute, None)
             elif line.log_type in [
-                LogType.API,
                 LogType.API_RECEIVED,
-                LogType.API_QUEUED,
-                LogType.API_ACCEPTED,
                 LogType.API_COMPLETED,
+                LogType.API_AUTHORIZING,
+                LogType.API_AUTHORIZED,
+                LogType.API_UPDATING_LAST_USER_ACTIVITY,
+                LogType.API_UPDATED_LAST_USER_ACTIVITY,
             ]:
-                label = f"{line.api_method} {self._anonymize_api_path(line.api_path)}"
+                if line.api_method and line.api_path:
+                    label = (
+                        f"{line.api_method} "
+                        f"{self._anonymize_api_path(line.api_path)}"
+                    )
+                else:
+                    label = line.request_id
             elif line.log_type in [
-                LogType.ENDPOINT,
                 LogType.ENDPOINT_ASYNC_STARTED,
                 LogType.ENDPOINT_ASYNC_COMPLETED,
                 LogType.ENDPOINT_SYNC_STARTED,
@@ -576,13 +494,11 @@ class LogFile(BaseModel):
             ]:
                 label = f"{line.target}"
             elif line.log_type in [
-                LogType.SQL,
                 LogType.SQL_STARTED,
                 LogType.SQL_COMPLETED,
             ]:
                 label = f"{line.target}"
             elif line.log_type in [
-                LogType.RBAC,
                 LogType.RBAC_STARTED,
                 LogType.RBAC_COMPLETED,
             ]:
@@ -833,7 +749,7 @@ class LogFile(BaseModel):
             if api_call_logs:
                 api_call = (
                     f"{api_call_logs[0].api_method} "
-                    f"{self._anonymize_api_path(api_call_logs[0].api_path)}"
+                    f"{self._anonymize_api_path(api_call_logs[0].api_path or '')}"
                 )
             else:
                 # No API call found, skip this request
@@ -1063,9 +979,6 @@ class LogFile(BaseModel):
         color_map = {
             # API states
             "API_RECEIVED": "#1f77b4",  # blue
-            "API_QUEUED": "#FF1E1E",  # bright red
-            "API_THROTTLED": "#d62728",  # darker red
-            "API_ACCEPTED": "#2ca02c",  # green
             "API_COMPLETED": "#9467bd",  # purple
             "API_AUTHORIZING": "#8B8000",  # dark gold/olive
             "API_AUTHORIZED": "#9A7D0A",  # muted gold

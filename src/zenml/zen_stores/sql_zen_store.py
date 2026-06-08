@@ -82,7 +82,12 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlalchemy import QueuePool, event, func, update
+from sqlalchemy import (
+    QueuePool,
+    event,
+    func,
+    update,
+)
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
@@ -184,7 +189,7 @@ from zenml.exceptions import (
     SecretsStoreNotConfiguredError,
 )
 from zenml.io import fileio
-from zenml.logger import get_console_handler, get_logger, get_logging_level
+from zenml.logger import ZenMLConsoleHandler, get_logger, get_logging_level
 from zenml.metadata.metadata_types import get_metadata_type
 from zenml.models import (
     TRIGGER_RETURN_TYPE_UNION,
@@ -297,6 +302,8 @@ from zenml.models import (
     ResourceRequestResponse,
     RunMetadataRequest,
     RunMetadataResource,
+    RunStatisticsRequest,
+    RunStatisticsResponse,
     RunTemplateFilter,
     RunTemplateRequest,
     RunTemplateResponse,
@@ -346,6 +353,7 @@ from zenml.models import (
     StepRunRequest,
     StepRunResponse,
     StepRunUpdate,
+    StreamBatchRequest,
     TagFilter,
     TagRequest,
     TagResourceRequest,
@@ -520,26 +528,20 @@ class Session(SqlModelSession):
             "overflow_connections": overflow,
         }
 
-    def _get_metrics_log_str(self) -> str:
-        """Get the metrics for the session as a string for logging.
+    def _get_log_metrics(self) -> Dict[str, Any]:
+        """Get SQL and system metrics for debug logs.
 
         Returns:
-            The metrics for the session as a string for logging.
+            The metrics for SQL session debug logs.
         """
-        if not logger.isEnabledFor(logging.DEBUG):
-            return ""
         metrics = self._get_metrics()
-        # Add the server metrics if running in a server
+
         if handle_bool_env_var(ENV_ZENML_SERVER):
             from zenml.zen_server.utils import get_system_metrics
 
             metrics.update(get_system_metrics())
 
-        return (
-            " [ "
-            + " ".join([f"{key}: {value}" for key, value in metrics.items()])
-            + " ]"
-        )
+        return metrics
 
     def __enter__(self) -> "Session":
         """Enter the context manager.
@@ -548,20 +550,6 @@ class Session(SqlModelSession):
             The SqlModel session.
         """
         if logger.isEnabledFor(logging.DEBUG):
-            self.log_request_id = "N/A"
-            self.log_request = ""
-            if handle_bool_env_var(ENV_ZENML_SERVER):
-                # Running inside server
-                from zenml.zen_server.utils import get_current_request_context
-
-                # If the code is running on the server, use the auth context.
-                try:
-                    request_context = get_current_request_context()
-                    self.log_request_id = request_context.log_request_id
-                    self.log_request = request_context.log_request
-                except RuntimeError:
-                    pass
-
             # Look up the stack to find the SQLZenStore method
             for frame in inspect.stack():
                 if "self" in frame.frame.f_locals:
@@ -575,9 +563,11 @@ class Session(SqlModelSession):
                 self.caller_method = "unknown"
 
             logger.debug(
-                f"[{self.log_request_id}] SQL STATS - "
-                f"{self.log_request} "
-                f"'{self.caller_method}' STARTED {self._get_metrics_log_str()}"
+                "sql.session.started",
+                extra={
+                    "caller": self.caller_method,
+                    **self._get_log_metrics(),
+                },
             )
 
             self.start_time = time.time()
@@ -598,18 +588,16 @@ class Session(SqlModelSession):
             exc_tb: The exception traceback.
         """
         if logger.isEnabledFor(logging.DEBUG):
-            duration = (time.time() - self.start_time) * 1000
-
-            # Add error information to the log
-            error_info = ""
-            if exc_type is not None:
-                error_info = " with ERROR"
+            duration_ms = round((time.time() - self.start_time) * 1000, 2)
 
             logger.debug(
-                f"[{self.log_request_id}] SQL STATS - "
-                f"{self.log_request} "
-                f"'{self.caller_method}' COMPLETED in "
-                f"{duration:.2f}ms {error_info} {self._get_metrics_log_str()}"
+                "sql.session.completed",
+                extra={
+                    "caller": self.caller_method,
+                    "duration_ms": duration_ms,
+                    "error": exc_type is not None,
+                    **self._get_log_metrics(),
+                },
             )
 
         super().__exit__(exc_type, exc_val, exc_tb)
@@ -1600,7 +1588,7 @@ class SqlZenStore(BaseZenStore):
         else:
             alembic_logger.setLevel(logging.WARNING)
 
-        alembic_logger.addHandler(get_console_handler())
+        alembic_logger.addHandler(ZenMLConsoleHandler())
 
         # We need to account for 3 distinct cases here:
         # 1. the database is completely empty (not initialized)
@@ -2015,7 +2003,9 @@ class SqlZenStore(BaseZenStore):
         )
 
         if uuid_utils.is_valid_uuid(api_key_name_or_id):
-            filter_params = APIKeySchema.id == api_key_name_or_id
+            filter_params = APIKeySchema.id == uuid_utils.to_uuid(
+                api_key_name_or_id
+            )
         else:
             filter_params = APIKeySchema.name == api_key_name_or_id
 
@@ -5462,6 +5452,24 @@ class SqlZenStore(BaseZenStore):
             "Replaying a pipeline run is not possible with a local store."
         )
 
+    def publish_run_events(
+        self,
+        pipeline_run_id: UUID,
+        batch: StreamBatchRequest,
+    ) -> NoReturn:
+        """Publish a batch of live events to a pipeline run's stream.
+
+        Args:
+            pipeline_run_id: The ID of the run the events belong to.
+            batch: The batch of events to publish.
+
+        Raises:
+            NotImplementedError: Always — the local store has no broker.
+        """
+        raise NotImplementedError(
+            "Publishing live events is not possible with a local store."
+        )
+
     # -------------------- Deployments --------------------
 
     @track_decorator(AnalyticsEvent.CREATE_DEPLOYMENT)
@@ -7348,6 +7356,30 @@ class SqlZenStore(BaseZenStore):
             schema=PipelineRunSchema, filter_model=filter_model
         )
 
+    def get_run_statistics(
+        self, request: RunStatisticsRequest
+    ) -> RunStatisticsResponse:
+        """Compute grouped statistics over pipeline runs.
+
+        Args:
+            request: Statistics request.
+
+        Returns:
+            Grouped statistics.
+        """
+        from zenml.zen_stores.sql_run_statistics import (
+            compute_run_statistics,
+        )
+
+        with Session(self.engine) as session:
+            self._set_filter_project_id(
+                filter_model=request.filter,
+                session=session,
+            )
+            return compute_run_statistics(
+                session=session, request=request, driver=self.config.driver
+            )
+
     def disable_run_heartbeat(self, run_id: UUID) -> None:
         """Disables heartbeat for pipeline and all its running steps.
 
@@ -7368,7 +7400,7 @@ class SqlZenStore(BaseZenStore):
 
             stmt = (
                 update(StepRunSchema)
-                .where(col(StepRunSchema.pipeline_run_id) == str(run_id))
+                .where(col(StepRunSchema.pipeline_run_id) == run_id)
                 .values(heartbeat_threshold=None)
             )
 
@@ -8145,7 +8177,7 @@ class SqlZenStore(BaseZenStore):
                     delete(TriggerSnapshotSchema).where(
                         col(TriggerSnapshotSchema.trigger_id) == trigger_id
                     )
-                )  # type: ignore[call-overload]
+                )  # type: ignore[call-overload, unused-ignore]
 
             session.commit()
 
@@ -12316,9 +12348,12 @@ class SqlZenStore(BaseZenStore):
         new_status = ExecutionStatus(pipeline_run.status)
 
         if new_status != previous_status:
-            EventDispatcher().handle_run_status_update(
-                run=pipeline_run.to_model(include_metadata=True)
-            )
+            dispatcher = EventDispatcher()
+            if dispatcher.has_handlers():
+                # Only convert to model if there are handlers to notify
+                dispatcher.handle_run_status_update(
+                    run=pipeline_run.to_model(include_metadata=True)
+                )
 
         if new_status.is_finished and pipeline_run.end_time:
             if pipeline_run.start_time:
@@ -13336,6 +13371,7 @@ class SqlZenStore(BaseZenStore):
             f"Unable to get {resource_type} with ID "
             f"'{resource_id}': No {resource_type} with this ID found"
         )
+        resource_id = uuid_utils.to_uuid(resource_id)
         query = select(schema_class).where(schema_class.id == resource_id)
         if project_id:
             error_msg += f" in project `{str(project_id)}`"
@@ -13343,6 +13379,7 @@ class SqlZenStore(BaseZenStore):
                 raise RuntimeError(
                     f"Schema {schema_class.__name__} is not project-scoped."
                 )
+            project_id = uuid_utils.to_uuid(project_id)
 
             query = query.where(schema_class.project_id == project_id)  # type: ignore[attr-defined]
 
@@ -13380,6 +13417,7 @@ class SqlZenStore(BaseZenStore):
         """
         schema_name = get_resource_type_name(schema_class)
         if uuid_utils.is_valid_uuid(object_name_or_id):
+            object_name_or_id = uuid_utils.to_uuid(object_name_or_id)
             filter_params = schema_class.id == object_name_or_id
             error_msg = (
                 f"Unable to get {schema_name} with name or ID "
@@ -13396,6 +13434,7 @@ class SqlZenStore(BaseZenStore):
         query = select(schema_class).where(filter_params)
         if project_name_or_id and hasattr(schema_class, "project_id"):
             if uuid_utils.is_valid_uuid(project_name_or_id):
+                project_name_or_id = uuid_utils.to_uuid(project_name_or_id)
                 query = query.where(
                     schema_class.project_id == project_name_or_id  # type: ignore[attr-defined]
                 )
@@ -13751,7 +13790,9 @@ class SqlZenStore(BaseZenStore):
         account_type = ""
         query = select(UserSchema)
         if uuid_utils.is_valid_uuid(account_name_or_id):
-            query = query.where(UserSchema.id == account_name_or_id)
+            query = query.where(
+                UserSchema.id == uuid_utils.to_uuid(account_name_or_id)
+            )
         else:
             query = query.where(UserSchema.name == account_name_or_id)
         if service_account is not None:
@@ -14683,13 +14724,16 @@ class SqlZenStore(BaseZenStore):
             query = select(ModelVersionArtifactSchema).where(
                 ModelVersionArtifactSchema.model_version_id == model_version.id
             )
-            try:
-                UUID(str(model_version_artifact_link_name_or_id))
+            if uuid_utils.is_valid_uuid(
+                model_version_artifact_link_name_or_id
+            ):
                 query = query.where(
                     ModelVersionArtifactSchema.id
-                    == model_version_artifact_link_name_or_id
+                    == uuid_utils.to_uuid(
+                        model_version_artifact_link_name_or_id
+                    )
                 )
-            except ValueError:
+            else:
                 query = (
                     query.where(
                         ModelVersionArtifactSchema.artifact_version_id
@@ -14852,13 +14896,16 @@ class SqlZenStore(BaseZenStore):
                 ModelVersionPipelineRunSchema.model_version_id
                 == model_version.id
             )
-            try:
-                UUID(str(model_version_pipeline_run_link_name_or_id))
+            if uuid_utils.is_valid_uuid(
+                model_version_pipeline_run_link_name_or_id
+            ):
                 query = query.where(
                     ModelVersionPipelineRunSchema.id
-                    == model_version_pipeline_run_link_name_or_id
+                    == uuid_utils.to_uuid(
+                        model_version_pipeline_run_link_name_or_id
+                    )
                 )
-            except ValueError:
+            else:
                 query = query.where(
                     ModelVersionPipelineRunSchema.pipeline_run_id
                     == PipelineRunSchema.id
