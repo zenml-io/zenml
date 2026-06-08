@@ -53,6 +53,7 @@ from zenml.zen_server.secure_headers import (
     secure_headers,
 )
 from zenml.zen_server.utils import (
+    get_request_path,
     get_system_metrics,
     is_user_request,
     request_manager,
@@ -175,7 +176,7 @@ class RestrictFileUploadsMiddleware(BaseHTTPMiddleware):
             content_type = request.headers.get("content-type", "")
             if (
                 "multipart/form-data" in content_type
-                and request.url.path not in self.allowed_paths
+                and get_request_path(request) not in self.allowed_paths
             ):
                 return JSONResponse(
                     status_code=403,
@@ -321,9 +322,8 @@ async def set_secure_headers(request: Request, call_next: Any) -> Any:
         response = _error_response()
 
     # If the request is for the openAPI docs, don't set secure headers
-    if request.url.path.startswith("/docs") or request.url.path.startswith(
-        "/redoc"
-    ):
+    request_path = get_request_path(request)
+    if request_path.startswith("/docs") or request_path.startswith("/redoc"):
         return response
 
     await secure_headers().set_headers_async(response)
@@ -420,7 +420,7 @@ async def skip_health_middleware(request: Request, call_next: Any) -> Any:
     Returns:
         The response to the request.
     """
-    if request.url.path in [HEALTH, READY]:
+    if get_request_path(request) in [HEALTH, READY]:
         # Skip expensive processing
         return PlainTextResponse("ok")
 
