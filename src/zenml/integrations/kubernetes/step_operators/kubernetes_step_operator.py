@@ -42,7 +42,11 @@ from zenml.step_operators import BaseStepOperator
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
-    from zenml.models import PipelineSnapshotBase, StepRunResponse
+    from zenml.models import (
+        PipelineSnapshotBase,
+        ResourceRequestResponse,
+        StepRunResponse,
+    )
 
 logger = get_logger(__name__)
 
@@ -197,6 +201,7 @@ class KubernetesStepOperator(BaseStepOperator):
         info: "StepRunInfo",
         entrypoint_command: List[str],
         environment: Dict[str, str],
+        allocated_resource_request: Optional["ResourceRequestResponse"] = None,
     ) -> None:
         """Submits a step run to Kubernetes.
 
@@ -205,10 +210,13 @@ class KubernetesStepOperator(BaseStepOperator):
             entrypoint_command: Command that executes the step.
             environment: Environment variables to set in the step operator
                 environment.
+            allocated_resource_request: The allocated resource request for the
+                step, if any.
 
         Raises:
             RuntimeError: If a regular step requests more than one pod.
             Exception: If the headless service creation fails.
+
         """
         settings = cast(
             KubernetesStepOperatorSettings, self.get_settings(info)
@@ -220,6 +228,14 @@ class KubernetesStepOperator(BaseStepOperator):
                 "step. Running a regular step on multiple pods would "
                 "duplicate its artifacts, outputs and logs on every pod."
             )
+        settings = kube_utils.apply_resource_request_component_settings(
+            settings=settings,
+            allocated_resource_request=allocated_resource_request,
+            component_id=self.id,
+            component_type=self.type,
+            flavor=self.flavor,
+            settings_class=KubernetesStepOperatorSettings,
+        )
         image_name = info.get_image(
             key=KUBERNETES_STEP_OPERATOR_DOCKER_IMAGE_KEY
         )
@@ -250,9 +266,15 @@ class KubernetesStepOperator(BaseStepOperator):
         # some memory resources itself and, if not specified, the pod will be
         # scheduled on any node regardless of available memory and risk
         # negatively impacting or even crashing the node due to memory pressure.
+        pod_settings = (
+            kube_utils.apply_resource_request_allocations_to_pod_settings(
+                allocated_resource_request=allocated_resource_request,
+                pod_settings=settings.pod_settings,
+            )
+        )
         pod_settings = kube_utils.apply_default_resource_requests(
             memory="400Mi",
-            pod_settings=settings.pod_settings,
+            pod_settings=pod_settings,
         )
 
         job_name = settings.job_name_prefix or ""

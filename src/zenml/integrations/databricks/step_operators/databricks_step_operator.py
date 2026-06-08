@@ -59,7 +59,7 @@ from zenml.step_operators.base_step_operator import BaseStepOperator
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
-    from zenml.models import StepRunResponse
+    from zenml.models import ResourceRequestResponse, StepRunResponse
 
 logger = get_logger(__name__)
 
@@ -156,6 +156,7 @@ class DatabricksStepOperator(BaseStepOperator):
         info: "StepRunInfo",
         entrypoint_command: List[str],
         environment: Dict[str, str],
+        allocated_resource_request: Optional["ResourceRequestResponse"] = None,
     ) -> None:
         """Submit a step run to Databricks.
 
@@ -164,6 +165,8 @@ class DatabricksStepOperator(BaseStepOperator):
             entrypoint_command: Command that executes the step.
             environment: Environment variables to set in the step operator
                 environment.
+            allocated_resource_request: The allocated resource request for the
+                step, if any.
 
         Raises:
             Exception: If wheel upload or Databricks run submission fails

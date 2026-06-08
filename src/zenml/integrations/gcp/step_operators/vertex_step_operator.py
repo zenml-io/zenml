@@ -42,7 +42,11 @@ from zenml.step_operators import BaseStepOperator
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.step_run_info import StepRunInfo
-    from zenml.models import PipelineSnapshotBase, StepRunResponse
+    from zenml.models import (
+        PipelineSnapshotBase,
+        ResourceRequestResponse,
+        StepRunResponse,
+    )
 
 logger = get_logger(__name__)
 
@@ -176,6 +180,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
         info: "StepRunInfo",
         entrypoint_command: List[str],
         environment: Dict[str, str],
+        allocated_resource_request: Optional["ResourceRequestResponse"] = None,
     ) -> None:
         """Submits a step run to VertexAI.
 
@@ -184,6 +189,8 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
             entrypoint_command: Command that executes the step.
             environment: Environment variables to set in the step operator
                 environment.
+            allocated_resource_request: The allocated resource request for the
+                step, if any.
         """
         resource_settings = info.config.resource_settings
         if resource_settings.cpu_count or resource_settings.memory:
