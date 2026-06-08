@@ -1413,7 +1413,7 @@ class FilterGenerator:
     def _define_int_filter(
         column: str, value: Any, operator: GenericFilterOps
     ) -> NumericFilter:
-        """Define a int filter for a given column.
+        """Define an int filter for a given column.
 
         Args:
             column: The column to filter on.
