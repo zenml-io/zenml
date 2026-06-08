@@ -266,6 +266,18 @@ def test_custom_pool_resources_are_not_basic_demands() -> None:
     assert rs.has_basic_resource_demands is False
 
 
+def test_default_resource_pool_timeouts_are_one_hour() -> None:
+    """Default allocation and initialization timeouts are one hour."""
+    rs = ResourceSettings()
+    assert rs.allocation_wait_timeout_seconds == 3600
+    assert rs.initialization_lease_seconds == 3600
+
+
+def test_resource_pool_timeouts_do_not_affect_empty() -> None:
+    """Timeout defaults do not make resource settings non-empty."""
+    assert ResourceSettings().empty is True
+
+
 def test_legacy_preemptible_maps_to_reclaim_tolerance() -> None:
     """Legacy preemptible input is accepted without storing the field."""
     rs = ResourceSettings(preemptible=True)

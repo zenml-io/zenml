@@ -34,7 +34,11 @@ from zenml.step_operators import BaseStepOperator
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.step_run_info import StepRunInfo
-    from zenml.models import PipelineSnapshotBase, StepRunResponse
+    from zenml.models import (
+        PipelineSnapshotBase,
+        ResourceRequestResponse,
+        StepRunResponse,
+    )
 
 logger = get_logger(__name__)
 
@@ -177,6 +181,7 @@ class ModalStepOperator(BaseStepOperator):
         info: "StepRunInfo",
         entrypoint_command: List[str],
         environment: Dict[str, str],
+        allocated_resource_request: Optional["ResourceRequestResponse"] = None,
     ) -> None:
         """Submits a step run to Modal.
 
@@ -184,6 +189,8 @@ class ModalStepOperator(BaseStepOperator):
             info: The step run information.
             entrypoint_command: The entrypoint command for the step.
             environment: The environment variables for the step.
+            allocated_resource_request: The allocated resource request for the
+                step, if any.
 
         Raises:
             ValueError: If no container registry is found in the stack or the

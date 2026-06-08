@@ -34,6 +34,7 @@ Adjusted from https://github.com/tensorflow/tfx/blob/master/tfx/utils/kube_utils
 import enum
 import functools
 import json
+import math
 import re
 import time
 from collections import defaultdict
@@ -46,10 +47,12 @@ from typing import (
     List,
     Optional,
     Tuple,
+    Type,
     TypeVar,
     Union,
     cast,
 )
+from uuid import UUID
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -57,6 +60,7 @@ from kubernetes.client.rest import ApiException
 from urllib3.exceptions import ReadTimeoutError
 
 from zenml.config.resource_settings import ByteUnit
+from zenml.enums import StackComponentType
 from zenml.integrations.kubernetes.constants import (
     STEP_NAME_ANNOTATION_KEY,
 )
@@ -74,11 +78,14 @@ from zenml.logger import get_logger
 from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
+    from zenml.config.base_settings import BaseSettings
     from zenml.config.resource_settings import ResourceSettings
+    from zenml.models import ResourceRequestResponse
 
 logger = get_logger(__name__)
 
 R = TypeVar("R")
+SettingsT = TypeVar("SettingsT", bound="BaseSettings")
 
 
 # This is to fix a bug in the kubernetes client which has some wrong
@@ -1538,6 +1545,173 @@ def apply_default_resource_requests(
         pod_settings.resources["requests"] = resources["requests"]
 
     return pod_settings
+
+
+def apply_resource_request_component_settings(
+    settings: SettingsT,
+    allocated_resource_request: Optional["ResourceRequestResponse"],
+    component_id: UUID,
+    component_type: StackComponentType,
+    flavor: str,
+    settings_class: Type[SettingsT],
+) -> SettingsT:
+    """Apply matching allocation component settings to stack settings.
+
+    Args:
+        settings: The stack component settings to update.
+        allocated_resource_request: The allocated resource request, if any.
+        component_id: The active stack component ID.
+        component_type: The active stack component type.
+        flavor: The active stack component flavor.
+        settings_class: The settings class used to validate the result.
+
+    Returns:
+        The updated and validated stack component settings.
+    """
+    if not allocated_resource_request:
+        return settings
+
+    settings_dict = settings.model_dump(exclude_unset=True)
+    for allocation in allocated_resource_request.get_resources().allocations:
+        if allocation.component_id != component_id:
+            continue
+
+        for component_settings in allocation.component_settings:
+            if (
+                component_settings.component_type != component_type
+                or component_settings.flavor != flavor
+            ):
+                continue
+
+            settings_dict.update(component_settings.settings)
+
+    return settings_class.model_validate(settings_dict)
+
+
+def apply_resource_request_allocations_to_pod_settings(
+    allocated_resource_request: Optional["ResourceRequestResponse"],
+    pod_settings: Optional[KubernetesPodSettings] = None,
+) -> KubernetesPodSettings:
+    """Apply allocated CPU, memory, and GPU resources to pod settings.
+
+    Args:
+        allocated_resource_request: The allocated resource request, if any.
+        pod_settings: The pod settings to update. A new one will be created
+            if not provided.
+
+    Returns:
+        The new or updated pod settings.
+    """
+    if not pod_settings:
+        pod_settings = KubernetesPodSettings()
+    else:
+        pod_settings = pod_settings.model_copy(deep=True)
+
+    if not allocated_resource_request:
+        return pod_settings
+
+    cpu_millicores = 0
+    memory_bytes = 0
+    gpu_count = 0
+    demands = allocated_resource_request.demands
+
+    for allocation in allocated_resource_request.get_resources().allocations:
+        if allocation.demand_index >= len(demands):
+            logger.warning(
+                "Ignoring resource allocation `%s` with invalid demand index "
+                "`%s`.",
+                allocation.id,
+                allocation.demand_index,
+            )
+            continue
+
+        demand = demands[allocation.demand_index]
+        if not demand.kind:
+            continue
+
+        kind = demand.kind.lower()
+        unit = allocation.unit or demand.unit
+        if kind == "cpu":
+            cpu_millicores += _cpu_allocation_to_millicores(
+                quantity=allocation.quantity,
+                unit=unit,
+            )
+        elif kind == "memory":
+            memory_bytes += _memory_allocation_to_bytes(
+                quantity=allocation.quantity,
+                unit=unit,
+            )
+        elif kind == "gpu":
+            gpu_count += allocation.quantity
+
+    resources = {
+        section: dict(values)
+        for section, values in (pod_settings.resources or {}).items()
+    }
+    requests = resources.setdefault("requests", {})
+    limits = resources.setdefault("limits", {})
+
+    if cpu_millicores:
+        cpu = _format_cpu_millicores(cpu_millicores)
+        requests["cpu"] = cpu
+        limits["cpu"] = cpu
+
+    if memory_bytes:
+        memory = f"{math.ceil(memory_bytes / ByteUnit.MIB.byte_value)}Mi"
+        requests["memory"] = memory
+        limits["memory"] = memory
+
+    if gpu_count:
+        gpu = str(gpu_count)
+        requests["nvidia.com/gpu"] = gpu
+        limits["nvidia.com/gpu"] = gpu
+
+    return pod_settings.model_copy(update={"resources": resources})
+
+
+def _cpu_allocation_to_millicores(quantity: int, unit: Optional[str]) -> int:
+    """Convert a CPU allocation to Kubernetes millicores."""
+    if unit is None:
+        if quantity > 50:
+            return quantity
+        return quantity * 1000
+
+    normalized_unit = unit.lower()
+    if normalized_unit == "cpu":
+        return quantity * 1000
+    if normalized_unit in {"m", "mcpu", "millicpu", "millicore", "millicores"}:
+        return quantity
+
+    logger.warning(
+        "Interpreting unsupported CPU allocation unit `%s` as full CPU cores.",
+        unit,
+    )
+    return quantity * 1000
+
+
+def _format_cpu_millicores(millicores: int) -> str:
+    """Format Kubernetes CPU quantity from millicores."""
+    if millicores % 1000 == 0:
+        return str(millicores // 1000)
+    return f"{millicores}m"
+
+
+def _memory_allocation_to_bytes(quantity: int, unit: Optional[str]) -> int:
+    """Convert a memory allocation to bytes."""
+    if unit is None:
+        logger.warning("Interpreting memory allocation without a unit as MiB.")
+        return quantity * ByteUnit.MIB.byte_value
+
+    try:
+        byte_unit = ByteUnit(unit)
+    except ValueError:
+        logger.warning(
+            "Ignoring memory allocation with unsupported unit `%s`.",
+            unit,
+        )
+        return 0
+
+    return quantity * byte_unit.byte_value
 
 
 # ============================================================================
