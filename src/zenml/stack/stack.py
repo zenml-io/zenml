@@ -613,7 +613,7 @@ class Stack:
             if not isinstance(log_store[0], BaseLogStore):
                 _raise_type_error(log_store[0], BaseLogStore)
 
-        # Sandbox (repeatable per stack)
+        # Sandbox
         sandbox = components.get(StackComponentType.SANDBOX)
         if sandbox is not None and not isinstance(sandbox, list):
             sandbox = [sandbox]

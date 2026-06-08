@@ -225,6 +225,8 @@ class StackComponentType(StrEnum):
             return "container_registries"
         elif self == StackComponentType.MODEL_REGISTRY:
             return "model_registries"
+        elif self == StackComponentType.SANDBOX:
+            return "sandboxes"
 
         return f"{self.value}s"
 

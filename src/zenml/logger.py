@@ -690,7 +690,7 @@ def _wrapped_write(original_write: Any, stream_name: str) -> Any:
                 exc_info=None,
                 func="",
             )
-            LoggingContext.emit(record)
+            LoggingContext.dispatch(record)
 
         return original_write(_add_step_name_to_message(text))
 
@@ -814,7 +814,7 @@ class ZenMLLoggingHandler(logging.Handler):
         """
         from zenml.utils.logging_utils import LoggingContext
 
-        LoggingContext.emit(record)
+        LoggingContext.dispatch(record)
 
 
 class ZenMLConsoleHandler(logging.StreamHandler):  # type: ignore[type-arg]
