@@ -105,15 +105,15 @@ def _sanitize_remote_path(remote_path: str) -> str:
 def _parse_sse_stream(lines: Iterator[str]) -> Iterator[_BridgeEvent]:
     """Parse the bridge's text/event-stream into typed events.
 
+    The inner ``_dispatch`` generator raises ``SandboxExecError`` on
+    malformed base64/JSON frames and on ``event: error`` payloads; that
+    exception propagates through the ``yield from`` calls below.
+
     Args:
         lines: Decoded SSE lines (no trailing newlines).
 
     Yields:
         One ``_BridgeEvent`` per dispatch.
-
-    Raises:
-        SandboxExecError: If the bridge emits an ``event: error`` frame, or
-            if a data frame is malformed (base64 / JSON).
     """
     event: Optional[str] = None
     data_chunks: List[str] = []
@@ -391,6 +391,9 @@ class _CloudflareBridgeClient:
 
         Returns:
             The bridge session id.
+
+        Raises:
+            SandboxExecError: If the bridge response is missing an id.
         """
         body: Optional[Dict[str, Any]] = {"env": env} if env else None
         resp = self._request(
@@ -682,12 +685,13 @@ class CloudflareSandboxProcess(SandboxProcess):
                 "Call process.kill() or session.destroy() to release the "
                 "bridge stream."
             )
-        if self._pump_error is not None:
-            if isinstance(self._pump_error, SandboxExecError):
-                raise self._pump_error
+        pump_err = self._pump_error
+        if pump_err is not None:
+            if isinstance(pump_err, SandboxExecError):
+                raise SandboxExecError(str(pump_err)) from pump_err
             raise SandboxExecError(
-                f"Bridge SSE pump failed: {self._pump_error}"
-            ) from self._pump_error
+                f"Bridge SSE pump failed: {pump_err}"
+            ) from pump_err
         if self._exit_code is None:
             # Stream ended cleanly but no exit frame arrived (truncated
             # SSE, killed via kill(), bridge stalled out). Surface this
