@@ -29,22 +29,12 @@ if TYPE_CHECKING:
     from zenml.integrations.cloudflare.sandboxes import CloudflareSandbox
 
 
-CLOUDFLARE_STEP_IMAGE_SENTINEL = "<step>"
 DEFAULT_BRIDGE_TIMEOUT_MS = 120_000
 
 
 class CloudflareSandboxSettings(BaseSandboxSettings):
     """Per-step settings for the Cloudflare sandbox."""
 
-    base_image: Optional[str] = Field(
-        default=None,
-        description="Container image override for the Cloudflare sandbox. "
-        "Reserved for future use: the current bridge HTTP API does not "
-        "accept a custom image on POST /v1/sandbox; the Worker's bound "
-        "container image is used. Accepts the '<step>' sentinel to reuse "
-        "the active step's containerized-orchestrator image. Example: "
-        "'docker.io/library/python:3.11-slim'",
-    )
     timeout_ms: Optional[int] = Field(
         default=None,
         ge=1,
@@ -77,13 +67,6 @@ class CloudflareSandboxConfig(BaseSandboxConfig, CloudflareSandboxSettings):
         "configured at deploy time on the Worker). Stored as a ZenML secret. "
         "When set, sent as 'Authorization: Bearer <token>' on every request "
         "to the bridge. Example: a random 32+ byte hex string",
-    )
-    default_image: str = Field(
-        default="docker.io/library/python:3.11-slim",
-        description="Container image used when no per-step base_image is "
-        "specified. Reserved for future use; currently informational only "
-        "until the bridge supports image overrides. Example: "
-        "'docker.io/library/python:3.11-slim'",
     )
 
     @property

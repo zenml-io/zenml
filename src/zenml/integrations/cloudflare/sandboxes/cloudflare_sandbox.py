@@ -43,7 +43,6 @@ from typing import (
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.cloudflare.flavors.cloudflare_sandbox_flavor import (
-    CLOUDFLARE_STEP_IMAGE_SENTINEL,
     DEFAULT_BRIDGE_TIMEOUT_MS,
     CloudflareSandboxConfig,
     CloudflareSandboxSettings,
@@ -74,24 +73,6 @@ _RETRYABLE_STATUSES: FrozenSet[int] = frozenset({429, 502, 503, 504})
 _MAX_RETRIES = 3
 
 
-class _BridgeHTTPError(SandboxExecError):
-    """Bridge returned a non-2xx response. Carries the HTTP status code.
-
-    Used by `_CloudflareBridgeClient` so callers can branch on status code
-    structurally instead of substring-matching the message.
-    """
-
-    def __init__(self, message: str, *, status_code: int) -> None:
-        """Initialize the error.
-
-        Args:
-            message: Human-readable error description.
-            status_code: HTTP status code from the bridge.
-        """
-        super().__init__(message)
-        self.status_code = status_code
-
-
 @dataclass(frozen=True)
 class _BridgeEvent:
     """One decoded SSE event from the bridge exec stream."""
@@ -101,42 +82,24 @@ class _BridgeEvent:
 
 
 def _sanitize_remote_path(remote_path: str) -> str:
-    """Validate and normalize a file path going to the bridge.
-
-    The bridge confines paths to /workspace server-side, but a request can
-    still wind up at an unexpected URL if the client lets `..` segments
-    through unencoded (httpx / RFC3986 path-merge may re-resolve, or a
-    reverse proxy may normalize before the bridge sees it). Reject anything
-    that doesn't normalize back to itself under POSIX rules.
+    """Reject paths with `..` segments before they reach the bridge URL.
 
     Args:
-        remote_path: A path inside the sandbox.
+        remote_path: A path inside the sandbox workspace.
 
     Returns:
-        The cleaned path with no leading slash, ready for URL composition.
+        The path stripped of any leading slash, ready for URL composition.
 
     Raises:
-        ValueError: If the path contains parent-directory segments, is
-            absolute, or otherwise doesn't normalize to a clean relative
-            path under /workspace.
+        ValueError: If the normalized path escapes the workspace root.
     """
-    if not remote_path or not remote_path.strip():
-        raise ValueError("Remote path must be a non-empty string.")
-    if "\x00" in remote_path:
-        raise ValueError("Remote path must not contain NUL bytes.")
     stripped = remote_path.lstrip("/")
-    normalized = posixpath.normpath(stripped)
-    if (
-        normalized == "."
-        or normalized.startswith("..")
-        or "/.." in normalized
-        or normalized.startswith("/")
-    ):
+    if posixpath.normpath(stripped) != stripped or stripped.startswith(".."):
         raise ValueError(
             f"Remote path '{remote_path}' resolves outside the sandbox "
-            "workspace. Use a relative path with no '..' segments."
+            "workspace."
         )
-    return normalized
+    return stripped
 
 
 def _parse_sse_stream(lines: Iterator[str]) -> Iterator[_BridgeEvent]:
@@ -345,10 +308,9 @@ class _CloudflareBridgeClient:
                     pass
 
             if not retryable or attempt >= _MAX_RETRIES:
-                raise _BridgeHTTPError(
+                raise SandboxExecError(
                     f"Bridge {method} {path} returned "
-                    f"{resp.status_code}: {body_preview}",
-                    status_code=resp.status_code,
+                    f"{resp.status_code}: {body_preview}"
                 )
             time.sleep(0.25 * (2**attempt))
 
@@ -402,37 +364,16 @@ class _CloudflareBridgeClient:
 
         Args:
             sandbox_id: The sandbox to scope the session to.
-            env: Optional env vars to attach at session creation. Best-effort:
-                if the bridge rejects the body shape (400/422) we fall back to
-                creating an env-less session.
+            env: Optional env vars passed in the session body. Verified
+                live against the bridge's POST /v1/sandbox/:id/session.
 
         Returns:
             The bridge session id.
-
-        Raises:
-            SandboxExecError: If session creation fails with a non-shape error.
         """
         body: Optional[Dict[str, Any]] = {"env": env} if env else None
-        try:
-            resp = self._request(
-                "POST", f"/v1/sandbox/{sandbox_id}/session", json_body=body
-            )
-        except _BridgeHTTPError as e:
-            # Only retry without env on a body-shape rejection (400 / 422).
-            # Any other status (auth, infra, 5xx) bubbles up unchanged.
-            if not env or e.status_code not in (400, 422):
-                raise
-            logger.debug(
-                "Bridge rejected env body on session create (HTTP %d); "
-                "retrying without env: %s",
-                e.status_code,
-                e,
-            )
-            resp = self._request(
-                "POST",
-                f"/v1/sandbox/{sandbox_id}/session",
-                json_body=None,
-            )
+        resp = self._request(
+            "POST", f"/v1/sandbox/{sandbox_id}/session", json_body=body
+        )
         sid = resp.json().get("id")
         if not sid:
             raise SandboxExecError(
@@ -500,59 +441,47 @@ class _CloudflareBridgeClient:
         self,
         sandbox_id: str,
         remote_path: str,
-        content: Union[bytes, BinaryIO],
+        data: bytes,
         *,
-        size: int,
         session_id: Optional[str] = None,
     ) -> None:
-        """Upload bytes or a streamed body to a sandbox path.
+        """Upload raw bytes to a sandbox path.
 
         Args:
             sandbox_id: The sandbox to write into.
-            remote_path: Path inside the sandbox workspace. Parent-directory
-                segments and absolute paths are rejected.
-            content: Raw bytes or an open binary file-like; httpx streams it
-                without copying into one buffer.
-            size: Pre-known content length, used to enforce the 32 MiB cap
-                without slurping the body.
+            remote_path: Path inside the sandbox workspace; `..` rejected.
+            data: Raw file bytes; max 32 MiB.
             session_id: Optional bridge session id.
 
         Raises:
             ValueError: If the file exceeds the bridge body limit or the
                 remote path is unsafe.
         """
-        if size > _BRIDGE_FILE_MAX_BYTES:
+        if len(data) > _BRIDGE_FILE_MAX_BYTES:
             raise ValueError(
-                f"File of {size} bytes exceeds the bridge limit of "
+                f"File of {len(data)} bytes exceeds the bridge limit of "
                 f"{_BRIDGE_FILE_MAX_BYTES} bytes (32 MiB)."
             )
         safe_path = _sanitize_remote_path(remote_path)
         encoded = urllib.parse.quote(safe_path, safe="/")
-        headers = {
-            "Content-Type": "application/octet-stream",
-            "Content-Length": str(size),
-        }
+        headers = {"Content-Type": "application/octet-stream"}
         if session_id is not None:
             headers["Session-Id"] = session_id
         self._request(
             "PUT",
             f"/v1/sandbox/{sandbox_id}/file/{encoded}",
-            content=content,
+            content=data,
             headers=headers,
         )
 
-    def get_file_stream(
+    def get_file(
         self,
         sandbox_id: str,
         remote_path: str,
         *,
         session_id: Optional[str] = None,
-    ) -> "httpx.Response":
-        """Download a sandbox file as a streamed response.
-
-        The caller owns the response and MUST close it (or use ``with``)
-        after consuming ``iter_bytes()`` — see ``CloudflareSandboxSession
-        .download_file`` for the canonical pattern.
+    ) -> bytes:
+        """Download raw bytes from a sandbox path.
 
         Args:
             sandbox_id: The sandbox to read from.
@@ -560,19 +489,19 @@ class _CloudflareBridgeClient:
             session_id: Optional bridge session id.
 
         Returns:
-            The streamed httpx Response.
+            The raw file contents (bridge caps at 32 MiB).
         """
         safe_path = _sanitize_remote_path(remote_path)
         encoded = urllib.parse.quote(safe_path, safe="/")
         headers: Dict[str, str] = {}
         if session_id is not None:
             headers["Session-Id"] = session_id
-        return self._request(
+        resp = self._request(
             "GET",
             f"/v1/sandbox/{sandbox_id}/file/{encoded}",
             headers=headers,
-            stream=True,
         )
+        return resp.content
 
 
 class CloudflareSandboxProcess(SandboxProcess):
@@ -853,14 +782,10 @@ class CloudflareSandboxSession(SandboxSession):
             if isinstance(command, list)
             else shlex.split(command)
         )
-        # Log the user-visible command BEFORE prefixing env=KEY=VAL into argv.
-        # Per-exec env values are often secrets (API keys, tokens); logging
-        # the prefixed argv would persist them in the sandbox log source.
+        # Log BEFORE prefixing env=KEY=VAL — per-exec env values are often
+        # secrets and would otherwise persist in the sandbox log source.
         self._log_command(argv)
         if env:
-            self._emit_log(
-                f"(env: {', '.join(sorted(env))})",
-            )
             wire_argv = ["env", *[f"{k}={v}" for k, v in env.items()], *argv]
         else:
             wire_argv = argv
@@ -889,49 +814,33 @@ class CloudflareSandboxSession(SandboxSession):
     def upload_file(self, local_path: str, remote_path: str) -> None:
         """Upload a local file into the sandbox.
 
-        Streams the file body through httpx without buffering it into one
-        in-memory bytes object.
-
         Args:
             local_path: Source path on the caller's machine.
             remote_path: Destination path inside the sandbox workspace.
         """
-        size = os.path.getsize(local_path)
         with open(local_path, "rb") as f:
-            self._client.put_file(
-                self._sandbox_id,
-                remote_path,
-                f,
-                size=size,
-                session_id=self._bridge_session_id,
-            )
+            data = f.read()
+        self._client.put_file(
+            self._sandbox_id,
+            remote_path,
+            data,
+            session_id=self._bridge_session_id,
+        )
 
     def download_file(self, remote_path: str, local_path: str) -> None:
         """Download a file from the sandbox.
-
-        Streams the response body chunk-by-chunk to local disk.
 
         Args:
             remote_path: Source path inside the sandbox workspace.
             local_path: Destination path on the caller's machine.
         """
-        resp = self._client.get_file_stream(
+        data = self._client.get_file(
             self._sandbox_id,
             remote_path,
             session_id=self._bridge_session_id,
         )
-        try:
-            with open(local_path, "wb") as f:
-                for chunk in resp.iter_bytes():
-                    f.write(chunk)
-        finally:
-            try:
-                resp.close()
-            except Exception:
-                logger.debug(
-                    "Closing bridge file-download response failed",
-                    exc_info=True,
-                )
+        with open(local_path, "wb") as f:
+            f.write(data)
 
     def close(self) -> None:
         """Release bridge-session state, if any. The sandbox keeps running."""
@@ -962,61 +871,6 @@ class CloudflareSandboxSession(SandboxSession):
                 e,
                 exc_info=True,
             )
-
-
-def _resolve_step_image() -> Optional[str]:
-    """Look up the active step's containerized-orchestrator image.
-
-    Returns:
-        The image URI for the active step's build, or ``None`` if no step
-        context is active or the run has no Docker build.
-    """
-    from zenml.orchestrators.containerized_orchestrator import (
-        ContainerizedOrchestrator,
-    )
-    from zenml.steps.step_context import StepContext
-
-    ctx = StepContext.get()
-    if ctx is None:
-        return None
-    snapshot = ctx.pipeline_run.snapshot
-    if snapshot is None or snapshot.build is None:
-        return None
-    try:
-        return ContainerizedOrchestrator.get_image(
-            snapshot=snapshot, step_name=ctx.step_name
-        )
-    except Exception as e:  # noqa: BLE001
-        logger.debug("Step image lookup for Cloudflare sandbox failed: %s", e)
-        return None
-
-
-def _resolve_image(base_image: Optional[str], default_image: str) -> str:
-    """Resolve a base_image setting into a concrete image URI.
-
-    Args:
-        base_image: The setting value: ``None``, the
-            ``CLOUDFLARE_STEP_IMAGE_SENTINEL`` literal, or a registry URI.
-        default_image: Fallback URI from the component config.
-
-    Returns:
-        A concrete image URI. The bridge does not currently consume this
-        value; it is recorded for future use and surfaced in logs.
-    """
-    if base_image is None:
-        return default_image
-    if base_image == CLOUDFLARE_STEP_IMAGE_SENTINEL:
-        step_image = _resolve_step_image()
-        if not step_image:
-            logger.warning(
-                "Step-image sentinel requested but no containerized step "
-                "image is available; falling back to the flavor's default "
-                "image '%s'.",
-                default_image,
-            )
-            return default_image
-        return step_image
-    return base_image
 
 
 class CloudflareSandbox(BaseSandbox):
@@ -1106,20 +960,6 @@ class CloudflareSandbox(BaseSandbox):
             A ``CloudflareSandboxSession`` bound to the new sandbox.
         """
         eff, env = self._effective_settings(settings)
-
-        # Resolve the intended image so it shows up in logs and can be
-        # cross-referenced with the bridge run; the bridge does not yet
-        # accept a custom image on POST /v1/sandbox, so the value is
-        # informational until that endpoint exposes one.
-        resolved_image = _resolve_image(
-            eff.base_image, self.config.default_image
-        )
-        logger.info(
-            "Cloudflare sandbox image (informational; bridge selects its "
-            "own image): %s",
-            resolved_image,
-        )
-
         client = self._get_client()
         sandbox_id = client.create_sandbox()
 

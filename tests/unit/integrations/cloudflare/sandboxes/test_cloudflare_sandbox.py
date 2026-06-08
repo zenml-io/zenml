@@ -126,7 +126,6 @@ class TestConfig:
 
     def test_settings_defaults(self) -> None:
         s = CloudflareSandboxSettings()
-        assert s.base_image is None
         assert s.timeout_ms is None
         assert s.cwd is None
         assert s.sandbox_environment == {}
@@ -303,43 +302,6 @@ class TestBridgeClient:
         assert sid == "sess_1"
         assert captured["body"] == {"env": {"K": "V"}}
 
-    def test_create_bridge_session_does_not_fallback_on_500_with_422_in_body(
-        self,
-    ) -> None:
-        # Regression: an earlier impl matched the substring '400'/'422'
-        # in str(e), which would silently drop user env when a real 5xx
-        # body coincidentally contained those digits. Now we branch on
-        # the HTTP status code structurally.
-        def handler(request: httpx.Request) -> httpx.Response:
-            return httpx.Response(
-                500, json={"error": "gateway timeout after 4220ms"}
-            )
-
-        client = _make_client(handler)
-        with pytest.raises(SandboxExecError, match="500"):
-            client.create_bridge_session("sb_1", env={"K": "V"})
-
-    def test_create_bridge_session_falls_back_on_422(self) -> None:
-        calls: List[Dict[str, Any]] = []
-
-        def handler(request: httpx.Request) -> httpx.Response:
-            body = (
-                json.loads(request.content.decode())
-                if request.content
-                else None
-            )
-            calls.append({"body": body})
-            if body is not None:
-                return httpx.Response(422, json={"error": "no env"})
-            return httpx.Response(200, json={"id": "sess_x"})
-
-        client = _make_client(handler)
-        sid = client.create_bridge_session("sb_1", env={"K": "V"})
-        assert sid == "sess_x"
-        assert len(calls) == 2
-        assert calls[0]["body"] == {"env": {"K": "V"}}
-        assert calls[1]["body"] is None
-
     def test_put_file_size_limit(self) -> None:
         def handler(request: httpx.Request) -> httpx.Response:
             return httpx.Response(200, json={"ok": True})
@@ -347,10 +309,7 @@ class TestBridgeClient:
         client = _make_client(handler)
         with pytest.raises(ValueError, match="exceeds the bridge limit"):
             client.put_file(
-                "sb_1",
-                "big.bin",
-                b"x",
-                size=_BRIDGE_FILE_MAX_BYTES + 1,
+                "sb_1", "big.bin", b"x" * (_BRIDGE_FILE_MAX_BYTES + 1)
             )
 
     def test_put_file_session_header(self) -> None:
@@ -362,9 +321,7 @@ class TestBridgeClient:
             return httpx.Response(200, json={"ok": True})
 
         client = _make_client(handler)
-        client.put_file(
-            "sb_1", "a/b.txt", b"hello", size=5, session_id="sess_2"
-        )
+        client.put_file("sb_1", "a/b.txt", b"hello", session_id="sess_2")
         assert captured["session"] == "sess_2"
         assert captured["path"] == "/v1/sandbox/sb_1/file/a/b.txt"
 
@@ -373,18 +330,14 @@ class TestBridgeClient:
             lambda req: httpx.Response(200, json={"ok": True})
         )
         with pytest.raises(ValueError, match="resolves outside"):
-            client.put_file("sb_1", "../../etc/passwd", b"x", size=1)
+            client.put_file("sb_1", "../../etc/passwd", b"x")
 
-    def test_get_file_stream_returns_streamed_response(self) -> None:
+    def test_get_file_returns_bytes(self) -> None:
         def handler(request: httpx.Request) -> httpx.Response:
             return httpx.Response(200, content=b"payload")
 
         client = _make_client(handler)
-        resp = client.get_file_stream("sb_1", "x.txt")
-        try:
-            assert b"".join(resp.iter_bytes()) == b"payload"
-        finally:
-            resp.close()
+        assert client.get_file("sb_1", "x.txt") == b"payload"
 
     def test_non_retryable_error_raises(self) -> None:
         def handler(request: httpx.Request) -> httpx.Response:
