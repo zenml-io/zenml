@@ -80,7 +80,6 @@ local = [
 server = [
     "zenml[local,native-schedules]",  # Includes all the DB dependencies
     "fastapi>=0.120.1,<0.121.0",
-    "starlette>=0.49.1,<0.50.0",
     "uvicorn[standard]>=0.17.5",
     "python-multipart~=0.0.9",
     "pyjwt[crypto]>=2.12.0,<2.13.0",
