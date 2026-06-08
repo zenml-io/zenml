@@ -303,7 +303,7 @@ def check_test_requirements(
         client=client,
     )
     if not result:
-        pytest.skip(msg=f"Requirements not met: {msg}")
+        pytest.skip(reason=f"Requirements not met: {msg}")
 
     return result
 
