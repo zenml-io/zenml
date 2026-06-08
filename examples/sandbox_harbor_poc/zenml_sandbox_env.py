@@ -13,6 +13,7 @@ from harbor.environments.base import BaseEnvironment, ExecResult
 from harbor.environments.capabilities import EnvironmentCapabilities
 
 from zenml.client import Client
+from zenml.integrations.modal.flavors import ModalSandboxSettings
 from zenml.logger import get_logger
 from zenml.sandboxes import BaseSandboxSettings, SandboxSession
 
@@ -59,13 +60,16 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
         """Translate Harbor's task-level docker_image to a sandbox setting.
 
         Returns:
-            A settings override with the task's docker_image, or None if the
-            task did not pin one.
+            A Modal-flavor settings override carrying the task's
+            docker_image, or None if the task didn't pin one. Hardcoded to
+            Modal because that's the only sandbox flavor with an image
+            knob today; switch to the active flavor's settings class when
+            another flavor ships an image field.
         """
         image = self.task_env_config.docker_image
         if image is None:
             return None
-        return BaseSandboxSettings(base_image=image)
+        return ModalSandboxSettings(image=image)
 
     async def start(self, force_build: bool) -> None:
         """Open a SandboxSession on the active stack's Sandbox component.

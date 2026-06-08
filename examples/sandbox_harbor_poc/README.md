@@ -15,7 +15,7 @@ The pipeline is the only entry point. One command, one ZenML run, one queryable 
 ## What you get over plain `harbor run`
 
 - **Run lineage.** Every trial is a ZenML pipeline run — dashboard, artifact store, replay, caching, the lot. Yurii's two complaints (not traceable, not reproducible) close at the pipeline layer.
-- **No per-trial rebuild.** The Sandbox component owns the image. Task `[environment].docker_image` flows through to the underlying flavor's `base_image`; no Dockerfile build per trial.
+- **No per-trial rebuild.** The Sandbox component owns the image. Task `[environment].docker_image` flows through to the underlying flavor's `image` setting; no Dockerfile build per trial.
 - **Portable substrate.** Swap the Sandbox flavor (Modal → GKE Agent Sandbox → …) and Harbor sees nothing change. Same bridge, same task assets.
 
 ## Files
