@@ -321,6 +321,62 @@ The `StepRunFuture` object provides several methods:
 When using `step.submit()`, steps with `runtime="isolated"` will execute in separate containers/processes, while steps with `runtime="inline"` will execute in separate threads within the orchestration environment.
 {% endhint %}
 
+### Async Pipelines and Steps
+
+Dynamic pipeline entrypoints and steps can be defined with `async def`. Inside an async pipeline, calling an async step returns an awaitable that dispatches the step when you `await` it, so you can run steps concurrently with `asyncio.gather(...)`:
+
+```python
+import asyncio
+
+from zenml import step, pipeline
+
+@step
+async def fetch(url: str) -> str:
+    ...
+
+@step
+async def summarize(text: str) -> str:
+    ...
+
+@pipeline(dynamic=True)
+async def fan_out_pipeline(urls: list[str]):
+    # Fetch every URL concurrently.
+    pages = await asyncio.gather(*(fetch(url) for url in urls))
+
+    # Await a single step call to get its outputs.
+    summary = await summarize(pages[0])
+```
+
+Awaiting an async step returns the same outputs a regular call would. The pipeline entrypoint and each step can independently be sync or async, but inside an async pipeline how you invoke a step depends on the step:
+
+- **Async step:** `await` it, or `asyncio.gather(...)` several to overlap them. It runs concurrently without blocking the loop.
+- **Sync step:** call `step.submit(...)` and await the returned future. A direct call raises an error. `submit(...)` runs the step on a worker thread.
+
+`step.submit(...)` returns a future immediately without suspending the body, so you can dispatch work and await the futures later or pass them to downstream steps.
+
+{% hint style="warning" %}
+Async entrypoints are only supported for dynamic pipelines. Decorating a non-dynamic pipeline with an `async def` entrypoint is rejected when the pipeline is defined. Use `@pipeline(dynamic=True)` for async pipelines.
+{% endhint %}
+
+{% hint style="info" %}
+Inside an async pipeline, await an async step or the future returned by `submit(...)`. Calling `.result()` or `.wait()` on a step future from the running event loop raises a `RuntimeError`, since blocking the loop would deadlock it.
+{% endhint %}
+
+The table below summarizes how each invocation behaves. A step is **isolated**
+when it has a step operator or resource settings, or `runtime="isolated"`, and
+always runs in a separate container or process. Otherwise it is **inline** and
+runs inside the orchestration environment. The last column shows where inline
+code runs.
+
+| Invocation | Dynamic pipeline | Async dynamic pipeline | Where inline code runs |
+| --- | --- | --- | --- |
+| `sync_step(...)` | Runs and blocks until it returns | Raises an error, use `.submit()` | Calling thread |
+| `async_step(...)` | Runs and blocks until it returns | `await` it, runs concurrently, does not block | Event loop (the shared loop in an async pipeline) |
+| `sync_step.submit(...)` | Returns a future, non-blocking | Returns a future, non-blocking, `await` it | Worker thread |
+| `async_step.submit(...)` | Returns a future, non-blocking | Returns a future, non-blocking, `await` it | Event loop (the shared loop in an async pipeline) |
+
+An async step call that is never awaited or submitted does not run.
+
 ### Child pipelines inside dynamic pipelines
 
 Dynamic pipelines can call other dynamic pipelines from their `@pipeline`

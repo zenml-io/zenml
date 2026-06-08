@@ -13,8 +13,10 @@
 #  permissions and limitations under the License.
 """Dynamic pipeline runner."""
 
+import asyncio
 import contextvars
 import copy
+import inspect
 import threading
 import time
 from concurrent.futures import Future, ThreadPoolExecutor
@@ -24,6 +26,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ContextManager,
+    Coroutine,
     Dict,
     Iterator,
     List,
@@ -372,6 +375,7 @@ class DynamicPipelineRunner:
         self._state = _PipelineThreadState()
 
         self._is_paused = False
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._pause_coordinator = pause_coordinator or _PauseCoordinator()
         self._pause_coordinator.register(self)
 
@@ -480,6 +484,15 @@ class DynamicPipelineRunner:
             The orchestrator.
         """
         return self._orchestrator
+
+    @property
+    def event_loop(self) -> Optional[asyncio.AbstractEventLoop]:
+        """The event loop running the async pipeline entrypoint, if any.
+
+        Returns:
+            The event loop running the async pipeline entrypoint, if any.
+        """
+        return self._loop
 
     def _monitoring_loop(self) -> None:
         """Monitoring loop.
@@ -861,7 +874,7 @@ class DynamicPipelineRunner:
         return_value: Any = None
         try:
             with self._state.claim():
-                return_value = self.pipeline._call_entrypoint(**params)
+                return_value = self._call_entrypoint(params=params)
         except RunPaused:
             # Either this run or a child run that was awaited on paused.
             self._mark_paused()
@@ -902,6 +915,41 @@ class DynamicPipelineRunner:
             )
             self._publish_run_status(exception=e)
             raise
+
+    def _call_entrypoint(self, params: Dict[str, Any]) -> Any:
+        """Call a pipeline entrypoint.
+
+        Args:
+            params: The pipeline entrypoint parameters.
+
+        Returns:
+            The pipeline entrypoint return value.
+        """
+        call_result = self.pipeline._call_entrypoint(**params)
+        if not inspect.iscoroutine(call_result):
+            return call_result
+        
+        async def _run_entrypoint_on_loop() -> Any:
+            self._loop = asyncio.get_running_loop()
+            try:
+                return await call_result
+            finally:
+                # The pipeline body can spawn step invocations as background
+                # tasks on this loop (e.g. asyncio.create_task(my_step())) and
+                # return without awaiting them. Those tasks might still be
+                # running when the body returns. `asyncio.run(...)`` cancels
+                # any pending tasks when it closes the loop, so we await them
+                # here first to let the tasks finish cleanly.
+                pending = [
+                    task
+                    for task in asyncio.all_tasks(self._loop)
+                    if task is not asyncio.current_task()
+                ]
+                if pending:
+                    await asyncio.gather(*pending, return_exceptions=True)
+                self._loop = None
+
+        return asyncio.run(_run_entrypoint_on_loop())
 
     def notify_graph_changed(self, nodes_ready: bool) -> None:
         """Wake up the startup loop if new nodes became ready.
@@ -1006,6 +1054,7 @@ class DynamicPipelineRunner:
         ] = None,
         group: Optional["GroupInfo"] = None,
         concurrent: Literal[False] = False,
+        invocation_id: Optional[str] = None,
     ) -> StepRunOutputs: ...
 
     @overload
@@ -1020,6 +1069,7 @@ class DynamicPipelineRunner:
         ] = None,
         group: Optional["GroupInfo"] = None,
         concurrent: Literal[True] = True,
+        invocation_id: Optional[str] = None,
     ) -> "StepFuture": ...
 
     def launch_step(
@@ -1033,6 +1083,7 @@ class DynamicPipelineRunner:
         ] = None,
         group: Optional["GroupInfo"] = None,
         concurrent: bool = False,
+        invocation_id: Optional[str] = None,
     ) -> Union[StepRunOutputs, "StepFuture"]:
         """Launch a step.
 
@@ -1044,6 +1095,8 @@ class DynamicPipelineRunner:
             after: The step run output futures to wait for.
             group: The group information for this step.
             concurrent: Whether to launch the step concurrently.
+            invocation_id: Pre-allocated invocation ID. Allocation is skipped
+                when provided.
 
         Raises:
             BaseException: If the step failed.
@@ -1053,9 +1106,10 @@ class DynamicPipelineRunner:
         """  # noqa: DOC502, DOC503
         step = step.copy()
 
-        invocation_id = self.allocate_invocation_id(
-            base_name=id or step.name, allow_suffix=not id
-        )
+        if invocation_id is None:
+            invocation_id = self.allocate_invocation_id(
+                base_name=id or step.name, allow_suffix=not id
+            )
 
         remaining_retries = None
         if step_run := self._existing_step_runs.get(invocation_id):

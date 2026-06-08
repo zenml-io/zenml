@@ -13,9 +13,10 @@
 #  permissions and limitations under the License.
 """Dynamic pipeline run context."""
 
+import asyncio
 import contextvars
 import threading
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from typing_extensions import Self
 
@@ -117,3 +118,14 @@ class DynamicPipelineRunContext(context_utils.BaseContext):
                 "Re-entering the same dynamic pipeline run context is not allowed."
             )
         return super().__enter__()
+
+
+def get_active_pipeline_loop() -> Optional[asyncio.AbstractEventLoop]:
+    """Get the event loop of the active dynamic pipeline run, if any.
+
+    Returns:
+        The event loop of the active dynamic pipeline run, if any.
+    """
+    if run_context := DynamicPipelineRunContext.get():
+        return run_context.runner.event_loop
+    return None

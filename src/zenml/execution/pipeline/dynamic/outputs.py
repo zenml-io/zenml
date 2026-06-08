@@ -13,12 +13,14 @@
 #  permissions and limitations under the License.
 """Dynamic pipeline execution outputs."""
 
+import asyncio
 import threading
 from abc import ABC, abstractmethod
 from concurrent.futures import Future
 from contextlib import AbstractContextManager, nullcontext
 from typing import (
     Any,
+    Generator,
     Generic,
     Iterator,
     List,
@@ -117,6 +119,22 @@ PipelineRunOutputs = Union[
 ]
 
 
+def _raise_if_blocking_on_event_loop() -> None:
+    """Raise if a blocking wait is attempted from a running event loop.
+
+    Raises:
+        RuntimeError: If called while an event loop runs on the current thread.
+    """
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return
+    raise RuntimeError(
+        "Cannot block on a future inside an async pipeline. Await it "
+        "instead."
+    )
+
+
 class BaseFuture(ABC):
     """Base future."""
 
@@ -167,6 +185,14 @@ class _InlineStepFuture(BaseFuture):
             The result of the step run future.
         """
         return self._wrapped.result()
+
+    async def aresult(self) -> "StepRunResponse":
+        """Await the step run result.
+
+        Returns:
+            The step run response.
+        """
+        return await asyncio.wrap_future(self._wrapped)
 
 
 class _IsolatedStepFuture(BaseFuture):
@@ -263,6 +289,14 @@ class _IsolatedStepFuture(BaseFuture):
 
         return step_run
 
+    async def aresult(self) -> "StepRunResponse":
+        """Await the step run result.
+
+        Returns:
+            The step run response.
+        """
+        return await asyncio.to_thread(self.result)
+
 
 StepExecutionFuture = Union[_InlineStepFuture, _IsolatedStepFuture]
 
@@ -298,6 +332,14 @@ class _StartupResult(Generic[T]):
             The startup result.
         """
         return self._future.result()
+
+    async def aresult(self) -> T:
+        """Await the startup result.
+
+        Returns:
+            The startup result.
+        """
+        return await asyncio.wrap_future(self._future)
 
     def set_result(self, value: T) -> None:
         """Store the startup result if it is still unresolved.
@@ -521,6 +563,28 @@ class StepFuture(BaseStepFuture):
         step_run = self._wait()
         return load_step_run_outputs(step_run.id)
 
+    def __await__(self) -> Generator[Any, None, StepRunOutputs]:
+        """Await the step run outputs.
+
+        Returns:
+            The step run outputs.
+        """
+        return self._aload().__await__()
+
+    async def _aload(self) -> StepRunOutputs:
+        """Await startup and execution, then load the outputs.
+
+        Returns:
+            The step run outputs.
+        """
+        from zenml.execution.pipeline.dynamic.utils import (
+            load_step_run_outputs,
+        )
+
+        execution_future = await self._startup.aresult()
+        step_run = await execution_future.aresult()
+        return await asyncio.to_thread(load_step_run_outputs, step_run.id)
+
     def load(self, disable_cache: bool = False) -> Any:
         """Get the step run output artifact data.
 
@@ -619,6 +683,7 @@ class StepFuture(BaseStepFuture):
         Returns:
             The step run response.
         """
+        _raise_if_blocking_on_event_loop()
         return self._startup.result().result()
 
     def _set_startup_result(
@@ -719,6 +784,7 @@ class PipelineFuture(BaseFuture):
 
     def wait(self) -> None:
         """Wait for the child pipeline to finish."""
+        _raise_if_blocking_on_event_loop()
         with _maybe_release_pipeline_thread():
             self._startup.result().result()
 
@@ -732,9 +798,32 @@ class PipelineFuture(BaseFuture):
             load_pipeline_run_outputs,
         )
 
+        _raise_if_blocking_on_event_loop()
         with _maybe_release_pipeline_thread():
             run = self._startup.result().result()
         return load_pipeline_run_outputs(run=run)
+
+    def __await__(self) -> Generator[Any, None, PipelineRunOutputs]:
+        """Await the child pipeline outputs.
+
+        Returns:
+            The child pipeline outputs.
+        """
+        return self._aload().__await__()
+
+    async def _aload(self) -> PipelineRunOutputs:
+        """Await child pipeline startup and execution, then load the outputs.
+
+        Returns:
+            The child pipeline outputs.
+        """
+        from zenml.execution.pipeline.dynamic.utils import (
+            load_pipeline_run_outputs,
+        )
+
+        execution_future = await self._startup.aresult()
+        run = await asyncio.wrap_future(execution_future)
+        return await asyncio.to_thread(load_pipeline_run_outputs, run)
 
     def artifacts(self) -> PipelineRunOutputs:
         """Get the child pipeline output artifacts.

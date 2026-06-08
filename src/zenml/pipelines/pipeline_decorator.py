@@ -29,6 +29,7 @@ from uuid import UUID
 
 from zenml.enums import ExecutionMode
 from zenml.logger import get_logger
+from zenml.utils.async_utils import is_async_callable
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import SettingsOrDict
@@ -214,6 +215,17 @@ def pipeline(
     """
 
     def inner_decorator(func: "F") -> Union["Pipeline", "DynamicPipeline"]:
+        """Create a pipeline instance from the decorated function.
+
+        Args:
+            func: The decorated function.
+
+        Raises:
+            RuntimeError: If a non-dynamic pipeline has an async entrypoint.
+
+        Returns:
+            A pipeline instance.
+        """
         from zenml.pipelines.pipeline_definition import Pipeline
 
         PipelineClass = Pipeline
@@ -233,6 +245,14 @@ def pipeline(
             logger.warning(
                 "The `depends_on` argument is not supported "
                 "for static pipelines and will be ignored."
+            )
+
+        if not dynamic and is_async_callable(func):
+            raise RuntimeError(
+                f"Pipeline `{name or func.__name__}` has an async (`async def`) "
+                "entrypoint but is not a dynamic pipeline. Async pipeline "
+                "entrypoints are only supported for dynamic pipelines. Use "
+                "`@pipeline(dynamic=True)` to define an async pipeline."
             )
 
         p = PipelineClass(

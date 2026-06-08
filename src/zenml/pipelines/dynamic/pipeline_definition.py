@@ -306,6 +306,13 @@ class DynamicPipeline(Pipeline):
                     "Calling a child pipeline is not allowed within a step function."
                 )
 
+            if run_context.runner.event_loop is not None:
+                raise RuntimeError(
+                    f"Cannot call child pipeline `{self.name}` directly inside "
+                    f"an async pipeline. Use `{self.name}.submit(...)` to run "
+                    f"it."
+                )
+
             return run_context.runner.submit_child_pipeline(
                 pipeline=self,
                 args=args,

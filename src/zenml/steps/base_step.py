@@ -69,6 +69,7 @@ from zenml.utils import (
     source_code_utils,
     source_utils,
 )
+from zenml.utils.async_utils import is_async_callable, run_coroutine_blocking
 
 if TYPE_CHECKING:
     from zenml.artifacts.external_artifact import ExternalArtifact
@@ -100,7 +101,9 @@ if TYPE_CHECKING:
         AnyOutputFuture,
         MapResultsFuture,
         StepFuture,
+        StepRunOutputs,
     )
+    from zenml.execution.pipeline.dynamic.runner import DynamicPipelineRunner
     from zenml.pipelines.compilation_context import (
         PipelineCompilationContext,
     )
@@ -612,6 +615,10 @@ class BaseStep:
             after: Upstream steps for the invocation.
             **kwargs: Entrypoint function keyword arguments.
 
+        Raises:
+            RuntimeError: If a sync step is called directly inside an async
+                pipeline.
+
         Returns:
             The outputs of the entrypoint function call.
         """
@@ -671,6 +678,29 @@ class BaseStep:
                 ],
                 after,
             )
+            if run_context.runner.event_loop is not None:
+                # Async dynamic pipeline.
+                if not is_async_callable(self.entrypoint):
+                    raise RuntimeError(
+                        f"Cannot call sync step `{self.name}` directly inside "
+                        f"an async pipeline. Use `{self.name}.submit(...)` to "
+                        f"run it."
+                    )
+                # Return a coroutine so the step is only dispatched once the
+                # body awaits it (or `asyncio.gather`s over it). The invocation
+                # ID is allocated now so IDs follow call order rather than await
+                # order.
+                invocation_id = run_context.runner.allocate_invocation_id(
+                    base_name=id or self.name, allow_suffix=not id
+                )
+                return self._call_async(
+                    runner=run_context.runner,
+                    invocation_id=invocation_id,
+                    args=args,
+                    kwargs=kwargs,
+                    after=after,
+                )
+
             return run_context.runner.launch_step(
                 step=self,
                 id=id,
@@ -693,6 +723,37 @@ class BaseStep:
             return
 
         return run_as_single_step_pipeline(self, None, *args, **kwargs)
+
+    async def _call_async(
+        self,
+        runner: "DynamicPipelineRunner",
+        invocation_id: str,
+        args: Tuple[Any, ...],
+        kwargs: Dict[str, Any],
+        after: Union["AnyOutputFuture", Sequence["AnyOutputFuture"], None],
+    ) -> "StepRunOutputs":
+        """Dispatch the step and await its outputs.
+
+        Args:
+            runner: The dynamic pipeline runner.
+            invocation_id: The pre-allocated invocation ID.
+            args: Entrypoint function arguments.
+            kwargs: Entrypoint function keyword arguments.
+            after: Upstream futures to wait for before executing the step.
+
+        Returns:
+            The step run outputs.
+        """
+        future = runner.launch_step(
+            step=self,
+            id=None,
+            args=args,
+            kwargs=kwargs,
+            after=after,
+            concurrent=True,
+            invocation_id=invocation_id,
+        )
+        return await future
 
     def call_entrypoint(self, *args: Any, **kwargs: Any) -> Any:
         """Calls the entrypoint function of the step.
@@ -720,6 +781,16 @@ class BaseStep:
                 "Invalid step function entrypoint arguments. Check out the "
                 "pydantic error above for more details."
             ) from e
+
+        if is_async_callable(self.entrypoint):
+            from zenml.execution.pipeline.dynamic.run_context import (
+                get_active_pipeline_loop,
+            )
+
+            return run_coroutine_blocking(
+                self.entrypoint(**validated_args),
+                loop=get_active_pipeline_loop(),
+            )
 
         return self.entrypoint(**validated_args)
 

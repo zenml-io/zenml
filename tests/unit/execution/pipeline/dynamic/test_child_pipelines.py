@@ -221,6 +221,43 @@ def test_inline_child_does_not_create_child_run() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Child pipelines inside an async parent
+# ---------------------------------------------------------------------------
+
+
+@pipeline(dynamic=True, enable_cache=False)
+async def parent_async_awaits_child_submit() -> None:
+    out = await child_emit_int_pipeline.submit()
+    assert out.load() == 11, out.load()
+
+
+def test_async_parent_awaits_child_submit() -> None:
+    run = parent_async_awaits_child_submit()
+    assert run.status.is_successful
+
+
+@pipeline(dynamic=True, enable_cache=False)
+async def parent_async_calls_child_directly() -> None:
+    child_emit_int_pipeline()
+
+
+def test_direct_child_call_rejected_in_async_pipeline() -> None:
+    with pytest.raises(RuntimeError, match="submit"):
+        parent_async_calls_child_directly()
+
+
+@pipeline(dynamic=True, enable_cache=False)
+async def parent_async_blocks_on_child_result() -> None:
+    future = child_emit_int_pipeline.submit()
+    future.result()
+
+
+def test_blocking_on_child_result_rejected_in_async_pipeline() -> None:
+    with pytest.raises(RuntimeError, match="async pipeline"):
+        parent_async_blocks_on_child_result()
+
+
+# ---------------------------------------------------------------------------
 # B. I/O between parent and child
 # ---------------------------------------------------------------------------
 
