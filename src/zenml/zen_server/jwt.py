@@ -18,7 +18,6 @@ from typing import (
     Any,
     Dict,
     Optional,
-    cast,
 )
 from uuid import UUID
 
@@ -88,24 +87,20 @@ class JWTToken(BaseModel):
             CredentialsNotValid: If the token is invalid.
         """
         config = server_config()
-        # PyJWT disables the remaining claim checks (exp, aud, iss, ...) on its
-        # own once `verify_signature` is False, so we only need to set this one
-        # flag to get all-or-nothing verification.
-        verification_options = {
-            "verify_signature": verify,
-        }
 
         try:
-            claims_data = jwt.decode(
+            # PyJWT disables the remaining claim checks (exp, aud, iss, ...) on
+            # its own once `verify_signature` is False, so we only need to set
+            # this one flag to get all-or-nothing verification.
+            claims = jwt.decode(
                 token,
                 config.jwt_secret_key,
                 algorithms=[config.jwt_token_algorithm],
                 audience=config.get_jwt_token_audience(),
                 issuer=config.get_jwt_token_issuer(),
-                options=verification_options,
+                options={"verify_signature": verify},
                 leeway=timedelta(seconds=config.jwt_token_leeway_seconds),
             )
-            claims = cast(Dict[str, Any], claims_data)
         except jwt.PyJWTError as e:
             raise CredentialsNotValid(f"Invalid JWT token: {e}") from e
 
