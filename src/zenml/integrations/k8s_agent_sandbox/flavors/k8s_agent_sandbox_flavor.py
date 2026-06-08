@@ -50,14 +50,7 @@ class ConnectionMode(str, Enum):
 
 
 class K8sAgentSandboxSettings(BaseSandboxSettings):
-    """Per-step settings for an Agent Sandbox component.
-
-    Inherits ``environment`` / ``copy_local_env`` from
-    ``BaseSandboxSettings`` and adds a flavor-local ``base_image``
-    (only honored when ``template_name`` is unset — inline mode; in
-    template mode the image comes from the referenced
-    ``SandboxTemplate`` custom resource).
-    """
+    """Per-step settings for an Agent Sandbox component."""
 
     base_image: Optional[str] = Field(
         default=None,
@@ -241,7 +234,7 @@ class K8sAgentSandboxFlavor(BaseSandboxFlavor):
         """
         return (
             "https://public-flavor-logos.s3.eu-central-1.amazonaws.com"
-            "/orchestrator/kubernetes.png"
+            "/sandbox/kubernetes.png"
         )
 
     @property

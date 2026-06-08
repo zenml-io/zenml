@@ -24,6 +24,7 @@ one-shot ``stdout()`` / ``stderr()`` iterators on
 snapshot/restore work once the operator exposes it.
 """
 
+import logging
 import shlex
 import time
 import uuid
@@ -161,50 +162,37 @@ class K8sAgentSandboxProcess(SandboxProcess):
         self,
         result: Any,
         *,
-        session: Optional["K8sAgentSandboxSession"] = None,
-        started_at: Optional[float] = None,
+        session: "K8sAgentSandboxSession",
+        started_at: float,
     ) -> None:
-        """Initializes the process wrapper.
+        """Initialize the process wrapper.
 
         Args:
-            result: The ``k8s_agent_sandbox.models.ExecutionResult``
-                returned by ``sandbox.commands.run``.
-            session: Owning session. When provided, captured output
-                is also re-emitted through ``session._wrap_stream`` so
-                it lands in the per-session sandbox log source.
-            started_at: Wall-clock time the ``exec`` call began,
-                forwarded to the base class so ``collect()`` can report
-                duration accurately.
+            result: The k8s_agent_sandbox ExecutionResult returned by
+                sandbox.commands.run.
+            session: The owning session.
+            started_at: Wall-clock time the exec call began.
         """
+        super().__init__(session=session, started_at=started_at)
         self._result = result
-        self._session = session
-        self._started_at = started_at
 
     def stdout(self) -> Iterator[str]:
-        """Yields captured stdout one line at a time.
+        """Stdout line iterator.
 
         Returns:
-            Line-delimited iterator over the captured stdout (timing is
-            single-shot — ``commands.run`` is one POST — but the shape
-            matches the contract). Log-wrapped via ``session._wrap_stream``
-            when a session is attached.
+            Stdout line iterator.
         """
         lines = iter((self._result.stdout or "").splitlines(keepends=True))
-        if self._session is None:
-            return lines
-        return self._session._wrap_stream(lines, stream="stdout")
+        return self._session._wrap_stream(lines, log_level=logging.INFO)
 
     def stderr(self) -> Iterator[str]:
-        """Yields captured stderr one line at a time.
+        """Stderr line iterator.
 
         Returns:
-            Line-delimited iterator over the captured stderr, log-wrapped
-            via ``session._wrap_stream`` when a session is attached.
+            Stderr line iterator.
         """
         lines = iter((self._result.stderr or "").splitlines(keepends=True))
-        if self._session is None:
-            return lines
-        return self._session._wrap_stream(lines, stream="stderr")
+        return self._session._wrap_stream(lines, log_level=logging.ERROR)
 
     def wait(self, timeout: Optional[float] = None) -> int:
         """Returns the exit code immediately.
@@ -348,7 +336,6 @@ class K8sAgentSandboxSession(SandboxSession):
         """
         if self._inline_template_name and self._inline_template_namespace:
             self._delete_inline_template()
-        self._close_log_ctx()
 
     def destroy(self) -> None:
         """Terminates the underlying Sandbox and finalizes the session.
@@ -375,7 +362,6 @@ class K8sAgentSandboxSession(SandboxSession):
             )
         if self._inline_template_name and self._inline_template_namespace:
             self._delete_inline_template()
-        self._close_log_ctx()
 
     def _delete_inline_template(self) -> None:
         """Best-effort delete of the inline-synthesized SandboxTemplate CR.

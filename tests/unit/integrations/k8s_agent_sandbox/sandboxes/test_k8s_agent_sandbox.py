@@ -106,10 +106,9 @@ class TestFlavorMetadata:
 class TestConfigDefaults:
     def test_inherits_base_sandbox_fields(self) -> None:
         fields = K8sAgentSandboxSettings.model_fields
-        # ``base_image`` is declared locally on the flavor (base no
-        # longer ships it); ``environment`` comes from
-        # ``BaseSandboxSettings``.
-        assert {"base_image", "environment"} <= set(fields)
+        # base_image is declared locally on the flavor; sandbox_environment
+        # comes from BaseSandboxSettings.
+        assert {"base_image", "sandbox_environment"} <= set(fields)
 
     def test_default_connection_mode_is_gateway(self) -> None:
         cfg = K8sAgentSandboxConfig()
@@ -526,17 +525,6 @@ class TestSessionLifecycle:
             name="zenml-sb-tpl-deadbeef",
         )
 
-    def test_close_flushes_log_ctx(self) -> None:
-        # The base contract requires _close_log_ctx() so the per-session
-        # log source is flushed to the log store.
-        session, _ = self._session_with_inline()
-        with (
-            patch("kubernetes.client.CustomObjectsApi"),
-            patch.object(session, "_close_log_ctx") as fake_close_log,
-        ):
-            session.close()
-        fake_close_log.assert_called_once()
-
     def test_destroy_terminates_and_deletes_template(self) -> None:
         session, fake_underlying = self._session_with_inline()
         with patch("kubernetes.client.CustomObjectsApi") as fake_api_cls:
@@ -584,45 +572,69 @@ class TestSessionLifecycle:
 
 
 class TestProcessSurface:
+    @staticmethod
+    def _passthrough_session() -> MagicMock:
+        """Session stub whose _wrap_stream returns its input iterator unchanged."""
+        fake_session = MagicMock()
+        fake_session._wrap_stream.side_effect = lambda lines, **_: lines
+        return fake_session
+
     def test_stdout_yields_line_by_line(self) -> None:
         # Honor the SandboxProcess line-iterator contract: each line is
         # one yield, trailing newline preserved.
         result = MagicMock(stdout="hello\nworld\n", stderr="", exit_code=0)
-        proc = K8sAgentSandboxProcess(result, session=None)
+        proc = K8sAgentSandboxProcess(
+            result, session=self._passthrough_session(), started_at=0.0
+        )
         assert list(proc.stdout()) == ["hello\n", "world\n"]
 
     def test_stdout_handles_trailing_partial_line(self) -> None:
         result = MagicMock(
             stdout="line1\nline2-no-newline", stderr="", exit_code=0
         )
-        proc = K8sAgentSandboxProcess(result, session=None)
+        proc = K8sAgentSandboxProcess(
+            result, session=self._passthrough_session(), started_at=0.0
+        )
         assert list(proc.stdout()) == ["line1\n", "line2-no-newline"]
 
     def test_stderr_empty_yields_no_chunks(self) -> None:
         result = MagicMock(stdout="ok\n", stderr="", exit_code=0)
-        proc = K8sAgentSandboxProcess(result, session=None)
+        proc = K8sAgentSandboxProcess(
+            result, session=self._passthrough_session(), started_at=0.0
+        )
         assert list(proc.stderr()) == []
 
     def test_wait_returns_captured_exit_code(self) -> None:
         result = MagicMock(stdout="", stderr="oops", exit_code=3)
-        proc = K8sAgentSandboxProcess(result, session=None)
+        proc = K8sAgentSandboxProcess(
+            result, session=self._passthrough_session(), started_at=0.0
+        )
         assert proc.wait() == 3
         assert proc.exit_code == 3
 
     def test_kill_is_noop(self) -> None:
-        proc = K8sAgentSandboxProcess(MagicMock(exit_code=0), session=None)
+        proc = K8sAgentSandboxProcess(
+            MagicMock(exit_code=0),
+            session=self._passthrough_session(),
+            started_at=0.0,
+        )
         proc.kill()  # no exception
 
     def test_session_log_wrapping_routes_through_wrap_stream(self) -> None:
+        import logging
+
         sentinel: Iterator[str] = iter(["wrapped"])
         fake_session = MagicMock()
         fake_session._wrap_stream.return_value = sentinel
         result = MagicMock(stdout="raw\n", stderr="", exit_code=0)
-        proc = K8sAgentSandboxProcess(result, session=fake_session)
+        proc = K8sAgentSandboxProcess(
+            result, session=fake_session, started_at=0.0
+        )
         out = list(proc.stdout())
         assert out == ["wrapped"]
-        assert fake_session._wrap_stream.call_args.kwargs["stream"] == (
-            "stdout"
+        assert (
+            fake_session._wrap_stream.call_args.kwargs["log_level"]
+            == logging.INFO
         )
 
 
