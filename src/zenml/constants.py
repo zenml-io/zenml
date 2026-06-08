@@ -316,7 +316,7 @@ INSIDE_ZENML_CONTAINER = handle_bool_env_var(ENV_ZENML_CONTAINER, False)
 VALID_OPERATING_SYSTEMS = ["Windows", "Darwin", "Linux"]
 
 # Path utilities constants
-REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://", "az://", "abfs://"]
+REMOTE_FS_PREFIX = ["gs://", "hdfs://", "s3://", "az://", "abfs://", "r2://"]
 
 # ZenML Analytics Server - URL
 ANALYTICS_SERVER_URL = "https://analytics.zenml.io/"
