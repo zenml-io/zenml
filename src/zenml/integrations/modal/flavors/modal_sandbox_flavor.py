@@ -48,22 +48,15 @@ class ModalSandboxSettings(BaseSandboxSettings, ModalStepOperatorSettings):
         "'<step>' to reuse the active step's containerized-orchestrator "
         "image. When None, the component's 'default_image' is used.",
     )
-    timeout_seconds: Optional[int] = Field(
-        default=None,
-        description="Per-session TTL (in seconds) passed to Modal as the "
-        "Sandbox timeout. Modal terminates the Sandbox after this many "
-        "seconds regardless of in-flight execs. Example: 3600 for a "
-        "1-hour cap. When None, Modal's own default applies.",
-    )
 
 
 class ModalSandboxConfig(BaseSandboxConfig, ModalStepOperatorConfig):
     """Configuration for the Modal sandbox component."""
 
     # Inherits from ModalStepOperatorConfig so token_id / token_secret /
-    # the both-or-neither validator are shared with the Modal step
-    # operator — a stack running both components only needs one set of
-    # credentials.
+    # modal_environment / timeout / the both-or-neither validator are
+    # shared with the Modal step operator — a stack running both
+    # components only needs one set of credentials and one timeout knob.
 
     app_name: str = Field(
         default="zenml-sandbox",
@@ -77,15 +70,6 @@ class ModalSandboxConfig(BaseSandboxConfig, ModalStepOperatorConfig):
         "'<step>' sentinel is requested but no containerized step image is "
         "available. Example: 'python:3.11-slim'.",
     )
-
-    @property
-    def is_remote(self) -> bool:
-        """Modal sandboxes run on Modal's infrastructure.
-
-        Returns:
-            ``True`` — the ZenML server is not the host.
-        """
-        return True
 
 
 class ModalSandboxFlavor(BaseSandboxFlavor):

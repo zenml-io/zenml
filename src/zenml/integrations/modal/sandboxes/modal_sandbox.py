@@ -150,8 +150,8 @@ class ModalSandboxProcess(SandboxProcess):
 
         Args:
             timeout: Not supported by Modal's ``ContainerProcess.wait()``.
-                Use the Session-level ``timeout_seconds`` setting to bound
-                total Session lifetime.
+                Use the Session-level ``timeout`` setting to bound total
+                Session lifetime.
 
         Returns:
             The exit code.
@@ -162,8 +162,8 @@ class ModalSandboxProcess(SandboxProcess):
         if timeout is not None:
             raise NotImplementedError(
                 "Modal does not support per-exec timeouts. Use "
-                "ModalSandboxSettings.timeout_seconds for Session-level "
-                "TTL, or wrap the wait call in your own watchdog."
+                "ModalSandboxSettings.timeout for Session-level TTL, or "
+                "wrap the wait call in your own watchdog."
             )
         self._process.wait()
         return int(self._process.returncode or 0)
@@ -271,10 +271,15 @@ class ModalSandboxSession(SandboxSession):
         if cwd is not None:
             kwargs["workdir"] = cwd
         if env:
-            # Modal 1.x exposes runtime env directly via `env=`; avoids
-            # leaking through the Image build cache and matches the
-            # step operator's runtime env path.
-            kwargs["env"] = env
+            # Modal 1.x validated env= on Sandbox.create (strickvl PR
+            # #4038) but not on ContainerProcess.exec. Stick with the
+            # secrets= path on per-exec env injection until that's
+            # verified end-to-end against a live Modal 1.x runtime.
+            import modal
+
+            kwargs["secrets"] = [
+                modal.Secret.from_dict(cast(Dict[str, Optional[str]], env))
+            ]
         started_at = time.time()
         try:
             process = self._sandbox.exec(*argv, **kwargs)
@@ -451,25 +456,15 @@ class ModalSandbox(BaseSandbox):
         """Return an explicit Modal client when credentials are configured.
 
         Returns:
-            A ``modal.Client`` built from ``token_id`` / ``token_secret``,
-            or ``None`` when no credentials are configured (Modal then
-            uses its ambient auth).
-
-        Raises:
-            ValueError: If exactly one of token_id / token_secret is set.
+            A modal.Client built from token_id / token_secret, or None
+            when no credentials are configured (Modal then uses its
+            ambient auth). The both-or-neither precondition is enforced
+            upstream by ModalStepOperatorConfig's validator.
         """
-        token_id = _normalize_optional_config_value(
-            getattr(self.config, "token_id", None)
-        )
+        token_id = _normalize_optional_config_value(self.config.token_id)
         token_secret = _normalize_optional_config_value(
-            getattr(self.config, "token_secret", None)
+            self.config.token_secret
         )
-
-        if bool(token_id) != bool(token_secret):
-            raise ValueError(
-                "Modal token_id and token_secret must be configured together."
-            )
-
         if not token_id or not token_secret:
             return None
 
@@ -581,8 +576,10 @@ class ModalSandbox(BaseSandbox):
                 # Modal 1.x: pass runtime env via env= (not via secrets=).
                 # Keeps the Image build cache clean of per-step values.
                 kwargs["env"] = env
-        if eff.timeout_seconds is not None:
-            kwargs["timeout"] = eff.timeout_seconds
+        # `timeout` is inherited from ModalStepOperatorSettings (validated
+        # ge=1, le=86400). Single source of truth shared with the step
+        # operator — one timeout knob per stack.
+        kwargs["timeout"] = eff.timeout
         if gpu_values is not None:
             kwargs["gpu"] = gpu_values
         if resource_settings.cpu_count is not None:
