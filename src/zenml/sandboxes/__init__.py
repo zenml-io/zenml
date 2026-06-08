@@ -32,7 +32,7 @@ from zenml.sandboxes.process import (
     SandboxProcess,
 )
 from zenml.sandboxes.session import SandboxSession
-from zenml.sandboxes.snapshot import BaseSandboxSnapshot
+from zenml.sandboxes.snapshot import SandboxSnapshot
 
 __all__ = [
     "LOCAL_SANDBOX_FLAVOR",
@@ -40,7 +40,7 @@ __all__ = [
     "BaseSandboxConfig",
     "BaseSandboxFlavor",
     "BaseSandboxSettings",
-    "BaseSandboxSnapshot",
+    "SandboxSnapshot",
     "LocalSandbox",
     "LocalSandboxConfig",
     "LocalSandboxFlavor",

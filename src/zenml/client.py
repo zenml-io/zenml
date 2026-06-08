@@ -2854,15 +2854,12 @@ class Client(metaclass=ClientMetaClass):
             ZenKeyError: If multiple builds were found that match the given
                 id or prefix.
         """
-        from zenml.utils.uuid_utils import is_valid_uuid
+        from zenml.utils.uuid_utils import is_valid_uuid, to_uuid
 
         # First interpret as full UUID
         if is_valid_uuid(id_or_prefix):
-            if not isinstance(id_or_prefix, UUID):
-                id_or_prefix = UUID(id_or_prefix, version=4)
-
             return self.zen_store.get_build(
-                id_or_prefix,
+                to_uuid(id_or_prefix),
                 hydrate=hydrate,
             )
 
@@ -8380,13 +8377,15 @@ class Client(metaclass=ClientMetaClass):
             ZenKeyError: If there is more than one entity with that name
                 or id prefix.
         """
-        from zenml.utils.uuid_utils import is_valid_uuid
+        from zenml.utils.uuid_utils import is_valid_uuid, to_uuid
 
         entity_label = get_method.__name__.replace("get_", "") + "s"
 
         # First interpret as full UUID
         if is_valid_uuid(name_id_or_prefix):
-            return get_method(name_id_or_prefix, hydrate=hydrate, **kwargs)
+            return get_method(
+                to_uuid(name_id_or_prefix), hydrate=hydrate, **kwargs
+            )
 
         # If not a UUID, try to find by name
         assert not isinstance(name_id_or_prefix, UUID)
@@ -8443,7 +8442,7 @@ class Client(metaclass=ClientMetaClass):
         project: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
     ) -> "AnyResponse":
-        from zenml.utils.uuid_utils import is_valid_uuid
+        from zenml.utils.uuid_utils import is_valid_uuid, to_uuid
 
         entity_label = get_method.__name__.replace("get_", "") + "s"
 
@@ -8454,10 +8453,7 @@ class Client(metaclass=ClientMetaClass):
                     f"{entity_label}. Ignoring the version and fetching the "
                     f"{entity_label} by ID."
                 )
-            if not isinstance(name_id_or_prefix, UUID):
-                name_id_or_prefix = UUID(name_id_or_prefix, version=4)
-
-            return get_method(name_id_or_prefix, hydrate=hydrate)
+            return get_method(to_uuid(name_id_or_prefix), hydrate=hydrate)
 
         assert not isinstance(name_id_or_prefix, UUID)
         list_kwargs: Dict[str, Any] = dict(
