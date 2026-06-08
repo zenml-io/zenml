@@ -74,6 +74,8 @@ class ByteUnit(Enum):
 
 MEMORY_REGEX = r"^[0-9]+(" + "|".join(unit.value for unit in ByteUnit) + r")$"
 BASIC_RESOURCE_KINDS = frozenset({"cpu", "gpu", "memory", "step_run"})
+DEFAULT_ALLOCATION_WAIT_TIMEOUT_SECONDS = 3600
+DEFAULT_INITIALIZATION_LEASE_SECONDS = 3600
 
 ResourceInput = Union[
     str,
@@ -181,6 +183,11 @@ class ResourceSettings(BaseSettings):
             requests. Defaults to ``any`` when not set. Legacy
             ``preemptible`` booleans are still accepted on input and mapped
             into this field.
+        allocation_wait_timeout_seconds: Maximum time in seconds to wait for
+            the resource manager to allocate resources before giving up.
+        initialization_lease_seconds: Maximum time in seconds to keep allocated
+            resources reserved while the workload is starting but not yet
+            running.
         min_replicas: Minimum number of container instances (replicas).
             Use 0 to allow scale-to-zero on idle. Only relevant to
             deployed pipelines.
@@ -211,6 +218,20 @@ class ResourceSettings(BaseSettings):
     )
     reclaim_tolerance: ResourceRequestReclaimTolerance = (
         ResourceRequestReclaimTolerance.ANY
+    )
+    allocation_wait_timeout_seconds: PositiveInt = Field(
+        default=DEFAULT_ALLOCATION_WAIT_TIMEOUT_SECONDS,
+        description=(
+            "Maximum time in seconds to wait for the resource manager to "
+            "allocate resources before giving up."
+        ),
+    )
+    initialization_lease_seconds: PositiveInt = Field(
+        default=DEFAULT_INITIALIZATION_LEASE_SECONDS,
+        description=(
+            "Maximum time in seconds to keep allocated resources reserved "
+            "while the workload is starting but not yet running."
+        ),
     )
 
     # Settings only applicable for deployers and deployed pipelines
@@ -319,6 +340,8 @@ class ResourceSettings(BaseSettings):
                         "resources",
                         "reclaim_tolerance",
                         "gpu_class",
+                        "allocation_wait_timeout_seconds",
+                        "initialization_lease_seconds",
                     },
                 )
             )

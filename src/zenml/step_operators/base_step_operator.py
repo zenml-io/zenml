@@ -15,7 +15,7 @@
 
 import time
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Dict, List, Type, cast
+from typing import TYPE_CHECKING, Dict, List, Optional, Type, cast
 
 from zenml.client import Client
 from zenml.enums import ExecutionStatus, StackComponentType
@@ -29,6 +29,7 @@ from zenml.step_operators.step_operator_entrypoint_configuration import (
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
+    from zenml.models import ResourceRequestResponse
 
 logger = get_logger(__name__)
 
@@ -69,6 +70,7 @@ class BaseStepOperator(StackComponent, ABC):
         info: "StepRunInfo",
         entrypoint_command: List[str],
         environment: Dict[str, str],
+        allocated_resource_request: Optional["ResourceRequestResponse"] = None,
     ) -> None:
         """Submit a step run.
 
@@ -80,6 +82,8 @@ class BaseStepOperator(StackComponent, ABC):
             entrypoint_command: Command that executes the step.
             environment: Environment variables to set in the step operator
                 environment.
+            allocated_resource_request: The allocated resource request for the
+                step, if any.
 
         Raises:
             NotImplementedError: If the step operator does not implement this
