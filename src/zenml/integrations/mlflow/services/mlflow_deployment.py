@@ -23,6 +23,7 @@ import pandas as pd
 import requests
 from mlflow.pyfunc.backend import PyFuncBackend
 from mlflow.version import VERSION as MLFLOW_VERSION
+from packaging import version
 from pydantic import field_validator
 
 from zenml.client import Client
@@ -115,8 +116,8 @@ class MLFlowDeploymentConfig(LocalDaemonServiceConfig):
 
     @field_validator("mlserver")
     @classmethod
-    def validate_mlserver_python_version(cls, mlserver: bool) -> bool:
-        """Validates the Python version if mlserver is used.
+    def validate_mlserver_support(cls, mlserver: bool) -> bool:
+        """Validate whether the MLServer backend can be used.
 
         Args:
             mlserver: set to True if the MLflow MLServer backend is used,
@@ -124,15 +125,26 @@ class MLFlowDeploymentConfig(LocalDaemonServiceConfig):
                 used.
 
         Returns:
-            the validated value
+            The validated value.
 
         Raises:
-            ValueError: if mlserver packages are not installed
+            ValueError: if mlserver packages are not installed or supported.
         """
         if mlserver is True:
-            # For the mlserver deployment, the mlserver and
-            # mlserver-mlflow packages need to be installed separately
-            # because they rely on an older version of Pydantic.
+            if version.parse(MLFLOW_VERSION) >= version.parse("3.13.0"):
+                logger.warning(
+                    "The MLflow MLServer backend is not supported for MLflow "
+                    "3.13.0 or newer. The `mlserver` deployment option will "
+                    "be ignored and the built-in MLflow scoring server will "
+                    "be used instead."
+                )
+                return False
+
+            logger.warning(
+                "The MLflow MLServer backend is deprecated and was removed "
+                "in MLflow 3.13.0. Consider using the built-in MLflow "
+                "scoring server instead."
+            )
 
             # Check if the mlserver and mlserver-mlflow packages are installed
             try:
@@ -241,6 +253,8 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
             # to run the deploy the model on the local running environment
             if int(mlflow_version[0]) >= 2:
                 backend_kwargs["env_manager"] = "local"
+            if self.config.mlserver:
+                serve_kwargs["enable_mlserver"] = True
             backend = PyFuncBackend(  # type: ignore[no-untyped-call, unused-ignore]
                 config={},
                 no_conda=True,
@@ -260,7 +274,6 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
                 model_uri=self.config.model_uri,
                 port=self.endpoint.status.port,
                 host="localhost",
-                enable_mlserver=self.config.mlserver,
                 **serve_kwargs,
             )
         except KeyboardInterrupt:

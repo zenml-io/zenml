@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Tests for MLflow deployment service endpoint configuration."""
 
+import logging
 from unittest.mock import MagicMock
 from uuid import uuid4
 
@@ -57,6 +58,7 @@ def test_standard_mlflow_deployment_healthcheck_uses_get() -> None:
 
 def test_mlserver_deployment_healthcheck_uses_get(
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Check that the MLServer endpoint keeps its existing GET readiness probe."""
 
@@ -69,8 +71,13 @@ def test_mlserver_deployment_healthcheck_uses_get(
         "zenml.integrations.mlflow.services.mlflow_deployment.importlib.import_module",
         import_module,
     )
+    monkeypatch.setattr(
+        "zenml.integrations.mlflow.services.mlflow_deployment.MLFLOW_VERSION",
+        "3.12.0",
+    )
 
-    service = _deployment_service(mlserver=True)
+    with caplog.at_level(logging.WARNING):
+        service = _deployment_service(mlserver=True)
 
     assert (
         service.endpoint.config.prediction_url_path
@@ -81,3 +88,29 @@ def test_mlserver_deployment_healthcheck_uses_get(
         == MLSERVER_HEALTHCHECK_URL_PATH
     )
     assert service.endpoint.monitor.config.use_head_request is False
+    assert "MLServer backend is deprecated" in caplog.text
+
+
+def test_mlserver_deployment_is_ignored_for_mlflow_3_13(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Check that MLServer deployments fall back for unsupported MLflow."""
+    monkeypatch.setattr(
+        "zenml.integrations.mlflow.services.mlflow_deployment.MLFLOW_VERSION",
+        "3.13.0",
+    )
+
+    with caplog.at_level(logging.WARNING):
+        service = _deployment_service(mlserver=True)
+
+    assert service.config.mlserver is False
+    assert (
+        service.endpoint.config.prediction_url_path
+        == MLFLOW_PREDICTION_URL_PATH
+    )
+    assert (
+        service.endpoint.monitor.config.healthcheck_uri_path
+        == MLFLOW_HEALTHCHECK_URL_PATH
+    )
+    assert "MLServer backend is not supported for MLflow 3.13.0" in caplog.text
