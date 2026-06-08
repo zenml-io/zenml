@@ -136,7 +136,7 @@ Important:
 - If you request GPUs with `ResourceSettings.gpu_count > 0`, you must also specify a GPU type via `ModalStepOperatorSettings.gpu`; otherwise the run will fail with a validation error.
 - If a GPU type is set but `gpu_count == 0`, ZenML treats the step as CPU-only and logs a warning that the GPU type is ignored.
 - If `gpu_count` is omitted and a GPU type is set, Modal uses one GPU of that type.
-- `cpu_count` is passed through from `ResourceSettings` to Modal. `memory` can be a string like "32GB" or an integer amount of bytes. ZenML passes memory to Modal in MB and rounds fractional MB values up.
+- `cpu_count` is passed through from `ResourceSettings` to Modal. `memory` must be a string such as `"32GB"`, `"32768MB"`, or `"32GiB"`. ZenML converts it to decimal megabytes (`MB`) and rounds fractional MB values up before passing it to Modal.
 - If the active container registry exposes credentials, ZenML passes them to Modal for image pulls. If no registry credentials are configured, Modal attempts to pull the image anonymously.
 
 {% hint style="info" %}

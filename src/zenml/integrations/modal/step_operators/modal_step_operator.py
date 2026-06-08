@@ -22,6 +22,7 @@ import modal
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.resource_settings import ByteUnit, ResourceSettings
+from zenml.constants import ENV_ZENML_STORE_PREFIX
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.exceptions import StackComponentInterfaceError
 from zenml.integrations.modal.flavors import (
@@ -43,6 +44,8 @@ logger = get_logger(__name__)
 MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY = "modal_step_operator"
 STEP_SANDBOX_ID_METADATA_KEY = "sandbox_id"
 STEP_MODAL_ENVIRONMENT_METADATA_KEY = "modal_environment"
+SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY = f"{ENV_ZENML_STORE_PREFIX}API_TOKEN"
+SENSITIVE_ZENML_RUNTIME_ENV_KEYS = {SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY}
 
 
 def _normalize_optional_config_value(value: Optional[str]) -> Optional[str]:
@@ -52,6 +55,22 @@ def _normalize_optional_config_value(value: Optional[str]) -> Optional[str]:
 
     stripped_value = value.strip()
     return stripped_value or None
+
+
+def _split_modal_runtime_environment(
+    environment: Dict[str, str],
+) -> Tuple[Dict[str, str], Dict[str, str]]:
+    """Split runtime environment variables into plain and secret values."""
+    sandbox_environment = {}
+    sensitive_environment = {}
+
+    for key, value in environment.items():
+        if key in SENSITIVE_ZENML_RUNTIME_ENV_KEYS:
+            sensitive_environment[key] = value
+        else:
+            sandbox_environment[key] = value
+
+    return sandbox_environment, sensitive_environment
 
 
 def get_gpu_values(
@@ -99,8 +118,10 @@ def get_gpu_values(
             raise StackComponentInterfaceError(
                 "GPU resources requested (gpu_count > 0) but no GPU type was specified "
                 "in Modal settings. Please set a GPU type (e.g., 'T4', 'A100') via "
-                "ModalStepOperatorSettings.gpu or @step(settings={'modal': {'gpu': '<TYPE>'}}), "
-                "or set gpu_count=0 to run on CPU."
+                "ModalStepOperatorSettings.gpu, for example with "
+                "@step(settings={'step_operator': ModalStepOperatorSettings(gpu='<TYPE>'), "
+                "'resources': ResourceSettings(gpu_count=1)}), or set gpu_count=0 "
+                "to run on CPU."
             )
         return None
 
@@ -258,6 +279,9 @@ class ModalStepOperator(BaseStepOperator):
         Raises:
             ValueError: If no container registry is found in the stack or the
                 entrypoint command is empty.
+            Exception: If sandbox metadata publication or local metadata update
+                fails after sandbox creation. In this case, the sandbox is
+                terminated before re-raising the original exception.
         """
         settings = cast(ModalStepOperatorSettings, self.get_settings(info))
         image_name = info.get_image(key=MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY)
@@ -306,19 +330,33 @@ class ModalStepOperator(BaseStepOperator):
             environment_name=modal_environment,
             client=modal_client,
         )
-        sandbox_environment: Dict[str, Optional[str]] = dict(environment)
+        sandbox_environment, sensitive_environment = (
+            _split_modal_runtime_environment(environment)
+        )
+        runtime_secrets = []
+        if sensitive_environment:
+            runtime_secrets.append(
+                modal.Secret.from_dict(sensitive_environment)
+            )
+
+        sandbox_create_kwargs: Dict[str, Any] = {
+            "app": app,
+            "image": zenml_image,
+            "gpu": gpu_values,
+            "cpu": resource_settings.cpu_count,
+            "memory": memory_int,
+            "cloud": settings.cloud,
+            "region": settings.region,
+            "timeout": settings.timeout,
+            "env": sandbox_environment,
+            "client": modal_client,
+        }
+        if runtime_secrets:
+            sandbox_create_kwargs["secrets"] = runtime_secrets
+
         sandbox = modal.Sandbox.create(
             *entrypoint_command,
-            app=app,
-            image=zenml_image,
-            gpu=gpu_values,
-            cpu=resource_settings.cpu_count,
-            memory=memory_int,
-            cloud=settings.cloud,
-            region=settings.region,
-            timeout=settings.timeout,
-            env=sandbox_environment,
-            client=modal_client,
+            **sandbox_create_kwargs,
         )
         metadata: Dict[str, Any] = {
             STEP_SANDBOX_ID_METADATA_KEY: sandbox.object_id
@@ -326,8 +364,19 @@ class ModalStepOperator(BaseStepOperator):
         if modal_environment:
             metadata[STEP_MODAL_ENVIRONMENT_METADATA_KEY] = modal_environment
 
-        publish_step_run_metadata(info.step_run_id, {self.id: metadata})
-        info.step_run.run_metadata.update(metadata)
+        try:
+            publish_step_run_metadata(info.step_run_id, {self.id: metadata})
+            info.step_run.run_metadata.update(metadata)
+        except Exception:
+            try:
+                sandbox.terminate()
+            except Exception:
+                logger.exception(
+                    "Failed to terminate Modal sandbox '%s' after metadata "
+                    "publication failed.",
+                    sandbox.object_id,
+                )
+            raise
 
     def get_status(self, step_run: "StepRunResponse") -> ExecutionStatus:
         """Gets the status of a submitted Modal sandbox.

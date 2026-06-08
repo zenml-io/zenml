@@ -40,6 +40,10 @@ from zenml.integrations.modal.step_operators.modal_step_operator import (
     get_gpu_values,
 )
 
+SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY = (
+    modal_step_operator_module.SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY
+)
+
 
 class ResourceSettingsStub:
     """Minimal stub to simulate ZenML ResourceSettings for GPU tests.
@@ -87,14 +91,20 @@ def _submit_with_stubs(
     config: ModalStepOperatorConfig,
     settings: ModalStepOperatorSettings,
     modal_client: ModalClientStub | None,
+    registry_credentials: tuple[str, str] | None = None,
+    environment: dict[str, str] | None = None,
+    publish_step_run_metadata_error: Exception | None = None,
+    run_metadata=None,
+    expect_submit_error: bool = False,
 ):
-    recorded = {"client_credentials": []}
+    recorded = {"client_credentials": [], "secret_values": []}
     resource_settings = ResourceSettingsStub(
         gpu_count=0,
         cpu_count=2,
         memory_mb=1.2,
     )
-    run_metadata = {}
+    if run_metadata is None:
+        run_metadata = {}
 
     class InfoStub:
         step_run_id = "step-run-id"
@@ -107,7 +117,7 @@ def _submit_with_stubs(
             return "registry.example.com/zenml:latest"
 
     class ContainerRegistryStub:
-        credentials = None
+        credentials = registry_credentials
 
     class StackStub:
         container_registry = ContainerRegistryStub()
@@ -138,6 +148,14 @@ def _submit_with_stubs(
             recorded["image"] = image
             return image
 
+    class SecretFactoryStub:
+        @staticmethod
+        def from_dict(values):
+            secret = SimpleNamespace(values=dict(values))
+            recorded["secret_values"].append(dict(values))
+            recorded.setdefault("secrets", []).append(secret)
+            return secret
+
     class AppFactoryStub:
         @staticmethod
         def lookup(*args, **kwargs):
@@ -147,11 +165,19 @@ def _submit_with_stubs(
     class SandboxStub:
         object_id = "sandbox-id"
 
+        def __init__(self):
+            self.terminate_calls = 0
+
+        def terminate(self):
+            self.terminate_calls += 1
+
     class SandboxFactoryStub:
         @staticmethod
         def create(*args, **kwargs):
             recorded["sandbox_create"] = (args, kwargs)
-            return SandboxStub()
+            sandbox = SandboxStub()
+            recorded["sandbox"] = sandbox
+            return sandbox
 
     operator = _make_operator(config)
     operator.id = "component-id"
@@ -165,17 +191,24 @@ def _submit_with_stubs(
         modal_step_operator_module.modal, "Image", ImageFactoryStub
     )
     monkeypatch.setattr(
+        modal_step_operator_module.modal, "Secret", SecretFactoryStub
+    )
+    monkeypatch.setattr(
         modal_step_operator_module.modal, "App", AppFactoryStub
     )
     monkeypatch.setattr(
         modal_step_operator_module.modal, "Sandbox", SandboxFactoryStub
     )
+
+    def publish_step_run_metadata_stub(*args, **kwargs):
+        if publish_step_run_metadata_error:
+            raise publish_step_run_metadata_error
+        recorded.setdefault("published_metadata", (args, kwargs))
+
     monkeypatch.setattr(
         modal_step_operator_module,
         "publish_step_run_metadata",
-        lambda *args, **kwargs: recorded.setdefault(
-            "published_metadata", (args, kwargs)
-        ),
+        publish_step_run_metadata_stub,
     )
 
     entrypoint_command = [
@@ -185,12 +218,19 @@ def _submit_with_stubs(
         "--step_name",
         "train model",
     ]
-    environment = {
-        "ZENML_ENV": "value",
-        "ZENML_STORE_API_TOKEN": "sensitive-token",
-    }
+    if environment is None:
+        environment = {
+            "ZENML_ENV": "value",
+            SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY: "sensitive-token",
+        }
 
-    operator.submit(InfoStub(), entrypoint_command, environment)
+    if expect_submit_error:
+        with pytest.raises(Exception) as e:
+            operator.submit(InfoStub(), entrypoint_command, environment)
+        recorded["submit_error"] = e.value
+    else:
+        operator.submit(InfoStub(), entrypoint_command, environment)
+
     return recorded, run_metadata, entrypoint_command, environment
 
 
@@ -205,10 +245,14 @@ def test_gpu_arg_raises_when_count_without_type() -> None:
     rs = ResourceSettingsStub(gpu_count=1)
     with pytest.raises(StackComponentInterfaceError) as e:
         get_gpu_values(settings, rs)
+    error_message = str(e.value)
     assert (
         "GPU resources requested (gpu_count > 0) but no GPU type was specified"
-        in str(e.value)
+        in error_message
     )
+    assert "ModalStepOperatorSettings.gpu" in error_message
+    assert "step_operator" in error_message
+    assert "settings={'modal'" not in error_message
 
 
 def test_gpu_arg_type_with_no_count_returns_type() -> None:
@@ -361,6 +405,10 @@ def test_modal_submit_passes_explicit_client_and_runtime_env_boundary(
     assert recorded["client_credentials"] == [("ak-test", "as-test")]
     assert recorded["image_name"] == "registry.example.com/zenml:latest"
     assert recorded["image_kwargs"] == {}
+    assert recorded["secret_values"] == [
+        {SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY: "sensitive-token"}
+    ]
+    runtime_secret = recorded["secrets"][0]
     assert recorded["app_lookup"] == (
         ("zenml-step-run-id-train",),
         {
@@ -380,12 +428,18 @@ def test_modal_submit_passes_explicit_client_and_runtime_env_boundary(
             "cloud": None,
             "region": None,
             "timeout": 1234,
-            "env": environment,
+            "env": {"ZENML_ENV": "value"},
             "client": modal_client,
+            "secrets": [runtime_secret],
         },
     )
     sandbox_env = recorded["sandbox_create"][1]["env"]
-    assert sandbox_env == environment
+    assert sandbox_env == {"ZENML_ENV": "value"}
+    assert SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY not in sandbox_env
+    assert environment == {
+        "ZENML_ENV": "value",
+        "ZENML_STORE_API_TOKEN": "sensitive-token",
+    }
     for env_var in (
         "MODAL_TOKEN_ID",
         "MODAL_TOKEN_SECRET",
@@ -405,6 +459,79 @@ def test_modal_submit_passes_explicit_client_and_runtime_env_boundary(
         {},
     )
     assert run_metadata == expected_metadata
+
+
+def test_modal_submit_passes_registry_credentials_to_image_from_registry(
+    monkeypatch,
+) -> None:
+    recorded, _, _, _ = _submit_with_stubs(
+        monkeypatch=monkeypatch,
+        config=ModalStepOperatorConfig(),
+        settings=ModalStepOperatorSettings(),
+        modal_client=None,
+        registry_credentials=("docker-user", "docker-pass"),
+        environment={"ZENML_ENV": "value"},
+    )
+
+    assert recorded["secret_values"] == [
+        {
+            "REGISTRY_USERNAME": "docker-user",
+            "REGISTRY_PASSWORD": "docker-pass",
+        }
+    ]
+    registry_secret = recorded["secrets"][0]
+    assert recorded["image_kwargs"] == {"secret": registry_secret}
+    assert recorded["sandbox_create"][1]["env"] == {"ZENML_ENV": "value"}
+    assert "secrets" not in recorded["sandbox_create"][1]
+
+
+def test_modal_submit_terminates_sandbox_when_metadata_publish_fails(
+    monkeypatch,
+) -> None:
+    publish_error = RuntimeError("metadata publish failed")
+    recorded, run_metadata, _, _ = _submit_with_stubs(
+        monkeypatch=monkeypatch,
+        config=ModalStepOperatorConfig(),
+        settings=ModalStepOperatorSettings(),
+        modal_client=None,
+        publish_step_run_metadata_error=publish_error,
+        expect_submit_error=True,
+    )
+
+    assert recorded["submit_error"] is publish_error
+    assert recorded["sandbox"].terminate_calls == 1
+    assert "published_metadata" not in recorded
+    assert run_metadata == {}
+
+
+def test_modal_submit_terminates_sandbox_when_local_metadata_update_fails(
+    monkeypatch,
+) -> None:
+    update_error = RuntimeError("local metadata update failed")
+
+    class FailingRunMetadata(dict):
+        def update(self, *args, **kwargs):
+            raise update_error
+
+    recorded, run_metadata, _, _ = _submit_with_stubs(
+        monkeypatch=monkeypatch,
+        config=ModalStepOperatorConfig(),
+        settings=ModalStepOperatorSettings(),
+        modal_client=None,
+        run_metadata=FailingRunMetadata(),
+        expect_submit_error=True,
+    )
+
+    expected_metadata = {
+        modal_step_operator_module.STEP_SANDBOX_ID_METADATA_KEY: "sandbox-id"
+    }
+    assert recorded["submit_error"] is update_error
+    assert recorded["published_metadata"] == (
+        ("step-run-id", {"component-id": expected_metadata}),
+        {},
+    )
+    assert recorded["sandbox"].terminate_calls == 1
+    assert run_metadata == {}
 
 
 def test_modal_submit_preserves_ambient_auth_with_client_none(
