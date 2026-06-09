@@ -29,6 +29,8 @@ from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker imp
     DATABRICKS_PASSWORD,
     DATABRICKS_TOKEN,
     DATABRICKS_USERNAME,
+    LOCAL_MLFLOW_ARTIFACTS_DIRECTORY,
+    LOCAL_MLFLOW_BACKEND_FILENAME,
     MLFLOW_TRACKING_INSECURE_TLS,
     MLFLOW_TRACKING_PASSWORD,
     MLFLOW_TRACKING_TOKEN,
@@ -247,6 +249,55 @@ def test_mlflow_experiment_tracker_set_config(local_stack: Stack) -> None:
     assert os.environ[DATABRICKS_PASSWORD] == "password"
     assert os.environ[DATABRICKS_TOKEN] == "token1234"
     assert os.environ[DATABRICKS_HOST] == "https://databricks.com"
+
+
+def test_mlflow_experiment_tracker_uses_sqlite_for_local_backend(
+    tmp_path, monkeypatch
+) -> None:
+    """Tests that the implicit local MLflow backend does not use the file store."""
+    import mlflow
+
+    artifact_store = MagicMock()
+    artifact_store.path = str(tmp_path)
+    stack = MagicMock()
+    stack.artifact_store = artifact_store
+    client = MagicMock()
+    client.active_stack = stack
+
+    monkeypatch.setattr(
+        "zenml.integrations.mlflow.experiment_trackers."
+        "mlflow_experiment_tracker.Client",
+        lambda: client,
+    )
+
+    experiment_tracker = MLFlowExperimentTracker(
+        name="",
+        id=uuid4(),
+        config=MLFlowExperimentTrackerConfig(),
+        flavor="mlflow",
+        type=StackComponentType.EXPERIMENT_TRACKER,
+        user=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+    expected_tracking_uri = "sqlite:///" + os.path.abspath(
+        str(tmp_path / LOCAL_MLFLOW_BACKEND_FILENAME)
+    )
+    expected_artifact_path = os.path.abspath(
+        str(tmp_path / LOCAL_MLFLOW_ARTIFACTS_DIRECTORY)
+    )
+
+    assert experiment_tracker.get_tracking_uri() == expected_tracking_uri
+    assert experiment_tracker.local_path == expected_artifact_path
+
+    experiment_tracker.configure_mlflow()
+    experiment = experiment_tracker._set_active_experiment("test_pipeline")
+
+    assert mlflow.get_tracking_uri() == expected_tracking_uri
+    assert experiment.artifact_location == "file:" + expected_artifact_path
+
+    mlflow.set_tracking_uri("")
 
 
 @patch("mlflow.start_run")

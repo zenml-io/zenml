@@ -67,7 +67,8 @@ def next_occurrence_for_cron(
     else:
         base = base.replace(tzinfo=timezone.utc)
 
-    return croniter(expression, base).get_next(datetime).replace(tzinfo=None)
+    next_occurrence: datetime = croniter(expression, base).get_next(datetime)
+    return next_occurrence.replace(tzinfo=None)
 
 
 def calculate_first_occurrence(
