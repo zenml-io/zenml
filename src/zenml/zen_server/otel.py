@@ -297,7 +297,7 @@ def _configure_logs(
         )
         # Attach the ZenML filters that add structlog contextvars
         # and step name to the log record to the OTel handler.
-        add_zenml_filters(otel_handler) # type: ignore[assignment]
+        add_zenml_filters(otel_handler)  # type: ignore[assignment]
 
         # Attach the OTel handler to the root logger.
         # init_logging() attaches ZenML's console and log-storage handlers to
