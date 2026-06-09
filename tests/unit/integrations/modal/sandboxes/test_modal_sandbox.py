@@ -40,9 +40,11 @@ from zenml.integrations.modal.sandboxes import (  # noqa: E402
     ModalSandboxProcess,
     ModalSandboxSession,
 )
+from zenml.integrations.modal.sandbox_utils import (  # noqa: E402
+    normalize_optional_config_value,
+)
 from zenml.integrations.modal.sandboxes.utils import (  # noqa: E402
     line_buffer,
-    normalize_optional_config_value,
 )
 from zenml.sandboxes import (  # noqa: E402
     BaseSandbox,
@@ -68,15 +70,26 @@ def _make_session(fake_sandbox: Any) -> ModalSandboxSession:
 
 @contextmanager
 def _patch_modal() -> Iterator[MagicMock]:
-    """Substitute the ``modal`` module with a MagicMock for ``import modal``."""
-    real = sys.modules.get("modal")
+    """Substitute the ``modal`` module with a MagicMock everywhere it's bound.
+
+    Production code imports ``modal`` lazily inside functions (in
+    ``modal_sandbox.py``) and eagerly at module top (in
+    ``sandbox_utils.py``). Swap both: ``sys.modules['modal']`` for the lazy
+    sites and ``sandbox_utils.modal`` for the already-bound name.
+    """
+    from zenml.integrations.modal import sandbox_utils
+
+    real_mod = sys.modules.get("modal")
+    real_su_modal = sandbox_utils.modal
     fake = MagicMock(name="modal")
     sys.modules["modal"] = fake
+    sandbox_utils.modal = fake
     try:
         yield fake
     finally:
-        if real is not None:
-            sys.modules["modal"] = real
+        sandbox_utils.modal = real_su_modal
+        if real_mod is not None:
+            sys.modules["modal"] = real_mod
         else:
             del sys.modules["modal"]
 
@@ -301,7 +314,9 @@ class TestModalSandbox:
             fake_sandbox = MagicMock(object_id="sb_xyz")
             modal_mock.Sandbox.from_id.return_value = fake_sandbox
             session = _make_modal_sandbox().attach("sb_xyz")
-        modal_mock.Sandbox.from_id.assert_called_once_with("sb_xyz")
+        modal_mock.Sandbox.from_id.assert_called_once_with(
+            "sb_xyz", client=None
+        )
         assert session.id == "sb_xyz"
 
     def test_attach_wraps_modal_errors_in_runtime_error(self) -> None:
