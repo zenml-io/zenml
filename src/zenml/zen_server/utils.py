@@ -724,6 +724,25 @@ def verify_admin_status_if_no_rbac(
     return
 
 
+def get_request_path(request: "Request") -> str:
+    """Return the routed request path, immune to Host-header poisoning.
+
+    Security checks must not use ``request.url.path``. Starlette rebuilds
+    ``request.url`` from the (unvalidated) ``Host`` header, so a crafted Host
+    header can make ``request.url.path`` differ from the path the router
+    actually dispatched to (CVE-2026-48710 / GHSA-86qp-5c8j-p5mr). The raw ASGI
+    ``scope["path"]`` is the value routing uses and the Host header cannot
+    influence it, so it is the only safe basis for a path-based decision.
+
+    Args:
+        request: The incoming request.
+
+    Returns:
+        The raw ASGI path that routing dispatched to.
+    """
+    return str(request.scope["path"])
+
+
 def is_user_request(request: "Request") -> bool:
     """Determine if the incoming request is a user request.
 
@@ -749,18 +768,17 @@ def is_user_request(request: "Request") -> bool:
 
     user_prefix = f"{API}{VERSION_1}"
     excluded_user_apis = [INFO]
+    path = get_request_path(request)
     # Check if this is not an excluded endpoint
-    if request.url.path in [
-        user_prefix + suffix for suffix in excluded_user_apis
-    ]:
+    if path in [user_prefix + suffix for suffix in excluded_user_apis]:
         return False
 
     # Check if this is other user request
-    if request.url.path.startswith(user_prefix):
+    if path.startswith(user_prefix):
         return True
 
     # Exclude system paths
-    if any(request.url.path.startswith(path) for path in system_paths):
+    if any(path.startswith(system_path) for system_path in system_paths):
         return False
 
     # Exclude requests with specific headers
