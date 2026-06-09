@@ -90,7 +90,6 @@ def test_schedule_crud_happy_path(clean_client):
 
 
 def test_event_crud_happy_path(clean_client):
-
     from zenml.enums import PipelineEvent, SourceType, TriggerRunConcurrency
     from zenml.models import SourceEntity
 
