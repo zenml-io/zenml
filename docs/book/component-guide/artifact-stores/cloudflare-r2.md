@@ -54,4 +54,4 @@ zenml artifact-store register cloudflare_store --flavor=r2 \
 
 Because R2 is S3-compatible, the same `client_kwargs`, `config_kwargs` and `s3_additional_kwargs` options documented for the [S3 Artifact Store](s3.md) are available here. R2 ignores the AWS region, but ZenML defaults the signing region to `auto` (the value Cloudflare documents for S3-compatible clients).
 
-For more, refer to the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-cloudflare.html).
+For full configuration reference, run `zenml flavor describe <flavor-name>` or browse the source under `src/zenml/integrations/cloudflare/`.
