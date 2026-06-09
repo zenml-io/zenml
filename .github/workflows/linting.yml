@@ -37,7 +37,7 @@ on:
       python-version:
         description: Python version
         type: choice
-        options: ['3.10', '3.11', '3.12', '3.13']
+        options: ['3.10', '3.11', '3.12', '3.13', '3.14']
         required: false
         default: '3.11'
       enable_tmate:
@@ -89,7 +89,7 @@ jobs:
           echo "TMP=/opt/tmp" >> "$GITHUB_ENV"
           echo "TEMP=/opt/tmp" >> "$GITHUB_ENV"
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
         with:
           repository: ${{ github.repository }}
           ref: ${{ github.event.pull_request.head.sha }}
@@ -114,7 +114,7 @@ jobs:
           install_integrations: ${{ inputs.install_integrations }}
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}
-        uses: mxschmitt/action-tmate@c0afd6f790e3a5564914980036ebf83216678101  # v3.23
+        uses: mxschmitt/action-tmate@35b54afac29c97fb54faba5b513f8fbd1882f113  # v3.24
       - name: Lint check
         env:
           OS: ${{ inputs.os }}
@@ -122,7 +122,7 @@ jobs:
           bash scripts/lint.sh
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
-        uses: mxschmitt/action-tmate@c0afd6f790e3a5564914980036ebf83216678101  # v3.23
+        uses: mxschmitt/action-tmate@35b54afac29c97fb54faba5b513f8fbd1882f113  # v3.24
       - name: Verify Python Env unaffected
         run: |-
           zenml integration list

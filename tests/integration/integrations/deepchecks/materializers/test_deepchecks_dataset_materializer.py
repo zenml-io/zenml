@@ -22,8 +22,8 @@ from tests.unit.test_general import _test_materializer
 
 
 @pytest.mark.skipif(
-    sys.version_info.minor == 12 or sys.version_info.minor == 13,
-    reason="The deepchecks integrations is not yet supported on 3.12 or 3.13.",
+    sys.version_info.minor in (12, 13, 14),
+    reason="The deepchecks integrations is not yet supported on 3.12, 3.13 or 3.14.",
 )
 def test_deepchecks_dataset_materializer(clean_client):
     """Test the Deepchecks dataset materializer."""

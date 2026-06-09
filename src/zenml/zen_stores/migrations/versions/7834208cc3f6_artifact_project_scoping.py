@@ -7,7 +7,6 @@ Create Date: 2022-12-06 10:08:28.031325
 """
 
 import sqlalchemy as sa
-import sqlmodel
 from alembic import op
 from sqlalchemy import select
 
@@ -25,24 +24,12 @@ def upgrade() -> None:
     # ------------------------------------
 
     with op.batch_alter_table("artifact", schema=None) as batch_op:
-        batch_op.add_column(
-            sa.Column("user_id", sqlmodel.sql.sqltypes.GUID(), nullable=True)
-        )
-        batch_op.add_column(
-            sa.Column(
-                "project_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
-        )
+        batch_op.add_column(sa.Column("user_id", sa.Uuid(), nullable=True))
+        batch_op.add_column(sa.Column("project_id", sa.Uuid(), nullable=True))
 
     with op.batch_alter_table("step_run", schema=None) as batch_op:
-        batch_op.add_column(
-            sa.Column("user_id", sqlmodel.sql.sqltypes.GUID(), nullable=True)
-        )
-        batch_op.add_column(
-            sa.Column(
-                "project_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
-        )
+        batch_op.add_column(sa.Column("user_id", sa.Uuid(), nullable=True))
+        batch_op.add_column(sa.Column("project_id", sa.Uuid(), nullable=True))
 
     # ------------
     # Migrate data
@@ -119,7 +106,7 @@ def upgrade() -> None:
         batch_op.alter_column(
             "project_id",
             nullable=False,
-            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            existing_type=sa.Uuid(),
         )
         batch_op.create_foreign_key(
             "fk_artifact_user_id_user",
@@ -140,7 +127,7 @@ def upgrade() -> None:
         batch_op.alter_column(
             "project_id",
             nullable=False,
-            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            existing_type=sa.Uuid(),
         )
         batch_op.create_foreign_key(
             "fk_step_run_project_id_workspace",
