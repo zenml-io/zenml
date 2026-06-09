@@ -14,33 +14,29 @@
 """Modal sandbox flavor implementation."""
 
 import logging
-import math
 import shlex
 import threading
 import time
 from typing import (
-    TYPE_CHECKING,
     Any,
     Dict,
-    Iterable,
     Iterator,
     List,
     Optional,
+    Tuple,
     Type,
     Union,
     cast,
 )
 
 from zenml.config.base_settings import BaseSettings
+from zenml.config.resource_settings import ResourceSettings
+from zenml.integrations.modal import sandbox_utils
 from zenml.integrations.modal.flavors import (
     ModalSandboxConfig,
     ModalSandboxSettings,
 )
-from zenml.integrations.modal.sandboxes.utils import (
-    build_modal_image,
-    line_buffer,
-    normalize_optional_config_value,
-)
+from zenml.integrations.modal.sandboxes.utils import line_buffer
 from zenml.logger import get_logger
 from zenml.sandboxes import (
     BaseSandbox,
@@ -330,123 +326,98 @@ class ModalSandbox(BaseSandbox):
         return ModalSandboxSettings
 
     def _get_modal_client(self) -> Optional[Any]:
-        """Return an explicit Modal client when credentials are configured.
+        """Return the cached Modal client, building it from creds on demand.
 
         Returns:
-            A Client built from token_id / token_secret, or None
-            when no credentials are configured (Modal then uses its
-            ambient auth). The both-or-neither precondition is enforced
-            upstream by ModalStepOperatorConfig's validator.
+            A ``modal.Client`` when token_id+token_secret are configured;
+            ``None`` for ambient auth.
         """
-        token_id = normalize_optional_config_value(self.config.token_id)
-        token_secret = normalize_optional_config_value(
-            self.config.token_secret
+        return sandbox_utils.get_modal_client(
+            get_token_id=lambda: self.config.token_id,
+            get_token_secret=lambda: self.config.token_secret,
+            get_cached_client=lambda: self._modal_client,
+            set_cached_client=lambda c: setattr(self, "_modal_client", c),
+            lock=self._modal_client_lock,
         )
-        if not token_id or not token_secret:
-            return None
-
-        import modal
-
-        with self._modal_client_lock:
-            client = self._modal_client
-            if client is None or client.is_closed():
-                client = modal.Client.from_credentials(token_id, token_secret)
-                self._modal_client = client
-
-        return client
 
     def _get_app(
         self,
-        environment_name: Optional[str] = None,
-        client: Optional[Any] = None,
+        *,
+        modal_environment: Optional[str],
+        modal_client: Optional[Any],
     ) -> Any:
-        """Return this component's Modal ``App``, caching the lookup.
+        """Look up this component's Modal App, caching the result.
 
         Args:
-            environment_name: Modal environment to look the app up in.
-            client: Explicit Modal client; ``None`` falls back to ambient.
+            modal_environment: Modal environment for the lookup.
+            modal_client: Explicit Modal client (None → ambient).
 
         Returns:
             The Modal App.
         """
         if self._app is None:
-            import modal
-
-            self._app = modal.App.lookup(
+            self._app = sandbox_utils.lookup_modal_app(
                 self.config.app_name,
-                create_if_missing=True,
-                environment_name=environment_name,
-                client=client,
+                modal_environment=modal_environment,
+                modal_client=modal_client,
             )
         return self._app
 
-    def _registry_secret(self) -> Optional[Any]:
-        """Return a Modal Secret holding container-registry creds, if any.
+    def _registry_credentials(self) -> Optional[Tuple[str, str]]:
+        """Return (username, password) for the active container registry.
 
         Returns:
-            A ``Secret`` when the stack's container registry exposes
-            credentials, otherwise ``None`` (anonymous pull).
+            ``(username, password)`` when the stack's container registry
+            exposes credentials, otherwise ``None`` (anonymous pull).
         """
         try:
             container_registry = self.stack.container_registry
         except Exception:
             container_registry = None
-        if container_registry is None:
+        if container_registry is None or not container_registry.credentials:
             return None
-        creds = container_registry.credentials
-        if not creds:
-            return None
+        username, password = container_registry.credentials
+        return username, password
 
-        import modal
-
-        username, password = creds
-        return modal.Secret.from_dict(
-            {"REGISTRY_USERNAME": username, "REGISTRY_PASSWORD": password}
-        )
-
-    def _modal_sandbox_kwargs(
+    def _build_create_kwargs(
         self,
         eff: ModalSandboxSettings,
         *,
-        client: Optional[Any],
+        image: Any,
+        modal_client: Optional[Any],
         with_env: bool = True,
     ) -> Dict[str, Any]:
-        """Build the kwargs passed to ``modal.Sandbox.create``.
+        """Compose kwargs for ``modal.Sandbox.create`` via sandbox_utils.
 
         Args:
             eff: Effective per-step settings.
-            client: Explicit Modal client (or ``None`` for ambient auth).
-            with_env: If True, the resolved Session env is exported as
-                ``env=`` on ``modal.Sandbox.create``. Skipped on the restore
-                path where injecting env into a frozen filesystem image
-                is rarely what the caller wants.
+            image: Modal Image to boot from.
+            modal_client: Explicit Modal client (or ``None`` for ambient).
+            with_env: If False, env is skipped (used on the restore path
+                where injecting env into a frozen filesystem image is
+                rarely what the caller wants).
 
         Returns:
-            Kwargs for ``modal.Sandbox.create``.
+            Kwargs for ``modal.Sandbox.create``. The active step's
+            ResourceSettings are NOT pulled in: the step's orchestrator
+            already pays for cpu/memory/gpu; the sandbox would double them.
+            Users override sandbox resources by setting gpu/region/cloud
+            on ``ModalSandboxSettings`` directly.
         """
-        environment_name = normalize_optional_config_value(
+        environment_name = sandbox_utils.normalize_optional_config_value(
             getattr(eff, "modal_environment", None)
         )
-
-        kwargs: Dict[str, Any] = {
-            "app": self._get_app(
-                environment_name=environment_name, client=client
+        env = self._resolve_session_environment(eff) if with_env else {}
+        return sandbox_utils.build_sandbox_create_kwargs(
+            app=self._get_app(
+                modal_environment=environment_name, modal_client=modal_client
             ),
-            "timeout": eff.timeout,
-        }
-        if client is not None:
-            kwargs["client"] = client
-        if with_env:
-            env = self._resolve_session_environment(eff)
-            if env:
-                kwargs["env"] = env
-        if eff.gpu is not None:
-            kwargs["gpu"] = eff.gpu
-        if eff.region is not None:
-            kwargs["region"] = eff.region
-        if eff.cloud is not None:
-            kwargs["cloud"] = eff.cloud
-        return kwargs
+            image=image,
+            settings=eff,
+            resource_settings=ResourceSettings(),
+            environment=env,
+            modal_client=modal_client,
+        )
 
     def create_session(
         self, settings: Optional[BaseSandboxSettings] = None
@@ -454,7 +425,7 @@ class ModalSandbox(BaseSandbox):
         """Boot a fresh Modal Sandbox.
 
         Args:
-            settings: Optional per-step overrides for image / resources / env.
+            settings: Optional per-step overrides for image / env.
 
         Returns:
             A ``ModalSandboxSession`` wrapping the live Modal Sandbox.
@@ -462,14 +433,14 @@ class ModalSandbox(BaseSandbox):
         import modal
 
         eff = cast(ModalSandboxSettings, self.resolve_settings(settings))
-        client = self._get_modal_client()
-        image = build_modal_image(
-            eff.image, registry_secret=self._registry_secret()
+        modal_client = self._get_modal_client()
+        image = sandbox_utils.get_modal_image_from_registry(
+            eff.image, registry_credentials=self._registry_credentials()
         )
-
         sandbox = modal.Sandbox.create(
-            image=image,
-            **self._modal_sandbox_kwargs(eff, client=client),
+            **self._build_create_kwargs(
+                eff, image=image, modal_client=modal_client
+            )
         )
         return ModalSandboxSession(sandbox, parent=self)
 
@@ -485,14 +456,11 @@ class ModalSandbox(BaseSandbox):
         Raises:
             RuntimeError: If Modal can't find a sandbox with the given id.
         """
-        import modal
-
-        client = self._get_modal_client()
+        modal_client = self._get_modal_client()
         try:
-            if client is not None:
-                sandbox = modal.Sandbox.from_id(session_id, client=client)
-            else:
-                sandbox = modal.Sandbox.from_id(session_id)
+            sandbox = sandbox_utils.get_sandbox_by_id(
+                session_id, modal_client=modal_client
+            )
         except Exception as e:
             raise RuntimeError(
                 f"Failed to attach to Modal sandbox '{session_id}' "
@@ -515,20 +483,19 @@ class ModalSandbox(BaseSandbox):
             RuntimeError: If Modal can't load the Image (e.g. id GC'd).
         """
         self._validate_snapshot(snapshot)
-        # Env injection is skipped: a restored sandbox boots from a frozen
-        # Image and the caller almost never wants to layer a fresh env
-        # merge on top.
         import modal
 
         eff = cast(ModalSandboxSettings, self.resolve_settings(None))
-        client = self._get_modal_client()
+        modal_client = self._get_modal_client()
         try:
             image = modal.Image.from_id(snapshot.ref)
             sandbox = modal.Sandbox.create(
-                image=image,
-                **self._modal_sandbox_kwargs(
-                    eff, client=client, with_env=False
-                ),
+                **self._build_create_kwargs(
+                    eff,
+                    image=image,
+                    modal_client=modal_client,
+                    with_env=False,
+                )
             )
         except Exception as e:
             raise RuntimeError(
