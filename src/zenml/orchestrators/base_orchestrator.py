@@ -533,7 +533,6 @@ class BaseOrchestrator(StackComponent, ABC):
             step=step,
             orchestrator_run_id=self.get_orchestrator_run_id(),
             retry=not self.config.handles_step_retries,
-            lifecycle_orchestrator=self,
         )
 
     @property
@@ -722,7 +721,7 @@ class BaseOrchestrator(StackComponent, ABC):
         For orchestrators that run their steps in a shared environment with a
         shared memory (e.g. the local orchestrator), the init and cleanup hooks
         can be run at run level and this property should be overridden to return
-        True.
+        False.
 
         Returns:
             Whether the orchestrator runs the init and cleanup hooks at step
@@ -731,11 +730,18 @@ class BaseOrchestrator(StackComponent, ABC):
         return True
 
     @classmethod
-    def run_init_hook(cls, snapshot: "PipelineSnapshotResponse") -> None:
+    def run_init_hook(
+        cls, snapshot: "PipelineSnapshotResponse"
+    ) -> Optional[bool]:
         """Runs the init hook.
 
         Args:
             snapshot: The snapshot to run the init hook for.
+
+        Returns:
+            Whether this call initialized the run context. Returns `False` if
+            the run context was already initialized. Custom orchestrator
+            overrides may still return `None` for legacy compatibility.
 
         Raises:
             HookExecutionException: If the init hook fails.
@@ -746,32 +752,35 @@ class BaseOrchestrator(StackComponent, ABC):
         init_hook_source = snapshot.pipeline_configuration.init_hook_source
         init_hook_kwargs = snapshot.pipeline_configuration.init_hook_kwargs
 
-        # We only run the init hook once, if the (thread-local) run context
+        # We only run the init hook once if the process-wide run context
         # associated with the current run has not been initialized yet. This
         # allows us to run the init hook only once per run per execution
         # environment (process, container, etc.).
-        if not run_context.initialized:
-            if not init_hook_source:
-                run_context.initialize(None)
-                return
+        if run_context.initialized:
+            return False
 
-            logger.info("Executing the pipeline's init hook...")
-            try:
-                with temporary_environment(
-                    snapshot.pipeline_configuration.environment
-                ):
-                    run_state = load_and_run_hook(
-                        init_hook_source,
-                        hook_parameters=init_hook_kwargs,
-                        raise_on_error=True,
-                    )
-            except Exception as e:
-                raise HookExecutionException(
-                    f"Failed to execute init hook for pipeline "
-                    f"{snapshot.pipeline_configuration.name}"
-                ) from e
+        if not init_hook_source:
+            run_context.initialize(None)
+            return True
 
-            run_context.initialize(run_state)
+        logger.info("Executing the pipeline's init hook...")
+        try:
+            with temporary_environment(
+                snapshot.pipeline_configuration.environment
+            ):
+                run_state = load_and_run_hook(
+                    init_hook_source,
+                    hook_parameters=init_hook_kwargs,
+                    raise_on_error=True,
+                )
+        except Exception as e:
+            raise HookExecutionException(
+                f"Failed to execute init hook for pipeline "
+                f"{snapshot.pipeline_configuration.name}"
+            ) from e
+
+        run_context.initialize(run_state)
+        return True
 
     @classmethod
     def run_cleanup_hook(cls, snapshot: "PipelineSnapshotResponse") -> None:

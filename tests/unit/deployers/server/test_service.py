@@ -300,3 +300,30 @@ def test_input_output_schema_properties(mocker: MockerFixture) -> None:
 
     assert service.input_schema == {"type": "object"}
     assert service.output_schema == {"type": "object"}
+
+
+@pytest.mark.parametrize(
+    "init_result, cleanup_expected",
+    [
+        (True, True),
+        (False, False),
+        (None, True),
+    ],
+)
+def test_cleanup_depends_on_service_init_result(
+    mocker: MockerFixture,
+    init_result: bool | None,
+    cleanup_expected: bool,
+) -> None:
+    service = _make_service_stub(mocker)
+    service._run_context_initialized_by_service = init_result
+    mock_cleanup_hook = mocker.patch(
+        "zenml.deployers.server.service.BaseOrchestrator.run_cleanup_hook"
+    )
+
+    service.cleanup()
+
+    if cleanup_expected:
+        mock_cleanup_hook.assert_called_once_with(service.snapshot)
+    else:
+        mock_cleanup_hook.assert_not_called()

@@ -88,7 +88,6 @@ if TYPE_CHECKING:
         PipelineRunResponse,
         StepRunResponse,
     )
-    from zenml.orchestrators import BaseOrchestrator
     from zenml.stack import Stack
     from zenml.steps import BaseStep
 
@@ -99,27 +98,15 @@ logger = get_logger(__name__)
 class StepRunner:
     """Class to run steps."""
 
-    def __init__(
-        self,
-        step: "Step",
-        stack: "Stack",
-        lifecycle_orchestrator: Optional["BaseOrchestrator"] = None,
-    ):
+    def __init__(self, step: "Step", stack: "Stack"):
         """Initializes the step runner.
 
         Args:
             step: The step to run.
             stack: The stack on which the step should run.
-            lifecycle_orchestrator: The orchestrator that owns run-context
-                init and cleanup policy. Defaults to the stack orchestrator.
         """
         self._step = step
         self._stack = stack
-        self._lifecycle_orchestrator = (
-            lifecycle_orchestrator
-            if lifecycle_orchestrator is not None
-            else stack.orchestrator
-        )
 
     @property
     def configuration(self) -> StepConfiguration:
@@ -222,6 +209,9 @@ class StepRunner:
                 # and handle it as a custom exception.
 
                 heartbeat_worker = StepHeartbeatWorker(step_id=step_run.id)
+                snapshot = pipeline_run.snapshot
+                should_run_hooks = False
+                init_result: Optional[bool] = None
 
                 try:
                     if self._step.spec.enable_heartbeat:
@@ -231,13 +221,15 @@ class StepRunner:
                             step_run.id,
                         )
                         heartbeat_worker.start()
-                    if (
+                    should_run_hooks = bool(
                         # TODO: do we need to disable this for dynamic pipelines?
-                        pipeline_run.snapshot
-                        and self._lifecycle_orchestrator.run_init_cleanup_at_step_level
-                    ):
-                        self._lifecycle_orchestrator.run_init_hook(
-                            snapshot=pipeline_run.snapshot
+                        snapshot
+                        and self._stack.orchestrator.run_init_cleanup_at_step_level
+                    )
+                    if should_run_hooks:
+                        assert snapshot is not None
+                        init_result = self._stack.orchestrator.run_init_hook(
+                            snapshot=snapshot
                         )
 
                     # Get all step environment variables. For most
@@ -367,12 +359,10 @@ class StepRunner:
 
                     # We run the cleanup hook at step level if we're not in an
                     # environment that supports a shared run context
-                    if (
-                        pipeline_run.snapshot
-                        and self._lifecycle_orchestrator.run_init_cleanup_at_step_level
-                    ):
-                        self._lifecycle_orchestrator.run_cleanup_hook(
-                            snapshot=pipeline_run.snapshot
+                    if should_run_hooks and init_result is not False:
+                        assert snapshot is not None
+                        self._stack.orchestrator.run_cleanup_hook(
+                            snapshot=snapshot
                         )
 
             # Update the status and output artifacts of the step run.

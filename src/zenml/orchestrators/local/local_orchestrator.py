@@ -55,7 +55,7 @@ class LocalOrchestrator(BaseOrchestrator):
         For orchestrators that run their steps in a shared environment with a
         shared memory (e.g. the local orchestrator), the init and cleanup hooks
         can be run at run level and this property should be overridden to return
-        True.
+        False.
 
         Returns:
             Whether the orchestrator runs the init and cleanup hooks at step
@@ -105,7 +105,7 @@ class LocalOrchestrator(BaseOrchestrator):
         step_exception: Optional[Exception] = None
         skipped_steps: List[str] = []
 
-        self.run_init_hook(snapshot=snapshot)
+        init_result = self.run_init_hook(snapshot=snapshot)
 
         # Run each step
         for step_name, step in snapshot.step_configurations.items():
@@ -166,7 +166,8 @@ class LocalOrchestrator(BaseOrchestrator):
                     step_exception = e
                     break
 
-        self.run_cleanup_hook(snapshot=snapshot)
+        if init_result is not False:
+            self.run_cleanup_hook(snapshot=snapshot)
 
         if execution_mode == ExecutionMode.FAIL_FAST and failed_steps:
             assert step_exception is not None

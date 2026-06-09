@@ -299,6 +299,18 @@ class BasePipelineDeploymentService(ABC):
 class PipelineDeploymentService(BasePipelineDeploymentService):
     """Default pipeline deployment service implementation."""
 
+    def __init__(
+        self, app_runner: "BaseDeploymentAppRunner", **kwargs: Any
+    ) -> None:
+        """Initialize the deployment service.
+
+        Args:
+            app_runner: The deployment application runner used with this service.
+            **kwargs: Additional keyword arguments for the deployment service.
+        """
+        super().__init__(app_runner=app_runner, **kwargs)
+        self._run_context_initialized_by_service: Optional[bool] = None
+
     def initialize(self) -> None:
         """Initialize service with proper error handling.
 
@@ -325,7 +337,9 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
 
         try:
             # Execute init hook
-            BaseOrchestrator.run_init_hook(self.snapshot)
+            self._run_context_initialized_by_service = (
+                BaseOrchestrator.run_init_hook(self.snapshot)
+            )
 
             # Log success
             self._log_initialization_success()
@@ -337,7 +351,8 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
 
     def cleanup(self) -> None:
         """Execute cleanup hook if present."""
-        BaseOrchestrator.run_cleanup_hook(self.snapshot)
+        if self._run_context_initialized_by_service is not False:
+            BaseOrchestrator.run_cleanup_hook(self.snapshot)
 
     def execute_pipeline(
         self,

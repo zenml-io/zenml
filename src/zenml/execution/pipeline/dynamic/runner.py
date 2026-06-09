@@ -824,16 +824,22 @@ class DynamicPipelineRunner:
                 monitoring_thread = self._start_monitoring_loop()
                 startup_thread = self._start_startup_loop()
 
+                init_result: Optional[bool] = None
                 if not self._run.triggered_by_deployment:
                     # Only run the init hook if the run is not triggered by
                     # a deployment, as the deployment service will have
                     # already run the init hook.
-                    self._orchestrator.run_init_hook(snapshot=self._snapshot)
+                    init_result = self._orchestrator.run_init_hook(
+                        snapshot=self._snapshot
+                    )
 
                 try:
                     self._run_entrypoint_and_finalize()
                 finally:
-                    if not self._run.triggered_by_deployment:
+                    if (
+                        not self._run.triggered_by_deployment
+                        and init_result is not False
+                    ):
                         # Only run the cleanup hook if the run is not
                         # triggered by a deployment, as the deployment
                         # service will have already run the cleanup hook.
@@ -1237,7 +1243,6 @@ class DynamicPipelineRunner:
             wait=True,
             retry=True,
             remaining_retries=remaining_retries,
-            lifecycle_orchestrator=self._orchestrator,
         )
 
     def _compile_or_reuse(
@@ -1957,7 +1962,6 @@ class DynamicPipelineRunner:
                     # steps.
                     wait=False,
                     retry=False,
-                    lifecycle_orchestrator=self._orchestrator,
                 )
             except BaseException as e:
                 self.mark_node_failed(node_id=step.spec.invocation_id)
