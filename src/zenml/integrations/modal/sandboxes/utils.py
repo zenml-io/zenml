@@ -11,27 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Helpers for the Modal sandbox flavor."""
+"""Sandbox-process helpers (line buffering for SandboxProcess IO)."""
 
-from typing import TYPE_CHECKING, Any, Iterable, Iterator, Optional
-
-if TYPE_CHECKING:
-    import modal
-
-
-def normalize_optional_config_value(value: Optional[str]) -> Optional[str]:
-    """Strip whitespace and return None for empty strings.
-
-    Args:
-        value: The raw config value.
-
-    Returns:
-        Stripped non-empty string, or ``None``.
-    """
-    if value is None:
-        return None
-    stripped = value.strip()
-    return stripped or None
+from typing import Any, Iterable, Iterator
 
 
 def line_buffer(chunks: Iterable[Any]) -> Iterator[str]:
@@ -62,23 +44,3 @@ def line_buffer(chunks: Iterable[Any]) -> Iterator[str]:
             yield line + "\n"
     if buffer:
         yield buffer
-
-
-def build_modal_image(
-    image_uri: str, registry_secret: Optional[Any] = None
-) -> "modal.Image":
-    """Wrap ``modal.Image.from_registry`` with an optional registry secret.
-
-    Args:
-        image_uri: Registry reference, e.g. ``python:3.11-slim``.
-        registry_secret: Optional ``modal.Secret`` carrying registry
-            credentials; passed through when present.
-
-    Returns:
-        A ``modal.Image`` instance ready to pass to ``Sandbox.create``.
-    """
-    import modal
-
-    if registry_secret is not None:
-        return modal.Image.from_registry(image_uri, secret=registry_secret)
-    return modal.Image.from_registry(image_uri)
