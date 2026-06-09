@@ -16,7 +16,6 @@
 import base64
 import json
 import logging
-import os
 import posixpath
 import shlex
 import threading
@@ -27,7 +26,6 @@ from dataclasses import dataclass
 from typing import (
     TYPE_CHECKING,
     Any,
-    BinaryIO,
     Deque,
     Dict,
     FrozenSet,
