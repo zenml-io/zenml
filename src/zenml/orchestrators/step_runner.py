@@ -43,6 +43,9 @@ from zenml.models.v2.core.step_run import (
     StepRunInputResponse,
     StepRunUpdate,
 )
+from zenml.orchestrators.base_orchestrator import (
+    should_run_cleanup_hook_after_init,
+)
 from zenml.orchestrators.publish_utils import (
     publish_failed_step_run,
     publish_step_run_metadata,
@@ -59,6 +62,7 @@ from zenml.steps.heartbeat import (
 from zenml.steps.step_context import (
     StepContext,
     get_step_context,
+    run_context_is_initialized,
 )
 from zenml.steps.utils import (
     OutputSignature,
@@ -212,6 +216,9 @@ class StepRunner:
                 snapshot = pipeline_run.snapshot
                 should_run_hooks = False
                 init_result: Optional[bool] = None
+                init_hook_started = False
+                init_hook_completed = False
+                run_context_was_initialized = False
 
                 try:
                     if self._step.spec.enable_heartbeat:
@@ -228,9 +235,14 @@ class StepRunner:
                     )
                     if should_run_hooks:
                         assert snapshot is not None
+                        run_context_was_initialized = (
+                            run_context_is_initialized()
+                        )
+                        init_hook_started = True
                         init_result = self._stack.orchestrator.run_init_hook(
                             snapshot=snapshot
                         )
+                        init_hook_completed = True
 
                     # Get all step environment variables. For most
                     # orchestrators, the non-secret environment variables have
@@ -357,9 +369,12 @@ class StepRunner:
                                 model_version=model_version,
                             )
 
-                    # We run the cleanup hook at step level if we're not in an
-                    # environment that supports a shared run context
-                    if should_run_hooks and init_result is not False:
+                    if should_run_hooks and should_run_cleanup_hook_after_init(
+                        init_result=init_result,
+                        init_hook_started=init_hook_started,
+                        init_hook_completed=init_hook_completed,
+                        run_context_was_initialized_before_init=run_context_was_initialized,
+                    ):
                         assert snapshot is not None
                         self._stack.orchestrator.run_cleanup_hook(
                             snapshot=snapshot

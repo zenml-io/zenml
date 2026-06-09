@@ -75,6 +75,24 @@ def get_or_create_run_context() -> "RunContext":
     return RunContext()
 
 
+def run_context_exists() -> bool:
+    """Check whether a run context exists.
+
+    Returns:
+        Whether a run context singleton exists.
+    """
+    return RunContext._exists()
+
+
+def run_context_is_initialized() -> bool:
+    """Check whether a run context exists and is initialized.
+
+    Returns:
+        Whether a run context exists and has been initialized.
+    """
+    return run_context_exists() and RunContext().initialized
+
+
 class RunContext(metaclass=SingletonMetaClass):
     """Provides context shared between all steps in a pipeline run."""
 

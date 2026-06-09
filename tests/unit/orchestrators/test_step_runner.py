@@ -23,6 +23,7 @@ from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import ArtifactSaveType, StepRunInputArtifactType
+from zenml.exceptions import HookExecutionException
 from zenml.execution.step.utils import launch_step
 from zenml.models import (
     PipelineRunResponse,
@@ -33,7 +34,10 @@ from zenml.models.v2.core.step_run import StepRunInputResponse
 from zenml.orchestrators.step_launcher import StepLauncher, StepRunner
 from zenml.stack import Stack
 from zenml.steps import step
-from zenml.steps.step_context import get_or_create_run_context
+from zenml.steps.step_context import (
+    get_or_create_run_context,
+    run_context_exists,
+)
 
 
 @step
@@ -65,6 +69,19 @@ def _snapshot_with_stack(
     return snapshot.model_copy(
         update={
             "resources": snapshot.resources.model_copy(update={"stack": stack})
+        }
+    )
+
+
+def _snapshot_with_pipeline_config(
+    snapshot: PipelineSnapshotResponse,
+    pipeline_config: PipelineConfiguration,
+) -> PipelineSnapshotResponse:
+    return snapshot.model_copy(
+        update={
+            "metadata": snapshot.metadata.model_copy(
+                update={"pipeline_configuration": pipeline_config}
+            )
         }
     )
 
@@ -284,6 +301,77 @@ def test_step_runner_runs_cleanup_when_init_raises(
     mock_run_cleanup_hook.assert_called_once_with(
         snapshot=sample_snapshot_response_model
     )
+
+
+def test_step_runner_preserves_existing_run_context_when_init_raises(
+    mocker,
+    local_stack,
+    sample_pipeline_run: PipelineRunResponse,
+    sample_step_run: StepRunResponse,
+    sample_snapshot_response_model: PipelineSnapshotResponse,
+):
+    _mock_successful_step_runner_dependencies(mocker)
+    mocker.patch("zenml.orchestrators.step_runner.publish_failed_step_run")
+    mock_run_init_hook, mock_run_cleanup_hook = _mock_stack_lifecycle_hooks(
+        mocker,
+        local_stack,
+        init_side_effect=RuntimeError("init failed"),
+    )
+    get_or_create_run_context().initialize({"owner": "deployment-service"})
+
+    with pytest.raises(RuntimeError, match="init failed"):
+        _run_successful_step(
+            local_stack=local_stack,
+            sample_pipeline_run=sample_pipeline_run,
+            sample_step_run=sample_step_run,
+            sample_snapshot_response_model=sample_snapshot_response_model,
+        )
+
+    mock_run_init_hook.assert_called_once_with(
+        snapshot=sample_snapshot_response_model
+    )
+    mock_run_cleanup_hook.assert_not_called()
+    assert get_or_create_run_context().state == {"owner": "deployment-service"}
+
+
+def test_step_runner_clears_partial_run_context_when_base_init_raises(
+    mocker,
+    local_stack,
+    sample_pipeline_run: PipelineRunResponse,
+    sample_step_run: StepRunResponse,
+    sample_snapshot_response_model: PipelineSnapshotResponse,
+):
+    _mock_successful_step_runner_dependencies(mocker)
+    mocker.patch("zenml.orchestrators.step_runner.publish_failed_step_run")
+    orchestrator_class = local_stack.orchestrator.__class__
+    mocker.patch.object(
+        orchestrator_class,
+        "run_init_cleanup_at_step_level",
+        new_callable=PropertyMock,
+        return_value=True,
+    )
+    mocker.patch(
+        "zenml.orchestrators.base_orchestrator.load_and_run_hook",
+        side_effect=RuntimeError("init failed"),
+    )
+    snapshot = _snapshot_with_pipeline_config(
+        sample_snapshot_response_model,
+        PipelineConfiguration(
+            name="pipeline_name",
+            init_hook_source="module.init_hook",
+            init_hook_kwargs={},
+        ),
+    )
+
+    with pytest.raises(HookExecutionException, match="Failed to execute"):
+        _run_successful_step(
+            local_stack=local_stack,
+            sample_pipeline_run=sample_pipeline_run,
+            sample_step_run=sample_step_run,
+            sample_snapshot_response_model=snapshot,
+        )
+
+    assert run_context_exists() is False
 
 
 def test_step_runner_preserves_existing_run_context_when_init_returns_false(

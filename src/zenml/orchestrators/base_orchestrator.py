@@ -71,6 +71,34 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
+def should_run_cleanup_hook_after_init(
+    *,
+    init_result: Optional[bool],
+    init_hook_started: bool,
+    init_hook_completed: bool,
+    run_context_was_initialized_before_init: bool,
+) -> bool:
+    """Decide whether cleanup is owned by an init hook attempt.
+
+    Args:
+        init_result: The value returned by the init hook, if it returned.
+        init_hook_started: Whether the init hook call was attempted.
+        init_hook_completed: Whether the init hook call returned normally.
+        run_context_was_initialized_before_init: Whether an initialized run
+            context existed before the init hook call.
+
+    Returns:
+        Whether the caller should run the cleanup hook.
+    """
+    if init_result is False:
+        return False
+
+    if init_hook_completed:
+        return True
+
+    return init_hook_started and not run_context_was_initialized_before_init
+
+
 class SubmissionResult:
     """Result of submitting a pipeline run."""
 

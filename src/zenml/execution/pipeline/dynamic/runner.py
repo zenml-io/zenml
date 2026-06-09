@@ -130,6 +130,9 @@ from zenml.models import (
     RunWaitConditionResponse,
     StepRunResponse,
 )
+from zenml.orchestrators.base_orchestrator import (
+    should_run_cleanup_hook_after_init,
+)
 from zenml.orchestrators.publish_utils import (
     publish_cancelled_step_run,
     publish_failed_pipeline_run,
@@ -141,6 +144,7 @@ from zenml.pipelines.dynamic.pipeline_definition import DynamicPipeline
 from zenml.pipelines.run_utils import create_placeholder_run
 from zenml.stack import Stack
 from zenml.steps import BaseStep
+from zenml.steps.step_context import run_context_is_initialized
 from zenml.utils import (
     env_utils,
     exception_utils,
@@ -821,24 +825,40 @@ class DynamicPipelineRunner:
                     runner=self,
                 ),
             ):
-                monitoring_thread = self._start_monitoring_loop()
-                startup_thread = self._start_startup_loop()
-
+                monitoring_thread: Optional[threading.Thread] = None
+                startup_thread: Optional[threading.Thread] = None
                 init_result: Optional[bool] = None
-                if not self._run.triggered_by_deployment:
-                    # Only run the init hook if the run is not triggered by
-                    # a deployment, as the deployment service will have
-                    # already run the init hook.
-                    init_result = self._orchestrator.run_init_hook(
-                        snapshot=self._snapshot
-                    )
+                init_hook_started = False
+                init_hook_completed = False
+                run_context_was_initialized = False
 
                 try:
+                    monitoring_thread = self._start_monitoring_loop()
+                    startup_thread = self._start_startup_loop()
+
+                    if not self._run.triggered_by_deployment:
+                        # Only run the init hook if the run is not triggered by
+                        # a deployment, as the deployment service will have
+                        # already run the init hook.
+                        run_context_was_initialized = (
+                            run_context_is_initialized()
+                        )
+                        init_hook_started = True
+                        init_result = self._orchestrator.run_init_hook(
+                            snapshot=self._snapshot
+                        )
+                        init_hook_completed = True
+
                     self._run_entrypoint_and_finalize()
                 finally:
                     if (
                         not self._run.triggered_by_deployment
-                        and init_result is not False
+                        and should_run_cleanup_hook_after_init(
+                            init_result=init_result,
+                            init_hook_started=init_hook_started,
+                            init_hook_completed=init_hook_completed,
+                            run_context_was_initialized_before_init=run_context_was_initialized,
+                        )
                     ):
                         # Only run the cleanup hook if the run is not
                         # triggered by a deployment, as the deployment
@@ -852,8 +872,10 @@ class DynamicPipelineRunner:
                     self._shutdown_requested = True
                     self._startup_event.set()
                     self._monitoring_event.set()
-                    monitoring_thread.join()
-                    startup_thread.join()
+                    if monitoring_thread:
+                        monitoring_thread.join()
+                    if startup_thread:
+                        startup_thread.join()
                     self._pause_coordinator.unregister(self)
 
     def _run_entrypoint_and_finalize(self) -> None:
@@ -2507,6 +2529,7 @@ class DynamicPipelineRunner:
         return create_placeholder_run(
             snapshot=child_snapshot,
             orchestrator_run_id=self._orchestrator_run_id,
+            trigger_info=self._run.trigger_info,
             parent_run_id=self._run.id,
             child_key=child_invocation_id,
         )

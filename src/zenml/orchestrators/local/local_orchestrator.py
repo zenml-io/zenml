@@ -25,7 +25,11 @@ from zenml.orchestrators import (
     BaseOrchestratorFlavor,
     SubmissionResult,
 )
+from zenml.orchestrators.base_orchestrator import (
+    should_run_cleanup_hook_after_init,
+)
 from zenml.stack import Stack
+from zenml.steps.step_context import run_context_is_initialized
 from zenml.utils import string_utils
 from zenml.utils.env_utils import temporary_environment
 
@@ -105,69 +109,85 @@ class LocalOrchestrator(BaseOrchestrator):
         step_exception: Optional[Exception] = None
         skipped_steps: List[str] = []
 
-        init_result = self.run_init_hook(snapshot=snapshot)
+        init_result: Optional[bool] = None
+        init_hook_started = False
+        init_hook_completed = False
+        run_context_was_initialized = False
 
-        # Run each step
-        for step_name, step in snapshot.step_configurations.items():
-            if (
-                execution_mode == ExecutionMode.STOP_ON_FAILURE
-                and failed_steps
+        try:
+            run_context_was_initialized = run_context_is_initialized()
+            init_hook_started = True
+            init_result = self.run_init_hook(snapshot=snapshot)
+            init_hook_completed = True
+
+            # Run each step
+            for step_name, step in snapshot.step_configurations.items():
+                if (
+                    execution_mode == ExecutionMode.STOP_ON_FAILURE
+                    and failed_steps
+                ):
+                    logger.warning(
+                        "Skipping step %s due to the failed step(s): %s (Execution mode %s)",
+                        step_name,
+                        ", ".join(failed_steps),
+                        execution_mode,
+                    )
+                    skipped_steps.append(step_name)
+                    continue
+
+                if failed_upstream_steps := [
+                    fs for fs in failed_steps if fs in step.spec.upstream_steps
+                ]:
+                    logger.warning(
+                        "Skipping step %s due to failure in upstream step(s): %s (Execution mode %s)",
+                        step_name,
+                        ", ".join(failed_upstream_steps),
+                        execution_mode,
+                    )
+                    skipped_steps.append(step_name)
+                    continue
+
+                if skipped_upstream_steps := [
+                    fs
+                    for fs in skipped_steps
+                    if fs in step.spec.upstream_steps
+                ]:
+                    logger.warning(
+                        "Skipping step %s due to the skipped upstream step(s) %s (Execution mode %s)",
+                        step_name,
+                        ", ".join(skipped_upstream_steps),
+                        execution_mode,
+                    )
+                    skipped_steps.append(step_name)
+                    continue
+
+                if self.requires_resources_in_orchestration_environment(step):
+                    logger.warning(
+                        "Specifying step resources is not supported for the local "
+                        "orchestrator, ignoring resource configuration for "
+                        "step %s.",
+                        step_name,
+                    )
+
+                step_environment = step_environments[step_name]
+                try:
+                    with temporary_environment(step_environment):
+                        self.run_step(step=step)
+                except Exception as e:
+                    failed_steps.append(step_name)
+                    logger.exception("Step %s failed.", step_name)
+
+                    if execution_mode == ExecutionMode.FAIL_FAST:
+                        step_exception = e
+                        break
+        finally:
+            if should_run_cleanup_hook_after_init(
+                init_result=init_result,
+                init_hook_started=init_hook_started,
+                init_hook_completed=init_hook_completed,
+                run_context_was_initialized_before_init=run_context_was_initialized,
             ):
-                logger.warning(
-                    "Skipping step %s due to the failed step(s): %s (Execution mode %s)",
-                    step_name,
-                    ", ".join(failed_steps),
-                    execution_mode,
-                )
-                skipped_steps.append(step_name)
-                continue
-
-            if failed_upstream_steps := [
-                fs for fs in failed_steps if fs in step.spec.upstream_steps
-            ]:
-                logger.warning(
-                    "Skipping step %s due to failure in upstream step(s): %s (Execution mode %s)",
-                    step_name,
-                    ", ".join(failed_upstream_steps),
-                    execution_mode,
-                )
-                skipped_steps.append(step_name)
-                continue
-
-            if skipped_upstream_steps := [
-                fs for fs in skipped_steps if fs in step.spec.upstream_steps
-            ]:
-                logger.warning(
-                    "Skipping step %s due to the skipped upstream step(s) %s (Execution mode %s)",
-                    step_name,
-                    ", ".join(skipped_upstream_steps),
-                    execution_mode,
-                )
-                skipped_steps.append(step_name)
-                continue
-
-            if self.requires_resources_in_orchestration_environment(step):
-                logger.warning(
-                    "Specifying step resources is not supported for the local "
-                    "orchestrator, ignoring resource configuration for "
-                    "step %s.",
-                    step_name,
-                )
-
-            step_environment = step_environments[step_name]
-            try:
-                with temporary_environment(step_environment):
-                    self.run_step(step=step)
-            except Exception as e:
-                failed_steps.append(step_name)
-                logger.exception("Step %s failed.", step_name)
-
-                if execution_mode == ExecutionMode.FAIL_FAST:
-                    step_exception = e
-                    break
-
-        if init_result is not False:
-            self.run_cleanup_hook(snapshot=snapshot)
+                self.run_cleanup_hook(snapshot=snapshot)
 
         if execution_mode == ExecutionMode.FAIL_FAST and failed_steps:
             assert step_exception is not None
