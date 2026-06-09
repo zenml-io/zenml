@@ -11,7 +11,7 @@ The Cloudflare Sandbox flavor wraps the [Cloudflare Sandbox bridge](https://deve
 Use the Cloudflare Sandbox flavor when:
 
 - You want ephemeral, isolated containers for running LLM-generated code with low cold-start latency on Cloudflare's edge.
-- You already operate on Cloudflare and want to keep your sandbox infrastructure on the same provider as your [R2 artifact store](../artifact-stores/r2.md) or [Cloudflare container registry](../container-registries/cloudflare.md).
+- You already operate on Cloudflare and want to keep your sandbox infrastructure on the same provider as your [R2 artifact store](../artifact-stores/cloudflare-r2.md) or [Cloudflare container registry](../container-registries/cloudflare.md).
 - You want a thin, HTTP-only surface — no Python SDK to install beyond ZenML itself.
 
 ### How to deploy the bridge
