@@ -87,7 +87,7 @@ When using the `mlflow_register_model_step`, you can set a variety of parameters
 {% hint style="info" %}
 The `model_source_uri` parameter is the path to the model within the MLflow tracking server.
 
-If you are using a local MLflow tracking server, the path will be something like `file:///.../mlruns/667102566783201219/3973eabc151c41e6ab98baeb20c5323b/artifacts/model`.
+If you are using ZenML's default local MLflow configuration, the path will be something like `file:///.../mlflow_artifacts/3973eabc151c41e6ab98baeb20c5323b/artifacts/model`.
 
 If you are using a remote MLflow tracking server, the path will be something like `s3://.../mlruns/667102566783201219/3973eabc151c41e6ab98baeb20c5323b/artifacts/model`.
 
@@ -104,7 +104,7 @@ If you want to register your models manually, you can use the `zenml model-regis
 zenml model-registry models register-version Tensorflow-model \
     --description="A new version of the tensorflow model with accuracy 98.88%" \
     -v 1 \
-    --model-uri="file:///.../mlruns/667102566783201219/3973eabc151c41e6ab98baeb20c5323b/artifacts/model" \
+    --model-uri="file:///.../mlflow_artifacts/3973eabc151c41e6ab98baeb20c5323b/artifacts/model" \
     -m key1 value1 -m key2 value2 \
     --zenml-pipeline-name="mlflow_training_pipeline" \
     --zenml-step-name="trainer"
@@ -169,7 +169,7 @@ $ zenml model-registry models get-version tensorflow-mnist-model -v 1
 ┃ METADATA               │ {'zenml_version': '0.34.0', 'zenml_run_name': 'mlflow_training_pipeline-2023_03_01-08_08_52_398499', 'zenml_pipeline_name': 'mlflow_training_pipeline', 'zenml_pipeline_run_uuid': '29fb22c1-6e0b-4431-9e04-226226506d16',              ┃
 ┃                        │ 'lr': '0.001', 'epochs': '5', 'optimizer': 'Adam'}                                                                                                                                  ┃
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┨
-┃ MODEL_SOURCE_URI       │ file:///Users/safoine-zenml/Library/Application Support/zenml/local_stores/0902a511-117d-4152-a098-b2f1124c4493/mlruns/489728212459131640/293a0d2e71e046999f77a79639f6eac2/artifacts/model                                                     ┃
+┃ MODEL_SOURCE_URI       │ file:///Users/example-user/Library/Application Support/zenml/local_stores/0902a511-117d-4152-a098-b2f1124c4493/mlflow_artifacts/293a0d2e71e046999f77a79639f6eac2/artifacts/model                                                     ┃
 ┠────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┨
 ┃ STAGE                  │ None                                                                                                                                                                                                                                           ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛

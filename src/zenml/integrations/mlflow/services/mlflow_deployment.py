@@ -23,6 +23,7 @@ import pandas as pd
 import requests
 from mlflow.pyfunc.backend import PyFuncBackend
 from mlflow.version import VERSION as MLFLOW_VERSION
+from packaging import version
 from pydantic import field_validator
 
 from zenml.client import Client
@@ -115,8 +116,8 @@ class MLFlowDeploymentConfig(LocalDaemonServiceConfig):
 
     @field_validator("mlserver")
     @classmethod
-    def validate_mlserver_python_version(cls, mlserver: bool) -> bool:
-        """Validates the Python version if mlserver is used.
+    def validate_mlserver_support(cls, mlserver: bool) -> bool:
+        """Validate whether the MLServer backend can be used.
 
         Args:
             mlserver: set to True if the MLflow MLServer backend is used,
@@ -124,15 +125,26 @@ class MLFlowDeploymentConfig(LocalDaemonServiceConfig):
                 used.
 
         Returns:
-            the validated value
+            The validated value.
 
         Raises:
-            ValueError: if mlserver packages are not installed
+            ValueError: if mlserver packages are not installed or supported.
         """
         if mlserver is True:
-            # For the mlserver deployment, the mlserver and
-            # mlserver-mlflow packages need to be installed separately
-            # because they rely on an older version of Pydantic.
+            if version.parse(MLFLOW_VERSION) >= version.parse("3.13.0"):
+                logger.warning(
+                    "The MLflow MLServer backend is not supported for MLflow "
+                    "3.13.0 or newer. The `mlserver` deployment option will "
+                    "be ignored and the built-in MLflow scoring server will "
+                    "be used instead."
+                )
+                return False
+
+            logger.warning(
+                "The MLflow MLServer backend is deprecated and was removed "
+                "in MLflow 3.13.0. Consider using the built-in MLflow "
+                "scoring server instead."
+            )
 
             # Check if the mlserver and mlserver-mlflow packages are installed
             try:
@@ -187,20 +199,20 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
             config: service configuration
             attrs: additional attributes to set on the service
         """
+        if not isinstance(config, MLFlowDeploymentConfig):
+            config = MLFlowDeploymentConfig.model_validate(config)
+
+        if config.mlserver:
+            prediction_url_path = MLSERVER_PREDICTION_URL_PATH
+            healthcheck_uri_path = MLSERVER_HEALTHCHECK_URL_PATH
+        else:
+            prediction_url_path = MLFLOW_PREDICTION_URL_PATH
+            healthcheck_uri_path = MLFLOW_HEALTHCHECK_URL_PATH
+
         # ensure that the endpoint is created before the service is initialized
         # TODO [ENG-700]: implement a service factory or builder for MLflow
         #   deployment services
-        if (
-            isinstance(config, MLFlowDeploymentConfig)
-            and "endpoint" not in attrs
-        ):
-            if config.mlserver:
-                prediction_url_path = MLSERVER_PREDICTION_URL_PATH
-                healthcheck_uri_path = MLSERVER_HEALTHCHECK_URL_PATH
-            else:
-                prediction_url_path = MLFLOW_PREDICTION_URL_PATH
-                healthcheck_uri_path = MLFLOW_HEALTHCHECK_URL_PATH
-
+        if "endpoint" not in attrs:
             endpoint = MLFlowDeploymentEndpoint(
                 config=MLFlowDeploymentEndpointConfig(
                     protocol=ServiceEndpointProtocol.HTTP,
@@ -215,6 +227,18 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
             )
             attrs["endpoint"] = endpoint
         super().__init__(config=config, **attrs)
+
+        # A persisted service can be reloaded after the local MLflow version
+        # changed. In that case, config validation above may flip `mlserver` to
+        # False, but a serialized endpoint can still contain MLServer
+        # healthcheck paths. Keep runtime status like the selected port, but
+        # realign the backend-specific endpoint paths with the validated config.
+        self.endpoint.config.prediction_url_path = prediction_url_path
+        self.endpoint.config.protocol = ServiceEndpointProtocol.HTTP
+        self.endpoint.monitor.config.healthcheck_uri_path = (
+            healthcheck_uri_path
+        )
+        self.endpoint.monitor.config.use_head_request = False
 
     def run(self) -> None:
         """Start the service.
@@ -241,6 +265,8 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
             # to run the deploy the model on the local running environment
             if int(mlflow_version[0]) >= 2:
                 backend_kwargs["env_manager"] = "local"
+            if self.config.mlserver:
+                serve_kwargs["enable_mlserver"] = True
             backend = PyFuncBackend(  # type: ignore[no-untyped-call, unused-ignore]
                 config={},
                 no_conda=True,
@@ -260,7 +286,6 @@ class MLFlowDeploymentService(LocalDaemonService, BaseDeploymentService):
                 model_uri=self.config.model_uri,
                 port=self.endpoint.status.port,
                 host="localhost",
-                enable_mlserver=self.config.mlserver,
                 **serve_kwargs,
             )
         except KeyboardInterrupt:
