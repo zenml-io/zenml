@@ -14,10 +14,11 @@
 """Modal orchestrator implementation."""
 
 import os
-import threading
 import time
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 from uuid import uuid4
+
+import modal
 
 from zenml.client import Client
 from zenml.config.resource_settings import ResourceSettings
@@ -58,8 +59,6 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-modal = sandbox_utils.modal
-
 ENV_ZENML_MODAL_RUN_ID = "ZENML_MODAL_RUN_ID"
 ENV_ZENML_MODAL_APP_NAME = "ZENML_MODAL_APP_NAME"
 MODAL_ORCHESTRATION_SANDBOX_ID_METADATA_KEY = "modal_orchestration_sandbox_id"
@@ -67,11 +66,14 @@ MODAL_APP_NAME_METADATA_KEY = "modal_app_name"
 MODAL_SANDBOX_ID_METADATA_KEY = "sandbox_id"
 MODAL_STATIC_STEP_SANDBOX_ID_METADATA_KEY_PREFIX = "modal_step_sandbox_id_"
 MODAL_ENVIRONMENT_METADATA_KEY = "modal_environment"
-MODAL_ORCHESTRATOR_GPU_SETTINGS_FIELD = "ModalOrchestratorSettings.gpu"
-MODAL_ORCHESTRATOR_GPU_SETTINGS_EXAMPLE = (
-    "For example with @pipeline(settings={'orchestrator': "
-    "ModalOrchestratorSettings(gpu='<TYPE>'), 'resources': "
-    "ResourceSettings(gpu_count=1)}), or set gpu_count=0 to run on CPU."
+MODAL_ORCHESTRATOR_GPU_VALIDATION_MESSAGE = sandbox_utils.GpuValidationMessage(
+    settings_field="ModalOrchestratorSettings.gpu",
+    settings_example=(
+        "For example with @pipeline(settings={'orchestrator': "
+        "ModalOrchestratorSettings(gpu='<TYPE>'), 'resources': "
+        "ResourceSettings(gpu_count=1)}), or set gpu_count=0 to run on "
+        "CPU."
+    ),
 )
 
 
@@ -125,8 +127,10 @@ class ModalOrchestrator(ContainerizedOrchestrator):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize the Modal orchestrator."""
         super().__init__(*args, **kwargs)
-        self._modal_client: Optional["modal.Client"] = None
-        self._modal_client_lock = threading.Lock()
+        self._modal_client_factory = sandbox_utils.ModalClientFactory(
+            get_token_id=lambda: self.config.token_id,
+            get_token_secret=lambda: self.config.token_secret,
+        )
 
     @property
     def config(self) -> ModalOrchestratorConfig:
@@ -196,19 +200,9 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             custom_validation_function=_validate_remote_components,
         )
 
-    def _set_modal_client(self, modal_client: "modal.Client") -> None:
-        """Cache an explicit Modal client."""
-        self._modal_client = modal_client
-
     def _get_modal_client(self) -> Optional["modal.Client"]:
         """Get an explicit Modal client when credentials are configured."""
-        return sandbox_utils.get_modal_client(
-            get_token_id=lambda: self.config.token_id,
-            get_token_secret=lambda: self.config.token_secret,
-            get_cached_client=lambda: self._modal_client,
-            set_cached_client=self._set_modal_client,
-            lock=self._modal_client_lock,
-        )
+        return self._modal_client_factory.get_client()
 
     def get_orchestrator_run_id(self) -> str:
         """Return the stable Modal run ID from the sandbox environment."""
@@ -315,7 +309,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
                 run_id=placeholder_run.id,
                 run_update=PipelineRunUpdate(orchestrator_run_id=modal_run_id),
             )
-            placeholder_run.orchestrator_run_id = modal_run_id
+            cast(Any, placeholder_run).orchestrator_run_id = modal_run_id
 
         try:
             image_name = self.get_image(snapshot=snapshot)
@@ -353,8 +347,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             or ResourceSettings(),
             environment=sandbox_environment,
             modal_client=modal_client,
-            settings_gpu_field=MODAL_ORCHESTRATOR_GPU_SETTINGS_FIELD,
-            settings_example=MODAL_ORCHESTRATOR_GPU_SETTINGS_EXAMPLE,
+            gpu_validation_message=MODAL_ORCHESTRATOR_GPU_VALIDATION_MESSAGE,
         )
 
         metadata: Dict[str, MetadataType] = {
@@ -520,8 +513,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             resource_settings=resource_settings or ResourceSettings(),
             environment=environment,
             modal_client=modal_client,
-            settings_gpu_field=MODAL_ORCHESTRATOR_GPU_SETTINGS_FIELD,
-            settings_example=MODAL_ORCHESTRATOR_GPU_SETTINGS_EXAMPLE,
+            gpu_validation_message=MODAL_ORCHESTRATOR_GPU_VALIDATION_MESSAGE,
         )
 
     @staticmethod
@@ -795,7 +787,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         while True:
             return_code = sandbox.poll()
             if return_code is not None:
-                return return_code
+                return cast(Optional[int], return_code)
             time.sleep(1)
 
     def get_pipeline_run_metadata(

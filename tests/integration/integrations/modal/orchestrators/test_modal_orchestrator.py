@@ -136,6 +136,7 @@ def _make_snapshot(*, schedule=None, is_dynamic=False, pipeline_image=True):
         build=BuildStub(pipeline_image=pipeline_image),
         pipeline_configuration=SimpleNamespace(
             name="pipe",
+            execution_mode=ExecutionMode.FAIL_FAST,
             resource_settings=ResourceSettingsStub(),
         ),
         step_configurations={"train": train_step},
@@ -757,6 +758,226 @@ def test_stop_run_refreshes_and_terminates_children_before_orchestration(
     assert from_id_sandboxes["child-complete"].terminate_calls == 0
 
 
+class StaticStepRunRequestFactoryStub:
+    """Small step run request factory for static controller tests."""
+
+    def __init__(self):
+        self.created_requests = []
+        self.populate_calls = []
+
+    @staticmethod
+    def has_caching_enabled(_step_name):
+        return False
+
+    def create_request(self, step_name):
+        request = SimpleNamespace(
+            step_name=step_name,
+            status=ExecutionStatus.INITIALIZING,
+            end_time=None,
+        )
+        self.created_requests.append(request)
+        return request
+
+    def populate_request(self, request, *, step_runs):
+        self.populate_calls.append((request, dict(step_runs)))
+
+
+def _make_static_controller(
+    monkeypatch,
+    *,
+    listed_step_runs=None,
+):
+    pipeline_run = SimpleNamespace(
+        id=uuid4(),
+        project_id=uuid4(),
+        run_metadata={},
+    )
+    snapshot = _make_snapshot()
+    active_stack = SimpleNamespace()
+    orchestrator = _make_orchestrator()
+    orchestrator.id = "modal-orchestrator-id"
+    step_run_request_factory = StaticStepRunRequestFactoryStub()
+    created_run_steps = []
+    listed_step_runs = listed_step_runs or []
+
+    class ZenStoreStub:
+        @staticmethod
+        def create_run_step(request):
+            created_run_steps.append(request)
+            return SimpleNamespace(id=uuid4(), status=request.status)
+
+    class ClientStub:
+        zen_store = ZenStoreStub()
+
+        @staticmethod
+        def list_run_steps(**_kwargs):
+            return listed_step_runs
+
+    monkeypatch.setattr(
+        modal_entrypoint_module.env_utils,
+        "get_runtime_environment",
+        lambda **_kwargs: {"STEP_ENV": "step-value"},
+    )
+
+    controller = modal_entrypoint_module._StaticModalPipelineController(
+        snapshot=snapshot,
+        pipeline_run=pipeline_run,
+        active_stack=active_stack,
+        orchestrator=orchestrator,
+        client=ClientStub(),
+        shared_env={"SHARED_ENV": "shared-value"},
+        step_run_request_factory=step_run_request_factory,
+    )
+    return SimpleNamespace(
+        controller=controller,
+        pipeline_run=pipeline_run,
+        orchestrator=orchestrator,
+        step_run_request_factory=step_run_request_factory,
+        created_run_steps=created_run_steps,
+    )
+
+
+def test_static_controller_start_sandbox_records_run_and_step_metadata(
+    monkeypatch,
+):
+    step_run_id = uuid4()
+    published_pipeline_metadata = []
+    published_step_metadata = []
+    created_environments = []
+    step_run = SimpleNamespace(
+        id=step_run_id,
+        status=ExecutionStatus.RUNNING,
+    )
+    setup = _make_static_controller(
+        monkeypatch,
+        listed_step_runs=[step_run],
+    )
+
+    def create_static_step_sandbox(**kwargs):
+        created_environments.append(kwargs["environment"])
+        return SandboxStub("step-sandbox-id")
+
+    setup.orchestrator.create_static_step_sandbox = create_static_step_sandbox
+    setup.orchestrator.get_settings = lambda _step: ModalOrchestratorSettings(
+        modal_environment="prod"
+    )
+    monkeypatch.setattr(
+        modal_entrypoint_module.publish_utils,
+        "publish_pipeline_run_metadata",
+        lambda *args, **kwargs: published_pipeline_metadata.append(
+            (args, kwargs)
+        ),
+    )
+    monkeypatch.setattr(
+        modal_entrypoint_module.publish_utils,
+        "publish_step_run_metadata",
+        lambda *args, **kwargs: published_step_metadata.append((args, kwargs)),
+    )
+
+    dag_node = modal_entrypoint_module.Node(id="train", upstream_nodes=[])
+
+    assert setup.controller.start_step_sandbox(dag_node) == NodeStatus.RUNNING
+
+    assert created_environments == [
+        {"SHARED_ENV": "shared-value", "STEP_ENV": "step-value"}
+    ]
+    assert (
+        dag_node.metadata[MODAL_SANDBOX_ID_METADATA_KEY] == "step-sandbox-id"
+    )
+    assert (
+        dag_node.metadata[modal_entrypoint_module.NODE_METADATA_PUBLISHED_KEY]
+        is True
+    )
+    assert dag_node.metadata[
+        modal_entrypoint_module.NODE_METADATA_STEP_RUN_ID_KEY
+    ] == str(step_run_id)
+    assert setup.pipeline_run.run_metadata == {
+        get_static_step_sandbox_metadata_key("train"): "step-sandbox-id"
+    }
+    assert published_pipeline_metadata == [
+        (
+            (
+                setup.pipeline_run.id,
+                {
+                    "modal-orchestrator-id": {
+                        get_static_step_sandbox_metadata_key(
+                            "train"
+                        ): "step-sandbox-id"
+                    }
+                },
+            ),
+            {},
+        )
+    ]
+    assert published_step_metadata == [
+        (
+            (
+                step_run_id,
+                {
+                    "modal-orchestrator-id": {
+                        MODAL_SANDBOX_ID_METADATA_KEY: "step-sandbox-id",
+                        MODAL_ENVIRONMENT_METADATA_KEY: "prod",
+                    }
+                },
+            ),
+            {},
+        )
+    ]
+
+
+def test_static_controller_failed_sandbox_respects_successful_step_run(
+    monkeypatch,
+):
+    step_run = SimpleNamespace(status=ExecutionStatus.COMPLETED)
+    setup = _make_static_controller(
+        monkeypatch,
+        listed_step_runs=[step_run],
+    )
+    setup.orchestrator._get_modal_client = lambda: "modal-client"
+    monkeypatch.setattr(
+        modal_entrypoint_module.sandbox_utils,
+        "get_sandbox_status",
+        lambda *_args, **_kwargs: ExecutionStatus.FAILED,
+    )
+
+    dag_node = modal_entrypoint_module.Node(id="train", upstream_nodes=[])
+    dag_node.metadata[MODAL_SANDBOX_ID_METADATA_KEY] = "step-sandbox-id"
+    dag_node.metadata[modal_entrypoint_module.NODE_METADATA_PUBLISHED_KEY] = (
+        True
+    )
+
+    assert (
+        setup.controller.check_step_sandbox(dag_node) == NodeStatus.COMPLETED
+    )
+    assert setup.created_run_steps == []
+
+
+def test_static_controller_failed_sandbox_publishes_failed_step_run(
+    monkeypatch,
+):
+    setup = _make_static_controller(monkeypatch, listed_step_runs=[])
+    setup.orchestrator._get_modal_client = lambda: "modal-client"
+    monkeypatch.setattr(
+        modal_entrypoint_module.sandbox_utils,
+        "get_sandbox_status",
+        lambda *_args, **_kwargs: ExecutionStatus.FAILED,
+    )
+
+    dag_node = modal_entrypoint_module.Node(id="train", upstream_nodes=[])
+    dag_node.metadata[MODAL_SANDBOX_ID_METADATA_KEY] = "step-sandbox-id"
+    dag_node.metadata[modal_entrypoint_module.NODE_METADATA_PUBLISHED_KEY] = (
+        True
+    )
+
+    assert setup.controller.check_step_sandbox(dag_node) == NodeStatus.FAILED
+
+    assert len(setup.created_run_steps) == 1
+    created_request = setup.created_run_steps[0]
+    assert created_request.step_name == "train"
+    assert created_request.status == ExecutionStatus.FAILED
+    assert created_request.end_time is not None
+
+
 def test_static_controller_finalize_raises_after_failed_child_publish(
     monkeypatch,
 ):
@@ -849,6 +1070,48 @@ def test_static_controller_finalize_stopping_run_does_not_raise(
     )
 
     assert published == [(pipeline_run_id, ExecutionStatus.STOPPED)]
+
+
+def test_static_controller_finalize_respects_late_stop_request(
+    monkeypatch,
+):
+    pipeline_run_id = uuid4()
+    published = []
+    refreshed_statuses = iter(
+        [ExecutionStatus.RUNNING, ExecutionStatus.STOPPING]
+    )
+
+    class ClientStub:
+        @staticmethod
+        def get_pipeline_run(*args, **kwargs):
+            return SimpleNamespace(
+                id=pipeline_run_id,
+                status=next(refreshed_statuses),
+            )
+
+    monkeypatch.setattr(modal_entrypoint_module, "Client", ClientStub)
+    monkeypatch.setattr(
+        modal_entrypoint_module,
+        "fetch_step_runs_by_names",
+        lambda **_kwargs: {},
+    )
+    monkeypatch.setattr(
+        modal_entrypoint_module.publish_utils,
+        "publish_pipeline_run_status_update",
+        lambda run_id, status: published.append(("status", run_id, status)),
+    )
+    monkeypatch.setattr(
+        modal_entrypoint_module.publish_utils,
+        "publish_failed_pipeline_run",
+        lambda run_id: published.append(("failed", run_id)),
+    )
+
+    modal_entrypoint_module.ModalOrchestratorEntrypointConfiguration._finalize_pipeline_run(
+        pipeline_run_id,
+        {"train": NodeStatus.FAILED},
+    )
+
+    assert published == [("status", pipeline_run_id, ExecutionStatus.STOPPED)]
 
 
 def test_get_orchestrator_run_id_reads_modal_environment(monkeypatch):

@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Static Modal orchestration entrypoint."""
 
+import os
 from typing import Any, Dict, List, Optional, cast
 from uuid import UUID
 
@@ -59,6 +60,252 @@ NODE_METADATA_PUBLISHED_KEY = "metadata_published"
 NODE_METADATA_STEP_RUN_ID_KEY = "step_run_id"
 
 
+class _StaticModalPipelineController:
+    """Control Modal child sandboxes for one static pipeline run."""
+
+    def __init__(
+        self,
+        *,
+        snapshot: Any,
+        pipeline_run: Any,
+        active_stack: Any,
+        orchestrator: ModalOrchestrator,
+        client: Client,
+        shared_env: Dict[str, str],
+        step_run_request_factory: StepRunRequestFactory,
+    ) -> None:
+        """Initialize the controller with explicit runtime state."""
+        self.snapshot = snapshot
+        self.pipeline_run = pipeline_run
+        self.active_stack = active_stack
+        self.orchestrator = orchestrator
+        self.client = client
+        self.shared_env = shared_env
+        self.step_run_request_factory = step_run_request_factory
+        self.step_runs: Dict[str, StepRunResponse] = {}
+
+    def build_nodes(self) -> List[Node]:
+        """Build DAG runner nodes from the static pipeline snapshot."""
+        return [
+            Node(id=step_name, upstream_nodes=step.spec.upstream_steps)
+            for step_name, step in self.snapshot.step_configurations.items()
+        ]
+
+    def start_step_sandbox(self, node: Node) -> NodeStatus:
+        """Start a Modal sandbox for one step unless it can be cached."""
+        step_name = node.id
+        if self._cache_step_run_if_possible(step_name):
+            return NodeStatus.COMPLETED
+
+        sandbox = self.orchestrator.create_static_step_sandbox(
+            snapshot=self.snapshot,
+            step_name=step_name,
+            environment=self._step_environment(step_name),
+        )
+        node.metadata[MODAL_SANDBOX_ID_METADATA_KEY] = sandbox.object_id
+        try:
+            publish_utils.publish_pipeline_run_metadata(
+                self.pipeline_run.id,
+                {
+                    self.orchestrator.id: {
+                        get_static_step_sandbox_metadata_key(
+                            step_name
+                        ): sandbox.object_id
+                    }
+                },
+            )
+            self.pipeline_run.run_metadata[
+                get_static_step_sandbox_metadata_key(step_name)
+            ] = sandbox.object_id
+            self._publish_step_sandbox_metadata(node)
+        except Exception:
+            sandbox.terminate()
+            raise
+
+        logger.info(
+            "Started Modal sandbox `%s` for step `%s`.",
+            sandbox.object_id,
+            step_name,
+        )
+        return NodeStatus.RUNNING
+
+    def check_step_sandbox(self, node: Node) -> NodeStatus:
+        """Return the current DAG status for one Modal step sandbox."""
+        sandbox_id = node.metadata.get(MODAL_SANDBOX_ID_METADATA_KEY)
+        if not sandbox_id:
+            logger.error("Missing Modal sandbox ID for step `%s`.", node.id)
+            return NodeStatus.FAILED
+
+        self._publish_step_sandbox_metadata(node)
+        status = sandbox_utils.get_sandbox_status(
+            str(sandbox_id),
+            modal_client=self.orchestrator._get_modal_client(),
+        )
+        if status == ExecutionStatus.COMPLETED:
+            return NodeStatus.COMPLETED
+        if status == ExecutionStatus.FAILED:
+            logger.error("Modal sandbox for step `%s` failed.", node.id)
+            return self._handle_failed_sandbox(node.id)
+        return NodeStatus.RUNNING
+
+    def stop_step_sandbox(self, node: Node) -> None:
+        """Terminate a step sandbox when the DAG runner stops the node."""
+        sandbox_id = node.metadata.get(MODAL_SANDBOX_ID_METADATA_KEY)
+        if not sandbox_id:
+            return
+        self.orchestrator._terminate_sandbox_if_running(
+            sandbox_id=str(sandbox_id),
+            description=f"static step `{node.id}`",
+        )
+
+    def should_interrupt_execution(self) -> Optional[InterruptMode]:
+        """Tell the DAG runner whether the ZenML run has requested a stop."""
+        try:
+            run = self.client.get_pipeline_run(
+                name_id_or_prefix=self.pipeline_run.id,
+                project=self.pipeline_run.project_id,
+                hydrate=False,
+            )
+        except Exception as e:
+            logger.warning(
+                "Failed to check Modal pipeline run stop status: %s", e
+            )
+            return None
+
+        if run.status in {
+            ExecutionStatus.STOPPING,
+            ExecutionStatus.STOPPED,
+        }:
+            logger.info(
+                "Stopping Modal DAG because pipeline run `%s` is `%s`.",
+                self.pipeline_run.id,
+                run.status,
+            )
+            return InterruptMode.FORCE
+
+        execution_mode = self.snapshot.pipeline_configuration.execution_mode
+        if run.status == ExecutionStatus.FAILED:
+            if execution_mode == ExecutionMode.FAIL_FAST:
+                return InterruptMode.FORCE
+            if execution_mode == ExecutionMode.STOP_ON_FAILURE:
+                return InterruptMode.GRACEFUL
+
+        return None
+
+    def _cache_step_run_if_possible(self, step_name: str) -> bool:
+        if not self.step_run_request_factory.has_caching_enabled(step_name):
+            return False
+
+        request = self.step_run_request_factory.create_request(step_name)
+        try:
+            self.step_run_request_factory.populate_request(
+                request, step_runs=self.step_runs
+            )
+        except Exception as e:
+            logger.error(
+                "Failed to populate step run request for step `%s`: %s",
+                step_name,
+                e,
+            )
+            return False
+
+        if request.status != ExecutionStatus.CACHED:
+            return False
+
+        step_run = publish_cached_step_run(request, self.pipeline_run)
+        self.step_runs[step_name] = step_run
+        logger.info("Using cached version of step `%s`.", step_name)
+        return True
+
+    def _step_environment(self, step_name: str) -> Dict[str, str]:
+        step = self.snapshot.step_configurations[step_name]
+        environment = self.shared_env.copy()
+        environment.update(
+            env_utils.get_runtime_environment(
+                config=step.config, stack=self.active_stack
+            )
+        )
+        return environment
+
+    def _publish_step_sandbox_metadata(self, node: Node) -> bool:
+        sandbox_id = node.metadata.get(MODAL_SANDBOX_ID_METADATA_KEY)
+        if not sandbox_id:
+            return False
+
+        if node.metadata.get(NODE_METADATA_PUBLISHED_KEY):
+            return True
+
+        step_runs_page = self.client.list_run_steps(
+            name=node.id,
+            pipeline_run_id=self.pipeline_run.id,
+            hydrate=False,
+            exclude_retried=True,
+            size=1,
+        )
+        if not step_runs_page:
+            return False
+
+        step_run = step_runs_page[0]
+        metadata = self.orchestrator._step_sandbox_metadata(
+            cast(
+                Any,
+                self.orchestrator.get_settings(
+                    self.snapshot.step_configurations[node.id]
+                ),
+            ),
+            str(sandbox_id),
+        )
+        publish_utils.publish_step_run_metadata(
+            step_run.id,
+            {self.orchestrator.id: metadata},
+        )
+        node.metadata[NODE_METADATA_PUBLISHED_KEY] = True
+        node.metadata[NODE_METADATA_STEP_RUN_ID_KEY] = str(step_run.id)
+        return True
+
+    def _handle_failed_sandbox(self, step_name: str) -> NodeStatus:
+        steps = self.client.list_run_steps(
+            name=step_name,
+            pipeline_run_id=self.pipeline_run.id,
+            hydrate=False,
+            exclude_retried=True,
+            size=1,
+        )
+        if steps:
+            step_run = steps[0]
+            if step_run.status.is_successful:
+                logger.info(
+                    "Step `%s` is successful in ZenML even though its "
+                    "Modal sandbox returned a non-zero exit code.",
+                    step_name,
+                )
+                return NodeStatus.COMPLETED
+            return NodeStatus.FAILED
+
+        request = self.step_run_request_factory.create_request(step_name)
+        try:
+            self.step_run_request_factory.populate_request(
+                request, step_runs=self.step_runs
+            )
+        except Exception as e:
+            logger.error(
+                "Failed to populate failed step run request for `%s`: %s",
+                step_name,
+                e,
+            )
+            return NodeStatus.FAILED
+
+        request.status = ExecutionStatus.FAILED
+        request.end_time = utc_now()
+        try:
+            self.client.zen_store.create_run_step(request)
+        except Exception as e:
+            logger.error(
+                "Failed to publish failed step run `%s`: %s", step_name, e
+            )
+        return NodeStatus.FAILED
+
+
 class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
     """Entrypoint configuration for the static Modal controller sandbox."""
 
@@ -100,242 +347,28 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
         )
         shared_env.update(secrets)
         shared_env[ENV_ZENML_MODAL_RUN_ID] = modal_run_id
-        if app_name := self._get_modal_app_name_from_environment():
+        if app_name := os.environ.get(ENV_ZENML_MODAL_APP_NAME):
             shared_env[ENV_ZENML_MODAL_APP_NAME] = app_name
 
-        step_run_request_factory = StepRunRequestFactory(
+        controller = _StaticModalPipelineController(
             snapshot=snapshot,
             pipeline_run=pipeline_run,
-            stack=active_stack,
-        )
-        step_runs: Dict[str, StepRunResponse] = {}
-
-        def _cache_step_run_if_possible(step_name: str) -> bool:
-            if not step_run_request_factory.has_caching_enabled(step_name):
-                return False
-
-            request = step_run_request_factory.create_request(step_name)
-            try:
-                step_run_request_factory.populate_request(
-                    request, step_runs=step_runs
-                )
-            except Exception as e:
-                logger.error(
-                    "Failed to populate step run request for step `%s`: %s",
-                    step_name,
-                    e,
-                )
-                return False
-
-            if request.status != ExecutionStatus.CACHED:
-                return False
-
-            step_run = publish_cached_step_run(request, pipeline_run)
-            step_runs[step_name] = step_run
-            logger.info("Using cached version of step `%s`.", step_name)
-            return True
-
-        def _step_environment(step_name: str) -> Dict[str, str]:
-            step = snapshot.step_configurations[step_name]
-            environment = shared_env.copy()
-            environment.update(
-                env_utils.get_runtime_environment(
-                    config=step.config, stack=active_stack
-                )
-            )
-            return environment
-
-        def _publish_step_sandbox_metadata(node: Node) -> bool:
-            sandbox_id = node.metadata.get(MODAL_SANDBOX_ID_METADATA_KEY)
-            if not sandbox_id:
-                return False
-
-            if node.metadata.get(NODE_METADATA_PUBLISHED_KEY):
-                return True
-
-            step_runs_page = client.list_run_steps(
-                name=node.id,
-                pipeline_run_id=pipeline_run.id,
-                hydrate=False,
-                exclude_retried=True,
-                size=1,
-            )
-            if not step_runs_page:
-                return False
-
-            step_run = step_runs_page[0]
-            metadata = orchestrator._step_sandbox_metadata(
-                cast(
-                    Any,
-                    orchestrator.get_settings(
-                        snapshot.step_configurations[node.id]
-                    ),
-                ),
-                str(sandbox_id),
-            )
-            publish_utils.publish_step_run_metadata(
-                step_run.id,
-                {orchestrator.id: metadata},
-            )
-            node.metadata[NODE_METADATA_PUBLISHED_KEY] = True
-            node.metadata[NODE_METADATA_STEP_RUN_ID_KEY] = str(step_run.id)
-            return True
-
-        def _handle_failed_sandbox(step_name: str) -> NodeStatus:
-            steps = client.list_run_steps(
-                name=step_name,
-                pipeline_run_id=pipeline_run.id,
-                hydrate=False,
-                exclude_retried=True,
-                size=1,
-            )
-            if steps:
-                step_run = steps[0]
-                if step_run.status.is_successful:
-                    logger.info(
-                        "Step `%s` is successful in ZenML even though its "
-                        "Modal sandbox returned a non-zero exit code.",
-                        step_name,
-                    )
-                    return NodeStatus.COMPLETED
-                return NodeStatus.FAILED
-
-            request = step_run_request_factory.create_request(step_name)
-            try:
-                step_run_request_factory.populate_request(
-                    request, step_runs=step_runs
-                )
-            except Exception as e:
-                logger.error(
-                    "Failed to populate failed step run request for `%s`: %s",
-                    step_name,
-                    e,
-                )
-                return NodeStatus.FAILED
-
-            request.status = ExecutionStatus.FAILED
-            request.end_time = utc_now()
-            try:
-                client.zen_store.create_run_step(request)
-            except Exception as e:
-                logger.error(
-                    "Failed to publish failed step run `%s`: %s", step_name, e
-                )
-            return NodeStatus.FAILED
-
-        def start_step_sandbox(node: Node) -> NodeStatus:
-            step_name = node.id
-            if _cache_step_run_if_possible(step_name):
-                return NodeStatus.COMPLETED
-
-            sandbox = orchestrator.create_static_step_sandbox(
+            active_stack=active_stack,
+            orchestrator=orchestrator,
+            client=client,
+            shared_env=shared_env,
+            step_run_request_factory=StepRunRequestFactory(
                 snapshot=snapshot,
-                step_name=step_name,
-                environment=_step_environment(step_name),
-            )
-            node.metadata[MODAL_SANDBOX_ID_METADATA_KEY] = sandbox.object_id
-            try:
-                publish_utils.publish_pipeline_run_metadata(
-                    pipeline_run.id,
-                    {
-                        orchestrator.id: {
-                            get_static_step_sandbox_metadata_key(
-                                step_name
-                            ): sandbox.object_id
-                        }
-                    },
-                )
-                pipeline_run.run_metadata[
-                    get_static_step_sandbox_metadata_key(step_name)
-                ] = sandbox.object_id
-                _publish_step_sandbox_metadata(node)
-            except Exception:
-                sandbox.terminate()
-                raise
-
-            logger.info(
-                "Started Modal sandbox `%s` for step `%s`.",
-                sandbox.object_id,
-                step_name,
-            )
-            return NodeStatus.RUNNING
-
-        def check_step_sandbox(node: Node) -> NodeStatus:
-            sandbox_id = node.metadata.get(MODAL_SANDBOX_ID_METADATA_KEY)
-            if not sandbox_id:
-                logger.error(
-                    "Missing Modal sandbox ID for step `%s`.", node.id
-                )
-                return NodeStatus.FAILED
-
-            _publish_step_sandbox_metadata(node)
-            status = sandbox_utils.get_sandbox_status(
-                str(sandbox_id), modal_client=orchestrator._get_modal_client()
-            )
-            if status == ExecutionStatus.COMPLETED:
-                return NodeStatus.COMPLETED
-            if status == ExecutionStatus.FAILED:
-                logger.error("Modal sandbox for step `%s` failed.", node.id)
-                return _handle_failed_sandbox(node.id)
-            return NodeStatus.RUNNING
-
-        def stop_step_sandbox(node: Node) -> None:
-            sandbox_id = node.metadata.get(MODAL_SANDBOX_ID_METADATA_KEY)
-            if not sandbox_id:
-                return
-            orchestrator._terminate_sandbox_if_running(
-                sandbox_id=str(sandbox_id),
-                description=f"static step `{node.id}`",
-            )
-
-        def should_interrupt_execution() -> Optional[InterruptMode]:
-            try:
-                run = client.get_pipeline_run(
-                    name_id_or_prefix=pipeline_run.id,
-                    project=pipeline_run.project_id,
-                    hydrate=False,
-                )
-            except Exception as e:
-                logger.warning(
-                    "Failed to check Modal pipeline run stop status: %s", e
-                )
-                return None
-
-            if run.status in {
-                ExecutionStatus.STOPPING,
-                ExecutionStatus.STOPPED,
-            }:
-                logger.info(
-                    "Stopping Modal DAG because pipeline run `%s` is `%s`.",
-                    pipeline_run.id,
-                    run.status,
-                )
-                return InterruptMode.FORCE
-
-            if run.status == ExecutionStatus.FAILED:
-                if (
-                    snapshot.pipeline_configuration.execution_mode
-                    == ExecutionMode.FAIL_FAST
-                ):
-                    return InterruptMode.FORCE
-                if (
-                    snapshot.pipeline_configuration.execution_mode
-                    == ExecutionMode.STOP_ON_FAILURE
-                ):
-                    return InterruptMode.GRACEFUL
-
-            return None
-
-        nodes = [
-            Node(id=step_name, upstream_nodes=step.spec.upstream_steps)
-            for step_name, step in snapshot.step_configurations.items()
-        ]
+                pipeline_run=pipeline_run,
+                stack=active_stack,
+            ),
+        )
         node_statuses = ModalDagRunner(
-            nodes=nodes,
-            node_startup_function=start_step_sandbox,
-            node_monitoring_function=check_step_sandbox,
-            node_stop_function=stop_step_sandbox,
-            interrupt_function=should_interrupt_execution,
+            nodes=controller.build_nodes(),
+            node_startup_function=controller.start_step_sandbox,
+            node_monitoring_function=controller.check_step_sandbox,
+            node_stop_function=controller.stop_step_sandbox,
+            interrupt_function=controller.should_interrupt_execution,
         ).run()
 
         self._finalize_pipeline_run(pipeline_run.id, node_statuses)
@@ -343,7 +376,7 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
 
     def _get_or_create_pipeline_run(
         self, *, snapshot_id: UUID, modal_run_id: str
-    ):
+    ) -> Any:
         """Create or update the ZenML pipeline run controlled by Modal."""
         snapshot = self.snapshot
         client = Client()
@@ -361,13 +394,6 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
         )
 
     @staticmethod
-    def _get_modal_app_name_from_environment() -> Optional[str]:
-        """Read the Modal app name from the controller environment."""
-        import os
-
-        return os.environ.get(ENV_ZENML_MODAL_APP_NAME)
-
-    @staticmethod
     def _finalize_pipeline_run(
         pipeline_run_id: UUID,
         node_statuses: Dict[str, NodeStatus],
@@ -383,55 +409,62 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
                 NodeStatus.CANCELLED,
             }
         ]
+        active_statuses = {
+            ExecutionStatus.INITIALIZING,
+            ExecutionStatus.PROVISIONING,
+            ExecutionStatus.RUNNING,
+        }
 
         try:
-            run = Client().get_pipeline_run(pipeline_run_id)
-            if run.status in {
-                ExecutionStatus.STOPPING,
-                ExecutionStatus.STOPPED,
-            }:
-                if run.status == ExecutionStatus.STOPPING:
-                    publish_utils.publish_pipeline_run_status_update(
-                        pipeline_run_id,
-                        ExecutionStatus.STOPPED,
+            client = Client()
+            run = client.get_pipeline_run(pipeline_run_id)
+
+            if run.status == ExecutionStatus.STOPPING:
+                publish_utils.publish_pipeline_run_status_update(
+                    pipeline_run_id,
+                    ExecutionStatus.STOPPED,
+                )
+                return
+            if run.status == ExecutionStatus.STOPPED:
+                return
+
+            if not failed_step_names:
+                if run.status in active_statuses:
+                    publish_utils.publish_successful_pipeline_run(
+                        pipeline_run_id
                     )
                 return
 
-            if failed_step_names:
-                logger.error(
-                    "The following Modal steps did not complete successfully: %s",
-                    ", ".join(failed_step_names),
-                )
-                step_runs = fetch_step_runs_by_names(
-                    step_run_names=failed_step_names,
-                    pipeline_run=Client().get_pipeline_run(pipeline_run_id),
-                )
-                for step_run in step_runs.values():
-                    if step_run.status in {
-                        ExecutionStatus.INITIALIZING,
-                        ExecutionStatus.RUNNING,
-                    }:
-                        publish_utils.publish_failed_step_run(step_run.id)
-
-                run = Client().get_pipeline_run(pipeline_run_id)
-                if run.status in {
+            logger.error(
+                "The following Modal steps did not complete successfully: %s",
+                ", ".join(failed_step_names),
+            )
+            step_runs = fetch_step_runs_by_names(
+                step_run_names=failed_step_names,
+                pipeline_run=run,
+            )
+            for step_run in step_runs.values():
+                if step_run.status in {
                     ExecutionStatus.INITIALIZING,
-                    ExecutionStatus.PROVISIONING,
                     ExecutionStatus.RUNNING,
                 }:
-                    publish_utils.publish_failed_pipeline_run(pipeline_run_id)
-                raise RuntimeError(
-                    "Modal steps did not complete successfully: "
-                    + ", ".join(failed_step_names)
-                )
+                    publish_utils.publish_failed_step_run(step_run.id)
 
-            run = Client().get_pipeline_run(pipeline_run_id)
-            if run.status in {
-                ExecutionStatus.INITIALIZING,
-                ExecutionStatus.PROVISIONING,
-                ExecutionStatus.RUNNING,
-            }:
-                publish_utils.publish_successful_pipeline_run(pipeline_run_id)
+            refreshed_run = client.get_pipeline_run(pipeline_run_id)
+            if refreshed_run.status == ExecutionStatus.STOPPING:
+                publish_utils.publish_pipeline_run_status_update(
+                    pipeline_run_id,
+                    ExecutionStatus.STOPPED,
+                )
+                return
+            if refreshed_run.status == ExecutionStatus.STOPPED:
+                return
+            if refreshed_run.status in active_statuses:
+                publish_utils.publish_failed_pipeline_run(pipeline_run_id)
+            raise RuntimeError(
+                "Modal steps did not complete successfully: "
+                + ", ".join(failed_step_names)
+            )
         except AuthorizationException:
             if failed_step_names:
                 raise RuntimeError(

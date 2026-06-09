@@ -13,8 +13,9 @@
 #  permissions and limitations under the License.
 """Modal step operator implementation."""
 
-import threading
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
+
+import modal
 
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
@@ -38,7 +39,6 @@ logger = get_logger(__name__)
 
 # Keep the Modal SDK module visible from this module for existing tests and
 # downstream code that monkeypatches it through the legacy step operator path.
-modal = sandbox_utils.modal
 
 MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY = "modal_step_operator"
 STEP_SANDBOX_ID_METADATA_KEY = "sandbox_id"
@@ -72,22 +72,14 @@ class ModalStepOperator(BaseStepOperator):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize the Modal step operator."""
         super().__init__(*args, **kwargs)
-        self._modal_client: Optional["modal.Client"] = None
-        self._modal_client_lock = threading.Lock()
+        self._modal_client_factory = sandbox_utils.ModalClientFactory(
+            get_token_id=lambda: self.config.token_id,
+            get_token_secret=lambda: self.config.token_secret,
+        )
 
     def _get_modal_client(self) -> Optional["modal.Client"]:
         """Get an explicit Modal client when credentials are configured."""
-        return sandbox_utils.get_modal_client(
-            get_token_id=lambda: self.config.token_id,
-            get_token_secret=lambda: self.config.token_secret,
-            get_cached_client=lambda: self._modal_client,
-            set_cached_client=self._set_modal_client,
-            lock=self._modal_client_lock,
-        )
-
-    def _set_modal_client(self, modal_client: "modal.Client") -> None:
-        """Cache an explicit Modal client."""
-        self._modal_client = modal_client
+        return self._modal_client_factory.get_client()
 
     @property
     def config(self) -> ModalStepOperatorConfig:
