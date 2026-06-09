@@ -383,6 +383,41 @@ def test_force_stop_stops_resource_created_by_starting_node() -> None:
     assert statuses == {"train": NodeStatus.CANCELLED}
 
 
+def test_force_stop_raises_when_late_starting_node_cleanup_fails() -> None:
+    startup_started = threading.Event()
+    finish_startup = threading.Event()
+
+    def start_node(node: Node) -> NodeStatus:
+        startup_started.set()
+        assert finish_startup.wait(timeout=5)
+        node.metadata["sandbox_id"] = "sandbox-created-during-startup"
+        return NodeStatus.RUNNING
+
+    def monitor_node(node: Node) -> NodeStatus:
+        return node.status
+
+    def stop_node(node: Node) -> None:
+        raise RuntimeError("late cleanup failed")
+
+    def interrupt() -> InterruptMode | None:
+        if startup_started.is_set():
+            finish_startup.set()
+            return InterruptMode.FORCE
+        return None
+
+    with pytest.raises(RuntimeError, match="late cleanup failed"):
+        DagRunner(
+            nodes=[Node(id="train")],
+            node_startup_function=start_node,
+            node_monitoring_function=monitor_node,
+            node_stop_function=stop_node,
+            interrupt_function=interrupt,
+            interrupt_check_interval=0,
+            monitoring_interval=0.01,
+            max_parallelism=1,
+        ).run()
+
+
 def test_force_stop_times_out_waiting_for_hung_startup() -> None:
     startup_started = threading.Event()
     release_startup = threading.Event()

@@ -139,7 +139,7 @@ class _StaticModalPipelineController:
         self._publish_step_sandbox_metadata(node)
         status = sandbox_utils.get_sandbox_status(
             str(sandbox_id),
-            modal_client=self.orchestrator._get_modal_client(),
+            modal_client=self.orchestrator.get_modal_client(),
         )
         if status == ExecutionStatus.COMPLETED:
             return NodeStatus.COMPLETED
@@ -153,7 +153,7 @@ class _StaticModalPipelineController:
         sandbox_id = node.metadata.get(MODAL_SANDBOX_ID_METADATA_KEY)
         if not sandbox_id:
             return
-        self.orchestrator._terminate_sandbox_if_running(
+        self.orchestrator.terminate_sandbox_if_running(
             sandbox_id=str(sandbox_id),
             description=f"static step `{node.id}`",
         )
@@ -239,7 +239,7 @@ class _StaticModalPipelineController:
             return False
 
         step_run = step_runs_page[0]
-        metadata = self.orchestrator._step_sandbox_metadata(
+        metadata = self.orchestrator.get_step_sandbox_metadata(
             cast(
                 Any,
                 self.orchestrator.get_settings(

@@ -83,9 +83,9 @@ ZenML builds and pushes the image, submits the orchestration sandbox to Modal, a
 
 ## Static and dynamic pipeline behavior
 
-For a **static pipeline**, ZenML submits one Modal orchestration sandbox. Inside that sandbox, ZenML follows the step dependency graph and starts one child Modal sandbox for each step once its upstream steps have completed. If a step can be loaded from cache, the controller records the cached step run instead of starting a new Modal sandbox for that step.
+For a **static pipeline**, ZenML submits one Modal orchestration sandbox. Inside that sandbox, ZenML follows the step dependency graph and starts one child Modal sandbox for each step once its upstream steps have completed. If a step can be loaded from cache, the controller records the cached step run instead of starting a new Modal sandbox for that step. Static Modal pipelines support all three ZenML execution modes: `FAIL_FAST`, `STOP_ON_FAILURE`, and `CONTINUE_ON_FAILURE`.
 
-For a **dynamic pipeline**, ZenML submits one Modal orchestration sandbox that runs ZenML's dynamic pipeline entrypoint. Dynamic steps can run in two ways:
+For a **dynamic pipeline**, ZenML submits one Modal orchestration sandbox that runs ZenML's dynamic pipeline entrypoint. Dynamic Modal pipelines still follow ZenML's current dynamic pipeline limitation: `CONTINUE_ON_FAILURE` behaves like `STOP_ON_FAILURE`, so after a dynamic step fails, ZenML does not keep launching later independent dynamic steps. Dynamic steps can run in two ways:
 
 * Steps that need isolation run as child Modal sandboxes. This includes steps with a step operator, step-level resource settings, or step-level Docker settings that differ from the pipeline image.
 * Steps that do not need isolation can run inside the dynamic orchestration sandbox process.

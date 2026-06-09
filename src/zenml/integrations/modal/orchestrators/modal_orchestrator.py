@@ -115,9 +115,13 @@ def get_static_step_sandbox_metadata_key(step_name: str) -> str:
 def _status_after_stop_request(
     sandbox_status: ExecutionStatus, zenml_status: ExecutionStatus
 ) -> ExecutionStatus:
-    """Map terminal sandbox states to stopped after ZenML requested a stop."""
-    if zenml_status == ExecutionStatus.STOPPING and sandbox_status.is_finished:
+    """Preserve ZenML stop-request states while polling Modal sandboxes."""
+    if zenml_status == ExecutionStatus.STOPPED:
         return ExecutionStatus.STOPPED
+    if zenml_status == ExecutionStatus.STOPPING:
+        if sandbox_status.is_finished:
+            return ExecutionStatus.STOPPED
+        return ExecutionStatus.STOPPING
     return sandbox_status
 
 
@@ -200,8 +204,8 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             custom_validation_function=_validate_remote_components,
         )
 
-    def _get_modal_client(self) -> Optional["modal.Client"]:
-        """Get an explicit Modal client when credentials are configured."""
+    def get_modal_client(self) -> Optional["modal.Client"]:
+        """Get the Modal client used by orchestrator entrypoints."""
         return self._modal_client_factory.get_client()
 
     def get_orchestrator_run_id(self) -> str:
@@ -329,7 +333,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         sandbox_environment[ENV_ZENML_MODAL_RUN_ID] = modal_run_id
         sandbox_environment[ENV_ZENML_MODAL_APP_NAME] = app_name
 
-        modal_client = self._get_modal_client()
+        modal_client = self.get_modal_client()
         zenml_image = sandbox_utils.get_modal_image_from_registry(
             image_name, stack.container_registry.credentials
         )
@@ -430,7 +434,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             entrypoint_command=command + args,
         )
 
-        metadata = self._step_sandbox_metadata(settings, sandbox.object_id)
+        metadata = self.get_step_sandbox_metadata(settings, sandbox.object_id)
         try:
             publish_step_run_metadata(
                 step_run_info.step_run_id,
@@ -496,7 +500,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         modal_environment = sandbox_utils.normalize_optional_config_value(
             settings.modal_environment
         )
-        modal_client = self._get_modal_client()
+        modal_client = self.get_modal_client()
         zenml_image = sandbox_utils.get_modal_image_from_registry(
             image_name, stack.container_registry.credentials
         )
@@ -517,10 +521,10 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         )
 
     @staticmethod
-    def _step_sandbox_metadata(
+    def get_step_sandbox_metadata(
         settings: ModalOrchestratorSettings, sandbox_id: str
     ) -> Dict[str, MetadataType]:
-        """Build metadata for a step sandbox."""
+        """Build step sandbox metadata for orchestrator entrypoints."""
         metadata: Dict[str, MetadataType] = {
             MODAL_SANDBOX_ID_METADATA_KEY: sandbox_id
         }
@@ -546,7 +550,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             return step_run.status
 
         status = sandbox_utils.get_sandbox_status(
-            sandbox_id, modal_client=self._get_modal_client()
+            sandbox_id, modal_client=self.get_modal_client()
         )
         return _status_after_stop_request(status, step_run.status)
 
@@ -562,7 +566,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             )
             return
 
-        self._terminate_sandbox_if_running(
+        self.terminate_sandbox_if_running(
             sandbox_id=sandbox_id,
             description=f"step run `{step_run.id}`",
         )
@@ -580,7 +584,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         if sandbox_id and not run.status.is_finished:
             try:
                 status = sandbox_utils.get_sandbox_status(
-                    sandbox_id, modal_client=self._get_modal_client()
+                    sandbox_id, modal_client=self.get_modal_client()
                 )
             except Exception as e:
                 logger.warning(
@@ -632,7 +636,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
                 try:
                     status = sandbox_utils.get_sandbox_status(
                         step_sandbox_id,
-                        modal_client=self._get_modal_client(),
+                        modal_client=self.get_modal_client(),
                     )
                     step_statuses[step_name] = _status_after_stop_request(
                         status, step_run.status
@@ -665,7 +669,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
                     continue
                 attempted_child_sandbox_ids.add(sandbox_id)
                 try:
-                    self._terminate_sandbox_if_running(
+                    self.terminate_sandbox_if_running(
                         sandbox_id=sandbox_id,
                         description=(
                             f"child sandbox `{sandbox_id}` for run `{run.id}`"
@@ -692,7 +696,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
 
             attempted_orchestration_sandbox_ids.add(orchestration_sandbox_id)
             try:
-                self._terminate_sandbox_if_running(
+                self.terminate_sandbox_if_running(
                     sandbox_id=orchestration_sandbox_id,
                     description=f"orchestration sandbox for run `{run.id}`",
                 )
@@ -753,12 +757,12 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         )
         return child_sandbox_ids
 
-    def _terminate_sandbox_if_running(
+    def terminate_sandbox_if_running(
         self, *, sandbox_id: str, description: str
     ) -> None:
-        """Terminate a Modal sandbox only when it is still running."""
+        """Terminate a running Modal sandbox for an orchestrator entrypoint."""
         sandbox = sandbox_utils.get_sandbox_by_id(
-            sandbox_id, modal_client=self._get_modal_client()
+            sandbox_id, modal_client=self.get_modal_client()
         )
         if sandbox.poll() is not None:
             logger.debug(

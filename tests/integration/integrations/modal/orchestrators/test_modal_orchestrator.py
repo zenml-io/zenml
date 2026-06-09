@@ -665,6 +665,25 @@ def test_fetch_status_maps_terminal_sandbox_to_stopped_for_stopping_run(
     assert step_statuses is None
 
 
+def test_fetch_status_keeps_stopping_for_running_sandbox(monkeypatch):
+    from_id_sandboxes = {
+        "orchestrator-sandbox": SandboxStub("orchestrator-sandbox", [None]),
+    }
+    _install_modal_sdk_stubs(monkeypatch, from_id_sandboxes=from_id_sandboxes)
+    run = SimpleNamespace(
+        id=uuid4(),
+        status=ExecutionStatus.STOPPING,
+        run_metadata={
+            MODAL_ORCHESTRATION_SANDBOX_ID_METADATA_KEY: "orchestrator-sandbox"
+        },
+    )
+
+    pipeline_status, step_statuses = _make_orchestrator().fetch_status(run)
+
+    assert pipeline_status == ExecutionStatus.STOPPING
+    assert step_statuses is None
+
+
 def test_isolated_step_status_maps_terminal_sandbox_to_stopped(monkeypatch):
     from_id_sandboxes = {
         "step-sandbox": SandboxStub("step-sandbox", [1]),
@@ -673,6 +692,40 @@ def test_isolated_step_status_maps_terminal_sandbox_to_stopped(monkeypatch):
     step_run = SimpleNamespace(
         id=uuid4(),
         status=ExecutionStatus.STOPPING,
+        run_metadata={MODAL_SANDBOX_ID_METADATA_KEY: "step-sandbox"},
+    )
+
+    assert (
+        _make_orchestrator().get_isolated_step_status(step_run)
+        == ExecutionStatus.STOPPED
+    )
+
+
+def test_isolated_step_status_keeps_stopping_for_running_sandbox(monkeypatch):
+    from_id_sandboxes = {
+        "step-sandbox": SandboxStub("step-sandbox", [None]),
+    }
+    _install_modal_sdk_stubs(monkeypatch, from_id_sandboxes=from_id_sandboxes)
+    step_run = SimpleNamespace(
+        id=uuid4(),
+        status=ExecutionStatus.STOPPING,
+        run_metadata={MODAL_SANDBOX_ID_METADATA_KEY: "step-sandbox"},
+    )
+
+    assert (
+        _make_orchestrator().get_isolated_step_status(step_run)
+        == ExecutionStatus.STOPPING
+    )
+
+
+def test_isolated_step_status_keeps_stopped_for_running_sandbox(monkeypatch):
+    from_id_sandboxes = {
+        "step-sandbox": SandboxStub("step-sandbox", [None]),
+    }
+    _install_modal_sdk_stubs(monkeypatch, from_id_sandboxes=from_id_sandboxes)
+    step_run = SimpleNamespace(
+        id=uuid4(),
+        status=ExecutionStatus.STOPPED,
         run_metadata={MODAL_SANDBOX_ID_METADATA_KEY: "step-sandbox"},
     )
 
@@ -1031,7 +1084,7 @@ def test_static_controller_failed_sandbox_respects_successful_step_run(
         monkeypatch,
         listed_step_runs=[step_run],
     )
-    setup.orchestrator._get_modal_client = lambda: "modal-client"
+    setup.orchestrator.get_modal_client = lambda: "modal-client"
     monkeypatch.setattr(
         modal_entrypoint_module.sandbox_utils,
         "get_sandbox_status",
@@ -1054,7 +1107,7 @@ def test_static_controller_failed_sandbox_publishes_failed_step_run(
     monkeypatch,
 ):
     setup = _make_static_controller(monkeypatch, listed_step_runs=[])
-    setup.orchestrator._get_modal_client = lambda: "modal-client"
+    setup.orchestrator.get_modal_client = lambda: "modal-client"
     monkeypatch.setattr(
         modal_entrypoint_module.sandbox_utils,
         "get_sandbox_status",

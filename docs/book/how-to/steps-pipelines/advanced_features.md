@@ -185,7 +185,7 @@ If steps 2, 3, and 4 execute in parallel and step 2 fails:
 - With `CONTINUE_ON_FAILURE`: Step 1 finishes → Steps 2,3,4 start → Step 2 fails, Steps 3, 4 complete → Step 5 skipped (depends on failed Step 2), Steps 6, 7 run normally → Step 8 is skipped as well.
 
 {% hint style="info" %}
-All three execution modes are currently only supported by the `local`, `local_docker`, `kubernetes`, and `modal` orchestrator flavors. For any other orchestrator flavor, the default (and only available) behavior is `CONTINUE_ON_FAILURE`. If you would like to see any of the other orchestrators extended to support the other execution modes, reach out to us in [Slack](https://zenml.io/slack-invite).
+All three execution modes are currently only supported by the `local`, `local_docker`, `kubernetes`, and `modal` orchestrator flavors. For Modal, this support applies to static pipelines. Dynamic Modal pipelines still follow the current dynamic pipeline limitation: `CONTINUE_ON_FAILURE` behaves like `STOP_ON_FAILURE`, so once a dynamic step fails, ZenML does not keep launching later independent dynamic steps. For any other orchestrator flavor, the default (and only available) behavior is `CONTINUE_ON_FAILURE`. If you would like to see any of the other orchestrators extended to support the other execution modes, reach out to us in [Slack](https://zenml.io/slack-invite).
 {% endhint %}
 
 ### Step Heartbeat

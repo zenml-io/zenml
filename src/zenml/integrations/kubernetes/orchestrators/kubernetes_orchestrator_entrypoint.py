@@ -800,6 +800,8 @@ def main() -> None:
                     )
                     return InterruptMode.GRACEFUL
                 elif run.status == ExecutionStatus.FAILED:
+                    # The DAG runner can miss failures published before
+                    # Kubernetes reports the step job as terminal.
                     if (
                         snapshot.pipeline_configuration.execution_mode
                         == ExecutionMode.STOP_ON_FAILURE

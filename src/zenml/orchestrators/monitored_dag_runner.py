@@ -163,6 +163,7 @@ class DagRunner:
         self._disabled_new_start_status: Optional[NodeStatus] = None
         self._force_stop_requested = False
         self._stop_attempted_node_ids: set[str] = set()
+        self._stop_errors: List[str] = []
         worker_count = handle_int_env_var(
             ENV_ZENML_DAG_RUNNER_WORKER_COUNT, 10
         )
@@ -277,7 +278,7 @@ class DagRunner:
                 ):
                     with self._node_state_lock:
                         node.status = NodeStatus.RUNNING
-                    self._stop_node_after_interrupt(node, [])
+                    self._stop_node_after_interrupt(node)
                     return
 
                 with self._node_state_lock:
@@ -363,9 +364,12 @@ class DagRunner:
             self._disable_new_starts(NodeStatus.CANCELLED)
             self._force_stop_requested = True
 
-    def _stop_node_after_interrupt(
-        self, node: Node, errors: List[str]
-    ) -> None:
+    def _record_stop_error(self, message: str) -> None:
+        """Record an error that should make the DAG runner fail."""
+        with self._node_state_lock:
+            self._stop_errors.append(message)
+
+    def _stop_node_after_interrupt(self, node: Node) -> None:
         """Stop one node after an interrupt and record stop errors."""
         if node.id in self._stop_attempted_node_ids:
             with self._node_state_lock:
@@ -376,13 +380,13 @@ class DagRunner:
         try:
             self._stop_node(node)
         except Exception as e:
-            errors.append(f"Failed to stop node `{node.id}`: {e}")
+            self._record_stop_error(f"Failed to stop node `{node.id}`: {e}")
             logger.exception("Failed to stop node `%s`.", node.id)
         else:
             with self._node_state_lock:
                 node.status = NodeStatus.CANCELLED
 
-    def _stop_starting_nodes(self, errors: List[str]) -> None:
+    def _stop_starting_nodes(self) -> None:
         """Stop nodes whose startup function may have created resources."""
         for node in list(self.nodes.values()):
             if node.status != NodeStatus.STARTING:
@@ -405,10 +409,10 @@ class DagRunner:
                         "force stop. ZenML could not confirm whether a "
                         "backend resource was created or stopped."
                     )
-                    errors.append(message)
+                    self._record_stop_error(message)
                     logger.error(message)
                     if self.node_stop_function and node.metadata:
-                        self._stop_node_after_interrupt(node, errors)
+                        self._stop_node_after_interrupt(node)
                     if not node.is_finished:
                         node.status = NodeStatus.CANCELLED
                     continue
@@ -419,18 +423,17 @@ class DagRunner:
                     )
 
             if node.status == NodeStatus.RUNNING:
-                self._stop_node_after_interrupt(node, errors)
+                self._stop_node_after_interrupt(node)
             elif not node.is_finished:
                 node.status = NodeStatus.CANCELLED
 
     def _stop_all_nodes(self) -> List[str]:
         """Stop nodes that are running or still starting."""
-        errors: List[str] = []
         self._cancel_queued_nodes()
-        self._stop_starting_nodes(errors)
+        self._stop_starting_nodes()
         for node in self.running_nodes:
-            self._stop_node_after_interrupt(node, errors)
-        return errors
+            self._stop_node_after_interrupt(node)
+        return self._stop_errors
 
     def _process_nodes(self) -> bool:
         """Process the nodes.
@@ -566,6 +569,8 @@ class DagRunner:
         self._force_stopping = (
             interrupt_mode == InterruptMode.FORCE or self._force_stop_requested
         )
+        with self._node_state_lock:
+            self._stop_errors = []
         self.shutdown_event.set()
         stop_errors: List[str] = []
         if self._force_stopping:
