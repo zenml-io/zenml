@@ -47,6 +47,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 _otel_configured = False
+_otel_log_handler: Optional[logging.Handler] = None
 
 # list of OTel providers, logger, tracer, meter, to shutdown on server exit.
 _otel_providers: list[Any] = []
@@ -137,11 +138,12 @@ def configure_otel(app: "FastAPI") -> None:
 
 def shutdown_otel() -> None:
     """Flush and shut down OpenTelemetry providers configured by ZenML."""
-    global _otel_configured
+    global _otel_configured, _otel_log_handler
 
     # If OTel is not configured, return early.
     if (
         not _otel_configured
+        and not _otel_log_handler
         and not _otel_providers
         and not _otel_uninstrument_callbacks
     ):
@@ -158,6 +160,13 @@ def shutdown_otel() -> None:
             )
     # Empty the list of uninstrument callbacks.
     _otel_uninstrument_callbacks.clear()
+
+    # Remove the OTel log handler from the root logger.
+    if _otel_log_handler:
+        root_logger = logging.getLogger()
+        root_logger.removeHandler(_otel_log_handler)
+        _otel_log_handler.close()
+        _otel_log_handler = None
 
     # Shut down the OTel providers.
     for provider in reversed(_otel_providers):
@@ -258,6 +267,8 @@ def _configure_logs(
     Returns:
         True if log export was configured, otherwise False.
     """
+    global _otel_log_handler
+
     if not endpoint:
         logger.debug("OpenTelemetry log export is disabled.")
         return False
@@ -267,7 +278,6 @@ def _configure_logs(
         from opentelemetry.exporter.otlp.proto.http._log_exporter import (
             OTLPLogExporter,
         )
-        from opentelemetry.instrumentation.logging import LoggingInstrumentor
         from opentelemetry.instrumentation.logging.handler import (
             LoggingHandler,
         )
@@ -280,38 +290,24 @@ def _configure_logs(
         )
         set_logger_provider(logger_provider)
 
-        log_handler_level = get_logging_level().value
-        logging_instrumentor = LoggingInstrumentor()
-
-        # LoggingInstrumentor can either rewrite stdlib logging formatting for
-        # trace correlation or attach an OTLP export handler. ZenML Logger module
-        # already owns console formatting and root logger verbosity, so we only use
-        # the export handler and configure its level/filters explicitly below.
-        #
-        # Setting the ``set_logging_format=False`` disables the automatic formatting
-        # of the log record by the LoggingInstrumentor. This is important because we
-        # want to use our own formatter and root logger verbosity.
-        #
-        # ``enable_log_auto_instrumentation=True`` adds OTel Log Handler to the root logger.
-        logging_instrumentor.instrument(
-            enable_log_auto_instrumentation=True,
+        otel_handler = LoggingHandler(
+            level=get_logging_level().value,
+            logger_provider=logger_provider,
             log_code_attributes=True,
-            set_logging_format=False,
         )
+        # Attach the ZenML filters that add structlog contextvars
+        # and step name to the log record to the OTel handler.
+        add_zenml_filters(otel_handler)
 
-        # Edit the OTel Log Handler level and add our context filters to it.
+        # Attach the OTel handler to the root logger.
+        # init_logging() attaches ZenML's console and log-storage handlers to
+        # the root logger, and server startup configures uvicorn to propagate
+        # there too. Attach OTel to the same logger so one logging pipeline
+        # exports ZenML, uvicorn, and third-party records with the same filters.
         root_logger = logging.getLogger()
-        for handler in root_logger.handlers:
-            if isinstance(handler, LoggingHandler):
-                # OTel creates its handler at NOTSET, so we apply our logging verbosity
-                # and context filters after instrumentation.
-                handler.setLevel(log_handler_level)
+        root_logger.addHandler(otel_handler)
 
-                # add zenml contextvars and step filters to the otel logging handler
-                # to attach ZenML context to the log record
-                add_zenml_filters(handler)
-
-        _otel_uninstrument_callbacks.append(logging_instrumentor.uninstrument)
+        _otel_log_handler = otel_handler
         _otel_providers.append(logger_provider)
         return True
     except Exception:
