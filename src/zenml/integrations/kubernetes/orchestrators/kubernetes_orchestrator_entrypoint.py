@@ -838,6 +838,7 @@ def main() -> None:
                 interrupt_check_interval=pipeline_settings.interrupt_check_interval,
                 max_parallelism=pipeline_settings.max_parallelism,
                 node_stop_function=stop_step,
+                execution_mode=snapshot.pipeline_configuration.execution_mode,
             ).run()
         finally:
             if (

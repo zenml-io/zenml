@@ -32,6 +32,7 @@ from zenml.constants import (
     ENV_ZENML_DAG_RUNNER_WORKER_COUNT,
     handle_int_env_var,
 )
+from zenml.enums import ExecutionMode
 from zenml.logger import get_logger
 from zenml.utils.enum_utils import StrEnum
 
@@ -113,6 +114,7 @@ class DagRunner:
         interrupt_check_interval: float = 1.0,
         max_parallelism: Optional[int] = None,
         starting_node_stop_timeout: float = STARTING_NODE_STOP_TIMEOUT_SECONDS,
+        execution_mode: ExecutionMode = ExecutionMode.CONTINUE_ON_FAILURE,
     ) -> None:
         """Initialize the DAG runner.
 
@@ -131,6 +133,8 @@ class DagRunner:
             max_parallelism: The maximum number of nodes to run in parallel.
             starting_node_stop_timeout: Seconds to wait for a starting node to
                 finish startup during force-stop cleanup.
+            execution_mode: The ZenML execution mode to apply after node
+                failures are observed.
         """
         self.nodes = {node.id: node for node in nodes}
         self.startup_queue: queue.Queue[Node] = queue.Queue()
@@ -150,9 +154,14 @@ class DagRunner:
         self.interrupt_check_interval = interrupt_check_interval
         self.max_parallelism = max_parallelism
         self.starting_node_stop_timeout = starting_node_stop_timeout
+        self.execution_mode = execution_mode
         self.shutdown_event = threading.Event()
+        self._node_state_lock = threading.RLock()
         self._startup_stop_timed_out = False
         self._force_stopping = False
+        self._failure_observed = False
+        self._disabled_new_start_status: Optional[NodeStatus] = None
+        self._force_stop_requested = False
         self._stop_attempted_node_ids: set[str] = set()
         worker_count = handle_int_env_var(
             ENV_ZENML_DAG_RUNNER_WORKER_COUNT, 10
@@ -236,11 +245,12 @@ class DagRunner:
         Args:
             node: The node to start.
         """
-        if self.shutdown_event.is_set():
-            node.status = NodeStatus.CANCELLED
-            return
+        with self._node_state_lock:
+            if self.shutdown_event.is_set():
+                node.status = NodeStatus.CANCELLED
+                return
 
-        node.status = NodeStatus.STARTING
+            node.status = NodeStatus.STARTING
 
         def _start_node_task() -> None:
             if self.shutdown_event.is_set():
@@ -249,13 +259,15 @@ class DagRunner:
                     "requested.",
                     node.id,
                 )
-                node.status = NodeStatus.CANCELLED
+                with self._node_state_lock:
+                    node.status = NodeStatus.CANCELLED
                 return
 
             try:
                 status = self.node_startup_function(node)
             except Exception:
-                node.status = NodeStatus.FAILED
+                with self._node_state_lock:
+                    node.status = NodeStatus.FAILED
                 logger.exception("Node `%s` failed to start.", node.id)
             else:
                 if (
@@ -263,11 +275,13 @@ class DagRunner:
                     and self.shutdown_event.is_set()
                     and status == NodeStatus.RUNNING
                 ):
-                    node.status = NodeStatus.RUNNING
+                    with self._node_state_lock:
+                        node.status = NodeStatus.RUNNING
                     self._stop_node_after_interrupt(node, [])
                     return
 
-                node.status = status
+                with self._node_state_lock:
+                    node.status = status
                 logger.info(
                     "Node `%s` started (status: %s)", node.id, node.status
                 )
@@ -291,8 +305,18 @@ class DagRunner:
 
         self.node_stop_function(node)
 
-    def _cancel_queued_nodes(self) -> None:
-        """Cancel nodes that were ready but never started."""
+    def _disable_new_starts(
+        self, unstarted_node_terminal_status: NodeStatus
+    ) -> None:
+        """Prevent new node starts and finish unstarted nodes."""
+        if self._disabled_new_start_status is not None:
+            return
+
+        self._disabled_new_start_status = unstarted_node_terminal_status
+        self._finish_unstarted_nodes(unstarted_node_terminal_status)
+
+    def _finish_unstarted_nodes(self, status: NodeStatus) -> None:
+        """Mark nodes that have not created backend resources as terminal."""
         while True:
             try:
                 node = self.startup_queue.get_nowait()
@@ -300,18 +324,52 @@ class DagRunner:
                 break
             self.startup_queue.task_done()
             if node.status == NodeStatus.READY:
-                node.status = NodeStatus.CANCELLED
+                node.status = status
 
         for node in self.nodes.values():
-            if node.status == NodeStatus.READY:
-                node.status = NodeStatus.CANCELLED
+            if node.status in {NodeStatus.NOT_READY, NodeStatus.READY}:
+                node.status = status
+
+    def _cancel_queued_nodes(self) -> None:
+        """Cancel nodes that never started."""
+        self._finish_unstarted_nodes(NodeStatus.CANCELLED)
+
+    def _apply_failure_policy(self) -> None:
+        """Apply the configured execution mode after a node failure."""
+        if self._failure_observed:
+            return
+        if not any(
+            node.status == NodeStatus.FAILED for node in self.nodes.values()
+        ):
+            return
+
+        self._failure_observed = True
+        if self._disabled_new_start_status is not None:
+            return
+
+        if self.execution_mode == ExecutionMode.STOP_ON_FAILURE:
+            logger.info(
+                "Disabling new DAG node starts after a node failure. Active "
+                "nodes will continue because execution mode is `%s`.",
+                self.execution_mode,
+            )
+            self._disable_new_starts(NodeStatus.SKIPPED)
+        elif self.execution_mode == ExecutionMode.FAIL_FAST:
+            logger.info(
+                "Force-stopping active DAG nodes after a node failure because "
+                "execution mode is `%s`.",
+                self.execution_mode,
+            )
+            self._disable_new_starts(NodeStatus.CANCELLED)
+            self._force_stop_requested = True
 
     def _stop_node_after_interrupt(
         self, node: Node, errors: List[str]
     ) -> None:
         """Stop one node after an interrupt and record stop errors."""
         if node.id in self._stop_attempted_node_ids:
-            node.status = NodeStatus.CANCELLED
+            with self._node_state_lock:
+                node.status = NodeStatus.CANCELLED
             return
 
         self._stop_attempted_node_ids.add(node.id)
@@ -321,7 +379,8 @@ class DagRunner:
             errors.append(f"Failed to stop node `{node.id}`: {e}")
             logger.exception("Failed to stop node `%s`.", node.id)
         else:
-            node.status = NodeStatus.CANCELLED
+            with self._node_state_lock:
+                node.status = NodeStatus.CANCELLED
 
     def _stop_starting_nodes(self, errors: List[str]) -> None:
         """Stop nodes whose startup function may have created resources."""
@@ -382,35 +441,52 @@ class DagRunner:
         Returns:
             Whether the DAG is finished.
         """
-        finished = True
+        with self._node_state_lock:
+            self._apply_failure_policy()
 
-        for node in self.nodes.values():
-            if node.status == NodeStatus.NOT_READY:
-                if self._should_skip_node(node):
-                    node.status = NodeStatus.SKIPPED
-                    logger.warning(
-                        "Skipping node `%s` because upstream node failed.",
-                        node.id,
-                    )
-                elif self._can_start_node(node):
-                    node.status = NodeStatus.READY
-                    self.startup_queue.put(node)
+            finished = True
 
-            if not node.is_finished:
-                finished = False
+            for node in self.nodes.values():
+                if (
+                    self._disabled_new_start_status is None
+                    and node.status == NodeStatus.NOT_READY
+                ):
+                    if self._should_skip_node(node):
+                        node.status = NodeStatus.SKIPPED
+                        logger.warning(
+                            "Skipping node `%s` because upstream node failed.",
+                            node.id,
+                        )
+                    elif self._can_start_node(node):
+                        node.status = NodeStatus.READY
+                        self.startup_queue.put(node)
 
-        # Start nodes until we reach the maximum configured parallelism
-        max_parallelism = self.max_parallelism or len(self.nodes)
-        while len(self.active_nodes) < max_parallelism:
-            try:
-                node = self.startup_queue.get_nowait()
-            except queue.Empty:
-                break
-            else:
-                self.startup_queue.task_done()
-                self._start_node(node)
+                if not node.is_finished:
+                    finished = False
 
-        return finished
+            self._apply_failure_policy()
+            if self._disabled_new_start_status is not None:
+                return finished
+
+            # Start nodes until we reach the maximum configured parallelism
+            max_parallelism = self.max_parallelism or len(self.nodes)
+            while len(self.active_nodes) < max_parallelism:
+                self._apply_failure_policy()
+                if self._disabled_new_start_status is not None:
+                    return finished
+
+                try:
+                    node = self.startup_queue.get_nowait()
+                except queue.Empty:
+                    break
+                else:
+                    self.startup_queue.task_done()
+                    self._apply_failure_policy()
+                    if self._disabled_new_start_status is not None:
+                        return finished
+                    self._start_node(node)
+
+            return finished
 
     def _monitoring_loop(self) -> None:
         """Monitoring loop.
@@ -419,22 +495,30 @@ class DagRunner:
         """
         while not self.shutdown_event.is_set():
             start_time = time.time()
-            for node in self.running_nodes:
+            with self._node_state_lock:
+                running_nodes = self.running_nodes
+
+            for node in running_nodes:
                 try:
-                    node.status = self.node_monitoring_function(node)
+                    status = self.node_monitoring_function(node)
                 except Exception:
-                    node.status = NodeStatus.FAILED
+                    status = NodeStatus.FAILED
                     logger.exception("Node `%s` failed.", node.id)
-                else:
-                    logger.debug(
-                        "Node `%s` status updated to `%s`",
-                        node.id,
-                        node.status,
-                    )
-                    if node.status == NodeStatus.FAILED:
-                        logger.error("Node `%s` failed.", node.id)
-                    elif node.status == NodeStatus.COMPLETED:
-                        logger.info("Node `%s` completed.", node.id)
+
+                with self._node_state_lock:
+                    if node.status != NodeStatus.RUNNING:
+                        continue
+                    node.status = status
+
+                logger.debug(
+                    "Node `%s` status updated to `%s`",
+                    node.id,
+                    status,
+                )
+                if status == NodeStatus.FAILED:
+                    logger.error("Node `%s` failed.", node.id)
+                elif status == NodeStatus.COMPLETED:
+                    logger.info("Node `%s` completed.", node.id)
 
                 time.sleep(self.monitoring_delay)
 
@@ -461,18 +545,27 @@ class DagRunner:
                     time.time() - last_interrupt_check
                     >= self.interrupt_check_interval
                 ):
-                    if interrupt_mode := self.interrupt_function():
-                        logger.warning("DAG execution interrupted.")
+                    interrupt_mode = self.interrupt_function()
+                    if interrupt_mode == InterruptMode.FORCE:
+                        logger.warning("DAG execution force interrupted.")
                         break
+                    if (
+                        interrupt_mode == InterruptMode.GRACEFUL
+                        and self._disabled_new_start_status is None
+                    ):
+                        logger.warning("DAG execution gracefully interrupted.")
+                        self._disable_new_starts(NodeStatus.CANCELLED)
                     last_interrupt_check = time.time()
 
             is_finished = self._process_nodes()
-            if is_finished:
+            if is_finished or self._force_stop_requested:
                 break
 
             time.sleep(0.5)
 
-        self._force_stopping = interrupt_mode == InterruptMode.FORCE
+        self._force_stopping = (
+            interrupt_mode == InterruptMode.FORCE or self._force_stop_requested
+        )
         self.shutdown_event.set()
         stop_errors: List[str] = []
         if self._force_stopping:

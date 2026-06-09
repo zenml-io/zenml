@@ -143,7 +143,7 @@ This is particularly useful for steps with side effects (like data loading or mo
 ZenML provides three execution modes that control how your orchestrator behaves when a step fails during pipeline execution. These modes are:
 
 - `CONTINUE_ON_FAILURE`: The orchestrator continues executing steps that don't depend on any of the failed steps.
-- `STOP_ON_FAILURE`: The orchestrator allows the running steps to complete, but prevents new steps from starting. 
+- `STOP_ON_FAILURE`: The orchestrator allows the running steps to complete, but prevents new steps from starting.
 - `FAIL_FAST`: The orchestrator stops the run and any running steps immediately when a failure occurs.
 
 You can configure the execution mode of your pipeline in several ways:
@@ -185,7 +185,7 @@ If steps 2, 3, and 4 execute in parallel and step 2 fails:
 - With `CONTINUE_ON_FAILURE`: Step 1 finishes → Steps 2,3,4 start → Step 2 fails, Steps 3, 4 complete → Step 5 skipped (depends on failed Step 2), Steps 6, 7 run normally → Step 8 is skipped as well.
 
 {% hint style="info" %}
-All three execution modes are currently only supported by the `local`, `local_docker`, and `kubernetes` orchestrator flavors. For any other orchestrator flavor, the default (and only available) behavior is `CONTINUE_ON_FAILURE`. If you would like to see any of the other orchestrators extended to support the other execution modes, reach out to us in [Slack](https://zenml.io/slack-invite). 
+All three execution modes are currently only supported by the `local`, `local_docker`, `kubernetes`, and `modal` orchestrator flavors. For any other orchestrator flavor, the default (and only available) behavior is `CONTINUE_ON_FAILURE`. If you would like to see any of the other orchestrators extended to support the other execution modes, reach out to us in [Slack](https://zenml.io/slack-invite).
 {% endhint %}
 
 ### Step Heartbeat

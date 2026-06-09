@@ -837,6 +837,104 @@ def _make_static_controller(
     )
 
 
+def test_static_entrypoint_passes_execution_mode_to_dag_runner(monkeypatch):
+    snapshot = _make_snapshot()
+    pipeline_run = _make_placeholder_run()
+    pipeline_run.project_id = snapshot.project_id
+    orchestrator = _make_orchestrator()
+    orchestrator.get_orchestrator_run_id = lambda: "modal-run-id"
+    captured_runner_kwargs = {}
+    finalized = []
+
+    class ClientStub:
+        active_stack = SimpleNamespace(orchestrator=orchestrator)
+
+    class StepRunRequestFactoryStub:
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+
+    class DagRunnerStub:
+        def __init__(self, **kwargs):
+            captured_runner_kwargs.update(kwargs)
+
+        @staticmethod
+        def run():
+            return {"train": NodeStatus.COMPLETED}
+
+    monkeypatch.setattr(modal_entrypoint_module, "Client", ClientStub)
+    monkeypatch.setattr(
+        modal_entrypoint_module.integration_registry,
+        "activate_integrations",
+        lambda: None,
+    )
+    monkeypatch.setattr(
+        modal_entrypoint_module.ModalOrchestratorEntrypointConfiguration,
+        "prepare_code_environment",
+        lambda self: None,
+    )
+    monkeypatch.setattr(
+        modal_entrypoint_module.ModalOrchestratorEntrypointConfiguration,
+        "_get_or_create_pipeline_run",
+        lambda self, **_kwargs: pipeline_run,
+    )
+    monkeypatch.setattr(
+        modal_entrypoint_module.ModalOrchestratorEntrypointConfiguration,
+        "_finalize_pipeline_run",
+        staticmethod(
+            lambda pipeline_run_id, statuses: finalized.append(
+                (pipeline_run_id, statuses)
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        modal_entrypoint_module,
+        "get_config_environment_vars",
+        lambda **_kwargs: ({}, {}),
+    )
+    monkeypatch.setattr(
+        modal_entrypoint_module,
+        "StepRunRequestFactory",
+        StepRunRequestFactoryStub,
+    )
+    monkeypatch.setattr(
+        modal_entrypoint_module, "ModalDagRunner", DagRunnerStub
+    )
+
+    config = modal_entrypoint_module.ModalOrchestratorEntrypointConfiguration(
+        ["--snapshot_id", str(snapshot.id)]
+    )
+    config._snapshot = snapshot
+
+    config.run()
+
+    assert captured_runner_kwargs["execution_mode"] == ExecutionMode.FAIL_FAST
+    assert finalized == [(pipeline_run.id, {"train": NodeStatus.COMPLETED})]
+
+
+@pytest.mark.parametrize(
+    ("run_status", "expected_interrupt"),
+    [
+        (
+            ExecutionStatus.STOPPING,
+            modal_entrypoint_module.InterruptMode.FORCE,
+        ),
+        (ExecutionStatus.STOPPED, modal_entrypoint_module.InterruptMode.FORCE),
+        (ExecutionStatus.FAILED, None),
+    ],
+)
+def test_static_controller_interrupts_only_for_external_stop(
+    monkeypatch,
+    run_status,
+    expected_interrupt,
+):
+    setup = _make_static_controller(monkeypatch)
+    setup.controller.client.get_pipeline_run = lambda **_kwargs: (
+        SimpleNamespace(status=run_status)
+    )
+
+    assert setup.controller.should_interrupt_execution() == expected_interrupt
+
+
 def test_static_controller_start_sandbox_records_run_and_step_metadata(
     monkeypatch,
 ):

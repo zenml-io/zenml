@@ -19,12 +19,330 @@ import time
 
 import pytest
 
+from zenml.enums import ExecutionMode
 from zenml.orchestrators.monitored_dag_runner import (
     DagRunner,
     InterruptMode,
     Node,
     NodeStatus,
 )
+
+
+def test_default_execution_mode_continues_independent_branches() -> None:
+    started_nodes: list[str] = []
+
+    def start_node(node: Node) -> NodeStatus:
+        started_nodes.append(node.id)
+        return NodeStatus.RUNNING
+
+    def monitor_node(node: Node) -> NodeStatus:
+        if node.id == "fails":
+            return NodeStatus.FAILED
+        return NodeStatus.COMPLETED
+
+    statuses = DagRunner(
+        nodes=[
+            Node(id="fails"),
+            Node(id="depends_on_fails", upstream_nodes=["fails"]),
+            Node(id="independent"),
+        ],
+        node_startup_function=start_node,
+        node_monitoring_function=monitor_node,
+        monitoring_interval=0.01,
+    ).run()
+
+    assert set(started_nodes) == {"fails", "independent"}
+    assert statuses == {
+        "fails": NodeStatus.FAILED,
+        "depends_on_fails": NodeStatus.SKIPPED,
+        "independent": NodeStatus.COMPLETED,
+    }
+
+
+def test_continue_on_failure_keeps_starting_independent_branches() -> None:
+    started_nodes: list[str] = []
+
+    def start_node(node: Node) -> NodeStatus:
+        started_nodes.append(node.id)
+        return NodeStatus.RUNNING
+
+    def monitor_node(node: Node) -> NodeStatus:
+        if node.id == "fails":
+            return NodeStatus.FAILED
+        return NodeStatus.COMPLETED
+
+    statuses = DagRunner(
+        nodes=[
+            Node(id="fails"),
+            Node(id="depends_on_fails", upstream_nodes=["fails"]),
+            Node(id="independent"),
+        ],
+        node_startup_function=start_node,
+        node_monitoring_function=monitor_node,
+        monitoring_interval=0.01,
+        execution_mode=ExecutionMode.CONTINUE_ON_FAILURE,
+    ).run()
+
+    assert set(started_nodes) == {"fails", "independent"}
+    assert statuses == {
+        "fails": NodeStatus.FAILED,
+        "depends_on_fails": NodeStatus.SKIPPED,
+        "independent": NodeStatus.COMPLETED,
+    }
+
+
+def test_stop_on_failure_drains_active_nodes_and_skips_unstarted_work() -> (
+    None
+):
+    failure_reported = threading.Event()
+    started_nodes: list[str] = []
+    stopped_nodes: list[str] = []
+
+    def start_node(node: Node) -> NodeStatus:
+        started_nodes.append(node.id)
+        return NodeStatus.RUNNING
+
+    def monitor_node(node: Node) -> NodeStatus:
+        if node.id == "fails":
+            failure_reported.set()
+            return NodeStatus.FAILED
+        if node.id == "active_sibling" and failure_reported.is_set():
+            return NodeStatus.COMPLETED
+        return NodeStatus.RUNNING
+
+    def stop_node(node: Node) -> None:
+        stopped_nodes.append(node.id)
+
+    statuses = DagRunner(
+        nodes=[
+            Node(id="fails"),
+            Node(id="active_sibling"),
+            Node(id="queued_independent"),
+            Node(id="after_sibling", upstream_nodes=["active_sibling"]),
+        ],
+        node_startup_function=start_node,
+        node_monitoring_function=monitor_node,
+        node_stop_function=stop_node,
+        monitoring_interval=0.01,
+        max_parallelism=2,
+        execution_mode=ExecutionMode.STOP_ON_FAILURE,
+    ).run()
+
+    assert set(started_nodes) == {"fails", "active_sibling"}
+    assert stopped_nodes == []
+    assert statuses == {
+        "fails": NodeStatus.FAILED,
+        "active_sibling": NodeStatus.COMPLETED,
+        "queued_independent": NodeStatus.SKIPPED,
+        "after_sibling": NodeStatus.SKIPPED,
+    }
+
+
+def test_stop_on_failure_rechecks_failures_before_starting_ready_nodes() -> (
+    None
+):
+    started_nodes: list[str] = []
+
+    def start_node(node: Node) -> NodeStatus:
+        started_nodes.append(node.id)
+        return NodeStatus.RUNNING
+
+    runner = DagRunner(
+        nodes=[Node(id="fails", status=NodeStatus.RUNNING), Node(id="queued")],
+        node_startup_function=start_node,
+        node_monitoring_function=lambda node: node.status,
+        monitoring_interval=0.01,
+        execution_mode=ExecutionMode.STOP_ON_FAILURE,
+    )
+    original_can_start_node = runner._can_start_node
+
+    def fail_during_processing(node: Node) -> bool:
+        if node.id == "queued":
+            runner.nodes["fails"].status = NodeStatus.FAILED
+        return original_can_start_node(node)
+
+    runner._can_start_node = fail_during_processing
+
+    try:
+        runner._process_nodes()
+    finally:
+        runner.startup_executor.shutdown(wait=True)
+
+    assert started_nodes == []
+    assert runner.nodes["queued"].status == NodeStatus.SKIPPED
+
+
+def test_fail_fast_stops_active_nodes_and_cancels_unstarted_work() -> None:
+    started_nodes: list[str] = []
+    stopped_nodes: list[str] = []
+
+    def start_node(node: Node) -> NodeStatus:
+        started_nodes.append(node.id)
+        return NodeStatus.RUNNING
+
+    def monitor_node(node: Node) -> NodeStatus:
+        if node.id == "fails":
+            return NodeStatus.FAILED
+        return NodeStatus.RUNNING
+
+    def stop_node(node: Node) -> None:
+        stopped_nodes.append(node.id)
+
+    statuses = DagRunner(
+        nodes=[
+            Node(id="fails"),
+            Node(id="active_sibling"),
+            Node(id="queued_independent"),
+            Node(
+                id="depends_on_queued", upstream_nodes=["queued_independent"]
+            ),
+        ],
+        node_startup_function=start_node,
+        node_monitoring_function=monitor_node,
+        node_stop_function=stop_node,
+        monitoring_interval=0.01,
+        max_parallelism=2,
+        execution_mode=ExecutionMode.FAIL_FAST,
+    ).run()
+
+    assert set(started_nodes) == {"fails", "active_sibling"}
+    assert stopped_nodes == ["active_sibling"]
+    assert statuses == {
+        "fails": NodeStatus.FAILED,
+        "active_sibling": NodeStatus.CANCELLED,
+        "queued_independent": NodeStatus.CANCELLED,
+        "depends_on_queued": NodeStatus.CANCELLED,
+    }
+
+
+def test_force_stop_keeps_cancelled_status_after_stale_monitor_result() -> (
+    None
+):
+    sibling_stopped = threading.Event()
+    stopped_nodes: list[str] = []
+
+    def monitor_node(node: Node) -> NodeStatus:
+        if node.id == "fails":
+            return NodeStatus.FAILED
+        assert sibling_stopped.wait(timeout=5)
+        return NodeStatus.RUNNING
+
+    def stop_node(node: Node) -> None:
+        stopped_nodes.append(node.id)
+        if node.id == "active_sibling":
+            sibling_stopped.set()
+
+    statuses = DagRunner(
+        nodes=[
+            Node(id="fails", status=NodeStatus.RUNNING),
+            Node(id="active_sibling", status=NodeStatus.RUNNING),
+        ],
+        node_startup_function=lambda node: NodeStatus.RUNNING,
+        node_monitoring_function=monitor_node,
+        node_stop_function=stop_node,
+        monitoring_interval=0.01,
+        max_parallelism=2,
+        execution_mode=ExecutionMode.FAIL_FAST,
+    ).run()
+
+    assert stopped_nodes == ["active_sibling"]
+    assert statuses == {
+        "fails": NodeStatus.FAILED,
+        "active_sibling": NodeStatus.CANCELLED,
+    }
+
+
+def test_fail_fast_stops_resource_created_by_starting_node() -> None:
+    finish_startup = threading.Event()
+    stopped_nodes: list[tuple[str, str | None]] = []
+
+    def start_node(node: Node) -> NodeStatus:
+        if node.id == "starting_sibling":
+            assert finish_startup.wait(timeout=5)
+            node.metadata["sandbox_id"] = "created-during-startup"
+        return NodeStatus.RUNNING
+
+    def monitor_node(node: Node) -> NodeStatus:
+        if node.id == "fails":
+            finish_startup.set()
+            return NodeStatus.FAILED
+        return NodeStatus.RUNNING
+
+    def stop_node(node: Node) -> None:
+        stopped_nodes.append((node.id, node.metadata.get("sandbox_id")))
+
+    statuses = DagRunner(
+        nodes=[Node(id="fails"), Node(id="starting_sibling")],
+        node_startup_function=start_node,
+        node_monitoring_function=monitor_node,
+        node_stop_function=stop_node,
+        monitoring_interval=0.01,
+        max_parallelism=2,
+        execution_mode=ExecutionMode.FAIL_FAST,
+    ).run()
+
+    assert stopped_nodes == [("starting_sibling", "created-during-startup")]
+    assert statuses == {
+        "fails": NodeStatus.FAILED,
+        "starting_sibling": NodeStatus.CANCELLED,
+    }
+
+
+def test_graceful_interrupt_drains_active_nodes_and_cancels_unstarted_work() -> (
+    None
+):
+    active_start_count = 0
+    graceful_interrupt_seen = threading.Event()
+    started_nodes: list[str] = []
+    stopped_nodes: list[str] = []
+
+    def start_node(node: Node) -> NodeStatus:
+        nonlocal active_start_count
+        started_nodes.append(node.id)
+        active_start_count += 1
+        return NodeStatus.RUNNING
+
+    def monitor_node(node: Node) -> NodeStatus:
+        if not graceful_interrupt_seen.is_set():
+            return NodeStatus.RUNNING
+        if node.id == "active_fails":
+            return NodeStatus.FAILED
+        return NodeStatus.COMPLETED
+
+    def stop_node(node: Node) -> None:
+        stopped_nodes.append(node.id)
+
+    def interrupt() -> InterruptMode | None:
+        if active_start_count == 2:
+            graceful_interrupt_seen.set()
+            return InterruptMode.GRACEFUL
+        return None
+
+    statuses = DagRunner(
+        nodes=[
+            Node(id="active_fails"),
+            Node(id="active_completes"),
+            Node(id="queued"),
+            Node(id="not_ready", upstream_nodes=["queued"]),
+        ],
+        node_startup_function=start_node,
+        node_monitoring_function=monitor_node,
+        node_stop_function=stop_node,
+        interrupt_function=interrupt,
+        interrupt_check_interval=0,
+        monitoring_interval=0.01,
+        max_parallelism=2,
+        execution_mode=ExecutionMode.FAIL_FAST,
+    ).run()
+
+    assert set(started_nodes) == {"active_fails", "active_completes"}
+    assert stopped_nodes == []
+    assert statuses == {
+        "active_fails": NodeStatus.FAILED,
+        "active_completes": NodeStatus.COMPLETED,
+        "queued": NodeStatus.CANCELLED,
+        "not_ready": NodeStatus.CANCELLED,
+    }
 
 
 def test_force_stop_stops_resource_created_by_starting_node() -> None:
@@ -211,7 +529,11 @@ def test_force_stop_cancels_ready_nodes_that_never_started() -> None:
         return None
 
     statuses = DagRunner(
-        nodes=[Node(id="train"), Node(id="evaluate")],
+        nodes=[
+            Node(id="train"),
+            Node(id="evaluate"),
+            Node(id="report", upstream_nodes=["evaluate"]),
+        ],
         node_startup_function=start_node,
         node_monitoring_function=monitor_node,
         node_stop_function=stop_node,
@@ -226,4 +548,5 @@ def test_force_stop_cancels_ready_nodes_that_never_started() -> None:
     assert statuses == {
         "train": NodeStatus.CANCELLED,
         "evaluate": NodeStatus.CANCELLED,
+        "report": NodeStatus.CANCELLED,
     }

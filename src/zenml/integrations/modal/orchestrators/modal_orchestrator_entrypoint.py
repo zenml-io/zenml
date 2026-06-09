@@ -21,7 +21,7 @@ from zenml.client import Client
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
-from zenml.enums import ExecutionMode, ExecutionStatus
+from zenml.enums import ExecutionStatus
 from zenml.exceptions import AuthorizationException
 from zenml.integrations.modal import sandbox_utils
 from zenml.integrations.modal.orchestrators.modal_orchestrator import (
@@ -182,13 +182,6 @@ class _StaticModalPipelineController:
                 run.status,
             )
             return InterruptMode.FORCE
-
-        execution_mode = self.snapshot.pipeline_configuration.execution_mode
-        if run.status == ExecutionStatus.FAILED:
-            if execution_mode == ExecutionMode.FAIL_FAST:
-                return InterruptMode.FORCE
-            if execution_mode == ExecutionMode.STOP_ON_FAILURE:
-                return InterruptMode.GRACEFUL
 
         return None
 
@@ -369,6 +362,7 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
             node_monitoring_function=controller.check_step_sandbox,
             node_stop_function=controller.stop_step_sandbox,
             interrupt_function=controller.should_interrupt_execution,
+            execution_mode=snapshot.pipeline_configuration.execution_mode,
         ).run()
 
         self._finalize_pipeline_run(pipeline_run.id, node_statuses)
