@@ -87,9 +87,9 @@ Sandbox stdout/stderr automatically lands on the active step under a dedicated `
 - **No R2 mount.** The bridge exposes `POST /v1/sandbox/:id/mount` but ZenML does not surface it yet.
 - **No PTY / WebSocket support.** Outside `BaseSandbox`'s contract.
 - **No GPU / region / cloud knobs.** Cloudflare does not expose those on the sandbox API.
-- **`base_image` is informational.** The bridge does not currently accept a custom image on sandbox creation; the Worker's bound container image is used. The setting is recorded and surfaced in logs so you can roll forward when the bridge gains image overrides.
+- **No image override on the sandbox.** The bridge does not currently accept a custom image on sandbox creation; the Worker's bound container image is used. When the bridge gains an image-override knob, we'll add a flavor setting for it.
 - **`kill()` is a no-op warn.** The bridge has no per-exec kill; call `session.destroy()` to terminate the whole sandbox.
 
 ### Related
 
-- [Cloudflare service connector](../../how-to/auth-management/service-connectors-guide.md) — used by the [R2 artifact store](../artifact-stores/r2.md) and the [Cloudflare container registry](../container-registries/cloudflare.md). The sandbox flavor deliberately does **not** flow through the connector; see the three-boundary explanation above.
+- [Cloudflare service connector](../service-connectors/service-connectors-guide.md) — used by the [R2 artifact store](../artifact-stores/cloudflare-r2.md) and the [Cloudflare container registry](../container-registries/cloudflare.md). The sandbox flavor deliberately does **not** flow through the connector; see the three-boundary explanation above.
