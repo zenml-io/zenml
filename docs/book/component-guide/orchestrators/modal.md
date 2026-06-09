@@ -159,7 +159,7 @@ The `modal_environment` setting selects the Modal environment used for `modal.Ap
 
 ## Synchronous and asynchronous runs
 
-By default, `synchronous=True`. In that mode, the process that submitted the run waits until the Modal orchestration sandbox finishes. If the orchestration sandbox exits with a non-zero code, ZenML reports the run as failed.
+By default, `synchronous=True`. In that mode, the process that submitted the run waits until the Modal orchestration sandbox finishes. If the controller detects failed child step sandboxes, it exits with a non-zero code, and ZenML reports the run as failed to the submitting process.
 
 If you set `synchronous=False`, ZenML submits the orchestration sandbox and returns after the sandbox has started successfully:
 
@@ -177,10 +177,11 @@ The pipeline still runs on Modal. You can monitor it from ZenML because the pipe
 
 When you stop a Modal-orchestrated run, ZenML terminates the Modal sandboxes it knows about:
 
-1. ZenML terminates the orchestration sandbox first so it cannot start more child sandboxes.
-2. ZenML reads the step run metadata for child sandbox IDs.
-3. ZenML terminates each known child sandbox that is still running.
-4. If a sandbox has already finished, ZenML leaves it alone.
+1. ZenML refreshes the pipeline run metadata and reads known child sandbox IDs from step metadata and pipeline-run fallback metadata.
+2. ZenML terminates each known child sandbox that is still running.
+3. ZenML terminates the orchestration sandbox.
+4. ZenML refreshes the run metadata once more and terminates any child sandbox IDs that appeared during cleanup.
+5. If a sandbox has already finished, ZenML leaves it alone.
 
 This applies to both graceful and forceful stop requests in the current implementation.
 

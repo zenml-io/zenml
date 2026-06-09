@@ -16,7 +16,7 @@
 import os
 import threading
 import time
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 from uuid import uuid4
 
 from zenml.client import Client
@@ -25,7 +25,7 @@ from zenml.constants import (
     METADATA_ORCHESTRATOR_RUN_ID,
     ORCHESTRATOR_DOCKER_IMAGE_KEY,
 )
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import ExecutionMode, ExecutionStatus, StackComponentType
 from zenml.integrations.modal import sandbox_utils
 from zenml.integrations.modal.flavors import (
     ModalOrchestratorConfig,
@@ -33,6 +33,7 @@ from zenml.integrations.modal.flavors import (
 )
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
+from zenml.models import PipelineRunUpdate
 from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.orchestrators.publish_utils import (
     publish_pipeline_run_metadata,
@@ -91,6 +92,19 @@ def _metadata_value(metadata: Dict[str, Any], key: str) -> Optional[str]:
     return str(value)
 
 
+def _metadata_values_with_prefix(
+    metadata: Dict[str, Any], prefix: str
+) -> Dict[str, str]:
+    """Read string metadata values for keys with a shared prefix."""
+    values: Dict[str, str] = {}
+    for key in metadata:
+        if not key.startswith(prefix):
+            continue
+        if value := _metadata_value(metadata, key):
+            values[key.removeprefix(prefix)] = value
+    return values
+
+
 def get_static_step_sandbox_metadata_key(step_name: str) -> str:
     """Build an append-safe run metadata key for a static child sandbox."""
     return f"{MODAL_STATIC_STEP_SANDBOX_ID_METADATA_KEY_PREFIX}{step_name}"
@@ -123,6 +137,15 @@ class ModalOrchestrator(ContainerizedOrchestrator):
     def settings_class(self) -> Optional[Type["BaseSettings"]]:
         """Get the settings class for the Modal orchestrator."""
         return ModalOrchestratorSettings
+
+    @property
+    def supported_execution_modes(self) -> List[ExecutionMode]:
+        """Get the execution modes supported by the Modal orchestrator."""
+        return [
+            ExecutionMode.FAIL_FAST,
+            ExecutionMode.STOP_ON_FAILURE,
+            ExecutionMode.CONTINUE_ON_FAILURE,
+        ]
 
     @property
     def validator(self) -> Optional[StackValidator]:
@@ -216,6 +239,10 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             ModalOrchestratorEntrypointConfiguration,
         )
 
+        # The static Modal controller recomputes per-step environments after
+        # it loads the active stack and run-scoped secrets inside Modal.
+        del step_environments
+
         command = (
             ModalOrchestratorEntrypointConfiguration.get_entrypoint_command()
         )
@@ -282,6 +309,13 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             str(placeholder_run.id) if placeholder_run else str(uuid4())
         )
         app_name = get_modal_app_name(modal_run_id)
+
+        if placeholder_run:
+            Client().zen_store.update_run(
+                run_id=placeholder_run.id,
+                run_update=PipelineRunUpdate(orchestrator_run_id=modal_run_id),
+            )
+            placeholder_run.orchestrator_run_id = modal_run_id
 
         try:
             image_name = self.get_image(snapshot=snapshot)
@@ -384,15 +418,22 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         settings = cast(
             ModalOrchestratorSettings, self.get_settings(step_run_info)
         )
+        modal_run_id = os.environ.get(
+            ENV_ZENML_MODAL_RUN_ID, str(step_run_info.run_id)
+        )
+        app_name = os.environ.get(
+            ENV_ZENML_MODAL_APP_NAME, get_modal_app_name(modal_run_id)
+        )
+        sandbox_environment = environment.copy()
+        sandbox_environment[ENV_ZENML_MODAL_RUN_ID] = modal_run_id
+        sandbox_environment[ENV_ZENML_MODAL_APP_NAME] = app_name
+
         sandbox = self._create_step_sandbox(
-            app_name=os.environ.get(
-                ENV_ZENML_MODAL_APP_NAME,
-                get_modal_app_name(str(step_run_info.run_id)),
-            ),
+            app_name=app_name,
             image_name=image_name,
             settings=settings,
             resource_settings=step_run_info.config.resource_settings,
-            environment=environment,
+            environment=sandbox_environment,
             entrypoint_command=command + args,
         )
 
@@ -568,15 +609,21 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         step_statuses = None
         if include_steps:
             step_statuses = {}
+            run_with_steps = self._get_fresh_pipeline_run(run)
             try:
-                steps = run.steps
+                steps = run_with_steps.steps
             except Exception:
                 logger.debug(
-                    "Fetching a hydrated pipeline run before reading Modal "
-                    "step sandbox metadata.",
+                    "Pipeline run `%s` is not hydrated with step metadata.",
+                    run.id,
                     exc_info=True,
                 )
-                steps = Client().get_pipeline_run(run.id).steps
+                steps = {}
+
+            fallback_sandbox_ids = _metadata_values_with_prefix(
+                run_with_steps.run_metadata,
+                MODAL_STATIC_STEP_SANDBOX_ID_METADATA_KEY_PREFIX,
+            )
 
             for step_name, step_run in steps.items():
                 if step_run.status.is_finished:
@@ -585,6 +632,8 @@ class ModalOrchestrator(ContainerizedOrchestrator):
                 step_sandbox_id = _metadata_value(
                     step_run.run_metadata, MODAL_SANDBOX_ID_METADATA_KEY
                 )
+                if not step_sandbox_id:
+                    step_sandbox_id = fallback_sandbox_ids.get(step_name)
                 if not step_sandbox_id:
                     continue
 
@@ -609,13 +658,47 @@ class ModalOrchestrator(ContainerizedOrchestrator):
     def _stop_run(
         self, run: "PipelineRunResponse", graceful: bool = False
     ) -> None:
-        """Terminate the orchestration sandbox and all known child sandboxes."""
-        errors = []
+        """Terminate all known child sandboxes and the orchestration sandbox."""
+        errors: List[str] = []
+        attempted_child_sandbox_ids: set[str] = set()
+        attempted_orchestration_sandbox_ids: set[str] = set()
 
-        orchestration_sandbox_id = _metadata_value(
-            run.run_metadata, MODAL_ORCHESTRATION_SANDBOX_ID_METADATA_KEY
-        )
-        if orchestration_sandbox_id:
+        refreshed_run = self._get_fresh_pipeline_run(run)
+
+        def _terminate_child_sandboxes(
+            target_run: "PipelineRunResponse",
+        ) -> None:
+            for sandbox_id in self._get_child_sandbox_ids(target_run):
+                if sandbox_id in attempted_child_sandbox_ids:
+                    continue
+                attempted_child_sandbox_ids.add(sandbox_id)
+                try:
+                    self._terminate_sandbox_if_running(
+                        sandbox_id=sandbox_id,
+                        description=(
+                            f"child sandbox `{sandbox_id}` for run `{run.id}`"
+                        ),
+                    )
+                except Exception as e:
+                    errors.append(str(e))
+
+        def _terminate_orchestration_sandbox(
+            target_run: "PipelineRunResponse",
+        ) -> None:
+            orchestration_sandbox_id = _metadata_value(
+                target_run.run_metadata,
+                MODAL_ORCHESTRATION_SANDBOX_ID_METADATA_KEY,
+            )
+            if not orchestration_sandbox_id:
+                logger.warning(
+                    "No Modal orchestration sandbox metadata found for run `%s`.",
+                    run.id,
+                )
+                return
+            if orchestration_sandbox_id in attempted_orchestration_sandbox_ids:
+                return
+
+            attempted_orchestration_sandbox_ids.add(orchestration_sandbox_id)
             try:
                 self._terminate_sandbox_if_running(
                     sandbox_id=orchestration_sandbox_id,
@@ -623,50 +706,60 @@ class ModalOrchestrator(ContainerizedOrchestrator):
                 )
             except Exception as e:
                 errors.append(str(e))
-        else:
-            logger.warning(
-                "No Modal orchestration sandbox metadata found for run `%s`.",
-                run.id,
-            )
 
-        try:
-            steps = run.steps
-        except Exception:
-            logger.debug(
-                "Fetching a hydrated pipeline run before stopping Modal step "
-                "sandboxes.",
-                exc_info=True,
-            )
-            steps = Client().get_pipeline_run(run.id).steps
+        _terminate_child_sandboxes(refreshed_run)
+        _terminate_orchestration_sandbox(refreshed_run)
 
-        child_sandbox_ids = {
-            sandbox_id
-            for step_run in steps.values()
-            if (
-                sandbox_id := _metadata_value(
-                    step_run.run_metadata, MODAL_SANDBOX_ID_METADATA_KEY
-                )
-            )
-        }
-        child_sandbox_ids.update(
-            str(value.value if hasattr(value, "value") else value)
-            for key, value in run.run_metadata.items()
-            if key.startswith(MODAL_STATIC_STEP_SANDBOX_ID_METADATA_KEY_PREFIX)
-        )
-
-        for sandbox_id in child_sandbox_ids:
-            try:
-                self._terminate_sandbox_if_running(
-                    sandbox_id=sandbox_id,
-                    description=f"child sandbox `{sandbox_id}` for run `{run.id}`",
-                )
-            except Exception as e:
-                errors.append(str(e))
+        late_run = self._get_fresh_pipeline_run(run)
+        _terminate_child_sandboxes(late_run)
+        _terminate_orchestration_sandbox(late_run)
 
         if errors:
             raise RuntimeError(
                 "Failed to stop all Modal sandboxes: " + "; ".join(errors)
             )
+
+    @staticmethod
+    def _get_fresh_pipeline_run(
+        run: "PipelineRunResponse",
+    ) -> "PipelineRunResponse":
+        """Fetch the latest hydrated run, falling back to the given one."""
+        try:
+            return Client().get_pipeline_run(run.id)
+        except Exception:
+            logger.debug(
+                "Failed to fetch a fresh Modal pipeline run before cleanup.",
+                exc_info=True,
+            )
+            return run
+
+    @staticmethod
+    def _get_child_sandbox_ids(run: "PipelineRunResponse") -> set[str]:
+        """Read child sandbox IDs from step and static fallback metadata."""
+        child_sandbox_ids: set[str] = set()
+        try:
+            steps = run.steps
+        except Exception:
+            logger.debug(
+                "Pipeline run `%s` is not hydrated with step metadata.",
+                run.id,
+                exc_info=True,
+            )
+            steps = {}
+
+        for step_run in steps.values():
+            if sandbox_id := _metadata_value(
+                step_run.run_metadata, MODAL_SANDBOX_ID_METADATA_KEY
+            ):
+                child_sandbox_ids.add(sandbox_id)
+
+        child_sandbox_ids.update(
+            _metadata_values_with_prefix(
+                run.run_metadata,
+                MODAL_STATIC_STEP_SANDBOX_ID_METADATA_KEY_PREFIX,
+            ).values()
+        )
+        return child_sandbox_ids
 
     def _terminate_sandbox_if_running(
         self, *, sandbox_id: str, description: str

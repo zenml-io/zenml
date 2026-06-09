@@ -26,7 +26,12 @@ from zenml.constants import (  # noqa: E402
     METADATA_ORCHESTRATOR_RUN_ID,
     ORCHESTRATOR_DOCKER_IMAGE_KEY,
 )
-from zenml.enums import ExecutionStatus, StackComponentType  # noqa: E402
+from zenml.enums import (  # noqa: E402
+    ExecutionMode,
+    ExecutionStatus,
+    StackComponentType,
+)
+from zenml.exceptions import AuthorizationException  # noqa: E402
 from zenml.integrations.modal import sandbox_utils  # noqa: E402
 from zenml.integrations.modal.flavors import (  # noqa: E402
     ModalOrchestratorConfig,
@@ -34,6 +39,9 @@ from zenml.integrations.modal.flavors import (  # noqa: E402
 )
 from zenml.integrations.modal.orchestrators import (  # noqa: E402
     modal_orchestrator as modal_orchestrator_module,
+)
+from zenml.integrations.modal.orchestrators import (  # noqa: E402
+    modal_orchestrator_entrypoint as modal_entrypoint_module,
 )
 from zenml.integrations.modal.orchestrators.modal_orchestrator import (  # noqa: E402
     ENV_ZENML_MODAL_APP_NAME,
@@ -46,6 +54,7 @@ from zenml.integrations.modal.orchestrators.modal_orchestrator import (  # noqa:
     get_modal_app_name,
     get_static_step_sandbox_metadata_key,
 )
+from zenml.orchestrators.monitored_dag_runner import NodeStatus  # noqa: E402
 
 SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY = (
     sandbox_utils.SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY
@@ -217,6 +226,7 @@ def _install_modal_sdk_stubs(monkeypatch, *, from_id_sandboxes=None):
 def test_static_submission_records_metadata_and_splits_secrets(monkeypatch):
     recorded = _install_modal_sdk_stubs(monkeypatch)
     published = []
+    run_updates = []
     placeholder_run = _make_placeholder_run()
     snapshot = _make_snapshot(pipeline_image=False)
     stack = _make_stack(registry_credentials=("user", "pass"))
@@ -230,6 +240,16 @@ def test_static_submission_records_metadata_and_splits_secrets(monkeypatch):
         synchronous=False,
         modal_environment="prod",
     )
+
+    class ZenStoreStub:
+        @staticmethod
+        def update_run(**kwargs):
+            run_updates.append(kwargs)
+
+    class ClientStub:
+        zen_store = ZenStoreStub()
+
+    monkeypatch.setattr(modal_orchestrator_module, "Client", ClientStub)
 
     def publish_pipeline_run_metadata_stub(*args, **kwargs):
         published.append((args, kwargs))
@@ -262,6 +282,11 @@ def test_static_submission_records_metadata_and_splits_secrets(monkeypatch):
         MODAL_ENVIRONMENT_METADATA_KEY: "prod",
     }
     assert placeholder_run.run_metadata == result.metadata
+    assert placeholder_run.orchestrator_run_id == str(placeholder_run.id)
+    assert run_updates[0]["run_id"] == placeholder_run.id
+    assert run_updates[0]["run_update"].orchestrator_run_id == str(
+        placeholder_run.id
+    )
     assert published == [
         (
             (),
@@ -301,6 +326,14 @@ def test_static_submission_records_metadata_and_splits_secrets(monkeypatch):
     }
 
 
+def test_supported_execution_modes_include_static_failure_modes():
+    assert _make_orchestrator().supported_execution_modes == [
+        ExecutionMode.FAIL_FAST,
+        ExecutionMode.STOP_ON_FAILURE,
+        ExecutionMode.CONTINUE_ON_FAILURE,
+    ]
+
+
 @pytest.mark.parametrize("is_dynamic", [False, True])
 def test_submission_rejects_schedules(is_dynamic):
     orchestrator = _make_orchestrator()
@@ -338,6 +371,16 @@ def test_submission_terminates_sandbox_when_metadata_publish_fails(
     orchestrator.get_settings = lambda _obj: ModalOrchestratorSettings(
         synchronous=False
     )
+
+    class ZenStoreStub:
+        @staticmethod
+        def update_run(**kwargs):
+            return None
+
+    class ClientStub:
+        zen_store = ZenStoreStub()
+
+    monkeypatch.setattr(modal_orchestrator_module, "Client", ClientStub)
 
     def publish_pipeline_run_metadata_stub(*args, **kwargs):
         raise RuntimeError("server unavailable")
@@ -435,10 +478,54 @@ def test_dynamic_isolated_step_submission_publishes_step_metadata(monkeypatch):
     assert sandbox_kwargs["gpu"] == "A100:2"
     assert sandbox_kwargs["cpu"] == 4
     assert sandbox_kwargs["memory"] == 3
-    assert sandbox_kwargs["env"] == {"PLAIN": "value"}
+    assert sandbox_kwargs["env"] == {
+        "PLAIN": "value",
+        ENV_ZENML_MODAL_RUN_ID: str(run_id),
+        ENV_ZENML_MODAL_APP_NAME: "existing-app",
+    }
     assert recorded["secret_values"] == [
         {SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY: "secret-token"}
     ]
+
+
+def test_dynamic_isolated_step_submission_adds_default_modal_environment(
+    monkeypatch,
+):
+    recorded = _install_modal_sdk_stubs(monkeypatch)
+    run_id = uuid4()
+    step_run_id = uuid4()
+
+    class ClientStub:
+        active_stack = _make_stack()
+
+    monkeypatch.setattr(modal_orchestrator_module, "Client", ClientStub)
+    monkeypatch.setattr(
+        modal_orchestrator_module,
+        "publish_step_run_metadata",
+        lambda *args, **kwargs: None,
+    )
+    monkeypatch.delenv(ENV_ZENML_MODAL_RUN_ID, raising=False)
+    monkeypatch.delenv(ENV_ZENML_MODAL_APP_NAME, raising=False)
+
+    step_run_info = SimpleNamespace(
+        pipeline_step_name="train",
+        snapshot=SimpleNamespace(id=uuid4()),
+        step_run_id=step_run_id,
+        run_id=run_id,
+        config=SimpleNamespace(resource_settings=ResourceSettingsStub()),
+        step_run=SimpleNamespace(run_metadata={}),
+        get_image=lambda key: "registry.example.com/zenml:step",
+    )
+    orchestrator = _make_orchestrator()
+    orchestrator.get_settings = lambda _obj: ModalOrchestratorSettings()
+
+    orchestrator.submit_isolated_step(step_run_info, {})
+
+    assert recorded["app_lookup"][0] == (get_modal_app_name(str(run_id)),)
+    assert recorded["sandbox_create"][1]["env"] == {
+        ENV_ZENML_MODAL_RUN_ID: str(run_id),
+        ENV_ZENML_MODAL_APP_NAME: get_modal_app_name(str(run_id)),
+    }
 
 
 def test_fetch_status_uses_run_and_step_metadata(monkeypatch):
@@ -464,6 +551,92 @@ def test_fetch_status_uses_run_and_step_metadata(monkeypatch):
 
     pipeline_status, step_statuses = _make_orchestrator().fetch_status(
         run, include_steps=True
+    )
+
+    assert pipeline_status == ExecutionStatus.RUNNING
+    assert step_statuses == {"train": ExecutionStatus.COMPLETED}
+
+
+def test_fetch_status_uses_static_pipeline_metadata_when_step_metadata_missing(
+    monkeypatch,
+):
+    from_id_sandboxes = {
+        "orchestrator-sandbox": SandboxStub("orchestrator-sandbox", [None]),
+        "fallback-step-sandbox": SandboxStub("fallback-step-sandbox", [0]),
+    }
+    _install_modal_sdk_stubs(monkeypatch, from_id_sandboxes=from_id_sandboxes)
+    run = SimpleNamespace(
+        id=uuid4(),
+        status=ExecutionStatus.RUNNING,
+        run_metadata={
+            MODAL_ORCHESTRATION_SANDBOX_ID_METADATA_KEY: "orchestrator-sandbox",
+            get_static_step_sandbox_metadata_key(
+                "train"
+            ): "fallback-step-sandbox",
+        },
+        steps={
+            "train": SimpleNamespace(
+                id=uuid4(),
+                status=ExecutionStatus.RUNNING,
+                run_metadata={},
+            )
+        },
+    )
+
+    pipeline_status, step_statuses = _make_orchestrator().fetch_status(
+        run, include_steps=True
+    )
+
+    assert pipeline_status == ExecutionStatus.RUNNING
+    assert step_statuses == {"train": ExecutionStatus.COMPLETED}
+
+
+def test_fetch_status_refreshes_static_fallback_metadata_for_hydrated_run(
+    monkeypatch,
+):
+    from_id_sandboxes = {
+        "orchestrator-sandbox": SandboxStub("orchestrator-sandbox", [None]),
+        "fresh-fallback-step-sandbox": SandboxStub(
+            "fresh-fallback-step-sandbox", [0]
+        ),
+    }
+    _install_modal_sdk_stubs(monkeypatch, from_id_sandboxes=from_id_sandboxes)
+    run_id = uuid4()
+    stale_run = SimpleNamespace(
+        id=run_id,
+        status=ExecutionStatus.RUNNING,
+        run_metadata={
+            MODAL_ORCHESTRATION_SANDBOX_ID_METADATA_KEY: "orchestrator-sandbox",
+        },
+        steps={
+            "train": SimpleNamespace(
+                id=uuid4(),
+                status=ExecutionStatus.RUNNING,
+                run_metadata={},
+            )
+        },
+    )
+    fresh_run = SimpleNamespace(
+        id=run_id,
+        status=ExecutionStatus.RUNNING,
+        run_metadata={
+            MODAL_ORCHESTRATION_SANDBOX_ID_METADATA_KEY: "orchestrator-sandbox",
+            get_static_step_sandbox_metadata_key(
+                "train"
+            ): "fresh-fallback-step-sandbox",
+        },
+        steps=stale_run.steps,
+    )
+
+    class ClientStub:
+        @staticmethod
+        def get_pipeline_run(_run_id):
+            return fresh_run
+
+    monkeypatch.setattr(modal_orchestrator_module, "Client", ClientStub)
+
+    pipeline_status, step_statuses = _make_orchestrator().fetch_status(
+        stale_run, include_steps=True
     )
 
     assert pipeline_status == ExecutionStatus.RUNNING
@@ -508,7 +681,7 @@ def test_isolated_step_status_maps_terminal_sandbox_to_stopped(monkeypatch):
     )
 
 
-def test_stop_run_terminates_orchestration_first_and_unique_running_children(
+def test_stop_run_refreshes_and_terminates_children_before_orchestration(
     monkeypatch,
 ):
     from_id_sandboxes = {
@@ -516,12 +689,15 @@ def test_stop_run_terminates_orchestration_first_and_unique_running_children(
         "child-running": SandboxStub("child-running", [None]),
         "child-complete": SandboxStub("child-complete", [0]),
         "fallback-child": SandboxStub("fallback-child", [None]),
+        "late-child": SandboxStub("late-child", [None]),
     }
     recorded = _install_modal_sdk_stubs(
         monkeypatch, from_id_sandboxes=from_id_sandboxes
     )
-    run = SimpleNamespace(
-        id=uuid4(),
+    run_id = uuid4()
+    stale_run = SimpleNamespace(id=run_id, run_metadata={}, steps={})
+    first_refresh = SimpleNamespace(
+        id=run_id,
         run_metadata={
             MODAL_ORCHESTRATION_SANDBOX_ID_METADATA_KEY: "orchestrator-sandbox",
             get_static_step_sandbox_metadata_key("fallback"): "fallback-child",
@@ -538,17 +714,141 @@ def test_stop_run_terminates_orchestration_first_and_unique_running_children(
             ),
         },
     )
+    second_refresh = SimpleNamespace(
+        id=run_id,
+        run_metadata={
+            MODAL_ORCHESTRATION_SANDBOX_ID_METADATA_KEY: "orchestrator-sandbox",
+            get_static_step_sandbox_metadata_key("late"): "late-child",
+        },
+        steps={},
+    )
+    refreshed_runs = iter([first_refresh, second_refresh])
 
-    _make_orchestrator()._stop_run(run)
+    class ClientStub:
+        @staticmethod
+        def get_pipeline_run(_run_id):
+            return next(refreshed_runs)
 
-    assert recorded["termination_order"][0] == "orchestrator-sandbox"
+    monkeypatch.setattr(modal_orchestrator_module, "Client", ClientStub)
+
+    _make_orchestrator()._stop_run(stale_run)
+
     assert recorded["termination_order"].count("child-running") == 1
     assert recorded["termination_order"].count("fallback-child") == 1
     assert "child-complete" not in recorded["termination_order"]
+    orchestration_index = recorded["termination_order"].index(
+        "orchestrator-sandbox"
+    )
+    assert (
+        recorded["termination_order"].index("child-running")
+        < orchestration_index
+    )
+    assert (
+        recorded["termination_order"].index("fallback-child")
+        < orchestration_index
+    )
+    assert (
+        recorded["termination_order"].index("late-child") > orchestration_index
+    )
     assert from_id_sandboxes["orchestrator-sandbox"].terminate_calls == 1
     assert from_id_sandboxes["child-running"].terminate_calls == 1
     assert from_id_sandboxes["fallback-child"].terminate_calls == 1
+    assert from_id_sandboxes["late-child"].terminate_calls == 1
     assert from_id_sandboxes["child-complete"].terminate_calls == 0
+
+
+def test_static_controller_finalize_raises_after_failed_child_publish(
+    monkeypatch,
+):
+    pipeline_run_id = uuid4()
+    step_run_id = uuid4()
+    published = []
+
+    class ClientStub:
+        @staticmethod
+        def get_pipeline_run(*args, **kwargs):
+            return SimpleNamespace(
+                id=pipeline_run_id,
+                status=ExecutionStatus.RUNNING,
+            )
+
+    monkeypatch.setattr(modal_entrypoint_module, "Client", ClientStub)
+    monkeypatch.setattr(
+        modal_entrypoint_module,
+        "fetch_step_runs_by_names",
+        lambda **_kwargs: {
+            "train": SimpleNamespace(
+                id=step_run_id,
+                status=ExecutionStatus.RUNNING,
+            )
+        },
+    )
+    monkeypatch.setattr(
+        modal_entrypoint_module.publish_utils,
+        "publish_failed_step_run",
+        lambda step_id: published.append(("step", step_id)),
+    )
+    monkeypatch.setattr(
+        modal_entrypoint_module.publish_utils,
+        "publish_failed_pipeline_run",
+        lambda run_id: published.append(("pipeline", run_id)),
+    )
+
+    with pytest.raises(RuntimeError, match="train"):
+        modal_entrypoint_module.ModalOrchestratorEntrypointConfiguration._finalize_pipeline_run(
+            pipeline_run_id,
+            {"train": NodeStatus.FAILED},
+        )
+
+    assert published == [
+        ("step", step_run_id),
+        ("pipeline", pipeline_run_id),
+    ]
+
+
+def test_static_controller_finalize_raises_failed_child_on_auth_error(
+    monkeypatch,
+):
+    pipeline_run_id = uuid4()
+
+    class ClientStub:
+        @staticmethod
+        def get_pipeline_run(*args, **kwargs):
+            raise AuthorizationException("not authorized")
+
+    monkeypatch.setattr(modal_entrypoint_module, "Client", ClientStub)
+
+    with pytest.raises(RuntimeError, match="train"):
+        modal_entrypoint_module.ModalOrchestratorEntrypointConfiguration._finalize_pipeline_run(
+            pipeline_run_id,
+            {"train": NodeStatus.FAILED},
+        )
+
+
+def test_static_controller_finalize_stopping_run_does_not_raise(
+    monkeypatch,
+):
+    pipeline_run_id = uuid4()
+    published = []
+
+    class ClientStub:
+        @staticmethod
+        def get_pipeline_run(*args, **kwargs):
+            return SimpleNamespace(status=ExecutionStatus.STOPPING)
+
+    monkeypatch.setattr(modal_entrypoint_module, "Client", ClientStub)
+    monkeypatch.setattr(
+        modal_entrypoint_module.publish_utils,
+        "publish_pipeline_run_status_update",
+        lambda run_id, status: published.append((run_id, status)),
+    )
+
+    modal_entrypoint_module.ModalOrchestratorEntrypointConfiguration._finalize_pipeline_run(
+        pipeline_run_id,
+        {"train": NodeStatus.CANCELLED},
+    )
+
+    assert published == [(pipeline_run_id, ExecutionStatus.STOPPED)]
 
 
 def test_get_orchestrator_run_id_reads_modal_environment(monkeypatch):

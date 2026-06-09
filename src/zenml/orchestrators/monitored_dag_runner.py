@@ -11,13 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""DAG runner."""
+"""Monitored backend-resource DAG runner for remote orchestrators.
+
+This runner starts DAG nodes in worker threads, monitors the backend resources
+those startup calls create, and can force-stop active resources when a pipeline
+run is stopped. It is used by orchestrators such as Modal where starting a node
+creates a remote resource that may need explicit cleanup.
+"""
 
 import contextvars
 import queue
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor, TimeoutError
 from typing import Any, Callable, Dict, List, Optional
 
 from pydantic import BaseModel
@@ -30,6 +36,8 @@ from zenml.logger import get_logger
 from zenml.utils.enum_utils import StrEnum
 
 logger = get_logger(__name__)
+
+STARTING_NODE_STOP_TIMEOUT_SECONDS = 30.0
 
 
 class NodeStatus(StrEnum):
@@ -104,6 +112,7 @@ class DagRunner:
         monitoring_delay: float = 0.0,
         interrupt_check_interval: float = 1.0,
         max_parallelism: Optional[int] = None,
+        starting_node_stop_timeout: float = STARTING_NODE_STOP_TIMEOUT_SECONDS,
     ) -> None:
         """Initialize the DAG runner.
 
@@ -120,6 +129,8 @@ class DagRunner:
             interrupt_check_interval: The interval in which the interrupt
                 function is called.
             max_parallelism: The maximum number of nodes to run in parallel.
+            starting_node_stop_timeout: Seconds to wait for a starting node to
+                finish startup during force-stop cleanup.
         """
         self.nodes = {node.id: node for node in nodes}
         self.startup_queue: queue.Queue[Node] = queue.Queue()
@@ -138,13 +149,18 @@ class DagRunner:
         self.monitoring_delay = monitoring_delay
         self.interrupt_check_interval = interrupt_check_interval
         self.max_parallelism = max_parallelism
+        self.starting_node_stop_timeout = starting_node_stop_timeout
         self.shutdown_event = threading.Event()
+        self._startup_stop_timed_out = False
+        self._force_stopping = False
+        self._stop_attempted_node_ids: set[str] = set()
         worker_count = handle_int_env_var(
             ENV_ZENML_DAG_RUNNER_WORKER_COUNT, 10
         )
         self.startup_executor = ThreadPoolExecutor(
             max_workers=worker_count, thread_name_prefix="DagRunner-Startup"
         )
+        self.startup_futures: Dict[str, Future[None]] = {}
 
     @property
     def running_nodes(self) -> List[Node]:
@@ -220,6 +236,10 @@ class DagRunner:
         Args:
             node: The node to start.
         """
+        if self.shutdown_event.is_set():
+            node.status = NodeStatus.CANCELLED
+            return
+
         node.status = NodeStatus.STARTING
 
         def _start_node_task() -> None:
@@ -229,20 +249,33 @@ class DagRunner:
                     "requested.",
                     node.id,
                 )
+                node.status = NodeStatus.CANCELLED
                 return
 
             try:
-                node.status = self.node_startup_function(node)
+                status = self.node_startup_function(node)
             except Exception:
                 node.status = NodeStatus.FAILED
                 logger.exception("Node `%s` failed to start.", node.id)
             else:
+                if (
+                    self._force_stopping
+                    and self.shutdown_event.is_set()
+                    and status == NodeStatus.RUNNING
+                ):
+                    node.status = NodeStatus.RUNNING
+                    self._stop_node_after_interrupt(node, [])
+                    return
+
+                node.status = status
                 logger.info(
                     "Node `%s` started (status: %s)", node.id, node.status
                 )
 
         ctx = contextvars.copy_context()
-        self.startup_executor.submit(ctx.run, _start_node_task)
+        self.startup_futures[node.id] = self.startup_executor.submit(
+            ctx.run, _start_node_task
+        )
 
     def _stop_node(self, node: Node) -> None:
         """Stop a node.
@@ -258,11 +291,87 @@ class DagRunner:
 
         self.node_stop_function(node)
 
-    def _stop_all_nodes(self) -> None:
-        """Stop all running nodes."""
-        for node in self.running_nodes:
-            self._stop_node(node)
+    def _cancel_queued_nodes(self) -> None:
+        """Cancel nodes that were ready but never started."""
+        while True:
+            try:
+                node = self.startup_queue.get_nowait()
+            except queue.Empty:
+                break
+            self.startup_queue.task_done()
+            if node.status == NodeStatus.READY:
+                node.status = NodeStatus.CANCELLED
+
+        for node in self.nodes.values():
+            if node.status == NodeStatus.READY:
+                node.status = NodeStatus.CANCELLED
+
+    def _stop_node_after_interrupt(
+        self, node: Node, errors: List[str]
+    ) -> None:
+        """Stop one node after an interrupt and record stop errors."""
+        if node.id in self._stop_attempted_node_ids:
             node.status = NodeStatus.CANCELLED
+            return
+
+        self._stop_attempted_node_ids.add(node.id)
+        try:
+            self._stop_node(node)
+        except Exception as e:
+            errors.append(f"Failed to stop node `{node.id}`: {e}")
+            logger.exception("Failed to stop node `%s`.", node.id)
+        else:
+            node.status = NodeStatus.CANCELLED
+
+    def _stop_starting_nodes(self, errors: List[str]) -> None:
+        """Stop nodes whose startup function may have created resources."""
+        for node in list(self.nodes.values()):
+            if node.status != NodeStatus.STARTING:
+                continue
+
+            future = self.startup_futures.get(node.id)
+            if future and future.cancel():
+                node.status = NodeStatus.CANCELLED
+                continue
+
+            if future:
+                try:
+                    future.result(timeout=self.starting_node_stop_timeout)
+                except TimeoutError:
+                    self._startup_stop_timed_out = True
+                    message = (
+                        "Timed out after "
+                        f"{self.starting_node_stop_timeout} seconds waiting "
+                        f"for node `{node.id}` to finish startup during "
+                        "force stop. ZenML could not confirm whether a "
+                        "backend resource was created or stopped."
+                    )
+                    errors.append(message)
+                    logger.error(message)
+                    if self.node_stop_function and node.metadata:
+                        self._stop_node_after_interrupt(node, errors)
+                    if not node.is_finished:
+                        node.status = NodeStatus.CANCELLED
+                    continue
+                except Exception:
+                    node.status = NodeStatus.FAILED
+                    logger.exception(
+                        "Startup future for node `%s` failed.", node.id
+                    )
+
+            if node.status == NodeStatus.RUNNING:
+                self._stop_node_after_interrupt(node, errors)
+            elif not node.is_finished:
+                node.status = NodeStatus.CANCELLED
+
+    def _stop_all_nodes(self) -> List[str]:
+        """Stop nodes that are running or still starting."""
+        errors: List[str] = []
+        self._cancel_queued_nodes()
+        self._stop_starting_nodes(errors)
+        for node in self.running_nodes:
+            self._stop_node_after_interrupt(node, errors)
+        return errors
 
     def _process_nodes(self) -> bool:
         """Process the nodes.
@@ -363,12 +472,24 @@ class DagRunner:
 
             time.sleep(0.5)
 
+        self._force_stopping = interrupt_mode == InterruptMode.FORCE
         self.shutdown_event.set()
-        if interrupt_mode == InterruptMode.FORCE:
-            # If a force interrupt was requested, we stop all running nodes.
-            self._stop_all_nodes()
+        stop_errors: List[str] = []
+        if self._force_stopping:
+            stop_errors = self._stop_all_nodes()
 
         self.monitoring_thread.join()
+        # If a startup future already exceeded the force-stop timeout, waiting
+        # here would recreate the unbounded wait that force stop avoids.
+        self.startup_executor.shutdown(
+            wait=not self._startup_stop_timed_out,
+            cancel_futures=self._startup_stop_timed_out,
+        )
+
+        if stop_errors:
+            raise RuntimeError(
+                "Failed to stop all DAG nodes: " + "; ".join(stop_errors)
+            )
 
         node_statuses = {
             node_id: node.status for node_id, node in self.nodes.items()

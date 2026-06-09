@@ -40,29 +40,38 @@ class ModalOrchestratorSettings(BaseSettings):
 
     gpu: Optional[str] = Field(
         None,
-        description="GPU type for the orchestration Sandbox. Use ResourceSettings.gpu_count to specify the number of GPUs.",
+        description="GPU type for the orchestration Modal Sandbox. Must be a valid Modal GPU type. "
+        "Examples: 'T4' (cost-effective), 'A100' (high-performance), 'V100' (training workloads). "
+        "Use ResourceSettings.gpu_count to specify the number of GPUs. If not specified, the orchestration sandbox uses CPU-only execution.",
     )
     region: Optional[str] = Field(
         None,
-        description="Cloud region for the orchestration Sandbox. If not specified, Modal uses its workspace default.",
+        description="Cloud region for the orchestration Modal Sandbox. Must be a valid region for the selected cloud provider. "
+        "Examples: 'us-east-1', 'us-west-2', 'eu-west-1'. If not specified, Modal uses its default region based on cloud provider and availability.",
     )
     cloud: Optional[str] = Field(
         None,
-        description="Cloud provider for the orchestration Sandbox. If not specified, Modal uses its workspace default.",
+        description="Cloud provider for the orchestration Modal Sandbox. Must be a valid Modal-supported cloud provider. "
+        "Examples: 'aws', 'gcp'. If not specified, Modal uses its default cloud provider based on workspace configuration.",
     )
     modal_environment: Optional[str] = Field(
         None,
-        description="Modal environment name used for App.lookup(..., environment_name=...).",
+        description="Modal environment name for app lookup. Must be a valid environment configured in Modal. "
+        "ZenML passes it as the Modal SDK App.lookup environment_name argument. Examples: 'main', 'staging', 'production'. "
+        "If not specified, Modal uses the default environment.",
     )
     timeout: int = Field(
         DEFAULT_TIMEOUT_SECONDS,
         ge=1,
         le=DEFAULT_TIMEOUT_SECONDS,
-        description=f"Maximum execution time in seconds. Must be between 1 and {DEFAULT_TIMEOUT_SECONDS} seconds.",
+        description=f"Maximum Modal Sandbox lifetime in seconds. Must be between 1 and {DEFAULT_TIMEOUT_SECONDS} seconds. "
+        f"Examples: 3600 (1 hour), 7200 (2 hours), {DEFAULT_TIMEOUT_SECONDS} (24 hours maximum). "
+        "Modal terminates the sandbox if it exceeds this timeout.",
     )
     synchronous: bool = Field(
         True,
-        description="Whether to wait for the orchestration Sandbox to finish after submission.",
+        description="Whether to wait for the orchestration Modal Sandbox to finish after submission. "
+        "When enabled, controller failures, including failed child step sandboxes, are surfaced to the submitting process.",
     )
 
 

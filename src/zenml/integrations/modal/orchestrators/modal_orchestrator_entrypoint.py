@@ -373,6 +373,17 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
         node_statuses: Dict[str, NodeStatus],
     ) -> None:
         """Publish a final pipeline status when the run is still active."""
+        failed_step_names = [
+            step_name
+            for step_name, node_status in node_statuses.items()
+            if node_status
+            in {
+                NodeStatus.FAILED,
+                NodeStatus.SKIPPED,
+                NodeStatus.CANCELLED,
+            }
+        ]
+
         try:
             run = Client().get_pipeline_run(pipeline_run_id)
             if run.status in {
@@ -386,16 +397,6 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
                     )
                 return
 
-            failed_step_names = [
-                step_name
-                for step_name, node_status in node_statuses.items()
-                if node_status
-                in {
-                    NodeStatus.FAILED,
-                    NodeStatus.SKIPPED,
-                    NodeStatus.CANCELLED,
-                }
-            ]
             if failed_step_names:
                 logger.error(
                     "The following Modal steps did not complete successfully: %s",
@@ -419,7 +420,10 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
                     ExecutionStatus.RUNNING,
                 }:
                     publish_utils.publish_failed_pipeline_run(pipeline_run_id)
-                return
+                raise RuntimeError(
+                    "Modal steps did not complete successfully: "
+                    + ", ".join(failed_step_names)
+                )
 
             run = Client().get_pipeline_run(pipeline_run_id)
             if run.status in {
@@ -429,4 +433,8 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
             }:
                 publish_utils.publish_successful_pipeline_run(pipeline_run_id)
         except AuthorizationException:
-            pass
+            if failed_step_names:
+                raise RuntimeError(
+                    "Modal steps did not complete successfully: "
+                    + ", ".join(failed_step_names)
+                )

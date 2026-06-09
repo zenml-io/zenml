@@ -11,7 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Compatibility imports for the shared DAG runner."""
+"""Compatibility import path for Kubernetes DAG runner users.
+
+Kubernetes now uses :mod:`zenml.orchestrators.monitored_dag_runner` directly.
+This module keeps the old Kubernetes import path working for code that still
+imports the runner from here.
+"""
 
 from zenml.orchestrators.monitored_dag_runner import (
     DagRunner,
