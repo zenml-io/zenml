@@ -93,7 +93,7 @@ class PandasMaterializer(BaseMaterializer):
         """
         super().__init__(uri, artifact_store)
         try:
-            import pyarrow  # type: ignore # noqa
+            import pyarrow  # noqa
 
             self.pyarrow_exists = True
         except ImportError:
