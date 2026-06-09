@@ -444,6 +444,12 @@ class DagRunner:
         Returns:
             Whether the DAG is finished.
         """
+        # Other threads (startup workers, the monitoring thread) acquire the
+        # node state lock before writing node statuses, and the remaining
+        # writers run on this thread. Statuses therefore cannot change while
+        # this method holds the lock, so applying the failure policy once on
+        # entry is sufficient; failures observed later are handled by the
+        # next call.
         with self._node_state_lock:
             self._apply_failure_policy()
 
@@ -467,26 +473,18 @@ class DagRunner:
                 if not node.is_finished:
                     finished = False
 
-            self._apply_failure_policy()
             if self._disabled_new_start_status is not None:
                 return finished
 
             # Start nodes until we reach the maximum configured parallelism
             max_parallelism = self.max_parallelism or len(self.nodes)
             while len(self.active_nodes) < max_parallelism:
-                self._apply_failure_policy()
-                if self._disabled_new_start_status is not None:
-                    return finished
-
                 try:
                     node = self.startup_queue.get_nowait()
                 except queue.Empty:
                     break
                 else:
                     self.startup_queue.task_done()
-                    self._apply_failure_policy()
-                    if self._disabled_new_start_status is not None:
-                        return finished
                     self._start_node(node)
 
             return finished

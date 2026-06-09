@@ -169,9 +169,7 @@ def get_gpu_values(
     settings: Any,
     resource_settings: ResourceSettings,
     *,
-    gpu_validation_message: Optional[GpuValidationMessage] = None,
-    settings_gpu_field: Optional[str] = None,
-    settings_example: Optional[str] = None,
+    gpu_validation_message: GpuValidationMessage = DEFAULT_GPU_VALIDATION_MESSAGE,
 ) -> Optional[str]:
     """Compute and validate the Modal ``gpu`` argument string.
 
@@ -186,10 +184,6 @@ def get_gpu_values(
         settings: Modal component settings describing the GPU type.
         resource_settings: Resource constraints providing the GPU count.
         gpu_validation_message: Human-readable context for error messages.
-        settings_gpu_field: Deprecated keyword-compatible settings field for
-            error messages.
-        settings_example: Deprecated keyword-compatible settings example for
-            error messages.
 
     Returns:
         A Modal-compatible GPU specification string or ``None`` when running on
@@ -199,19 +193,6 @@ def get_gpu_values(
         StackComponentInterfaceError: If the configuration is inconsistent or
             invalid.
     """
-    gpu_validation_message = (
-        gpu_validation_message or DEFAULT_GPU_VALIDATION_MESSAGE
-    )
-    if settings_gpu_field or settings_example:
-        gpu_validation_message = GpuValidationMessage(
-            settings_field=(
-                settings_gpu_field or gpu_validation_message.settings_field
-            ),
-            settings_example=(
-                settings_example or gpu_validation_message.settings_example
-            ),
-        )
-
     gpu_type = normalize_optional_config_value(settings.gpu)
     gpu_count = resource_settings.gpu_count
 

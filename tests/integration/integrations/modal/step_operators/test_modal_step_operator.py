@@ -32,12 +32,15 @@ from zenml.integrations.modal.flavors import (
     ModalStepOperatorConfig,
     ModalStepOperatorSettings,
 )
+from zenml.integrations.modal.sandbox_utils import (
+    GpuValidationMessage,
+    get_gpu_values,
+)
 from zenml.integrations.modal.step_operators import (
     modal_step_operator as modal_step_operator_module,
 )
 from zenml.integrations.modal.step_operators.modal_step_operator import (
     ModalStepOperator,
-    get_gpu_values,
 )
 
 SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY = (
@@ -255,7 +258,7 @@ def test_gpu_arg_raises_when_count_without_type() -> None:
     assert "settings={'modal'" not in error_message
 
 
-def test_gpu_arg_accepts_legacy_error_message_keywords() -> None:
+def test_gpu_arg_uses_custom_validation_message() -> None:
     settings = ModalStepOperatorSettings(gpu=None)
     rs = ResourceSettingsStub(gpu_count=1)
 
@@ -263,8 +266,10 @@ def test_gpu_arg_accepts_legacy_error_message_keywords() -> None:
         get_gpu_values(
             settings,
             rs,
-            settings_gpu_field="CustomSettings.gpu",
-            settings_example="Set CustomSettings(gpu='A100').",
+            gpu_validation_message=GpuValidationMessage(
+                settings_field="CustomSettings.gpu",
+                settings_example="Set CustomSettings(gpu='A100').",
+            ),
         )
 
     error_message = str(e.value)

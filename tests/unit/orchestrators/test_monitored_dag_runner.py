@@ -138,9 +138,8 @@ def test_stop_on_failure_drains_active_nodes_and_skips_unstarted_work() -> (
     }
 
 
-def test_stop_on_failure_rechecks_failures_before_starting_ready_nodes() -> (
-    None
-):
+def test_stop_on_failure_skips_queued_nodes_after_failure() -> None:
+    """A failure observed on entry must keep queued nodes from starting."""
     started_nodes: list[str] = []
 
     def start_node(node: Node) -> NodeStatus:
@@ -148,20 +147,16 @@ def test_stop_on_failure_rechecks_failures_before_starting_ready_nodes() -> (
         return NodeStatus.RUNNING
 
     runner = DagRunner(
-        nodes=[Node(id="fails", status=NodeStatus.RUNNING), Node(id="queued")],
+        nodes=[
+            Node(id="fails", status=NodeStatus.FAILED),
+            Node(id="queued", status=NodeStatus.READY),
+        ],
         node_startup_function=start_node,
         node_monitoring_function=lambda node: node.status,
         monitoring_interval=0.01,
         execution_mode=ExecutionMode.STOP_ON_FAILURE,
     )
-    original_can_start_node = runner._can_start_node
-
-    def fail_during_processing(node: Node) -> bool:
-        if node.id == "queued":
-            runner.nodes["fails"].status = NodeStatus.FAILED
-        return original_can_start_node(node)
-
-    runner._can_start_node = fail_during_processing
+    runner._initialize_startup_queue()
 
     try:
         runner._process_nodes()

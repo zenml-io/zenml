@@ -37,9 +37,6 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-# Keep the Modal SDK module visible from this module for existing tests and
-# downstream code that monkeypatches it through the legacy step operator path.
-
 MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY = "modal_step_operator"
 STEP_SANDBOX_ID_METADATA_KEY = "sandbox_id"
 STEP_MODAL_ENVIRONMENT_METADATA_KEY = "modal_environment"
@@ -49,17 +46,6 @@ SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY = (
 SENSITIVE_ZENML_RUNTIME_ENV_KEYS = (
     sandbox_utils.SENSITIVE_ZENML_RUNTIME_ENV_KEYS
 )
-
-# Backward-compatible private helper aliases. The public compatibility point is
-# `get_gpu_values`, but these aliases keep older focused tests and monkeypatches
-# working if they reached into this module.
-_normalize_optional_config_value = (
-    sandbox_utils.normalize_optional_config_value
-)
-_split_modal_runtime_environment = (
-    sandbox_utils.split_modal_runtime_environment
-)
-get_gpu_values = sandbox_utils.get_gpu_values
 
 
 class ModalStepOperator(BaseStepOperator):
@@ -206,7 +192,7 @@ class ModalStepOperator(BaseStepOperator):
             stack.container_registry.credentials,
         )
         resource_settings = info.config.resource_settings
-        modal_environment = _normalize_optional_config_value(
+        modal_environment = sandbox_utils.normalize_optional_config_value(
             settings.modal_environment
         )
         modal_client = self._get_modal_client()
