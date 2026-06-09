@@ -1,8 +1,8 @@
-"""add pagination indexes for pipeline runs and snapshots [9210b7665982].
+"""add pagination indexes for pipeline runs and snapshots [c465032f0ec0].
 
-Revision ID: 9210b7665982
+Revision ID: c465032f0ec0
 Revises: 0.94.6
-Create Date: 2026-06-03 16:08:25.358801
+Create Date: 2026-06-09 02:19:38.572706
 
 """
 
@@ -12,7 +12,7 @@ from zenml.zen_stores.migrations.utils import (
 )
 
 # revision identifiers, used by Alembic.
-revision = "9210b7665982"
+revision = "c465032f0ec0"
 down_revision = "0.94.6"
 branch_labels = None
 depends_on = None
@@ -68,9 +68,14 @@ def upgrade() -> None:
         ["step_run_id"],
     )
 
-    # Matches slow hydrated step-run list queries:
-    # WHERE project_id = ? AND pipeline_run_id = ? AND name IN (...)
-    # ORDER BY created, id.
+    # Composite index for the slow hydrated step-run list query (top offender
+    # in the RDS slow logs: ~174k-380k rows examined to return 0-2 rows). The
+    # column order is deliberate and respects leftmost-prefix usage:
+    # project_id, pipeline_run_id and name are equality predicates and form the
+    # prefix, then created, id match the pagination ORDER BY:
+    #   WHERE project_id = ? AND pipeline_run_id = ? AND name = ? / IN (...)
+    #   ORDER BY created, id
+    # Purpose-built for this query shape, not a general-purpose step_run index.
     create_index_if_missing(
         "step_run",
         "ix_step_run_project_id_pipeline_run_id_name_created_id",
