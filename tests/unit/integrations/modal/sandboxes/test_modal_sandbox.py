@@ -23,7 +23,7 @@ import sys
 from contextlib import contextmanager
 from datetime import datetime
 from typing import Any, Iterator, List
-from unittest.mock import MagicMock, patch, sentinel
+from unittest.mock import MagicMock
 from uuid import uuid4
 
 import pytest

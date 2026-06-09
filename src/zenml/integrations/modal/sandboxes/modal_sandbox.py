@@ -14,15 +14,12 @@
 """Modal sandbox flavor implementation."""
 
 import logging
-import math
 import shlex
 import threading
 import time
 from typing import (
-    TYPE_CHECKING,
     Any,
     Dict,
-    Iterable,
     Iterator,
     List,
     Optional,
