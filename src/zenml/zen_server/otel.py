@@ -352,6 +352,9 @@ def _instrument_libraries(app: "FastAPI") -> None:
     try:
         from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
+        # Exclude low-level ASGI send/receive event spans; the main request
+        # span is enough for normal API tracing, and these add noise.
+        # Ref: https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/fastapi/fastapi.html#request-response-hooks
         FastAPIInstrumentor.instrument_app(
             app,
             exclude_spans=["send", "receive"],
