@@ -19,6 +19,7 @@ import copy
 import functools
 import inspect
 import os
+import signal
 import threading
 import time
 from concurrent.futures import Future, ThreadPoolExecutor
@@ -980,21 +981,34 @@ class DynamicPipelineRunner:
 
         async def _run_entrypoint_on_loop() -> Any:
             self._loop = asyncio.get_running_loop()
+            interrupted = False
             try:
                 return await call_result
+            except (asyncio.CancelledError, KeyboardInterrupt):
+                # Ctrl+C unwinds the body as a cancellation. Cancel in-flight
+                # step tasks instead of waiting for them so the interrupt is as
+                # responsive as it is in a sync pipeline, where the running step
+                # is interrupted immediately. Other failures fall through and
+                # let in-flight steps drain, matching the sync stop-on-failure
+                # behavior.
+                interrupted = True
+                raise
             finally:
                 # The pipeline body can spawn step invocations as background
                 # tasks on this loop (e.g. asyncio.create_task(my_step())) and
                 # return without awaiting them. Those tasks might still be
                 # running when the body returns. `asyncio.run(...)`` cancels
-                # any pending tasks when it closes the loop, so we await them
-                # here first to let the tasks finish cleanly.
+                # any pending tasks when it closes the loop, so on a normal
+                # return we await them here first to let them finish cleanly.
                 pending = [
                     task
                     for task in asyncio.all_tasks(self._loop)
                     if task is not asyncio.current_task()
                 ]
                 if pending:
+                    if interrupted:
+                        for task in pending:
+                            task.cancel()
                     await asyncio.gather(*pending, return_exceptions=True)
                 self._loop = None
 
@@ -1585,18 +1599,47 @@ class DynamicPipelineRunner:
         future = loop.run_in_executor(
             None, functools.partial(context.run, poll, interrupt=interrupt)
         )
+
+        def _remove_sigint_handler() -> None:
+            try:
+                loop.remove_signal_handler(signal.SIGINT)
+            except (NotImplementedError, RuntimeError, ValueError):
+                pass
+
+        def _forward_ctrl_c() -> None:
+            # Restore default handling so a second Ctrl+C force-quits while the
+            # poll aborts the wait, then forward the first one to the poll.
+            _remove_sigint_handler()
+            interrupt.trigger()
+
+        # Route Ctrl+C through the loop so the worker poll aborts the wait the
+        # same way a sync pipeline does, identically across Python versions.
+        # Without this, Python 3.11+ delivers the SIGINT as a task cancellation
+        # while 3.10 raises it as a KeyboardInterrupt during `asyncio.run()`
+        # shutdown, which marks the run failed instead of stopped. The
+        # `CancelledError` branch below stays as the fallback for platforms
+        # without loop signal handlers and child pipelines off the main thread.
+        sigint_forwarded = False
+        try:
+            loop.add_signal_handler(signal.SIGINT, _forward_ctrl_c)
+            sigint_forwarded = True
+        except (NotImplementedError, RuntimeError, ValueError):
+            pass
+
         try:
             try:
                 return await asyncio.shield(future)
             except asyncio.CancelledError:
-                # Ctrl+C reaches the loop thread as a cancellation here, never
-                # the worker. Forward it so the poll aborts the wait the same
-                # way Ctrl+C does in a sync pipeline.
+                # A cancellation reaches the loop thread here, never the
+                # worker. Forward it so the poll aborts the wait the same way
+                # Ctrl+C does in a sync pipeline.
                 if future.done():
                     return future.result()
                 interrupt.trigger()
                 return await asyncio.shield(future)
         finally:
+            if sigint_forwarded:
+                _remove_sigint_handler()
             interrupt.close()
             self._end_active_wait()
 

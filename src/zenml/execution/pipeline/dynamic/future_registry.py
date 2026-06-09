@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Future registry for dynamic pipeline execution."""
 
+import asyncio
 import threading
 import time
 from typing import Dict, List, Union
@@ -265,7 +266,11 @@ class FutureRegistry:
         for future in futures:
             try:
                 future.wait()
-            except Exception:
+            except (Exception, asyncio.CancelledError):
+                # A cancelled step (Ctrl+C) surfaces as a `CancelledError`,
+                # which is a `BaseException`. Swallow it like any other failure
+                # so the drain stays best-effort and the caller can publish the
+                # final run status.
                 pass
 
     def has_in_progress_work(self) -> bool:
