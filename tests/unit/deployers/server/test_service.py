@@ -36,6 +36,7 @@ from zenml.deployers.server.app import (
 )
 from zenml.deployers.server.models import BaseDeploymentInvocationRequest
 from zenml.deployers.server.service import PipelineDeploymentService
+from zenml.steps.step_context import RunContext, run_context_is_initialized
 
 
 class WeatherParams(BaseModel):
@@ -317,6 +318,8 @@ def test_cleanup_depends_on_service_init_result(
 ) -> None:
     service = _make_service_stub(mocker)
     service._run_context_initialized_by_service = init_result
+    service._init_hook_started_by_service = True
+    service._init_hook_completed_by_service = True
     mock_cleanup_hook = mocker.patch(
         "zenml.deployers.server.service.BaseOrchestrator.run_cleanup_hook"
     )
@@ -327,3 +330,46 @@ def test_cleanup_depends_on_service_init_result(
         mock_cleanup_hook.assert_called_once_with(service.snapshot)
     else:
         mock_cleanup_hook.assert_not_called()
+
+
+def test_cleanup_before_init_hook_attempt_preserves_existing_run_context(
+    mocker: MockerFixture,
+) -> None:
+    RunContext._clear()
+    RunContext().initialize(state="pre-existing")
+    service = _make_service_stub(mocker)
+    mock_cleanup_hook = mocker.patch(
+        "zenml.deployers.server.service.BaseOrchestrator.run_cleanup_hook"
+    )
+
+    try:
+        service.cleanup()
+
+        mock_cleanup_hook.assert_not_called()
+        assert run_context_is_initialized() is True
+        assert RunContext().state == "pre-existing"
+    finally:
+        RunContext._clear()
+
+
+def test_cleanup_only_clears_service_owned_run_context_once(
+    mocker: MockerFixture,
+) -> None:
+    RunContext._clear()
+    RunContext().initialize(state="service-owned")
+    service = _make_service_stub(mocker)
+    service._run_context_initialized_by_service = True
+    service._init_hook_started_by_service = True
+    service._init_hook_completed_by_service = True
+
+    try:
+        service.cleanup()
+        assert run_context_is_initialized() is False
+
+        RunContext().initialize(state="new-owner")
+        service.cleanup()
+
+        assert run_context_is_initialized() is True
+        assert RunContext().state == "new-owner"
+    finally:
+        RunContext._clear()
