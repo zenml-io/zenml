@@ -133,7 +133,7 @@ Within the `MLFlowDeploymentService` you can configure:
 * `blocking`: set to True to run the service in the context of the current process and block until the service is stopped instead of running the service as a daemon process. Useful for operating systems that do not support daemon processes.
 * `model_uri`: The URI of the model to be deployed. This can be a local file path, a run ID, or a model name and version.
 * `workers`: The number of workers to be used by the MLflow prediction server.
-* `mlserver`: If True, the MLflow prediction server will be started as a MLServer instance.
+* `mlserver`: If True, the MLflow prediction server will be started as a MLServer instance. The MLServer backend is deprecated by MLflow and is ignored for MLflow 3.13.0 or newer, where ZenML falls back to the built-in MLflow scoring server.
 * `timeout`: The timeout in seconds to wait for the MLflow prediction server to start or stop.
 
 ### Run inference on a deployed model
