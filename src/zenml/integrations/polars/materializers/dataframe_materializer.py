@@ -17,8 +17,8 @@ import os
 from typing import Any, ClassVar, Tuple, Type, Union
 
 import polars as pl
-import pyarrow as pa  # type: ignore
-import pyarrow.parquet as pq  # type: ignore
+import pyarrow as pa
+import pyarrow.parquet as pq
 
 from zenml.enums import ArtifactType
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -47,7 +47,7 @@ class PolarsMaterializer(BaseMaterializer):
             io_utils.copy_dir(self.uri, temp_dir)
 
             # Load the data from the temporary directory
-            table = pq.read_table(
+            table = pq.read_table(  # type: ignore[no-untyped-call]
                 os.path.join(temp_dir, "dataframe.parquet").replace("\\", "/")
             )
 
@@ -104,5 +104,7 @@ class PolarsMaterializer(BaseMaterializer):
             path = os.path.join(temp_dir, "dataframe.parquet").replace(
                 "\\", "/"
             )
-            pq.write_table(table, path)  # Uses lz4 compression by default
+            pq.write_table(  # type: ignore[no-untyped-call]
+                table, path
+            )  # Uses lz4 compression by default
             io_utils.copy_dir(temp_dir, self.uri)
