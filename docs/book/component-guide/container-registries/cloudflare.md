@@ -32,4 +32,4 @@ zenml container-registry register cloudflare_registry \
 zenml stack register cloudflare_stack -c cloudflare_registry ... --set
 ```
 
-For more, refer to the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-cloudflare.html).
+For full configuration reference, run `zenml flavor describe <flavor-name>` or browse the source under `src/zenml/integrations/cloudflare/`.
