@@ -2405,11 +2405,23 @@ class SqlZenStore(BaseZenStore):
     ) -> Optional[ApiTransactionSchema]:
         """Atomically claim an expired API transaction for re-execution.
 
-        The conditional UPDATE is the claim. It transitions a completed,
-        expired transaction back to pending only if no other worker already
-        claimed it. Concurrent workers that see ``rowcount == 0`` lost the
-        claim and must treat the transaction as in-flight instead of executing
-        the mutation again.
+        The claim is a single conditional UPDATE rather than loading the row
+        and then mutating it, which makes it atomic across concurrent workers.
+        The UPDATE transitions a still-completed, still-expired transaction
+        back to pending (``completed=False``, ``expired=None``) only while the
+        predicates still match, so exactly one worker can win the claim. A
+        worker that sees ``rowcount != 1`` lost the race (another worker
+        already claimed it) and must treat the transaction as in-flight instead
+        of re-executing the mutation. The winning worker also deletes the stale
+        cached result so the transaction is re-run cleanly.
+
+        Args:
+            api_transaction_schema: The expired transaction to claim.
+            session: The SQL session to use for the claim.
+
+        Returns:
+            The claimed transaction schema if this worker won the claim, or
+            ``None`` if another worker already claimed it.
         """
         now = utc_now()
         result = session.execute(
@@ -2440,8 +2452,14 @@ class SqlZenStore(BaseZenStore):
     ) -> int:
         """Delete completed API transactions that have expired."""
         with Session(self.engine) as session:
-            # Select a bounded batch first so MySQL can skip rows locked by
-            # other cleanup workers instead of blocking a full delete scan.
+            # Two-step delete (SELECT ids, then DELETE by id) instead of a
+            # single ``DELETE ... WHERE completed AND expired``: MySQL supports
+            # SKIP LOCKED only on SELECT, so selecting a bounded, locked batch
+            # lets concurrent cleanup workers skip rows another worker already
+            # holds rather than serializing on them. It also caps each delete
+            # to ``batch_size`` rows, avoiding the long-held locks and
+            # replication lag an unbounded delete scan causes on large
+            # backlogs.
             query = (
                 select(ApiTransactionSchema.id)
                 .where(
