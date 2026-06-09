@@ -100,10 +100,10 @@ server = [
 ]
 otel = [
     # Install otel dependencies to enable OpenTelemetry instrumentation in the server
-    "opentelemetry-exporter-otlp-proto-http>=1.40.0",
-    "opentelemetry-instrumentation-fastapi>=0.61b0",
-    "opentelemetry-instrumentation-requests>=0.61b0",
-    "opentelemetry-instrumentation-sqlalchemy>=0.61b0",
+    "opentelemetry-exporter-otlp-proto-http>=1.40.0,<1.41.0",
+    "opentelemetry-instrumentation-fastapi>=0.61b0,<0.62b0",
+    "opentelemetry-instrumentation-requests>=0.61b0,<0.62b0",
+    "opentelemetry-instrumentation-sqlalchemy>=0.61b0,<0.62b0",
 ]
 server-streaming = ["redis>=7.1.0,<8.0.0"]
 jupyter = ["rich[jupyter]>=12.0.0"]
