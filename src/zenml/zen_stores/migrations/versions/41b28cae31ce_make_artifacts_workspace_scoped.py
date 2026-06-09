@@ -7,6 +7,7 @@ Create Date: 2025-02-19 23:23:08.133826
 """
 
 import os
+from uuid import UUID
 
 import sqlalchemy as sa
 from alembic import op
@@ -66,7 +67,7 @@ def upgrade() -> None:
 
     # Update existing records with the default workspace
     op.execute(
-        artifact_table.update().values(workspace_id=default_workspace_id)
+        artifact_table.update().values(workspace_id=UUID(default_workspace_id))
     )
 
     bind = op.get_bind()
