@@ -56,11 +56,9 @@ Because the bridge bearer token is scoped to a single Worker (not a whole Cloudf
 |---|---|
 | `worker_url` | Base URL of the deployed bridge Worker. Required. |
 | `api_key` | Bearer token for the bridge. Stored as a ZenML secret. |
-| `base_image` | Reserved for future use: the current bridge does not accept a custom image on `POST /v1/sandbox`. Pass `"<step>"` to request the active step's containerized-orchestrator image (still informational today). |
-| `default_image` | Component-level fallback for `base_image`. |
 | `timeout_ms` | Per-exec timeout in milliseconds. Passed to the bridge as `timeout_ms`. |
 | `cwd` | Default working directory for execs inside the sandbox (server-side paths are confined to `/workspace`). |
-| `sandbox_environment` | Env vars injected into the sandbox session. When set, ZenML asks the bridge to scope them to a session (`POST /v1/sandbox/:id/session`) and falls back to inlining `KEY=VAL` into argv if the bridge rejects the body shape. |
+| `sandbox_environment` | Env vars injected into the sandbox session. ZenML scopes them via `POST /v1/sandbox/:id/session`. |
 
 ### Using it from a step
 
