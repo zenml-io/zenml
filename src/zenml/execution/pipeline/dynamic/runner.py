@@ -16,7 +16,9 @@
 import asyncio
 import contextvars
 import copy
+import functools
 import inspect
+import os
 import threading
 import time
 from concurrent.futures import Future, ThreadPoolExecutor
@@ -25,8 +27,8 @@ from datetime import timedelta
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     ContextManager,
-    Coroutine,
     Dict,
     Iterator,
     List,
@@ -181,6 +183,51 @@ class _WaitConditionAborted(Exception):
 
 class RunPaused(Exception):
     """Raised when a run (or one of its descendants) entered a paused state."""
+
+
+class _WaitInterrupt:
+    """Cross-thread wake signal for an offloaded wait poll."""
+
+    def __init__(self) -> None:
+        """Initialize the interrupt."""
+        self._event = threading.Event()
+        self._read_fd, self._write_fd = os.pipe()
+
+    @property
+    def fd(self) -> int:
+        """Read end of the wakeup pipe, for use in `select`.
+
+        Returns:
+            The read file descriptor.
+        """
+        return self._read_fd
+
+    def trigger(self) -> None:
+        """Wake the worker poll from its sleep or terminal read."""
+        self._event.set()
+        try:
+            os.write(self._write_fd, b"\x00")
+        except OSError:
+            pass
+
+    def wait(self, timeout: float) -> bool:
+        """Block up to `timeout` seconds or until triggered.
+
+        Args:
+            timeout: Maximum number of seconds to block.
+
+        Returns:
+            Whether the interrupt was triggered.
+        """
+        return self._event.wait(timeout=timeout)
+
+    def close(self) -> None:
+        """Close the wakeup pipe."""
+        for fd in (self._read_fd, self._write_fd):
+            try:
+                os.close(fd)
+            except OSError:
+                pass
 
 
 class _PipelineThreadState:
@@ -373,6 +420,8 @@ class DynamicPipelineRunner:
         self._future_registry = FutureRegistry()
         self._child_runners: Dict[str, "DynamicPipelineRunner"] = {}
         self._state = _PipelineThreadState()
+        self._active_wait = False
+        self._active_wait_lock = threading.Lock()
 
         self._is_paused = False
         self._loop: Optional[asyncio.AbstractEventLoop] = None
@@ -928,7 +977,7 @@ class DynamicPipelineRunner:
         call_result = self.pipeline._call_entrypoint(**params)
         if not inspect.iscoroutine(call_result):
             return call_result
-        
+
         async def _run_entrypoint_on_loop() -> Any:
             self._loop = asyncio.get_running_loop()
             try:
@@ -1432,22 +1481,52 @@ class DynamicPipelineRunner:
             name: Optional deterministic wait condition name.
             after: Optional upstream futures that must finish before waiting.
 
+        Returns:
+            The resolved wait condition value. Inside an async pipeline this is
+            a coroutine that resolves to the value when awaited.
+        """
+        wait_condition_name = self._validate_and_begin_wait(name=name)
+
+        poll = functools.partial(
+            self._run_wait_to_completion,
+            wait_condition_name=wait_condition_name,
+            schema=schema,
+            type=type,
+            timeout=timeout,
+            poll_interval=poll_interval,
+            question=question,
+            metadata=metadata,
+            after=after,
+        )
+
+        if self.event_loop is not None:
+            # Async pipeline: park the body coroutine on the loop and run the
+            # blocking poll on a worker thread so in-flight steps keep draining.
+            return self._await_wait(poll=poll)
+
+        try:
+            return poll()
+        finally:
+            self._end_active_wait()
+
+    def _validate_and_begin_wait(self, name: Optional[str]) -> str:
+        """Validate the wait call and reserve the single active wait slot.
+
+        Args:
+            name: Optional deterministic wait condition name.
+
         Raises:
-            RuntimeError: If called outside the dynamic pipeline function.
-            _WaitConditionAborted: If the wait condition was aborted.
-            RunPaused: If the wait condition polling timed out and the run
-                was transitioned to PAUSED.
-            KeyboardInterrupt: If interrupted while waiting.
-            BaseException: If polling fails after the lease is abandoned.
+            RuntimeError: If called outside the dynamic pipeline function, from
+                inside a step, from a non-pipeline thread, or while another
+                wait is already active.
 
         Returns:
-            The resolved wait condition value.
-        """  # noqa: DOC503
+            The resolved wait condition name.
+        """
         from zenml.execution.pipeline.dynamic.run_context import (
             DynamicPipelineRunContext,
         )
         from zenml.steps.step_context import StepContext
-        from zenml.utils.time_utils import utc_now
 
         context = DynamicPipelineRunContext.get()
         if not context:
@@ -1462,8 +1541,6 @@ class DynamicPipelineRunner:
             )
 
         if threading.get_ident() != self._state.id:
-            # `wait(...)` is currently only allowed as a sync call in the
-            # pipeline function.
             raise RuntimeError(
                 "`zenml.wait(...)` must be called from the pipeline "
                 "thread, not from a worker thread spawned inside the "
@@ -1471,6 +1548,100 @@ class DynamicPipelineRunner:
             )
 
         wait_condition_name = name or context.next_wait_condition_name()
+        self._begin_active_wait()
+        return wait_condition_name
+
+    def _begin_active_wait(self) -> None:
+        """Reserve the single active wait slot for this run.
+
+        Raises:
+            RuntimeError: If a wait is already active on this run.
+        """
+        with self._active_wait_lock:
+            if self._active_wait:
+                raise RuntimeError(
+                    "Only one `zenml.wait(...)` can be active per run. Await "
+                    "the active wait condition before starting another one."
+                )
+            self._active_wait = True
+
+    def _end_active_wait(self) -> None:
+        """Release the single active wait slot for this run."""
+        with self._active_wait_lock:
+            self._active_wait = False
+
+    async def _await_wait(self, poll: Callable[..., Any]) -> Any:
+        """Run the blocking wait poll on a worker thread and await it.
+
+        Args:
+            poll: The wait poll bound with its arguments.
+
+        Returns:
+            The resolved wait condition value.
+        """
+        interrupt = _WaitInterrupt()
+        loop = asyncio.get_running_loop()
+        context = contextvars.copy_context()
+        future = loop.run_in_executor(
+            None, functools.partial(context.run, poll, interrupt=interrupt)
+        )
+        try:
+            try:
+                return await asyncio.shield(future)
+            except asyncio.CancelledError:
+                # Ctrl+C reaches the loop thread as a cancellation here, never
+                # the worker. Forward it so the poll aborts the wait the same
+                # way Ctrl+C does in a sync pipeline.
+                if future.done():
+                    return future.result()
+                interrupt.trigger()
+                return await asyncio.shield(future)
+        finally:
+            interrupt.close()
+            self._end_active_wait()
+
+    def _run_wait_to_completion(
+        self,
+        wait_condition_name: str,
+        schema: Optional[Any] = None,
+        type: RunWaitConditionType = RunWaitConditionType.EXTERNAL_INPUT,
+        timeout: int = 600,
+        poll_interval: int = 5,
+        question: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        after: Union[
+            "AnyOutputFuture", Sequence["AnyOutputFuture"], None
+        ] = None,
+        interrupt: Optional[_WaitInterrupt] = None,
+    ) -> Any:
+        """Create and poll the wait condition until it resolves or pauses.
+
+        Args:
+            wait_condition_name: Resolved wait condition name.
+            schema: Optional expected output type for the resolved result.
+            type: Wait condition type.
+            timeout: Earliest time in seconds at which polling may give up
+                and pause the run. The actual pause is deferred until all
+                active work in this pipeline (or any parent/child pipelines) has
+                finished.
+            poll_interval: Poll interval in seconds.
+            question: Optional question shown to external actors.
+            metadata: Optional metadata attached to the condition.
+            after: Optional upstream futures that must finish before waiting.
+            interrupt: Optional cross-thread interrupt that aborts the poll
+                when triggered from the event loop thread.
+
+        Raises:
+            _WaitConditionAborted: If the wait condition was aborted.
+            RunPaused: If the wait condition polling timed out and the run
+                was transitioned to PAUSED.
+            KeyboardInterrupt: If interrupted while waiting.
+            BaseException: If polling fails after the lease is abandoned.
+
+        Returns:
+            The resolved wait condition value.
+        """  # noqa: DOC503
+        from zenml.utils.time_utils import utc_now
 
         for future in collect_futures(after=after, expand_map_results=True):
             future.wait()
@@ -1553,7 +1724,15 @@ class DynamicPipelineRunner:
                             poll_interactive_wait_condition_input(
                                 condition=condition,
                                 poll_interval=poll_interval,
+                                interrupt_fd=interrupt.fd
+                                if interrupt is not None
+                                else None,
                             )
+                        elif interrupt is not None:
+                            # Async pipeline: wake early if the loop thread
+                            # forwards a Ctrl+C, otherwise sleep the interval.
+                            if interrupt.wait(timeout=poll_interval):
+                                raise KeyboardInterrupt()
                         else:
                             time.sleep(poll_interval)
             except _WaitConditionAborted:

@@ -136,7 +136,8 @@ def wait(
         RuntimeError: If called outside of dynamic pipeline execution.
 
     Returns:
-        The resolved wait condition value.
+        The resolved wait condition value. Inside an async pipeline this is a
+        coroutine that resolves to the value when awaited.
     """
     from zenml.execution.pipeline.dynamic.run_context import (
         DynamicPipelineRunContext,

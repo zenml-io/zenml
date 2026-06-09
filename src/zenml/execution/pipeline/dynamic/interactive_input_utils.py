@@ -4,7 +4,7 @@ import json
 import select
 import sys
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Iterator, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Iterator, List, Optional, Tuple
 
 from zenml.client import Client
 from zenml.constants import (
@@ -105,11 +105,17 @@ def maybe_enable_interactive_wait_prompt(
 
 def read_stdin_line_with_timeout(
     timeout: float,
+    interrupt_fd: Optional[int] = None,
 ) -> Tuple[bool, Optional[str]]:
     """Read a line from stdin with a timeout.
 
     Args:
         timeout: Maximum number of seconds to wait.
+        interrupt_fd: Optional file descriptor that aborts the wait when it
+            becomes readable.
+
+    Raises:
+        KeyboardInterrupt: If the interrupt descriptor became readable.
 
     Returns:
         A tuple indicating whether input was received and the entered value.
@@ -118,12 +124,19 @@ def read_stdin_line_with_timeout(
     if timeout <= 0:
         return False, None
 
+    watch: List[Any] = [sys.stdin]
+    if interrupt_fd is not None:
+        watch.append(interrupt_fd)
+
     try:
-        readable, _, _ = select.select([sys.stdin], [], [], timeout)
+        readable, _, _ = select.select(watch, [], [], timeout)
     except (AttributeError, OSError, ValueError):
         return False, None
 
-    if not readable:
+    if interrupt_fd is not None and interrupt_fd in readable:
+        raise KeyboardInterrupt()
+
+    if sys.stdin not in readable:
         return False, None
 
     raw_value = sys.stdin.readline()
@@ -136,15 +149,19 @@ def read_stdin_line_with_timeout(
 def poll_interactive_wait_condition_input(
     condition: "RunWaitConditionResponse",
     poll_interval: int,
+    interrupt_fd: Optional[int] = None,
 ) -> None:
     """Poll interactive input for a wait condition.
 
     Args:
         condition: The wait condition to resolve.
         poll_interval: Maximum number of seconds to wait.
+        interrupt_fd: Optional file descriptor that aborts the wait when it
+            becomes readable.
     """
     has_input, raw_value = read_stdin_line_with_timeout(
         timeout=float(poll_interval),
+        interrupt_fd=interrupt_fd,
     )
     if not has_input:
         return
