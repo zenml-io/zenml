@@ -14,13 +14,13 @@ The pipeline is the only entry point. One command, one ZenML run, one queryable 
 
 ## What you get over plain `harbor run`
 
-- **Run lineage.** Every trial is a ZenML pipeline run — dashboard, artifact store, replay, caching, the lot. Yurii's two complaints (not traceable, not reproducible) close at the pipeline layer.
-- **No per-trial rebuild.** The Sandbox component owns the image. Task `[environment].docker_image` flows through to the underlying flavor's `image` setting; no Dockerfile build per trial.
-- **Portable substrate.** Swap the Sandbox flavor (Modal → GKE Agent Sandbox → …) and Harbor sees nothing change. Same bridge, same task assets.
+- **Run lineage.** Every trial is a ZenML pipeline run — dashboard, artifact store, replay, caching, the lot. Trials become traceable and reproducible at the pipeline layer.
+- **No per-trial rebuild.** The Sandbox component owns the image. Task `[environment].docker_image` is translated to `ModalSandboxSettings(image=...)` — Modal-only today; no Dockerfile build per trial.
+- **Portable substrate.** Tasks that don't pin `docker_image` are flavor-portable: swap the Sandbox flavor (Modal → GKE Agent Sandbox → …) and Harbor sees nothing change. Same bridge, same task assets.
 
 ## Files
 
-- `zenml_sandbox_env.py` — `ZenMLSandboxEnvironment(harbor.BaseEnvironment)`. ~290 LOC, implements the full Harbor environment contract (`start`/`stop`/`exec`/`upload_file`/`download_file`/`upload_dir`/`download_dir`).
+- `zenml_sandbox_env.py` — `ZenMLSandboxEnvironment(harbor.BaseEnvironment)`, implements the full Harbor environment contract (`start`/`stop`/`exec`/`upload_file`/`download_file`/`upload_dir`/`download_dir`).
 - `run.py` — the ZenML pipeline. Single step builds a Harbor `JobConfig` pointing at the bridge and runs it via `Job.create().run()`.
 - `tasks/hello/` — a hermetic Harbor task: write `42` to `/app/answer.txt`, verifier scores 1.0 if it matches. Runs under the `oracle` agent so no LLM keys needed.
 - `requirements.txt` — `harbor` + `zenml[local]`. The Modal SDK comes in via `zenml integration install modal`.
@@ -75,7 +75,7 @@ End-to-end wall clock on the default task: **~15s**, reward `1.0`. Full chain:
 ## Open seams
 
 - **`upload_dir` / `download_dir`** tar through `upload_file` / `download_file`. When the underlying Sandbox flavor grows native dir transfer this collapses to one call.
-- **`timeout_sec`** is enforced host-side via `asyncio.wait_for`; the Modal session doesn't accept per-exec timeouts. Bump session-level TTL via `ModalSandboxSettings(timeout_seconds=...)` if a trial needs more than the default.
+- **`timeout_sec`** is enforced inside the sandbox via coreutils `timeout` (genuine exit code 124 on expiry); the Modal session doesn't accept per-exec timeouts. Bump session-level TTL via `ModalSandboxSettings(timeout=...)` if a trial needs more than the default.
 - **`user`** ignored — `SandboxSession.exec` doesn't take a user yet. Agent/verifier scripts run as the container default.
 - **Resource translation** — Harbor's `task_env_config.cpus` / `memory_mb` / `gpus` don't yet flow into the active flavor's `ResourceSettings`. Add when the first GPU-flavored task comes through.
 

@@ -1,21 +1,8 @@
-"""ZenML pipeline that runs a Harbor evaluation trial.
-
-This is the single entry point for running Harbor evals on top of the
-ZenML Sandbox component. The pipeline owns the run; its single step
-builds a Harbor ``JobConfig`` pointed at the ``ZenMLSandboxEnvironment``
-bridge, and ``Job.create(config).run()`` executes the trial inside
-whatever Sandbox the active stack provides (Modal today; GKE Agent
-Sandbox / Agent Substrate later).
-
-Everything Harbor produces — reward, ATIF, agent/verifier logs, exit
-codes — comes back as ``JobResult`` and lands as a ZenML artifact
-attached to the pipeline run, so you get full lineage, caching, and
-the dashboard view by default.
+"""ZenML pipeline that runs a Harbor evaluation trial via the Sandbox bridge.
 
 Invocation::
 
-    python run.py                            # default: tasks/hello, oracle
-    python run.py tasks/hello oracle
+    python run.py [task_path] [agent_name]   # default: tasks/hello, oracle
 """
 
 from __future__ import annotations
@@ -28,6 +15,7 @@ from typing import Annotated, Any
 
 from harbor.job import Job
 from harbor.models.job.config import JobConfig
+from harbor.models.job.result import JobResult
 from harbor.models.trial.config import (
     AgentConfig,
     EnvironmentConfig,
@@ -79,7 +67,7 @@ async def _run_harbor_job(
     }
 
 
-def _mean_reward(result: Any) -> float | None:
+def _mean_reward(result: JobResult) -> float | None:
     """Pull a single mean-reward scalar out of ``JobResult.stats.evals``.
 
     Harbor's stats nest one ``mean`` per eval bucket
@@ -87,16 +75,13 @@ def _mean_reward(result: Any) -> float | None:
     by averaging across them — keeps the artifact's schema flat for
     the dashboard's metadata table.
     """
-    evals = result.stats.evals or {}
-    means: list[float] = []
-    for eval_stats in evals.values():
-        for metric in eval_stats.metrics or []:
-            mean = metric.get("mean") if isinstance(metric, dict) else None
-            if mean is not None:
-                means.append(float(mean))
-    if not means:
-        return None
-    return sum(means) / len(means)
+    means = [
+        float(m["mean"])
+        for stats in result.stats.evals.values()
+        for m in stats.metrics
+        if m.get("mean") is not None
+    ]
+    return sum(means) / len(means) if means else None
 
 
 @step

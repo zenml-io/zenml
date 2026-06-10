@@ -10,7 +10,6 @@ import uuid
 from pathlib import Path
 
 from harbor.environments.base import BaseEnvironment, ExecResult
-from harbor.environments.capabilities import EnvironmentCapabilities
 
 from zenml.client import Client
 from zenml.integrations.modal.flavors import ModalSandboxSettings
@@ -48,14 +47,6 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
     def _validate_definition(self) -> None:
         """No-op: the Sandbox flavor owns the image, no Dockerfile needed."""
 
-    @property
-    def capabilities(self) -> EnvironmentCapabilities:
-        """Capabilities reported to Harbor's preflight validators."""
-        # Conservative no-GPU default: BaseSandbox doesn't yet expose a
-        # supports_gpu capability, and claiming GPU support unconditionally
-        # would let Harbor preflight a task that fails deep in the agent run.
-        return EnvironmentCapabilities(gpus=False)
-
     def _settings_override(self) -> BaseSandboxSettings | None:
         """Translate Harbor's task-level docker_image to a sandbox setting.
 
@@ -91,7 +82,7 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
             )
         settings = self._settings_override()
         self._session = await asyncio.to_thread(
-            lambda: sandbox.create_session(settings=settings).__enter__()
+            sandbox.create_session, settings=settings
         )
         logger.info(
             "ZenML Sandbox session %s started for Harbor trial %s",
@@ -150,7 +141,9 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
                 pipelines) — wrapped in `bash -c`.
             cwd: Optional working directory inside the sandbox.
             env: Per-call env vars, merged on top of session env.
-            timeout_sec: Host-side timeout enforced via asyncio.wait_for.
+            timeout_sec: Enforced inside the sandbox via coreutils
+                ``timeout``, which kills the process and yields a genuine
+                return code 124 on expiry.
             user: Not yet plumbed through the Sandbox interface.
 
         Returns:
@@ -164,11 +157,14 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
             )
         merged_env = self._merge_env(env)
         session = self._live_session
+        argv = (
+            ["timeout", str(timeout_sec), "bash", "-c", command]
+            if timeout_sec is not None
+            else ["bash", "-c", command]
+        )
 
         def _run() -> ExecResult:
-            process = session.exec(
-                ["bash", "-c", command], cwd=cwd, env=merged_env
-            )
+            process = session.exec(argv, cwd=cwd, env=merged_env)
             out = process.collect()
             return ExecResult(
                 stdout=out.stdout,
@@ -176,17 +172,6 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
                 return_code=out.exit_code,
             )
 
-        if timeout_sec is not None:
-            try:
-                return await asyncio.wait_for(
-                    asyncio.to_thread(_run), timeout=timeout_sec
-                )
-            except asyncio.TimeoutError:
-                return ExecResult(
-                    stdout="",
-                    stderr=f"command timed out after {timeout_sec}s",
-                    return_code=124,
-                )
         return await asyncio.to_thread(_run)
 
     async def upload_file(
@@ -205,21 +190,24 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
             self._live_session.download_file, source_path, str(target_path)
         )
 
-    def _remote_tar_path(self, kind: str) -> str:
-        """Per-call remote tar path, safe against concurrent calls."""
-        # Per-call uuid keeps overlapping upload_dir calls from colliding
-        # on the same archive name.
-        return f"/tmp/.hb-{kind}-{uuid.uuid4().hex}.tar.gz"
-
     async def upload_dir(
         self, source_dir: Path | str, target_dir: str
     ) -> None:
-        """Upload a directory tree via a single tar archive round-trip."""
+        """Upload a directory tree via a single tar archive round-trip.
+
+        Args:
+            source_dir: Local directory to upload.
+            target_dir: Destination directory inside the sandbox.
+
+        Raises:
+            RuntimeError: If extracting the archive inside the sandbox
+                fails.
+        """
         # SandboxSession only exposes upload_file. Tar locally,
         # upload once, untar in the session — per-file calls would be
         # slow on remote flavors.
         source = Path(source_dir)
-        remote_tar = self._remote_tar_path("upload")
+        remote_tar = f"/tmp/.hb-{uuid.uuid4().hex}.tar.gz"
         with tempfile.TemporaryDirectory() as host_tmp:
             archive = Path(host_tmp) / "upload.tar.gz"
             with tarfile.open(archive, "w:gz") as tf:
@@ -229,36 +217,20 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
             )
         q_target = shlex.quote(target_dir)
         q_tar = shlex.quote(remote_tar)
-        # Always remove the tar — failure inside `tar xzf` shouldn't
-        # leak the archive into /tmp.
-        await self.exec(
-            f"mkdir -p {q_target}; "
-            f"tar xzf {q_tar} -C {q_target}; "
-            f"rc=$?; rm -f {q_tar}; exit $rc"
+        result = await self.exec(
+            f"mkdir -p {q_target} && tar xzf {q_tar} -C {q_target} "
+            f"&& rm -f {q_tar}"
         )
+        if result.return_code != 0:
+            raise RuntimeError(
+                f"Failed to extract upload archive: "
+                f"{result.stderr or result.stdout}"
+            )
 
     async def download_dir(
         self, source_dir: str, target_dir: Path | str
     ) -> None:
         """Download a directory tree via tar + ``download_file``."""
-        remote_tar = self._remote_tar_path("download")
-        await self.exec(
-            f"tar czf {shlex.quote(remote_tar)} -C {shlex.quote(source_dir)} ."
+        await self.download_dir_with_exclusions(
+            source_dir=source_dir, target_dir=target_dir, exclude=[]
         )
-        target = Path(target_dir)
-        target.mkdir(parents=True, exist_ok=True)
-        try:
-            with tempfile.TemporaryDirectory() as host_tmp:
-                host_tar = Path(host_tmp) / "download.tar.gz"
-                await asyncio.to_thread(
-                    self._live_session.download_file,
-                    remote_tar,
-                    str(host_tar),
-                )
-                with tarfile.open(host_tar, "r:gz") as tf:
-                    # ``filter="data"`` blocks unsafe tar entries
-                    # (absolute paths, links escaping target). Requires
-                    # Python 3.12+; the surrounding example pins 3.12.
-                    tf.extractall(path=target, filter="data")
-        finally:
-            await self.exec(f"rm -f {shlex.quote(remote_tar)}")
