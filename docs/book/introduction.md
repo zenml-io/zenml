@@ -43,13 +43,15 @@ The documentation is split into spaces — the tabs at the top of this page. Kno
 | **[Stacks](https://docs.zenml.io/stacks)** | The infrastructure components — orchestrators, artifact stores, and more — that both pipelines and agents run on |
 | **[SDK reference](https://docs.zenml.io/sdk-reference)** / **[API reference](https://docs.zenml.io/api-reference)** | Client and REST API references, organized per project |
 
-### Getting Started
+### First steps
 
-Set up ZenML and build your first pipeline:
+Whichever path you picked, the first steps are the same shape: install, run something real, then learn the concepts.
 
-<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-cover data-type="files"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>Installation</strong></td><td>Set up ZenML in your environment</td><td><a href=".gitbook/assets/production.png">production.png</a></td><td><a href="getting-started/installation.md">installation.md</a></td></tr><tr><td><strong>Core Concepts</strong></td><td>Understand ZenML fundamentals — and where Kitaru fits</td><td><a href=".gitbook/assets/core-concepts.png">core-concepts.png</a></td><td><a href="getting-started/core-concepts.md">core-concepts.md</a></td></tr><tr><td><strong>Hello World</strong></td><td>Build your first ML workflow</td><td><a href=".gitbook/assets/how-to.png">how-to.png</a></td><td><a href="getting-started/hello-world.md">hello-world.md</a></td></tr></tbody></table>
-
-Building agents instead? The equivalent path lives in the Kitaru docs: [installation](https://docs.zenml.io/kitaru/getting-started/installation), [quickstart](https://docs.zenml.io/kitaru/getting-started/quickstart), and [core concepts](https://docs.zenml.io/kitaru/concepts).
+| | ML Pipelines (ZenML) | AI Agents (Kitaru) |
+| --- | --- | --- |
+| **Install** | [Installation](getting-started/installation.md) | [Installation](https://docs.zenml.io/kitaru/getting-started/installation) |
+| **First run** | [Hello World](getting-started/hello-world.md) | [Quickstart](https://docs.zenml.io/kitaru/getting-started/quickstart) |
+| **Concepts** | [Core Concepts](getting-started/core-concepts.md) | [Core Concepts](https://docs.zenml.io/kitaru/concepts) |
 
 If you use AI coding tools, see [LLM tooling](reference/llms-txt.md) for ZenML's MCP server and Agent Skills (including `zenml-scoping` and `zenml-pipeline-authoring`).
 
