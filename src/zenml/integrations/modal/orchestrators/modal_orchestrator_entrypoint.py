@@ -93,6 +93,7 @@ class _StaticModalPipelineController:
         self.shared_env = shared_env
         self.step_run_request_factory = step_run_request_factory
         self.step_runs: Dict[str, StepRunResponse] = {}
+        self._last_interrupt_status: Optional[ExecutionStatus] = None
 
     def build_nodes(self) -> List[Node]:
         """Build DAG runner nodes from the static pipeline snapshot."""
@@ -183,17 +184,36 @@ class _StaticModalPipelineController:
             )
             return None
 
-        if run.status in {
-            ExecutionStatus.STOPPING,
-            ExecutionStatus.STOPPED,
-        }:
-            logger.info(
-                "Stopping Modal DAG because pipeline run `%s` is `%s`.",
-                self.pipeline_run.id,
-                run.status,
-            )
+        interrupt_status = (
+            run.status
+            if run.status
+            in {ExecutionStatus.STOPPING, ExecutionStatus.STOPPED}
+            else None
+        )
+
+        if run.status == ExecutionStatus.STOPPING:
+            if interrupt_status != self._last_interrupt_status:
+                logger.info(
+                    "Gracefully stopping Modal DAG because pipeline run `%s` "
+                    "is `%s`.",
+                    self.pipeline_run.id,
+                    run.status,
+                )
+            self._last_interrupt_status = interrupt_status
+            return InterruptMode.GRACEFUL
+
+        if run.status == ExecutionStatus.STOPPED:
+            if interrupt_status != self._last_interrupt_status:
+                logger.info(
+                    "Force-stopping Modal DAG because pipeline run `%s` "
+                    "is `%s`.",
+                    self.pipeline_run.id,
+                    run.status,
+                )
+            self._last_interrupt_status = interrupt_status
             return InterruptMode.FORCE
 
+        self._last_interrupt_status = None
         return None
 
     def _cache_step_run_if_possible(self, step_name: str) -> bool:
@@ -456,6 +476,8 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
             client = Client()
             run = client.get_pipeline_run(pipeline_run_id)
 
+            # A graceful local stop only marks the run as STOPPING. Once the
+            # controller has drained the DAG, it publishes the terminal status.
             if run.status == ExecutionStatus.STOPPING:
                 publish_utils.publish_pipeline_run_status_update(
                     pipeline_run_id,

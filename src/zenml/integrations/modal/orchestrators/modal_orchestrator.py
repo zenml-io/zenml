@@ -654,12 +654,35 @@ class ModalOrchestrator(ContainerizedOrchestrator):
     def _stop_run(
         self, run: "PipelineRunResponse", graceful: bool = False
     ) -> None:
-        """Terminate all known child sandboxes and the orchestration sandbox."""
+        """Stop a Modal run, honoring graceful stops where possible."""
+        refreshed_run: Optional["PipelineRunResponse"] = None
+        if graceful:
+            snapshot = getattr(run, "snapshot", None)
+            if snapshot is None:
+                refreshed_run = self._get_fresh_pipeline_run(run)
+                snapshot = getattr(refreshed_run, "snapshot", None)
+
+            if snapshot is not None and not snapshot.is_dynamic:
+                logger.info(
+                    "Gracefully stopping Modal run `%s`. The orchestration "
+                    "sandbox will stop scheduling new steps and let running "
+                    "child sandboxes finish.",
+                    run.id,
+                )
+                return
+
+            logger.warning(
+                "Graceful stops are only supported for static Modal runs. "
+                "Force-stopping Modal run `%s` instead.",
+                run.id,
+            )
+
         errors: List[str] = []
         attempted_child_sandbox_ids: set[str] = set()
         attempted_orchestration_sandbox_ids: set[str] = set()
 
-        refreshed_run = self._get_fresh_pipeline_run(run)
+        if refreshed_run is None:
+            refreshed_run = self._get_fresh_pipeline_run(run)
 
         def _terminate_child_sandboxes(
             target_run: "PipelineRunResponse",

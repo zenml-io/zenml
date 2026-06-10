@@ -752,6 +752,150 @@ def test_isolated_step_status_keeps_stopped_for_running_sandbox(monkeypatch):
     )
 
 
+def test_graceful_stop_run_leaves_sandboxes_for_controller_to_drain(
+    monkeypatch,
+):
+    from_id_sandboxes = {
+        "orchestrator-sandbox": SandboxStub("orchestrator-sandbox", [None]),
+        "child-running": SandboxStub("child-running", [None]),
+    }
+    recorded = _install_modal_sdk_stubs(
+        monkeypatch, from_id_sandboxes=from_id_sandboxes
+    )
+    run = SimpleNamespace(
+        id=uuid4(),
+        snapshot=SimpleNamespace(is_dynamic=False),
+        run_metadata={
+            MODAL_ORCHESTRATION_SANDBOX_ID_METADATA_KEY: (
+                "orchestrator-sandbox"
+            ),
+        },
+        steps={
+            "train": SimpleNamespace(
+                run_metadata={MODAL_SANDBOX_ID_METADATA_KEY: "child-running"}
+            ),
+        },
+    )
+
+    class ClientStub:
+        @staticmethod
+        def get_pipeline_run(_run_id):
+            raise AssertionError(
+                "Graceful stop should let the remote controller drain the DAG."
+            )
+
+    monkeypatch.setattr(modal_orchestrator_module, "Client", ClientStub)
+    stopped_step_run_ids = []
+    monkeypatch.setattr(
+        modal_orchestrator_module,
+        "publish_stopped_step_run",
+        lambda step_run_id: stopped_step_run_ids.append(step_run_id),
+    )
+
+    _make_orchestrator()._stop_run(run, graceful=True)
+
+    assert recorded["termination_order"] == []
+    assert from_id_sandboxes["orchestrator-sandbox"].terminate_calls == 0
+    assert from_id_sandboxes["child-running"].terminate_calls == 0
+    assert stopped_step_run_ids == []
+
+
+def test_graceful_stop_run_uses_fetched_static_snapshot(monkeypatch):
+    from_id_sandboxes = {
+        "orchestrator-sandbox": SandboxStub("orchestrator-sandbox", [None]),
+        "child-running": SandboxStub("child-running", [None]),
+    }
+    recorded = _install_modal_sdk_stubs(
+        monkeypatch, from_id_sandboxes=from_id_sandboxes
+    )
+    run_id = uuid4()
+    stale_run = SimpleNamespace(id=run_id, run_metadata={}, steps={})
+    hydrated_run = SimpleNamespace(
+        id=run_id,
+        snapshot=SimpleNamespace(is_dynamic=False),
+        run_metadata={
+            MODAL_ORCHESTRATION_SANDBOX_ID_METADATA_KEY: (
+                "orchestrator-sandbox"
+            ),
+        },
+        steps={
+            "train": SimpleNamespace(
+                run_metadata={MODAL_SANDBOX_ID_METADATA_KEY: "child-running"}
+            ),
+        },
+    )
+    fetched_run_ids = []
+
+    class ClientStub:
+        @staticmethod
+        def get_pipeline_run(_run_id):
+            fetched_run_ids.append(_run_id)
+            return hydrated_run
+
+    monkeypatch.setattr(modal_orchestrator_module, "Client", ClientStub)
+    stopped_step_run_ids = []
+    monkeypatch.setattr(
+        modal_orchestrator_module,
+        "publish_stopped_step_run",
+        lambda step_run_id: stopped_step_run_ids.append(step_run_id),
+    )
+
+    _make_orchestrator()._stop_run(stale_run, graceful=True)
+
+    assert fetched_run_ids == [run_id]
+    assert recorded["termination_order"] == []
+    assert from_id_sandboxes["orchestrator-sandbox"].terminate_calls == 0
+    assert from_id_sandboxes["child-running"].terminate_calls == 0
+    assert stopped_step_run_ids == []
+
+
+def test_graceful_stop_run_force_stops_dynamic_runs(monkeypatch):
+    from_id_sandboxes = {
+        "orchestrator-sandbox": SandboxStub("orchestrator-sandbox", [None]),
+        "child-running": SandboxStub("child-running", [None]),
+    }
+    recorded = _install_modal_sdk_stubs(
+        monkeypatch, from_id_sandboxes=from_id_sandboxes
+    )
+    run_id = uuid4()
+    run = SimpleNamespace(
+        id=run_id,
+        snapshot=SimpleNamespace(is_dynamic=True),
+        run_metadata={
+            MODAL_ORCHESTRATION_SANDBOX_ID_METADATA_KEY: (
+                "orchestrator-sandbox"
+            ),
+        },
+        steps={
+            "train": SimpleNamespace(
+                id=uuid4(),
+                status=ExecutionStatus.RUNNING,
+                config=SimpleNamespace(step_operator=None),
+                run_metadata={MODAL_SANDBOX_ID_METADATA_KEY: "child-running"},
+            ),
+        },
+    )
+
+    class ClientStub:
+        @staticmethod
+        def get_pipeline_run(_run_id):
+            return run
+
+    monkeypatch.setattr(modal_orchestrator_module, "Client", ClientStub)
+    stopped_step_run_ids = []
+    monkeypatch.setattr(
+        modal_orchestrator_module,
+        "publish_stopped_step_run",
+        lambda step_run_id: stopped_step_run_ids.append(step_run_id),
+    )
+
+    _make_orchestrator()._stop_run(run, graceful=True)
+
+    assert recorded["termination_order"].count("child-running") == 1
+    assert recorded["termination_order"].count("orchestrator-sandbox") == 1
+    assert stopped_step_run_ids == [run.steps["train"].id]
+
+
 def test_stop_run_refreshes_and_terminates_children_before_orchestration(
     monkeypatch,
 ):
@@ -1047,7 +1191,7 @@ def test_static_entrypoint_passes_execution_mode_to_dag_runner(monkeypatch):
     [
         (
             ExecutionStatus.STOPPING,
-            modal_entrypoint_module.InterruptMode.FORCE,
+            modal_entrypoint_module.InterruptMode.GRACEFUL,
         ),
         (ExecutionStatus.STOPPED, modal_entrypoint_module.InterruptMode.FORCE),
         (ExecutionStatus.FAILED, None),
