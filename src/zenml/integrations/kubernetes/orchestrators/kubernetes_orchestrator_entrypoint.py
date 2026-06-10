@@ -746,7 +746,7 @@ def main() -> None:
                     snapshot.step_configurations[step_name]
                 ),
             )
-            status, error_message = kube_utils.check_job_status(
+            status, status_message = kube_utils.check_job_status(
                 batch_api=batch_api,
                 core_api=core_api,
                 namespace=namespace,
@@ -760,7 +760,7 @@ def main() -> None:
                 logger.error(
                     "Job for step `%s` failed: %s",
                     step_name,
-                    error_message,
+                    status_message,
                 )
                 return _handle_failed_job(step_name)
             elif (
@@ -774,6 +774,19 @@ def main() -> None:
                 stop_step(node=node)
                 return NodeStatus.FAILED
             else:
+                if status_message:
+                    last_pending_message = node.metadata.get(
+                        "last_pending_status_message"
+                    )
+                    if last_pending_message != status_message:
+                        logger.info(
+                            "Job for step `%s` is pending: %s",
+                            step_name,
+                            status_message,
+                        )
+                        node.metadata["last_pending_status_message"] = (
+                            status_message
+                        )
                 return NodeStatus.RUNNING
 
         def should_interrupt_execution() -> Optional[InterruptMode]:
