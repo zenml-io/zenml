@@ -943,16 +943,25 @@ class BaseFilter(BaseModel):
         operator = GenericFilterOps.EQUALS  # Default operator
         if isinstance(value, str):
             split_value = value.split(":", 1)
-            if (
-                len(split_value) == 2
-                and split_value[0] in GenericFilterOps.values()
-            ):
-                value = split_value[1]
-                operator = GenericFilterOps(split_value[0])
-                if operator in VALUELESS_FILTER_OPS:
-                    if value:
-                        raise ValueError(NO_VALUE_ERROR)
-                    value = None
+            if len(split_value) == 2:
+                potential_operator, potential_value = split_value
+                if potential_operator in GenericFilterOps.values():
+                    value = potential_value
+                    operator = GenericFilterOps(potential_operator)
+                else:
+                    logger.debug(
+                        "Treating filter value '%s' as a literal equality "
+                        "value because '%s' is not a supported filter "
+                        "operator. Supported operators are: %s.",
+                        value,
+                        potential_operator,
+                        GenericFilterOps.values(),
+                    )
+
+            if operator in VALUELESS_FILTER_OPS:
+                if value:
+                    raise ValueError(NO_VALUE_ERROR)
+                value = None
 
             if operator in {
                 operator.ONEOF,
