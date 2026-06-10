@@ -16,7 +16,7 @@ layout:
 
 # Welcome to ZenML
 
-ZenML is a unified MLOps framework that extends the battle-tested principles you rely on for classical ML to the new world of AI agents. It's one place to develop, evaluate, and deploy your entire AI portfolio - from decision trees to complex multi-agent systems. By providing a single framework for your entire AI stack, ZenML enables developers across your organization to collaborate more effectively without maintaining separate toolchains for models and agents.
+ZenML is an open-source framework for developing, evaluating, and deploying your entire AI portfolio — classical ML, LLM pipelines, and AI agents alike. It takes the battle-tested engineering principles that production ML is built on and applies them to everything you ship, so your organization doesn't maintain one toolchain for models and another for agents.
 
 That story has two open-source projects behind it:
 
