@@ -12,7 +12,6 @@ from pathlib import Path
 from harbor.environments.base import BaseEnvironment, ExecResult
 
 from zenml.client import Client
-from zenml.integrations.modal.flavors import ModalSandboxSettings
 from zenml.logger import get_logger
 from zenml.sandboxes import BaseSandboxSettings, SandboxSession
 
@@ -60,6 +59,10 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
         image = self.task_env_config.docker_image
         if image is None:
             return None
+        # Imported lazily so the bridge only needs the modal integration
+        # when a task actually pins a docker_image.
+        from zenml.integrations.modal.flavors import ModalSandboxSettings
+
         return ModalSandboxSettings(image=image)
 
     async def start(self, force_build: bool) -> None:
@@ -107,11 +110,7 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
             str(paths.verifier_dir),
             str(paths.artifacts_dir),
         ]
-        joined = " ".join(shlex.quote(d) for d in dirs)
-        # chmod 1777 matches /tmp semantics so non-root agent and verifier
-        # users can write to /logs/agent and /logs/verifier without one
-        # trampling the other.
-        await self.exec(f"mkdir -p {joined} && chmod 1777 {joined}")
+        await self.ensure_dirs(dirs)
 
     async def stop(self, delete: bool) -> None:
         """Close (or destroy) the underlying SandboxSession.

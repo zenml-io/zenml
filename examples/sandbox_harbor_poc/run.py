@@ -8,10 +8,12 @@ Invocation::
 from __future__ import annotations
 
 import asyncio
+import io
 import sys
+import tarfile
 import tempfile
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, Tuple
 
 from harbor.job import Job
 from harbor.models.job.config import JobConfig
@@ -86,9 +88,12 @@ def _mean_reward(result: JobResult) -> float | None:
 
 @step
 def run_harbor_trial(
-    task_path: str = _DEFAULT_TASK_PATH,
-    agent_name: str = _DEFAULT_AGENT,
-) -> Annotated[dict[str, Any], "harbor_trial_result"]:
+    task_path: str,
+    agent_name: str,
+) -> Tuple[
+    Annotated[dict[str, Any], "harbor_trial_result"],
+    Annotated[bytes, "harbor_trial_artifacts"],
+]:
     """Run one Harbor trial through the ZenML Sandbox bridge.
 
     Args:
@@ -98,36 +103,47 @@ def run_harbor_trial(
             ``nop``, ``claude-code-agent``, ...).
 
     Returns:
-        Job id, completion counts, mean reward across trials.
+        Job summary (id, completion counts, mean reward) and a gzipped
+        tarball of Harbor's ``jobs/`` tree (agent/verifier logs,
+        trajectory).
+
+    Raises:
+        FileNotFoundError: If ``task_path`` does not resolve to an
+            existing Harbor task directory.
     """
     here = Path(__file__).parent.resolve()
     task = (here / task_path).resolve()
     if not task.exists():
         raise FileNotFoundError(f"Harbor task path not found: {task}")
 
-    # Harbor's on-disk ``jobs/`` tree duplicates everything we hand back
-    # as a ZenML artifact, so we drop it on TemporaryDirectory exit.
     # ``asyncio.run`` is safe because ZenML steps run synchronously
     # today; revisit if step bodies grow an outer event loop.
     with tempfile.TemporaryDirectory(prefix="zenml-harbor-") as tmp:
         jobs_dir = Path(tmp)
-        return asyncio.run(_run_harbor_job(task, agent_name, jobs_dir))
+        summary = asyncio.run(_run_harbor_job(task, agent_name, jobs_dir))
+        # Harbor's ``jobs/`` tree is the only copy of the agent/verifier
+        # logs and trajectory; tar it into the artifact store before the
+        # tempdir vanishes.
+        buffer = io.BytesIO()
+        with tarfile.open(fileobj=buffer, mode="w:gz") as tf:
+            tf.add(jobs_dir, arcname=".")
+        return summary, buffer.getvalue()
 
 
 @pipeline(enable_cache=False)
 def sandbox_harbor_poc_pipeline(
     task_path: str = _DEFAULT_TASK_PATH,
     agent_name: str = _DEFAULT_AGENT,
-) -> dict[str, Any]:
+) -> None:
     """Single-step pipeline: ZenML on top, Harbor running inside."""
-    return run_harbor_trial(task_path=task_path, agent_name=agent_name)
+    run_harbor_trial(task_path=task_path, agent_name=agent_name)
 
 
 if __name__ == "__main__":
     task = sys.argv[1] if len(sys.argv) > 1 else _DEFAULT_TASK_PATH
     agent = sys.argv[2] if len(sys.argv) > 2 else _DEFAULT_AGENT
-    print("Running ZenML pipeline (Harbor on Modal sandbox) ...")
+    print("Running ZenML pipeline (Harbor on the active stack's sandbox) ...")
     print(f"  task  = {task}")
     print(f"  agent = {agent}")
     sandbox_harbor_poc_pipeline(task_path=task, agent_name=agent)
-    print("Done. Check the ZenML dashboard for the run + artifact.")
+    print("Done. Check the ZenML dashboard for the run + artifacts.")

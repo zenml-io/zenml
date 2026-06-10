@@ -14,7 +14,7 @@ The pipeline is the only entry point. One command, one ZenML run, one queryable 
 
 ## What you get over plain `harbor run`
 
-- **Run lineage.** Every trial is a ZenML pipeline run — dashboard, artifact store, replay, caching, the lot. Trials become traceable and reproducible at the pipeline layer.
+- **Run lineage.** Every trial is a ZenML pipeline run — dashboard, artifact store, replay, caching, the lot. The reward summary lands as one artifact and Harbor's full `jobs/` tree (agent/verifier logs, trajectory) as a second, tarred one, so the trial's raw output outlives the local tempdir.
 - **No per-trial rebuild.** The Sandbox component owns the image. Task `[environment].docker_image` is translated to `ModalSandboxSettings(image=...)` — Modal-only today; no Dockerfile build per trial.
 - **Portable substrate.** Tasks that don't pin `docker_image` are flavor-portable: swap the Sandbox flavor (Modal → GKE Agent Sandbox → …) and Harbor sees nothing change. Same bridge, same task assets.
 
@@ -50,13 +50,18 @@ python run.py
 python run.py tasks/hello oracle
 ```
 
-The pipeline prints the dashboard URL on start. Inspect the artifact:
+The pipeline prints the dashboard URL on start. Inspect the artifacts:
 
 ```python
 from zenml.client import Client
 run = Client().get_pipeline_run("<run-id-from-stdout>")
-result = run.steps["run_harbor_trial"].outputs["harbor_trial_result"][0].load()
+outputs = run.steps["run_harbor_trial"].outputs
+result = outputs["harbor_trial_result"][0].load()
 # {"job_id": "...", "n_total": 1, "n_completed": 1, "n_errored": 0, "mean_reward": 1.0}
+
+# Gzipped tar of Harbor's jobs/ tree: agent + verifier logs, trajectory.
+logs_tgz = outputs["harbor_trial_artifacts"][0].load()
+open("harbor_trial_artifacts.tar.gz", "wb").write(logs_tgz)
 ```
 
 ## Smoke results
@@ -70,7 +75,7 @@ End-to-end wall clock on the default task: **~15s**, reward `1.0`. Full chain:
 5. Oracle agent uploads `solve.sh` → execs → writes `/app/answer.txt`
 6. Bash verifier reads the file → `reward = 1.0`
 7. Bridge destroys the Modal session, returns `ExecResult`s to Harbor
-8. Step returns the `JobResult` summary → saved as ZenML artifact
+8. Step returns the `JobResult` summary plus a tarball of the `jobs/` tree → saved as ZenML artifacts
 
 ## Open seams
 
