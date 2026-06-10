@@ -63,7 +63,7 @@ def upgrade() -> None:
             ["step_run_id"],
             ["step_run.id"],
             name="fk_hook_invocation_step_run_id_step_run",
-            ondelete="SET NULL",
+            ondelete="CASCADE",
         ),
         sa.ForeignKeyConstraint(
             ["user_id"],

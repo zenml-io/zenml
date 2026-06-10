@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -289,4 +289,18 @@ class HookInvocationFilter(ProjectScopedFilter):
     name: Optional[str] = Field(
         default=None,
         description="Name of this hook invocation",
+    )
+    status: Optional[str] = Field(
+        default=None,
+        description="Status of this hook invocation",
+    )
+    start_time: Optional[Union[datetime, str]] = Field(
+        default=None,
+        description="Start time of this hook invocation",
+        union_mode="left_to_right",
+    )
+    end_time: Optional[Union[datetime, str]] = Field(
+        default=None,
+        description="End time of this hook invocation",
+        union_mode="left_to_right",
     )

@@ -63,6 +63,19 @@ def _default_hook_name(
     return None
 
 
+def _validate_hook_name(name: Optional[str]) -> None:
+    """Validate a hook name.
+
+    Args:
+        name: The name of the hook.
+
+    Raises:
+        ValueError: If the name is invalid.
+    """
+    if name is not None and not re.match(HOOK_NAME_PATTERN, name):
+        raise ValueError(f"Invalid hook name: {name}")
+
+
 def _parse_hook_outputs(
     func: Callable[..., Any], result: Any
 ) -> Dict[str, Any]:
@@ -208,6 +221,7 @@ def run_hook(
         except Exception:
             import_path = None
 
+    _validate_hook_name(name)
     resolved_name = name or _default_hook_name(loaded_func, hook_type)
 
     start_time = utc_now()

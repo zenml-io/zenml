@@ -66,6 +66,7 @@ from zenml.enums import (
     ColorVariants,
     CuratedVisualizationSize,
     DeploymentStatus,
+    ExecutionStatus,
     HookType,
     LogicalOperators,
     ModelStages,
@@ -5526,6 +5527,9 @@ class Client(metaclass=ClientMetaClass):
         step_run_id: Optional[Union[str, UUID]] = None,
         hook_type: Optional[Union[str, HookType]] = None,
         name: Optional[str] = None,
+        status: Optional[Union[str, ExecutionStatus]] = None,
+        start_time: Optional[Union[datetime, str]] = None,
+        end_time: Optional[Union[datetime, str]] = None,
         project: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
@@ -5544,6 +5548,9 @@ class Client(metaclass=ClientMetaClass):
             step_run_id: The id of the step run to filter by.
             hook_type: The type of the hook invocation to filter by.
             name: The name of the hook invocation to filter by.
+            status: The status of the hook invocation to filter by.
+            start_time: The start time of the hook invocation to filter by.
+            end_time: The end time of the hook invocation to filter by.
             project: The project name/ID to filter by.
             user: Filter by user name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
@@ -5564,6 +5571,9 @@ class Client(metaclass=ClientMetaClass):
             step_run_id=step_run_id,
             hook_type=hook_type,
             name=name,
+            status=status,
+            start_time=start_time,
+            end_time=end_time,
             project=project or self.active_project.id,
             user=user,
         )

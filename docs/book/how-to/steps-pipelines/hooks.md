@@ -37,8 +37,8 @@ on whether the pipeline is dynamic.
 | `on_end` | Propagates to each step's `on_end` default | Fires once at the pipeline level |
 
 For a static pipeline, a pipeline-level hook is a default that every step inherits
-where it has not set its own. No pipeline-level rows are produced. For a dynamic
-pipeline, the hook fires once at the run level and produces `RUN_*` rows. It fires
+where it has not set its own. No pipeline-level hooks are run. For a dynamic
+pipeline, the hook fires once at the run level and produces `RUN_*` entries. It fires
 on every run, including each invocation of a deployed pipeline. Dynamic pipeline
 users who want per-step defaults wire each `@step` directly.
 
