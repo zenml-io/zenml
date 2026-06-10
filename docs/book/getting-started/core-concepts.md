@@ -215,4 +215,8 @@ When you start working with ZenML, you'll start with a local ZenML setup, and wh
 
 ZenML also provides a [VS Code extension](https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode) that allows you to interact with your ZenML stacks, runs, and server directly from your VS Code editor. If you're working on code in your editor, you can easily switch and inspect the stacks you're using, delete and inspect pipelines as well as even switch stacks.
 
+## Where Kitaru fits
+
+[Kitaru](https://docs.zenml.io/kitaru) is ZenML's durable execution layer for AI agents. It applies the same concepts you just read about to agent workflows: a Kitaru **flow** is a dynamic pipeline, a **checkpoint** is a step whose output is persisted for replay, and executions run on the same stacks, store artifacts in the same artifact stores, and appear in the same server and dashboard as your ML pipelines. If your work is agents rather than pipelines, start with the [Kitaru docs](https://docs.zenml.io/kitaru) and the [Agents guide](https://docs.zenml.io/user-guides/agents-guide) — everything here about stacks, the server, secrets, and collaboration applies there too.
+
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
