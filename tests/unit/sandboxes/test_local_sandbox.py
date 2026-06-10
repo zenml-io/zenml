@@ -351,6 +351,16 @@ class TestCloseAndDestroy:
         session.destroy()
         assert not os.path.isdir(workdir)
 
+    def test_close_terminates_running_processes(self) -> None:
+        # A long-running child must not outlive the session: close()
+        # terminates anything exec() spawned that is still alive.
+        session = _make_local_sandbox().create_session()
+        proc = session.exec(["sleep", "3600"])
+        popen = proc._process  # type: ignore[attr-defined]
+        assert popen.poll() is None
+        session.close()
+        assert popen.poll() is not None
+
 
 class TestOptionalMethods:
     def test_snapshot_default_raises(self) -> None:
