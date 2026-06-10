@@ -273,6 +273,7 @@ class StepLauncher:
                                 e,
                             )
                             if step_run.status in {
+                                ExecutionStatus.PROVISIONING,
                                 ExecutionStatus.RUNNING,
                                 ExecutionStatus.QUEUED,
                             }:
