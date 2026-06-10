@@ -42,7 +42,7 @@ from zenml.constants import (
 )
 from zenml.enums import SourceContextTypes
 from zenml.logger import (
-    bind_request_context,
+    bind_log_context,
     get_logger,
     get_logging_context,
     logging_scope,
@@ -399,7 +399,7 @@ async def record_requests(request: Request, call_next: Any) -> Any:
 
     # Bind only request_id globally for correlation; method/path/client_ip stay
     # scoped to request lifecycle logs to avoid bloating every downstream line.
-    bind_request_context(request_id=request_context.request_id)
+    bind_log_context(clear=True, request_id=request_context.request_id)
 
     try:
         response = await call_next(request)

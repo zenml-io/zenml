@@ -122,8 +122,8 @@ def get_logging_level() -> LoggingLevels:
     return LoggingLevels[verbosity]
 
 
-def bind_request_context(**fields: Any) -> None:
-    """Bind extra context variables to the current logging context.
+def bind_log_context(*, clear: bool = False, **fields: Any) -> None:
+    """Bind fields to the active logging context.
 
     Use it to propagate common context variables to every downstream
     log record. The extra context persists until the current logging
@@ -132,11 +132,22 @@ def bind_request_context(**fields: Any) -> None:
     E.g.: This can be used at request boundaries to propagate context
     like request_id, method, path, etc. to all log records in a request.
 
-    Any previously bound contextvars are cleared first, so this sets a
-    fresh set of context variables to the current logging context.
+    Set ``clear=True`` at request boundaries to avoid leaking context from
+    previous requests.
+
+    Args:
+        clear: Whether to clear the active context before binding fields.
+        **fields: Context fields to bind to the active log context.
     """
-    structlog.contextvars.clear_contextvars()
+    if clear:
+        clear_log_context()
+
     structlog.contextvars.bind_contextvars(**fields)
+
+
+def clear_log_context() -> None:
+    """Clear structured context bound to the active request."""
+    structlog.contextvars.clear_contextvars()
 
 
 @contextmanager
@@ -155,7 +166,7 @@ def logging_scope(**fields: Any) -> Generator[None, None, None]:
             logger.info("transaction attempt succeeded")
 
         This will propagate extra context (on top of the context bound by
-        `bind_request_context`) to the log records emitted within the scope.
+        `bind_log_context`) to the log records emitted within the scope.
     """
     with structlog.contextvars.bound_contextvars(**fields):
         yield
@@ -165,7 +176,7 @@ def get_logging_context() -> dict[str, Any]:
     """Return a snapshot of the currently bound logging context.
 
     Returns a fresh dict (safe to mutate) with all the context
-    variables bound via ``bind_request_context`` or ``logging_scope``.
+    variables bound via ``bind_log_context`` or ``logging_scope``.
 
     Useful at response/error boundaries that need to surface a single field
     (typically ``request_id``) back to the caller.
