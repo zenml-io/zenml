@@ -25,6 +25,7 @@ from zenml.stack import Flavor
 
 MODAL_ORCHESTRATOR_FLAVOR = "modal"
 MODAL_STEP_OPERATOR_FLAVOR = "modal"
+MODAL_VOLUME_ARTIFACT_STORE_FLAVOR = "modal_volume"
 
 
 class ModalIntegration(Integration):

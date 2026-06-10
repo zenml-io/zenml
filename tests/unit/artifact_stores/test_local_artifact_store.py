@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+"""Tests for the local artifact store."""
+
 import os
 from datetime import datetime
 from uuid import uuid4
@@ -40,8 +42,7 @@ def test_local_artifact_store_attributes():
 
 
 def test_local_artifact_store_only_supports_local_paths():
-    """Checks that a local artifact store can only be initialized with a local
-    path."""
+    """Check that local artifact stores only accept local paths."""
     with pytest.raises(ArtifactStoreInterfaceError):
         LocalArtifactStore(
             name="",
@@ -71,6 +72,18 @@ def test_local_artifact_store_only_supports_local_paths():
             name="",
             id=uuid4(),
             config=LocalArtifactStoreConfig(path="hdfs://remote/path"),
+            flavor="default",
+            type=StackComponentType.ARTIFACT_STORE,
+            user=uuid4(),
+            created=datetime.now(),
+            updated=datetime.now(),
+        )
+
+    with pytest.raises(ArtifactStoreInterfaceError):
+        LocalArtifactStore(
+            name="",
+            id=uuid4(),
+            config=LocalArtifactStoreConfig(path="modal-volume://remote/path"),
             flavor="default",
             type=StackComponentType.ARTIFACT_STORE,
             user=uuid4(),

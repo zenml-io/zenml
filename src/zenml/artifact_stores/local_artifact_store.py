@@ -64,8 +64,7 @@ class LocalArtifactStoreConfig(BaseArtifactStoreConfig):
         Raises:
             ArtifactStoreInterfaceError: If the given path is not a local path.
         """
-        remote_prefixes = ["gs://", "hdfs://", "s3://", "az://", "abfs://"]
-        if any(path.startswith(prefix) for prefix in remote_prefixes):
+        if io_utils.is_remote(path):
             raise ArtifactStoreInterfaceError(
                 f"The path '{path}' you defined for your local artifact store "
                 f"starts with a remote prefix."

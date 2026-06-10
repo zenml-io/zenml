@@ -23,6 +23,10 @@ from zenml.integrations.modal.flavors.modal_step_operator_flavor import (
     ModalStepOperatorFlavor,
     ModalStepOperatorSettings,
 )
+from zenml.integrations.modal.flavors.modal_volume_artifact_store_flavor import (
+    ModalVolumeArtifactStoreConfig,
+    ModalVolumeArtifactStoreFlavor,
+)
 
 __all__ = [
     "ModalOrchestratorConfig",
@@ -31,4 +35,6 @@ __all__ = [
     "ModalStepOperatorConfig",
     "ModalStepOperatorFlavor",
     "ModalStepOperatorSettings",
+    "ModalVolumeArtifactStoreConfig",
+    "ModalVolumeArtifactStoreFlavor",
 ]

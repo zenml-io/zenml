@@ -1,0 +1,521 @@
+#  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Mounted fast-path implementation for Modal Volume artifact stores."""
+
+import glob as glob_module
+import os
+import shutil
+from pathlib import Path
+from typing import Any, Callable, Iterable, List, Optional, Tuple, cast
+
+from zenml.artifact_stores import BaseArtifactStore
+from zenml.artifact_stores.base_artifact_store import PathType
+from zenml.constants import handle_bool_env_var
+from zenml.integrations.modal.flavors.modal_volume_artifact_store_flavor import (
+    MODAL_VOLUME_URI_SCHEME,
+    ModalVolumeArtifactStoreConfig,
+    parse_modal_volume_uri,
+)
+from zenml.io.fileio import convert_to_str
+
+ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH = (
+    "ZENML_MODAL_ARTIFACT_STORE_FAST_PATH"
+)
+
+
+class ModalVolumeArtifactStore(BaseArtifactStore):
+    """Artifact store that accesses a mounted Modal Volume with local IO."""
+
+    @property
+    def config(self) -> ModalVolumeArtifactStoreConfig:
+        """Get the config of this artifact store.
+
+        Returns:
+            The Modal Volume artifact-store config.
+        """
+        return cast(ModalVolumeArtifactStoreConfig, self._config)
+
+    @property
+    def volume_name(self) -> str:
+        """The Modal Volume name derived from the configured path.
+
+        Returns:
+            The Modal Volume name.
+        """
+        return self.config.volume_name
+
+    @property
+    def volume_prefix(self) -> str:
+        """The Modal Volume prefix derived from the configured path.
+
+        Returns:
+            The prefix inside the mounted Modal Volume.
+        """
+        return self.config.volume_prefix
+
+    def _require_mounted_fast_path(self) -> Path:
+        """Return the mounted Volume path or fail with setup guidance.
+
+        Returns:
+            The resolved mount path.
+
+        Raises:
+            RuntimeError: If the runtime did not opt into mounted fast-path IO.
+            FileNotFoundError: If the runtime marker is set but the mount is missing.
+        """
+        if not handle_bool_env_var(
+            ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, default=False
+        ):
+            raise RuntimeError(
+                "The Modal Volume artifact store currently supports only the "
+                "mounted Modal fast path. Set "
+                f"{ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH}=1 in a Modal "
+                "runtime where the Volume is mounted, or wait for the planned "
+                "Modal SDK fallback implementation."
+            )
+
+        mount_path = Path(self.config.mount_path)
+        if not mount_path.is_dir():
+            raise FileNotFoundError(
+                "The Modal Volume artifact store fast-path marker is set, but "
+                f"the configured mount path '{self.config.mount_path}' does "
+                f"not exist. Volume '{self.volume_name}' must be mounted at "
+                "that path by the Modal runtime. The configured "
+                f"create_if_missing value is {self.config.create_if_missing}."
+            )
+
+        return mount_path.resolve()
+
+    def _uri_parts(self, uri: PathType) -> List[str]:
+        """Return URI path segments and validate artifact-store bounds.
+
+        Args:
+            uri: A Modal Volume URI.
+
+        Returns:
+            The decoded path segments inside the Volume.
+
+        Raises:
+            FileNotFoundError: If the URI points outside this artifact store.
+        """
+        path = convert_to_str(uri)
+        parsed = parse_modal_volume_uri(path)
+        if parsed.volume_name != self.volume_name:
+            raise FileNotFoundError(
+                f"URI '{path}' uses Modal Volume '{parsed.volume_name}', but "
+                f"this artifact store is configured for '{self.volume_name}'."
+            )
+
+        uri_parts = (
+            parsed.volume_prefix.split("/") if parsed.volume_prefix else []
+        )
+        root_parts = (
+            self.volume_prefix.split("/") if self.volume_prefix else []
+        )
+        if uri_parts[: len(root_parts)] != root_parts:
+            raise FileNotFoundError(
+                f"URI '{path}' is outside of artifact store bounds "
+                f"'{self.path}'."
+            )
+
+        return uri_parts
+
+    @staticmethod
+    def _is_relative_to(path: Path, parent: Path) -> bool:
+        """Check whether `path` is equal to or below `parent`.
+
+        Args:
+            path: The path to check.
+            parent: The expected parent path.
+
+        Returns:
+            True if the path is below the parent.
+        """
+        try:
+            path.relative_to(parent)
+        except ValueError:
+            return False
+        return True
+
+    def _nearest_existing_path(self, path: Path) -> Path:
+        """Find the nearest existing path, treating broken symlinks as existing.
+
+        Args:
+            path: The path to inspect.
+
+        Returns:
+            The nearest existing path or symlink.
+        """
+        current_path = path
+        while not current_path.exists() and not current_path.is_symlink():
+            if current_path == current_path.parent:
+                return current_path
+            current_path = current_path.parent
+        return current_path
+
+    def _artifact_store_root_path(self, mount_path: Path) -> Path:
+        """Return the local path for the configured artifact-store prefix.
+
+        Args:
+            mount_path: The resolved Modal Volume mount path.
+
+        Returns:
+            The local artifact-store root path.
+        """
+        root_parts = (
+            self.volume_prefix.split("/") if self.volume_prefix else []
+        )
+        return mount_path.joinpath(*root_parts) if root_parts else mount_path
+
+    def _raise_path_escape_error(
+        self, uri: PathType, boundary_name: str, boundary_path: Path
+    ) -> None:
+        """Raise a consistent error for paths outside an enforced boundary.
+
+        Args:
+            uri: The original Modal Volume URI.
+            boundary_name: Human-readable boundary name.
+            boundary_path: The resolved boundary path.
+
+        Raises:
+            FileNotFoundError: Always raised with path escape details.
+        """
+        raise FileNotFoundError(
+            f"URI '{convert_to_str(uri)}' resolves outside the configured "
+            f"{boundary_name} '{boundary_path}'."
+        )
+
+    def _validate_path_boundary(
+        self,
+        path: Path,
+        boundary_path: Path,
+        boundary_name: str,
+        uri: PathType,
+    ) -> None:
+        """Reject paths whose real target escapes one boundary.
+
+        Missing paths are allowed when their nearest existing parent is an
+        ancestor of the boundary. This lets ZenML create a missing
+        artifact-store root directory while still rejecting existing symlinks
+        below that root that point elsewhere.
+
+        Args:
+            path: The candidate local path.
+            boundary_path: The boundary path.
+            boundary_name: Human-readable boundary name.
+            uri: The original Modal Volume URI.
+        """
+        if not self._is_relative_to(path, boundary_path):
+            self._raise_path_escape_error(uri, boundary_name, boundary_path)
+
+        nearest_existing_path = self._nearest_existing_path(path)
+        nearest_is_below_boundary = self._is_relative_to(
+            nearest_existing_path, boundary_path
+        )
+        boundary_is_below_nearest = self._is_relative_to(
+            boundary_path, nearest_existing_path
+        )
+        if not (nearest_is_below_boundary or boundary_is_below_nearest):
+            self._raise_path_escape_error(uri, boundary_name, boundary_path)
+
+        resolved_existing_path = nearest_existing_path.resolve(strict=False)
+        if nearest_is_below_boundary and not self._is_relative_to(
+            resolved_existing_path, boundary_path
+        ):
+            self._raise_path_escape_error(uri, boundary_name, boundary_path)
+
+        if path.exists() or path.is_symlink():
+            resolved_path = path.resolve(strict=False)
+            if not self._is_relative_to(resolved_path, boundary_path):
+                self._raise_path_escape_error(
+                    uri, boundary_name, boundary_path
+                )
+
+    def _validate_mount_relative_path(
+        self, path: Path, mount_path: Path, uri: PathType
+    ) -> None:
+        """Reject paths that escape the mount or artifact-store prefix.
+
+        Args:
+            path: The candidate local path.
+            mount_path: The resolved Modal Volume mount path.
+            uri: The original Modal Volume URI, used for error messages.
+        """
+        self._validate_path_boundary(
+            path=path,
+            boundary_path=mount_path,
+            boundary_name="Modal Volume mount path",
+            uri=uri,
+        )
+        self._validate_path_boundary(
+            path=path,
+            boundary_path=self._artifact_store_root_path(mount_path),
+            boundary_name="artifact-store root path",
+            uri=uri,
+        )
+
+    def _local_path(self, uri: PathType) -> str:
+        """Translate a Modal Volume URI into a mounted local filesystem path.
+
+        Args:
+            uri: A Modal Volume URI.
+
+        Returns:
+            The corresponding local path below the configured mount path.
+        """
+        mount_path = self._require_mounted_fast_path()
+        parts = self._uri_parts(uri)
+        local_path = mount_path.joinpath(*parts) if parts else mount_path
+        self._validate_mount_relative_path(local_path, mount_path, uri)
+        return str(local_path)
+
+    def _uri_from_local_path(
+        self, local_path: str, mount_path: Optional[Path] = None
+    ) -> str:
+        """Translate a mounted local filesystem path back into a Modal URI.
+
+        Args:
+            local_path: A local path below the configured mount path.
+            mount_path: The resolved mount path to use, if already available.
+
+        Returns:
+            The corresponding Modal Volume URI.
+        """
+        if mount_path is None:
+            mount_path = self._require_mounted_fast_path()
+        path = Path(local_path).resolve()
+        artifact_store_root_path = self._artifact_store_root_path(mount_path)
+        if not self._is_relative_to(path, artifact_store_root_path):
+            raise FileNotFoundError(
+                f"Local path '{local_path}' resolves outside the configured "
+                f"artifact-store root path '{artifact_store_root_path}'."
+            )
+        relative_path = path.relative_to(mount_path)
+        relative = relative_path.as_posix()
+        if relative == ".":
+            return f"{MODAL_VOLUME_URI_SCHEME}{self.volume_name}"
+        return f"{MODAL_VOLUME_URI_SCHEME}{self.volume_name}/{relative}"
+
+    def open(self, path: PathType, mode: str = "r") -> Any:
+        """Open a file at the given path.
+
+        Args:
+            path: Path of the file to open.
+            mode: Mode in which to open the file.
+
+        Returns:
+            A file-like object.
+        """
+        encoding = "utf-8" if "b" not in mode else None
+        return open(self._local_path(path), mode=mode, encoding=encoding)
+
+    def copyfile(
+        self, src: PathType, dst: PathType, overwrite: bool = False
+    ) -> None:
+        """Copy a file.
+
+        Args:
+            src: The path to copy from.
+            dst: The path to copy to.
+            overwrite: If a file already exists at the destination, overwrite it.
+
+        Raises:
+            FileExistsError: If the destination exists and overwrite is false.
+        """
+        local_src = self._local_path(src)
+        local_dst = self._local_path(dst)
+        if not overwrite and os.path.exists(local_dst):
+            raise FileExistsError(
+                f"Destination file '{convert_to_str(dst)}' already exists. "
+                "Set `overwrite=True` to copy anyway."
+            )
+        shutil.copyfile(local_src, local_dst)
+
+    def exists(self, path: PathType) -> bool:
+        """Check whether a path exists.
+
+        Args:
+            path: The path to check.
+
+        Returns:
+            True if the path exists, False otherwise.
+        """
+        return os.path.exists(self._local_path(path))
+
+    def glob(self, pattern: PathType) -> List[PathType]:
+        """Return all paths that match the given glob pattern.
+
+        Args:
+            pattern: The glob pattern to match.
+
+        Returns:
+            A list of matching Modal Volume URIs.
+        """
+        mount_path = self._require_mounted_fast_path()
+        local_pattern = self._local_path(pattern)
+        return [
+            self._uri_from_local_path(path, mount_path=mount_path)
+            for path in glob_module.glob(local_pattern)
+        ]
+
+    def isdir(self, path: PathType) -> bool:
+        """Check whether a path is a directory.
+
+        Args:
+            path: The path to check.
+
+        Returns:
+            True if the path is a directory, False otherwise.
+        """
+        return os.path.isdir(self._local_path(path))
+
+    def listdir(self, path: PathType) -> List[PathType]:
+        """Return a list of bare names in a directory.
+
+        Args:
+            path: The path to list.
+
+        Returns:
+            A list of direct child names.
+        """
+        return os.listdir(self._local_path(path))  # type: ignore[return-value]
+
+    def makedirs(self, path: PathType) -> None:
+        """Create a directory and any missing parent directories.
+
+        Args:
+            path: The path to create.
+        """
+        os.makedirs(self._local_path(path), exist_ok=True)
+
+    def mkdir(self, path: PathType) -> None:
+        """Create a directory.
+
+        Args:
+            path: The path to create.
+        """
+        os.mkdir(self._local_path(path))
+
+    def remove(self, path: PathType) -> None:
+        """Remove a file.
+
+        Args:
+            path: The path to remove.
+        """
+        os.remove(self._local_path(path))
+
+    def rename(
+        self, src: PathType, dst: PathType, overwrite: bool = False
+    ) -> None:
+        """Rename source file to destination file.
+
+        Args:
+            src: The path of the file to rename.
+            dst: The destination path.
+            overwrite: If a file already exists at the destination, overwrite it.
+
+        Raises:
+            FileExistsError: If the destination exists and overwrite is false.
+        """
+        local_src = self._local_path(src)
+        local_dst = self._local_path(dst)
+        if not overwrite and os.path.exists(local_dst):
+            raise FileExistsError(
+                f"Destination file '{convert_to_str(dst)}' already exists. "
+                "Set `overwrite=True` to rename anyway."
+            )
+        os.rename(local_src, local_dst)
+
+    def rmtree(self, path: PathType) -> None:
+        """Remove a directory recursively.
+
+        Args:
+            path: The path to remove.
+        """
+        shutil.rmtree(self._local_path(path))
+
+    def stat(self, path: PathType) -> Any:
+        """Return stat info for the given path.
+
+        Args:
+            path: The path to get stat info for.
+
+        Returns:
+            The stat result.
+        """
+        return os.stat(self._local_path(path))
+
+    def size(self, path: PathType) -> int:
+        """Get the size of a file or directory in bytes.
+
+        Args:
+            path: The path to size.
+
+        Returns:
+            The size in bytes.
+        """
+        mount_path = self._require_mounted_fast_path()
+        local_path = self._local_path(path)
+        if not os.path.isdir(local_path):
+            return os.path.getsize(local_path)
+
+        total_size = 0
+        for root, dirs, files in os.walk(local_path):
+            root_path = Path(root)
+            self._validate_mount_relative_path(root_path, mount_path, path)
+            for dir_name in dirs:
+                self._validate_mount_relative_path(
+                    root_path / dir_name, mount_path, path
+                )
+            for file_name in files:
+                file_path = root_path / file_name
+                self._validate_mount_relative_path(file_path, mount_path, path)
+                total_size += os.path.getsize(file_path)
+        return total_size
+
+    def walk(
+        self,
+        top: PathType,
+        topdown: bool = True,
+        onerror: Optional[Callable[..., None]] = None,
+    ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
+        """Walk a directory tree.
+
+        Args:
+            top: Path of directory to walk.
+            topdown: Whether to walk directories topdown or bottom-up.
+            onerror: Callable that gets called if an error occurs.
+
+        Yields:
+            Tuples containing the current Modal URI, directory names, and file names.
+        """
+        mount_path = self._require_mounted_fast_path()
+        for root, dirs, files in os.walk(
+            self._local_path(top), topdown=topdown, onerror=onerror
+        ):
+            root_path = Path(root)
+            self._validate_mount_relative_path(root_path, mount_path, top)
+            for dir_name in dirs:
+                self._validate_mount_relative_path(
+                    root_path / dir_name, mount_path, top
+                )
+            for file_name in files:
+                self._validate_mount_relative_path(
+                    root_path / file_name, mount_path, top
+                )
+            yield (
+                self._uri_from_local_path(root, mount_path=mount_path),
+                dirs,
+                files,
+            )

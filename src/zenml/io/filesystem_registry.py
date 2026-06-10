@@ -116,7 +116,7 @@ class FileIORegistry:
             path_bytes = path
         else:
             raise ValueError("Invalid path type: %r." % path)
-        result = re.match(b"^([a-z0-9]+://)", path_bytes)
+        result = re.match(b"^([a-z0-9-]+://)", path_bytes)
         if result:
             scheme = result.group(1).decode("utf-8")
         else:
