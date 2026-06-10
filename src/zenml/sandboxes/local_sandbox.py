@@ -176,10 +176,9 @@ class LocalSandboxSession(SandboxSession):
         )
         self._workdir = workdir
         self._env = env
-        self._closed = False
         self._processes: List["subprocess.Popen[str]"] = []
 
-    def exec(
+    def _exec(
         self,
         command: Union[str, List[str]],
         *,
@@ -196,17 +195,11 @@ class LocalSandboxSession(SandboxSession):
             env: Environment variables to set in the subprocess environment.
 
         Raises:
-            SandboxExecError: If the session is closed or the subprocess fails
-                to launch.
+            SandboxExecError: If the subprocess fails to launch.
 
         Returns:
             Process handle.
         """
-        if self._closed:
-            raise SandboxExecError(
-                "Cannot execute a command in a closed sandbox session."
-            )
-
         if isinstance(command, str):
             command = shlex.split(command)
 
@@ -247,10 +240,6 @@ class LocalSandboxSession(SandboxSession):
 
     def _close(self) -> None:
         """Terminate running processes and clean up the working directory."""
-        if self._closed:
-            return
-
-        self._closed = True
         for process in self._processes:
             if process.poll() is not None:
                 continue

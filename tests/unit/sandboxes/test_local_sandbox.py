@@ -29,6 +29,7 @@ from zenml.sandboxes import (
     LocalSandboxFlavor,
     LocalSandboxSettings,
     SandboxExecError,
+    SandboxSessionClosedError,
 )
 
 
@@ -152,7 +153,7 @@ class TestExec:
     def test_exec_after_close_raises(self) -> None:
         session = _make_local_sandbox().create_session()
         session.close()
-        with pytest.raises(SandboxExecError):
+        with pytest.raises(SandboxSessionClosedError):
             session.exec([sys.executable, "-c", "pass"])
 
 
