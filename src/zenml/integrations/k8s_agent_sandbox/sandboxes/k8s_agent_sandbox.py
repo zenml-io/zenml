@@ -195,7 +195,7 @@ class K8sAgentSandboxSession(SandboxSession):
         self._inline_template_name = inline_template_name
         self._inline_template_namespace = inline_template_namespace
 
-    def exec(
+    def _exec(
         self,
         command: Union[str, List[str]],
         *,
@@ -285,6 +285,10 @@ class K8sAgentSandboxSession(SandboxSession):
                 self._inline_template_namespace or "<unknown>",
                 self.id,
             )
+        # Retry the inline-template delete directly: close() is
+        # idempotent, so if an earlier close() failed the delete (tracker
+        # kept), routing through close() again would be a no-op.
+        self._delete_inline_template()
         self.close()
 
     def _delete_inline_template(self) -> None:
