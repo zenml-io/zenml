@@ -15,7 +15,6 @@
 
 import logging
 import shlex
-import threading
 import time
 from typing import (
     Any,
@@ -303,9 +302,12 @@ class ModalSandbox(BaseSandbox):
         # Modal App lookup is a network round-trip; cache after the first
         # create_session / restore call.
         self._app: Optional[Any] = None
-        # Lazy thread-safe Modal client cache, recreated when closed.
-        self._modal_client: Optional[Any] = None
-        self._modal_client_lock = threading.Lock()
+        # Lazy thread-safe Modal client cache, owned by the factory and
+        # rebuilt when the cached client closes.
+        self._modal_client_factory = sandbox_utils.ModalClientFactory(
+            get_token_id=lambda: self.config.token_id,
+            get_token_secret=lambda: self.config.token_secret,
+        )
 
     @property
     def config(self) -> ModalSandboxConfig:
@@ -332,13 +334,7 @@ class ModalSandbox(BaseSandbox):
             A ``modal.Client`` when token_id+token_secret are configured;
             ``None`` for ambient auth.
         """
-        return sandbox_utils.get_modal_client(
-            get_token_id=lambda: self.config.token_id,
-            get_token_secret=lambda: self.config.token_secret,
-            get_cached_client=lambda: self._modal_client,
-            set_cached_client=lambda c: setattr(self, "_modal_client", c),
-            lock=self._modal_client_lock,
-        )
+        return self._modal_client_factory.get_client()
 
     def _get_app(
         self,
