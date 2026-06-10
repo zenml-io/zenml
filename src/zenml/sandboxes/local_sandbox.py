@@ -248,6 +248,15 @@ class LocalSandboxSession(SandboxSession):
                 process.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 process.kill()
+                try:
+                    # Reap the killed child so it doesn't linger as a
+                    # zombie until the Popen object is GC'd.
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    logger.debug(
+                        "Local sandbox child %s survived SIGKILL reaping",
+                        process.pid,
+                    )
         try:
             shutil.rmtree(self._workdir, ignore_errors=True)
         except Exception as e:
