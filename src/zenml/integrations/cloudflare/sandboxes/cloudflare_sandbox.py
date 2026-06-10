@@ -57,6 +57,8 @@ from zenml.sandboxes import (
 if TYPE_CHECKING:
     import httpx
 
+    from zenml.config.step_run_info import StepRunInfo
+
 
 logger = get_logger(__name__)
 
@@ -64,9 +66,8 @@ logger = get_logger(__name__)
 # returns 413; we surface a clear error instead.
 _BRIDGE_FILE_MAX_BYTES = 32 * 1024 * 1024
 
-# Bridge status codes worth retrying. Cribbed from openai-agents' Cloudflare
-# bridge client — 5xx Worker bugs (500) are non-retryable; transient upstream
-# / rate-limit codes are.
+# Transient bridge statuses worth retrying; 500s are Worker bugs and
+# surface immediately.
 _RETRYABLE_STATUSES: FrozenSet[int] = frozenset({429, 502, 503, 504})
 _MAX_RETRIES = 3
 
@@ -186,10 +187,6 @@ def _parse_sse_stream(lines: Iterator[str]) -> Iterator[_BridgeEvent]:
 def _drain_sse_response(resp: "httpx.Response") -> Iterator[_BridgeEvent]:
     """Yield events from an already-open SSE response, closing it at the end.
 
-    Split out from ``exec_stream`` so that function can issue the POST
-    eagerly (surfacing 4xx/auth errors at the call site) while only the
-    SSE iteration stays deferred to the consumer.
-
     Args:
         resp: An open streaming ``httpx.Response``.
 
@@ -213,14 +210,14 @@ class _CloudflareBridgeClient:
         worker_url: str,
         api_key: Optional[str],
         *,
-        http_client: Optional["httpx.Client"] = None,
+        transport: Optional["httpx.BaseTransport"] = None,
     ) -> None:
         """Initialize the client.
 
         Args:
             worker_url: Base URL of the deployed bridge Worker.
             api_key: Bearer token for the bridge (``SANDBOX_API_KEY``).
-            http_client: Optional pre-built ``httpx.Client``, used for tests.
+            transport: Optional httpx transport override, used by tests.
         """
         import httpx
 
@@ -228,30 +225,19 @@ class _CloudflareBridgeClient:
         headers: Dict[str, str] = {}
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
-
-        if http_client is not None:
-            self._client = http_client
-            self._owns_client = False
-            # Inject auth into the provided client to keep tests honest.
-            for k, v in headers.items():
-                self._client.headers.setdefault(k, v)
-        else:
-            self._client = httpx.Client(
-                base_url=self._base,
-                headers=headers,
-                timeout=httpx.Timeout(30.0, read=None),
-            )
-            self._owns_client = True
+        self._client = httpx.Client(
+            base_url=self._base,
+            headers=headers,
+            timeout=httpx.Timeout(30.0, read=None),
+            transport=transport,
+        )
 
     def close(self) -> None:
         """Release the underlying HTTP client."""
-        if self._owns_client:
-            try:
-                self._client.close()
-            except Exception:
-                logger.debug(
-                    "Closing bridge HTTP client failed", exc_info=True
-                )
+        try:
+            self._client.close()
+        except Exception:
+            logger.debug("Closing bridge HTTP client failed", exc_info=True)
 
     def _request(
         self,
@@ -282,8 +268,8 @@ class _CloudflareBridgeClient:
         import httpx
 
         url = path if path.startswith("http") else self._base + path
-        last_exc: Optional[BaseException] = None
-        for attempt in range(_MAX_RETRIES + 1):
+        attempt = 0
+        while True:
             try:
                 if stream:
                     req = self._client.build_request(
@@ -303,12 +289,12 @@ class _CloudflareBridgeClient:
                         headers=headers,
                     )
             except httpx.HTTPError as e:
-                last_exc = e
                 if attempt >= _MAX_RETRIES:
                     raise SandboxExecError(
                         f"Bridge request {method} {path} failed: {e}"
                     ) from e
                 time.sleep(0.25 * (2**attempt))
+                attempt += 1
                 continue
 
             if resp.status_code < 400:
@@ -333,11 +319,7 @@ class _CloudflareBridgeClient:
                     f"{resp.status_code}: {body_preview}"
                 )
             time.sleep(0.25 * (2**attempt))
-
-        # Defensive: loop above always either returns or raises.
-        raise SandboxExecError(
-            f"Bridge {method} {path} exhausted retries: {last_exc}"
-        )
+            attempt += 1
 
     def create_sandbox(self) -> str:
         """Create a fresh sandbox.
@@ -384,8 +366,7 @@ class _CloudflareBridgeClient:
 
         Args:
             sandbox_id: The sandbox to scope the session to.
-            env: Optional env vars passed in the session body. Verified
-                live against the bridge's POST /v1/sandbox/:id/session.
+            env: Optional env vars applied to every exec in the session.
 
         Returns:
             The bridge session id.
@@ -423,12 +404,8 @@ class _CloudflareBridgeClient:
         cwd: Optional[str] = None,
         timeout_ms: int = DEFAULT_BRIDGE_TIMEOUT_MS,
         session_id: Optional[str] = None,
-    ) -> Iterator[_BridgeEvent]:
-        """Run a command and return an iterator over decoded SSE events.
-
-        The POST is issued eagerly so launch errors (4xx, auth) surface at
-        the call site instead of being deferred to the first iteration —
-        the returned generator only carries SSE-decoded events.
+    ) -> Tuple["httpx.Response", Iterator[_BridgeEvent]]:
+        """Run a command and stream decoded SSE events.
 
         Args:
             sandbox_id: The sandbox to exec into.
@@ -438,7 +415,9 @@ class _CloudflareBridgeClient:
             session_id: Optional bridge session id to pass via header.
 
         Returns:
-            Iterator of ``_BridgeEvent`` instances in dispatch order.
+            The open streaming response (closing it aborts the stream and
+            unblocks a reader mid-iteration) and an iterator of
+            ``_BridgeEvent`` instances in dispatch order.
         """
         body: Dict[str, Any] = {"argv": argv, "timeout_ms": timeout_ms}
         if cwd is not None:
@@ -447,6 +426,8 @@ class _CloudflareBridgeClient:
         if session_id is not None:
             headers["Session-Id"] = session_id
 
+        # POST eagerly so 4xx/auth errors raise at the call site; only SSE
+        # decoding is deferred.
         resp = self._request(
             "POST",
             f"/v1/sandbox/{sandbox_id}/exec",
@@ -454,7 +435,7 @@ class _CloudflareBridgeClient:
             headers=headers,
             stream=True,
         )
-        return _drain_sse_response(resp)
+        return resp, _drain_sse_response(resp)
 
     def put_file(
         self,
@@ -532,6 +513,7 @@ class CloudflareSandboxProcess(SandboxProcess):
         *,
         session: "CloudflareSandboxSession",
         started_at: float,
+        response: Optional["httpx.Response"] = None,
     ) -> None:
         """Initialize the process wrapper.
 
@@ -539,9 +521,13 @@ class CloudflareSandboxProcess(SandboxProcess):
             event_iter: Iterator yielding bridge SSE events for this exec.
             session: Owning session.
             started_at: Wall-clock launch time.
+            response: The underlying streaming SSE response; ``kill()``
+                closes it to unblock the pump thread mid-read.
         """
         super().__init__(session=session, started_at=started_at)
         self._event_iter = event_iter
+        self._response = response
+        self._killed = threading.Event()
 
         # The bridge multiplexes stdout/stderr on one SSE stream. We pump
         # it once on a background thread and demux into two buffers so
@@ -562,21 +548,22 @@ class CloudflareSandboxProcess(SandboxProcess):
         )
         self._pump.start()
 
-    def _push_text(
-        self, target: Deque[str], remainder_attr: str, text: str
-    ) -> None:
+    def _push_text(self, target: Deque[str], remainder: str, text: str) -> str:
         """Line-buffer arbitrary text into the target deque.
 
         Args:
             target: Buffer to append lines to.
-            remainder_attr: Name of the per-stream remainder attribute.
+            remainder: Partial line carried over from the previous chunk.
             text: New text chunk.
+
+        Returns:
+            The trailing partial line (no newline yet) to carry over.
         """
-        buf = getattr(self, remainder_attr) + text
+        buf = remainder + text
         while "\n" in buf:
             line, buf = buf.split("\n", 1)
             target.append(line + "\n")
-        setattr(self, remainder_attr, buf)
+        return buf
 
     def _flush_remainders(self) -> None:
         """Push trailing partial lines (no terminating newline) on stream end."""
@@ -593,25 +580,25 @@ class CloudflareSandboxProcess(SandboxProcess):
             for ev in self._event_iter:
                 with self._data_available:
                     if ev.kind == "stdout":
-                        self._push_text(
+                        self._stdout_remainder = self._push_text(
                             self._stdout_buf,
-                            "_stdout_remainder",
+                            self._stdout_remainder,
                             cast(str, ev.data),
                         )
                     elif ev.kind == "stderr":
-                        self._push_text(
+                        self._stderr_remainder = self._push_text(
                             self._stderr_buf,
-                            "_stderr_remainder",
+                            self._stderr_remainder,
                             cast(str, ev.data),
                         )
                     elif ev.kind == "exit":
                         self._exit_code = int(cast(int, ev.data))
                     self._data_available.notify_all()
-        except GeneratorExit:
-            # kill() closed the iterator. Not an error.
-            pass
         except BaseException as e:  # noqa: BLE001
-            self._pump_error = e
+            # kill() closes the response under our feet; the resulting
+            # httpx error is the expected shutdown path, not a failure.
+            if not self._killed.is_set():
+                self._pump_error = e
         finally:
             with self._data_available:
                 self._flush_remainders()
@@ -670,11 +657,9 @@ class CloudflareSandboxProcess(SandboxProcess):
 
         Raises:
             TimeoutError: If ``timeout`` elapsed before the bridge sent an
-                ``exit`` frame. The pump keeps running; call ``kill()`` to
-                stop it.
-            SandboxExecError: If the pump captured an error, or if the SSE
-                stream ended without an ``exit`` frame (treated as failure,
-                NOT silently as exit code 0 — that would mask real bugs).
+                ``exit`` frame.
+            SandboxExecError: If the pump captured an error or the stream
+                ended without an exit frame.
         """
         completed = self._done.wait(timeout)
         if not completed:
@@ -705,20 +690,22 @@ class CloudflareSandboxProcess(SandboxProcess):
 
         The bridge has no per-exec kill RPC, so this can't actually
         terminate the in-flight command on Cloudflare's side. What we CAN
-        do is close the SSE generator (which closes the underlying httpx
-        response and unblocks the pump thread), then signal `_done` so
-        `wait()` and `stdout()`/`stderr()` consumers stop waiting.
-        Use ``session.destroy()`` to force-terminate the whole sandbox.
+        do is close the SSE response (which unblocks the pump thread
+        mid-read), then signal ``_done`` so ``wait()`` and
+        ``stdout()``/``stderr()`` consumers stop waiting. Use
+        ``session.destroy()`` to force-terminate the whole sandbox.
         """
-        # Closing the generator triggers GeneratorExit inside
-        # exec_stream, whose finally clause closes the httpx response.
-        try:
-            self._event_iter.close()
-        except Exception:
-            logger.debug(
-                "Closing bridge SSE iterator during kill() failed",
-                exc_info=True,
-            )
+        # Set the flag before closing so the pump treats the resulting
+        # httpx error as a clean shutdown.
+        self._killed.set()
+        if self._response is not None:
+            try:
+                self._response.close()
+            except Exception:
+                logger.debug(
+                    "Closing bridge SSE response during kill() failed",
+                    exc_info=True,
+                )
         with self._data_available:
             self._done.set()
             self._data_available.notify_all()
@@ -813,7 +800,7 @@ class CloudflareSandboxSession(SandboxSession):
         effective_cwd = cwd if cwd is not None else self._default_cwd
         started_at = time.time()
         try:
-            event_iter = self._client.exec_stream(
+            response, event_iter = self._client.exec_stream(
                 self._sandbox_id,
                 wire_argv,
                 cwd=effective_cwd,
@@ -828,7 +815,10 @@ class CloudflareSandboxSession(SandboxSession):
                 f"({type(e).__name__}): {e}"
             ) from e
         return CloudflareSandboxProcess(
-            event_iter, session=self, started_at=started_at
+            event_iter,
+            session=self,
+            started_at=started_at,
+            response=response,
         )
 
     def upload_file(self, local_path: str, remote_path: str) -> None:
@@ -938,12 +928,14 @@ class CloudflareSandbox(BaseSandbox):
                 )
             return self._client
 
-    def cleanup(self) -> None:
-        """Close the cached bridge HTTP client.
+    def cleanup_step_run(self, info: "StepRunInfo", step_failed: bool) -> None:
+        """Close the cached bridge HTTP client after the step finishes.
 
-        Called by ``Stack.cleanup`` when the stack is torn down. Without
-        this, the owned httpx.Client (and its connection pool) leaks for
-        the lifetime of the process.
+        A later session lazily rebuilds the client via ``_get_client``.
+
+        Args:
+            info: Info about the step that was executed.
+            step_failed: Whether the step failed.
         """
         with self._client_lock:
             if self._client is not None:
@@ -951,22 +943,7 @@ class CloudflareSandbox(BaseSandbox):
                     self._client.close()
                 finally:
                     self._client = None
-        super().cleanup()
-
-    def _effective_settings(
-        self, settings: Optional[BaseSandboxSettings]
-    ) -> Tuple[CloudflareSandboxSettings, Dict[str, str]]:
-        """Resolve effective settings + env for a session.
-
-        Args:
-            settings: Per-call override, if any.
-
-        Returns:
-            (effective settings, resolved env dict).
-        """
-        eff = cast(CloudflareSandboxSettings, self.resolve_settings(settings))
-        env = self._resolve_session_environment(eff)
-        return eff, env
+        super().cleanup_step_run(info=info, step_failed=step_failed)
 
     def create_session(
         self, settings: Optional[BaseSandboxSettings] = None
@@ -979,7 +956,8 @@ class CloudflareSandbox(BaseSandbox):
         Returns:
             A ``CloudflareSandboxSession`` bound to the new sandbox.
         """
-        eff, env = self._effective_settings(settings)
+        eff = cast(CloudflareSandboxSettings, self.resolve_settings(settings))
+        env = self._resolve_session_environment(eff)
         client = self._get_client()
         sandbox_id = client.create_sandbox()
 
@@ -1020,7 +998,7 @@ class CloudflareSandbox(BaseSandbox):
             raise RuntimeError(
                 f"Cloudflare sandbox '{session_id}' is not running."
             )
-        eff, _ = self._effective_settings(None)
+        eff = cast(CloudflareSandboxSettings, self.resolve_settings(None))
         timeout_ms = eff.timeout_ms or DEFAULT_BRIDGE_TIMEOUT_MS
         return CloudflareSandboxSession(
             session_id,

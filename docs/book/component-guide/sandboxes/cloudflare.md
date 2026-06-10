@@ -32,6 +32,13 @@ zenml sandbox register my-cf-sandbox \
     --api_key=<your-SANDBOX_API_KEY>
 ```
 
+Component-level (registration-time) configuration:
+
+| Field | Purpose |
+|---|---|
+| `worker_url` | Base URL of the deployed bridge Worker. Required. |
+| `api_key` | Bearer token for the bridge. Stored as a ZenML secret. |
+
 Then attach it to your stack:
 
 ```bash
@@ -50,12 +57,10 @@ Because the bridge bearer token is scoped to a single Worker (not a whole Cloudf
 
 ### Settings reference
 
-`CloudflareSandboxSettings` (override per `@step`) and the equivalents on `CloudflareSandboxConfig` (component-level defaults):
+`CloudflareSandboxSettings` (override per `@step`):
 
 | Field | Purpose |
 |---|---|
-| `worker_url` | Base URL of the deployed bridge Worker. Required. |
-| `api_key` | Bearer token for the bridge. Stored as a ZenML secret. |
 | `timeout_ms` | Per-exec timeout in milliseconds. Passed to the bridge as `timeout_ms`. |
 | `cwd` | Default working directory for execs inside the sandbox (server-side paths are confined to `/workspace`). |
 | `sandbox_environment` | Env vars injected into the sandbox session. ZenML scopes them via `POST /v1/sandbox/:id/session`. |
@@ -86,7 +91,7 @@ Sandbox stdout/stderr automatically lands on the active step under a dedicated `
 - **No PTY / WebSocket support.** Outside `BaseSandbox`'s contract.
 - **No GPU / region / cloud knobs.** Cloudflare does not expose those on the sandbox API.
 - **No image override on the sandbox.** The bridge does not currently accept a custom image on sandbox creation; the Worker's bound container image is used. When the bridge gains an image-override knob, we'll add a flavor setting for it.
-- **`kill()` is a no-op warn.** The bridge has no per-exec kill; call `session.destroy()` to terminate the whole sandbox.
+- **`kill()` only stops streaming and unblocks `wait()`.** The bridge has no per-exec kill, so the in-flight command keeps running on Cloudflare until its `timeout_ms` — call `session.destroy()` to terminate the whole sandbox.
 
 ### Related
 

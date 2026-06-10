@@ -39,6 +39,7 @@ from zenml.integrations.cloudflare.sandboxes.cloudflare_sandbox import (
     CloudflareSandbox,
     CloudflareSandboxProcess,
     CloudflareSandboxSession,
+    _BridgeEvent,
     _CloudflareBridgeClient,
     _parse_sse_stream,
 )
@@ -57,12 +58,8 @@ def _b64(text: str) -> str:
 
 
 def _make_client(handler: Any) -> _CloudflareBridgeClient:
-    transport = httpx.MockTransport(handler)
-    http_client = httpx.Client(
-        base_url=WORKER_URL, transport=transport, timeout=5.0
-    )
     return _CloudflareBridgeClient(
-        WORKER_URL, API_KEY, http_client=http_client
+        WORKER_URL, API_KEY, transport=httpx.MockTransport(handler)
     )
 
 
@@ -340,11 +337,8 @@ class TestBridgeClient:
         assert client.get_file("sb_1", "x.txt") == b"payload"
 
     def test_exec_stream_surfaces_launch_errors_eagerly(self) -> None:
-        # Regression: exec_stream used to be a generator function, so the
-        # POST /exec was deferred to the first iteration. Bridge launch
-        # errors (401, 400 from a malformed argv, etc.) would land on the
-        # pump thread as a pump_error instead of failing fast at the
-        # session.exec() call site. The POST must happen at call time.
+        # Bridge launch errors (401 etc.) must raise at exec_stream() call
+        # time, not on the pump thread.
         def handler(request: httpx.Request) -> httpx.Response:
             return httpx.Response(401, json={"error": "unauthorized"})
 
@@ -366,8 +360,8 @@ class TestProcessDemux:
         session = _passthrough_session()
         events = iter(
             [
-                type("E", (), {"kind": "stdout", "data": "line1\nline2\n"})(),
-                type("E", (), {"kind": "exit", "data": 0})(),
+                _BridgeEvent(kind="stdout", data="line1\nline2\n"),
+                _BridgeEvent(kind="exit", data=0),
             ]
         )
         proc = CloudflareSandboxProcess(
@@ -382,9 +376,9 @@ class TestProcessDemux:
         session = _passthrough_session()
         events = iter(
             [
-                type("E", (), {"kind": "stderr", "data": "err\n"})(),
-                type("E", (), {"kind": "stdout", "data": "ok\n"})(),
-                type("E", (), {"kind": "exit", "data": 1})(),
+                _BridgeEvent(kind="stderr", data="err\n"),
+                _BridgeEvent(kind="stdout", data="ok\n"),
+                _BridgeEvent(kind="exit", data=1),
             ]
         )
         proc = CloudflareSandboxProcess(
@@ -398,8 +392,8 @@ class TestProcessDemux:
         session = _passthrough_session()
         events = iter(
             [
-                type("E", (), {"kind": "stdout", "data": "abc"})(),
-                type("E", (), {"kind": "exit", "data": 0})(),
+                _BridgeEvent(kind="stdout", data="abc"),
+                _BridgeEvent(kind="exit", data=0),
             ]
         )
         proc = CloudflareSandboxProcess(
@@ -410,18 +404,18 @@ class TestProcessDemux:
 
     def test_wait_returns_captured_exit_code(self) -> None:
         session = _passthrough_session()
-        events = iter([type("E", (), {"kind": "exit", "data": 7})()])
+        events = iter([_BridgeEvent(kind="exit", data=7)])
         proc = CloudflareSandboxProcess(
             events, session=session, started_at=0.0
         )
         assert proc.wait() == 7
 
     def test_wait_timeout_raises_timeout_error(self) -> None:
-        # Generator that never yields anything — pump hangs until kill().
-        def _block() -> Iterator[Any]:
-            evt = threading.Event()
-            evt.wait()
-            yield  # pragma: no cover
+        release = threading.Event()
+
+        def _block() -> Iterator[_BridgeEvent]:
+            release.wait(timeout=10.0)
+            yield from ()
 
         session = _passthrough_session()
         proc = CloudflareSandboxProcess(
@@ -431,15 +425,14 @@ class TestProcessDemux:
             with pytest.raises(TimeoutError):
                 proc.wait(timeout=0.05)
         finally:
-            proc.kill()
-            # Pump should now be unblocked; subsequent wait must not hang.
+            release.set()
+            proc._pump.join(timeout=2.0)
+        assert not proc._pump.is_alive()
 
     def test_wait_raises_when_exit_frame_missing(self) -> None:
         # Pump finishes (iterator exhausted) but never saw an exit event.
         session = _passthrough_session()
-        events = iter(
-            [type("E", (), {"kind": "stdout", "data": "partial\n"})()]
-        )
+        events = iter([_BridgeEvent(kind="stdout", data="partial\n")])
         proc = CloudflareSandboxProcess(
             events, session=session, started_at=0.0
         )
@@ -447,30 +440,39 @@ class TestProcessDemux:
             proc.wait()
 
     def test_kill_unblocks_consumers(self) -> None:
-        # Generator that yields nothing and parks until close()d.
+        # End-to-end through session.exec: the pump blocks on a real SSE
+        # body, and kill() must close the response to unblock it.
         opened = threading.Event()
-        released = threading.Event()
+        release = threading.Event()
 
-        def _hang() -> Iterator[Any]:
-            opened.set()
-            try:
-                while True:
-                    released.wait(timeout=10.0)
-                    if released.is_set():
-                        return
-            except GeneratorExit:
-                return
-            yield  # pragma: no cover
+        class _BlockingStream(httpx.SyncByteStream):
+            def __iter__(self) -> Iterator[bytes]:
+                opened.set()
+                release.wait(timeout=10.0)
+                yield b""
 
-        session = _passthrough_session()
-        proc = CloudflareSandboxProcess(
-            _hang(), session=session, started_at=0.0
-        )
-        opened.wait(timeout=1.0)
+            def close(self) -> None:
+                release.set()
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(
+                200,
+                stream=_BlockingStream(),
+                headers={"Content-Type": "text/event-stream"},
+            )
+
+        client = _make_client(handler)
+        session = _make_session(client)
+        proc = session.exec(["sleep", "60"])
+        assert isinstance(proc, CloudflareSandboxProcess)
+        assert opened.wait(timeout=2.0)
         proc.kill()
-        # kill() must signal _done so wait() returns / raises promptly.
-        with pytest.raises(SandboxExecError):
+        # kill() must unblock wait(); no exit frame ever arrived, so this
+        # surfaces as an error rather than a bogus exit code 0.
+        with pytest.raises(SandboxExecError, match="without an exit frame"):
             proc.wait(timeout=2.0)
+        proc._pump.join(timeout=2.0)
+        assert not proc._pump.is_alive()
 
 
 class TestSessionExec:
