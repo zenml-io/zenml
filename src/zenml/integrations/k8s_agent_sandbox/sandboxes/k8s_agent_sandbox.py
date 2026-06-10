@@ -30,6 +30,9 @@ from typing import (
     cast,
 )
 
+from kubernetes import client as k8s_client
+from kubernetes.client.rest import ApiException
+
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.k8s_agent_sandbox.flavors import (
     ConnectionMode,
@@ -48,6 +51,10 @@ from zenml.sandboxes import (
 if TYPE_CHECKING:
     from k8s_agent_sandbox import (
         SandboxClient,  # type: ignore[import-not-found]
+    )
+    from k8s_agent_sandbox.models import (  # type: ignore[import-not-found]
+        ExecutionResult,
+        SandboxConnectionConfig,
     )
     from k8s_agent_sandbox.sandbox import (
         Sandbox,  # type: ignore[import-not-found]
@@ -71,10 +78,6 @@ def _delete_sandbox_template(name: str, namespace: str) -> None:
         name: SandboxTemplate name.
         namespace: Target namespace.
     """
-    from kubernetes import (
-        client as k8s_client,
-    )
-
     k8s_client.CustomObjectsApi().delete_namespaced_custom_object(
         group=_SANDBOX_TEMPLATE_GROUP,
         version=_SANDBOX_TEMPLATE_VERSION,
@@ -93,7 +96,7 @@ class K8sAgentSandboxProcess(SandboxProcess):
 
     def __init__(
         self,
-        result: Any,
+        result: "ExecutionResult",
         *,
         session: "K8sAgentSandboxSession",
         started_at: float,
@@ -180,12 +183,6 @@ class K8sAgentSandboxSession(SandboxSession):
             parent=parent,
         )
         self._sandbox = sandbox
-        # Typed alias of ``self._parent``: sessions are only ever
-        # constructed by ``K8sAgentSandbox``, and the destructive paths
-        # below must re-enter its ``_kube_default_config`` credential
-        # scope — on connector-only setups (no ambient kubeconfig) the
-        # cleanup calls would otherwise hit the wrong cluster or fail.
-        self._parent_k8s = parent
         self._inline_template_name = inline_template_name
         self._inline_template_namespace = inline_template_namespace
 
@@ -206,13 +203,9 @@ class K8sAgentSandboxSession(SandboxSession):
             cwd: Working directory. Prepended as ``cd <cwd> && ...`` —
                 the SDK's ``commands.run`` doesn't expose a workdir
                 kwarg.
-            env: Per-exec env vars. Prepended as inline ``KEY=value``
-                exports. **Caveat**: when ``command`` is a
-                shell-string containing ``&&`` / ``;`` / ``|``, the
-                env prefix only binds to the first command in the
-                chain. Pass ``command`` as a list, or pre-export the
-                vars inside the command string, for unambiguous
-                semantics.
+            env: Per-exec env vars. Prepended as ``export KEY=value; ``
+                statements so they apply to the entire command chain
+                (``&&`` / ``;`` / ``|``).
 
         Returns:
             An ``K8sAgentSandboxProcess`` carrying the captured
@@ -224,8 +217,10 @@ class K8sAgentSandboxSession(SandboxSession):
         """
         cmd_str = shlex.join(command) if isinstance(command, list) else command
         if env:
-            prefix = " ".join(f"{k}={shlex.quote(v)}" for k, v in env.items())
-            cmd_str = f"{prefix} {cmd_str}"
+            exports = "".join(
+                f"export {k}={shlex.quote(v)}; " for k, v in env.items()
+            )
+            cmd_str = f"{exports}{cmd_str}"
         if cwd is not None:
             cmd_str = f"cd {shlex.quote(cwd)} && {cmd_str}"
 
@@ -236,8 +231,7 @@ class K8sAgentSandboxSession(SandboxSession):
             result = self._sandbox.commands.run(cmd_str)
         except Exception as e:
             raise SandboxExecError(
-                f"agent-sandbox exec failed to launch "
-                f"({type(e).__name__}): {e}"
+                f"agent-sandbox exec failed ({type(e).__name__}): {e}"
             ) from e
         return K8sAgentSandboxProcess(
             result, session=self, started_at=started_at
@@ -258,7 +252,7 @@ class K8sAgentSandboxSession(SandboxSession):
         reconcile manually, never raised.
         """
         try:
-            with self._parent_k8s._kube_default_config():
+            with cast("K8sAgentSandbox", self._parent)._kube_default_config():
                 self._sandbox.terminate()
         except Exception as e:  # noqa: BLE001
             logger.warning(
@@ -287,7 +281,7 @@ class K8sAgentSandboxSession(SandboxSession):
         if name is None or namespace is None:
             return
         try:
-            with self._parent_k8s._kube_default_config():
+            with cast("K8sAgentSandbox", self._parent)._kube_default_config():
                 _delete_sandbox_template(name, namespace)
         except Exception as e:  # noqa: BLE001
             logger.warning(
@@ -322,7 +316,7 @@ class K8sAgentSandbox(BaseSandbox):
         """
         return K8sAgentSandboxSettings
 
-    def _get_kube_api_client(self) -> Any:
+    def _get_kube_api_client(self) -> Optional[k8s_client.ApiClient]:
         """Resolves an ``ApiClient`` from the linked service connector.
 
         Returns:
@@ -337,10 +331,6 @@ class K8sAgentSandbox(BaseSandbox):
         connector = self.get_connector()
         if connector is None:
             return None
-        from kubernetes import (
-            client as k8s_client,
-        )
-
         api_client = connector.connect()
         if not isinstance(api_client, k8s_client.ApiClient):
             raise RuntimeError(
@@ -349,7 +339,7 @@ class K8sAgentSandbox(BaseSandbox):
             )
         return api_client
 
-    def _build_connection_config(self) -> Any:
+    def _build_connection_config(self) -> "SandboxConnectionConfig":
         """Builds a ``SandboxConnectionConfig`` from the component config.
 
         Returns:
@@ -404,10 +394,6 @@ class K8sAgentSandbox(BaseSandbox):
         if api_client is None:
             yield
             return
-        from kubernetes import (
-            client as k8s_client,
-        )
-
         # ``Configuration._default`` is the same attribute
         # ``Configuration.set_default`` writes to; reading it directly
         # is the only way to snapshot the current default since the
@@ -457,15 +443,11 @@ class K8sAgentSandbox(BaseSandbox):
             ValueError: If no ``image`` is configured. Inline mode
                 requires an explicit image — reproducibility-first.
         """
-        from kubernetes import (
-            client as k8s_client,
-        )
-
         from zenml.integrations.kubernetes.manifest_utils import (
             add_pod_settings,
         )
 
-        image = eff.image or self.config.image
+        image = eff.image
         if not image:
             raise ValueError(
                 "Inline SandboxTemplate synthesis requires an image. "
@@ -532,7 +514,7 @@ class K8sAgentSandbox(BaseSandbox):
         )
 
         return {
-            "apiVersion": "extensions.agents.x-k8s.io/v1beta1",
+            "apiVersion": f"{_SANDBOX_TEMPLATE_GROUP}/{_SANDBOX_TEMPLATE_VERSION}",
             "kind": "SandboxTemplate",
             "metadata": {"name": name, "namespace": namespace},
             "spec": {"podTemplate": {"spec": pod_spec_dict}},
@@ -559,13 +541,6 @@ class K8sAgentSandbox(BaseSandbox):
                 Raises with the underlying ``ApiException`` chained for
                 diagnostics.
         """
-        from kubernetes import (
-            client as k8s_client,
-        )
-        from kubernetes.client.rest import (
-            ApiException,
-        )
-
         # Full uuid4 hex (32 chars) — fan-out workflows (step.map at
         # large N) make short names a real collision risk.
         name = f"zenml-sb-tpl-{uuid.uuid4().hex}"

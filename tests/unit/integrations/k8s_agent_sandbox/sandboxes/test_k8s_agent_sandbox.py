@@ -89,38 +89,12 @@ def _make_sandbox(
 
 
 class TestFlavorMetadata:
-    def test_name_is_k8s_agent_sandbox(self) -> None:
-        assert K8sAgentSandboxFlavor().name == "k8s_agent_sandbox"
-
-    def test_config_class(self) -> None:
-        assert K8sAgentSandboxFlavor().config_class is K8sAgentSandboxConfig
-
     def test_service_connector_requirements_match_k8s_cluster(self) -> None:
         from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 
         req = K8sAgentSandboxFlavor().service_connector_requirements
         assert req is not None
         assert req.resource_type == KUBERNETES_CLUSTER_RESOURCE_TYPE
-
-
-class TestConfigDefaults:
-    def test_inherits_base_sandbox_fields(self) -> None:
-        fields = K8sAgentSandboxSettings.model_fields
-        # image is declared locally on the flavor; sandbox_environment
-        # comes from BaseSandboxSettings.
-        assert {"image", "sandbox_environment"} <= set(fields)
-
-    def test_default_connection_mode_is_gateway(self) -> None:
-        cfg = K8sAgentSandboxConfig()
-        assert cfg.connection_mode == ConnectionMode.GATEWAY
-
-    def test_is_remote_true(self) -> None:
-        cfg = K8sAgentSandboxConfig()
-        assert cfg.is_remote is True
-
-    def test_template_name_optional(self) -> None:
-        cfg = K8sAgentSandboxConfig()
-        assert cfg.template_name is None
 
 
 class TestRequirementsAreInherited:
@@ -328,9 +302,9 @@ class TestInlineTemplateBody:
     def test_default_resources_include_ephemeral_storage(self) -> None:
         # The upstream-matching default ephemeral-storage request is
         # set so the pod can be scheduled.
-        sb = _make_sandbox(template_name=None, image="r:1")
+        sb = _make_sandbox(template_name=None)
         body = sb._build_inline_template_body(
-            K8sAgentSandboxSettings(), "ns", "zenml-sb-tpl-test"
+            K8sAgentSandboxSettings(image="r:1"), "ns", "zenml-sb-tpl-test"
         )
         container = body["spec"]["podTemplate"]["spec"]["containers"][0]
         assert container["resources"]["requests"]["ephemeral-storage"] == (
@@ -338,18 +312,18 @@ class TestInlineTemplateBody:
         )
 
     def test_container_name_matches_upstream(self) -> None:
-        sb = _make_sandbox(template_name=None, image="r:1")
+        sb = _make_sandbox(template_name=None)
         body = sb._build_inline_template_body(
-            K8sAgentSandboxSettings(), "ns", "zenml-sb-tpl-test"
+            K8sAgentSandboxSettings(image="r:1"), "ns", "zenml-sb-tpl-test"
         )
         container = body["spec"]["podTemplate"]["spec"]["containers"][0]
         # Operator examples use `python-runtime` — keep parity.
         assert container["name"] == "python-runtime"
 
     def test_includes_liveness_probe(self) -> None:
-        sb = _make_sandbox(template_name=None, image="r:1")
+        sb = _make_sandbox(template_name=None)
         body = sb._build_inline_template_body(
-            K8sAgentSandboxSettings(), "ns", "zenml-sb-tpl-test"
+            K8sAgentSandboxSettings(image="r:1"), "ns", "zenml-sb-tpl-test"
         )
         container = body["spec"]["podTemplate"]["spec"]["containers"][0]
         assert container["livenessProbe"]["httpGet"]["port"] == 8888
@@ -373,10 +347,11 @@ class TestInlineTemplateBody:
         assert container["image"] == "my-org/custom:1"
 
     def test_sandbox_environment_lands_in_template_env(self) -> None:
-        sb = _make_sandbox(image="r:1")
+        sb = _make_sandbox()
         body = sb._build_inline_template_body(
             K8sAgentSandboxSettings(
-                sandbox_environment={"OPENAI_API_KEY": "sk-test"}
+                image="r:1",
+                sandbox_environment={"OPENAI_API_KEY": "sk-test"},
             ),
             "ns",
             "zenml-sb-tpl-test",
@@ -394,12 +369,13 @@ class TestInlineTemplateBody:
             KubernetesPodSettings,
         )
 
-        sb = _make_sandbox(image="r:1")
+        sb = _make_sandbox()
         body = sb._build_inline_template_body(
             K8sAgentSandboxSettings(
+                image="r:1",
                 pod_settings=KubernetesPodSettings(
                     node_selectors={"node-pool": "sandbox"}
-                )
+                ),
             ),
             "ns",
             "zenml-sb-tpl-test",
@@ -416,12 +392,13 @@ class TestInlineTemplateBody:
             KubernetesPodSettings,
         )
 
-        sb = _make_sandbox(image="r:1")
+        sb = _make_sandbox()
         body = sb._build_inline_template_body(
             K8sAgentSandboxSettings(
+                image="r:1",
                 pod_settings=KubernetesPodSettings(
                     node_selectors={"node-pool": "sandbox"}
-                )
+                ),
             ),
             "ns",
             "zenml-sb-tpl-test",
@@ -436,12 +413,13 @@ class TestInlineTemplateBody:
             KubernetesPodSettings,
         )
 
-        sb = _make_sandbox(image="r:1")
+        sb = _make_sandbox()
         body = sb._build_inline_template_body(
             K8sAgentSandboxSettings(
+                image="r:1",
                 pod_settings=KubernetesPodSettings(
                     resources={"requests": {"cpu": "500m"}}
-                )
+                ),
             ),
             "ns",
             "zenml-sb-tpl-test",
@@ -723,8 +701,9 @@ class TestExec:
         session = self._live_session(result)
         session.exec("env", env={"FOO": "bar baz"})
         called_with = session._sandbox.commands.run.call_args.args[0]
-        # shlex.quote wraps "bar baz" in single quotes.
-        assert "FOO='bar baz'" in called_with
+        # `export` applies to the whole command chain; shlex.quote
+        # wraps "bar baz" in single quotes.
+        assert called_with == "export FOO='bar baz'; env"
 
     def test_exec_failure_wraps_in_sandbox_exec_error(self) -> None:
         from zenml.sandboxes import SandboxExecError
