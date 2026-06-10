@@ -1210,6 +1210,93 @@ def test_static_controller_interrupts_only_for_external_stop(
     assert setup.controller.should_interrupt_execution() == expected_interrupt
 
 
+def test_start_step_sandbox_launches_sandbox_on_cache_miss(monkeypatch):
+    setup = _make_static_controller(monkeypatch)
+    sandbox = SandboxStub("step-sandbox-id")
+    setup.step_run_request_factory.has_caching_enabled = lambda _step_name: (
+        True
+    )
+
+    def populate_running_request(request, *, step_runs):
+        request.status = ExecutionStatus.RUNNING
+        setup.step_run_request_factory.populate_calls.append(
+            (request, dict(step_runs))
+        )
+
+    setup.step_run_request_factory.populate_request = populate_running_request
+    setup.orchestrator.create_static_step_sandbox = lambda **_kwargs: sandbox
+    monkeypatch.setattr(
+        modal_entrypoint_module.publish_utils,
+        "publish_pipeline_run_metadata",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        modal_entrypoint_module,
+        "publish_cached_step_run",
+        lambda *_args, **_kwargs: pytest.fail(
+            "Cache miss must not publish a cached step run."
+        ),
+    )
+
+    dag_node = modal_entrypoint_module.Node(id="train", upstream_nodes=[])
+
+    assert setup.controller.start_step_sandbox(dag_node) == NodeStatus.RUNNING
+    assert (
+        dag_node.metadata[MODAL_SANDBOX_ID_METADATA_KEY] == "step-sandbox-id"
+    )
+    assert setup.step_run_request_factory.created_requests[0].status == (
+        ExecutionStatus.RUNNING
+    )
+    assert sandbox.terminate_calls == 0
+
+
+def test_start_step_sandbox_uses_cached_step_run_on_cache_hit(monkeypatch):
+    setup = _make_static_controller(monkeypatch)
+    cached_step_run = SimpleNamespace(
+        id=uuid4(), status=ExecutionStatus.CACHED
+    )
+    setup.step_run_request_factory.has_caching_enabled = lambda _step_name: (
+        True
+    )
+
+    def populate_cached_request(request, *, step_runs):
+        request.status = ExecutionStatus.CACHED
+        setup.step_run_request_factory.populate_calls.append(
+            (request, dict(step_runs))
+        )
+
+    setup.step_run_request_factory.populate_request = populate_cached_request
+    setup.orchestrator.create_static_step_sandbox = lambda **_kwargs: (
+        pytest.fail("Cache hit must not start a Modal sandbox.")
+    )
+    published_cached_requests = []
+    monkeypatch.setattr(
+        modal_entrypoint_module,
+        "publish_cached_step_run",
+        lambda request, pipeline_run: (
+            published_cached_requests.append((request, pipeline_run))
+            or cached_step_run
+        ),
+    )
+
+    dag_node = modal_entrypoint_module.Node(id="train", upstream_nodes=[])
+
+    assert (
+        setup.controller.start_step_sandbox(dag_node) == NodeStatus.COMPLETED
+    )
+    assert published_cached_requests == [
+        (
+            setup.step_run_request_factory.created_requests[0],
+            setup.pipeline_run,
+        )
+    ]
+    assert setup.step_run_request_factory.created_requests[0].status == (
+        ExecutionStatus.CACHED
+    )
+    assert setup.controller.step_runs == {"train": cached_step_run}
+    assert MODAL_SANDBOX_ID_METADATA_KEY not in dag_node.metadata
+
+
 def test_start_step_sandbox_tolerates_metadata_publish_failure(monkeypatch):
     """A step metadata publish error must not kill the new sandbox."""
     setup = _make_static_controller(monkeypatch)
