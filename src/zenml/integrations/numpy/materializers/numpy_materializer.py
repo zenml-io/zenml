@@ -123,8 +123,8 @@ class NumpyMaterializer(BaseMaterializer):
             )
             try:
                 # Import old materializer dependencies
-                import pyarrow as pa  # type: ignore
-                import pyarrow.parquet as pq  # type: ignore
+                import pyarrow as pa
+                import pyarrow.parquet as pq
 
                 from zenml.utils import yaml_utils
 
@@ -137,7 +137,9 @@ class NumpyMaterializer(BaseMaterializer):
                     os.path.join(self.uri, DATA_FILENAME), "rb"
                 ) as f:
                     input_stream = pa.input_stream(f)
-                    data = pq.read_table(input_stream)
+                    data = pq.read_table(  # type: ignore[no-untyped-call]
+                        input_stream
+                    )
                 vals = getattr(data.to_pandas(), DATA_VAR).values
                 arr = np.reshape(vals, shape_tuple)
                 # Ensure consistent dtype handling
