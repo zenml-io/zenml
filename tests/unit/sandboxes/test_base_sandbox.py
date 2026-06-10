@@ -33,6 +33,7 @@ from zenml.sandboxes import (
     SandboxOutput,
     SandboxProcess,
     SandboxSession,
+    SandboxSessionClosedError,
     SandboxSnapshot,
 )
 
@@ -73,9 +74,10 @@ class _FakeSession(SandboxSession):
             id=session_id,
             parent=parent or MagicMock(spec=BaseSandbox, flavor="fake"),
         )
-        self.closed = False
+        self.was_closed = False
+        self.close_count = 0
 
-    def exec(
+    def _exec(
         self,
         command: Union[str, List[str]],
         *,
@@ -85,7 +87,8 @@ class _FakeSession(SandboxSession):
         return _FakeProcess()
 
     def _close(self) -> None:
-        self.closed = True
+        self.was_closed = True
+        self.close_count += 1
 
 
 class _FakeSandbox(BaseSandbox):
@@ -176,8 +179,29 @@ class TestSessionContextManager:
         session = _FakeSession()
         with session as s:
             assert s is session
-            assert session.closed is False
+            assert session.was_closed is False
+        assert session.was_closed is True
         assert session.closed is True
+
+    def test_use_after_close_raises(self) -> None:
+        # close() is terminal: every session-using operation on a closed
+        # handle must fail loudly instead of half-working unlogged.
+        session = _FakeSession()
+        session.close()
+        with pytest.raises(SandboxSessionClosedError):
+            session.exec("true")
+        with pytest.raises(SandboxSessionClosedError):
+            session.create_snapshot()
+        with pytest.raises(SandboxSessionClosedError):
+            session.upload_file("a", "b")
+        with pytest.raises(SandboxSessionClosedError):
+            session.download_file("a", "b")
+
+    def test_close_is_idempotent(self) -> None:
+        session = _FakeSession()
+        session.close()
+        session.close()
+        assert session.close_count == 1
 
     def test_direct_close_flushes_log_ctx(self) -> None:
         # Users may call close() without the context manager; the logging
@@ -185,7 +209,7 @@ class TestSessionContextManager:
         session = _FakeSession()
         with patch.object(session, "_close_logging_context") as fake_close_log:
             session.close()
-        assert session.closed is True
+        assert session.was_closed is True
         fake_close_log.assert_called_once()
 
     def test_exit_flushes_log_ctx_when_close_raises(self) -> None:
@@ -200,7 +224,7 @@ class TestSessionContextManager:
                     parent=MagicMock(spec=BaseSandbox, flavor="fake"),
                 )
 
-            def exec(
+            def _exec(
                 self,
                 command: Union[str, List[str]],
                 *,
