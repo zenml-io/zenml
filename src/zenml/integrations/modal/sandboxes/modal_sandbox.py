@@ -126,6 +126,9 @@ class ModalSandboxProcess(SandboxProcess):
         Modal's ``ContainerProcess`` exposes no per-command kill, so the
         only way to honor the ``SandboxProcess.kill()`` contract (the
         command must actually stop) is to terminate the whole Sandbox.
+        The session handle is closed afterwards — the sandbox is gone,
+        so further use would only fail later with a confusing Modal
+        error instead of ``SandboxSessionClosedError``.
         """
         session = cast("ModalSandboxSession", self._session)
         logger.warning(
@@ -134,6 +137,7 @@ class ModalSandboxProcess(SandboxProcess):
             session.id,
         )
         session._sandbox.terminate()
+        session.close()
 
     @property
     def exit_code(self) -> Optional[int]:
@@ -256,19 +260,23 @@ class ModalSandboxSession(SandboxSession):
         """No-op: the Modal Sandbox stays alive until destroy() or TTL."""
 
     def destroy(self) -> None:
-        """Terminate the Sandbox on Modal."""
+        """Terminate the Sandbox on Modal.
+
+        The handle is only closed after successful termination — on
+        failure it stays open so destroy() can be retried.
+
+        Raises:
+            RuntimeError: If Modal fails to terminate the sandbox.
+        """
         try:
             self._sandbox.terminate()
         except Exception as e:
-            logger.warning(
-                "Modal sandbox terminate() failed: %s. The sandbox may "
-                "still be running; Modal will eventually clean it up "
-                "via its TTL.",
-                e,
-                exc_info=True,
-            )
-        finally:
-            self.close()
+            raise RuntimeError(
+                f"Failed to terminate Modal sandbox '{self.id}': {e}. "
+                "It may keep running (and billing) until its TTL; retry "
+                "destroy() or stop it from the Modal dashboard."
+            ) from e
+        self.close()
 
 
 class ModalSandbox(BaseSandbox):
