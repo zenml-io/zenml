@@ -123,17 +123,18 @@ class ModalSandboxProcess(SandboxProcess):
         try:
             if self._process.stdin is not None:
                 self._process.stdin.close()
+            logger.info(
+                "Modal has no per-command kill; closed stdin instead. Use "
+                "session.destroy() to force-terminate the whole Sandbox."
+            )
         except Exception as e:
             logger.warning(
                 "Closing Modal process stdin during kill() failed: %s. "
-                "The process may still be running.",
+                "The process may still be running; use session.destroy() "
+                "to force-terminate the whole Sandbox.",
                 e,
                 exc_info=True,
             )
-        logger.warning(
-            "Modal does not support per-command kill; closed stdin instead. "
-            "Use session.destroy() to force-terminate the whole Sandbox."
-        )
 
     @property
     def exit_code(self) -> Optional[int]:
