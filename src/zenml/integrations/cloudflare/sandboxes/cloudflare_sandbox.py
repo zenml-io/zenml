@@ -104,9 +104,8 @@ def _sanitize_remote_path(remote_path: str) -> str:
 def _parse_sse_stream(lines: Iterator[str]) -> Iterator[_BridgeEvent]:
     """Parse the bridge's text/event-stream into typed events.
 
-    The inner ``_dispatch`` generator raises ``SandboxExecError`` on
-    malformed base64/JSON frames and on ``event: error`` payloads; that
-    exception propagates through the ``yield from`` calls below.
+    Malformed frames and ``event: error`` payloads raise
+    ``SandboxExecError`` from the inner dispatch generator.
 
     Args:
         lines: Decoded SSE lines (no trailing newlines).
@@ -688,12 +687,9 @@ class CloudflareSandboxProcess(SandboxProcess):
     def kill(self) -> None:
         """Stop reading the SSE stream and unblock consumers.
 
-        The bridge has no per-exec kill RPC, so this can't actually
-        terminate the in-flight command on Cloudflare's side. What we CAN
-        do is close the SSE response (which unblocks the pump thread
-        mid-read), then signal ``_done`` so ``wait()`` and
-        ``stdout()``/``stderr()`` consumers stop waiting. Use
-        ``session.destroy()`` to force-terminate the whole sandbox.
+        The bridge has no per-exec kill RPC — the command keeps running
+        on Cloudflare until ``timeout_ms``; ``session.destroy()``
+        terminates the whole sandbox.
         """
         # Set the flag before closing so the pump treats the resulting
         # httpx error as a clean shutdown.
