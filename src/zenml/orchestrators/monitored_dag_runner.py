@@ -371,12 +371,14 @@ class DagRunner:
 
     def _stop_node_after_interrupt(self, node: Node) -> None:
         """Stop one node after an interrupt and record stop errors."""
-        if node.id in self._stop_attempted_node_ids:
-            with self._node_state_lock:
+        # The check and the add must be atomic: the main thread and a startup
+        # worker can both reach this for the same node during a force stop,
+        # and only one of them may call the stop function.
+        with self._node_state_lock:
+            if node.id in self._stop_attempted_node_ids:
                 node.status = NodeStatus.CANCELLED
-            return
-
-        self._stop_attempted_node_ids.add(node.id)
+                return
+            self._stop_attempted_node_ids.add(node.id)
         try:
             self._stop_node(node)
         except Exception as e:
@@ -529,6 +531,10 @@ class DagRunner:
 
     def run(self) -> Dict[str, NodeStatus]:
         """Run the DAG.
+
+        Raises:
+            RuntimeError: If one or more nodes could not be stopped during a
+                force stop, so their backend resources may still be running.
 
         Returns:
             The final node states.

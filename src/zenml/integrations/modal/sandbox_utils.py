@@ -16,7 +16,7 @@
 import math
 from dataclasses import dataclass
 from threading import Lock
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Protocol, Tuple
 
 import modal
 
@@ -48,6 +48,30 @@ DEFAULT_GPU_VALIDATION_MESSAGE = GpuValidationMessage(
         "ResourceSettings(gpu_count=1)}), or set gpu_count=0 to run on CPU."
     ),
 )
+
+
+class ModalSandboxSettings(Protocol):
+    """Fields shared by Modal component settings that describe a sandbox."""
+
+    @property
+    def gpu(self) -> Optional[str]:
+        """GPU type requested for the sandbox, if any."""
+        ...
+
+    @property
+    def cloud(self) -> Optional[str]:
+        """Cloud provider for the sandbox, if any."""
+        ...
+
+    @property
+    def region(self) -> Optional[str]:
+        """Cloud region for the sandbox, if any."""
+        ...
+
+    @property
+    def timeout(self) -> int:
+        """Maximum sandbox lifetime in seconds."""
+        ...
 
 
 def normalize_optional_config_value(value: Optional[str]) -> Optional[str]:
@@ -135,7 +159,7 @@ class ModalClientFactory:
 def get_modal_image_from_registry(
     image_name: str,
     registry_credentials: Optional[Tuple[str, str]] = None,
-) -> Any:
+) -> "modal.Image":
     """Create a Modal image from a registry image name."""
     if registry_credentials:
         docker_username, docker_password = registry_credentials
@@ -155,7 +179,7 @@ def lookup_modal_app(
     *,
     modal_environment: Optional[str],
     modal_client: Optional["modal.Client"],
-) -> Any:
+) -> "modal.App":
     """Look up or create a Modal app for Sandbox execution."""
     return modal.App.lookup(
         app_name,
@@ -166,7 +190,7 @@ def lookup_modal_app(
 
 
 def get_gpu_values(
-    settings: Any,
+    settings: ModalSandboxSettings,
     resource_settings: ResourceSettings,
     *,
     gpu_validation_message: GpuValidationMessage = DEFAULT_GPU_VALIDATION_MESSAGE,
@@ -232,7 +256,7 @@ def get_memory_mb(resource_settings: ResourceSettings) -> Optional[int]:
 
 def create_runtime_secrets(
     sensitive_environment: Dict[str, Optional[str]],
-) -> List[Any]:
+) -> List["modal.Secret"]:
     """Create Modal secrets for sensitive runtime environment values."""
     if not sensitive_environment:
         return []
@@ -242,9 +266,9 @@ def create_runtime_secrets(
 
 def build_sandbox_create_kwargs(
     *,
-    app: Any,
-    image: Any,
-    settings: Any,
+    app: "modal.App",
+    image: "modal.Image",
+    settings: ModalSandboxSettings,
     resource_settings: ResourceSettings,
     environment: Dict[str, str],
     modal_client: Optional["modal.Client"],
@@ -281,14 +305,14 @@ def build_sandbox_create_kwargs(
 def create_modal_sandbox(
     entrypoint_command: List[str],
     *,
-    app: Any,
-    image: Any,
-    settings: Any,
+    app: "modal.App",
+    image: "modal.Image",
+    settings: ModalSandboxSettings,
     resource_settings: ResourceSettings,
     environment: Dict[str, str],
     modal_client: Optional["modal.Client"],
     gpu_validation_message: GpuValidationMessage = DEFAULT_GPU_VALIDATION_MESSAGE,
-) -> Any:
+) -> "modal.Sandbox":
     """Create a Modal sandbox for a ZenML entrypoint command."""
     sandbox_create_kwargs = build_sandbox_create_kwargs(
         app=app,
@@ -317,7 +341,7 @@ def get_sandbox_by_id(
     sandbox_id: str,
     *,
     modal_client: Optional["modal.Client"],
-) -> Any:
+) -> "modal.Sandbox":
     """Reconstruct a Modal sandbox handle by ID."""
     return modal.Sandbox.from_id(sandbox_id, client=modal_client)
 

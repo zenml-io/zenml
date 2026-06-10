@@ -16,7 +16,7 @@
 import os
 import time
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import modal
 
@@ -39,6 +39,7 @@ from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.orchestrators.publish_utils import (
     publish_pipeline_run_metadata,
     publish_step_run_metadata,
+    publish_stopped_step_run,
 )
 from zenml.pipelines.dynamic.entrypoint_configuration import (
     DynamicPipelineEntrypointConfiguration,
@@ -313,7 +314,6 @@ class ModalOrchestrator(ContainerizedOrchestrator):
                 run_id=placeholder_run.id,
                 run_update=PipelineRunUpdate(orchestrator_run_id=modal_run_id),
             )
-            cast(Any, placeholder_run).orchestrator_run_id = modal_run_id
 
         try:
             image_name = self.get_image(snapshot=snapshot)
@@ -451,7 +451,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         snapshot: "PipelineSnapshotResponse",
         step_name: str,
         environment: Dict[str, str],
-    ) -> Any:
+    ) -> "modal.Sandbox":
         """Create a child sandbox for a static pipeline step."""
         from zenml.entrypoints import StepEntrypointConfiguration
 
@@ -488,7 +488,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         resource_settings: ResourceSettings,
         environment: Dict[str, str],
         entrypoint_command: list[str],
-    ) -> Any:
+    ) -> "modal.Sandbox":
         """Create a Modal sandbox for one ZenML step."""
         stack = Client().active_stack
         if not stack.container_registry:
@@ -715,6 +715,48 @@ class ModalOrchestrator(ContainerizedOrchestrator):
                 "Failed to stop all Modal sandboxes: " + "; ".join(errors)
             )
 
+        self._publish_stopped_statuses_for_unfinished_steps(run)
+
+    def _publish_stopped_statuses_for_unfinished_steps(
+        self, run: "PipelineRunResponse"
+    ) -> None:
+        """Record stopped statuses for step runs whose sandboxes were killed.
+
+        Terminating a Modal sandbox kills the step process before it can
+        publish its own terminal status, and the orchestration sandbox that
+        could reconcile step statuses is terminated as well, so the stopping
+        client records them here.
+        """
+        final_run = self._get_fresh_pipeline_run(run)
+        try:
+            steps = final_run.steps
+        except Exception:
+            logger.debug(
+                "Pipeline run `%s` is not hydrated with step metadata.",
+                run.id,
+                exc_info=True,
+            )
+            return
+
+        for step_name, step_run in steps.items():
+            if step_run.status.is_finished:
+                continue
+            # Steps backed by a step operator run on that operator's
+            # infrastructure, survive the sandbox terminations, and publish
+            # their own terminal status.
+            if step_run.config.step_operator:
+                continue
+            try:
+                publish_stopped_step_run(step_run.id)
+            except Exception as e:
+                logger.warning(
+                    "Failed to mark step `%s` of stopped run `%s` as "
+                    "stopped: %s",
+                    step_name,
+                    run.id,
+                    e,
+                )
+
     @staticmethod
     def _get_fresh_pipeline_run(
         run: "PipelineRunResponse",
@@ -774,7 +816,9 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         logger.info("Terminated Modal sandbox for %s.", description)
 
     @staticmethod
-    def _terminate_created_sandbox_after_metadata_error(sandbox: Any) -> None:
+    def _terminate_created_sandbox_after_metadata_error(
+        sandbox: "modal.Sandbox",
+    ) -> None:
         """Terminate a newly-created sandbox after metadata publication fails."""
         try:
             sandbox.terminate()
@@ -786,7 +830,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             )
 
     @staticmethod
-    def _wait_for_sandbox(sandbox: Any) -> Optional[int]:
+    def _wait_for_sandbox(sandbox: "modal.Sandbox") -> Optional[int]:
         """Wait for a Modal sandbox by polling its return code."""
         while True:
             return_code = sandbox.poll()
@@ -795,7 +839,7 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             time.sleep(1)
 
     def get_pipeline_run_metadata(
-        self, run_id: Any
+        self, run_id: UUID
     ) -> Dict[str, MetadataType]:
         """Get run metadata from the Modal sandbox environment."""
         metadata: Dict[str, MetadataType] = {

@@ -14,6 +14,7 @@
 """Static Modal orchestration entrypoint."""
 
 import os
+import time
 from typing import Any, Dict, List, Optional, cast
 from uuid import UUID
 
@@ -58,6 +59,15 @@ logger = get_logger(__name__)
 RUN_ID_OPTION = "run_id"
 NODE_METADATA_PUBLISHED_KEY = "metadata_published"
 NODE_METADATA_STEP_RUN_ID_KEY = "step_run_id"
+NODE_METADATA_PUBLISH_ATTEMPTED_AT_KEY = "metadata_publish_attempted_at"
+
+# Step-level sandbox metadata is best-effort bookkeeping: every reader of
+# sandbox IDs falls back to the run-level metadata published at sandbox
+# creation, and the step run row only exists once the step entrypoint starts
+# inside the sandbox, which can take a minute of cold start. Retrying on a
+# slow interval instead of every monitoring tick keeps a parallel cold start
+# from hammering the ZenML server.
+STEP_METADATA_PUBLISH_RETRY_INTERVAL_SECONDS = 10.0
 
 
 class _StaticModalPipelineController:
@@ -117,10 +127,11 @@ class _StaticModalPipelineController:
             self.pipeline_run.run_metadata[
                 get_static_step_sandbox_metadata_key(step_name)
             ] = sandbox.object_id
-            self._publish_step_sandbox_metadata(node)
         except Exception:
             sandbox.terminate()
             raise
+
+        self._maybe_publish_step_sandbox_metadata(node)
 
         logger.info(
             "Started Modal sandbox `%s` for step `%s`.",
@@ -136,7 +147,7 @@ class _StaticModalPipelineController:
             logger.error("Missing Modal sandbox ID for step `%s`.", node.id)
             return NodeStatus.FAILED
 
-        self._publish_step_sandbox_metadata(node)
+        self._maybe_publish_step_sandbox_metadata(node)
         status = sandbox_utils.get_sandbox_status(
             str(sandbox_id),
             modal_client=self.orchestrator.get_modal_client(),
@@ -219,6 +230,38 @@ class _StaticModalPipelineController:
             )
         )
         return environment
+
+    def _maybe_publish_step_sandbox_metadata(self, node: Node) -> None:
+        """Publish step sandbox metadata without risking the node.
+
+        Step-level metadata is convenience bookkeeping, so a transient
+        publish failure must not mark a healthy sandbox as failed, and
+        retries are throttled to avoid polling the server on every
+        monitoring tick.
+        """
+        if node.metadata.get(NODE_METADATA_PUBLISHED_KEY):
+            return
+
+        now = time.monotonic()
+        last_attempt = node.metadata.get(
+            NODE_METADATA_PUBLISH_ATTEMPTED_AT_KEY
+        )
+        if (
+            last_attempt is not None
+            and now - last_attempt
+            < STEP_METADATA_PUBLISH_RETRY_INTERVAL_SECONDS
+        ):
+            return
+
+        node.metadata[NODE_METADATA_PUBLISH_ATTEMPTED_AT_KEY] = now
+        try:
+            self._publish_step_sandbox_metadata(node)
+        except Exception as e:
+            logger.warning(
+                "Failed to publish Modal sandbox metadata for step `%s`: %s",
+                node.id,
+                e,
+            )
 
     def _publish_step_sandbox_metadata(self, node: Node) -> bool:
         sandbox_id = node.metadata.get(MODAL_SANDBOX_ID_METADATA_KEY)

@@ -149,12 +149,30 @@ def _make_stack(registry_credentials=None):
     )
 
 
+class _PlaceholderRunStub:
+    """Mimics `PipelineRunResponse` strictness for attribute writes.
+
+    The real response model exposes `orchestrator_run_id` as a read-only
+    property and rejects writes to undeclared attributes, so this stub must
+    too — a permissive double would let the orchestrator mutate response
+    objects in ways that crash against the real model.
+    """
+
+    __slots__ = ("id", "name", "run_metadata", "project_id")
+
+    def __init__(self):
+        self.id = uuid4()
+        self.name = "run-name"
+        self.run_metadata = {}
+        self.project_id = None
+
+    @property
+    def orchestrator_run_id(self):
+        return None
+
+
 def _make_placeholder_run():
-    return SimpleNamespace(
-        id=uuid4(),
-        name="run-name",
-        run_metadata={},
-    )
+    return _PlaceholderRunStub()
 
 
 def _install_modal_sdk_stubs(monkeypatch, *, from_id_sandboxes=None):
@@ -283,7 +301,6 @@ def test_static_submission_records_metadata_and_splits_secrets(monkeypatch):
         MODAL_ENVIRONMENT_METADATA_KEY: "prod",
     }
     assert placeholder_run.run_metadata == result.metadata
-    assert placeholder_run.orchestrator_run_id == str(placeholder_run.id)
     assert run_updates[0]["run_id"] == placeholder_run.id
     assert run_updates[0]["run_update"].orchestrator_run_id == str(
         placeholder_run.id
@@ -811,6 +828,67 @@ def test_stop_run_refreshes_and_terminates_children_before_orchestration(
     assert from_id_sandboxes["child-complete"].terminate_calls == 0
 
 
+def test_stop_run_publishes_stopped_statuses_for_unfinished_steps(
+    monkeypatch,
+):
+    """Killed step sandboxes can never report back, so the client must."""
+    from_id_sandboxes = {
+        "orchestrator-sandbox": SandboxStub("orchestrator-sandbox", [None]),
+        "child-running": SandboxStub("child-running", [None]),
+    }
+    _install_modal_sdk_stubs(monkeypatch, from_id_sandboxes=from_id_sandboxes)
+    run_id = uuid4()
+    running_step = SimpleNamespace(
+        id=uuid4(),
+        status=ExecutionStatus.RUNNING,
+        run_metadata={MODAL_SANDBOX_ID_METADATA_KEY: "child-running"},
+        config=SimpleNamespace(step_operator=None),
+    )
+    finished_step = SimpleNamespace(
+        id=uuid4(),
+        status=ExecutionStatus.COMPLETED,
+        run_metadata={},
+        config=SimpleNamespace(step_operator=None),
+    )
+    step_operator_step = SimpleNamespace(
+        id=uuid4(),
+        status=ExecutionStatus.RUNNING,
+        run_metadata={},
+        config=SimpleNamespace(step_operator="sagemaker"),
+    )
+    refreshed_run = SimpleNamespace(
+        id=run_id,
+        run_metadata={
+            MODAL_ORCHESTRATION_SANDBOX_ID_METADATA_KEY: (
+                "orchestrator-sandbox"
+            ),
+        },
+        steps={
+            "train": running_step,
+            "report": finished_step,
+            "remote_train": step_operator_step,
+        },
+    )
+
+    class ClientStub:
+        @staticmethod
+        def get_pipeline_run(_run_id):
+            return refreshed_run
+
+    monkeypatch.setattr(modal_orchestrator_module, "Client", ClientStub)
+    stopped_step_run_ids = []
+    monkeypatch.setattr(
+        modal_orchestrator_module,
+        "publish_stopped_step_run",
+        lambda step_run_id: stopped_step_run_ids.append(step_run_id),
+    )
+
+    stale_run = SimpleNamespace(id=run_id, run_metadata={}, steps={})
+    _make_orchestrator()._stop_run(stale_run)
+
+    assert stopped_step_run_ids == [running_step.id]
+
+
 class StaticStepRunRequestFactoryStub:
     """Small step run request factory for static controller tests."""
 
@@ -988,6 +1066,32 @@ def test_static_controller_interrupts_only_for_external_stop(
     assert setup.controller.should_interrupt_execution() == expected_interrupt
 
 
+def test_start_step_sandbox_tolerates_metadata_publish_failure(monkeypatch):
+    """A step metadata publish error must not kill the new sandbox."""
+    setup = _make_static_controller(monkeypatch)
+    sandbox = SandboxStub("step-sandbox-id")
+    setup.orchestrator.create_static_step_sandbox = lambda **_kwargs: sandbox
+    monkeypatch.setattr(
+        modal_entrypoint_module.publish_utils,
+        "publish_pipeline_run_metadata",
+        lambda *_args, **_kwargs: None,
+    )
+
+    def _raise_transient(_node):
+        raise RuntimeError("transient server error")
+
+    monkeypatch.setattr(
+        setup.controller,
+        "_publish_step_sandbox_metadata",
+        _raise_transient,
+    )
+
+    dag_node = modal_entrypoint_module.Node(id="train", upstream_nodes=[])
+
+    assert setup.controller.start_step_sandbox(dag_node) == NodeStatus.RUNNING
+    assert sandbox.terminate_calls == 0
+
+
 def test_static_controller_start_sandbox_records_run_and_step_metadata(
     monkeypatch,
 ):
@@ -1101,6 +1205,57 @@ def test_static_controller_failed_sandbox_respects_successful_step_run(
         setup.controller.check_step_sandbox(dag_node) == NodeStatus.COMPLETED
     )
     assert setup.created_run_steps == []
+
+
+def test_check_step_sandbox_tolerates_metadata_publish_failure(monkeypatch):
+    """A transient metadata publish error must not fail a healthy node."""
+    setup = _make_static_controller(monkeypatch)
+    setup.orchestrator.get_modal_client = lambda: "modal-client"
+    monkeypatch.setattr(
+        modal_entrypoint_module.sandbox_utils,
+        "get_sandbox_status",
+        lambda *_args, **_kwargs: ExecutionStatus.RUNNING,
+    )
+
+    def _raise_transient(_node):
+        raise RuntimeError("transient server error")
+
+    monkeypatch.setattr(
+        setup.controller,
+        "_publish_step_sandbox_metadata",
+        _raise_transient,
+    )
+
+    dag_node = modal_entrypoint_module.Node(id="train", upstream_nodes=[])
+    dag_node.metadata[MODAL_SANDBOX_ID_METADATA_KEY] = "step-sandbox-id"
+
+    assert setup.controller.check_step_sandbox(dag_node) == NodeStatus.RUNNING
+
+
+def test_step_metadata_publish_attempts_are_throttled(monkeypatch):
+    setup = _make_static_controller(monkeypatch)
+    attempts = []
+    monkeypatch.setattr(
+        setup.controller,
+        "_publish_step_sandbox_metadata",
+        lambda _node: attempts.append(1) or False,
+    )
+
+    dag_node = modal_entrypoint_module.Node(id="train", upstream_nodes=[])
+    dag_node.metadata[MODAL_SANDBOX_ID_METADATA_KEY] = "step-sandbox-id"
+
+    setup.controller._maybe_publish_step_sandbox_metadata(dag_node)
+    setup.controller._maybe_publish_step_sandbox_metadata(dag_node)
+    assert len(attempts) == 1
+
+    dag_node.metadata[
+        modal_entrypoint_module.NODE_METADATA_PUBLISH_ATTEMPTED_AT_KEY
+    ] -= (
+        modal_entrypoint_module.STEP_METADATA_PUBLISH_RETRY_INTERVAL_SECONDS
+        + 1
+    )
+    setup.controller._maybe_publish_step_sandbox_metadata(dag_node)
+    assert len(attempts) == 2
 
 
 def test_static_controller_failed_sandbox_publishes_failed_step_run(

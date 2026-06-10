@@ -6,6 +6,10 @@ description: Orchestrating your pipelines to run in Modal Sandboxes.
 
 The Modal orchestrator runs ZenML pipelines on [Modal](https://modal.com) using Modal Sandboxes. A Modal Sandbox is a remote container process: ZenML builds a Docker image for your pipeline, pushes it to your stack's container registry, and asks Modal to start that image in Modal's cloud infrastructure.
 
+{% hint style="info" %}
+Everywhere on this page, "sandbox" refers to Modal's Sandbox compute primitive (`modal.Sandbox`) — a Modal product concept, not a ZenML stack component.
+{% endhint %}
+
 The important runtime story is:
 
 1. You start a ZenML pipeline run from your machine or CI system.
@@ -87,7 +91,7 @@ For a **static pipeline**, ZenML submits one Modal orchestration sandbox. Inside
 
 For a **dynamic pipeline**, ZenML submits one Modal orchestration sandbox that runs ZenML's dynamic pipeline entrypoint. Dynamic Modal pipelines still follow ZenML's current dynamic pipeline limitation: `CONTINUE_ON_FAILURE` behaves like `STOP_ON_FAILURE`, so after a dynamic step fails, ZenML does not keep launching later independent dynamic steps. Dynamic steps can run in two ways:
 
-* Steps that need isolation run as child Modal sandboxes. This includes steps with a step operator, step-level resource settings, or step-level Docker settings that differ from the pipeline image.
+* Steps that need isolation run as child Modal sandboxes. This includes steps with step-level resource settings or step-level Docker settings that differ from the pipeline image. Steps that use a step operator are isolated too, but they run on that step operator's infrastructure instead of a child Modal sandbox.
 * Steps that do not need isolation can run inside the dynamic orchestration sandbox process.
 
 In both modes, ZenML stores the orchestration sandbox ID on the pipeline run and child sandbox IDs on step runs. These metadata entries are what ZenML uses later for status checks and stop requests.
@@ -109,13 +113,10 @@ from zenml import pipeline, step
 from zenml.config import ResourceSettings
 from zenml.integrations.modal.flavors import ModalOrchestratorSettings
 
-modal_settings = ModalOrchestratorSettings(
+gpu_step_settings = ModalOrchestratorSettings(
     gpu="A100",           # GPU type, e.g. "T4" or "A100"
     # region="us-east-1", # optional, Modal Team/Enterprise only
     # cloud="aws",        # optional, Modal Team/Enterprise only
-    # modal_environment="main",  # optional Modal environment name
-    # timeout=86400,      # sandbox timeout in seconds, max 24 hours
-    # synchronous=True,   # wait for the orchestration sandbox by default
 )
 
 step_resources = ResourceSettings(
@@ -125,15 +126,26 @@ step_resources = ResourceSettings(
 )
 
 
-@step(settings={"resources": step_resources})
+@step(
+    settings={
+        "orchestrator": gpu_step_settings,
+        "resources": step_resources,
+    }
+)
 def train_model() -> None:
     ...
 
 
-@pipeline(settings={"orchestrator": modal_settings})
+@pipeline
 def training_pipeline() -> None:
     train_model()
 ```
+
+Orchestrator-wide options such as `modal_environment`, `timeout`, and `synchronous` can be set in a `ModalOrchestratorSettings` object passed at the pipeline level when you need them.
+
+{% hint style="warning" %}
+Set GPU types at the step level, not the pipeline level. Pipeline-level orchestrator settings configure the orchestration sandbox and are inherited by every step, so a pipeline-level `gpu` attaches a GPU to all step sandboxes and to the controller — where it sits idle while you pay for it, unless your dynamic pipeline runs GPU step code inside the orchestration sandbox process.
+{% endhint %}
 
 The resource mapping is:
 
