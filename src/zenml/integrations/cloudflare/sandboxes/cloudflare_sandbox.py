@@ -266,7 +266,7 @@ class _CloudflareBridgeClient:
         """
         import httpx
 
-        url = path if path.startswith("http") else self._base + path
+        url = self._base + path
         attempt = 0
         while True:
             try:
@@ -349,13 +349,28 @@ class _CloudflareBridgeClient:
     def is_running(self, sandbox_id: str) -> bool:
         """Check whether the given sandbox is still alive.
 
+        A 404/410 from the bridge means the sandbox is gone (expired or
+        deleted), which is an answer — ``False`` — not an error. This is a
+        single status probe, so it bypasses ``_request``'s retry loop.
+
         Args:
             sandbox_id: The sandbox to check.
 
         Returns:
-            True if the bridge reports the sandbox as running.
+            True if the bridge reports the sandbox as running, False if it
+            reports it as stopped or unknown (404/410).
+
+        Raises:
+            SandboxExecError: If the bridge returns any other error status.
         """
-        resp = self._request("GET", f"/v1/sandbox/{sandbox_id}/running")
+        resp = self._client.get(f"/v1/sandbox/{sandbox_id}/running")
+        if resp.status_code in (404, 410):
+            return False
+        if resp.status_code >= 400:
+            raise SandboxExecError(
+                f"Bridge GET /v1/sandbox/{sandbox_id}/running returned "
+                f"{resp.status_code}: {resp.text[:500]}"
+            )
         return bool(resp.json().get("running", False))
 
     def create_bridge_session(
@@ -951,6 +966,10 @@ class CloudflareSandbox(BaseSandbox):
 
         Returns:
             A ``CloudflareSandboxSession`` bound to the new sandbox.
+
+        Raises:
+            Exception: Whatever bridge-session creation raised; the freshly
+                created sandbox is deleted first so it does not leak.
         """
         eff = cast(CloudflareSandboxSettings, self.resolve_settings(settings))
         env = self._resolve_session_environment(eff)
@@ -962,10 +981,22 @@ class CloudflareSandbox(BaseSandbox):
         # "missing API key on bridge" instead of "my OPENAI_API_KEY
         # mysteriously isn't visible inside the sandbox".
         bridge_session_id: Optional[str] = None
-        if env:
-            bridge_session_id = client.create_bridge_session(
-                sandbox_id, env=env
-            )
+        try:
+            if env:
+                bridge_session_id = client.create_bridge_session(
+                    sandbox_id, env=env
+                )
+        except Exception:
+            # Don't leak the sandbox we just created on Cloudflare.
+            try:
+                client.delete_sandbox(sandbox_id)
+            except Exception:
+                logger.warning(
+                    "Failed to clean up sandbox %s after session-env setup "
+                    "failed; it will linger until the bridge TTL expires.",
+                    sandbox_id,
+                )
+            raise
 
         timeout_ms = eff.timeout_ms or DEFAULT_BRIDGE_TIMEOUT_MS
         return CloudflareSandboxSession(

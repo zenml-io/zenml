@@ -22,7 +22,7 @@ import base64
 import json
 import threading
 from typing import Any, Dict, Iterator, List, Optional
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
 import httpx
@@ -130,6 +130,18 @@ class TestConfig:
     def test_timeout_ms_positive(self) -> None:
         with pytest.raises(Exception):
             CloudflareSandboxSettings(timeout_ms=0)
+
+    def test_worker_url_https_accepted(self) -> None:
+        cfg = CloudflareSandboxConfig(worker_url=WORKER_URL)
+        assert cfg.worker_url == WORKER_URL
+
+    def test_worker_url_http_localhost_accepted(self) -> None:
+        for url in ("http://localhost:8787", "http://127.0.0.1:8787"):
+            assert CloudflareSandboxConfig(worker_url=url).worker_url == url
+
+    def test_worker_url_plain_http_rejected(self) -> None:
+        with pytest.raises(ValueError, match="https"):
+            CloudflareSandboxConfig(worker_url="http://example.com")
 
 
 class TestSSEParser:
@@ -286,6 +298,64 @@ class TestBridgeClient:
 
         client = _make_client(handler)
         assert client.is_running("sb_1") is True
+
+    def test_is_running_false(self) -> None:
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, json={"running": False})
+
+        client = _make_client(handler)
+        assert client.is_running("sb_1") is False
+
+    def test_is_running_gone_sandbox_is_false(self) -> None:
+        # An expired/deleted sandbox 404s (or 410s) on the bridge; that's
+        # an answer, not an error.
+        for status in (404, 410):
+            client = _make_client(
+                lambda req, s=status: httpx.Response(s, text="gone")
+            )
+            assert client.is_running("sb_dead") is False
+
+    def test_is_running_other_error_raises(self) -> None:
+        def handler(request: httpx.Request) -> httpx.Response:
+            return httpx.Response(503, text="unavailable")
+
+        client = _make_client(handler)
+        with pytest.raises(SandboxExecError, match="503"):
+            client.is_running("sb_1")
+
+    def test_request_retries_429_then_succeeds(self) -> None:
+        attempts: List[int] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            attempts.append(1)
+            if len(attempts) == 1:
+                return httpx.Response(429, text="slow down")
+            return httpx.Response(200, json={"id": "sb_retry"})
+
+        client = _make_client(handler)
+        with patch(
+            "zenml.integrations.cloudflare.sandboxes.cloudflare_sandbox"
+            ".time.sleep"
+        ):
+            assert client.create_sandbox() == "sb_retry"
+        assert len(attempts) == 2
+
+    def test_request_persistent_503_raises_after_retries(self) -> None:
+        attempts: List[int] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            attempts.append(1)
+            return httpx.Response(503, text="unavailable")
+
+        client = _make_client(handler)
+        with patch(
+            "zenml.integrations.cloudflare.sandboxes.cloudflare_sandbox"
+            ".time.sleep"
+        ):
+            with pytest.raises(SandboxExecError, match="503"):
+                client.create_sandbox()
+        # Initial attempt + _MAX_RETRIES retries.
+        assert len(attempts) == 4
 
     def test_create_bridge_session_with_env(self) -> None:
         captured: Dict[str, Any] = {}
@@ -643,6 +713,33 @@ class TestComponent:
         assert sess.id == "sb_new"
         assert "POST /v1/sandbox" in calls
         assert "POST /v1/sandbox/sb_new/session" in calls
+
+    def test_create_session_cleans_up_sandbox_on_session_failure(
+        self,
+    ) -> None:
+        # If bridge-session creation fails after the sandbox was created,
+        # the sandbox must be deleted instead of leaking until its TTL.
+        calls: List[str] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            calls.append(f"{request.method} {request.url.path}")
+            if request.method == "POST" and request.url.path == "/v1/sandbox":
+                return httpx.Response(200, json={"id": "sb_leak"})
+            if request.url.path == "/v1/sandbox/sb_leak/session":
+                return httpx.Response(500, text="session backend down")
+            if (
+                request.method == "DELETE"
+                and request.url.path == "/v1/sandbox/sb_leak"
+            ):
+                return httpx.Response(204)
+            return httpx.Response(404)
+
+        component = self._make_component()
+        component._client = _make_client(handler)
+        settings = CloudflareSandboxSettings(sandbox_environment={"K": "V"})
+        with pytest.raises(SandboxExecError, match="500"):
+            component.create_session(settings)
+        assert "DELETE /v1/sandbox/sb_leak" in calls
 
     def test_create_session_without_env_skips_bridge_session(self) -> None:
         calls: List[str] = []

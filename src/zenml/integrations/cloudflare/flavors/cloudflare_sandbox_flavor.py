@@ -14,8 +14,9 @@
 """Cloudflare sandbox flavor."""
 
 from typing import TYPE_CHECKING, Optional, Type
+from urllib.parse import urlparse
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from zenml.integrations.cloudflare import CLOUDFLARE_SANDBOX_FLAVOR
 from zenml.sandboxes import (
@@ -68,6 +69,39 @@ class CloudflareSandboxConfig(BaseSandboxConfig, CloudflareSandboxSettings):
         "When set, sent as 'Authorization: Bearer <token>' on every request "
         "to the bridge. Example: a random 32+ byte hex string",
     )
+
+    @field_validator("worker_url")
+    @classmethod
+    def _validate_worker_url_scheme(cls, value: str) -> str:
+        """Require https for the bridge URL.
+
+        The bridge bearer token travels on every request, so plain http is
+        only acceptable when talking to a local bridge during development.
+
+        Args:
+            value: The configured worker URL.
+
+        Returns:
+            The validated URL, unchanged.
+
+        Raises:
+            ValueError: If the URL scheme is not https (or http to
+                localhost/127.0.0.1).
+        """
+        parsed = urlparse(value)
+        if parsed.scheme == "https":
+            return value
+        if parsed.scheme == "http" and parsed.hostname in (
+            "localhost",
+            "127.0.0.1",
+        ):
+            return value
+        raise ValueError(
+            f"Invalid worker_url '{value}': the Cloudflare sandbox bridge "
+            "must be reached over https (the API key is sent as a bearer "
+            "token on every request). Plain http is only allowed for "
+            "localhost/127.0.0.1 when testing a local bridge."
+        )
 
     @property
     def is_remote(self) -> bool:

@@ -65,6 +65,8 @@ Because the bridge bearer token is scoped to a single Worker (not a whole Cloudf
 | `cwd` | Default working directory for execs inside the sandbox (server-side paths are confined to `/workspace`). |
 | `sandbox_environment` | Env vars injected into the sandbox session. ZenML scopes them via `POST /v1/sandbox/:id/session`. |
 
+Note: passing `env=` to an individual `session.exec(...)` call requires the `env(1)` binary in the sandbox image (the variables are inlined as an `env KEY=VAL ...` prefix); prefer the session-scoped `sandbox_environment` setting where possible.
+
 ### Using it from a step
 
 ```python
