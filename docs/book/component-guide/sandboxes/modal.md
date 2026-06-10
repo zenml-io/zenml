@@ -124,6 +124,6 @@ If your agent needs to preserve in-memory state across runs, prefer [`attach()`]
 ### Caveats
 
 - Modal sandbox env vars remain **readable from inside the Session** by any code the agent runs. The [Sandbox Auth Proxy pattern](README.md#security-considerations) is on the roadmap; until it lands, treat sandbox env as agent-visible.
-- `session.close()` is a no-op (Modal Sandbox is a stateless client handle); use `session.destroy()` to force-terminate, or let Modal's `timeout` expire.
+- `session.close()` invalidates the local handle (further use raises `SandboxSessionClosedError`) but does **not** stop the Modal Sandbox — it keeps running until `session.destroy()` or the `timeout` TTL. Use `sandbox.attach(session_id)` for a fresh handle.
 - `process.kill()` terminates the **whole Sandbox**, not just the one command — Modal exposes no per-command kill.
 - `restore()` always returns a **new** Sandbox with a new id. The original `id` is unaffected; if you need id stability across runs, use `attach()` with a persisted session id instead.

@@ -341,8 +341,42 @@ class TestSessionOptionalMethods:
             _FakeSession().download_file("/remote", "/local")
 
     def test_destroy_default_raises(self) -> None:
+        # The default _destroy hook raises before any state change, so an
+        # unsupported destroy leaves the handle open and usable.
+        session = _FakeSession()
         with pytest.raises(NotImplementedError):
-            _FakeSession().destroy()
+            session.destroy()
+        assert session.closed is False
+
+    def test_destroy_closes_handle_and_flushes_logging(self) -> None:
+        class _DestroyableSession(_FakeSession):
+            def __init__(self) -> None:
+                super().__init__()
+                self.destroyed = False
+
+            def _destroy(self) -> None:
+                self.destroyed = True
+
+        session = _DestroyableSession()
+        with patch.object(session, "_close_logging_context") as fake_close_log:
+            session.destroy()
+        assert session.destroyed is True
+        assert session.closed is True
+        assert session.was_closed is True
+        fake_close_log.assert_called_once()
+
+    def test_destroy_failure_leaves_handle_open(self) -> None:
+        # _destroy runs before close(), so a flavor failure propagates
+        # and leaves the handle open for retry.
+        class _FailingDestroySession(_FakeSession):
+            def _destroy(self) -> None:
+                raise RuntimeError("provider unavailable")
+
+        session = _FailingDestroySession()
+        with pytest.raises(RuntimeError, match="provider unavailable"):
+            session.destroy()
+        assert session.closed is False
+        session.exec("true")  # still usable
 
 
 class TestSandboxOptionalMethods:
@@ -616,18 +650,19 @@ class TestSandboxProcessCollect:
         # fit under the cap.
         assert len(consumed) == 3
 
-    def test_collect_called_twice_logs_exec_result_only_once(self) -> None:
-        # Repeated collect() must not double-emit the OK/FAIL marker.
-        # Streams are already drained on the 2nd call so captured
-        # strings are empty, and the _collected latch prevents the
-        # session._log_exec_result fire.
+    def test_collect_called_twice_raises(self) -> None:
+        # Streams are drained by the first collect(), so a second call
+        # would fabricate an empty SandboxOutput. It must fail loudly
+        # instead, and the OK/FAIL marker must only be emitted once.
         proc = self._proc_returning(
             stdout_lines=["x\n"], stderr_lines=[], code=0
         )
         fake_session = MagicMock(spec=SandboxSession)
         proc._session = fake_session
-        proc.collect()
-        proc.collect()
+        out = proc.collect()
+        assert out.stdout == "x\n"
+        with pytest.raises(RuntimeError, match="already collected"):
+            proc.collect()
         assert fake_session._log_exec_result.call_count == 1
 
     def test_drain_exception_kills_process_and_reraises(self) -> None:

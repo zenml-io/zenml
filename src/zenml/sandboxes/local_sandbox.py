@@ -151,6 +151,23 @@ class LocalSandboxProcess(SandboxProcess):
         """
         return self._process.returncode
 
+    @staticmethod
+    def _release_pipes(process: "subprocess.Popen[str]") -> None:
+        """Close the stdout/stderr pipe file objects of a subprocess.
+
+        Without an explicit close, every exec leaks two file descriptors
+        until the `Popen` object is GC'd, which exhausts the fd limit in
+        long-lived sessions. Closing an already-closed file object is a
+        no-op, so this is safe to call repeatedly.
+
+        Args:
+            process: The subprocess whose pipes should be released.
+        """
+        if process.stdout is not None:
+            process.stdout.close()
+        if process.stderr is not None:
+            process.stderr.close()
+
 
 class LocalSandboxSession(SandboxSession):
     """Local sandbox session."""
@@ -205,6 +222,22 @@ class LocalSandboxSession(SandboxSession):
 
         self._log_command(command)
 
+        # Prune exited processes and release their pipe file objects so a
+        # long-lived session (e.g. an agent loop issuing many execs) does
+        # not accumulate two leaked fds per exec until it hits EMFILE. A
+        # caller holding an undrained handle for an exited process across
+        # later execs in the same session may find its streams closed;
+        # this is acceptable because the alternative is unbounded fd
+        # growth, and collect()/stream iteration normally drains before
+        # the next exec.
+        still_running = []
+        for tracked in self._processes:
+            if tracked.poll() is None:
+                still_running.append(tracked)
+            else:
+                LocalSandboxProcess._release_pipes(tracked)
+        self._processes = still_running
+
         if cwd is None:
             effective_cwd = self._workdir
         elif os.path.isabs(cwd):
@@ -241,22 +274,36 @@ class LocalSandboxSession(SandboxSession):
     def _close(self) -> None:
         """Terminate running processes and clean up the working directory."""
         for process in self._processes:
-            if process.poll() is not None:
-                continue
-            process.terminate()
+            # One misbehaving process must not abort termination of the
+            # remaining processes or the workdir removal: close() latches
+            # the closed flag, so a retry would be a silent no-op.
             try:
-                process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                try:
-                    # Reap the killed child so it doesn't linger as a
-                    # zombie until the Popen object is GC'd.
-                    process.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    logger.debug(
-                        "Local sandbox child %s survived SIGKILL reaping",
-                        process.pid,
-                    )
+                if process.poll() is None:
+                    process.terminate()
+                    try:
+                        process.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+                        try:
+                            # Reap the killed child so it doesn't linger as a
+                            # zombie until the Popen object is GC'd.
+                            process.wait(timeout=5)
+                        except subprocess.TimeoutExpired:
+                            logger.debug(
+                                "Local sandbox child %s survived SIGKILL "
+                                "reaping",
+                                process.pid,
+                            )
+                # The session is over, so its streams are over too:
+                # release the pipe fds of every tracked process.
+                LocalSandboxProcess._release_pipes(process)
+            except Exception as e:
+                logger.warning(
+                    "Failed to clean up local sandbox child %s: %s",
+                    process.pid,
+                    e,
+                )
+        self._processes.clear()
         try:
             shutil.rmtree(self._workdir, ignore_errors=True)
         except Exception as e:
@@ -265,9 +312,8 @@ class LocalSandboxSession(SandboxSession):
                 e,
             )
 
-    def destroy(self) -> None:
-        """Destroy the session and clean up the working directory."""
-        self.close()
+    def _destroy(self) -> None:
+        """Destroy hook; `close()` already performs the full local cleanup."""
 
 
 class LocalSandbox(BaseSandbox):
