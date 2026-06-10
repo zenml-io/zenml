@@ -13,7 +13,7 @@ from harbor.environments.base import BaseEnvironment, ExecResult
 
 from zenml.client import Client
 from zenml.logger import get_logger
-from zenml.sandboxes import BaseSandboxSettings, SandboxSession
+from zenml.sandboxes import BaseSandbox, BaseSandboxSettings, SandboxSession
 
 logger = get_logger(__name__)
 
@@ -46,19 +46,36 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
     def _validate_definition(self) -> None:
         """No-op: the Sandbox flavor owns the image, no Dockerfile needed."""
 
-    def _settings_override(self) -> BaseSandboxSettings | None:
+    def _settings_override(
+        self, sandbox: BaseSandbox
+    ) -> BaseSandboxSettings | None:
         """Translate Harbor's task-level docker_image to a sandbox setting.
+
+        Modal is the only sandbox flavor with an image knob today; switch
+        to the active flavor's settings class when another flavor ships
+        an image field.
+
+        Args:
+            sandbox: The active stack's Sandbox component.
 
         Returns:
             A Modal-flavor settings override carrying the task's
-            docker_image, or None if the task didn't pin one. Hardcoded to
-            Modal because that's the only sandbox flavor with an image
-            knob today; switch to the active flavor's settings class when
-            another flavor ships an image field.
+            docker_image, or None if the task didn't pin one.
+
+        Raises:
+            NotImplementedError: If the task pins a docker_image but the
+                active sandbox flavor isn't Modal — Modal settings would
+                fail confusingly on any other flavor.
         """
         image = self.task_env_config.docker_image
         if image is None:
             return None
+        if sandbox.flavor != "modal":
+            raise NotImplementedError(
+                "Task-level docker_image is currently only supported "
+                "with the Modal sandbox flavor (active flavor: "
+                f"'{sandbox.flavor}')."
+            )
         # Imported lazily so the bridge only needs the modal integration
         # when a task actually pins a docker_image.
         from zenml.integrations.modal.flavors import ModalSandboxSettings
@@ -75,6 +92,8 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
         Raises:
             RuntimeError: If no Sandbox component is registered on the
                 active stack.
+            NotImplementedError: If the task requires network isolation
+                (allow_internet=false), which the bridge can't enforce.
         """
         sandbox = Client().active_stack.sandbox
         if sandbox is None:
@@ -83,7 +102,30 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
                 "Register one with `zenml sandbox register ...` and add "
                 "it to the active stack before running Harbor."
             )
-        settings = self._settings_override()
+        cfg = self.task_env_config
+        if not cfg.allow_internet:
+            raise NotImplementedError(
+                "This Harbor task sets allow_internet=false, but the "
+                "ZenML Sandbox bridge cannot enforce network isolation "
+                "yet — refusing to run rather than silently skip it."
+            )
+        ignored = [
+            name
+            for name, value in (
+                ("cpus", cfg.cpus),
+                ("memory_mb", cfg.memory_mb),
+                ("gpus", cfg.gpus),
+            )
+            if value is not None
+        ]
+        if ignored:
+            logger.warning(
+                "Harbor task env config sets %s, but the ZenML Sandbox "
+                "bridge does not translate resource requests to the "
+                "sandbox flavor yet; the values are ignored.",
+                ", ".join(ignored),
+            )
+        settings = self._settings_override(sandbox)
         self._session = await asyncio.to_thread(
             sandbox.create_session, settings=settings
         )
@@ -149,9 +191,10 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
             Harbor ExecResult with stdout, stderr, and return code.
         """
         if user is not None:
-            logger.debug(
+            logger.warning(
                 "ZenMLSandboxEnvironment.exec ignoring user=%r — not "
-                "supported by the Sandbox interface yet.",
+                "supported by the Sandbox interface yet; the command "
+                "runs as the container default user.",
                 user,
             )
         merged_env = self._merge_env(env)

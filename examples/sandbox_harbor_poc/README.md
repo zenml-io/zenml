@@ -16,18 +16,25 @@ The pipeline is the only entry point. One command, one ZenML run, one queryable 
 
 - **Run lineage.** Every trial is a ZenML pipeline run — dashboard, artifact store, replay, caching, the lot. The reward summary lands as one artifact and Harbor's full `jobs/` tree (agent/verifier logs, trajectory) as a second, tarred one, so the trial's raw output outlives the local tempdir.
 - **No per-trial rebuild.** The Sandbox component owns the image. Task `[environment].docker_image` is translated to `ModalSandboxSettings(image=...)` — Modal-only today; no Dockerfile build per trial.
-- **Portable substrate.** Tasks that don't pin `docker_image` are flavor-portable: swap the Sandbox flavor (Modal → GKE Agent Sandbox → …) and Harbor sees nothing change. Same bridge, same task assets.
+- **Portable substrate (in principle).** Tasks that don't pin `docker_image` only talk to the generic Sandbox interface, so swapping the flavor (Modal → GKE Agent Sandbox → …) should leave Harbor none the wiser. In practice the bridge has only been smoke-tested with the Modal flavor. **Warning:** the Local sandbox flavor executes commands directly on the host — do not point it at untrusted Harbor tasks.
 
 ## Files
 
-- `zenml_sandbox_env.py` — `ZenMLSandboxEnvironment(harbor.BaseEnvironment)`, implements the full Harbor environment contract (`start`/`stop`/`exec`/`upload_file`/`download_file`/`upload_dir`/`download_dir`).
+- `zenml_sandbox_env.py` — `ZenMLSandboxEnvironment(harbor.BaseEnvironment)`, implements the Harbor environment methods (`start`/`stop`/`exec`/`upload_file`/`download_file`/`upload_dir`/`download_dir`). Known gaps are listed under [Open seams](#open-seams).
 - `run.py` — the ZenML pipeline. Single step builds a Harbor `JobConfig` pointing at the bridge and runs it via `Job.create().run()`.
 - `tasks/hello/` — a hermetic Harbor task: write `42` to `/app/answer.txt`, verifier scores 1.0 if it matches. Runs under the `oracle` agent so no LLM keys needed.
 - `requirements.txt` — `harbor` + `zenml[local]`. The Modal SDK comes in via `zenml integration install modal`.
 
 ## Prereqs
 
-A ZenML stack with a Sandbox component. Smoke-tested on:
+Before running anything, you need an **active ZenML stack with a Modal Sandbox component registered** — see the [Modal sandbox docs](https://docs.zenml.io/component-guide/sandboxes/modal) for registration details:
+
+```bash
+zenml sandbox register modal-sb --flavor=modal
+zenml stack register harbor-stack -o default -a default -sb modal-sb --set
+```
+
+Smoke-tested on:
 
 ```
 orchestrator:    default
@@ -35,7 +42,9 @@ artifact_store:  s3
 sandbox:         modal-sb       # Modal flavor of the Sandbox component
 ```
 
-Set up Modal credentials via `modal token new` (writes `~/.modal.toml`) or export `MODAL_TOKEN_ID` / `MODAL_TOKEN_SECRET` — the Modal SDK reads them at import.
+You also need **Modal credentials**: set them up via `modal token new` (writes `~/.modal.toml`) or export `MODAL_TOKEN_ID` / `MODAL_TOKEN_SECRET` — the Modal SDK reads them at import.
+
+The sandbox image must provide `bash`, `timeout`(1), and `tar` — the bridge relies on them for command execution, timeouts, and directory transfer.
 
 ## Running
 
@@ -86,4 +95,4 @@ End-to-end wall clock on the default task: **~15s**, reward `1.0`. Full chain:
 
 ## A note on `harbor run`
 
-The bridge implements the full `BaseEnvironment` contract, so technically `harbor run --environment-import-path zenml_sandbox_env:ZenMLSandboxEnvironment` works too. But that path skips the ZenML pipeline — no lineage, no artifact, ZenML invisible. We've intentionally made `python run.py` the one supported entry point so the lineage story stays honest.
+The bridge implements the `BaseEnvironment` methods — with known gaps: no user switching, resource limits (`cpus`/`memory_mb`/`gpus`) are not enforced, and there is no network isolation — so technically `harbor run --environment-import-path zenml_sandbox_env:ZenMLSandboxEnvironment` works too. But that path skips the ZenML pipeline — no lineage, no artifact, ZenML invisible. We've intentionally made `python run.py` the one supported entry point so the lineage story stays honest.
