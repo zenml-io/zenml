@@ -31,7 +31,10 @@ from zenml.sandboxes.process import (
     SandboxOutput,
     SandboxProcess,
 )
-from zenml.sandboxes.session import SandboxSession
+from zenml.sandboxes.session import (
+    SandboxSession,
+    SandboxSessionClosedError,
+)
 from zenml.sandboxes.snapshot import SandboxSnapshot
 
 __all__ = [
@@ -49,4 +52,5 @@ __all__ = [
     "SandboxOutput",
     "SandboxProcess",
     "SandboxSession",
+    "SandboxSessionClosedError",
 ]
