@@ -49,6 +49,7 @@ from zenml.integrations.modal.sandboxes.utils import (  # noqa: E402
 from zenml.sandboxes import (  # noqa: E402
     BaseSandbox,
     SandboxExecError,
+    SandboxSessionClosedError,
     SandboxSnapshot,
 )
 
@@ -230,6 +231,18 @@ class TestModalSandboxProcess:
         ModalSandboxProcess(fake, session=session, started_at=0.0).kill()
         fake_sandbox.terminate.assert_called_once()
 
+    def test_kill_closes_the_session(self) -> None:
+        # After kill() the sandbox is gone; the session handle must be
+        # closed so later use raises SandboxSessionClosedError instead
+        # of a confusing Modal error from a dead sandbox.
+        fake_sandbox = MagicMock(object_id="sb_xyz")
+        session = _make_session(fake_sandbox)
+        fake = MagicMock()
+        ModalSandboxProcess(fake, session=session, started_at=0.0).kill()
+        assert session.closed is True
+        with pytest.raises(SandboxSessionClosedError):
+            session.exec(["echo", "hi"])
+
     def test_kill_does_not_use_per_command_stdin(self) -> None:
         # kill() must not fall back to a stdin-EOF nudge, which leaves
         # ill-behaved commands running until the sandbox TTL.
@@ -299,8 +312,23 @@ class TestModalSandboxSession:
 
     def test_destroy_calls_terminate(self) -> None:
         fake_sandbox = MagicMock(object_id="sb_xyz")
-        _make_session(fake_sandbox).destroy()
+        session = _make_session(fake_sandbox)
+        session.destroy()
         fake_sandbox.terminate.assert_called_once()
+        assert session.closed is True
+
+    def test_destroy_raises_and_keeps_handle_open_on_failure(self) -> None:
+        # A failed terminate must surface (the sandbox keeps billing
+        # until TTL) and leave the handle open so destroy() can retry.
+        fake_sandbox = MagicMock(object_id="sb_xyz")
+        fake_sandbox.terminate.side_effect = RuntimeError("api down")
+        session = _make_session(fake_sandbox)
+        with pytest.raises(RuntimeError, match="Failed to terminate"):
+            session.destroy()
+        assert session.closed is False
+        fake_sandbox.terminate.side_effect = None
+        session.destroy()  # retry succeeds
+        assert session.closed is True
 
     def test_close_is_a_noop(self) -> None:
         # Modal Sandbox has no client-side resources to release; close()
