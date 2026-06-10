@@ -20,6 +20,8 @@ talking to a real Cloudflare Worker.
 
 import base64
 import json
+import os
+import tempfile
 import threading
 from typing import Any, Dict, Iterator, List, Optional
 from unittest.mock import MagicMock, patch
@@ -733,6 +735,20 @@ class TestSessionLifecycle:
         session.destroy()
         assert "DELETE /v1/sandbox/sb_abc" in calls
         assert session.closed is True
+
+    def test_upload_rejects_oversized_file_before_reading(self) -> None:
+        # The size check must run on the path, not after loading the
+        # whole file into memory.
+        client = _make_client(lambda r: httpx.Response(204))
+        session = _make_session(client)
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            f.truncate(_BRIDGE_FILE_MAX_BYTES + 1)  # sparse, no real I/O
+            path = f.name
+        try:
+            with pytest.raises(ValueError, match="upload limit"):
+                session.upload_file(path, "big.bin")
+        finally:
+            os.unlink(path)
 
     def test_destroy_raises_and_keeps_handle_open_on_failure(self) -> None:
         # A failed delete must surface (the sandbox keeps running until

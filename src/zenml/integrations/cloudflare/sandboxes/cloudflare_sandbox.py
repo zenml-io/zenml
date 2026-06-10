@@ -16,6 +16,7 @@
 import base64
 import json
 import logging
+import os
 import posixpath
 import shlex
 import threading
@@ -845,7 +846,18 @@ class CloudflareSandboxSession(SandboxSession):
         Args:
             local_path: Source path on the caller's machine.
             remote_path: Destination path inside the sandbox workspace.
+
+        Raises:
+            ValueError: If the file exceeds the bridge's body limit.
         """
+        # Check the size before reading: loading an oversized file into
+        # memory just to have put_file reject it invites an OOM.
+        size = os.path.getsize(local_path)
+        if size > _BRIDGE_FILE_MAX_BYTES:
+            raise ValueError(
+                f"File '{local_path}' is {size} bytes, exceeding the "
+                f"bridge's {_BRIDGE_FILE_MAX_BYTES}-byte upload limit."
+            )
         with open(local_path, "rb") as f:
             data = f.read()
         self._client.put_file(
