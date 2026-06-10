@@ -11,7 +11,7 @@ planner_step ──► subtasks ┘
 ```
 
 1. **`prep_step`** boots a sandbox, `pip install`s the scientific stack (numpy, scipy) once, and snapshots the filesystem into a `SandboxSnapshot` artifact (Modal Image id, materialized through ZenML's artifact store).
-2. **`planner_step`** asks a small LLM to decompose the user's goal into `N` *independent* subtasks (system prompt enforces no shared filesystem / no cross-subagent dependencies, since each subagent runs in its own sandbox).
+2. **`planner_step`** asks a small LLM to decompose the user's goal into three *independent* subtasks (system prompt enforces no shared filesystem / no cross-subagent dependencies, since each subagent runs in its own sandbox). The `.map()` fan-out itself handles any list length.
 3. **`subagent_step`** (fanned out via `step.map(snapshot=unmapped(...), subtask=subtasks)`) — each instance restores from the shared snapshot, opens a fresh agent loop in that restored sandbox, and returns one partial answer.
 4. **`reducer_step`** synthesizes the partial answers into a final response with another LLM call.
 
@@ -19,7 +19,7 @@ Wall clock on the smoke run: prep ~13 s, planner ~5 s, three parallel subagents 
 
 ## What's interesting here
 
-- **The Sandbox component is the agent's tool.** The agent has four tools — `run_python`, `run_shell`, `list_files`, `read_file` — each of which calls `session.exec(...)` on the active stack's Sandbox. Switch flavor (Modal today, E2B/Daytona/Agent Substrate later) and the agent gets a different execution backend without code changes.
+- **The Sandbox component is the agent's tool.** The agent has four tools — `run_python`, `run_shell`, `list_files`, `read_file` — each of which calls `session.exec(...)` on the active stack's Sandbox via the flavor-agnostic `BaseSandbox` interface. Note that the snapshot fan-out relies on `create_snapshot()`/`restore()`, which only the Modal flavor implements today.
 - **One sandbox session per subagent, many tool calls per session.** Every subagent step opens one `SandboxSession` and reuses it across all of its `run_python` / `run_shell` calls. Files written to `/tmp` and pip-installed packages persist between turns, so the agent can build up state across tool calls. (Imports / Python variables do *not* persist — each `run_python` is a fresh interpreter.)
 - **Snapshot fan-out.** Heavy setup (pip install, dataset download, model warmup) runs once in `prep_step`; every fanned-out subagent boots from the snapshot for free. The snapshot is a normal ZenML artifact — cacheable, queryable, replayable.
 - **Per-session log forwarding.** Each subagent's sandbox stdout/stderr surfaces in *its own* step log stream as a dedicated `sandbox:<session_id>` source. Step metadata records `sandbox.<session_id>.flavor` and (Uri-typed) `sandbox.<session_id>.dashboard_url` so the dashboard renders a clickable link to the Modal sandbox.
@@ -48,7 +48,7 @@ Create a ZenML secret carrying your OpenAI key. **Important:** the secret-key ca
 zenml secret create openai -v '{"OPENAI_API_KEY": "sk-..."}'
 ```
 
-Register the sandbox component. Modal credentials are *not* configured on the component — the Modal SDK reads `MODAL_TOKEN_ID` / `MODAL_TOKEN_SECRET` from the process environment (or `~/.modal.toml`) at import time. On remote orchestrators, surface those via the orchestrator's own env/secret plumbing.
+Register the sandbox component. Modal credentials come either from the Modal SDK's ambient auth (`~/.modal.toml` or `MODAL_TOKEN_ID` / `MODAL_TOKEN_SECRET` env vars) or from the component itself (`zenml sandbox register ... --token_id=... --token_secret=...`). Prefer the component route when steps run on a remote orchestrator, since the orchestrator environment won't have your local Modal auth.
 
 ```bash
 zenml sandbox register modal-sb \
@@ -97,24 +97,11 @@ print(run.steps["reducer_step"].outputs["final_answer"][0].load())
 ## Tuning knobs
 
 - **Make subagents independent.** The planner's system prompt insists on no shared state; if you write a leading query that implies a pipeline, the planner may still produce dependent subtasks and you'll see "file not found" errors from subagents 2+.
-- **Sandbox timeout.** The default Modal Sandbox TTL is 5 min; `ModalSandboxSettings(timeout_seconds=900)` in `run.py` lifts it to 15 min for slow agent loops. Applied to both `create_session` and `restore`.
-- **PydanticAI usage limit.** Default is 50 LLM requests per `run_sync`. The example bumps to 200 in `run_agent_in_session` since multi-step tool-using loops can chew through the budget on a slow day.
 - **Richer base image.** The default Modal image is `python:3.11-slim` — bare Python. The agent's system prompt teaches it to `pip install` on demand, and `prep_step` does this once and snapshots. To skip the snapshot dance, pass a pre-built sci-py image in `ModalSandboxSettings(image="ghcr.io/your-org/scipy-base:latest")` on the relevant step.
-
-## Switching sandbox flavors
-
-The agent code is flavor-agnostic — `Client().active_stack.sandbox` returns a `BaseSandbox`, the agent calls `session.exec(...)` through the interface. To run against a different flavor (once they ship), just swap the stack:
-
-```bash
-zenml sandbox register my-other-sandbox --flavor=<other_flavor>
-zenml stack update --sandbox my-other-sandbox
-```
-
-The **snapshot fan-out** part of the pipeline does need flavor-level support — `session.create_snapshot()` / `sandbox.restore(snap)` are only implemented on Modal today. For a fresh-session-per-subagent fan-out (no snapshot reuse), swap `subagent_step` to call `sandbox.create_session()` instead of `sandbox.restore(snapshot)` and drop the `prep_step` / `snapshot` plumbing.
 
 ## Cloud orchestrators
 
-The default `orchestrator: default` runs the agent steps on your local Python. To run on a remote orchestrator (Kubernetes, SageMaker, Vertex…), the included `get_docker_settings()` helper bakes the example's requirements into the step image and — when ZenML is installed editable — copies the current source. Add `OPENAI_API_KEY` to the step env:
+The default `orchestrator: default` runs the agent steps on your local Python. To run on a remote orchestrator (Kubernetes, SageMaker, Vertex…), the pipeline's `DockerSettings` bakes the example's requirements into the step image. Add `OPENAI_API_KEY` to the step env:
 
 ```python
 DockerSettings(

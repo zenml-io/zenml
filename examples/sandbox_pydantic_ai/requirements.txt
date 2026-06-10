@@ -1,2 +1,2 @@
-pydantic-ai>=0.0.13
+pydantic-ai>=1.0
 zenml[local]

@@ -13,105 +13,39 @@
 #  permissions and limitations under the License.
 """ZenML pipeline: plan -> fan-out subagents -> reduce.
 
-A planner LLM decomposes the user's goal into ``N`` independent
+A planner LLM decomposes the user's goal into three independent
 subtasks. Each subtask runs in its own ZenML step via ``step.map()``,
 which gives each subagent a fresh ``SandboxSession`` (isolated /tmp,
 own log source, own step metadata, independently cacheable). A reducer
 LLM stitches the subagent outputs into a single coherent answer.
 """
 
-import site
-import sys
-from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated
 
 from agent import (
-    _DEFAULT_QUERY,
+    DEFAULT_QUERY,
     plan_subtasks,
     run_agent_in_session,
     synthesize,
 )
 
-import zenml
 from zenml import pipeline, step, unmapped
 from zenml.client import Client
 from zenml.config import DockerSettings
-from zenml.integrations.modal.flavors import ModalSandboxSettings
 from zenml.sandboxes import SandboxSnapshot
-
-
-def get_docker_settings(
-    skip_parent_build: bool = False, **kwargs: Any
-) -> DockerSettings:
-    """Build DockerSettings that work with an editable ZenML install.
-
-    Args:
-        skip_parent_build: If True, never add the parent build even when
-            ZenML appears to be an editable install.
-        **kwargs: Extra DockerSettings fields to merge in.
-
-    Returns:
-        A DockerSettings configured for this example.
-    """
-    settings_kwargs: dict = {
-        "build_config": {
-            "build_options": {
-                "platform": "linux/amd64",
-            }
-        },
-        "python_package_installer": "uv",
-    }
-
-    if not skip_parent_build:
-        for path in site.getsitepackages() + [site.getusersitepackages()]:
-            if Path(path).resolve() in Path(zenml.__file__).resolve().parents:
-                break
-        else:
-            zenml_git_root = Path(zenml.__file__).parents[2]
-            settings_kwargs.update(
-                {
-                    "dockerfile": str(
-                        zenml_git_root / "docker" / "zenml-dev.Dockerfile"
-                    ),
-                    "build_context_root": str(zenml_git_root),
-                    "parent_image_build_config": {
-                        "build_options": {
-                            "platform": "linux/amd64",
-                            "buildargs": {
-                                "PYTHON_VERSION": (
-                                    f"{sys.version_info.major}."
-                                    f"{sys.version_info.minor}"
-                                )
-                            },
-                        }
-                    },
-                    "prevent_build_reuse": True,
-                }
-            )
-
-    settings_kwargs.update(kwargs)
-    settings_kwargs.setdefault("allow_download_from_artifact_store", False)
-    settings_kwargs.setdefault("allow_download_from_code_repository", False)
-
-    return DockerSettings(**settings_kwargs)
-
-
-# Per-step sandbox settings. Lift Modal's 5-minute timeout so a slow
-# OpenAI tool-use loop doesn't terminate the sandbox mid-exec. Sandbox
-# stdout/stderr automatically lands in a per-session ``sandbox:<id>``
-# log source on the active step -- no opt-in needed.
-_AGENT_SANDBOX_SETTINGS = ModalSandboxSettings(timeout_seconds=900)
-
 
 _PYTHON_DEPS = "numpy scipy"
 
 
-@step(settings={"sandbox": _AGENT_SANDBOX_SETTINGS})
+@step
 def prep_step() -> Annotated[SandboxSnapshot, "scientific_image"]:
     """Boot a sandbox, install scientific deps, return a snapshot.
 
     Returns:
         The sandbox snapshot with the scientific stack pre-installed.
+
+    Raises:
+        RuntimeError: If the stack has no sandbox or the install fails.
     """
     sandbox = Client().active_stack.sandbox
     if sandbox is None:
@@ -145,7 +79,7 @@ def planner_step(query: str) -> Annotated[list[str], "subtasks"]:
     return plan_subtasks(query)
 
 
-@step(settings={"sandbox": _AGENT_SANDBOX_SETTINGS})
+@step
 def subagent_step(
     snapshot: SandboxSnapshot, subtask: str
 ) -> Annotated[str, "subagent_answer"]:
@@ -157,6 +91,9 @@ def subagent_step(
 
     Returns:
         The subagent's final natural-language answer.
+
+    Raises:
+        RuntimeError: If the active stack has no sandbox component.
     """
     sandbox = Client().active_stack.sandbox
     if sandbox is None:
@@ -185,10 +122,13 @@ def reducer_step(
     dynamic=True,
     enable_cache=False,
     settings={
-        "docker": get_docker_settings(requirements="requirements.txt"),
+        "docker": DockerSettings(
+            python_package_installer="uv",
+            requirements="requirements.txt",
+        ),
     },
 )
-def sandbox_pydantic_ai_pipeline(query: str = _DEFAULT_QUERY) -> str:
+def sandbox_pydantic_ai_pipeline(query: str = DEFAULT_QUERY) -> str:
     """Prep -> plan -> fan-out subagents -> reduce.
 
     Args:

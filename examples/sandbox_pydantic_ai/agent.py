@@ -25,19 +25,15 @@ tool call persist for the next. That naturally drives multi-step
 agent flows: generate data, inspect, filter, re-compute, etc.
 """
 
-import shlex
 from dataclasses import dataclass
 
 from pydantic import BaseModel
 from pydantic_ai import Agent, RunContext
-from pydantic_ai.usage import UsageLimits
 
 from zenml.sandboxes import SandboxSession
 
-# Cap the stdout/stderr surface the agent sees per tool call. Passed to
-# ``SandboxProcess.collect`` as ``max_chars`` -- the base helper drains
-# both streams fully (so the provider's wait() doesn't block on a
-# buffered reader) and flags per-stream truncation via ``SandboxOutput``.
+# Cap per-stream tool output so a chatty command doesn't blow up the
+# LLM context.
 _MAX_STREAM_CHARS = 32_000
 
 
@@ -51,12 +47,7 @@ class CodeResult(BaseModel):
 
 @dataclass
 class AgentDeps:
-    """Runtime handle passed to every tool call.
-
-    Carries the live ``SandboxSession`` so all tool invocations share one
-    container. A plain dataclass (not a Pydantic model) -- there's nothing
-    to validate, and the live session isn't serializable anyway.
-    """
+    """Carries the live ``SandboxSession`` shared by all tool calls."""
 
     session: SandboxSession
 
@@ -180,15 +171,12 @@ def build_agent() -> Agent[AgentDeps, str]:
         Returns:
             File contents on stdout (capped at ``_MAX_STREAM_CHARS``).
         """
-        # ``cat -- path`` so paths starting with - don't get parsed as flags.
-        return _exec_collect(
-            ctx.deps.session, ["bash", "-lc", f"cat -- {shlex.quote(path)}"]
-        )
+        return _exec_collect(ctx.deps.session, ["cat", "--", path])
 
     return agent
 
 
-_DEFAULT_QUERY = (
+DEFAULT_QUERY = (
     "Benchmark three classic numerical-methods problems and report "
     "the answer plus how it compares to the known exact value:\n"
     "1. Estimate π using Monte Carlo with at least 200k samples.\n"
@@ -285,13 +273,5 @@ def run_agent_in_session(session: SandboxSession, query: str) -> str:
         The agent's final natural-language answer.
     """
     agent = build_agent()
-    result = agent.run_sync(
-        query,
-        deps=AgentDeps(session=session),
-        # PydanticAI defaults to 50 LLM requests per run; a multi-step
-        # tool-using agent can chew through that on a rough day
-        # (retries, package installs, etc.). Lift the cap so the
-        # example doesn't UsageLimitExceeded prematurely.
-        usage_limits=UsageLimits(request_limit=200),
-    )
+    result = agent.run_sync(query, deps=AgentDeps(session=session))
     return result.output
