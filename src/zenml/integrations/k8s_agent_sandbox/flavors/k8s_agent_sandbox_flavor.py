@@ -52,17 +52,21 @@ class ConnectionMode(str, Enum):
 class K8sAgentSandboxSettings(BaseSandboxSettings):
     """Per-step settings for an Agent Sandbox component."""
 
-    base_image: Optional[str] = Field(
+    image: Optional[str] = Field(
         default=None,
         description="Container image used when synthesizing an inline "
         "SandboxTemplate (i.e. when ``template_name`` is unset). MUST "
         "contain the agent-sandbox runtime that exposes the sandbox "
-        "HTTP API on port 8888. Per-step override on top of the "
-        "component-level ``default_image``. Examples: "
+        "HTTP API on port 8888 — ``commands.run`` POSTs to "
+        "``/execute`` and fails fast without it. No default: inline "
+        "mode refuses to run without an explicit image. Pin to a "
+        "digest or a stable tag — never ``:latest``. To bundle extra "
+        "deps, base a custom image on the upstream "
+        "``python-runtime-sandbox`` image. Examples: "
         "``ghcr.io/agent-sandbox/python-runtime@sha256:...``, "
-        "``my-org/sandbox-runtime:1.0``. Pin to a digest or stable "
-        "tag — never ``:latest``. Ignored when ``template_name`` is "
-        "set — the referenced SandboxTemplate's image wins.",
+        "``my-org/sandbox-runtime:1.0``. Ignored when "
+        "``template_name`` is set — the referenced SandboxTemplate's "
+        "image wins.",
     )
     template_name: Optional[str] = Field(
         default=None,
@@ -70,11 +74,14 @@ class K8sAgentSandboxSettings(BaseSandboxSettings):
         "resource in the cluster. When set the flavor uses template "
         "mode: ``client.create_sandbox(template=template_name, "
         "namespace=namespace)``. When ``None`` the flavor creates an "
-        "inline SandboxTemplate per session from ``base_image`` and "
-        "the active step's ``ResourceSettings``. Examples: "
-        "``python-sandbox``, ``ml-workload-template``. Template mode "
-        "is recommended for production; inline mode is convenient "
-        "for prototyping.",
+        "inline SandboxTemplate per session from ``image``, "
+        "``sandbox_environment`` and ``pod_settings``. In template "
+        "mode the referenced SandboxTemplate's spec wins and the "
+        "inherited ``sandbox_environment`` setting is NOT applied — "
+        "bake env into the template or pass per-exec ``env``. "
+        "Examples: ``python-sandbox``, ``ml-workload-template``. "
+        "Template mode is recommended for production; inline mode is "
+        "convenient for prototyping.",
     )
     namespace: str = Field(
         default="default",
@@ -98,8 +105,11 @@ class K8sAgentSandboxSettings(BaseSandboxSettings):
         description="Full Kubernetes pod customization reusing the "
         "Kubernetes orchestrator's ``KubernetesPodSettings`` surface — "
         "node_selectors, affinity, tolerations, volume_mounts, env, "
-        "security_context, additional_pod_spec_args, etc. Only applied "
-        "in inline-template mode (when ``template_name`` is unset); in "
+        "security_context, additional_pod_spec_args, etc. Sandbox pod "
+        "resources (cpu/memory/gpu) are sized exclusively via "
+        "``resources`` here — the active step's ``ResourceSettings`` "
+        "are not applied to the sandbox pod. Only applied in "
+        "inline-template mode (when ``template_name`` is unset); in "
         "template mode the referenced SandboxTemplate's spec wins.",
     )
 
@@ -143,28 +153,6 @@ class K8sAgentSandboxConfig(BaseSandboxConfig, K8sAgentSandboxSettings):
         description="Direct HTTP base URL of the sandbox-router service. "
         "Required when ``connection_mode=direct``; ignored otherwise. "
         "Example: ``http://sandbox-router.example.com``.",
-    )
-    default_image: Optional[str] = Field(
-        default=None,
-        description="Container image used when synthesizing an inline "
-        "SandboxTemplate (i.e. when no ``template_name`` is set). MUST "
-        "contain the agent-sandbox runtime that exposes the sandbox "
-        "HTTP API on port 8888 — ``commands.run`` POSTs to ``/execute`` "
-        "and fails fast without it. No default: reproducibility-first, "
-        "we refuse to enter inline mode unless an explicit image is "
-        "provided here or via per-step ``base_image``. Pin to a digest "
-        "or a stable tag — never ``:latest``. To bundle extra deps "
-        "base a custom image on the upstream ``python-runtime-sandbox`` "
-        "(see the operator's ``examples/`` for the Dockerfile shape). "
-        "Ignored when ``template_name`` is set — the referenced "
-        "SandboxTemplate's container image wins.",
-    )
-    inline_template_cleanup: bool = Field(
-        default=True,
-        description="Whether to delete synthesized SandboxTemplate "
-        "custom resources at session close. ``True`` (default) keeps "
-        "the cluster clean; set ``False`` for debugging when you want "
-        "to inspect the generated CR after the session exits.",
     )
 
     @property

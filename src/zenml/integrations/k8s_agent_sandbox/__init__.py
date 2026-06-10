@@ -18,9 +18,7 @@ Wraps the ``k8s-agent-sandbox`` Python SDK (the client library for the
 project) as a ZenML ``Sandbox`` stack component.
 
 Works against any Kubernetes cluster running the ``agent-sandbox``
-operator. On GKE the operator additionally supports Pod Snapshots;
-snapshot / restore support is planned for a follow-up release and is
-intentionally absent from this initial skeleton.
+operator.
 """
 
 from typing import List, Type
@@ -32,11 +30,6 @@ from zenml.stack import Flavor
 
 K8S_AGENT_SANDBOX_FLAVOR = "k8s_agent_sandbox"
 
-# Verified against k8s-agent-sandbox SDK 0.1.x against the operator's
-# `main` branch as of 2026-05. Bump the cap deliberately as each new
-# SDK minor is smoke-tested.
-_SDK_REQUIREMENT = "k8s-agent-sandbox>=0.1.0,<0.2"
-
 
 class K8sAgentSandboxIntegration(Integration):
     """Definition of the Agent Sandbox integration for ZenML."""
@@ -45,7 +38,7 @@ class K8sAgentSandboxIntegration(Integration):
     # Inherit the kubernetes-client pin from the ``kubernetes`` integration
     # so the pod-spec helpers we reuse (manifest_utils, pod_settings,
     # kube_utils) can't drift across installs.
-    REQUIREMENTS = [_SDK_REQUIREMENT] + [
+    REQUIREMENTS = ["k8s-agent-sandbox>=0.1.0,<0.2"] + [
         r for r in KubernetesIntegration.REQUIREMENTS if "kubernetes" in r
     ]
 

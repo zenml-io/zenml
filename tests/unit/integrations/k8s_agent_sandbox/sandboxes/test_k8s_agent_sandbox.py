@@ -106,9 +106,9 @@ class TestFlavorMetadata:
 class TestConfigDefaults:
     def test_inherits_base_sandbox_fields(self) -> None:
         fields = K8sAgentSandboxSettings.model_fields
-        # base_image is declared locally on the flavor; sandbox_environment
+        # image is declared locally on the flavor; sandbox_environment
         # comes from BaseSandboxSettings.
-        assert {"base_image", "sandbox_environment"} <= set(fields)
+        assert {"image", "sandbox_environment"} <= set(fields)
 
     def test_default_connection_mode_is_gateway(self) -> None:
         cfg = K8sAgentSandboxConfig()
@@ -142,7 +142,20 @@ class TestRequirementsAreInherited:
             assert pin in K8sAgentSandboxIntegration.REQUIREMENTS
 
 
+_CONNECTION_CONFIG_CLASSES = (
+    "SandboxDirectConnectionConfig",
+    "SandboxGatewayConnectionConfig",
+    "SandboxInClusterConnectionConfig",
+    "SandboxLocalTunnelConnectionConfig",
+)
+
+
 class TestConnectionConfigBuild:
+    @pytest.fixture(autouse=True)
+    def _reset_connection_config_mocks(self) -> None:
+        for cls_name in _CONNECTION_CONFIG_CLASSES:
+            getattr(_models, cls_name).reset_mock()
+
     @pytest.mark.parametrize(
         "mode,expected_cls",
         [
@@ -158,16 +171,11 @@ class TestConnectionConfigBuild:
         self, mode: ConnectionMode, expected_cls: str
     ) -> None:
         sb = _make_sandbox(connection_mode=mode)
-        # Smoke: the method picks the right SDK class. The SDK models
-        # module is shimmed at import time (see top of file); we just
-        # confirm the matching constructor is invoked.
-        with patch.dict(
-            "sys.modules",
-            {"k8s_agent_sandbox.models": _models},
-        ):
-            cfg = sb._build_connection_config()
-        assert type(cfg).__name__ == "MagicMock"  # mock class instance
-        assert getattr(_models, expected_cls).called
+        sb._build_connection_config()
+        getattr(_models, expected_cls).assert_called_once()
+        for other_cls in _CONNECTION_CONFIG_CLASSES:
+            if other_cls != expected_cls:
+                getattr(_models, other_cls).assert_not_called()
 
     def test_direct_mode_requires_api_url(self) -> None:
         sb = _make_sandbox(connection_mode=ConnectionMode.DIRECT)
@@ -230,7 +238,7 @@ class TestCreateSession:
         sb = _make_sandbox(
             template_name=None,
             namespace="lab",
-            default_image="runtime:1.0",
+            image="runtime:1.0",
         )
         fake_client = _wire_client(sb)
 
@@ -264,22 +272,8 @@ class TestCreateSession:
         assert session._inline_template_name == body["metadata"]["name"]
         assert session._inline_template_namespace == "lab"
 
-    def test_inline_template_cleanup_disabled_skips_tracking(self) -> None:
-        sb = _make_sandbox(
-            template_name=None,
-            namespace="lab",
-            default_image="runtime:1.0",
-            inline_template_cleanup=False,
-        )
-        _wire_client(sb)
-
-        with patch("kubernetes.client.CustomObjectsApi"):
-            session = sb.create_session()
-        assert session._inline_template_name is None
-        assert session._inline_template_namespace is None
-
     def test_inline_template_requires_image(self) -> None:
-        # Reproducibility-first: no default_image, no base_image → refuse.
+        # Reproducibility-first: no image anywhere → refuse.
         sb = _make_sandbox(template_name=None, namespace="lab")
         _wire_client(sb)
         with (
@@ -294,7 +288,7 @@ class TestCreateSession:
         sb = _make_sandbox(
             template_name=None,
             namespace="lab",
-            default_image="runtime:1.0",
+            image="runtime:1.0",
         )
         fake_client = _wire_client(sb)
         fake_client.create_sandbox.side_effect = RuntimeError("denied")
@@ -308,75 +302,33 @@ class TestCreateSession:
         fake_api.create_namespaced_custom_object.assert_called_once()
         fake_api.delete_namespaced_custom_object.assert_called_once()
 
-    def test_orphan_cleanup_runs_even_when_cleanup_disabled(self) -> None:
-        # `inline_template_cleanup=False` governs successful teardown;
-        # orphan cleanup on create-sandbox failure must still happen.
-        sb = _make_sandbox(
-            template_name=None,
-            namespace="lab",
-            default_image="runtime:1.0",
-            inline_template_cleanup=False,
-        )
-        fake_client = _wire_client(sb)
-        fake_client.create_sandbox.side_effect = RuntimeError("denied")
-
-        with patch("kubernetes.client.CustomObjectsApi") as fake_api_cls:
-            fake_api = MagicMock()
-            fake_api_cls.return_value = fake_api
-            with pytest.raises(RuntimeError, match="denied"):
-                sb.create_session()
-        fake_api.delete_namespaced_custom_object.assert_called_once()
-
-    def test_404_crd_missing_hint(self) -> None:
+    def test_create_failure_raises_with_chained_api_exception(self) -> None:
         from kubernetes.client.rest import ApiException
 
         sb = _make_sandbox(
             template_name=None,
             namespace="lab",
-            default_image="runtime:1.0",
+            image="runtime:1.0",
         )
         _wire_client(sb)
 
         api_exc = ApiException(status=404, reason="Not Found")
-        api_exc.body = (
-            '{"kind":"Status","status":"Failure",'
-            '"reason":"NotFound","message":"the server could not find '
-            'the requested resource"}'
-        )
         with patch("kubernetes.client.CustomObjectsApi") as fake_api_cls:
             fake_api = MagicMock()
             fake_api.create_namespaced_custom_object.side_effect = api_exc
             fake_api_cls.return_value = fake_api
-            with pytest.raises(RuntimeError, match="CRDs aren't installed"):
+            with pytest.raises(
+                RuntimeError, match="Failed to create inline SandboxTemplate"
+            ) as exc_info:
                 sb.create_session()
-
-    def test_404_namespace_missing_hint(self) -> None:
-        # If the 404 body mentions the namespace, surface the
-        # namespace-missing remediation instead of the CRD hint.
-        from kubernetes.client.rest import ApiException
-
-        sb = _make_sandbox(
-            template_name=None,
-            namespace="missing-ns",
-            default_image="runtime:1.0",
-        )
-        _wire_client(sb)
-
-        api_exc = ApiException(status=404, reason="Not Found")
-        api_exc.body = '{"message":"namespaces \\"missing-ns\\" not found"}'
-        with patch("kubernetes.client.CustomObjectsApi") as fake_api_cls:
-            fake_api = MagicMock()
-            fake_api.create_namespaced_custom_object.side_effect = api_exc
-            fake_api_cls.return_value = fake_api
-            with pytest.raises(RuntimeError, match="does not exist"):
-                sb.create_session()
+        assert exc_info.value.__cause__ is api_exc
 
 
 class TestInlineTemplateBody:
     def test_default_resources_include_ephemeral_storage(self) -> None:
-        # Even without StepContext, the upstream-matching default
-        # ephemeral-storage request is set so the pod can be scheduled.
-        sb = _make_sandbox(template_name=None, default_image="r:1")
+        # The upstream-matching default ephemeral-storage request is
+        # set so the pod can be scheduled.
+        sb = _make_sandbox(template_name=None, image="r:1")
         body = sb._build_inline_template_body(
             K8sAgentSandboxSettings(), "ns", "zenml-sb-tpl-test"
         )
@@ -386,7 +338,7 @@ class TestInlineTemplateBody:
         )
 
     def test_container_name_matches_upstream(self) -> None:
-        sb = _make_sandbox(template_name=None, default_image="r:1")
+        sb = _make_sandbox(template_name=None, image="r:1")
         body = sb._build_inline_template_body(
             K8sAgentSandboxSettings(), "ns", "zenml-sb-tpl-test"
         )
@@ -395,7 +347,7 @@ class TestInlineTemplateBody:
         assert container["name"] == "python-runtime"
 
     def test_includes_liveness_probe(self) -> None:
-        sb = _make_sandbox(template_name=None, default_image="r:1")
+        sb = _make_sandbox(template_name=None, image="r:1")
         body = sb._build_inline_template_body(
             K8sAgentSandboxSettings(), "ns", "zenml-sb-tpl-test"
         )
@@ -403,7 +355,7 @@ class TestInlineTemplateBody:
         assert container["livenessProbe"]["httpGet"]["port"] == 8888
 
     def test_refuses_without_any_image(self) -> None:
-        # default_image=None on config, no base_image in settings.
+        # No image on config and no image in settings.
         sb = _make_sandbox(template_name=None)
         with pytest.raises(ValueError, match="requires an image"):
             sb._build_inline_template_body(
@@ -411,58 +363,28 @@ class TestInlineTemplateBody:
             )
 
     def test_image_override_via_settings(self) -> None:
-        sb = _make_sandbox(default_image="default:1")
+        sb = _make_sandbox(image="default:1")
         body = sb._build_inline_template_body(
-            K8sAgentSandboxSettings(base_image="my-org/custom:1"),
+            K8sAgentSandboxSettings(image="my-org/custom:1"),
             "ns",
             "zenml-sb-tpl-test",
         )
         container = body["spec"]["podTemplate"]["spec"]["containers"][0]
         assert container["image"] == "my-org/custom:1"
 
-    def test_resource_requests_via_k8s_helper(self) -> None:
-        # Confirms we reuse `convert_resource_settings_to_k8s_format`:
-        # cpu_count=0.5 must become "500m", not "0.5" — the helper's
-        # millicore handling is the integration value-add.
-        from zenml.config.resource_settings import ResourceSettings
-
-        sb = _make_sandbox(default_image="r:1")
-        fake_ctx = MagicMock()
-        fake_ctx.step_run.config.resource_settings = ResourceSettings(
-            cpu_count=0.5, memory="512MiB"
+    def test_sandbox_environment_lands_in_template_env(self) -> None:
+        sb = _make_sandbox(image="r:1")
+        body = sb._build_inline_template_body(
+            K8sAgentSandboxSettings(
+                sandbox_environment={"OPENAI_API_KEY": "sk-test"}
+            ),
+            "ns",
+            "zenml-sb-tpl-test",
         )
-        with patch(
-            "zenml.steps.step_context.StepContext.get",
-            return_value=fake_ctx,
-        ):
-            body = sb._build_inline_template_body(
-                K8sAgentSandboxSettings(), "ns", "zenml-sb-tpl-test"
-            )
-        requests = body["spec"]["podTemplate"]["spec"]["containers"][0][
-            "resources"
-        ]["requests"]
-        assert requests["cpu"] == "500m"
-        assert requests["memory"].endswith("Mi")
-
-    def test_gpu_count_routed_to_nvidia_resource(self) -> None:
-        # The k8s helper mirrors GPUs to both requests and limits.
-        from zenml.config.resource_settings import ResourceSettings
-
-        sb = _make_sandbox(default_image="r:1")
-        fake_ctx = MagicMock()
-        fake_ctx.step_run.config.resource_settings = ResourceSettings(
-            gpu_count=1
-        )
-        with patch(
-            "zenml.steps.step_context.StepContext.get",
-            return_value=fake_ctx,
-        ):
-            body = sb._build_inline_template_body(
-                K8sAgentSandboxSettings(), "ns", "zenml-sb-tpl-test"
-            )
-        res = body["spec"]["podTemplate"]["spec"]["containers"][0]["resources"]
-        assert res["requests"]["nvidia.com/gpu"] == "1"
-        assert res["limits"]["nvidia.com/gpu"] == "1"
+        container = body["spec"]["podTemplate"]["spec"]["containers"][0]
+        assert {"name": "OPENAI_API_KEY", "value": "sk-test"} in container[
+            "env"
+        ]
 
     def test_pod_settings_applied_via_manifest_utils(self) -> None:
         # `add_pod_settings` should plumb node_selectors / tolerations
@@ -472,7 +394,7 @@ class TestInlineTemplateBody:
             KubernetesPodSettings,
         )
 
-        sb = _make_sandbox(default_image="r:1")
+        sb = _make_sandbox(image="r:1")
         body = sb._build_inline_template_body(
             K8sAgentSandboxSettings(
                 pod_settings=KubernetesPodSettings(
@@ -484,6 +406,48 @@ class TestInlineTemplateBody:
         )
         pod_spec = body["spec"]["podTemplate"]["spec"]
         assert pod_spec["nodeSelector"] == {"node-pool": "sandbox"}
+
+    def test_partial_pod_settings_keep_default_resources(self) -> None:
+        # `add_pod_settings` overwrites container resources with
+        # `pod_settings.resources` (default {}); pod_settings carrying
+        # only node_selectors must not wipe the ephemeral-storage
+        # default.
+        from zenml.integrations.kubernetes.pod_settings import (
+            KubernetesPodSettings,
+        )
+
+        sb = _make_sandbox(image="r:1")
+        body = sb._build_inline_template_body(
+            K8sAgentSandboxSettings(
+                pod_settings=KubernetesPodSettings(
+                    node_selectors={"node-pool": "sandbox"}
+                )
+            ),
+            "ns",
+            "zenml-sb-tpl-test",
+        )
+        container = body["spec"]["podTemplate"]["spec"]["containers"][0]
+        assert container["resources"]["requests"]["ephemeral-storage"] == (
+            "512Mi"
+        )
+
+    def test_pod_settings_resources_win_over_defaults(self) -> None:
+        from zenml.integrations.kubernetes.pod_settings import (
+            KubernetesPodSettings,
+        )
+
+        sb = _make_sandbox(image="r:1")
+        body = sb._build_inline_template_body(
+            K8sAgentSandboxSettings(
+                pod_settings=KubernetesPodSettings(
+                    resources={"requests": {"cpu": "500m"}}
+                )
+            ),
+            "ns",
+            "zenml-sb-tpl-test",
+        )
+        container = body["spec"]["podTemplate"]["spec"]["containers"][0]
+        assert container["resources"] == {"requests": {"cpu": "500m"}}
 
 
 class TestSessionLifecycle:
