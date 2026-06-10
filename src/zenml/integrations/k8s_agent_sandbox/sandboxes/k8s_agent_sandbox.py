@@ -259,7 +259,7 @@ class K8sAgentSandboxSession(SandboxSession):
             result, session=self, started_at=started_at
         )
 
-    def close(self) -> None:
+    def _close(self) -> None:
         """Releases the session without terminating the sandbox.
 
         Deletes any inline-synthesized SandboxTemplate CR. Idempotent.
@@ -285,8 +285,7 @@ class K8sAgentSandboxSession(SandboxSession):
                 self._inline_template_namespace or "<unknown>",
                 self.id,
             )
-        if self._inline_template_name and self._inline_template_namespace:
-            self._delete_inline_template()
+        self.close()
 
     def _delete_inline_template(self) -> None:
         """Best-effort, idempotent delete of the inline SandboxTemplate CR.
