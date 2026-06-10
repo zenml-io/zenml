@@ -4,9 +4,9 @@ description: Guides, examples and projects
 
 # Learn ZenML
 
-Discover how to build production-ready ML pipelines and durable AI agents with ZenML and Kitaru through our curated learning resources. Whether you're looking for step-by-step instructions, complete project implementations, or specific examples, you'll find resources to accelerate your workflow.
+Discover how to build production-ready ML pipelines and production-grade AI agents with ZenML and Kitaru through our curated learning resources. Whether you're looking for step-by-step instructions, complete project implementations, or specific examples, you'll find resources to accelerate your workflow.
 
-[Kitaru](https://docs.zenml.io/kitaru) is ZenML's durable execution layer for AI agents — flows, checkpoints, replay, and human-in-the-loop — with its own learning track.
+[Kitaru](https://docs.zenml.io/kitaru) is ZenML's sibling project for AI agents: it records every step of your agents' runs and makes them replayable — diagnose failures, test model swaps, pause for human approval, and improve agents with confidence. It has its own learning track below.
 
 ## Guides
 

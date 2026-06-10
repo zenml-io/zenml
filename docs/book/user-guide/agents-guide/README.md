@@ -5,7 +5,7 @@ icon: robot
 
 # Agents guide
 
-This guide teaches durable AI agents with [Kitaru](https://docs.zenml.io/kitaru), ZenML's durable execution layer for agents. Where the other guides build ML pipelines, this one builds an internal agent platform — and the platform problems it solves are the ones every agent team eventually hits.
+This guide teaches production AI agents with [Kitaru](https://docs.zenml.io/kitaru), ZenML's sibling project for running, replaying, and improving agents. Where the other guides build ML pipelines, this one builds an internal agent platform — and the platform problems it solves are the ones every agent team eventually hits.
 
 When one team builds one agent, the hard parts can hide in a notebook or a script. When several teams start building agents, the same platform questions come back every time:
 

@@ -217,7 +217,7 @@ ZenML also provides a [VS Code extension](https://marketplace.visualstudio.com/i
 
 ## Where Kitaru fits
 
-[Kitaru](https://docs.zenml.io/kitaru) is ZenML's sibling open-source project: a durable execution layer for AI agents. It is not a separate world to learn — it applies the concepts on this page to agent workflows, with primitives designed for how agent code is actually written (plain Python control flow, no graph DSL). Kitaru works standalone with zero configuration locally, and because its primitives compile down to ZenML ones, adopting it next to ZenML gives your agents and pipelines one operational home instead of two toolchains.
+[Kitaru](https://docs.zenml.io/kitaru) is ZenML's sibling open-source project for AI agents. Its premise: agents are easy to run in production but hard to understand and risky to update. So Kitaru records every step of every run — each model call, tool call, and decision — as a checkpoint, and makes runs replayable: re-execute any run from any point with an override (a different model, a changed prompt, another tool output) and see what would have happened before you ship the change. It is not a separate world to learn — it applies the concepts on this page to agent workflows, with primitives designed for how agent code is actually written (plain Python control flow, no graph DSL). Kitaru works standalone with zero configuration locally, and because its primitives compile down to ZenML ones, your agents and pipelines share one operational home instead of two toolchains.
 
 The mapping is direct:
 
