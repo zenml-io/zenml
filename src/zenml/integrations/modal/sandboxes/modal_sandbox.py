@@ -252,12 +252,8 @@ class ModalSandboxSession(SandboxSession):
         """
         self._sandbox.filesystem.copy_to_local(remote_path, local_path)
 
-    def close(self) -> None:
-        """No-op: the Modal Sandbox stays alive until destroy() or TTL.
-
-        Logging-context teardown is centralized in
-        ``SandboxSession.__exit__``.
-        """
+    def _close(self) -> None:
+        """No-op: the Modal Sandbox stays alive until destroy() or TTL."""
 
     def destroy(self) -> None:
         """Terminate the Sandbox on Modal."""
@@ -271,6 +267,8 @@ class ModalSandboxSession(SandboxSession):
                 e,
                 exc_info=True,
             )
+        finally:
+            self.close()
 
 
 class ModalSandbox(BaseSandbox):

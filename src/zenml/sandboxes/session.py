@@ -149,13 +149,25 @@ class SandboxSession(ABC):
             f"{type(self).__name__} does not support file downloads."
         )
 
-    @abstractmethod
     def close(self) -> None:
         """Close the sandbox session handle.
 
         For remote sandboxes, this does not terminate the sandbox on the
         provider. The sandbox will keep running until its TTL expires or
         `destroy()` is called.
+        """
+        try:
+            self._close()
+        finally:
+            self._close_logging_context()
+
+    @abstractmethod
+    def _close(self) -> None:
+        """Release flavor-specific session resources.
+
+        Called by `close()`, which owns the logging-context cleanup —
+        implementations must not need to (and cannot forget to) close it
+        themselves.
         """
 
     def destroy(self) -> None:
@@ -354,8 +366,5 @@ class SandboxSession(ABC):
         return self
 
     def __exit__(self, *_: Any) -> None:
-        """Close the session and logging context."""
-        try:
-            self.close()
-        finally:
-            self._close_logging_context()
+        """Close the session."""
+        self.close()

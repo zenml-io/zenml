@@ -177,6 +177,7 @@ class LocalSandboxSession(SandboxSession):
         self._workdir = workdir
         self._env = env
         self._closed = False
+        self._processes: List["subprocess.Popen[str]"] = []
 
     def exec(
         self,
@@ -239,16 +240,25 @@ class LocalSandboxSession(SandboxSession):
                 f"Local sandbox execution failed to launch: {e}"
             ) from e
 
+        self._processes.append(process)
         return LocalSandboxProcess(
             process=process, session=self, started_at=started_at
         )
 
-    def close(self) -> None:
-        """Close the session and clean up the working directory."""
+    def _close(self) -> None:
+        """Terminate running processes and clean up the working directory."""
         if self._closed:
             return
 
         self._closed = True
+        for process in self._processes:
+            if process.poll() is not None:
+                continue
+            process.terminate()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
         try:
             shutil.rmtree(self._workdir, ignore_errors=True)
         except Exception as e:
