@@ -143,13 +143,15 @@ class RequestLimiter:
         Returns:
             The ip address for the current request (or 127.0.0.1 if none found).
         """
-        if "X_FORWARDED_FOR" in request.headers:
-            return request.headers["X_FORWARDED_FOR"]
-        else:
-            if not request.client or not request.client.host:
-                return "127.0.0.1"
+        forwarded_for = request.headers.get("X-Forwarded-For")
 
-            return request.client.host
+        if forwarded_for:
+            return forwarded_for.split(",")[-1].strip()
+
+        if not request.client or not request.client.host:
+            return "127.0.0.1"
+
+        return request.client.host
 
     @contextmanager
     def limit_failed_requests(

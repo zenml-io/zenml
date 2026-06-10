@@ -1190,6 +1190,17 @@ server:
     port: 80
     annotations: {}
 
+  # Uvicorn proxy header handling.
+  #
+  # These defaults match the ZenML server image CMD:
+  #   --proxy-headers --forwarded-allow-ips "*"
+  #
+  # Disable proxyHeaders.enabled to make Uvicorn ignore X-Forwarded-* headers,
+  # or set forwardedAllowIPs to a comma-separated list of trusted proxy IPs.
+  proxyHeaders:
+    enabled: true
+    forwardedAllowIPs: "*"
+
   ingress:
     enabled: true
     className: "nginx"

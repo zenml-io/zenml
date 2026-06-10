@@ -397,7 +397,7 @@ def device_authorization(
     forwarded = request.headers.get("X-Forwarded-For")
 
     if forwarded:
-        ip_address = forwarded.split(",")[0].strip()
+        ip_address = forwarded.split(",")[-1].strip()
     elif request.client and request.client.host:
         ip_address = request.client.host
 
