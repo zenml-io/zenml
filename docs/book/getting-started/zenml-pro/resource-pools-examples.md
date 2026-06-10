@@ -33,6 +33,7 @@ Admin pitfalls that cause author-facing rejections:
 
 * GPU-only pools or policies — also model `CPU`, `memory`, and `step run`.
 * Grants that omit a resource the step requests — rejected even when the pool is idle.
+* Grants that try to reserve more than the pool's capacity for the same resource and class.
 * `reclaim_tolerance: none` without matching reserved grants — rejected immediately.
 * Multiple pools on one component — one pool wins; every candidate pool must cover all demands.
 
@@ -154,7 +155,7 @@ Production policy (high priority, reserved grant):
   "grants": [
     {
       "resource": "GPU",
-      "classes": ["reserved"],
+      "class_name": "reserved",
       "reserved": 4,
       "limit": 4
     }
@@ -172,7 +173,7 @@ Sandbox policy (low priority, adhoc only):
   "grants": [
     {
       "resource": "GPU",
-      "classes": ["adhoc"],
+      "class_name": "adhoc",
       "reserved": 0,
       "limit": 8
     }
@@ -230,8 +231,9 @@ than failing or competing outside the pool.
 
 Pool: 8 `GPU` in one `default` class (or use CLI from section 1).
 
-Two policies at priority 10, each `reserved: 4`, `limit: 8` on different
-orchestrators.
+Two policies at priority 10, each with a `GPU/default` grant using
+`reserved: 4`, `limit: 8` on different orchestrators. The pool has 8 GPUs, so
+the two reservations exactly fill the reservable capacity for that class.
 
 ### Author (both teams)
 
@@ -257,13 +259,15 @@ that accept it.
 
 ### Admin (UI)
 
-Same 8-GPU pool. Production policy priority 100; sandbox priority 10. Sandbox
-grant allows adhoc burst to 8.
+Use an 8-GPU pool with one `default` class. Production policy priority 100
+uses a `GPU/default` grant with `reserved: 4`, `limit: 4`. Sandbox policy
+priority 10 uses a `GPU/default` grant with `reserved: 0`, `limit: 8`.
 
 ### Flow
 
 1. Sandbox step holds 6 GPUs (`reclaim_tolerance` default `any` on isolated step).
-2. Production submits needing 4 GPUs; reserved has headroom but adhoc is tight.
+2. Production submits needing 4 GPUs; its reserved share has headroom but raw
+   class capacity is tight.
 3. Reconciler preempts sandbox victims (lower priority, reclaimable).
 4. Production allocates; sandbox re-queues if retries configured.
 
@@ -434,8 +438,9 @@ when you define a custom descriptor and declare pool capacity for it.
 
 ### Admin (UI)
 
-Descriptor `training-license`. Pool class quantity 4. Policy grant reserved 2,
-limit 4 for the orchestrator.
+Descriptor `training-license`. Pool class `default` quantity 4. Policy grant
+uses `class_name: "default"`, `reserved: 2`, and `limit: 4` for the
+orchestrator.
 
 ### Author
 

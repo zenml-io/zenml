@@ -149,7 +149,7 @@ Each policy carries one or more grant line items:
 | Grant field | Meaning |
 | --- | --- |
 | `resource` | Descriptor name |
-| `classes` | Which capacity classes this grant covers (for example `["reserved", "adhoc"]`) |
+| `class_name` | Exactly one pool-local capacity class this grant covers (for example `reserved`) |
 | `reserved` | Guaranteed slice; non-reclaimable requests must fit here |
 | `limit` | Hard ceiling; omit or set null to track current pool capacity |
 
@@ -162,15 +162,26 @@ Policy-level fields:
 | `grants` | Grant list; empty list = grantless (admit to all pool capacity) |
 
 {% hint style="warning" %}
-Each grant covers one descriptor by name. If a step's request includes a demand
-(for example `kind: cpu`, `kind: memory`, or `kind: step_run`) that is not
-covered by any grant on the policy, the request is rejected — even when the
-pool has free capacity. Grantless policies skip per-resource grants but still
-require every demand to match a resource declared in the pool.
+Each grant covers one descriptor and one class. If a subject may use the same
+resource in multiple classes, configure one grant per class. If a step's
+request includes a demand (for example `kind: cpu`, `kind: memory`, or
+`kind: step_run`) that is not covered by any grant on the policy, the request
+is rejected — even when the pool has free capacity. Grantless policies skip
+per-resource grants but still require every demand to match a resource declared
+in the pool.
 
 Requests with `reclaim_tolerance: none` must fit within a grant's `reserved`
 amount for each demand. If reserved is 0 or the grant omits that resource, the
 request is rejected immediately.
+{% endhint %}
+
+{% hint style="warning" %}
+Reservations are validated against pool capacity per resource and class. For a
+given pool, resource, and `class_name`, the sum of `reserved` across all
+policies attached to that pool cannot exceed the matching capacity bucket. For
+example, if `datacenter-gpus` has `GPU/reserved` capacity `8`, all policy
+grants for `GPU` with `class_name: "reserved"` on that pool can reserve at most
+8 total.
 {% endhint %}
 
 {% hint style="warning" %}
