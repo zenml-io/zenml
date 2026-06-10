@@ -75,8 +75,8 @@ def _check_basic_exec(sandbox) -> None:
     print("\n[1/5] Basic exec + stream")
     with sandbox.create_session(
         settings=ModalSandboxSettings(
-            environment={"ZENML_SANDBOX_SMOKE": "1"},
-            timeout_seconds=600,
+            sandbox_environment={"ZENML_SANDBOX_SMOKE": "1"},
+            timeout=600,
         )
     ) as session:
         print(f"   Session id: {session.id}")
@@ -148,7 +148,7 @@ def _check_snapshot_restore(sandbox) -> None:
             ],
         )
         assert code == 0 and out == ["snapshot-payload"]
-        snap = original.snapshot()
+        snap = original.create_snapshot()
         print(f"   snapshot ref: {snap.ref}")
 
     with sandbox.restore(snap) as restored:
