@@ -585,8 +585,11 @@ class TestProcessDemux:
         assert opened.wait(timeout=2.0)
         proc.kill()
         # kill() must unblock wait(); no exit frame ever arrived, so this
-        # surfaces as an error rather than a bogus exit code 0.
-        with pytest.raises(SandboxExecError, match="without an exit frame"):
+        # surfaces as a precise killed-stream error rather than a bogus
+        # exit code 0 or a vague truncation message.
+        with pytest.raises(
+            SandboxExecError, match=r"killed via kill\(\) or session close\(\)"
+        ):
             proc.wait(timeout=2.0)
         proc._pump.join(timeout=2.0)
         assert not proc._pump.is_alive()
@@ -768,6 +771,24 @@ class TestSessionLifecycle:
         session.destroy()  # retry succeeds
         assert session.closed is True
 
+    def test_destroy_succeeds_when_sandbox_already_gone(self) -> None:
+        # A 404/410 on DELETE means the sandbox already expired (TTL) or
+        # was destroyed before — the desired end state, so destroy() must
+        # succeed and close the handle instead of raising forever.
+        for status in (404, 410):
+
+            def handler(
+                request: httpx.Request, s: int = status
+            ) -> httpx.Response:
+                if request.method == "DELETE":
+                    return httpx.Response(s, text="gone")
+                return httpx.Response(204)
+
+            client = _make_client(handler)
+            session = _make_session(client)
+            session.destroy()
+            assert session.closed is True
+
     def test_close_kills_unfinished_exec_streams(self) -> None:
         # close() must not leave the local SSE response + pump thread
         # alive for a still-running command; the remote command keeps
@@ -795,14 +816,14 @@ class TestSessionLifecycle:
 
 
 class TestComponent:
-    def _make_component(self) -> CloudflareSandbox:
+    def _make_component(self, **config_kwargs: Any) -> CloudflareSandbox:
         from datetime import datetime
 
         return CloudflareSandbox(
             name="cf-sandbox",
             id=uuid4(),
             config=CloudflareSandboxConfig(
-                worker_url=WORKER_URL, api_key=API_KEY
+                worker_url=WORKER_URL, api_key=API_KEY, **config_kwargs
             ),
             flavor="cloudflare",
             type=StackComponentType.SANDBOX,
@@ -882,6 +903,36 @@ class TestComponent:
         component._client = _make_client(handler)
         sess = component.attach("sb_existing")
         assert sess.id == "sb_existing"
+
+    def test_attach_with_env_creates_bridge_session(self) -> None:
+        # attach() must restore sandbox_environment the same way
+        # create_session does: via an owned bridge session, not silently
+        # dropping it.
+        captured: Dict[str, Any] = {}
+        calls: List[str] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            calls.append(f"{request.method} {request.url.path}")
+            if request.url.path == "/v1/sandbox/sb_existing/running":
+                return httpx.Response(200, json={"running": True})
+            if request.url.path == "/v1/sandbox/sb_existing/session":
+                if request.method == "POST":
+                    captured["body"] = json.loads(request.content.decode())
+                    return httpx.Response(200, json={"id": "sess_att"})
+            if request.url.path.startswith("/v1/sandbox/sb_existing/session/"):
+                return httpx.Response(204)
+            return httpx.Response(404)
+
+        component = self._make_component(sandbox_environment={"K": "V"})
+        component._client = _make_client(handler)
+        sess = component.attach("sb_existing")
+        assert isinstance(sess, CloudflareSandboxSession)
+        assert captured["body"] == {"env": {"K": "V"}}
+        assert sess._bridge_session_id == "sess_att"
+        # The attached session owns the bridge session and deletes it on
+        # close.
+        sess.close()
+        assert "DELETE /v1/sandbox/sb_existing/session/sess_att" in calls
 
     def test_attach_not_running_raises(self) -> None:
         def handler(request: httpx.Request) -> httpx.Response:

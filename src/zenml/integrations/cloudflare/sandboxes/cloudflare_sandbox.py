@@ -357,10 +357,16 @@ class _CloudflareBridgeClient:
     def delete_sandbox(self, sandbox_id: str) -> None:
         """Delete a sandbox.
 
+        A 404/410 means the sandbox is already gone (TTL expiry, double
+        destroy) — the desired end state, so it counts as success rather
+        than a failure that destroy() would retry forever.
+
         Args:
             sandbox_id: The sandbox to delete.
         """
-        self._request("DELETE", f"/v1/sandbox/{sandbox_id}")
+        self._request(
+            "DELETE", f"/v1/sandbox/{sandbox_id}", ok_statuses=(404, 410)
+        )
 
     def is_running(self, sandbox_id: str) -> bool:
         """Check whether the given sandbox is still alive.
@@ -686,8 +692,9 @@ class CloudflareSandboxProcess(SandboxProcess):
         Raises:
             TimeoutError: If ``timeout`` elapsed before the bridge sent an
                 ``exit`` frame.
-            SandboxExecError: If the pump captured an error or the stream
-                ended without an exit frame.
+            SandboxExecError: If the pump captured an error, the stream was
+                killed via ``kill()``/``close()``, or it ended without an
+                exit frame.
         """
         completed = self._done.wait(timeout)
         if not completed:
@@ -704,12 +711,18 @@ class CloudflareSandboxProcess(SandboxProcess):
                 f"Bridge SSE pump failed: {pump_err}"
             ) from pump_err
         if self._exit_code is None:
+            if self._killed.is_set():
+                raise SandboxExecError(
+                    "exec stream was killed via kill() or session close(); "
+                    "the command may keep running on Cloudflare until "
+                    "timeout_ms"
+                )
             # Stream ended cleanly but no exit frame arrived (truncated
-            # SSE, killed via kill(), bridge stalled out). Surface this
-            # as a failure rather than returning a bogus 0.
+            # SSE, bridge stalled out). Surface this as a failure rather
+            # than returning a bogus 0.
             raise SandboxExecError(
                 "Cloudflare exec finished without an exit frame; the bridge "
-                "stream may have been truncated, killed, or stalled."
+                "stream may have been truncated or stalled."
             )
         return self._exit_code
 
@@ -906,11 +919,11 @@ class CloudflareSandboxSession(SandboxSession):
                 self._owns_bridge_session = False
                 self._bridge_session_id = None
 
-    def destroy(self) -> None:
+    def _destroy(self) -> None:
         """Terminate the sandbox on Cloudflare.
 
-        The handle is only closed after successful deletion — on failure
-        it stays open so destroy() can be retried.
+        Raising on failure keeps the handle open (the base ``destroy()``
+        only closes after this hook succeeds), so destroy() can be retried.
 
         Raises:
             RuntimeError: If the bridge fails to delete the sandbox.
@@ -923,7 +936,6 @@ class CloudflareSandboxSession(SandboxSession):
                 f"{e}. It may keep running until the bridge's TTL; retry "
                 "destroy() to terminate it."
             ) from e
-        self.close()
 
 
 class CloudflareSandbox(BaseSandbox):
@@ -1046,7 +1058,10 @@ class CloudflareSandbox(BaseSandbox):
             session_id: The bridge sandbox id to attach to.
 
         Returns:
-            A ``CloudflareSandboxSession`` with no bridge-side session id.
+            A ``CloudflareSandboxSession``. If the resolved settings carry
+            ``sandbox_environment``, a fresh bridge session scopes that env
+            to the new handle (which owns and later deletes it), mirroring
+            ``create_session``.
 
         Raises:
             RuntimeError: If the bridge reports the sandbox as not running.
@@ -1057,11 +1072,20 @@ class CloudflareSandbox(BaseSandbox):
                 f"Cloudflare sandbox '{session_id}' is not running."
             )
         eff = cast(CloudflareSandboxSettings, self.resolve_settings(None))
+        env = self._resolve_session_environment(eff)
+        # Unlike create_session, a bridge-session failure here needs no
+        # sandbox cleanup: the sandbox pre-exists and must keep running,
+        # so the error simply propagates and nothing leaks.
+        bridge_session_id: Optional[str] = None
+        if env:
+            bridge_session_id = client.create_bridge_session(
+                session_id, env=env
+            )
         return CloudflareSandboxSession(
             session_id,
             client=client,
             parent=self,
-            bridge_session_id=None,
+            bridge_session_id=bridge_session_id,
             default_cwd=eff.cwd,
             default_timeout_ms=eff.timeout_ms,
         )
