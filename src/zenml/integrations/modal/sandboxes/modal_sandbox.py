@@ -121,27 +121,19 @@ class ModalSandboxProcess(SandboxProcess):
         return int(self._process.returncode or 0)
 
     def kill(self) -> None:
-        """Best-effort process termination."""
-        # Modal's ContainerProcess does not expose a per-command kill —
-        # only wait / poll / stdin / stdout / stderr / attach. Sending
-        # EOF on stdin lets well-behaved processes exit. For a hard
-        # kill, call ModalSandboxSession.destroy().
-        try:
-            if self._process.stdin is not None:
-                self._process.stdin.write_eof()
-                self._process.stdin.drain()
-            logger.info(
-                "Modal has no per-command kill; sent EOF on stdin instead. "
-                "Use session.destroy() to force-terminate the whole Sandbox."
-            )
-        except Exception as e:
-            logger.warning(
-                "Closing Modal process stdin during kill() failed: %s. "
-                "The process may still be running; use session.destroy() "
-                "to force-terminate the whole Sandbox.",
-                e,
-                exc_info=True,
-            )
+        """Terminate the owning Modal Sandbox.
+
+        Modal's ``ContainerProcess`` exposes no per-command kill, so the
+        only way to honor the ``SandboxProcess.kill()`` contract (the
+        command must actually stop) is to terminate the whole Sandbox.
+        """
+        session = cast("ModalSandboxSession", self._session)
+        logger.warning(
+            "Modal has no per-command kill; terminating the whole Modal "
+            "sandbox '%s' to stop the command.",
+            session.id,
+        )
+        session._sandbox.terminate()
 
     @property
     def exit_code(self) -> Optional[int]:
@@ -458,7 +450,7 @@ class ModalSandbox(BaseSandbox):
         eff = cast(ModalSandboxSettings, self.resolve_settings(None))
         modal_client = self._modal_client_factory.get_client()
         try:
-            image = modal.Image.from_id(snapshot.ref)
+            image = modal.Image.from_id(snapshot.ref, client=modal_client)
             # Env vars are runtime config, not filesystem state, so the
             # snapshot image doesn't carry them — re-apply the resolved
             # session environment on restore.

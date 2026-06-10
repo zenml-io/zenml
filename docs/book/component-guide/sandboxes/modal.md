@@ -34,7 +34,7 @@ zenml sandbox register my-modal-sandbox \
     --app_name=my-agent-app
 ```
 
-Add env vars and ZenML-stored secrets that should land in every Session at the standard component level — see the [Environment Variables docs](https://docs.zenml.io/concepts/environment-variables#configuring-environment-variables-on-stack-components):
+Component-level `--env` and ZenML-stored `--secret` values are injected into your **step process** environment (where your agent framework runs), not into the sandbox container — see the [Environment Variables docs](https://docs.zenml.io/concepts/environment-variables#configuring-environment-variables-on-stack-components). Env vars for code running *inside* the sandbox go through the `sandbox_environment` setting instead:
 
 ```bash
 zenml sandbox register my-modal-sandbox --flavor=modal ... \
@@ -91,11 +91,16 @@ from zenml.client import Client
 def agent_step(prompt: str) -> str:
     sandbox = Client().active_stack.sandbox
     with sandbox.create_session() as session:
-        process = session.exec(["python", "-c", "print(2 + 2)"])
-        out = "".join(process.stdout())
-        process.wait()
-        return out
+        try:
+            process = session.exec(["python", "-c", "print(2 + 2)"])
+            out = "".join(process.stdout())
+            process.wait()
+            return out
+        finally:
+            session.destroy()
 ```
+
+`close()` (called by the `with` block) intentionally keeps the sandbox alive so you can `attach()` to it later — call `session.destroy()` when you're done, or the sandbox keeps billing until the `timeout` TTL kicks in as the backstop.
 
 ### Snapshots and restore
 
@@ -118,4 +123,5 @@ If your agent needs to preserve in-memory state across runs, prefer [`attach()`]
 
 - Modal sandbox env vars remain **readable from inside the Session** by any code the agent runs. The [Sandbox Auth Proxy pattern](README.md#security-considerations) is on the roadmap; until it lands, treat sandbox env as agent-visible.
 - `session.close()` is a no-op (Modal Sandbox is a stateless client handle); use `session.destroy()` to force-terminate, or let Modal's `timeout` expire.
+- `process.kill()` terminates the **whole Sandbox**, not just the one command — Modal exposes no per-command kill.
 - `restore()` always returns a **new** Sandbox with a new id. The original `id` is unaffected; if you need id stability across runs, use `attach()` with a persisted session id instead.

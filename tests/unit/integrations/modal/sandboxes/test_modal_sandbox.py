@@ -221,20 +221,23 @@ class TestModalSandboxProcess:
                 timeout=5.0
             )
 
-    def test_kill_sends_eof_on_stdin(self) -> None:
+    def test_kill_terminates_owning_sandbox(self) -> None:
+        # Modal has no per-command kill, so kill() must terminate the
+        # whole Sandbox to honor the SandboxProcess.kill() contract.
+        fake_sandbox = MagicMock(object_id="sb_xyz")
+        session = _make_session(fake_sandbox)
         fake = MagicMock()
-        session = _make_session(MagicMock(object_id="sb_xyz"))
         ModalSandboxProcess(fake, session=session, started_at=0.0).kill()
-        fake.stdin.write_eof.assert_called_once()
-        fake.stdin.drain.assert_called_once()
+        fake_sandbox.terminate.assert_called_once()
 
-    def test_kill_tolerates_stdin_close_failure(self) -> None:
+    def test_kill_does_not_use_per_command_stdin(self) -> None:
+        # kill() must not fall back to a stdin-EOF nudge, which leaves
+        # ill-behaved commands running until the sandbox TTL.
+        fake_sandbox = MagicMock(object_id="sb_xyz")
+        session = _make_session(fake_sandbox)
         fake = MagicMock()
-        fake.stdin.write_eof.side_effect = RuntimeError("already closed")
-        session = _make_session(MagicMock(object_id="sb_xyz"))
-        ModalSandboxProcess(
-            fake, session=session, started_at=0.0
-        ).kill()  # no raise
+        ModalSandboxProcess(fake, session=session, started_at=0.0).kill()
+        fake.stdin.write_eof.assert_not_called()
 
 
 # ---------------------------------------------------------------------------
@@ -372,9 +375,32 @@ class TestModalSandbox:
             sandbox = _make_modal_sandbox()
             snap = SandboxSnapshot(sandbox_id=sandbox.id, ref="im-old")
             session = sandbox.restore(snap)
-        modal_mock.Image.from_id.assert_called_once_with("im-old")
+        modal_mock.Image.from_id.assert_called_once_with("im-old", client=None)
         modal_mock.Sandbox.create.assert_called_once()
         assert session.id == "sb_new"
+
+    def test_restore_uses_configured_modal_client(self) -> None:
+        # restore() must load the snapshot Image with the client built from
+        # the component's token_id/token_secret, not Modal's ambient auth.
+        with _patch_modal() as modal_mock:
+            fake_client = MagicMock()
+            fake_client.is_closed.return_value = False
+            modal_mock.Client.from_credentials.return_value = fake_client
+            modal_mock.App.lookup.return_value = MagicMock()
+            modal_mock.Image.from_id.return_value = MagicMock()
+            modal_mock.Sandbox.create.return_value = MagicMock(
+                object_id="sb_new"
+            )
+            sandbox = _make_modal_sandbox(
+                config=ModalSandboxConfig(
+                    token_id="ak-test", token_secret="as-test"
+                )
+            )
+            snap = SandboxSnapshot(sandbox_id=sandbox.id, ref="im-old")
+            sandbox.restore(snap)
+        modal_mock.Image.from_id.assert_called_once_with(
+            "im-old", client=fake_client
+        )
 
     def test_restore_reapplies_session_environment(self) -> None:
         # Env vars are runtime config, not filesystem state — the snapshot
