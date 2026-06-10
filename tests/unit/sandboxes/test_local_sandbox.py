@@ -352,6 +352,19 @@ class TestCloseAndDestroy:
         session.destroy()
         assert not os.path.isdir(workdir)
 
+    def test_close_releases_pipe_fds(self) -> None:
+        # The session close is terminal: the streams of every tracked
+        # process are over, so their pipe file objects must be closed.
+        session = _make_local_sandbox().create_session()
+        proc = session.exec([sys.executable, "-c", "print('hi')"])
+        popen = proc._process  # type: ignore[attr-defined]
+        proc.collect()
+        assert popen.stdout is not None and not popen.stdout.closed
+        assert popen.stderr is not None and not popen.stderr.closed
+        session.close()
+        assert popen.stdout.closed
+        assert popen.stderr.closed
+
     def test_close_terminates_running_processes(self) -> None:
         # A long-running child must not outlive the session: close()
         # terminates anything exec() spawned that is still alive.
@@ -361,6 +374,54 @@ class TestCloseAndDestroy:
         assert popen.poll() is None
         session.close()
         assert popen.poll() is not None
+
+
+class TestNoFdLeakAcrossExecs:
+    """Regression tests for the per-exec file descriptor leak.
+
+    Before the prune fix, every exec left its two pipe file objects
+    open and its `Popen` tracked forever: 100 collect()ed execs grew
+    /proc/self/fd by 200 and long-lived agent-loop sessions eventually
+    hit EMFILE.
+    """
+
+    def test_exec_prunes_exited_processes(self) -> None:
+        sandbox = _make_local_sandbox()
+        with sandbox.create_session() as session:
+            first = session.exec([sys.executable, "-c", "pass"])
+            first.collect()
+            first_popen = first._process  # type: ignore[attr-defined]
+            session.exec([sys.executable, "-c", "pass"]).collect()
+            assert first_popen not in session._processes  # type: ignore[attr-defined]
+            assert first_popen.stdout.closed
+            assert first_popen.stderr.closed
+
+    def test_exec_keeps_running_processes_tracked(self) -> None:
+        sandbox = _make_local_sandbox()
+        with sandbox.create_session() as session:
+            running = session.exec(["sleep", "3600"])
+            running_popen = running._process  # type: ignore[attr-defined]
+            session.exec([sys.executable, "-c", "pass"]).collect()
+            assert running_popen in session._processes  # type: ignore[attr-defined]
+            assert not running_popen.stdout.closed
+            assert not running_popen.stderr.closed
+
+    def test_fd_count_does_not_grow_linearly(self) -> None:
+        fd_dir = "/proc/self/fd"
+        if not os.path.isdir(fd_dir):
+            pytest.skip("requires /proc to count open file descriptors")
+
+        sandbox = _make_local_sandbox()
+        with sandbox.create_session() as session:
+            session.exec([sys.executable, "-c", "pass"]).collect()
+            baseline = len(os.listdir(fd_dir))
+            for _ in range(20):
+                session.exec([sys.executable, "-c", "print('x')"]).collect()
+            after = len(os.listdir(fd_dir))
+
+        # Without pruning, 20 execs leak 40 fds. Allow slack for the
+        # last (not yet pruned) process and incidental fd churn.
+        assert after - baseline <= 6
 
 
 class TestOptionalMethods:
