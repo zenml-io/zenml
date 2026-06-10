@@ -62,7 +62,7 @@ class _FakeProcess(SandboxProcess):
 
 
 class _FakeSession(SandboxSession):
-    """Minimal SandboxSession for testing. Only implements `exec` + `close`."""
+    """Minimal SandboxSession for testing. Only implements `exec` + `_close`."""
 
     def __init__(
         self,
@@ -84,9 +84,8 @@ class _FakeSession(SandboxSession):
     ) -> SandboxProcess:
         return _FakeProcess()
 
-    def close(self) -> None:
+    def _close(self) -> None:
         self.closed = True
-        self._close_logging_context()
 
 
 class _FakeSandbox(BaseSandbox):
@@ -180,11 +179,20 @@ class TestSessionContextManager:
             assert session.closed is False
         assert session.closed is True
 
+    def test_direct_close_flushes_log_ctx(self) -> None:
+        # Users may call close() without the context manager; the logging
+        # context must not leak in that path either.
+        session = _FakeSession()
+        with patch.object(session, "_close_logging_context") as fake_close_log:
+            session.close()
+        assert session.closed is True
+        fake_close_log.assert_called_once()
+
     def test_exit_flushes_log_ctx_when_close_raises(self) -> None:
-        # The base __exit__ must call _close_logging_context() even when the
-        # subclass close() raises. That's the W5 fix: log cleanup is
-        # base-owned, not delegated to subclasses that may forget or
-        # error out before reaching the call.
+        # The base close() must call _close_logging_context() even when
+        # the flavor _close() hook raises: log cleanup is base-owned, not
+        # delegated to subclasses that may forget or error out before
+        # reaching the call.
         class _RaisingSession(SandboxSession):
             def __init__(self) -> None:
                 super().__init__(
@@ -201,7 +209,7 @@ class TestSessionContextManager:
             ) -> SandboxProcess:
                 return _FakeProcess()
 
-            def close(self) -> None:
+            def _close(self) -> None:
                 raise RuntimeError("close failed")
 
         session = _RaisingSession()
