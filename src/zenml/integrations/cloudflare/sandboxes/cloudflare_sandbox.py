@@ -867,32 +867,22 @@ class CloudflareSandboxSession(SandboxSession):
         with open(local_path, "wb") as f:
             f.write(data)
 
-    def close(self) -> None:
+    def _close(self) -> None:
         """Release bridge-session state, if any. The sandbox keeps running."""
-        try:
-            if (
-                self._owns_bridge_session
-                and self._bridge_session_id is not None
-            ):
-                try:
-                    self._client.delete_bridge_session(
-                        self._sandbox_id, self._bridge_session_id
-                    )
-                except Exception as e:
-                    logger.debug(
-                        "Failed to delete bridge session %s: %s",
-                        self._bridge_session_id,
-                        e,
-                    )
-                finally:
-                    self._owns_bridge_session = False
-                    self._bridge_session_id = None
-        finally:
-            # Users may call close() directly instead of using the session as
-            # a context manager, in which case __exit__ never runs and the
-            # logging context would otherwise stay open. _close_logging_context
-            # is idempotent, so the second call from __exit__ is a no-op.
-            self._close_logging_context()
+        if self._owns_bridge_session and self._bridge_session_id is not None:
+            try:
+                self._client.delete_bridge_session(
+                    self._sandbox_id, self._bridge_session_id
+                )
+            except Exception as e:
+                logger.debug(
+                    "Failed to delete bridge session %s: %s",
+                    self._bridge_session_id,
+                    e,
+                )
+            finally:
+                self._owns_bridge_session = False
+                self._bridge_session_id = None
 
     def destroy(self) -> None:
         """Terminate the sandbox on Cloudflare."""
@@ -906,6 +896,8 @@ class CloudflareSandboxSession(SandboxSession):
                 e,
                 exc_info=True,
             )
+        finally:
+            self.close()
 
 
 class CloudflareSandbox(BaseSandbox):
