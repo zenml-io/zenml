@@ -40,6 +40,10 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
+class SandboxSessionClosedError(RuntimeError):
+    """Raised when a closed sandbox session is used."""
+
+
 class SandboxSession(ABC):
     """Sandbox session."""
 
@@ -57,12 +61,34 @@ class SandboxSession(ABC):
         """
         self.id = id
         self._parent = parent
+        self._closed = False
         self._logging_context: Optional["LoggingContext"] = None
         self._logging_disabled = False
         self._logging_lock = threading.Lock()
         self._publish_sandbox_metadata()
 
-    @abstractmethod
+    @property
+    def closed(self) -> bool:
+        """Whether this session handle has been closed.
+
+        Returns:
+            ``True`` once `close()` or `destroy()` has been called.
+        """
+        return self._closed
+
+    def _ensure_open(self) -> None:
+        """Reject use of a closed session handle.
+
+        Raises:
+            SandboxSessionClosedError: If the session has been closed.
+        """
+        if self._closed:
+            raise SandboxSessionClosedError(
+                f"Sandbox session `{self.id}` has been closed. Create a "
+                "new session (or re-attach to the sandbox) to keep "
+                "interacting with it."
+            )
+
     def exec(
         self,
         command: Union[str, List[str]],
@@ -71,6 +97,28 @@ class SandboxSession(ABC):
         env: Optional[Dict[str, str]] = None,
     ) -> SandboxProcess:
         """Execute a command in the sandbox session.
+
+        Args:
+            command: The command to execute.
+            cwd: Optional working directory override.
+            env: Optional environment variables to set in the environment
+                executing the command.
+
+        Returns:
+            Process handle.
+        """
+        self._ensure_open()
+        return self._exec(command, cwd=cwd, env=env)
+
+    @abstractmethod
+    def _exec(
+        self,
+        command: Union[str, List[str]],
+        *,
+        cwd: Optional[str] = None,
+        env: Optional[Dict[str, str]] = None,
+    ) -> SandboxProcess:
+        """Flavor-specific command execution, called by `exec()`.
 
         Args:
             command: The command to execute.
@@ -103,12 +151,22 @@ class SandboxSession(ABC):
         Returns:
             Process handle.
         """
+        self._ensure_open()
         raise NotImplementedError(
             f"{type(self).__name__} does not support async execution."
         )
 
     def create_snapshot(self) -> SandboxSnapshot:
         """Create a snapshot of the sandbox session.
+
+        Returns:
+            A sandbox snapshot.
+        """
+        self._ensure_open()
+        return self._create_snapshot()
+
+    def _create_snapshot(self) -> SandboxSnapshot:
+        """Flavor-specific snapshot creation, called by `create_snapshot()`.
 
         Raises:
             NotImplementedError: If the sandbox does not support creating
@@ -127,6 +185,16 @@ class SandboxSession(ABC):
         Args:
             local_path: Source path on the caller's filesystem.
             remote_path: Destination path in the sandbox.
+        """
+        self._ensure_open()
+        self._upload_file(local_path, remote_path)
+
+    def _upload_file(self, local_path: str, remote_path: str) -> None:
+        """Flavor-specific file upload, called by `upload_file()`.
+
+        Args:
+            local_path: Source path on the caller's filesystem.
+            remote_path: Destination path in the sandbox.
 
         Raises:
             NotImplementedError: If the sandbox does not support file uploads.
@@ -141,6 +209,16 @@ class SandboxSession(ABC):
         Args:
             remote_path: Source path in the sandbox.
             local_path: Destination path on the caller's filesystem.
+        """
+        self._ensure_open()
+        self._download_file(remote_path, local_path)
+
+    def _download_file(self, remote_path: str, local_path: str) -> None:
+        """Flavor-specific file download, called by `download_file()`.
+
+        Args:
+            remote_path: Source path in the sandbox.
+            local_path: Destination path on the caller's filesystem.
 
         Raises:
             NotImplementedError: If the sandbox does not support file downloads.
@@ -150,12 +228,17 @@ class SandboxSession(ABC):
         )
 
     def close(self) -> None:
-        """Close the sandbox session handle.
+        """Close the sandbox session handle. Terminal and idempotent.
 
-        For remote sandboxes, this does not terminate the sandbox on the
-        provider. The sandbox will keep running until its TTL expires or
-        `destroy()` is called.
+        After closing, the session handle rejects further use (`exec`,
+        snapshots, file transfer) — re-attach to the sandbox for a fresh
+        handle. For remote sandboxes, closing does not terminate the
+        sandbox on the provider: it keeps running until its TTL expires
+        or `destroy()` is called.
         """
+        if self._closed:
+            return
+        self._closed = True
         try:
             self._close()
         finally:

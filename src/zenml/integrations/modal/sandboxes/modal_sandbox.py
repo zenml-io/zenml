@@ -175,7 +175,7 @@ class ModalSandboxSession(SandboxSession):
         """
         return cast(Optional[str], self._sandbox.get_dashboard_url())
 
-    def exec(
+    def _exec(
         self,
         command: Union[str, List[str]],
         *,
@@ -224,7 +224,7 @@ class ModalSandboxSession(SandboxSession):
             process, session=self, started_at=started_at
         )
 
-    def create_snapshot(self) -> SandboxSnapshot:
+    def _create_snapshot(self) -> SandboxSnapshot:
         """Capture the Sandbox's filesystem as a reusable Modal Image.
 
         Returns:
@@ -234,7 +234,7 @@ class ModalSandboxSession(SandboxSession):
         image = self._sandbox.snapshot_filesystem()
         return SandboxSnapshot(sandbox_id=self._parent.id, ref=image.object_id)
 
-    def upload_file(self, local_path: str, remote_path: str) -> None:
+    def _upload_file(self, local_path: str, remote_path: str) -> None:
         """Upload a local file into the Sandbox.
 
         Args:
@@ -243,7 +243,7 @@ class ModalSandboxSession(SandboxSession):
         """
         self._sandbox.filesystem.copy_from_local(local_path, remote_path)
 
-    def download_file(self, remote_path: str, local_path: str) -> None:
+    def _download_file(self, remote_path: str, local_path: str) -> None:
         """Download a file from the Sandbox to local storage.
 
         Args:
