@@ -63,18 +63,25 @@ def prep_step() -> Annotated[SandboxSnapshot, "scientific_image"]:
         RuntimeError: If the install fails.
     """
     with _active_sandbox().create_session() as session:
-        out = session.exec(
-            [
-                "bash",
-                "-lc",
-                f"pip install --quiet --no-cache-dir {_PYTHON_DEPS}",
-            ]
-        ).collect()
-        if out.exit_code != 0:
-            raise RuntimeError(
-                f"Failed to install deps (exit {out.exit_code}): {out.stderr}"
-            )
-        return session.create_snapshot()
+        # Destroy the sandbox once the snapshot is taken: close() only
+        # detaches the handle and would leave the sandbox billing until
+        # its TTL expires.
+        try:
+            out = session.exec(
+                [
+                    "bash",
+                    "-lc",
+                    f"pip install --quiet --no-cache-dir {_PYTHON_DEPS}",
+                ]
+            ).collect()
+            if out.exit_code != 0:
+                raise RuntimeError(
+                    f"Failed to install deps (exit {out.exit_code}): "
+                    f"{out.stderr}"
+                )
+            return session.create_snapshot()
+        finally:
+            session.destroy()
 
 
 @step(enable_cache=False)
@@ -104,7 +111,10 @@ def subagent_step(
         The subagent's final natural-language answer.
     """
     with _active_sandbox().restore(snapshot) as session:
-        return run_agent_in_session(session, subtask)
+        try:
+            return run_agent_in_session(session, subtask)
+        finally:
+            session.destroy()
 
 
 @step(enable_cache=False)
