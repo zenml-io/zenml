@@ -70,6 +70,8 @@ class PipelineConfigurationUpdate(FrozenBaseModel):
     success_hook_source: Optional[StringSerializableSource] = None
     start_hook_source: Optional[StringSerializableSource] = None
     end_hook_source: Optional[StringSerializableSource] = None
+    pause_hook_source: Optional[StringSerializableSource] = None
+    resume_hook_source: Optional[StringSerializableSource] = None
     init_hook_source: Optional[StringSerializableSource] = None
     init_hook_kwargs: Optional[Dict[str, Any]] = None
     cleanup_hook_source: Optional[StringSerializableSource] = None

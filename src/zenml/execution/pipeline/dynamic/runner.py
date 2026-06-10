@@ -771,6 +771,11 @@ class DynamicPipelineRunner:
 
         with logs_context:
             run_start_hook = False
+            run_resume_hook = self._run.status in {
+                ExecutionStatus.RESUMING,
+                ExecutionStatus.PAUSED,
+            }
+
             if self._run.status.is_finished:
                 logger.info("Run `%s` is already finished.", str(self._run.id))
                 return
@@ -833,6 +838,11 @@ class DynamicPipelineRunner:
                     run_lifecycle_hook(
                         self._snapshot.pipeline_configuration.start_hook_source,
                         HookType.RUN_START,
+                    )
+                elif run_resume_hook:
+                    run_lifecycle_hook(
+                        self._snapshot.pipeline_configuration.resume_hook_source,
+                        HookType.RUN_RESUME,
                     )
 
                 if not self._run.triggered_by_deployment:
@@ -922,8 +932,13 @@ class DynamicPipelineRunner:
             self._publish_run_status(return_value=return_value)
             # A completed run fires end then success. A concurrent stop can
             # resolve the run to a terminal, non-completed status, which fires
-            # the end hook only.
-            if self._run.status.is_finished:
+            # the end hook only. A paused run fires the pause hook instead.
+            if self._run.status == ExecutionStatus.PAUSED:
+                run_lifecycle_hook(
+                    self._snapshot.pipeline_configuration.pause_hook_source,
+                    HookType.RUN_PAUSE,
+                )
+            elif self._run.status.is_finished:
                 self._fire_terminal_run_hooks(self._run.status)
         except Exception as e:
             # Publish failed for some reason (e.g., invalid return value).

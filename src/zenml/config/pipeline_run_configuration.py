@@ -142,6 +142,16 @@ class PipelineRunConfiguration(
         "each step as a default. Dynamic pipelines run it once at the run "
         "level.",
     )
+    pause_hook_source: Optional[StringSerializableSource] = Field(
+        default=None,
+        description="Pause hook source. Static pipelines ignore it. Dynamic "
+        "pipelines run it once at the run level when the run pauses.",
+    )
+    resume_hook_source: Optional[StringSerializableSource] = Field(
+        default=None,
+        description="Resume hook source. Static pipelines ignore it. Dynamic "
+        "pipelines run it once at the run level when a paused run resumes.",
+    )
     substitutions: Optional[Dict[str, str]] = Field(
         default=None, description="The substitutions for the pipeline run."
     )

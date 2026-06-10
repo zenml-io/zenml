@@ -149,6 +149,8 @@ class HookType(StrEnum):
     RUN_SUCCESS = "run_success"
     RUN_FAILURE = "run_failure"
     RUN_END = "run_end"
+    RUN_PAUSE = "run_pause"
+    RUN_RESUME = "run_resume"
     STEP_START = "step_start"
     STEP_END = "step_end"
     STEP_SUCCESS = "step_success"

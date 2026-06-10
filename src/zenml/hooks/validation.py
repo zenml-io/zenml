@@ -107,6 +107,8 @@ def resolve_and_validate_hook(
             "- the on_start hook takes no arguments\n"
             "- the on_end hook optionally takes a single `BaseException`"
             " argument\n"
+            "- the on_pause hook takes no arguments\n"
+            "- the on_resume hook takes no arguments\n"
             "- the init hook takes any number of JSON-safe arguments\n"
             "- the cleanup hook takes no arguments\n"
         ) from e

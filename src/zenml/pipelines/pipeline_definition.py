@@ -150,6 +150,8 @@ class Pipeline:
         on_success: Optional["HookSpecification"] = None,
         on_start: Optional["HookSpecification"] = None,
         on_end: Optional["HookSpecification"] = None,
+        on_pause: Optional["HookSpecification"] = None,
+        on_resume: Optional["HookSpecification"] = None,
         on_init: Optional["InitHookSpecification"] = None,
         on_init_kwargs: Optional[Dict[str, Any]] = None,
         on_cleanup: Optional["HookSpecification"] = None,
@@ -196,6 +198,12 @@ class Pipeline:
                 optional `BaseException`, or a source path to one. Static
                 pipelines propagate it to each step as a default. Dynamic
                 pipelines run it once at the run level.
+            on_pause: Hook run when the run pauses. A no-arg callable, or a
+                source path to one. Static pipelines ignore it. Dynamic
+                pipelines run it once at the run level.
+            on_resume: Hook run when a paused run resumes. A no-arg callable,
+                or a source path to one. Static pipelines ignore it. Dynamic
+                pipelines run it once at the run level.
             on_init: Callback function to run on initialization of the pipeline.
                 Can be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`) if the function returns a
@@ -234,6 +242,8 @@ class Pipeline:
                 on_success=on_success,
                 on_start=on_start,
                 on_end=on_end,
+                on_pause=on_pause,
+                on_resume=on_resume,
                 on_init=on_init,
                 on_init_kwargs=on_init_kwargs,
                 on_cleanup=on_cleanup,
@@ -384,6 +394,8 @@ class Pipeline:
         on_success: Optional["HookSpecification"] = None,
         on_start: Optional["HookSpecification"] = None,
         on_end: Optional["HookSpecification"] = None,
+        on_pause: Optional["HookSpecification"] = None,
+        on_resume: Optional["HookSpecification"] = None,
         on_init: Optional["InitHookSpecification"] = None,
         on_init_kwargs: Optional[Dict[str, Any]] = None,
         on_cleanup: Optional["HookSpecification"] = None,
@@ -439,6 +451,12 @@ class Pipeline:
                 optional `BaseException`, or a source path to one. Static
                 pipelines propagate it to each step as a default. Dynamic
                 pipelines run it once at the run level.
+            on_pause: Hook run when the run pauses. A no-arg callable, or a
+                source path to one. Static pipelines ignore it. Dynamic
+                pipelines run it once at the run level.
+            on_resume: Hook run when a paused run resumes. A no-arg callable,
+                or a source path to one. Static pipelines ignore it. Dynamic
+                pipelines run it once at the run level.
             on_init: Callback function to run on initialization of the pipeline.
                 Can be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`) if the function returns a
@@ -489,6 +507,16 @@ class Pipeline:
         if on_end:
             # string of on_end hook function to be used for this pipeline
             end_hook_source, _ = resolve_and_validate_hook(on_end, Exception())
+
+        pause_hook_source = None
+        if on_pause:
+            # string of on_pause hook function to be used for this pipeline
+            pause_hook_source, _ = resolve_and_validate_hook(on_pause)
+
+        resume_hook_source = None
+        if on_resume:
+            # string of on_resume hook function to be used for this pipeline
+            resume_hook_source, _ = resolve_and_validate_hook(on_resume)
 
         init_hook_kwargs = None
         init_hook_source = None
@@ -541,6 +569,8 @@ class Pipeline:
                 "success_hook_source": success_hook_source,
                 "start_hook_source": start_hook_source,
                 "end_hook_source": end_hook_source,
+                "pause_hook_source": pause_hook_source,
+                "resume_hook_source": resume_hook_source,
                 "init_hook_source": init_hook_source,
                 "init_hook_kwargs": init_hook_kwargs,
                 "cleanup_hook_source": cleanup_hook_source,

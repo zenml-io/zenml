@@ -12,8 +12,8 @@ failure, logging run details, and triggering external workflows.
 
 ## Lifecycle hooks
 
-There are four lifecycle hooks at each scope. They fire automatically and each
-fire creates one `HookInvocation` row.
+Lifecycle hooks fire automatically and each fire creates one `HookInvocation`
+row.
 
 | Hook | Step scope | Pipeline scope (dynamic) |
 |---|---|---|
@@ -21,6 +21,8 @@ fire creates one `HookInvocation` row.
 | `on_end` | Each execution attempt, regardless of outcome | Once when the run reaches a terminal state |
 | `on_success` | Once when the step completes successfully | Once when the run completes successfully |
 | `on_failure` | Once when the step fails terminally | Once when the run fails |
+| `on_pause` | — | Once when the run pauses |
+| `on_resume` | — | Once when a paused run resumes |
 
 Step-level hooks fire for both static and dynamic pipelines, uniformly.
 
@@ -35,6 +37,8 @@ on whether the pipeline is dynamic.
 | `on_success` | Propagates to each step's `on_success` default | Fires once at the pipeline level |
 | `on_failure` | Propagates to each step's `on_failure` default | Fires once at the pipeline level |
 | `on_end` | Propagates to each step's `on_end` default | Fires once at the pipeline level |
+| `on_pause` | Ignored | Fires once at the pipeline level |
+| `on_resume` | Ignored | Fires once at the pipeline level |
 
 For a static pipeline, a pipeline-level hook is a default that every step inherits
 where it has not set its own. No pipeline-level hooks are run. For a dynamic
@@ -70,8 +74,8 @@ my_step = my_step.with_options(on_failure="my_module.alert_on_failure")
 
 ### Hook signatures
 
-`on_start` and `on_success` take no arguments. `on_failure` and `on_end`
-optionally take a single `BaseException` argument.
+`on_start`, `on_success`, `on_pause` and `on_resume` take no arguments.
+`on_failure` and `on_end` optionally take a single `BaseException` argument.
 
 ```python
 from typing import Optional

@@ -17,9 +17,15 @@ from typing import List, Optional
 
 import pytest
 
-from zenml import pipeline, step
+from zenml import pipeline, step, wait
 from zenml.client import Client
-from zenml.enums import HookType
+from zenml.enums import (
+    ExecutionStatus,
+    HookType,
+    RunWaitConditionResolution,
+)
+from zenml.models import PipelineRunUpdate
+from zenml.stack import Stack
 
 _events: List[str] = []
 
@@ -46,6 +52,14 @@ def record_failure(exception: Optional[BaseException] = None) -> None:
 
 def record_cleanup() -> None:
     _events.append("cleanup")
+
+
+def record_pause() -> None:
+    _events.append("pause")
+
+
+def record_resume() -> None:
+    _events.append("resume")
 
 
 def failing_init() -> None:
@@ -78,6 +92,8 @@ def _run_hook_types(pipeline_run_id) -> List[HookType]:
         HookType.RUN_END,
         HookType.RUN_SUCCESS,
         HookType.RUN_FAILURE,
+        HookType.RUN_PAUSE,
+        HookType.RUN_RESUME,
     }
     return [i.hook_type for i in invocations.items if i.hook_type in run_types]
 
@@ -258,3 +274,61 @@ def test_dynamic_step_keeps_its_own_hooks():
     step_types = _step_hook_types(run.id)
     assert HookType.STEP_START in step_types
     assert HookType.STEP_END in step_types
+
+
+@pipeline(
+    dynamic=True,
+    enable_cache=False,
+    on_start=record_start,
+    on_end=record_end,
+    on_success=record_success,
+    on_failure=record_failure,
+    on_pause=record_pause,
+    on_resume=record_resume,
+)
+def pausing_pipeline() -> None:
+    wait(timeout=2, poll_interval=1)
+    noop_step()
+
+
+def test_pause_and_resume_fire_hooks():
+    """Tests hook firing when a run pauses and is resumed."""
+    _events.clear()
+    run = pausing_pipeline()
+    assert run is not None
+    run = Client().get_pipeline_run(run.id, hydrate=True)
+    assert run.status == ExecutionStatus.PAUSED
+
+    assert _events == ["start", "pause"]
+    types = _run_hook_types(run.id)
+    assert types == [HookType.RUN_START, HookType.RUN_PAUSE]
+
+    conditions = Client().list_run_wait_conditions(
+        pipeline_run=run.id, status="pending"
+    )
+    assert conditions.total == 1
+    Client().resolve_run_wait_condition(
+        run_wait_condition_id=conditions.items[0].id,
+        resolution=RunWaitConditionResolution.CONTINUE,
+    )
+
+    Client().zen_store.update_run(
+        run_id=run.id,
+        run_update=PipelineRunUpdate(status=ExecutionStatus.RESUMING),
+    )
+    stack = Stack.from_model(Client().active_stack_model)
+    assert run.snapshot is not None
+    stack.orchestrator.resume_run(snapshot=run.snapshot, run=run, stack=stack)
+
+    run = Client().get_pipeline_run(run.id, hydrate=True)
+    assert run.status.is_successful
+
+    assert _events == ["start", "pause", "resume", "end", "success"]
+    types = _run_hook_types(run.id)
+    assert types == [
+        HookType.RUN_START,
+        HookType.RUN_PAUSE,
+        HookType.RUN_RESUME,
+        HookType.RUN_END,
+        HookType.RUN_SUCCESS,
+    ]
