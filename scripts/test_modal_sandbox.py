@@ -52,105 +52,101 @@ def _exec_and_collect(session, argv: List[str]) -> Tuple[List[str], int]:
 def _check_basic_exec(sandbox) -> None:
     """Boots a Session, runs a hello-world command, asserts the output."""
     print("\n[1/5] Basic exec + stream")
-    with sandbox.create_session(
+    # No context manager: __exit__ would close the handle even when
+    # destroy() raises, defeating its keep-open-for-retry behavior.
+    session = sandbox.create_session(
         settings=ModalSandboxSettings(
             sandbox_environment={"ZENML_SANDBOX_SMOKE": "1"},
             timeout=600,
         )
-    ) as session:
-        try:
-            print(f"   Session id: {session.id}")
-            out, code = _exec_and_collect(
-                session,
-                [
-                    "python",
-                    "-c",
-                    "print('hello from modal'); import os; print(os.environ['ZENML_SANDBOX_SMOKE'])",
-                ],
-            )
-            print(f"   stdout: {out!r}")
-            print(f"   exit:   {code}")
-            assert code == 0, f"expected exit 0, got {code}"
-            assert out == ["hello from modal", "1"], (
-                f"unexpected stdout: {out!r}"
-            )
-        finally:
-            session.destroy()
+    )
+    try:
+        print(f"   Session id: {session.id}")
+        out, code = _exec_and_collect(
+            session,
+            [
+                "python",
+                "-c",
+                "print('hello from modal'); import os; print(os.environ['ZENML_SANDBOX_SMOKE'])",
+            ],
+        )
+        print(f"   stdout: {out!r}")
+        print(f"   exit:   {code}")
+        assert code == 0, f"expected exit 0, got {code}"
+        assert out == ["hello from modal", "1"], f"unexpected stdout: {out!r}"
+    finally:
+        session.destroy()
 
 
 def _check_exit_nonzero(sandbox) -> None:
     """Verifies a failing command surfaces a non-zero exit code (no exception)."""
     print("\n[2/5] Non-zero exit (no exception)")
-    with sandbox.create_session() as session:
-        try:
-            process = session.exec(["python", "-c", "import sys; sys.exit(3)"])
-            process.wait()
-            print(f"   exit_code: {process.exit_code}")
-            assert process.exit_code == 3
-        finally:
-            session.destroy()
+    session = sandbox.create_session()
+    try:
+        process = session.exec(["python", "-c", "import sys; sys.exit(3)"])
+        process.wait()
+        print(f"   exit_code: {process.exit_code}")
+        assert process.exit_code == 3
+    finally:
+        session.destroy()
 
 
 def _check_file_io(sandbox) -> None:
     """Round-trips a file upload + download."""
     print("\n[3/5] upload_file + download_file")
-    with sandbox.create_session() as session:
-        with tempfile.NamedTemporaryFile(
-            "w", suffix=".txt", delete=False
-        ) as src:
-            src.write("hello\nfrom\nlocal\n")
-            src_path = src.name
-        try:
-            session.upload_file(src_path, "/tmp/in.txt")
-            out, code = _exec_and_collect(session, ["cat", "/tmp/in.txt"])
-            assert code == 0
-            assert out == ["hello", "from", "local"], out
+    session = sandbox.create_session()
+    with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False) as src:
+        src.write("hello\nfrom\nlocal\n")
+        src_path = src.name
+    try:
+        session.upload_file(src_path, "/tmp/in.txt")
+        out, code = _exec_and_collect(session, ["cat", "/tmp/in.txt"])
+        assert code == 0
+        assert out == ["hello", "from", "local"], out
 
-            with tempfile.NamedTemporaryFile(
-                "rb", suffix=".txt", delete=False
-            ) as dst:
-                dst_path = dst.name
-            session.download_file("/tmp/in.txt", dst_path)
-            with open(dst_path) as f:
-                assert f.read() == "hello\nfrom\nlocal\n"
-            print("   round-trip ok")
-        finally:
-            session.destroy()
-            for p in (src_path, dst_path):
-                try:
-                    os.unlink(p)
-                except OSError:
-                    pass
+        with tempfile.NamedTemporaryFile(
+            "rb", suffix=".txt", delete=False
+        ) as dst:
+            dst_path = dst.name
+        session.download_file("/tmp/in.txt", dst_path)
+        with open(dst_path) as f:
+            assert f.read() == "hello\nfrom\nlocal\n"
+        print("   round-trip ok")
+    finally:
+        session.destroy()
+        for p in (src_path, dst_path):
+            try:
+                os.unlink(p)
+            except OSError:
+                pass
 
 
 def _check_snapshot_restore(sandbox) -> None:
     """Writes a file, snapshots, restores into a fresh Session, reads it back."""
     print("\n[4/5] snapshot + restore (FS state preserved)")
-    with sandbox.create_session() as original:
-        try:
-            out, code = _exec_and_collect(
-                original,
-                [
-                    "bash",
-                    "-c",
-                    "echo 'snapshot-payload' > /tmp/snap.txt && cat /tmp/snap.txt",
-                ],
-            )
-            assert code == 0 and out == ["snapshot-payload"]
-            snap = original.create_snapshot()
-            print(f"   snapshot ref: {snap.ref}")
-        finally:
-            original.destroy()
+    original = sandbox.create_session()
+    try:
+        out, code = _exec_and_collect(
+            original,
+            [
+                "bash",
+                "-c",
+                "echo 'snapshot-payload' > /tmp/snap.txt && cat /tmp/snap.txt",
+            ],
+        )
+        assert code == 0 and out == ["snapshot-payload"]
+        snap = original.create_snapshot()
+        print(f"   snapshot ref: {snap.ref}")
+    finally:
+        original.destroy()
 
-    with sandbox.restore(snap) as restored:
-        try:
-            out, code = _exec_and_collect(restored, ["cat", "/tmp/snap.txt"])
-            assert code == 0 and out == ["snapshot-payload"], out
-            print(
-                f"   restored session id: {restored.id} (new id; FS preserved)"
-            )
-        finally:
-            restored.destroy()
+    restored = sandbox.restore(snap)
+    try:
+        out, code = _exec_and_collect(restored, ["cat", "/tmp/snap.txt"])
+        assert code == 0 and out == ["snapshot-payload"], out
+        print(f"   restored session id: {restored.id} (new id; FS preserved)")
+    finally:
+        restored.destroy()
 
 
 def _check_attach(sandbox) -> None:
