@@ -17,11 +17,9 @@ import logging
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, cast
 
-from opentelemetry.sdk._logs import (
-    Logger,
-    LoggerProvider,
-    LoggingHandler,
-)
+from opentelemetry._logs import Logger
+from opentelemetry.instrumentation.logging.handler import LoggingHandler
+from opentelemetry.sdk._logs import LoggerProvider
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.resources import Resource
 
@@ -35,7 +33,7 @@ from zenml.logger import get_logger
 from zenml.models import LogsResponse
 
 if TYPE_CHECKING:
-    from opentelemetry.sdk._logs.export import LogExporter
+    from opentelemetry.sdk._logs.export import LogRecordExporter
 
     from zenml.utils.logging_utils import LogEntry
 
@@ -127,7 +125,7 @@ class OtelLogStore(BaseLogStore):
         super().__init__(*args, **kwargs)
 
         self._resource: Optional["Resource"] = None
-        self._exporter: Optional["LogExporter"] = None
+        self._exporter: Optional["LogRecordExporter"] = None
         self._provider: Optional["LoggerProvider"] = None
         self._processor: Optional["OtelBatchLogRecordProcessor"] = None
         self._handler: Optional["LoggingHandler"] = None
@@ -164,7 +162,7 @@ class OtelLogStore(BaseLogStore):
             raise RuntimeError("OpenTelemetry log store is not initialized")
         return self._provider
 
-    def get_exporter(self) -> "LogExporter":
+    def get_exporter(self) -> "LogRecordExporter":
         """Get the Datadog log exporter.
 
         Returns:
@@ -247,12 +245,13 @@ class OtelLogStore(BaseLogStore):
             if self._handler is None:
                 raise RuntimeError("OpenTelemetry provider is not initialized")
 
-            emit_kwargs = self._handler._translate(record)
-            emit_kwargs["attributes"].update(origin.metadata)
+            otel_log_record = self._handler._translate(record)
+            merged_attrs = dict(otel_log_record.attributes or {})
+            merged_attrs.update(origin.metadata)
             if metadata:
-                emit_kwargs["attributes"].update(metadata)
-
-            origin.logger.emit(**emit_kwargs)
+                merged_attrs.update(metadata)
+            otel_log_record.attributes = merged_attrs
+            origin.logger.emit(otel_log_record)
 
     def _release_origin(
         self,
