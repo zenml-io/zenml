@@ -69,6 +69,10 @@ _BRIDGE_FILE_MAX_BYTES = 32 * 1024 * 1024
 # Transient bridge statuses worth retrying; 500s are Worker bugs and
 # surface immediately.
 _RETRYABLE_STATUSES: FrozenSet[int] = frozenset({429, 502, 503, 504})
+# Only idempotent methods are retried: a POST that failed mid-flight may
+# already have executed on the bridge (created a sandbox, launched a
+# command), so retrying it risks double execution.
+_RETRYABLE_METHODS: FrozenSet[str] = frozenset({"GET", "PUT", "DELETE"})
 _MAX_RETRIES = 3
 
 
@@ -77,7 +81,9 @@ class _BridgeEvent:
     """One decoded SSE event from the bridge exec stream."""
 
     kind: Literal["stdout", "stderr", "exit", "error"]
-    data: Any
+    # stdout/stderr frames carry decoded text, exit frames carry the
+    # exit code; error frames raise during parsing and never get here.
+    data: Union[str, int]
 
 
 def _sanitize_remote_path(remote_path: str) -> str:
@@ -93,7 +99,8 @@ def _sanitize_remote_path(remote_path: str) -> str:
         ValueError: If the normalized path escapes the workspace root.
     """
     stripped = remote_path.lstrip("/")
-    if posixpath.normpath(stripped) != stripped or stripped.startswith(".."):
+    normalized = posixpath.normpath(stripped)
+    if normalized != stripped or normalized.split("/", 1)[0] == "..":
         raise ValueError(
             f"Remote path '{remote_path}' resolves outside the sandbox "
             "workspace."
@@ -220,12 +227,11 @@ class _CloudflareBridgeClient:
         """
         import httpx
 
-        self._base = worker_url.rstrip("/")
         headers: Dict[str, str] = {}
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
         self._client = httpx.Client(
-            base_url=self._base,
+            base_url=worker_url.rstrip("/"),
             headers=headers,
             timeout=httpx.Timeout(30.0, read=None),
             transport=transport,
@@ -247,8 +253,13 @@ class _CloudflareBridgeClient:
         content: Optional[bytes] = None,
         headers: Optional[Dict[str, str]] = None,
         stream: bool = False,
+        ok_statuses: Tuple[int, ...] = (),
     ) -> "httpx.Response":
         """Issue a request with the bridge's retry policy.
+
+        Connection errors and transient statuses (429/502/503/504) are
+        retried only for idempotent methods; a failed POST surfaces
+        immediately because it may already have executed on the bridge.
 
         Args:
             method: HTTP verb.
@@ -257,6 +268,9 @@ class _CloudflareBridgeClient:
             content: Raw bytes body (mutually exclusive with json_body).
             headers: Extra headers.
             stream: When True, return the response without reading it.
+            ok_statuses: Error statuses that carry meaning for the caller
+                (e.g. a 404 that answers a liveness probe); returned
+                as-is instead of raising or retrying.
 
         Returns:
             The httpx Response.
@@ -266,14 +280,14 @@ class _CloudflareBridgeClient:
         """
         import httpx
 
-        url = self._base + path
+        retryable_method = method in _RETRYABLE_METHODS
         attempt = 0
         while True:
             try:
                 if stream:
                     req = self._client.build_request(
                         method,
-                        url,
+                        path,
                         json=json_body,
                         content=content,
                         headers=headers,
@@ -282,13 +296,13 @@ class _CloudflareBridgeClient:
                 else:
                     resp = self._client.request(
                         method,
-                        url,
+                        path,
                         json=json_body,
                         content=content,
                         headers=headers,
                     )
             except httpx.HTTPError as e:
-                if attempt >= _MAX_RETRIES:
+                if not retryable_method or attempt >= _MAX_RETRIES:
                     raise SandboxExecError(
                         f"Bridge request {method} {path} failed: {e}"
                     ) from e
@@ -296,10 +310,12 @@ class _CloudflareBridgeClient:
                 attempt += 1
                 continue
 
-            if resp.status_code < 400:
+            if resp.status_code in ok_statuses or resp.status_code < 400:
                 return resp
 
-            retryable = resp.status_code in _RETRYABLE_STATUSES
+            retryable = (
+                retryable_method and resp.status_code in _RETRYABLE_STATUSES
+            )
             body_preview = ""
             if not stream:
                 try:
@@ -350,8 +366,7 @@ class _CloudflareBridgeClient:
         """Check whether the given sandbox is still alive.
 
         A 404/410 from the bridge means the sandbox is gone (expired or
-        deleted), which is an answer — ``False`` — not an error. This is a
-        single status probe, so it bypasses ``_request``'s retry loop.
+        deleted), which is an answer — ``False`` — not an error.
 
         Args:
             sandbox_id: The sandbox to check.
@@ -359,28 +374,24 @@ class _CloudflareBridgeClient:
         Returns:
             True if the bridge reports the sandbox as running, False if it
             reports it as stopped or unknown (404/410).
-
-        Raises:
-            SandboxExecError: If the bridge returns any other error status.
         """
-        resp = self._client.get(f"/v1/sandbox/{sandbox_id}/running")
+        resp = self._request(
+            "GET",
+            f"/v1/sandbox/{sandbox_id}/running",
+            ok_statuses=(404, 410),
+        )
         if resp.status_code in (404, 410):
             return False
-        if resp.status_code >= 400:
-            raise SandboxExecError(
-                f"Bridge GET /v1/sandbox/{sandbox_id}/running returned "
-                f"{resp.status_code}: {resp.text[:500]}"
-            )
         return bool(resp.json().get("running", False))
 
     def create_bridge_session(
-        self, sandbox_id: str, env: Optional[Dict[str, str]] = None
+        self, sandbox_id: str, env: Dict[str, str]
     ) -> str:
         """Create a bridge-side session for scoped env / cwd state.
 
         Args:
             sandbox_id: The sandbox to scope the session to.
-            env: Optional env vars applied to every exec in the session.
+            env: Env vars applied to every exec in the session.
 
         Returns:
             The bridge session id.
@@ -388,9 +399,10 @@ class _CloudflareBridgeClient:
         Raises:
             SandboxExecError: If the bridge response is missing an id.
         """
-        body: Optional[Dict[str, Any]] = {"env": env} if env else None
         resp = self._request(
-            "POST", f"/v1/sandbox/{sandbox_id}/session", json_body=body
+            "POST",
+            f"/v1/sandbox/{sandbox_id}/session",
+            json_body={"env": env},
         )
         sid = resp.json().get("id")
         if not sid:
@@ -593,20 +605,22 @@ class CloudflareSandboxProcess(SandboxProcess):
         try:
             for ev in self._event_iter:
                 with self._data_available:
-                    if ev.kind == "stdout":
+                    # Only ``exit`` frames carry an int payload (the exit
+                    # code); stdout/stderr frames carry decoded text.
+                    if isinstance(ev.data, int):
+                        self._exit_code = ev.data
+                    elif ev.kind == "stdout":
                         self._stdout_remainder = self._push_text(
                             self._stdout_buf,
                             self._stdout_remainder,
-                            cast(str, ev.data),
+                            ev.data,
                         )
                     elif ev.kind == "stderr":
                         self._stderr_remainder = self._push_text(
                             self._stderr_buf,
                             self._stderr_remainder,
-                            cast(str, ev.data),
+                            ev.data,
                         )
-                    elif ev.kind == "exit":
-                        self._exit_code = int(cast(int, ev.data))
                     self._data_available.notify_all()
         except BaseException as e:  # noqa: BLE001
             # kill() closes the response under our feet; the resulting
@@ -791,9 +805,6 @@ class CloudflareSandboxSession(SandboxSession):
 
         Returns:
             A ``CloudflareSandboxProcess``.
-
-        Raises:
-            SandboxExecError: If the bridge rejects the launch.
         """
         argv: List[str] = (
             list(command)
@@ -810,21 +821,15 @@ class CloudflareSandboxSession(SandboxSession):
 
         effective_cwd = cwd if cwd is not None else self._default_cwd
         started_at = time.time()
-        try:
-            response, event_iter = self._client.exec_stream(
-                self._sandbox_id,
-                wire_argv,
-                cwd=effective_cwd,
-                timeout_ms=self._default_timeout_ms,
-                session_id=self._bridge_session_id,
-            )
-        except SandboxExecError:
-            raise
-        except Exception as e:
-            raise SandboxExecError(
-                f"Cloudflare bridge exec failed to launch "
-                f"({type(e).__name__}): {e}"
-            ) from e
+        # exec_stream surfaces every failure mode as SandboxExecError, so
+        # launch errors propagate to the caller as-is.
+        response, event_iter = self._client.exec_stream(
+            self._sandbox_id,
+            wire_argv,
+            cwd=effective_cwd,
+            timeout_ms=self._default_timeout_ms,
+            session_id=self._bridge_session_id,
+        )
         return CloudflareSandboxProcess(
             event_iter,
             session=self,
@@ -998,14 +1003,13 @@ class CloudflareSandbox(BaseSandbox):
                 )
             raise
 
-        timeout_ms = eff.timeout_ms or DEFAULT_BRIDGE_TIMEOUT_MS
         return CloudflareSandboxSession(
             sandbox_id,
             client=client,
             parent=self,
             bridge_session_id=bridge_session_id,
             default_cwd=eff.cwd,
-            default_timeout_ms=timeout_ms,
+            default_timeout_ms=eff.timeout_ms,
         )
 
     def attach(self, session_id: str) -> SandboxSession:
@@ -1026,12 +1030,11 @@ class CloudflareSandbox(BaseSandbox):
                 f"Cloudflare sandbox '{session_id}' is not running."
             )
         eff = cast(CloudflareSandboxSettings, self.resolve_settings(None))
-        timeout_ms = eff.timeout_ms or DEFAULT_BRIDGE_TIMEOUT_MS
         return CloudflareSandboxSession(
             session_id,
             client=client,
             parent=self,
             bridge_session_id=None,
             default_cwd=eff.cwd,
-            default_timeout_ms=timeout_ms,
+            default_timeout_ms=eff.timeout_ms,
         )

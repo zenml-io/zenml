@@ -34,6 +34,9 @@ from zenml.integrations.cloudflare.flavors import (
     CloudflareSandboxFlavor,
     CloudflareSandboxSettings,
 )
+from zenml.integrations.cloudflare.flavors.cloudflare_sandbox_flavor import (
+    DEFAULT_BRIDGE_TIMEOUT_MS,
+)
 from zenml.integrations.cloudflare.sandboxes.cloudflare_sandbox import (
     _BRIDGE_FILE_MAX_BYTES,
     CloudflareSandbox,
@@ -123,7 +126,7 @@ class TestConfig:
 
     def test_settings_defaults(self) -> None:
         s = CloudflareSandboxSettings()
-        assert s.timeout_ms is None
+        assert s.timeout_ms == DEFAULT_BRIDGE_TIMEOUT_MS
         assert s.cwd is None
         assert s.sandbox_environment == {}
 
@@ -315,32 +318,9 @@ class TestBridgeClient:
             )
             assert client.is_running("sb_dead") is False
 
-    def test_is_running_other_error_raises(self) -> None:
-        def handler(request: httpx.Request) -> httpx.Response:
-            return httpx.Response(503, text="unavailable")
-
-        client = _make_client(handler)
-        with pytest.raises(SandboxExecError, match="503"):
-            client.is_running("sb_1")
-
-    def test_request_retries_429_then_succeeds(self) -> None:
-        attempts: List[int] = []
-
-        def handler(request: httpx.Request) -> httpx.Response:
-            attempts.append(1)
-            if len(attempts) == 1:
-                return httpx.Response(429, text="slow down")
-            return httpx.Response(200, json={"id": "sb_retry"})
-
-        client = _make_client(handler)
-        with patch(
-            "zenml.integrations.cloudflare.sandboxes.cloudflare_sandbox"
-            ".time.sleep"
-        ):
-            assert client.create_sandbox() == "sb_retry"
-        assert len(attempts) == 2
-
-    def test_request_persistent_503_raises_after_retries(self) -> None:
+    def test_is_running_other_error_retries_then_raises(self) -> None:
+        # is_running is a GET, so transient 5xx errors go through the
+        # retry loop before surfacing.
         attempts: List[int] = []
 
         def handler(request: httpx.Request) -> httpx.Response:
@@ -353,9 +333,61 @@ class TestBridgeClient:
             ".time.sleep"
         ):
             with pytest.raises(SandboxExecError, match="503"):
-                client.create_sandbox()
+                client.is_running("sb_1")
+        assert len(attempts) == 4
+
+    def test_get_retries_429_then_succeeds(self) -> None:
+        attempts: List[int] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            attempts.append(1)
+            if len(attempts) == 1:
+                return httpx.Response(429, text="slow down")
+            return httpx.Response(200, content=b"payload")
+
+        client = _make_client(handler)
+        with patch(
+            "zenml.integrations.cloudflare.sandboxes.cloudflare_sandbox"
+            ".time.sleep"
+        ):
+            assert client.get_file("sb_1", "x.txt") == b"payload"
+        assert len(attempts) == 2
+
+    def test_get_persistent_503_raises_after_retries(self) -> None:
+        attempts: List[int] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            attempts.append(1)
+            return httpx.Response(503, text="unavailable")
+
+        client = _make_client(handler)
+        with patch(
+            "zenml.integrations.cloudflare.sandboxes.cloudflare_sandbox"
+            ".time.sleep"
+        ):
+            with pytest.raises(SandboxExecError, match="503"):
+                client.get_file("sb_1", "x.txt")
         # Initial attempt + _MAX_RETRIES retries.
         assert len(attempts) == 4
+
+    def test_post_exec_not_retried_on_503(self) -> None:
+        # POST is not idempotent: a retried /exec could run the command
+        # twice, so transient errors must surface immediately.
+        attempts: List[int] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            attempts.append(1)
+            return httpx.Response(503, text="unavailable")
+
+        client = _make_client(handler)
+        with patch(
+            "zenml.integrations.cloudflare.sandboxes.cloudflare_sandbox"
+            ".time.sleep"
+        ) as sleep:
+            with pytest.raises(SandboxExecError, match="503"):
+                client.exec_stream("sb_1", ["echo", "hi"])
+        assert len(attempts) == 1
+        sleep.assert_not_called()
 
     def test_create_bridge_session_with_env(self) -> None:
         captured: Dict[str, Any] = {}
@@ -396,8 +428,21 @@ class TestBridgeClient:
         client = _make_client(
             lambda req: httpx.Response(200, json={"ok": True})
         )
-        with pytest.raises(ValueError, match="resolves outside"):
-            client.put_file("sb_1", "../../etc/passwd", b"x")
+        for path in ("../x", "../../etc/passwd"):
+            with pytest.raises(ValueError, match="resolves outside"):
+                client.put_file("sb_1", path, b"x")
+
+    def test_put_file_allows_dot_dot_prefixed_names(self) -> None:
+        # "..foo" is a legitimate file/directory name, not a traversal.
+        captured: Dict[str, str] = {}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            captured["path"] = request.url.path
+            return httpx.Response(200, json={"ok": True})
+
+        client = _make_client(handler)
+        client.put_file("sb_1", "..foo/bar.txt", b"x")
+        assert captured["path"] == "/v1/sandbox/sb_1/file/..foo/bar.txt"
 
     def test_get_file_returns_bytes(self) -> None:
         def handler(request: httpx.Request) -> httpx.Response:

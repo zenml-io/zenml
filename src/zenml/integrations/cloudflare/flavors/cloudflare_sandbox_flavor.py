@@ -36,13 +36,13 @@ DEFAULT_BRIDGE_TIMEOUT_MS = 120_000
 class CloudflareSandboxSettings(BaseSandboxSettings):
     """Per-step settings for the Cloudflare sandbox."""
 
-    timeout_ms: Optional[int] = Field(
-        default=None,
+    timeout_ms: int = Field(
+        default=DEFAULT_BRIDGE_TIMEOUT_MS,
         ge=1,
         description="Per-exec timeout in milliseconds. Passed to the bridge "
         "as timeout_ms on POST /v1/sandbox/:id/exec. Must be a positive "
-        "integer. Example: 60000 for a one-minute cap. When omitted the "
-        "component-level default applies",
+        "integer. Example: 60000 for a one-minute cap. Defaults to 120000 "
+        "(two minutes)",
     )
     cwd: Optional[str] = Field(
         default=None,
