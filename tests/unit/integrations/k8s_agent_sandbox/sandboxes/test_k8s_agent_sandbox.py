@@ -68,6 +68,22 @@ from zenml.integrations.k8s_agent_sandbox.sandboxes.k8s_agent_sandbox import (  
 )
 
 
+@pytest.fixture(autouse=True)
+def _ambient_kube_loaders() -> Iterator[None]:
+    """Stubs the ambient kubeconfig loaders for every test.
+
+    Without a connector, ``_kube_default_config`` loads the in-cluster
+    or local kubeconfig — neither exists (reliably) on CI machines, so
+    the loaders are replaced with no-op mocks. Tests that exercise the
+    loading logic itself apply their own, more specific patches.
+    """
+    with (
+        patch("kubernetes.config.load_incluster_config"),
+        patch("kubernetes.config.load_kube_config"),
+    ):
+        yield
+
+
 def _make_sandbox(
     template_name: Optional[str] = "python-sandbox",
     **config_overrides: Any,
@@ -474,7 +490,11 @@ class TestSessionLifecycle:
             fake_api_cls.return_value = fake_api
             session.destroy()
         fake_underlying.terminate.assert_called_once()
+        # _destroy() deletes the template (tracker cleared); the base
+        # template's follow-up close() must not delete it again.
         fake_api.delete_namespaced_custom_object.assert_called_once()
+        # The base destroy() template closes the handle after _destroy().
+        assert session.closed
 
     def test_destroy_tolerates_terminate_failure(self) -> None:
         session, fake_underlying = self._session_with_inline()
@@ -631,6 +651,74 @@ class TestSessionLifecycle:
         fake_api_cls.assert_not_called()
 
 
+class TestKubeDefaultConfigNoConnector:
+    """Without a connector, the ambient cluster config must be loaded.
+
+    Leaving ``Configuration._default`` untouched would make the
+    kubernetes SDK (and the agent-sandbox SDK on top of it) talk to the
+    library default — localhost — instead of the user's cluster.
+    """
+
+    @staticmethod
+    def _no_connector_sandbox() -> K8sAgentSandbox:
+        sb = _make_sandbox()
+        sb._get_kube_api_client = MagicMock(  # type: ignore[method-assign]
+            return_value=None
+        )
+        return sb
+
+    def test_incluster_config_tried_first(self) -> None:
+        sb = self._no_connector_sandbox()
+        with (
+            patch("kubernetes.config.load_incluster_config") as fake_incluster,
+            patch("kubernetes.config.load_kube_config") as fake_kubeconfig,
+        ):
+            with sb._kube_default_config():
+                pass
+        fake_incluster.assert_called_once()
+        fake_kubeconfig.assert_not_called()
+
+    def test_falls_back_to_kube_config_and_restores_default(self) -> None:
+        from kubernetes import client as k8s_client
+        from kubernetes.config import ConfigException
+
+        sb = self._no_connector_sandbox()
+        previous_default = k8s_client.Configuration._default
+        with (
+            patch(
+                "kubernetes.config.load_incluster_config",
+                side_effect=ConfigException("not in cluster"),
+            ),
+            patch("kubernetes.config.load_kube_config") as fake_kubeconfig,
+        ):
+            with sb._kube_default_config():
+                pass
+        fake_kubeconfig.assert_called_once()
+        # The loaders mutate the process-global default in place; the
+        # context must put back whatever was there before.
+        assert k8s_client.Configuration._default is previous_default
+
+    def test_both_loads_failing_raises_runtime_error(self) -> None:
+        from kubernetes.config import ConfigException
+
+        sb = self._no_connector_sandbox()
+        with (
+            patch(
+                "kubernetes.config.load_incluster_config",
+                side_effect=ConfigException("not in cluster"),
+            ),
+            patch(
+                "kubernetes.config.load_kube_config",
+                side_effect=ConfigException("no kubeconfig"),
+            ),
+        ):
+            with pytest.raises(
+                RuntimeError, match="service connector.*kubeconfig"
+            ):
+                with sb._kube_default_config():
+                    pass
+
+
 class TestProcessSurface:
     @staticmethod
     def _passthrough_session() -> MagicMock:
@@ -727,8 +815,53 @@ class TestExec:
         session = self._live_session(result)
         session.exec("ls", cwd="/tmp")
         called_with = session._sandbox.commands.run.call_args.args[0]
-        # Braces group the command so a failing `cd` short-circuits it.
-        assert called_with == "cd /tmp && { ls; }"
+        # Braces group the command so a failing `cd` short-circuits it;
+        # a newline (not `; }`) terminates the group so raw commands
+        # ending in `#comment`, `;` or `&` stay valid shell.
+        assert called_with == "cd /tmp && { ls\n}"
+
+    @pytest.mark.parametrize(
+        "raw_cmd",
+        ["ls #comment", "ls;", "ls &"],
+        ids=["trailing-comment", "trailing-semicolon", "trailing-ampersand"],
+    )
+    def test_cwd_grouping_survives_tricky_command_endings(
+        self, raw_cmd: str
+    ) -> None:
+        # A `; }` terminator would be swallowed by a trailing comment
+        # or clash with a trailing `;` / `&`; the newline terminator
+        # handles all of them.
+        result = MagicMock(stdout="", stderr="", exit_code=0)
+        session = self._live_session(result)
+        session.exec(raw_cmd, cwd="/tmp")
+        called_with = session._sandbox.commands.run.call_args.args[0]
+        assert called_with == f"cd /tmp && {{ {raw_cmd}\n}}"
+
+    @pytest.mark.parametrize(
+        "raw_cmd",
+        ["ls #comment", "ls;", "ls &", "ls"],
+        ids=[
+            "trailing-comment",
+            "trailing-semicolon",
+            "trailing-ampersand",
+            "plain",
+        ],
+    )
+    def test_cwd_grouping_is_valid_bash(self, raw_cmd: str) -> None:
+        import shutil
+        import subprocess
+
+        bash = shutil.which("bash")
+        if bash is None:
+            pytest.skip("bash not available")
+        result = MagicMock(stdout="", stderr="", exit_code=0)
+        session = self._live_session(result)
+        session.exec(raw_cmd, cwd="/tmp")
+        called_with = session._sandbox.commands.run.call_args.args[0]
+        check = subprocess.run(
+            [bash, "-n"], input=called_with, capture_output=True, text=True
+        )
+        assert check.returncode == 0, check.stderr
 
     def test_env_prefixed_as_inline_exports(self) -> None:
         result = MagicMock(stdout="", stderr="", exit_code=0)
@@ -746,7 +879,7 @@ class TestExec:
         session = self._live_session(result)
         session.exec("env", cwd="/tmp", env={"FOO": "bar baz"})
         called_with = session._sandbox.commands.run.call_args.args[0]
-        assert called_with == "cd /tmp && { export FOO='bar baz'; env; }"
+        assert called_with == "cd /tmp && { export FOO='bar baz'; env\n}"
 
     def test_malicious_env_key_rejected(self) -> None:
         # Keys are interpolated unquoted into `export <key>=...` — a

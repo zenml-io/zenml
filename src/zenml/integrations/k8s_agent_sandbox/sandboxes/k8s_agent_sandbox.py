@@ -33,6 +33,7 @@ from typing import (
 )
 
 from kubernetes import client as k8s_client
+from kubernetes import config as k8s_config
 from kubernetes.client.rest import ApiException
 
 from zenml.config.base_settings import BaseSettings
@@ -210,10 +211,10 @@ class K8sAgentSandboxSession(SandboxSession):
                 string is passed through unmodified; callers are
                 responsible for any internal escaping.
             cwd: Working directory. The command is composed as
-                ``cd <cwd> && { <exports><cmd>; }`` — the braces ensure
-                nothing runs in the wrong directory when the ``cd``
-                fails; the SDK's ``commands.run`` doesn't expose a
-                workdir kwarg.
+                ``cd <cwd> && { <exports><cmd><newline>}`` — the braces
+                ensure nothing runs in the wrong directory when the
+                ``cd`` fails; the SDK's ``commands.run`` doesn't expose
+                a workdir kwarg.
             env: Per-exec env vars. Prepended as ``export KEY=value; ``
                 statements so they apply to the entire command chain
                 (``&&`` / ``;`` / ``|``). Keys must be valid shell
@@ -244,7 +245,11 @@ class K8sAgentSandboxSession(SandboxSession):
             )
             cmd_str = f"{exports}{cmd_str}"
         if cwd is not None:
-            cmd_str = f"cd {shlex.quote(cwd)} && {{ {cmd_str}; }}"
+            # The group is terminated with a newline rather than `; }`:
+            # a raw string command ending in `#comment`, `;` or `&`
+            # would swallow or clash with `; }`, while a newline ends
+            # comments and is a valid command terminator in all cases.
+            cmd_str = f"cd {shlex.quote(cwd)} && {{ {cmd_str}\n}}"
 
         self._log_command(command)
 
@@ -267,11 +272,13 @@ class K8sAgentSandboxSession(SandboxSession):
         if self._inline_template_name and self._inline_template_namespace:
             self._delete_inline_template()
 
-    def destroy(self) -> None:
+    def _destroy(self) -> None:
         """Terminates the Sandbox and deletes any inline template CR.
 
         Best-effort: failures are logged with the kubectl command to
-        reconcile manually, never raised.
+        reconcile manually, never raised. The base ``destroy()`` calls
+        ``close()`` afterwards, which routes through ``_close()`` —
+        the inline-template delete there is idempotent via the tracker.
         """
         try:
             with cast("K8sAgentSandbox", self._parent)._kube_default_config():
@@ -289,7 +296,6 @@ class K8sAgentSandboxSession(SandboxSession):
         # idempotent, so if an earlier close() failed the delete (tracker
         # kept), routing through close() again would be a no-op.
         self._delete_inline_template()
-        self.close()
 
     def _delete_inline_template(self) -> None:
         """Best-effort, idempotent delete of the inline SandboxTemplate CR.
@@ -406,6 +412,11 @@ class K8sAgentSandbox(BaseSandbox):
     def _kube_default_config(self) -> Iterator[None]:
         """Scopes the connector's kubeconfig as the kubernetes default.
 
+        Without a connector, the user's ambient cluster config is
+        loaded instead (in-cluster first, then the local kubeconfig) —
+        leaving the library default untouched would silently point the
+        kubernetes SDK at localhost.
+
         ``Configuration._default`` is process-global, so the module-
         level lock is held for the duration of the context to keep
         concurrent sessions (e.g. callers spawning parallel
@@ -413,6 +424,10 @@ class K8sAgentSandbox(BaseSandbox):
 
         Yields:
             ``None`` — used as a context manager.
+
+        Raises:
+            RuntimeError: If no connector is linked and neither an
+                in-cluster config nor a kubeconfig could be loaded.
         """
         with _kube_default_config_lock:
             # The SDK's K8sHelper.__init__ calls config.load_kube_config()
@@ -421,16 +436,35 @@ class K8sAgentSandbox(BaseSandbox):
             # for the duration of the block. Inside a cluster the SDK tries
             # load_incluster_config() first, which wins over this default.
             api_client = self._get_kube_api_client()
-            if api_client is None:
-                yield
-                return
             # ``Configuration._default`` is the same attribute
             # ``Configuration.set_default`` writes to; reading it directly
             # is the only way to snapshot the current default since the
             # upstream library doesn't expose a getter.
             previous = k8s_client.Configuration._default
             try:
-                k8s_client.Configuration.set_default(api_client.configuration)
+                if api_client is not None:
+                    k8s_client.Configuration.set_default(
+                        api_client.configuration
+                    )
+                else:
+                    # Both loaders mutate the process-global default in
+                    # place; the snapshot above keeps the restore
+                    # symmetric with the connector branch.
+                    try:
+                        k8s_config.load_incluster_config()
+                    except k8s_config.ConfigException:
+                        try:
+                            k8s_config.load_kube_config()
+                        except k8s_config.ConfigException as e:
+                            raise RuntimeError(
+                                "No Kubernetes credentials available: the "
+                                "sandbox component has no service connector "
+                                "linked, and neither an in-cluster config "
+                                "nor a local kubeconfig could be loaded. "
+                                "Link a Kubernetes service connector to the "
+                                "component or configure a kubeconfig (e.g. "
+                                "via `kubectl config use-context`)."
+                            ) from e
                 yield
             finally:
                 k8s_client.Configuration._default = previous
