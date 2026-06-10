@@ -165,24 +165,15 @@ class ModalSandboxSession(SandboxSession):
         # which is called during base __init__ via _publish_sandbox_metadata,
         # has the state it needs.
         self._sandbox = sandbox
-        self._parent_modal = parent
         super().__init__(id=sandbox.object_id, parent=parent)
 
     def _get_dashboard_url(self) -> Optional[str]:
-        """Returns the Modal sandbox's dashboard URL, or ``None``.
+        """Returns the Modal sandbox's dashboard URL.
 
         Returns:
-            URL string from ``Sandbox.get_dashboard_url()`` — older Modal
-            SDKs without this API return ``None``.
+            URL string from ``Sandbox.get_dashboard_url()``.
         """
-        try:
-            url = self._sandbox.get_dashboard_url()
-        except Exception as e:  # noqa: BLE001
-            logger.debug(
-                "Could not resolve Modal sandbox dashboard URL: %s", e
-            )
-            return None
-        return cast(Optional[str], url)
+        return cast(Optional[str], self._sandbox.get_dashboard_url())
 
     def exec(
         self,
@@ -217,10 +208,8 @@ class ModalSandboxSession(SandboxSession):
         if cwd is not None:
             kwargs["workdir"] = cwd
         if env:
-            # Modal 1.x validated env= on modal.Sandbox.create (strickvl PR
-            # #4038) but not on ContainerProcess.exec. Stick with the
-            # secrets= path on per-exec env injection until that's
-            # verified end-to-end against a live Modal 1.x runtime.
+            # Unlike Sandbox.create, Sandbox.exec takes no env=; per-exec
+            # env is injected via secrets=.
             import modal
 
             kwargs["secrets"] = [
@@ -245,9 +234,7 @@ class ModalSandboxSession(SandboxSession):
             in-memory process state is captured.
         """
         image = self._sandbox.snapshot_filesystem()
-        return SandboxSnapshot(
-            sandbox_id=self._parent_modal.id, ref=image.object_id
-        )
+        return SandboxSnapshot(sandbox_id=self._parent.id, ref=image.object_id)
 
     def upload_file(self, local_path: str, remote_path: str) -> None:
         """Upload a local file into the Sandbox.
@@ -363,17 +350,16 @@ class ModalSandbox(BaseSandbox):
         """Return (username, password) for the active container registry.
 
         Returns:
-            ``(username, password)`` when the stack's container registry
-            exposes credentials, otherwise ``None`` (anonymous pull).
+            ``(username, password)`` when the active stack's container
+            registry exposes credentials, otherwise ``None`` (anonymous
+            pull).
         """
-        try:
-            container_registry = self.stack.container_registry
-        except Exception:
-            container_registry = None
-        if container_registry is None or not container_registry.credentials:
-            return None
-        username, password = container_registry.credentials
-        return username, password
+        from zenml.client import Client
+
+        container_registry = Client().active_stack.container_registry
+        if container_registry and container_registry.credentials:
+            return container_registry.credentials
+        return None
 
     def _build_create_kwargs(
         self,
@@ -381,7 +367,7 @@ class ModalSandbox(BaseSandbox):
         *,
         image: Any,
         modal_client: Optional[Any],
-        with_env: bool = True,
+        environment: Dict[str, str],
     ) -> Dict[str, Any]:
         """Compose kwargs for ``modal.Sandbox.create`` via sandbox_utils.
 
@@ -389,9 +375,7 @@ class ModalSandbox(BaseSandbox):
             eff: Effective per-step settings.
             image: Modal Image to boot from.
             modal_client: Explicit Modal client (or ``None`` for ambient).
-            with_env: If False, env is skipped (used on the restore path
-                where injecting env into a frozen filesystem image is
-                rarely what the caller wants).
+            environment: Env vars to inject into the new sandbox.
 
         Returns:
             Kwargs for ``modal.Sandbox.create``. The active step's
@@ -401,9 +385,8 @@ class ModalSandbox(BaseSandbox):
             on ``ModalSandboxSettings`` directly.
         """
         environment_name = sandbox_utils.normalize_optional_config_value(
-            getattr(eff, "modal_environment", None)
+            eff.modal_environment
         )
-        env = self._resolve_session_environment(eff) if with_env else {}
         return sandbox_utils.build_sandbox_create_kwargs(
             app=self._get_app(
                 modal_environment=environment_name, modal_client=modal_client
@@ -411,7 +394,7 @@ class ModalSandbox(BaseSandbox):
             image=image,
             settings=eff,
             resource_settings=ResourceSettings(),
-            environment=env,
+            environment=environment,
             modal_client=modal_client,
         )
 
@@ -435,7 +418,10 @@ class ModalSandbox(BaseSandbox):
         )
         sandbox = modal.Sandbox.create(
             **self._build_create_kwargs(
-                eff, image=image, modal_client=modal_client
+                eff,
+                image=image,
+                modal_client=modal_client,
+                environment=self._resolve_session_environment(eff),
             )
         )
         return ModalSandboxSession(sandbox, parent=self)
@@ -485,12 +471,14 @@ class ModalSandbox(BaseSandbox):
         modal_client = self._get_modal_client()
         try:
             image = modal.Image.from_id(snapshot.ref)
+            # Intentionally no session env: restore boots the frozen
+            # filesystem image as-is.
             sandbox = modal.Sandbox.create(
                 **self._build_create_kwargs(
                     eff,
                     image=image,
                     modal_client=modal_client,
-                    with_env=False,
+                    environment={},
                 )
             )
         except Exception as e:

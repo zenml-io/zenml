@@ -31,8 +31,7 @@ Use the Modal Sandbox flavor when:
 ```bash
 zenml sandbox register my-modal-sandbox \
     --flavor=modal \
-    --app_name=my-agent-app \
-    --default_image=python:3.11-slim
+    --app_name=my-agent-app
 ```
 
 Add env vars and ZenML-stored secrets that should land in every Session at the standard component level — see the [Environment Variables docs](https://docs.zenml.io/concepts/environment-variables#configuring-environment-variables-on-stack-components):
@@ -51,32 +50,32 @@ zenml stack update --sandbox my-modal-sandbox
 
 ### Settings reference
 
-`ModalSandboxSettings` (override on individual `@step` decorations) and the equivalents as component-level defaults on `ModalSandboxConfig`:
+`ModalSandboxSettings` (override on individual `@step` decorations):
 
 | Field | Purpose |
 |---|---|
-| `base_image` | `None` → component `default_image`; `STEP_IMAGE` sentinel → image the current ZenML step is running in (resolved on-demand from the active pipeline run's snapshot via `ContainerizedOrchestrator.get_image`); any other string → exact image URI for `modal.Image.from_registry`. |
-| `environment` | Per-step env vars merged onto `StackComponent.environment` and resolved secrets (Settings wins on collision). |
-| `copy_local_env` | If `True`, propagate the step process's full local env into the Session. Off by default. |
-| `timeout_seconds` | Forwarded to Modal's `Sandbox.create(timeout=)`. Also honored on `restore()`. |
-| `gpu` | Modal GPU type, e.g. `"A100"`, `"H100"`, `"T4"`. The count comes from `ResourceSettings.gpu_count` and is appended as `<type>:<count>`. |
+| `image` | Docker image to boot the Sandbox from. Any registry reference Modal can pull, e.g. `python:3.11-slim` (the default) or `my-registry/my-image:tag`. |
+| `sandbox_environment` | Env vars to set in the Session, injected at Sandbox create time. |
+| `timeout` | Sandbox lifetime in seconds, forwarded to Modal's `Sandbox.create(timeout=)`. Also honored on `restore()`. |
+| `gpu` | Modal GPU type, e.g. `"A100"`, `"H100"`, `"T4"`. |
 | `region` | Modal region (e.g. `"us-east"`). Enterprise/Team plans. |
 | `cloud` | Cloud provider (e.g. `"aws"`, `"gcp"`). Enterprise/Team plans. |
+| `modal_environment` | Modal environment used for the App lookup. |
 
-For **cpu / memory / gpu count**, use ZenML's standard `ResourceSettings` rather than this flavor's settings — the same place the [Modal step operator](../step-operators/modal.md) reads them from. Example:
+`ModalSandboxConfig` additionally holds the component-level fields set at registration time: `app_name` (the Modal App that hosts the Sessions) and the optional `token_id` / `token_secret` pair for explicit Modal credentials (otherwise Modal's ambient auth from `modal setup` is used).
+
+Sandbox cpu/memory follow Modal's defaults, and only `ModalSandboxSettings` (`gpu` type string, `region`, `cloud`) configures sandbox resources. The step's `ResourceSettings` are intentionally **not** mirrored into the sandbox: the orchestrator already provisions those resources for the step itself, and the sandbox would double them. Example:
 
 ```python
 from zenml import step
-from zenml.config import ResourceSettings
 from zenml.integrations.modal.flavors import ModalSandboxSettings
 
 @step(
     settings={
-        "resources": ResourceSettings(cpu_count=4, memory="8GB", gpu_count=2),
-        "sandbox.modal": ModalSandboxSettings(gpu="A100", timeout_seconds=900),
+        "sandbox.modal": ModalSandboxSettings(gpu="A100", timeout=900),
     },
 )
-def agent_step(...): ...   # the sandbox will request "A100:2" on Modal
+def agent_step(...): ...
 ```
 
 Sandbox stdout/stderr automatically lands on the active step under a dedicated `sandbox:<session_id>` log source — see the [base sandbox docs](README.md#sandbox-logs) for the format. The `sandbox.<id>.dashboard_url` step-metadata entry is rendered as a clickable link to the Modal sandbox.
@@ -105,8 +104,8 @@ Modal supports **filesystem-only** snapshots (`sandbox.snapshot_filesystem()`). 
 ```python
 from zenml import save_artifact, load_artifact
 
-snap = session.snapshot()                     # ModalSandboxSnapshot
-save_artifact(snap, name="agent_checkpoint")  # uses the dedicated materializer
+snap = session.create_snapshot()              # SandboxSnapshot
+save_artifact(snap, name="agent_checkpoint")
 
 # later — possibly in a different pipeline run:
 snap = load_artifact("agent_checkpoint")
@@ -117,6 +116,6 @@ If your agent needs to preserve in-memory state across runs, prefer [`attach()`]
 
 ### Caveats
 
-- Modal sandbox env vars are passed as a `modal.Secret`, but they remain **readable from inside the Session** by any code the agent runs. The [Sandbox Auth Proxy pattern](README.md#security-considerations) is on the roadmap; until it lands, treat sandbox env as agent-visible.
+- Modal sandbox env vars remain **readable from inside the Session** by any code the agent runs. The [Sandbox Auth Proxy pattern](README.md#security-considerations) is on the roadmap; until it lands, treat sandbox env as agent-visible.
 - `session.close()` is a no-op (Modal Sandbox is a stateless client handle); use `session.destroy()` to force-terminate, or let Modal's `timeout` expire.
 - `restore()` always returns a **new** Sandbox with a new id. The original `id` is unaffected; if you need id stability across runs, use `attach()` with a persisted session id instead.
