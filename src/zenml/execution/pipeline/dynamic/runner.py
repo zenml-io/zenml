@@ -645,7 +645,17 @@ class DynamicPipelineRunner:
                                 config=step_run.config,
                                 step_config_overrides=step_run.config,
                             )
-                            self._queue_concurrent_isolated_step(step=step)
+                            execution_future = (
+                                self._queue_concurrent_isolated_step(step=step)
+                            )
+                            # Replace the execution future of the registered
+                            # step future. This is done so a failed submission
+                            # resolves the future instead of leaving it polling
+                            # the step run that is stuck in `RETRYING` status.
+                            self._future_registry.rebind_step_execution_future(
+                                invocation_id=invocation_id,
+                                future=execution_future,
+                            )
 
                 time.sleep(monitoring_delay)
 
