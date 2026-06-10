@@ -49,16 +49,12 @@ from zenml.sandboxes import (
 )
 
 if TYPE_CHECKING:
-    from k8s_agent_sandbox import (
-        SandboxClient,  # type: ignore[import-not-found]
-    )
-    from k8s_agent_sandbox.models import (  # type: ignore[import-not-found]
+    from k8s_agent_sandbox import SandboxClient
+    from k8s_agent_sandbox.models import (
         ExecutionResult,
         SandboxConnectionConfig,
     )
-    from k8s_agent_sandbox.sandbox import (
-        Sandbox,  # type: ignore[import-not-found]
-    )
+    from k8s_agent_sandbox.sandbox import Sandbox
 
 logger = get_logger(__name__)
 
@@ -350,7 +346,7 @@ class K8sAgentSandbox(BaseSandbox):
             ValueError: If ``connection_mode=direct`` and ``api_url``
                 is not configured.
         """
-        from k8s_agent_sandbox.models import (  # type: ignore[import-not-found]
+        from k8s_agent_sandbox.models import (
             SandboxDirectConnectionConfig,
             SandboxGatewayConnectionConfig,
             SandboxInClusterConnectionConfig,
