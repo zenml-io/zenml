@@ -37,6 +37,7 @@ import json
 import re
 import time
 from collections import defaultdict
+from datetime import datetime, timezone
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -943,6 +944,62 @@ def get_pod_failure_details(
     return None
 
 
+def get_pod_pending_details(
+    pod: k8s_client.V1Pod, container_name: str
+) -> Optional[str]:
+    """Get best-effort pod pending details.
+
+    Args:
+        pod: The pod to get pending details for.
+        container_name: The container name.
+
+    Returns:
+        Pending details for the pod, if available.
+    """
+    try:
+        details: list[str] = []
+        pod_name = pod.metadata.name if pod.metadata else None
+
+        if pod.status:
+            for condition in pod.status.conditions or []:
+                if condition.status == "False" and (
+                    condition.reason or condition.message
+                ):
+                    condition_details = [condition.type or "Unknown"]
+                    if condition.reason:
+                        condition_details.append(condition.reason)
+                    if condition.message:
+                        condition_details.append(
+                            f"message={condition.message}"
+                        )
+                    details.append(
+                        "pod condition: " + ", ".join(condition_details)
+                    )
+
+            if pod.status.reason:
+                details.append(f"pod reason: {pod.status.reason}")
+            if pod.status.message:
+                details.append(f"pod message: {pod.status.message}")
+
+        container_state = get_container_status(pod, container_name)
+        if container_state and container_state.waiting:
+            waiting = container_state.waiting
+            container_details = [waiting.reason or "Unknown"]
+            if waiting.message:
+                container_details.append(f"message={waiting.message}")
+            details.append(
+                f"container waiting reason: {', '.join(container_details)}"
+            )
+
+        if details:
+            prefix = f"pod `{pod_name}`" if pod_name else "pod"
+            return f"{prefix}: " + "; ".join(details)
+    except Exception:
+        logger.debug("Failed to extract pod pending details.", exc_info=True)
+
+    return None
+
+
 def wait_for_job_to_finish(
     get_client: Callable[[], k8s_client.ApiClient],
     namespace: str,
@@ -1116,7 +1173,9 @@ def check_job_status(
         api_request_timeout: The request timeout in seconds.
 
     Returns:
-        The status of the job and an error message if the job failed.
+        The status of the job and an optional status message. For failed jobs,
+        this is the error message; for running jobs, this can contain pending
+        pod diagnostics.
     """
     job: k8s_client.V1Job = retry_on_api_exception(
         batch_api.read_namespaced_job, api_request_timeout=api_request_timeout
@@ -1150,6 +1209,7 @@ def check_job_status(
 
                 return JobStatus.FAILED, error_message
 
+    pending_message = None
     if fail_on_container_waiting_reasons:
         pod_list: k8s_client.V1PodList = retry_on_api_exception(
             core_api.list_namespaced_pod,
@@ -1159,8 +1219,19 @@ def check_job_status(
             label_selector=f"job-name={job_name}",
             field_selector="status.phase=Pending",
         )
+        pod_list.items.sort(
+            key=lambda pod: (
+                pod.metadata.creation_timestamp
+                if pod.metadata and pod.metadata.creation_timestamp
+                else datetime.min.replace(tzinfo=timezone.utc)
+            ),
+            reverse=True,
+        )
         for pod in pod_list.items:
             container_state = get_container_status(
+                pod, container_name or "main"
+            )
+            pending_message = pending_message or get_pod_pending_details(
                 pod, container_name or "main"
             )
 
@@ -1180,9 +1251,11 @@ def check_job_status(
                 error_message = (
                     f"Detected container in state `{waiting_state.reason}`"
                 )
+                if pending_message:
+                    error_message += f" ({pending_message})"
                 return JobStatus.FAILED, error_message
 
-    return JobStatus.RUNNING, None
+    return JobStatus.RUNNING, pending_message
 
 
 def create_config_map(
