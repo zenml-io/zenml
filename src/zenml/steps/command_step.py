@@ -13,7 +13,9 @@
 #  permissions and limitations under the License.
 """Step that runs an opaque container command."""
 
-from typing import TYPE_CHECKING, Any, Dict, List
+import inspect
+import textwrap
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Union
 
 from zenml.exceptions import StepInterfaceError
 from zenml.steps.base_step import BaseStep
@@ -22,14 +24,86 @@ if TYPE_CHECKING:
     from zenml.config.step_configurations import StepConfigurationUpdate
 
 
+def _build_function_command(func: Callable[[], Any]) -> List[str]:
+    """Builds a command that runs a function using `python -c`.
+
+    Args:
+        func: The function to run.
+
+    Raises:
+        StepInterfaceError: If the function is not a plain undecorated
+            function without parameters, or if its source code cannot be
+            extracted.
+
+    Returns:
+        The command.
+    """
+    if not inspect.isfunction(func):
+        raise StepInterfaceError(
+            "The object passed as command step function is not a function: "
+            f"`{func}`."
+        )
+
+    if func.__name__ == "<lambda>":
+        raise StepInterfaceError(
+            "Lambdas cannot be used as command step functions."
+        )
+
+    if hasattr(func, "__wrapped__"):
+        raise StepInterfaceError(
+            f"The command step function `{func.__name__}` is decorated."
+        )
+
+    if func.__closure__ is not None:
+        raise StepInterfaceError(
+            f"The command step function `{func.__name__}` references "
+            "variables from an enclosing function."
+        )
+
+    if inspect.signature(func).parameters:
+        raise StepInterfaceError(
+            f"The command step function `{func.__name__}` has parameters."
+        )
+
+    try:
+        source = textwrap.dedent(inspect.getsource(func))
+    except (OSError, TypeError):
+        raise StepInterfaceError(
+            "Failed to get the source code of the command step function "
+            f"`{func.__name__}`."
+        )
+
+    if source.lstrip().startswith("@"):
+        raise StepInterfaceError(
+            f"The command step function `{func.__name__}` is decorated."
+        )
+
+    code = f"{source}\n{func.__name__}()\n"
+
+    try:
+        compile(code, "<command-step>", "exec")
+    except SyntaxError as e:
+        raise StepInterfaceError(
+            "Failed to compile the source code of the command step function "
+            f"`{func.__name__}`: {e}"
+        )
+
+    return ["python", "-c", code]
+
+
 class CommandStep(BaseStep):
     """Step that runs an opaque container command."""
 
-    def __init__(self, command: List[str], **kwargs: Any) -> None:
+    def __init__(
+        self,
+        command: Union[List[str], Callable[[], Any]],
+        **kwargs: Any,
+    ) -> None:
         """Initializes a command step.
 
         Args:
-            command: The command to run for the step.
+            command: The command to run for the step, or a self-contained
+                function to run with `python -c`.
             **kwargs: Keyword arguments to configure the step. Forwarded to
                 the `BaseStep` constructor.
 
@@ -37,6 +111,9 @@ class CommandStep(BaseStep):
             StepInterfaceError: If the command is empty, or if a subclass
                 overrides the entrypoint to declare inputs or outputs.
         """
+        if callable(command):
+            command = _build_function_command(command)
+
         if not command:
             raise StepInterfaceError(
                 "The command of a command step must not be empty."

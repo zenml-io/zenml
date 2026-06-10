@@ -11,6 +11,9 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import functools
+import subprocess
+
 import pytest
 
 from zenml.config.compiler import Compiler
@@ -45,6 +48,82 @@ def test_command_step_with_empty_command_fails():
     """Tests that constructing a command step with an empty command fails."""
     with pytest.raises(StepInterfaceError):
         CommandStep(command=[])
+
+
+def _self_contained_function() -> None:
+    import json
+
+    print(json.dumps({"status": "done"}))
+
+
+def test_command_step_with_function():
+    """Tests that a command step can be constructed from a function."""
+    step = CommandStep(command=_self_contained_function)
+
+    command = step.configuration.command
+    assert command is not None
+    assert command[:2] == ["python", "-c"]
+    assert "_self_contained_function()" in command[2]
+
+    result = subprocess.run(command, capture_output=True, text=True)
+    assert result.returncode == 0
+    assert result.stdout.strip() == '{"status": "done"}'
+
+
+def test_command_step_with_lambda_fails():
+    """Tests that lambdas are rejected as command step functions."""
+    with pytest.raises(StepInterfaceError):
+        CommandStep(command=lambda: None)
+
+
+def test_command_step_with_function_with_parameters_fails():
+    """Tests that functions with parameters are rejected."""
+
+    def _with_parameter(x: int = 1) -> None:
+        pass
+
+    with pytest.raises(StepInterfaceError):
+        CommandStep(command=_with_parameter)
+
+
+def test_command_step_with_closure_fails():
+    """Tests that closures are rejected as command step functions."""
+    captured = "value"
+
+    def _closure() -> None:
+        print(captured)
+
+    with pytest.raises(StepInterfaceError):
+        CommandStep(command=_closure)
+
+
+def test_command_step_with_decorated_function_fails():
+    """Tests that decorated functions are rejected."""
+
+    def _decorator(func):
+        @functools.wraps(func)
+        def _wrapper() -> None:
+            func()
+
+        return _wrapper
+
+    @_decorator
+    def _decorated() -> None:
+        pass
+
+    with pytest.raises(StepInterfaceError):
+        CommandStep(command=_decorated)
+
+
+def test_command_step_with_method_fails():
+    """Tests that methods are rejected as command step functions."""
+
+    class _WithMethod:
+        def method(self) -> None:
+            pass
+
+    with pytest.raises(StepInterfaceError):
+        CommandStep(command=_WithMethod().method)
 
 
 def test_command_step_can_be_loaded_from_source():

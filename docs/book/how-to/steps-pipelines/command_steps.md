@@ -23,6 +23,29 @@ if __name__ == "__main__":
 
 The command is whatever you would type in a shell, split into a list. The image just needs to contain the binary you invoke. Shell features like pipes and `&&` need an explicit shell, for example `["bash", "-c", "a | b"]`.
 
+## Running a Python function
+
+Instead of a command, you can pass a Python function. ZenML extracts the source code of the function and runs it with `python -c`:
+
+```python
+from zenml import CommandStep
+
+def train() -> None:
+    import json
+
+    print(json.dumps({"status": "training"}))
+
+train_step = CommandStep(command=train)
+```
+
+The extracted source code is the entire program, nothing around the function travels with it. This means the function must be self-contained:
+
+- All imports must happen inside the function body. Module-level imports are not available.
+- The function must not reference module-level variables, constants, or other functions.
+- The function must not take any parameters, be decorated, or be defined inside another function.
+
+ZenML rejects parameters, decorators, and references to enclosing functions when the step is created. The execution environment only needs a `python` binary on the `PATH`, ZenML does not have to be installed.
+
 ## Running without ZenML in the image
 
 A regular step runs your Python function inside the container, so the image has to contain `zenml`, your step code, and all of its dependencies. A command step does not. ZenML treats the command as a black box and never imports anything inside the container, so you can run an image that does not have `zenml` installed.
@@ -74,3 +97,4 @@ Environment variables and secrets are passed to the command as environment varia
 - Logs of command steps are not tracked by ZenML. They stay in the backend's native logging (for example CloudWatch or pod logs).
 - Step hooks are not allowed.
 - Steps in static pipelines without a step operator are not supported.
+- Functions passed as commands must be self-contained (see [Running a Python function](#running-a-python-function)).
