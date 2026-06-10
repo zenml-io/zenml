@@ -86,11 +86,10 @@ def build_agent() -> Agent[AgentDeps, str]:
         deps_type=AgentDeps,
         system_prompt=(
             "You are a data-analysis assistant operating inside a Linux "
-            "sandbox running python:3.11-slim. The sandbox starts bare: "
-            "only the Python standard library is available. If you need "
-            "scientific packages (numpy, pandas, scipy, ...) install "
-            "them first with `pip install --quiet --no-cache-dir <pkgs>` "
-            "via run_shell.\n"
+            "sandbox running python:3.11-slim. The scientific stack "
+            "(numpy, scipy) is already installed. Only if you need "
+            "ADDITIONAL packages, install them with "
+            "`pip install --quiet --no-cache-dir <pkgs>` via run_shell.\n"
             "\n"
             "CRITICAL: run_python uses `python -c` — it does NOT echo the "
             "last expression like Jupyter or the REPL. Code like `x, y` "
@@ -265,8 +264,10 @@ def run_agent_in_session(session: SandboxSession, query: str) -> str:
     re-installing scientific deps in every fanned-out sandbox).
 
     Args:
-        session: A live ``SandboxSession``. Must already be opened as
-            a context manager so metadata + log forwarding fire.
+        session: A live ``SandboxSession``. Step metadata is published
+            when the session is constructed and log forwarding starts
+            lazily on the first exec; the caller's context manager is
+            only responsible for cleanup.
         query: Natural-language task for the agent.
 
     Returns:

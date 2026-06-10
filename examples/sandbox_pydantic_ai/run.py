@@ -32,9 +32,24 @@ from agent import (
 from zenml import pipeline, step, unmapped
 from zenml.client import Client
 from zenml.config import DockerSettings
-from zenml.sandboxes import SandboxSnapshot
+from zenml.sandboxes import BaseSandbox, SandboxSnapshot
 
 _PYTHON_DEPS = "numpy scipy"
+
+
+def _active_sandbox() -> BaseSandbox:
+    """Fetches the Sandbox component from the active stack.
+
+    Returns:
+        The active stack's sandbox component.
+
+    Raises:
+        RuntimeError: If the active stack has no sandbox component.
+    """
+    sandbox = Client().active_stack.sandbox
+    if sandbox is None:
+        raise RuntimeError("No Sandbox component in the active stack.")
+    return sandbox
 
 
 @step
@@ -45,13 +60,9 @@ def prep_step() -> Annotated[SandboxSnapshot, "scientific_image"]:
         The sandbox snapshot with the scientific stack pre-installed.
 
     Raises:
-        RuntimeError: If the stack has no sandbox or the install fails.
+        RuntimeError: If the install fails.
     """
-    sandbox = Client().active_stack.sandbox
-    if sandbox is None:
-        raise RuntimeError("No Sandbox component in the active stack.")
-
-    with sandbox.create_session() as session:
+    with _active_sandbox().create_session() as session:
         out = session.exec(
             [
                 "bash",
@@ -66,7 +77,7 @@ def prep_step() -> Annotated[SandboxSnapshot, "scientific_image"]:
         return session.create_snapshot()
 
 
-@step
+@step(enable_cache=False)
 def planner_step(query: str) -> Annotated[list[str], "subtasks"]:
     """Asks a planner LLM to decompose the user goal into N subtasks.
 
@@ -79,7 +90,7 @@ def planner_step(query: str) -> Annotated[list[str], "subtasks"]:
     return plan_subtasks(query)
 
 
-@step
+@step(enable_cache=False)
 def subagent_step(
     snapshot: SandboxSnapshot, subtask: str
 ) -> Annotated[str, "subagent_answer"]:
@@ -91,18 +102,12 @@ def subagent_step(
 
     Returns:
         The subagent's final natural-language answer.
-
-    Raises:
-        RuntimeError: If the active stack has no sandbox component.
     """
-    sandbox = Client().active_stack.sandbox
-    if sandbox is None:
-        raise RuntimeError("No Sandbox component in the active stack.")
-    with sandbox.restore(snapshot) as session:
+    with _active_sandbox().restore(snapshot) as session:
         return run_agent_in_session(session, subtask)
 
 
-@step
+@step(enable_cache=False)
 def reducer_step(
     query: str, parts: list[str]
 ) -> Annotated[str, "final_answer"]:
@@ -118,9 +123,10 @@ def reducer_step(
     return synthesize(query, parts)
 
 
+# LLM-dependent steps disable caching individually so the expensive
+# prep_step snapshot can still be reused across runs via the cache.
 @pipeline(
     dynamic=True,
-    enable_cache=False,
     settings={
         "docker": DockerSettings(
             python_package_installer="uv",

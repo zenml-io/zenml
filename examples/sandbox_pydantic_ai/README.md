@@ -42,10 +42,10 @@ uv pip install -r requirements.txt
 zenml init
 ```
 
-Create a ZenML secret carrying your OpenAI key. **Important:** the secret-key casing must be `OPENAI_API_KEY` (uppercase). The Click CLI normalizes `--flag` names to lowercase, so use the `-v` JSON form:
+Create a ZenML secret carrying your OpenAI key (`zenml secret create` preserves the casing of the key names you pass):
 
 ```bash
-zenml secret create openai -v '{"OPENAI_API_KEY": "sk-..."}'
+zenml secret create openai --OPENAI_API_KEY=sk-...
 ```
 
 Register the sandbox component. Modal credentials come either from the Modal SDK's ambient auth (`~/.modal.toml` or `MODAL_TOKEN_ID` / `MODAL_TOKEN_SECRET` env vars) or from the component itself (`zenml sandbox register ... --token_id=... --token_secret=...`). Prefer the component route when steps run on a remote orchestrator, since the orchestrator environment won't have your local Modal auth.
@@ -101,14 +101,6 @@ print(run.steps["reducer_step"].outputs["final_answer"][0].load())
 
 ## Cloud orchestrators
 
-The default `orchestrator: default` runs the agent steps on your local Python. To run on a remote orchestrator (Kubernetes, SageMaker, Vertex…), the pipeline's `DockerSettings` bakes the example's requirements into the step image. Add `OPENAI_API_KEY` to the step env:
-
-```python
-DockerSettings(
-    python_package_installer="uv",
-    requirements="requirements.txt",
-    environment={"OPENAI_API_KEY": os.environ["OPENAI_API_KEY"]},
-)
-```
+The default `orchestrator: default` runs the agent steps on your local Python. To run on a remote orchestrator (Kubernetes, SageMaker, Vertex…), the pipeline's `DockerSettings` bakes the example's requirements into the step image. No extra env wiring is needed for the OpenAI key: the `--secret=openai` attached to the sandbox component is resolved into the step environment at runtime, on any orchestrator.
 
 The Sandbox itself still runs on Modal regardless of the orchestrator — only step execution location changes.
