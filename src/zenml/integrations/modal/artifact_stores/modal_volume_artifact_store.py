@@ -15,23 +15,41 @@
 
 import glob as glob_module
 import os
+import posixpath
 import shutil
 from pathlib import Path
-from typing import Any, Callable, Iterable, List, Optional, Tuple, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    cast,
+)
 
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.artifact_stores.base_artifact_store import PathType
 from zenml.constants import handle_bool_env_var
+from zenml.integrations.modal import (
+    MODAL_ORCHESTRATOR_FLAVOR,
+    MODAL_STEP_OPERATOR_FLAVOR,
+)
 from zenml.integrations.modal.flavors.modal_volume_artifact_store_flavor import (
+    ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH,
+    ENV_ZENML_MODAL_ARTIFACT_STORE_MOUNT_PATH,
+    ENV_ZENML_MODAL_ARTIFACT_STORE_VOLUME_NAME,
+    ENV_ZENML_MODAL_ARTIFACT_STORE_VOLUME_PREFIX,
     MODAL_VOLUME_URI_SCHEME,
     ModalVolumeArtifactStoreConfig,
     parse_modal_volume_uri,
 )
 from zenml.io.fileio import convert_to_str
+from zenml.stack import StackValidator
 
-ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH = (
-    "ZENML_MODAL_ARTIFACT_STORE_FAST_PATH"
-)
+if TYPE_CHECKING:
+    from zenml.stack import Stack
 
 
 class ModalVolumeArtifactStore(BaseArtifactStore):
@@ -64,6 +82,81 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
         """
         return self.config.volume_prefix
 
+    @property
+    def validator(self) -> StackValidator:
+        """Validate that the stack can mount Modal Volumes at runtime.
+
+        Returns:
+            A stack validator that limits this artifact store to Modal-native
+            execution paths.
+        """
+
+        def _validate_modal_runtime(stack: "Stack") -> Tuple[bool, str]:
+            orchestrator = getattr(stack, "orchestrator", None)
+            if (
+                getattr(orchestrator, "flavor", None)
+                != MODAL_ORCHESTRATOR_FLAVOR
+            ):
+                return False, (
+                    "Modal Volume artifact stores are Modal-native storage, "
+                    "not S3-compatible general cloud artifact storage. The "
+                    "stack must use the Modal orchestrator so ZenML artifact "
+                    "reads and writes run inside Modal sandboxes with the "
+                    "Volume mounted. Local, Kubernetes, and other non-Modal "
+                    "orchestrators are not supported until Modal SDK fallback "
+                    "execution is implemented."
+                )
+
+            step_operators = getattr(stack, "step_operators", {}) or {}
+            non_modal_step_operators = [
+                step_operator.name
+                for step_operator in step_operators.values()
+                if step_operator.flavor != MODAL_STEP_OPERATOR_FLAVOR
+            ]
+            if non_modal_step_operators:
+                return False, (
+                    "Modal Volume artifact stores can only be used with "
+                    "Modal runtimes in this release. Non-Modal step operators "
+                    f"cannot mount Modal Volumes: {non_modal_step_operators}."
+                )
+
+            return True, ""
+
+        return StackValidator(
+            custom_validation_function=_validate_modal_runtime
+        )
+
+    def _validate_runtime_mount_metadata(self) -> None:
+        """Check that the mounted fast path matches this artifact store.
+
+        Raises:
+            RuntimeError: If the Modal runtime mounted a different Volume or
+                artifact-store prefix.
+        """
+        expected_mount_path = posixpath.normpath(self.config.mount_path)
+        runtime_values = {
+            ENV_ZENML_MODAL_ARTIFACT_STORE_VOLUME_NAME: self.volume_name,
+            ENV_ZENML_MODAL_ARTIFACT_STORE_VOLUME_PREFIX: self.volume_prefix,
+            ENV_ZENML_MODAL_ARTIFACT_STORE_MOUNT_PATH: expected_mount_path,
+        }
+
+        for env_var, expected_value in runtime_values.items():
+            actual_value = os.environ.get(env_var)
+            if env_var == ENV_ZENML_MODAL_ARTIFACT_STORE_MOUNT_PATH:
+                actual_value = (
+                    posixpath.normpath(actual_value) if actual_value else None
+                )
+
+            if actual_value != expected_value:
+                raise RuntimeError(
+                    "The Modal Volume artifact store fast-path marker is set, "
+                    "but the runtime mount metadata does not match this "
+                    "artifact store. "
+                    f"Expected {env_var}='{expected_value}', got "
+                    f"'{actual_value}'. This sandbox may have mounted a "
+                    "different Modal Volume artifact store."
+                )
+
     def _require_mounted_fast_path(self) -> Path:
         """Return the mounted Volume path or fail with setup guidance.
 
@@ -84,6 +177,8 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
                 "runtime where the Volume is mounted, or wait for the planned "
                 "Modal SDK fallback implementation."
             )
+
+        self._validate_runtime_mount_metadata()
 
         mount_path = Path(self.config.mount_path)
         if not mount_path.is_dir():

@@ -62,6 +62,9 @@ class ModalStepOperator(BaseStepOperator):
             get_token_id=lambda: self.config.token_id,
             get_token_secret=lambda: self.config.token_secret,
         )
+        self._modal_volume_mount_factory = (
+            sandbox_utils.ModalVolumeMountFactory()
+        )
 
     def _get_modal_client(self) -> Optional["modal.Client"]:
         """Get an explicit Modal client when credentials are configured."""
@@ -195,6 +198,10 @@ class ModalStepOperator(BaseStepOperator):
         modal_environment = sandbox_utils.normalize_optional_config_value(
             settings.modal_environment
         )
+        sandbox_utils.validate_modal_volume_environment_consistency(
+            stack,
+            modal_environment=modal_environment,
+        )
         modal_client = self._get_modal_client()
 
         app = sandbox_utils.lookup_modal_app(
@@ -202,14 +209,26 @@ class ModalStepOperator(BaseStepOperator):
             modal_environment=modal_environment,
             modal_client=modal_client,
         )
+        modal_volume_mount = self._modal_volume_mount_factory.get_mount(
+            stack,
+            modal_environment=modal_environment,
+            modal_client=modal_client,
+        )
+        sandbox_environment = environment.copy()
+        if modal_volume_mount:
+            sandbox_environment.update(modal_volume_mount.environment)
+
         sandbox = sandbox_utils.create_modal_sandbox(
             entrypoint_command,
             app=app,
             image=zenml_image,
             settings=settings,
             resource_settings=resource_settings,
-            environment=environment,
+            environment=sandbox_environment,
             modal_client=modal_client,
+            volumes=(
+                modal_volume_mount.volumes if modal_volume_mount else None
+            ),
         )
         metadata: Dict[str, Any] = {
             STEP_SANDBOX_ID_METADATA_KEY: sandbox.object_id

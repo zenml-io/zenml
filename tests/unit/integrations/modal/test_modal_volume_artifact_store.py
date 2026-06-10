@@ -16,21 +16,28 @@
 import os
 from datetime import datetime
 from pathlib import Path
+from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
 from pydantic import ValidationError
 
 from zenml.enums import StackComponentType
+from zenml.exceptions import StackValidationError
 from zenml.integrations.modal import (
+    MODAL_ORCHESTRATOR_FLAVOR,
+    MODAL_STEP_OPERATOR_FLAVOR,
     MODAL_VOLUME_ARTIFACT_STORE_FLAVOR,
     ModalIntegration,
 )
 from zenml.integrations.modal.artifact_stores.modal_volume_artifact_store import (
-    ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH,
     ModalVolumeArtifactStore,
 )
 from zenml.integrations.modal.flavors.modal_volume_artifact_store_flavor import (
+    ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH,
+    ENV_ZENML_MODAL_ARTIFACT_STORE_MOUNT_PATH,
+    ENV_ZENML_MODAL_ARTIFACT_STORE_VOLUME_NAME,
+    ENV_ZENML_MODAL_ARTIFACT_STORE_VOLUME_PREFIX,
     ModalVolumeArtifactStoreConfig,
     ModalVolumeArtifactStoreFlavor,
     parse_modal_volume_uri,
@@ -62,6 +69,26 @@ def _make_artifact_store(
     )
 
 
+def _enable_fast_path(
+    monkeypatch: pytest.MonkeyPatch,
+    artifact_store: ModalVolumeArtifactStore,
+) -> None:
+    """Set the Modal fast-path environment for one artifact store."""
+    monkeypatch.setenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, "1")
+    monkeypatch.setenv(
+        ENV_ZENML_MODAL_ARTIFACT_STORE_MOUNT_PATH,
+        artifact_store.config.mount_path,
+    )
+    monkeypatch.setenv(
+        ENV_ZENML_MODAL_ARTIFACT_STORE_VOLUME_NAME,
+        artifact_store.volume_name,
+    )
+    monkeypatch.setenv(
+        ENV_ZENML_MODAL_ARTIFACT_STORE_VOLUME_PREFIX,
+        artifact_store.volume_prefix,
+    )
+
+
 def test_modal_volume_path_parsing_derives_volume_fields() -> None:
     """Modal Volume config derives Volume details from path."""
     parsed = parse_modal_volume_uri("modal-volume://vol-a/some/prefix")
@@ -74,6 +101,13 @@ def test_modal_volume_path_parsing_derives_volume_fields() -> None:
     assert config.volume_name == "vol-a"
     assert config.volume_prefix == "some/prefix"
     assert config.create_if_missing is False
+
+    normalized_config = ModalVolumeArtifactStoreConfig(
+        path="modal-volume://vol-a/some/prefix",
+        mount_path="/mnt//../mnt/zenml/./artifacts/..",
+    )
+    assert normalized_config.mount_path == "/mnt/zenml"
+
     config_fields = ModalVolumeArtifactStoreConfig.model_fields
     assert "volume_name" not in config_fields
     assert "volume_prefix" not in config_fields
@@ -121,8 +155,93 @@ def test_modal_volume_flavor_uses_lazy_implementation_import() -> None:
 
 
 def test_modal_integration_defers_modal_volume_flavor_registration() -> None:
-    """Modal Volume flavor registration waits for Modal mount wiring."""
+    """Modal Volume flavor registration waits for lifecycle validation."""
     assert ModalVolumeArtifactStoreFlavor not in ModalIntegration.flavors()
+
+
+def _validator_stack(
+    *,
+    orchestrator_flavor: str,
+    step_operator_flavors: list[str] | None = None,
+):
+    """Create a minimal stack object for artifact-store validator tests."""
+    orchestrator = SimpleNamespace(
+        flavor=orchestrator_flavor,
+        type=StackComponentType.ORCHESTRATOR,
+    )
+    step_operators = {
+        f"step-operator-{index}": SimpleNamespace(
+            name=f"step-operator-{index}",
+            flavor=flavor,
+            type=StackComponentType.STEP_OPERATOR,
+        )
+        for index, flavor in enumerate(step_operator_flavors or [])
+    }
+    return SimpleNamespace(
+        name="validator-stack",
+        orchestrator=orchestrator,
+        step_operators=step_operators,
+        all_components=[orchestrator, *step_operators.values()],
+    )
+
+
+def test_modal_volume_validator_accepts_modal_orchestrator(
+    tmp_path: Path,
+) -> None:
+    """Modal orchestrator stacks can mount Modal Volume artifact stores."""
+    validator = _make_artifact_store(tmp_path).validator
+
+    validator.validate(
+        _validator_stack(orchestrator_flavor=MODAL_ORCHESTRATOR_FLAVOR)
+    )
+
+
+def test_modal_volume_validator_accepts_modal_step_operator_with_modal_orchestrator(
+    tmp_path: Path,
+) -> None:
+    """A Modal step operator is safe only when orchestration is also Modal."""
+    validator = _make_artifact_store(tmp_path).validator
+
+    validator.validate(
+        _validator_stack(
+            orchestrator_flavor=MODAL_ORCHESTRATOR_FLAVOR,
+            step_operator_flavors=[MODAL_STEP_OPERATOR_FLAVOR],
+        )
+    )
+
+
+def test_modal_volume_validator_rejects_non_modal_orchestrator(
+    tmp_path: Path,
+) -> None:
+    """Local and other non-Modal orchestrators cannot mount Modal Volumes."""
+    validator = _make_artifact_store(tmp_path).validator
+
+    with pytest.raises(StackValidationError) as exc_info:
+        validator.validate(_validator_stack(orchestrator_flavor="local"))
+
+    error_message = str(exc_info.value)
+    assert "Modal-native storage" in error_message
+    assert "Modal orchestrator" in error_message
+    assert "not S3-compatible" in error_message
+
+
+def test_modal_volume_validator_rejects_non_modal_step_operator(
+    tmp_path: Path,
+) -> None:
+    """Non-Modal step operators cannot mount the configured Modal Volume."""
+    validator = _make_artifact_store(tmp_path).validator
+
+    with pytest.raises(StackValidationError) as exc_info:
+        validator.validate(
+            _validator_stack(
+                orchestrator_flavor=MODAL_ORCHESTRATOR_FLAVOR,
+                step_operator_flavors=["vertex"],
+            )
+        )
+
+    error_message = str(exc_info.value)
+    assert "Non-Modal step operators" in error_message
+    assert "cannot mount Modal Volumes" in error_message
 
 
 def test_modal_volume_uri_is_remote() -> None:
@@ -151,11 +270,29 @@ def test_modal_volume_fails_when_marked_mount_is_missing(
     """A set marker with no mount path points to Modal runtime setup failure."""
     missing_mount_path = tmp_path / "missing"
     artifact_store = _make_artifact_store(missing_mount_path)
-    monkeypatch.setenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, "1")
+    _enable_fast_path(monkeypatch, artifact_store)
 
     with pytest.raises(
         FileNotFoundError, match="create_if_missing value is False"
     ):
+        artifact_store.exists(MODAL_URI)
+
+
+def test_modal_volume_rejects_mismatched_fast_path_metadata(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A sandbox mounted for one Volume cannot serve another Volume."""
+    mount_path = tmp_path / "mount"
+    mount_path.mkdir()
+    artifact_store = _make_artifact_store(mount_path)
+    _enable_fast_path(monkeypatch, artifact_store)
+    monkeypatch.setenv(
+        ENV_ZENML_MODAL_ARTIFACT_STORE_VOLUME_NAME,
+        "different-volume",
+    )
+
+    with pytest.raises(RuntimeError, match="runtime mount metadata"):
         artifact_store.exists(MODAL_URI)
 
 
@@ -169,7 +306,7 @@ def test_modal_volume_rejects_symlink_escape_for_missing_write_path(
     mount_path.mkdir()
     outside_path.mkdir()
     artifact_store = _make_artifact_store(mount_path)
-    monkeypatch.setenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, "1")
+    _enable_fast_path(monkeypatch, artifact_store)
 
     artifact_store.makedirs(MODAL_URI)
     os.symlink(outside_path, mount_path / "root" / "link")
@@ -193,7 +330,7 @@ def test_modal_volume_rejects_symlink_escape_outside_mount(
     outside_file = outside_path / "secret.txt"
     outside_file.write_text("secret")
     artifact_store = _make_artifact_store(mount_path)
-    monkeypatch.setenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, "1")
+    _enable_fast_path(monkeypatch, artifact_store)
 
     artifact_store.makedirs(MODAL_URI)
     os.symlink(outside_file, mount_path / "root" / "secret-link.txt")
@@ -212,7 +349,7 @@ def test_modal_volume_rejects_symlink_escape_outside_configured_prefix(
     mount_path.mkdir()
     other_prefix.mkdir()
     artifact_store = _make_artifact_store(mount_path)
-    monkeypatch.setenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, "1")
+    _enable_fast_path(monkeypatch, artifact_store)
 
     artifact_store.makedirs(MODAL_URI)
     os.symlink("../other", mount_path / "root" / "link")
@@ -235,7 +372,7 @@ def test_modal_volume_recursive_operations_reject_prefix_escape_symlinks(
     other_prefix.mkdir()
     (other_prefix / "secret.txt").write_text("secret")
     artifact_store = _make_artifact_store(mount_path)
-    monkeypatch.setenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, "1")
+    _enable_fast_path(monkeypatch, artifact_store)
 
     artifact_store.makedirs(MODAL_URI)
     with artifact_store.open(f"{MODAL_URI}/data.txt", "w") as file:
@@ -258,7 +395,7 @@ def test_modal_volume_mounted_fast_path_methods(
     mount_path = tmp_path / "mount"
     mount_path.mkdir()
     artifact_store = _make_artifact_store(mount_path)
-    monkeypatch.setenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, "1")
+    _enable_fast_path(monkeypatch, artifact_store)
 
     root_uri = MODAL_URI
     nested_uri = f"{root_uri}/nested"
@@ -313,7 +450,7 @@ def test_modal_volume_rejects_operation_path_traversal(
     mount_path = tmp_path / "mount"
     mount_path.mkdir()
     artifact_store = _make_artifact_store(mount_path)
-    monkeypatch.setenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, "1")
+    _enable_fast_path(monkeypatch, artifact_store)
 
     with pytest.raises(ValueError, match="path traversal"):
         artifact_store.exists(f"{MODAL_URI}/../outside")
@@ -329,8 +466,8 @@ def test_modal_volume_fileio_registration(
     """Instantiating the artifact store registers modal-volume:// with fileio."""
     mount_path = tmp_path / "mount"
     mount_path.mkdir()
-    _make_artifact_store(mount_path)
-    monkeypatch.setenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, "1")
+    artifact_store = _make_artifact_store(mount_path)
+    _enable_fast_path(monkeypatch, artifact_store)
 
     uri = f"{MODAL_URI}/fileio/file.txt"
     fileio.makedirs(os.path.dirname(uri))
@@ -353,7 +490,7 @@ def test_modal_volume_path_materializer_file_roundtrip(
     mount_path = tmp_path / "mount"
     mount_path.mkdir()
     artifact_store = _make_artifact_store(mount_path)
-    monkeypatch.setenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, "1")
+    _enable_fast_path(monkeypatch, artifact_store)
 
     source_path = tmp_path / "source.txt"
     source_path.write_text("materialized file")

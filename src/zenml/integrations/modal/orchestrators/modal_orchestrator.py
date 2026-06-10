@@ -136,6 +136,9 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             get_token_id=lambda: self.config.token_id,
             get_token_secret=lambda: self.config.token_secret,
         )
+        self._modal_volume_mount_factory = (
+            sandbox_utils.ModalVolumeMountFactory()
+        )
 
     @property
     def config(self) -> ModalOrchestratorConfig:
@@ -332,6 +335,10 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         sandbox_environment = environment.copy()
         sandbox_environment[ENV_ZENML_MODAL_RUN_ID] = modal_run_id
         sandbox_environment[ENV_ZENML_MODAL_APP_NAME] = app_name
+        if sandbox_utils.stack_uses_modal_volume_artifact_store(stack):
+            sandbox_environment[
+                sandbox_utils.ENV_ZENML_MODAL_VOLUME_ENVIRONMENT_NAME
+            ] = modal_environment or ""
 
         modal_client = self.get_modal_client()
         zenml_image = sandbox_utils.get_modal_image_from_registry(
@@ -342,6 +349,14 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             modal_environment=modal_environment,
             modal_client=modal_client,
         )
+        modal_volume_mount = self._modal_volume_mount_factory.get_mount(
+            stack,
+            modal_environment=modal_environment,
+            modal_client=modal_client,
+        )
+        if modal_volume_mount:
+            sandbox_environment.update(modal_volume_mount.environment)
+
         sandbox = sandbox_utils.create_modal_sandbox(
             entrypoint_command,
             app=app,
@@ -352,6 +367,9 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             environment=sandbox_environment,
             modal_client=modal_client,
             gpu_validation_message=MODAL_ORCHESTRATOR_GPU_VALIDATION_MESSAGE,
+            volumes=(
+                modal_volume_mount.volumes if modal_volume_mount else None
+            ),
         )
 
         metadata: Dict[str, MetadataType] = {
@@ -500,6 +518,10 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         modal_environment = sandbox_utils.normalize_optional_config_value(
             settings.modal_environment
         )
+        sandbox_utils.validate_modal_volume_environment_consistency(
+            stack,
+            modal_environment=modal_environment,
+        )
         modal_client = self.get_modal_client()
         zenml_image = sandbox_utils.get_modal_image_from_registry(
             image_name, stack.container_registry.credentials
@@ -509,15 +531,27 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             modal_environment=modal_environment,
             modal_client=modal_client,
         )
+        modal_volume_mount = self._modal_volume_mount_factory.get_mount(
+            stack,
+            modal_environment=modal_environment,
+            modal_client=modal_client,
+        )
+        sandbox_environment = environment.copy()
+        if modal_volume_mount:
+            sandbox_environment.update(modal_volume_mount.environment)
+
         return sandbox_utils.create_modal_sandbox(
             entrypoint_command,
             app=app,
             image=zenml_image,
             settings=settings,
             resource_settings=resource_settings or ResourceSettings(),
-            environment=environment,
+            environment=sandbox_environment,
             modal_client=modal_client,
             gpu_validation_message=MODAL_ORCHESTRATOR_GPU_VALIDATION_MESSAGE,
+            volumes=(
+                modal_volume_mount.volumes if modal_volume_mount else None
+            ),
         )
 
     @staticmethod

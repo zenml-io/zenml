@@ -13,12 +13,12 @@
 #  permissions and limitations under the License.
 """Modal Volume artifact store flavor."""
 
-import os
+import posixpath
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar, Set, Type
 from urllib.parse import unquote, urlparse
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 
 from zenml.artifact_stores import (
     BaseArtifactStoreConfig,
@@ -34,6 +34,18 @@ if TYPE_CHECKING:
 
 MODAL_VOLUME_URI_SCHEME_NAME = "modal-volume"
 MODAL_VOLUME_URI_SCHEME = f"{MODAL_VOLUME_URI_SCHEME_NAME}://"
+ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH = (
+    "ZENML_MODAL_ARTIFACT_STORE_FAST_PATH"
+)
+ENV_ZENML_MODAL_ARTIFACT_STORE_MOUNT_PATH = (
+    "ZENML_MODAL_ARTIFACT_STORE_MOUNT_PATH"
+)
+ENV_ZENML_MODAL_ARTIFACT_STORE_VOLUME_NAME = (
+    "ZENML_MODAL_ARTIFACT_STORE_VOLUME_NAME"
+)
+ENV_ZENML_MODAL_ARTIFACT_STORE_VOLUME_PREFIX = (
+    "ZENML_MODAL_ARTIFACT_STORE_VOLUME_PREFIX"
+)
 
 
 @dataclass(frozen=True)
@@ -133,12 +145,30 @@ class ModalVolumeArtifactStoreConfig(BaseArtifactStoreConfig):
         """
         parse_modal_volume_uri(self.path)
 
-        if not os.path.isabs(self.mount_path):
+        return self
+
+    @field_validator("mount_path")
+    @classmethod
+    def _validate_mount_path(cls, mount_path: str) -> str:
+        """Validate and normalize the Modal Volume mount path.
+
+        Args:
+            mount_path: The configured mount path.
+
+        Returns:
+            The normalized absolute mount path.
+
+        Raises:
+            ValueError: If the mount path is invalid.
+        """
+        if not posixpath.isabs(mount_path):
             raise ValueError("Modal Volume mount_path must be absolute.")
-        if os.path.abspath(self.mount_path) == os.path.sep:
+
+        normalized_mount_path = posixpath.normpath(mount_path)
+        if normalized_mount_path == posixpath.sep:
             raise ValueError("Modal Volume mount_path must not be '/'.")
 
-        return self
+        return normalized_mount_path
 
     @property
     def volume_name(self) -> str:

@@ -32,10 +32,20 @@ from zenml.enums import (  # noqa: E402
     StackComponentType,
 )
 from zenml.exceptions import AuthorizationException  # noqa: E402
-from zenml.integrations.modal import sandbox_utils  # noqa: E402
+from zenml.integrations.modal import (  # noqa: E402
+    MODAL_VOLUME_ARTIFACT_STORE_FLAVOR,
+    sandbox_utils,  # noqa: E402
+)
 from zenml.integrations.modal.flavors import (  # noqa: E402
     ModalOrchestratorConfig,
     ModalOrchestratorSettings,
+    ModalVolumeArtifactStoreConfig,
+)
+from zenml.integrations.modal.flavors.modal_volume_artifact_store_flavor import (  # noqa: E402
+    ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH,
+    ENV_ZENML_MODAL_ARTIFACT_STORE_MOUNT_PATH,
+    ENV_ZENML_MODAL_ARTIFACT_STORE_VOLUME_NAME,
+    ENV_ZENML_MODAL_ARTIFACT_STORE_VOLUME_PREFIX,
 )
 from zenml.integrations.modal.orchestrators import (  # noqa: E402
     modal_orchestrator as modal_orchestrator_module,
@@ -143,9 +153,26 @@ def _make_snapshot(*, schedule=None, is_dynamic=False, pipeline_image=True):
     )
 
 
-def _make_stack(registry_credentials=None):
+def _make_stack(registry_credentials=None, artifact_store=None):
     return SimpleNamespace(
         container_registry=SimpleNamespace(credentials=registry_credentials),
+        artifact_store=artifact_store,
+    )
+
+
+def _modal_volume_artifact_store(
+    *,
+    path="modal-volume://training-artifacts/runs",
+    mount_path="/mnt/zenml",
+    create_if_missing=True,
+):
+    return SimpleNamespace(
+        flavor=MODAL_VOLUME_ARTIFACT_STORE_FLAVOR,
+        config=ModalVolumeArtifactStoreConfig(
+            path=path,
+            mount_path=mount_path,
+            create_if_missing=create_if_missing,
+        ),
     )
 
 
@@ -202,6 +229,15 @@ def _install_modal_sdk_stubs(monkeypatch, *, from_id_sandboxes=None):
             recorded["app_lookup"] = (args, kwargs)
             return SimpleNamespace(app_name=args[0])
 
+    class VolumeFactoryStub:
+        @staticmethod
+        def from_name(*args, **kwargs):
+            volume = SimpleNamespace(volume_name=args[0])
+            recorded.setdefault("volume_from_name", []).append(
+                (args, kwargs, volume)
+            )
+            return volume
+
     class SandboxFactoryStub:
         @staticmethod
         def create(*args, **kwargs):
@@ -236,6 +272,9 @@ def _install_modal_sdk_stubs(monkeypatch, *, from_id_sandboxes=None):
         modal_orchestrator_module.modal, "Secret", SecretFactoryStub
     )
     monkeypatch.setattr(modal_orchestrator_module.modal, "App", AppFactoryStub)
+    monkeypatch.setattr(
+        modal_orchestrator_module.modal, "Volume", VolumeFactoryStub
+    )
     monkeypatch.setattr(
         modal_orchestrator_module.modal, "Sandbox", SandboxFactoryStub
     )
@@ -342,6 +381,195 @@ def test_static_submission_records_metadata_and_splits_secrets(monkeypatch):
     assert recorded["secret_values"][-1] == {
         SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY: "secret-token"
     }
+
+
+def test_orchestration_sandbox_mounts_modal_volume_artifact_store(
+    monkeypatch,
+):
+    recorded = _install_modal_sdk_stubs(monkeypatch)
+    snapshot = _make_snapshot()
+    stack = _make_stack(artifact_store=_modal_volume_artifact_store())
+    orchestrator = _make_orchestrator(
+        ModalOrchestratorConfig(
+            synchronous=False,
+            modal_environment="prod",
+        )
+    )
+    orchestrator.get_settings = lambda _obj: ModalOrchestratorSettings(
+        synchronous=False,
+        modal_environment="prod",
+    )
+
+    result = orchestrator.submit_pipeline(
+        snapshot=snapshot,
+        stack=stack,
+        base_environment={"PLAIN": "value"},
+        step_environments={},
+        placeholder_run=None,
+    )
+
+    assert result is not None
+    volume_args, volume_kwargs, volume = recorded["volume_from_name"][0]
+    assert volume_args == ("training-artifacts",)
+    assert volume_kwargs == {
+        "environment_name": "prod",
+        "create_if_missing": True,
+        "client": None,
+    }
+    sandbox_kwargs = recorded["sandbox_create"][1]
+    assert sandbox_kwargs["volumes"] == {"/mnt/zenml": volume}
+    assert (
+        sandbox_kwargs["env"][ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH] == "1"
+    )
+    assert sandbox_kwargs["env"][
+        ENV_ZENML_MODAL_ARTIFACT_STORE_MOUNT_PATH
+    ] == ("/mnt/zenml")
+    assert sandbox_kwargs["env"][
+        ENV_ZENML_MODAL_ARTIFACT_STORE_VOLUME_NAME
+    ] == ("training-artifacts")
+    assert sandbox_kwargs["env"][
+        ENV_ZENML_MODAL_ARTIFACT_STORE_VOLUME_PREFIX
+    ] == ("runs")
+    assert (
+        sandbox_kwargs["env"][
+            sandbox_utils.ENV_ZENML_MODAL_VOLUME_ENVIRONMENT_NAME
+        ]
+        == "prod"
+    )
+
+
+def test_static_child_sandbox_mounts_modal_volume_artifact_store(
+    monkeypatch,
+):
+    recorded = _install_modal_sdk_stubs(monkeypatch)
+
+    class ClientStub:
+        active_stack = _make_stack(
+            artifact_store=_modal_volume_artifact_store(
+                create_if_missing=False
+            )
+        )
+
+    monkeypatch.setattr(modal_orchestrator_module, "Client", ClientStub)
+    monkeypatch.setenv(ENV_ZENML_MODAL_RUN_ID, "run-id")
+    monkeypatch.setenv(ENV_ZENML_MODAL_APP_NAME, "app-name")
+
+    snapshot = _make_snapshot()
+    orchestrator = _make_orchestrator()
+    orchestrator.get_settings = lambda _obj: ModalOrchestratorSettings(
+        modal_environment="prod"
+    )
+
+    orchestrator.create_static_step_sandbox(
+        snapshot=snapshot,
+        step_name="train",
+        environment={"STEP_ENV": "value"},
+    )
+
+    volume_args, volume_kwargs, volume = recorded["volume_from_name"][0]
+    assert volume_args == ("training-artifacts",)
+    assert volume_kwargs["environment_name"] == "prod"
+    assert volume_kwargs["create_if_missing"] is False
+    sandbox_kwargs = recorded["sandbox_create"][1]
+    assert sandbox_kwargs["volumes"] == {"/mnt/zenml": volume}
+    assert sandbox_kwargs["env"]["STEP_ENV"] == "value"
+    assert (
+        sandbox_kwargs["env"][ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH] == "1"
+    )
+
+
+def test_static_child_sandboxes_reuse_modal_volume_mount(
+    monkeypatch,
+):
+    recorded = _install_modal_sdk_stubs(monkeypatch)
+
+    class ClientStub:
+        active_stack = _make_stack(
+            artifact_store=_modal_volume_artifact_store()
+        )
+
+    monkeypatch.setattr(modal_orchestrator_module, "Client", ClientStub)
+    monkeypatch.setenv(ENV_ZENML_MODAL_RUN_ID, "run-id")
+    monkeypatch.setenv(ENV_ZENML_MODAL_APP_NAME, "app-name")
+    monkeypatch.setenv(
+        sandbox_utils.ENV_ZENML_MODAL_VOLUME_ENVIRONMENT_NAME,
+        "prod",
+    )
+
+    snapshot = _make_snapshot()
+    orchestrator = _make_orchestrator()
+    orchestrator.get_settings = lambda _obj: ModalOrchestratorSettings(
+        modal_environment="prod"
+    )
+
+    first_sandbox = orchestrator.create_static_step_sandbox(
+        snapshot=snapshot,
+        step_name="train",
+        environment={"STEP_ENV": "first"},
+    )
+    second_sandbox = orchestrator.create_static_step_sandbox(
+        snapshot=snapshot,
+        step_name="train",
+        environment={"STEP_ENV": "second"},
+    )
+
+    assert first_sandbox is not second_sandbox
+    assert len(recorded["created_sandboxes"]) == 2
+    assert len(recorded["volume_from_name"]) == 1
+    resolved_volume = recorded["volume_from_name"][0][2]
+    for sandbox in recorded["created_sandboxes"]:
+        assert sandbox.object_id.startswith("sandbox-")
+    assert recorded["sandbox_create"][1]["volumes"] == {
+        "/mnt/zenml": resolved_volume
+    }
+
+
+def test_dynamic_isolated_step_sandbox_mounts_modal_volume_artifact_store(
+    monkeypatch,
+):
+    recorded = _install_modal_sdk_stubs(monkeypatch)
+    published = []
+    step_run_id = uuid4()
+
+    class ClientStub:
+        active_stack = _make_stack(
+            artifact_store=_modal_volume_artifact_store()
+        )
+
+    monkeypatch.setattr(modal_orchestrator_module, "Client", ClientStub)
+    monkeypatch.setattr(
+        modal_orchestrator_module,
+        "publish_step_run_metadata",
+        lambda *args, **kwargs: published.append((args, kwargs)),
+    )
+    monkeypatch.setenv(ENV_ZENML_MODAL_APP_NAME, "existing-app")
+
+    step_run_info = SimpleNamespace(
+        pipeline_step_name="train",
+        snapshot=SimpleNamespace(id=uuid4()),
+        step_run_id=step_run_id,
+        run_id=uuid4(),
+        config=SimpleNamespace(resource_settings=ResourceSettingsStub()),
+        step_run=SimpleNamespace(run_metadata={}),
+        get_image=lambda key: "registry.example.com/zenml:step",
+    )
+    orchestrator = _make_orchestrator()
+    orchestrator.get_settings = lambda _obj: ModalOrchestratorSettings(
+        modal_environment="prod"
+    )
+
+    orchestrator.submit_isolated_step(step_run_info, {"STEP_ENV": "value"})
+
+    volume_args, volume_kwargs, volume = recorded["volume_from_name"][0]
+    assert volume_args == ("training-artifacts",)
+    assert volume_kwargs["environment_name"] == "prod"
+    sandbox_kwargs = recorded["sandbox_create"][1]
+    assert sandbox_kwargs["volumes"] == {"/mnt/zenml": volume}
+    assert sandbox_kwargs["env"]["STEP_ENV"] == "value"
+    assert (
+        sandbox_kwargs["env"][ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH] == "1"
+    )
+    assert published
 
 
 def test_supported_execution_modes_include_static_failure_modes():

@@ -221,9 +221,7 @@ def test_modal_orchestrator_config_remote_schedulable_and_sync_flags() -> None:
     assert async_config.is_synchronous is False
 
 
-def test_modal_integration_registers_step_operator_and_orchestrator_flavors() -> (
-    None
-):
+def test_modal_integration_registers_modal_flavors() -> None:
     assert [flavor.__name__ for flavor in ModalIntegration.flavors()] == [
         "ModalStepOperatorFlavor",
         "ModalOrchestratorFlavor",

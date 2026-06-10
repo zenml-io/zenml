@@ -28,9 +28,17 @@ pytest.importorskip("modal")
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentInterfaceError
+from zenml.integrations.modal import MODAL_VOLUME_ARTIFACT_STORE_FLAVOR
 from zenml.integrations.modal.flavors import (
     ModalStepOperatorConfig,
     ModalStepOperatorSettings,
+    ModalVolumeArtifactStoreConfig,
+)
+from zenml.integrations.modal.flavors.modal_volume_artifact_store_flavor import (
+    ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH,
+    ENV_ZENML_MODAL_ARTIFACT_STORE_MOUNT_PATH,
+    ENV_ZENML_MODAL_ARTIFACT_STORE_VOLUME_NAME,
+    ENV_ZENML_MODAL_ARTIFACT_STORE_VOLUME_PREFIX,
 )
 from zenml.integrations.modal.sandbox_utils import (
     GpuValidationMessage,
@@ -89,6 +97,17 @@ def _make_operator(config: ModalStepOperatorConfig) -> ModalStepOperator:
     )
 
 
+def _modal_volume_artifact_store():
+    return SimpleNamespace(
+        flavor=MODAL_VOLUME_ARTIFACT_STORE_FLAVOR,
+        config=ModalVolumeArtifactStoreConfig(
+            path="modal-volume://training-artifacts/runs",
+            mount_path="/mnt/zenml",
+            create_if_missing=True,
+        ),
+    )
+
+
 def _submit_with_stubs(
     monkeypatch,
     config: ModalStepOperatorConfig,
@@ -96,6 +115,7 @@ def _submit_with_stubs(
     modal_client: ModalClientStub | None,
     registry_credentials: tuple[str, str] | None = None,
     environment: dict[str, str] | None = None,
+    artifact_store=None,
     publish_step_run_metadata_error: Exception | None = None,
     run_metadata=None,
     expect_submit_error: bool = False,
@@ -124,6 +144,9 @@ def _submit_with_stubs(
 
     class StackStub:
         container_registry = ContainerRegistryStub()
+
+    if artifact_store is not None:
+        StackStub.artifact_store = artifact_store
 
     class ClientStub:
         active_stack = StackStub()
@@ -165,6 +188,15 @@ def _submit_with_stubs(
             recorded["app_lookup"] = (args, kwargs)
             return "app"
 
+    class VolumeFactoryStub:
+        @staticmethod
+        def from_name(*args, **kwargs):
+            volume = SimpleNamespace(volume_name=args[0])
+            recorded.setdefault("volume_from_name", []).append(
+                (args, kwargs, volume)
+            )
+            return volume
+
     class SandboxStub:
         object_id = "sandbox-id"
 
@@ -198,6 +230,9 @@ def _submit_with_stubs(
     )
     monkeypatch.setattr(
         modal_step_operator_module.modal, "App", AppFactoryStub
+    )
+    monkeypatch.setattr(
+        modal_step_operator_module.modal, "Volume", VolumeFactoryStub
     )
     monkeypatch.setattr(
         modal_step_operator_module.modal, "Sandbox", SandboxFactoryStub
@@ -516,6 +551,36 @@ def test_modal_submit_passes_explicit_client_and_runtime_env_boundary(
         {},
     )
     assert run_metadata == expected_metadata
+
+
+def test_modal_submit_mounts_modal_volume_artifact_store(
+    monkeypatch,
+) -> None:
+    recorded, _, _, _ = _submit_with_stubs(
+        monkeypatch=monkeypatch,
+        config=ModalStepOperatorConfig(),
+        settings=ModalStepOperatorSettings(modal_environment="prod"),
+        modal_client=None,
+        artifact_store=_modal_volume_artifact_store(),
+        environment={"ZENML_ENV": "value"},
+    )
+
+    volume_args, volume_kwargs, volume = recorded["volume_from_name"][0]
+    assert volume_args == ("training-artifacts",)
+    assert volume_kwargs == {
+        "environment_name": "prod",
+        "create_if_missing": True,
+        "client": None,
+    }
+    sandbox_kwargs = recorded["sandbox_create"][1]
+    assert sandbox_kwargs["volumes"] == {"/mnt/zenml": volume}
+    assert sandbox_kwargs["env"] == {
+        "ZENML_ENV": "value",
+        ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH: "1",
+        ENV_ZENML_MODAL_ARTIFACT_STORE_MOUNT_PATH: "/mnt/zenml",
+        ENV_ZENML_MODAL_ARTIFACT_STORE_VOLUME_NAME: "training-artifacts",
+        ENV_ZENML_MODAL_ARTIFACT_STORE_VOLUME_PREFIX: "runs",
+    }
 
 
 def test_modal_submit_passes_registry_credentials_to_image_from_registry(

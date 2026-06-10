@@ -46,4 +46,7 @@ class ModalIntegration(Integration):
             ModalStepOperatorFlavor,
         )
 
-        return [ModalStepOperatorFlavor, ModalOrchestratorFlavor]
+        return [
+            ModalStepOperatorFlavor,
+            ModalOrchestratorFlavor,
+        ]
