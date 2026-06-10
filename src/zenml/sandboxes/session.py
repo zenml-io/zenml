@@ -342,8 +342,15 @@ class SandboxSession(ABC):
             yield line
 
     def _close_logging_context(self) -> None:
-        """Close the logging context for the sandbox session."""
+        """Close the logging context for the sandbox session.
+
+        Closing is terminal: the context is created lazily on first emit,
+        so without disabling further creation here, any emit after close
+        (e.g. draining a leftover stream) would silently resurrect a new
+        context that nothing ever closes.
+        """
         with self._logging_lock:
+            self._logging_disabled = True
             if self._logging_context is not None:
                 try:
                     self._logging_context.end()
