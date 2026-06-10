@@ -22,7 +22,7 @@ import logging
 import sys
 from contextlib import contextmanager
 from datetime import datetime
-from typing import Any, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Dict, Iterator, List, Optional
 from unittest.mock import MagicMock
 from uuid import uuid4
 
