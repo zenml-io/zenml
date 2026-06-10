@@ -440,6 +440,20 @@ class TestSandboxLogEmission:
         assert out == ["a", "b"]
         assert session._logging_context is None
 
+    def test_close_is_terminal_for_logging(self) -> None:
+        # The context is created lazily on first emit; after close, an
+        # emit (e.g. draining a leftover stream) must not resurrect a
+        # fresh context that nothing would ever close.
+        session = _FakeSession()
+        ctx = MagicMock()
+        session._logging_context = ctx
+        session.close()
+        ctx.end.assert_called_once()
+        assert session._logging_context is None
+        assert session._logging_disabled is True
+        session._emit_log("after close")
+        assert session._logging_context is None
+
     def test_emit_failure_latches_forwarding_off(self) -> None:
         """If LoggingContext setup fails once, we don't retry on every emit."""
         session = _FakeSession()
