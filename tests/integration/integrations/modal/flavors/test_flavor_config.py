@@ -262,20 +262,23 @@ def test_modal_orchestrator_validator_rejects_local_container_registry() -> (
     assert "Modal orchestrator" in str(exc_info.value)
 
 
-def test_modal_orchestrator_validator_rejects_local_path_components() -> None:
+def test_modal_orchestrator_validator_rejects_local_path_components(
+    tmp_path,
+) -> None:
     validator = _make_orchestrator().validator
     assert validator is not None
+    local_path = tmp_path / "validator"
     local_component = _stack_component(
         name="local-validator",
         component_type=StackComponentType.DATA_VALIDATOR,
-        local_path="/tmp/validator",
+        local_path=str(local_path),
     )
 
     with pytest.raises(StackValidationError) as exc_info:
         validator.validate(_stack(extra_components=[local_component]))
 
     assert "local-validator" in str(exc_info.value)
-    assert "/tmp/validator" in str(exc_info.value)
+    assert str(local_path) in str(exc_info.value)
     assert "cannot access local filesystem paths" in str(exc_info.value)
 
 
