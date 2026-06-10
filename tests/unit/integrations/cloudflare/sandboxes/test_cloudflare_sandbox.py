@@ -703,6 +703,24 @@ class TestSessionLifecycle:
         session.close()
         assert calls == []
 
+    def test_direct_close_ends_logging_context(self) -> None:
+        # Users may call close() without the context manager, so close()
+        # itself must end the logging context, not just __exit__.
+        client = _make_client(lambda r: httpx.Response(204))
+        session = _make_session(client, bridge_session_id="sess_1")
+        log_ctx = MagicMock()
+        session._logging_context = log_ctx
+        session.close()
+        log_ctx.end.assert_called_once()
+        assert session._logging_context is None
+
+    def test_close_then_exit_does_not_raise(self) -> None:
+        client = _make_client(lambda r: httpx.Response(204))
+        session = _make_session(client, bridge_session_id="sess_1")
+        session._logging_context = MagicMock()
+        with session:
+            session.close()
+
     def test_destroy_deletes_sandbox(self) -> None:
         calls: List[str] = []
 
