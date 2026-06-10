@@ -40,6 +40,7 @@ from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
     batch_verify_permissions_for_models,
+    dehydrate_response_model,
     verify_permission,
 )
 from zenml.zen_server.utils import (
@@ -182,5 +183,6 @@ def get_deployed_stack(
         batch_verify_permissions_for_models(
             models=rbac_read_checks, action=Action.READ
         )
+        deployed_stack = dehydrate_response_model(deployed_stack)
 
     return deployed_stack
