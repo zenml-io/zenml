@@ -254,10 +254,21 @@ class SandboxSession(ABC):
         """
 
     def destroy(self) -> None:
-        """Destroy the sandbox session.
+        """Destroy the sandbox session. Terminal like `close()`.
 
-        This will terminate the sandbox on the provider. After calling this,
-        it is no longer possible to attach to the session.
+        Terminates the sandbox on the provider and then closes this
+        handle, so after a successful call it is no longer possible to
+        attach to the session. Flavor failures (including
+        `NotImplementedError` from flavors without destroy support)
+        propagate and leave the handle open for retry, because the
+        flavor hook runs before `close()`. Callable on an
+        already-closed handle: `close()` is idempotent.
+        """
+        self._destroy()
+        self.close()
+
+    def _destroy(self) -> None:
+        """Flavor-specific session destruction, called by `destroy()`.
 
         Raises:
             NotImplementedError: If the sandbox does not support destroying

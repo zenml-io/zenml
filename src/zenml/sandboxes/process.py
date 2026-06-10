@@ -94,11 +94,17 @@ class SandboxProcess(ABC):
             max_chars: Maximum number of characters to collect per stream.
 
         Raises:
+            RuntimeError: If the process output was already collected. The
+                streams are drained by the first call, so a second call
+                would fabricate an empty result instead of the real output.
             drain_exception: Re-raised from a failed stdout or stderr drain.
 
         Returns:
             The output of the process.
         """
+        if self._collected:
+            raise RuntimeError("process output was already collected")
+
         results: List[Optional[Tuple[str, bool]]] = [None, None]
         errors: List[Optional[BaseException]] = [None, None]
 
@@ -151,11 +157,10 @@ class SandboxProcess(ABC):
         stderr, stderr_truncated = results[1] or ("", False)
 
         exit_code = self.wait()
-        if not self._collected:
-            self._collected = True
-            self._session._log_exec_result(
-                exit_code=exit_code, started_at=self._started_at
-            )
+        self._collected = True
+        self._session._log_exec_result(
+            exit_code=exit_code, started_at=self._started_at
+        )
 
         return SandboxOutput(
             stdout=stdout,
