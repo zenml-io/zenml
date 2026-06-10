@@ -13,10 +13,12 @@
 #  permissions and limitations under the License.
 """Sandbox-process helpers (line buffering for SandboxProcess IO)."""
 
-from typing import Any, Iterable, Iterator
+from typing import Iterable, Iterator, Optional, Union
 
 
-def line_buffer(chunks: Iterable[Any]) -> Iterator[str]:
+def line_buffer(
+    chunks: Iterable[Optional[Union[bytes, str]]],
+) -> Iterator[str]:
     """Re-emit byte/str chunks one decoded line at a time.
 
     Modal returns LogsReader iterables that yield byte chunks, not lines,

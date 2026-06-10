@@ -17,6 +17,7 @@ import logging
 import shlex
 import time
 from typing import (
+    TYPE_CHECKING,
     Any,
     Dict,
     Iterator,
@@ -27,6 +28,8 @@ from typing import (
     Union,
     cast,
 )
+
+import modal
 
 from zenml.config.base_settings import BaseSettings
 from zenml.config.resource_settings import ResourceSettings
@@ -46,6 +49,9 @@ from zenml.sandboxes import (
     SandboxSnapshot,
 )
 
+if TYPE_CHECKING:
+    from modal.container_process import ContainerProcess
+
 logger = get_logger(__name__)
 
 
@@ -54,7 +60,7 @@ class ModalSandboxProcess(SandboxProcess):
 
     def __init__(
         self,
-        process: Any,
+        process: "ContainerProcess",
         *,
         session: "ModalSandboxSession",
         started_at: float,
@@ -152,7 +158,7 @@ class ModalSandboxSession(SandboxSession):
 
     def __init__(
         self,
-        sandbox: Any,
+        sandbox: "modal.Sandbox",
         *,
         parent: "ModalSandbox",
     ) -> None:
@@ -211,11 +217,9 @@ class ModalSandboxSession(SandboxSession):
         if env:
             # Unlike Sandbox.create, Sandbox.exec takes no env=; per-exec
             # env is injected via secrets=.
-            import modal
-
-            kwargs["secrets"] = [
-                modal.Secret.from_dict(cast(Dict[str, Optional[str]], env))
-            ]
+            kwargs["secrets"] = sandbox_utils.create_runtime_secrets(
+                cast(Dict[str, Optional[str]], env)
+            )
         started_at = time.time()
         try:
             process = self._sandbox.exec(*argv, **kwargs)
@@ -287,9 +291,6 @@ class ModalSandbox(BaseSandbox):
             **kwargs: Forwarded to ``StackComponent``.
         """
         super().__init__(*args, **kwargs)
-        # Modal App lookup is a network round-trip; cache after the first
-        # create_session / restore call.
-        self._app: Optional[Any] = None
         # Lazy thread-safe Modal client cache, owned by the factory and
         # rebuilt when the cached client closes.
         self._modal_client_factory = sandbox_utils.ModalClientFactory(
@@ -315,50 +316,30 @@ class ModalSandbox(BaseSandbox):
         """
         return ModalSandboxSettings
 
-    def _get_modal_client(self) -> Optional[Any]:
-        """Return the cached Modal client, building it from creds on demand.
+    def _registry_credentials(self, image: str) -> Optional[Tuple[str, str]]:
+        """Return (username, password) for pulling the given image.
 
-        Returns:
-            A ``modal.Client`` when token_id+token_secret are configured;
-            ``None`` for ambient auth.
-        """
-        return self._modal_client_factory.get_client()
-
-    def _get_app(
-        self,
-        *,
-        modal_environment: Optional[str],
-        modal_client: Optional[Any],
-    ) -> Any:
-        """Look up this component's Modal App, caching the result.
+        The credentials of the active stack's container registry must only
+        be handed to Modal when the image actually lives in that registry —
+        the image is arbitrary user input (Docker Hub default), and leaking
+        e.g. ECR credentials to a ``python:3.11-slim`` pull is unnecessary.
 
         Args:
-            modal_environment: Modal environment for the lookup.
-            modal_client: Explicit Modal client (None → ambient).
+            image: The image reference the sandbox will boot from.
 
         Returns:
-            The Modal App.
-        """
-        if self._app is None:
-            self._app = sandbox_utils.lookup_modal_app(
-                self.config.app_name,
-                modal_environment=modal_environment,
-                modal_client=modal_client,
-            )
-        return self._app
-
-    def _registry_credentials(self) -> Optional[Tuple[str, str]]:
-        """Return (username, password) for the active container registry.
-
-        Returns:
-            ``(username, password)`` when the active stack's container
-            registry exposes credentials, otherwise ``None`` (anonymous
-            pull).
+            ``(username, password)`` when the image lives in the active
+            stack's container registry and that registry exposes
+            credentials, otherwise ``None`` (anonymous pull).
         """
         from zenml.client import Client
 
         container_registry = Client().active_stack.container_registry
-        if container_registry and container_registry.credentials:
+        if (
+            container_registry
+            and container_registry.is_valid_image_name_for_registry(image)
+            and container_registry.credentials
+        ):
             return container_registry.credentials
         return None
 
@@ -366,11 +347,15 @@ class ModalSandbox(BaseSandbox):
         self,
         eff: ModalSandboxSettings,
         *,
-        image: Any,
-        modal_client: Optional[Any],
+        image: "modal.Image",
+        modal_client: Optional["modal.Client"],
         environment: Dict[str, str],
     ) -> Dict[str, Any]:
         """Compose kwargs for ``modal.Sandbox.create`` via sandbox_utils.
+
+        The Modal App is looked up per call (like the step operator does per
+        submit) because ``modal_environment`` is a setting and may differ
+        between sessions.
 
         Args:
             eff: Effective per-step settings.
@@ -382,19 +367,23 @@ class ModalSandbox(BaseSandbox):
             Kwargs for ``modal.Sandbox.create``. The active step's
             ResourceSettings are NOT pulled in: the step's orchestrator
             already pays for cpu/memory/gpu; the sandbox would double them.
-            Users override sandbox resources by setting gpu/region/cloud
-            on ``ModalSandboxSettings`` directly.
+            Users size the sandbox via cpu/memory/gpu/region/cloud on
+            ``ModalSandboxSettings`` directly.
         """
         environment_name = sandbox_utils.normalize_optional_config_value(
             eff.modal_environment
         )
         return sandbox_utils.build_sandbox_create_kwargs(
-            app=self._get_app(
-                modal_environment=environment_name, modal_client=modal_client
+            app=sandbox_utils.lookup_modal_app(
+                self.config.app_name,
+                modal_environment=environment_name,
+                modal_client=modal_client,
             ),
             image=image,
             settings=eff,
-            resource_settings=ResourceSettings(),
+            resource_settings=ResourceSettings(
+                cpu_count=eff.cpu, memory=eff.memory
+            ),
             environment=environment,
             modal_client=modal_client,
         )
@@ -410,12 +399,11 @@ class ModalSandbox(BaseSandbox):
         Returns:
             A ``ModalSandboxSession`` wrapping the live Modal Sandbox.
         """
-        import modal
-
         eff = cast(ModalSandboxSettings, self.resolve_settings(settings))
-        modal_client = self._get_modal_client()
+        modal_client = self._modal_client_factory.get_client()
         image = sandbox_utils.get_modal_image_from_registry(
-            eff.image, registry_credentials=self._registry_credentials()
+            eff.image,
+            registry_credentials=self._registry_credentials(eff.image),
         )
         sandbox = modal.Sandbox.create(
             **self._build_create_kwargs(
@@ -439,7 +427,7 @@ class ModalSandbox(BaseSandbox):
         Raises:
             RuntimeError: If Modal can't find a sandbox with the given id.
         """
-        modal_client = self._get_modal_client()
+        modal_client = self._modal_client_factory.get_client()
         try:
             sandbox = sandbox_utils.get_sandbox_by_id(
                 session_id, modal_client=modal_client
@@ -466,20 +454,19 @@ class ModalSandbox(BaseSandbox):
             RuntimeError: If Modal can't load the Image (e.g. id GC'd).
         """
         self._validate_snapshot(snapshot)
-        import modal
-
         eff = cast(ModalSandboxSettings, self.resolve_settings(None))
-        modal_client = self._get_modal_client()
+        modal_client = self._modal_client_factory.get_client()
         try:
             image = modal.Image.from_id(snapshot.ref)
-            # Intentionally no session env: restore boots the frozen
-            # filesystem image as-is.
+            # Env vars are runtime config, not filesystem state, so the
+            # snapshot image doesn't carry them — re-apply the resolved
+            # session environment on restore.
             sandbox = modal.Sandbox.create(
                 **self._build_create_kwargs(
                     eff,
                     image=image,
                     modal_client=modal_client,
-                    environment={},
+                    environment=self._resolve_session_environment(eff),
                 )
             )
         except Exception as e:
