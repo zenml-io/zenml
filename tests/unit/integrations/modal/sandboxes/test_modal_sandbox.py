@@ -22,7 +22,7 @@ import logging
 import sys
 from contextlib import contextmanager
 from datetime import datetime
-from typing import Any, Iterator, List
+from typing import Any, Dict, Iterator, List, Optional
 from unittest.mock import MagicMock
 from uuid import uuid4
 
@@ -72,22 +72,25 @@ def _make_session(fake_sandbox: Any) -> ModalSandboxSession:
 def _patch_modal() -> Iterator[MagicMock]:
     """Substitute the ``modal`` module with a MagicMock everywhere it's bound.
 
-    Production code imports ``modal`` lazily inside functions (in
-    ``modal_sandbox.py``) and eagerly at module top (in
-    ``sandbox_utils.py``). Swap both: ``sys.modules['modal']`` for the lazy
-    sites and ``sandbox_utils.modal`` for the already-bound name.
+    Production code imports ``modal`` eagerly at module top (in both
+    ``modal_sandbox.py`` and ``sandbox_utils.py``), so swap the
+    already-bound names in both modules plus ``sys.modules['modal']``.
     """
     from zenml.integrations.modal import sandbox_utils
+    from zenml.integrations.modal.sandboxes import modal_sandbox
 
     real_mod = sys.modules.get("modal")
     real_su_modal = sandbox_utils.modal
+    real_ms_modal = modal_sandbox.modal
     fake = MagicMock(name="modal")
     sys.modules["modal"] = fake
     sandbox_utils.modal = fake
+    modal_sandbox.modal = fake
     try:
         yield fake
     finally:
         sandbox_utils.modal = real_su_modal
+        modal_sandbox.modal = real_ms_modal
         if real_mod is not None:
             sys.modules["modal"] = real_mod
         else:
@@ -96,9 +99,9 @@ def _patch_modal() -> Iterator[MagicMock]:
 
 def _make_modal_sandbox(
     *,
-    environment: dict | None = None,
-    secrets: list | None = None,
-    config: ModalSandboxConfig | None = None,
+    environment: Optional[Dict[str, str]] = None,
+    secrets: Optional[List[Any]] = None,
+    config: Optional[ModalSandboxConfig] = None,
 ) -> ModalSandbox:
     """Build a ModalSandbox without going through Stack/Client."""
     return ModalSandbox(
@@ -218,19 +221,23 @@ class TestModalSandboxProcess:
                 timeout=5.0
             )
 
-    def test_kill_closes_stdin(self) -> None:
+    def test_kill_terminates_owning_sandbox(self) -> None:
+        # Modal has no per-command kill, so kill() must terminate the
+        # whole Sandbox to honor the SandboxProcess.kill() contract.
+        fake_sandbox = MagicMock(object_id="sb_xyz")
+        session = _make_session(fake_sandbox)
         fake = MagicMock()
-        session = _make_session(MagicMock(object_id="sb_xyz"))
         ModalSandboxProcess(fake, session=session, started_at=0.0).kill()
-        fake.stdin.close.assert_called_once()
+        fake_sandbox.terminate.assert_called_once()
 
-    def test_kill_tolerates_stdin_close_failure(self) -> None:
+    def test_kill_does_not_use_per_command_stdin(self) -> None:
+        # kill() must not fall back to a stdin-EOF nudge, which leaves
+        # ill-behaved commands running until the sandbox TTL.
+        fake_sandbox = MagicMock(object_id="sb_xyz")
+        session = _make_session(fake_sandbox)
         fake = MagicMock()
-        fake.stdin.close.side_effect = RuntimeError("already closed")
-        session = _make_session(MagicMock(object_id="sb_xyz"))
-        ModalSandboxProcess(
-            fake, session=session, started_at=0.0
-        ).kill()  # no raise
+        ModalSandboxProcess(fake, session=session, started_at=0.0).kill()
+        fake.stdin.write_eof.assert_not_called()
 
 
 # ---------------------------------------------------------------------------
@@ -327,9 +334,10 @@ class TestModalSandbox:
             with pytest.raises(RuntimeError, match="sb_missing"):
                 _make_modal_sandbox().attach("sb_missing")
 
-    def test_app_lookup_cached_across_create_sessions(self) -> None:
-        # _get_app should call modal.App.lookup only once per ModalSandbox
-        # instance.
+    def test_app_lookup_per_session_honors_modal_environment(self) -> None:
+        # modal_environment is a setting, so each create_session must do
+        # its own App lookup with the effective environment instead of
+        # reusing a cached App from an earlier lookup.
         with _patch_modal() as modal_mock:
             modal_mock.App.lookup.return_value = MagicMock()
             modal_mock.Image.from_registry.return_value = MagicMock()
@@ -337,9 +345,18 @@ class TestModalSandbox:
                 object_id="sb_a"
             )
             sandbox = _make_modal_sandbox()
-            sandbox.create_session()
-            sandbox.create_session()
-        assert modal_mock.App.lookup.call_count == 1
+            sandbox.create_session(
+                settings=ModalSandboxSettings(modal_environment="staging")
+            )
+            sandbox.create_session(
+                settings=ModalSandboxSettings(modal_environment="prod")
+            )
+        assert modal_mock.App.lookup.call_count == 2
+        environments = [
+            call.kwargs["environment_name"]
+            for call in modal_mock.App.lookup.call_args_list
+        ]
+        assert environments == ["staging", "prod"]
 
     def test_restore_rejects_cross_provider(self) -> None:
         sandbox = _make_modal_sandbox()
@@ -358,9 +375,51 @@ class TestModalSandbox:
             sandbox = _make_modal_sandbox()
             snap = SandboxSnapshot(sandbox_id=sandbox.id, ref="im-old")
             session = sandbox.restore(snap)
-        modal_mock.Image.from_id.assert_called_once_with("im-old")
+        modal_mock.Image.from_id.assert_called_once_with("im-old", client=None)
         modal_mock.Sandbox.create.assert_called_once()
         assert session.id == "sb_new"
+
+    def test_restore_uses_configured_modal_client(self) -> None:
+        # restore() must load the snapshot Image with the client built from
+        # the component's token_id/token_secret, not Modal's ambient auth.
+        with _patch_modal() as modal_mock:
+            fake_client = MagicMock()
+            fake_client.is_closed.return_value = False
+            modal_mock.Client.from_credentials.return_value = fake_client
+            modal_mock.App.lookup.return_value = MagicMock()
+            modal_mock.Image.from_id.return_value = MagicMock()
+            modal_mock.Sandbox.create.return_value = MagicMock(
+                object_id="sb_new"
+            )
+            sandbox = _make_modal_sandbox(
+                config=ModalSandboxConfig(
+                    token_id="ak-test", token_secret="as-test"
+                )
+            )
+            snap = SandboxSnapshot(sandbox_id=sandbox.id, ref="im-old")
+            sandbox.restore(snap)
+        modal_mock.Image.from_id.assert_called_once_with(
+            "im-old", client=fake_client
+        )
+
+    def test_restore_reapplies_session_environment(self) -> None:
+        # Env vars are runtime config, not filesystem state — the snapshot
+        # image doesn't carry them, so restore must re-inject them.
+        with _patch_modal() as modal_mock:
+            modal_mock.App.lookup.return_value = MagicMock()
+            modal_mock.Image.from_id.return_value = MagicMock()
+            modal_mock.Sandbox.create.return_value = MagicMock(
+                object_id="sb_new"
+            )
+            sandbox = _make_modal_sandbox(
+                config=ModalSandboxConfig(
+                    sandbox_environment={"SESSION_VAR": "x"}
+                )
+            )
+            snap = SandboxSnapshot(sandbox_id=sandbox.id, ref="im-old")
+            sandbox.restore(snap)
+        create_kwargs = modal_mock.Sandbox.create.call_args.kwargs
+        assert create_kwargs.get("env") == {"SESSION_VAR": "x"}
 
     def test_create_session_passes_env_kwarg(self) -> None:
         with _patch_modal() as modal_mock:
@@ -393,9 +452,102 @@ class TestModalSandbox:
             _make_modal_sandbox().create_session(settings=settings)
         modal_mock.Image.from_registry.assert_called_with("my-registry/app:v1")
 
+    def test_cpu_and_memory_settings_reach_sandbox_create(self) -> None:
+        with _patch_modal() as modal_mock:
+            modal_mock.App.lookup.return_value = MagicMock()
+            modal_mock.Image.from_registry.return_value = MagicMock()
+            modal_mock.Sandbox.create.return_value = MagicMock(
+                object_id="sb_new"
+            )
+
+            settings = ModalSandboxSettings(cpu=2, memory="2GB")
+            _make_modal_sandbox().create_session(settings=settings)
+        create_kwargs = modal_mock.Sandbox.create.call_args.kwargs
+        assert create_kwargs.get("cpu") == 2
+        assert create_kwargs.get("memory") == 2000
+
+
+class TestModalSandboxConfig:
+    def test_settings_fields_exist_on_config(self) -> None:
+        # The config must inherit the settings so registration-time values
+        # like --image aren't silently dropped (extra="ignore").
+        config = ModalSandboxConfig(
+            image="my-registry/app:v1", sandbox_environment={"FOO": "1"}
+        )
+        assert config.image == "my-registry/app:v1"
+        assert config.sandbox_environment == {"FOO": "1"}
+
+    def test_defaults(self) -> None:
+        config = ModalSandboxConfig()
+        assert config.image == "python:3.11-slim"
+        # Sandbox TTL default is 1 hour, not the step operator's 24 hours.
+        assert config.timeout == 3600
+        assert ModalSandboxSettings().timeout == 3600
+
+
+class TestRegistryCredentials:
+    """Registry credentials are only handed out for images in the registry."""
+
+    @staticmethod
+    def _patch_active_stack_registry(
+        monkeypatch: pytest.MonkeyPatch, uri: str
+    ) -> MagicMock:
+        from zenml.container_registries.base_container_registry import (
+            BaseContainerRegistry,
+        )
+
+        registry = MagicMock()
+        registry.config.uri = uri
+        registry.credentials = ("user", "pass")
+        registry.is_valid_image_name_for_registry.side_effect = lambda image: (
+            BaseContainerRegistry.is_valid_image_name_for_registry(
+                registry, image
+            )
+        )
+        client = MagicMock()
+        client.active_stack.container_registry = registry
+        monkeypatch.setattr("zenml.client.Client", lambda: client)
+        return registry
+
+    def test_credentials_passed_for_image_in_stack_registry(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        self._patch_active_stack_registry(monkeypatch, "my-registry.io/team")
+        with _patch_modal() as modal_mock:
+            modal_mock.App.lookup.return_value = MagicMock()
+            modal_mock.Image.from_registry.return_value = MagicMock()
+            modal_mock.Sandbox.create.return_value = MagicMock(
+                object_id="sb_new"
+            )
+            fake_secret = MagicMock()
+            modal_mock.Secret.from_dict.return_value = fake_secret
+
+            settings = ModalSandboxSettings(image="my-registry.io/team/app:v1")
+            _make_modal_sandbox().create_session(settings=settings)
+        modal_mock.Image.from_registry.assert_called_once_with(
+            "my-registry.io/team/app:v1", secret=fake_secret
+        )
+
+    def test_no_credentials_for_docker_hub_style_image(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        self._patch_active_stack_registry(monkeypatch, "my-registry.io/team")
+        with _patch_modal() as modal_mock:
+            modal_mock.App.lookup.return_value = MagicMock()
+            modal_mock.Image.from_registry.return_value = MagicMock()
+            modal_mock.Sandbox.create.return_value = MagicMock(
+                object_id="sb_new"
+            )
+
+            settings = ModalSandboxSettings(image="python:3.11-slim")
+            _make_modal_sandbox().create_session(settings=settings)
+        modal_mock.Image.from_registry.assert_called_once_with(
+            "python:3.11-slim"
+        )
+
 
 # ---------------------------------------------------------------------------
-# _get_modal_client
+# Modal client factory wiring
 # ---------------------------------------------------------------------------
 
 
@@ -403,7 +555,7 @@ class TestGetModalClient:
     def test_returns_none_when_no_credentials_configured(self) -> None:
         sandbox = _make_modal_sandbox()
         # Default config has no token_id / token_secret.
-        assert sandbox._get_modal_client() is None
+        assert sandbox._modal_client_factory.get_client() is None
 
     def test_returns_client_when_credentials_configured(self) -> None:
         sandbox = _make_modal_sandbox(
@@ -415,13 +567,13 @@ class TestGetModalClient:
             fake_client = MagicMock()
             fake_client.is_closed.return_value = False
             modal_mock.Client.from_credentials.return_value = fake_client
-            client = sandbox._get_modal_client()
+            client = sandbox._modal_client_factory.get_client()
             assert client is fake_client
             modal_mock.Client.from_credentials.assert_called_once_with(
                 "ak-test", "as-test"
             )
             # Second call returns the cached client.
-            client2 = sandbox._get_modal_client()
+            client2 = sandbox._modal_client_factory.get_client()
             assert client2 is fake_client
             assert modal_mock.Client.from_credentials.call_count == 1
 

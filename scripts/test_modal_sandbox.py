@@ -35,7 +35,7 @@ Run with::
 
 import os
 import tempfile
-from typing import Iterator, List
+from typing import List, Tuple
 
 __test__ = False
 
@@ -43,31 +43,10 @@ from zenml.client import Client
 from zenml.integrations.modal.flavors import ModalSandboxSettings
 
 
-def _drain(stream: Iterator[str], limit: int = 50) -> List[str]:
-    """Reads up to ``limit`` lines from a process stream.
-
-    Args:
-        stream: The line iterator.
-        limit: Hard cap so a runaway process doesn't hang the smoke test.
-
-    Returns:
-        The collected lines (rstripped).
-    """
-    lines: List[str] = []
-    for _ in range(limit):
-        try:
-            lines.append(next(stream).rstrip())
-        except StopIteration:
-            break
-    return lines
-
-
-def _exec_and_collect(session, argv: List[str]) -> tuple[List[str], int]:
+def _exec_and_collect(session, argv: List[str]) -> Tuple[List[str], int]:
     """Runs argv in the session and returns (stdout lines, exit code)."""
-    process = session.exec(argv)
-    stdout_lines = _drain(process.stdout())
-    exit_code = process.wait()
-    return stdout_lines, exit_code
+    output = session.exec(argv).collect()
+    return output.stdout.splitlines(), output.exit_code
 
 
 def _check_basic_exec(sandbox) -> None:
@@ -79,29 +58,37 @@ def _check_basic_exec(sandbox) -> None:
             timeout=600,
         )
     ) as session:
-        print(f"   Session id: {session.id}")
-        out, code = _exec_and_collect(
-            session,
-            [
-                "python",
-                "-c",
-                "print('hello from modal'); import os; print(os.environ['ZENML_SANDBOX_SMOKE'])",
-            ],
-        )
-        print(f"   stdout: {out!r}")
-        print(f"   exit:   {code}")
-        assert code == 0, f"expected exit 0, got {code}"
-        assert out == ["hello from modal", "1"], f"unexpected stdout: {out!r}"
+        try:
+            print(f"   Session id: {session.id}")
+            out, code = _exec_and_collect(
+                session,
+                [
+                    "python",
+                    "-c",
+                    "print('hello from modal'); import os; print(os.environ['ZENML_SANDBOX_SMOKE'])",
+                ],
+            )
+            print(f"   stdout: {out!r}")
+            print(f"   exit:   {code}")
+            assert code == 0, f"expected exit 0, got {code}"
+            assert out == ["hello from modal", "1"], (
+                f"unexpected stdout: {out!r}"
+            )
+        finally:
+            session.destroy()
 
 
 def _check_exit_nonzero(sandbox) -> None:
     """Verifies a failing command surfaces a non-zero exit code (no exception)."""
     print("\n[2/5] Non-zero exit (no exception)")
     with sandbox.create_session() as session:
-        process = session.exec(["python", "-c", "import sys; sys.exit(3)"])
-        process.wait()
-        print(f"   exit_code: {process.exit_code}")
-        assert process.exit_code == 3
+        try:
+            process = session.exec(["python", "-c", "import sys; sys.exit(3)"])
+            process.wait()
+            print(f"   exit_code: {process.exit_code}")
+            assert process.exit_code == 3
+        finally:
+            session.destroy()
 
 
 def _check_file_io(sandbox) -> None:
@@ -128,6 +115,7 @@ def _check_file_io(sandbox) -> None:
                 assert f.read() == "hello\nfrom\nlocal\n"
             print("   round-trip ok")
         finally:
+            session.destroy()
             for p in (src_path, dst_path):
                 try:
                     os.unlink(p)
@@ -139,22 +127,30 @@ def _check_snapshot_restore(sandbox) -> None:
     """Writes a file, snapshots, restores into a fresh Session, reads it back."""
     print("\n[4/5] snapshot + restore (FS state preserved)")
     with sandbox.create_session() as original:
-        out, code = _exec_and_collect(
-            original,
-            [
-                "bash",
-                "-c",
-                "echo 'snapshot-payload' > /tmp/snap.txt && cat /tmp/snap.txt",
-            ],
-        )
-        assert code == 0 and out == ["snapshot-payload"]
-        snap = original.create_snapshot()
-        print(f"   snapshot ref: {snap.ref}")
+        try:
+            out, code = _exec_and_collect(
+                original,
+                [
+                    "bash",
+                    "-c",
+                    "echo 'snapshot-payload' > /tmp/snap.txt && cat /tmp/snap.txt",
+                ],
+            )
+            assert code == 0 and out == ["snapshot-payload"]
+            snap = original.create_snapshot()
+            print(f"   snapshot ref: {snap.ref}")
+        finally:
+            original.destroy()
 
     with sandbox.restore(snap) as restored:
-        out, code = _exec_and_collect(restored, ["cat", "/tmp/snap.txt"])
-        assert code == 0 and out == ["snapshot-payload"], out
-        print(f"   restored session id: {restored.id} (new id; FS preserved)")
+        try:
+            out, code = _exec_and_collect(restored, ["cat", "/tmp/snap.txt"])
+            assert code == 0 and out == ["snapshot-payload"], out
+            print(
+                f"   restored session id: {restored.id} (new id; FS preserved)"
+            )
+        finally:
+            restored.destroy()
 
 
 def _check_attach(sandbox) -> None:
