@@ -159,7 +159,7 @@ class K8sAgentSandboxSession(SandboxSession):
         self,
         sandbox: "Sandbox",
         *,
-        parent: "BaseSandbox",
+        parent: "K8sAgentSandbox",
         inline_template_name: Optional[str] = None,
         inline_template_namespace: Optional[str] = None,
     ) -> None:
@@ -168,7 +168,7 @@ class K8sAgentSandboxSession(SandboxSession):
         Args:
             sandbox: The live ``Sandbox`` returned by
                 ``SandboxClient.create_sandbox``.
-            parent: The owning ``BaseSandbox`` component.
+            parent: The owning ``K8sAgentSandbox`` component.
             inline_template_name: Name of an inline-synthesized
                 SandboxTemplate CR to delete on close, or ``None`` when
                 the session was created from a pre-existing template.
@@ -180,6 +180,12 @@ class K8sAgentSandboxSession(SandboxSession):
             parent=parent,
         )
         self._sandbox = sandbox
+        # Typed alias of ``self._parent``: sessions are only ever
+        # constructed by ``K8sAgentSandbox``, and the destructive paths
+        # below must re-enter its ``_kube_default_config`` credential
+        # scope — on connector-only setups (no ambient kubeconfig) the
+        # cleanup calls would otherwise hit the wrong cluster or fail.
+        self._parent_k8s = parent
         self._inline_template_name = inline_template_name
         self._inline_template_namespace = inline_template_namespace
 
@@ -252,7 +258,8 @@ class K8sAgentSandboxSession(SandboxSession):
         reconcile manually, never raised.
         """
         try:
-            self._sandbox.terminate()
+            with self._parent_k8s._kube_default_config():
+                self._sandbox.terminate()
         except Exception as e:  # noqa: BLE001
             logger.warning(
                 "agent-sandbox terminate() failed: %s. The sandbox may "
@@ -266,7 +273,11 @@ class K8sAgentSandboxSession(SandboxSession):
             self._delete_inline_template()
 
     def _delete_inline_template(self) -> None:
-        """Best-effort, idempotent delete of the inline SandboxTemplate CR."""
+        """Best-effort, idempotent delete of the inline SandboxTemplate CR.
+
+        Runs inside the parent's connector credential scope so the
+        delete targets the same cluster the template was created on.
+        """
         # Clear the tracker before the API call so a second call (e.g.
         # destroy() after close()) is a no-op even if this one crashes.
         name = self._inline_template_name
@@ -276,7 +287,8 @@ class K8sAgentSandboxSession(SandboxSession):
         if name is None or namespace is None:
             return
         try:
-            _delete_sandbox_template(name, namespace)
+            with self._parent_k8s._kube_default_config():
+                _delete_sandbox_template(name, namespace)
         except Exception as e:  # noqa: BLE001
             logger.warning(
                 "Cleanup of inline SandboxTemplate '%s' failed: %s. "

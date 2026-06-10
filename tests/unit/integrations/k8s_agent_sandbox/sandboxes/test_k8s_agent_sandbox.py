@@ -25,7 +25,7 @@ from __future__ import annotations
 import sys
 import types
 from typing import Any, Iterator, Optional
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 from uuid import uuid4
 
 import pytest
@@ -524,6 +524,91 @@ class TestSessionLifecycle:
             )
             fake_api_cls.return_value = fake_api
             session.close()  # should not raise
+
+    def test_close_deletes_inline_template_inside_connector_scope(
+        self,
+    ) -> None:
+        # Connector-only setups have no ambient kubeconfig: the delete
+        # must run while the connector's configuration is the
+        # process-global kubernetes default, and the previous default
+        # must be restored afterwards.
+        from kubernetes import client as k8s_client
+
+        sb = _make_sandbox()
+        fake_api_client = MagicMock(name="connector-api-client")
+        sb._get_kube_api_client = MagicMock(  # type: ignore[method-assign]
+            return_value=fake_api_client
+        )
+
+        fake_underlying = MagicMock()
+        fake_underlying.name = "sb1"
+        session = K8sAgentSandboxSession(
+            fake_underlying,
+            parent=sb,
+            inline_template_name="zenml-sb-tpl-deadbeef",
+            inline_template_namespace="lab",
+        )
+
+        previous_default = k8s_client.Configuration._default
+        set_default_calls_at_delete_time: list = []
+
+        with (
+            patch.object(
+                k8s_client.Configuration, "set_default"
+            ) as fake_set_default,
+            patch("kubernetes.client.CustomObjectsApi") as fake_api_cls,
+        ):
+            fake_api = MagicMock()
+
+            def record_scope(**kwargs: Any) -> None:
+                set_default_calls_at_delete_time.extend(
+                    fake_set_default.call_args_list
+                )
+
+            fake_api.delete_namespaced_custom_object.side_effect = record_scope
+            fake_api_cls.return_value = fake_api
+            session.close()
+
+        fake_api.delete_namespaced_custom_object.assert_called_once()
+        # The connector configuration became the default BEFORE the
+        # delete call was issued.
+        assert set_default_calls_at_delete_time == [
+            call(fake_api_client.configuration)
+        ]
+        # The process-global default was restored after close().
+        assert k8s_client.Configuration._default is previous_default
+
+    def test_destroy_terminates_inside_connector_scope(self) -> None:
+        from kubernetes import client as k8s_client
+
+        sb = _make_sandbox()
+        fake_api_client = MagicMock(name="connector-api-client")
+        sb._get_kube_api_client = MagicMock(  # type: ignore[method-assign]
+            return_value=fake_api_client
+        )
+
+        fake_underlying = MagicMock()
+        fake_underlying.name = "sb1"
+        session = K8sAgentSandboxSession(fake_underlying, parent=sb)
+
+        set_default_calls_at_terminate_time: list = []
+
+        with patch.object(
+            k8s_client.Configuration, "set_default"
+        ) as fake_set_default:
+
+            def record_scope() -> None:
+                set_default_calls_at_terminate_time.extend(
+                    fake_set_default.call_args_list
+                )
+
+            fake_underlying.terminate.side_effect = record_scope
+            session.destroy()
+
+        fake_underlying.terminate.assert_called_once()
+        assert set_default_calls_at_terminate_time == [
+            call(fake_api_client.configuration)
+        ]
 
     def test_close_skips_delete_when_no_inline_template(self) -> None:
         sb = _make_sandbox()
