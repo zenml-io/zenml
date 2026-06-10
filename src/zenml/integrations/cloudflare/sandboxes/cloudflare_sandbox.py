@@ -31,7 +31,6 @@ from typing import (
     FrozenSet,
     Iterator,
     List,
-    Literal,
     Optional,
     Tuple,
     Type,
@@ -80,9 +79,9 @@ _MAX_RETRIES = 3
 class _BridgeEvent:
     """One decoded SSE event from the bridge exec stream."""
 
-    kind: Literal["stdout", "stderr", "exit", "error"]
-    # stdout/stderr frames carry decoded text, exit frames carry the
+    # "stdout"/"stderr" events carry decoded text, "exit" carries the
     # exit code; error frames raise during parsing and never get here.
+    kind: str
     data: Union[str, int]
 
 
