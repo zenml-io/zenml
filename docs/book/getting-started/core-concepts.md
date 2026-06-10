@@ -215,22 +215,4 @@ When you start working with ZenML, you'll start with a local ZenML setup, and wh
 
 ZenML also provides a [VS Code extension](https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode) that allows you to interact with your ZenML stacks, runs, and server directly from your VS Code editor. If you're working on code in your editor, you can easily switch and inspect the stacks you're using, delete and inspect pipelines as well as even switch stacks.
 
-## Where Kitaru fits
-
-[Kitaru](https://docs.zenml.io/kitaru) is ZenML's sibling open-source project for AI agents. Its premise: agents are easy to run in production but hard to understand and risky to update. So Kitaru records every step of every run — each model call, tool call, and decision — as a checkpoint, and makes runs replayable: re-execute any run from any point with an override (a different model, a changed prompt, another tool output) and see what would have happened before you ship the change. It is not a separate world to learn — it applies the concepts on this page to agent workflows, with primitives designed for how agent code is actually written (plain Python control flow, no graph DSL). Kitaru works standalone with zero configuration locally, and because its primitives compile down to ZenML ones, your agents and pipelines share one operational home instead of two toolchains.
-
-The mapping is direct:
-
-| Concept on this page | Kitaru equivalent | What it adds for agents |
-| --- | --- | --- |
-| `@pipeline` | `@kitaru.flow` | A flow is a dynamic pipeline — the orchestration boundary for an agent workflow |
-| `@step` | `@kitaru.checkpoint` | Every checkpoint output is persisted invisibly, so crashed runs resume and finished work is never paid for twice |
-| Pipeline run | Execution | Inspect, retry, resume, cancel, and **replay** runs — with the option to override a checkpoint's cached output |
-| Artifacts | `kitaru.save()` / `kitaru.load()` | Same artifact stores, same versioning |
-| Run metadata | `kitaru.log()` | Structured metadata on executions and checkpoints |
-| — | `kitaru.wait()` | A durable pause: stop a run for human input or an external event and resume it later, even hours later |
-| Stacks, server, dashboard, secrets | Shared | A [Kitaru stack](https://docs.zenml.io/kitaru/stacks) is a focused view of a ZenML stack; executions appear in the same server and dashboard |
-
-If your work is agents rather than pipelines, start with the [Kitaru docs](https://docs.zenml.io/kitaru) and the [Agents guide](https://docs.zenml.io/user-guides/agents-guide) — everything on this page about stacks, the server, secrets, and collaboration applies there too.
-
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
