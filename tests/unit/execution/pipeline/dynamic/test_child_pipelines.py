@@ -141,6 +141,8 @@ def _resolve_pending_wait(
     resolution: RunWaitConditionResolution = RunWaitConditionResolution.CONTINUE,
     result: Any = None,
     timeout: float = 10.0,
+    thread: Optional[threading.Thread] = None,
+    holder: Optional[Dict[str, Any]] = None,
 ) -> UUID:
     deadline = time.time() + timeout
     client = Client()
@@ -157,6 +159,19 @@ def _resolve_pending_wait(
                 result=result,
             )
             return condition.id
+
+        if holder and (exc := holder.get("exc")):
+            raise RuntimeError(
+                f"Pipeline run `{pipeline_run_id}` failed before a pending "
+                "wait condition was visible."
+            ) from exc
+
+        if thread and not thread.is_alive():
+            raise RuntimeError(
+                f"Pipeline run `{pipeline_run_id}` finished before a pending "
+                "wait condition was visible."
+            )
+
         time.sleep(0.1)
     raise TimeoutError(
         f"No pending wait condition on run {pipeline_run_id} after {timeout}s"
@@ -448,7 +463,7 @@ def test_wait_continue_returns_typed_value() -> None:
         thread=thread,
         holder=holder,
     )
-    _resolve_pending_wait(run_id, result=21)
+    _resolve_pending_wait(run_id, result=21, thread=thread, holder=holder)
     _wait_for_thread(thread)
     assert "exc" not in holder, holder.get("exc")
     run = holder["run"]
@@ -474,7 +489,7 @@ def test_wait_continue_without_schema_proceeds() -> None:
         thread=thread,
         holder=holder,
     )
-    _resolve_pending_wait(run_id)
+    _resolve_pending_wait(run_id, thread=thread, holder=holder)
     _wait_for_thread(thread)
     assert "exc" not in holder, holder.get("exc")
     assert holder["run"].status.is_successful
@@ -494,7 +509,12 @@ def test_wait_abort_aborts_run() -> None:
         thread=thread,
         holder=holder,
     )
-    _resolve_pending_wait(run_id, resolution=RunWaitConditionResolution.ABORT)
+    _resolve_pending_wait(
+        run_id,
+        resolution=RunWaitConditionResolution.ABORT,
+        thread=thread,
+        holder=holder,
+    )
     _wait_for_thread(thread)
     # The run must not be successful — the server publishes the run as
     # stopped/failed when the wait condition aborts.
@@ -547,7 +567,13 @@ def test_parent_waits_while_child_runs_then_wait_resolves() -> None:
         thread=thread,
         holder=holder,
     )
-    _resolve_pending_wait(parent_run_id, result=99, timeout=15)
+    _resolve_pending_wait(
+        parent_run_id,
+        result=99,
+        timeout=15,
+        thread=thread,
+        holder=holder,
+    )
     _wait_for_thread(thread)
     assert "exc" not in holder, holder.get("exc")
     assert holder["run"].status.is_successful
@@ -594,7 +620,13 @@ def test_child_waits_while_parent_does_other_work_then_child_wait_resolves() -> 
         time.sleep(0.1)
     assert child_run_id is not None, "Child run never appeared"
 
-    _resolve_pending_wait(child_run_id, result=42, timeout=15)
+    _resolve_pending_wait(
+        child_run_id,
+        result=42,
+        timeout=15,
+        thread=thread,
+        holder=holder,
+    )
     _wait_for_thread(thread)
     assert "exc" not in holder, holder.get("exc")
     parent = holder["run"]
@@ -620,8 +652,8 @@ def test_parent_run_resolves_two_sequential_waits() -> None:
         thread=thread,
         holder=holder,
     )
-    _resolve_pending_wait(run_id, result=10)
-    _resolve_pending_wait(run_id, result=20)
+    _resolve_pending_wait(run_id, result=10, thread=thread, holder=holder)
+    _resolve_pending_wait(run_id, result=20, thread=thread, holder=holder)
     _wait_for_thread(thread)
     assert "exc" not in holder, holder.get("exc")
     refreshed = _refresh(holder["run"].id)
