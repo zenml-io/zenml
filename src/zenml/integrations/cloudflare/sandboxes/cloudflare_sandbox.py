@@ -785,7 +785,7 @@ class CloudflareSandboxSession(SandboxSession):
         """
         return None
 
-    def exec(
+    def _exec(
         self,
         command: Union[str, List[str]],
         *,
@@ -836,7 +836,7 @@ class CloudflareSandboxSession(SandboxSession):
             response=response,
         )
 
-    def upload_file(self, local_path: str, remote_path: str) -> None:
+    def _upload_file(self, local_path: str, remote_path: str) -> None:
         """Upload a local file into the sandbox.
 
         Args:
@@ -852,7 +852,7 @@ class CloudflareSandboxSession(SandboxSession):
             session_id=self._bridge_session_id,
         )
 
-    def download_file(self, remote_path: str, local_path: str) -> None:
+    def _download_file(self, remote_path: str, local_path: str) -> None:
         """Download a file from the sandbox.
 
         Args:
