@@ -53,8 +53,8 @@ from zenml import step, pipeline
 def notify_start():
     print("starting")
 
-def notify_end(status, exception=None):
-    print(f"finished with status {status}")
+def notify_end(exception=None):
+    print("finished")
 
 @step(on_start=notify_start, on_end=notify_end)
 def my_step() -> int:
@@ -70,25 +70,26 @@ my_step = my_step.with_options(on_failure="my_module.alert_on_failure")
 
 ### Hook signatures
 
-`on_start` and `on_success` take no arguments. `on_failure` optionally takes a
-single `BaseException` argument. `on_end` is tri-signature.
+`on_start` and `on_success` take no arguments. `on_failure` and `on_end`
+optionally take a single `BaseException` argument.
 
 ```python
 from typing import Optional
-from zenml.enums import ExecutionStatus
 
 def on_end(): ...
-def on_end(status: ExecutionStatus): ...
-def on_end(status: ExecutionStatus, exception: Optional[BaseException] = None): ...
+def on_end(exception: Optional[BaseException] = None): ...
 ```
 
-`status` is the terminal status of the step attempt or run. `exception` is set
-only when the status is a failure. Write the two-argument form with a default on
-`exception` so the same function works on both the success and failure paths.
+`exception` is set only when the attempt or run failed. Details about the
+current step or run are available through the step or run context (see
+below).
 
-### Accessing run information in hooks
+### Accessing step/run information in hooks
 
-Any hook can read details about the current run through the step context.
+Step-scope hooks read the current step run and pipeline run through the step
+context. Run-scope hooks on a dynamic pipeline fire outside any step and read
+the run from the run context instead, via
+`DynamicPipelineRunContext.get().run`.
 
 ```python
 from zenml import get_step_context, step
@@ -96,9 +97,6 @@ from zenml import get_step_context, step
 def on_failure(exception: BaseException):
     context = get_step_context()
     print(f"Failed step: {context.step_run.name}")
-    print(f"Parameters: {context.step_run.config.parameters}")
-    print(f"Exception: {type(exception).__name__}: {exception}")
-    print(f"Pipeline: {context.pipeline_run.name}")
 
 @step(on_failure=on_failure)
 def my_step(some_parameter: int = 1):
@@ -138,6 +136,10 @@ def my_step():
 * **Hook failures are swallowed.** When a lifecycle hook raises, the run or step is
   not aborted. The exception is captured into the `HookInvocation` record with
   `status=FAILED` and execution proceeds.
+* **Return values are discarded.** Set `ZENML_TRACK_LIFECYCLE_HOOK_OUTPUTS=true`
+  in the execution environment to instead materialize lifecycle hook return
+  values as output artifacts of the invocation, following the same rules as
+  `store_return=True` on `run_hook` (see below).
 
 ## Init and cleanup hooks
 

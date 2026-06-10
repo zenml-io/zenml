@@ -26,6 +26,10 @@ from typing import (
 )
 
 from zenml.config.source import Source
+from zenml.constants import (
+    ENV_ZENML_TRACK_LIFECYCLE_HOOK_OUTPUTS,
+    handle_bool_env_var,
+)
 from zenml.enums import ExecutionStatus, HookType
 from zenml.hooks.recording import record_hook_invocation
 from zenml.hooks.validation import bind_optional_hook_args
@@ -203,7 +207,7 @@ def run_hook(
         name: Custom event name for the invocation.
         hook_type: Type of the hook invocation.
         store_return: Whether to materialize the return value as outputs.
-        track: Whether to record the invocation and capture its logs.
+        track: Whether to record the invocation.
 
     Raises:
         BaseException: Any exception raised by the hook function.
@@ -229,9 +233,7 @@ def run_hook(
     outputs: Optional[Dict[str, Any]] = None
     exception_info: Optional[ExceptionInfo] = None
 
-    logs_context = (
-        setup_hook_logging_context(hook_type, resolved_name) if track else None
-    )
+    logs_context = setup_hook_logging_context(hook_type, resolved_name)
     logs_id = logs_context.log_model.id if logs_context is not None else None
 
     with logs_context or nullcontext():
@@ -293,7 +295,12 @@ def run_lifecycle_hook(
     try:
         func = source_utils.load(hook_source)
         bound_args = bind_optional_hook_args(func, optional_args or ())
-        run_hook(func, *bound_args, hook_type=hook_type)
+        store_return = handle_bool_env_var(
+            ENV_ZENML_TRACK_LIFECYCLE_HOOK_OUTPUTS, default=False
+        )
+        run_hook(
+            func, *bound_args, hook_type=hook_type, store_return=store_return
+        )
     except Exception as e:
         logger.error(
             "Failed to run `%s` hook from source `%s`: %s",

@@ -207,9 +207,9 @@ def pipeline(
             source path to one. Static pipelines propagate it to each step as
             a default. Dynamic pipelines run it once at the run level.
         on_end: Hook run when the pipeline ends. A callable taking an optional
-            status and `BaseException`, or a source path to one. Static
-            pipelines propagate it to each step as a default. Dynamic pipelines
-            run it once at the run level.
+            `BaseException`, or a source path to one. Static pipelines
+            propagate it to each step as a default. Dynamic pipelines run it
+            once at the run level.
         on_init: Callback function to run on initialization of the pipeline. Can
             be a function with no arguments, or a source path to such a function
             (e.g. `module.my_function`) if the function returns a value, it will

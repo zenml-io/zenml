@@ -47,7 +47,7 @@ from zenml.constants import (
     ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK,
     handle_bool_env_var,
 )
-from zenml.enums import ExecutionStatus, GroupType, StepRuntime, StepType
+from zenml.enums import GroupType, StepRuntime, StepType
 from zenml.exceptions import SourceValidationException, StepInterfaceError
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -174,7 +174,7 @@ class BaseStep:
             on_start: Hook run when the step starts. A no-arg callable, or a
                 source path to one.
             on_end: Hook run when the step ends. A callable taking an optional
-                status and `BaseException`, or a source path to one.
+                `BaseException`, or a source path to one.
             model: configuration of the model version in the Model Control Plane.
             retry: Configuration for retrying the step in case of failure.
             substitutions: Extra substitutions for model and artifact name
@@ -1011,7 +1011,7 @@ class BaseStep:
             on_start: Hook run when the step starts. A no-arg callable, or a
                 source path to one.
             on_end: Hook run when the step ends. A callable taking an optional
-                status and `BaseException`, or a source path to one.
+                `BaseException`, or a source path to one.
             model: Model to use for this step.
             retry: Configuration for retrying the step in case of failure.
             substitutions: Extra substitutions for model and artifact name
@@ -1086,9 +1086,7 @@ class BaseStep:
         end_hook_source = None
         if on_end:
             # string of on_end hook function to be used for this step
-            end_hook_source, _ = resolve_and_validate_hook(
-                on_end, ExecutionStatus.COMPLETED, Exception()
-            )
+            end_hook_source, _ = resolve_and_validate_hook(on_end, Exception())
 
         if merge and secrets and self._configuration.secrets:
             secrets = self._configuration.secrets + list(secrets)
@@ -1184,7 +1182,7 @@ class BaseStep:
             on_start: Hook run when the step starts. A no-arg callable, or a
                 source path to one.
             on_end: Hook run when the step ends. A callable taking an optional
-                status and `BaseException`, or a source path to one.
+                `BaseException`, or a source path to one.
             model: Model to use for this step.
             retry: Configuration for retrying the step in case of failure.
             substitutions: Extra substitutions for model and artifact name

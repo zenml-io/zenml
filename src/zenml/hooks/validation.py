@@ -89,9 +89,9 @@ def resolve_and_validate_hook(
         raise ValueError(f"{func} is not a valid function.")
 
     bound_args = bind_optional_hook_args(func, args)
-    # Allow arbitrary types if an exception/status arg is provided. If
-    # validating an init hook which allows user-provided arguments, we only
-    # allow JSON-serializable arguments.
+    # Allow arbitrary types if an exception arg is provided. If validating an
+    # init hook which allows user-provided arguments, we only allow
+    # JSON-serializable arguments.
     config = ConfigDict(arbitrary_types_allowed=bool(bound_args))
     try:
         validated_kwargs = validate_function_args(
@@ -105,7 +105,7 @@ def resolve_and_validate_hook(
             "- the failure hook optionally takes a single `BaseException`"
             " argument\n"
             "- the on_start hook takes no arguments\n"
-            "- the on_end hook optionally takes a status and a `BaseException`"
+            "- the on_end hook optionally takes a single `BaseException`"
             " argument\n"
             "- the init hook takes any number of JSON-safe arguments\n"
             "- the cleanup hook takes no arguments\n"

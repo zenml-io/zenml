@@ -53,7 +53,7 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.schedule import Schedule
 from zenml.config.step_configurations import StepConfigurationUpdate
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.exceptions import EntityExistsError
 from zenml.execution.pipeline.utils import (
     should_prevent_pipeline_execution,
@@ -193,9 +193,9 @@ class Pipeline:
                 step as a default. Dynamic pipelines run it once at the run
                 level.
             on_end: Hook run when the pipeline ends. A callable taking an
-                optional status and `BaseException`, or a source path to one.
-                Static pipelines propagate it to each step as a default.
-                Dynamic pipelines run it once at the run level.
+                optional `BaseException`, or a source path to one. Static
+                pipelines propagate it to each step as a default. Dynamic
+                pipelines run it once at the run level.
             on_init: Callback function to run on initialization of the pipeline.
                 Can be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`) if the function returns a
@@ -436,9 +436,9 @@ class Pipeline:
                 step as a default. Dynamic pipelines run it once at the run
                 level.
             on_end: Hook run when the pipeline ends. A callable taking an
-                optional status and `BaseException`, or a source path to one.
-                Static pipelines propagate it to each step as a default.
-                Dynamic pipelines run it once at the run level.
+                optional `BaseException`, or a source path to one. Static
+                pipelines propagate it to each step as a default. Dynamic
+                pipelines run it once at the run level.
             on_init: Callback function to run on initialization of the pipeline.
                 Can be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`) if the function returns a
@@ -488,9 +488,7 @@ class Pipeline:
         end_hook_source = None
         if on_end:
             # string of on_end hook function to be used for this pipeline
-            end_hook_source, _ = resolve_and_validate_hook(
-                on_end, ExecutionStatus.COMPLETED, Exception()
-            )
+            end_hook_source, _ = resolve_and_validate_hook(on_end, Exception())
 
         init_hook_kwargs = None
         init_hook_source = None

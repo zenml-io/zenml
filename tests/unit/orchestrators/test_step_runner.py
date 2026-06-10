@@ -24,7 +24,6 @@ from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import (
     ArtifactSaveType,
-    ExecutionStatus,
     HookType,
     StepRunInputArtifactType,
 )
@@ -64,9 +63,7 @@ def on_start_hook() -> None:
     pass
 
 
-def on_end_hook(
-    status: ExecutionStatus, exception: Optional[BaseException] = None
-) -> None:
+def on_end_hook(exception: Optional[BaseException] = None) -> None:
     pass
 
 
@@ -367,7 +364,7 @@ def test_step_hooks_fire_on_successful_attempt(
     ]
     assert types.count(HookType.STEP_START) == 1
     assert len(end_calls) == 1
-    assert end_calls[0][0] == ExecutionStatus.COMPLETED
+    assert end_calls[0] == (None,)
     assert types.count(HookType.STEP_SUCCESS) == 1
     assert types.count(HookType.STEP_FAILURE) == 0
 
@@ -411,15 +408,13 @@ def test_step_hooks_fire_one_pair_per_attempt(
     )
 
     types = [hook_type for hook_type, _ in fired]
-    end_statuses = [
+    end_exceptions = [
         args[0] for hook_type, args in fired if hook_type == HookType.STEP_END
     ]
     assert types.count(HookType.STEP_START) == 3
-    assert end_statuses == [
-        ExecutionStatus.FAILED,
-        ExecutionStatus.FAILED,
-        ExecutionStatus.COMPLETED,
-    ]
+    assert isinstance(end_exceptions[0], RuntimeError)
+    assert isinstance(end_exceptions[1], RuntimeError)
+    assert end_exceptions[2] is None
     assert types.count(HookType.STEP_SUCCESS) == 1
     assert types.count(HookType.STEP_FAILURE) == 0
 
@@ -465,11 +460,9 @@ def test_step_hooks_terminal_failure_fires_failure_hook(
         args for hook_type, args in fired if hook_type == HookType.STEP_FAILURE
     ]
     assert types.count(HookType.STEP_START) == 2
-    assert [args[0] for args in end_calls] == [
-        ExecutionStatus.FAILED,
-        ExecutionStatus.FAILED,
-    ]
-    assert isinstance(end_calls[0][1], RuntimeError)
+    assert len(end_calls) == 2
+    assert isinstance(end_calls[0][0], RuntimeError)
+    assert isinstance(end_calls[1][0], RuntimeError)
     assert len(failure_calls) == 1
     assert isinstance(failure_calls[0][0], RuntimeError)
     assert types.count(HookType.STEP_SUCCESS) == 0

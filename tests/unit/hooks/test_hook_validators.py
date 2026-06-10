@@ -13,9 +13,10 @@
 #  permissions and limitations under the License.
 """Tests for start/end hook validation and decorator wiring."""
 
+from typing import Optional
+
 import pytest
 
-from zenml.enums import ExecutionStatus
 from zenml.exceptions import HookValidationException
 from zenml.hooks.validation import resolve_and_validate_hook
 from zenml.pipelines import pipeline
@@ -34,38 +35,30 @@ def on_end_no_params() -> None:
     pass
 
 
-def on_end_with_status(status: ExecutionStatus) -> None:
+def on_end_with_exception(exception: Optional[BaseException] = None) -> None:
     pass
 
 
-def on_end_with_status_and_exception(
-    status: ExecutionStatus, exception: BaseException
-) -> None:
-    pass
-
-
-def on_end_with_too_many_params(a: int, b: int, c: int) -> None:
+def on_end_with_too_many_params(a: int, b: int) -> None:
     pass
 
 
 def _validate_on_end(func):
-    return resolve_and_validate_hook(
-        func, ExecutionStatus.COMPLETED, Exception()
-    )
+    return resolve_and_validate_hook(func, Exception())
 
 
 @pytest.mark.parametrize(
     "func",
-    [on_end_no_params, on_end_with_status, on_end_with_status_and_exception],
+    [on_end_no_params, on_end_with_exception],
 )
 def test_on_end_accepts_supported_signatures(func):
-    """Tests that on_end accepts no-arg, status, and status+exception."""
+    """Tests that on_end accepts no-arg and exception signatures."""
     source, _ = _validate_on_end(func)
     assert source is not None
 
 
 def test_on_end_rejects_too_many_params():
-    """Tests that on_end rejects more than two arguments."""
+    """Tests that on_end rejects more than one argument."""
     with pytest.raises(HookValidationException):
         _validate_on_end(on_end_with_too_many_params)
 
@@ -85,7 +78,7 @@ def test_on_start_rejects_required_param():
 def test_step_decorator_stores_hook_sources():
     """Tests that the step decorator stores start/end hook sources."""
 
-    @step(on_start=on_start_no_params, on_end=on_end_with_status_and_exception)
+    @step(on_start=on_start_no_params, on_end=on_end_with_exception)
     def my_step() -> None:
         pass
 
@@ -96,9 +89,7 @@ def test_step_decorator_stores_hook_sources():
 def test_pipeline_decorator_stores_hook_sources():
     """Tests that the pipeline decorator stores start/end hook sources."""
 
-    @pipeline(
-        on_start=on_start_no_params, on_end=on_end_with_status_and_exception
-    )
+    @pipeline(on_start=on_start_no_params, on_end=on_end_with_exception)
     def my_pipeline() -> None:
         pass
 

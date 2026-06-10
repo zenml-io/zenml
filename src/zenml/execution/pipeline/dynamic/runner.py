@@ -951,7 +951,7 @@ class DynamicPipelineRunner:
         run_lifecycle_hook(
             config.end_hook_source,
             HookType.RUN_END,
-            optional_args=(status, exception),
+            optional_args=(exception,),
         )
         if status == ExecutionStatus.COMPLETED:
             run_lifecycle_hook(

@@ -151,7 +151,7 @@ def step(
         on_start: Hook run when the step starts. A no-arg callable, or a source
             path to one.
         on_end: Hook run when the step ends. A callable taking an optional
-            status and `BaseException`, or a source path to one.
+            `BaseException`, or a source path to one.
         model: configuration of the model in the Model Control Plane.
         retry: configuration of step retry in case of step failure.
         substitutions: Extra substitutions for model and artifact name

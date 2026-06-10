@@ -270,13 +270,13 @@ class StepRunner:
 
                         # A remote stop is a graceful, non-failure termination,
                         # so the per-attempt end hook fires here as it does on
-                        # the success and failure paths. No exception is passed,
+                        # the success and failure paths. The exception is None,
                         # since the step did not fail.
                         self._fire_step_hook(
                             self.configuration.end_hook_source,
                             HookType.STEP_END,
                             step_environment,
-                            optional_args=(ExecutionStatus.STOPPED,),
+                            optional_args=(None,),
                         )
 
                         raise StepHeartBeatTerminationException(
@@ -299,10 +299,7 @@ class StepRunner:
                             self.configuration.end_hook_source,
                             HookType.STEP_END,
                             step_environment,
-                            optional_args=(
-                                ExecutionStatus.FAILED,
-                                step_exception,
-                            ),
+                            optional_args=(step_exception,),
                         )
 
                         if not step_run.is_retriable:
@@ -330,7 +327,7 @@ class StepRunner:
                             self.configuration.end_hook_source,
                             HookType.STEP_END,
                             step_environment,
-                            optional_args=(ExecutionStatus.COMPLETED, None),
+                            optional_args=(None,),
                         )
                         self._fire_step_hook(
                             self.configuration.success_hook_source,

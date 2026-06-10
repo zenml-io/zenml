@@ -18,9 +18,15 @@ from uuid import uuid4
 
 import pytest
 
+from zenml.constants import ENV_ZENML_TRACK_LIFECYCLE_HOOK_OUTPUTS
 from zenml.enums import ExecutionStatus, HookType
 from zenml.hooks import execution as hook_execution
-from zenml.hooks.execution import _get_log_source_name, run_hook
+from zenml.hooks.execution import (
+    _get_log_source_name,
+    run_hook,
+    run_lifecycle_hook,
+)
+from zenml.utils import source_utils
 
 
 def _good_hook() -> int:
@@ -103,8 +109,8 @@ def test_run_hook_links_logs_id_from_context_to_record():
     assert "hook_invocation_id" not in record.call_args.kwargs
 
 
-def test_run_hook_untracked_skips_logs_context():
-    """An untracked hook captures no logs and records nothing."""
+def test_run_hook_untracked_skips_recording():
+    """An untracked hook captures logs but records nothing."""
     with (
         mock.patch.object(
             hook_execution, "setup_hook_logging_context"
@@ -113,7 +119,7 @@ def test_run_hook_untracked_skips_logs_context():
     ):
         assert run_hook(_good_hook, track=False) == 5
 
-    logs_context.assert_not_called()
+    logs_context.assert_called_once_with(HookType.CUSTOM, "_good_hook")
     record.assert_not_called()
 
 
@@ -121,3 +127,24 @@ def test_run_hook_without_run_context_still_returns():
     """A missing run context disables log capture without breaking the hook."""
     with mock.patch.object(hook_execution, "record_hook_invocation"):
         assert run_hook(_good_hook) == 5
+
+
+def test_run_lifecycle_hook_outputs_disabled_by_default():
+    """A lifecycle hook does not store its return value by default."""
+    source = source_utils.resolve(_good_hook)
+    with mock.patch.object(hook_execution, "run_hook") as run:
+        run_lifecycle_hook(source, HookType.STEP_END)
+
+    run.assert_called_once()
+    assert run.call_args.kwargs["store_return"] is False
+
+
+def test_run_lifecycle_hook_outputs_enabled_by_env_var(monkeypatch):
+    """The env var enables storing lifecycle hook return values."""
+    monkeypatch.setenv(ENV_ZENML_TRACK_LIFECYCLE_HOOK_OUTPUTS, "true")
+    source = source_utils.resolve(_good_hook)
+    with mock.patch.object(hook_execution, "run_hook") as run:
+        run_lifecycle_hook(source, HookType.STEP_END)
+
+    run.assert_called_once()
+    assert run.call_args.kwargs["store_return"] is True

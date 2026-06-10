@@ -19,7 +19,7 @@ import pytest
 
 from zenml import pipeline, step
 from zenml.client import Client
-from zenml.enums import ExecutionStatus, HookType
+from zenml.enums import HookType
 
 _events: List[str] = []
 
@@ -32,9 +32,7 @@ def record_init() -> None:
     _events.append("init")
 
 
-def record_end(
-    status: ExecutionStatus, exception: Optional[BaseException] = None
-) -> None:
+def record_end(exception: Optional[BaseException] = None) -> None:
     _events.append("end")
 
 
