@@ -100,6 +100,7 @@ from the same pool, subject, and policy path in one transaction.
 Before granting, the reconciler checks:
 
 - Matching policy and grant for each demand (or grantless admission against pool capacity)
+- Exact grant `class_name` when the selected capacity class is policy-gated
 - Grant `limit` and reserved rules for `reclaim_tolerance: none`
 - Free capacity in each required `(resource, class)` bucket
 - Class rank when the request does not pin a class
@@ -113,6 +114,10 @@ that omits a demanded resource causes rejection.
 For `reclaim_tolerance: none`, each demand must fit within the grant's
 `reserved` amount. Zero reserved for a demanded resource rejects the request
 immediately.
+
+Administrators cannot over-reserve a pool class through policies. For each
+pool, resource, and class, the configured policy `reserved` totals must fit
+inside the matching pool capacity before those policies can be saved.
 {% endhint %}
 
 If raw capacity is insufficient, the reconciler may attempt preemption before
