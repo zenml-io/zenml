@@ -101,6 +101,11 @@ EXEMPT_URL_STATUS: Dict[str, set] = {
     # surface as 404/410/5xx, which is not exempted here and would still fail.
     "https://zenml.io/slack": {403},
     "https://zenml.io/slack-invite": {403},
+    # TEMPORARY: the Agents guide ships in the same PR that introduces links to
+    # it, so the URL 404s until the PR merges and GitBook syncs the Learn
+    # space. Remove this entry once https://docs.zenml.io/user-guides/agents-guide
+    # is live.
+    "https://docs.zenml.io/user-guides/agents-guide": {404},
 }
 
 EXEMPT_DOMAIN_STATUS: Dict[str, set] = {
