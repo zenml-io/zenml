@@ -35,7 +35,7 @@ Run with::
 
 import os
 import tempfile
-from typing import Iterator, List
+from typing import List, Tuple
 
 __test__ = False
 
@@ -43,31 +43,10 @@ from zenml.client import Client
 from zenml.integrations.modal.flavors import ModalSandboxSettings
 
 
-def _drain(stream: Iterator[str], limit: int = 50) -> List[str]:
-    """Reads up to ``limit`` lines from a process stream.
-
-    Args:
-        stream: The line iterator.
-        limit: Hard cap so a runaway process doesn't hang the smoke test.
-
-    Returns:
-        The collected lines (rstripped).
-    """
-    lines: List[str] = []
-    for _ in range(limit):
-        try:
-            lines.append(next(stream).rstrip())
-        except StopIteration:
-            break
-    return lines
-
-
-def _exec_and_collect(session, argv: List[str]) -> tuple[List[str], int]:
+def _exec_and_collect(session, argv: List[str]) -> Tuple[List[str], int]:
     """Runs argv in the session and returns (stdout lines, exit code)."""
-    process = session.exec(argv)
-    stdout_lines = _drain(process.stdout())
-    exit_code = process.wait()
-    return stdout_lines, exit_code
+    output = session.exec(argv).collect()
+    return output.stdout.splitlines(), output.exit_code
 
 
 def _check_basic_exec(sandbox) -> None:

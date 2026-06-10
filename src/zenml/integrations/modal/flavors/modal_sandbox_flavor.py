@@ -19,6 +19,7 @@ from pydantic import Field
 
 from zenml.integrations.modal import MODAL_SANDBOX_FLAVOR
 from zenml.integrations.modal.flavors.modal_step_operator_flavor import (
+    DEFAULT_TIMEOUT_SECONDS,
     ModalStepOperatorConfig,
     ModalStepOperatorSettings,
 )
@@ -41,9 +42,33 @@ class ModalSandboxSettings(BaseSandboxSettings, ModalStepOperatorSettings):
         "any registry reference Modal can pull. Example: "
         "'python:3.11-slim', 'my-registry/my-image:tag'.",
     )
+    cpu: Optional[int] = Field(
+        default=None,
+        description="Number of CPU cores requested for the sandbox. Must be "
+        "a positive integer accepted by Modal. Examples: 1, 2, 4. If not "
+        "set, Modal's default CPU allocation applies",
+    )
+    memory: Optional[str] = Field(
+        default=None,
+        description="Memory requested for the sandbox as a string with a "
+        "byte unit. Examples: '512MB', '2GB'. If not set, Modal's default "
+        "memory allocation applies",
+    )
+    timeout: int = Field(
+        default=3600,
+        ge=1,
+        le=DEFAULT_TIMEOUT_SECONDS,
+        description="Sandbox lifetime (TTL) in seconds. Modal terminates "
+        "the sandbox once this elapses, regardless of running commands. "
+        "Note that closing a session does NOT terminate the sandbox; only "
+        "destroy() or this TTL does, so unused sandboxes keep billing "
+        "until then. Examples: 600 (10 minutes), 3600 (1 hour, default)",
+    )
 
 
-class ModalSandboxConfig(BaseSandboxConfig, ModalStepOperatorConfig):
+class ModalSandboxConfig(
+    BaseSandboxConfig, ModalSandboxSettings, ModalStepOperatorConfig
+):
     """Configuration for the Modal sandbox component."""
 
     app_name: str = Field(
