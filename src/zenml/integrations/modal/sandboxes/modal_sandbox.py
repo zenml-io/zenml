@@ -60,7 +60,7 @@ class ModalSandboxProcess(SandboxProcess):
 
     def __init__(
         self,
-        process: "ContainerProcess",
+        process: "ContainerProcess[str]",
         *,
         session: "ModalSandboxSession",
         started_at: float,
@@ -123,15 +123,16 @@ class ModalSandboxProcess(SandboxProcess):
     def kill(self) -> None:
         """Best-effort process termination."""
         # Modal's ContainerProcess does not expose a per-command kill —
-        # only wait / poll / stdin / stdout / stderr / attach. Closing
-        # stdin signals EOF, which lets well-behaved processes exit. For
-        # a hard kill, call ModalSandboxSession.destroy().
+        # only wait / poll / stdin / stdout / stderr / attach. Sending
+        # EOF on stdin lets well-behaved processes exit. For a hard
+        # kill, call ModalSandboxSession.destroy().
         try:
             if self._process.stdin is not None:
-                self._process.stdin.close()
+                self._process.stdin.write_eof()
+                self._process.stdin.drain()
             logger.info(
-                "Modal has no per-command kill; closed stdin instead. Use "
-                "session.destroy() to force-terminate the whole Sandbox."
+                "Modal has no per-command kill; sent EOF on stdin instead. "
+                "Use session.destroy() to force-terminate the whole Sandbox."
             )
         except Exception as e:
             logger.warning(

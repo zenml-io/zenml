@@ -221,15 +221,16 @@ class TestModalSandboxProcess:
                 timeout=5.0
             )
 
-    def test_kill_closes_stdin(self) -> None:
+    def test_kill_sends_eof_on_stdin(self) -> None:
         fake = MagicMock()
         session = _make_session(MagicMock(object_id="sb_xyz"))
         ModalSandboxProcess(fake, session=session, started_at=0.0).kill()
-        fake.stdin.close.assert_called_once()
+        fake.stdin.write_eof.assert_called_once()
+        fake.stdin.drain.assert_called_once()
 
     def test_kill_tolerates_stdin_close_failure(self) -> None:
         fake = MagicMock()
-        fake.stdin.close.side_effect = RuntimeError("already closed")
+        fake.stdin.write_eof.side_effect = RuntimeError("already closed")
         session = _make_session(MagicMock(object_id="sb_xyz"))
         ModalSandboxProcess(
             fake, session=session, started_at=0.0
