@@ -57,6 +57,8 @@ zenml stack update --sandbox my-modal-sandbox
 | `image` | Docker image to boot the Sandbox from. Any registry reference Modal can pull, e.g. `python:3.11-slim` (the default) or `my-registry/my-image:tag`. |
 | `sandbox_environment` | Env vars to set in the Session, injected at Sandbox create time. |
 | `timeout` | Sandbox lifetime in seconds, forwarded to Modal's `Sandbox.create(timeout=)`. Also honored on `restore()`. |
+| `cpu` | CPU cores requested for the sandbox, e.g. `2`. Modal's default allocation when unset. |
+| `memory` | Memory requested for the sandbox, e.g. `"2GB"`. Modal's default allocation when unset. |
 | `gpu` | Modal GPU type, e.g. `"A100"`, `"H100"`, `"T4"`. |
 | `region` | Modal region (e.g. `"us-east"`). Enterprise/Team plans. |
 | `cloud` | Cloud provider (e.g. `"aws"`, `"gcp"`). Enterprise/Team plans. |
@@ -64,7 +66,7 @@ zenml stack update --sandbox my-modal-sandbox
 
 `ModalSandboxConfig` additionally holds the component-level fields set at registration time: `app_name` (the Modal App that hosts the Sessions) and the optional `token_id` / `token_secret` pair for explicit Modal credentials (otherwise Modal's ambient auth from `modal setup` is used).
 
-Sandbox cpu/memory follow Modal's defaults, and only `ModalSandboxSettings` (`gpu` type string, `region`, `cloud`) configures sandbox resources. The step's `ResourceSettings` are intentionally **not** mirrored into the sandbox: the orchestrator already provisions those resources for the step itself, and the sandbox would double them. Example:
+Sandbox resources are configured only via `ModalSandboxSettings` (`cpu`, `memory`, `gpu` type string, `region`, `cloud`); cpu/memory follow Modal's defaults when unset. The step's `ResourceSettings` are intentionally **not** mirrored into the sandbox: the orchestrator already provisions those resources for the step itself, and the sandbox would double them. Example:
 
 ```python
 from zenml import step
@@ -90,17 +92,17 @@ from zenml.client import Client
 @step
 def agent_step(prompt: str) -> str:
     sandbox = Client().active_stack.sandbox
-    with sandbox.create_session() as session:
-        try:
-            process = session.exec(["python", "-c", "print(2 + 2)"])
-            out = "".join(process.stdout())
-            process.wait()
-            return out
-        finally:
-            session.destroy()
+    session = sandbox.create_session()
+    try:
+        process = session.exec(["python", "-c", "print(2 + 2)"])
+        out = "".join(process.stdout())
+        process.wait()
+        return out
+    finally:
+        session.destroy()
 ```
 
-`close()` (called by the `with` block) intentionally keeps the sandbox alive so you can `attach()` to it later — call `session.destroy()` when you're done, or the sandbox keeps billing until the `timeout` TTL kicks in as the backstop.
+Call `session.destroy()` when you're done, or the sandbox keeps billing until the `timeout` TTL kicks in as the backstop. Use `with sandbox.create_session() as session:` (which only calls `close()`, keeping the sandbox alive for a later `attach()`) when you *want* the sandbox to outlive the handle — but don't combine it with `destroy()`: if `destroy()` fails, it deliberately leaves the handle open for a retry, and the `with` block's exit would close it anyway.
 
 ### Snapshots and restore
 
