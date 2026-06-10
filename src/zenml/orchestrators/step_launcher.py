@@ -202,6 +202,7 @@ class StepLauncher:
                 invocation_id=self._invocation_id,
                 dynamic_config=dynamic_config,
             )
+            step_run_request.status = self._get_initial_step_run_status()
             if isinstance(logs_context, LoggingContext):
                 step_run_request.logs = logs_context.log_model.id
 
@@ -652,6 +653,27 @@ class StepLauncher:
             orchestrator=self._stack.orchestrator,
         )
         return step_runtime == StepRuntime.INLINE
+
+    def _get_initial_step_run_status(self) -> ExecutionStatus:
+        """Gets the initial status of the step run.
+
+        Returns:
+            The initial status of the step run.
+        """
+        if self._snapshot.is_dynamic:
+            from zenml.execution.pipeline.dynamic.compilation import (
+                get_step_runtime,
+            )
+
+            step_runtime = get_step_runtime(
+                step_config=self._step.config,
+                pipeline_docker_settings=self._snapshot.pipeline_configuration.docker_settings,
+                orchestrator=self._stack.orchestrator,
+            )
+            if step_runtime == StepRuntime.ISOLATED:
+                return ExecutionStatus.PROVISIONING
+
+        return ExecutionStatus.RUNNING
 
     def _wait_until_resources_acquired(
         self, step_run_info: StepRunInfo

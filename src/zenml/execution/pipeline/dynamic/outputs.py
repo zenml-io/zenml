@@ -274,6 +274,7 @@ class _IsolatedStepFuture(BaseFuture):
             # If a step is in `retrying` status, another step run will be
             # created and we will try to pick it up in the next iteration.
             if step_run.status not in {
+                ExecutionStatus.PROVISIONING,
                 ExecutionStatus.RUNNING,
                 ExecutionStatus.RETRYING,
             }:
