@@ -732,6 +732,45 @@ class TestSessionLifecycle:
         session = _make_session(client)
         session.destroy()
         assert "DELETE /v1/sandbox/sb_abc" in calls
+        assert session.closed is True
+
+    def test_destroy_raises_and_keeps_handle_open_on_failure(self) -> None:
+        # A failed delete must surface (the sandbox keeps running until
+        # TTL) and leave the handle open so destroy() can be retried.
+        statuses = iter([500, 204])
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            if request.method == "DELETE":
+                return httpx.Response(next(statuses))
+            return httpx.Response(204)
+
+        client = _make_client(handler)
+        session = _make_session(client)
+        with pytest.raises(RuntimeError, match="Failed to delete"):
+            session.destroy()
+        assert session.closed is False
+        session.destroy()  # retry succeeds
+        assert session.closed is True
+
+    def test_close_kills_unfinished_exec_streams(self) -> None:
+        # close() must not leave the local SSE response + pump thread
+        # alive for a still-running command; the remote command keeps
+        # going, but local resources die with the handle.
+        def handler(request: httpx.Request) -> httpx.Response:
+            if request.url.path.endswith("/exec"):
+                # stdout frame but no exit frame: command still running.
+                return httpx.Response(
+                    200,
+                    headers={"Content-Type": "text/event-stream"},
+                    text=_sse_event("stdout", _b64("partial\n")),
+                )
+            return httpx.Response(204)
+
+        client = _make_client(handler)
+        session = _make_session(client)
+        process = session.exec(["sleep", "3600"])
+        session.close()
+        assert process._killed.is_set()
 
     def test_dashboard_url_none(self) -> None:
         client = _make_client(lambda r: httpx.Response(200, json={"id": "x"}))

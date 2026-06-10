@@ -775,6 +775,7 @@ class CloudflareSandboxSession(SandboxSession):
         self._default_cwd = default_cwd
         self._default_timeout_ms = default_timeout_ms
         self._owns_bridge_session = bridge_session_id is not None
+        self._processes: List[CloudflareSandboxProcess] = []
         super().__init__(id=sandbox_id, parent=parent)
 
     def _get_dashboard_url(self) -> Optional[str]:
@@ -829,12 +830,14 @@ class CloudflareSandboxSession(SandboxSession):
             timeout_ms=self._default_timeout_ms,
             session_id=self._bridge_session_id,
         )
-        return CloudflareSandboxProcess(
+        process = CloudflareSandboxProcess(
             event_iter,
             session=self,
             started_at=started_at,
             response=response,
         )
+        self._processes.append(process)
+        return process
 
     def _upload_file(self, local_path: str, remote_path: str) -> None:
         """Upload a local file into the sandbox.
@@ -868,7 +871,14 @@ class CloudflareSandboxSession(SandboxSession):
             f.write(data)
 
     def _close(self) -> None:
-        """Release bridge-session state, if any. The sandbox keeps running."""
+        """Release local exec streams and bridge-session state.
+
+        The remote sandbox keeps running, but local SSE responses and
+        their pump threads must not outlive the session handle.
+        """
+        for process in self._processes:
+            if process.exit_code is None:
+                process.kill()
         if self._owns_bridge_session and self._bridge_session_id is not None:
             try:
                 self._client.delete_bridge_session(
@@ -885,19 +895,23 @@ class CloudflareSandboxSession(SandboxSession):
                 self._bridge_session_id = None
 
     def destroy(self) -> None:
-        """Terminate the sandbox on Cloudflare."""
+        """Terminate the sandbox on Cloudflare.
+
+        The handle is only closed after successful deletion — on failure
+        it stays open so destroy() can be retried.
+
+        Raises:
+            RuntimeError: If the bridge fails to delete the sandbox.
+        """
         try:
             self._client.delete_sandbox(self._sandbox_id)
         except Exception as e:
-            logger.warning(
-                "Failed to delete Cloudflare sandbox %s: %s. It may keep "
-                "running until the bridge's TTL kicks in.",
-                self._sandbox_id,
-                e,
-                exc_info=True,
-            )
-        finally:
-            self.close()
+            raise RuntimeError(
+                f"Failed to delete Cloudflare sandbox '{self._sandbox_id}': "
+                f"{e}. It may keep running until the bridge's TTL; retry "
+                "destroy() to terminate it."
+            ) from e
+        self.close()
 
 
 class CloudflareSandbox(BaseSandbox):
