@@ -503,6 +503,39 @@ class TestSessionLifecycle:
             fake_api_cls.return_value = fake_api
             session.close()  # should not raise
 
+    def test_transient_delete_failure_retried_on_destroy(self) -> None:
+        # A failed delete keeps the tracker set so a later destroy()
+        # retries instead of orphaning the inline template CR.
+        session, _ = self._session_with_inline()
+        with patch("kubernetes.client.CustomObjectsApi") as fake_api_cls:
+            fake_api = MagicMock()
+            fake_api.delete_namespaced_custom_object.side_effect = [
+                RuntimeError("transient network error"),
+                None,
+            ]
+            fake_api_cls.return_value = fake_api
+            session.close()  # delete fails, tracker kept
+            assert session._inline_template_name == "zenml-sb-tpl-deadbeef"
+            session.destroy()  # retry succeeds
+        assert fake_api.delete_namespaced_custom_object.call_count == 2
+        assert session._inline_template_name is None
+
+    def test_delete_404_clears_tracker(self) -> None:
+        # 404 means the CR is already gone — no point retrying.
+        from kubernetes.client.rest import ApiException
+
+        session, _ = self._session_with_inline()
+        with patch("kubernetes.client.CustomObjectsApi") as fake_api_cls:
+            fake_api = MagicMock()
+            fake_api.delete_namespaced_custom_object.side_effect = (
+                ApiException(status=404, reason="Not Found")
+            )
+            fake_api_cls.return_value = fake_api
+            session.close()
+            session.destroy()
+        assert fake_api.delete_namespaced_custom_object.call_count == 1
+        assert session._inline_template_name is None
+
     def test_close_deletes_inline_template_inside_connector_scope(
         self,
     ) -> None:
@@ -694,7 +727,8 @@ class TestExec:
         session = self._live_session(result)
         session.exec("ls", cwd="/tmp")
         called_with = session._sandbox.commands.run.call_args.args[0]
-        assert called_with.startswith("cd /tmp && ")
+        # Braces group the command so a failing `cd` short-circuits it.
+        assert called_with == "cd /tmp && { ls; }"
 
     def test_env_prefixed_as_inline_exports(self) -> None:
         result = MagicMock(stdout="", stderr="", exit_code=0)
@@ -704,6 +738,24 @@ class TestExec:
         # `export` applies to the whole command chain; shlex.quote
         # wraps "bar baz" in single quotes.
         assert called_with == "export FOO='bar baz'; env"
+
+    def test_cwd_and_env_compose_with_grouping(self) -> None:
+        # Exports live inside the braces: if `cd` fails, neither the
+        # exports nor the command run (in the wrong directory).
+        result = MagicMock(stdout="", stderr="", exit_code=0)
+        session = self._live_session(result)
+        session.exec("env", cwd="/tmp", env={"FOO": "bar baz"})
+        called_with = session._sandbox.commands.run.call_args.args[0]
+        assert called_with == "cd /tmp && { export FOO='bar baz'; env; }"
+
+    def test_malicious_env_key_rejected(self) -> None:
+        # Keys are interpolated unquoted into `export <key>=...` — a
+        # non-identifier key would be shell injection.
+        result = MagicMock(stdout="", stderr="", exit_code=0)
+        session = self._live_session(result)
+        with pytest.raises(ValueError, match="environment variable name"):
+            session.exec("env", env={"FOO; rm -rf /": "x"})
+        session._sandbox.commands.run.assert_not_called()
 
     def test_exec_failure_wraps_in_sandbox_exec_error(self) -> None:
         from zenml.sandboxes import SandboxExecError

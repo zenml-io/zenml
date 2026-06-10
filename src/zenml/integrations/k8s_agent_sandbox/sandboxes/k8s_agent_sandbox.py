@@ -14,7 +14,9 @@
 """Agent Sandbox flavor implementation."""
 
 import logging
+import re
 import shlex
+import threading
 import time
 import uuid
 from contextlib import contextmanager
@@ -62,6 +64,17 @@ logger = get_logger(__name__)
 _SANDBOX_TEMPLATE_GROUP = "extensions.agents.x-k8s.io"
 _SANDBOX_TEMPLATE_VERSION = "v1beta1"
 _SANDBOX_TEMPLATE_PLURAL = "sandboxtemplates"
+
+# Env var keys are interpolated unquoted into `export <key>=...`; only
+# shell-identifier keys are safe there.
+_ENV_KEY_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+
+# ``Configuration._default`` is process-global; serializing
+# ``_kube_default_config`` scopes keeps concurrent sessions for
+# different clusters from cross-wiring credentials. A plain Lock (not
+# RLock) suffices: no call path re-enters the context — ``destroy()``
+# exits its scope before ``_delete_inline_template`` opens a new one.
+_kube_default_config_lock = threading.Lock()
 
 
 def _delete_sandbox_template(name: str, namespace: str) -> None:
@@ -196,29 +209,42 @@ class K8sAgentSandboxSession(SandboxSession):
                 via ``shlex.join`` — unambiguous shell semantics. A
                 string is passed through unmodified; callers are
                 responsible for any internal escaping.
-            cwd: Working directory. Prepended as ``cd <cwd> && ...`` —
-                the SDK's ``commands.run`` doesn't expose a workdir
-                kwarg.
+            cwd: Working directory. The command is composed as
+                ``cd <cwd> && { <exports><cmd>; }`` — the braces ensure
+                nothing runs in the wrong directory when the ``cd``
+                fails; the SDK's ``commands.run`` doesn't expose a
+                workdir kwarg.
             env: Per-exec env vars. Prepended as ``export KEY=value; ``
                 statements so they apply to the entire command chain
-                (``&&`` / ``;`` / ``|``).
+                (``&&`` / ``;`` / ``|``). Keys must be valid shell
+                identifiers (``[A-Za-z_][A-Za-z0-9_]*``).
 
         Returns:
             An ``K8sAgentSandboxProcess`` carrying the captured
             ``ExecutionResult``.
 
         Raises:
+            ValueError: If an ``env`` key is not a valid shell
+                identifier — keys are interpolated unquoted into the
+                ``export`` statement, so anything else would allow
+                shell injection.
             SandboxExecError: If the SDK raises while issuing the HTTP
                 POST (network error, sandbox unhealthy, etc.).
         """
         cmd_str = shlex.join(command) if isinstance(command, list) else command
         if env:
+            for key in env:
+                if not _ENV_KEY_PATTERN.fullmatch(key):
+                    raise ValueError(
+                        f"Invalid environment variable name {key!r}: must "
+                        "match [A-Za-z_][A-Za-z0-9_]*."
+                    )
             exports = "".join(
                 f"export {k}={shlex.quote(v)}; " for k, v in env.items()
             )
             cmd_str = f"{exports}{cmd_str}"
         if cwd is not None:
-            cmd_str = f"cd {shlex.quote(cwd)} && {cmd_str}"
+            cmd_str = f"cd {shlex.quote(cwd)} && {{ {cmd_str}; }}"
 
         self._log_command(command)
 
@@ -268,27 +294,30 @@ class K8sAgentSandboxSession(SandboxSession):
         Runs inside the parent's connector credential scope so the
         delete targets the same cluster the template was created on.
         """
-        # Clear the tracker before the API call so a second call (e.g.
-        # destroy() after close()) is a no-op even if this one crashes.
         name = self._inline_template_name
         namespace = self._inline_template_namespace
-        self._inline_template_name = None
-        self._inline_template_namespace = None
         if name is None or namespace is None:
             return
         try:
             with cast("K8sAgentSandbox", self._parent)._kube_default_config():
                 _delete_sandbox_template(name, namespace)
         except Exception as e:  # noqa: BLE001
-            logger.warning(
-                "Cleanup of inline SandboxTemplate '%s' failed: %s. "
-                "Delete manually with `kubectl delete sandboxtemplate "
-                "-n %s %s` if it lingers.",
-                name,
-                e,
-                namespace,
-                name,
-            )
+            if not (isinstance(e, ApiException) and e.status == 404):
+                logger.warning(
+                    "Cleanup of inline SandboxTemplate '%s' failed: %s. "
+                    "Delete manually with `kubectl delete sandboxtemplate "
+                    "-n %s %s` if it lingers.",
+                    name,
+                    e,
+                    namespace,
+                    name,
+                )
+                return
+        # Clear the tracker only on success or 404 (already gone) so a
+        # transient delete failure stays retryable from a later
+        # destroy().
+        self._inline_template_name = None
+        self._inline_template_namespace = None
 
 
 class K8sAgentSandbox(BaseSandbox):
@@ -374,32 +403,34 @@ class K8sAgentSandbox(BaseSandbox):
     def _kube_default_config(self) -> Iterator[None]:
         """Scopes the connector's kubeconfig as the kubernetes default.
 
-        Not thread-safe: ``Configuration._default`` is process-global.
-        ZenML steps run sequentially, so this only matters for callers
-        spawning concurrent ``create_session`` calls themselves.
+        ``Configuration._default`` is process-global, so the module-
+        level lock is held for the duration of the context to keep
+        concurrent sessions (e.g. callers spawning parallel
+        ``create_session`` calls) from cross-wiring credentials.
 
         Yields:
             ``None`` — used as a context manager.
         """
-        # The SDK's K8sHelper.__init__ calls config.load_kube_config()
-        # with no seam to inject an ApiClient, so the only way to make
-        # it use connector credentials is to set the process default
-        # for the duration of the block. Inside a cluster the SDK tries
-        # load_incluster_config() first, which wins over this default.
-        api_client = self._get_kube_api_client()
-        if api_client is None:
-            yield
-            return
-        # ``Configuration._default`` is the same attribute
-        # ``Configuration.set_default`` writes to; reading it directly
-        # is the only way to snapshot the current default since the
-        # upstream library doesn't expose a getter.
-        previous = k8s_client.Configuration._default
-        try:
-            k8s_client.Configuration.set_default(api_client.configuration)
-            yield
-        finally:
-            k8s_client.Configuration._default = previous
+        with _kube_default_config_lock:
+            # The SDK's K8sHelper.__init__ calls config.load_kube_config()
+            # with no seam to inject an ApiClient, so the only way to make
+            # it use connector credentials is to set the process default
+            # for the duration of the block. Inside a cluster the SDK tries
+            # load_incluster_config() first, which wins over this default.
+            api_client = self._get_kube_api_client()
+            if api_client is None:
+                yield
+                return
+            # ``Configuration._default`` is the same attribute
+            # ``Configuration.set_default`` writes to; reading it directly
+            # is the only way to snapshot the current default since the
+            # upstream library doesn't expose a getter.
+            previous = k8s_client.Configuration._default
+            try:
+                k8s_client.Configuration.set_default(api_client.configuration)
+                yield
+            finally:
+                k8s_client.Configuration._default = previous
 
     def _build_client(self) -> "SandboxClient":
         """Builds a fresh ``SandboxClient`` per call.
