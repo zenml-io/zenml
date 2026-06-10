@@ -23,7 +23,7 @@ import sys
 from contextlib import contextmanager
 from datetime import datetime
 from typing import Any, Dict, Iterator, List, Optional
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, PropertyMock
 from uuid import uuid4
 
 import pytest
@@ -207,11 +207,23 @@ class TestModalSandboxProcess:
         fake.wait.assert_called_once()
 
     def test_exit_code_none_while_running(self) -> None:
+        # Modal's ContainerProcess.returncode raises InvalidError while
+        # the command runs; exit_code must use poll() and return None.
         fake = MagicMock()
-        fake.returncode = None
+        type(fake).returncode = PropertyMock(
+            side_effect=RuntimeError("not finished")
+        )
+        fake.poll.return_value = None
         session = _make_session(MagicMock(object_id="sb_xyz"))
         proc = ModalSandboxProcess(fake, session=session, started_at=0.0)
         assert proc.exit_code is None
+
+    def test_exit_code_after_completion(self) -> None:
+        fake = MagicMock()
+        fake.poll.return_value = 7
+        session = _make_session(MagicMock(object_id="sb_xyz"))
+        proc = ModalSandboxProcess(fake, session=session, started_at=0.0)
+        assert proc.exit_code == 7
 
     def test_wait_with_timeout_raises_not_implemented(self) -> None:
         # Modal has no per-exec timeout; we refuse rather than silently drop.
@@ -242,6 +254,18 @@ class TestModalSandboxProcess:
         assert session.closed is True
         with pytest.raises(SandboxSessionClosedError):
             session.exec(["echo", "hi"])
+
+    def test_kill_failure_raises_retryable_runtime_error(self) -> None:
+        # kill() goes through session.destroy(), so a failed terminate
+        # surfaces as the documented RuntimeError (billing warning) and
+        # leaves the handle open for retry.
+        fake_sandbox = MagicMock(object_id="sb_xyz")
+        fake_sandbox.terminate.side_effect = RuntimeError("api down")
+        session = _make_session(fake_sandbox)
+        fake = MagicMock()
+        with pytest.raises(RuntimeError, match="Failed to terminate"):
+            ModalSandboxProcess(fake, session=session, started_at=0.0).kill()
+        assert session.closed is False
 
     def test_kill_does_not_use_per_command_stdin(self) -> None:
         # kill() must not fall back to a stdin-EOF nudge, which leaves
@@ -347,12 +371,24 @@ class TestModalSandbox:
     def test_attach_calls_from_id(self) -> None:
         with _patch_modal() as modal_mock:
             fake_sandbox = MagicMock(object_id="sb_xyz")
+            fake_sandbox.poll.return_value = None  # still running
             modal_mock.Sandbox.from_id.return_value = fake_sandbox
             session = _make_modal_sandbox().attach("sb_xyz")
         modal_mock.Sandbox.from_id.assert_called_once_with(
             "sb_xyz", client=None
         )
         assert session.id == "sb_xyz"
+
+    def test_attach_rejects_terminated_sandbox(self) -> None:
+        # Modal returns a handle even for a dead sandbox; attach() must
+        # fail fast instead of handing out a session whose first exec
+        # fails with a confusing Modal error.
+        with _patch_modal() as modal_mock:
+            fake_sandbox = MagicMock(object_id="sb_dead")
+            fake_sandbox.poll.return_value = 0  # already terminated
+            modal_mock.Sandbox.from_id.return_value = fake_sandbox
+            with pytest.raises(RuntimeError, match="already terminated"):
+                _make_modal_sandbox().attach("sb_dead")
 
     def test_attach_wraps_modal_errors_in_runtime_error(self) -> None:
         with _patch_modal() as modal_mock:
