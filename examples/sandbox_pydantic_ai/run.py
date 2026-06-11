@@ -20,7 +20,7 @@ own log source, own step metadata, independently cacheable). A reducer
 LLM stitches the subagent outputs into a single coherent answer.
 """
 
-from typing import Annotated
+from typing import Annotated, Optional
 
 from agent import (
     DEFAULT_QUERY,
@@ -32,7 +32,10 @@ from agent import (
 from zenml import pipeline, step, unmapped
 from zenml.client import Client
 from zenml.config import DockerSettings
+from zenml.logger import get_logger
 from zenml.sandboxes import BaseSandbox, SandboxSnapshot
+
+logger = get_logger(__name__)
 
 _PYTHON_DEPS = "numpy scipy"
 
@@ -53,11 +56,17 @@ def _active_sandbox() -> BaseSandbox:
 
 
 @step
-def prep_step() -> Annotated[SandboxSnapshot, "scientific_image"]:
-    """Boot a sandbox, install scientific deps, return a snapshot.
+def prep_step() -> Annotated[Optional[SandboxSnapshot], "scientific_image"]:
+    """Install scientific deps once and snapshot, where the flavor allows.
+
+    Snapshots are an optional sandbox capability (Modal implements them
+    today). On flavors without them, this step probes cheaply — before
+    paying for the dependency install — and returns ``None``, in which
+    case each subagent installs its own deps in a fresh session.
 
     Returns:
-        The sandbox snapshot with the scientific stack pre-installed.
+        The snapshot with the scientific stack pre-installed, or ``None``
+        if the active flavor does not support snapshots.
 
     Raises:
         RuntimeError: If the install fails.
@@ -66,6 +75,17 @@ def prep_step() -> Annotated[SandboxSnapshot, "scientific_image"]:
     # handle open for retry, but __exit__ would close it anyway.
     session = _active_sandbox().create_session()
     try:
+        try:
+            # Capability probe on the still-empty session, so a flavor
+            # without snapshots doesn't pay for the install below.
+            session.create_snapshot()
+        except NotImplementedError:
+            logger.warning(
+                "The active sandbox flavor does not support snapshots; "
+                "each subagent will install its dependencies in a fresh "
+                "session instead."
+            )
+            return None
         out = session.exec(
             [
                 "bash",
@@ -97,19 +117,43 @@ def planner_step(query: str) -> Annotated[list[str], "subtasks"]:
 
 @step(enable_cache=False)
 def subagent_step(
-    snapshot: SandboxSnapshot, subtask: str
+    snapshot: Optional[SandboxSnapshot], subtask: str
 ) -> Annotated[str, "subagent_answer"]:
-    """Restore from the shared snapshot and run the agent on one subtask.
+    """Run the agent on one subtask in its own sandbox session.
+
+    Restores the shared snapshot where available; otherwise boots a
+    fresh session and installs the scientific deps first.
 
     Args:
-        snapshot: Shared snapshot with scientific deps pre-installed.
+        snapshot: Shared snapshot with scientific deps pre-installed,
+            or ``None`` on flavors without snapshot support.
         subtask: The subtask description for this subagent.
 
     Returns:
         The subagent's final natural-language answer.
+
+    Raises:
+        RuntimeError: If the fallback dependency install fails.
     """
-    session = _active_sandbox().restore(snapshot)
+    sandbox = _active_sandbox()
+    if snapshot is None:
+        session = sandbox.create_session()
+    else:
+        session = sandbox.restore(snapshot)
     try:
+        if snapshot is None:
+            out = session.exec(
+                [
+                    "bash",
+                    "-lc",
+                    f"pip install --quiet --no-cache-dir {_PYTHON_DEPS}",
+                ]
+            ).collect()
+            if out.exit_code != 0:
+                raise RuntimeError(
+                    f"Failed to install deps (exit {out.exit_code}): "
+                    f"{out.stderr}"
+                )
         return run_agent_in_session(session, subtask)
     finally:
         session.destroy()

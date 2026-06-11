@@ -27,8 +27,11 @@ agent flows: generate data, inspect, filter, re-compute, etc.
 
 from dataclasses import dataclass
 
+import httpx
 from pydantic import BaseModel
 from pydantic_ai import Agent, RunContext
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
 
 from zenml.sandboxes import SandboxSession
 
@@ -74,6 +77,25 @@ def _exec_collect(session: SandboxSession, argv: list[str]) -> CodeResult:
     return CodeResult(stdout=stdout, stderr=stderr, exit_code=out.exit_code)
 
 
+def _fresh_model() -> OpenAIChatModel:
+    """Builds the LLM with a per-call HTTP client.
+
+    PydanticAI's string model shorthand shares a module-cached async
+    HTTP client whose asyncio primitives bind to the first event loop
+    that uses it. ``run_sync`` spins up a new loop per call, so under
+    ZenML's fan-out (concurrent step threads) the shared client crashes
+    with "bound to a different event loop". A private client per agent
+    keeps every loop self-contained.
+
+    Returns:
+        A gpt-4o-mini model backed by its own ``httpx.AsyncClient``.
+    """
+    return OpenAIChatModel(
+        "gpt-4o-mini",
+        provider=OpenAIProvider(http_client=httpx.AsyncClient()),
+    )
+
+
 def build_agent() -> Agent[AgentDeps, str]:
     """Constructs the PydanticAI agent with the sandbox tools registered.
 
@@ -82,7 +104,7 @@ def build_agent() -> Agent[AgentDeps, str]:
         via four tools: run_python, run_shell, list_files, read_file.
     """
     agent: Agent[AgentDeps, str] = Agent(
-        "openai:gpt-4o-mini",
+        _fresh_model(),
         deps_type=AgentDeps,
         system_prompt=(
             "You are a data-analysis assistant operating inside a Linux "
@@ -211,7 +233,7 @@ def plan_subtasks(query: str) -> list[str]:
         A list of self-contained subtask descriptions.
     """
     planner: Agent[None, _Subtasks] = Agent(
-        "openai:gpt-4o-mini",
+        _fresh_model(),
         output_type=_Subtasks,
         system_prompt=(
             "Decompose the user's task into exactly 3 fully "
@@ -241,7 +263,7 @@ def synthesize(query: str, parts: list[str]) -> str:
         A final natural-language response.
     """
     reducer: Agent[None, str] = Agent(
-        "openai:gpt-4o-mini",
+        _fresh_model(),
         system_prompt=(
             "You are synthesizing the answers of several subagents that "
             "each tackled an independent subtask of the user's "
