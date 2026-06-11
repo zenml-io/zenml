@@ -29,6 +29,10 @@ from zenml.enums import (
     RunWaitConditionResolution,
 )
 
+RUN_DISCOVERY_TIMEOUT = 60.0
+WAIT_CONDITION_TIMEOUT = 60.0
+PIPELINE_THREAD_TIMEOUT = 120.0
+
 
 def _hook_noop() -> None:
     pass
@@ -106,7 +110,7 @@ def _latest_run_id(
     pipeline_name: str,
     *,
     after: Optional[datetime.datetime] = None,
-    timeout: float = 20.0,
+    timeout: float = RUN_DISCOVERY_TIMEOUT,
     poll_interval: float = 1.0,
     thread: Optional[threading.Thread] = None,
     holder: Optional[Dict[str, Any]] = None,
@@ -149,7 +153,7 @@ def _resolve_pending_wait(
     *,
     resolution: RunWaitConditionResolution = RunWaitConditionResolution.CONTINUE,
     result: Any = None,
-    timeout: float = 10.0,
+    timeout: float = WAIT_CONDITION_TIMEOUT,
     thread: Optional[threading.Thread] = None,
     holder: Optional[Dict[str, Any]] = None,
 ) -> UUID:
@@ -188,7 +192,7 @@ def _resolve_pending_wait(
 
 
 def _wait_for_thread(
-    thread: threading.Thread, *, timeout: float = 30.0
+    thread: threading.Thread, *, timeout: float = PIPELINE_THREAD_TIMEOUT
 ) -> None:
     thread.join(timeout=timeout)
     assert not thread.is_alive(), "Pipeline thread did not finish in time"
@@ -510,6 +514,7 @@ def waiting_pipeline_to_be_aborted() -> None:
     step_emit_int()  # Must not run.
 
 
+@pytest.mark.serial_only
 def test_wait_abort_aborts_run() -> None:
     thread, holder, started_at = _run_in_thread(waiting_pipeline_to_be_aborted)
     run_id = _latest_run_id(
@@ -599,6 +604,7 @@ def parent_waits_with_concurrent_child_running() -> None:
     step_assert_int(value=answer, expected=99)
 
 
+@pytest.mark.serial_only
 def test_parent_waits_while_child_runs_then_wait_resolves() -> None:
     thread, holder, started_at = _run_in_thread(
         parent_waits_with_concurrent_child_running
@@ -612,7 +618,6 @@ def test_parent_waits_while_child_runs_then_wait_resolves() -> None:
     _resolve_pending_wait(
         parent_run_id,
         result=99,
-        timeout=15,
         thread=thread,
         holder=holder,
     )
@@ -652,7 +657,7 @@ def test_child_waits_while_parent_does_other_work_then_child_wait_resolves() -> 
     )
 
     # Wait for the child run to register.
-    deadline = time.time() + 15
+    deadline = time.time() + RUN_DISCOVERY_TIMEOUT
     child_run_id: Optional[UUID] = None
     while time.time() < deadline:
         children = Client().list_pipeline_runs(parent_run_id=parent_run_id)
@@ -665,7 +670,6 @@ def test_child_waits_while_parent_does_other_work_then_child_wait_resolves() -> 
     _resolve_pending_wait(
         child_run_id,
         result=42,
-        timeout=15,
         thread=thread,
         holder=holder,
     )

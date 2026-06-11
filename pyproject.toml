@@ -208,6 +208,20 @@ norecursedirs = [
     "tests/integration/examples/*", # ignore example folders
     ".hypothesis",
 ]
+markers = [
+    # Tests that intentionally mutate server-global state (user list, service
+    # accounts, global secrets, etc.) and cannot run safely in parallel against
+    # a shared external server. Offload's parallel batching skips these tests
+    # via `-m 'not global_state'`; they run in the serial_only GitHub-runner
+    # job instead.
+    "global_state: test mutates server-global state; incompatible with parallel sandboxes",
+    # Tests that rely on wall-clock timing or the absence of concurrent load
+    # (e.g. dynamic-pipeline wait/abort timing). Excluded from offload's
+    # parallel batches via `-m 'not serial_only'` and run in a dedicated
+    # single-worker GitHub-runner job. Replaces the fragile --deselect paths
+    # in the old offload TOML, which silently stopped working when files moved.
+    "serial_only: test is timing-sensitive and must run without parallel neighbors",
+]
 
 [tool.coverage.run]
 parallel = true

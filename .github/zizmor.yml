@@ -96,3 +96,8 @@ rules:
       - weekly-agent-pipelines-test.yml
       - nightly_build.yml
       - release.yml
+      # offload-tests.yml: called by ci-fast.yml and ci-medium.yml; all three
+      # are first-party workflows.  secrets:inherit is intentional so the
+      # MODAL_TOKEN_ID/SECRET and GH_ACTIONS_CACHE_KEY flow through without
+      # being listed at every call site.
+      - offload-tests.yml

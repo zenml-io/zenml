@@ -1,0 +1,64 @@
+# Offload configuration for the unit-test lane.
+#
+# Pinned to upstream offload v0.9.7 (crates.io), the published crate rather
+# than any fork. A separate file is required for each lane because
+# v0.9.7 has no include/extends mechanism and no per-run group-selection
+# CLI flag; "offload -c <file>" is the only way to choose a group set.
+#
+# sandbox_repo_root is chosen over sandbox_project_root because ZenML is not
+# a monorepo: the repo root and the project working directory are the same
+# ("/app"). Using sandbox_repo_root matches the upstream offload-pytest-modal.toml
+# example and is the field that drives thin-diff patch application.
+
+[offload]
+max_parallel = 2
+test_timeout_secs = 960
+sandbox_repo_root = "/app"
+
+[provider]
+type = "modal"
+dockerfile = "Dockerfile.ci"
+include_cwd = true
+cpu_cores = 4.0
+memory_gb = 8.0
+
+[provider.env]
+# ${VAR:-default} expansion is valid ONLY in [provider.env] values.
+# Do NOT use ${...} in run_args or filters — offload v0.9.7 does not expand
+# them there.
+PYTHONDONTWRITEBYTECODE = "1"
+PYTHONUNBUFFERED = "1"
+ZENML_DEBUG = "true"
+ZENML_ANALYTICS_OPT_IN = "false"
+AUTO_OPEN_DASHBOARD = "false"
+ZENML_CUSTOM_SOURCE_ROOT = "/app"
+
+[framework]
+type = "pytest"
+command = "python -m pytest -p no:pytest_postgresql"
+# Literal run_args — no ${...} expansion in this field.
+# --no-provision: the sandbox already has a ZenML server started by the harness.
+# -p no:randomly: deterministic ordering aids reproduction of flaky failures.
+# -p no:rerunfailures: retries are managed by offload's retry_count, not pytest.
+run_args = "--no-provision --environment default -p no:randomly -p no:rerunfailures"
+
+[groups.unit]
+retry_count = 0
+# serial_only tests are timing-sensitive and run in a dedicated GitHub-runner
+# job (see ci-fast.yml) to avoid interference from parallel offload sandboxes.
+# The tests/unit/scripts/ci directory no longer exists; it was purged as part
+# of the CI rework (PR 2).
+filters = "tests/unit -m 'not serial_only'"
+
+[checkpoint]
+# Without [checkpoint], offload uses latest-commit mode: the image cache only
+# hits on re-runs of the exact same HEAD SHA, so every new push rebuilds the
+# image. Listing the files that affect the image build here means the cache
+# is reused across commits that do not touch these files.
+build_inputs = ["Dockerfile.ci", "pyproject.toml"]
+
+[history]
+path = "offload-history.jsonl"
+
+[report]
+output_dir = ".ci/offload"

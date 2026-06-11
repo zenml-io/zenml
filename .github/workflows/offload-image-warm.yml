@@ -1,0 +1,144 @@
+---
+# Warm the offload git-notes image cache on pushes to develop that touch
+# Dockerfile.ci or pyproject.toml.
+#
+# Background (CI-REWORK-PLAN.md §2.2 gap 2):
+#   PR jobs run with contents:read and cannot push git notes, so nobody warms
+#   refs/notes/offload-images between PR runs.  Without warm notes, every run
+#   against a new HEAD SHA rebuilds the Modal image from scratch even when
+#   Dockerfile.ci and pyproject.toml have not changed.
+#
+#   This workflow runs on develop with contents:write + persist-credentials:true
+#   and calls "offload build" (which pushes the updated image ID to
+#   refs/notes/offload-images on origin) after any build-input change lands.
+#
+# Security posture (artipacked):
+#   persist-credentials:true is required so "offload build" can push git notes
+#   back to origin.  This is a deliberate exception to the repo-wide
+#   persist-credentials:false posture documented in .github/CLAUDE.md.
+#   The exception is scoped to this single workflow which runs only on
+#   push-to-develop (a trusted ref) with no pull-request trigger.
+#   The zizmor.yml artipacked rule is globally disabled for now (see comment
+#   there); when that rule is re-enabled this workflow must be listed as an
+#   explicit exception.
+#
+# Best-effort semantics: git-notes pushes can race concurrent develop pushes.
+#   The workflow does not retry on push failure and does not block develop.
+#   A missed warm just means the next PR run rebuilds the image; it is not a
+#   correctness failure.  "continue-on-error: true" on the notes-push step
+#   reflects this.
+#
+# No secrets inheritance: this workflow uses workflow-level secrets directly
+#   (MODAL_TOKEN_ID/SECRET) without "secrets: inherit" so the caller scope is
+#   explicit and zizmor does not flag it as a secrets-inherit violation.
+name: offload-image-warm
+on:
+  push:
+    branches: [develop]
+    paths: [Dockerfile.ci, pyproject.toml]
+  workflow_dispatch:
+concurrency:
+  # Only one image-warm job at a time on develop; cancel the in-progress run
+  # when a second push lands before the first finishes.
+  group: offload-image-warm-develop
+  cancel-in-progress: true
+permissions:
+  # contents:write is required to push git notes back to origin.
+  contents: write
+jobs:
+  warm-image:
+    name: warm-offload-image
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      ZENML_ANALYTICS_OPT_IN: false
+      ZENML_DEBUG: true
+      PYTHONIOENCODING: utf-8
+      UV_HTTP_TIMEOUT: 600
+      UV_CACHE_DIR: /opt/uv-cache
+      MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+      MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        with:
+          fetch-depth: 50
+          # persist-credentials:true is intentional here — offload build pushes
+          # git notes back to origin (see design comments at top of file).
+          persist-credentials: true
+
+      # Fetch existing notes so offload can compare the current image ID before
+      # deciding whether to rebuild.  Best-effort on first run.
+      - name: Fetch offload image-cache notes
+        continue-on-error: true
+        run: |
+          git fetch origin refs/notes/offload-images:refs/notes/offload-images || true
+      - name: Set up Python 3.13
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        with:
+          python-version: '3.13'
+      - name: Prepare system directories
+        run: |
+          sudo mkdir -p /opt/uv-cache /opt/tmp /opt/offload-bin
+          sudo chown -R "$(id -u)":"$(id -g)" /opt/uv-cache /opt/tmp /opt/offload-bin
+          echo "UV_CACHE_DIR=/opt/uv-cache" >> "$GITHUB_ENV"
+          echo "TMPDIR=/opt/tmp" >> "$GITHUB_ENV"
+          echo "TMP=/opt/tmp" >> "$GITHUB_ENV"
+          echo "TEMP=/opt/tmp" >> "$GITHUB_ENV"
+      - name: Cache offload binary
+        id: offload-cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
+        with:
+          path: /opt/offload-bin/offload
+          key: offload-linux-x86_64-v0.9.7
+      - name: Install offload v0.9.7 (cache miss)
+        if: steps.offload-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          cargo install offload --version 0.9.7 --root /opt/offload
+          cp /opt/offload/bin/offload /opt/offload-bin/offload
+      - name: Add offload to PATH
+        run: echo "/opt/offload-bin" >> "$GITHUB_PATH"
+      - name: Restore uv cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
+        with:
+          path: /opt/uv-cache
+          key: uv-${{ runner.os }}-3.13-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            uv-${{ runner.os }}-3.13-
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
+      - name: Install driver dependencies
+        run: uv pip install --system -e ".[server,templates,dev]"
+
+      # Swap .dockerignore so offload sees the correct allowlist (same as in
+      # offload-tests.yml — offload reads ".dockerignore" from cwd).
+      - name: Swap .dockerignore for offload build context
+        run: cp Dockerfile.ci.dockerignore .dockerignore
+
+      # "offload build" builds the Modal image and publishes its ID to
+      # refs/notes/offload-images on origin.  We use the unit TOML for the
+      # build (any TOML with the same [provider]/[checkpoint] block works; they
+      # are identical across all three TOMLs).
+      - name: Build and cache Modal image
+        id: build
+        continue-on-error: true
+        run: offload -c offload-unit.toml build
+
+      # Push the updated notes ref so subsequent PR runs can read the image ID.
+      # continue-on-error:true: a race with another push does not break develop.
+      - name: Push git notes to origin
+        if: steps.build.outcome == 'success'
+        continue-on-error: true
+        run: |
+          git push origin refs/notes/offload-images || true
+      - name: Report warm result
+        if: always()
+        env:
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+        run: |-
+          if [ "$BUILD_OUTCOME" = "success" ]; then
+            echo "Image warm succeeded — git notes updated."
+          else
+            echo "Image warm failed or skipped (non-blocking)."
+          fi

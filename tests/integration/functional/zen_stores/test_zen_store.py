@@ -426,6 +426,7 @@ def test_deleting_default_project_fails():
 # '-------'
 
 
+@pytest.mark.global_state
 class TestAdminUser:
     default_pwd = "".join(random.choices(ascii_lowercase, k=10))
 
@@ -823,6 +824,7 @@ def test_get_user():
             assert user.is_service_account is False
 
 
+@pytest.mark.global_state
 def test_delete_user_with_resources_fails():
     """Tests deleting a user with resources fails."""
     zen_store = Client().zen_store
@@ -952,7 +954,9 @@ def test_delete_user_with_resources_fails():
         zen_store.delete_user(user.id)
 
     with UserContext(delete=False, login=True) as user:
-        model_context = ModelContext(create_version=True, delete=False)
+        model_context = ModelContext(
+            create_version=True, tags=[], delete=False
+        )
         with model_context:
             # We only use the context as a shortcut to create the resource
             pass
@@ -1145,6 +1149,7 @@ def test_delete_service_account():
             zen_store.get_service_account(service_account.id)
 
 
+@pytest.mark.global_state
 def test_delete_service_account_with_resources_fails():
     """Tests deleting a service account with resources fails."""
     zen_store = Client().zen_store
@@ -1274,7 +1279,9 @@ def test_delete_service_account_with_resources_fails():
         zen_store.delete_service_account(service_account.id)
 
     with ServiceAccountContext(delete=False, login=True) as service_account:
-        model_context = ModelContext(create_version=True, delete=False)
+        model_context = ModelContext(
+            create_version=True, tags=[], delete=False
+        )
         with model_context:
             # We only use the context as a shortcut to create the resource
             pass
@@ -2852,6 +2859,7 @@ def test_deleting_a_stack_recursively_with_some_stack_components_present_in_anot
                             store.get_stack_component(image_builder.id)
 
 
+@pytest.mark.global_state
 def test_stacks_are_accessible_by_other_users():
     """Tests accessing stack on rest zen stores."""
     client = Client()
@@ -2894,6 +2902,7 @@ def test_stacks_are_accessible_by_other_users():
 # '----------------'
 
 
+@pytest.mark.global_state
 def test_list_runs_is_ordered():
     """Tests listing runs returns ordered runs."""
     client = Client()
@@ -3377,6 +3386,7 @@ def test_get_run_step_inputs_succeeds():
 # '-----------'
 
 
+@pytest.mark.global_state
 def test_list_unused_artifacts():
     """Tests listing with `unused=True` only returns unused artifacts."""
     client = Client()
@@ -3404,6 +3414,7 @@ def test_list_unused_artifacts():
         assert artifact_versions.total == num_unused_artifact_versions_before
 
 
+@pytest.mark.global_state
 def test_list_custom_named_artifacts():
     """Tests listing with `has_custom_name=True` only returns custom named artifacts with proper filtering."""
     client = Client()
@@ -3801,6 +3812,7 @@ def test_connector_name_reuse_for_same_user_fails():
                 pass
 
 
+@pytest.mark.global_state
 def test_connector_name_reuse_for_different_user_fails():
     """Tests that a connector's name cannot be re-used by another user."""
     if Client().zen_store.type == StoreType.SQL:

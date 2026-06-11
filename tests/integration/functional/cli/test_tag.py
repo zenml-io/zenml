@@ -25,6 +25,8 @@ from zenml.client import Client
 from zenml.enums import ColorVariants
 from zenml.models import TagResponse
 
+pytestmark = pytest.mark.global_state
+
 
 def test_tag_list():
     """Test that zenml tag list does not fail."""

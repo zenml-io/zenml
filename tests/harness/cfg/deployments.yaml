@@ -122,3 +122,14 @@ deployments:
       url: http://127.0.0.1:8080/
       username: default
       password: ''
+  - name: modal-mysql-server
+    description: >-
+      Modal-hosted ZenML server backed by MySQL for CI integration tests.
+    server: external
+    database: external
+    capabilities:
+      server: true
+    config:
+      url: '{{MODAL_CI_SERVER_URL}}'
+      username: '{{MODAL_CI_SERVER_USERNAME}}'
+      password: '{{MODAL_CI_SERVER_PASSWORD}}'
