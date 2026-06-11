@@ -95,6 +95,7 @@ def _check_file_io(sandbox) -> None:
     """Round-trips a file upload + download."""
     print("\n[3/5] upload_file + download_file")
     session = sandbox.create_session()
+    dst_path = None
     with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False) as src:
         src.write("hello\nfrom\nlocal\n")
         src_path = src.name
@@ -115,6 +116,8 @@ def _check_file_io(sandbox) -> None:
     finally:
         session.destroy()
         for p in (src_path, dst_path):
+            if p is None:
+                continue
             try:
                 os.unlink(p)
             except OSError:
