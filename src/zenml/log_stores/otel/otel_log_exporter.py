@@ -19,10 +19,14 @@ import threading
 from collections import defaultdict
 from io import BytesIO
 from time import time_ns
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence
+from typing import Any, Dict, List, Mapping, Optional, Sequence
 
 import requests
-from opentelemetry.sdk._logs.export import LogExporter, LogExportResult
+from opentelemetry.sdk._logs import ReadableLogRecord
+from opentelemetry.sdk._logs.export import (
+    LogRecordExporter,
+    LogRecordExportResult,
+)
 from opentelemetry.sdk.util.instrumentation import InstrumentationScope
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
@@ -34,13 +38,10 @@ from zenml.utils.json_utils import pydantic_encoder
 
 DEFAULT_TIMEOUT = 10
 
-if TYPE_CHECKING:
-    from opentelemetry.sdk._logs import LogData
-
 logger = get_logger(__name__)
 
 
-class OTLPLogExporter(LogExporter):
+class OTLPLogExporter(LogRecordExporter):
     """OpenTelemetry exporter using JSON protocol.
 
     This exporter is a placeholder until the actual implementation of the
@@ -230,51 +231,42 @@ class OTLPLogExporter(LogExporter):
         ]
 
     @classmethod
-    def _encode_log(cls, log_data: "LogData") -> Dict[str, Any]:
-        """Encode a log data object to a dictionary.
+    def _encode_log(cls, readable: ReadableLogRecord) -> Dict[str, Any]:
+        """Encode a readable log record to a dictionary.
 
         Args:
-            log_data: The log data object to encode.
+            readable: SDK readable log record from the batch processor.
 
         Returns:
             A dictionary representing the log data.
         """
-        span_id = (
-            None
-            if log_data.log_record.span_id == 0
-            else log_data.log_record.span_id
-        )
-        trace_id = (
-            None
-            if log_data.log_record.trace_id == 0
-            else log_data.log_record.trace_id
-        )
-        body = log_data.log_record.body
+        lr = readable.log_record
+        span_id = None if lr.span_id == 0 else lr.span_id
+        trace_id = None if lr.trace_id == 0 else lr.trace_id
+        body = lr.body
         log_record = dict(
-            time_unix_nano=log_data.log_record.timestamp,
+            time_unix_nano=lr.timestamp,
             observed_time_unix_nano=time_ns(),
             span_id=span_id,
             trace_id=trace_id,
-            flags=int(log_data.log_record.trace_flags),
+            flags=int(lr.trace_flags),
             body=cls._encode_value(body, allow_null=True),
-            severity_text=log_data.log_record.severity_text,
-            attributes=cls._encode_attributes(log_data.log_record.attributes)
-            if log_data.log_record.attributes
+            severity_text=lr.severity_text,
+            attributes=cls._encode_attributes(lr.attributes)
+            if lr.attributes
             else None,
-            dropped_attributes_count=log_data.log_record.dropped_attributes,
-            severity_number=getattr(
-                log_data.log_record.severity_number, "value", None
-            ),
-            event_name=log_data.log_record.event_name,
+            dropped_attributes_count=readable.dropped_attributes,
+            severity_number=getattr(lr.severity_number, "value", None),
+            event_name=lr.event_name,
         )
 
         return {k: v for k, v in log_record.items() if v is not None}
 
-    def _encode_logs(self, logs: Sequence["LogData"]) -> Any:
-        """Encode a sequence of log data objects to a list of dictionaries.
+    def _encode_logs(self, logs: Sequence[ReadableLogRecord]) -> Any:
+        """Encode a sequence of readable log records to OTLP JSON.
 
         Args:
-            logs: The sequence of log data objects to encode.
+            logs: Readable log records from the batch processor.
 
         Returns:
             The log data.
@@ -283,10 +275,10 @@ class OTLPLogExporter(LogExporter):
             lambda: defaultdict(list)
         )
 
-        for log_data in logs:
-            resource = log_data.log_record.resource
-            instrumentation = log_data.instrumentation_scope or None
-            json_log = self._encode_log(log_data)
+        for readable in logs:
+            resource = readable.resource
+            instrumentation = readable.instrumentation_scope or None
+            json_log = self._encode_log(readable)
 
             resource_logs[resource][instrumentation].append(json_log)
 
@@ -338,18 +330,20 @@ class OTLPLogExporter(LogExporter):
 
         return dict(resource_logs=json_resource_logs)
 
-    def export(self, batch: Sequence["LogData"]) -> LogExportResult:
+    def export(
+        self, batch: Sequence[ReadableLogRecord]
+    ) -> LogRecordExportResult:
         """Export a batch of logs to the OpenTelemetry backend.
 
         Args:
             batch: The batch of logs to export.
 
         Returns:
-            LogExportResult indicating success or failure.
+            LogRecordExportResult indicating success or failure.
         """
         if self._shutdown:
             logger.warning("Exporter already shutdown, ignoring batch")
-            return LogExportResult.FAILURE
+            return LogRecordExportResult.FAILURE
         encoded_logs = self._encode_logs(batch)
 
         serialized_data = json.dumps(
@@ -360,11 +354,11 @@ class OTLPLogExporter(LogExporter):
         try:
             resp = self._export(serialized_data, self._timeout)
             if resp.ok:
-                return LogExportResult.SUCCESS
-            return LogExportResult.FAILURE
+                return LogRecordExportResult.SUCCESS
+            return LogRecordExportResult.FAILURE
         except Exception as e:
             logger.error(f"Error exporting logs: {e}")
-            return LogExportResult.FAILURE
+            return LogRecordExportResult.FAILURE
 
     def shutdown(self) -> None:
         """Shutdown the exporter."""

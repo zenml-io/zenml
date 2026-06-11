@@ -22,7 +22,6 @@ from types import SimpleNamespace
 from typing import Any, cast
 
 import pytest
-import structlog
 
 import zenml.logger as zenml_logger_module
 from zenml.constants import (
@@ -38,11 +37,12 @@ from zenml.logger import (
     ZenMLConsoleHandler,
     ZenMLJsonFormatter,
     ZenMLLoggingHandler,
-    bind_request_context,
+    bind_log_context,
+    clear_log_context,
     get_logger,
     get_logging_context,
     init_logging,
-    logging_scope,
+    logging_context,
 )
 
 #####################
@@ -98,7 +98,7 @@ def clean_logging_state(
         zenml_logger_module._stderr_wrapped,
     )
 
-    structlog.contextvars.clear_contextvars()
+    clear_log_context()
 
     yield
 
@@ -120,7 +120,7 @@ def clean_logging_state(
 
     # Structured logging context is stored separately from stdlib logging.
     # Clear it so request/scope fields from one test don't appear in another.
-    structlog.contextvars.clear_contextvars()
+    clear_log_context()
 
 
 def _make_log_record(
@@ -894,7 +894,7 @@ def test_logging_context_step_name_prefix_uses_legacy_env_semantics(
 def test_contextvars_filter_copies_bound_context_to_log_record() -> None:
     """Bound logging context is copied onto standard library log records."""
     # Bind the request context.
-    bind_request_context(request_id="request-1", method="GET")
+    bind_log_context(clear=True, request_id="request-1", method="GET")
     record = _make_log_record("request.received")
 
     # Call the contextvars filter to copy the contextvars onto the log record.
@@ -907,7 +907,7 @@ def test_contextvars_filter_copies_bound_context_to_log_record() -> None:
 
 def test_contextvars_filter_preserves_existing_log_record_fields() -> None:
     """Test _ContextVarsFilter copies contextvars onto log record but preserves existing fields."""
-    bind_request_context(request_id="bound-request", method="GET")
+    bind_log_context(clear=True, request_id="bound-request", method="GET")
     # Explicit LogRecord fields should win over bound context. This lets a
     # caller override request-level defaults for a single log line.
     record = _make_log_record("request.received", request_id="record-request")
@@ -950,9 +950,9 @@ def test_step_name_filter_tolerates_step_context_errors(
 
 def test_logging_scope_restores_outer_context() -> None:
     """Scoped logging context is removed after leaving the scope."""
-    bind_request_context(request_id="request-1")
+    bind_log_context(clear=True, request_id="request-1")
 
-    with logging_scope(transaction_id="transaction-1"):
+    with logging_context(transaction_id="transaction-1"):
         assert get_logging_context() == {
             "request_id": "request-1",
             "transaction_id": "transaction-1",
