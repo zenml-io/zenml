@@ -38,6 +38,14 @@ from zenml.login.credentials_store import CredentialsStore
 from zenml.stack.stack import Stack
 
 
+def _ensure_active_project(client: Client) -> None:
+    """Ensure tests always start with an active project."""
+    try:
+        client.active_project
+    except RuntimeError:
+        client.set_active_project("default")
+
+
 def cleanup_folder(path: str) -> None:
     """Deletes a folder and all its contents in a way that works on Windows.
 
@@ -111,6 +119,7 @@ def environment_session(
     if no_provision:
         logging.info("Skipping environment provisioning")
         with environment.deployment.connect() as client:
+            _ensure_active_project(client)
             yield environment, client
     else:
         # Provision the environment (bring up the deployment, if local, and
@@ -119,6 +128,7 @@ def environment_session(
             teardown=not no_teardown,
             deprovision=not no_deprovision,
         ) as client:
+            _ensure_active_project(client)
             logging.info(
                 f"Test session is using environment '{environment.config.name}' "
                 f"running at '{client.zen_store.url}'."
@@ -194,26 +204,31 @@ def clean_project_session(
     from zenml.utils.string_utils import random_str
 
     client = Client()
-    original_project = client.active_project.id
+    try:
+        original_project = client.active_project.id
+    except RuntimeError:
+        client.set_active_project("default")
+        original_project = client.active_project.id
 
     project_name = f"pytest_{random_str(8).lower()}"
     client.create_project(name=project_name, description="pytest test project")
 
-    if clean_repo:
-        with clean_repo_session(tmp_path_factory) as repo_client:
-            repo_client.set_active_project(project_name)
+    try:
+        if clean_repo:
+            with clean_repo_session(tmp_path_factory) as repo_client:
+                repo_client.set_active_project(project_name)
+
+                logging.info(f"Tests are running in project: '{project_name}'")
+                yield repo_client
+        else:
+            client.set_active_project(project_name)
 
             logging.info(f"Tests are running in project: '{project_name}'")
-            yield repo_client
-    else:
-        client.set_active_project(project_name)
-
-        logging.info(f"Tests are running in project: '{project_name}'")
-        yield client
-
-    # change the active project back to what it was
-    client.set_active_project(original_project)
-    client.delete_project(project_name)
+            yield client
+    finally:
+        # change the active project back to what it was
+        client.set_active_project(original_project)
+        client.delete_project(project_name)
 
 
 @contextmanager

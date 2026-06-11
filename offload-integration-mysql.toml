@@ -1,0 +1,81 @@
+# Offload configuration for the remote-mysql-modal integration lane.
+#
+# Pinned to upstream offload v0.9.7 (crates.io), the published crate rather
+# than any fork. Separate from offload-integration.toml because:
+# (1) v0.9.7 has no per-run group-selection CLI flag, so unit vs integration
+#     must be separate files; (2) the filter set differs (no examples/cli,
+#     no global_state, shared-state deselects); (3) the environment is
+#     remote-mysql-modal, not default.
+#
+# MODAL_CI_SERVER_URL, MODAL_CI_SERVER_USERNAME, and MODAL_CI_SERVER_PASSWORD
+# are NOT in this file. They are injected at run time via repeatable
+# "offload run --env KEY=VALUE" flags in the reusable workflow (offload-tests.yml).
+# Secrets must never be baked into TOML files checked into source control.
+#
+# sandbox_repo_root is chosen over sandbox_project_root because ZenML is not
+# a monorepo: the repo root and the project working directory are the same
+# ("/app"). Using sandbox_repo_root matches the upstream offload-pytest-modal.toml
+# example and is the field that drives thin-diff patch application.
+
+[offload]
+max_parallel = 20
+test_timeout_secs = 960
+sandbox_repo_root = "/app"
+
+[provider]
+type = "modal"
+dockerfile = "Dockerfile.ci"
+include_cwd = true
+cpu_cores = 4.0
+memory_gb = 8.0
+
+[provider.env]
+# ${VAR:-default} expansion is valid ONLY in [provider.env] values.
+# Do NOT use ${...} in run_args or filters — offload v0.9.7 does not expand
+# them there.
+PYTHONDONTWRITEBYTECODE = "1"
+PYTHONUNBUFFERED = "1"
+ZENML_DEBUG = "true"
+ZENML_ANALYTICS_OPT_IN = "false"
+AUTO_OPEN_DASHBOARD = "false"
+ZENML_CUSTOM_SOURCE_ROOT = "/app"
+
+[framework]
+type = "pytest"
+command = "python -m pytest -p no:pytest_postgresql"
+# run_args are literal — no ${...} expansion in this field.
+# --environment remote-mysql-modal: use the harness environment that points
+#   to the Modal-hosted MySQL ZenML server started by modal_mysql_sandbox.py.
+# -p no:randomly: deterministic ordering aids reproduction of flaky failures.
+# -p no:rerunfailures: retries managed by offload's retry_count, not pytest.
+run_args = "--no-provision --environment remote-mysql-modal -p no:randomly -p no:rerunfailures"
+
+[groups.integration]
+retry_count = 0
+# Exclusion rationale:
+# - examples: download public datasets; excluded to keep sandbox network use
+#   predictable and avoid flakes from external HTTP calls.
+# - cli tests: excluded because they create/delete global stacks and models
+#   that interfere with parallel sandboxes sharing one external MySQL server.
+# - slow: long-running; belongs in the scheduled develop-qualification tier.
+# - global_state: tests that mutate server-global state (e.g. server settings,
+#   secrets pagination ordering). They require exclusive server access and run
+#   in a dedicated serial job.
+# - test_list_secrets_pagination_and_sorting: depends on exact pagination order
+#   which is fragile under parallel writes from other sandboxes.
+# - test_deletion_of_links[True]: deletes cross-model links while other tests
+#   create them, causing intermittent 404s in a shared server scenario.
+filters = "tests/integration --ignore=tests/integration/examples --ignore=tests/integration/functional/cli -m 'not slow and not global_state' --deselect=tests/integration/functional/zen_stores/test_secrets_store.py::test_list_secrets_pagination_and_sorting --deselect=tests/integration/functional/model/test_model_version.py::TestModel::test_deletion_of_links[True]"
+
+[checkpoint]
+# Without [checkpoint], offload uses latest-commit mode: the image cache only
+# hits on re-runs of the exact same HEAD SHA, so every new push rebuilds the
+# image. Listing the files that affect the image build here means the cache
+# is reused across commits that do not touch these files.
+build_inputs = ["Dockerfile.ci", "pyproject.toml"]
+
+[history]
+path = "offload-history.jsonl"
+
+[report]
+output_dir = ".ci/offload"

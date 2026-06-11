@@ -494,6 +494,7 @@ def test_update_public_secret_name_succeeds_if_private_secret_exists():
             assert other_secret.id == all_secrets[0].id
 
 
+@pytest.mark.global_state
 def test_reusing_private_secret_name_succeeds():
     """Tests that the name of a private secret can be reused for another user."""
     if Client().zen_store.type == StoreType.SQL:
@@ -727,6 +728,7 @@ def test_update_scope_fails_if_name_already_in_scope():
             assert saved_secret.private is True
 
 
+@pytest.mark.global_state
 def test_public_secret_is_visible_to_other_users():
     """Tests that a public secret is visible to other users."""
     if Client().zen_store.type == StoreType.SQL:
@@ -783,6 +785,7 @@ def test_public_secret_is_visible_to_other_users():
             assert len(private_secrets) == 0
 
 
+@pytest.mark.global_state
 def test_private_secret_is_not_visible_to_other_users():
     """Tests that a private secret is not visible to other users."""
     if Client().zen_store.type == StoreType.SQL:
@@ -1282,6 +1285,7 @@ def test_list_secrets_pagination_and_sorting():
         assert len(secrets.items) == 0
 
 
+@pytest.mark.global_state
 def test_delete_user_with_secrets():
     """Tests that deleting a user is not possible while it owns secrets."""
     client = Client()

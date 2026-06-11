@@ -1,1 +1,8 @@
 * text=auto
+
+# offload-history.jsonl uses offload's custom merge driver to combine
+# cross-branch test timing history without conflicts.  Run
+# "offload history setup-merge-driver" once per clone to register the driver.
+# The history file is updated on develop-push (see offload-image-warm.yml)
+# and is intentionally lossy on concurrent pushes.
+offload-history.jsonl merge=offload-history

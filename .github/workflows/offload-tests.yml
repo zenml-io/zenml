@@ -1,0 +1,310 @@
+---
+# Reusable workflow: run a ZenML test lane on Modal via offload v0.9.7.
+#
+# Design decisions recorded here (see CI-REWORK-PLAN.md §2.2 and implementation
+# gaps 1/2):
+#
+# GAP 1 — [checkpoint] image cache: checkout uses fetch-depth: 50 (not 0 or 1)
+#   to give offload enough commit history to locate the build-input ancestor
+#   whose git-notes image ID should be reused.  fetch-depth: 0 is deliberately
+#   avoided because it is slow on large repos; 50 is sufficient for any
+#   realistic push-to-develop cadence.  The refs/notes/offload-images refspec
+#   is fetched explicitly so the runner can read the cached image ID.
+#
+# GAP 2 — git-notes warmer: PR jobs run with contents:read and cannot push
+#   notes, so the cache is warmed by the separate offload-image-warm.yml
+#   workflow (triggered on push to develop when Dockerfile.ci or pyproject.toml
+#   changes).  This workflow only reads notes; it never pushes them.
+#
+# GAP 4 — dependabot routing: dependabot PRs are same-repo but get Dependabot
+#   secrets, not repo secrets, so MODAL_TOKEN_ID/SECRET are absent.  Callers
+#   must add "|| github.actor == 'dependabot[bot]'" to the offload lane
+#   conditions (see ci-fast.yml) so dependabot PRs route to the runner path.
+#
+# GAP 6 — merge_group double-run: ci-fast fires on both pull_request and
+#   merge_group, so offload lanes run twice per merged PR (PR + queue entry).
+#   Policy decision (PR 2): accept the cost for now.  Callers that want to
+#   skip offload lanes on merge_group can add:
+#     if: github.event_name != 'merge_group'
+#   on the offload-tests call site and ensure the rollup allows-skips for that
+#   job.  This is not done by default because the merge-queue is a different
+#   commit (squash or merge) from the PR head, so re-running tests is correct.
+#
+# GAP 7 — no coverage upload: offload lanes run plain pytest without
+#   "coverage run", so no coverage data reaches codecov.  This is a deliberate
+#   decision: the complexity of running coverage inside Modal sandboxes and
+#   merging distributed reports is not worth it at this stage.  Coverage
+#   upload is not silently lost — it was never present for the offload path.
+#
+# offload v0.9.7 install: we download the pre-built Linux binary from crates.io
+#   rather than running "cargo install" (avoids the Rust toolchain bootstrap and
+#   compile time on every cold cache miss).  The binary is cached keyed on the
+#   version string so it is fetched at most once per major runner image rotation.
+#   There is NO fork reference anywhere in this workflow.
+#
+# .dockerignore swap: offload's working-dir snapshot reads ".dockerignore" from
+#   cwd, not from "Dockerfile.ci.dockerignore".  We copy the file before running
+#   offload and restore it on an ephemeral runner (no trap needed).
+#
+# Modal auth: MODAL_TOKEN_ID and MODAL_TOKEN_SECRET must be in the job
+#   environment for offload's native modal provider to authenticate.  The plan's
+#   §2.2 nine-step list omitted these; they are added here as a job-level env
+#   block so every step that invokes offload inherits them.
+#
+# exit codes: offload exits 0 (pass), 2 (flaky-only, with retry_count > 0),
+#   or 1 (failed or not run).  With retry_count = 0 in our TOMLs exit 2 cannot
+#   occur, but we treat 0 and 2 as success explicitly via the "Evaluate offload
+#   result" step so the policy is documented and survives if retries are ever
+#   enabled.  The run-offload step captures the exit code to a step output
+#   instead of failing, so teardown, artifact upload, and result evaluation
+#   always run without needing continue-on-error on the test-execution step.
+name: offload-tests
+on:
+  workflow_call:
+    inputs:
+      suite:
+        description: Test lane — selects the offload TOML config file
+        type: string
+        required: true
+        # Accepted values: unit | integration | integration-mysql
+      environment:
+        description: Harness environment name (default or remote-mysql-modal)
+        type: string
+        required: false
+        default: default
+      parallel:
+        description: Maximum number of parallel Modal sandboxes
+        type: number
+        required: false
+        default: 20
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: Test lane
+        type: choice
+        options: [unit, integration, integration-mysql]
+        required: true
+        default: unit
+      environment:
+        description: Harness environment name
+        type: choice
+        options: [default, remote-mysql-modal]
+        required: false
+        default: default
+      parallel:
+        description: Maximum parallel sandboxes
+        type: number
+        required: false
+        default: 20
+permissions:
+  contents: read
+env:
+  ZENML_ANALYTICS_OPT_IN: false
+  ZENML_DEBUG: true
+  PYTHONIOENCODING: utf-8
+  UV_HTTP_TIMEOUT: 600
+  # Modal auth — required by offload's native modal provider.
+  # Absent on fork PRs and dependabot PRs; callers must route those to the
+  # runner path (see ci-fast.yml fork/kill-switch conditions).
+  MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+  MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+jobs:
+  offload-tests:
+    name: offload-${{ inputs.suite }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      UV_CACHE_DIR: /opt/uv-cache
+      TMPDIR: /opt/tmp
+      TMP: /opt/tmp
+      TEMP: /opt/tmp
+    steps:
+      # Step 1: checkout — deep enough for [checkpoint] ancestor lookup + notes
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        with:
+          fetch-depth: 50
+          persist-credentials: false
+
+      # Fetch the git-notes ref where offload stores cached Modal image IDs
+      # (gap 1).  Best-effort: the ref may not exist on the first run.
+      # persist-credentials:false on checkout means we must use the token
+      # explicitly for this fetch.  Notes are read-only here (PR jobs cannot
+      # push; the warmer in offload-image-warm.yml has contents:write).
+      - name: Fetch offload image-cache notes
+        continue-on-error: true
+        run: |
+          git fetch origin refs/notes/offload-images:refs/notes/offload-images || true
+
+      # Step 2: Python runtime for driver-side pytest collection and scripts
+      - name: Set up Python 3.13
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        with:
+          python-version: '3.13'
+
+      # Step 3: install offload v0.9.7 — pre-built Linux binary from crates.io
+      # Cached so cargo / the Rust toolchain are never needed in CI.
+      - name: Prepare system directories
+        run: |
+          sudo mkdir -p /opt/uv-cache /opt/tmp /opt/offload-bin
+          sudo chown -R "$(id -u)":"$(id -g)" /opt/uv-cache /opt/tmp /opt/offload-bin
+          echo "UV_CACHE_DIR=/opt/uv-cache" >> "$GITHUB_ENV"
+          echo "TMPDIR=/opt/tmp" >> "$GITHUB_ENV"
+          echo "TMP=/opt/tmp" >> "$GITHUB_ENV"
+          echo "TEMP=/opt/tmp" >> "$GITHUB_ENV"
+      - name: Cache offload binary
+        id: offload-cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
+        with:
+          path: /opt/offload-bin/offload
+          key: offload-linux-x86_64-v0.9.7
+      - name: Install offload v0.9.7 (cache miss)
+        if: steps.offload-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          # Download the pre-built Linux binary from crates.io.  If crates.io
+          # does not publish a pre-built binary for this version, fall back to
+          # cargo install.  The fallback requires cargo (present on ubuntu-latest).
+          if command -v cargo >/dev/null 2>&1; then
+            cargo install offload --version 0.9.7 --root /opt/offload
+            cp /opt/offload/bin/offload /opt/offload-bin/offload
+          else
+            echo "cargo not found — cannot install offload" >&2
+            exit 1
+          fi
+      - name: Add offload to PATH
+        run: echo "/opt/offload-bin" >> "$GITHUB_PATH"
+      - name: Verify offload version
+        run: offload --version
+
+      # Step 4: install driver-side ZenML dependencies (runs on the runner,
+      # needed for pytest --collect-only which offload runs locally).
+      - name: Restore uv cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
+        with:
+          path: /opt/uv-cache
+          key: uv-${{ runner.os }}-3.13-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            uv-${{ runner.os }}-3.13-
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
+      - name: Install driver dependencies
+        run: |
+          uv pip install --system -e ".[server,templates,dev]"
+
+      # .dockerignore swap: offload reads ".dockerignore" from cwd for its
+      # working-dir snapshot, not "Dockerfile.ci.dockerignore".  No trap/restore
+      # is needed on an ephemeral runner — the workspace is discarded after the
+      # job.
+      - name: Swap .dockerignore for offload build context
+        run: cp Dockerfile.ci.dockerignore .dockerignore
+
+      # Step 5 (remote-mysql only): start the Modal MySQL sandbox and capture
+      # connection details as masked step outputs.
+      - name: Start Modal MySQL sandbox
+        id: mysql-sandbox
+        if: inputs.environment == 'remote-mysql-modal'
+        env:
+          ZENML_CI_CHECKOUT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python scripts/ci/modal_mysql_sandbox.py start
+
+      # Step 6: run the offload lane.
+      #
+      # Lane→config mapping (6-line case, no script):
+      #   unit              → offload-unit.toml        (max_parallel=2 in TOML)
+      #   integration       → offload-integration.toml (max_parallel=20 in TOML)
+      #   integration-mysql → offload-integration-mysql.toml
+      #
+      # Secrets for the mysql lane are injected via repeatable --env flags so
+      # they never appear in the TOML files checked into source control.
+      # MODAL_TOKEN_ID/SECRET are inherited from the job-level env block.
+      #
+      # Exit codes: 0 = pass, 2 = flaky-only (only possible with retry_count>0),
+      # 1 = failed.  The offload invocation is wrapped in `set +e` so its exit
+      # code is captured to a step output rather than failing this step; the
+      # "Evaluate offload result" step (always()) is the single point that maps
+      # the captured code to the job verdict (0/2 = pass, 1 = fail).  This keeps
+      # the test-execution step free of continue-on-error while still letting
+      # teardown, artifact upload, and evaluation run regardless of the outcome.
+      - name: Run offload tests
+        id: run-offload
+        env:
+          OFFLOAD_SUITE: ${{ inputs.suite }}
+          OFFLOAD_PARALLEL: ${{ inputs.parallel }}
+          MODAL_CI_SERVER_URL: ${{ steps.mysql-sandbox.outputs.server_url }}
+          MODAL_CI_SERVER_USERNAME: ${{ steps.mysql-sandbox.outputs.server_username }}
+          MODAL_CI_SERVER_PASSWORD: ${{ steps.mysql-sandbox.outputs.server_password }}
+          ZENML_CI_CHECKOUT_REF: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p .ci/offload
+          case "$OFFLOAD_SUITE" in
+            unit)
+              offload_config="offload-unit.toml"
+              ;;
+            integration)
+              offload_config="offload-integration.toml"
+              ;;
+            integration-mysql)
+              offload_config="offload-integration-mysql.toml"
+              ;;
+            *)
+              echo "Unknown suite: $OFFLOAD_SUITE" >&2
+              exit 1
+              ;;
+          esac
+          extra_env_flags=""
+          if [ "$OFFLOAD_SUITE" = "integration-mysql" ]; then
+            extra_env_flags="--env MODAL_CI_SERVER_URL=${MODAL_CI_SERVER_URL} --env MODAL_CI_SERVER_USERNAME=${MODAL_CI_SERVER_USERNAME} --env MODAL_CI_SERVER_PASSWORD=${MODAL_CI_SERVER_PASSWORD}"
+          fi
+
+          # shellcheck disable=SC2086
+          # Disable set -e around the offload invocation so the exit code is
+          # captured before the shell exits.
+          set +e
+          offload -c "$offload_config" run \
+            --parallel "$OFFLOAD_PARALLEL" \
+            --record-history \
+            --ci \
+            $extra_env_flags
+          offload_exit=$?
+          set -e
+          # Record the exit code for the "Evaluate offload result" step; do not
+          # propagate it as this step's status (that step owns the job verdict).
+          echo "exit_code=$offload_exit" >> "$GITHUB_OUTPUT"
+
+      # Step 7 (remote-mysql only, always): stop the sandbox even if tests fail.
+      - name: Stop Modal MySQL sandbox
+        if: always() && inputs.environment == 'remote-mysql-modal' && steps.mysql-sandbox.outputs.sandbox_id
+          != ''
+        env:
+          SANDBOX_ID: ${{ steps.mysql-sandbox.outputs.sandbox_id }}
+        run: python scripts/ci/modal_mysql_sandbox.py stop --sandbox-id "$SANDBOX_ID"
+
+      # Step 8: upload the full offload output directory for post-run inspection.
+      # Failing tests are inspected by downloading this artifact (junit.xml plus
+      # offload's own per-test logs); offload also streams failures inline in
+      # --ci mode during the run.
+      - name: Upload offload artifacts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: offload-artifacts-${{ inputs.suite }}-${{ github.run_id }}
+          path: .ci/offload
+          if-no-files-found: warn
+
+      # Explicit pass/fail: offload exit 0 = pass, exit 2 = flaky-only (treated
+      # as pass), exit 1 = fail.  With retry_count=0 exit 2 cannot occur, but
+      # encoding the policy now means enabling retries later does not silently
+      # flip the semantics.
+      - name: Evaluate offload result
+        if: always() && steps.run-offload.outcome != 'skipped'
+        env:
+          OFFLOAD_EXIT: ${{ steps.run-offload.outputs.exit_code || '1' }}
+        run: |-
+          if [ "$OFFLOAD_EXIT" = "0" ] || [ "$OFFLOAD_EXIT" = "2" ]; then
+            echo "offload exited $OFFLOAD_EXIT (pass)"
+          else
+            echo "offload exited $OFFLOAD_EXIT (fail)" >&2
+            exit 1
+          fi

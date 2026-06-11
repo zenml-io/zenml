@@ -1,0 +1,80 @@
+ARG PYTHON_VERSION=3.13
+ARG UV_VERSION=0.11.7
+
+FROM python:${PYTHON_VERSION}-slim-bookworm AS builder
+ARG UV_VERSION
+
+RUN set -ex \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends git graphviz build-essential libgomp1 \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --upgrade wheel pip "uv==${UV_VERSION}"
+
+# Layer ordering: pyproject.toml is copied first so that the expensive
+# dependency resolution and download step is cached independently of source
+# code changes. The [checkpoint] section in the offload TOMLs lists
+# pyproject.toml as a build input, so offload's git-notes image cache also
+# invalidates on pyproject.toml changes.
+WORKDIR /app
+COPY pyproject.toml README.md LICENSE ./
+
+# Phase 1: compile and install all ZenML extras (server, connectors, dev, …).
+RUN uv pip compile pyproject.toml --exclude-newer "PT72H" --no-emit-package zenml --no-header --no-annotate \
+    --extra server \
+    --extra templates \
+    --extra terraform \
+    --extra secrets-aws \
+    --extra secrets-gcp \
+    --extra secrets-azure \
+    --extra secrets-hashicorp \
+    --extra s3fs \
+    --extra gcsfs \
+    --extra adlfs \
+    --extra dev \
+    --extra connectors-aws \
+    --extra connectors-gcp \
+    --extra connectors-azure \
+    --extra azureml \
+    --extra sagemaker \
+    --extra vertex \
+    --output-file /tmp/zenml-requirements.txt \
+  && uv pip install --exclude-newer "PT72H" --system -r /tmp/zenml-requirements.txt \
+  && uv pip install --exclude-newer "PT72H" --system 'setuptools<82' \
+  && rm -f /tmp/zenml-requirements.txt
+
+# Phase 2: install ZenML itself (editable) so that "zenml integration
+# export-requirements" is available in the next phase.
+COPY src ./src
+RUN uv pip install --exclude-newer "PT72H" --system --no-deps -e .
+
+# Phase 3: generate integration requirements via the same mechanism as
+# install-zenml-dev.sh --integrations yes, then install them.
+# tensorflow and deepchecks are excluded on Python 3.12+ (no wheels).
+# The other IGNORED_INTEGRATIONS match the historical export script.
+RUN python_version=$(python -c "import sys; print('.'.join(map(str, sys.version_info[:2])))") \
+  && ignore_args="--ignore-integration feast --ignore-integration label_studio --ignore-integration bentoml --ignore-integration seldon --ignore-integration pycaret --ignore-integration skypilot_aws --ignore-integration skypilot_gcp --ignore-integration skypilot_azure --ignore-integration skypilot_kubernetes --ignore-integration skypilot_lambda --ignore-integration pigeon --ignore-integration prodigy --ignore-integration argilla --ignore-integration vllm" \
+  && case "$python_version" in 3.12|3.13|3.14) ignore_args="$ignore_args --ignore-integration tensorflow --ignore-integration deepchecks" ;; esac \
+  && ZENML_DEBUG=false ZENML_ANALYTICS_OPT_IN=false \
+     zenml integration export-requirements \
+       --output-file /tmp/integration-requirements.txt \
+       $ignore_args \
+  && printf '\npyyaml>=6.0.1\npyopenssl\ntyping-extensions\nmaison<2\n' >> /tmp/integration-requirements.txt \
+  && uv pip install --exclude-newer "PT72H" --system -r /tmp/integration-requirements.txt \
+  && { uv pip uninstall --system multipart || true; } \
+  && uv pip install --exclude-newer "PT72H" --system --force-reinstall --no-deps "docstring_parser_fork" \
+  && { pip cache purge 2>/dev/null || true; } \
+  && rm -f /tmp/integration-requirements.txt
+
+FROM python:${PYTHON_VERSION}-slim-bookworm
+
+RUN set -ex \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends git graphviz libgomp1 \
+  && apt-get clean -y \
+  && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /usr/local /usr/local
+
+WORKDIR /app

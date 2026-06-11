@@ -23,8 +23,7 @@
 #
 # (5) ci-fast triggers on merge_group AND pull_request so the ci-fast-required
 #     rollup can report status on merge_group commits (required checks must
-#     report on every context they guard).  The resulting duplicate execution
-#     of the test lanes (PR + queue) is a known, accepted cost.
+#     report on every context they guard).
 #
 # (6) paths-ignore removed.  Required rollup jobs must always report a status,
 #     even for docs-only PRs.  The wall-clock cost is acceptable given that
@@ -35,13 +34,53 @@
 # (8) Ops change set: enable the merge queue in repo settings; required checks
 #     = ci-fast-required on PRs + ci-medium-required in the merge queue.
 #
-# (9) generate-test-duration.yml / .test_durations keep feeding pytest-split
-#     sharding for the runner lanes in this tier; this timing data must not be
-#     silently removed.
+# (9) ci-medium kill-switch decision (gap 3): see ci-medium.yml for the
+#     decision.  This file's runner-lane conditions mirror it: fork PRs,
+#     dependabot, and the ZENML_CI_MODAL_DISABLED kill switch all route to
+#     runner lanes.
 #
-# (10) No coverage upload to codecov in this tier.  Runner lanes run plain
-#      pytest without `coverage run`; documenting here so it is not silently
-#      lost.
+# (10) generate-test-duration.yml / .test_durations keep feeding pytest-split
+#      sharding for runner lanes in this tier.  After PR 2 there are TWO timing
+#      systems: .test_durations (runner shards) and offload-history.jsonl
+#      (offload LPT scheduling).  Both are intentional; neither must be
+#      silently removed.
+#
+# (11) No coverage upload to codecov in this tier.  Runner lanes run plain
+#      pytest without `coverage run`; offload lanes also run plain pytest with
+#      no coverage instrumentation.  This is a deliberate decision: the
+#      complexity of running coverage inside Modal sandboxes and merging
+#      distributed reports is not worth it at this stage.  Coverage was never
+#      present for the offload path.  (gap 7)
+#
+# (12) PR 2 lane swap (§2.3):
+#      - offload lanes (offload-unit-tests, offload-integration-tests) are the
+#        REQUIRED path for same-repo PRs.
+#      - The runner lanes (unit-test, default-integration-test) are kept but
+#        gated to the STATIC FALLBACK condition:
+#          github.event.pull_request.head.repo.full_name != github.repository
+#          || vars.ZENML_CI_MODAL_DISABLED == 'true'
+#          || github.actor == 'dependabot[bot]'
+#        Rationale for dependabot (gap 4): dependabot PRs are same-repo but
+#        get Dependabot secrets, not repo secrets, so MODAL_TOKEN_ID/SECRET are
+#        absent and the offload lane would silently fail to authenticate.
+#      - Offload lanes carry the INVERSE condition: same-repo AND not
+#        dependabot AND kill switch off.
+#      - Both condition sets also exclude drafts (consistent with the rest of
+#        this file).
+#
+# (13) merge_group double-run (gap 6): ci-fast fires on both pull_request and
+#      merge_group events.  When a PR is merged, offload lanes run twice — once
+#      for the PR head and once for the merge-queue's temporary merge commit.
+#      Policy decision (PR 2): accept the cost.  The merge-queue commit is a
+#      different SHA from the PR head (squash or merge), so re-running tests is
+#      correct.  Skipping offload lanes on merge_group would require the rollup
+#      to allow-skip those jobs, which weakens the protection guarantee.  The
+#      extra Modal cost per merge is bounded and acceptable.
+#
+# (14) serial-only tests (§3.6): tests marked @pytest.mark.serial_only run on a
+#      plain GitHub runner so they are never interleaved with parallel offload
+#      sandboxes.  The runner job also covers global_state tests that have no
+#      remote-mysql-modal home yet (carried from step 2 risk tracking).
 name: ci-fast
 on:
   workflow_dispatch:
@@ -145,11 +184,116 @@ jobs:
         run: |
           uv pip install --system --force-reinstall --no-deps "docstring_parser_fork"
           pydoclint src/zenml tests/harness
-  unit-test:
-    # Plain runner lane — PR 2 will add the fork/kill-switch conditions that
-    # gate this job to fork PRs and the kill-switch path (§2.3).
+  # ── Offload lanes (required path — same-repo, non-dependabot, kill switch off)
+  # ──────────────────────────────────────────────────────────────────────────────
+  # The condition fires on:
+  #   - Non-draft PRs from the same repo (not fork, not dependabot)
+  #   - merge_group events (accepted double-run cost per gap  # 6 policy)
+  #   - push to develop
+  # On pull_request events the fork and dependabot checks gate access to Modal
+  # secrets.  On merge_group/push the PR context is absent (head.repo is null)
+  # so only the kill switch and draft checks apply.
+  # Tests marked serial_only are excluded here and run in serial-only-tests below.
+  offload-unit-tests:
+    if: >-
+      vars.ZENML_CI_MODAL_DISABLED != 'true'
+      && github.actor != 'dependabot[bot]'
+      && (github.event_name != 'pull_request'
+          || (github.event.pull_request.draft == false
+              && github.event.pull_request.head.repo.full_name == github.repository))
+    uses: ./.github/workflows/offload-tests.yml
+    with:
+      suite: unit
+      environment: default
+      parallel: 2
+    secrets: inherit
+  offload-integration-tests:
+    if: >-
+      vars.ZENML_CI_MODAL_DISABLED != 'true'
+      && github.actor != 'dependabot[bot]'
+      && (github.event_name != 'pull_request'
+          || (github.event.pull_request.draft == false
+              && github.event.pull_request.head.repo.full_name == github.repository))
+    uses: ./.github/workflows/offload-tests.yml
+    with:
+      suite: integration
+      environment: default
+      parallel: 20
+    secrets: inherit
+  # ── Serial-only runner job (§3.6) ─────────────────────────────────────────
+  # Runs tests marked @pytest.mark.serial_only on a plain GitHub runner so
+  # they are never interleaved with parallel Modal sandboxes.  This job always
+  # runs for same-repo non-draft events (it does not need Modal credentials).
+  #
+  # This job also provides a home for global_state-marked tests that are
+  # excluded from the offload-integration-mysql lane; until a dedicated
+  # ci-medium runner lane is added for them (tracked in risks), the global_state
+  # tests must be explicitly added here or they silently stop running.
+  serial-only-tests:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
       false
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ZENML_ANALYTICS_OPT_IN: false
+      ZENML_DEBUG: true
+      ZENML_ENABLE_RICH_TRACEBACK: false
+      ZENML_TEST_DEPLOYMENT_ROOT_PATH: /tmp/zenml-test-deploy
+      PYTHONIOENCODING: utf-8
+      UV_HTTP_TIMEOUT: 600
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        with:
+          persist-credentials: false
+      - name: Set uv cache + temp dirs (/opt)
+        run: |
+          sudo mkdir -p /opt/uv-cache /opt/tmp
+          sudo chown -R "$(id -u)":"$(id -g)" /opt/uv-cache /opt/tmp
+          echo "UV_CACHE_DIR=/opt/uv-cache" >> "$GITHUB_ENV"
+          echo "TMPDIR=/opt/tmp" >> "$GITHUB_ENV"
+          echo "TMP=/opt/tmp" >> "$GITHUB_ENV"
+          echo "TEMP=/opt/tmp" >> "$GITHUB_ENV"
+      - name: Restore uv cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
+        with:
+          path: /opt/uv-cache
+          key: uv-${{ runner.os }}-3.13-${{ hashFiles('src/zenml/integrations/*/__init__.py')
+            }}
+          restore-keys: |
+            uv-${{ runner.os }}-3.13-
+      - name: Setup environment
+        uses: ./.github/actions/setup_environment
+        with:
+          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+          python-version: '3.13'
+          os: ubuntu-latest
+          install_integrations: 'yes'
+      - name: Run serial-only unit tests
+        run: >-
+          python -m pytest -p no:pytest_postgresql -v --tb=short
+          --no-provision --environment default
+          -p no:randomly -p no:rerunfailures
+          -m serial_only
+          tests/unit
+  # ── Runner lanes (STATIC FALLBACK — fork PRs, dependabot, kill switch)
+  # ──────────────────────────────────────────────────────────────────────────────
+  # These are the PR 1 runner jobs; PR 2 adds the static condition that gates
+  # them to the fallback path (§2.3 and policy note 12 above).
+  #
+  # The condition is the logical complement of the offload-lane condition:
+  # fire when the offload lanes do NOT fire, i.e. when the event IS a PR AND
+  # it is a fork PR, a dependabot PR, or the kill switch is active.
+  # On merge_group and develop push the offload lanes run, so these jobs skip.
+  unit-test:
+    # Runner fallback: fork PRs (no Modal secrets), dependabot PRs (gets
+    # Dependabot secrets not repo secrets), or kill switch active.
+    if: >-
+      github.event_name == 'pull_request'
+      && github.event.pull_request.draft == false
+      && (github.event.pull_request.head.repo.full_name != github.repository
+          || vars.ZENML_CI_MODAL_DISABLED == 'true'
+          || github.actor == 'dependabot[bot]')
     uses: ./.github/workflows/unit-test.yml
     with:
       python-version: '3.13'
@@ -157,10 +301,13 @@ jobs:
       install_integrations: 'yes'
     secrets: inherit
   default-integration-test:
-    # Plain runner lane for the default environment (no docker server).
-    # PR 2 will add the fork/kill-switch conditions (§2.3).
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
-      false
+    # Runner fallback: same conditions as unit-test above.
+    if: >-
+      github.event_name == 'pull_request'
+      && github.event.pull_request.draft == false
+      && (github.event.pull_request.head.repo.full_name != github.repository
+          || vars.ZENML_CI_MODAL_DISABLED == 'true'
+          || github.actor == 'dependabot[bot]')
     uses: ./.github/workflows/integration-test-fast.yml
     with:
       python-version: '3.13'
@@ -189,14 +336,25 @@ jobs:
     secrets: inherit
   ci-fast-required:
     # alls-green rolls up all required jobs into one status the branch
-    # protection rule checks.  update-templates-to-examples is listed as
-    # allowed-skips because it legitimately skips on fork PRs, drafts, and
-    # non-pull_request events.
+    # protection rule checks.
+    #
+    # allowed-skips rationale:
+    #   update-templates-to-examples — legitimately skips on fork PRs, drafts,
+    #     and non-pull_request events.
+    #   offload-unit-tests, offload-integration-tests — skip on fork PRs,
+    #     dependabot PRs, and when the kill switch is active; the runner
+    #     fallback lanes run instead in those cases, so the rollup stays green.
+    #   unit-test, default-integration-test — skip on same-repo non-dependabot
+    #     PRs when Modal is enabled (offload lanes run instead).
+    #   serial-only-tests is always required (no skip condition).
     runs-on: ubuntu-latest
     needs:
       - sqlite-db-migration-testing-random
       - api-docs-test
       - static-checks
+      - offload-unit-tests
+      - offload-integration-tests
+      - serial-only-tests
       - unit-test
       - default-integration-test
       - update-templates-to-examples
@@ -206,5 +364,10 @@ jobs:
       - name: Check all required fast-CI jobs passed
         uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe  # v1.2.2
         with:
-          allowed-skips: update-templates-to-examples
+          allowed-skips: >-
+            update-templates-to-examples,
+            offload-unit-tests,
+            offload-integration-tests,
+            unit-test,
+            default-integration-test
           jobs: ${{ toJSON(needs) }}

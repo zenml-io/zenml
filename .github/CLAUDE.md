@@ -17,9 +17,9 @@ This document provides guidance for AI assistants working with ZenML's GitHub Ac
 
 ### Entry Points vs Reusable Workflows
 
-**Entry points** (triggered externally): ci-fast.yml, ci-medium.yml, ci-slow-develop.yml, slow-ci-on-pr.yml, release.yml, nightly_build.yml, check-links.yml, check-markdown-links.yml, gitbook-redirect-check.yml, validate-changelog.yml, zizmor.yml
+**Entry points** (triggered externally): ci-fast.yml, ci-medium.yml, ci-slow-develop.yml, slow-ci-on-pr.yml, release.yml, nightly_build.yml, check-links.yml, check-markdown-links.yml, gitbook-redirect-check.yml, validate-changelog.yml, zizmor.yml, offload-image-warm.yml
 
-**Reusable workflows** (called via `workflow_call`): unit-test.yml, linting.yml, integration-test-*.yml, base-package-functionality.yml, publish_*.yml
+**Reusable workflows** (called via `workflow_call`): unit-test.yml, linting.yml, integration-test-*.yml, base-package-functionality.yml, publish_*.yml, offload-tests.yml
 
 Some entrypoint/orchestration workflows are also callable. For example, `ci-slow-develop.yml` exposes `workflow_call` so `slow-ci-on-pr.yml` can reuse the develop qualification matrix.
 
@@ -32,10 +32,21 @@ All reusable workflows use `secrets: inherit` for centralized secret management.
 Runs automatically on all PRs, merge queue entries, and pushes to develop:
 - SQLite migration testing (random, sqlite only)
 - Static checks (ubuntu, Python 3.13) — spellcheck, Ruff, and pydoclint
-- Unit tests (ubuntu, Python 3.13) via `unit-test.yml`
-- Default integration tests (ubuntu, Python 3.13) via `integration-test-fast.yml`
+- Serial-only tests (ubuntu, Python 3.13) — tests marked `@pytest.mark.serial_only`
+  that must not run in parallel Modal sandboxes
 - API docs buildability test
 - Template example updates (same-repo, non-draft PRs only)
+
+**For same-repo, non-dependabot PRs when Modal is enabled:**
+- `offload-unit-tests` — unit test suite on Modal via offload (required)
+- `offload-integration-tests` — integration test suite on Modal via offload (required)
+
+**Fallback (fork PRs, dependabot, or `ZENML_CI_MODAL_DISABLED=true`):**
+- `unit-test` — runner-based unit tests via `unit-test.yml`
+- `default-integration-test` — runner-based default-environment integration tests
+
+Both the offload lanes and the runner lanes are in the `ci-fast-required` rollup with
+`allowed-skips` for whichever side is inactive, so exactly one path is required at a time.
 
 ### ci-medium.yml (Merge Queue)
 
@@ -44,6 +55,8 @@ Runs merge-queue validation beyond fast PR checks:
 - Python 3.13 linting (via `linting.yml`) and unit tests (via `unit-test.yml`)
 - Docker-orchestrator MySQL integration tests (via `integration-test-fast.yml`)
 - Base package functionality tests (via `base-package-functionality.yml`)
+- `remote-mysql-modal-offload` — integration suite against a Modal-hosted MySQL server
+  (skipped when `ZENML_CI_MODAL_DISABLED=true`; docker-orchestrator-mysql provides coverage)
 
 ### ci-slow-develop.yml and slow-ci-on-pr.yml (Develop Qualification)
 
@@ -104,7 +117,14 @@ GH_TOKEN=$(gh auth token) uvx zizmor --fix=all --config=.github/zizmor.yml .gith
 - **Unpinned uses**: ZenML template repos intentionally stay on `@main` branch
 - **Template injection**: Step outputs within same workflow are trusted
 - **Cache poisoning**: Protected release branch workflows (docs only)
-- **Secrets inherit**: First-party workflows calling other first-party workflows
+- **Secrets inherit**: First-party workflows calling other first-party workflows,
+  including `offload-tests.yml` (called by ci-fast.yml and ci-medium.yml;
+  `MODAL_TOKEN_ID`/`MODAL_TOKEN_SECRET` flow through without per-call-site
+  enumeration)
+- **artipacked (pending)**: `artipacked` rule is globally disabled. When it is
+  re-enabled, `offload-image-warm.yml` must be listed as an explicit
+  exception — it intentionally uses `persist-credentials: true` to push
+  `refs/notes/offload-images` to the protected `develop` branch.
 
 ## Common Patterns
 
@@ -171,6 +191,135 @@ key: uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/i
 Cache invalidates when integrations change.
 
 `generate-test-duration.yml` refreshes `.test_durations` on a weekly schedule. This file feeds `pytest-split` sharding in the runner-based integration lanes (ci-fast and ci-slow-develop). Do not delete or rekey `.test_durations` without also updating the workflows that consume it; stale shard data degrades test parallelism but does not break correctness.
+
+## Modal Execution via offload (PR 2)
+
+### offload-tests.yml — the reusable offload workflow
+
+`offload-tests.yml` (~150 lines) replaces the old 502-line `linux-fast-offload.yml`. It
+accepts three inputs: `suite` (unit|integration|integration-mysql), `environment`
+(default|remote-mysql-modal), and `parallel` (max sandboxes).
+
+Lifecycle:
+1. Checkout with `fetch-depth: 50` so offload's `[checkpoint]` can locate the
+   build-input ancestor.  Fetches `refs/notes/offload-images` for the image cache.
+2. Install offload v0.9.7 from the pre-built binary, cached by version string.
+3. Install driver-side ZenML dependencies via `uv pip install -e ".[server,templates,dev]"`.
+4. Copy `Dockerfile.ci.dockerignore` to `.dockerignore` (offload reads `.dockerignore`
+   from cwd, not from the Dockerfile-named file).
+5. *(integration-mysql only)* Start the Modal MySQL sandbox via `modal_mysql_sandbox.py start`.
+6. Run `offload -c <lane>.toml run --parallel N --record-history --ci`.
+7. *(integration-mysql only, `always()`)* Stop the sandbox.
+8. Upload `.ci/offload` artifacts (junit.xml + offload logs) for failure inspection.
+
+Exit codes: 0 = pass, 2 = flaky-only (only with `retry_count > 0`), 1 = failed.
+Exit 0 and 2 are both treated as success; exit 1 fails the job.
+
+Modal auth: `MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET` are job-level env vars inherited
+via `secrets: inherit`. They are absent on fork PRs and dependabot PRs — callers
+must route those to the runner fallback (see ci-fast.yml conditions).
+
+No coverage upload: offload lanes run plain `pytest` with no `coverage run`
+instrumentation. This is a deliberate decision — the complexity of running coverage
+inside Modal sandboxes and merging distributed reports is not worth it at this stage.
+Coverage was never present for the offload path; this is not a regression.
+
+### offload TOML config files (THREE standalone files)
+
+offload v0.9.7 has no `include`/`extends` mechanism and no per-run group-selection
+CLI flag, so three standalone TOML files are required (one for each test group).
+The plan's "one config" ideal (§2.1) was superseded by these verified v0.9.7 facts.
+
+| File | Group | Key settings |
+|------|-------|-------------|
+| `offload-unit.toml` | `tests/unit -m 'not serial_only'` | `max_parallel=2` |
+| `offload-integration.toml` | `tests/integration -m 'not slow and not serial_only'` | `max_parallel=20` |
+| `offload-integration-mysql.toml` | `tests/integration -m 'not slow and not global_state'` | `max_parallel=20` |
+
+Select a lane with `offload -c <file> run ...`.  Never `cp` over `offload.toml`.
+
+`${VAR:-default}` expansion is valid ONLY in `[provider.env]` values.  Do NOT use
+`${...}` in `[framework].run_args` or `[groups.*].filters` — it is not expanded there.
+
+### offload version pin
+
+offload is pinned to **v0.9.7** (crates.io upstream, not a fork).  There is NO fork
+reference anywhere in the workflow or TOML files.  An unexplained fork pin is a
+`CHANGES_REQUESTED` blocker per the PR review guidelines.
+
+To upgrade: bump the version string in `offload-tests.yml` and `offload-image-warm.yml`
+(two cache keys + two install steps), then verify the new version's TOML schema
+against the field list in the TOML comments.
+
+### Image cache via git notes
+
+offload stores Modal image IDs in `refs/notes/offload-images`.  The `[checkpoint]`
+section in each TOML specifies `build_inputs = ["Dockerfile.ci", "pyproject.toml"]`;
+offload reuses the cached image when the most recent ancestor commit that touched
+any build input is the same as the last build.  This requires `fetch-depth: 50`
+(not 0 or 1) so the ancestor lookup succeeds.
+
+PR jobs run with `contents:read` and cannot push notes.  The separate
+`offload-image-warm.yml` workflow (triggered by push to develop when
+`Dockerfile.ci` or `pyproject.toml` changes) runs with `contents:write` and
+`persist-credentials: true` to warm the cache.
+
+Security posture of `offload-image-warm.yml`: `persist-credentials: true` is a
+deliberate exception to the repo-wide `persist-credentials: false` posture.  It
+is scoped to a single workflow that only runs on `push` to the protected `develop`
+branch (a trusted ref, no pull-request trigger).  The artipacked rule in
+`zizmor.yml` is globally disabled; when it is re-enabled, `offload-image-warm.yml`
+must be listed as an explicit exception.
+
+The notes push in `offload-image-warm.yml` is `continue-on-error: true` because
+concurrent develop pushes can race.  A missed warm is non-critical (next PR run
+rebuilds the image).
+
+### Dual timing systems
+
+The codebase intentionally maintains TWO test timing systems:
+
+| File | Purpose | Feeds |
+|------|---------|-------|
+| `.test_durations` | pytest-split shard weights | runner-lane integration tests |
+| `offload-history.jsonl` | offload LPT scheduling | offload-based test lanes |
+
+Do not remove either file.  `generate-test-duration.yml` refreshes `.test_durations`
+weekly.  `offload-history.jsonl` is updated by `--record-history` on every offload run
+(merge driver configured in `.gitattributes` handles concurrent updates).
+
+### Kill switch
+
+`vars.ZENML_CI_MODAL_DISABLED=true` routes all test execution to GitHub runner lanes:
+- In `ci-fast.yml`: offload lanes are skipped; `unit-test` and `default-integration-test`
+  runner jobs become active.
+- In `ci-medium.yml`: `remote-mysql-modal-offload` is skipped; the always-present
+  `docker-orchestrator-mysql-integration-test` provides database integration coverage.
+
+The kill switch is a repository variable (`vars.*`), not a secret.
+
+### Fork and dependabot routing
+
+Fork PRs (`github.event.pull_request.head.repo.full_name != github.repository`) do not
+have access to repo secrets, so offload lanes would fail to authenticate with Modal.
+
+Dependabot PRs are same-repo but get Dependabot secrets instead of repo secrets, so
+`MODAL_TOKEN_ID` and `MODAL_TOKEN_SECRET` are absent — the same fallback applies.
+
+Both cases are handled by the static condition on offload lanes in `ci-fast.yml`:
+```yaml
+&& github.event.pull_request.head.repo.full_name == github.repository
+&& github.actor != 'dependabot[bot]'
+&& vars.ZENML_CI_MODAL_DISABLED != 'true'
+```
+
+### merge_group double-run policy
+
+`ci-fast.yml` fires on both `pull_request` and `merge_group`.  When a PR is merged,
+offload lanes run twice — once for the PR head SHA and once for the merge-queue
+temporary merge commit.  This is intentional: the merge-queue commit is a different
+SHA (squash or merge), so re-running tests against it is correct.  The extra Modal
+cost per merge is bounded and accepted.
 
 ## Key Supporting Files
 
