@@ -222,7 +222,7 @@ class K8sAgentSandboxFlavor(BaseSandboxFlavor):
         """
         return (
             "https://public-flavor-logos.s3.eu-central-1.amazonaws.com"
-            "/sandbox/kubernetes.png"
+            "/sandbox/kubernetes-agent-sandbox.svg"
         )
 
     @property
