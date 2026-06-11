@@ -31,19 +31,12 @@ CLOUDFLARE_CONTAINER_REGISTRY_FLAVOR = "cloudflare"
 # names only need to be unique per component type.
 CLOUDFLARE_SANDBOX_FLAVOR = "cloudflare"
 
-# Service connector type and resource types.
-CLOUDFLARE_CONNECTOR_TYPE = "cloudflare"
-CLOUDFLARE_GENERIC_RESOURCE_TYPE = "cloudflare-generic"
-CLOUDFLARE_R2_RESOURCE_TYPE = "r2-bucket"
-
-
 class CloudflareIntegration(Integration):
     """Definition of the Cloudflare integration for ZenML."""
 
     NAME = CLOUDFLARE
     # R2 is S3-compatible, so the artifact store reuses the S3 filesystem
-    # stack. boto3 is required for the underlying client and the R2 service
-    # connector.
+    # stack, which needs boto3 for the underlying client.
     REQUIREMENTS = [
         # Explicitly exclude 2025.3.1 to avoid pulling in the yanked fsspec
         # package with the same version
@@ -54,15 +47,6 @@ class CloudflareIntegration(Integration):
         # mockable transport for tests.
         "httpx>=0.24",
     ]
-
-    @classmethod
-    def activate(cls) -> None:
-        """Activate the Cloudflare integration.
-
-        Imports the service connectors so they register themselves with the
-        service connector registry.
-        """
-        from zenml.integrations.cloudflare import service_connectors  # noqa
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

@@ -53,7 +53,7 @@ The Cloudflare sandbox crosses three security boundaries; ZenML only owns the fi
 2. **Bridge → Cloudflare account** — the bridge Worker holds its own Cloudflare service binding (configured at deploy time via Wrangler). ZenML never sees Cloudflare API tokens.
 3. **Sandbox → external** — code running inside the sandbox can call external services through Cloudflare's outbound proxy. Auth for that path is the agent author's responsibility.
 
-Because the bridge bearer token is scoped to a single Worker (not a whole Cloudflare account), it intentionally **does not** flow through the ZenML Cloudflare service connector — it lives directly on the sandbox flavor as a `SecretField`.
+Because the bridge bearer token is scoped to a single Worker (not a whole Cloudflare account), it is not a Cloudflare-issued account credential — it lives directly on the sandbox flavor as a `SecretField`.
 
 ### Settings reference
 
@@ -97,4 +97,4 @@ Sandbox stdout/stderr automatically lands on the active step under a dedicated `
 
 ### Related
 
-- [Cloudflare service connector](../service-connectors/service-connectors-guide.md) — used by the [R2 artifact store](../artifact-stores/cloudflare-r2.md) and the [Cloudflare container registry](../container-registries/cloudflare.md). The sandbox flavor deliberately does **not** flow through the connector; see the three-boundary explanation above.
+- [R2 artifact store](../artifact-stores/cloudflare-r2.md) and [Cloudflare container registry](../container-registries/cloudflare.md) — the sibling components of this integration, configured with credentials directly on the component.
