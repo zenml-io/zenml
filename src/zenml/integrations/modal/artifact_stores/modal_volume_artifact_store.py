@@ -232,8 +232,7 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
                     "stack must use the Modal orchestrator so ZenML artifact "
                     "reads and writes run inside Modal sandboxes with the "
                     "Volume mounted. Local, Kubernetes, and other non-Modal "
-                    "orchestrators are not supported until Modal SDK fallback "
-                    "execution is implemented."
+                    "runtime execution is not supported."
                 )
 
             step_operators = getattr(stack, "step_operators", {}) or {}
@@ -304,11 +303,10 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
         """
         if not self._is_mounted_fast_path_enabled():
             raise RuntimeError(
-                "The Modal Volume artifact store currently supports only the "
-                "mounted Modal fast path. Set "
+                "This Modal Volume artifact store operation requires a "
+                "mounted Modal runtime. Set "
                 f"{ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH}=1 in a Modal "
-                "runtime where the Volume is mounted, or wait for the planned "
-                "Modal SDK fallback implementation."
+                "runtime where the Volume is mounted."
             )
 
         self._validate_runtime_mount_metadata()
@@ -501,7 +499,36 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
 
         if ENV_ZENML_MODAL_VOLUME_ENVIRONMENT_NAME in os.environ:
             return os.environ[ENV_ZENML_MODAL_VOLUME_ENVIRONMENT_NAME] or None
-        return os.environ.get("MODAL_ENVIRONMENT") or None
+
+        from zenml.integrations.modal.sandbox_utils import (
+            normalize_optional_config_value,
+        )
+
+        config_environment = normalize_optional_config_value(
+            self.config.modal_environment
+        )
+        if config_environment:
+            return config_environment
+
+        return normalize_optional_config_value(
+            os.environ.get("MODAL_ENVIRONMENT")
+        )
+
+    def _get_modal_client(self) -> Optional[Any]:
+        """Create an explicit Modal client from artifact-store credentials."""
+        from zenml.integrations.modal.sandbox_utils import ModalClientFactory
+
+        client_factory = getattr(self, "_modal_client_factory", None)
+        if client_factory is None:
+            client_factory = ModalClientFactory(
+                get_token_id=lambda: self.config.token_id,
+                get_token_secret=lambda: self.config.token_secret,
+            )
+            object.__setattr__(
+                self, "_modal_client_factory", client_factory
+            )
+
+        return client_factory.get_client()
 
     def _get_modal_volume(self) -> Any:
         """Look up the configured Modal Volume through the Modal SDK.
@@ -527,11 +554,18 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
             ) from e
 
         modal_environment = self._modal_environment_name()
+        modal_client = self._get_modal_client()
         try:
+            volume_kwargs = {
+                "environment_name": modal_environment,
+                "create_if_missing": self.config.create_if_missing,
+            }
+            if modal_client is not None:
+                volume_kwargs["client"] = modal_client
+
             volume = modal.Volume.from_name(
                 self.volume_name,
-                environment_name=modal_environment,
-                create_if_missing=self.config.create_if_missing,
+                **volume_kwargs,
             )
         except Exception as e:
             environment_text = modal_environment or "the default Modal environment"
@@ -540,11 +574,21 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
                 f"'{self.volume_name}' in {environment_text} through the "
                 "Modal SDK. Ensure Modal credentials are configured for this "
                 "process and that the Volume exists, or set "
-                "create_if_missing=True."
+                "create_if_missing=True. Original Modal SDK error "
+                f"({type(e).__name__}): {e}"
             ) from e
 
         object.__setattr__(self, "_modal_volume", volume)
         return volume
+
+    def cleanup(self) -> None:
+        """Close any Modal SDK client created by this artifact store."""
+        client_factory = getattr(self, "_modal_client_factory", None)
+        try:
+            if client_factory is not None:
+                client_factory.close()
+        finally:
+            object.__setattr__(self, "_modal_volume", None)
 
     def _sdk_path(self, uri: PathType) -> str:
         """Translate a Modal Volume URI into an SDK path.
@@ -567,6 +611,28 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
     def _entry_is_directory(entry: Any) -> bool:
         """Return whether a Modal Volume FileEntry describes a directory."""
         return getattr(getattr(entry, "type", None), "name", "") == "DIRECTORY"
+
+    @staticmethod
+    def _entry_size(entry: Any) -> int:
+        """Return the byte size recorded on a Modal Volume FileEntry."""
+        return int(getattr(entry, "size", 0) or 0)
+
+    @staticmethod
+    def _entry_sdk_path(entry: Any) -> str:
+        """Return a normalized absolute SDK path for a Modal FileEntry."""
+        return posixpath.normpath(
+            "/" + str(getattr(entry, "path", "")).lstrip("/")
+        )
+
+    def _uri_from_sdk_path(self, sdk_path: str) -> str:
+        """Translate a Modal SDK path into a Modal Volume URI."""
+        normalized_path = posixpath.normpath(sdk_path)
+        if normalized_path == "/":
+            return f"{MODAL_VOLUME_URI_SCHEME}{self.volume_name}"
+        return (
+            f"{MODAL_VOLUME_URI_SCHEME}{self.volume_name}/"
+            f"{normalized_path.lstrip('/')}"
+        )
 
     def _get_sdk_entry(self, path: PathType) -> Optional[Any]:
         """Find the Modal SDK directory entry for a path.
@@ -593,9 +659,7 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
             raise
 
         for entry in entries:
-            entry_path = posixpath.normpath(
-                "/" + str(getattr(entry, "path", "")).lstrip("/")
-            )
+            entry_path = self._entry_sdk_path(entry)
             if entry_path == sdk_path or posixpath.basename(entry_path) == name:
                 return entry
         return None
@@ -916,6 +980,28 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
         Returns:
             The size in bytes.
         """
+        if not self._is_mounted_fast_path_enabled():
+            sdk_path = posixpath.normpath(self._sdk_path(path))
+            entry = None if sdk_path == "/" else self._get_sdk_entry(path)
+            if sdk_path != "/" and entry is None:
+                raise FileNotFoundError(convert_to_str(path))
+            if entry is not None and not self._entry_is_directory(entry):
+                return self._entry_size(entry)
+
+            try:
+                entries = self._get_modal_volume().listdir(
+                    sdk_path, recursive=True
+                )
+            except Exception as e:
+                if self._is_modal_not_found_error(e):
+                    raise FileNotFoundError(convert_to_str(path)) from e
+                raise
+            return sum(
+                self._entry_size(entry)
+                for entry in entries
+                if not self._entry_is_directory(entry)
+            )
+
         mount_path = self._require_mounted_fast_path()
         local_path = self._local_path(path)
         if not os.path.isdir(local_path):
@@ -951,6 +1037,68 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
         Yields:
             Tuples containing the current Modal URI, directory names, and file names.
         """
+        if not self._is_mounted_fast_path_enabled():
+            sdk_top = posixpath.normpath(self._sdk_path(top))
+            if not self.isdir(top):
+                return
+            try:
+                entries = self._get_modal_volume().listdir(
+                    sdk_top, recursive=True
+                )
+            except Exception as e:
+                if onerror:
+                    onerror(e)
+                    return
+                raise
+
+            tree: dict[str, tuple[set[str], set[str]]] = {
+                sdk_top: (set(), set())
+            }
+            for entry in entries:
+                entry_path = self._entry_sdk_path(entry)
+                if entry_path == sdk_top:
+                    continue
+                relative_path = posixpath.relpath(entry_path, sdk_top)
+                if relative_path == "." or relative_path.startswith("../"):
+                    continue
+
+                current_path = sdk_top
+                parts = relative_path.split("/")
+                for dir_name in parts[:-1]:
+                    dirs, _ = tree.setdefault(current_path, (set(), set()))
+                    dirs.add(dir_name)
+                    current_path = posixpath.join(current_path, dir_name)
+                    tree.setdefault(current_path, (set(), set()))
+
+                parent_dirs, parent_files = tree.setdefault(
+                    current_path, (set(), set())
+                )
+                entry_name = parts[-1]
+                if self._entry_is_directory(entry):
+                    parent_dirs.add(entry_name)
+                    tree.setdefault(
+                        posixpath.join(current_path, entry_name),
+                        (set(), set()),
+                    )
+                else:
+                    parent_files.add(entry_name)
+
+            def walk_sdk_path(
+                sdk_path: str,
+            ) -> Iterable[Tuple[PathType, List[PathType], List[PathType]]]:
+                dirs, files = tree.get(sdk_path, (set(), set()))
+                dir_names = sorted(dirs)
+                file_names = sorted(files)
+                if topdown:
+                    yield (self._uri_from_sdk_path(sdk_path), dir_names, file_names)
+                for dir_name in dir_names:
+                    yield from walk_sdk_path(posixpath.join(sdk_path, dir_name))
+                if not topdown:
+                    yield (self._uri_from_sdk_path(sdk_path), dir_names, file_names)
+
+            yield from walk_sdk_path(sdk_top)
+            return
+
         mount_path = self._require_mounted_fast_path()
         for root, dirs, files in os.walk(
             self._local_path(top), topdown=topdown, onerror=onerror

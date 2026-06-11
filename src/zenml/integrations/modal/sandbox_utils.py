@@ -191,6 +191,15 @@ class ModalClientFactory:
             )
             return self._cached_client
 
+    def close(self) -> None:
+        """Close and clear the cached explicit Modal client, if any."""
+        with self._lock:
+            try:
+                if self._cached_client is not None:
+                    self._cached_client.close()
+            finally:
+                self._cached_client = None
+
 
 class ModalVolumeMountFactory:
     """Resolve and cache Modal Volume mounts for sandbox creation."""

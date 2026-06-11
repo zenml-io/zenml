@@ -24,7 +24,7 @@ import pytest
 from pydantic import ValidationError
 
 from zenml.enums import StackComponentType
-from zenml.exceptions import StackValidationError
+from zenml.exceptions import StackComponentInterfaceError, StackValidationError
 from zenml.integrations.modal import (
     MODAL_ORCHESTRATOR_FLAVOR,
     MODAL_STEP_OPERATOR_FLAVOR,
@@ -43,6 +43,9 @@ from zenml.integrations.modal.flavors.modal_volume_artifact_store_flavor import 
     ModalVolumeArtifactStoreFlavor,
     parse_modal_volume_uri,
 )
+from zenml.integrations.modal.sandbox_utils import (
+    ENV_ZENML_MODAL_VOLUME_ENVIRONMENT_NAME,
+)
 from zenml.io import fileio
 from zenml.log_stores.artifact.artifact_log_store import ArtifactLogStore
 from zenml.materializers.path_materializer import PathMaterializer
@@ -54,6 +57,7 @@ MODAL_URI = "modal-volume://test-volume/root"
 def _make_artifact_store(
     mount_path: Path,
     path: str = MODAL_URI,
+    **config_kwargs: object,
 ) -> ModalVolumeArtifactStore:
     """Create a Modal Volume artifact store for tests."""
     return ModalVolumeArtifactStore(
@@ -62,6 +66,7 @@ def _make_artifact_store(
         config=ModalVolumeArtifactStoreConfig(
             path=path,
             mount_path=str(mount_path),
+            **config_kwargs,
         ),
         flavor=MODAL_VOLUME_ARTIFACT_STORE_FLAVOR,
         type=StackComponentType.ARTIFACT_STORE,
@@ -127,10 +132,10 @@ class ModalVolumeStub:
         del self.files[path]
 
     def listdir(self, path: str, recursive: bool = False):
-        """List direct child entries below a path."""
+        """List child entries below a path."""
         prefix = path.strip("/")
         children: dict[str, SimpleNamespace] = {}
-        for file_path in self.files:
+        for file_path, contents in self.files.items():
             stripped_path = file_path.strip("/")
             if prefix:
                 if not stripped_path.startswith(f"{prefix}/"):
@@ -138,13 +143,24 @@ class ModalVolumeStub:
                 remainder = stripped_path[len(prefix) + 1 :]
             else:
                 remainder = stripped_path
-            child_name = remainder.split("/", 1)[0]
-            child_path = f"{prefix}/{child_name}" if prefix else child_name
-            entry_type = "DIRECTORY" if "/" in remainder else "FILE"
-            children[child_path] = SimpleNamespace(
-                path=child_path,
-                type=SimpleNamespace(name=entry_type),
-            )
+
+            current_prefix = prefix
+            parts = remainder.split("/") if recursive else [
+                remainder.split("/", 1)[0]
+            ]
+            for index, part in enumerate(parts):
+                child_path = f"{current_prefix}/{part}" if current_prefix else part
+                is_file = recursive and index == len(parts) - 1
+                if not recursive:
+                    is_file = "/" not in remainder
+                children[child_path] = SimpleNamespace(
+                    path=child_path,
+                    type=SimpleNamespace(
+                        name="FILE" if is_file else "DIRECTORY"
+                    ),
+                    size=len(contents) if is_file else 0,
+                )
+                current_prefix = child_path
         return list(children.values())
 
 
@@ -180,6 +196,19 @@ def test_modal_volume_path_parsing_derives_volume_fields() -> None:
     assert config.volume_name == "vol-a"
     assert config.volume_prefix == "some/prefix"
     assert config.create_if_missing is False
+    assert config.token_id is None
+    assert config.token_secret is None
+    assert config.modal_environment is None
+
+    credential_config = ModalVolumeArtifactStoreConfig(
+        path="modal-volume://vol-a/some/prefix",
+        token_id="ak-test",
+        token_secret="as-test",
+        modal_environment="production",
+    )
+    assert credential_config.token_id == "ak-test"
+    assert credential_config.token_secret == "as-test"
+    assert credential_config.modal_environment == "production"
 
     normalized_config = ModalVolumeArtifactStoreConfig(
         path="modal-volume://vol-a/some/prefix",
@@ -190,6 +219,9 @@ def test_modal_volume_path_parsing_derives_volume_fields() -> None:
     config_fields = ModalVolumeArtifactStoreConfig.model_fields
     assert "volume_name" not in config_fields
     assert "volume_prefix" not in config_fields
+    assert "token_id" in config_fields
+    assert "token_secret" in config_fields
+    assert "modal_environment" in config_fields
     assert "use_sdk_fallback_for_control_plane" not in config_fields
     assert "allow_non_modal_execution_with_sdk" not in config_fields
 
@@ -223,6 +255,37 @@ def test_modal_volume_config_rejects_invalid_mount_paths(
     """The mount path must be a non-root absolute path."""
     with pytest.raises(ValidationError, match="mount_path"):
         ModalVolumeArtifactStoreConfig(path=MODAL_URI, mount_path=mount_path)
+
+
+@pytest.mark.parametrize(
+    "config_kwargs",
+    [
+        {"token_id": "ak-test"},
+        {"token_secret": "as-test"},
+    ],
+)
+def test_modal_volume_config_rejects_incomplete_token_pair(
+    config_kwargs: dict[str, str],
+) -> None:
+    """Modal token_id and token_secret must be configured together."""
+    with pytest.raises(ValidationError, match="configured together"):
+        ModalVolumeArtifactStoreConfig(path=MODAL_URI, **config_kwargs)
+
+
+@pytest.mark.parametrize(
+    "config_kwargs",
+    [
+        {"token_id": "  ", "token_secret": "as-test"},
+        {"token_id": "ak-test", "token_secret": "  "},
+        {"token_id": "  ", "token_secret": "  "},
+    ],
+)
+def test_modal_volume_config_rejects_empty_token_values(
+    config_kwargs: dict[str, str],
+) -> None:
+    """Whitespace-only Modal token values are invalid, not unset."""
+    with pytest.raises(ValidationError, match="must not be empty"):
+        ModalVolumeArtifactStoreConfig(path=MODAL_URI, **config_kwargs)
 
 
 def test_modal_volume_flavor_uses_lazy_implementation_import() -> None:
@@ -389,6 +452,60 @@ def test_modal_volume_uses_sdk_fallback_without_fast_path_marker(
     assert volume.files["/root/control-plane/existing.txt"] == b"keep"
 
 
+def test_modal_volume_sdk_fallback_sizes_files_and_directories(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Server downloads can size files and directories without a mount."""
+    artifact_store = _make_artifact_store(tmp_path)
+    volume = ModalVolumeStub(
+        files={
+            "/root/control-plane/archive.tar.gz": b"archive",
+            "/root/control-plane/nested/data.bin": b"data",
+            "/root/control-plane/nested/second.bin": b"12",
+        }
+    )
+    monkeypatch.delenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, raising=False)
+    monkeypatch.setattr(artifact_store, "_get_modal_volume", lambda: volume)
+
+    assert artifact_store.size(
+        f"{MODAL_URI}/control-plane/archive.tar.gz"
+    ) == len(b"archive")
+    assert artifact_store.size(f"{MODAL_URI}/control-plane/nested") == len(
+        b"data12"
+    )
+    assert artifact_store.size(f"{MODAL_URI}/control-plane") == len(
+        b"archivedata12"
+    )
+
+
+def test_modal_volume_sdk_fallback_walks_directories(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Server downloads can walk directories without a mount."""
+    artifact_store = _make_artifact_store(tmp_path)
+    volume = ModalVolumeStub(
+        files={
+            "/root/control-plane/archive.tar.gz": b"archive",
+            "/root/control-plane/nested/data.bin": b"data",
+        }
+    )
+    monkeypatch.delenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, raising=False)
+    monkeypatch.setattr(artifact_store, "_get_modal_volume", lambda: volume)
+
+    walked = list(artifact_store.walk(f"{MODAL_URI}/control-plane"))
+
+    assert walked == [
+        (
+            f"{MODAL_URI}/control-plane",
+            ["nested"],
+            ["archive.tar.gz"],
+        ),
+        (f"{MODAL_URI}/control-plane/nested", [], ["data.bin"]),
+    ]
+
+
 def test_modal_volume_loads_artifact_visualization_via_sdk_fallback(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -463,6 +580,81 @@ def test_modal_volume_fetches_artifact_logs_via_sdk_fallback(
     ]
 
 
+def test_modal_volume_sdk_lookup_uses_artifact_store_credentials(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Configured artifact-store credentials create an explicit Modal client."""
+    import modal
+
+    class ClientStub:
+        def __init__(self) -> None:
+            self.closed = False
+
+        def is_closed(self) -> bool:
+            return self.closed
+
+        def close(self) -> None:
+            self.closed = True
+
+    artifact_store = _make_artifact_store(
+        tmp_path,
+        token_id=" ak-test ",
+        token_secret=" as-test ",
+        modal_environment="artifact-env",
+    )
+    volume = object()
+    client = ClientStub()
+    client_calls: list[tuple[str, str]] = []
+    volume_calls: list[dict[str, object]] = []
+
+    def from_credentials(token_id: str, token_secret: str) -> ClientStub:
+        client_calls.append((token_id, token_secret))
+        return client
+
+    def from_name(
+        name: str,
+        *,
+        environment_name: str | None,
+        create_if_missing: bool,
+        client: ClientStub,
+    ) -> object:
+        volume_calls.append(
+            {
+                "name": name,
+                "environment_name": environment_name,
+                "create_if_missing": create_if_missing,
+                "client": client,
+            }
+        )
+        return volume
+
+    monkeypatch.delenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, raising=False)
+    monkeypatch.delenv(ENV_ZENML_MODAL_VOLUME_ENVIRONMENT_NAME, raising=False)
+    monkeypatch.setenv("MODAL_ENVIRONMENT", " ambient-env ")
+    monkeypatch.setattr(
+        modal.Client,
+        "from_credentials",
+        staticmethod(from_credentials),
+    )
+    monkeypatch.setattr(modal.Volume, "from_name", from_name)
+
+    assert artifact_store._get_modal_volume() is volume
+    assert artifact_store._get_modal_volume() is volume
+    assert client_calls == [("ak-test", "as-test")]
+    assert volume_calls == [
+        {
+            "name": "test-volume",
+            "environment_name": "artifact-env",
+            "create_if_missing": False,
+            "client": client,
+        }
+    ]
+
+    artifact_store.cleanup()
+    assert client.closed
+
+
 def test_modal_volume_sdk_lookup_prefers_sandbox_environment_and_caches(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -470,17 +662,31 @@ def test_modal_volume_sdk_lookup_prefers_sandbox_environment_and_caches(
     """SDK fallback reuses the sandbox Volume environment marker."""
     import modal
 
-    artifact_store = _make_artifact_store(tmp_path)
+    artifact_store = _make_artifact_store(
+        tmp_path,
+        modal_environment="artifact-env",
+    )
     volume = object()
     calls: list[dict[str, object]] = []
 
-    def from_name(name: str, **kwargs: object) -> object:
-        calls.append({"name": name, **kwargs})
+    def from_name(
+        name: str,
+        *,
+        environment_name: str | None,
+        create_if_missing: bool,
+    ) -> object:
+        calls.append(
+            {
+                "name": name,
+                "environment_name": environment_name,
+                "create_if_missing": create_if_missing,
+            }
+        )
         return volume
 
     monkeypatch.delenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, raising=False)
-    monkeypatch.setenv("MODAL_ENVIRONMENT", "ambient-env")
-    monkeypatch.setenv("ZENML_MODAL_VOLUME_ENVIRONMENT_NAME", "sandbox-env")
+    monkeypatch.setenv("MODAL_ENVIRONMENT", " ambient-env ")
+    monkeypatch.setenv(ENV_ZENML_MODAL_VOLUME_ENVIRONMENT_NAME, "sandbox-env")
     monkeypatch.setattr(modal.Volume, "from_name", from_name)
 
     assert artifact_store._get_modal_volume() is volume
@@ -493,22 +699,88 @@ def test_modal_volume_sdk_lookup_prefers_sandbox_environment_and_caches(
         }
     ]
 
-    fallback_artifact_store = _make_artifact_store(tmp_path)
-    fallback_volume = object()
-    monkeypatch.delenv("ZENML_MODAL_VOLUME_ENVIRONMENT_NAME", raising=False)
+    config_artifact_store = _make_artifact_store(
+        tmp_path,
+        modal_environment="artifact-env",
+    )
+    config_volume = object()
+    monkeypatch.delenv(ENV_ZENML_MODAL_VOLUME_ENVIRONMENT_NAME, raising=False)
 
-    def fallback_from_name(name: str, **kwargs: object) -> object:
-        calls.append({"name": name, **kwargs})
-        return fallback_volume
+    def config_from_name(
+        name: str,
+        *,
+        environment_name: str | None,
+        create_if_missing: bool,
+    ) -> object:
+        calls.append(
+            {
+                "name": name,
+                "environment_name": environment_name,
+                "create_if_missing": create_if_missing,
+            }
+        )
+        return config_volume
 
-    monkeypatch.setattr(modal.Volume, "from_name", fallback_from_name)
+    monkeypatch.setattr(modal.Volume, "from_name", config_from_name)
 
-    assert fallback_artifact_store._get_modal_volume() is fallback_volume
+    assert config_artifact_store._get_modal_volume() is config_volume
+    assert calls[-1] == {
+        "name": "test-volume",
+        "environment_name": "artifact-env",
+        "create_if_missing": False,
+    }
+
+    ambient_artifact_store = _make_artifact_store(tmp_path)
+    ambient_volume = object()
+
+    def ambient_from_name(
+        name: str,
+        *,
+        environment_name: str | None,
+        create_if_missing: bool,
+    ) -> object:
+        calls.append(
+            {
+                "name": name,
+                "environment_name": environment_name,
+                "create_if_missing": create_if_missing,
+            }
+        )
+        return ambient_volume
+
+    monkeypatch.setattr(modal.Volume, "from_name", ambient_from_name)
+
+    assert ambient_artifact_store._get_modal_volume() is ambient_volume
     assert calls[-1] == {
         "name": "test-volume",
         "environment_name": "ambient-env",
         "create_if_missing": False,
     }
+
+
+def test_modal_volume_preserves_credential_errors_from_volume_lookup(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Credential validation failures are not hidden as Volume lookup errors."""
+    import modal
+
+    class FailingClientFactory:
+        def get_client(self) -> object:
+            raise StackComponentInterfaceError("bad Modal credentials")
+
+    def from_name(*args: object, **kwargs: object) -> object:
+        raise AssertionError("Volume lookup should not run")
+
+    artifact_store = _make_artifact_store(tmp_path)
+    monkeypatch.delenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, raising=False)
+    object.__setattr__(
+        artifact_store, "_modal_client_factory", FailingClientFactory()
+    )
+    monkeypatch.setattr(modal.Volume, "from_name", from_name)
+
+    with pytest.raises(StackComponentInterfaceError, match="bad Modal credentials"):
+        artifact_store._get_modal_volume()
 
 
 def test_modal_volume_cleans_temp_file_when_sdk_read_fails(

@@ -15,7 +15,7 @@
 
 import posixpath
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, ClassVar, Set, Type
+from typing import TYPE_CHECKING, ClassVar, Optional, Set, Type
 from urllib.parse import unquote, urlparse
 
 from pydantic import Field, field_validator, model_validator
@@ -25,6 +25,7 @@ from zenml.artifact_stores import (
     BaseArtifactStoreFlavor,
 )
 from zenml.integrations.modal import MODAL_VOLUME_ARTIFACT_STORE_FLAVOR
+from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.modal.artifact_stores import (
@@ -130,6 +131,21 @@ class ModalVolumeArtifactStoreConfig(BaseArtifactStoreConfig):
         description="Whether Modal runtime wiring may create the Volume if it "
         "does not already exist.",
     )
+    token_id: Optional[str] = SecretField(
+        default=None,
+        description="Modal API token ID for SDK fallback access. Must be configured together with token_secret. "
+        "When unset, ZenML lets the Modal SDK use ambient credentials from the process environment or ~/.modal.toml.",
+    )
+    token_secret: Optional[str] = SecretField(
+        default=None,
+        description="Modal API token secret for SDK fallback access. Must be configured together with token_id. "
+        "When unset, ZenML lets the Modal SDK use ambient credentials from the process environment or ~/.modal.toml.",
+    )
+    modal_environment: Optional[str] = Field(
+        default=None,
+        description="Modal environment name used by SDK fallback access outside mounted Modal runtimes. "
+        "If not specified, ZenML uses Modal's default environment or the ambient MODAL_ENVIRONMENT value.",
+    )
 
     @model_validator(mode="after")
     def _validate_modal_volume_config(
@@ -144,6 +160,17 @@ class ModalVolumeArtifactStoreConfig(BaseArtifactStoreConfig):
             ValueError: If the URI or mount path is invalid.
         """
         parse_modal_volume_uri(self.path)
+
+        token_id = self.token_id.strip() if self.token_id else None
+        token_secret = self.token_secret.strip() if self.token_secret else None
+        if self.token_id is not None and not token_id:
+            raise ValueError("Modal token_id must not be empty.")
+        if self.token_secret is not None and not token_secret:
+            raise ValueError("Modal token_secret must not be empty.")
+        if bool(token_id) != bool(token_secret):
+            raise ValueError(
+                "Modal token_id and token_secret must be configured together."
+            )
 
         return self
 
