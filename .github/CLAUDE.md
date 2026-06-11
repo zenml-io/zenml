@@ -8,7 +8,7 @@ This document provides guidance for AI assistants working with ZenML's GitHub Ac
 
 | Category | Workflows | Purpose |
 |----------|-----------|---------|
-| **CI/Testing** | ci-fast.yml, ci-slow.yml, unit-test.yml, integration-test-*.yml, base-package-functionality.yml | Primary PR testing and reusable test jobs |
+| **CI/Testing** | ci-fast.yml, ci-medium.yml, ci-slow-develop.yml, slow-ci-on-pr.yml, unit-test.yml, integration-test-*.yml, base-package-functionality.yml | Primary PR, merge-queue, develop qualification, and reusable test jobs |
 | **Linting/Quality** | linting.yml, spellcheck.yml, zizmor.yml, check-links.yml, check-markdown-links.yml, gitbook-redirect-check.yml, validate-changelog.yml | Code quality, docs links, changelog, and workflow security checks |
 | **Release/Nightly** | release.yml, release_prepare.yml, release_finalize.yml, publish_*.yml, nightly_build.yml | PyPI, Docker, Helm, stack template, and nightly publishing |
 | **Security** | codeql.yml, trivy-*.yml, zizmor.yml | Static analysis and vulnerability/supply-chain scanning |
@@ -17,41 +17,52 @@ This document provides guidance for AI assistants working with ZenML's GitHub Ac
 
 ### Entry Points vs Reusable Workflows
 
-**Entry points** (triggered externally): ci-fast.yml, ci-slow.yml, release.yml, nightly_build.yml, check-links.yml, check-markdown-links.yml, gitbook-redirect-check.yml, validate-changelog.yml, zizmor.yml
+**Entry points** (triggered externally): ci-fast.yml, ci-medium.yml, ci-slow-develop.yml, slow-ci-on-pr.yml, release.yml, nightly_build.yml, check-links.yml, check-markdown-links.yml, gitbook-redirect-check.yml, validate-changelog.yml, zizmor.yml
 
 **Reusable workflows** (called via `workflow_call`): unit-test.yml, linting.yml, integration-test-*.yml, base-package-functionality.yml, publish_*.yml
 
+Some entrypoint/orchestration workflows are also callable. For example, `ci-slow-develop.yml` exposes `workflow_call` so `slow-ci-on-pr.yml` can reuse the develop qualification matrix.
+
 All reusable workflows use `secrets: inherit` for centralized secret management.
 
-## Two-Tier CI Architecture
+## CI Architecture
 
 ### ci-fast.yml (Every PR)
 
-Runs automatically on all PRs and pushes to main:
-- Spellcheck
-- SQLite migration testing
-- Linting (ubuntu, Python 3.11) — includes Ruff, pydoclint, yamlfix, zizmor, and mypy
-- Unit tests (ubuntu, Python 3.11)
-- Integration tests (2 environments, 6 shards each)
+Runs automatically on all PRs, merge queue entries, and pushes to develop:
+- SQLite migration testing (random, sqlite only)
+- Static checks (ubuntu, Python 3.13) — spellcheck, Ruff, and pydoclint
+- Unit tests (ubuntu, Python 3.13) via `unit-test.yml`
+- Default integration tests (ubuntu, Python 3.13) via `integration-test-fast.yml`
 - API docs buildability test
-- Template example updates (PRs only, same-repo only)
+- Template example updates (same-repo, non-draft PRs only)
 
-### ci-slow.yml (Full Matrix, Requires Label)
+### ci-medium.yml (Merge Queue)
 
-Gated by `run-slow-ci` label (checked dynamically):
+Runs merge-queue validation beyond fast PR checks:
+- Random database migration coverage (MySQL, MariaDB, SQLite) with random seed per run
+- Python 3.13 linting (via `linting.yml`) and unit tests (via `unit-test.yml`)
+- Docker-orchestrator MySQL integration tests (via `integration-test-fast.yml`)
+- Base package functionality tests (via `base-package-functionality.yml`)
+
+### ci-slow-develop.yml and slow-ci-on-pr.yml (Develop Qualification)
+
+`ci-slow-develop.yml` runs scheduled/manual develop qualification and can be called by other workflows. `slow-ci-on-pr.yml` triggers that same slow matrix for a PR when maintainers add the `run-slow-ci` label.
+
+The slow matrix includes:
 - Multi-OS: Ubuntu, Windows, macOS
-- Multi-Python: 3.10, 3.11, 3.12, 3.13, 3.14
+- Python 3.10, 3.11, 3.12, and 3.13 coverage where supported by the lane
 - Full database migration tests (MySQL, MariaDB, SQLite)
 - VSCode tutorial pipeline tests
 - Base package functionality tests
 
-**Label mechanism**: Maintainers add `run-slow-ci` label and rerun workflow to trigger full CI without code changes.
+`slow-ci-on-pr.yml` is advisory for labeled PRs and must not publish develop-red incidents; only scheduled/manual develop qualification should do that.
 
 ## Release Process
 
 Triggered by tag push. Sequence:
 
-1. Unit tests (ubuntu, Python 3.11)
+1. Unit tests (ubuntu, Python 3.13)
 2. Database migration tests (MySQL, SQLite, MariaDB) - parallel
 3. Publish to PyPI (trusted publishing with OIDC)
 4. Wait 4 minutes (PyPI CDN propagation)
@@ -135,24 +146,20 @@ env:
 
 ### Concurrency
 
-All CI workflows use:
+Most CI workflows use:
 ```yaml
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 ```
 
-This cancels previous runs when new commits are pushed to the same branch.
+This cancels previous runs when new commits are pushed to the same branch. Qualification workflows can intentionally differ; for example, `ci-slow-develop.yml` keeps in-progress develop qualification runs instead of canceling them.
 
 ### Path Filtering
 
-ci-fast and ci-slow ignore:
-- `docs/**` - Documentation changes
-- `*.md` - Markdown files
-- `.claude/**` - Claude configuration
-- `.github/workflows/claude.yml` - Claude workflow
+Path filtering is workflow-specific. Do not assume required aggregate workflows can skip docs-only changes; required rollup jobs may still need to report a status even when expensive test jobs are skipped. Check each workflow's `paths`, `paths-ignore`, and job-level conditions before changing branch protection behavior.
 
-But explicitly include `pyproject.toml` changes.
+`ci-fast.yml` does not use `paths-ignore` — docs-only PRs run the full ci-fast suite. This is intentional: the ci-fast rollup is a required check on PRs and merge-queue entries, so it must always report a status regardless of changed files. The extra runner minutes for docs-only PRs are the price of reliable required-status reporting.
 
 ### Caching
 
@@ -162,6 +169,8 @@ key: uv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('src/zenml/i
 ```
 
 Cache invalidates when integrations change.
+
+`generate-test-duration.yml` refreshes `.test_durations` on a weekly schedule. This file feeds `pytest-split` sharding in the runner-based integration lanes (ci-fast and ci-slow-develop). Do not delete or rekey `.test_durations` without also updating the workflows that consume it; stale shard data degrades test parallelism but does not break correctness.
 
 ## Key Supporting Files
 
@@ -228,7 +237,7 @@ Regression tests for example/tutorial/agent pipelines. If a code change affects 
 
 5. **Run format.sh before commits**: YAML files must pass yamlfix (`bash scripts/format.sh .github/`)
 
-6. **Two-tier CI requires label**: Full CI only runs with `run-slow-ci` label - maintainers add this for thorough testing
+6. **Slow CI entry points differ**: Advisory PR slow CI runs when maintainers add the `run-slow-ci` label; develop qualification runs through `ci-slow-develop.yml` on its own scheduled/manual/callable paths
 
 7. **Release waits are intentional**: The 4-minute sleeps in release.yml allow PyPI CDN propagation
 

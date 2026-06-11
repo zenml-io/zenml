@@ -3,12 +3,14 @@ name: Release Package & Docker Image
 on:
   push:
     tags: ['*']
+permissions:
+  contents: read
 jobs:
   setup-and-test:
     uses: ./.github/workflows/unit-test.yml
     with:
       os: ubuntu-latest
-      python-version: '3.11'
+      python-version: '3.13'
     secrets: inherit
   # We only run the `latest` DB migration test here, as the other previous steps in the release flow already
   # test full migrations.
@@ -25,7 +27,7 @@ jobs:
       - name: Set up Python 3.10
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
-          python-version: '3.10'
+          python-version: '3.13'
       - name: Login to Docker Hub
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee  # v4.2.0
         with:
@@ -46,7 +48,7 @@ jobs:
       - name: Set up Python 3.10
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
-          python-version: '3.10'
+          python-version: '3.13'
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh sqlite latest
   mariadb-db-migration-testing:
@@ -62,7 +64,7 @@ jobs:
       - name: Set up Python 3.10
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
-          python-version: '3.10'
+          python-version: '3.13'
       - name: Login to Docker Hub
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee  # v4.2.0
         with:
@@ -96,10 +98,10 @@ jobs:
       - name: Get the version from the github tag ref
         id: get_version
         run: echo "VERSION=${GITHUB_REF/refs\/tags\//}" >> "$GITHUB_OUTPUT"
-      - name: Set up Python 3.11
+      - name: Set up Python 3.13
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
-          python-version: '3.11'
+          python-version: '3.13'
       - name: Install uv
         uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b  # v8.1.0
         with:
@@ -159,6 +161,9 @@ jobs:
         id: get_version
         run: echo "VERSION=${GITHUB_REF/refs\/tags\//}" >> "$GITHUB_OUTPUT"
       - name: Create a tag on ZenML Cloud plugins repo
+        env:
+          RELEASE_VERSION: ${{ steps.get_version.outputs.VERSION }}
+          CLOUD_PLUGINS_SHA: ${{ steps.get_sha.outputs.sha }}
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           github-token: ${{ secrets.CLOUD_PLUGINS_REPO_PAT }}
@@ -166,6 +171,6 @@ jobs:
             await github.rest.git.createRef({
               owner: 'zenml-io',
               repo: 'zenml-cloud-plugins',
-              ref: 'refs/tags/${{ steps.get_version.outputs.VERSION }}',
-              sha: '${{ steps.get_sha.outputs.sha }}'
+              ref: `refs/tags/${process.env.RELEASE_VERSION}`,
+              sha: process.env.CLOUD_PLUGINS_SHA
             })

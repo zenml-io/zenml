@@ -1,127 +1,210 @@
 ---
+# PR tier: runs on every non-draft pull request, merge_group entry, and push
+# to develop.
+#
+# Policy decisions recorded here (see CI-REWORK-PLAN.md §2.0 and §4.1):
+#
+# (1) Linting leaves the PR tier — py3.13 full lint runs in ci-medium; ci-fast
+#     gets the cheap consolidated static-checks job (spellcheck + ruff +
+#     pydoclint) that completes in under two minutes.
+#
+# (2) docker-server-docker-orchestrator-mysql integration moved to ci-medium
+#     (merge-queue tier) — too slow for every PR.
+#
+# (3) mysql/mariadb random migration testing moved to ci-medium; PRs keep
+#     sqlite-random only.
+#
+# (4) update-templates-to-examples is KEPT in ci-fast (not retired).
+#     Its jobs are internally guarded `if: github.event_name == 'pull_request'`
+#     and push sync commits onto the PR head branch, so a push-to-develop
+#     re-home would silently no-op and pushing sync commits straight to develop
+#     would bypass review.  Kept out of the required rollup (legitimately skips
+#     on fork PRs and drafts).
+#
+# (5) ci-fast triggers on merge_group AND pull_request so the ci-fast-required
+#     rollup can report status on merge_group commits (required checks must
+#     report on every context they guard).  The resulting duplicate execution
+#     of the test lanes (PR + queue) is a known, accepted cost.
+#
+# (6) paths-ignore removed.  Required rollup jobs must always report a status,
+#     even for docs-only PRs.  The wall-clock cost is acceptable given that
+#     lint and docker-orchestrator integration have left the PR tier.
+#
+# (7) push trigger now targets `develop` (not `main`).
+#
+# (8) Ops change set: enable the merge queue in repo settings; required checks
+#     = ci-fast-required on PRs + ci-medium-required in the merge queue.
+#
+# (9) generate-test-duration.yml / .test_durations keep feeding pytest-split
+#     sharding for the runner lanes in this tier; this timing data must not be
+#     silently removed.
+#
+# (10) No coverage upload to codecov in this tier.  Runner lanes run plain
+#      pytest without `coverage run`; documenting here so it is not silently
+#      lost.
 name: ci-fast
 on:
   workflow_dispatch:
   workflow_call:
+  merge_group:
   push:
-    branches: [main]
-    paths-ignore:
-      - docs/**
-      - '*'
-      - '!pyproject.toml'
-      - '**.md'
-      - .github/workflows/claude.yml
-      - .claude/**
+    branches: [develop]
   pull_request:
     types: [opened, synchronize, ready_for_review]
-    paths-ignore:
-      - docs/**
-      - '*'
-      - '!pyproject.toml'
-      - '**.md'
-      - .github/workflows/claude.yml
-      - .claude/**
 concurrency:
-  # New commit on branch cancels running workflows of the same branch
+  # New commit on branch cancels running workflows of the same branch.
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+permissions:
+  contents: read
 jobs:
   sqlite-db-migration-testing-random:
     runs-on: ubuntu-latest
     env:
       ZENML_ANALYTICS_OPT_IN: false
       ZENML_DEBUG: true
-    # if team member commented, not a draft, on a PR, using /fulltest
-    if: github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch'
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
+      false
     steps:
       - name: Checkout code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
         with:
           fetch-depth: 0
-      - name: Set up Python 3.10
+          persist-credentials: false
+      - name: Set up Python 3.13
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
-          python-version: '3.10'
+          python-version: '3.13'
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh sqlite random
-  spellcheck:
-    if: github.event.pull_request.draft == false
+  api-docs-test:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
+      false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
-      - name: Spelling checker
-        uses: crate-ci/typos@44e2070e6017f834bf069503acb35ca0ca0b75f2  # v1.47.1
+        with:
+          persist-credentials: false
+      - name: Set up Python 3.13
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        with:
+          python-version: '3.13'
+      - name: Test API docs buildable
+        run: bash scripts/generate-docs.sh -v DUMMY -c
+  static-checks:
+    # Consolidated: spellcheck + ruff + pydoclint in one job.
+    # Full py3.13 lint (linting.yml) runs in ci-medium, not here.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
+      false
+    runs-on: ubuntu-latest
+    env:
+      ZENML_ANALYTICS_OPT_IN: false
+      ZENML_DEBUG: 1
+      PYTHONIOENCODING: utf-8
+      UV_HTTP_TIMEOUT: 600
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set uv cache + temp dirs (/opt)
+        run: |
+          sudo mkdir -p /opt/uv-cache /opt/tmp
+          sudo chown -R "$(id -u)":"$(id -g)" /opt/uv-cache /opt/tmp
+          echo "UV_CACHE_DIR=/opt/uv-cache" >> "$GITHUB_ENV"
+          echo "TMPDIR=/opt/tmp" >> "$GITHUB_ENV"
+          echo "TMP=/opt/tmp" >> "$GITHUB_ENV"
+          echo "TEMP=/opt/tmp" >> "$GITHUB_ENV"
+      - name: Restore uv cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
+        with:
+          path: /opt/uv-cache
+          key: uv-${{ runner.os }}-3.13-${{ hashFiles('src/zenml/integrations/*/__init__.py')
+            }}
+          restore-keys: |
+            uv-${{ runner.os }}-3.13-
+      - name: Setup environment
+        uses: ./.github/actions/setup_environment
+        with:
+          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
+          python-version: '3.13'
+          os: ubuntu-latest
+          install_integrations: 'no'
+      - name: Spellcheck
+        uses: crate-ci/typos@7c572958218557a3272c2d6719629443b5cc26fd  # v1.45.2
         with:
           files: .
           config: ./.typos.toml
-  api-docs-test:
-    if: github.event.pull_request.draft == false
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
-      - name: Set up Python 3.11
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
-        with:
-          python-version: '3.11'
-      - name: Test API docs buildable
-        run: bash scripts/generate-docs.sh -v DUMMY -c
-  update-templates-to-examples:
-    # this doesn't work on forked repositories (i.e. outside contributors)
-    # so we disable template updates for those PRs / branches
-    if: github.event.pull_request.head.repo.full_name == 'zenml-io/zenml' && github.event.pull_request.draft
-      == false
-    uses: ./.github/workflows/update-templates-to-examples.yml
-    with:
-      python-version: '3.11'
-      os: ubuntu-latest
-    secrets: inherit
-  linting:
-    if: github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ['3.11']
-      fail-fast: false
-    uses: ./.github/workflows/linting.yml
-    with:
-      python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
-    secrets: inherit
-  ubuntu-setup-and-unit-test:
-    needs: linting
-    if: github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        # IMPORTANT: Since we are using the combination of `arc-runner-set`
-        # and `3.10` in our `ci-fast` workflow, this combination has been
-        # excluded from the `ci-slow` workflow. If you change the configuration
-        # here, please adjust the configuration of `ci-slow` accordingly.
-        os: [ubuntu-latest]
-        python-version: ['3.11']
-      fail-fast: false
+      - name: Lint
+        run: |
+          ruff check src/zenml tests/harness
+          ruff check tests examples --extend-ignore D --extend-exclude "*.ipynb"
+      - name: Docstring
+        run: |
+          uv pip install --system --force-reinstall --no-deps "docstring_parser_fork"
+          pydoclint src/zenml tests/harness
+  unit-test:
+    # Plain runner lane — PR 2 will add the fork/kill-switch conditions that
+    # gate this job to fork PRs and the kill-switch path (§2.3).
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
+      false
     uses: ./.github/workflows/unit-test.yml
     with:
-      python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
+      python-version: '3.13'
+      os: ubuntu-latest
+      install_integrations: 'yes'
     secrets: inherit
-  ubuntu-latest-integration-test:
-    needs: [linting]
-    if: github.event.pull_request.draft == false
-    strategy:
-      matrix:
-        # IMPORTANT: Since we are using the combination of `arc-runner-set`
-        # and `3.10` in our `ci-fast` workflow, this combination has been
-        # excluded from the `ci-slow` workflow. If you change the configuration
-        # here, please adjust the configuration of `ci-slow` accordingly.
-        os: [ubuntu-latest]
-        python-version: ['3.11']
-        test_environment: [default, docker-server-docker-orchestrator-mysql]
-      fail-fast: false
+  default-integration-test:
+    # Plain runner lane for the default environment (no docker server).
+    # PR 2 will add the fork/kill-switch conditions (§2.3).
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
+      false
     uses: ./.github/workflows/integration-test-fast.yml
     with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
-      test_environment: ${{ matrix.test_environment }}
+      python-version: '3.13'
+      os: ubuntu-latest
+      test_environment: default
+      ci_tier: fast
     secrets: inherit
+  update-templates-to-examples:
+    # Kept in ci-fast rather than re-homed to push-to-develop or retired.
+    # All jobs in the called workflow are internally guarded
+    # `if: github.event_name == 'pull_request'`, so this caller job
+    # naturally no-ops on push/merge_group events.
+    # Excluded from the required rollup because fork PRs and drafts
+    # legitimately skip it.
+    # Needs job-level contents:write/pull-requests:write because its jobs push
+    # sync commits back to the PR head branch; top-level permissions are read.
+    if: github.event.pull_request.head.repo.full_name == 'zenml-io/zenml' && github.event.pull_request.draft
+      == false
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: ./.github/workflows/update-templates-to-examples.yml
+    with:
+      python-version: '3.13'
+      os: ubuntu-latest
+    secrets: inherit
+  ci-fast-required:
+    # alls-green rolls up all required jobs into one status the branch
+    # protection rule checks.  update-templates-to-examples is listed as
+    # allowed-skips because it legitimately skips on fork PRs, drafts, and
+    # non-pull_request events.
+    runs-on: ubuntu-latest
+    needs:
+      - sqlite-db-migration-testing-random
+      - api-docs-test
+      - static-checks
+      - unit-test
+      - default-integration-test
+      - update-templates-to-examples
+    if: always() && (github.event_name != 'pull_request' || github.event.pull_request.draft
+      == false)
+    steps:
+      - name: Check all required fast-CI jobs passed
+        uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe  # v1.2.2
+        with:
+          allowed-skips: update-templates-to-examples
+          jobs: ${{ toJSON(needs) }}

@@ -120,7 +120,12 @@ install_integrations() {
     if [ "$os_name" = "Windows" ]; then
         ignore_integrations="$ignore_integrations pytorch neural_prophet pytorch_lightning"
     fi
-    
+    # Some integration SDKs still require NumPy 1.x. Keep Windows on Python
+    # 3.13 by skipping only these integration-specific exported requirements.
+    if [ "$os_name" = "Windows" ] && [ "$python_version" = "3.13" ]; then
+        ignore_integrations="$ignore_integrations azure langchain"
+    fi
+
     # turn the ignore integrations into a list of --ignore-integration args
     ignore_integrations_args=""
     for integration in $ignore_integrations; do
@@ -149,7 +154,13 @@ install_integrations() {
         echo "typing-extensions" >> integration-requirements.txt
         echo "maison<2" >> integration-requirements.txt
     fi
-    
+
+    # NumPy 2.4.x Windows wheels for CPython 3.13 currently emit runtime
+    # warnings and can segfault before pytest collection starts.
+    if [ "$os_name" = "Windows" ] && [ "$python_version" = "3.13" ]; then
+        echo "numpy==2.2.6" >> integration-requirements.txt
+    fi
+
     echo "-e .[server,templates,terraform,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,dev,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]" >> integration-requirements.txt
 
     # Build upgrade arguments based on UPGRADE_ALL flag

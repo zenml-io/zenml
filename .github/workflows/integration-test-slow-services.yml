@@ -144,13 +144,9 @@ jobs:
         with:
           python-version: ${{ inputs.python-version }}
           os: ${{ inputs.os }}
-      - name: Install docker-compose for non-default environments
+      - name: Verify Docker Compose for non-default environments
         if: inputs.test_environment != 'default'
-        run: |
-          pip install uv
-          # see https://github.com/docker/docker-py/issues/3256 for why we need to pin requests
-          # docker-compose is deprecated and doesn't work with newer versions of docker
-          uv pip install --system "pyyaml==5.3.1" "requests<2.32.0" "docker==6.1.3" docker-compose
+        run: docker compose version
       - name: Install MacOS System Dependencies
         if: runner.os=='macOS'
         run: brew install libomp
