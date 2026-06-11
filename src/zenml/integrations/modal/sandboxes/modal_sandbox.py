@@ -101,24 +101,28 @@ class ModalSandboxProcess(SandboxProcess):
         """Blocks until the command exits.
 
         Args:
-            timeout: Not supported by Modal's ``ContainerProcess.wait()``.
-                Use the Session-level ``timeout`` setting to bound total
-                Session lifetime.
+            timeout: Maximum seconds to wait. Modal's own ``wait()`` has
+                no timeout parameter, so a bounded wait polls instead.
 
         Returns:
             The exit code.
 
         Raises:
-            NotImplementedError: If ``timeout`` is not ``None``.
+            TimeoutError: If the command is still running after ``timeout``
+                seconds.
         """
-        if timeout is not None:
-            raise NotImplementedError(
-                "Modal does not support per-exec timeouts. Use "
-                "ModalSandboxSettings.timeout for Session-level TTL, or "
-                "wrap the wait call in your own watchdog."
-            )
-        self._process.wait()
-        return int(self._process.returncode or 0)
+        if timeout is None:
+            self._process.wait()
+            return int(self._process.returncode or 0)
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            code = self._process.poll()
+            if code is not None:
+                return int(code)
+            time.sleep(0.2)
+        raise TimeoutError(
+            f"Modal command did not exit within {timeout} seconds."
+        )
 
     def kill(self) -> None:
         """Terminate the owning Modal Sandbox.
