@@ -47,8 +47,7 @@ def generate_artifact_uri(
     Returns:
         The URI of the output artifact.
     """
-    for banned_character in ["<", ">", ":", '"', "/", "\\", "|", "?", "*"]:
-        output_name = output_name.replace(banned_character, "_")
+    output_name = string_utils.sanitize_uri_path_component(output_name)
     return os.path.join(
         artifact_store_path,
         step_run.name,

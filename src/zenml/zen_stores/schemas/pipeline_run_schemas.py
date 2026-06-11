@@ -547,6 +547,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     self.snapshot.get_step_configuration(step_name).config
                 ),
                 pipeline_configuration=pipeline_configuration,
+                exclude_hook_sources=self.snapshot.is_dynamic,
             )
         else:
             raise RuntimeError("Pipeline run has no snapshot.")
