@@ -128,7 +128,10 @@ class ModalSandboxProcess(SandboxProcess):
         command must actually stop) is to terminate the whole Sandbox.
         The session handle is closed afterwards — the sandbox is gone,
         so further use would only fail later with a confusing Modal
-        error instead of ``SandboxSessionClosedError``.
+        error instead of ``SandboxSessionClosedError``. Delegates to
+        ``session.destroy()`` so termination failures surface as the
+        documented retryable ``RuntimeError`` (with the billing warning)
+        and leave the handle open for retry.
         """
         session = cast("ModalSandboxSession", self._session)
         logger.warning(
@@ -136,17 +139,20 @@ class ModalSandboxProcess(SandboxProcess):
             "sandbox '%s' to stop the command.",
             session.id,
         )
-        session._sandbox.terminate()
-        session.close()
+        session.destroy()
 
     @property
     def exit_code(self) -> Optional[int]:
         """Exit code, or ``None`` if the command is still running.
 
+        Uses ``poll()`` instead of ``returncode``: Modal's
+        ``ContainerProcess.returncode`` raises ``InvalidError`` while the
+        command is still running, whereas this property promises ``None``.
+
         Returns:
             The exit code or ``None``.
         """
-        code = self._process.returncode
+        code = self._process.poll()
         return int(code) if code is not None else None
 
 
@@ -259,11 +265,12 @@ class ModalSandboxSession(SandboxSession):
     def _close(self) -> None:
         """No-op: the Modal Sandbox stays alive until destroy() or TTL."""
 
-    def destroy(self) -> None:
+    def _destroy(self) -> None:
         """Terminate the Sandbox on Modal.
 
-        The handle is only closed after successful termination — on
-        failure it stays open so destroy() can be retried.
+        Raised failures propagate before the base `destroy()` template
+        closes the handle, so on failure the handle stays open and
+        destroy() can be retried.
 
         Raises:
             RuntimeError: If Modal fails to terminate the sandbox.
@@ -276,7 +283,6 @@ class ModalSandboxSession(SandboxSession):
                 "It may keep running (and billing) until its TTL; retry "
                 "destroy() or stop it from the Modal dashboard."
             ) from e
-        self.close()
 
 
 class ModalSandbox(BaseSandbox):
@@ -424,7 +430,8 @@ class ModalSandbox(BaseSandbox):
             A ``ModalSandboxSession`` wrapping the existing live sandbox.
 
         Raises:
-            RuntimeError: If Modal can't find a sandbox with the given id.
+            RuntimeError: If Modal can't find a sandbox with the given id,
+                or the sandbox has already terminated.
         """
         modal_client = self._modal_client_factory.get_client()
         try:
@@ -436,6 +443,13 @@ class ModalSandbox(BaseSandbox):
                 f"Failed to attach to Modal sandbox '{session_id}' "
                 f"({type(e).__name__}): {e}"
             ) from e
+        # Modal happily returns a handle for a dead sandbox; without this
+        # check the first exec fails with a confusing Modal error.
+        if sandbox.poll() is not None:
+            raise RuntimeError(
+                f"Modal sandbox '{session_id}' has already terminated "
+                "(destroyed or TTL expired); create a new session instead."
+            )
         return ModalSandboxSession(sandbox, parent=self)
 
     def restore(self, snapshot: SandboxSnapshot) -> SandboxSession:
