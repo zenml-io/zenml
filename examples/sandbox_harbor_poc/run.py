@@ -30,10 +30,15 @@ from pipelines.harbor_eval_campaign import harbor_eval_campaign
 
 
 def _collect_runtime_env_vars() -> Dict[str, str]:
-    """Collect API keys from the local environment to forward to remote pods.
+    """Collect LLM API keys from the local environment to forward to remote pods.
 
     Forwarding OPENAI/ANTHROPIC keys lets non-oracle agents reach their LLM
     providers from inside the Sandbox. The oracle agent needs none.
+
+    NOTE: do NOT forward provider *credentials* (e.g. Modal tokens) here —
+    ``--forward-env`` writes these into the image as ENV layers. Sandbox
+    provider creds are injected at runtime from a ZenML secret instead (see
+    ``_ensure_modal_credentials`` in steps/run_harbor_job.py).
 
     Returns:
         Dict of env var name → value for keys that are set locally.

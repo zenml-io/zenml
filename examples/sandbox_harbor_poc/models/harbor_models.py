@@ -44,14 +44,52 @@ class HarborRunSpec(BaseModel):
         description="LLM model for the agent (None for oracle which needs no model)",
     )
     task_path: str = Field(
-        description="Path to a single Harbor task directory (one containing a "
-        "task.toml), relative to the example root or absolute. Resolved per "
-        "execution environment by run_harbor_job, e.g. "
-        "'datasets/mini_harbor/add-function'"
+        default="",
+        description="Path to a Harbor task. For local datasets this is a "
+        "directory containing a task.toml, relative to the example root or "
+        "absolute (e.g. 'datasets/mini_harbor/add-function'). For registry "
+        "tasks (see task_git_url) it is the task's sub-path inside the git "
+        "repo (e.g. 'sample/chess-best-move'). Empty when a whole dataset is "
+        "handed to Harbor (shape A registry runs)",
     )
     task_name: str = Field(
         description="Task identifier used for grouping and the report matrix, "
-        "e.g. 'add-function'"
+        "e.g. 'add-function' or 'chess-best-move'"
+    )
+    task_git_url: Optional[str] = Field(
+        default=None,
+        description="Git URL of the repo holding the task, for registry/git "
+        "datasets like Terminal Bench. When set, run_harbor_job builds a "
+        "git-backed TaskConfig instead of resolving a local path. Example: "
+        "'https://github.com/laude-institute/terminal-bench-2-0-sample.git'",
+    )
+    task_git_commit_id: Optional[str] = Field(
+        default=None,
+        description="Pinned commit SHA for the git task, ensuring the exact "
+        "task version is reproducible. Paired with task_git_url",
+    )
+    task_ref: Optional[str] = Field(
+        default=None,
+        description="Optional git ref (branch/tag) for the task, used instead "
+        "of a pinned commit when task_git_commit_id is not available",
+    )
+    dataset_name: Optional[str] = Field(
+        default=None,
+        description="Harbor registry dataset name handed wholesale to a single "
+        "Harbor job (shape A only), e.g. 'terminal-bench'. Harbor expands and "
+        "schedules the tasks internally. Unused in shape B, where build_matrix "
+        "expands the dataset into one spec per task",
+    )
+    dataset_version: Optional[str] = Field(
+        default=None,
+        description="Registry dataset version paired with dataset_name, e.g. "
+        "'2.0'. Pins the dataset for reproducibility",
+    )
+    dataset_n_tasks: Optional[int] = Field(
+        default=None,
+        description="Cap on the number of tasks Harbor pulls from the dataset "
+        "(shape A), applied after any task-name filtering. Handy for demos "
+        "that want a slice of a large benchmark",
     )
     env_provider: Optional[str] = Field(
         default=None,

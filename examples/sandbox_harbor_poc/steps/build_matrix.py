@@ -13,8 +13,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Step: build the evaluation matrix from a YAML config file."""
+"""Step: build the evaluation matrix from a YAML config file.
 
+A campaign sources its tasks one of two ways:
+
+* **Local dataset** — ``dataset_path`` points at a directory of task folders
+  (each with a ``task.toml``), as in the bundled ``datasets/mini_harbor``.
+* **Registry dataset** — ``dataset_name`` (+ ``dataset_version``) names a
+  Harbor registry benchmark such as ``terminal-bench`` (89 tasks) or
+  ``swebench-verified`` (500 tasks). Harbor resolves it to git-pinned tasks,
+  which we expand into one spec per task so ZenML still fans out one Sandbox
+  per trial.
+
+Both paths produce the same ``HarborRunSpec`` list; only how a task is located
+(local path vs. git url + commit) differs downstream in ``run_harbor_job``.
+"""
+
+import asyncio
 import logging
 from pathlib import Path
 from typing import List, Optional
@@ -25,6 +40,29 @@ from models.harbor_models import HarborRunSpec
 from zenml import step
 
 logger = logging.getLogger(__name__)
+
+
+class _TaskRef:
+    """A single resolved task: its name plus where to fetch it from.
+
+    Local tasks carry only ``path``; registry tasks carry the git coordinates
+    (``git_url`` + ``git_commit_id``/``ref``) and ``path`` as the sub-path
+    inside the repo.
+    """
+
+    def __init__(
+        self,
+        name: str,
+        path: str,
+        git_url: Optional[str] = None,
+        git_commit_id: Optional[str] = None,
+        ref: Optional[str] = None,
+    ) -> None:
+        self.name = name
+        self.path = path
+        self.git_url = git_url
+        self.git_commit_id = git_commit_id
+        self.ref = ref
 
 
 def _resolve_path(path: str) -> Path:
@@ -56,14 +94,14 @@ def _resolve_path(path: str) -> Path:
     )
 
 
-def _list_task_names(dataset_path: str) -> List[str]:
-    """List task directory names under a dataset (each holds a task.toml).
+def _local_task_refs(dataset_path: str) -> List[_TaskRef]:
+    """Resolve a local dataset directory into one task ref per task folder.
 
     Args:
         dataset_path: Dataset directory from the config.
 
     Returns:
-        Sorted task directory names.
+        Sorted task refs, one per ``*/task.toml`` under the dataset.
 
     Raises:
         FileNotFoundError: If the dataset has no tasks.
@@ -74,7 +112,96 @@ def _list_task_names(dataset_path: str) -> List[str]:
         raise FileNotFoundError(
             f"No Harbor tasks (*/task.toml) found under {resolved}"
         )
-    return names
+    # Keep the path relative so run_harbor_job re-resolves it in its own
+    # execution environment.
+    return [_TaskRef(name=n, path=f"{dataset_path}/{n}") for n in names]
+
+
+def _registry_task_refs(
+    name: str,
+    version: Optional[str],
+    n_tasks: Optional[int],
+    task_names: Optional[List[str]],
+) -> List[_TaskRef]:
+    """Resolve a Harbor registry dataset into one git-pinned ref per task.
+
+    Uses Harbor's own ``DatasetConfig.get_task_configs`` so the task set,
+    versions and commit pins match exactly what ``harbor run`` would use.
+    This only reads the registry/git metadata; the task contents are fetched
+    later, per trial, inside ``run_harbor_job``.
+
+    Args:
+        name: Registry dataset name, e.g. 'terminal-bench'.
+        version: Dataset version, e.g. '2.0' (None for the registry default).
+        n_tasks: Optional cap on the number of tasks (applied after filtering).
+        task_names: Optional glob patterns selecting tasks to include.
+
+    Returns:
+        One task ref per resolved task, carrying its git coordinates.
+
+    Raises:
+        ValueError: If the dataset resolves to no tasks.
+    """
+    from harbor.models.job.config import DatasetConfig
+
+    dataset = DatasetConfig(
+        name=name,
+        version=version,
+        n_tasks=n_tasks,
+        task_names=task_names or None,
+    )
+    task_configs = asyncio.run(
+        dataset.get_task_configs(disable_verification=True)
+    )
+    if not task_configs:
+        raise ValueError(
+            f"Harbor registry dataset '{name}' (version={version}) resolved "
+            f"to no tasks (task_names={task_names}, n_tasks={n_tasks})."
+        )
+    refs: List[_TaskRef] = []
+    for tc in task_configs:
+        # Registry tasks set name=None; derive a stable name from the repo
+        # sub-path's last segment (e.g. 'sample/chess-best-move' -> 'chess...').
+        task_name = tc.name or (Path(tc.path).name if tc.path else "task")
+        refs.append(
+            _TaskRef(
+                name=task_name,
+                path=str(tc.path) if tc.path else "",
+                git_url=tc.git_url,
+                git_commit_id=tc.git_commit_id,
+                ref=tc.ref,
+            )
+        )
+    return refs
+
+
+def _resolve_task_refs(campaign: dict) -> List[_TaskRef]:
+    """Resolve the campaign's task source (local or registry) into task refs.
+
+    Args:
+        campaign: The ``campaign`` block of the YAML config.
+
+    Returns:
+        Task refs for the configured dataset.
+
+    Raises:
+        ValueError: If neither ``dataset_path`` nor ``dataset_name`` is set.
+    """
+    dataset_name = campaign.get("dataset_name")
+    dataset_path = campaign.get("dataset_path")
+    if dataset_name:
+        return _registry_task_refs(
+            name=dataset_name,
+            version=campaign.get("dataset_version"),
+            n_tasks=campaign.get("n_tasks"),
+            task_names=campaign.get("task_names"),
+        )
+    if dataset_path:
+        return _local_task_refs(dataset_path)
+    raise ValueError(
+        "Campaign config must set either 'dataset_path' (local dataset) or "
+        "'dataset_name' (Harbor registry dataset)."
+    )
 
 
 def _agent_models(agent: str, models: List[str]) -> List[Optional[str]]:
@@ -119,26 +246,26 @@ def build_matrix(config_path: str) -> List[HarborRunSpec]:
     campaign = raw.get("campaign", raw)
     agents: List[str] = campaign.get("agents", [])
     models: List[str] = campaign.get("models", [])
-    dataset_path: str = campaign.get("dataset_path", "")
     env_provider = campaign.get("env_provider")
 
-    task_names = _list_task_names(dataset_path)
+    task_refs = _resolve_task_refs(campaign)
 
     specs: List[HarborRunSpec] = []
     for agent in agents:
         for model in _agent_models(agent, models):
             combo = f"{agent}/{model}" if model else agent
-            for task_name in task_names:
+            for ref in task_refs:
                 specs.append(
                     HarborRunSpec(
                         agent=agent,
                         model=model,
-                        # Keep the path relative so run_harbor_job can
-                        # re-resolve it in its own execution environment.
-                        task_path=f"{dataset_path}/{task_name}",
-                        task_name=task_name,
+                        task_path=ref.path,
+                        task_name=ref.name,
+                        task_git_url=ref.git_url,
+                        task_git_commit_id=ref.git_commit_id,
+                        task_ref=ref.ref,
                         env_provider=env_provider,
-                        label=f"{combo}/{task_name}",
+                        label=f"{combo}/{ref.name}",
                     )
                 )
 

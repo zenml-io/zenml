@@ -30,19 +30,65 @@ DAG shape (determined at runtime by the config's agent x model matrix):
         build_report
 """
 
+import site
+import sys
+from pathlib import Path
 from typing import Annotated, Tuple
 
 from models.harbor_models import CampaignReport
 from steps import build_matrix, build_report, parse_harbor_job, run_harbor_job
 
+import zenml
 from zenml import pipeline
 from zenml.config import DockerSettings, PythonPackageInstaller
 from zenml.types import HTMLString
 
-docker_settings = DockerSettings(
-    python_package_installer=PythonPackageInstaller.UV,
-    requirements="requirements.txt",
-)
+
+def _docker_settings() -> DockerSettings:
+    """Docker settings for remote (containerized) runs.
+
+    The Sandbox component is unreleased, so a stock image built from PyPI
+    ``zenml`` would lack ``zenml.sandboxes`` and the bridge would fail to
+    import in the pod. When ZenML is an editable/branch checkout we therefore
+    build the parent image from the repo's ``docker/zenml-dev.Dockerfile`` so
+    the branch ZenML (Sandbox component included) is baked in. The example's
+    own deps go on top; the stack's integration deps (modal, s3, aws,
+    kubernetes) are added automatically via ``install_stack_requirements``.
+
+    Returns:
+        DockerSettings suitable for the active install (editable or released).
+    """
+    common = {
+        "python_package_installer": PythonPackageInstaller.UV,
+        # zenml comes from the parent image — do NOT list it here, or PyPI
+        # zenml would overwrite the branch build and drop the Sandbox component.
+        "requirements": ["harbor>=0.8.0", "pyyaml>=6.0"],
+        "build_config": {"build_options": {"platform": "linux/amd64"}},
+    }
+    zenml_root = Path(zenml.__file__).resolve().parents[2]
+    dev_dockerfile = zenml_root / "docker" / "zenml-dev.Dockerfile"
+    is_editable = not any(
+        Path(p).resolve() in Path(zenml.__file__).resolve().parents
+        for p in site.getsitepackages()
+    )
+    if is_editable and dev_dockerfile.exists():
+        py = f"{sys.version_info.major}.{sys.version_info.minor}"
+        return DockerSettings(
+            dockerfile=str(dev_dockerfile),
+            build_context_root=str(zenml_root),
+            parent_image_build_config={
+                "build_options": {
+                    "platform": "linux/amd64",
+                    "buildargs": {"PYTHON_VERSION": py},
+                }
+            },
+            prevent_build_reuse=False,
+            **common,
+        )
+    return DockerSettings(**common)
+
+
+docker_settings = _docker_settings()
 
 
 @pipeline(

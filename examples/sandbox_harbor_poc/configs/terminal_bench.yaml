@@ -1,0 +1,27 @@
+campaign:
+  name: terminal-bench-oracle
+  # Harbor registry dataset (instead of a local dataset_path). Harbor resolves
+  # the task set to git-pinned commits exactly as `harbor run` would, so the
+  # benchmark is reproducible. Browse datasets at:
+  #   https://raw.githubusercontent.com/laude-institute/harbor/main/registry.json
+  dataset_name: terminal-bench
+  dataset_version: "2.0"        # 89 tasks; authored by the Harbor/Terminal-Bench team
+  # Full 89-task benchmark (no n_tasks cap). Add e.g. `n_tasks: 20` for a
+  # demo-sized slice, or set task_names to pin specific tasks (globs allowed).
+  # task_names:
+  #   - "chess-best-move"
+  agents:
+    - oracle                    # runs each task's reference solution — no API key,
+                                # no model needed, so the run goes green offline
+  models: []
+  # env_provider is ignored: the substrate is the active stack's ZenML Sandbox
+  # component, not a Harbor env provider. Terminal Bench tasks pin a prebuilt
+  # image in their task.toml, which the bridge pulls directly.
+  env_provider: ~
+
+# Swap the dataset to run a different benchmark, e.g. SWE-bench Verified:
+#   dataset_name: swebench-verified
+#   dataset_version: "1.0"      # 500 tasks
+# or the 10-task smoke sample:
+#   dataset_name: terminal-bench-sample
+#   dataset_version: "2.0"

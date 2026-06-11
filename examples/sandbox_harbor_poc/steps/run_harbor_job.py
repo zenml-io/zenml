@@ -85,6 +85,30 @@ def _resolve_task_path(task_path: str) -> Path:
     )
 
 
+def _build_task_config(spec: HarborRunSpec) -> TaskConfig:
+    """Build the single-task TaskConfig for this spec.
+
+    Registry tasks (Terminal Bench, SWE-bench, ...) carry git coordinates, so
+    Harbor fetches the pinned task from its repo at run time — no local copy
+    needs to ship with the example. Local-dataset tasks resolve to a directory
+    on disk instead.
+
+    Args:
+        spec: The Harbor run specification (one agent/model/task).
+
+    Returns:
+        A TaskConfig Harbor can resolve in this execution environment.
+    """
+    if spec.task_git_url:
+        return TaskConfig(
+            git_url=spec.task_git_url,
+            git_commit_id=spec.task_git_commit_id,
+            ref=spec.task_ref,
+            path=Path(spec.task_path) if spec.task_path else None,
+        )
+    return TaskConfig(path=str(_resolve_task_path(spec.task_path)))
+
+
 def _build_agent_config(spec: HarborRunSpec) -> AgentConfig:
     """Build the AgentConfig, attaching the LLM model when the spec sets one.
 
@@ -114,13 +138,11 @@ async def _run_harbor_job(spec: HarborRunSpec, jobs_dir: Path) -> Path:
     Returns:
         Path to the Harbor job output directory.
     """
-    task_path = _resolve_task_path(spec.task_path)
-
     config = JobConfig(
         jobs_dir=jobs_dir,
         n_concurrent_trials=1,
         quiet=True,
-        tasks=[TaskConfig(path=str(task_path))],
+        tasks=[_build_task_config(spec)],
         agents=[_build_agent_config(spec)],
         environment=EnvironmentConfig(import_path=_BRIDGE_IMPORT_PATH),
         verifier=VerifierConfig(),
@@ -166,6 +188,39 @@ def _find_job_dir(jobs_dir: Path) -> Path:
     )
 
 
+def _ensure_modal_credentials() -> None:
+    """Inject Modal credentials from a ZenML secret into the environment.
+
+    Local runs read ``~/.modal.toml`` directly, so this is a no-op there. On a
+    remote orchestrator the step pod has neither that file nor the env vars, so
+    we pull a ``modal`` ZenML secret (stored server-side, never baked into the
+    image) and export it for the Modal SDK to read at session creation. This is
+    the secure alternative to forwarding credentials via DockerSettings, which
+    would write them into the image as ENV layers.
+    """
+    if os.environ.get("MODAL_TOKEN_ID") and os.environ.get(
+        "MODAL_TOKEN_SECRET"
+    ):
+        return
+    try:
+        from zenml.client import Client
+
+        values = Client().get_secret("modal").secret_values
+    except Exception as e:
+        logger.info(
+            "No `modal` ZenML secret available (%s); relying on ambient "
+            "Modal credentials (~/.modal.toml).",
+            e,
+        )
+        return
+    token_id = values.get("token_id")
+    token_secret = values.get("token_secret")
+    if token_id and token_secret:
+        os.environ["MODAL_TOKEN_ID"] = token_id
+        os.environ["MODAL_TOKEN_SECRET"] = token_secret
+        logger.info("Loaded Modal credentials from the `modal` ZenML secret.")
+
+
 @step(enable_cache=False)
 def run_harbor_job(spec: HarborRunSpec) -> Annotated[Path, "job_dir"]:
     """Run one Harbor trial (one task) through the Sandbox bridge.
@@ -192,6 +247,10 @@ def run_harbor_job(spec: HarborRunSpec) -> Annotated[Path, "job_dir"]:
         logger.info(
             "ENV %s = %s", k, f"set ({len(val)} chars)" if val else "NOT SET"
         )
+
+    # Remote pods have no ~/.modal.toml; load Modal creds from a ZenML secret
+    # at runtime (never baked into the image).
+    _ensure_modal_credentials()
 
     # jobs_dir MUST outlive the step: ZenML's PathMaterializer archives it
     # AFTER the step returns. A TemporaryDirectory context would delete the

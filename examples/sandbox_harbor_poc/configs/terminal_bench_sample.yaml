@@ -1,0 +1,11 @@
+campaign:
+  name: terminal-bench-sample-oracle
+  # The 10-task Terminal Bench sample — a fast smoke test of the registry path
+  # (real prebuilt task images, git-pinned), without the full 89-task runtime.
+  dataset_name: terminal-bench-sample
+  dataset_version: "2.0"
+  n_tasks: 2
+  agents:
+    - oracle
+  models: []
+  env_provider: ~
