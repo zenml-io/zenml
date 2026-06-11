@@ -9106,6 +9106,39 @@ class SqlZenStore(BaseZenStore):
         if self.backup_secrets_store:
             self.backup_secrets_store.delete_secret_values(secret_id=secret_id)
 
+    def _get_visible_secret_schema(
+        self,
+        secret_name_or_id: Union[str, UUID],
+        session: Session,
+    ) -> SecretSchema:
+        """Get a non-internal secret schema visible to the active user.
+
+        Args:
+            secret_name_or_id: The name or ID of the secret to fetch.
+            session: The database session to use.
+
+        Returns:
+            The secret schema.
+
+        Raises:
+            KeyError: If the secret does not exist, is internal, or is private
+                and not owned by the current user.
+        """
+        secret_schema = self._get_schema_by_name_or_id(
+            secret_name_or_id, schema_class=SecretSchema, session=session
+        )
+        if (
+            secret_schema.internal
+            or secret_schema.private
+            and secret_schema.user.id != self._get_active_user(session).id
+        ):
+            raise KeyError(
+                f"Secret with name or ID {secret_name_or_id} not found "
+                "or is private and not owned by the current user."
+            )
+
+        return secret_schema
+
     def _link_secrets_to_resource(
         self,
         secrets: Optional[Sequence[Union[str, UUID]]],
@@ -9135,8 +9168,8 @@ class SqlZenStore(BaseZenStore):
                     # Not a valid UUID string, proceed normally
                     pass
 
-            secret_schema = self._get_schema_by_name_or_id(
-                secret, schema_class=SecretSchema, session=session
+            secret_schema = self._get_visible_secret_schema(
+                secret, session=session
             )
             resource_type = resource_types[type(resource)]
             secret_resource = SecretResourceSchema(
@@ -9183,8 +9216,8 @@ class SqlZenStore(BaseZenStore):
                     # Not a valid UUID string, proceed normally
                     pass
 
-            secret_schema = self._get_schema_by_name_or_id(
-                secret, schema_class=SecretSchema, session=session
+            secret_schema = self._get_visible_secret_schema(
+                secret, session=session
             )
             resource_type = resource_types[type(resource)]
 
@@ -9289,27 +9322,13 @@ class SqlZenStore(BaseZenStore):
             The secret.
 
         Raises:
-            KeyError: if the secret doesn't exist.
-        """
+            KeyError: If the secret does not exist, is internal, or is private
+                and not owned by the current user.
+        """  # noqa: DOC502
         with Session(self.engine) as session:
-            secret_in_db = session.exec(
-                select(SecretSchema).where(
-                    SecretSchema.id == secret_id,
-                    # Don't return internal secrets
-                    col(SecretSchema.internal).is_(False),
-                )
-            ).first()
-            if (
-                secret_in_db is None
-                # Private secrets are only accessible to their owner
-                or secret_in_db.private
-                and secret_in_db.user.id != self._get_active_user(session).id
-            ):
-                raise KeyError(
-                    f"Secret with ID {secret_id} not found or is private and "
-                    "not owned by the current user."
-                )
-
+            secret_in_db = self._get_visible_secret_schema(
+                secret_id, session=session
+            )
             secret_model = secret_in_db.to_model(
                 include_metadata=hydrate, include_resources=True
             )
@@ -9323,7 +9342,10 @@ class SqlZenStore(BaseZenStore):
         secret_name_or_id: Union[str, UUID],
         include_secret_values: bool = False,
     ) -> SecretResponse:
-        """Get a secret by name or ID.
+        """Get a non-internal secret by name or ID.
+
+        Private secrets are only accessible to their owner. Internal secrets
+        are not returned by this method.
 
         Args:
             secret_name_or_id: The name or ID of the secret to fetch.
@@ -9332,18 +9354,23 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The secret.
-        """
+
+        Raises:
+            KeyError: If the secret does not exist, is internal, or is private
+                and not owned by the current user.
+        """  # noqa: DOC502
         with Session(self.engine) as session:
-            secret_in_db = self._get_schema_by_name_or_id(
-                secret_name_or_id, schema_class=SecretSchema, session=session
+            secret_in_db = self._get_visible_secret_schema(
+                secret_name_or_id, session=session
             )
             secret_model = secret_in_db.to_model(
                 include_metadata=True, include_resources=True
             )
+            secret_id = secret_in_db.id
 
         if include_secret_values:
             secret_model.set_secrets(
-                self._get_secret_values(secret_id=secret_in_db.id)
+                self._get_secret_values(secret_id=secret_id)
             )
 
         return secret_model
@@ -9412,32 +9439,18 @@ class SqlZenStore(BaseZenStore):
             The updated secret.
 
         Raises:
-            KeyError: if the secret doesn't exist.
+            KeyError: If the secret does not exist, is internal, or is private
+                and not owned by the current user.
             EntityExistsError: If a secret with the same name already exists in
                 the same scope.
             IllegalOperationError: if the secret is private and the current user
                 is not the owner of the secret.
-        """
+        """  # noqa: DOC503
         with Session(self.engine) as session:
-            existing_secret = session.exec(
-                select(SecretSchema).where(
-                    SecretSchema.id == secret_id,
-                    # Don't update internal secrets
-                    col(SecretSchema.internal).is_(False),
-                )
-            ).first()
-
+            existing_secret = self._get_visible_secret_schema(
+                secret_id, session=session
+            )
             active_user = self._get_active_user(session)
-
-            if not existing_secret or (
-                # Private secrets are only accessible to their owner
-                existing_secret.private
-                and existing_secret.user.id != active_user.id
-            ):
-                raise KeyError(
-                    f"Secret with ID {secret_id} not found or is private and "
-                    "not owned by the current user."
-                )
 
             if (
                 secret_update.private is not None
@@ -9520,28 +9533,11 @@ class SqlZenStore(BaseZenStore):
             secret_id: The id of the secret to delete.
 
         Raises:
-            KeyError: if the secret doesn't exist.
-        """
+            KeyError: If the secret does not exist, is internal, or is private
+                and not owned by the current user.
+        """  # noqa: DOC502
         with Session(self.engine) as session:
-            existing_secret = session.exec(
-                select(SecretSchema).where(
-                    SecretSchema.id == secret_id,
-                    # Don't delete internal secrets
-                    col(SecretSchema.internal).is_(False),
-                )
-            ).first()
-
-            if not existing_secret or (
-                # Private secrets are only accessible to their owner
-                existing_secret.private
-                and existing_secret.user.id
-                != self._get_active_user(session).id
-            ):
-                raise KeyError(
-                    f"Secret with ID {secret_id} not found or is private and "
-                    "not owned by the current user."
-                )
-
+            self._get_visible_secret_schema(secret_id, session=session)
             self._delete_secret_schema(secret_id=secret_id, session=session)
 
     def backup_secrets(
