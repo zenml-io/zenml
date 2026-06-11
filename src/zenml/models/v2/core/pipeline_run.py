@@ -964,7 +964,7 @@ class PipelineRunFilter(
     )
     status: StringFilterOption = Field(
         default=None,
-        description="Name of the Pipeline Run",
+        description="Status of the Pipeline Run",
     )
     in_progress: Optional[bool] = Field(
         default=None,

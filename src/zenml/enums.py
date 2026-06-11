@@ -142,6 +142,22 @@ class ExecutionStatus(StrEnum):
         return self in {ExecutionStatus.FAILED, ExecutionStatus.CANCELLED}
 
 
+class HookType(StrEnum):
+    """Hook types."""
+
+    RUN_START = "run_start"
+    RUN_SUCCESS = "run_success"
+    RUN_FAILURE = "run_failure"
+    RUN_END = "run_end"
+    RUN_PAUSE = "run_pause"
+    RUN_RESUME = "run_resume"
+    STEP_START = "step_start"
+    STEP_END = "step_end"
+    STEP_SUCCESS = "step_success"
+    STEP_FAILURE = "step_failure"
+    CUSTOM = "custom"
+
+
 class LoggingLevels(Enum):
     """Enum for logging levels."""
 
@@ -212,6 +228,7 @@ class StackComponentType(StrEnum):
     STEP_OPERATOR = "step_operator"
     MODEL_REGISTRY = "model_registry"
     DEPLOYER = "deployer"
+    SANDBOX = "sandbox"
 
     @property
     def plural(self) -> str:
@@ -224,6 +241,8 @@ class StackComponentType(StrEnum):
             return "container_registries"
         elif self == StackComponentType.MODEL_REGISTRY:
             return "model_registries"
+        elif self == StackComponentType.SANDBOX:
+            return "sandboxes"
 
         return f"{self.value}s"
 
@@ -238,6 +257,7 @@ class StackComponentType(StrEnum):
             StackComponentType.ALERTER,
             StackComponentType.EXPERIMENT_TRACKER,
             StackComponentType.STEP_OPERATOR,
+            StackComponentType.SANDBOX,
         }
 
 

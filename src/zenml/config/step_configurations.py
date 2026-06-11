@@ -212,6 +212,14 @@ class StepConfigurationUpdate(FrozenBaseModel):
         default=None,
         description="The success hook source for the step.",
     )
+    start_hook_source: Optional[StringSerializableSource] = Field(
+        default=None,
+        description="The start hook source for the step.",
+    )
+    end_hook_source: Optional[StringSerializableSource] = Field(
+        default=None,
+        description="The end hook source for the step.",
+    )
     model: Optional[Model] = Field(
         default=None,
         description="The model to use for the step.",
@@ -374,32 +382,26 @@ class StepConfiguration(PartialStepConfiguration):
         return DockerSettings.model_validate(model_or_dict)
 
     def apply_pipeline_configuration(
-        self, pipeline_configuration: "PipelineConfiguration"
+        self,
+        pipeline_configuration: "PipelineConfiguration",
+        exclude_hook_sources: bool,
     ) -> "StepConfiguration":
         """Apply the pipeline configuration to this step configuration.
 
         Args:
             pipeline_configuration: The pipeline configuration to apply.
+            exclude_hook_sources: If True, the pipeline-level lifecycle hook
+                sources are not propagated as step defaults.
 
         Returns:
             The updated step configuration.
         """
-        pipeline_values = pipeline_configuration.model_dump(
-            include={
-                "settings",
-                "extra",
-                "failure_hook_source",
-                "success_hook_source",
-                "retry",
-                "substitutions",
-                "environment",
-                "secrets",
-                "cache_policy",
-            },
-            exclude_none=True,
+        pipeline_dict = _get_pipeline_values_to_propagate(
+            pipeline_configuration=pipeline_configuration,
+            exclude_hook_sources=exclude_hook_sources,
         )
         merged_config_dict = _apply_pipeline_configuration(
-            self.model_dump(), pipeline_values
+            self.model_dump(), pipeline_dict
         )
         return self.model_validate(merged_config_dict)
 
@@ -524,6 +526,7 @@ class Step(FrozenBaseModel):
         cls,
         data: Dict[str, Any],
         pipeline_configuration: "PipelineConfiguration",
+        exclude_hook_sources: bool,
     ) -> "Step":
         """Create a step from a dictionary.
 
@@ -535,24 +538,16 @@ class Step(FrozenBaseModel):
             data: The dictionary to create the `Step` object from.
             pipeline_configuration: The pipeline configuration to apply to the
                 step configuration.
+            exclude_hook_sources: If True, the pipeline-level lifecycle hook
+                sources are not propagated as step defaults.
 
         Returns:
             The instantiated object.
         """
         if "config" not in data:
-            pipeline_dict = pipeline_configuration.model_dump(
-                include={
-                    "settings",
-                    "extra",
-                    "failure_hook_source",
-                    "success_hook_source",
-                    "retry",
-                    "substitutions",
-                    "environment",
-                    "secrets",
-                    "cache_policy",
-                },
-                exclude_none=True,
+            pipeline_dict = _get_pipeline_values_to_propagate(
+                pipeline_configuration=pipeline_configuration,
+                exclude_hook_sources=exclude_hook_sources,
             )
 
             merged_config_dict = _apply_pipeline_configuration(
@@ -617,3 +612,39 @@ def _apply_pipeline_configuration(
         combined_dict, update=step_overrides, ignore_none=True
     )
     return merged_config_dict
+
+
+def _get_pipeline_values_to_propagate(
+    pipeline_configuration: "PipelineConfiguration",
+    exclude_hook_sources: bool,
+) -> Dict[str, Any]:
+    """Get the pipeline configuration fields propagated to a step.
+
+    Args:
+        pipeline_configuration: The pipeline configuration to get the values
+            from.
+        exclude_hook_sources: If True, omit the lifecycle hook sources.
+
+    Returns:
+        The pipeline configuration values to propagate to the step.
+    """
+    include = {
+        "settings",
+        "extra",
+        "retry",
+        "substitutions",
+        "environment",
+        "secrets",
+        "cache_policy",
+    }
+    if not exclude_hook_sources:
+        include |= {
+            "failure_hook_source",
+            "success_hook_source",
+            "start_hook_source",
+            "end_hook_source",
+        }
+
+    return pipeline_configuration.model_dump(
+        include=include, exclude_none=True
+    )

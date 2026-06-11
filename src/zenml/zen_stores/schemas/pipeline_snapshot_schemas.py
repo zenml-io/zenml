@@ -528,6 +528,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                 step_configurations[step_configuration.name] = Step.from_dict(
                     json.loads(step_configuration.config),
                     pipeline_configuration,
+                    exclude_hook_sources=self.is_dynamic,
                 )
 
             client_environment = json.loads(self.client_environment)
@@ -548,6 +549,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                         step_configuration.name: Step.from_dict(
                             json.loads(step_configuration.config),
                             pipeline_configuration,
+                            exclude_hook_sources=self.is_dynamic,
                         )
                         for step_configuration in self.get_step_configurations()
                     }
