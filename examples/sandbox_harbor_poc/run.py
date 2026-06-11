@@ -6,7 +6,13 @@ agent loop, verifier, reward). Each mapped step runs exactly one trial.
 
 Invocation::
 
-    python run.py [task_path] [agent_name] [n_trials]   # default: tasks/hello, oracle, 3
+    python run.py [task] [agent_name] [n_trials]   # default: tasks/hello, oracle, 3
+
+``task`` is a local task directory (``tasks/hello``) or a Harbor registry
+dataset (``dataset:terminal-bench-sample@2.0``), which expands into one
+trial per benchmark task::
+
+    python run.py dataset:terminal-bench@2.0 oracle 1   # the full 89-task benchmark
 """
 
 import asyncio
@@ -18,7 +24,7 @@ from pathlib import Path
 from typing import Annotated, Any, Tuple
 
 from harbor.job import Job
-from harbor.models.job.config import JobConfig
+from harbor.models.job.config import DatasetConfig, JobConfig
 from harbor.models.job.result import JobResult
 from harbor.models.trial.config import (
     AgentConfig,
@@ -43,9 +49,84 @@ _BRIDGE_IMPORT_PATH = "zenml_sandbox_env:ZenMLSandboxEnvironment"
 _DEFAULT_TASK_PATH = "tasks/hello"
 _DEFAULT_AGENT = "oracle"
 
+# Task spec prefixes accepted alongside plain local paths.
+# ``dataset:NAME@VERSION`` names a Harbor registry dataset and expands —
+# via Harbor's own resolver, so the task set and commit pins match
+# ``harbor run`` exactly — into one ``git+URL@COMMIT:SUBPATH`` ref per
+# task. Refs stay plain strings so the mapped trial steps fetch only
+# their own pinned task at runtime, nothing ships with the example.
+_DATASET_PREFIX = "dataset:"
+_GIT_TASK_PREFIX = "git+"
+
+
+def _expand_dataset(spec: str) -> list[str]:
+    """Resolve a ``dataset:NAME@VERSION`` spec into git-pinned task refs.
+
+    Args:
+        spec: Dataset spec, e.g. ``dataset:terminal-bench@2.0``. The
+            version is optional (``dataset:terminal-bench`` resolves the
+            registry default).
+
+    Returns:
+        One ``git+URL@COMMIT:SUBPATH`` ref per task in the dataset.
+
+    Raises:
+        ValueError: If the dataset resolves to no tasks.
+    """
+    name, _, version = spec[len(_DATASET_PREFIX) :].partition("@")
+    dataset = DatasetConfig(name=name, version=version or None)
+    task_configs = asyncio.run(
+        dataset.get_task_configs(disable_verification=True)
+    )
+    refs = []
+    for tc in task_configs:
+        if tc.git_url:
+            pin = tc.git_commit_id or tc.ref or ""
+            refs.append(f"{_GIT_TASK_PREFIX}{tc.git_url}@{pin}:{tc.path}")
+        elif tc.path:
+            refs.append(str(tc.path))
+    if not refs:
+        raise ValueError(f"Dataset spec {spec!r} resolved to no tasks.")
+    return refs
+
+
+def _task_config(task_ref: str) -> TaskConfig:
+    """Build the single-trial TaskConfig for a local path or git ref.
+
+    Args:
+        task_ref: Local task directory (relative to this example) or a
+            ``git+URL@COMMIT:SUBPATH`` ref from ``_expand_dataset``.
+
+    Returns:
+        A TaskConfig Harbor can resolve in this execution environment —
+        git-backed refs are fetched by Harbor itself at trial start.
+
+    Raises:
+        FileNotFoundError: If a local ``task_ref`` does not resolve to
+            an existing Harbor task directory.
+    """
+    if task_ref.startswith(_GIT_TASK_PREFIX):
+        url, _, pinned = task_ref[len(_GIT_TASK_PREFIX) :].rpartition("@")
+        pin, _, subpath = pinned.partition(":")
+        return TaskConfig(
+            git_url=url, git_commit_id=pin or None, path=Path(subpath)
+        )
+    here = Path(__file__).parent.resolve()
+    task = (here / task_ref).resolve()
+    if not task.exists():
+        raise FileNotFoundError(f"Harbor task path not found: {task}")
+    return TaskConfig(path=task)
+
+
+def _display_name(task_ref: str) -> str:
+    """Short task label for trial summaries and report rows."""
+    if task_ref.startswith(_GIT_TASK_PREFIX):
+        return Path(task_ref.rpartition(":")[-1]).name
+    return task_ref
+
 
 async def _run_harbor_job(
-    task_path: Path,
+    task: TaskConfig,
     agent_name: str,
     jobs_dir: Path,
 ) -> dict[str, Any]:
@@ -54,7 +135,7 @@ async def _run_harbor_job(
         jobs_dir=jobs_dir,
         n_concurrent_trials=1,
         quiet=True,
-        tasks=[TaskConfig(path=task_path)],
+        tasks=[task],
         agents=[AgentConfig(name=agent_name)],
         environment=EnvironmentConfig(import_path=_BRIDGE_IMPORT_PATH),
         verifier=VerifierConfig(),
@@ -102,7 +183,9 @@ def build_matrix(
     """Expand a trial campaign into aligned per-trial parameter lists.
 
     Args:
-        task_paths: Harbor task paths to evaluate.
+        task_paths: Harbor tasks to evaluate — local task directories
+            and/or ``dataset:NAME@VERSION`` registry specs, each of
+            which expands to every task in the dataset.
         agent_names: Harbor agents to evaluate each task with.
         n_trials: Trials per (task, agent) combination.
 
@@ -111,12 +194,18 @@ def build_matrix(
         trial, ready for ``run_harbor_trial.map``.
     """
     tasks, agents, indices = [], [], []
-    for task in task_paths:
-        for agent in agent_names:
-            for index in range(n_trials):
-                tasks.append(task)
-                agents.append(agent)
-                indices.append(index)
+    for entry in task_paths:
+        if entry.startswith(_DATASET_PREFIX):
+            refs = _expand_dataset(entry)
+            logger.info("%s expanded to %d task(s)", entry, len(refs))
+        else:
+            refs = [entry]
+        for task in refs:
+            for agent in agent_names:
+                for index in range(n_trials):
+                    tasks.append(task)
+                    agents.append(agent)
+                    indices.append(index)
     return tasks, agents, indices
 
 
@@ -133,7 +222,9 @@ def run_harbor_trial(
 
     Args:
         task_path: Filesystem path to the Harbor task, relative to
-            this example's directory.
+            this example's directory, or a ``git+URL@COMMIT:SUBPATH``
+            ref produced by ``build_matrix`` from a dataset spec
+            (Harbor fetches the pinned task itself at trial start).
         agent_name: One of Harbor's built-in agents (``oracle``,
             ``nop``, ``claude-code-agent``, ...).
         trial_index: Position of this trial within its (task, agent)
@@ -145,20 +236,17 @@ def run_harbor_trial(
         trajectory).
 
     Raises:
-        FileNotFoundError: If ``task_path`` does not resolve to an
-            existing Harbor task directory.
+        FileNotFoundError: If a local ``task_path`` does not resolve to
+            an existing Harbor task directory.
     """
-    here = Path(__file__).parent.resolve()
-    task = (here / task_path).resolve()
-    if not task.exists():
-        raise FileNotFoundError(f"Harbor task path not found: {task}")
+    task = _task_config(task_path)
 
     # ``asyncio.run`` is safe because ZenML steps run synchronously
     # today; revisit if step bodies grow an outer event loop.
     with tempfile.TemporaryDirectory(prefix="zenml-harbor-") as tmp:
         jobs_dir = Path(tmp)
         summary = asyncio.run(_run_harbor_job(task, agent_name, jobs_dir))
-        summary["task"] = task_path
+        summary["task"] = _display_name(task_path)
         summary["agent"] = agent_name
         summary["trial_index"] = trial_index
         # Harbor's ``jobs/`` tree is the only copy of the agent/verifier

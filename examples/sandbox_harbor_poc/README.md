@@ -64,6 +64,28 @@ python run.py
 python run.py tasks/hello oracle
 ```
 
+### Running a registry benchmark (Terminal Bench)
+
+Instead of a local task directory, pass a `dataset:NAME@VERSION` spec naming
+a dataset from the [Harbor registry](https://www.harborframework.com/) —
+Terminal Bench, SWE-bench Verified, and friends. The spec expands into one
+mapped trial step per benchmark task; each step fetches its own git-pinned
+task at runtime (commit pins match `harbor run` exactly, nothing ships with
+the example), and tasks that pin a prebuilt `docker_image` boot it directly:
+
+```bash
+# The 10-task Terminal Bench sample — a fast real-benchmark smoke test:
+python run.py dataset:terminal-bench-sample@2.0 oracle 1
+
+# The full 89-task Terminal Bench 2.0 (fans out 89 trial steps):
+python run.py dataset:terminal-bench@2.0 oracle 1
+```
+
+The `oracle` agent runs each task's reference solution, so a registry run
+needs no LLM keys — it validates the orchestration and environment path,
+not model quality. Swap in a real agent (`terminus-2`, `claude-code-agent`,
+...) plus its API key to benchmark a model.
+
 The pipeline prints the dashboard URL on start. Inspect the artifacts:
 
 ```python
