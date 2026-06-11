@@ -145,37 +145,31 @@ class LoggingContext(context_utils.BaseContext):
         return self._name
 
     @classmethod
-    def emit(
+    def dispatch(
         cls,
         record: logging.LogRecord,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
-        """Emit a log record using the active logging context.
+        """Route a log record to the active logging context.
 
-        This class method is called by stdout/stderr wrappers and logging
-        handlers to route logs to the active log store.
+        Called by stdout/stderr wrappers and logging handlers to route
+        records to whatever context is currently on the stack. Side-
+        channel emitters (where the caller knows the target source)
+        should call `emit(record, metadata)` on a specific
+        `LoggingContext` instead.
 
         Args:
-            record: The log record to emit.
+            record: The log record to dispatch.
             metadata: Additional metadata to attach to the log entry.
         """
-        if context := LoggingContext.get():
-            if context._disabled:
-                return
-            context._disabled = True
-            try:
-                message = record.getMessage()
-                if message and message.strip():
-                    if context._origin:
-                        context._log_store.emit(
-                            origin=context._origin,
-                            record=record,
-                            metadata=metadata,
-                        )
-            except Exception:
-                logger.debug("Failed to emit log record", exc_info=True)
-            finally:
-                context._disabled = False
+        context = LoggingContext.get()
+        if context is None or context._disabled:
+            return
+        context._disabled = True
+        try:
+            context.emit(record, metadata)
+        finally:
+            context._disabled = False
 
     def update(
         self,
@@ -219,6 +213,50 @@ class LoggingContext(context_utils.BaseContext):
             logs_id=self.log_model.id, logs_update=log_update
         )
 
+    def begin(self) -> None:
+        """Register the origin."""
+        with self._lock:
+            if self._origin is not None:
+                return
+            self._origin = self._log_store.register_origin(
+                name=self.name,
+                log_model=self.log_model,
+                metadata=self._metadata,
+            )
+
+    def end(self) -> None:
+        """Deregister the origin."""
+        with self._lock:
+            if self._origin is not None:
+                self._log_store.deregister_origin(
+                    self._origin, blocking=self._block_on_exit
+                )
+                self._origin = None
+
+    def emit(
+        self,
+        record: logging.LogRecord,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Emit a record to this context's origin.
+
+        Args:
+            record: The log record to emit.
+            metadata: Additional metadata to attach to the log entry.
+        """
+        if self._origin is None:
+            return
+        message = record.getMessage()
+        if message and message.strip():
+            try:
+                self._log_store.emit(
+                    origin=self._origin,
+                    record=record,
+                    metadata=metadata,
+                )
+            except Exception:
+                logger.debug("Failed to emit log record", exc_info=True)
+
     def __enter__(self) -> "LoggingContext":
         """Enter the context and set as active.
 
@@ -236,17 +274,15 @@ class LoggingContext(context_utils.BaseContext):
                     ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, True
                 )
             )
-            try:
-                self._origin = self._log_store.register_origin(
-                    name=self.name,
-                    log_model=self.log_model,
-                    metadata=self._metadata,
-                )
-            except Exception:
-                step_names_in_console.reset(self._step_names_token)
-                self._step_names_token = None
+        try:
+            self.begin()
+        except Exception:
+            with self._lock:
+                if self._step_names_token is not None:
+                    step_names_in_console.reset(self._step_names_token)
+                    self._step_names_token = None
                 super().__exit__(None, None, None)
-                raise
+            raise
 
         return self
 
@@ -264,7 +300,7 @@ class LoggingContext(context_utils.BaseContext):
             exc_tb: The traceback of the exception.
         """
         if exc_type is not None:
-            LoggingContext.emit(
+            self.emit(
                 logging.LogRecord(
                     name="",
                     level=logging.ERROR,
@@ -278,18 +314,16 @@ class LoggingContext(context_utils.BaseContext):
                 metadata={"zenml.event.type": "exception"},
             )
 
-        with self._lock:
-            try:
-                super().__exit__(exc_type, exc_val, exc_tb)
-                if self._origin:
-                    self._log_store.deregister_origin(
-                        self._origin, blocking=self._block_on_exit
-                    )
-                    self._origin = None
-            finally:
-                if self._step_names_token is not None:
-                    step_names_in_console.reset(self._step_names_token)
-                    self._step_names_token = None
+        try:
+            self.end()
+        finally:
+            with self._lock:
+                try:
+                    super().__exit__(exc_type, exc_val, exc_tb)
+                finally:
+                    if self._step_names_token is not None:
+                        step_names_in_console.reset(self._step_names_token)
+                        self._step_names_token = None
 
 
 def generate_logs_request(source: str) -> LogsRequest:

@@ -23,7 +23,16 @@ import pytest
 
 from zenml import pipeline, step, wait
 from zenml.client import Client
-from zenml.enums import ExecutionStatus, RunWaitConditionResolution
+from zenml.enums import (
+    ExecutionStatus,
+    HookType,
+    RunWaitConditionResolution,
+)
+
+
+def _hook_noop() -> None:
+    pass
+
 
 # ---------------------------------------------------------------------------
 # Reusable steps
@@ -97,11 +106,14 @@ def _latest_run_id(
     pipeline_name: str,
     *,
     after: Optional[datetime.datetime] = None,
-    timeout: float = 10.0,
+    timeout: float = 20.0,
+    poll_interval: float = 1.0,
+    thread: Optional[threading.Thread] = None,
+    holder: Optional[Dict[str, Any]] = None,
 ) -> UUID:
     deadline = time.time() + timeout
     client = Client()
-    while time.time() < deadline:
+    while True:
         runs = client.list_pipeline_runs(
             pipeline=pipeline_name,
             sort_by="desc:created",
@@ -111,7 +123,22 @@ def _latest_run_id(
             run = runs.items[0]
             if after is None or run.created >= after:
                 return run.id
-        time.sleep(0.05)
+
+        if holder and (exc := holder.get("exc")):
+            raise RuntimeError(
+                f"Pipeline `{pipeline_name}` failed before a run was visible."
+            ) from exc
+
+        if thread and not thread.is_alive():
+            raise RuntimeError(
+                f"Pipeline `{pipeline_name}` finished before a run was visible."
+            )
+
+        if time.time() >= deadline:
+            break
+
+        time.sleep(min(poll_interval, max(0.0, deadline - time.time())))
+
     raise TimeoutError(
         f"No run for pipeline `{pipeline_name}` after {timeout}s"
     )
@@ -123,6 +150,8 @@ def _resolve_pending_wait(
     resolution: RunWaitConditionResolution = RunWaitConditionResolution.CONTINUE,
     result: Any = None,
     timeout: float = 10.0,
+    thread: Optional[threading.Thread] = None,
+    holder: Optional[Dict[str, Any]] = None,
 ) -> UUID:
     deadline = time.time() + timeout
     client = Client()
@@ -139,6 +168,19 @@ def _resolve_pending_wait(
                 result=result,
             )
             return condition.id
+
+        if holder and (exc := holder.get("exc")):
+            raise RuntimeError(
+                f"Pipeline run `{pipeline_run_id}` failed before a pending "
+                "wait condition was visible."
+            ) from exc
+
+        if thread and not thread.is_alive():
+            raise RuntimeError(
+                f"Pipeline run `{pipeline_run_id}` finished before a pending "
+                "wait condition was visible."
+            )
+
         time.sleep(0.1)
     raise TimeoutError(
         f"No pending wait condition on run {pipeline_run_id} after {timeout}s"
@@ -424,8 +466,13 @@ def waiting_pipeline_returns_value() -> int:
 
 def test_wait_continue_returns_typed_value() -> None:
     thread, holder, started_at = _run_in_thread(waiting_pipeline_returns_value)
-    run_id = _latest_run_id("waiting_pipeline_returns_value", after=started_at)
-    _resolve_pending_wait(run_id, result=21)
+    run_id = _latest_run_id(
+        "waiting_pipeline_returns_value",
+        after=started_at,
+        thread=thread,
+        holder=holder,
+    )
+    _resolve_pending_wait(run_id, result=21, thread=thread, holder=holder)
     _wait_for_thread(thread)
     assert "exc" not in holder, holder.get("exc")
     run = holder["run"]
@@ -445,8 +492,13 @@ def waiting_pipeline_no_schema() -> None:
 
 def test_wait_continue_without_schema_proceeds() -> None:
     thread, holder, started_at = _run_in_thread(waiting_pipeline_no_schema)
-    run_id = _latest_run_id("waiting_pipeline_no_schema", after=started_at)
-    _resolve_pending_wait(run_id)
+    run_id = _latest_run_id(
+        "waiting_pipeline_no_schema",
+        after=started_at,
+        thread=thread,
+        holder=holder,
+    )
+    _resolve_pending_wait(run_id, thread=thread, holder=holder)
     _wait_for_thread(thread)
     assert "exc" not in holder, holder.get("exc")
     assert holder["run"].status.is_successful
@@ -460,8 +512,18 @@ def waiting_pipeline_to_be_aborted() -> None:
 
 def test_wait_abort_aborts_run() -> None:
     thread, holder, started_at = _run_in_thread(waiting_pipeline_to_be_aborted)
-    run_id = _latest_run_id("waiting_pipeline_to_be_aborted", after=started_at)
-    _resolve_pending_wait(run_id, resolution=RunWaitConditionResolution.ABORT)
+    run_id = _latest_run_id(
+        "waiting_pipeline_to_be_aborted",
+        after=started_at,
+        thread=thread,
+        holder=holder,
+    )
+    _resolve_pending_wait(
+        run_id,
+        resolution=RunWaitConditionResolution.ABORT,
+        thread=thread,
+        holder=holder,
+    )
     _wait_for_thread(thread)
     # The run must not be successful — the server publishes the run as
     # stopped/failed when the wait condition aborts.
@@ -469,6 +531,39 @@ def test_wait_abort_aborts_run() -> None:
     assert not final.status.is_successful
     # The follow-up step must not have started.
     assert "step_emit_int" not in final.steps
+
+
+@pipeline(
+    dynamic=True,
+    enable_cache=False,
+    on_end=_hook_noop,
+    on_success=_hook_noop,
+    on_failure=_hook_noop,
+)
+def waiting_pipeline_aborted_with_hooks() -> None:
+    wait(timeout=20, poll_interval=1)
+    step_emit_int()  # Must not run.
+
+
+def test_wait_abort_fires_run_end_hook_only() -> None:
+    thread, holder, started_at = _run_in_thread(
+        waiting_pipeline_aborted_with_hooks
+    )
+    run_id = _latest_run_id(
+        "waiting_pipeline_aborted_with_hooks", after=started_at
+    )
+    _resolve_pending_wait(run_id, resolution=RunWaitConditionResolution.ABORT)
+    _wait_for_thread(thread)
+
+    invocations = Client().list_hook_invocations(
+        pipeline_run_id=run_id, size=100
+    )
+    types = {i.hook_type for i in invocations.items}
+    # The run reaches a terminal state on abort, so the end hook fires, but
+    # neither the success nor the failure hook does.
+    assert HookType.RUN_END in types
+    assert HookType.RUN_SUCCESS not in types
+    assert HookType.RUN_FAILURE not in types
 
 
 @pipeline(dynamic=True, enable_cache=False)
@@ -511,8 +606,16 @@ def test_parent_waits_while_child_runs_then_wait_resolves() -> None:
     parent_run_id = _latest_run_id(
         "parent_waits_with_concurrent_child_running",
         after=started_at,
+        thread=thread,
+        holder=holder,
     )
-    _resolve_pending_wait(parent_run_id, result=99, timeout=15)
+    _resolve_pending_wait(
+        parent_run_id,
+        result=99,
+        timeout=15,
+        thread=thread,
+        holder=holder,
+    )
     _wait_for_thread(thread)
     assert "exc" not in holder, holder.get("exc")
     assert holder["run"].status.is_successful
@@ -544,6 +647,8 @@ def test_child_waits_while_parent_does_other_work_then_child_wait_resolves() -> 
     parent_run_id = _latest_run_id(
         "parent_runs_concurrent_child_that_waits",
         after=started_at,
+        thread=thread,
+        holder=holder,
     )
 
     # Wait for the child run to register.
@@ -557,7 +662,13 @@ def test_child_waits_while_parent_does_other_work_then_child_wait_resolves() -> 
         time.sleep(0.1)
     assert child_run_id is not None, "Child run never appeared"
 
-    _resolve_pending_wait(child_run_id, result=42, timeout=15)
+    _resolve_pending_wait(
+        child_run_id,
+        result=42,
+        timeout=15,
+        thread=thread,
+        holder=holder,
+    )
     _wait_for_thread(thread)
     assert "exc" not in holder, holder.get("exc")
     parent = holder["run"]
@@ -578,10 +689,13 @@ def test_parent_run_resolves_two_sequential_waits() -> None:
         parent_waits_then_child_inline_wait
     )
     run_id = _latest_run_id(
-        "parent_waits_then_child_inline_wait", after=started_at
+        "parent_waits_then_child_inline_wait",
+        after=started_at,
+        thread=thread,
+        holder=holder,
     )
-    _resolve_pending_wait(run_id, result=10)
-    _resolve_pending_wait(run_id, result=20)
+    _resolve_pending_wait(run_id, result=10, thread=thread, holder=holder)
+    _resolve_pending_wait(run_id, result=20, thread=thread, holder=holder)
     _wait_for_thread(thread)
     assert "exc" not in holder, holder.get("exc")
     refreshed = _refresh(holder["run"].id)

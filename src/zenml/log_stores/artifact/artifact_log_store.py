@@ -27,7 +27,7 @@ from typing import (
 )
 from uuid import UUID
 
-from opentelemetry.sdk._logs.export import LogExporter
+from opentelemetry.sdk._logs.export import LogRecordExporter
 
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.enums import LoggingLevels, StackComponentType
@@ -296,7 +296,7 @@ class ArtifactLogStore(OtelLogStore):
         """
         return cast(ArtifactLogStoreConfig, self._config)
 
-    def get_exporter(self) -> "LogExporter":
+    def get_exporter(self) -> "LogRecordExporter":
         """Get the artifact log exporter for this log store.
 
         Returns:

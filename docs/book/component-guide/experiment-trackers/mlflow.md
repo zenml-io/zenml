@@ -38,6 +38,12 @@ zenml experiment-tracker register mlflow_experiment_tracker --flavor=mlflow
 zenml stack register custom_stack -e mlflow_experiment_tracker ... --set
 ```
 
+{% hint style="warning" %}
+If you use the default local MLflow configuration without setting a `tracking_uri`, ZenML stores new MLflow tracking metadata in a SQLite database at `<LOCAL_ARTIFACT_STORE>/mlflow.db` and stores MLflow artifacts in `<LOCAL_ARTIFACT_STORE>/mlflow_artifacts`.
+
+Earlier ZenML versions used MLflow's file store at `<LOCAL_ARTIFACT_STORE>/mlruns` for this default local setup. Existing local runs in that directory are not migrated automatically and won't appear in the new default SQLite-backed MLflow UI. The files remain on disk and can still be inspected separately with MLflow's file-store backend.
+{% endhint %}
+
 * [Remote Experiment Tracking with MLflow Tracking Server](https://mlflow.org/docs/latest/tracking/tutorials/remote-server.html): This scenario assumes that you have already deployed an MLflow Tracking Server enabled with proxied artifact storage access. There is no restriction regarding what other types of components it can be combined with. This option requires [authentication-related parameters](mlflow.md#authentication-methods) to be configured for the MLflow Experiment Tracker.
 
 {% hint style="warning" %}
@@ -193,13 +199,17 @@ tracking_url = trainer_step.run_metadata["experiment_tracker_url"].value
 print(tracking_url)
 ```
 
-This will be the URL of the corresponding experiment in your deployed MLflow instance, or a link to the corresponding mlflow experiment file if you are using local MLflow.
+This will be the URL of the corresponding experiment in your deployed MLflow instance, or the local MLflow tracking URI if you are using ZenML's default local MLflow configuration.
 
 {% hint style="info" %}
-If you are using local MLflow, you can use the `mlflow ui` command to start MLflow at [`localhost:5000`](http://localhost:5000/) where you can then explore the UI in your browser.
+If you are using ZenML's default local MLflow configuration, the MLflow tracking metadata is stored in a SQLite database inside your active local artifact store, and MLflow artifacts are stored next to it. You can use the `mlflow ui` command to start MLflow at [`localhost:5000`](http://localhost:5000/) where you can then explore the UI in your browser.
+
+You can find the active artifact store path with `zenml artifact-store describe`.
 
 ```bash
-mlflow ui --backend-store-uri <TRACKING_URL>
+mlflow ui \
+  --backend-store-uri sqlite:///<PATH_TO_LOCAL_ARTIFACT_STORE>/mlflow.db \
+  --default-artifact-root file:<PATH_TO_LOCAL_ARTIFACT_STORE>/mlflow_artifacts
 ```
 {% endhint %}
 
