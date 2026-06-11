@@ -13,7 +13,10 @@
 #  permissions and limitations under the License.
 """Kubernetes sandbox implementation."""
 
+import base64
 import logging
+import os
+import posixpath
 import queue
 import re
 import shlex
@@ -45,10 +48,11 @@ _STREAM_END = object()
 # shell-identifier keys are safe there.
 _ENV_KEY_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
-# Per-stream line cap for the websocket drain queues. A caller that only
-# wait()s on a noisy command would otherwise grow these queues without
-# bound. Past the cap the oldest lines are dropped (logged once).
+# Per-stream line cap for the websocket drain queues.
 _STREAM_BUFFER_MAX_LINES = 100_000
+
+# Characters per stdin frame during file uploads.
+_FILE_TRANSFER_CHUNK_CHARS = 1024 * 1024
 
 
 def _split_lines_with_buffer(chunk: str, buffer: str) -> Tuple[List[str], str]:
@@ -66,6 +70,46 @@ def _split_lines_with_buffer(chunk: str, buffer: str) -> Tuple[List[str], str]:
     if lines and not lines[-1].endswith("\n"):
         return lines[:-1], lines[-1]
     return lines, ""
+
+
+def _iter_stream_chunks(
+    websocket_client: "k8s_stream.ws_client.WSClient",
+) -> Iterator[Tuple[str, str]]:
+    """Iterate output chunks of a websocket client until it closes.
+
+    Args:
+        websocket_client: The websocket client to read from.
+
+    Yields:
+        Tuples of channel name (`stdout` or `stderr`) and chunk.
+    """
+    while websocket_client.is_open():
+        websocket_client.update(timeout=1)
+        if websocket_client.peek_stdout():
+            yield "stdout", websocket_client.read_stdout()
+        if websocket_client.peek_stderr():
+            yield "stderr", websocket_client.read_stderr()
+
+
+def _read_exit_code(
+    websocket_client: "k8s_stream.ws_client.WSClient",
+) -> Optional[int]:
+    """Read the exec exit code from a closed websocket client.
+
+    Args:
+        websocket_client: The websocket client to read the exit code from.
+
+    Returns:
+        The exit code or `None` if it cannot be determined.
+    """
+    try:
+        return cast(Optional[int], websocket_client.returncode)
+    except Exception:
+        logger.debug(
+            "Failed to read Kubernetes sandbox exec exit code.",
+            exc_info=True,
+        )
+        return None
 
 
 class KubernetesSandboxProcess(SandboxProcess):
@@ -128,19 +172,16 @@ class KubernetesSandboxProcess(SandboxProcess):
         stdout_buffer = ""
         stderr_buffer = ""
         try:
-            while self._websocket_client.is_open():
-                self._websocket_client.update(timeout=1)
-                if self._websocket_client.peek_stdout():
-                    stdout_chunk = self._websocket_client.read_stdout()
+            for channel, chunk in _iter_stream_chunks(self._websocket_client):
+                if channel == "stdout":
                     lines, stdout_buffer = _split_lines_with_buffer(
-                        chunk=stdout_chunk, buffer=stdout_buffer
+                        chunk=chunk, buffer=stdout_buffer
                     )
                     for line in lines:
                         self._enqueue_line(self._stdout_queue, line)
-                if self._websocket_client.peek_stderr():
-                    stderr_chunk = self._websocket_client.read_stderr()
+                else:
                     lines, stderr_buffer = _split_lines_with_buffer(
-                        chunk=stderr_chunk, buffer=stderr_buffer
+                        chunk=chunk, buffer=stderr_buffer
                     )
                     for line in lines:
                         self._enqueue_line(self._stderr_queue, line)
@@ -157,13 +198,7 @@ class KubernetesSandboxProcess(SandboxProcess):
             if stderr_buffer:
                 self._enqueue_line(self._stderr_queue, stderr_buffer)
             if self._exit_code is None:
-                try:
-                    self._exit_code = self._websocket_client.returncode
-                except Exception:
-                    logger.debug(
-                        "Failed to read Kubernetes sandbox exec exit code.",
-                        exc_info=True,
-                    )
+                self._exit_code = _read_exit_code(self._websocket_client)
             if self._exit_code is None:
                 self._exit_code = 1
             self._stdout_queue.put(_STREAM_END)
@@ -341,9 +376,6 @@ class KubernetesSandboxSession(SandboxSession):
             cwd: Optional working directory override.
             env: Optional environment variables to set in the command process.
 
-        Raises:
-            SandboxExecError: If command execution cannot be started.
-
         Returns:
             Process handle.
         """
@@ -353,14 +385,37 @@ class KubernetesSandboxSession(SandboxSession):
             command=command, cwd=cwd, env=env
         )
         started_at = time.time()
+        websocket_client = self._open_exec_stream(command=exec_command)
+
+        return KubernetesSandboxProcess(
+            session=self,
+            websocket_client=websocket_client,
+            started_at=started_at,
+        )
+
+    def _open_exec_stream(
+        self, command: List[str], stdin: bool = False
+    ) -> "k8s_stream.ws_client.WSClient":
+        """Open a websocket exec stream in the sandbox pod.
+
+        Args:
+            command: Command to execute.
+            stdin: Whether to open a stdin channel.
+
+        Raises:
+            SandboxExecError: If command execution cannot be started.
+
+        Returns:
+            The websocket client.
+        """
         try:
-            websocket_client = k8s_stream(
+            return k8s_stream(
                 self._core_api.connect_get_namespaced_pod_exec,
                 self._pod_name,
                 self._namespace,
-                command=exec_command,
+                command=command,
                 stderr=True,
-                stdin=False,
+                stdin=stdin,
                 stdout=True,
                 tty=False,
                 _preload_content=False,
@@ -370,11 +425,84 @@ class KubernetesSandboxSession(SandboxSession):
                 f"Kubernetes sandbox execution failed to launch: {e}"
             ) from e
 
-        return KubernetesSandboxProcess(
-            session=self,
-            websocket_client=websocket_client,
-            started_at=started_at,
+    @staticmethod
+    def _collect_exec_output(
+        websocket_client: "k8s_stream.ws_client.WSClient",
+    ) -> str:
+        """Collect exec output until the command finishes.
+
+        Args:
+            websocket_client: The websocket client to drain.
+
+        Raises:
+            SandboxExecError: If the command fails.
+
+        Returns:
+            The captured stdout.
+        """
+        stdout = ""
+        stderr = ""
+        for channel, chunk in _iter_stream_chunks(websocket_client):
+            if channel == "stdout":
+                stdout += chunk
+            else:
+                stderr += chunk
+
+        if _read_exit_code(websocket_client) != 0:
+            raise SandboxExecError(
+                f"Kubernetes sandbox file transfer failed: {stderr.strip()}"
+            )
+
+        return stdout
+
+    def _upload_file(self, local_path: str, remote_path: str) -> None:
+        """Upload a file to the sandbox pod.
+
+        Args:
+            local_path: Path of the local file to upload.
+            remote_path: Destination path in the sandbox pod.
+        """
+        # The file content is transferred base64-encoded because the
+        # websocket client decodes frames as UTF-8, which corrupts raw
+        # binary.
+        with open(local_path, "rb") as f:
+            encoded = base64.b64encode(f.read()).decode("ascii")
+
+        # `head -c N` makes the remote pipeline exit after the exact encoded
+        # byte count, since the websocket client cannot signal stdin EOF.
+        parent_dir = posixpath.dirname(remote_path) or "."
+        script = (
+            f"mkdir -p {shlex.quote(parent_dir)} && "
+            f"head -c {len(encoded)} | base64 -d > {shlex.quote(remote_path)}"
         )
+        websocket_client = self._open_exec_stream(
+            command=["/bin/sh", "-c", script], stdin=True
+        )
+        for index in range(0, len(encoded), _FILE_TRANSFER_CHUNK_CHARS):
+            websocket_client.write_stdin(
+                encoded[index : index + _FILE_TRANSFER_CHUNK_CHARS]
+            )
+
+        self._collect_exec_output(websocket_client)
+
+    def _download_file(self, remote_path: str, local_path: str) -> None:
+        """Download a file from the sandbox pod.
+
+        Args:
+            remote_path: Path of the file in the sandbox pod.
+            local_path: Local destination path.
+        """
+        websocket_client = self._open_exec_stream(
+            command=["/bin/sh", "-c", f"base64 < {shlex.quote(remote_path)}"]
+        )
+        stdout = self._collect_exec_output(websocket_client)
+
+        local_dir = os.path.dirname(local_path)
+        if local_dir:
+            os.makedirs(local_dir, exist_ok=True)
+
+        with open(local_path, "wb") as f:
+            f.write(base64.b64decode(stdout))
 
     def _close(self) -> None:
         """Close session handle without terminating the pod."""
