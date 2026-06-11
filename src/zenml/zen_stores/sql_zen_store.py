@@ -15205,6 +15205,74 @@ class SqlZenStore(BaseZenStore):
 
         return resource_type_to_schema_mapping[resource_type]
 
+    def _get_resources_from_tag_resources(
+        self,
+        tag_resources: List[TagResourceRequest],
+        session: Session,
+    ) -> List[BaseSchema]:
+        """Get resources referenced by tag resource requests in bulk.
+
+        Args:
+            tag_resources: The tag resource requests.
+            session: The database session to use.
+
+        Returns:
+            The resources referenced by the tag resource requests.
+
+        Raises:
+            KeyError: If a referenced resource does not exist.
+        """
+        resource_ids_by_type: Dict[TaggableResourceTypes, Set[UUID]] = (
+            defaultdict(set)
+        )
+        for tag_resource in tag_resources:
+            resource_ids_by_type[tag_resource.resource_type].add(
+                tag_resource.resource_id
+            )
+
+        resources_by_key: Dict[
+            Tuple[TaggableResourceTypes, UUID], BaseSchema
+        ] = {}
+        for resource_type, resource_ids in resource_ids_by_type.items():
+            schema_class = self._get_schema_from_resource_type(resource_type)
+            query = select(schema_class).where(
+                col(schema_class.id).in_(resource_ids)
+            )
+            resources = session.exec(query).all()
+            for resource in resources:
+                resources_by_key[(resource_type, resource.id)] = resource
+
+        resolved_resources: List[BaseSchema] = []
+        for tag_resource in tag_resources:
+            key = (tag_resource.resource_type, tag_resource.resource_id)
+            try:
+                resolved_resources.append(resources_by_key[key])
+            except KeyError:
+                raise KeyError(
+                    f"{tag_resource.resource_type.value} with ID "
+                    f"`{tag_resource.resource_id}` not found."
+                )
+
+        return resolved_resources
+
+    def get_resources_from_tag_resources(
+        self,
+        tag_resources: List[TagResourceRequest],
+    ) -> List[Any]:
+        """Get resource models referenced by tag resource requests in bulk.
+
+        Args:
+            tag_resources: The tag resource requests.
+
+        Returns:
+            The resource models referenced by the tag resource requests.
+        """
+        with Session(self.engine) as session:
+            resources = self._get_resources_from_tag_resources(
+                tag_resources=tag_resources, session=session
+            )
+            return [resource.to_model() for resource in resources]
+
     def _get_tag_schema(
         self,
         tag_name_or_id: Union[str, UUID],
@@ -15964,18 +16032,15 @@ class SqlZenStore(BaseZenStore):
             The newly created tag resource relationships.
         """
         with Session(self.engine) as session:
+            resolved_resources = self._get_resources_from_tag_resources(
+                tag_resources=tag_resources, session=session
+            )
             resources: List[
                 Tuple[TagSchema, TaggableResourceTypes, BaseSchema]
             ] = []
-            for tag_resource in tag_resources:
-                resource_schema = self._get_schema_from_resource_type(
-                    tag_resource.resource_type
-                )
-                resource = self._get_schema_by_id(
-                    resource_id=tag_resource.resource_id,
-                    schema_class=resource_schema,
-                    session=session,
-                )
+            for tag_resource, resource in zip(
+                tag_resources, resolved_resources
+            ):
                 tag_schema = self._get_tag_schema(
                     tag_name_or_id=tag_resource.tag_id,
                     session=session,
