@@ -154,7 +154,7 @@ def _fetch_and_verify_api_key(
         logger.error(error)
         raise CredentialsNotValid(error)
 
-    if key_to_verify and not api_key.verify_key(key_to_verify):
+    if key_to_verify is not None and not api_key.verify_key(key_to_verify):
         error = (
             f"Authentication error: could not verify key value for API key "
             f"{api_key.name}"
