@@ -48,7 +48,6 @@ from zenml.deployers.utils import (
     deployment_snapshot_request_from_source_snapshot,
 )
 from zenml.enums import StackComponentType
-from zenml.hooks.hook_validators import load_and_run_hook
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineRunResponse,
@@ -62,7 +61,7 @@ from zenml.orchestrators.local.local_orchestrator import (
 )
 from zenml.stack import Stack
 from zenml.steps.utils import get_unique_step_output_names
-from zenml.utils import env_utils, source_utils
+from zenml.utils import source_utils
 from zenml.utils.logging_utils import setup_logging_context
 from zenml.zen_stores.rest_zen_store import RestZenStore
 
@@ -604,34 +603,6 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
                 runtime.stop()
 
         return captured_outputs
-
-    def _execute_init_hook(self) -> None:
-        """Execute init hook if present.
-
-        Raises:
-            Exception: If executing the hook fails.
-        """
-        init_hook_source = (
-            self.snapshot.pipeline_configuration.init_hook_source
-        )
-        init_hook_kwargs = (
-            self.snapshot.pipeline_configuration.init_hook_kwargs
-        )
-
-        if not init_hook_source:
-            return
-
-        logger.info("Executing pipeline's init hook...")
-        try:
-            with env_utils.temporary_environment(
-                self.snapshot.pipeline_configuration.environment
-            ):
-                self.pipeline_state = load_and_run_hook(
-                    init_hook_source, init_hook_kwargs
-                )
-        except Exception as e:
-            logger.exception(f"Failed to execute init hook: {e}")
-            raise
 
     def _log_initialization_success(self) -> None:
         """Log successful initialization."""

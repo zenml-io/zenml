@@ -342,7 +342,8 @@ def deployment_snapshot_request_from_source_snapshot(
             step.step_config_overrides, step_update
         )
         merged_step_config = step_config.apply_pipeline_configuration(
-            pipeline_configuration
+            pipeline_configuration,
+            exclude_hook_sources=source_snapshot.is_dynamic,
         )
 
         step_spec = step.spec.model_copy(update={"enable_heartbeat": False})

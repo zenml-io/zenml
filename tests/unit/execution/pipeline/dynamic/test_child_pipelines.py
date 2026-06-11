@@ -23,7 +23,16 @@ import pytest
 
 from zenml import pipeline, step, wait
 from zenml.client import Client
-from zenml.enums import ExecutionStatus, RunWaitConditionResolution
+from zenml.enums import (
+    ExecutionStatus,
+    HookType,
+    RunWaitConditionResolution,
+)
+
+
+def _hook_noop() -> None:
+    pass
+
 
 # ---------------------------------------------------------------------------
 # Reusable steps
@@ -522,6 +531,39 @@ def test_wait_abort_aborts_run() -> None:
     assert not final.status.is_successful
     # The follow-up step must not have started.
     assert "step_emit_int" not in final.steps
+
+
+@pipeline(
+    dynamic=True,
+    enable_cache=False,
+    on_end=_hook_noop,
+    on_success=_hook_noop,
+    on_failure=_hook_noop,
+)
+def waiting_pipeline_aborted_with_hooks() -> None:
+    wait(timeout=20, poll_interval=1)
+    step_emit_int()  # Must not run.
+
+
+def test_wait_abort_fires_run_end_hook_only() -> None:
+    thread, holder, started_at = _run_in_thread(
+        waiting_pipeline_aborted_with_hooks
+    )
+    run_id = _latest_run_id(
+        "waiting_pipeline_aborted_with_hooks", after=started_at
+    )
+    _resolve_pending_wait(run_id, resolution=RunWaitConditionResolution.ABORT)
+    _wait_for_thread(thread)
+
+    invocations = Client().list_hook_invocations(
+        pipeline_run_id=run_id, size=100
+    )
+    types = {i.hook_type for i in invocations.items}
+    # The run reaches a terminal state on abort, so the end hook fires, but
+    # neither the success nor the failure hook does.
+    assert HookType.RUN_END in types
+    assert HookType.RUN_SUCCESS not in types
+    assert HookType.RUN_FAILURE not in types
 
 
 @pipeline(dynamic=True, enable_cache=False)

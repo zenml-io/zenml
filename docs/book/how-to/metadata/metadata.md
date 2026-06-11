@@ -442,7 +442,7 @@ The `StepContext` object is your handle to the *current* pipeline/step run while
 
 It is available:
 - Inside functions decorated with `@step` (during execution, not composition time).
-- Inside step hooks like `on_failure` / `on_success`.
+- Inside step hooks like `on_failure` / `on_success` (see [Hooks](../steps-pipelines/hooks.md)).
 - Inside materializers triggered by a step’s `save` / `load`.
 - Calling `get_step_context()` elsewhere raises `RuntimeError`.
 
