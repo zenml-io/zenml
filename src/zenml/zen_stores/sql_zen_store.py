@@ -9320,11 +9320,7 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The secret.
-
-        Raises:
-            KeyError: If the secret does not exist, is internal, or is private
-                and not owned by the current user.
-        """  # noqa: DOC502
+        """
         with Session(self.engine) as session:
             secret_in_db = self._get_visible_secret_schema(
                 secret_id, session=session
@@ -9354,11 +9350,7 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The secret.
-
-        Raises:
-            KeyError: If the secret does not exist, is internal, or is private
-                and not owned by the current user.
-        """  # noqa: DOC502
+        """
         with Session(self.engine) as session:
             secret_in_db = self._get_visible_secret_schema(
                 secret_name_or_id, session=session
@@ -9439,13 +9431,11 @@ class SqlZenStore(BaseZenStore):
             The updated secret.
 
         Raises:
-            KeyError: If the secret does not exist, is internal, or is private
-                and not owned by the current user.
             EntityExistsError: If a secret with the same name already exists in
                 the same scope.
             IllegalOperationError: if the secret is private and the current user
                 is not the owner of the secret.
-        """  # noqa: DOC503
+        """
         with Session(self.engine) as session:
             existing_secret = self._get_visible_secret_schema(
                 secret_id, session=session
@@ -9531,11 +9521,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             secret_id: The id of the secret to delete.
-
-        Raises:
-            KeyError: If the secret does not exist, is internal, or is private
-                and not owned by the current user.
-        """  # noqa: DOC502
+        """
         with Session(self.engine) as session:
             self._get_visible_secret_schema(secret_id, session=session)
             self._delete_secret_schema(secret_id=secret_id, session=session)
