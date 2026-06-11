@@ -292,13 +292,14 @@ def test_modal_volume_flavor_uses_lazy_implementation_import() -> None:
     """The flavor exposes config and implementation classes."""
     flavor = ModalVolumeArtifactStoreFlavor()
     assert flavor.name == MODAL_VOLUME_ARTIFACT_STORE_FLAVOR
-    assert flavor.config_class is ModalVolumeArtifactStoreConfig
-    assert flavor.implementation_class is ModalVolumeArtifactStore
+    assert flavor.config_class.__name__ == ModalVolumeArtifactStoreConfig.__name__
+    assert flavor.implementation_class.__name__ == ModalVolumeArtifactStore.__name__
 
 
-def test_modal_integration_defers_modal_volume_flavor_registration() -> None:
-    """Modal Volume flavor registration waits for lifecycle validation."""
-    assert ModalVolumeArtifactStoreFlavor not in ModalIntegration.flavors()
+def test_modal_integration_registers_modal_volume_flavor() -> None:
+    """The Modal integration exposes the Modal Volume artifact store."""
+    flavor_names = {flavor.__name__ for flavor in ModalIntegration.flavors()}
+    assert ModalVolumeArtifactStoreFlavor.__name__ in flavor_names
 
 
 def _validator_stack(

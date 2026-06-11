@@ -1,5 +1,7 @@
 #  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
 #
+# ruff: noqa: D100,D103
+#
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
 #  You may obtain a copy of the License at:
@@ -225,6 +227,7 @@ def test_modal_integration_registers_modal_flavors() -> None:
     assert [flavor.__name__ for flavor in ModalIntegration.flavors()] == [
         "ModalStepOperatorFlavor",
         "ModalOrchestratorFlavor",
+        "ModalVolumeArtifactStoreFlavor",
     ]
 
 
@@ -311,11 +314,17 @@ def test_modal_flavor_imports_do_not_import_modal_sdk() -> None:
             )
         )
         importlib.reload(
+            importlib.import_module(
+                "zenml.integrations.modal.flavors.modal_volume_artifact_store_flavor"
+            )
+        )
+        importlib.reload(
             importlib.import_module("zenml.integrations.modal.flavors")
         )
         assert [flavor.__name__ for flavor in ModalIntegration.flavors()] == [
             "ModalStepOperatorFlavor",
             "ModalOrchestratorFlavor",
+            "ModalVolumeArtifactStoreFlavor",
         ]
     finally:
         sys.meta_path.remove(blocker)

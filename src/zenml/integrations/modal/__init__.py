@@ -44,9 +44,11 @@ class ModalIntegration(Integration):
         from zenml.integrations.modal.flavors import (
             ModalOrchestratorFlavor,
             ModalStepOperatorFlavor,
+            ModalVolumeArtifactStoreFlavor,
         )
 
         return [
             ModalStepOperatorFlavor,
             ModalOrchestratorFlavor,
+            ModalVolumeArtifactStoreFlavor,
         ]
