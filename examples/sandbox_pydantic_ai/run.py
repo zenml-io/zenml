@@ -56,7 +56,7 @@ def _active_sandbox() -> BaseSandbox:
 
 
 @step
-def prep_step() -> Annotated[Optional[SandboxSnapshot], "scientific_image"]:
+def prep_step() -> Annotated[Optional[SandboxSnapshot], "scientific_snapshot"]:
     """Install scientific deps once and snapshot, where the flavor allows.
 
     Snapshots are an optional sandbox capability (Modal implements them
