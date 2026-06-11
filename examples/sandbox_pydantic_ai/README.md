@@ -45,7 +45,7 @@ zenml init
 Create a ZenML secret carrying your OpenAI key (`zenml secret create` preserves the casing of the key names you pass):
 
 ```bash
-zenml secret create openai --OPENAI_API_KEY=sk-...
+zenml secret create openai --OPENAI_API_KEY=<your-openai-api-key>
 ```
 
 Register the sandbox component. Modal credentials come either from the Modal SDK's ambient auth (`~/.modal.toml` or `MODAL_TOKEN_ID` / `MODAL_TOKEN_SECRET` env vars) or from the component itself (`zenml sandbox register ... --token_id=... --token_secret=...`). Prefer the component route when steps run on a remote orchestrator, since the orchestrator environment won't have your local Modal auth.
