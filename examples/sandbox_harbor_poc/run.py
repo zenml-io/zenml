@@ -5,8 +5,6 @@ Invocation::
     python run.py [task_path] [agent_name]   # default: tasks/hello, oracle
 """
 
-from __future__ import annotations
-
 import asyncio
 import io
 import sys
