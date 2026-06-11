@@ -57,8 +57,6 @@ from zenml.sandboxes import (
 if TYPE_CHECKING:
     import httpx
 
-    from zenml.config.step_run_info import StepRunInfo
-
 
 logger = get_logger(__name__)
 
@@ -1007,23 +1005,6 @@ class CloudflareSandbox(BaseSandbox):
                     self.config.worker_url, self.config.api_key
                 )
             return self._client
-
-    def cleanup_step_run(self, info: "StepRunInfo", step_failed: bool) -> None:
-        """Close the cached bridge HTTP client after the step finishes.
-
-        A later session lazily rebuilds the client via ``_get_client``.
-
-        Args:
-            info: Info about the step that was executed.
-            step_failed: Whether the step failed.
-        """
-        with self._client_lock:
-            if self._client is not None:
-                try:
-                    self._client.close()
-                finally:
-                    self._client = None
-        super().cleanup_step_run(info=info, step_failed=step_failed)
 
     def create_session(
         self, settings: Optional[BaseSandboxSettings] = None
