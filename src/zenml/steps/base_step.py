@@ -134,6 +134,8 @@ class BaseStep:
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
+        on_start: Optional["HookSpecification"] = None,
+        on_end: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
         retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
@@ -165,12 +167,14 @@ class BaseStep:
                 step.
             settings: Settings for this step.
             extra: Extra configurations for this step.
-            on_failure: Callback function in event of failure of the step. Can
-                be a function with a single argument of type `BaseException`, or
-                a source path to such a function (e.g. `module.my_function`).
-            on_success: Callback function in event of success of the step. Can
-                be a function with no arguments, or a source path to such a
-                function (e.g. `module.my_function`).
+            on_failure: Hook run when the step fails. A callable taking an
+                optional `BaseException`, or a source path to one.
+            on_success: Hook run when the step succeeds. A no-arg callable, or
+                a source path to one.
+            on_start: Hook run when the step starts. A no-arg callable, or a
+                source path to one.
+            on_end: Hook run when the step ends. A callable taking an optional
+                `BaseException`, or a source path to one.
             model: configuration of the model version in the Model Control Plane.
             retry: Configuration for retrying the step in case of failure.
             substitutions: Extra substitutions for model and artifact name
@@ -248,6 +252,8 @@ class BaseStep:
             extra=extra,
             on_failure=on_failure,
             on_success=on_success,
+            on_start=on_start,
+            on_end=on_end,
             model=model,
             retry=retry,
             substitutions=substitutions,
@@ -956,6 +962,8 @@ class BaseStep:
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
+        on_start: Optional["HookSpecification"] = None,
+        on_end: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
         retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
@@ -996,12 +1004,14 @@ class BaseStep:
                 step.
             settings: Settings for this step.
             extra: Extra configurations for this step.
-            on_failure: Callback function in event of failure of the step. Can
-                be a function with a single argument of type `BaseException`, or
-                a source path to such a function (e.g. `module.my_function`).
-            on_success: Callback function in event of success of the step. Can
-                be a function with no arguments, or a source path to such a
-                function (e.g. `module.my_function`).
+            on_failure: Hook run when the step fails. A callable taking an
+                optional `BaseException`, or a source path to one.
+            on_success: Hook run when the step succeeds. A no-arg callable, or
+                a source path to one.
+            on_start: Hook run when the step starts. A no-arg callable, or a
+                source path to one.
+            on_end: Hook run when the step ends. A callable taking an optional
+                `BaseException`, or a source path to one.
             model: Model to use for this step.
             retry: Configuration for retrying the step in case of failure.
             substitutions: Extra substitutions for model and artifact name
@@ -1023,7 +1033,7 @@ class BaseStep:
             The step instance that this method was called on.
         """
         from zenml.config.step_configurations import StepConfigurationUpdate
-        from zenml.hooks.hook_validators import resolve_and_validate_hook
+        from zenml.hooks.validation import resolve_and_validate_hook
 
         def _resolve_if_necessary(
             value: Union[str, Source, Type[Any]],
@@ -1060,13 +1070,23 @@ class BaseStep:
         if on_failure:
             # string of on_failure hook function to be used for this step
             failure_hook_source, _ = resolve_and_validate_hook(
-                on_failure, allow_exception_arg=True
+                on_failure, Exception()
             )
 
         success_hook_source = None
         if on_success:
             # string of on_success hook function to be used for this step
             success_hook_source, _ = resolve_and_validate_hook(on_success)
+
+        start_hook_source = None
+        if on_start:
+            # string of on_start hook function to be used for this step
+            start_hook_source, _ = resolve_and_validate_hook(on_start)
+
+        end_hook_source = None
+        if on_end:
+            # string of on_end hook function to be used for this step
+            end_hook_source, _ = resolve_and_validate_hook(on_end, Exception())
 
         if merge and secrets and self._configuration.secrets:
             secrets = self._configuration.secrets + list(secrets)
@@ -1090,6 +1110,8 @@ class BaseStep:
                 "extra": extra,
                 "failure_hook_source": failure_hook_source,
                 "success_hook_source": success_hook_source,
+                "start_hook_source": start_hook_source,
+                "end_hook_source": end_hook_source,
                 "model": model,
                 "retry": retry,
                 "substitutions": substitutions,
@@ -1121,6 +1143,8 @@ class BaseStep:
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
+        on_start: Optional["HookSpecification"] = None,
+        on_end: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
         retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
@@ -1151,12 +1175,14 @@ class BaseStep:
                 step.
             settings: Settings for this step.
             extra: Extra configurations for this step.
-            on_failure: Callback function in event of failure of the step. Can
-                be a function with a single argument of type `BaseException`, or
-                a source path to such a function (e.g. `module.my_function`).
-            on_success: Callback function in event of success of the step. Can
-                be a function with no arguments, or a source path to such a
-                function (e.g. `module.my_function`).
+            on_failure: Hook run when the step fails. A callable taking an
+                optional `BaseException`, or a source path to one.
+            on_success: Hook run when the step succeeds. A no-arg callable, or
+                a source path to one.
+            on_start: Hook run when the step starts. A no-arg callable, or a
+                source path to one.
+            on_end: Hook run when the step ends. A callable taking an optional
+                `BaseException`, or a source path to one.
             model: Model to use for this step.
             retry: Configuration for retrying the step in case of failure.
             substitutions: Extra substitutions for model and artifact name
@@ -1193,6 +1219,8 @@ class BaseStep:
             extra=extra,
             on_failure=on_failure,
             on_success=on_success,
+            on_start=on_start,
+            on_end=on_end,
             model=model,
             retry=retry,
             substitutions=substitutions,

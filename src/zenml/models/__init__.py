@@ -162,6 +162,14 @@ from zenml.models.v2.core.flavor import (
     FlavorResponseResources,
     FlavorUpdate,
 )
+from zenml.models.v2.core.hook_invocation import (
+    HookInvocationFilter,
+    HookInvocationRequest,
+    HookInvocationResponse,
+    HookInvocationResponseBody,
+    HookInvocationResponseMetadata,
+    HookInvocationResponseResources,
+)
 from zenml.models.v2.core.logs import (
     LogsRequest,
     LogsResponse,
@@ -536,6 +544,10 @@ CuratedVisualizationResponse.model_rebuild()
 FlavorResponseBody.model_rebuild()
 FlavorResponseMetadata.model_rebuild()
 FlavorResponseResources.model_rebuild()
+HookInvocationRequest.model_rebuild()
+HookInvocationResponseBody.model_rebuild()
+HookInvocationResponseMetadata.model_rebuild()
+HookInvocationResponseResources.model_rebuild()
 LogsRequest.model_rebuild()
 LogsUpdate.model_rebuild()
 LogsResponseResources.model_rebuild()
@@ -742,6 +754,12 @@ __all__ = [
     "FlavorResponseBody",
     "FlavorResponseMetadata",
     "FlavorResponseResources",
+    "HookInvocationRequest",
+    "HookInvocationFilter",
+    "HookInvocationResponse",
+    "HookInvocationResponseBody",
+    "HookInvocationResponseMetadata",
+    "HookInvocationResponseResources",
     "LogsRequest",
     "LogsUpdate",
     "LogsResponse",
