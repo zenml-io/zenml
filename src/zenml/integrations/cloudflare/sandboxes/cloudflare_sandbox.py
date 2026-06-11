@@ -75,6 +75,11 @@ _RETRYABLE_STATUSES: FrozenSet[int] = frozenset({429, 502, 503, 504})
 _RETRYABLE_METHODS: FrozenSet[str] = frozenset({"GET", "PUT", "DELETE"})
 _MAX_RETRIES = 3
 
+# Per-stream line cap for the SSE pump buffers. A caller that only
+# wait()s on a noisy command would otherwise grow these deques without
+# bound; past the cap the oldest lines are dropped (logged once).
+_STREAM_BUFFER_MAX_LINES = 100_000
+
 
 @dataclass(frozen=True)
 class _BridgeEvent:
@@ -568,6 +573,7 @@ class CloudflareSandboxProcess(SandboxProcess):
         self._lock = threading.Lock()
         self._stdout_buf: Deque[str] = deque()
         self._stderr_buf: Deque[str] = deque()
+        self._buffer_truncated = False
         self._data_available = threading.Condition(self._lock)
         self._done = threading.Event()
         self._exit_code: Optional[int] = None
@@ -594,6 +600,17 @@ class CloudflareSandboxProcess(SandboxProcess):
         buf = remainder + text
         while "\n" in buf:
             line, buf = buf.split("\n", 1)
+            if len(target) >= _STREAM_BUFFER_MAX_LINES:
+                target.popleft()
+                if not self._buffer_truncated:
+                    self._buffer_truncated = True
+                    logger.warning(
+                        "Cloudflare exec output exceeded the %d-line "
+                        "buffer; oldest undrained lines are being "
+                        "dropped. Drain process.stdout()/stderr() (or "
+                        "use collect()) to keep full output.",
+                        _STREAM_BUFFER_MAX_LINES,
+                    )
             target.append(line + "\n")
         return buf
 
@@ -812,26 +829,34 @@ class CloudflareSandboxSession(SandboxSession):
         Args:
             command: A list (argv) or string (shell-split via ``shlex.split``).
             cwd: Working directory inside the sandbox.
-            env: Per-exec env vars. Merged inline into argv as ``KEY=VAL``
-                prefixes since the bridge exec endpoint does not document
-                an env parameter; session-scoped env created at session
-                start is the preferred path.
+            env: Not supported on this flavor — see ``Raises``.
+
+        Raises:
+            NotImplementedError: If ``env`` is passed. The bridge has no
+                per-exec env API, and inlining values into argv would
+                expose secrets on the remote process command line and in
+                bridge-side logging. Use the session-scoped
+                ``sandbox_environment`` setting instead.
 
         Returns:
             A ``CloudflareSandboxProcess``.
         """
+        if env:
+            raise NotImplementedError(
+                "Per-exec env vars are not supported on the Cloudflare "
+                "sandbox: the bridge has no per-exec env API, and "
+                "inlining values into the command line would expose "
+                "secrets to process inspection and bridge logs. Use the "
+                "sandbox_environment setting (scoped to the session via "
+                "the bridge session API) instead."
+            )
         argv: List[str] = (
             list(command)
             if isinstance(command, list)
             else shlex.split(command)
         )
-        # Log BEFORE prefixing env=KEY=VAL — per-exec env values are often
-        # secrets and would otherwise persist in the sandbox log source.
         self._log_command(argv)
-        if env:
-            wire_argv = ["env", *[f"{k}={v}" for k, v in env.items()], *argv]
-        else:
-            wire_argv = argv
+        wire_argv = argv
 
         effective_cwd = cwd if cwd is not None else self._default_cwd
         started_at = time.time()

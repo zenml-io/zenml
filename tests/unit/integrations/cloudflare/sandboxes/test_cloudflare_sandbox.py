@@ -643,12 +643,32 @@ class TestSessionExec:
         proc.wait()
         assert captured["body"]["argv"] == ["python", "-c", "print(1)"]
 
-    def test_exec_env_inlined(self) -> None:
-        captured: Dict[str, Any] = {}
+    def test_exec_env_rejected(self) -> None:
+        # The bridge has no per-exec env API; inlining values into argv
+        # would expose secrets on the remote command line, so env= is
+        # rejected with a pointer at sandbox_environment.
+        requests_seen: List[str] = []
 
         def handler(request: httpx.Request) -> httpx.Response:
-            captured["body"] = json.loads(request.content.decode())
-            sse = 'event: exit\ndata: {"exit_code": 0}\n\n'
+            requests_seen.append(request.url.path)
+            return httpx.Response(204)
+
+        client = _make_client(handler)
+        session = _make_session(client)
+        with pytest.raises(NotImplementedError, match="sandbox_environment"):
+            session.exec(["python"], env={"FOO": "bar"})
+        assert not any(p.endswith("/exec") for p in requests_seen)
+
+    def test_pump_buffer_caps_undrained_output(self) -> None:
+        # A wait()-only caller must not grow the pump buffers without
+        # bound; past the cap the oldest lines are dropped.
+        big = "".join(f"line-{i}\n" for i in range(50))
+        sse = (
+            f"event: stdout\ndata: {base64.b64encode(big.encode()).decode()}\n\n"
+            'event: exit\ndata: {"exit_code": 0}\n\n'
+        )
+
+        def handler(request: httpx.Request) -> httpx.Response:
             return httpx.Response(
                 200,
                 content=sse.encode(),
@@ -657,12 +677,18 @@ class TestSessionExec:
 
         client = _make_client(handler)
         session = _make_session(client)
-        proc = session.exec(["python"], env={"FOO": "bar"})
-        proc.wait()
-        argv = captured["body"]["argv"]
-        assert argv[0] == "env"
-        assert "FOO=bar" in argv
-        assert argv[-1] == "python"
+        import zenml.integrations.cloudflare.sandboxes.cloudflare_sandbox as cf
+
+        old = cf._STREAM_BUFFER_MAX_LINES
+        cf._STREAM_BUFFER_MAX_LINES = 10
+        try:
+            proc = session.exec(["noisy"])
+            assert proc.wait() == 0
+            buffered = list(proc.stdout())
+            assert len(buffered) <= 10
+            assert buffered[-1] == "line-49\n"
+        finally:
+            cf._STREAM_BUFFER_MAX_LINES = old
 
 
 class TestSessionFileOps:
