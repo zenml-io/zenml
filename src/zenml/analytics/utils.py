@@ -21,6 +21,7 @@ from uuid import UUID
 
 from zenml.analytics import identify, track
 from zenml.analytics.enums import AnalyticsEvent
+from zenml.analytics.error_classification import classify_error
 from zenml.analytics.models import AnalyticsTrackedModelMixin
 from zenml.constants import ENV_ZENML_ANALYTICS_OPT_IN
 from zenml.logger import get_logger
@@ -240,5 +241,11 @@ class track_handler(object):
 
         if type_ is not None:
             self.metadata.update({"event_error_type": type_.__name__})
+            # Add privacy-safe, structured failure labels (category / origin /
+            # fingerprint). This never reads the exception message or
+            # traceback text and never raises.
+            self.metadata.update(
+                classify_error(type_, value, traceback)
+            )
 
         track(self.event, self.metadata)
