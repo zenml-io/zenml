@@ -45,6 +45,7 @@
   * [Execution](how-to/steps-pipelines/execution.md)
   * [Wait for External Input](how-to/steps-pipelines/wait_resume.md)
   * [Advanced Features](how-to/steps-pipelines/advanced_features.md)
+  * [Hooks](how-to/steps-pipelines/hooks.md)
   * [Dynamic Pipelines](how-to/steps-pipelines/dynamic_pipelines.md)
   * [Streaming Events](how-to/steps-pipelines/streaming_events.md)
 * [Artifacts](how-to/artifacts/artifacts.md)
