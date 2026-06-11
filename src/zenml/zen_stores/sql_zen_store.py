@@ -11980,13 +11980,32 @@ class SqlZenStore(BaseZenStore):
                     new_status=step_run_update.status,
                 )
 
-            if existing_step_run.is_retriable and step_run_update.status in {
+            if step_run_update.status in {
                 ExecutionStatus.FAILED,
                 ExecutionStatus.CANCELLED,
             }:
-                # This step will be retried by the orchestrator, so we
-                # set its status accordingly.
-                step_run_update.status = ExecutionStatus.RETRYING
+                can_retry = existing_step_run.is_retriable
+
+                if can_retry:
+                    run_status = ExecutionStatus(
+                        session.exec(
+                            select(PipelineRunSchema.status).where(
+                                PipelineRunSchema.id
+                                == existing_step_run.pipeline_run_id
+                            )
+                        ).one()
+                    )
+                    if run_status in {
+                        ExecutionStatus.STOPPING,
+                        ExecutionStatus.STOPPED,
+                    }:
+                        # The run is stopping, which prevents any step retries.
+                        can_retry = False
+
+                if can_retry:
+                    # This step will be retried by the orchestrator, so we
+                    # set its status accordingly.
+                    step_run_update.status = ExecutionStatus.RETRYING
 
             # If the step is stopping and fails, we need to set its status to stopped.
             if (

@@ -950,6 +950,14 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 return False
 
             new_status = requested_status or current_status
+
+            # If the run is stopping and fails, we set its status to stopped.
+            if (
+                current_status
+                in {ExecutionStatus.STOPPING, ExecutionStatus.STOPPED}
+                and new_status == ExecutionStatus.FAILED
+            ):
+                new_status = ExecutionStatus.STOPPED
         else:
             # For static pipelines we compute the run status based on the step
             # statuses.

@@ -557,11 +557,13 @@ class DynamicPipelineRunner:
                     # Resource preemption sets the status to CANCELLING. We now
                     # update the status to CANCELLED.
                     step_run = publish_cancelled_step_run(step_run.id)
-                elif (
-                    infra_status
-                    in [ExecutionStatus.FAILED, ExecutionStatus.STOPPED]
-                    and db_status == ExecutionStatus.RUNNING
-                ):
+                elif infra_status in [
+                    ExecutionStatus.FAILED,
+                    ExecutionStatus.STOPPED,
+                ] and db_status in [
+                    ExecutionStatus.PROVISIONING,
+                    ExecutionStatus.RUNNING,
+                ]:
                     # Step failed/stopped on the infra side, but the
                     # code failed before it could report the status back to us.
                     step_run = publish_failed_step_run(step_run.id)
@@ -645,7 +647,17 @@ class DynamicPipelineRunner:
                                 config=step_run.config,
                                 step_config_overrides=step_run.config,
                             )
-                            self._queue_concurrent_isolated_step(step=step)
+                            execution_future = (
+                                self._queue_concurrent_isolated_step(step=step)
+                            )
+                            # Replace the execution future of the registered
+                            # step future. This is done so a failed submission
+                            # resolves the future instead of leaving it polling
+                            # the step run that is stuck in `RETRYING` status.
+                            self._future_registry.rebind_step_execution_future(
+                                invocation_id=invocation_id,
+                                future=execution_future,
+                            )
 
                 time.sleep(monitoring_delay)
 
@@ -1130,7 +1142,10 @@ class DynamicPipelineRunner:
 
             remaining_retries = get_remaining_retries(step_run=step_run)
 
-            if step_run.status == ExecutionStatus.RUNNING:
+            if step_run.status in {
+                ExecutionStatus.PROVISIONING,
+                ExecutionStatus.RUNNING,
+            }:
                 logger.info(
                     "Restarting the monitoring of existing step `%s` "
                     "(ID: %s). Remaining retries: %d",

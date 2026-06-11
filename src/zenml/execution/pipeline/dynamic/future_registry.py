@@ -184,6 +184,19 @@ class FutureRegistry:
             step_future = self.get_step_future(invocation_id=invocation_id)
             step_future._set_startup_result(future)
 
+    def rebind_step_execution_future(
+        self, invocation_id: str, future: StepExecutionFuture
+    ) -> None:
+        """Rebind the step execution future to a new attempt of the step.
+
+        Args:
+            invocation_id: The step invocation ID.
+            future: The future that represents the new step execution attempt.
+        """
+        with self._lock:
+            step_future = self.get_step_future(invocation_id=invocation_id)
+            step_future._rebind_execution_future(future)
+
     def bind_map_child_futures(
         self, map_id: str, child_futures: List[StepFuture]
     ) -> None:
