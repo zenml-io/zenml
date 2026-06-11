@@ -64,7 +64,6 @@ from zenml.constants import (
 from zenml.enums import (
     ColorVariants,
     CuratedVisualizationSize,
-    DeploymentStatus,
     LogicalOperators,
     ModelStages,
     OAuthDeviceStatus,
