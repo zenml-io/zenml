@@ -107,6 +107,16 @@ class ModalVolumeStub:
         """
         self.files = files or {}
         self.copy_calls: list[tuple[list[str], str, bool]] = []
+        self.listdir_calls: list[tuple[str, bool]] = []
+        self.read_file_calls: list[str] = []
+        self.remove_file_calls: list[tuple[str, bool]] = []
+        self.upload_calls: list[tuple[str, str]] = []
+
+    @staticmethod
+    def _assert_sdk_path(path: str) -> None:
+        """Fail when code passes absolute paths to Modal SDK file APIs."""
+        if path != "/" and path.startswith("/"):
+            raise AssertionError(f"SDK path must be relative, got {path!r}")
 
     def batch_upload(self, force: bool = False) -> "BatchUploadStub":
         """Return a batch uploader for this stub Volume."""
@@ -114,6 +124,8 @@ class ModalVolumeStub:
 
     def read_file(self, path: str):
         """Yield file contents in chunks like the Modal SDK."""
+        self._assert_sdk_path(path)
+        self.read_file_calls.append(path)
         yield self.files[path][:2]
         yield self.files[path][2:]
 
@@ -124,15 +136,22 @@ class ModalVolumeStub:
         recursive: bool = False,
     ) -> None:
         """Copy a file within the stub Volume."""
+        for src_path in src_paths:
+            self._assert_sdk_path(src_path)
+        self._assert_sdk_path(dst_path)
         self.copy_calls.append((src_paths, dst_path, recursive))
         self.files[dst_path] = self.files[src_paths[0]]
 
     def remove_file(self, path: str, recursive: bool = False) -> None:
         """Remove a file from the stub Volume."""
+        self._assert_sdk_path(path)
+        self.remove_file_calls.append((path, recursive))
         del self.files[path]
 
     def listdir(self, path: str, recursive: bool = False):
         """List child entries below a path."""
+        self._assert_sdk_path(path)
+        self.listdir_calls.append((path, recursive))
         prefix = path.strip("/")
         children: dict[str, SimpleNamespace] = {}
         for file_path, contents in self.files.items():
@@ -181,6 +200,8 @@ class BatchUploadStub:
 
     def put_file(self, local_path: str, remote_path: str) -> None:
         """Store local file bytes at the requested remote path."""
+        self.volume._assert_sdk_path(remote_path)
+        self.volume.upload_calls.append((local_path, remote_path))
         self.volume.files[remote_path] = Path(local_path).read_bytes()
 
 
@@ -412,7 +433,8 @@ def test_modal_volume_uses_sdk_fallback_without_fast_path_marker(
     with artifact_store.open(uri, "wb") as file:
         file.write(b"archive")
 
-    assert volume.files["/root/control-plane/archive.tar.gz"] == b"archive"
+    assert volume.files["root/control-plane/archive.tar.gz"] == b"archive"
+    assert volume.upload_calls[0][1] == "root/control-plane/archive.tar.gz"
     assert artifact_store.exists(uri)
     with artifact_store.open(uri, "rb") as file:
         temp_download_path = file.name
@@ -428,29 +450,37 @@ def test_modal_volume_uses_sdk_fallback_without_fast_path_marker(
     assert artifact_store.listdir(f"{MODAL_URI}/control-plane") == [
         "archive.tar.gz"
     ]
+    assert "root/control-plane/archive.tar.gz" in volume.read_file_calls
+    assert ("root/control-plane", False) in volume.listdir_calls
 
-    volume.files["/root/control-plane/source.txt"] = b"source"
+    volume.files["root/control-plane/source.txt"] = b"source"
     artifact_store.copyfile(
         f"{MODAL_URI}/control-plane/source.txt",
         f"{MODAL_URI}/control-plane/copy.txt",
     )
-    assert volume.files["/root/control-plane/copy.txt"] == b"source"
+    assert volume.files["root/control-plane/copy.txt"] == b"source"
     assert volume.copy_calls == [
         (
-            ["/root/control-plane/source.txt"],
-            "/root/control-plane/copy.txt",
+            ["root/control-plane/source.txt"],
+            "root/control-plane/copy.txt",
             False,
         )
     ]
 
-    volume.files["/root/control-plane/existing.txt"] = b"keep"
+    volume.files["root/control-plane/existing.txt"] = b"keep"
     with pytest.raises(NotImplementedError, match="overwriting"):
         artifact_store.copyfile(
             f"{MODAL_URI}/control-plane/source.txt",
             f"{MODAL_URI}/control-plane/existing.txt",
             overwrite=True,
         )
-    assert volume.files["/root/control-plane/existing.txt"] == b"keep"
+    assert volume.files["root/control-plane/existing.txt"] == b"keep"
+
+    artifact_store.remove(f"{MODAL_URI}/control-plane/copy.txt")
+    assert volume.remove_file_calls == [
+        ("root/control-plane/copy.txt", False)
+    ]
+    assert not artifact_store.exists(f"{MODAL_URI}/control-plane/copy.txt")
 
 
 def test_modal_volume_sdk_fallback_sizes_files_and_directories(
@@ -461,9 +491,9 @@ def test_modal_volume_sdk_fallback_sizes_files_and_directories(
     artifact_store = _make_artifact_store(tmp_path)
     volume = ModalVolumeStub(
         files={
-            "/root/control-plane/archive.tar.gz": b"archive",
-            "/root/control-plane/nested/data.bin": b"data",
-            "/root/control-plane/nested/second.bin": b"12",
+            "root/control-plane/archive.tar.gz": b"archive",
+            "root/control-plane/nested/data.bin": b"data",
+            "root/control-plane/nested/second.bin": b"12",
         }
     )
     monkeypatch.delenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, raising=False)
@@ -488,8 +518,8 @@ def test_modal_volume_sdk_fallback_walks_directories(
     artifact_store = _make_artifact_store(tmp_path)
     volume = ModalVolumeStub(
         files={
-            "/root/control-plane/archive.tar.gz": b"archive",
-            "/root/control-plane/nested/data.bin": b"data",
+            "root/control-plane/archive.tar.gz": b"archive",
+            "root/control-plane/nested/data.bin": b"data",
         }
     )
     monkeypatch.delenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, raising=False)
@@ -518,7 +548,7 @@ def test_modal_volume_loads_artifact_visualization_via_sdk_fallback(
     artifact_store = _make_artifact_store(tmp_path)
     visualization_uri = f"{MODAL_URI}/dashboard/visualization.html"
     volume = ModalVolumeStub(
-        files={"/root/dashboard/visualization.html": b"<h1>Modal</h1>"}
+        files={"root/dashboard/visualization.html": b"<h1>Modal</h1>"}
     )
     monkeypatch.delenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, raising=False)
     monkeypatch.setattr(artifact_store, "_get_modal_volume", lambda: volume)
@@ -554,7 +584,7 @@ def test_modal_volume_fetches_artifact_logs_via_sdk_fallback(
     logs_uri = f"{MODAL_URI}/logs/{uuid4()}.log"
     volume = ModalVolumeStub(
         files={
-            f"/{logs_uri.removeprefix('modal-volume://test-volume/')}": (
+            logs_uri.removeprefix("modal-volume://test-volume/"): (
                 b"first Modal log line\nsecond Modal log line\n"
             )
         }

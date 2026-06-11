@@ -31,6 +31,7 @@
 * [Artifact Stores](artifact-stores/README.md)
   * [Local Artifact Store](artifact-stores/local.md)
   * [Amazon Simple Cloud Storage (S3)](artifact-stores/s3.md)
+  * [Modal Volume](artifact-stores/modal-volume.md)
   * [Google Cloud Storage (GCS)](artifact-stores/gcp.md)
   * [Azure Blob Storage](artifact-stores/azure.md)
   * [Alibaba Cloud OSS](artifact-stores/alibaba-oss.md)

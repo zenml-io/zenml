@@ -47,7 +47,7 @@ To use the Modal orchestrator, you need:
 * A [Modal account](https://modal.com/signup).
 * Modal authentication configured either with `modal setup`, Modal environment variables, or the `token_id` and `token_secret` fields on the ZenML orchestrator component.
 * Docker installed and running where ZenML builds images.
-* A [remote artifact store](../artifact-stores/README.md). Modal cannot read artifacts from a local directory on your laptop.
+* A [remote artifact store](../artifact-stores/README.md). Modal cannot read artifacts from a local directory on your laptop. For Modal-native storage, you can use the [Modal Volume artifact store](../artifact-stores/modal-volume.md).
 * A [remote container registry](../container-registries/README.md). Modal pulls the Docker image from this registry.
 * An [image builder](../image-builders/README.md) in your stack so ZenML can build the image that Modal runs.
 

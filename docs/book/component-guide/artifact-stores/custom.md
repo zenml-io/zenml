@@ -16,13 +16,13 @@ The Artifact Store establishes one of the main components in every ZenML stack. 
 
 1. As ZenML only supports filesystem-based artifact stores, it features a configuration parameter called `path`, which will indicate the root path of the artifact store. When registering an artifact store, users will have to define this parameter.
 2. Moreover, there is another variable in the config class called `SUPPORTED_SCHEMES`. This is a class variable that needs to be defined in every subclass of the base artifact store configuration. It indicates the supported file path schemes for the corresponding implementation. For instance, for the Azure artifact store, this set will be defined as `{"abfs://", "az://"}`.
-3. Lastly, the base class features a set of `abstractmethod`s: `open`, `copyfile`,`exists`,`glob`,`isdir`,`listdir` ,`makedirs`,`mkdir`,`remove`, `rename`,`rmtree`,`stat`,`walk`. In the implementation of every `ArtifactStore` flavor, it is required to define these methods with respect to the flavor at hand.
+3. Lastly, the base class features a set of `abstractmethod`s: `open`, `copyfile`, `exists`, `glob`, `isdir`, `listdir`, `makedirs`, `mkdir`, `remove`, `rename`, `rmtree`, `size`, `stat`, `walk`. In the implementation of every `ArtifactStore` flavor, it is required to define these methods with respect to the flavor at hand.
 
 Putting all these considerations together, we end up with the following implementation:
 
 ```python
 from abc import abstractmethod
-from typing import Any, ClassVar, List, Set, Union
+from typing import Any, Callable, ClassVar, Iterable, List, Optional, Set, Tuple, Union
 from zenml.enums import StackComponentType
 from zenml.stack import StackComponent, StackComponentConfig
 
@@ -87,6 +87,10 @@ class BaseArtifactStore(StackComponent):
     @abstractmethod
     def rmtree(self, path: PathType) -> None:
         """Deletes dir recursively. Dangerous operation."""
+
+    @abstractmethod
+    def size(self, path: PathType) -> int:
+        """Get the size of a file in bytes."""
 
     @abstractmethod
     def stat(self, path: PathType) -> Any:

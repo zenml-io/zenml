@@ -597,10 +597,10 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
             uri: A Modal Volume URI.
 
         Returns:
-            The absolute path used by Modal SDK Volume file APIs.
+            The path used by Modal SDK Volume file APIs.
         """
         parts = self._uri_parts(uri)
-        return "/" + "/".join(parts) if parts else "/"
+        return "/".join(parts) if parts else "/"
 
     @staticmethod
     def _is_modal_not_found_error(error: Exception) -> bool:
@@ -619,10 +619,11 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
 
     @staticmethod
     def _entry_sdk_path(entry: Any) -> str:
-        """Return a normalized absolute SDK path for a Modal FileEntry."""
-        return posixpath.normpath(
-            "/" + str(getattr(entry, "path", "")).lstrip("/")
+        """Return a normalized SDK path for a Modal FileEntry."""
+        normalized_path = posixpath.normpath(
+            str(getattr(entry, "path", "")).lstrip("/")
         )
+        return "/" if normalized_path == "." else normalized_path
 
     def _uri_from_sdk_path(self, sdk_path: str) -> str:
         """Translate a Modal SDK path into a Modal Volume URI."""
