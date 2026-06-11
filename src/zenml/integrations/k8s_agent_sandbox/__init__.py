@@ -38,7 +38,7 @@ class K8sAgentSandboxIntegration(Integration):
     # Inherit the kubernetes-client pin from the ``kubernetes`` integration
     # so the pod-spec helpers we reuse (manifest_utils, pod_settings,
     # kube_utils) can't drift across installs.
-    REQUIREMENTS = ["k8s-agent-sandbox>=0.1.0,<0.2"] + [
+    REQUIREMENTS = ["k8s-agent-sandbox>=0.3,<0.5"] + [
         r for r in KubernetesIntegration.REQUIREMENTS if "kubernetes" in r
     ]
 
