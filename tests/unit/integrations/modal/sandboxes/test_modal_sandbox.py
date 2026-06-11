@@ -225,14 +225,23 @@ class TestModalSandboxProcess:
         proc = ModalSandboxProcess(fake, session=session, started_at=0.0)
         assert proc.exit_code == 7
 
-    def test_wait_with_timeout_raises_not_implemented(self) -> None:
-        # Modal has no per-exec timeout; we refuse rather than silently drop.
+    def test_wait_with_timeout_polls_to_completion(self) -> None:
+        # Modal's own wait() has no timeout parameter; a bounded wait
+        # polls instead and returns the exit code once available.
         fake = MagicMock()
+        fake.poll.side_effect = [None, None, 7]
         session = _make_session(MagicMock(object_id="sb_xyz"))
-        with pytest.raises(NotImplementedError, match="timeout"):
-            ModalSandboxProcess(fake, session=session, started_at=0.0).wait(
-                timeout=5.0
-            )
+        proc = ModalSandboxProcess(fake, session=session, started_at=0.0)
+        assert proc.wait(timeout=5.0) == 7
+        fake.wait.assert_not_called()
+
+    def test_wait_with_timeout_raises_on_deadline(self) -> None:
+        fake = MagicMock()
+        fake.poll.return_value = None
+        session = _make_session(MagicMock(object_id="sb_xyz"))
+        proc = ModalSandboxProcess(fake, session=session, started_at=0.0)
+        with pytest.raises(TimeoutError, match="did not exit"):
+            proc.wait(timeout=0.3)
 
     def test_kill_terminates_owning_sandbox(self) -> None:
         # Modal has no per-command kill, so kill() must terminate the
