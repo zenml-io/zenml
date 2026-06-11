@@ -85,6 +85,14 @@ class _ModalVolumeDownloadFile:
         """Delegate file operations to the temporary file."""
         return getattr(self._file, name)
 
+    def __iter__(self) -> Any:
+        """Delegate line iteration to the temporary file."""
+        return iter(self._file)
+
+    def __next__(self) -> Any:
+        """Delegate direct iteration to the temporary file."""
+        return next(self._file)
+
     def __enter__(self) -> "_ModalVolumeDownloadFile":
         """Return the readable file object."""
         return self
