@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+from typing import Optional
 from uuid import uuid4
 
 import pytest
@@ -21,7 +22,11 @@ from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
-from zenml.enums import ArtifactSaveType, StepRunInputArtifactType
+from zenml.enums import (
+    ArtifactSaveType,
+    HookType,
+    StepRunInputArtifactType,
+)
 from zenml.models import (
     PipelineRunResponse,
     PipelineSnapshotResponse,
@@ -32,6 +37,10 @@ from zenml.orchestrators.step_launcher import StepRunner
 from zenml.stack import Stack
 from zenml.steps import step
 
+HOOK_MODULE = "tests.unit.orchestrators.test_step_runner"
+
+_flaky_calls = {"count": 0}
+
 
 @step
 def successful_step() -> None:
@@ -41,6 +50,91 @@ def successful_step() -> None:
 @step
 def failing_step() -> None:
     raise RuntimeError()
+
+
+@step
+def flaky_step() -> None:
+    _flaky_calls["count"] += 1
+    if _flaky_calls["count"] < 3:
+        raise RuntimeError()
+
+
+def on_start_hook() -> None:
+    pass
+
+
+def on_end_hook(exception: Optional[BaseException] = None) -> None:
+    pass
+
+
+def on_success_hook() -> None:
+    pass
+
+
+def on_failure_hook(exception: Optional[BaseException] = None) -> None:
+    pass
+
+
+def _step_with_hooks(source: str) -> Step:
+    """Builds a step whose config sets all four step lifecycle hooks."""
+    return Step.model_validate(
+        {
+            "spec": {"source": source, "upstream_steps": []},
+            "config": {
+                "name": "step_name",
+                "start_hook_source": f"{HOOK_MODULE}.on_start_hook",
+                "end_hook_source": f"{HOOK_MODULE}.on_end_hook",
+                "success_hook_source": f"{HOOK_MODULE}.on_success_hook",
+                "failure_hook_source": f"{HOOK_MODULE}.on_failure_hook",
+            },
+        }
+    )
+
+
+def _hook_step_run_info(
+    step: Step,
+    snapshot: PipelineSnapshotResponse,
+    step_run: StepRunResponse,
+) -> StepRunInfo:
+    """Builds step run info for a hook-configured step."""
+    return StepRunInfo(
+        step_run_id=uuid4(),
+        run_id=uuid4(),
+        run_name="run_name",
+        pipeline_step_name="step_name",
+        config=step.config,
+        spec=step.spec,
+        pipeline=PipelineConfiguration(name="pipeline_name"),
+        snapshot=snapshot,
+        force_write_logs=lambda: None,
+        step_run=step_run,
+    )
+
+
+def _patch_step_runner_io(mocker):
+    """Patches step runner IO and captures fired hooks.
+
+    Returns:
+        A list of (hook_type, optional_args) tuples for each fired hook.
+    """
+    fired = []
+    mocker.patch(
+        "zenml.orchestrators.step_runner.run_lifecycle_hook",
+        side_effect=lambda source, hook_type, optional_args=None: fired.append(
+            (hook_type, optional_args or ())
+        ),
+    )
+    mocker.patch.object(Stack, "prepare_step_run")
+    mocker.patch.object(Stack, "cleanup_step_run")
+    mocker.patch("zenml.artifacts.utils.save_artifact", return_value=uuid4())
+    mocker.patch("zenml.orchestrators.step_runner.publish_successful_step_run")
+    mocker.patch(
+        "zenml.orchestrators.step_runner.setup_logging_context",
+        return_value=mocker.MagicMock(
+            __enter__=lambda s: None, __exit__=lambda s, *a: None
+        ),
+    )
+    return fired
 
 
 def test_running_a_successful_step(
@@ -239,3 +333,136 @@ def test_loading_input_artifact_without_specified_data_type(
     )
     assert isinstance(data, int)
     assert data == 42
+
+
+def test_step_hooks_fire_on_successful_attempt(
+    mocker,
+    local_stack,
+    sample_pipeline_run: PipelineRunResponse,
+    sample_step_run: StepRunResponse,
+    sample_snapshot_response_model: PipelineSnapshotResponse,
+):
+    """Tests that a successful attempt fires start, end, and success hooks."""
+    fired = _patch_step_runner_io(mocker)
+    step = _step_with_hooks(f"{HOOK_MODULE}.successful_step")
+    step_run_info = _hook_step_run_info(
+        step, sample_snapshot_response_model, sample_step_run
+    )
+
+    runner = StepRunner(step=step, stack=local_stack)
+    runner.run(
+        pipeline_run=sample_pipeline_run,
+        step_run=sample_step_run,
+        step_run_info=step_run_info,
+        input_artifacts={},
+        output_artifact_uris={},
+    )
+
+    types = [hook_type for hook_type, _ in fired]
+    end_calls = [
+        args for hook_type, args in fired if hook_type == HookType.STEP_END
+    ]
+    assert types.count(HookType.STEP_START) == 1
+    assert len(end_calls) == 1
+    assert end_calls[0] == (None,)
+    assert types.count(HookType.STEP_SUCCESS) == 1
+    assert types.count(HookType.STEP_FAILURE) == 0
+
+
+def test_step_hooks_fire_one_pair_per_attempt(
+    mocker,
+    local_stack,
+    sample_pipeline_run: PipelineRunResponse,
+    sample_step_run: StepRunResponse,
+    sample_snapshot_response_model: PipelineSnapshotResponse,
+):
+    """Tests that two retriable failures then a success fire one pair each."""
+    _flaky_calls["count"] = 0
+    fired = _patch_step_runner_io(mocker)
+    mock_failed = mocker.patch(
+        "zenml.orchestrators.step_runner.publish_failed_step_run"
+    )
+    mock_failed.return_value.is_retriable = True
+
+    step = _step_with_hooks(f"{HOOK_MODULE}.flaky_step")
+    step_run_info = _hook_step_run_info(
+        step, sample_snapshot_response_model, sample_step_run
+    )
+    runner = StepRunner(step=step, stack=local_stack)
+
+    for _ in range(2):
+        with pytest.raises(RuntimeError):
+            runner.run(
+                pipeline_run=sample_pipeline_run,
+                step_run=sample_step_run,
+                step_run_info=step_run_info,
+                input_artifacts={},
+                output_artifact_uris={},
+            )
+    runner.run(
+        pipeline_run=sample_pipeline_run,
+        step_run=sample_step_run,
+        step_run_info=step_run_info,
+        input_artifacts={},
+        output_artifact_uris={},
+    )
+
+    types = [hook_type for hook_type, _ in fired]
+    end_exceptions = [
+        args[0] for hook_type, args in fired if hook_type == HookType.STEP_END
+    ]
+    assert types.count(HookType.STEP_START) == 3
+    assert isinstance(end_exceptions[0], RuntimeError)
+    assert isinstance(end_exceptions[1], RuntimeError)
+    assert end_exceptions[2] is None
+    assert types.count(HookType.STEP_SUCCESS) == 1
+    assert types.count(HookType.STEP_FAILURE) == 0
+
+
+def test_step_hooks_terminal_failure_fires_failure_hook(
+    mocker,
+    local_stack,
+    sample_pipeline_run: PipelineRunResponse,
+    sample_step_run: StepRunResponse,
+    sample_snapshot_response_model: PipelineSnapshotResponse,
+):
+    """Tests that a retriable then terminal failure fires one failure hook."""
+    fired = _patch_step_runner_io(mocker)
+    mock_failed = mocker.patch(
+        "zenml.orchestrators.step_runner.publish_failed_step_run"
+    )
+    mock_failed.side_effect = [
+        mocker.Mock(is_retriable=True),
+        mocker.Mock(is_retriable=False),
+    ]
+
+    step = _step_with_hooks(f"{HOOK_MODULE}.failing_step")
+    step_run_info = _hook_step_run_info(
+        step, sample_snapshot_response_model, sample_step_run
+    )
+    runner = StepRunner(step=step, stack=local_stack)
+
+    for _ in range(2):
+        with pytest.raises(RuntimeError):
+            runner.run(
+                pipeline_run=sample_pipeline_run,
+                step_run=sample_step_run,
+                step_run_info=step_run_info,
+                input_artifacts={},
+                output_artifact_uris={},
+            )
+
+    types = [hook_type for hook_type, _ in fired]
+    end_calls = [
+        args for hook_type, args in fired if hook_type == HookType.STEP_END
+    ]
+    failure_calls = [
+        args for hook_type, args in fired if hook_type == HookType.STEP_FAILURE
+    ]
+    assert types.count(HookType.STEP_START) == 2
+    assert len(end_calls) == 2
+    assert isinstance(end_calls[0][0], RuntimeError)
+    assert isinstance(end_calls[1][0], RuntimeError)
+    assert len(failure_calls) == 1
+    assert isinstance(failure_calls[0][0], RuntimeError)
+    assert types.count(HookType.STEP_SUCCESS) == 0
