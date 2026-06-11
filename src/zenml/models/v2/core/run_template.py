@@ -438,8 +438,11 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
                         == PipelineSnapshotSchema.id,
                         PipelineSnapshotSchema.code_reference_id
                         == CodeReferenceSchema.id,
-                        CodeReferenceSchema.code_repository_id
-                        == code_repo_filter,
+                        self.generate_custom_query_conditions_for_column(
+                            value=code_repo_filter,
+                            table=CodeReferenceSchema,
+                            column="code_repository_id",
+                        ),
                     )
                 )
 
@@ -454,7 +457,11 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
                     and_(
                         RunTemplateSchema.source_snapshot_id
                         == PipelineSnapshotSchema.id,
-                        PipelineSnapshotSchema.stack_id == stack_filter,
+                        self.generate_custom_query_conditions_for_column(
+                            value=stack_filter,
+                            table=PipelineSnapshotSchema,
+                            column="stack_id",
+                        ),
                     )
                 )
 
@@ -469,7 +476,11 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
                     and_(
                         RunTemplateSchema.source_snapshot_id
                         == PipelineSnapshotSchema.id,
-                        PipelineSnapshotSchema.build_id == build_filter,
+                        self.generate_custom_query_conditions_for_column(
+                            value=build_filter,
+                            table=PipelineSnapshotSchema,
+                            column="build_id",
+                        ),
                     )
                 )
 
@@ -484,7 +495,11 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
                     and_(
                         RunTemplateSchema.source_snapshot_id
                         == PipelineSnapshotSchema.id,
-                        PipelineSnapshotSchema.pipeline_id == pipeline_filter,
+                        self.generate_custom_query_conditions_for_column(
+                            value=pipeline_filter,
+                            table=PipelineSnapshotSchema,
+                            column="pipeline_id",
+                        ),
                     ),
                 )
 

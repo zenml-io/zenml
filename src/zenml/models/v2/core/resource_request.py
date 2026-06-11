@@ -292,7 +292,11 @@ class ResourceRequestFilter(UserScopedFilter):
                 custom_filters.append(
                     and_(
                         ResourceRequestSchema.step_run_id == StepRunSchema.id,
-                        StepRunSchema.pipeline_run_id == pipeline_run_filter,
+                        self.generate_custom_query_conditions_for_column(
+                            value=pipeline_run_filter,
+                            table=StepRunSchema,
+                            column="pipeline_run_id",
+                        ),
                     )
                 )
 

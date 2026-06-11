@@ -515,8 +515,11 @@ class StackFilter(UserScopedFilter):
                 custom_filters.append(
                     and_(
                         StackCompositionSchema.stack_id == StackSchema.id,
-                        StackCompositionSchema.component_id
-                        == component_id_filter,
+                        self.generate_custom_query_conditions_for_column(
+                            value=component_id_filter,
+                            table=StackCompositionSchema,
+                            column="component_id",
+                        ),
                     )
                 )
 

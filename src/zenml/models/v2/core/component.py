@@ -503,7 +503,11 @@ class ComponentFilter(UserScopedFilter):
             for stack_filter in stack_filters:
                 custom_filters.append(
                     and_(
-                        StackCompositionSchema.stack_id == stack_filter,
+                        self.generate_custom_query_conditions_for_column(
+                            value=stack_filter,
+                            table=StackCompositionSchema,
+                            column="stack_id",
+                        ),
                         StackCompositionSchema.component_id
                         == StackComponentSchema.id,
                     )

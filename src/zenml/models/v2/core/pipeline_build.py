@@ -573,7 +573,11 @@ class PipelineBuildFilter(ProjectScopedFilter):
                         == StackComponentSchema.id,
                         StackComponentSchema.type
                         == StackComponentType.CONTAINER_REGISTRY.value,
-                        StackComponentSchema.id == container_registry_filter,
+                        self.generate_custom_query_conditions_for_column(
+                            value=container_registry_filter,
+                            table=StackComponentSchema,
+                            column="id",
+                        ),
                     )
                 )
 

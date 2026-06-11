@@ -1084,8 +1084,11 @@ class PipelineRunFilter(
                         == PipelineSnapshotSchema.id,
                         PipelineSnapshotSchema.code_reference_id
                         == CodeReferenceSchema.id,
-                        CodeReferenceSchema.code_repository_id
-                        == code_repo_filter,
+                        self.generate_custom_query_conditions_for_column(
+                            value=code_repo_filter,
+                            table=CodeReferenceSchema,
+                            column="code_repository_id",
+                        ),
                     )
                 )
 
@@ -1101,7 +1104,11 @@ class PipelineRunFilter(
                         PipelineRunSchema.snapshot_id
                         == PipelineSnapshotSchema.id,
                         PipelineSnapshotSchema.stack_id == StackSchema.id,
-                        StackSchema.id == stack_filter,
+                        self.generate_custom_query_conditions_for_column(
+                            value=stack_filter,
+                            table=StackSchema,
+                            column="id",
+                        ),
                     )
                 )
 
@@ -1118,7 +1125,11 @@ class PipelineRunFilter(
                         == PipelineSnapshotSchema.id,
                         PipelineSnapshotSchema.schedule_id
                         == ScheduleSchema.id,
-                        ScheduleSchema.id == schedule_filter,
+                        self.generate_custom_query_conditions_for_column(
+                            value=schedule_filter,
+                            table=ScheduleSchema,
+                            column="id",
+                        ),
                     )
                 )
 
@@ -1135,7 +1146,11 @@ class PipelineRunFilter(
                         == PipelineSnapshotSchema.id,
                         PipelineSnapshotSchema.build_id
                         == PipelineBuildSchema.id,
-                        PipelineBuildSchema.id == build_filter,
+                        self.generate_custom_query_conditions_for_column(
+                            value=build_filter,
+                            table=PipelineBuildSchema,
+                            column="id",
+                        ),
                     )
                 )
 
@@ -1150,8 +1165,11 @@ class PipelineRunFilter(
                     and_(
                         PipelineRunSchema.snapshot_id
                         == PipelineSnapshotSchema.id,
-                        PipelineSnapshotSchema.template_id
-                        == run_template_filter,
+                        self.generate_custom_query_conditions_for_column(
+                            value=run_template_filter,
+                            table=PipelineSnapshotSchema,
+                            column="template_id",
+                        ),
                     )
                 )
 
@@ -1166,8 +1184,11 @@ class PipelineRunFilter(
                     and_(
                         PipelineRunSchema.snapshot_id
                         == PipelineSnapshotSchema.id,
-                        PipelineSnapshotSchema.source_snapshot_id
-                        == source_snapshot_filter,
+                        self.generate_custom_query_conditions_for_column(
+                            value=source_snapshot_filter,
+                            table=PipelineSnapshotSchema,
+                            column="source_snapshot_id",
+                        ),
                     )
                 )
 
@@ -1395,8 +1416,11 @@ class PipelineRunFilter(
                         and_(
                             PipelineRunSchema.id
                             == TriggerExecutionSchema.pipeline_run_id,
-                            TriggerExecutionSchema.trigger_id
-                            == trigger_id_filter,
+                            self.generate_custom_query_conditions_for_column(
+                                value=trigger_id_filter,
+                                table=TriggerExecutionSchema,
+                                column="trigger_id",
+                            ),
                         )
                     )
                 )
