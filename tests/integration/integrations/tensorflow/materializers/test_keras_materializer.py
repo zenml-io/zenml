@@ -21,8 +21,8 @@ from tests.unit.test_general import _test_materializer
 
 
 @pytest.mark.skipif(
-    sys.version_info.minor == 12 or sys.version_info.minor == 13,
-    reason="The tensorflow integrations is not yet supported on 3.12.",
+    sys.version_info.minor in (12, 13, 14),
+    reason="The tensorflow integrations is not yet supported on 3.12, 3.13 or 3.14.",
 )
 @pytest.mark.skipif(
     platform.system() == "Darwin",

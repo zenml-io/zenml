@@ -35,7 +35,7 @@ from zenml.config.constants import (
 )
 from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.retry_config import StepRetryConfig
-from zenml.config.source import SourceWithValidator
+from zenml.config.source import StringSerializableSource
 from zenml.enums import ExecutionMode
 from zenml.model.model import Model
 from zenml.utils.tag_utils import Tag
@@ -66,11 +66,15 @@ class PipelineConfigurationUpdate(FrozenBaseModel):
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     tags: Optional[List[Union[str, "Tag"]]] = None
     extra: Dict[str, Any] = {}
-    failure_hook_source: Optional[SourceWithValidator] = None
-    success_hook_source: Optional[SourceWithValidator] = None
-    init_hook_source: Optional[SourceWithValidator] = None
+    failure_hook_source: Optional[StringSerializableSource] = None
+    success_hook_source: Optional[StringSerializableSource] = None
+    start_hook_source: Optional[StringSerializableSource] = None
+    end_hook_source: Optional[StringSerializableSource] = None
+    pause_hook_source: Optional[StringSerializableSource] = None
+    resume_hook_source: Optional[StringSerializableSource] = None
+    init_hook_source: Optional[StringSerializableSource] = None
     init_hook_kwargs: Optional[Dict[str, Any]] = None
-    cleanup_hook_source: Optional[SourceWithValidator] = None
+    cleanup_hook_source: Optional[StringSerializableSource] = None
     model: Optional[Model] = None
     parameters: Optional[Dict[str, Any]] = None
     retry: Optional[StepRetryConfig] = None

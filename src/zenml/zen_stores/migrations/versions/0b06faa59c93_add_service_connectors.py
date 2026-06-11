@@ -25,11 +25,9 @@ def upgrade() -> None:
         sa.Column("connector_type", sa.TEXT(), nullable=True),
         sa.Column("auth_method", sa.TEXT(), nullable=True),
         sa.Column("resource_id", sa.TEXT(), nullable=True),
-        sa.Column(
-            "workspace_id", sqlmodel.sql.sqltypes.GUID(), nullable=False
-        ),
-        sa.Column("user_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
-        sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("workspace_id", sa.Uuid(), nullable=False),
+        sa.Column("user_id", sa.Uuid(), nullable=True),
+        sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.Column("updated", sa.DateTime(), nullable=False),
         sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
@@ -40,7 +38,7 @@ def upgrade() -> None:
         sa.Column("resource_types", sa.LargeBinary(), nullable=False),
         sa.Column("supports_instances", sa.Boolean(), nullable=False),
         sa.Column("configuration", sa.LargeBinary(), nullable=True),
-        sa.Column("secret_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
+        sa.Column("secret_id", sa.Uuid(), nullable=True),
         sa.Column("expires_at", sa.DateTime(), nullable=True),
         sa.Column("expiration_seconds", sa.Integer(), nullable=True),
         sa.Column("labels", sa.LargeBinary(), nullable=True),
@@ -83,9 +81,7 @@ def upgrade() -> None:
 
     with op.batch_alter_table("stack_component", schema=None) as batch_op:
         batch_op.add_column(
-            sa.Column(
-                "connector_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
+            sa.Column("connector_id", sa.Uuid(), nullable=True)
         )
         batch_op.add_column(
             sa.Column(

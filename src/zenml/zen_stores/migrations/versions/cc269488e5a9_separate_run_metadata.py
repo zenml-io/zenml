@@ -5,10 +5,9 @@ Revises: b73bc71f1106
 Create Date: 2024-11-12 09:46:46.587478
 """
 
-import uuid
+from uuid import UUID, uuid4
 
 import sqlalchemy as sa
-import sqlmodel
 from alembic import op
 
 # revision identifiers, used by Alembic.
@@ -24,15 +23,15 @@ def upgrade() -> None:
         "run_metadata_resource",
         sa.Column(
             "id",
-            sqlmodel.sql.sqltypes.GUID(),
+            sa.Uuid(),
             nullable=False,
             primary_key=True,
         ),
-        sa.Column("resource_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("resource_id", sa.Uuid(), nullable=False),
         sa.Column("resource_type", sa.String(length=255), nullable=False),
         sa.Column(
             "run_metadata_id",
-            sqlmodel.sql.sqltypes.GUID(),
+            sa.Uuid(),
             sa.ForeignKey("run_metadata.id", ondelete="CASCADE"),
             nullable=False,
         ),
@@ -52,10 +51,10 @@ def upgrade() -> None:
     # Prepare data with new UUIDs for bulk insert
     resource_data = [
         {
-            "id": str(uuid.uuid4()),  # Generate a new UUID for each row
-            "resource_id": row.resource_id,
+            "id": uuid4(),  # Generate a new UUID for each row
+            "resource_id": UUID(row.resource_id),
             "resource_type": row.resource_type,
-            "run_metadata_id": row.id,
+            "run_metadata_id": UUID(row.id),
         }
         for row in run_metadata_data
     ]
@@ -65,16 +64,14 @@ def upgrade() -> None:
         op.bulk_insert(
             sa.table(
                 "run_metadata_resource",
-                sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
-                sa.Column(
-                    "resource_id", sqlmodel.sql.sqltypes.GUID(), nullable=False
-                ),
+                sa.Column("id", sa.Uuid(), nullable=False),
+                sa.Column("resource_id", sa.Uuid(), nullable=False),
                 sa.Column(
                     "resource_type", sa.String(length=255), nullable=False
                 ),
                 sa.Column(
                     "run_metadata_id",
-                    sqlmodel.sql.sqltypes.GUID(),
+                    sa.Uuid(),
                     nullable=False,
                 ),  # Changed to BIGINT
             ),
@@ -86,9 +83,7 @@ def upgrade() -> None:
 
     op.add_column(
         "run_metadata",
-        sa.Column(
-            "publisher_step_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-        ),
+        sa.Column("publisher_step_id", sa.Uuid(), nullable=True),
     )
 
 
@@ -97,7 +92,7 @@ def downgrade() -> None:
     # Recreate the `resource_id` and `resource_type` columns in `run_metadata`
     op.add_column(
         "run_metadata",
-        sa.Column("resource_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
+        sa.Column("resource_id", sa.Uuid(), nullable=True),
     )
     op.add_column(
         "run_metadata",

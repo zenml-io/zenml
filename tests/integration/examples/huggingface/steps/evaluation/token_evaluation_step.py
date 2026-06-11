@@ -1,10 +1,9 @@
+"""Evaluation step for the HuggingFace token classification example."""
+
 import tensorflow as tf
 from datasets import DatasetDict
-from transformers import (
-    DataCollatorForTokenClassification,
-    PreTrainedTokenizerBase,
-    TFPreTrainedModel,
-)
+from steps.tf_dataset import create_tf_token_classification_dataset
+from transformers import PreTrainedTokenizerBase, TFPreTrainedModel
 
 from zenml import step
 
@@ -21,14 +20,11 @@ def token_evaluator(
     # Needs to recompile because we are reloading model for evaluation
     model.compile(optimizer=tf.keras.optimizers.Adam())
 
-    # Convert into tf dataset format
-    validation_set = tokenized_datasets["validation"].to_tf_dataset(
-        columns=["attention_mask", "input_ids", "labels"],
-        shuffle=False,
+    validation_set = create_tf_token_classification_dataset(
+        dataset=tokenized_datasets["validation"],
+        tokenizer=tokenizer,
         batch_size=batch_size,
-        collate_fn=DataCollatorForTokenClassification(
-            tokenizer, return_tensors="tf"
-        ),
+        shuffle=False,
     )
 
     # Calculate loss

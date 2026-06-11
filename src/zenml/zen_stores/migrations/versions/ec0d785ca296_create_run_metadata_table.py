@@ -33,20 +33,14 @@ def upgrade() -> None:
 
     op.create_table(
         "run_metadata",
-        sa.Column(
-            "pipeline_run_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-        ),
-        sa.Column("step_run_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
-        sa.Column("artifact_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
-        sa.Column(
-            "stack_component_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-        ),
-        sa.Column("user_id", sqlmodel.sql.sqltypes.GUID(), nullable=True),
-        sa.Column(
-            "workspace_id", sqlmodel.sql.sqltypes.GUID(), nullable=False
-        ),
+        sa.Column("pipeline_run_id", sa.Uuid(), nullable=True),
+        sa.Column("step_run_id", sa.Uuid(), nullable=True),
+        sa.Column("artifact_id", sa.Uuid(), nullable=True),
+        sa.Column("stack_component_id", sa.Uuid(), nullable=True),
+        sa.Column("user_id", sa.Uuid(), nullable=True),
+        sa.Column("workspace_id", sa.Uuid(), nullable=False),
         sa.Column("value", sa.TEXT(), nullable=False),
-        sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.Column("updated", sa.DateTime(), nullable=False),
         sa.Column("key", sqlmodel.sql.sqltypes.AutoString(), nullable=False),

@@ -299,11 +299,11 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
         self.prepare_environment_variable(set=True)
 
         try:
+            down = settings.down
+            idle_minutes_to_autostop = settings.idle_minutes_to_autostop
             if isinstance(self.cloud, sky.clouds.Kubernetes):
                 run_command = f"${{VIRTUAL_ENV:+$VIRTUAL_ENV/bin/}}{entrypoint_str} {arguments_str}"
                 setup = None
-                down = False
-                idle_minutes_to_autostop = None
             else:
                 run_command = create_docker_run_command(
                     image=image,
@@ -313,8 +313,6 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     docker_run_args=settings.docker_run_args,
                     use_sudo=True,  # Base orchestrator uses sudo
                 )
-                down = settings.down
-                idle_minutes_to_autostop = settings.idle_minutes_to_autostop
 
             # Create the Task with all parameters and task settings
             task_kwargs = prepare_task_kwargs(
@@ -372,8 +370,6 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     down=down,
                     idle_minutes_to_autostop=idle_minutes_to_autostop,
                 )
-                if isinstance(self.cloud, sky.clouds.Kubernetes):
-                    launch_kwargs.pop("idle_minutes_to_autostop", None)
                 logger.info(
                     f"Launching the task on a new cluster: {cluster_name}"
                 )

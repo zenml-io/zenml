@@ -19,7 +19,7 @@ It provides several key features:
    - Validates links by making HTTP requests
    - Supports parallel validation for better performance
    - Provides detailed error reporting for broken links
-   - Soft-passes HTTP 429 responses for specific domains (e.g., HashiCorp docs) to avoid CI flakiness
+   - Applies narrow status-specific policies for known bot-hostile or rate-limited domains
 
 Usage Examples:
     # Find all links containing 'docs.zenml.io' in a directory
@@ -40,7 +40,7 @@ Usage Examples:
     # Use custom URL path mappings
     python link_checker.py --dir docs --replace-links --url-mapping user-guide=user-guides
 
-    # Soft-pass 429 for HashiCorp docs and skip HEAD for those domains (defaults)
+    # Use default CI policies for known bot-hostile or rate-limited domains
     python link_checker.py --dir docs --substring http --validate-links --ci-mode
 
 Arguments:
@@ -58,6 +58,9 @@ Arguments:
     --user-agent: Custom User-Agent header to use for HTTP requests
 
 Note:
+    Status-specific policies may accept known bot-hostile responses such as 403
+    while still failing non-exempt hard failures such as 404 and 410.
+
     The 'requests' package is required for link validation. Install it with:
     pip install requests
 """
@@ -88,13 +91,19 @@ except ImportError:
 #     EXEMPT_URL_STATUS with the normalized URL (no trailing slash) and a set
 #     of allowed status codes.
 #   - To allow particular statuses for an entire *domain*, add an entry to
-#     EXEMPT_DOMAIN_STATUS with the domain suffix (e.g. "example.com") and a
-#     set of allowed status codes. Matching uses host.endswith(domain).
+#     EXEMPT_DOMAIN_STATUS with the domain (e.g. "example.com") and a set of
+#     allowed status codes. Matching allows only exact hosts or dotted subdomains.
 # ------------------------------------------------------------------------------
 
 EXEMPT_URL_STATUS: Dict[str, set] = {
     # Requires authentication; often returns 403 to unauthenticated HEAD/GET.
     "https://huggingface.co/settings/tokens": {403},
+    # Modal and Segment reject automated requests for these approved docs links.
+    "https://modal.com": {403, 406},
+    "https://modal.com/docs/guide/gpu": {403, 406},
+    "https://modal.com/docs/guide/region-selection": {403, 406},
+    "https://modal.com/signup": {403, 406},
+    "https://segment.com": {403},
     # zenml.io/slack and /slack-invite redirect to a zenml.slack.com invite URL.
     # Slack returns 403 to any unauthenticated request to those invite URLs by
     # design, regardless of User-Agent or HEAD/GET. A real takedown would
@@ -109,8 +118,10 @@ EXEMPT_DOMAIN_STATUS: Dict[str, set] = {
     "developer.hashicorp.com": {429},
     "terraform.io": {429},
     "www.terraform.io": {429},
-    # Modal docs return 406 Not Acceptable to automated requests.
-    "modal.com": {406},
+    # AWS documentation and SDK reference hosts often reject CI traffic.
+    "boto3.amazonaws.com": {403},
+    "botocore.amazonaws.com": {403},
+    "docs.aws.amazon.com": {403},
     # ghcr.io is a container registry API, not a web page; returns 502 to browsers.
     "ghcr.io": {502},
 }
@@ -119,11 +130,13 @@ EXEMPT_DOMAIN_STATUS: Dict[str, set] = {
 # These defaults can be extended via CLI flags.
 DEFAULT_IGNORE_429_DOMAINS = {
     "developer.hashicorp.com",
+    "huggingface.co",
     "terraform.io",
     "www.terraform.io",
 }
 DEFAULT_NO_HEAD_DOMAINS = {
     "developer.hashicorp.com",
+    "huggingface.co",
     "terraform.io",
     "www.terraform.io",
 }
@@ -137,6 +150,11 @@ DEFAULT_USER_AGENT = (
 )
 
 
+def host_matches_domain(host: str, domain: str) -> bool:
+    """Return whether a hostname is the domain itself or a real subdomain."""
+    return host == domain or host.endswith(f".{domain}")
+
+
 def is_exception_status(cleaned_url: str, status_code: int) -> bool:
     """
     Return True if (cleaned_url, status_code) should be treated as valid based
@@ -144,7 +162,7 @@ def is_exception_status(cleaned_url: str, status_code: int) -> bool:
 
     Rules:
       - Exact-URL exemptions: compared after stripping any trailing slash.
-      - Domain exemptions: suffix match against the URL hostname.
+      - Domain exemptions: exact hostname or dotted subdomain match.
     """
     if not cleaned_url.startswith(("http://", "https://")):
         return False
@@ -162,7 +180,7 @@ def is_exception_status(cleaned_url: str, status_code: int) -> bool:
         host = ""
 
     for domain, codes in EXEMPT_DOMAIN_STATUS.items():
-        if host.endswith(domain) and status_code in codes:
+        if host_matches_domain(host, domain) and status_code in codes:
             return True
 
     return False
@@ -409,8 +427,9 @@ def check_link_validity(
                 cleaned_url, timeout=timeout, allow_redirects=True
             )
 
-        # If HEAD fails (>=400), try GET
-        if response.status_code >= 400:
+        # If HEAD fails (>=400), try GET. Domains configured to skip HEAD
+        # already used GET above, so avoid sending the same GET request twice.
+        if not skip_head and response.status_code >= 400:
             response = session.get(
                 cleaned_url, timeout=timeout, allow_redirects=True
             )
@@ -557,6 +576,8 @@ def validate_urls(
                 else:
                     if is_valid and status_code == 429:
                         status = "✅ Valid (429 soft-pass)"
+                    elif is_valid and status_code and status_code >= 400:
+                        status = f"✅ Valid (policy-exempt HTTP {status_code})"
                     else:
                         status = (
                             "✅ Valid" if is_valid else f"❌ {error_message}"
@@ -929,13 +950,13 @@ def main():
         "--ignore-429-domain",
         action="append",
         default=[],
-        help="Domain for which to consider HTTP 429 as a soft pass (can be used multiple times). Defaults include developer.hashicorp.com and terraform.io.",
+        help="Domain for which to consider HTTP 429 as a soft pass (can be used multiple times). Defaults include developer.hashicorp.com, huggingface.co, and terraform.io.",
     )
     parser.add_argument(
         "--no-head-domain",
         action="append",
         default=[],
-        help="Domain for which to skip HEAD and only use GET (can be used multiple times). Defaults include developer.hashicorp.com and terraform.io.",
+        help="Domain for which to skip HEAD and only use GET (can be used multiple times). Defaults include developer.hashicorp.com, huggingface.co, and terraform.io.",
     )
     parser.add_argument(
         "--skip-domain",

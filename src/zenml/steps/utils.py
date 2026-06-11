@@ -438,7 +438,7 @@ class OnlyNoneReturnsVisitor(ReturnVisitor):
             node: The return statement to visit.
         """
         if node.value is not None:
-            if isinstance(node.value, (ast.Constant, ast.NameConstant)):
+            if isinstance(node.value, ast.Constant):
                 if node.value.value is None:
                     return
 

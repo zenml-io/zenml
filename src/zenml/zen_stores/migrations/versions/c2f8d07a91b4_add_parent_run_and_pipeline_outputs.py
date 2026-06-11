@@ -23,14 +23,14 @@ def upgrade() -> None:
         batch_op.add_column(
             sa.Column(
                 "parent_run_id",
-                sqlmodel.sql.sqltypes.GUID(),
+                sa.Uuid(),
                 nullable=True,
             )
         )
         batch_op.add_column(
             sa.Column(
                 "root_run_id",
-                sqlmodel.sql.sqltypes.GUID(),
+                sa.Uuid(),
                 nullable=True,
             )
         )
@@ -74,17 +74,17 @@ def upgrade() -> None:
 
     op.create_table(
         "pipeline_run_output",
-        sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.Column("updated", sa.DateTime(), nullable=False),
         sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.Column("output_index", sa.Integer(), nullable=False),
         sa.Column(
             "pipeline_run_id",
-            sqlmodel.sql.sqltypes.GUID(),
+            sa.Uuid(),
             nullable=False,
         ),
-        sa.Column("artifact_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("artifact_id", sa.Uuid(), nullable=False),
         sa.ForeignKeyConstraint(
             ["pipeline_run_id"],
             ["pipeline_run.id"],

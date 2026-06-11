@@ -23,7 +23,7 @@ from zenml.config.cache_policy import CachePolicyWithValidator
 from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.schedule import Schedule
-from zenml.config.source import SourceWithValidator
+from zenml.config.source import StringSerializableSource
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import ExecutionMode
 from zenml.model.model import Model
@@ -106,11 +106,7 @@ class PipelineRunConfiguration(
         default=None,
         description="The retry configuration for all steps of the pipeline run.",
     )
-    failure_hook_source: Optional[SourceWithValidator] = Field(
-        default=None,
-        description="The failure hook source for all steps of the pipeline run.",
-    )
-    init_hook_source: Optional[SourceWithValidator] = Field(
+    init_hook_source: Optional[StringSerializableSource] = Field(
         default=None,
         description="The init hook source for the pipeline run.",
     )
@@ -118,13 +114,43 @@ class PipelineRunConfiguration(
         default=None,
         description="The init hook args for the pipeline run.",
     )
-    cleanup_hook_source: Optional[SourceWithValidator] = Field(
+    cleanup_hook_source: Optional[StringSerializableSource] = Field(
         default=None,
         description="The cleanup hook source for the pipeline run.",
     )
-    success_hook_source: Optional[SourceWithValidator] = Field(
+    failure_hook_source: Optional[StringSerializableSource] = Field(
         default=None,
-        description="The success hook source for all steps of the pipeline run.",
+        description="Failure hook source. Static pipelines propagate it to "
+        "each step as a default. Dynamic pipelines run it once at the run "
+        "level.",
+    )
+    success_hook_source: Optional[StringSerializableSource] = Field(
+        default=None,
+        description="Success hook source. Static pipelines propagate it to "
+        "each step as a default. Dynamic pipelines run it once at the run "
+        "level.",
+    )
+    start_hook_source: Optional[StringSerializableSource] = Field(
+        default=None,
+        description="Start hook source. Static pipelines propagate it to "
+        "each step as a default. Dynamic pipelines run it once at the run "
+        "level.",
+    )
+    end_hook_source: Optional[StringSerializableSource] = Field(
+        default=None,
+        description="End hook source. Static pipelines propagate it to "
+        "each step as a default. Dynamic pipelines run it once at the run "
+        "level.",
+    )
+    pause_hook_source: Optional[StringSerializableSource] = Field(
+        default=None,
+        description="Pause hook source. Static pipelines ignore it. Dynamic "
+        "pipelines run it once at the run level when the run pauses.",
+    )
+    resume_hook_source: Optional[StringSerializableSource] = Field(
+        default=None,
+        description="Resume hook source. Static pipelines ignore it. Dynamic "
+        "pipelines run it once at the run level when a paused run resumes.",
     )
     substitutions: Optional[Dict[str, str]] = Field(
         default=None, description="The substitutions for the pipeline run."

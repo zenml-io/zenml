@@ -42,10 +42,10 @@ from zenml.constants import (
 )
 from zenml.enums import SourceContextTypes
 from zenml.logger import (
-    bind_request_context,
+    bind_log_context,
     get_logger,
     get_logging_context,
-    logging_scope,
+    logging_context,
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_server.request_management import RequestContext
@@ -53,6 +53,7 @@ from zenml.zen_server.secure_headers import (
     secure_headers,
 )
 from zenml.zen_server.utils import (
+    get_request_path,
     get_system_metrics,
     is_user_request,
     request_manager,
@@ -175,7 +176,7 @@ class RestrictFileUploadsMiddleware(BaseHTTPMiddleware):
             content_type = request.headers.get("content-type", "")
             if (
                 "multipart/form-data" in content_type
-                and request.url.path not in self.allowed_paths
+                and get_request_path(request) not in self.allowed_paths
             ):
                 return JSONResponse(
                     status_code=403,
@@ -321,9 +322,8 @@ async def set_secure_headers(request: Request, call_next: Any) -> Any:
         response = _error_response()
 
     # If the request is for the openAPI docs, don't set secure headers
-    if request.url.path.startswith("/docs") or request.url.path.startswith(
-        "/redoc"
-    ):
+    request_path = get_request_path(request)
+    if request_path.startswith("/docs") or request_path.startswith("/redoc"):
         return response
 
     await secure_headers().set_headers_async(response)
@@ -352,7 +352,7 @@ async def log_requests(request: Request, call_next: Any) -> Any:
     # Log full request metadata on lifecycle events only, i.e. when the
     # request is received and completed; downstream logs get request_id
     # for correlation without repeating method/path/client_ip.
-    with logging_scope(**_request_log_fields(request)):
+    with logging_context(**_request_log_fields(request)):
         logger.debug("request.received", extra=get_system_metrics())
 
     try:
@@ -361,7 +361,7 @@ async def log_requests(request: Request, call_next: Any) -> Any:
         request_context = request_manager().current_request
 
         # Log full request metadata on the request boundary.
-        with logging_scope(**_request_log_fields(request)):
+        with logging_context(**_request_log_fields(request)):
             logger.debug(
                 "request.completed",
                 extra={
@@ -399,7 +399,7 @@ async def record_requests(request: Request, call_next: Any) -> Any:
 
     # Bind only request_id globally for correlation; method/path/client_ip stay
     # scoped to request lifecycle logs to avoid bloating every downstream line.
-    bind_request_context(request_id=request_context.request_id)
+    bind_log_context(clear=True, request_id=request_context.request_id)
 
     try:
         response = await call_next(request)
@@ -420,7 +420,7 @@ async def skip_health_middleware(request: Request, call_next: Any) -> Any:
     Returns:
         The response to the request.
     """
-    if request.url.path in [HEALTH, READY]:
+    if get_request_path(request) in [HEALTH, READY]:
         # Skip expensive processing
         return PlainTextResponse("ok")
 

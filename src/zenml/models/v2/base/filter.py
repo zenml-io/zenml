@@ -438,13 +438,15 @@ class UUIDFilter(StrFilter):
             if not uuid_utils.is_valid_uuid(self.value):
                 return False
 
-            return column == self.value
+            assert isinstance(self.value, (str, UUID))
+            return column == uuid_utils.to_uuid(self.value)
 
         if self.operation == GenericFilterOps.NOT_EQUALS:
             if not uuid_utils.is_valid_uuid(self.value):
                 return True
 
-            return column != self.value
+            assert isinstance(self.value, (str, UUID))
+            return column != uuid_utils.to_uuid(self.value)
 
         # For all other operations, cast and handle the column as string
         return super().generate_query_conditions_from_column(
@@ -1016,18 +1018,22 @@ class BaseFilter(BaseModel):
             The query with sorting applied.
         """
         from sqlalchemy import asc, desc
+        from sqlmodel import col
 
         column, operand = self.sorting_params
 
         if operand == SorterOps.DESCENDING:
             sort_clause = desc(getattr(table, column))
+            tiebreaker = desc(col(table.id))
         else:
             sort_clause = asc(getattr(table, column))
+            tiebreaker = asc(col(table.id))
 
         # We always add the `id` column as a tiebreaker to ensure a stable,
         # repeatable order of items, otherwise subsequent pages might contain
-        # the same items.
-        query = query.order_by(sort_clause, asc(table.id))  # type: ignore[arg-type]
+        # the same items. The tiebreaker follows the primary sort direction so
+        # the order matches an index and avoids a filesort on descending sorts.
+        query = query.order_by(sort_clause, tiebreaker)
 
         return query
 

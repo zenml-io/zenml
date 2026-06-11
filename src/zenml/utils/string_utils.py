@@ -113,6 +113,23 @@ def random_str(length: int) -> str:
     return "".join(random.choices(string.ascii_letters, k=length))
 
 
+_URI_BANNED_CHARACTERS = ["<", ">", ":", '"', "/", "\\", "|", "?", "*"]
+
+
+def sanitize_uri_path_component(component: str) -> str:
+    """Replace characters that are unsafe in a URI or filesystem path component.
+
+    Args:
+        component: The path component to sanitize.
+
+    Returns:
+        The component with banned characters replaced by underscores.
+    """
+    for banned_character in _URI_BANNED_CHARACTERS:
+        component = component.replace(banned_character, "_")
+    return component
+
+
 def validate_name(model: BaseModel, name_field: str = "name") -> None:
     """Validator to ensure that the given name has only allowed characters.
 

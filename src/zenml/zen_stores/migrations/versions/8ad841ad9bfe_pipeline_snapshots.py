@@ -439,16 +439,14 @@ def upgrade() -> None:
         batch_op.add_column(
             sa.Column(
                 "source_snapshot_id",
-                sqlmodel.sql.sqltypes.GUID(),
+                sa.Uuid(),
                 nullable=True,
             )
         )
 
     with op.batch_alter_table("pipeline_run", schema=None) as batch_op:
         batch_op.add_column(
-            sa.Column(
-                "triggered_by", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
+            sa.Column("triggered_by", sa.Uuid(), nullable=True)
         )
         batch_op.add_column(
             sa.Column(

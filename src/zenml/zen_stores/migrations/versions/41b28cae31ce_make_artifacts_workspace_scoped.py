@@ -7,9 +7,9 @@ Create Date: 2025-02-19 23:23:08.133826
 """
 
 import os
+from uuid import UUID
 
 import sqlalchemy as sa
-import sqlmodel
 from alembic import op
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import column, table
@@ -36,19 +36,15 @@ def upgrade() -> None:
     with op.batch_alter_table("artifact", schema=None) as batch_op:
         # First add columns as nullable
         batch_op.add_column(
-            sa.Column(
-                "workspace_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
+            sa.Column("workspace_id", sa.Uuid(), nullable=True)
         )
-        batch_op.add_column(
-            sa.Column("user_id", sqlmodel.sql.sqltypes.GUID(), nullable=True)
-        )
+        batch_op.add_column(sa.Column("user_id", sa.Uuid(), nullable=True))
 
     # Create a temp table object for the update
     artifact_table = table(
         "artifact",
-        column("id", sqlmodel.sql.sqltypes.GUID()),
-        column("workspace_id", sqlmodel.sql.sqltypes.GUID()),
+        column("id", sa.Uuid()),
+        column("workspace_id", sa.Uuid()),
     )
 
     default_workspace_name = os.getenv(
@@ -71,7 +67,7 @@ def upgrade() -> None:
 
     # Update existing records with the default workspace
     op.execute(
-        artifact_table.update().values(workspace_id=default_workspace_id)
+        artifact_table.update().values(workspace_id=UUID(default_workspace_id))
     )
 
     bind = op.get_bind()
@@ -99,7 +95,7 @@ def upgrade() -> None:
     with op.batch_alter_table("artifact", schema=None) as batch_op:
         batch_op.alter_column(
             "workspace_id",
-            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            existing_type=sa.Uuid(),
             nullable=False,
         )
 

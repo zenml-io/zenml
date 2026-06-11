@@ -23,7 +23,10 @@ from pydantic.fields import FieldInfo
 from zenml.config import ResourceSettings
 from zenml.config.base_settings import BaseSettings
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
-from zenml.config.source import SourceWithValidator
+from zenml.config.source import (
+    SERIALIZE_AS_STRING_CONTEXT_KEY,
+    StringSerializableSource,
+)
 from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
@@ -110,6 +113,7 @@ def generate_config_template(
             exclude={"name", "outputs"},
             exclude_none=True,
             exclude_defaults=True,
+            context={SERIALIZE_AS_STRING_CONTEXT_KEY: True},
         )
         for name, step in step_configurations.items()
     }
@@ -126,6 +130,7 @@ def generate_config_template(
         exclude=pipeline_config_exclude,
         exclude_none=True,
         exclude_defaults=True,
+        context={SERIALIZE_AS_STRING_CONTEXT_KEY: True},
     )
 
     pipeline_config.get("settings", {}).pop("docker", None)
@@ -210,7 +215,7 @@ def generate_config_schema(
         if key in step_config_exclude:
             continue
 
-        if field_info.annotation == Optional[SourceWithValidator]:  # type: ignore[comparison-overlap]
+        if field_info.annotation == Optional[StringSerializableSource]:  # type: ignore[comparison-overlap]
             generic_step_fields[key] = (Optional[str], field_info)
         else:
             generic_step_fields[key] = (field_info.annotation, field_info)
@@ -314,7 +319,7 @@ def generate_config_schema(
         if key in ["schedule", "build", "steps", "settings", "parameters"]:
             continue
 
-        if field_info.annotation == Optional[SourceWithValidator]:  # type: ignore[comparison-overlap]
+        if field_info.annotation == Optional[StringSerializableSource]:  # type: ignore[comparison-overlap]
             top_level_fields[key] = (Optional[str], field_info)
         else:
             top_level_fields[key] = (field_info.annotation, field_info)

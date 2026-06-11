@@ -28,8 +28,8 @@ def upgrade() -> None:
     # ----------------
     op.create_table(
         "step_run_output_artifact",
-        sa.Column("step_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
-        sa.Column("artifact_id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("step_id", sa.Uuid(), nullable=False),
+        sa.Column("artifact_id", sa.Uuid(), nullable=False),
         sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
         sa.ForeignKeyConstraint(
             ["artifact_id"],
@@ -153,7 +153,7 @@ def upgrade() -> None:
         batch_op.add_column(
             sa.Column(
                 "artifact_store_id",
-                sqlmodel.sql.sqltypes.GUID(),
+                sa.Uuid(),
                 nullable=True,
             )
         )

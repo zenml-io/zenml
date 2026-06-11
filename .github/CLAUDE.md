@@ -40,7 +40,7 @@ Runs automatically on all PRs and pushes to main:
 
 Gated by `run-slow-ci` label (checked dynamically):
 - Multi-OS: Ubuntu, Windows, macOS
-- Multi-Python: 3.10, 3.11, 3.12, 3.13
+- Multi-Python: 3.10, 3.11, 3.12, 3.13, 3.14
 - Full database migration tests (MySQL, MariaDB, SQLite)
 - VSCode tutorial pipeline tests
 - Base package functionality tests
@@ -96,6 +96,21 @@ GH_TOKEN=$(gh auth token) uvx zizmor --fix=all --config=.github/zizmor.yml .gith
 - **Secrets inherit**: First-party workflows calling other first-party workflows
 
 ## Common Patterns
+
+### Dependency and security audit gating
+
+When a security/audit tool needs custom pass/fail policy, prefer a three-step
+workflow shape:
+
+1. A read-only PR/push job gathers raw tool output, writes a Markdown summary to
+   `$GITHUB_STEP_SUMMARY`, and uploads larger JSON/Markdown reports as artifacts.
+2. A small read-only gate job consumes only compact outputs such as counts,
+   booleans, and result flags, then decides the final CI status.
+3. Any issue or repository mutation runs in a separate scheduled/manual-only job
+   with the narrow write permission it needs (for example `issues: write`).
+
+Keep PR and push paths read-only. Do not grant write permissions to the audit or
+gate jobs just because scheduled maintenance needs them.
 
 ### Environment Variables
 
