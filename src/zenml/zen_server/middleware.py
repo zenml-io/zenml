@@ -45,7 +45,7 @@ from zenml.logger import (
     bind_log_context,
     get_logger,
     get_logging_context,
-    logging_scope,
+    logging_context,
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_server.request_management import RequestContext
@@ -352,7 +352,7 @@ async def log_requests(request: Request, call_next: Any) -> Any:
     # Log full request metadata on lifecycle events only, i.e. when the
     # request is received and completed; downstream logs get request_id
     # for correlation without repeating method/path/client_ip.
-    with logging_scope(**_request_log_fields(request)):
+    with logging_context(**_request_log_fields(request)):
         logger.debug("request.received", extra=get_system_metrics())
 
     try:
@@ -361,7 +361,7 @@ async def log_requests(request: Request, call_next: Any) -> Any:
         request_context = request_manager().current_request
 
         # Log full request metadata on the request boundary.
-        with logging_scope(**_request_log_fields(request)):
+        with logging_context(**_request_log_fields(request)):
             logger.debug(
                 "request.completed",
                 extra={

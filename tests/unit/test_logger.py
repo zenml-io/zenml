@@ -42,7 +42,7 @@ from zenml.logger import (
     get_logger,
     get_logging_context,
     init_logging,
-    logging_scope,
+    logging_context,
 )
 
 #####################
@@ -950,7 +950,7 @@ def test_logging_scope_restores_outer_context() -> None:
     """Scoped logging context is removed after leaving the scope."""
     bind_log_context(clear=True, request_id="request-1")
 
-    with logging_scope(transaction_id="transaction-1"):
+    with logging_context(transaction_id="transaction-1"):
         assert get_logging_context() == {
             "request_id": "request-1",
             "transaction_id": "transaction-1",
