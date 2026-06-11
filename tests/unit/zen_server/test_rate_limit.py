@@ -34,13 +34,13 @@ def _request(
     )
 
 
-def test_get_ipaddr_uses_proxy_appended_x_forwarded_for_header() -> None:
-    """The limiter uses the proxy-appended X-Forwarded-For value."""
+def test_get_ipaddr_ignores_raw_x_forwarded_for_header() -> None:
+    """The limiter uses the ASGI client host, not raw forwarded headers."""
     limiter = RequestLimiter(day_limit=10)
 
     request = _request([(b"x-forwarded-for", b"203.0.113.5, 10.0.0.1")])
 
-    assert limiter._get_ipaddr(request) == "10.0.0.1"
+    assert limiter._get_ipaddr(request) == "10.0.0.10"
 
 
 def test_get_ipaddr_falls_back_to_client_host() -> None:

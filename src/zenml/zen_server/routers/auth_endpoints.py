@@ -402,11 +402,7 @@ def device_authorization(
     # Fetch the IP address of the client
     ip_address: str = ""
     city, region, country = "", "", ""
-    forwarded = request.headers.get("X-Forwarded-For")
-
-    if forwarded:
-        ip_address = forwarded.split(",")[-1].strip()
-    elif request.client and request.client.host:
+    if request.client and request.client.host:
         ip_address = request.client.host
 
     if ip_address:

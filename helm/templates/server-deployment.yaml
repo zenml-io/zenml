@@ -129,6 +129,8 @@ spec:
             - --proxy-headers
             - --forwarded-allow-ips
             - {{ $server.proxyHeaders.forwardedAllowIPs | quote }}
+            {{ else }}
+            - --no-proxy-headers
             {{ end }}
             - --port
             - "8080"
