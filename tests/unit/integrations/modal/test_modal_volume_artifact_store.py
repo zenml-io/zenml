@@ -14,6 +14,7 @@
 """Tests for the Modal Volume artifact store."""
 
 import os
+import tempfile
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
@@ -249,18 +250,314 @@ def test_modal_volume_uri_is_remote() -> None:
     assert io_utils.is_remote("modal-volume://vol/path")
 
 
-def test_modal_volume_requires_fast_path_marker(
+def test_modal_volume_uses_sdk_fallback_without_fast_path_marker(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Operations fail loudly when the mounted fast path is not enabled."""
+    """Local control-plane writes use Modal SDK fallback before mounting."""
+
+    class BatchUploadStub:
+        """Collect files uploaded through the Modal SDK batch API."""
+
+        def __init__(self, volume: "VolumeStub") -> None:
+            self.volume = volume
+
+        def __enter__(self) -> "BatchUploadStub":
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            pass
+
+        def put_file(self, local_path: str, remote_path: str) -> None:
+            self.volume.files[remote_path] = Path(local_path).read_bytes()
+
+    class VolumeStub:
+        """Small Modal Volume stand-in for control-plane SDK operations."""
+
+        def __init__(self) -> None:
+            self.files: dict[str, bytes] = {}
+            self.copy_calls: list[tuple[list[str], str, bool]] = []
+
+        def batch_upload(self, force: bool = False) -> BatchUploadStub:
+            return BatchUploadStub(self)
+
+        def read_file(self, path: str):
+            yield self.files[path][:2]
+            yield self.files[path][2:]
+
+        def copy_files(
+            self,
+            src_paths: list[str],
+            dst_path: str,
+            recursive: bool = False,
+        ) -> None:
+            self.copy_calls.append((src_paths, dst_path, recursive))
+            self.files[dst_path] = self.files[src_paths[0]]
+
+        def remove_file(self, path: str, recursive: bool = False) -> None:
+            del self.files[path]
+
+        def listdir(self, path: str, recursive: bool = False):
+            prefix = path.strip("/")
+            children: dict[str, SimpleNamespace] = {}
+            for file_path in self.files:
+                stripped_path = file_path.strip("/")
+                if prefix:
+                    if not stripped_path.startswith(f"{prefix}/"):
+                        continue
+                    remainder = stripped_path[len(prefix) + 1 :]
+                else:
+                    remainder = stripped_path
+                child_name = remainder.split("/", 1)[0]
+                child_path = f"{prefix}/{child_name}" if prefix else child_name
+                entry_type = "DIRECTORY" if "/" in remainder else "FILE"
+                children[child_path] = SimpleNamespace(
+                    path=child_path,
+                    type=SimpleNamespace(name=entry_type),
+                )
+            return list(children.values())
+
     mount_path = tmp_path / "mount"
     mount_path.mkdir()
     artifact_store = _make_artifact_store(mount_path)
+    volume = VolumeStub()
     monkeypatch.delenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, raising=False)
+    monkeypatch.setattr(artifact_store, "_get_modal_volume", lambda: volume)
 
-    with pytest.raises(RuntimeError, match="mounted Modal fast path"):
-        artifact_store.exists(MODAL_URI)
+    uri = f"{MODAL_URI}/control-plane/archive.tar.gz"
+    artifact_store.makedirs(f"{MODAL_URI}/control-plane")
+
+    assert not artifact_store.exists(uri)
+
+    with artifact_store.open(uri, "wb") as file:
+        file.write(b"archive")
+
+    assert volume.files["/root/control-plane/archive.tar.gz"] == b"archive"
+    assert artifact_store.exists(uri)
+    with artifact_store.open(uri, "rb") as file:
+        temp_download_path = file.name
+        assert Path(temp_download_path).exists()
+        assert file.read() == b"archive"
+    assert not Path(temp_download_path).exists()
+
+    with artifact_store.open(uri, "a") as file:
+        file.write("-log")
+
+    with artifact_store.open(uri, "rb") as file:
+        assert file.read() == b"archive-log"
+    assert artifact_store.listdir(f"{MODAL_URI}/control-plane") == [
+        "archive.tar.gz"
+    ]
+
+    volume.files["/root/control-plane/source.txt"] = b"source"
+    artifact_store.copyfile(
+        f"{MODAL_URI}/control-plane/source.txt",
+        f"{MODAL_URI}/control-plane/copy.txt",
+    )
+    assert volume.files["/root/control-plane/copy.txt"] == b"source"
+    assert volume.copy_calls == [
+        (
+            ["/root/control-plane/source.txt"],
+            "/root/control-plane/copy.txt",
+            False,
+        )
+    ]
+
+    volume.files["/root/control-plane/existing.txt"] = b"keep"
+    with pytest.raises(NotImplementedError, match="overwriting"):
+        artifact_store.copyfile(
+            f"{MODAL_URI}/control-plane/source.txt",
+            f"{MODAL_URI}/control-plane/existing.txt",
+            overwrite=True,
+        )
+    assert volume.files["/root/control-plane/existing.txt"] == b"keep"
+
+
+def test_modal_volume_sdk_lookup_prefers_sandbox_environment_and_caches(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """SDK fallback reuses the sandbox Volume environment marker."""
+    import modal
+
+    artifact_store = _make_artifact_store(tmp_path)
+    volume = object()
+    calls: list[dict[str, object]] = []
+
+    def from_name(name: str, **kwargs: object) -> object:
+        calls.append({"name": name, **kwargs})
+        return volume
+
+    monkeypatch.delenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, raising=False)
+    monkeypatch.setenv("MODAL_ENVIRONMENT", "ambient-env")
+    monkeypatch.setenv("ZENML_MODAL_VOLUME_ENVIRONMENT_NAME", "sandbox-env")
+    monkeypatch.setattr(modal.Volume, "from_name", from_name)
+
+    assert artifact_store._get_modal_volume() is volume
+    assert artifact_store._get_modal_volume() is volume
+    assert calls == [
+        {
+            "name": "test-volume",
+            "environment_name": "sandbox-env",
+            "create_if_missing": False,
+        }
+    ]
+
+    fallback_artifact_store = _make_artifact_store(tmp_path)
+    fallback_volume = object()
+    monkeypatch.delenv("ZENML_MODAL_VOLUME_ENVIRONMENT_NAME", raising=False)
+
+    def fallback_from_name(name: str, **kwargs: object) -> object:
+        calls.append({"name": name, **kwargs})
+        return fallback_volume
+
+    monkeypatch.setattr(modal.Volume, "from_name", fallback_from_name)
+
+    assert fallback_artifact_store._get_modal_volume() is fallback_volume
+    assert calls[-1] == {
+        "name": "test-volume",
+        "environment_name": "ambient-env",
+        "create_if_missing": False,
+    }
+
+
+def test_modal_volume_cleans_temp_file_when_sdk_read_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """SDK read failures do not leak temp files."""
+    temp_paths: list[Path] = []
+    original_named_temporary_file = tempfile.NamedTemporaryFile
+
+    def named_temporary_file_spy(*args: object, **kwargs: object):
+        temp_file = original_named_temporary_file(*args, **kwargs)
+        temp_paths.append(Path(temp_file.name))
+        return temp_file
+
+    def failing_chunks():
+        yield b"partial"
+        raise RuntimeError("stream failed")
+
+    class FailingReadVolumeStub:
+        def read_file(self, path: str):
+            return failing_chunks()
+
+    artifact_store = _make_artifact_store(tmp_path)
+    monkeypatch.delenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, raising=False)
+    monkeypatch.setattr(
+        artifact_store, "_get_modal_volume", lambda: FailingReadVolumeStub()
+    )
+    monkeypatch.setattr(tempfile, "NamedTemporaryFile", named_temporary_file_spy)
+
+    with pytest.raises(RuntimeError, match="stream failed"):
+        artifact_store.open(f"{MODAL_URI}/failed-read.txt", "rb")
+
+    assert temp_paths
+    assert all(not path.exists() for path in temp_paths)
+
+
+def test_modal_volume_translates_sdk_read_not_found(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Modal SDK missing-file errors become FileNotFoundError."""
+
+    class NotFoundError(Exception):
+        pass
+
+    class MissingReadVolumeStub:
+        def read_file(self, path: str):
+            raise NotFoundError("missing")
+            yield b""  # pragma: no cover
+
+    artifact_store = _make_artifact_store(tmp_path)
+    monkeypatch.delenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, raising=False)
+    monkeypatch.setattr(
+        artifact_store, "_get_modal_volume", lambda: MissingReadVolumeStub()
+    )
+
+    with pytest.raises(FileNotFoundError):
+        artifact_store.open(f"{MODAL_URI}/missing.txt", "rb")
+
+
+def test_modal_volume_cleans_upload_temp_file_when_append_preload_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Append preload failures do not leak the temp upload file."""
+    temp_paths: list[Path] = []
+    original_named_temporary_file = tempfile.NamedTemporaryFile
+
+    def named_temporary_file_spy(*args: object, **kwargs: object):
+        temp_file = original_named_temporary_file(*args, **kwargs)
+        temp_paths.append(Path(temp_file.name))
+        return temp_file
+
+    class FailingPreloadVolumeStub:
+        def listdir(self, path: str, recursive: bool = False):
+            return [
+                SimpleNamespace(
+                    path="root/existing.txt",
+                    type=SimpleNamespace(name="FILE"),
+                )
+            ]
+
+        def read_file(self, path: str):
+            raise RuntimeError("preload failed")
+            yield b""  # pragma: no cover
+
+    artifact_store = _make_artifact_store(tmp_path)
+    monkeypatch.delenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, raising=False)
+    monkeypatch.setattr(
+        artifact_store,
+        "_get_modal_volume",
+        lambda: FailingPreloadVolumeStub(),
+    )
+    monkeypatch.setattr(tempfile, "NamedTemporaryFile", named_temporary_file_spy)
+
+    with pytest.raises(RuntimeError, match="preload failed"):
+        artifact_store.open(f"{MODAL_URI}/existing.txt", "a")
+
+    assert temp_paths
+    assert all(not path.exists() for path in temp_paths)
+
+
+def test_modal_volume_preserves_upload_temp_file_when_upload_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A failed SDK upload leaves the temporary source file for inspection."""
+
+    class FailingBatchUploadStub:
+        def __enter__(self) -> "FailingBatchUploadStub":
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            pass
+
+        def put_file(self, local_path: str, remote_path: str) -> None:
+            raise RuntimeError("upload failed")
+
+    class FailingVolumeStub:
+        def batch_upload(self, force: bool = False) -> FailingBatchUploadStub:
+            return FailingBatchUploadStub()
+
+    artifact_store = _make_artifact_store(tmp_path)
+    monkeypatch.delenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, raising=False)
+    monkeypatch.setattr(
+        artifact_store, "_get_modal_volume", lambda: FailingVolumeStub()
+    )
+
+    file = artifact_store.open(f"{MODAL_URI}/failed-upload.txt", "wb")
+    file.write(b"debug me")
+    temp_upload_path = file.name
+
+    with pytest.raises(RuntimeError, match="upload failed"):
+        file.close()
+
+    assert Path(temp_upload_path).exists()
+    assert Path(temp_upload_path).read_bytes() == b"debug me"
+    Path(temp_upload_path).unlink()
 
 
 def test_modal_volume_fails_when_marked_mount_is_missing(

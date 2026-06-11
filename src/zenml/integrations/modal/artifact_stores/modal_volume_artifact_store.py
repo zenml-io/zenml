@@ -17,6 +17,7 @@ import glob as glob_module
 import os
 import posixpath
 import shutil
+import tempfile
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -50,6 +51,126 @@ from zenml.stack import StackValidator
 
 if TYPE_CHECKING:
     from zenml.stack import Stack
+
+
+class _ModalVolumeDownloadFile:
+    """Temporary-file-backed reader for Modal SDK downloads."""
+
+    def __init__(self, chunks: Iterable[bytes], mode: str) -> None:
+        """Write SDK chunks to a local temp file and open it for reading.
+
+        Args:
+            chunks: Byte chunks returned by the Modal SDK.
+            mode: File open mode.
+        """
+        temp_path: Optional[str] = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="wb", delete=False
+            ) as temp_file:
+                temp_path = temp_file.name
+                for chunk in chunks:
+                    temp_file.write(chunk)
+
+            self._temp_path = temp_path
+            encoding = "utf-8" if "b" not in mode else None
+            self._file = open(self._temp_path, mode=mode, encoding=encoding)
+            self._closed = False
+        except Exception:
+            if temp_path and os.path.exists(temp_path):
+                os.remove(temp_path)
+            raise
+
+    def __getattr__(self, name: str) -> Any:
+        """Delegate file operations to the temporary file."""
+        return getattr(self._file, name)
+
+    def __enter__(self) -> "_ModalVolumeDownloadFile":
+        """Return the readable file object."""
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        """Close and delete the temporary download file."""
+        self.close()
+
+    def close(self) -> None:
+        """Close and delete the temporary download file."""
+        if self._closed:
+            return
+        self._closed = True
+        self._file.close()
+        if os.path.exists(self._temp_path):
+            os.remove(self._temp_path)
+
+
+class _ModalVolumeUploadFile:
+    """Temporary-file-backed writer for Modal SDK uploads."""
+
+    def __init__(
+        self,
+        artifact_store: "ModalVolumeArtifactStore",
+        path: PathType,
+        mode: str,
+    ) -> None:
+        """Create a local temporary file that uploads on successful close.
+
+        Args:
+            artifact_store: Artifact store that owns the destination Volume.
+            path: Modal Volume URI to upload to.
+            mode: File open mode.
+        """
+        encoding = "utf-8" if "b" not in mode else None
+        self._artifact_store = artifact_store
+        self._path = path
+        self._temp_file = tempfile.NamedTemporaryFile(
+            mode=mode,
+            delete=False,
+            encoding=encoding,
+        )
+        self._closed = False
+
+    def __getattr__(self, name: str) -> Any:
+        """Delegate file operations to the temporary file."""
+        return getattr(self._temp_file, name)
+
+    def __enter__(self) -> "_ModalVolumeUploadFile":
+        """Return the writable file object."""
+        return self
+
+    def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+        """Upload only when the write context exits cleanly."""
+        self.close(upload=exc_type is None)
+
+    def close(self, upload: bool = True) -> None:
+        """Close the temp file and optionally upload it to the Volume.
+
+        Args:
+            upload: Whether to upload the temporary file before deleting it.
+        """
+        if self._closed:
+            return
+        self._closed = True
+        temp_path = self._temp_file.name
+        self._temp_file.close()
+        should_delete = not upload
+        if upload:
+            self._artifact_store._upload_local_file(temp_path, self._path)
+            should_delete = True
+        if should_delete and os.path.exists(temp_path):
+            os.remove(temp_path)
+
+    def write_existing_contents(self, chunks: Iterable[bytes]) -> None:
+        """Write existing SDK file contents before appending new data.
+
+        Args:
+            chunks: Byte chunks returned by the Modal SDK.
+        """
+        binary_mode = "b" in self._temp_file.mode
+        for chunk in chunks:
+            if binary_mode:
+                self._temp_file.write(chunk)
+            else:
+                self._temp_file.write(chunk.decode("utf-8"))
 
 
 class ModalVolumeArtifactStore(BaseArtifactStore):
@@ -157,6 +278,12 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
                     "different Modal Volume artifact store."
                 )
 
+    def _is_mounted_fast_path_enabled(self) -> bool:
+        """Check whether this process should use mounted Modal IO."""
+        return handle_bool_env_var(
+            ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, default=False
+        )
+
     def _require_mounted_fast_path(self) -> Path:
         """Return the mounted Volume path or fail with setup guidance.
 
@@ -167,9 +294,7 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
             RuntimeError: If the runtime did not opt into mounted fast-path IO.
             FileNotFoundError: If the runtime marker is set but the mount is missing.
         """
-        if not handle_bool_env_var(
-            ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, default=False
-        ):
+        if not self._is_mounted_fast_path_enabled():
             raise RuntimeError(
                 "The Modal Volume artifact store currently supports only the "
                 "mounted Modal fast path. Set "
@@ -360,6 +485,123 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
             uri=uri,
         )
 
+    def _modal_environment_name(self) -> Optional[str]:
+        """Return the Modal environment used for SDK Volume access."""
+        from zenml.integrations.modal.sandbox_utils import (
+            ENV_ZENML_MODAL_VOLUME_ENVIRONMENT_NAME,
+        )
+
+        if ENV_ZENML_MODAL_VOLUME_ENVIRONMENT_NAME in os.environ:
+            return os.environ[ENV_ZENML_MODAL_VOLUME_ENVIRONMENT_NAME] or None
+        return os.environ.get("MODAL_ENVIRONMENT") or None
+
+    def _get_modal_volume(self) -> Any:
+        """Look up the configured Modal Volume through the Modal SDK.
+
+        Returns:
+            The Modal SDK Volume object.
+
+        Raises:
+            RuntimeError: If Modal is unavailable or the Volume lookup fails.
+        """
+        cached_volume = getattr(self, "_modal_volume", None)
+        if cached_volume is not None:
+            return cached_volume
+
+        try:
+            import modal
+        except ImportError as e:
+            raise RuntimeError(
+                "The Modal Volume artifact store needs the `modal` package "
+                "installed when it is accessed outside a mounted Modal "
+                "runtime. Install the ZenML Modal integration and configure "
+                "Modal credentials for this process."
+            ) from e
+
+        modal_environment = self._modal_environment_name()
+        try:
+            volume = modal.Volume.from_name(
+                self.volume_name,
+                environment_name=modal_environment,
+                create_if_missing=self.config.create_if_missing,
+            )
+        except Exception as e:
+            environment_text = modal_environment or "the default Modal environment"
+            raise RuntimeError(
+                "Failed to access Modal Volume "
+                f"'{self.volume_name}' in {environment_text} through the "
+                "Modal SDK. Ensure Modal credentials are configured for this "
+                "process and that the Volume exists, or set "
+                "create_if_missing=True."
+            ) from e
+
+        object.__setattr__(self, "_modal_volume", volume)
+        return volume
+
+    def _sdk_path(self, uri: PathType) -> str:
+        """Translate a Modal Volume URI into an SDK path.
+
+        Args:
+            uri: A Modal Volume URI.
+
+        Returns:
+            The absolute path used by Modal SDK Volume file APIs.
+        """
+        parts = self._uri_parts(uri)
+        return "/" + "/".join(parts) if parts else "/"
+
+    @staticmethod
+    def _is_modal_not_found_error(error: Exception) -> bool:
+        """Check whether a Modal SDK exception means a path is missing."""
+        return error.__class__.__name__ == "NotFoundError"
+
+    @staticmethod
+    def _entry_is_directory(entry: Any) -> bool:
+        """Return whether a Modal Volume FileEntry describes a directory."""
+        return getattr(getattr(entry, "type", None), "name", "") == "DIRECTORY"
+
+    def _get_sdk_entry(self, path: PathType) -> Optional[Any]:
+        """Find the Modal SDK directory entry for a path.
+
+        Args:
+            path: Modal Volume URI to inspect.
+
+        Returns:
+            The matching Modal SDK FileEntry, or `None` when missing.
+        """
+        sdk_path = posixpath.normpath(self._sdk_path(path))
+        if sdk_path == "/":
+            return None
+
+        parent = posixpath.dirname(sdk_path) or "/"
+        name = posixpath.basename(sdk_path)
+        try:
+            entries = self._get_modal_volume().listdir(
+                parent, recursive=False
+            )
+        except Exception as e:
+            if self._is_modal_not_found_error(e):
+                return None
+            raise
+
+        for entry in entries:
+            entry_path = posixpath.normpath(
+                "/" + str(getattr(entry, "path", "")).lstrip("/")
+            )
+            if entry_path == sdk_path or posixpath.basename(entry_path) == name:
+                return entry
+        return None
+
+    def _upload_local_file(self, local_path: str, dst: PathType) -> None:
+        """Upload a local file to the configured Modal Volume.
+
+        Args:
+            local_path: Local file path to upload.
+            dst: Modal Volume URI destination.
+        """
+        with self._get_modal_volume().batch_upload(force=True) as batch:
+            batch.put_file(local_path, self._sdk_path(dst))
+
     def _local_path(self, uri: PathType) -> str:
         """Translate a Modal Volume URI into a mounted local filesystem path.
 
@@ -412,8 +654,48 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
         Returns:
             A file-like object.
         """
-        encoding = "utf-8" if "b" not in mode else None
-        return open(self._local_path(path), mode=mode, encoding=encoding)
+        if self._is_mounted_fast_path_enabled():
+            encoding = "utf-8" if "b" not in mode else None
+            return open(self._local_path(path), mode=mode, encoding=encoding)
+
+        if "+" in mode:
+            raise NotImplementedError(
+                "Modal Volume SDK fallback does not support read/write "
+                "update modes yet."
+            )
+
+        if "r" in mode:
+            chunks = self._get_modal_volume().read_file(self._sdk_path(path))
+            try:
+                return _ModalVolumeDownloadFile(chunks, mode)
+            except Exception as e:
+                if self._is_modal_not_found_error(e):
+                    raise FileNotFoundError(convert_to_str(path)) from e
+                raise
+
+        if "a" in mode:
+            write_mode = mode.replace("a", "w")
+            file = _ModalVolumeUploadFile(self, path, write_mode)
+            try:
+                if self.exists(path):
+                    chunks = self._get_modal_volume().read_file(
+                        self._sdk_path(path)
+                    )
+                    file.write_existing_contents(chunks)
+            except Exception:
+                file.close(upload=False)
+                raise
+            return file
+
+        if "w" in mode or "x" in mode:
+            if "x" in mode and self.exists(path):
+                raise FileExistsError(
+                    f"Destination file '{convert_to_str(path)}' already "
+                    "exists."
+                )
+            return _ModalVolumeUploadFile(self, path, mode)
+
+        raise ValueError(f"Unsupported file mode for Modal Volume: {mode}")
 
     def copyfile(
         self, src: PathType, dst: PathType, overwrite: bool = False
@@ -428,6 +710,22 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
         Raises:
             FileExistsError: If the destination exists and overwrite is false.
         """
+        if not self._is_mounted_fast_path_enabled():
+            if overwrite:
+                raise NotImplementedError(
+                    "Modal Volume SDK fallback does not support overwriting "
+                    "copy destinations safely yet."
+                )
+            if self.exists(dst):
+                raise FileExistsError(
+                    f"Destination file '{convert_to_str(dst)}' already "
+                    "exists. Set `overwrite=True` to copy anyway."
+                )
+            self._get_modal_volume().copy_files(
+                [self._sdk_path(src)], self._sdk_path(dst), recursive=False
+            )
+            return
+
         local_src = self._local_path(src)
         local_dst = self._local_path(dst)
         if not overwrite and os.path.exists(local_dst):
@@ -446,6 +744,10 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
         Returns:
             True if the path exists, False otherwise.
         """
+        if not self._is_mounted_fast_path_enabled():
+            if posixpath.normpath(self._sdk_path(path)) == "/":
+                return True
+            return self._get_sdk_entry(path) is not None
         return os.path.exists(self._local_path(path))
 
     def glob(self, pattern: PathType) -> List[PathType]:
@@ -473,6 +775,11 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
         Returns:
             True if the path is a directory, False otherwise.
         """
+        if not self._is_mounted_fast_path_enabled():
+            if posixpath.normpath(self._sdk_path(path)) == "/":
+                return True
+            entry = self._get_sdk_entry(path)
+            return bool(entry and self._entry_is_directory(entry))
         return os.path.isdir(self._local_path(path))
 
     def listdir(self, path: PathType) -> List[PathType]:
@@ -484,6 +791,18 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
         Returns:
             A list of direct child names.
         """
+        if not self._is_mounted_fast_path_enabled():
+            try:
+                entries = self._get_modal_volume().listdir(
+                    self._sdk_path(path), recursive=False
+                )
+            except Exception as e:
+                if self._is_modal_not_found_error(e):
+                    raise FileNotFoundError(convert_to_str(path)) from e
+                raise
+            return [
+                posixpath.basename(str(entry.path)) for entry in entries
+            ]
         return os.listdir(self._local_path(path))  # type: ignore[return-value]
 
     def makedirs(self, path: PathType) -> None:
@@ -492,6 +811,12 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
         Args:
             path: The path to create.
         """
+        if not self._is_mounted_fast_path_enabled():
+            # Modal Volumes create parent directories implicitly during file
+            # upload. This SDK fallback only validates the path; it does not
+            # create empty directories in the Volume.
+            self._uri_parts(path)
+            return
         os.makedirs(self._local_path(path), exist_ok=True)
 
     def mkdir(self, path: PathType) -> None:
@@ -500,6 +825,9 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
         Args:
             path: The path to create.
         """
+        if not self._is_mounted_fast_path_enabled():
+            self.makedirs(path)
+            return
         os.mkdir(self._local_path(path))
 
     def remove(self, path: PathType) -> None:
@@ -508,6 +836,16 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
         Args:
             path: The path to remove.
         """
+        if not self._is_mounted_fast_path_enabled():
+            try:
+                self._get_modal_volume().remove_file(
+                    self._sdk_path(path), recursive=False
+                )
+            except Exception as e:
+                if self._is_modal_not_found_error(e):
+                    raise FileNotFoundError(convert_to_str(path)) from e
+                raise
+            return
         os.remove(self._local_path(path))
 
     def rename(
@@ -538,6 +876,16 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
         Args:
             path: The path to remove.
         """
+        if not self._is_mounted_fast_path_enabled():
+            try:
+                self._get_modal_volume().remove_file(
+                    self._sdk_path(path), recursive=True
+                )
+            except Exception as e:
+                if self._is_modal_not_found_error(e):
+                    raise FileNotFoundError(convert_to_str(path)) from e
+                raise
+            return
         shutil.rmtree(self._local_path(path))
 
     def stat(self, path: PathType) -> Any:

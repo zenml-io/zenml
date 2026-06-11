@@ -367,6 +367,7 @@ def resolve_modal_volume_sandbox_mount(
             ENV_ZENML_MODAL_ARTIFACT_STORE_MOUNT_PATH: config.mount_path,
             ENV_ZENML_MODAL_ARTIFACT_STORE_VOLUME_NAME: config.volume_name,
             ENV_ZENML_MODAL_ARTIFACT_STORE_VOLUME_PREFIX: config.volume_prefix,
+            ENV_ZENML_MODAL_VOLUME_ENVIRONMENT_NAME: modal_environment or "",
         },
     )
 

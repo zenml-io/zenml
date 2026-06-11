@@ -90,7 +90,39 @@ def test_modal_volume_mount_resolves_volume_and_builds_fast_path_env(
         ENV_ZENML_MODAL_ARTIFACT_STORE_MOUNT_PATH: "/mnt/zenml",
         ENV_ZENML_MODAL_ARTIFACT_STORE_VOLUME_NAME: "training-artifacts",
         ENV_ZENML_MODAL_ARTIFACT_STORE_VOLUME_PREFIX: "runs",
+        sandbox_utils.ENV_ZENML_MODAL_VOLUME_ENVIRONMENT_NAME: "prod",
     }
+
+
+def test_modal_volume_mount_sets_empty_marker_for_default_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The default Modal environment is propagated as an empty marker."""
+    volume = SimpleNamespace(name="volume")
+
+    class VolumeFactoryStub:
+        @staticmethod
+        def from_name(*args, **kwargs):
+            return volume
+
+    monkeypatch.setattr(sandbox_utils.modal, "Volume", VolumeFactoryStub)
+
+    mount = sandbox_utils.get_modal_volume_sandbox_mount(
+        _stack_with_artifact_store(
+            ModalVolumeArtifactStoreConfig(
+                path="modal-volume://training-artifacts/runs"
+            ),
+            MODAL_VOLUME_ARTIFACT_STORE_FLAVOR,
+        ),
+        modal_environment=None,
+        modal_client=None,
+    )
+
+    assert mount is not None
+    assert (
+        mount.environment[sandbox_utils.ENV_ZENML_MODAL_VOLUME_ENVIRONMENT_NAME]
+        == ""
+    )
 
 
 def test_modal_volume_mount_factory_reuses_matching_mounts(
