@@ -768,7 +768,9 @@ def test_wrapped_stdout_stores_raw_message_without_step_prefix(
     def get_step_context() -> SimpleNamespace:
         return SimpleNamespace(step_name="trainer")
 
-    monkeypatch.setattr("zenml.utils.logging_utils.LoggingContext.emit", emit)
+    monkeypatch.setattr(
+        "zenml.utils.logging_utils.LoggingContext.dispatch", emit
+    )
     monkeypatch.setattr("zenml.steps.get_step_context", get_step_context)
     token = zenml_logger_module.step_names_in_console.set(True)
 
