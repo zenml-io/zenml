@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Mounted fast-path implementation for Modal Volume artifact stores."""
 
+import fnmatch
 import glob as glob_module
 import os
 import posixpath
@@ -524,9 +525,7 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
                 get_token_id=lambda: self.config.token_id,
                 get_token_secret=lambda: self.config.token_secret,
             )
-            object.__setattr__(
-                self, "_modal_client_factory", client_factory
-            )
+            object.__setattr__(self, "_modal_client_factory", client_factory)
 
         return client_factory.get_client()
 
@@ -568,7 +567,9 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
                 **volume_kwargs,
             )
         except Exception as e:
-            environment_text = modal_environment or "the default Modal environment"
+            environment_text = (
+                modal_environment or "the default Modal environment"
+            )
             raise RuntimeError(
                 "Failed to access Modal Volume "
                 f"'{self.volume_name}' in {environment_text} through the "
@@ -651,9 +652,7 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
         parent = posixpath.dirname(sdk_path) or "/"
         name = posixpath.basename(sdk_path)
         try:
-            entries = self._get_modal_volume().listdir(
-                parent, recursive=False
-            )
+            entries = self._get_modal_volume().listdir(parent, recursive=False)
         except Exception as e:
             if self._is_modal_not_found_error(e):
                 return None
@@ -661,7 +660,10 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
 
         for entry in entries:
             entry_path = self._entry_sdk_path(entry)
-            if entry_path == sdk_path or posixpath.basename(entry_path) == name:
+            if (
+                entry_path == sdk_path
+                or posixpath.basename(entry_path) == name
+            ):
                 return entry
         return None
 
@@ -738,8 +740,10 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
             )
 
         if "r" in mode:
-            chunks = self._get_modal_volume().read_file(self._sdk_path(path))
             try:
+                chunks = self._get_modal_volume().read_file(
+                    self._sdk_path(path)
+                )
                 return _ModalVolumeDownloadFile(chunks, mode)
             except Exception as e:
                 if self._is_modal_not_found_error(e):
@@ -832,6 +836,52 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
         Returns:
             A list of matching Modal Volume URIs.
         """
+        if not self._is_mounted_fast_path_enabled():
+            sdk_pattern = posixpath.normpath(self._sdk_path(pattern))
+            if not any(char in sdk_pattern for char in "*?["):
+                return (
+                    [convert_to_str(pattern)] if self.exists(pattern) else []
+                )
+
+            first_wildcard_index = min(
+                index
+                for char in "*?["
+                if (index := sdk_pattern.find(char)) != -1
+            )
+            base_path = sdk_pattern[:first_wildcard_index]
+            base_dir = posixpath.dirname(base_path) or "/"
+            if base_dir == ".":
+                base_dir = "/"
+
+            try:
+                entries = self._get_modal_volume().listdir(
+                    base_dir, recursive=True
+                )
+            except Exception as e:
+                if self._is_modal_not_found_error(e):
+                    return []
+                raise
+
+            pattern_parts = sdk_pattern.strip("/").split("/")
+
+            def path_matches_pattern(entry_path: str) -> bool:
+                """Match glob patterns without letting wildcards cross `/`."""
+                entry_parts = entry_path.strip("/").split("/")
+                return len(entry_parts) == len(pattern_parts) and all(
+                    fnmatch.fnmatchcase(entry_part, pattern_part)
+                    for entry_part, pattern_part in zip(
+                        entry_parts, pattern_parts
+                    )
+                )
+
+            return sorted(
+                self._uri_from_sdk_path(entry_path)
+                for entry in entries
+                if path_matches_pattern(
+                    entry_path := self._entry_sdk_path(entry)
+                )
+            )
+
         mount_path = self._require_mounted_fast_path()
         local_pattern = self._local_path(pattern)
         return [
@@ -873,9 +923,7 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
                 if self._is_modal_not_found_error(e):
                     raise FileNotFoundError(convert_to_str(path)) from e
                 raise
-            return [
-                posixpath.basename(str(entry.path)) for entry in entries
-            ]
+            return [posixpath.basename(str(entry.path)) for entry in entries]
         return os.listdir(self._local_path(path))  # type: ignore[return-value]
 
     def makedirs(self, path: PathType) -> None:
@@ -934,6 +982,29 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
         Raises:
             FileExistsError: If the destination exists and overwrite is false.
         """
+        if not self._is_mounted_fast_path_enabled():
+            destination_exists = self.exists(dst)
+            if destination_exists and overwrite:
+                raise NotImplementedError(
+                    "Modal Volume SDK fallback does not support overwriting "
+                    "rename destinations safely yet."
+                )
+            if destination_exists:
+                raise FileExistsError(
+                    f"Destination file '{convert_to_str(dst)}' already "
+                    "exists. Set `overwrite=True` to rename anyway."
+                )
+            try:
+                self._get_modal_volume().rename(
+                    self._sdk_path(src),
+                    self._sdk_path(dst),
+                )
+            except Exception as e:
+                if self._is_modal_not_found_error(e):
+                    raise FileNotFoundError(convert_to_str(src)) from e
+                raise
+            return
+
         local_src = self._local_path(src)
         local_dst = self._local_path(dst)
         if not overwrite and os.path.exists(local_dst):
@@ -970,6 +1041,31 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
         Returns:
             The stat result.
         """
+        if not self._is_mounted_fast_path_enabled():
+            sdk_path = posixpath.normpath(self._sdk_path(path))
+            if sdk_path == "/":
+                return {
+                    "name": "/",
+                    "path": "/",
+                    "size": self.size(path),
+                    "type": "DIRECTORY",
+                }
+
+            entry = self._get_sdk_entry(path)
+            if entry is None:
+                raise FileNotFoundError(convert_to_str(path))
+
+            entry_path = self._entry_sdk_path(entry)
+            is_directory = self._entry_is_directory(entry)
+            return {
+                "name": posixpath.basename(entry_path),
+                "path": entry_path,
+                "size": self.size(path)
+                if is_directory
+                else self._entry_size(entry),
+                "type": "DIRECTORY" if is_directory else "FILE",
+            }
+
         return os.stat(self._local_path(path))
 
     def size(self, path: PathType) -> int:
@@ -1091,11 +1187,21 @@ class ModalVolumeArtifactStore(BaseArtifactStore):
                 dir_names = sorted(dirs)
                 file_names = sorted(files)
                 if topdown:
-                    yield (self._uri_from_sdk_path(sdk_path), dir_names, file_names)
+                    yield (
+                        self._uri_from_sdk_path(sdk_path),
+                        dir_names,
+                        file_names,
+                    )
                 for dir_name in dir_names:
-                    yield from walk_sdk_path(posixpath.join(sdk_path, dir_name))
+                    yield from walk_sdk_path(
+                        posixpath.join(sdk_path, dir_name)
+                    )
                 if not topdown:
-                    yield (self._uri_from_sdk_path(sdk_path), dir_names, file_names)
+                    yield (
+                        self._uri_from_sdk_path(sdk_path),
+                        dir_names,
+                        file_names,
+                    )
 
             yield from walk_sdk_path(sdk_top)
             return

@@ -14,6 +14,7 @@
 """Tests for the Modal Volume artifact store."""
 
 import os
+import tarfile
 import tempfile
 from datetime import datetime
 from pathlib import Path
@@ -23,6 +24,7 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
+from zenml.constants import ENV_ZENML_SERVER
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentInterfaceError, StackValidationError
 from zenml.integrations.modal import (
@@ -110,6 +112,7 @@ class ModalVolumeStub:
         self.listdir_calls: list[tuple[str, bool]] = []
         self.read_file_calls: list[str] = []
         self.remove_file_calls: list[tuple[str, bool]] = []
+        self.rename_calls: list[tuple[str, str]] = []
         self.upload_calls: list[tuple[str, str]] = []
 
     @staticmethod
@@ -148,6 +151,13 @@ class ModalVolumeStub:
         self.remove_file_calls.append((path, recursive))
         del self.files[path]
 
+    def rename(self, old_name: str, new_name: str) -> None:
+        """Rename a file within the stub Volume."""
+        self._assert_sdk_path(old_name)
+        self._assert_sdk_path(new_name)
+        self.rename_calls.append((old_name, new_name))
+        self.files[new_name] = self.files.pop(old_name)
+
     def listdir(self, path: str, recursive: bool = False):
         """List child entries below a path."""
         self._assert_sdk_path(path)
@@ -164,11 +174,15 @@ class ModalVolumeStub:
                 remainder = stripped_path
 
             current_prefix = prefix
-            parts = remainder.split("/") if recursive else [
-                remainder.split("/", 1)[0]
-            ]
+            parts = (
+                remainder.split("/")
+                if recursive
+                else [remainder.split("/", 1)[0]]
+            )
             for index, part in enumerate(parts):
-                child_path = f"{current_prefix}/{part}" if current_prefix else part
+                child_path = (
+                    f"{current_prefix}/{part}" if current_prefix else part
+                )
                 is_file = recursive and index == len(parts) - 1
                 if not recursive:
                     is_file = "/" not in remainder
@@ -313,8 +327,13 @@ def test_modal_volume_flavor_uses_lazy_implementation_import() -> None:
     """The flavor exposes config and implementation classes."""
     flavor = ModalVolumeArtifactStoreFlavor()
     assert flavor.name == MODAL_VOLUME_ARTIFACT_STORE_FLAVOR
-    assert flavor.config_class.__name__ == ModalVolumeArtifactStoreConfig.__name__
-    assert flavor.implementation_class.__name__ == ModalVolumeArtifactStore.__name__
+    assert (
+        flavor.config_class.__name__ == ModalVolumeArtifactStoreConfig.__name__
+    )
+    assert (
+        flavor.implementation_class.__name__
+        == ModalVolumeArtifactStore.__name__
+    )
 
 
 def test_modal_integration_registers_modal_volume_flavor() -> None:
@@ -453,11 +472,14 @@ def test_modal_volume_uses_sdk_fallback_without_fast_path_marker(
     assert "root/control-plane/archive.tar.gz" in volume.read_file_calls
     assert ("root/control-plane", False) in volume.listdir_calls
 
+    source_uri = f"{MODAL_URI}/control-plane/source.txt"
+    copy_uri = f"{MODAL_URI}/control-plane/copy.txt"
+    nested_uri = f"{MODAL_URI}/control-plane/nested/file.txt"
+    renamed_uri = f"{MODAL_URI}/control-plane/renamed.txt"
+    overwrite_missing_uri = f"{MODAL_URI}/control-plane/overwrite-missing.txt"
     volume.files["root/control-plane/source.txt"] = b"source"
-    artifact_store.copyfile(
-        f"{MODAL_URI}/control-plane/source.txt",
-        f"{MODAL_URI}/control-plane/copy.txt",
-    )
+    volume.files["root/control-plane/nested/file.txt"] = b"nested"
+    artifact_store.copyfile(source_uri, copy_uri)
     assert volume.files["root/control-plane/copy.txt"] == b"source"
     assert volume.copy_calls == [
         (
@@ -466,21 +488,59 @@ def test_modal_volume_uses_sdk_fallback_without_fast_path_marker(
             False,
         )
     ]
+    assert set(artifact_store.glob(f"{MODAL_URI}/control-plane/*.txt")) == {
+        source_uri,
+        copy_uri,
+    }
+    assert artifact_store.glob(f"{MODAL_URI}/control-plane/*/*.txt") == [
+        nested_uri
+    ]
+    assert artifact_store.glob(source_uri) == [source_uri]
+    assert artifact_store.stat(source_uri) == {
+        "name": "source.txt",
+        "path": "root/control-plane/source.txt",
+        "size": len(b"source"),
+        "type": "FILE",
+    }
+
+    artifact_store.rename(copy_uri, renamed_uri)
+    assert "root/control-plane/copy.txt" not in volume.files
+    assert volume.files["root/control-plane/renamed.txt"] == b"source"
+
+    artifact_store.rename(renamed_uri, overwrite_missing_uri, overwrite=True)
+    assert "root/control-plane/renamed.txt" not in volume.files
+    assert (
+        volume.files["root/control-plane/overwrite-missing.txt"] == b"source"
+    )
+    assert volume.rename_calls == [
+        ("root/control-plane/copy.txt", "root/control-plane/renamed.txt"),
+        (
+            "root/control-plane/renamed.txt",
+            "root/control-plane/overwrite-missing.txt",
+        ),
+    ]
 
     volume.files["root/control-plane/existing.txt"] = b"keep"
     with pytest.raises(NotImplementedError, match="overwriting"):
         artifact_store.copyfile(
-            f"{MODAL_URI}/control-plane/source.txt",
+            source_uri,
+            f"{MODAL_URI}/control-plane/existing.txt",
+            overwrite=True,
+        )
+    assert volume.files["root/control-plane/existing.txt"] == b"keep"
+    with pytest.raises(NotImplementedError, match="overwriting"):
+        artifact_store.rename(
+            overwrite_missing_uri,
             f"{MODAL_URI}/control-plane/existing.txt",
             overwrite=True,
         )
     assert volume.files["root/control-plane/existing.txt"] == b"keep"
 
-    artifact_store.remove(f"{MODAL_URI}/control-plane/copy.txt")
+    artifact_store.remove(overwrite_missing_uri)
     assert volume.remove_file_calls == [
-        ("root/control-plane/copy.txt", False)
+        ("root/control-plane/overwrite-missing.txt", False)
     ]
-    assert not artifact_store.exists(f"{MODAL_URI}/control-plane/copy.txt")
+    assert not artifact_store.exists(overwrite_missing_uri)
 
 
 def test_modal_volume_sdk_fallback_sizes_files_and_directories(
@@ -604,6 +664,154 @@ def test_modal_volume_fetches_artifact_logs_via_sdk_fallback(
     )
 
     log_entries = log_store.fetch(logs_model=logs_model, limit=10)
+
+    assert [entry.message for entry in log_entries] == [
+        "first Modal log line",
+        "second Modal log line",
+    ]
+
+
+def test_modal_volume_server_download_archive_via_sdk_fallback(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Server artifact archives can read Modal Volume files by SDK."""
+    from zenml.zen_server import download_utils
+
+    artifact_store = _make_artifact_store(tmp_path)
+    artifact_uri = f"{MODAL_URI}/dashboard/archive"
+    volume = ModalVolumeStub(
+        files={
+            "root/dashboard/archive/summary.txt": b"summary",
+            "root/dashboard/archive/nested/data.txt": b"nested-data",
+        }
+    )
+    cleanup_calls: list[bool] = []
+    monkeypatch.delenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, raising=False)
+    monkeypatch.setattr(artifact_store, "_get_modal_volume", lambda: volume)
+    monkeypatch.setattr(
+        artifact_store, "cleanup", lambda: cleanup_calls.append(True)
+    )
+    monkeypatch.setattr(
+        download_utils,
+        "load_artifact_store",
+        lambda artifact_store_id, zen_store: artifact_store,
+    )
+    monkeypatch.setattr(download_utils, "zen_store", lambda: object())
+    monkeypatch.setattr(
+        download_utils,
+        "server_config",
+        lambda: SimpleNamespace(file_download_size_limit=10_000),
+    )
+
+    artifact = SimpleNamespace(
+        id=uuid4(),
+        artifact_store_id=artifact_store.id,
+        uri=artifact_uri,
+    )
+
+    archive_path = download_utils.create_artifact_archive(artifact)
+    try:
+        with tarfile.open(archive_path, mode="r:gz") as archive:
+            assert set(archive.getnames()) == {
+                ".",
+                "nested",
+                "nested/data.txt",
+                "summary.txt",
+            }
+            summary_file = archive.extractfile("summary.txt")
+            nested_file = archive.extractfile("nested/data.txt")
+            assert summary_file is not None
+            assert nested_file is not None
+            assert summary_file.read() == b"summary"
+            assert nested_file.read() == b"nested-data"
+    finally:
+        os.remove(archive_path)
+    assert cleanup_calls == [True]
+
+
+def test_modal_volume_server_download_verification_cleans_up_on_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Download verification cleans reconstructed artifact stores on failure."""
+    from zenml.zen_server import download_utils
+
+    artifact_store = _make_artifact_store(tmp_path)
+    cleanup_calls: list[bool] = []
+    monkeypatch.delenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, raising=False)
+    monkeypatch.setattr(
+        artifact_store, "_get_modal_volume", lambda: ModalVolumeStub()
+    )
+    monkeypatch.setattr(
+        artifact_store, "cleanup", lambda: cleanup_calls.append(True)
+    )
+    monkeypatch.setattr(
+        download_utils,
+        "load_artifact_store",
+        lambda artifact_store_id, zen_store: artifact_store,
+    )
+    monkeypatch.setattr(download_utils, "zen_store", lambda: object())
+
+    artifact = SimpleNamespace(
+        id=uuid4(),
+        artifact_store_id=artifact_store.id,
+        uri=f"{MODAL_URI}/missing-artifact",
+    )
+
+    with pytest.raises(KeyError, match="does not exist"):
+        download_utils.verify_artifact_is_downloadable(artifact)
+
+    assert cleanup_calls == [True]
+
+
+def test_modal_volume_server_fetch_logs_reconstructs_artifact_store(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Server log fetching can reconstruct Modal Volume artifact log stores."""
+    from zenml.stack import StackComponent
+    from zenml.utils import logging_utils
+    from zenml.zen_server.rbac import endpoint_utils
+
+    artifact_store = _make_artifact_store(tmp_path)
+    logs_uri = f"{MODAL_URI}/logs/{uuid4()}.log"
+    volume = ModalVolumeStub(
+        files={
+            logs_uri.removeprefix("modal-volume://test-volume/"): (
+                b"first Modal log line\nsecond Modal log line\n"
+            )
+        }
+    )
+    artifact_store_model = SimpleNamespace(
+        id=artifact_store.id,
+        name=artifact_store.name,
+        type=StackComponentType.ARTIFACT_STORE,
+    )
+    logs_model = SimpleNamespace(
+        log_store_id=None,
+        artifact_store_id=artifact_store.id,
+        uri=logs_uri,
+    )
+    zen_store = SimpleNamespace(
+        get_stack_component=lambda component_id: artifact_store_model
+    )
+
+    monkeypatch.setenv(ENV_ZENML_SERVER, "true")
+    monkeypatch.delenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, raising=False)
+    monkeypatch.setattr(artifact_store, "_get_modal_volume", lambda: volume)
+    monkeypatch.setattr(
+        endpoint_utils,
+        "verify_permissions_and_get_entity",
+        lambda id, get_method: get_method(id),
+    )
+    monkeypatch.setattr(
+        StackComponent,
+        "from_model",
+        staticmethod(lambda model: artifact_store),
+    )
+
+    log_entries = logging_utils.fetch_logs(logs_model, zen_store, limit=10)
 
     assert [entry.message for entry in log_entries] == [
         "first Modal log line",
@@ -810,7 +1018,9 @@ def test_modal_volume_preserves_credential_errors_from_volume_lookup(
     )
     monkeypatch.setattr(modal.Volume, "from_name", from_name)
 
-    with pytest.raises(StackComponentInterfaceError, match="bad Modal credentials"):
+    with pytest.raises(
+        StackComponentInterfaceError, match="bad Modal credentials"
+    ):
         artifact_store._get_modal_volume()
 
 
@@ -840,7 +1050,9 @@ def test_modal_volume_cleans_temp_file_when_sdk_read_fails(
     monkeypatch.setattr(
         artifact_store, "_get_modal_volume", lambda: FailingReadVolumeStub()
     )
-    monkeypatch.setattr(tempfile, "NamedTemporaryFile", named_temporary_file_spy)
+    monkeypatch.setattr(
+        tempfile, "NamedTemporaryFile", named_temporary_file_spy
+    )
 
     with pytest.raises(RuntimeError, match="stream failed"):
         artifact_store.open(f"{MODAL_URI}/failed-read.txt", "rb")
@@ -871,6 +1083,31 @@ def test_modal_volume_translates_sdk_read_not_found(
 
     with pytest.raises(FileNotFoundError):
         artifact_store.open(f"{MODAL_URI}/missing.txt", "rb")
+
+
+def test_modal_volume_translates_immediate_sdk_read_not_found(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Immediate Modal SDK read_file errors become FileNotFoundError."""
+
+    class NotFoundError(Exception):
+        pass
+
+    class ImmediateMissingReadVolumeStub:
+        def read_file(self, path: str):
+            raise NotFoundError("missing")
+
+    artifact_store = _make_artifact_store(tmp_path)
+    monkeypatch.delenv(ENV_ZENML_MODAL_ARTIFACT_STORE_FAST_PATH, raising=False)
+    monkeypatch.setattr(
+        artifact_store,
+        "_get_modal_volume",
+        lambda: ImmediateMissingReadVolumeStub(),
+    )
+
+    with pytest.raises(FileNotFoundError):
+        artifact_store.open(f"{MODAL_URI}/missing-immediate.txt", "rb")
 
 
 def test_modal_volume_cleans_upload_temp_file_when_append_preload_fails(
@@ -906,7 +1143,9 @@ def test_modal_volume_cleans_upload_temp_file_when_append_preload_fails(
         "_get_modal_volume",
         lambda: FailingPreloadVolumeStub(),
     )
-    monkeypatch.setattr(tempfile, "NamedTemporaryFile", named_temporary_file_spy)
+    monkeypatch.setattr(
+        tempfile, "NamedTemporaryFile", named_temporary_file_spy
+    )
 
     with pytest.raises(RuntimeError, match="preload failed"):
         artifact_store.open(f"{MODAL_URI}/existing.txt", "a")

@@ -41,6 +41,7 @@ from zenml.integrations.modal.flavors.modal_volume_artifact_store_flavor import 
     ENV_ZENML_MODAL_ARTIFACT_STORE_VOLUME_PREFIX,
 )
 from zenml.integrations.modal.sandbox_utils import (
+    ENV_ZENML_MODAL_VOLUME_ENVIRONMENT_NAME,
     GpuValidationMessage,
     get_gpu_values,
 )
@@ -580,6 +581,7 @@ def test_modal_submit_mounts_modal_volume_artifact_store(
         ENV_ZENML_MODAL_ARTIFACT_STORE_MOUNT_PATH: "/mnt/zenml",
         ENV_ZENML_MODAL_ARTIFACT_STORE_VOLUME_NAME: "training-artifacts",
         ENV_ZENML_MODAL_ARTIFACT_STORE_VOLUME_PREFIX: "runs",
+        ENV_ZENML_MODAL_VOLUME_ENVIRONMENT_NAME: "prod",
     }
 
 

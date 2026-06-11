@@ -55,18 +55,24 @@ def verify_artifact_is_downloadable(
         artifact_store_id=artifact.artifact_store_id, zen_store=zen_store()
     )
 
-    if not artifact_store.exists(artifact.uri):
-        raise KeyError(f"The artifact URI '{artifact.uri}' does not exist.")
+    try:
+        if not artifact_store.exists(artifact.uri):
+            raise KeyError(
+                f"The artifact URI '{artifact.uri}' does not exist."
+            )
 
-    size = artifact_store.size(artifact.uri)
-    max_download_size = server_config().file_download_size_limit
+        size = artifact_store.size(artifact.uri)
+        max_download_size = server_config().file_download_size_limit
 
-    if size and size > max_download_size:
-        raise IllegalOperationError(
-            f"The artifact '{artifact.id}' is too large to be downloaded. "
-            f"The maximum download size allowed by your ZenML server is "
-            f"{max_download_size} bytes."
-        )
+        if size and size > max_download_size:
+            raise IllegalOperationError(
+                f"The artifact '{artifact.id}' is too large to be "
+                "downloaded. The maximum download size allowed by your "
+                f"ZenML server is {max_download_size} bytes."
+            )
+    except Exception:
+        artifact_store.cleanup()
+        raise
 
     return artifact_store
 
@@ -91,32 +97,37 @@ def create_artifact_archive(
             tarinfo.size = size
         return tarinfo
 
-    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-        with tarfile.open(fileobj=temp_file, mode="w:gz") as tar:
-            if artifact_store.isdir(artifact.uri):
-                for dir, _, files in artifact_store.walk(artifact.uri):
-                    dir = dir.decode() if isinstance(dir, bytes) else dir
-                    dir_info = tarfile.TarInfo(
-                        name=os.path.relpath(dir, artifact.uri)
-                    )
-                    dir_info.type = tarfile.DIRTYPE
-                    dir_info.mode = 0o755
-                    tar.addfile(dir_info)
-
-                    for file in files:
-                        file = (
-                            file.decode() if isinstance(file, bytes) else file
+    try:
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            with tarfile.open(fileobj=temp_file, mode="w:gz") as tar:
+                if artifact_store.isdir(artifact.uri):
+                    for dir, _, files in artifact_store.walk(artifact.uri):
+                        dir = dir.decode() if isinstance(dir, bytes) else dir
+                        dir_info = tarfile.TarInfo(
+                            name=os.path.relpath(dir, artifact.uri)
                         )
-                        path = os.path.join(dir, file)
-                        tarinfo = _prepare_tarinfo(path)
-                        with artifact_store.open(path, "rb") as f:
-                            tar.addfile(tarinfo, fileobj=f)
-            else:
-                tarinfo = _prepare_tarinfo(artifact.uri)
-                with artifact_store.open(artifact.uri, "rb") as f:
-                    tar.addfile(tarinfo, fileobj=f)
+                        dir_info.type = tarfile.DIRTYPE
+                        dir_info.mode = 0o755
+                        tar.addfile(dir_info)
 
-        return temp_file.name
+                        for file in files:
+                            file = (
+                                file.decode()
+                                if isinstance(file, bytes)
+                                else file
+                            )
+                            path = os.path.join(dir, file)
+                            tarinfo = _prepare_tarinfo(path)
+                            with artifact_store.open(path, "rb") as f:
+                                tar.addfile(tarinfo, fileobj=f)
+                else:
+                    tarinfo = _prepare_tarinfo(artifact.uri)
+                    with artifact_store.open(artifact.uri, "rb") as f:
+                        tar.addfile(tarinfo, fileobj=f)
+
+            return temp_file.name
+    finally:
+        artifact_store.cleanup()
 
 
 def download_snapshot_code_archive(
