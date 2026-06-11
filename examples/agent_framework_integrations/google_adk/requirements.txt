@@ -1,5 +1,5 @@
 # Pin to <=1.14.1 until google-adk relaxes their opentelemetry-sdk constraint.
-# Versions 1.15.0+ cap OTEL to <=1.37.0, conflicting with ZenML's ==1.38.0.
+# Versions 1.15.0+ cap OTEL to <=1.37.0, conflicting with ZenML's ==1.40.0.
 google-adk>=1.6.1,<=1.14.1
 zenml[local]>=0.84.3
 jinja2>=3.1.0
