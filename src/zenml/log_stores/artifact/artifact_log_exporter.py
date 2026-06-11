@@ -16,10 +16,14 @@
 import os
 import time
 from collections import defaultdict
-from typing import TYPE_CHECKING, Dict, List, Sequence
+from typing import Dict, List, Sequence
 from uuid import uuid4
 
-from opentelemetry.sdk._logs.export import LogExporter, LogExportResult
+from opentelemetry.sdk._logs import ReadableLogRecord
+from opentelemetry.sdk._logs.export import (
+    LogRecordExporter,
+    LogRecordExportResult,
+)
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.enums import LoggingLevels
@@ -31,17 +35,13 @@ from zenml.logger import get_logger
 from zenml.utils.logging_utils import LogEntry
 from zenml.utils.time_utils import utc_now
 
-if TYPE_CHECKING:
-    from opentelemetry.sdk._logs import LogData
-
-
 DEFAULT_MESSAGE_SIZE = 5 * 1024
 LOGS_EXTENSION = ".log"
 
 logger = get_logger(__name__)
 
 
-class ArtifactLogExporter(LogExporter):
+class ArtifactLogExporter(LogRecordExporter):
     """OpenTelemetry exporter that writes logs to ZenML artifact store."""
 
     def __init__(self, artifact_store: "BaseArtifactStore") -> None:
@@ -52,24 +52,26 @@ class ArtifactLogExporter(LogExporter):
         """
         self.artifact_store = artifact_store
 
-    def export(self, batch: Sequence["LogData"]) -> LogExportResult:
+    def export(
+        self, batch: Sequence[ReadableLogRecord]
+    ) -> LogRecordExportResult:
         """Export a batch of logs to the artifact store.
 
         Args:
-            batch: Sequence of LogData to export (can be from multiple contexts).
+            batch: Readable log records to export (can be from multiple contexts).
 
         Returns:
-            LogExportResult indicating success or failure.
+            LogRecordExportResult indicating success or failure.
         """
         if not batch:
-            return LogExportResult.SUCCESS
+            return LogRecordExportResult.SUCCESS
 
         try:
             logs_by_uri: Dict[str, List[str]] = defaultdict(list)
             finalized_log_streams: List[str] = []
 
-            for log_data in batch:
-                attrs = log_data.log_record.attributes
+            for readable in batch:
+                attrs = readable.log_record.attributes
                 if not attrs:
                     continue
 
@@ -77,11 +79,11 @@ class ArtifactLogExporter(LogExporter):
                 if not log_uri or not isinstance(log_uri, str):
                     continue
 
-                if log_data.log_record.body is END_OF_STREAM_MESSAGE:
+                if readable.log_record.body is END_OF_STREAM_MESSAGE:
                     finalized_log_streams.append(log_uri)
                     continue
 
-                entries = self._otel_record_to_log_entries(log_data)
+                entries = self._otel_record_to_log_entries(readable)
                 for entry in entries:
                     json_line = entry.model_dump_json(exclude_none=True)
                     logs_by_uri[log_uri].append(json_line)
@@ -93,24 +95,24 @@ class ArtifactLogExporter(LogExporter):
             for log_uri in finalized_log_streams:
                 self._finalize(log_uri)
 
-            return LogExportResult.SUCCESS
+            return LogRecordExportResult.SUCCESS
 
         except Exception:
             logger.exception("Failed to export logs to artifact store")
-            return LogExportResult.FAILURE
+            return LogRecordExportResult.FAILURE
 
     def _otel_record_to_log_entries(
-        self, log_data: "LogData"
+        self, readable: ReadableLogRecord
     ) -> List[LogEntry]:
         """Convert an OTEL log record to ZenML LogEntry objects.
 
         Args:
-            log_data: The OpenTelemetry log data.
+            readable: The OpenTelemetry readable log record.
 
         Returns:
             List of LogEntry objects (multiple if message was chunked).
         """
-        log_record = log_data.log_record
+        log_record = readable.log_record
         attributes = log_record.attributes
 
         message = str(log_record.body) if log_record.body else ""
