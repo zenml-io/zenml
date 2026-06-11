@@ -3,14 +3,19 @@
 Run [Harbor](https://harborframework.org) evaluation trials through a ZenML pipeline, with the trial's container backed by whatever Sandbox flavor is on the active stack — Modal today, GKE Agent Sandbox / Agent Substrate when that flavor lands.
 
 ```
-ZenML pipeline (single step, the user's entry point)
-  -> Harbor (programmatic: tasks, agent, verifier, ATIF, reward)
-    -> ZenMLSandboxEnvironment (implements harbor.BaseEnvironment)
-      -> Client().active_stack.sandbox.create_session()
-        -> Modal sandbox
+ZenML pipeline: build_matrix -> run_harbor_trial.map(...) -> build_report
+  each mapped step runs ONE Harbor trial:
+    -> Harbor (programmatic: task loading, agent loop, verifier, reward)
+      -> ZenMLSandboxEnvironment (implements harbor.BaseEnvironment)
+        -> Client().active_stack.sandbox.create_session()
+          -> sandbox (Modal, Kubernetes, ...)
 ```
 
-The pipeline is the only entry point. One command, one ZenML run, one queryable artifact carrying the trial's reward and metadata.
+ZenML owns the outer orchestration — matrix expansion, per-trial steps (own
+sandbox session, logs, retries, cache entry), and cross-trial aggregation into
+a campaign report. Harbor keeps the trial eval kernel and runs exactly one
+trial per step. One command, one ZenML run, per-trial artifacts plus a
+markdown report on the dashboard.
 
 ## What you get over plain `harbor run`
 
