@@ -36,7 +36,7 @@ from zenml.hooks.validation import bind_optional_hook_args
 from zenml.logger import get_logger
 from zenml.models import ExceptionInfo
 from zenml.models.v2.core.hook_invocation import HOOK_NAME_PATTERN
-from zenml.utils import source_utils
+from zenml.utils import async_utils, source_utils
 from zenml.utils.exception_utils import collect_exception_information
 from zenml.utils.time_utils import utc_now
 
@@ -239,7 +239,12 @@ def run_hook(
     with logs_context or nullcontext():
         try:
             try:
-                result = loaded_func(*args, **(kwargs or {}))
+                if async_utils.is_async_callable(loaded_func):
+                    result = async_utils.run_coroutine_isolated(
+                        loaded_func(*args, **(kwargs or {}))
+                    )
+                else:
+                    result = loaded_func(*args, **(kwargs or {}))
             except BaseException as e:
                 status = ExecutionStatus.FAILED
                 exception_info = collect_exception_information(

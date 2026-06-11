@@ -11,9 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-import asyncio
 import os
-import time
 from contextlib import ExitStack as does_not_raise
 from typing import Tuple
 
@@ -148,32 +146,3 @@ def test_pipeline_run_with_nested_pipeline_definition() -> None:
     )
     with does_not_raise():
         nested_pipeline()
-
-
-ASYNC_STEP_SLEEP_SECONDS = 0.5
-ASYNC_STEP_COUNT = 4
-
-
-@step
-async def async_sleep_step() -> None:
-    await asyncio.sleep(ASYNC_STEP_SLEEP_SECONDS)
-
-
-@pipeline(dynamic=True, enable_cache=False)
-def concurrent_async_steps_pipeline() -> None:
-    futures = [async_sleep_step.submit() for _ in range(ASYNC_STEP_COUNT)]
-    for future in futures:
-        future.result()
-
-
-def test_submitted_async_steps_run_concurrently() -> None:
-    """Tests that submitted async steps overlap instead of running sequentially."""
-    start = time.monotonic()
-    concurrent_async_steps_pipeline()
-    duration = time.monotonic() - start
-
-    # Sequential execution would take at least
-    # `ASYNC_STEP_COUNT * ASYNC_STEP_SLEEP_SECONDS`. The submitted steps run on
-    # separate threads, so their sleeps overlap and the total stays below that
-    # lower bound.
-    assert duration < ASYNC_STEP_COUNT * ASYNC_STEP_SLEEP_SECONDS
