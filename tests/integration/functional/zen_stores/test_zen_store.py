@@ -87,6 +87,7 @@ from zenml.exceptions import (
 )
 from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models import (
+    APIKey,
     APIKeyFilter,
     APIKeyRequest,
     APIKeyRotateRequest,
@@ -2121,6 +2122,11 @@ def test_login_api_key():
             new_zen_store = Client().zen_store
             active_user = new_zen_store.get_user()
             assert active_user.id == service_account.id
+
+        forged_api_key = APIKey(id=api_key.id, key="").encode()
+        with pytest.raises(AuthorizationException):
+            with LoginContext(api_key=forged_api_key):
+                Client().zen_store.get_user()
 
         api_key = zen_store.get_api_key(
             service_account_id=service_account.id,
