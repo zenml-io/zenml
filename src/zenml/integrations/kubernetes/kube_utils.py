@@ -280,6 +280,57 @@ def get_pod(
         raise RuntimeError from e
 
 
+def create_pod(
+    core_api: k8s_client.CoreV1Api,
+    namespace: str,
+    pod_manifest: k8s_client.V1Pod,
+    api_request_timeout: Optional[int] = None,
+) -> None:
+    """Create a Kubernetes pod.
+
+    Args:
+        core_api: Client of `CoreV1Api` of Kubernetes API.
+        namespace: The namespace in which to create the pod.
+        pod_manifest: The manifest of the pod to create.
+        api_request_timeout: The request timeout in seconds.
+    """
+    retry_on_api_exception(
+        core_api.create_namespaced_pod,
+        api_request_timeout=api_request_timeout,
+    )(
+        namespace=namespace,
+        body=pod_manifest,
+    )
+
+
+def delete_pod(
+    core_api: k8s_client.CoreV1Api,
+    pod_name: str,
+    namespace: str,
+    api_request_timeout: Optional[int] = None,
+) -> None:
+    """Delete a Kubernetes pod.
+
+    Args:
+        core_api: Client of `CoreV1Api` of Kubernetes API.
+        pod_name: The name of the pod to delete.
+        namespace: The namespace of the pod.
+        api_request_timeout: The request timeout in seconds.
+    """
+    try:
+        retry_on_api_exception(
+            core_api.delete_namespaced_pod,
+            api_request_timeout=api_request_timeout,
+        )(
+            name=pod_name,
+            namespace=namespace,
+            propagation_policy="Foreground",
+        )
+    except k8s_client.rest.ApiException as e:
+        if e.status != 404:
+            raise
+
+
 def wait_pod(
     kube_client_fn: Callable[[], k8s_client.ApiClient],
     pod_name: str,
