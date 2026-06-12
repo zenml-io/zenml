@@ -23,13 +23,13 @@ from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
-from zenml.exceptions import HookExecutionException
-from zenml.execution.step.utils import launch_step
 from zenml.enums import (
     ArtifactSaveType,
     HookType,
     StepRunInputArtifactType,
 )
+from zenml.exceptions import HookExecutionException
+from zenml.execution.step.utils import launch_step
 from zenml.models import (
     PipelineRunResponse,
     PipelineSnapshotResponse,
