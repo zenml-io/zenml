@@ -30,6 +30,7 @@ CLOUDFLARE_CONTAINER_REGISTRY_FLAVOR = "cloudflare"
 # Intentionally the same value as the container-registry flavor: flavor
 # names only need to be unique per component type.
 CLOUDFLARE_SANDBOX_FLAVOR = "cloudflare"
+CLOUDFLARE_ORCHESTRATOR_FLAVOR = "cloudflare"
 
 class CloudflareIntegration(Integration):
     """Definition of the Cloudflare integration for ZenML."""
@@ -57,6 +58,7 @@ class CloudflareIntegration(Integration):
         """
         from zenml.integrations.cloudflare.flavors import (
             CloudflareContainerRegistryFlavor,
+            CloudflareOrchestratorFlavor,
             CloudflareSandboxFlavor,
             R2ArtifactStoreFlavor,
         )
@@ -65,4 +67,5 @@ class CloudflareIntegration(Integration):
             R2ArtifactStoreFlavor,
             CloudflareContainerRegistryFlavor,
             CloudflareSandboxFlavor,
+            CloudflareOrchestratorFlavor,
         ]

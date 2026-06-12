@@ -16,6 +16,11 @@
 from zenml.integrations.cloudflare.flavors.cloudflare_container_registry_flavor import (
     CloudflareContainerRegistryFlavor,
 )
+from zenml.integrations.cloudflare.flavors.cloudflare_orchestrator_flavor import (
+    CloudflareOrchestratorConfig,
+    CloudflareOrchestratorFlavor,
+    CloudflareOrchestratorSettings,
+)
 from zenml.integrations.cloudflare.flavors.cloudflare_r2_artifact_store_flavor import (
     R2ArtifactStoreConfig,
     R2ArtifactStoreFlavor,
@@ -30,6 +35,9 @@ __all__ = [
     "R2ArtifactStoreFlavor",
     "R2ArtifactStoreConfig",
     "CloudflareContainerRegistryFlavor",
+    "CloudflareOrchestratorConfig",
+    "CloudflareOrchestratorFlavor",
+    "CloudflareOrchestratorSettings",
     "CloudflareSandboxConfig",
     "CloudflareSandboxFlavor",
     "CloudflareSandboxSettings",
