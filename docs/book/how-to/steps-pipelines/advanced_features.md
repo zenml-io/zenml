@@ -116,6 +116,26 @@ settings:
 
 You can also configure the orchestrator to always run asynchronously by setting `synchronous=False` in its configuration.
 
+### Async Steps
+
+Step functions can be defined with `async def`. ZenML runs the coroutine to completion when the step executes, so whether a step body is async is invisible at the call site:
+
+```python
+from zenml import step
+
+@step
+async def fetch_data(url: str) -> bytes:
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url)
+        return response.content
+```
+
+An async step behaves like any other step: call it inside a pipeline, pass its outputs downstream, or run several concurrently with [`.submit()`](dynamic_pipelines.md#parallel-step-execution). Submitted async steps run on separate threads, so their `await` points overlap and IO-bound work proceeds in parallel.
+
+{% hint style="warning" %}
+A blocking call inside an async body (`time.sleep`, a synchronous HTTP request, heavy CPU work) stalls that step's event loop and erases the concurrency. Use the async equivalents (`asyncio.sleep`, an async HTTP client) inside async steps.
+{% endhint %}
+
 ### Step Execution Order
 
 By default, ZenML determines step execution order based on data dependencies. When a step requires output from another step, it automatically creates a dependency.
@@ -716,82 +736,7 @@ This is particularly useful for steps that interact with external services or re
 
 ### Pipeline and Step Hooks
 
-Hooks allow you to execute custom code at specific points in the pipeline or step lifecycle:
-
-```python
-def success_hook():
-    print(f"Step completed successfully")
-
-def failure_hook(exception: BaseException):
-    print(f"Step failed with error: {str(exception)}")
-
-@step(on_success=success_hook, on_failure=failure_hook)
-def my_step():
-    return 42
-```
-
-The following conventions apply to hooks:
-
-* the success hook takes no arguments
-* the failure hook optionally takes a single `BaseException` typed argument
-
-You can also define hooks at the pipeline level to apply to all steps:
-
-```python
-@pipeline(on_failure=failure_hook, on_success=success_hook)
-def my_pipeline():
-    ...
-```
-
-Step-level hooks take precedence over pipeline-level hooks. Hooks are particularly useful for:
-- Sending notifications when steps fail or succeed
-- Logging detailed information about runs
-- Triggering external workflows based on pipeline state
-
-### Accessing Step Context in Hooks
-
-You can access detailed information about the current run using the step context:
-
-```python
-from zenml import step, get_step_context
-
-def on_failure(exception: BaseException):
-    context = get_step_context()
-    print(f"Failed step: {context.step_run.name}")
-    print(f"Parameters: {context.step_run.config.parameters}")
-    print(f"Exception: {type(exception).__name__}: {str(exception)}")
-    
-    # Access pipeline information
-    print(f"Pipeline: {context.pipeline_run.name}")
-
-@step(on_failure=on_failure)
-def my_step(some_parameter: int = 1):
-    raise ValueError("My exception")
-```
-
-### Using Alerter in Hooks
-
-You can use the [Alerter stack component](https://docs.zenml.io/component-guide/alerters) to send notifications when steps fail or succeed:
-
-```python
-from zenml import get_step_context
-from zenml.client import Client
-
-def on_failure():
-    step_name = get_step_context().step_run.name
-    Client().active_stack.alerter.post(f"{step_name} just failed!")
-```
-
-ZenML provides built-in alerter hooks for common scenarios:
-
-```python
-from zenml.hooks import alerter_success_hook, alerter_failure_hook
-
-@step(on_failure=alerter_failure_hook, on_success=alerter_success_hook)
-def my_step():
-    ...
-```
-
+Run custom code on step and pipeline lifecycle events (`on_start`, `on_end`, `on_success`, `on_failure`) to send notifications, log run details, or trigger external workflows. See the dedicated [Hooks](hooks.md) page for the full hook surface, including signatures, accessing run information, alerter integration, the static-versus-dynamic pipeline behavior, and running custom hooks using `run_hook(...)`.
 
 ## Conclusion
 

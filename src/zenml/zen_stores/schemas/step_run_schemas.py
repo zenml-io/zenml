@@ -388,6 +388,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 step = Step.from_dict(
                     json.loads(config_schema.config),
                     pipeline_configuration=pipeline_configuration,
+                    exclude_hook_sources=self.snapshot.is_dynamic,
                 )
         if not step and self.step_configuration:
             # In this legacy case, we're guaranteed to have the merged

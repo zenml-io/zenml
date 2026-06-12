@@ -79,6 +79,8 @@ def step(
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
+    on_start: Optional["HookSpecification"] = None,
+    on_end: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
@@ -107,6 +109,8 @@ def step(
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
+    on_start: Optional["HookSpecification"] = None,
+    on_end: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
@@ -140,12 +144,14 @@ def step(
         secrets: Secrets to set as environment variables when running this step.
         settings: Settings for this step.
         extra: Extra configurations for this step.
-        on_failure: Callback function in event of failure of the step. Can be a
-            function with a single argument of type `BaseException`, or a source
-            path to such a function (e.g. `module.my_function`).
-        on_success: Callback function in event of success of the step. Can be a
-            function with no arguments, or a source path to such a function
-            (e.g. `module.my_function`).
+        on_failure: Hook run when the step fails. A callable taking an optional
+            `BaseException`, or a source path to one.
+        on_success: Hook run when the step succeeds. A no-arg callable, or a
+            source path to one.
+        on_start: Hook run when the step starts. A no-arg callable, or a source
+            path to one.
+        on_end: Hook run when the step ends. A callable taking an optional
+            `BaseException`, or a source path to one.
         model: configuration of the model in the Model Control Plane.
         retry: configuration of step retry in case of step failure.
         substitutions: Extra substitutions for model and artifact name
@@ -193,6 +199,8 @@ def step(
             extra=extra,
             on_failure=on_failure,
             on_success=on_success,
+            on_start=on_start,
+            on_end=on_end,
             model=model,
             retry=retry,
             substitutions=substitutions,

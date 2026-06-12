@@ -16,7 +16,7 @@
 import functools
 from datetime import datetime, timedelta
 from functools import wraps
-from typing import Any, Awaitable, Callable, Dict, Optional, Tuple, Union, cast
+from typing import Any, Awaitable, Callable, Dict, Optional, Tuple, Union
 from urllib.parse import urlencode, urlparse
 from uuid import UUID, uuid4
 
@@ -154,7 +154,7 @@ def _fetch_and_verify_api_key(
         logger.error(error)
         raise CredentialsNotValid(error)
 
-    if key_to_verify and not api_key.verify_key(key_to_verify):
+    if key_to_verify is not None and not api_key.verify_key(key_to_verify):
         error = (
             f"Authentication error: could not verify key value for API key "
             f"{api_key.name}"
@@ -1168,13 +1168,10 @@ def verify_download_token(
 
     config = server_config()
     try:
-        claims = cast(
-            Dict[str, Any],
-            jwt.decode(
-                token,
-                config.jwt_secret_key,
-                algorithms=[config.jwt_token_algorithm],
-            ),
+        claims = jwt.decode(
+            token,
+            config.jwt_secret_key,
+            algorithms=[config.jwt_token_algorithm],
         )
     except jwt.PyJWTError as e:
         raise CredentialsNotValid(f"Invalid JWT token: {e}") from e
