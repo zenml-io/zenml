@@ -65,16 +65,48 @@ def _info():
 def _mock_trackio_signature(
     mock_signature: MagicMock,
 ) -> None:
-    mock_signature.return_value.parameters = {
-        "project": None,
-        "name": None,
-        "config": None,
-        "dir": None,
-        "resume": None,
-        "tracking_uri": None,
-        "sdk": None,
-        "space": None,
-    }
+    def side_effect(fn):
+        sig = MagicMock()
+
+        mock_name = getattr(fn, "_mock_name", "")
+
+        if mock_name == "init":
+            sig.parameters = {
+                "project": None,
+                "name": None,
+                "config": None,
+                "resume": None,
+                "server_url": None,
+                "space_id": None,
+                "dataset_id": None,
+                "bucket_id": None,
+                "sdk": None,
+                "auto_log_gpu": None,
+                "gpu_log_interval": None,
+            }
+
+        elif mock_name == "sync":
+            sig.parameters = {
+                "project": None,
+                "space_id": None,
+                "dataset_id": None,
+                "bucket_id": None,
+                "sdk": None,
+            }
+
+        elif mock_name == "freeze":
+            sig.parameters = {
+                "project": None,
+                "space_id": None,
+                "bucket_id": None,
+            }
+
+        else:
+            sig.parameters = {}
+
+        return sig
+
+    mock_signature.side_effect = side_effect
 
 
 @pytest.fixture
@@ -113,6 +145,7 @@ def test_trackio_run_initialization(
     assert kwargs["project"] == "test-project"
     assert kwargs["name"] == "pipeline_run_trainer"
     assert kwargs["resume"] == "allow"
+    assert kwargs["auto_log_gpu"] is True
 
 
 @patch(
@@ -140,23 +173,35 @@ def test_trackio_custom_run_name(
 
 @patch(
     "zenml.integrations.trackio.experiment_trackers."
-    "trackio_experiment_tracker.trackio.init"
+    "trackio_experiment_tracker.trackio.finish"
 )
-def test_trackio_static_backend_adds_sdk(
-    mock_init: MagicMock,
+@patch(
+    "zenml.integrations.trackio.experiment_trackers."
+    "trackio_experiment_tracker.trackio.sync"
+)
+def test_trackio_standard_backend_sync(
+    mock_sync: MagicMock,
+    mock_finish: MagicMock,
     mock_trackio_signature,
 ) -> None:
-    tracker = _tracker(
-        backend="static",
+    tracker = _tracker()
+
+    tracker.get_settings = MagicMock(
+        return_value=_settings(
+            auto_sync=True,
+        )
     )
 
-    tracker.get_settings = MagicMock(return_value=_settings())
+    tracker.cleanup_step_run(
+        _info(),
+        step_failed=False,
+    )
 
-    tracker.prepare_step_run(_info())
+    mock_sync.assert_called_once_with(
+        project="test-project",
+    )
 
-    kwargs = mock_init.call_args.kwargs
-
-    assert kwargs["sdk"] == "static"
+    mock_finish.assert_called_once()
 
 
 @patch(
@@ -168,7 +213,7 @@ def test_trackio_hf_space_passed(
     mock_trackio_signature,
 ) -> None:
     tracker = _tracker(
-        hf_space="test-space",
+        space_id="test-space",
     )
 
     tracker.get_settings = MagicMock(return_value=_settings())
@@ -177,7 +222,7 @@ def test_trackio_hf_space_passed(
 
     kwargs = mock_init.call_args.kwargs
 
-    assert kwargs["space"] == "test-space"
+    assert kwargs["space_id"] == "test-space"
 
 
 @patch(
@@ -221,15 +266,19 @@ def test_trackio_tags_logged(
     "zenml.integrations.trackio.experiment_trackers."
     "trackio_experiment_tracker.trackio.sync"
 )
-def test_trackio_sync_enabled(
+def test_trackio_static_backend_adds_sdk(
     mock_sync: MagicMock,
     mock_finish: MagicMock,
+    mock_trackio_signature,  # Added signature fixture
 ) -> None:
-    tracker = _tracker()
+    tracker = _tracker(
+        backend="static",
+    )
 
     tracker.get_settings = MagicMock(
         return_value=_settings(
             auto_sync=True,
+            project="test-project",
         )
     )
 
@@ -240,9 +289,8 @@ def test_trackio_sync_enabled(
 
     mock_sync.assert_called_once_with(
         project="test-project",
+        sdk="static",
     )
-
-    mock_finish.assert_called_once()
 
 
 @patch(
@@ -253,12 +301,12 @@ def test_trackio_sync_enabled(
     "zenml.integrations.trackio.experiment_trackers."
     "trackio_experiment_tracker.trackio.freeze"
 )
-def test_trackio_freeze_enabled(
+def test_trackio_cleanup_calls_freeze_on_failure(
     mock_freeze: MagicMock,
     mock_finish: MagicMock,
 ) -> None:
     tracker = _tracker(
-        hf_space="space-id",
+        space_id="space-id",
     )
 
     tracker.get_settings = MagicMock(
@@ -288,7 +336,7 @@ def test_trackio_freeze_enabled(
     "zenml.integrations.trackio.experiment_trackers."
     "trackio_experiment_tracker.trackio.sync"
 )
-def test_trackio_cleanup_calls_finish_on_failure(
+def test_trackio_cleanup_calls_finish_when_sync_fails(
     mock_sync: MagicMock,
     mock_finish: MagicMock,
 ) -> None:
