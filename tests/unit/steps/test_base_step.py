@@ -224,6 +224,16 @@ def test_calling_a_step_works():
         step_instance.call_entrypoint()
 
 
+def test_async_step_call_entrypoint_runs_coroutine_to_completion():
+    """Tests that calling an async step entrypoint returns the coroutine result."""
+
+    @step
+    async def async_step(value: int) -> int:
+        return value + 1
+
+    assert async_step.call_entrypoint(value=1) == 2
+
+
 @step
 def wrong_int_output_step_1() -> int:
     return "not_an_int"
