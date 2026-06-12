@@ -86,7 +86,7 @@ def test_local_orchestrator_clears_partial_run_context_when_init_raises(
         local_orchestrator, "run_cleanup_hook"
     )
     mocker.patch(
-        "zenml.orchestrators.base_orchestrator.load_and_run_hook",
+        "zenml.orchestrators.base_orchestrator.run_hook",
         side_effect=RuntimeError("init failed"),
     )
     snapshot = SimpleNamespace(

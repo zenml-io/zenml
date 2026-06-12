@@ -35,6 +35,11 @@ def _pipeline_configuration(*, init_hook_source=None):
         init_hook_source=init_hook_source,
         init_hook_kwargs={},
         cleanup_hook_source=None,
+        start_hook_source=None,
+        resume_hook_source=None,
+        end_hook_source=None,
+        success_hook_source=None,
+        failure_hook_source=None,
     )
 
 
@@ -122,7 +127,7 @@ def test_dynamic_runner_clears_partial_run_context_when_init_raises(
         runner, "_run_entrypoint_and_finalize"
     )
     mocker.patch(
-        "zenml.orchestrators.base_orchestrator.load_and_run_hook",
+        "zenml.orchestrators.base_orchestrator.run_hook",
         side_effect=RuntimeError("init failed"),
     )
 

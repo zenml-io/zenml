@@ -123,8 +123,8 @@ def test_run_init_hook_returns_true_for_fresh_context_without_hook():
 def test_run_init_hook_returns_false_for_existing_context(mocker):
     run_context = get_or_create_run_context()
     run_context.initialize({"owner": "service"})
-    mock_load_and_run_hook = mocker.patch(
-        "zenml.orchestrators.base_orchestrator.load_and_run_hook"
+    mock_run_hook = mocker.patch(
+        "zenml.orchestrators.base_orchestrator.run_hook"
     )
 
     result = BaseOrchestrator.run_init_hook(
@@ -133,12 +133,12 @@ def test_run_init_hook_returns_false_for_existing_context(mocker):
 
     assert result is False
     assert get_or_create_run_context().state == {"owner": "service"}
-    mock_load_and_run_hook.assert_not_called()
+    mock_run_hook.assert_not_called()
 
 
 def test_run_init_hook_returns_true_for_successful_hook(mocker):
-    mock_load_and_run_hook = mocker.patch(
-        "zenml.orchestrators.base_orchestrator.load_and_run_hook",
+    mock_run_hook = mocker.patch(
+        "zenml.orchestrators.base_orchestrator.run_hook",
         return_value={"state": "from-hook"},
     )
 
@@ -148,18 +148,18 @@ def test_run_init_hook_returns_true_for_successful_hook(mocker):
 
     assert result is True
     assert get_or_create_run_context().state == {"state": "from-hook"}
-    mock_load_and_run_hook.assert_called_once_with(
+    mock_run_hook.assert_called_once_with(
         "module.hook",
-        hook_parameters={"parameter": "value"},
-        raise_on_error=True,
+        kwargs={"parameter": "value"},
+        track=False,
     )
 
 
 def test_run_init_hook_runs_cleanup_and_clears_partial_context_when_hook_fails(
     mocker,
 ):
-    mock_load_and_run_hook = mocker.patch(
-        "zenml.orchestrators.base_orchestrator.load_and_run_hook",
+    mock_run_hook = mocker.patch(
+        "zenml.orchestrators.base_orchestrator.run_hook",
         side_effect=[RuntimeError("init failed"), None],
     )
 
@@ -172,13 +172,13 @@ def test_run_init_hook_runs_cleanup_and_clears_partial_context_when_hook_fails(
         )
 
     assert run_context_exists() is False
-    assert mock_load_and_run_hook.call_args_list == [
+    assert mock_run_hook.call_args_list == [
         mocker.call(
             "module.init_hook",
-            hook_parameters={"parameter": "value"},
-            raise_on_error=True,
+            kwargs={"parameter": "value"},
+            track=False,
         ),
-        mocker.call("module.cleanup_hook", raise_on_error=False),
+        mocker.call("module.cleanup_hook", track=False),
     ]
 
 
@@ -186,14 +186,14 @@ def test_run_init_hook_preserves_init_error_when_partial_cleanup_fails(
     mocker,
 ):
     mocker.patch(
-        "zenml.orchestrators.base_orchestrator.load_and_run_hook",
+        "zenml.orchestrators.base_orchestrator.run_hook",
         side_effect=[
             RuntimeError("init failed"),
             RuntimeError("cleanup failed"),
         ],
     )
-    mock_logger_exception = mocker.patch(
-        "zenml.orchestrators.base_orchestrator.logger.exception"
+    mock_logger_error = mocker.patch(
+        "zenml.orchestrators.base_orchestrator.logger.error"
     )
 
     with pytest.raises(HookExecutionException) as exc_info:
@@ -208,8 +208,8 @@ def test_run_init_hook_preserves_init_error_when_partial_cleanup_fails(
     assert isinstance(exc_info.value.__cause__, RuntimeError)
     assert str(exc_info.value.__cause__) == "init failed"
     assert run_context_exists() is False
-    mock_logger_exception.assert_called_once_with(
-        "Failed to run cleanup hook after failed init hook."
+    mock_logger_error.assert_called_once_with(
+        "Failed to run cleanup hook: %s", mocker.ANY
     )
 
 
@@ -217,8 +217,8 @@ def test_run_init_hook_does_not_clear_initialized_context_when_hook_fails(
     mocker,
 ):
     RunContext().initialize({"owner": "service"})
-    mock_load_and_run_hook = mocker.patch(
-        "zenml.orchestrators.base_orchestrator.load_and_run_hook",
+    mock_run_hook = mocker.patch(
+        "zenml.orchestrators.base_orchestrator.run_hook",
         side_effect=RuntimeError("hook failed"),
     )
 
@@ -228,4 +228,4 @@ def test_run_init_hook_does_not_clear_initialized_context_when_hook_fails(
 
     assert result is False
     assert RunContext().state == {"owner": "service"}
-    mock_load_and_run_hook.assert_not_called()
+    mock_run_hook.assert_not_called()

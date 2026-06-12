@@ -164,7 +164,7 @@ This is a slimmed-down version of the base implementation. For the full implemen
 
 For most custom implementations, you'll want to extend `OtelLogStore` rather than `BaseLogStore` directly. The OTEL Log Store provides:
 
-- OpenTelemetry infrastructure (LoggerProvider, BatchLogRecordProcessor)
+- OpenTelemetry infrastructure (LoggerProvider, BatchLogRecordProcessor; stdlib bridge via `opentelemetry-instrumentation-logging`)
 - Automatic log batching and retry logic
 - Standard OTEL log format conversion
 
@@ -177,7 +177,7 @@ To create a custom OTEL-based log store, you only need to implement:
 from typing import List, Optional, Type
 from datetime import datetime
 
-from opentelemetry.sdk._logs.export import LogExporter
+from opentelemetry.sdk._logs.export import LogRecordExporter
 
 from zenml.log_stores.otel.otel_log_store import OtelLogStore
 from zenml.log_stores.otel.otel_flavor import OtelLogStoreConfig, OtelLogStoreFlavor
@@ -199,7 +199,7 @@ class MyLogStore(OtelLogStore):
     def config(self) -> MyLogStoreConfig:
         return cast(MyLogStoreConfig, self._config)
 
-    def get_exporter(self) -> LogExporter:
+    def get_exporter(self) -> LogRecordExporter:
         """Return the log exporter for your backend."""
         return MyCustomLogExporter(
             endpoint=self.config.endpoint,
@@ -243,11 +243,12 @@ If you're using a custom backend, you'll need to implement a log exporter. The e
 
 ```python
 from typing import Sequence
-from opentelemetry.sdk._logs import LogData
-from opentelemetry.sdk._logs.export import LogExporter, LogExportResult
+
+from opentelemetry.sdk._logs import ReadableLogRecord
+from opentelemetry.sdk._logs.export import LogRecordExporter, LogRecordExportResult
 
 
-class MyCustomLogExporter(LogExporter):
+class MyCustomLogExporter(LogRecordExporter):
     """Exporter that sends logs to my custom backend."""
 
     def __init__(self, endpoint: str, api_key: str):
@@ -255,16 +256,16 @@ class MyCustomLogExporter(LogExporter):
         self.api_key = api_key
         self._shutdown = False
 
-    def export(self, batch: Sequence[LogData]) -> LogExportResult:
+    def export(self, batch: Sequence[ReadableLogRecord]) -> LogRecordExportResult:
         """Export a batch of logs."""
         if self._shutdown:
-            return LogExportResult.FAILURE
+            return LogRecordExportResult.FAILURE
 
         try:
             # Convert OTEL logs to your backend's format
             logs_data = []
-            for log_data in batch:
-                record = log_data.log_record
+            for readable in batch:
+                record = readable.log_record
                 logs_data.append({
                     "timestamp": record.timestamp,
                     "message": str(record.body),
@@ -281,11 +282,11 @@ class MyCustomLogExporter(LogExporter):
             )
             
             if response.ok:
-                return LogExportResult.SUCCESS
-            return LogExportResult.FAILURE
+                return LogRecordExportResult.SUCCESS
+            return LogRecordExportResult.FAILURE
 
         except Exception:
-            return LogExportResult.FAILURE
+            return LogRecordExportResult.FAILURE
 
     def shutdown(self) -> None:
         """Shutdown the exporter."""
@@ -337,7 +338,7 @@ Follow these steps to create and register your custom log store:
 
 1. **Create the implementation**: Implement your log store class, configuration, and flavor as shown above.
 
-2. **Create the exporter** (if needed): Implement a custom `LogExporter` for your backend.
+2. **Create the exporter** (if needed): Implement a custom `LogRecordExporter` for your backend.
 
 3. **Register the flavor**: Use the CLI to register your custom flavor:
 
@@ -391,7 +392,7 @@ This separation allows you to register flavors even when their dependencies aren
 
 1. **Extend OtelLogStore**: Unless you have specific requirements, extend `OtelLogStore` to benefit from built-in batching and retry logic.
 
-2. **Handle failures gracefully**: Log export failures shouldn't crash your pipeline. Return `LogExportResult.FAILURE` and log warnings.
+2. **Handle failures gracefully**: Log export failures shouldn't crash your pipeline. Return `LogRecordExportResult.FAILURE` and log warnings.
 
 3. **Implement retry logic**: For network-based backends, implement retry logic in your exporter.
 

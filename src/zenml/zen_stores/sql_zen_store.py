@@ -241,6 +241,9 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    HookInvocationFilter,
+    HookInvocationRequest,
+    HookInvocationResponse,
     LogsRequest,
     LogsResponse,
     LogsUpdate,
@@ -409,6 +412,8 @@ from zenml.zen_stores.schemas import (
     CuratedVisualizationSchema,
     DeploymentSchema,
     FlavorSchema,
+    HookInvocationOutputArtifactSchema,
+    HookInvocationSchema,
     ModelSchema,
     ModelVersionArtifactSchema,
     ModelVersionPipelineRunSchema,
@@ -3280,6 +3285,11 @@ class SqlZenStore(BaseZenStore):
                             ),
                             col(ArtifactVersionSchema.id).notin_(
                                 select(PipelineRunOutputSchema.artifact_id)
+                            ),
+                            col(ArtifactVersionSchema.id).notin_(
+                                select(
+                                    HookInvocationOutputArtifactSchema.artifact_version_id
+                                )
                             ),
                             col(ArtifactVersionSchema.project_id)
                             == project_id,
@@ -6226,6 +6236,7 @@ class SqlZenStore(BaseZenStore):
                     name: Step.from_dict(
                         json.loads(step_run.dynamic_config.config),  # type: ignore[union-attr]
                         pipeline_configuration=pipeline_configuration,
+                        exclude_hook_sources=True,
                     )
                     for name, step_run in step_runs.items()
                 }
@@ -6234,6 +6245,7 @@ class SqlZenStore(BaseZenStore):
                     config_table.name: Step.from_dict(
                         json.loads(config_table.config),
                         pipeline_configuration=pipeline_configuration,
+                        exclude_hook_sources=False,
                     )
                     for config_table in snapshot.step_configurations
                 }
@@ -9094,6 +9106,39 @@ class SqlZenStore(BaseZenStore):
         if self.backup_secrets_store:
             self.backup_secrets_store.delete_secret_values(secret_id=secret_id)
 
+    def _get_visible_secret_schema(
+        self,
+        secret_name_or_id: Union[str, UUID],
+        session: Session,
+    ) -> SecretSchema:
+        """Get a non-internal secret schema visible to the active user.
+
+        Args:
+            secret_name_or_id: The name or ID of the secret to fetch.
+            session: The database session to use.
+
+        Returns:
+            The secret schema.
+
+        Raises:
+            KeyError: If the secret does not exist, is internal, or is private
+                and not owned by the current user.
+        """
+        secret_schema = self._get_schema_by_name_or_id(
+            secret_name_or_id, schema_class=SecretSchema, session=session
+        )
+        if (
+            secret_schema.internal
+            or secret_schema.private
+            and secret_schema.user.id != self._get_active_user(session).id
+        ):
+            raise KeyError(
+                f"Secret with name or ID {secret_name_or_id} not found "
+                "or is private and not owned by the current user."
+            )
+
+        return secret_schema
+
     def _link_secrets_to_resource(
         self,
         secrets: Optional[Sequence[Union[str, UUID]]],
@@ -9123,8 +9168,8 @@ class SqlZenStore(BaseZenStore):
                     # Not a valid UUID string, proceed normally
                     pass
 
-            secret_schema = self._get_schema_by_name_or_id(
-                secret, schema_class=SecretSchema, session=session
+            secret_schema = self._get_visible_secret_schema(
+                secret, session=session
             )
             resource_type = resource_types[type(resource)]
             secret_resource = SecretResourceSchema(
@@ -9171,8 +9216,8 @@ class SqlZenStore(BaseZenStore):
                     # Not a valid UUID string, proceed normally
                     pass
 
-            secret_schema = self._get_schema_by_name_or_id(
-                secret, schema_class=SecretSchema, session=session
+            secret_schema = self._get_visible_secret_schema(
+                secret, session=session
             )
             resource_type = resource_types[type(resource)]
 
@@ -9275,29 +9320,11 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The secret.
-
-        Raises:
-            KeyError: if the secret doesn't exist.
         """
         with Session(self.engine) as session:
-            secret_in_db = session.exec(
-                select(SecretSchema).where(
-                    SecretSchema.id == secret_id,
-                    # Don't return internal secrets
-                    col(SecretSchema.internal).is_(False),
-                )
-            ).first()
-            if (
-                secret_in_db is None
-                # Private secrets are only accessible to their owner
-                or secret_in_db.private
-                and secret_in_db.user.id != self._get_active_user(session).id
-            ):
-                raise KeyError(
-                    f"Secret with ID {secret_id} not found or is private and "
-                    "not owned by the current user."
-                )
-
+            secret_in_db = self._get_visible_secret_schema(
+                secret_id, session=session
+            )
             secret_model = secret_in_db.to_model(
                 include_metadata=hydrate, include_resources=True
             )
@@ -9311,7 +9338,10 @@ class SqlZenStore(BaseZenStore):
         secret_name_or_id: Union[str, UUID],
         include_secret_values: bool = False,
     ) -> SecretResponse:
-        """Get a secret by name or ID.
+        """Get a non-internal secret by name or ID.
+
+        Private secrets are only accessible to their owner. Internal secrets
+        are not returned by this method.
 
         Args:
             secret_name_or_id: The name or ID of the secret to fetch.
@@ -9322,16 +9352,17 @@ class SqlZenStore(BaseZenStore):
             The secret.
         """
         with Session(self.engine) as session:
-            secret_in_db = self._get_schema_by_name_or_id(
-                secret_name_or_id, schema_class=SecretSchema, session=session
+            secret_in_db = self._get_visible_secret_schema(
+                secret_name_or_id, session=session
             )
             secret_model = secret_in_db.to_model(
                 include_metadata=True, include_resources=True
             )
+            secret_id = secret_in_db.id
 
         if include_secret_values:
             secret_model.set_secrets(
-                self._get_secret_values(secret_id=secret_in_db.id)
+                self._get_secret_values(secret_id=secret_id)
             )
 
         return secret_model
@@ -9400,32 +9431,16 @@ class SqlZenStore(BaseZenStore):
             The updated secret.
 
         Raises:
-            KeyError: if the secret doesn't exist.
             EntityExistsError: If a secret with the same name already exists in
                 the same scope.
             IllegalOperationError: if the secret is private and the current user
                 is not the owner of the secret.
         """
         with Session(self.engine) as session:
-            existing_secret = session.exec(
-                select(SecretSchema).where(
-                    SecretSchema.id == secret_id,
-                    # Don't update internal secrets
-                    col(SecretSchema.internal).is_(False),
-                )
-            ).first()
-
+            existing_secret = self._get_visible_secret_schema(
+                secret_id, session=session
+            )
             active_user = self._get_active_user(session)
-
-            if not existing_secret or (
-                # Private secrets are only accessible to their owner
-                existing_secret.private
-                and existing_secret.user.id != active_user.id
-            ):
-                raise KeyError(
-                    f"Secret with ID {secret_id} not found or is private and "
-                    "not owned by the current user."
-                )
 
             if (
                 secret_update.private is not None
@@ -9506,30 +9521,9 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             secret_id: The id of the secret to delete.
-
-        Raises:
-            KeyError: if the secret doesn't exist.
         """
         with Session(self.engine) as session:
-            existing_secret = session.exec(
-                select(SecretSchema).where(
-                    SecretSchema.id == secret_id,
-                    # Don't delete internal secrets
-                    col(SecretSchema.internal).is_(False),
-                )
-            ).first()
-
-            if not existing_secret or (
-                # Private secrets are only accessible to their owner
-                existing_secret.private
-                and existing_secret.user.id
-                != self._get_active_user(session).id
-            ):
-                raise KeyError(
-                    f"Secret with ID {secret_id} not found or is private and "
-                    "not owned by the current user."
-                )
-
+            self._get_visible_secret_schema(secret_id, session=session)
             self._delete_secret_schema(secret_id=secret_id, session=session)
 
     def backup_secrets(
@@ -11853,6 +11847,181 @@ class SqlZenStore(BaseZenStore):
                 apply_query_options_from_schema=True,
             )
 
+    # -------------------- Hook invocations --------------------
+
+    def create_hook_invocation(
+        self, hook_invocation: HookInvocationRequest
+    ) -> HookInvocationResponse:
+        """Create a hook invocation.
+
+        Args:
+            hook_invocation: The hook invocation to create.
+
+        Returns:
+            The created hook invocation.
+        """
+        with Session(self.engine) as session:
+            self._set_request_user_id(
+                request_model=hook_invocation, session=session
+            )
+
+            # Check that the pipeline run exists.
+            self._get_reference_schema_by_id(
+                resource=hook_invocation,
+                reference_schema=PipelineRunSchema,
+                reference_id=hook_invocation.pipeline_run_id,
+                session=session,
+            )
+            # Check that the step run exists (if set).
+            self._get_reference_schema_by_id(
+                resource=hook_invocation,
+                reference_schema=StepRunSchema,
+                reference_id=hook_invocation.step_run_id,
+                session=session,
+                reference_type="step run",
+            )
+
+            hook_invocation_schema = HookInvocationSchema.from_request(
+                hook_invocation
+            )
+            session.add(hook_invocation_schema)
+            session.flush()
+
+            for (
+                output_name,
+                artifact_version_ids,
+            ) in hook_invocation.outputs.items():
+                for artifact_version_id in artifact_version_ids:
+                    self._set_hook_invocation_output_artifact(
+                        hook_invocation=hook_invocation_schema,
+                        artifact_version_id=artifact_version_id,
+                        name=output_name,
+                        session=session,
+                    )
+
+            if hook_invocation.logs_id is not None:
+                logs_schema = session.get(LogsSchema, hook_invocation.logs_id)
+                if logs_schema is not None:
+                    logs_schema.hook_invocation_id = hook_invocation_schema.id
+                    session.add(logs_schema)
+
+            session.commit()
+            session.refresh(hook_invocation_schema)
+            return hook_invocation_schema.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def get_hook_invocation(
+        self, hook_invocation_id: UUID, hydrate: bool = True
+    ) -> HookInvocationResponse:
+        """Get a hook invocation by ID.
+
+        Args:
+            hook_invocation_id: The ID of the hook invocation to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The hook invocation.
+        """
+        with Session(self.engine) as session:
+            hook_invocation = self._get_schema_by_id(
+                resource_id=hook_invocation_id,
+                schema_class=HookInvocationSchema,
+                session=session,
+                query_options=HookInvocationSchema.get_query_options(
+                    include_metadata=hydrate, include_resources=True
+                ),
+            )
+            return hook_invocation.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
+
+    def list_hook_invocations(
+        self,
+        hook_invocation_filter_model: HookInvocationFilter,
+        hydrate: bool = False,
+    ) -> Page[HookInvocationResponse]:
+        """List all hook invocations matching the given filter criteria.
+
+        Args:
+            hook_invocation_filter_model: All filter parameters including
+                pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all hook invocations matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            self._set_filter_project_id(
+                filter_model=hook_invocation_filter_model,
+                session=session,
+            )
+            query = select(HookInvocationSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=HookInvocationSchema,
+                filter_model=hook_invocation_filter_model,
+                hydrate=hydrate,
+                apply_query_options_from_schema=True,
+            )
+
+    def delete_hook_invocation(self, hook_invocation_id: UUID) -> None:
+        """Delete a hook invocation.
+
+        Args:
+            hook_invocation_id: The ID of the hook invocation to delete.
+        """
+        with Session(self.engine) as session:
+            hook_invocation = self._get_schema_by_id(
+                resource_id=hook_invocation_id,
+                schema_class=HookInvocationSchema,
+                session=session,
+            )
+            # Deleting the hook invocation cascades to its output artifact
+            # links, but leaves the linked artifact versions in place.
+            session.delete(hook_invocation)
+            session.commit()
+
+    def _set_hook_invocation_output_artifact(
+        self,
+        hook_invocation: HookInvocationSchema,
+        artifact_version_id: UUID,
+        name: str,
+        session: Session,
+    ) -> None:
+        """Links an artifact version as an output of a hook invocation.
+
+        Args:
+            hook_invocation: The hook invocation.
+            artifact_version_id: The ID of the artifact version.
+            name: The name of the output in the hook invocation.
+            session: The database session to use.
+        """
+        # Check if the artifact version exists.
+        self._get_reference_schema_by_id(
+            resource=hook_invocation,
+            reference_schema=ArtifactVersionSchema,
+            reference_id=artifact_version_id,
+            session=session,
+            reference_type="output artifact",
+        )
+
+        # No need to check for an existing link. The hook invocation is created
+        # with a fresh ID in the same transaction, so no link can pre-exist, and
+        # the composite primary key prevents duplicates. If we ever allow
+        # updating the outputs of hook invocations, we'll need to add a check
+        # here.
+        session.add(
+            HookInvocationOutputArtifactSchema(
+                hook_invocation_id=hook_invocation.id,
+                artifact_version_id=artifact_version_id,
+                name=name,
+            )
+        )
+
     def update_step_heartbeat(
         self, step_run_id: UUID
     ) -> StepHeartbeatResponse:
@@ -11980,13 +12149,32 @@ class SqlZenStore(BaseZenStore):
                     new_status=step_run_update.status,
                 )
 
-            if existing_step_run.is_retriable and step_run_update.status in {
+            if step_run_update.status in {
                 ExecutionStatus.FAILED,
                 ExecutionStatus.CANCELLED,
             }:
-                # This step will be retried by the orchestrator, so we
-                # set its status accordingly.
-                step_run_update.status = ExecutionStatus.RETRYING
+                can_retry = existing_step_run.is_retriable
+
+                if can_retry:
+                    run_status = ExecutionStatus(
+                        session.exec(
+                            select(PipelineRunSchema.status).where(
+                                PipelineRunSchema.id
+                                == existing_step_run.pipeline_run_id
+                            )
+                        ).one()
+                    )
+                    if run_status in {
+                        ExecutionStatus.STOPPING,
+                        ExecutionStatus.STOPPED,
+                    }:
+                        # The run is stopping, which prevents any step retries.
+                        can_retry = False
+
+                if can_retry:
+                    # This step will be retried by the orchestrator, so we
+                    # set its status accordingly.
+                    step_run_update.status = ExecutionStatus.RETRYING
 
             # If the step is stopping and fails, we need to set its status to stopped.
             if (
