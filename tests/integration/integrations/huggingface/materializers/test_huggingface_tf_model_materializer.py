@@ -11,17 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Tests for the Hugging Face TensorFlow model materializer."""
 
 import sys
 
 import pytest
-import tensorflow as tf
-from transformers import BertConfig, TFBertForSequenceClassification
 
 from tests.unit.test_general import _test_materializer
-from zenml.integrations.huggingface.materializers.huggingface_tf_model_materializer import (
-    HFTFModelMaterializer,
-)
 
 
 @pytest.mark.skipif(
@@ -30,6 +26,13 @@ from zenml.integrations.huggingface.materializers.huggingface_tf_model_materiali
 )
 def test_huggingface_tf_pretrained_model_materializer(clean_client):
     """Tests whether the steps work for the Huggingface Tensorflow Pretrained Model materializer."""
+    import tensorflow as tf
+    from transformers import BertConfig, TFBertForSequenceClassification
+
+    from zenml.integrations.huggingface.materializers.huggingface_tf_model_materializer import (
+        HFTFModelMaterializer,
+    )
+
     model = TFBertForSequenceClassification(
         BertConfig(
             hidden_size=32,
