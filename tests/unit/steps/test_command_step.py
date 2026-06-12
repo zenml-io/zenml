@@ -19,6 +19,7 @@ import pytest
 
 from zenml.config.compiler import Compiler
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
+from zenml.constants import CODE_HASH_PARAMETER_NAME
 from zenml.exceptions import StackValidationError, StepInterfaceError
 from zenml.pipelines.pipeline_decorator import pipeline
 from zenml.steps.base_step import BaseStep
@@ -43,6 +44,17 @@ def test_command_step_disables_caching():
     step = CommandStep(command=["echo", "hi"], enable_cache=True)
 
     assert step.configuration.enable_cache is False
+
+
+def test_command_step_command_affects_code_hash():
+    """Tests that the command is part of the code hash caching parameter."""
+    step_1 = CommandStep(command=["echo", "hi"])
+    step_2 = CommandStep(command=["echo", "bye"])
+
+    assert (
+        step_1.caching_parameters[CODE_HASH_PARAMETER_NAME]
+        != step_2.caching_parameters[CODE_HASH_PARAMETER_NAME]
+    )
 
 
 def test_command_step_with_empty_command_fails():

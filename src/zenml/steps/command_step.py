@@ -146,6 +146,20 @@ class CommandStep(BaseStep):
         # configuration. So we just return a step with a dummy command.
         return cls(command=["zenml-command-step-from-source"])
 
+    @property
+    def source_code_cache_value(self) -> str:
+        """The source code cache value of this step.
+
+        Returns:
+            The source code cache value of this step.
+        """
+        # This value is captured at compile time on the original step
+        # instance, so the dummy command of instances loaded from source
+        # never ends up in it.
+        command = self.configuration.command
+        assert command is not None
+        return self.source_code + str(command)
+
     def entrypoint(self) -> None:
         """Runs the configured command as a subprocess."""
         command = self.configuration.command
