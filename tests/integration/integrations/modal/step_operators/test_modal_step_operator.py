@@ -28,20 +28,21 @@ pytest.importorskip("modal")
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackComponentInterfaceError
+from zenml.integrations.modal import sandbox_utils
 from zenml.integrations.modal.flavors import (
     ModalStepOperatorConfig,
     ModalStepOperatorSettings,
 )
+from zenml.integrations.modal.sandbox_utils import get_gpu_values
 from zenml.integrations.modal.step_operators import (
     modal_step_operator as modal_step_operator_module,
 )
 from zenml.integrations.modal.step_operators.modal_step_operator import (
     ModalStepOperator,
-    get_gpu_values,
 )
 
 SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY = (
-    modal_step_operator_module.SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY
+    sandbox_utils.SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY
 )
 
 
@@ -255,6 +256,23 @@ def test_gpu_arg_raises_when_count_without_type() -> None:
     assert "settings={'modal'" not in error_message
 
 
+def test_gpu_arg_uses_custom_validation_message() -> None:
+    settings = ModalStepOperatorSettings(gpu=None)
+    rs = ResourceSettingsStub(gpu_count=1)
+
+    with pytest.raises(StackComponentInterfaceError) as e:
+        get_gpu_values(
+            settings,
+            rs,
+            gpu_settings_field="CustomSettings.gpu",
+            gpu_settings_example="Set CustomSettings(gpu='A100').",
+        )
+
+    error_message = str(e.value)
+    assert "CustomSettings.gpu" in error_message
+    assert "Set CustomSettings(gpu='A100')." in error_message
+
+
 def test_gpu_arg_type_with_no_count_returns_type() -> None:
     settings = ModalStepOperatorSettings(gpu="A100")
     rs = ResourceSettingsStub(gpu_count=None)
@@ -284,7 +302,7 @@ def test_gpu_arg_type_with_zero_count_warns_and_returns_cpu_only(
     assert "running on CPU only" in caplog.text
 
 
-def test_modal_client_helper_preserves_ambient_auth(monkeypatch) -> None:
+def test_modal_client_factory_preserves_ambient_auth(monkeypatch) -> None:
     recorded = []
 
     class ModalClientFactoryStub:
@@ -305,7 +323,7 @@ def test_modal_client_helper_preserves_ambient_auth(monkeypatch) -> None:
     assert recorded == []
 
 
-def test_modal_client_helper_caches_and_rebuilds_explicit_client(
+def test_modal_client_factory_caches_and_rebuilds_explicit_client(
     monkeypatch,
 ) -> None:
     first_client = ModalClientStub("first")
@@ -342,31 +360,42 @@ def test_modal_client_helper_caches_and_rebuilds_explicit_client(
     ]
 
 
-def test_modal_client_helper_returns_open_cache_without_reading_config(
+def test_modal_client_factory_returns_open_cache_without_reading_config(
     monkeypatch,
 ) -> None:
-    class ConfigAccessStub:
-        @property
-        def token_id(self):
-            raise AssertionError("Cached clients must not read token_id.")
-
-        @property
-        def token_secret(self):
-            raise AssertionError("Cached clients must not read token_secret.")
-
-    operator = _make_operator(ModalStepOperatorConfig())
     cached_client = ModalClientStub("cached")
-    operator._modal_client = cached_client
+    should_fail_token_lookup = False
+
+    class ModalClientFactoryStub:
+        @staticmethod
+        def from_credentials(token_id, token_secret):
+            assert (token_id, token_secret) == ("ak-test", "as-test")
+            return cached_client
+
+    def get_token_id():
+        if should_fail_token_lookup:
+            raise AssertionError("Cached clients must not read token_id.")
+        return "ak-test"
+
+    def get_token_secret():
+        if should_fail_token_lookup:
+            raise AssertionError("Cached clients must not read token_secret.")
+        return "as-test"
+
     monkeypatch.setattr(
-        ModalStepOperator,
-        "config",
-        property(lambda _operator: ConfigAccessStub()),
+        modal_step_operator_module.modal, "Client", ModalClientFactoryStub
+    )
+    factory = modal_step_operator_module.sandbox_utils.ModalClientFactory(
+        get_token_id=get_token_id,
+        get_token_secret=get_token_secret,
     )
 
-    assert operator._get_modal_client() is cached_client
+    assert factory.get_client() is cached_client
+    should_fail_token_lookup = True
+    assert factory.get_client() is cached_client
 
 
-def test_modal_client_helper_uses_lock_for_concurrent_creation(
+def test_modal_client_factory_uses_lock_for_concurrent_creation(
     monkeypatch,
 ) -> None:
     modal_client = ModalClientStub("explicit")
