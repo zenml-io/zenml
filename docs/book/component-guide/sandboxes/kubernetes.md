@@ -76,7 +76,7 @@ Without these controls, sandbox pods may still reach internal services or extern
 | `destroy()` | ✅ | Deletes the backing pod. |
 | `attach(session_id)` | ✅ | Re-attaches to a running session pod. |
 | `snapshot()` / `restore()` | ❌ | Not implemented. |
-| `upload_file` / `download_file` | ✅ | Transfers file content through Kubernetes exec. |
+| `upload_file` / `download_file` | ✅ | Transfers file content through Kubernetes exec. Uploads are limited to 256 MiB per file. |
 
 ## Attaching to a running session
 

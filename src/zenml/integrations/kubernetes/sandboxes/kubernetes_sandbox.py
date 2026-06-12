@@ -54,6 +54,8 @@ _STREAM_BUFFER_MAX_LINES = 100_000
 # Characters per stdin frame during file uploads.
 _FILE_TRANSFER_CHUNK_CHARS = 1024 * 1024
 
+_FILE_UPLOAD_MAX_BYTES = 256 * 1024 * 1024
+
 
 def _split_lines_with_buffer(chunk: str, buffer: str) -> Tuple[List[str], str]:
     """Split a chunk into lines and remaining buffer.
@@ -304,17 +306,23 @@ class KubernetesSandboxSession(SandboxSession):
         """
         self._pod_name = pod_name
         self._namespace = namespace
+        self._core_api: Optional[k8s_client.CoreV1Api] = None
+        # `kubernetes.stream` swaps `ApiClient.request` in place during exec
+        # handshakes, so all calls on the client are serialized behind this lock.
+        self._client_lock = threading.Lock()
         super().__init__(id=id, parent=parent)
 
-    @property
-    def _core_api(self) -> k8s_client.CoreV1Api:
-        """Return Kubernetes Core API client.
+    def _get_core_api(self) -> k8s_client.CoreV1Api:
+        """Get the session-private Kubernetes Core API client.
 
         Returns:
             The CoreV1Api client.
         """
         sandbox = cast(KubernetesSandbox, self._parent)
-        return sandbox.core_api
+        if self._core_api is None or sandbox.connector_has_expired():
+            self._core_api = k8s_client.CoreV1Api(sandbox.build_kube_client())
+
+        return self._core_api
 
     @staticmethod
     def _build_shell_command(
@@ -409,17 +417,18 @@ class KubernetesSandboxSession(SandboxSession):
             The websocket client.
         """
         try:
-            return k8s_stream(
-                self._core_api.connect_get_namespaced_pod_exec,
-                self._pod_name,
-                self._namespace,
-                command=command,
-                stderr=True,
-                stdin=stdin,
-                stdout=True,
-                tty=False,
-                _preload_content=False,
-            )
+            with self._client_lock:
+                return k8s_stream(
+                    self._get_core_api().connect_get_namespaced_pod_exec,
+                    self._pod_name,
+                    self._namespace,
+                    command=command,
+                    stderr=True,
+                    stdin=stdin,
+                    stdout=True,
+                    tty=False,
+                    _preload_content=False,
+                )
         except Exception as e:
             raise SandboxExecError(
                 f"Kubernetes sandbox execution failed to launch: {e}"
@@ -440,20 +449,21 @@ class KubernetesSandboxSession(SandboxSession):
         Returns:
             The captured stdout.
         """
-        stdout = ""
-        stderr = ""
+        stdout_chunks: List[str] = []
+        stderr_chunks: List[str] = []
         for channel, chunk in _iter_stream_chunks(websocket_client):
             if channel == "stdout":
-                stdout += chunk
+                stdout_chunks.append(chunk)
             else:
-                stderr += chunk
+                stderr_chunks.append(chunk)
 
         if _read_exit_code(websocket_client) != 0:
+            stderr = "".join(stderr_chunks)
             raise SandboxExecError(
                 f"Kubernetes sandbox file transfer failed: {stderr.strip()}"
             )
 
-        return stdout
+        return "".join(stdout_chunks)
 
     def _upload_file(self, local_path: str, remote_path: str) -> None:
         """Upload a file to the sandbox pod.
@@ -461,7 +471,16 @@ class KubernetesSandboxSession(SandboxSession):
         Args:
             local_path: Path of the local file to upload.
             remote_path: Destination path in the sandbox pod.
+
+        Raises:
+            ValueError: If the file exceeds the upload size limit.
         """
+        if os.path.getsize(local_path) > _FILE_UPLOAD_MAX_BYTES:
+            raise ValueError(
+                f"File `{local_path}` exceeds the "
+                f"{_FILE_UPLOAD_MAX_BYTES} byte upload limit."
+            )
+
         # The file content is transferred base64-encoded because the
         # websocket client decodes frames as UTF-8, which corrupts raw
         # binary.
@@ -510,12 +529,13 @@ class KubernetesSandboxSession(SandboxSession):
     def _destroy(self) -> None:
         """Delete the backing sandbox pod from Kubernetes."""
         sandbox = cast(KubernetesSandbox, self._parent)
-        kube_utils.delete_pod(
-            core_api=self._core_api,
-            pod_name=self._pod_name,
-            namespace=self._namespace,
-            api_request_timeout=sandbox.config.api_request_timeout,
-        )
+        with self._client_lock:
+            kube_utils.delete_pod(
+                core_api=self._get_core_api(),
+                pod_name=self._pod_name,
+                namespace=self._namespace,
+                api_request_timeout=sandbox.config.api_request_timeout,
+            )
 
 
 class KubernetesSandbox(BaseSandbox):
@@ -541,8 +561,8 @@ class KubernetesSandbox(BaseSandbox):
         """
         return KubernetesSandboxSettings
 
-    def get_kube_client(self) -> k8s_client.ApiClient:
-        """Get the Kubernetes API client.
+    def build_kube_client(self) -> k8s_client.ApiClient:
+        """Build a new Kubernetes API client.
 
         Returns:
             The Kubernetes API client.
@@ -552,11 +572,7 @@ class KubernetesSandbox(BaseSandbox):
         """
         if self.config.incluster:
             kube_utils.load_kube_config(incluster=True)
-            self._k8s_client = k8s_client.ApiClient()
-            return self._k8s_client
-
-        if self._k8s_client and not self.connector_has_expired():
-            return self._k8s_client
+            return k8s_client.ApiClient()
 
         connector = self.get_connector()
         if connector:
@@ -566,12 +582,25 @@ class KubernetesSandbox(BaseSandbox):
                     f"Expected a k8s_client.ApiClient while trying to use "
                     f"the linked connector, but got {type(client)}."
                 )
-            self._k8s_client = client
-        else:
-            kube_utils.load_kube_config(
-                context=self.config.kubernetes_context,
-            )
-            self._k8s_client = k8s_client.ApiClient()
+
+            return client
+
+        kube_utils.load_kube_config(
+            context=self.config.kubernetes_context,
+        )
+
+        return k8s_client.ApiClient()
+
+    def get_kube_client(self) -> k8s_client.ApiClient:
+        """Get the cached Kubernetes API client.
+
+        Returns:
+            The Kubernetes API client.
+        """
+        if self._k8s_client and not self.connector_has_expired():
+            return self._k8s_client
+
+        self._k8s_client = self.build_kube_client()
 
         return self._k8s_client
 

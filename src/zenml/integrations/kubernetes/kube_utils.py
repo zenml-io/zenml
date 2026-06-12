@@ -316,6 +316,10 @@ def delete_pod(
         pod_name: The name of the pod to delete.
         namespace: The namespace of the pod.
         api_request_timeout: The request timeout in seconds.
+
+    Raises:
+        k8s_client.rest.ApiException: If the pod deletion failed for any
+            reason other than the pod not being found.
     """
     try:
         retry_on_api_exception(

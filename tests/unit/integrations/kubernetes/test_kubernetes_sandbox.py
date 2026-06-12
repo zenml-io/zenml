@@ -14,6 +14,7 @@
 """Tests for the Kubernetes sandbox."""
 
 import queue
+from pathlib import Path
 from typing import List, Optional
 from unittest.mock import MagicMock
 from uuid import uuid4
@@ -210,3 +211,99 @@ def test_attach_fails_for_non_running_pod() -> None:
 
     with pytest.raises(RuntimeError, match="is not running"):
         KubernetesSandbox.attach(sandbox, "k8s-abc")
+
+
+def _make_session(
+    sandbox: Optional[MagicMock] = None,
+) -> KubernetesSandboxSession:
+    if sandbox is None:
+        sandbox = _make_sandbox([])
+        sandbox.connector_has_expired.return_value = False
+        sandbox.build_kube_client.side_effect = lambda: MagicMock()
+
+    return KubernetesSandboxSession(
+        id="k8s-abc",
+        pod_name="zenml-sandbox-k8s-abc",
+        namespace="zenml",
+        parent=sandbox,
+    )
+
+
+def test_sessions_do_not_share_api_clients() -> None:
+    """Test that each session builds its own private API client."""
+    sandbox = _make_sandbox([])
+    sandbox.connector_has_expired.return_value = False
+    sandbox.build_kube_client.side_effect = lambda: MagicMock()
+    first = _make_session(sandbox)
+    second = _make_session(sandbox)
+
+    assert (
+        first._get_core_api().api_client
+        is not second._get_core_api().api_client
+    )
+
+
+def test_session_caches_api_client_until_connector_expires() -> None:
+    """Test that the session client is rebuilt once the connector expires."""
+    session = _make_session()
+    sandbox = session._parent
+
+    core_api = session._get_core_api()
+    assert session._get_core_api() is core_api
+
+    sandbox.connector_has_expired.return_value = True
+    assert session._get_core_api() is not core_api
+
+
+def test_upload_file_rejects_oversized_files(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that uploads larger than the upload limit are rejected."""
+    monkeypatch.setattr(kubernetes_sandbox, "_FILE_UPLOAD_MAX_BYTES", 4)
+    local_file = tmp_path / "payload.bin"
+    local_file.write_bytes(b"12345")
+    session = _make_session()
+
+    with pytest.raises(ValueError, match="upload limit"):
+        session._upload_file(str(local_file), "/remote/payload.bin")
+
+
+class _FakeWSClient:
+    """Websocket client stub yielding canned stdout chunks."""
+
+    def __init__(self, stdout_chunks: List[str], returncode: int = 0) -> None:
+        self._stdout_chunks = list(stdout_chunks)
+        self.returncode = returncode
+        self.closed = False
+
+    def is_open(self) -> bool:
+        return not self.closed and bool(self._stdout_chunks)
+
+    def update(self, timeout: Optional[int] = None) -> None:
+        pass
+
+    def peek_stdout(self) -> bool:
+        return bool(self._stdout_chunks)
+
+    def read_stdout(self) -> str:
+        return self._stdout_chunks.pop(0)
+
+    def peek_stderr(self) -> bool:
+        return False
+
+    def read_stderr(self) -> str:
+        return ""
+
+    def close(self) -> None:
+        self.closed = True
+
+
+def test_collect_exec_output_joins_chunks() -> None:
+    """Test that exec output chunks are joined into the full stdout."""
+    websocket_client = _FakeWSClient(["abc", "def"])
+
+    output = KubernetesSandboxSession._collect_exec_output(
+        websocket_client  # type: ignore[arg-type]
+    )
+
+    assert output == "abcdef"
