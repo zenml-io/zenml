@@ -119,17 +119,16 @@ class TrackioExperimentTracker(BaseExperimentTracker):
         )
 
         if current_trackio_run:
-            run_url = getattr(
-                current_trackio_run,
-                "url",
-                None,
-            )
-
             run_name = getattr(
                 current_trackio_run,
                 "name",
                 None,
             )
+
+        if self.config.space_id:
+            run_url = f"https://huggingface.co/spaces/{self.config.space_id}"
+        elif self.config.server_url:
+            run_url = self.config.server_url
 
         default_run_name = f"{info.run_name}_{info.pipeline_step_name}"
 

@@ -304,6 +304,7 @@ def test_trackio_static_backend_adds_sdk(
 def test_trackio_cleanup_calls_freeze_on_failure(
     mock_freeze: MagicMock,
     mock_finish: MagicMock,
+    mock_trackio_signature,
 ) -> None:
     tracker = _tracker(
         space_id="space-id",
@@ -359,7 +360,8 @@ def test_trackio_cleanup_calls_finish_when_sync_fails(
 
 
 def test_trackio_metadata() -> None:
-    tracker = _tracker()
+
+    tracker = _tracker(space_id="AINovice2005/zenml-F5J4jOGLJ44")
 
     tracker.get_settings = MagicMock(return_value=_settings())
 
@@ -368,7 +370,6 @@ def test_trackio_metadata() -> None:
         "trackio_experiment_tracker.trackio.run",
         new=SimpleNamespace(
             name="trackio-run",
-            url="https://trackio.ai/run/123",
         ),
     ):
         metadata = tracker.get_step_run_metadata(_info())
@@ -376,7 +377,7 @@ def test_trackio_metadata() -> None:
     assert metadata["trackio_run_name"] == "trackio-run"
 
     assert metadata[METADATA_EXPERIMENT_TRACKER_URL] == Uri(
-        "https://trackio.ai/run/123"
+        "https://huggingface.co/spaces/AINovice2005/zenml-F5J4jOGLJ44"
     )
 
 
