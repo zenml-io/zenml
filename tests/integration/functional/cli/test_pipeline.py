@@ -78,7 +78,7 @@ def test_pipeline_run_list(clean_client_with_run):
 
 def test_pipeline_run_list_returns_newest_first(clean_client_with_run: Client):
     """Test that pipeline runs are listed newest-first by default"""
-    runner = CliRunner()
+    runner = cli_runner()
     run_command = cli.commands["pipeline"].commands["run"]
     list_command = cli.commands["pipeline"].commands["runs"].commands["list"]
 
