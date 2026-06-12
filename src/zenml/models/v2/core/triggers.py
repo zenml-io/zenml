@@ -31,7 +31,6 @@ from typing import (
 from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator, model_validator
-from sqlmodel import col
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import (
@@ -486,6 +485,8 @@ class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
         Returns:
             The query with filter applied.
         """
+        from sqlmodel import col
+
         from zenml.zen_stores.schemas import (
             PipelineSnapshotSchema,
             TriggerSchema,
