@@ -133,9 +133,7 @@ def test_dynamic_runner_clears_partial_run_context_when_init_raises(
     runner._orchestrator.run_init_hook.assert_called_once_with(
         snapshot=runner._snapshot
     )
-    runner._orchestrator.run_cleanup_hook.assert_called_once_with(
-        snapshot=runner._snapshot
-    )
+    runner._orchestrator.run_cleanup_hook.assert_not_called()
     mock_run_entrypoint.assert_not_called()
     runner._executor.shutdown.assert_called_once_with(
         wait=True, cancel_futures=True
@@ -146,6 +144,37 @@ def test_dynamic_runner_clears_partial_run_context_when_init_raises(
     monitoring_thread.join.assert_called_once_with()
     startup_thread.join.assert_called_once_with()
     runner._pause_coordinator.unregister.assert_called_once_with(runner)
+
+
+@pytest.mark.parametrize(
+    "init_result, cleanup_expected",
+    [
+        (True, True),
+        (False, False),
+        (None, True),
+    ],
+)
+def test_dynamic_runner_cleanup_depends_on_init_result(
+    mocker,
+    init_result,
+    cleanup_expected,
+):
+    runner = _make_runner(mocker, triggered_by_deployment=False)
+    runner._orchestrator.run_init_hook.return_value = init_result
+    _patch_background_threads(mocker, runner)
+    mocker.patch.object(runner, "_run_entrypoint_and_finalize")
+
+    runner.run_pipeline()
+
+    runner._orchestrator.run_init_hook.assert_called_once_with(
+        snapshot=runner._snapshot
+    )
+    if cleanup_expected:
+        runner._orchestrator.run_cleanup_hook.assert_called_once_with(
+            snapshot=runner._snapshot
+        )
+    else:
+        runner._orchestrator.run_cleanup_hook.assert_not_called()
 
 
 def test_dynamic_runner_shuts_down_monitoring_when_startup_loop_fails(

@@ -130,9 +130,6 @@ from zenml.models import (
     RunWaitConditionResponse,
     StepRunResponse,
 )
-from zenml.orchestrators.base_orchestrator import (
-    should_run_cleanup_hook_after_init,
-)
 from zenml.orchestrators.publish_utils import (
     publish_cancelled_step_run,
     publish_failed_pipeline_run,
@@ -144,7 +141,6 @@ from zenml.pipelines.dynamic.pipeline_definition import DynamicPipeline
 from zenml.pipelines.run_utils import create_placeholder_run
 from zenml.stack import Stack
 from zenml.steps import BaseStep
-from zenml.steps.step_context import run_context_is_initialized
 from zenml.utils import (
     env_utils,
     exception_utils,
@@ -827,10 +823,7 @@ class DynamicPipelineRunner:
             ):
                 monitoring_thread: Optional[threading.Thread] = None
                 startup_thread: Optional[threading.Thread] = None
-                init_result: Optional[bool] = None
-                init_hook_started = False
-                init_hook_completed = False
-                run_context_was_initialized = False
+                init_result: Optional[bool] = False
 
                 try:
                     monitoring_thread = self._start_monitoring_loop()
@@ -840,25 +833,15 @@ class DynamicPipelineRunner:
                         # Only run the init hook if the run is not triggered by
                         # a deployment, as the deployment service will have
                         # already run the init hook.
-                        run_context_was_initialized = (
-                            run_context_is_initialized()
-                        )
-                        init_hook_started = True
                         init_result = self._orchestrator.run_init_hook(
                             snapshot=self._snapshot
                         )
-                        init_hook_completed = True
 
                     self._run_entrypoint_and_finalize()
                 finally:
                     if (
                         not self._run.triggered_by_deployment
-                        and should_run_cleanup_hook_after_init(
-                            init_result=init_result,
-                            init_hook_started=init_hook_started,
-                            init_hook_completed=init_hook_completed,
-                            run_context_was_initialized_before_init=run_context_was_initialized,
-                        )
+                        and init_result is not False
                     ):
                         # Only run the cleanup hook if the run is not
                         # triggered by a deployment, as the deployment

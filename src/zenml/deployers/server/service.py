@@ -55,16 +55,12 @@ from zenml.models import (
     PipelineRunTriggerInfo,
     PipelineSnapshotResponse,
 )
-from zenml.orchestrators.base_orchestrator import (
-    BaseOrchestrator,
-    should_run_cleanup_hook_after_init,
-)
+from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.orchestrators.local.local_orchestrator import (
     LocalOrchestrator,
     LocalOrchestratorConfig,
 )
 from zenml.stack import Stack
-from zenml.steps.step_context import run_context_is_initialized
 from zenml.steps.utils import get_unique_step_output_names
 from zenml.utils import env_utils, source_utils
 from zenml.utils.logging_utils import setup_logging_context
@@ -86,15 +82,18 @@ class SharedLocalOrchestrator(LocalOrchestrator):
     """
 
     @classmethod
-    def run_init_hook(cls, snapshot: "PipelineSnapshotResponse") -> None:
+    def run_init_hook(cls, snapshot: "PipelineSnapshotResponse") -> bool:
         """Runs the init hook.
 
         Args:
             snapshot: The snapshot to run the init hook for.
+
+        Returns:
+            False because the deployment service owns the run context.
         """
         # Bypass the init hook execution because it is run globally by
-        # the deployment service
-        pass
+        # the deployment service.
+        return False
 
     @classmethod
     def run_cleanup_hook(cls, snapshot: "PipelineSnapshotResponse") -> None:
@@ -313,11 +312,7 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
             **kwargs: Additional keyword arguments for the deployment service.
         """
         super().__init__(app_runner=app_runner, **kwargs)
-        self._run_context_initialized_by_service: Optional[bool] = None
-        self._init_hook_started_by_service = False
-        self._init_hook_completed_by_service = False
-        self._run_context_was_initialized_before_init_hook = False
-        self._cleanup_hook_ran_by_service = False
+        self._should_run_cleanup_hook = False
 
     def initialize(self) -> None:
         """Initialize service with proper error handling.
@@ -343,14 +338,8 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         self.orchestrator_class = SharedLocalOrchestrator
 
         try:
-            self._run_context_was_initialized_before_init_hook = (
-                run_context_is_initialized()
-            )
-            self._init_hook_started_by_service = True
-            self._run_context_initialized_by_service = (
-                BaseOrchestrator.run_init_hook(self.snapshot)
-            )
-            self._init_hook_completed_by_service = True
+            init_result = BaseOrchestrator.run_init_hook(self.snapshot)
+            self._should_run_cleanup_hook = init_result is not False
 
             self._log_initialization_success()
 
@@ -361,17 +350,11 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
 
     def cleanup(self) -> None:
         """Execute cleanup hook if present."""
-        if self._cleanup_hook_ran_by_service:
+        if not self._should_run_cleanup_hook:
             return
 
-        if should_run_cleanup_hook_after_init(
-            init_result=self._run_context_initialized_by_service,
-            init_hook_started=self._init_hook_started_by_service,
-            init_hook_completed=self._init_hook_completed_by_service,
-            run_context_was_initialized_before_init=self._run_context_was_initialized_before_init_hook,
-        ):
-            BaseOrchestrator.run_cleanup_hook(self.snapshot)
-            self._cleanup_hook_ran_by_service = True
+        BaseOrchestrator.run_cleanup_hook(self.snapshot)
+        self._should_run_cleanup_hook = False
 
     def execute_pipeline(
         self,

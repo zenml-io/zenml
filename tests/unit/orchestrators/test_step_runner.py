@@ -272,7 +272,7 @@ def test_step_runner_cleanup_depends_on_init_result(
         mock_run_cleanup_hook.assert_not_called()
 
 
-def test_step_runner_runs_cleanup_when_init_raises(
+def test_step_runner_does_not_run_cleanup_when_init_raises(
     mocker,
     local_stack,
     sample_pipeline_run: PipelineRunResponse,
@@ -298,9 +298,7 @@ def test_step_runner_runs_cleanup_when_init_raises(
     mock_run_init_hook.assert_called_once_with(
         snapshot=sample_snapshot_response_model
     )
-    mock_run_cleanup_hook.assert_called_once_with(
-        snapshot=sample_snapshot_response_model
-    )
+    mock_run_cleanup_hook.assert_not_called()
 
 
 def test_step_runner_preserves_existing_run_context_when_init_raises(
@@ -350,6 +348,9 @@ def test_step_runner_clears_partial_run_context_when_base_init_raises(
         new_callable=PropertyMock,
         return_value=True,
     )
+    mock_run_cleanup_hook = mocker.patch.object(
+        orchestrator_class, "run_cleanup_hook"
+    )
     mocker.patch(
         "zenml.orchestrators.base_orchestrator.load_and_run_hook",
         side_effect=RuntimeError("init failed"),
@@ -372,6 +373,7 @@ def test_step_runner_clears_partial_run_context_when_base_init_raises(
         )
 
     assert run_context_exists() is False
+    mock_run_cleanup_hook.assert_called_once_with(snapshot)
 
 
 def test_step_runner_preserves_existing_run_context_when_init_returns_false(

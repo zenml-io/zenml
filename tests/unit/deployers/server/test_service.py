@@ -317,19 +317,50 @@ def test_cleanup_depends_on_service_init_result(
     cleanup_expected: bool,
 ) -> None:
     service = _make_service_stub(mocker)
-    service._run_context_initialized_by_service = init_result
-    service._init_hook_started_by_service = True
-    service._init_hook_completed_by_service = True
+    mock_client = mocker.patch("zenml.deployers.server.service.Client")
+    mock_client.return_value.zen_store = object()
+    mock_client.return_value.active_stack.validate.return_value = None
+    mock_init_hook = mocker.patch(
+        "zenml.deployers.server.service.BaseOrchestrator.run_init_hook",
+        return_value=init_result,
+    )
     mock_cleanup_hook = mocker.patch(
         "zenml.deployers.server.service.BaseOrchestrator.run_cleanup_hook"
     )
 
+    service.initialize()
+    service.cleanup()
     service.cleanup()
 
+    mock_init_hook.assert_called_once_with(service.snapshot)
     if cleanup_expected:
         mock_cleanup_hook.assert_called_once_with(service.snapshot)
     else:
         mock_cleanup_hook.assert_not_called()
+
+
+def test_service_cleanup_can_be_retried_when_cleanup_hook_raises(
+    mocker: MockerFixture,
+) -> None:
+    service = _make_service_stub(mocker)
+    mock_client = mocker.patch("zenml.deployers.server.service.Client")
+    mock_client.return_value.zen_store = object()
+    mock_client.return_value.active_stack.validate.return_value = None
+    mocker.patch(
+        "zenml.deployers.server.service.BaseOrchestrator.run_init_hook",
+        return_value=True,
+    )
+    mock_cleanup_hook = mocker.patch(
+        "zenml.deployers.server.service.BaseOrchestrator.run_cleanup_hook",
+        side_effect=[RuntimeError("cleanup failed"), None],
+    )
+
+    service.initialize()
+    with pytest.raises(RuntimeError, match="cleanup failed"):
+        service.cleanup()
+    service.cleanup()
+
+    assert mock_cleanup_hook.call_count == 2
 
 
 def test_cleanup_before_init_hook_attempt_preserves_existing_run_context(
@@ -358,9 +389,7 @@ def test_cleanup_only_clears_service_owned_run_context_once(
     RunContext._clear()
     RunContext().initialize(state="service-owned")
     service = _make_service_stub(mocker)
-    service._run_context_initialized_by_service = True
-    service._init_hook_started_by_service = True
-    service._init_hook_completed_by_service = True
+    service._should_run_cleanup_hook = True
 
     try:
         service.cleanup()

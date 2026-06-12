@@ -25,11 +25,7 @@ from zenml.orchestrators import (
     BaseOrchestratorFlavor,
     SubmissionResult,
 )
-from zenml.orchestrators.base_orchestrator import (
-    should_run_cleanup_hook_after_init,
-)
 from zenml.stack import Stack
-from zenml.steps.step_context import run_context_is_initialized
 from zenml.utils import string_utils
 from zenml.utils.env_utils import temporary_environment
 
@@ -109,16 +105,10 @@ class LocalOrchestrator(BaseOrchestrator):
         step_exception: Optional[Exception] = None
         skipped_steps: List[str] = []
 
-        init_result: Optional[bool] = None
-        init_hook_started = False
-        init_hook_completed = False
-        run_context_was_initialized = False
+        init_result: Optional[bool] = False
 
         try:
-            run_context_was_initialized = run_context_is_initialized()
-            init_hook_started = True
             init_result = self.run_init_hook(snapshot=snapshot)
-            init_hook_completed = True
 
             # Run each step
             for step_name, step in snapshot.step_configurations.items():
@@ -181,12 +171,7 @@ class LocalOrchestrator(BaseOrchestrator):
                         step_exception = e
                         break
         finally:
-            if should_run_cleanup_hook_after_init(
-                init_result=init_result,
-                init_hook_started=init_hook_started,
-                init_hook_completed=init_hook_completed,
-                run_context_was_initialized_before_init=run_context_was_initialized,
-            ):
+            if init_result is not False:
                 self.run_cleanup_hook(snapshot=snapshot)
 
         if execution_mode == ExecutionMode.FAIL_FAST and failed_steps:

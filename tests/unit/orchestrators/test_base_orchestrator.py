@@ -17,10 +17,15 @@ import pytest
 
 from zenml.config import ResourceSettings
 from zenml.config.step_configurations import Step
+from zenml.exceptions import HookExecutionException
 from zenml.models import PipelineSnapshotResponse
 from zenml.orchestrators import BaseOrchestrator
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
-from zenml.steps.step_context import get_or_create_run_context
+from zenml.steps.step_context import (
+    RunContext,
+    get_or_create_run_context,
+    run_context_exists,
+)
 
 
 class _RunStepTestOrchestrator(BaseOrchestrator):
@@ -28,13 +33,14 @@ class _RunStepTestOrchestrator(BaseOrchestrator):
         return "orchestrator-run-id"
 
 
-def _snapshot_for_hook(init_hook_source=None):
+def _snapshot_for_hook(init_hook_source=None, cleanup_hook_source=None):
     return SimpleNamespace(
         pipeline_configuration=SimpleNamespace(
             name="pipeline_name",
             environment={},
             init_hook_source=init_hook_source,
             init_hook_kwargs={"parameter": "value"},
+            cleanup_hook_source=cleanup_hook_source,
         )
     )
 
@@ -114,14 +120,20 @@ def test_run_init_hook_returns_true_for_fresh_context_without_hook():
     assert run_context.state is None
 
 
-def test_run_init_hook_returns_false_for_existing_context():
+def test_run_init_hook_returns_false_for_existing_context(mocker):
     run_context = get_or_create_run_context()
     run_context.initialize({"owner": "service"})
+    mock_load_and_run_hook = mocker.patch(
+        "zenml.orchestrators.base_orchestrator.load_and_run_hook"
+    )
 
-    result = BaseOrchestrator.run_init_hook(snapshot=_snapshot_for_hook())
+    result = BaseOrchestrator.run_init_hook(
+        snapshot=_snapshot_for_hook(init_hook_source="module.hook")
+    )
 
     assert result is False
     assert get_or_create_run_context().state == {"owner": "service"}
+    mock_load_and_run_hook.assert_not_called()
 
 
 def test_run_init_hook_returns_true_for_successful_hook(mocker):
@@ -141,3 +153,79 @@ def test_run_init_hook_returns_true_for_successful_hook(mocker):
         hook_parameters={"parameter": "value"},
         raise_on_error=True,
     )
+
+
+def test_run_init_hook_runs_cleanup_and_clears_partial_context_when_hook_fails(
+    mocker,
+):
+    mock_load_and_run_hook = mocker.patch(
+        "zenml.orchestrators.base_orchestrator.load_and_run_hook",
+        side_effect=[RuntimeError("init failed"), None],
+    )
+
+    with pytest.raises(HookExecutionException, match="Failed to execute"):
+        BaseOrchestrator.run_init_hook(
+            snapshot=_snapshot_for_hook(
+                init_hook_source="module.init_hook",
+                cleanup_hook_source="module.cleanup_hook",
+            )
+        )
+
+    assert run_context_exists() is False
+    assert mock_load_and_run_hook.call_args_list == [
+        mocker.call(
+            "module.init_hook",
+            hook_parameters={"parameter": "value"},
+            raise_on_error=True,
+        ),
+        mocker.call("module.cleanup_hook", raise_on_error=False),
+    ]
+
+
+def test_run_init_hook_preserves_init_error_when_partial_cleanup_fails(
+    mocker,
+):
+    mocker.patch(
+        "zenml.orchestrators.base_orchestrator.load_and_run_hook",
+        side_effect=[
+            RuntimeError("init failed"),
+            RuntimeError("cleanup failed"),
+        ],
+    )
+    mock_logger_exception = mocker.patch(
+        "zenml.orchestrators.base_orchestrator.logger.exception"
+    )
+
+    with pytest.raises(HookExecutionException) as exc_info:
+        BaseOrchestrator.run_init_hook(
+            snapshot=_snapshot_for_hook(
+                init_hook_source="module.init_hook",
+                cleanup_hook_source="module.cleanup_hook",
+            )
+        )
+
+    assert "Failed to execute init hook" in str(exc_info.value)
+    assert isinstance(exc_info.value.__cause__, RuntimeError)
+    assert str(exc_info.value.__cause__) == "init failed"
+    assert run_context_exists() is False
+    mock_logger_exception.assert_called_once_with(
+        "Failed to run cleanup hook after failed init hook."
+    )
+
+
+def test_run_init_hook_does_not_clear_initialized_context_when_hook_fails(
+    mocker,
+):
+    RunContext().initialize({"owner": "service"})
+    mock_load_and_run_hook = mocker.patch(
+        "zenml.orchestrators.base_orchestrator.load_and_run_hook",
+        side_effect=RuntimeError("hook failed"),
+    )
+
+    result = BaseOrchestrator.run_init_hook(
+        snapshot=_snapshot_for_hook(init_hook_source="module.hook")
+    )
+
+    assert result is False
+    assert RunContext().state == {"owner": "service"}
+    mock_load_and_run_hook.assert_not_called()

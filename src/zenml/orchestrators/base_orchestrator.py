@@ -53,7 +53,12 @@ from zenml.orchestrators.publish_utils import (
 )
 from zenml.orchestrators.utils import get_config_environment_vars
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
-from zenml.steps.step_context import RunContext, get_or_create_run_context
+from zenml.steps.step_context import (
+    RunContext,
+    get_or_create_run_context,
+    run_context_exists,
+    run_context_is_initialized,
+)
 from zenml.utils.env_utils import temporary_environment
 from zenml.utils.pydantic_utils import before_validator_handler
 
@@ -69,34 +74,6 @@ if TYPE_CHECKING:
     )
 
 logger = get_logger(__name__)
-
-
-def should_run_cleanup_hook_after_init(
-    *,
-    init_result: Optional[bool],
-    init_hook_started: bool,
-    init_hook_completed: bool,
-    run_context_was_initialized_before_init: bool,
-) -> bool:
-    """Decide whether cleanup is owned by an init hook attempt.
-
-    Args:
-        init_result: The value returned by the init hook, if it returned.
-        init_hook_started: Whether the init hook call was attempted.
-        init_hook_completed: Whether the init hook call returned normally.
-        run_context_was_initialized_before_init: Whether an initialized run
-            context existed before the init hook call.
-
-    Returns:
-        Whether the caller should run the cleanup hook.
-    """
-    if init_result is False:
-        return False
-
-    if init_hook_completed:
-        return True
-
-    return init_hook_started and not run_context_was_initialized_before_init
 
 
 class SubmissionResult:
@@ -775,17 +752,13 @@ class BaseOrchestrator(StackComponent, ABC):
             HookExecutionException: If the init hook fails.
         """
         # The lifetime of the run context starts when the init hook is executed
-        # and ends when the cleanup hook is executed
+        # and ends when the cleanup hook is executed.
+        if run_context_is_initialized():
+            return False
+
         run_context = get_or_create_run_context()
         init_hook_source = snapshot.pipeline_configuration.init_hook_source
         init_hook_kwargs = snapshot.pipeline_configuration.init_hook_kwargs
-
-        # We only run the init hook once if the process-wide run context
-        # associated with the current run has not been initialized yet. This
-        # allows us to run the init hook only once per run per execution
-        # environment (process, container, etc.).
-        if run_context.initialized:
-            return False
 
         if not init_hook_source:
             run_context.initialize(None)
@@ -802,6 +775,19 @@ class BaseOrchestrator(StackComponent, ABC):
                     raise_on_error=True,
                 )
         except Exception as e:
+            if run_context_exists() and not run_context_is_initialized():
+                try:
+                    cls.run_cleanup_hook(snapshot)
+                except Exception:
+                    logger.exception(
+                        "Failed to run cleanup hook after failed init hook."
+                    )
+                finally:
+                    if (
+                        run_context_exists()
+                        and not run_context_is_initialized()
+                    ):
+                        RunContext._clear()
             raise HookExecutionException(
                 f"Failed to execute init hook for pipeline "
                 f"{snapshot.pipeline_configuration.name}"

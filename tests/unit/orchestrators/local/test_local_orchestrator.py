@@ -82,6 +82,9 @@ def test_local_orchestrator_clears_partial_run_context_when_init_raises(
     mocker,
     local_orchestrator,
 ):
+    mock_run_cleanup_hook = mocker.patch.object(
+        local_orchestrator, "run_cleanup_hook"
+    )
     mocker.patch(
         "zenml.orchestrators.base_orchestrator.load_and_run_hook",
         side_effect=RuntimeError("init failed"),
@@ -102,3 +105,4 @@ def test_local_orchestrator_clears_partial_run_context_when_init_raises(
         )
 
     assert run_context_exists() is False
+    mock_run_cleanup_hook.assert_not_called()
