@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 import functools
 import subprocess
+import sys
 
 import pytest
 
@@ -48,6 +49,26 @@ def test_command_step_with_empty_command_fails():
     """Tests that constructing a command step with an empty command fails."""
     with pytest.raises(StepInterfaceError):
         CommandStep(command=[])
+
+
+def test_command_step_entrypoint_runs_command(tmp_path):
+    """Tests that the step entrypoint runs the configured command."""
+    output_file = tmp_path / "output.txt"
+    step = CommandStep(
+        command=[sys.executable, "-c", f"open(r'{output_file}', 'w').close()"]
+    )
+
+    step.entrypoint()
+
+    assert output_file.exists()
+
+
+def test_command_step_entrypoint_raises_on_failure():
+    """Tests that the step entrypoint raises if the command fails."""
+    step = CommandStep(command=[sys.executable, "-c", "raise SystemExit(1)"])
+
+    with pytest.raises(subprocess.CalledProcessError):
+        step.entrypoint()
 
 
 def _self_contained_function() -> None:

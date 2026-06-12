@@ -40,28 +40,24 @@ class _FakeEntrypointConfig:
 
 def test_get_step_entrypoint_command_for_command_step():
     """Tests that the helper returns the custom command for a command step."""
-    step = SimpleNamespace(
-        config=SimpleNamespace(command=["python", "train.py"]),
-        spec=SimpleNamespace(invocation_id="train"),
-    )
+    config = SimpleNamespace(command=["python", "train.py"])
     command, args = get_step_entrypoint_command(
-        step=step,
+        invocation_id="train",
+        config=config,
         entrypoint_config_class=_FakeEntrypointConfig,
         snapshot_id=uuid4(),
         step_run_id=uuid4(),
     )
-    assert command == ["python"]
-    assert args == ["train.py"]
+    assert command == ["python", "train.py"]
+    assert args == []
 
 
 def test_get_step_entrypoint_command_for_regular_step():
     """Tests that the helper returns the ZenML entrypoint for a regular step."""
-    step = SimpleNamespace(
-        config=SimpleNamespace(command=None),
-        spec=SimpleNamespace(invocation_id="train"),
-    )
+    config = SimpleNamespace(command=None)
     command, args = get_step_entrypoint_command(
-        step=step,
+        invocation_id="train",
+        config=config,
         entrypoint_config_class=_FakeEntrypointConfig,
         snapshot_id=uuid4(),
         step_run_id=uuid4(),

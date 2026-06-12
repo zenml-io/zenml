@@ -39,7 +39,7 @@ logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
-    from zenml.config.step_configurations import Step
+    from zenml.config.step_configurations import StepConfiguration
     from zenml.entrypoints.step_entrypoint_configuration import (
         StepEntrypointConfiguration,
     )
@@ -233,7 +233,8 @@ def get_config_environment_vars(
 
 
 def get_step_entrypoint_command(
-    step: "Step",
+    invocation_id: str,
+    config: "StepConfiguration",
     entrypoint_config_class: Type["StepEntrypointConfiguration"],
     snapshot_id: UUID,
     **entrypoint_config_kwargs: Any,
@@ -241,7 +242,8 @@ def get_step_entrypoint_command(
     """Gets the entrypoint command to run a step.
 
     Args:
-        step: The step to run.
+        invocation_id: The invocation ID of the step to run.
+        config: The configuration of the step to run.
         entrypoint_config_class: The entrypoint configuration class used to
             build the ZenML step entrypoint command.
         snapshot_id: The snapshot ID to pass to the entrypoint configuration
@@ -252,13 +254,13 @@ def get_step_entrypoint_command(
     Returns:
         A tuple containing command and args.
     """
-    if step.config.command is not None:
-        return step.config.command, []
+    if config.command is not None:
+        return config.command, []
 
     return (
         entrypoint_config_class.get_entrypoint_command(),
         entrypoint_config_class.get_entrypoint_arguments(
-            step_name=step.spec.invocation_id,
+            step_name=invocation_id,
             snapshot_id=snapshot_id,
             **entrypoint_config_kwargs,
         ),

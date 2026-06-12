@@ -366,7 +366,7 @@ class BaseOrchestrator(StackComponent, ABC):
                                 )
                         except Exception as e:
                             logger.debug(
-                                "Something went went wrong trying to publish the"
+                                "Something went wrong trying to publish the "
                                 f"run metadata: {e}"
                             )
             else:

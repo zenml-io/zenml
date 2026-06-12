@@ -17,8 +17,7 @@ from uuid import uuid4
 
 import pytest
 
-from zenml.enums import ExecutionStatus
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.orchestrators.step_launcher import (
     StepLauncher,
     _get_step_operator,
@@ -92,7 +91,7 @@ def test_dynamic_command_step_success_publishes_status(mocker):
     publish_failed.assert_not_called()
 
 
-def test_dynamic_command_step_failure_publishes_status(mocker):
+def test_dynamic_command_step_failure_raises(mocker):
     launcher = object.__new__(StepLauncher)
     launcher._stack = mocker.Mock()
     launcher._stack.orchestrator.wait_for_isolated_step.return_value = (
@@ -134,4 +133,6 @@ def test_dynamic_command_step_failure_publishes_status(mocker):
         )
 
     publish_success.assert_not_called()
-    publish_failed.assert_called_once_with(step_run_info.step_run_id)
+    # Publishing the failed status is the responsibility of the generic
+    # exception handling in `StepLauncher.launch(...)`.
+    publish_failed.assert_not_called()

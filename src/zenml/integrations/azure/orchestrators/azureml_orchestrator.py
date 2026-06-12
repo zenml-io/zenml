@@ -623,11 +623,9 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         image = step_run_info.get_image(key=ORCHESTRATOR_DOCKER_IMAGE_KEY)
         env = Environment(name=f"zenml-{step_run_info.run_name}", image=image)
 
-        step = step_run_info.snapshot.step_configurations[
-            step_run_info.pipeline_step_name
-        ]
         entrypoint_command, entrypoint_args = get_step_entrypoint_command(
-            step=step,
+            invocation_id=step_run_info.pipeline_step_name,
+            config=step_run_info.config,
             entrypoint_config_class=StepOperatorEntrypointConfiguration,
             snapshot_id=step_run_info.snapshot.id,
             step_run_id=str(step_run_info.step_run_id),

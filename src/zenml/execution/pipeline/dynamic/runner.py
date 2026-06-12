@@ -138,6 +138,7 @@ from zenml.orchestrators.publish_utils import (
     publish_failed_step_run,
     publish_pipeline_run_status_update,
     publish_stopped_step_run,
+    publish_successful_step_run,
 )
 from zenml.pipelines.dynamic.pipeline_definition import DynamicPipeline
 from zenml.pipelines.run_utils import create_placeholder_run
@@ -487,6 +488,10 @@ class DynamicPipelineRunner:
         """Monitoring loop.
 
         This should run in a separate thread and monitors the running steps.
+
+        Raises:
+            RuntimeError: If a regular (=non-command) step completed on the
+                infrastructure side but its status was not updated in the DB.
         """
         from zenml.config.step_configurations import Step
 
@@ -569,6 +574,31 @@ class DynamicPipelineRunner:
                     # Step failed/stopped on the infra side, but the
                     # code failed before it could report the status back to us.
                     step_run = publish_failed_step_run(step_run.id)
+                elif (
+                    infra_status == ExecutionStatus.COMPLETED
+                    and db_status == ExecutionStatus.RUNNING
+                ):
+                    if step_run.config.command is not None:
+                        # For isolated command steps, no zenml code is running
+                        # and therefore nothing publishes the status. We assume
+                        # the command finished successfully because of the
+                        # infra status.
+                        step_run = publish_successful_step_run(
+                            step_run_id=step_run.id,
+                            output_artifact_ids={},
+                        )
+                    else:
+                        # This should never happen, handle it just in case. If
+                        # this happens, the node would stay in `RUNNING` status
+                        # forever and keep the pipeline from finishing. We
+                        # record a failure but don't raise to keep the
+                        # monitoring loop alive during the shutdown phase.
+                        exc = RuntimeError(
+                            f"Step `{invocation_id}` completed on the "
+                            "infrastructure side but its status was not "
+                            "updated."
+                        )
+                        self.record_failure(exc)
 
                 # Get the updated status that we might have just published
                 db_status = step_run.status

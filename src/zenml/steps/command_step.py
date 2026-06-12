@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
 """Step that runs an opaque container command."""
 
 import inspect
+import subprocess
 import textwrap
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Union
 
@@ -146,7 +147,10 @@ class CommandStep(BaseStep):
         return cls(command=["zenml-command-step-from-source"])
 
     def entrypoint(self) -> None:
-        """No-op entrypoint. A command step has no Python body to run."""
+        """Runs the configured command as a subprocess."""
+        command = self.configuration.command
+        assert command is not None
+        subprocess.run(command, check=True)
 
     def _validate_configuration(
         self,

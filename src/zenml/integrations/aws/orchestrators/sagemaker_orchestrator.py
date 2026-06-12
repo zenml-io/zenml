@@ -1089,11 +1089,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             SagemakerOrchestratorSettings, self.get_settings(step_run_info)
         )
 
-        step = step_run_info.snapshot.step_configurations[
-            step_run_info.pipeline_step_name
-        ]
         command, arguments = get_step_entrypoint_command(
-            step=step,
+            invocation_id=step_run_info.pipeline_step_name,
+            config=step_run_info.config,
             entrypoint_config_class=(
                 SagemakerStepOperatorEntrypointConfiguration
             ),

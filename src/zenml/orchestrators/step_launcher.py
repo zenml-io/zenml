@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Class to launch (run directly or using a step operator) steps."""
 
-import subprocess
 import time
 from contextlib import nullcontext
 from typing import (
@@ -479,7 +478,8 @@ class StepLauncher:
         )
 
         command, args = orchestrator_utils.get_step_entrypoint_command(
-            step=self._step,
+            invocation_id=self._invocation_id,
+            config=self._step.config,
             entrypoint_config_class=step_operator.entrypoint_config_class,
             snapshot_id=self._snapshot.id,
             step_run_id=str(step_run_info.step_run_id),
@@ -552,27 +552,9 @@ class StepLauncher:
                 status = step_operator.wait(
                     step_run=step_run_info.step_run,
                 )
-                if status.is_successful:
-                    if self._is_command_step:
-                        # No in-container `StepRunner` publishes the status for
-                        # a command step, so the parent does it here.
-                        publish_utils.publish_successful_step_run(
-                            step_run_id=step_run_info.step_run_id,
-                            output_artifact_ids={},
-                        )
-                else:
-                    if self._is_command_step:
-                        publish_utils.publish_failed_step_run(
-                            step_run_info.step_run_id
-                        )
-                    step_run = Client().get_run_step(step_run_info.step_run_id)
-                    raise exception_utils.reconstruct_exception(
-                        exception_info=step_run.exception_info,
-                        fallback_message=(
-                            f"Step `{step_run_info.pipeline_step_name}` failed "
-                            f"with status `{status}`."
-                        ),
-                    )
+                self._finalize_remote_step(
+                    status=status, step_run_info=step_run_info
+                )
 
     def _run_step_with_dynamic_orchestrator(
         self,
@@ -606,27 +588,39 @@ class StepLauncher:
             status = self._stack.orchestrator.wait_for_isolated_step(
                 step_run_info.step_run
             )
-            if status.is_successful:
-                if self._is_command_step:
-                    # No in-container `StepRunner` publishes the status for
-                    # a command step, so the parent does it here.
-                    publish_utils.publish_successful_step_run(
-                        step_run_id=step_run_info.step_run_id,
-                        output_artifact_ids={},
-                    )
-            else:
-                if self._is_command_step:
-                    publish_utils.publish_failed_step_run(
-                        step_run_info.step_run_id
-                    )
-                step_run = Client().get_run_step(step_run_info.step_run_id)
-                raise exception_utils.reconstruct_exception(
-                    exception_info=step_run.exception_info,
-                    fallback_message=(
-                        f"Step `{step_run_info.pipeline_step_name}` failed "
-                        f"with status `{status}`."
-                    ),
-                )
+            self._finalize_remote_step(
+                status=status, step_run_info=step_run_info
+            )
+
+    def _finalize_remote_step(
+        self, status: ExecutionStatus, step_run_info: StepRunInfo
+    ) -> None:
+        """Finalizes a step that was executed in a remote environment.
+
+        Args:
+            status: The status reported by the remote environment.
+            step_run_info: Additional information needed to run the step.
+
+        Raises:
+            BaseException: If the step run failed.
+        """  # noqa: DOC502, DOC503
+        if not status.is_successful:
+            step_run = Client().get_run_step(step_run_info.step_run_id)
+            raise exception_utils.reconstruct_exception(
+                exception_info=step_run.exception_info,
+                fallback_message=(
+                    f"Step `{step_run_info.pipeline_step_name}` failed "
+                    f"with status `{status}`."
+                ),
+            )
+
+        if self._step.config.command is not None:
+            # Nothing in the execution environment publishes the status for
+            # a command step, so we do it here.
+            publish_utils.publish_successful_step_run(
+                step_run_id=step_run_info.step_run_id,
+                output_artifact_ids={},
+            )
 
     def _run_step_in_current_thread(
         self,
@@ -645,10 +639,6 @@ class StepLauncher:
             input_artifacts: The input artifact versions of the current step.
             output_artifact_uris: The output artifact URIs of the current step.
         """
-        if self._is_command_step:
-            self._run_command_step_locally(step_run=step_run)
-            return
-
         runner = StepRunner(step=self._step, stack=self._stack)
         runner.run(
             pipeline_run=pipeline_run,
@@ -657,46 +647,6 @@ class StepLauncher:
             output_artifact_uris=output_artifact_uris,
             step_run_info=step_run_info,
         )
-
-    @property
-    def _is_command_step(self) -> bool:
-        """Whether the step is a command step.
-
-        Returns:
-            Whether the step is a command step.
-        """
-        return self._step.config.command is not None
-
-    def _run_command_step_locally(self, step_run: StepRunResponse) -> None:
-        """Runs a command step as a subprocess in the current environment.
-
-        Args:
-            step_run: The model of the current step run.
-
-        Raises:
-            RuntimeError: If the command exits with a non-zero status.
-        """
-        command = self._step.config.command
-        assert command is not None
-
-        logger.info(
-            "Running command step `%s` locally: %s",
-            self._invocation_id,
-            command,
-        )
-        # TODO: env etc
-        result = subprocess.run(command)
-        if result.returncode == 0:
-            publish_utils.publish_successful_step_run(
-                step_run_id=step_run.id,
-                output_artifact_ids={},
-            )
-        else:
-            publish_utils.publish_failed_step_run(step_run.id)
-            raise RuntimeError(
-                f"Command step `{self._invocation_id}` failed with exit code "
-                f"{result.returncode}."
-            )
 
     def _should_register_signal_handler(self) -> bool:
         """Whether the signal handler should be registered.
@@ -732,6 +682,14 @@ class StepLauncher:
             from zenml.execution.pipeline.dynamic.compilation import (
                 get_step_runtime,
             )
+
+            if self._step.config.command is not None:
+                # Command steps can't report themselves as running once the
+                # container started, so we start them in a running state.
+                # Once we extend all orchestrator/step operator implementations
+                # to distinguish between the provisioning and running states,
+                # we can remove this special case.
+                return ExecutionStatus.RUNNING
 
             step_runtime = get_step_runtime(
                 step_config=self._step.config,
