@@ -44,7 +44,7 @@ from zenml.enums import (
     OAuthDeviceStatus,
     OAuthGrantTypes,
 )
-from zenml.exceptions import AuthorizationException
+from zenml.exceptions import AuthorizationException, CredentialsNotValid
 from zenml.logger import get_logger
 from zenml.models import (
     OAuthDeviceAuthorizationResponse,
@@ -243,6 +243,7 @@ def token(
         An access token or a redirect response.
 
     Raises:
+        CredentialsNotValid: If the credentials are invalid.
         ValueError: If the grant type is invalid.
     """
     config = server_config()
@@ -279,6 +280,7 @@ def token(
         # Try to get the external session token or authorization token from the
         # authorization header
         authorization_header = request.headers.get("Authorization")
+        external_access_token: Optional[str] = None
         if authorization_header:
             scheme, _, token = authorization_header.partition(" ")
             if token and scheme.lower() == "bearer":
@@ -292,6 +294,12 @@ def token(
 
             # Redirect the user to the external authentication login endpoint
             return OAuthRedirectResponse(authorization_url=authorization_url)
+
+        if not external_access_token:
+            logger.info("Request with invalid external authorization header")
+            raise CredentialsNotValid(
+                "Invalid request: invalid authorization header."
+            )
 
         auth_context = authenticate_external_user(
             external_access_token=external_access_token,
@@ -394,11 +402,7 @@ def device_authorization(
     # Fetch the IP address of the client
     ip_address: str = ""
     city, region, country = "", "", ""
-    forwarded = request.headers.get("X-Forwarded-For")
-
-    if forwarded:
-        ip_address = forwarded.split(",")[0].strip()
-    elif request.client and request.client.host:
+    if request.client and request.client.host:
         ip_address = request.client.host
 
     if ip_address:
