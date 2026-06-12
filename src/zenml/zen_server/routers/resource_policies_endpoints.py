@@ -72,9 +72,9 @@ def create_resource_policy(
     """
     check_entitlement(feature=RESOURCE_POOL_FEATURE)
 
-    if policy.component_id is not None:
+    for component_id in policy.component_ids:
         component = zen_store().get_stack_component(
-            policy.component_id, hydrate=False
+            component_id, hydrate=False
         )
         verify_permission_for_model(model=component, action=Action.READ)
 
@@ -159,11 +159,12 @@ def update_resource_policy(
     """
     check_entitlement(feature=RESOURCE_POOL_FEATURE)
 
-    if policy_update.component_id is not None:
-        component = zen_store().get_stack_component(
-            policy_update.component_id, hydrate=False
-        )
-        verify_permission_for_model(model=component, action=Action.READ)
+    if policy_update.component_ids is not None:
+        for component_id in policy_update.component_ids:
+            component = zen_store().get_stack_component(
+                component_id, hydrate=False
+            )
+            verify_permission_for_model(model=component, action=Action.READ)
 
     return verify_permissions_and_update_entity(
         id=policy_id,

@@ -108,13 +108,13 @@ class ResourcePolicyRequest(UserScopedRequest):
         title="The target resource pool name.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    component_id: Optional[UUID] = Field(
-        default=None,
-        title="The stack component ID targeted by this policy.",
+    component_ids: list[UUID] = Field(
+        default_factory=list,
+        title="The stack component IDs targeted by this policy.",
     )
-    account_id: Optional[UUID] = Field(
-        default=None,
-        title="The external account ID targeted by this policy.",
+    account_ids: list[UUID] = Field(
+        default_factory=list,
+        title="The external account IDs targeted by this policy.",
     )
     priority_lane: bool = Field(
         default=False,
@@ -131,7 +131,7 @@ class ResourcePolicyRequest(UserScopedRequest):
 
     @model_validator(mode="after")
     def _validate_request(self) -> "ResourcePolicyRequest":
-        """Validate pool, component or account, and priority fields.
+        """Validate pool, subjects, and priority fields.
 
         Returns:
             The validated policy request.
@@ -142,11 +142,9 @@ class ResourcePolicyRequest(UserScopedRequest):
         if self.pool_id is None and self.pool is None:
             raise ValueError("A resource policy requires a pool ID or name.")
 
-        has_component = self.component_id is not None
-        has_account = self.account_id is not None
-        if has_component == has_account:
+        if not self.component_ids and not self.account_ids:
             raise ValueError(
-                "Exactly one of component_id or account_id must be set."
+                "At least one component_ids or account_ids entry must be set."
             )
 
         if self.priority_lane:
@@ -179,13 +177,13 @@ class ResourcePolicyUpdate(BaseUpdate):
         title="The new target resource pool name.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    component_id: Optional[UUID] = Field(
+    component_ids: Optional[list[UUID]] = Field(
         default=None,
-        title="The new stack component ID.",
+        title="The new stack component IDs.",
     )
-    account_id: Optional[UUID] = Field(
+    account_ids: Optional[list[UUID]] = Field(
         default=None,
-        title="The new external account ID.",
+        title="The new external account IDs.",
     )
     priority_lane: Optional[bool] = Field(
         default=None,
@@ -204,17 +202,20 @@ class ResourcePolicyUpdate(BaseUpdate):
     def _validate_component_account_and_priority(
         self,
     ) -> "ResourcePolicyUpdate":
-        """Validate mutually exclusive component, account, and priority fields.
+        """Validate subject and priority fields.
 
         Returns:
             The validated policy update.
 
         Raises:
-            ValueError: If component, account, or priority fields are inconsistent.
+            ValueError: If subjects or priority fields are inconsistent.
         """
-        if self.component_id is not None and self.account_id is not None:
+        if (
+            self.component_ids is not None or self.account_ids is not None
+        ) and not (self.component_ids or self.account_ids):
             raise ValueError(
-                "component_id and account_id cannot both be set on update."
+                "At least one component_ids or account_ids entry must be set "
+                "when updating policy subjects."
             )
 
         if self.priority_lane is True and self.priority is not None:
@@ -237,13 +238,13 @@ class ResourcePolicyResponseBody(UserScopedResponseBody):
     """Response body for resource policies."""
 
     pool_id: UUID = Field(title="The target resource pool ID.")
-    component_id: Optional[UUID] = Field(
-        default=None,
-        title="The stack component ID when the policy targets a component.",
+    component_ids: list[UUID] = Field(
+        default_factory=list,
+        title="The stack component IDs targeted by this policy.",
     )
-    account_id: Optional[UUID] = Field(
-        default=None,
-        title="The external account ID when the policy targets an account.",
+    account_ids: list[UUID] = Field(
+        default_factory=list,
+        title="The external account IDs targeted by this policy.",
     )
     priority_lane: bool = Field(
         default=False,
@@ -300,22 +301,22 @@ class ResourcePolicyResponse(
         return self.get_metadata().pool
 
     @property
-    def component_id(self) -> Optional[UUID]:
-        """Resource policy component ID.
+    def component_ids(self) -> list[UUID]:
+        """Resource policy component IDs.
 
         Returns:
-            The stack component ID targeted by this policy, if any.
+            The stack component IDs targeted by this policy.
         """
-        return self.get_body().component_id
+        return self.get_body().component_ids
 
     @property
-    def account_id(self) -> Optional[UUID]:
-        """Resource policy account ID.
+    def account_ids(self) -> list[UUID]:
+        """Resource policy account IDs.
 
         Returns:
-            The external account ID targeted by this policy, if any.
+            The external account IDs targeted by this policy.
         """
-        return self.get_body().account_id
+        return self.get_body().account_ids
 
     @property
     def priority_lane(self) -> bool:
