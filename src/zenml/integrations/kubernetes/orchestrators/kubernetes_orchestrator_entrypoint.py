@@ -47,7 +47,7 @@ from zenml.integrations.kubernetes.manifest_utils import (
     build_pod_manifest,
     pod_template_manifest_from_pod,
 )
-from zenml.integrations.kubernetes.orchestrators.dag_runner import (
+from zenml.orchestrators.monitored_dag_runner import (
     DagRunner,
     InterruptMode,
     Node,
