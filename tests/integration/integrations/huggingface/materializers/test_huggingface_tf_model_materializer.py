@@ -15,7 +15,8 @@
 import sys
 
 import pytest
-from transformers import TFAutoModelForSequenceClassification
+import tensorflow as tf
+from transformers import BertConfig, TFBertForSequenceClassification
 
 from tests.unit.test_general import _test_materializer
 from zenml.integrations.huggingface.materializers.huggingface_tf_model_materializer import (
@@ -29,10 +30,20 @@ from zenml.integrations.huggingface.materializers.huggingface_tf_model_materiali
 )
 def test_huggingface_tf_pretrained_model_materializer(clean_client):
     """Tests whether the steps work for the Huggingface Tensorflow Pretrained Model materializer."""
+    model = TFBertForSequenceClassification(
+        BertConfig(
+            hidden_size=32,
+            intermediate_size=37,
+            num_attention_heads=4,
+            num_hidden_layers=1,
+            num_labels=5,
+            vocab_size=100,
+        )
+    )
+    model(input_ids=tf.constant([[1, 2]]))
+
     model = _test_materializer(
-        step_output=TFAutoModelForSequenceClassification.from_pretrained(
-            "bert-base-cased", num_labels=5
-        ),
+        step_output=model,
         materializer_class=HFTFModelMaterializer,
         expected_metadata_size=4,
     )
