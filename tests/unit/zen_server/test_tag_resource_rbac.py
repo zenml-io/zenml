@@ -15,6 +15,7 @@ from zenml.models import ModelRequest, TagRequest, UserRequest
 from zenml.zen_server.auth import AuthContext
 from zenml.zen_server.middleware import record_requests
 from zenml.zen_server.rbac.rbac_interface import RBACInterface
+from zenml.zen_server.rbac.rbac_sql_zen_store import RBACSqlZenStore
 from zenml.zen_server.routers import (
     models_endpoints,
     tag_resource_endpoints,
@@ -78,7 +79,6 @@ async def _run_tag_resource_rbac_regression(client: Client) -> None:
 
     try:
         store = client.zen_store
-        zen_server_utils._zen_store = store
         server_cfg.rbac_implementation_source = "local.test_rbac"
 
         attacker = store.create_user(
@@ -107,6 +107,12 @@ async def _run_tag_resource_rbac_regression(client: Client) -> None:
             "resource_id": str(victim_model.id),
             "resource_type": TaggableResourceTypes.MODEL.value,
         }
+
+        rbac_store = RBACSqlZenStore(
+            config=store.config.model_copy(deep=True),
+            skip_default_registrations=True,
+        )
+        zen_server_utils._zen_store = rbac_store
 
         app = FastAPI()
         app.add_middleware(BaseHTTPMiddleware, dispatch=record_requests)

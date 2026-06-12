@@ -14,34 +14,143 @@
 """RBAC SQL Zen Store implementation."""
 
 from typing import (
+    TYPE_CHECKING,
+    List,
     Optional,
+    Sequence,
+    Set,
     Tuple,
 )
 from uuid import UUID
 
+from zenml.enums import TaggableResourceTypes
 from zenml.logger import get_logger
 from zenml.models import (
     ModelRequest,
     ModelResponse,
     ModelVersionRequest,
     ModelVersionResponse,
+    TagResourceRequest,
+    TagResourceResponse,
 )
 from zenml.zen_server.feature_gate.endpoint_utils import (
     check_entitlement,
     report_usage,
 )
-from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.models import Action, Resource, ResourceType
 from zenml.zen_server.rbac.utils import (
+    batch_verify_permissions,
     verify_permission,
     verify_permission_for_model,
 )
-from zenml.zen_stores.sql_zen_store import SqlZenStore
+from zenml.zen_stores.sql_zen_store import Session, SqlZenStore
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas import BaseSchema
 
 logger = get_logger(__name__)
 
 
 class RBACSqlZenStore(SqlZenStore):
     """Wrapper around the SQLZenStore that implements RBAC functionality."""
+
+    def _get_rbac_resource_type_for_taggable_resource_type(
+        self, resource_type: TaggableResourceTypes
+    ) -> ResourceType:
+        """Get the RBAC resource type for a taggable resource type.
+
+        Args:
+            resource_type: The taggable resource type.
+
+        Returns:
+            The corresponding RBAC resource type.
+        """
+        if resource_type == TaggableResourceTypes.PIPELINE_SNAPSHOT:
+            return ResourceType.PIPELINE_SNAPSHOT
+
+        return ResourceType(resource_type.value)
+
+    def _get_rbac_resources_from_tag_resources(
+        self,
+        tag_resources: List[TagResourceRequest],
+        resolved_resources: Sequence["BaseSchema"],
+    ) -> Set[Resource]:
+        """Get RBAC resources referenced by tag resource requests in bulk.
+
+        Args:
+            tag_resources: The tag resource requests.
+            resolved_resources: The resources referenced by the tag resource
+                requests.
+
+        Returns:
+            The RBAC resources referenced by the tag resource requests.
+        """
+        resources = set()
+        for tag_resource, resource in zip(tag_resources, resolved_resources):
+            rbac_resource_type = (
+                self._get_rbac_resource_type_for_taggable_resource_type(
+                    tag_resource.resource_type
+                )
+            )
+            resources.add(
+                Resource(
+                    type=rbac_resource_type,
+                    id=resource.id,
+                    project_id=getattr(resource, "project_id"),
+                )
+            )
+
+        return resources
+
+    def batch_create_tag_resource(
+        self, tag_resources: List[TagResourceRequest]
+    ) -> List[TagResourceResponse]:
+        """Create a batch of tag resource relationships.
+
+        Args:
+            tag_resources: The tag resource relationships to be created.
+
+        Returns:
+            The newly created tag resource relationships.
+        """
+        with Session(self.engine) as session:
+            resolved_resources = self._get_resources_from_tag_resources(
+                tag_resources=tag_resources, session=session
+            )
+            resources = self._get_rbac_resources_from_tag_resources(
+                tag_resources=tag_resources,
+                resolved_resources=resolved_resources,
+            )
+            batch_verify_permissions(resources=resources, action=Action.UPDATE)
+
+            return self._batch_create_tag_resource(
+                tag_resources=tag_resources,
+                resolved_resources=resolved_resources,
+                session=session,
+            )
+
+    def batch_delete_tag_resource(
+        self, tag_resources: List[TagResourceRequest]
+    ) -> None:
+        """Delete a batch of tag resource relationships.
+
+        Args:
+            tag_resources: The tag resource relationships to be deleted.
+        """
+        with Session(self.engine) as session:
+            resolved_resources = self._get_resources_from_tag_resources(
+                tag_resources=tag_resources, session=session
+            )
+            resources = self._get_rbac_resources_from_tag_resources(
+                tag_resources=tag_resources,
+                resolved_resources=resolved_resources,
+            )
+            batch_verify_permissions(resources=resources, action=Action.UPDATE)
+
+            self._delete_tag_resource_schemas(
+                tag_resources=tag_resources,
+                session=session,
+            )
 
     def _get_or_create_model(
         self, model_request: ModelRequest
