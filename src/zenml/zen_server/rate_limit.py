@@ -135,7 +135,7 @@ class RequestLimiter:
     def _get_ipaddr(self, request: Request) -> str:
         """Returns the IP address for the current request.
 
-        Based on the X-Forwarded-For headers or client information.
+        Based on the client information provided by the ASGI server.
 
         Args:
             request: The request object.
@@ -143,13 +143,10 @@ class RequestLimiter:
         Returns:
             The ip address for the current request (or 127.0.0.1 if none found).
         """
-        if "X_FORWARDED_FOR" in request.headers:
-            return request.headers["X_FORWARDED_FOR"]
-        else:
-            if not request.client or not request.client.host:
-                return "127.0.0.1"
+        if not request.client or not request.client.host:
+            return "127.0.0.1"
 
-            return request.client.host
+        return request.client.host
 
     @contextmanager
     def limit_failed_requests(
