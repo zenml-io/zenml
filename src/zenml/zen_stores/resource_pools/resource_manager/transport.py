@@ -167,6 +167,39 @@ class RMSubjectSelector(BaseModel):
             "Resource policies require component_id or account_id."
         )
 
+    @classmethod
+    def from_policy_subjects(
+        cls,
+        *,
+        component_ids: list[UUID] | None,
+        account_ids: list[UUID] | None,
+    ) -> list["RMSubjectSelector"]:
+        """Build selectors from ZenML policy subject references.
+
+        Args:
+            component_ids: Optional stack component IDs.
+            account_ids: Optional external account IDs.
+
+        Returns:
+            Resource Manager subject selectors.
+
+        Raises:
+            ValueError: If neither reference list contains subjects.
+        """
+        selectors = [
+            cls(subject_type=COMPONENT_SUBJECT_TYPE, subject_id=component_id)
+            for component_id in component_ids or []
+        ]
+        selectors.extend(
+            cls(subject_type=ACCOUNT_SUBJECT_TYPE, subject_id=account_id)
+            for account_id in account_ids or []
+        )
+        if not selectors:
+            raise ValueError(
+                "Resource policies require component_ids or account_ids."
+            )
+        return selectors
+
     def to_policy_subject(self) -> tuple[Optional[UUID], Optional[UUID]]:
         """Parse this selector into ZenML policy subject IDs.
 
@@ -189,6 +222,28 @@ class RMSubjectSelector(BaseModel):
             f"Unsupported Resource Manager policy subject type "
             f"{self.subject_type!r}."
         )
+
+    @classmethod
+    def to_policy_subjects(
+        cls, selectors: list["RMSubjectSelector"]
+    ) -> tuple[list[UUID], list[UUID]]:
+        """Parse selectors into ZenML policy subject ID lists.
+
+        Args:
+            selectors: Resource Manager subject selectors.
+
+        Returns:
+            Tuple of component IDs and account IDs.
+        """
+        component_ids: list[UUID] = []
+        account_ids: list[UUID] = []
+        for selector in selectors:
+            component_id, account_id = selector.to_policy_subject()
+            if component_id is not None:
+                component_ids.append(component_id)
+            if account_id is not None:
+                account_ids.append(account_id)
+        return component_ids, account_ids
 
 
 class RMSubjectSettingsEntry(BaseModel):
@@ -752,7 +807,7 @@ class RMPolicyRequest(BaseModel):
     """Resource policy create payload for the Resource Manager API."""
 
     pool: UUID | str
-    subject_selector: RMSubjectSelector
+    subject_selectors: list[RMSubjectSelector]
     priority: int | None = None
     priority_lane: bool = False
     grants: list[RMPolicyGrant] = Field(default_factory=list)
@@ -776,9 +831,9 @@ class RMPolicyRequest(BaseModel):
             raise ValueError("Resource policies require a pool ID or name.")
         return cls(
             pool=pool,
-            subject_selector=RMSubjectSelector.from_policy_subject(
-                component_id=policy.component_id,
-                account_id=policy.account_id,
+            subject_selectors=RMSubjectSelector.from_policy_subjects(
+                component_ids=policy.component_ids,
+                account_ids=policy.account_ids,
             ),
             priority=policy.priority,
             priority_lane=policy.priority_lane,
@@ -791,7 +846,7 @@ class RMPolicyRequest(BaseModel):
 class RMPolicyUpdate(BaseModel):
     """Resource policy update payload for the Resource Manager API."""
 
-    subject_selector: Optional[RMSubjectSelector] = None
+    subject_selectors: Optional[list[RMSubjectSelector]] = None
     priority: int | None = None
     priority_lane: bool | None = None
     grants: Optional[list[RMPolicyGrant]] = None
@@ -807,11 +862,11 @@ class RMPolicyUpdate(BaseModel):
         Returns:
             Resource Manager policy update payload.
         """
-        subject_selector = None
-        if update.component_id is not None or update.account_id is not None:
-            subject_selector = RMSubjectSelector.from_policy_subject(
-                component_id=update.component_id,
-                account_id=update.account_id,
+        subject_selectors = None
+        if update.component_ids is not None or update.account_ids is not None:
+            subject_selectors = RMSubjectSelector.from_policy_subjects(
+                component_ids=update.component_ids,
+                account_ids=update.account_ids,
             )
         grants = None
         if update.grants is not None:
@@ -819,7 +874,7 @@ class RMPolicyUpdate(BaseModel):
                 RMPolicyGrant.from_model(grant) for grant in update.grants
             ]
         return cls(
-            subject_selector=subject_selector,
+            subject_selectors=subject_selectors,
             priority=update.priority,
             priority_lane=update.priority_lane,
             grants=grants,
@@ -833,7 +888,7 @@ class RMPolicyResponse(BaseModel):
     organization_id: UUID
     pool_id: UUID
     pool: Optional[str] = None
-    subject_selector: RMSubjectSelector
+    subject_selectors: list[RMSubjectSelector]
     priority: int | None = None
     priority_lane: bool = False
     grants: list[RMPolicyGrantResponse]
@@ -852,7 +907,9 @@ class RMPolicyResponse(BaseModel):
             ZenML policy response.
         """
         created, updated = _normalize_timestamps(self.created, self.updated)
-        component_id, account_id = self.subject_selector.to_policy_subject()
+        component_ids, account_ids = RMSubjectSelector.to_policy_subjects(
+            self.subject_selectors
+        )
         priority_lane = self.priority_lane or (
             self.priority == PRIORITY_LANE_PRIORITY
         )
@@ -864,8 +921,8 @@ class RMPolicyResponse(BaseModel):
                 updated=updated,
                 user_id=None,
                 pool_id=self.pool_id,
-                component_id=component_id,
-                account_id=account_id,
+                component_ids=component_ids,
+                account_ids=account_ids,
                 priority_lane=priority_lane,
                 priority=priority,
                 grants=[grant.to_model() for grant in self.grants],

@@ -2595,8 +2595,8 @@ class Client(metaclass=ClientMetaClass):
         grants: Optional[List[ResourcePolicyGrant]] = None,
         pool: Optional[str] = None,
         *,
-        component_id: Optional[UUID] = None,
-        account_id: Optional[UUID] = None,
+        component_ids: Optional[List[UUID]] = None,
+        account_ids: Optional[List[UUID]] = None,
         priority_lane: bool = False,
     ) -> ResourcePolicyResponse:
         """Create a resource policy.
@@ -2607,8 +2607,8 @@ class Client(metaclass=ClientMetaClass):
             grants: Resource policy grants. Omit or pass an empty list for
                 grantless policies.
             pool: The pool name this policy belongs to.
-            component_id: Stack component ID for component policies.
-            account_id: External account ID for user or service account
+            component_ids: Stack component IDs for component policies.
+            account_ids: External account IDs for user or service account
                 policies.
             priority_lane: Whether this policy uses the maximum priority lane.
 
@@ -2616,8 +2616,8 @@ class Client(metaclass=ClientMetaClass):
             The created policy.
         """
         request = ResourcePolicyRequest(
-            component_id=component_id,
-            account_id=account_id,
+            component_ids=component_ids or [],
+            account_ids=account_ids or [],
             pool_id=pool_id,
             pool=pool,
             priority_lane=priority_lane,
@@ -2698,11 +2698,11 @@ class Client(metaclass=ClientMetaClass):
         policy_id: UUID,
         pool_id: Optional[UUID] = None,
         pool: Optional[str] = None,
-        component_id: Optional[UUID] = None,
+        component_ids: Optional[List[UUID]] = None,
         priority: Optional[int] = None,
         grants: Optional[List[ResourcePolicyGrant]] = None,
         *,
-        account_id: Optional[UUID] = None,
+        account_ids: Optional[List[UUID]] = None,
         priority_lane: Optional[bool] = None,
     ) -> ResourcePolicyResponse:
         """Update a resource policy.
@@ -2711,10 +2711,10 @@ class Client(metaclass=ClientMetaClass):
             policy_id: The policy ID.
             pool_id: Updated pool ID.
             pool: Updated pool name.
-            component_id: Updated component ID.
+            component_ids: Updated component IDs.
             priority: Updated priority.
             grants: Updated full replacement grants.
-            account_id: Updated external account ID.
+            account_ids: Updated external account IDs.
             priority_lane: Updated priority-lane flag.
 
         Returns:
@@ -2723,8 +2723,8 @@ class Client(metaclass=ClientMetaClass):
         update = ResourcePolicyUpdate(
             pool_id=pool_id,
             pool=pool,
-            component_id=component_id,
-            account_id=account_id,
+            component_ids=component_ids,
+            account_ids=account_ids,
             priority_lane=priority_lane,
             priority=priority,
             grants=grants,
