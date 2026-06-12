@@ -28,18 +28,29 @@ You also need an R2 bucket and an [R2 API token](https://developers.cloudflare.c
 
 ### How do you configure it?
 
-The artifact store path uses the `r2://` scheme. The R2 S3 API endpoint is derived automatically from your account ID:
+The artifact store path uses the `r2://` scheme. The R2 S3 API endpoint is derived automatically from your account ID. Store the R2 API token's S3 credentials in a ZenML secret and reference it via `authentication_secret`, just like the [S3 Artifact Store](s3.md):
 
 ```shell
+# Store the R2 S3 credentials in a ZenML secret
+zenml secret create r2_secret \
+    --aws_access_key_id=<R2_ACCESS_KEY_ID> \
+    --aws_secret_access_key=<R2_SECRET_ACCESS_KEY>
+
+# Register the R2 artifact store and reference the ZenML secret
 zenml artifact-store register cloudflare_store \
     --flavor=r2 \
     --path=r2://my-bucket/artifacts \
     --account_id=<CLOUDFLARE_ACCOUNT_ID> \
-    --key=<R2_ACCESS_KEY_ID> \
-    --secret=<R2_SECRET_ACCESS_KEY>
+    --authentication_secret=r2_secret
 
 zenml stack register cloudflare_stack -a cloudflare_store ... --set
 ```
+
+{% hint style="warning" %}
+Credentials must be configured explicitly (via `authentication_secret`, a service connector, or the `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` environment variables). R2 is not AWS, so the implicit AWS credential chain (instance profiles, IMDS, SSO) can never supply R2 keys — the store fails fast with a clear error instead of letting botocore time out against AWS metadata endpoints.
+
+Note that the `secret` configuration field cannot be set from the CLI: `--secret` is reserved by `zenml artifact-store register` for attaching ZenML secrets as runtime environment variables. Use `authentication_secret` as shown above.
+{% endhint %}
 
 {% hint style="info" %}
 The `account_id` is used to build the endpoint `https://<account_id>.r2.cloudflarestorage.com`. If you prefer, you can skip `account_id` and pass the endpoint directly via `client_kwargs`:
@@ -47,7 +58,7 @@ The `account_id` is used to build the endpoint `https://<account_id>.r2.cloudfla
 ```shell
 zenml artifact-store register cloudflare_store --flavor=r2 \
     --path=r2://my-bucket/artifacts \
-    --key=<R2_ACCESS_KEY_ID> --secret=<R2_SECRET_ACCESS_KEY> \
+    --authentication_secret=r2_secret \
     --client_kwargs='{"endpoint_url": "https://<account_id>.r2.cloudflarestorage.com"}'
 ```
 {% endhint %}

@@ -19,7 +19,10 @@ from uuid import uuid4
 import pytest
 
 from zenml.enums import StackComponentType
-from zenml.exceptions import ArtifactStoreInterfaceError
+from zenml.exceptions import (
+    ArtifactStoreInterfaceError,
+    AuthorizationException,
+)
 from zenml.integrations.cloudflare.artifact_stores.r2_artifact_store import (
     R2ArtifactStore,
 )
@@ -94,6 +97,57 @@ def test_scheme_stripped_before_filesystem():
 
     store.remove("r2://my-bucket/file.txt")
     store.filesystem.rm_file.assert_called_once_with(path="my-bucket/file.txt")
+
+
+def test_get_credentials_fails_fast_without_credentials(monkeypatch):
+    """Missing credentials raise immediately instead of hitting botocore.
+
+    R2 is not AWS: the implicit credential chain can never produce R2 keys
+    but spends minutes timing out against AWS metadata endpoints before
+    failing with an opaque `NoCredentialsError`.
+    """
+    monkeypatch.delenv("AWS_ACCESS_KEY_ID", raising=False)
+    store = _make_store()
+
+    with pytest.raises(AuthorizationException, match="R2 is not AWS"):
+        store.get_credentials()
+
+
+def test_get_credentials_allows_env_credentials(monkeypatch):
+    """Credentials in the standard AWS env variables are accepted."""
+    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "env-key")
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "env-secret")
+    store = _make_store()
+
+    # No explicit config credentials: s3fs picks the env values up itself.
+    assert store.get_credentials() == (None, None, None, None)
+
+
+def test_get_credentials_uses_explicit_config(monkeypatch):
+    """Credentials set directly on the config are returned as-is."""
+    monkeypatch.delenv("AWS_ACCESS_KEY_ID", raising=False)
+    store = R2ArtifactStore(
+        name="",
+        id=uuid4(),
+        config=R2ArtifactStoreConfig(
+            path="r2://my-bucket",
+            account_id="abc123",
+            key="config-key",
+            secret="config-secret",
+        ),
+        flavor="r2",
+        type=StackComponentType.ARTIFACT_STORE,
+        user=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+    assert store.get_credentials() == (
+        "config-key",
+        "config-secret",
+        None,
+        None,
+    )
 
 
 def test_glob_reprefixes_results_with_r2_scheme():

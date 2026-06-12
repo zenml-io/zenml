@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Cloudflare R2 Artifact Store."""
 
+import os
 from typing import (
     Any,
     Callable,
@@ -26,6 +27,7 @@ from typing import (
 )
 
 from zenml.artifact_stores import BaseArtifactStore
+from zenml.exceptions import AuthorizationException
 from zenml.integrations.cloudflare.flavors.cloudflare_r2_artifact_store_flavor import (
     R2ArtifactStoreConfig,
 )
@@ -73,6 +75,41 @@ class R2ArtifactStore(S3ArtifactStore):
             The config of this artifact store.
         """
         return cast(R2ArtifactStoreConfig, self._config)
+
+    def get_credentials(
+        self,
+    ) -> Tuple[Optional[str], Optional[str], Optional[str], Optional[str]]:
+        """Gets authentication credentials, requiring them to be explicit.
+
+        Unlike AWS S3, R2 has no ambient credential sources: botocore's
+        implicit fallback chain (instance profiles, IMDS, SSO) can never
+        yield R2 keys, but spends minutes on metadata-endpoint timeouts
+        before failing with an opaque ``NoCredentialsError``. Fail fast
+        instead, unless credentials are supplied via the standard AWS
+        environment variables (a legitimate way to pass R2 keys).
+
+        Returns:
+            Tuple (key, secret, token, region) of credentials used to
+            authenticate with the R2 S3 endpoint.
+
+        Raises:
+            AuthorizationException: If no explicit credentials are
+                configured and none are present in the environment.
+        """
+        key, secret, token, region = super().get_credentials()
+        if not key and not os.environ.get("AWS_ACCESS_KEY_ID"):
+            raise AuthorizationException(
+                "No credentials configured for the Cloudflare R2 artifact "
+                "store. R2 is not AWS, so botocore's implicit credential "
+                "chain cannot supply R2 keys. Configure credentials in one "
+                "of these ways: (1) store them in a ZenML secret and set "
+                "`authentication_secret` on the component, (2) link a "
+                "service connector, or (3) export them as the "
+                "`AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` environment "
+                "variables. R2 S3 credentials are created in the Cloudflare "
+                "dashboard under R2 -> Manage R2 API Tokens."
+            )
+        return key, secret, token, region
 
     def open(self, path: PathType, mode: str = "r") -> Any:
         """Open a file at the given path.
