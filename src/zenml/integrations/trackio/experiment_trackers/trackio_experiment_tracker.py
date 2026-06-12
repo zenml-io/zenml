@@ -164,15 +164,59 @@ class TrackioExperimentTracker(BaseExperimentTracker):
             if settings.auto_sync:
                 logger.info("Syncing Trackio run.")
 
-                trackio.sync(project=self.config.project_name)
+                sync_kwargs: Dict[str, Any] = {
+                    "project": self.config.project_name,
+                }
 
-            if settings.auto_freeze and self.config.hf_space:
+                # Publish to Hugging Face Space
+                if self.config.space_id and settings.publish_to_space:
+                    sync_kwargs["space_id"] = self.config.space_id
+
+                # Publish to Hugging Face Dataset
+                if self.config.dataset_id and settings.publish_to_dataset:
+                    sync_kwargs["dataset_id"] = self.config.dataset_id
+
+                # Optional bucket storage
+                if self.config.bucket_id:
+                    sync_kwargs["bucket_id"] = self.config.bucket_id
+
+                if self.config.backend == "static":
+                    sync_kwargs["sdk"] = "static"
+
+                valid_params = inspect.signature(trackio.sync).parameters
+                logger.info(
+                    "valid sync params: %s",
+                    valid_params.keys(),
+                )
+                filtered_kwargs: Dict[str, Any] = {
+                    key: value
+                    for key, value in sync_kwargs.items()
+                    if key in valid_params and value is not None
+                }
+
+                logger.info("Trackio sync kwargs: %s", filtered_kwargs)
+                cast(Any, trackio.sync)(**filtered_kwargs)
+
+            if settings.auto_freeze and self.config.space_id:
                 logger.info("Freezing Trackio dashboard.")
 
-                trackio.freeze(
-                    space_id=self.config.hf_space,
-                    project=self.config.project_name,
-                )
+                freeze_kwargs: Dict[str, Any] = {
+                    "space_id": self.config.space_id,
+                    "project": self.config.project_name,
+                }
+
+                if self.config.bucket_id:
+                    freeze_kwargs["bucket_id"] = self.config.bucket_id
+
+                valid_params = inspect.signature(trackio.freeze).parameters
+                filtered_kwargs = {
+                    key: value
+                    for key, value in freeze_kwargs.items()
+                    if key in valid_params and value is not None
+                }
+
+                logger.info("Trackio freeze kwargs: %s", filtered_kwargs)
+                cast(Any, trackio.freeze)(**filtered_kwargs)
 
         except Exception as e:
             logger.warning(
@@ -218,39 +262,38 @@ class TrackioExperimentTracker(BaseExperimentTracker):
 
         config = {
             "zenml": {
-                "pipeline_name": (info.pipeline.name),
-                "step_name": (info.pipeline_step_name),
+                "pipeline_name": info.pipeline.name,
+                "step_name": info.pipeline_step_name,
                 "run_name": info.run_name,
             }
         }
 
-        init_kwargs = {
-            "project": (self.config.project_name),
+        init_kwargs: Dict[str, Any] = {
+            "project": self.config.project_name,
             "name": run_name,
             "config": config,
-            "dir": self.config.local_dir,
             "resume": settings.resume,
+            "auto_log_gpu": settings.log_gpu_metrics,
         }
 
-        if self.config.tracking_uri:
-            init_kwargs["tracking_uri"] = self.config.tracking_uri
+        if self.config.server_url:
+            init_kwargs["server_url"] = self.config.server_url
 
-        if self.config.backend == "static":
-            init_kwargs["sdk"] = "static"
+        if self.config.space_id:
+            init_kwargs["space_id"] = self.config.space_id
 
-        if self.config.hf_space:
-            init_kwargs["space"] = self.config.hf_space
+        if self.config.dataset_id:
+            init_kwargs["dataset_id"] = self.config.dataset_id
 
-        # ---------------------------------------------
-        # Filter unsupported SDK arguments
-        # ---------------------------------------------
+        if self.config.bucket_id:
+            init_kwargs["bucket_id"] = self.config.bucket_id
 
         valid_params = inspect.signature(trackio.init).parameters
 
         filtered_kwargs: Dict[str, Any] = {
             key: value
             for key, value in init_kwargs.items()
-            if (key in valid_params and value is not None)
+            if key in valid_params and value is not None
         }
 
         logger.info(

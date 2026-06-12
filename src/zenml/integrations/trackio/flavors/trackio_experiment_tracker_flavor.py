@@ -73,14 +73,27 @@ class TrackioExperimentTrackerSettings(BaseSettings):
         ),
     )
 
-    log_system_metrics: bool = Field(
-        default=True,
-        description=("Whether system metrics should be logged automatically."),
-    )
-
     log_gpu_metrics: bool = Field(
         default=True,
         description=("Whether GPU telemetry should be logged automatically."),
+    )
+
+    publish_to_space: bool = Field(
+        default=False,
+        description=(
+            "Whether Trackio dashboards should "
+            "automatically be published to a "
+            "Hugging Face Space."
+        ),
+    )
+
+    publish_to_dataset: bool = Field(
+        default=False,
+        description=(
+            "Whether Trackio logs should "
+            "automatically be published to a "
+            "Hugging Face Dataset repository."
+        ),
     )
 
 
@@ -95,16 +108,20 @@ class TrackioExperimentTrackerConfig(
         description=("Trackio project name."),
     )
 
-    tracking_uri: Optional[str] = Field(
+    server_url: Optional[str] = Field(
         default=None,
         description=(
-            "Optional Trackio backend URI. "
-            "Can point to a local backend, "
-            "HF Space backend, or self-hosted server."
+            "Optional Trackio server URL. Can point to a "
+            "self-hosted Trackio backend or remote server."
         ),
     )
 
-    backend: str = Field(
+    backend: Literal[
+        "sqlite",
+        "space",
+        "http",
+        "static",
+    ] = Field(
         default="sqlite",
         description=(
             "Trackio backend type. "
@@ -126,54 +143,24 @@ class TrackioExperimentTrackerConfig(
         ),
     )
 
-    hf_space: Optional[str] = Field(
+    space_id: Optional[str] = Field(
+        default=None,
+        description=("Optional Hugging Face Space ID used by Trackio."),
+    )
+
+    dataset_id: Optional[str] = Field(
         default=None,
         description=(
-            "Optional Hugging Face Space used as "
-            "the Trackio dashboard backend."
+            "Optional Hugging Face Dataset ID used for "
+            "Trackio run synchronization."
         ),
     )
 
-    hf_dataset_repo: Optional[str] = Field(
+    bucket_id: Optional[str] = Field(
         default=None,
         description=(
-            "Optional Hugging Face Dataset repository "
-            "used for publishing experiment logs."
-        ),
-    )
-
-    hf_bucket_uri: Optional[str] = Field(
-        default=None,
-        description=(
-            "Optional Hugging Face bucket URI used "
-            "for artifact and static dashboard storage."
-        ),
-    )
-
-    publish_to_space: bool = Field(
-        default=False,
-        description=(
-            "Whether Trackio dashboards should "
-            "automatically be published to a "
-            "Hugging Face Space."
-        ),
-    )
-
-    publish_to_dataset: bool = Field(
-        default=False,
-        description=(
-            "Whether Trackio logs should "
-            "automatically be published to a "
-            "Hugging Face Dataset repository."
-        ),
-    )
-
-    static_space_mode: bool = Field(
-        default=False,
-        description=(
-            "Whether Trackio should use static "
-            "Space deployment mode backed by "
-            "Hugging Face buckets."
+            "Optional Hugging Face bucket ID used for "
+            "artifact and dashboard storage."
         ),
     )
 
