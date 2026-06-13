@@ -65,45 +65,44 @@ def _info():
 def _mock_trackio_signature(
     mock_signature: MagicMock,
 ) -> None:
+    parameter_map = {
+        "init": {
+            "project",
+            "name",
+            "config",
+            "resume",
+            "server_url",
+            "space_id",
+            "dataset_id",
+            "bucket_id",
+            "sdk",
+            "auto_log_gpu",
+            "gpu_log_interval",
+        },
+        "sync": {
+            "project",
+            "space_id",
+            "dataset_id",
+            "bucket_id",
+            "sdk",
+        },
+        "freeze": {
+            "project",
+            "space_id",
+            "bucket_id",
+        },
+    }
+
     def side_effect(fn):
         sig = MagicMock()
+        fn_name = getattr(fn, "_mock_name", str(fn))
 
-        mock_name = getattr(fn, "_mock_name", "")
+        for name, params in parameter_map.items():
+            if name in fn_name:
+                sig.parameters = {p: None for p in params}
+                return sig
 
-        if mock_name == "init":
-            sig.parameters = {
-                "project": None,
-                "name": None,
-                "config": None,
-                "resume": None,
-                "server_url": None,
-                "space_id": None,
-                "dataset_id": None,
-                "bucket_id": None,
-                "sdk": None,
-                "auto_log_gpu": None,
-                "gpu_log_interval": None,
-            }
-
-        elif mock_name == "sync":
-            sig.parameters = {
-                "project": None,
-                "space_id": None,
-                "dataset_id": None,
-                "bucket_id": None,
-                "sdk": None,
-            }
-
-        elif mock_name == "freeze":
-            sig.parameters = {
-                "project": None,
-                "space_id": None,
-                "bucket_id": None,
-            }
-
-        else:
-            sig.parameters = {}
-
+        sig.parameters = {}
         return sig
 
     mock_signature.side_effect = side_effect

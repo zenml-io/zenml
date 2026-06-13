@@ -182,7 +182,10 @@ class TrackioExperimentTracker(BaseExperimentTracker):
                 if self.config.backend == "static":
                     sync_kwargs["sdk"] = "static"
 
-                valid_params = inspect.signature(trackio.sync).parameters
+                trackio_any = cast(Any, trackio)
+
+                valid_params = inspect.signature(trackio_any.sync).parameters
+
                 logger.info(
                     "valid sync params: %s",
                     valid_params.keys(),
