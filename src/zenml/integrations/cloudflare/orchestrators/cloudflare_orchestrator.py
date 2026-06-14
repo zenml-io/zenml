@@ -13,11 +13,10 @@
 #  permissions and limitations under the License.
 """Implementation of the Cloudflare orchestrator (proof of concept).
 
-Runs every pipeline step in its own Cloudflare Sandbox, dispatched through
-the Cloudflare sandbox stack component (and therefore through the bridge
-Worker it is configured with). The orchestration loop itself runs on the
-client, mirroring the local Docker orchestrator — Cloudflare Workflows are
-the natural home for it later.
+Runs every pipeline step in its own Cloudflare Sandbox via the bridge
+Worker configured on the orchestrator itself. The orchestration loop runs
+on the client, mirroring the local Docker orchestrator — Cloudflare
+Workflows are the natural home for it later.
 """
 
 import os
@@ -27,7 +26,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    Tuple,
     Type,
     cast,
 )
@@ -41,19 +39,21 @@ from zenml.integrations.cloudflare.flavors.cloudflare_orchestrator_flavor import
     CloudflareOrchestratorSettings,
 )
 from zenml.integrations.cloudflare.flavors.cloudflare_sandbox_flavor import (
+    CloudflareSandboxConfig,
     CloudflareSandboxSettings,
 )
 from zenml.logger import get_logger
 from zenml.orchestrators import BaseOrchestrator, SubmissionResult
-from zenml.stack import Stack, StackValidator
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
+    from zenml.integrations.cloudflare.sandboxes import CloudflareSandbox
     from zenml.models import (
         PipelineRunResponse,
         PipelineSnapshotResponse,
     )
     from zenml.sandboxes.session import SandboxSession
+    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 
@@ -61,11 +61,11 @@ ENV_ZENML_CLOUDFLARE_ORCHESTRATOR_RUN_ID = (
     "ZENML_CLOUDFLARE_ORCHESTRATOR_RUN_ID"
 )
 
-CLOUDFLARE_SANDBOX_FLAVOR_NAME = "cloudflare"
-
 
 class CloudflareOrchestrator(BaseOrchestrator):
     """Orchestrator that runs each step in a Cloudflare Sandbox."""
+
+    _dispatch_sandbox: Optional["CloudflareSandbox"] = None
 
     @property
     def config(self) -> CloudflareOrchestratorConfig:
@@ -85,32 +85,37 @@ class CloudflareOrchestrator(BaseOrchestrator):
         """
         return CloudflareOrchestratorSettings
 
-    @property
-    def validator(self) -> Optional[StackValidator]:
-        """Ensures the stack contains a Cloudflare sandbox to dispatch to.
+    def _get_dispatch_sandbox(self) -> "CloudflareSandbox":
+        """Returns the sandbox used to launch step containers.
+
+        The orchestrator owns its bridge connection config; internally it
+        drives the same machinery as the Cloudflare sandbox flavor (the
+        same pattern `ArtifactLogStore.from_artifact_store` uses to build
+        one component from another's configuration). Any sandbox component
+        in the stack remains untouched and available for in-step use.
 
         Returns:
-            A `StackValidator` instance.
+            A Cloudflare sandbox bound to the orchestrator's bridge.
         """
+        if self._dispatch_sandbox is None:
+            from zenml.integrations.cloudflare.sandboxes import (
+                CloudflareSandbox,
+            )
 
-        def _ensure_cloudflare_sandbox(stack: "Stack") -> Tuple[bool, str]:
-            sandbox = stack.sandbox
-            if (
-                sandbox is None
-                or sandbox.flavor != CLOUDFLARE_SANDBOX_FLAVOR_NAME
-            ):
-                return False, (
-                    "The Cloudflare orchestrator launches steps through a "
-                    "Cloudflare sandbox component and requires one in the "
-                    "same stack: `zenml stack update --sandbox "
-                    "<CLOUDFLARE_SANDBOX_NAME>`."
-                )
-            return True, ""
-
-        return StackValidator(
-            required_components={StackComponentType.SANDBOX},
-            custom_validation_function=_ensure_cloudflare_sandbox,
-        )
+            self._dispatch_sandbox = CloudflareSandbox(
+                name=f"{self.name}-dispatch",
+                id=self.id,
+                config=CloudflareSandboxConfig(
+                    worker_url=self.config.worker_url,
+                    api_key=self.config.api_key,
+                ),
+                flavor="cloudflare",
+                type=StackComponentType.SANDBOX,
+                user=self.user,
+                created=self.created,
+                updated=self.updated,
+            )
+        return self._dispatch_sandbox
 
     def get_orchestrator_run_id(self) -> str:
         """Returns the run id of the active orchestrator run.
@@ -198,8 +203,7 @@ class CloudflareOrchestrator(BaseOrchestrator):
                 "immediately."
             )
 
-        sandbox = stack.sandbox
-        assert sandbox is not None  # guaranteed by the stack validator
+        sandbox = self._get_dispatch_sandbox()
 
         orchestrator_run_id = str(uuid4())
         start_time = time.time()

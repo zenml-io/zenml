@@ -14,8 +14,9 @@
 """Cloudflare orchestrator flavor (proof of concept)."""
 
 from typing import TYPE_CHECKING, Optional, Type
+from urllib.parse import urlparse
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.cloudflare import CLOUDFLARE_ORCHESTRATOR_FLAVOR
@@ -23,6 +24,7 @@ from zenml.orchestrators import (
     BaseOrchestratorConfig,
     BaseOrchestratorFlavor,
 )
+from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.cloudflare.orchestrators import (
@@ -54,10 +56,58 @@ class CloudflareOrchestratorConfig(
 ):
     """Configuration for the Cloudflare orchestrator.
 
-    The orchestrator carries no connection configuration of its own: it
-    launches steps through the Cloudflare sandbox component that must be
-    part of the same stack, reusing its bridge Worker URL and API key.
+    The orchestrator connects to the same Cloudflare Sandbox bridge Worker
+    that the sandbox flavor uses, but holds its own connection
+    configuration: orchestration must not depend on an (optional) sandbox
+    component being part of the stack.
     """
+
+    worker_url: str = Field(
+        description="URL of the deployed Cloudflare Sandbox bridge Worker "
+        "used to launch step containers. Must be an https:// URL pointing "
+        "at a Worker that implements the bridge HTTP API. Example: "
+        "'https://sandbox-bridge.example.workers.dev'",
+    )
+    api_key: Optional[str] = SecretField(
+        default=None,
+        description="Bearer token for the bridge Worker (the "
+        "SANDBOX_API_KEY configured at deploy time on the Worker). Stored "
+        "as a ZenML secret. Example: a random 32+ byte hex string",
+    )
+
+    @field_validator("worker_url")
+    @classmethod
+    def _validate_worker_url_scheme(cls, value: str) -> str:
+        """Require https for the bridge URL.
+
+        Mirrors the Cloudflare sandbox flavor: the bearer token travels on
+        every request, so plain http is only acceptable for a local bridge
+        during development.
+
+        Args:
+            value: The configured worker URL.
+
+        Returns:
+            The validated URL, unchanged.
+
+        Raises:
+            ValueError: If the URL scheme is not https (or http to
+                localhost/127.0.0.1).
+        """
+        parsed = urlparse(value)
+        if parsed.scheme == "https":
+            return value
+        if parsed.scheme == "http" and parsed.hostname in (
+            "localhost",
+            "127.0.0.1",
+        ):
+            return value
+        raise ValueError(
+            f"Invalid worker_url '{value}': the Cloudflare sandbox bridge "
+            "must be reached over https (the API key is sent as a bearer "
+            "token on every request). Plain http is only allowed for "
+            "localhost/127.0.0.1 when testing a local bridge."
+        )
 
     @property
     def is_local(self) -> bool:
