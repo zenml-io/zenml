@@ -37,6 +37,14 @@ def _boom_hook() -> None:
     raise RuntimeError("boom")
 
 
+async def _async_hook() -> int:
+    return 7
+
+
+async def _async_boom_hook() -> None:
+    raise RuntimeError("async boom")
+
+
 def test_run_hook_output_parse_error_keeps_status_completed():
     """An output parse error does not mark a successful hook as FAILED."""
     with mock.patch.object(
@@ -60,6 +68,23 @@ def test_run_hook_failure_records_failed_with_exception_info():
     with mock.patch.object(hook_execution, "record_hook_invocation") as record:
         with pytest.raises(RuntimeError, match="boom"):
             run_hook(_boom_hook)
+
+    record.assert_called_once()
+    assert record.call_args.kwargs["status"] == ExecutionStatus.FAILED
+    assert record.call_args.kwargs["exception_info"] is not None
+
+
+def test_run_hook_async_function_runs_coroutine_to_completion():
+    """An async hook runs to completion and returns its result."""
+    with mock.patch.object(hook_execution, "record_hook_invocation"):
+        assert run_hook(_async_hook) == 7
+
+
+def test_run_hook_async_failure_records_failed_with_exception_info():
+    """A failing async hook records FAILED with exception info and re-raises."""
+    with mock.patch.object(hook_execution, "record_hook_invocation") as record:
+        with pytest.raises(RuntimeError, match="async boom"):
+            run_hook(_async_boom_hook)
 
     record.assert_called_once()
     assert record.call_args.kwargs["status"] == ExecutionStatus.FAILED
