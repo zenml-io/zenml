@@ -542,9 +542,17 @@ class StepRunner:
                         pass
                     elif issubclass(arg_type, (list, tuple)):
                         assert annotation
-                        item_arg_type = get_args(annotation)[0]
-                        item_arg_type = resolve_type_annotation(item_arg_type)
                         collection_type = arg_type
+                        type_args = get_args(annotation)
+                        if type_args:
+                            item_arg_type = resolve_type_annotation(
+                                type_args[0]
+                            )
+                        else:
+                            # Bare `list` or `tuple` annotation without type
+                            # arguments, load each item using the data type
+                            # stored with the artifact.
+                            item_arg_type = Any
                     else:
                         raise StepInterfaceError(
                             "Passing multiple artifacts to a step is only "

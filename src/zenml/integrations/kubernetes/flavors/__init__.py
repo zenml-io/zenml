@@ -23,6 +23,11 @@ from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import
     KubernetesOrchestratorFlavor,
     KubernetesOrchestratorSettings,
 )
+from zenml.integrations.kubernetes.flavors.kubernetes_sandbox_flavor import (
+    KubernetesSandboxConfig,
+    KubernetesSandboxFlavor,
+    KubernetesSandboxSettings,
+)
 from zenml.integrations.kubernetes.flavors.kubernetes_step_operator_flavor import (
     KubernetesStepOperatorConfig,
     KubernetesStepOperatorFlavor,
@@ -36,6 +41,9 @@ __all__ = [
     "KubernetesOrchestratorFlavor",
     "KubernetesOrchestratorConfig",
     "KubernetesOrchestratorSettings",
+    "KubernetesSandboxConfig",
+    "KubernetesSandboxFlavor",
+    "KubernetesSandboxSettings",
     "KubernetesStepOperatorConfig",
     "KubernetesStepOperatorFlavor",
     "KubernetesStepOperatorSettings",

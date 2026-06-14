@@ -2238,12 +2238,21 @@ class GCPServiceConnector(ServiceConnector):
             if dns_endpoint_config:
                 dns_host = dns_endpoint_config.endpoint.strip()
                 if dns_host:
+                    if dns_endpoint_config.allow_external_traffic:
+                        logger.debug(
+                            "Using GKE DNS control plane endpoint for Kubernetes API "
+                            "access: %s instead of IP-based endpoint: %s",
+                            dns_host,
+                            cluster.endpoint.strip(),
+                        )
+                        return f"https://{dns_host}", None
+
                     logger.debug(
-                        "Using GKE DNS control plane endpoint for Kubernetes API "
-                        "access: %s",
+                        "Skipping GKE DNS control plane endpoint for Kubernetes "
+                        "API access because it does not allow external/user "
+                        "traffic: %s",
                         dns_host,
                     )
-                    return f"https://{dns_host}", None
 
         ip_endpoint = cluster.endpoint.strip()
         if not ip_endpoint:
