@@ -83,13 +83,30 @@ zenml metric-store register my_otel_metrics \
 
 #### Enabling GPU metrics
 
-GPU sampling needs the optional `pynvml` dependency (kept out of the base package to stay lightweight):
+GPU sampling needs the optional `pynvml` dependency (kept out of the base package to stay lightweight). Install it directly on the workers that have a GPU:
 
 ```shell
-pip install "zenml[gpu-metrics]"
+pip install "pynvml>=11.5.0"
 ```
 
 `enable_gpu` defaults to `True`; if `pynvml` or a GPU is unavailable, GPU metrics are skipped with a one-time warning rather than an error.
+
+#### Emitting your own metrics
+
+Beyond the automatic CPU / memory / GPU sampling, you can record your own numbers from inside a step with `collect_metric`. Custom values ride the same pipeline as the sampled ones, so they carry the same run / step / pipeline labels and land in the same backend:
+
+```python
+from zenml import collect_metric, step
+
+
+@step
+def train(...) -> None:
+    ...
+    collect_metric("val_accuracy", 0.91)
+    collect_metric("rows_processed", 12000, split="train")  # optional labels
+```
+
+Each value is stored as a gauge (last value wins) and exported under `zenml.step.custom.<name>` — the `custom.` prefix keeps your names from colliding with the built-in system gauges. The call is a safe no-op when the active stack has no metric store or step metrics are disabled, so you can leave it in your step code unconditionally. It takes effect on the step's own thread; values emitted from a thread you start yourself are not picked up.
 
 ### Configuration options
 
@@ -130,7 +147,7 @@ This keeps a flaky collector from dropping a step's metrics.
 
 3. **Use secrets for credentials**: Always store API keys / tokens in ZenML secrets, never in plain text.
 
-4. **Install the GPU extra only where needed**: Keep `zenml[gpu-metrics]` on GPU worker images; CPU-only clients don't need it.
+4. **Install `pynvml` only where needed**: Add `pynvml` to GPU worker images; CPU-only clients don't need it.
 
 For the full list of configurable attributes, see the [SDK Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-metric_stores.html#zenml.metric_stores.otel.otel_metric_store).
 

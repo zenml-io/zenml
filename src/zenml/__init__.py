@@ -63,6 +63,7 @@ from zenml.pipelines import get_pipeline_context, pipeline
 from zenml.steps import step, get_step_context
 from zenml.steps.utils import log_step_metadata
 from zenml.utils.metadata_utils import log_metadata, bulk_log_metadata
+from zenml.utils.metric_sampling_utils import collect_metric
 from zenml.utils.tag_utils import Tag, add_tags, remove_tags
 from zenml.execution.pipeline.dynamic.utils import unmapped, wait
 
@@ -71,6 +72,7 @@ __all__ = [
     "remove_tags",
     "Tag",
     "ArtifactConfig",
+    "collect_metric",
     "ExternalArtifact",
     "get_pipeline_context",
     "get_step_context",

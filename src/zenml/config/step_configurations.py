@@ -172,6 +172,13 @@ class StepConfigurationUpdate(FrozenBaseModel):
         default=None,
         description="Whether to enable logs for the step.",
     )
+    enable_step_metrics: Optional[bool] = Field(
+        default=None,
+        description="Whether to enable runtime metric sampling (CPU/GPU/"
+        "memory) for the step. Only takes effect when the active stack "
+        "has a metric store configured. None inherits from the pipeline "
+        "configuration; True/False overrides it for this step.",
+    )
     step_operator: Optional[Union[bool, str]] = Field(
         default=None,
         description="The step operator to use for the step.",

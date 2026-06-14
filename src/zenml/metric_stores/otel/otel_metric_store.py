@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -170,9 +170,7 @@ class OtelMetricStore(BaseMetricStore):
             measurements: Mapping of metric name to value for this tick.
             metadata: Additional metadata to attach to the samples.
         """
-        attributes = {**origin.metadata}
-        if metadata:
-            attributes.update(metadata)
+        attributes = self._build_sample_attributes(origin, metadata)
 
         with self._lock:
             for metric_name, value in measurements.items():
@@ -230,9 +228,9 @@ class OtelMetricStore(BaseMetricStore):
         """Fetch metric samples.
 
         OTLP export is fire-and-forget: the OTel collector / Prometheus
-        owns the data, not ZenML. Reading it back is the job of a
-        backend-specific flavor added later, exactly as
-        ``OtelLogStore.fetch`` raises ``NotImplementedError``.
+        owns the data, not ZenML. Reading samples back is the job of a
+        backend-specific flavor added later; this base implementation
+        therefore raises ``NotImplementedError``.
 
         Args:
             filters: Identity filters describing which samples to fetch.

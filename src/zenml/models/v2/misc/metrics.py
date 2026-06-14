@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -31,10 +31,9 @@ from pydantic import BaseModel, Field
 class MetricSample(BaseModel):
     """A single metric measurement returned by a fetch.
 
-    The metric analogue of ``zenml.utils.logging_utils.LogEntry``: one
-    value at one point in time, plus the identity labels it was recorded
-    with (run id, step id, pipeline name, ...) so the caller can slice
-    it the same way logs are sliced.
+    One value at one point in time, plus the identity labels it was
+    recorded with (run id, step id, pipeline name, ...) so the caller can
+    slice it by those keys.
     """
 
     name: str = Field(

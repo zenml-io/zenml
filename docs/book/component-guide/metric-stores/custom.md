@@ -12,12 +12,12 @@ ZenML ships an [OpenTelemetry Metric Store](./#metric-store-flavors) that export
 
 ### Base Abstraction
 
-The metric store collects runtime resource metrics during step execution and exports them. The key thing to understand is that, unlike logs, **metrics have no external producer** — the sampler in `zenml.utils.metric_sampling_utils` generates measurements on a timer and pushes them in via `record()`. The origin lifecycle, flush semantics, and the read path mirror the [Log Store](../log-stores/custom.md) on purpose.
+The metric store collects runtime resource metrics during step execution and exports them. The key thing to understand is that **metrics have no external producer** — the sampler in `zenml.utils.metric_sampling_utils` generates measurements on a timer and pushes them in via `record()`. The origin lifecycle, flush semantics, and read path are designed around that pull model.
 
 1. **Origins**: A `BaseMetricStoreOrigin` represents the source of measurements (a step execution) and carries the identity labels (run id, step id, ...) stamped on every sample. You `register_origin()` when a step starts and `deregister_origin()` when it ends — deregistering the last origin triggers a `flush()`.
 
 2. **Core methods**: four abstract methods must be implemented:
-   - `record()` — write one set of measurements for an origin (the metric analogue of the log store's `emit()`; called by the sampler, not an external stream)
+   - `record()` — write one set of measurements for an origin (called by the sampler on each tick, not by an external stream)
    - `_release_origin()` — called when an origin is done (release resources)
    - `flush()` — ensure pending samples are exported
    - `fetch()` — retrieve samples for display (return a `MetricsResponse`)

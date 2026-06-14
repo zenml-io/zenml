@@ -5,23 +5,23 @@ icon: gauge-high
 
 # Metric Stores
 
-The metric store is a stack component responsible for collecting runtime resource metrics — CPU, GPU, and memory utilization — while your pipeline steps execute, and exporting them to an observability backend. It is the metrics counterpart of the [Log Store](../log-stores/README.md): where the log store captures *what your code said*, the metric store captures *how hard the machine worked* running it.
+The metric store is a stack component responsible for collecting runtime resource metrics — CPU, GPU, and memory utilization — while your pipeline steps execute, and exporting them to an observability backend.
 
 ### How it works
 
-Metrics have no natural producer the way logs do (Python's logging system already generates log records; nothing generates a "CPU is at 73%" event). The metric store therefore samples the system itself:
+Metrics have no natural producer — nothing emits a "CPU is at 73%" event on its own — so the metric store samples the system itself:
 
-1. **Per-step sampling context**: When a step starts, ZenML wraps it in a metric sampling context (mirroring how logs use a `LoggingContext`).
+1. **Per-step sampling context**: When a step starts, ZenML wraps it in a metric sampling context that is active for the duration of the step.
 
 2. **Background sampler thread**: That context starts a small background thread which, every few seconds, reads CPU / memory via [`psutil`](https://pypi.org/project/psutil/) (and optionally GPU via `pynvml`) and pushes one measurement into the active metric store.
 
 3. **Off-thread export**: The store hands measurements to an OpenTelemetry meter; a batch reader exports them to your backend on its *own* thread, so the network round-trip never blocks step execution.
 
-Every sample carries the same identity labels as logs (run id, step id, pipeline name, ...), so metrics and logs for the same step line up in your dashboards.
+Every sample carries identity labels (run id, step id, pipeline name, ...), so metrics for a given step line up alongside other ZenML telemetry in your dashboards.
 
 ### When to use it
 
-Unlike the log store, the metric store is **opt-in and has no default**. A stack without one simply collects no metrics — nothing breaks. Configure one when:
+The metric store is **opt-in and has no default**. A stack without one simply collects no metrics — nothing breaks. Configure one when:
 
 - You want CPU / GPU / memory utilization for every step, visualized in Grafana, Prometheus, or any OpenTelemetry-compatible backend
 - You are right-sizing infrastructure (e.g. spotting steps that under- or over-use a GPU)
@@ -60,7 +60,7 @@ Once attached, resource metrics are collected automatically for every step of ev
 GPU sampling needs the optional [`pynvml`](https://pypi.org/project/pynvml/) dependency, which is kept out of the base package to stay lightweight:
 
 ```shell
-pip install "zenml[gpu-metrics]"
+pip install "pynvml>=11.5.0"
 ```
 
 If `enable_gpu` is left on but `pynvml` (or a GPU) is unavailable, GPU metrics are simply skipped with a one-time warning — never an error.

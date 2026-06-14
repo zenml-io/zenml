@@ -58,6 +58,7 @@ class PipelineConfigurationUpdate(FrozenBaseModel):
     enable_artifact_metadata: Optional[bool] = None
     enable_artifact_visualization: Optional[bool] = None
     enable_step_logs: Optional[bool] = None
+    enable_step_metrics: Optional[bool] = None
     enable_heartbeat: Optional[bool] = None
     environment: Dict[str, Any] = {}
     secrets: List[Union[str, UUID]] = []

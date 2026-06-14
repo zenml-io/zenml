@@ -218,7 +218,7 @@ def stack() -> None:
     required=False,
 )
 @click.option(
-    "-M",
+    "-m",
     "--metric_store",
     "metric_store",
     help="Name of the metric store for this stack.",
@@ -760,7 +760,7 @@ def register_stack(
     required=False,
 )
 @click.option(
-    "-M",
+    "-m",
     "--metric_store",
     "metric_store",
     help="Name of the metric store for this stack.",
@@ -1006,7 +1006,7 @@ def update_stack(
     required=False,
 )
 @click.option(
-    "-M",
+    "-m",
     "--metric_store",
     "metric_store_flag",
     help="Include this to remove the metric store from this stack.",

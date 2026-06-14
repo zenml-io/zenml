@@ -195,6 +195,7 @@ class Compiler:
                 enable_artifact_metadata=config.enable_artifact_metadata,
                 enable_artifact_visualization=config.enable_artifact_visualization,
                 enable_step_logs=config.enable_step_logs,
+                enable_step_metrics=config.enable_step_metrics,
                 environment=config.environment,
                 secrets=config.secrets,
                 enable_pipeline_logs=config.enable_pipeline_logs,
@@ -246,6 +247,13 @@ class Compiler:
             for invocation in pipeline.invocations.values():
                 invocation.step.configure(
                     enable_step_logs=config.enable_step_logs
+                )
+
+        # Override `enable_step_metrics` if set at run level
+        if config.enable_step_metrics is not None:
+            for invocation in pipeline.invocations.values():
+                invocation.step.configure(
+                    enable_step_metrics=config.enable_step_metrics
                 )
 
     def _apply_stack_default_settings(

@@ -139,6 +139,7 @@ class Pipeline:
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
+        enable_step_metrics: Optional[bool] = None,
         enable_heartbeat: Optional[bool] = None,
         environment: Optional[Dict[str, Any]] = None,
         secrets: Optional[List[Union[UUID, str]]] = None,
@@ -169,6 +170,9 @@ class Pipeline:
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this pipeline.
             enable_step_logs: If step logs should be enabled for this pipeline.
+            enable_step_metrics: If runtime metric sampling (CPU/GPU/memory)
+                should be enabled for all steps of this pipeline. Only takes
+                effect when the active stack has a metric store configured.
             enable_heartbeat: If heartbeat should be enabled for this pipeline.
             environment: Environment variables to set when running this
                 pipeline.
@@ -211,6 +215,7 @@ class Pipeline:
                 enable_artifact_metadata=enable_artifact_metadata,
                 enable_artifact_visualization=enable_artifact_visualization,
                 enable_step_logs=enable_step_logs,
+                enable_step_metrics=enable_step_metrics,
                 enable_heartbeat=enable_heartbeat,
                 environment=environment,
                 secrets=secrets,
@@ -359,6 +364,7 @@ class Pipeline:
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
+        enable_step_metrics: Optional[bool] = None,
         enable_heartbeat: Optional[bool] = None,
         environment: Optional[Dict[str, Any]] = None,
         secrets: Optional[Sequence[Union[UUID, str]]] = None,
@@ -398,6 +404,9 @@ class Pipeline:
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this pipeline.
             enable_step_logs: If step logs should be enabled for this pipeline.
+            enable_step_metrics: If runtime metric sampling (CPU/GPU/memory)
+                should be enabled for all steps of this pipeline. Only takes
+                effect when the active stack has a metric store configured.
             enable_heartbeat: If heartbeat should be enabled for this pipeline.
             environment: Environment variables to set when running this
                 pipeline.
@@ -494,6 +503,7 @@ class Pipeline:
                 "enable_artifact_metadata": enable_artifact_metadata,
                 "enable_artifact_visualization": enable_artifact_visualization,
                 "enable_step_logs": enable_step_logs,
+                "enable_step_metrics": enable_step_metrics,
                 "enable_heartbeat": enable_heartbeat,
                 "environment": environment,
                 "secrets": secrets,
@@ -843,6 +853,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
+        enable_step_metrics: Optional[bool] = None,
         enable_pipeline_logs: Optional[bool] = None,
         schedule: Optional[Schedule] = None,
         build: Union[str, "UUID", "PipelineBuildBase", None] = None,
@@ -866,6 +877,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this pipeline run.
             enable_step_logs: If step logs should be enabled for this pipeline.
+            enable_step_metrics: If runtime metric sampling (CPU/GPU/memory)
+                should be enabled for all steps of this pipeline. Only takes
+                effect when the active stack has a metric store configured.
             enable_pipeline_logs: If pipeline logs should be enabled for this
                 pipeline run.
             schedule: Optional schedule to use for the run.
@@ -899,6 +913,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             enable_artifact_metadata=enable_artifact_metadata,
             enable_artifact_visualization=enable_artifact_visualization,
             enable_step_logs=enable_step_logs,
+            enable_step_metrics=enable_step_metrics,
             enable_pipeline_logs=enable_pipeline_logs,
             steps=step_configurations,
             settings=settings,

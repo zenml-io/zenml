@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -17,20 +17,28 @@ A metric store collects runtime measurements (CPU, memory, optional GPU)
 sampled during step execution and exports them to a metrics backend.
 Concrete flavors implement ``record`` (write) and may optionally
 implement ``fetch`` (read back); the origin lifecycle and flush
-semantics are managed by the base class so the dashboard can query
-metrics back the same way it queries logs.
+semantics are managed by the base class so the dashboard can query the
+recorded metrics back.
 """
 
 import threading
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Any, Dict, Optional, Type, cast
+from uuid import uuid4
 
 from pydantic import Field
 
 from zenml.enums import StackComponentType
 from zenml.models import MetricsResponse
 from zenml.stack import Flavor, StackComponent, StackComponentConfig
+
+# OTLP attribute key carrying each origin's stable, independent id. A
+# future fetch-capable metric store uses this as the PRIMARY handle to
+# pull back exactly one stream's samples. Unlike the shared ZenML identity
+# labels (run / step / project), two streams under the same run - e.g.
+# step metrics vs future orchestrator-pod metrics - never collide on it.
+METRIC_ORIGIN_ID_ATTRIBUTE = "zenml.metric.origin.id"
 
 
 class BaseMetricStoreConfig(StackComponentConfig):
@@ -66,6 +74,11 @@ class BaseMetricStoreOrigin:
     deregisters it when the step ends. The identity metadata carried by
     the origin (run id, step id, pipeline name) is attached to every
     sample so the data can be sliced by it on the dashboard.
+
+    Beyond that shared metadata, each origin also carries a stable ``id``
+    of its own, exported under ``METRIC_ORIGIN_ID_ATTRIBUTE``. It is the
+    primary, stable handle a fetch-capable store keys on to pull back
+    exactly one stream's samples.
     """
 
     def __init__(
@@ -85,6 +98,12 @@ class BaseMetricStoreOrigin:
         self.name = name
         self.metric_store = metric_store
         self.metadata = metadata
+        # Stable, process-unique handle for THIS stream, minted once and
+        # constant for the origin's lifetime. Deliberately NOT derived
+        # from the ZenML identity metadata: two streams that share that
+        # metadata (step vs orchestrator-pod under one run) must stay
+        # distinguishable, and a retried step is a new stream -> new id.
+        self.id = str(uuid4())
 
 
 class BaseMetricStore(StackComponent, ABC):
@@ -95,10 +114,9 @@ class BaseMetricStore(StackComponent, ABC):
     pipeline and step execution. Different implementations may export to
     different backends (OpenTelemetry, ...).
 
-    The ``register_origin`` / ``deregister_origin`` lifecycle is concrete
-    and identical to the log store: subclasses only implement the
-    abstract ``record`` / ``_release_origin`` / ``flush`` / ``fetch``
-    methods.
+    The ``register_origin`` / ``deregister_origin`` lifecycle is concrete:
+    subclasses only implement the abstract ``record`` /
+    ``_release_origin`` / ``flush`` / ``fetch`` methods.
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
@@ -173,6 +191,36 @@ class BaseMetricStore(StackComponent, ABC):
             if len(self._origins) == 0:
                 self.flush(blocking=blocking)
 
+    def _build_sample_attributes(
+        self,
+        origin: BaseMetricStoreOrigin,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Build the attribute set stamped on every exported sample.
+
+        Centralizes the export contract so each flavor's ``record`` stamps
+        the origin's stable id (under ``METRIC_ORIGIN_ID_ATTRIBUTE``)
+        alongside the identity metadata. Concrete flavors should route
+        their per-sample attributes through here rather than reading
+        ``origin.metadata`` directly, so the primary fetch handle is
+        always present on the wire.
+
+        Args:
+            origin: The origin the sample belongs to.
+            metadata: Additional per-tick metadata to merge in (takes
+                precedence over identity metadata on key collisions).
+
+        Returns:
+            The merged attribute mapping for one sample.
+        """
+        attributes: Dict[str, Any] = {
+            METRIC_ORIGIN_ID_ATTRIBUTE: origin.id,
+            **origin.metadata,
+        }
+        if metadata:
+            attributes.update(metadata)
+        return attributes
+
     @abstractmethod
     def record(
         self,
@@ -182,9 +230,8 @@ class BaseMetricStore(StackComponent, ABC):
     ) -> None:
         """Record a single set of measurements for an origin.
 
-        This is the metric analogue of ``BaseLogStore.emit``. It is called
-        by the periodic sampler (one call per sampling tick) rather than by
-        an existing record stream.
+        Called by the periodic sampler — one invocation per sampling tick —
+        with the values gathered for that tick.
 
         Args:
             origin: The origin the measurements belong to.

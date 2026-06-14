@@ -59,6 +59,7 @@ def pipeline(
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
     enable_step_logs: Optional[bool] = None,
+    enable_step_metrics: Optional[bool] = None,
     enable_heartbeat: Optional[bool] = None,
     environment: Optional[Dict[str, Any]] = None,
     secrets: Optional[List[Union[UUID, str]]] = None,
@@ -88,6 +89,7 @@ def pipeline(
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
     enable_step_logs: Optional[bool] = None,
+    enable_step_metrics: Optional[bool] = None,
     enable_heartbeat: Optional[bool] = None,
     environment: Optional[Dict[str, Any]] = None,
     secrets: Optional[List[Union[UUID, str]]] = None,
@@ -117,6 +119,7 @@ def pipeline(
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
     enable_step_logs: Optional[bool] = None,
+    enable_step_metrics: Optional[bool] = None,
     enable_heartbeat: Optional[bool] = None,
     environment: Optional[Dict[str, Any]] = None,
     secrets: Optional[List[Union[UUID, str]]] = None,
@@ -146,6 +149,7 @@ def pipeline(
     enable_cache: Optional[bool] = None,
     enable_artifact_metadata: Optional[bool] = None,
     enable_step_logs: Optional[bool] = None,
+    enable_step_metrics: Optional[bool] = None,
     enable_heartbeat: Optional[bool] = None,
     environment: Optional[Dict[str, Any]] = None,
     secrets: Optional[List[Union[UUID, str]]] = None,
@@ -180,6 +184,9 @@ def pipeline(
         enable_cache: Whether to use caching or not.
         enable_artifact_metadata: Whether to enable artifact metadata or not.
         enable_step_logs: If step logs should be enabled for this pipeline.
+        enable_step_metrics: If runtime metric sampling (CPU/GPU/memory) should
+            be enabled for all steps of this pipeline. Only takes effect when
+            the active stack has a metric store configured.
         enable_heartbeat: If heartbeat should be enabled for this pipeline.
         environment: Environment variables to set when running this pipeline.
         secrets: Secrets to set as environment variables when running this
@@ -241,6 +248,7 @@ def pipeline(
             enable_cache=enable_cache,
             enable_artifact_metadata=enable_artifact_metadata,
             enable_step_logs=enable_step_logs,
+            enable_step_metrics=enable_step_metrics,
             enable_heartbeat=enable_heartbeat,
             environment=environment,
             secrets=secrets,

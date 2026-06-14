@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -41,6 +41,8 @@ from zenml.utils.logging_utils import (
 if TYPE_CHECKING:
     from uuid import UUID
 
+    from zenml.config.pipeline_configurations import PipelineConfiguration
+    from zenml.config.step_configurations import StepConfiguration
     from zenml.metric_stores.base_metric_store import BaseMetricStoreOrigin
     from zenml.models import (
         MetricsResponse,
@@ -50,6 +52,52 @@ if TYPE_CHECKING:
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
 logger = get_logger(__name__)
+
+# User-supplied custom metrics are namespaced under this prefix so a
+# user-chosen name can never collide with (and overwrite) a system gauge
+# such as "cpu_percent". A custom metric "val_accuracy" is therefore
+# exported as the gauge "zenml.step.custom.val_accuracy".
+CUSTOM_METRIC_PREFIX = "custom."
+
+
+def is_step_metrics_enabled(
+    step_configuration: "StepConfiguration",
+    pipeline_configuration: "PipelineConfiguration",
+) -> bool:
+    """Check if runtime metric sampling is enabled for a step.
+
+    Resolution order (first hit wins):
+
+    1. Env var ``ZENML_DISABLE_STEP_METRICS_SAMPLING`` set to a truthy
+       value disables sampling unconditionally (ops kill switch).
+    2. The step's ``enable_step_metrics`` if not None.
+    3. The pipeline's ``enable_step_metrics`` if not None.
+    4. Default: enabled.
+
+    The caller is still responsible for checking that a metric store is
+    actually configured on the active stack — this helper only resolves
+    the user-facing toggle.
+
+    Args:
+        step_configuration: The step configuration.
+        pipeline_configuration: The pipeline configuration.
+
+    Returns:
+        True if metric sampling should run for the step, False otherwise.
+    """
+    from zenml.constants import (
+        ENV_ZENML_DISABLE_STEP_METRICS_SAMPLING,
+        handle_bool_env_var,
+    )
+    from zenml.orchestrators.utils import is_setting_enabled
+
+    if handle_bool_env_var(ENV_ZENML_DISABLE_STEP_METRICS_SAMPLING, False):
+        return False
+    return is_setting_enabled(
+        is_enabled_on_step=step_configuration.enable_step_metrics,
+        is_enabled_on_pipeline=pipeline_configuration.enable_step_metrics,
+    )
+
 
 # psutil.Process() construction walks /proc/self; we sample it on every
 # tick, so cache one instance per process.
@@ -107,7 +155,7 @@ def _collect_gpu_metrics() -> Dict[str, float]:
                 logger.warning(
                     "GPU metrics requested but the optional 'pynvml' "
                     "dependency is not installed; skipping GPU sampling. "
-                    "Install it with `pip install zenml[gpu-metrics]` or "
+                    "Install it with `pip install pynvml` or "
                     "set enable_gpu=False on the metric store."
                 )
                 _pynvml_warned = True
@@ -258,6 +306,73 @@ class MetricSamplingContext(context_utils.BaseContext):
                     self._origin, blocking=True
                 )
                 self._origin = None
+
+    def record_custom(
+        self,
+        name: str,
+        value: float,
+        labels: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Record one user-supplied custom metric for this step.
+
+        Routes through the same ``record`` path the sampler uses, so the
+        custom metric carries the identical origin id and run / step /
+        pipeline labels as the auto-sampled ones. The name is namespaced
+        under ``custom.`` so a user value can never overwrite a system
+        gauge. Failures are swallowed and logged at debug level - emitting
+        a custom metric must never crash the step.
+
+        Args:
+            name: The user-chosen metric name (e.g. ``"val_accuracy"``).
+            value: The numeric value to record for this metric.
+            labels: Optional extra attributes to attach to this sample.
+        """
+        if self._origin is None or self._metric_store is None:
+            return
+        try:
+            self._metric_store.record(
+                origin=self._origin,
+                measurements={f"{CUSTOM_METRIC_PREFIX}{name}": float(value)},
+                metadata=labels or None,
+            )
+        except Exception:
+            logger.debug("Failed to record custom metric", exc_info=True)
+
+
+def collect_metric(name: str, value: float, **labels: Any) -> None:
+    """Emit a custom metric from inside a step.
+
+    Sends your own numeric metric (model accuracy, rows processed, ...) to
+    the active stack's metric store. The value is stored as a gauge (last
+    value wins) and shipped to the same backend as the auto-sampled CPU /
+    memory / GPU metrics, tagged with the same run / step / pipeline
+    identity. It is exported under the gauge ``zenml.step.custom.<name>``.
+
+    The call is a safe no-op when the active stack has no metric store,
+    when step metrics are disabled, or when called outside a step. It only
+    takes effect on the thread running the step body - a value emitted from
+    a thread you start yourself will not be picked up.
+
+    Args:
+        name: The metric name, exported as ``zenml.step.custom.<name>``.
+        value: The numeric value to record.
+        **labels: Optional extra attributes to attach to the sample
+            (e.g. ``split="train"``).
+
+    Example:
+        ```python
+        from zenml import collect_metric, step
+
+        @step
+        def train(...) -> None:
+            collect_metric("val_accuracy", 0.91)
+            collect_metric("rows", 12000, split="train")
+        ```
+    """
+    context = MetricSamplingContext.get()
+    if context is None:
+        return
+    context.record_custom(name, value, labels)
 
 
 def setup_metric_context(

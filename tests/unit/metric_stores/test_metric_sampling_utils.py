@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -121,3 +121,62 @@ def test_sampling_context_samples_and_cleans_up() -> None:
     assert BASE_METRIC_KEYS <= set(store.records[0])
     # Thread must be joined (not left running) after context exit.
     assert ctx._thread is None
+
+
+# ---------------------------------------------------------------------------
+# is_step_metrics_enabled — toggle resolution
+# ---------------------------------------------------------------------------
+
+
+def _make_configs(
+    step_value: Optional[bool], pipeline_value: Optional[bool]
+) -> Any:
+    """Build minimal step + pipeline configs with the toggle preset."""
+    step = MagicMock()
+    step.enable_step_metrics = step_value
+    pipeline = MagicMock()
+    pipeline.enable_step_metrics = pipeline_value
+    return step, pipeline
+
+
+def test_is_step_metrics_enabled_defaults_true() -> None:
+    """When nothing is set anywhere, sampling is on by default."""
+    from zenml.utils.metric_sampling_utils import is_step_metrics_enabled
+
+    step, pipeline = _make_configs(None, None)
+    assert is_step_metrics_enabled(step, pipeline) is True
+
+
+def test_is_step_metrics_enabled_step_false_wins() -> None:
+    """An explicit False on the step disables sampling."""
+    from zenml.utils.metric_sampling_utils import is_step_metrics_enabled
+
+    step, pipeline = _make_configs(False, None)
+    assert is_step_metrics_enabled(step, pipeline) is False
+
+
+def test_is_step_metrics_enabled_pipeline_false_propagates() -> None:
+    """If the step has no preference, the pipeline value applies."""
+    from zenml.utils.metric_sampling_utils import is_step_metrics_enabled
+
+    step, pipeline = _make_configs(None, False)
+    assert is_step_metrics_enabled(step, pipeline) is False
+
+
+def test_is_step_metrics_enabled_step_overrides_pipeline() -> None:
+    """A step that explicitly opts in beats a pipeline-wide opt-out."""
+    from zenml.utils.metric_sampling_utils import is_step_metrics_enabled
+
+    step, pipeline = _make_configs(True, False)
+    assert is_step_metrics_enabled(step, pipeline) is True
+
+
+def test_is_step_metrics_enabled_env_kill_switch(
+    monkeypatch: Any,
+) -> None:
+    """The env var forces sampling off no matter what the configs say."""
+    from zenml.utils.metric_sampling_utils import is_step_metrics_enabled
+
+    monkeypatch.setenv("ZENML_DISABLE_STEP_METRICS_SAMPLING", "true")
+    step, pipeline = _make_configs(True, True)
+    assert is_step_metrics_enabled(step, pipeline) is False
