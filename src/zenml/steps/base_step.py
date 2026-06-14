@@ -61,6 +61,7 @@ from zenml.steps.utils import (
     run_as_single_step_pipeline,
 )
 from zenml.utils import (
+    async_utils,
     dict_utils,
     materializer_utils,
     notebook_utils,
@@ -726,6 +727,11 @@ class BaseStep:
                 "Invalid step function entrypoint arguments. Check out the "
                 "pydantic error above for more details."
             ) from e
+
+        if async_utils.is_async_callable(self.entrypoint):
+            return async_utils.run_coroutine_isolated(
+                self.entrypoint(**validated_args)
+            )
 
         return self.entrypoint(**validated_args)
 

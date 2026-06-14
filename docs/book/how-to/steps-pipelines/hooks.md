@@ -140,6 +140,8 @@ def my_step():
 * **Hook failures are swallowed.** When a lifecycle hook raises, the run or step is
   not aborted. The exception is captured into the `HookInvocation` record with
   `status=FAILED` and execution proceeds.
+* **Async hooks.** Hook functions can be defined with `async def`. When the hook
+  fires, ZenML runs the coroutine to completion and blocks until it finishes.
 * **Return values are discarded.** Set `ZENML_TRACK_LIFECYCLE_HOOK_OUTPUTS=true`
   in the execution environment to instead materialize lifecycle hook return
   values as output artifacts of the invocation, following the same rules as
