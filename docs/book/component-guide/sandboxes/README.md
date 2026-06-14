@@ -108,6 +108,7 @@ Every value you put in a Session's environment (`sandbox_environment`) is **read
 ## Available flavors
 
 - **[Local](local.md)** — subprocess-based; **no isolation**; built-in. Intended for examples, unit tests, and development against the abstraction.
+- **[Kubernetes](kubernetes.md)** — pod-backed sessions executed through Kubernetes exec.
 - **[Cloudflare](cloudflare.md)** — backed by a Cloudflare Sandbox bridge Worker; isolated containers on Cloudflare's infrastructure. Part of the `cloudflare` integration.
 
 ## Develop a custom Sandbox

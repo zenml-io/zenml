@@ -116,6 +116,26 @@ settings:
 
 You can also configure the orchestrator to always run asynchronously by setting `synchronous=False` in its configuration.
 
+### Async Steps
+
+Step functions can be defined with `async def`. ZenML runs the coroutine to completion when the step executes, so whether a step body is async is invisible at the call site:
+
+```python
+from zenml import step
+
+@step
+async def fetch_data(url: str) -> bytes:
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url)
+        return response.content
+```
+
+An async step behaves like any other step: call it inside a pipeline, pass its outputs downstream, or run several concurrently with [`.submit()`](dynamic_pipelines.md#parallel-step-execution). Submitted async steps run on separate threads, so their `await` points overlap and IO-bound work proceeds in parallel.
+
+{% hint style="warning" %}
+A blocking call inside an async body (`time.sleep`, a synchronous HTTP request, heavy CPU work) stalls that step's event loop and erases the concurrency. Use the async equivalents (`asyncio.sleep`, an async HTTP client) inside async steps.
+{% endhint %}
+
 ### Step Execution Order
 
 By default, ZenML determines step execution order based on data dependencies. When a step requires output from another step, it automatically creates a dependency.
