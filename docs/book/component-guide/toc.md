@@ -50,6 +50,7 @@
   * [Develop a Custom Log Store](log-stores/custom.md)
 * [Sandboxes](sandboxes/README.md)
   * [Local](sandboxes/local.md)
+  * [Kubernetes](sandboxes/kubernetes.md)
   * [Modal](sandboxes/modal.md)
   * [Kubernetes Agent Sandbox](sandboxes/k8s-agent-sandbox.md)
 * [Step Operators](step-operators/README.md)

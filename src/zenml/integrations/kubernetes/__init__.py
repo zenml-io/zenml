@@ -26,6 +26,7 @@ from zenml.stack import Flavor
 KUBERNETES_ORCHESTRATOR_FLAVOR = "kubernetes"
 KUBERNETES_STEP_OPERATOR_FLAVOR = "kubernetes"
 KUBERNETES_DEPLOYER_FLAVOR = "kubernetes"
+KUBERNETES_SANDBOX_FLAVOR = "kubernetes"
 
 
 class KubernetesIntegration(Integration):
@@ -46,12 +47,14 @@ class KubernetesIntegration(Integration):
         from zenml.integrations.kubernetes.flavors import (
             KubernetesDeployerFlavor,
             KubernetesOrchestratorFlavor,
+            KubernetesSandboxFlavor,
             KubernetesStepOperatorFlavor,
         )
 
         return [
             KubernetesDeployerFlavor,
             KubernetesOrchestratorFlavor,
+            KubernetesSandboxFlavor,
             KubernetesStepOperatorFlavor,
         ]
 
