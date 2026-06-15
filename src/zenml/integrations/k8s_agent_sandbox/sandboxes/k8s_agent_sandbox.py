@@ -452,17 +452,14 @@ class K8sAgentSandbox(BaseSandbox):
                         api_client.configuration
                     )
 
-                    # The SDK's K8sHelper.__init__ calls
-                    # load_incluster_config()/load_kube_config() and *then*
-                    # constructs its API clients, so it would overwrite the
-                    # connector config we just set with the ambient
-                    # kubeconfig — silently sending the SDK to the local
-                    # cluster instead of the connector's. The SDK exposes no
-                    # ApiClient injection seam, so suppress those loaders for
-                    # the scope; the clients it builds then snapshot the
-                    # connector config. K8sHelper resolves the loaders off
-                    # the shared ``kubernetes.config`` module at call time,
-                    # so patching the module here intercepts them.
+                    # K8sHelper.__init__ calls load_incluster_config()/
+                    # load_kube_config() before building its clients, which
+                    # would overwrite the connector default with the ambient
+                    # kubeconfig (silently using the local cluster). The SDK
+                    # has no ApiClient injection seam, so suppress those
+                    # loaders for the scope; it resolves them off the shared
+                    # kubernetes.config module at call time, so patching the
+                    # module intercepts them.
                     def _keep_connector_default(*_: Any, **__: Any) -> None:
                         return None
 
