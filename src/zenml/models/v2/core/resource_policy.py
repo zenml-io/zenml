@@ -116,6 +116,10 @@ class ResourcePolicyRequest(UserScopedRequest):
         default_factory=list,
         title="The external account IDs targeted by this policy.",
     )
+    team_ids: list[UUID] = Field(
+        default_factory=list,
+        title="The team IDs targeted by this policy.",
+    )
     priority_lane: bool = Field(
         default=False,
         title="Whether this policy uses the internal maximum priority lane.",
@@ -142,9 +146,14 @@ class ResourcePolicyRequest(UserScopedRequest):
         if self.pool_id is None and self.pool is None:
             raise ValueError("A resource policy requires a pool ID or name.")
 
-        if not self.component_ids and not self.account_ids:
+        if (
+            not self.component_ids
+            and not self.account_ids
+            and not self.team_ids
+        ):
             raise ValueError(
-                "At least one component_ids or account_ids entry must be set."
+                "At least one component_ids, account_ids, or team_ids entry "
+                "must be set."
             )
 
         if self.priority_lane:
@@ -185,6 +194,10 @@ class ResourcePolicyUpdate(BaseUpdate):
         default=None,
         title="The new external account IDs.",
     )
+    team_ids: Optional[list[UUID]] = Field(
+        default=None,
+        title="The new team IDs.",
+    )
     priority_lane: Optional[bool] = Field(
         default=None,
         title="Whether this policy uses the internal maximum priority lane.",
@@ -211,11 +224,13 @@ class ResourcePolicyUpdate(BaseUpdate):
             ValueError: If subjects or priority fields are inconsistent.
         """
         if (
-            self.component_ids is not None or self.account_ids is not None
-        ) and not (self.component_ids or self.account_ids):
+            self.component_ids is not None
+            or self.account_ids is not None
+            or self.team_ids is not None
+        ) and not (self.component_ids or self.account_ids or self.team_ids):
             raise ValueError(
-                "At least one component_ids or account_ids entry must be set "
-                "when updating policy subjects."
+                "At least one component_ids, account_ids, or team_ids entry "
+                "must be set when updating policy subjects."
             )
 
         if self.priority_lane is True and self.priority is not None:
@@ -245,6 +260,10 @@ class ResourcePolicyResponseBody(UserScopedResponseBody):
     account_ids: list[UUID] = Field(
         default_factory=list,
         title="The external account IDs targeted by this policy.",
+    )
+    team_ids: list[UUID] = Field(
+        default_factory=list,
+        title="The team IDs targeted by this policy.",
     )
     priority_lane: bool = Field(
         default=False,
@@ -319,6 +338,15 @@ class ResourcePolicyResponse(
         return self.get_body().account_ids
 
     @property
+    def team_ids(self) -> list[UUID]:
+        """Resource policy team IDs.
+
+        Returns:
+            The team IDs targeted by this policy.
+        """
+        return self.get_body().team_ids
+
+    @property
     def priority_lane(self) -> bool:
         """Whether this policy uses the priority lane.
 
@@ -372,6 +400,10 @@ class ResourcePolicyFilter(UserScopedFilter):
     account_id: Union[UUID, str, None] = Field(
         default=None,
         description="The external account ID.",
+    )
+    team_id: Union[UUID, str, None] = Field(
+        default=None,
+        description="The team ID.",
     )
     priority: Union[int, str, None] = Field(
         default=None,

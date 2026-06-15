@@ -27,6 +27,7 @@ PERMISSIONS_ENDPOINT = "/rbac/check_permissions"
 ALLOWED_RESOURCE_IDS_ENDPOINT = "/rbac/allowed_resource_ids"
 RESOURCE_MEMBERSHIP_ENDPOINT = "/rbac/resource_members"
 RESOURCES_ENDPOINT = "/rbac/resources"
+USER_TEAM_IDS_ENDPOINT = "/rbac/user_team_ids"
 
 
 class ZenMLCloudRBAC(RBACInterface):
@@ -148,6 +149,28 @@ class ZenMLCloudRBAC(RBACInterface):
             "actions": [str(action) for action in actions],
         }
         self._connection.post(endpoint=RESOURCE_MEMBERSHIP_ENDPOINT, data=data)
+
+    def list_user_team_ids(self, user: "UserResponse") -> List[str]:
+        """List team IDs that a user belongs to.
+
+        Args:
+            user: User for which to list team memberships.
+
+        Returns:
+            Team IDs that include this user.
+        """
+        if user.is_service_account and user.external_user_id is None:
+            return []
+
+        assert user.external_user_id
+        response = self._connection.get(
+            endpoint=USER_TEAM_IDS_ENDPOINT,
+            params={"user_id": str(user.external_user_id)},
+        )
+        value = response.json()
+
+        assert isinstance(value, list)
+        return [str(team_id) for team_id in value]
 
     def delete_resources(self, resources: List[Resource]) -> None:
         """Delete resource membership information for a list of resources.
