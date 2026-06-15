@@ -227,8 +227,13 @@ class AzureMLStepOperator(BaseStepOperator):
             azureml_client, settings, default_compute_name=f"zenml_{self.id}"
         )
 
+        job_name_prefix = str(info.step_run_id)[:8]
+        job_name = (
+            f"{job_name_prefix}-{info.run_name}-{info.pipeline_step_name}"
+        )
+
         command_job = command(
-            name=info.run_name,
+            name=job_name,
             command=shell_join(entrypoint_command),
             environment=env,
             environment_variables=environment,

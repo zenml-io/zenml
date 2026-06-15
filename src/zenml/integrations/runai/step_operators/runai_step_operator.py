@@ -527,19 +527,15 @@ class RunAIStepOperator(BaseStepOperator):
         Returns:
             Tuple of (command, args) as strings. The args value is None when
             there are no extra tokens.
-
-        Raises:
-            ValueError: If entrypoint_command format is invalid.
         """
-        if len(entrypoint_command) < 3:
-            raise ValueError(
-                f"Expected entrypoint command with at least 3 elements "
-                f"(e.g., ['python', '-m', 'module_name']), but got "
-                f"{len(entrypoint_command)} elements: {entrypoint_command}"
-            )
-
-        command_tokens = entrypoint_command[:3]
-        args_tokens = entrypoint_command[3:]
+        if len(entrypoint_command) > 3:
+            command_tokens = entrypoint_command[:3]
+            args_tokens = entrypoint_command[3:]
+        else:
+            # For command steps, the entrypoint command can be of arbitrary
+            # length. We treat it as a single command with no arguments.
+            command_tokens = entrypoint_command
+            args_tokens = []
 
         command = shell_join(command_tokens)
         args = shell_join(args_tokens) if args_tokens else None

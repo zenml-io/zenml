@@ -93,6 +93,7 @@ Environment variables and secrets are passed to the command as environment varia
 ## Limitations
 
 - Command steps do not support inputs and outputs.
+- Your code is not downloaded into the execution environment.
 - `get_step_context()`, metadata, visualizations, and tags are not available inside the command.
 - Logs of command steps are not tracked by ZenML. They stay in the backend's native logging (for example CloudWatch or pod logs).
 - Step hooks are not allowed.
