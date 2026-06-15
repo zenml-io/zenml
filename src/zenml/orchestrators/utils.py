@@ -15,6 +15,7 @@
 
 import os
 import random
+import shlex
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 from uuid import UUID
 
@@ -265,6 +266,22 @@ def get_step_entrypoint_command(
             **entrypoint_config_kwargs,
         ),
     )
+
+
+def shell_join(command: List[str]) -> str:
+    """Joins command tokens into a single shell-escaped string.
+
+    Use this when a backend flattens an entrypoint command into a string that
+    a shell later re-splits. Command step commands can contain spaces, quotes
+    and newlines that a plain space join would corrupt.
+
+    Args:
+        command: The command tokens to join.
+
+    Returns:
+        The command tokens joined into a single shell-escaped string.
+    """
+    return shlex.join(command)
 
 
 class register_artifact_store_filesystem:

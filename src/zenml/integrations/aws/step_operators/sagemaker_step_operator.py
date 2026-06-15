@@ -45,6 +45,7 @@ from zenml.integrations.aws.utils import (
 )
 from zenml.logger import get_logger
 from zenml.orchestrators.publish_utils import publish_step_run_metadata
+from zenml.orchestrators.utils import shell_join
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 from zenml.step_operators.step_operator_entrypoint_configuration import (
@@ -248,7 +249,7 @@ class SagemakerStepOperator(BaseStepOperator):
         )
 
         image_name = info.get_image(key=SAGEMAKER_DOCKER_IMAGE_KEY)
-        environment[_ENTRYPOINT_ENV_VARIABLE] = " ".join(entrypoint_command)
+        environment[_ENTRYPOINT_ENV_VARIABLE] = shell_join(entrypoint_command)
 
         # Get and default fill SageMaker estimator arguments for full ZenML support
         estimator_args = settings.estimator_args

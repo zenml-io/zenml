@@ -73,6 +73,7 @@ from zenml.integrations.runai.flavors.runai_step_operator_flavor import (
 )
 from zenml.logger import get_logger
 from zenml.orchestrators.publish_utils import publish_step_run_metadata
+from zenml.orchestrators.utils import shell_join
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 
@@ -540,8 +541,8 @@ class RunAIStepOperator(BaseStepOperator):
         command_tokens = entrypoint_command[:3]
         args_tokens = entrypoint_command[3:]
 
-        command = " ".join(command_tokens)
-        args = " ".join(args_tokens) if args_tokens else None
+        command = shell_join(command_tokens)
+        args = shell_join(args_tokens) if args_tokens else None
         return command, args
 
     def _build_environment_variables(

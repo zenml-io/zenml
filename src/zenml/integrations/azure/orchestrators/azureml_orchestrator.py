@@ -72,6 +72,7 @@ from zenml.orchestrators.publish_utils import publish_step_run_metadata
 from zenml.orchestrators.utils import (
     get_orchestrator_run_name,
     get_step_entrypoint_command,
+    shell_join,
 )
 from zenml.pipelines.dynamic.entrypoint_configuration import (
     DynamicPipelineEntrypointConfiguration,
@@ -641,7 +642,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         command_job = command(
             name=job_name,
             display_name=job_name,
-            command=" ".join(entrypoint_command + entrypoint_args),
+            command=shell_join(entrypoint_command + entrypoint_args),
             environment=env,
             environment_variables=environment,
             compute=compute_target,
