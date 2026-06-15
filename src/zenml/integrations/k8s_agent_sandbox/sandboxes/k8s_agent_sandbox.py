@@ -72,9 +72,11 @@ _ENV_KEY_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 # ``Configuration._default`` is process-global; serializing
 # ``_kube_default_config`` scopes keeps concurrent sessions for
-# different clusters from cross-wiring credentials. A plain Lock (not
-# RLock) suffices: no call path re-enters the context — ``destroy()``
-# exits its scope before ``_delete_inline_template`` opens a new one.
+# different clusters from cross-wiring credentials. The scope is held
+# only while API clients are built (they snapshot the default at
+# construction), not across the slow readiness wait, so fan-out stays
+# parallel. A plain Lock (not RLock) suffices: no call path re-enters
+# the context — each scope closes before the next one opens.
 _kube_default_config_lock = threading.Lock()
 
 
@@ -281,8 +283,11 @@ class K8sAgentSandboxSession(SandboxSession):
         the inline-template delete there is idempotent via the tracker.
         """
         try:
-            with cast("K8sAgentSandbox", self._parent)._kube_default_config():
-                self._sandbox.terminate()
+            # terminate() routes through the SDK's k8s_helper, whose API
+            # clients already captured the connector credentials at build
+            # time, so it needs no default-config scope. Keeping it out of
+            # the scope also avoids serializing teardown on the global lock.
+            self._sandbox.terminate()
         except Exception as e:  # noqa: BLE001
             logger.warning(
                 "agent-sandbox terminate() failed: %s. The sandbox may "
@@ -420,7 +425,11 @@ class K8sAgentSandbox(BaseSandbox):
         ``Configuration._default`` is process-global, so the module-
         level lock is held for the duration of the context to keep
         concurrent sessions (e.g. callers spawning parallel
-        ``create_session`` calls) from cross-wiring credentials.
+        ``create_session`` calls) from cross-wiring credentials. Callers
+        must therefore keep the scope tight — only the work that builds
+        API clients (which snapshot the default at construction) belongs
+        inside it; slow network operations should run afterwards on the
+        already-constructed clients so fan-out doesn't serialize.
 
         Yields:
             ``None`` — used as a context manager.
@@ -430,22 +439,41 @@ class K8sAgentSandbox(BaseSandbox):
                 in-cluster config nor a kubeconfig could be loaded.
         """
         with _kube_default_config_lock:
-            # The SDK's K8sHelper.__init__ calls config.load_kube_config()
-            # with no seam to inject an ApiClient, so the only way to make
-            # it use connector credentials is to set the process default
-            # for the duration of the block. Inside a cluster the SDK tries
-            # load_incluster_config() first, which wins over this default.
             api_client = self._get_kube_api_client()
             # ``Configuration._default`` is the same attribute
             # ``Configuration.set_default`` writes to; reading it directly
             # is the only way to snapshot the current default since the
             # upstream library doesn't expose a getter.
             previous = k8s_client.Configuration._default
+            loader_overrides: List[Any] = []
             try:
                 if api_client is not None:
                     k8s_client.Configuration.set_default(
                         api_client.configuration
                     )
+
+                    # The SDK's K8sHelper.__init__ calls
+                    # load_incluster_config()/load_kube_config() and *then*
+                    # constructs its API clients, so it would overwrite the
+                    # connector config we just set with the ambient
+                    # kubeconfig — silently sending the SDK to the local
+                    # cluster instead of the connector's. The SDK exposes no
+                    # ApiClient injection seam, so suppress those loaders for
+                    # the scope; the clients it builds then snapshot the
+                    # connector config. K8sHelper resolves the loaders off
+                    # the shared ``kubernetes.config`` module at call time,
+                    # so patching the module here intercepts them.
+                    def _keep_connector_default(*_: Any, **__: Any) -> None:
+                        return None
+
+                    for _loader in (
+                        "load_incluster_config",
+                        "load_kube_config",
+                    ):
+                        loader_overrides.append(
+                            (_loader, getattr(k8s_config, _loader))
+                        )
+                        setattr(k8s_config, _loader, _keep_connector_default)
                 else:
                     # Both loaders mutate the process-global default in
                     # place; the snapshot above keeps the restore
@@ -467,6 +495,8 @@ class K8sAgentSandbox(BaseSandbox):
                             ) from e
                 yield
             finally:
+                for _loader, _original in loader_overrides:
+                    setattr(k8s_config, _loader, _original)
                 k8s_client.Configuration._default = previous
 
     def _build_client(self) -> "SandboxClient":
@@ -649,50 +679,54 @@ class K8sAgentSandbox(BaseSandbox):
             K8sAgentSandboxSettings, self.resolve_settings(override=settings)
         )
 
-        # Scope connector-provided kubeconfig as the kubernetes default
-        # for the duration of this call so CR creation + the
-        # SandboxClient's K8sHelper all see the same credentials, and
-        # restore the previous default on exit to avoid polluting
-        # process-global state for sibling components.
-        with self._kube_default_config():
-            namespace = eff.namespace
+        namespace = eff.namespace
+        template_name = eff.template_name
+        synthesized_name: Optional[str] = None
 
-            template_name = eff.template_name
-            synthesized_name: Optional[str] = None
+        # Hold the connector-credential scope only for the fast,
+        # default-dependent work: synthesizing the inline template CR and
+        # constructing the SandboxClient (its K8sHelper snapshots the
+        # config at build time). The slow create_sandbox readiness wait
+        # then runs unlocked on the already-built client, so concurrently
+        # mapped steps don't serialize on each other's pod boot.
+        with self._kube_default_config():
             if not template_name:
                 template_name = self._synthesize_inline_template(
                     eff, namespace
                 )
                 synthesized_name = template_name
+            client = self._build_client()
 
-            try:
-                sandbox = self._build_client().create_sandbox(
-                    template=template_name,
-                    namespace=namespace,
-                    sandbox_ready_timeout=eff.sandbox_ready_timeout,
-                )
-            except Exception:
-                # Allocated a CR but never got a sandbox — drop the CR
-                # so flaky clusters / RBAC denials don't accumulate
-                # orphans.
-                if synthesized_name:
-                    try:
-                        _delete_sandbox_template(synthesized_name, namespace)
-                    except Exception as cleanup_exc:  # noqa: BLE001
-                        logger.warning(
-                            "Failed to clean up orphan SandboxTemplate "
-                            "'%s/%s' after create_sandbox failure: %s",
-                            namespace,
-                            synthesized_name,
-                            cleanup_exc,
-                        )
-                raise
-
-            return K8sAgentSandboxSession(
-                sandbox,
-                parent=self,
-                inline_template_name=synthesized_name,
-                inline_template_namespace=(
-                    namespace if synthesized_name else None
-                ),
+        try:
+            sandbox = client.create_sandbox(
+                template=template_name,
+                namespace=namespace,
+                sandbox_ready_timeout=eff.sandbox_ready_timeout,
             )
+        except Exception:
+            # Allocated a CR but never got a sandbox — drop the CR so
+            # flaky clusters / RBAC denials don't accumulate orphans.
+            # The delete builds a fresh API client, so it needs the
+            # connector scope again.
+            if synthesized_name:
+                try:
+                    with self._kube_default_config():
+                        _delete_sandbox_template(synthesized_name, namespace)
+                except Exception as cleanup_exc:  # noqa: BLE001
+                    logger.warning(
+                        "Failed to clean up orphan SandboxTemplate "
+                        "'%s/%s' after create_sandbox failure: %s",
+                        namespace,
+                        synthesized_name,
+                        cleanup_exc,
+                    )
+            raise
+
+        return K8sAgentSandboxSession(
+            sandbox,
+            parent=self,
+            inline_template_name=synthesized_name,
+            inline_template_namespace=(
+                namespace if synthesized_name else None
+            ),
+        )

@@ -609,7 +609,14 @@ class TestSessionLifecycle:
         # The process-global default was restored after close().
         assert k8s_client.Configuration._default is previous_default
 
-    def test_destroy_terminates_inside_connector_scope(self) -> None:
+    def test_destroy_terminates_without_reentering_connector_scope(
+        self,
+    ) -> None:
+        # terminate() routes through the SDK's already-built clients
+        # (which snapshotted the connector config at session creation),
+        # so destroy() must NOT re-open the global-default scope for it.
+        # Re-entering would serialize every session's teardown on the
+        # process-wide lock.
         from kubernetes import client as k8s_client
 
         sb = _make_sandbox()
@@ -620,26 +627,16 @@ class TestSessionLifecycle:
 
         fake_underlying = MagicMock()
         fake_underlying.name = "sb1"
+        # No inline template, so destroy() == terminate() only.
         session = K8sAgentSandboxSession(fake_underlying, parent=sb)
-
-        set_default_calls_at_terminate_time: list = []
 
         with patch.object(
             k8s_client.Configuration, "set_default"
         ) as fake_set_default:
-
-            def record_scope() -> None:
-                set_default_calls_at_terminate_time.extend(
-                    fake_set_default.call_args_list
-                )
-
-            fake_underlying.terminate.side_effect = record_scope
             session.destroy()
 
         fake_underlying.terminate.assert_called_once()
-        assert set_default_calls_at_terminate_time == [
-            call(fake_api_client.configuration)
-        ]
+        fake_set_default.assert_not_called()
 
     def test_close_skips_delete_when_no_inline_template(self) -> None:
         sb = _make_sandbox()
@@ -717,6 +714,109 @@ class TestKubeDefaultConfigNoConnector:
             ):
                 with sb._kube_default_config():
                     pass
+
+
+class TestConnectorConfigSurvivesSdkLoaders:
+    """The connector config must outlive the SDK's K8sHelper.__init__.
+
+    K8sHelper calls ``load_incluster_config()``/``load_kube_config()``
+    and *then* builds its API clients, so without intervention it
+    overwrites the connector default with the ambient kubeconfig and
+    silently talks to the local cluster. ``_kube_default_config`` must
+    suppress those loaders for the scope so the connector config sticks.
+    """
+
+    @staticmethod
+    def _connector_sandbox() -> "tuple[K8sAgentSandbox, MagicMock]":
+        sb = _make_sandbox()
+        fake_api_client = MagicMock(name="connector-api-client")
+        sb._get_kube_api_client = MagicMock(  # type: ignore[method-assign]
+            return_value=fake_api_client
+        )
+        return sb, fake_api_client
+
+    def test_sdk_loaders_cannot_clobber_connector_default(self) -> None:
+        from kubernetes import client as k8s_client
+        from kubernetes import config as k8s_config
+
+        sb, fake_api_client = self._connector_sandbox()
+        before_incluster = k8s_config.load_incluster_config
+        before_kube = k8s_config.load_kube_config
+
+        # set_default deep-copies its argument, so identity checks on the
+        # stored default are meaningless; assert on the call instead.
+        with patch.object(
+            k8s_client.Configuration, "set_default"
+        ) as fake_set_default:
+            with sb._kube_default_config():
+                # The connector config is installed as the process
+                # default...
+                fake_set_default.assert_called_once_with(
+                    fake_api_client.configuration
+                )
+                # ...and the loaders the SDK would call are neutralized,
+                # so a K8sHelper built inside this scope cannot reload
+                # ambient config and overwrite that default.
+                assert k8s_config.load_incluster_config is not before_incluster
+                assert k8s_config.load_kube_config is not before_kube
+                k8s_config.load_incluster_config()
+                k8s_config.load_kube_config()
+                # The suppressed loaders did not trigger a re-set.
+                fake_set_default.assert_called_once_with(
+                    fake_api_client.configuration
+                )
+
+        # The real loaders are restored on exit.
+        assert k8s_config.load_incluster_config is before_incluster
+        assert k8s_config.load_kube_config is before_kube
+
+    def test_no_connector_leaves_sdk_loaders_intact(self) -> None:
+        # Without a connector the SDK must be free to load ambient
+        # config itself, so the loaders must not be suppressed.
+        from kubernetes import config as k8s_config
+
+        sb = _make_sandbox()
+        sb._get_kube_api_client = MagicMock(  # type: ignore[method-assign]
+            return_value=None
+        )
+        before_kube = k8s_config.load_kube_config
+        with sb._kube_default_config():
+            assert k8s_config.load_kube_config is before_kube
+
+
+class TestCreateSessionReleasesLockBeforeReadyWait:
+    """Fan-out regression: the slow readiness wait must run unlocked.
+
+    The connector default is process-global, so client construction is
+    serialized — but ``create_sandbox`` (claim + up-to-180s pod-ready
+    watch) reuses the already-built client and must not hold the lock,
+    or N mapped steps would serialize to N x ready-wait.
+    """
+
+    def test_create_sandbox_runs_with_global_lock_released(self) -> None:
+        from zenml.integrations.k8s_agent_sandbox.sandboxes import (
+            k8s_agent_sandbox as mod,
+        )
+
+        sb = _make_sandbox(namespace="prod")
+        fake_client = _wire_client(sb)
+
+        lock_free_during_create: list = []
+
+        def record_lock(**_: Any) -> MagicMock:
+            acquired = mod._kube_default_config_lock.acquire(blocking=False)
+            lock_free_during_create.append(acquired)
+            if acquired:
+                mod._kube_default_config_lock.release()
+            return MagicMock(name="sandbox")
+
+        fake_client.create_sandbox.side_effect = record_lock
+        sb.create_session()
+
+        # The lock was acquirable while create_sandbox ran, i.e. it was
+        # released after client construction rather than held across the
+        # readiness wait.
+        assert lock_free_during_create == [True]
 
 
 class TestProcessSurface:
