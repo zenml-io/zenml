@@ -2996,8 +2996,10 @@ def list_options(
         for k, v in filter_model.model_fields.items():
             if k not in filter_model.CLI_EXCLUDE_FIELDS:
                 is_multiple = _is_list_field(v)
+
                 if is_multiple:
                     multi_value_fields.add(k)
+
                 default_value = v.default
 
                 if k == "sort_by" and default_value == "created":
