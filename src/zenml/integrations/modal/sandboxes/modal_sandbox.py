@@ -31,6 +31,7 @@ from typing import (
 
 import modal
 
+from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
 from zenml.config.resource_settings import ResourceSettings
 from zenml.integrations.modal import sandbox_utils
@@ -341,8 +342,6 @@ class ModalSandbox(BaseSandbox):
             stack's container registry and that registry exposes
             credentials, otherwise ``None`` (anonymous pull).
         """
-        from zenml.client import Client
-
         container_registry = Client().active_stack.container_registry
         if (
             container_registry
