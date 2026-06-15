@@ -14,7 +14,7 @@
 """Resource pool store backed by the ZenML Pro Resource Manager service."""
 
 import json
-from typing import TYPE_CHECKING, Any, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Optional, Sequence, TypeVar
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -48,7 +48,10 @@ from zenml.models import (
     ResourceRequestRequest,
     ResourceRequestResponse,
     ResourceRequestTerminateRequest,
+    UserFilter,
+    UserResponse,
 )
+from zenml.models.v2.base.scoped import UserScopedResponse
 from zenml.models.v2.core.resource_request import (
     ResourceRequestRenewalRequest,
 )
@@ -79,6 +82,12 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 PageItemT = TypeVar("PageItemT", bound=BaseModel)
+UserScopedResponseT = TypeVar(
+    "UserScopedResponseT", bound=UserScopedResponse[Any, Any, Any]
+)
+USER_ID_METADATA_KEY = "user_id"
+ORGANIZATION_ID_METADATA_KEY = "organization_id"
+WORKSPACE_ID_METADATA_KEY = "workspace_id"
 
 
 class ResourceManagerResourcePoolsStoreSettings(BaseSettings):
@@ -125,10 +134,12 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         Returns:
             The created ZenML descriptor response.
         """
-        response = self._client.create_resource(
-            RMResourceRequest.from_model(descriptor)
+        request = RMResourceRequest.from_model(descriptor)
+        request.metadata = self._metadata_with_server_context(
+            request.metadata,
         )
-        return response.to_model()
+        response = self._client.create_resource(request)
+        return self._response_with_user(response, response.to_model())
 
     def get_resource_descriptor(
         self, descriptor_id: UUID
@@ -141,7 +152,8 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         Returns:
             The requested ZenML descriptor response.
         """
-        return self._client.get_resource(descriptor_id).to_model()
+        response = self._client.get_resource(descriptor_id)
+        return self._response_with_user(response, response.to_model())
 
     def list_resource_descriptors(
         self, filter_model: ResourceDescriptorFilter
@@ -162,11 +174,12 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             list_kwargs["name"] = str(filter_model.name)
         if filter_model.kind is not None:
             list_kwargs["kind"] = str(filter_model.kind)
-        items = [
-            item.to_model()
-            for item in self._client.list_resources(**list_kwargs).items
-        ]
-        return self._page(items)
+        responses = self._client.list_resources(**list_kwargs).items
+        return self._page(
+            self._responses_with_users(
+                responses, [response.to_model() for response in responses]
+            )
+        )
 
     def update_resource_descriptor(
         self, descriptor_id: UUID, update: ResourceDescriptorUpdate
@@ -184,7 +197,7 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             descriptor_id,
             RMResourceUpdate.from_model(update),
         )
-        return response.to_model()
+        return self._response_with_user(response, response.to_model())
 
     def delete_resource_descriptor(self, descriptor_id: UUID) -> None:
         """Delete a resource descriptor through Resource Manager.
@@ -205,10 +218,12 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         Returns:
             The created ZenML pool response.
         """
-        response = self._client.create_pool(
-            RMPoolRequest.from_model(resource_pool)
+        request = RMPoolRequest.from_model(resource_pool)
+        request.metadata = self._metadata_with_server_context(
+            request.metadata,
         )
-        return response.to_model()
+        response = self._client.create_pool(request)
+        return self._response_with_user(response, response.to_model())
 
     def get_resource_pool(
         self, resource_pool_id: UUID, hydrate: bool = True
@@ -222,7 +237,8 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         Returns:
             The requested ZenML pool response.
         """
-        return self._client.get_pool(resource_pool_id).to_model()
+        response = self._client.get_pool(resource_pool_id)
+        return self._response_with_user(response, response.to_model())
 
     def list_resource_pools(
         self, filter_model: ResourcePoolFilter, hydrate: bool = False
@@ -242,11 +258,12 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             list_kwargs["pool_id"] = UUID(str(filter_model.id))
         if filter_model.name is not None:
             list_kwargs["name"] = str(filter_model.name)
-        items = [
-            item.to_model()
-            for item in self._client.list_pools(**list_kwargs).items
-        ]
-        return self._page(items)
+        responses = self._client.list_pools(**list_kwargs).items
+        return self._page(
+            self._responses_with_users(
+                responses, [response.to_model() for response in responses]
+            )
+        )
 
     def update_resource_pool(
         self, resource_pool_id: UUID, update: ResourcePoolUpdate
@@ -264,7 +281,7 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             resource_pool_id,
             RMPoolUpdate.from_model(update),
         )
-        return response.to_model()
+        return self._response_with_user(response, response.to_model())
 
     def delete_resource_pool(self, resource_pool_id: UUID) -> None:
         """Delete a resource pool through Resource Manager.
@@ -321,10 +338,12 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         Returns:
             The created ZenML policy response.
         """
-        response = self._client.create_policy(
-            RMPolicyRequest.from_model(policy)
+        request = RMPolicyRequest.from_model(policy)
+        request.metadata = self._metadata_with_server_context(
+            request.metadata,
         )
-        return response.to_model()
+        response = self._client.create_policy(request)
+        return self._response_with_user(response, response.to_model())
 
     def get_resource_policy(
         self, policy_id: UUID, hydrate: bool = True
@@ -338,7 +357,8 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         Returns:
             The requested ZenML policy response.
         """
-        return self._client.get_policy(policy_id).to_model()
+        response = self._client.get_policy(policy_id)
+        return self._response_with_user(response, response.to_model())
 
     def list_resource_policies(
         self,
@@ -370,11 +390,12 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             list_kwargs["subject_id"] = UUID(str(filter_model.team_id))
         if filter_model.priority is not None:
             list_kwargs["priority"] = int(filter_model.priority)
-        items = [
-            item.to_model()
-            for item in self._client.list_policies(**list_kwargs).items
-        ]
-        return self._page(items)
+        responses = self._client.list_policies(**list_kwargs).items
+        return self._page(
+            self._responses_with_users(
+                responses, [response.to_model() for response in responses]
+            )
+        )
 
     def update_resource_policy(
         self, policy_id: UUID, update: ResourcePolicyUpdate
@@ -401,7 +422,7 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             policy_id,
             RMPolicyUpdate.from_model(update),
         )
-        return response.to_model()
+        return self._response_with_user(response, response.to_model())
 
     def delete_resource_policy(self, policy_id: UUID) -> None:
         """Delete a resource policy through Resource Manager.
@@ -424,7 +445,7 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             The requested ZenML resource request response.
         """
         response = self._client.get_request(resource_request_id)
-        return response.to_model()
+        return self._response_with_user(response, response.to_model())
 
     def list_resource_requests(
         self, filter_model: ResourceRequestFilter, hydrate: bool = False
@@ -477,11 +498,12 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             list_kwargs["metadata"] = metadata
 
         _ = hydrate
-        items = [
-            item.to_model()
-            for item in self._client.list_requests(**list_kwargs).items
-        ]
-        return self._page(items)
+        responses = self._client.list_requests(**list_kwargs).items
+        return self._page(
+            self._responses_with_users(
+                responses, [response.to_model() for response in responses]
+            )
+        )
 
     def terminate_resource_request(
         self,
@@ -506,7 +528,7 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             force=terminate_request.force,
             reason=terminate_request.reason,
         )
-        return response.to_model()
+        return self._response_with_user(response, response.to_model())
 
     def release_resource_request(
         self,
@@ -524,7 +546,7 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             The released resource request.
         """
         response = self._client.release_request(resource_request_id)
-        return response.to_model()
+        return self._response_with_user(response, response.to_model())
 
     def renew_resource_request(
         self,
@@ -544,7 +566,7 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             resource_request_id,
             lease_expires_at=renewal_request.lease_expires_at,
         )
-        return response.to_model()
+        return self._response_with_user(response, response.to_model())
 
     def delete_resource_request(self, resource_request_id: UUID) -> None:
         """Delete a terminal resource request through Resource Manager.
@@ -615,7 +637,9 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
                 "request."
             )
 
-        user = self.store.get_user(resource_request.user, hydrate=False)
+        with self.store.get_session() as session:
+            user = self.store._get_active_user(session)
+
         subjects = [RMSubject.from_account(user)]
         if resource_request.component_ids:
             subjects.extend(
@@ -644,6 +668,10 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
                 resource_request,
                 subjects=subjects,
             )
+            request.metadata = self._metadata_with_server_context(
+                request.metadata,
+                user=user,
+            )
             logger.info(f"Creating resource request: {request}")
 
             response = self._client.create_request(request)
@@ -661,7 +689,7 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             ) from exc
 
         logger.info(f"Created resource request: {response}")
-        return response.to_model()
+        return self._response_with_user(response, response.to_model())
 
     def create_resource_request_for_step_run(
         self,
@@ -712,6 +740,123 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         return self.create_resource_request(
             resource_request.model_copy(update={"metadata": metadata})
         )
+
+    def _metadata_with_server_context(
+        self,
+        metadata: dict[str, Any],
+        user: UserResponse | None = None,
+    ) -> dict[str, Any]:
+        """Add immutable ZenML Pro provenance metadata to create payloads.
+
+        Args:
+            metadata: User-supplied metadata to preserve.
+            user: The ZenML Pro user to use for metadata. If not provided, the
+                current active user is used.
+
+        Returns:
+            Metadata enriched with ZenML Pro user, organization, and workspace
+            identifiers.
+        """
+        pro_config = ServerProConfiguration.get_server_config()
+        server_metadata = {
+            ORGANIZATION_ID_METADATA_KEY: str(pro_config.organization_id),
+            WORKSPACE_ID_METADATA_KEY: str(pro_config.workspace_id),
+        }
+        if user is None:
+            with self.store.get_session() as session:
+                user = self.store._get_active_user(session)
+        if user is not None and user.external_user_id is not None:
+            server_metadata[USER_ID_METADATA_KEY] = str(user.external_user_id)
+
+        return {**metadata, **server_metadata}
+
+    def _response_with_user(
+        self,
+        response: BaseModel,
+        model: UserScopedResponseT,
+    ) -> UserScopedResponseT:
+        """Populate ZenML user fields from Resource Manager metadata.
+
+        Args:
+            response: Resource Manager transport response.
+            model: ZenML response model converted from the transport response.
+
+        Returns:
+            The ZenML response model with user fields populated when possible.
+        """
+        return self._responses_with_users([response], [model])[0]
+
+    def _responses_with_users(
+        self,
+        responses: Sequence[BaseModel],
+        models: list[UserScopedResponseT],
+    ) -> list[UserScopedResponseT]:
+        """Populate ZenML user fields from Resource Manager metadata in bulk.
+
+        Args:
+            responses: Resource Manager transport responses.
+            models: ZenML response models converted from the transport
+                responses, in matching order.
+
+        Returns:
+            The ZenML response models with user fields populated when possible.
+        """
+        external_user_ids_by_index: dict[int, UUID] = {}
+        external_user_ids: set[UUID] = set()
+        for index, response in enumerate(responses):
+            external_user_id = self._external_user_id_from_metadata(
+                getattr(response, "metadata", {})
+            )
+            if external_user_id is None:
+                continue
+            external_user_ids_by_index[index] = external_user_id
+            external_user_ids.add(external_user_id)
+
+        if not external_user_ids:
+            return models
+
+        users = self._users_by_external_id(external_user_ids)
+        for index, external_user_id in external_user_ids_by_index.items():
+            user = users.get(external_user_id)
+            if user is None:
+                continue
+            models[index].get_body().user_id = user.id
+            models[index].get_resources().user = user
+
+        return models
+
+    def _users_by_external_id(
+        self, external_user_ids: set[UUID]
+    ) -> dict[UUID, UserResponse]:
+        """Fetch ZenML users keyed by external ZenML Pro user ID."""
+        external_user_id_filter = "oneof:" + json.dumps(
+            sorted(str(user_id) for user_id in external_user_ids)
+        )
+        user_page = self.store.list_users(
+            UserFilter(
+                external_user_id=external_user_id_filter,
+                size=max(len(external_user_ids), 1),
+            ),
+            hydrate=True,
+        )
+        return {
+            user.external_user_id: user
+            for user in user_page.items
+            if user.external_user_id is not None
+        }
+
+    @staticmethod
+    def _external_user_id_from_metadata(
+        metadata: dict[str, Any],
+    ) -> Optional[UUID]:
+        """Extract an external ZenML Pro user ID from RM metadata."""
+        value = metadata.get(USER_ID_METADATA_KEY)
+        if value is None:
+            return None
+        try:
+            return UUID(str(value))
+        except ValueError:
+            return None
 
     def _client_from_settings(
         self, settings: ResourceManagerResourcePoolsStoreSettings
