@@ -278,7 +278,10 @@ def _configure_logs(
         from opentelemetry.exporter.otlp.proto.http._log_exporter import (
             OTLPLogExporter,
         )
-        from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+        from opentelemetry.instrumentation.logging.handler import (
+            LoggingHandler,
+        )
+        from opentelemetry.sdk._logs import LoggerProvider
         from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 
         logger_provider = LoggerProvider(resource=resource)
@@ -290,10 +293,11 @@ def _configure_logs(
         otel_handler = LoggingHandler(
             level=get_logging_level().value,
             logger_provider=logger_provider,
+            log_code_attributes=True,
         )
         # Attach the ZenML filters that add structlog contextvars
         # and step name to the log record to the OTel handler.
-        otel_handler = add_zenml_filters(otel_handler)  # type: ignore[assignment]
+        add_zenml_filters(otel_handler)
 
         # Attach the OTel handler to the root logger.
         # init_logging() attaches ZenML's console and log-storage handlers to
@@ -303,7 +307,6 @@ def _configure_logs(
         root_logger = logging.getLogger()
         root_logger.addHandler(otel_handler)
 
-        # Store the OTel handler so it can be removed on shutdown.
         _otel_log_handler = otel_handler
         _otel_providers.append(logger_provider)
         return True
@@ -336,7 +339,6 @@ def instrument_sqlalchemy_store(store: "SqlZenStore") -> None:
             "OpenTelemetry SQLAlchemy instrumentation package not installed. "
             "Install `opentelemetry-instrumentation-sqlalchemy`."
         )
-        pass
     except Exception:
         logger.exception("Failed to instrument SQLAlchemy with OpenTelemetry.")
 
@@ -350,7 +352,13 @@ def _instrument_libraries(app: "FastAPI") -> None:
     try:
         from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
-        FastAPIInstrumentor.instrument_app(app)
+        # Exclude low-level ASGI send/receive event spans; the main request
+        # span is enough for normal API tracing, and these add noise.
+        # Ref: https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/fastapi/fastapi.html#request-response-hooks
+        FastAPIInstrumentor.instrument_app(
+            app,
+            exclude_spans=["send", "receive"],
+        )
         _otel_uninstrument_callbacks.append(
             lambda: FastAPIInstrumentor.uninstrument_app(app)
         )
@@ -359,7 +367,6 @@ def _instrument_libraries(app: "FastAPI") -> None:
             "OpenTelemetry FastAPI instrumentation package not installed. "
             "Install `opentelemetry-instrumentation-fastapi`."
         )
-        pass
 
     try:
         from opentelemetry.instrumentation.requests import RequestsInstrumentor
@@ -372,4 +379,3 @@ def _instrument_libraries(app: "FastAPI") -> None:
             "OpenTelemetry requests instrumentation package not installed. "
             "Install `opentelemetry-instrumentation-requests`."
         )
-        pass

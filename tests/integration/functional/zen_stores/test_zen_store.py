@@ -87,6 +87,7 @@ from zenml.exceptions import (
 )
 from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models import (
+    APIKey,
     APIKeyFilter,
     APIKeyRequest,
     APIKeyRotateRequest,
@@ -2121,6 +2122,11 @@ def test_login_api_key():
             new_zen_store = Client().zen_store
             active_user = new_zen_store.get_user()
             assert active_user.id == service_account.id
+
+        forged_api_key = APIKey(id=api_key.id, key="").encode()
+        with pytest.raises(AuthorizationException):
+            with LoginContext(api_key=forged_api_key):
+                Client().zen_store.get_user()
 
         api_key = zen_store.get_api_key(
             service_account_id=service_account.id,
@@ -5617,6 +5623,41 @@ class TestTagResource:
                 ),
             ]
         )
+
+    def test_batch_create_tag_resource_resolves_resources_in_bulk(
+        self, clean_client: "Client"
+    ):
+        """Tests batch tag resource creation resolves resources in bulk."""
+        if clean_client.zen_store.type != StoreType.SQL:
+            pytest.skip("Only SQL Zen Stores support tagging resources")
+
+        tag1 = clean_client.create_tag(name="foo1", color="red")
+        tag2 = clean_client.create_tag(name="foo2", color="green")
+        model1 = clean_client.create_model(name="bar1")
+        model2 = clean_client.create_model(name="bar2")
+
+        with patch.object(
+            clean_client.zen_store,
+            "_get_schema_by_id",
+            side_effect=AssertionError(
+                "Batch tag resource creation should not resolve resources "
+                "with individual get calls."
+            ),
+        ):
+            clean_client.zen_store.batch_create_tag_resource(
+                [
+                    TagResourceRequest(
+                        tag_id=tag1.id,
+                        resource_id=model1.id,
+                        resource_type=TaggableResourceTypes.MODEL,
+                    ),
+                    TagResourceRequest(
+                        tag_id=tag2.id,
+                        resource_id=model2.id,
+                        resource_type=TaggableResourceTypes.MODEL,
+                    ),
+                ]
+            )
 
     def test_delete_tag_resource_pass(self, clean_client: "Client"):
         """Tests deleting tag<>resource mapping pass."""

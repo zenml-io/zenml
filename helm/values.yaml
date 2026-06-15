@@ -1190,6 +1190,25 @@ server:
     port: 80
     annotations: {}
 
+  # Uvicorn proxy header handling.
+  #
+  # SECURITY WARNING: Only enable this if ZenML is behind trusted proxies that
+  # control the X-Forwarded-* headers. Client-supplied X-Forwarded-For values
+  # can be forged and may bypass IP-based protections such as login rate
+  # limiting if they are trusted blindly.
+  #
+  # Safe configurations are either:
+  #   1. Set forwardedAllowIPs to a strict comma-separated list of trusted
+  #      proxy IPs/CIDRs; or
+  #   2. Ensure your ingress/gateway sanitizes or overwrites incoming
+  #      X-Forwarded-* headers before forwarding requests to ZenML.
+  #
+  # When disabled, Uvicorn ignores X-Forwarded-* headers and ZenML sees the
+  # direct peer address, which is usually the ingress/gateway IP in Kubernetes.
+  proxyHeaders:
+    enabled: false
+    forwardedAllowIPs: "*"
+
   ingress:
     enabled: true
     className: "nginx"

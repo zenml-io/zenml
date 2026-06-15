@@ -24,6 +24,7 @@ from zenml.enums import (
     PLATFORM_EVENT_REGISTRY,
     PipelineEvent,
     PipelineRunEvent,
+    PipelineSnapshotEvent,
     SourceType,
     TriggerRunConcurrency,
 )
@@ -58,11 +59,29 @@ def create_platform_event_trigger(
     pass
 
 
+# create pipeline snapshot trigger overload
+@overload
+def create_platform_event_trigger(
+    *,
+    name: str,
+    source_pipeline_snapshot_id: UUID,
+    target_events: list[PipelineSnapshotEvent],
+    active: bool = True,
+    concurrency: TriggerRunConcurrency = TriggerRunConcurrency.SKIP,
+) -> PlatformEventTriggerResponse:
+    pass
+
+
 def create_platform_event_trigger(
     name: str,
-    target_events: list[PipelineEvent] | list[PipelineRunEvent],
+    target_events: (
+        list[PipelineEvent]
+        | list[PipelineRunEvent]
+        | list[PipelineSnapshotEvent]
+    ),
     source_pipeline_id: UUID | None = None,
     source_pipeline_run_id: UUID | None = None,
+    source_pipeline_snapshot_id: UUID | None = None,
     active: bool = True,
     concurrency: TriggerRunConcurrency = TriggerRunConcurrency.SKIP,
 ) -> PlatformEventTriggerResponse:
@@ -73,6 +92,7 @@ def create_platform_event_trigger(
         target_events: A list of target events (events that will cause trigger execution).
         source_pipeline_id: A Pipeline ID (one of the source options).
         source_pipeline_run_id: A Pipeline Run ID (one of the source options).
+        source_pipeline_snapshot_id: A Pipeline Snapshot ID (one of the source options).
         active: Flag - whether to activate the trigger on creation.
         concurrency: How to handle concurrent executions (SKIP/SUBMIT etc.).
 
@@ -87,6 +107,7 @@ def create_platform_event_trigger(
     options = [
         source_pipeline_id,
         source_pipeline_run_id,
+        source_pipeline_snapshot_id,
     ]
 
     if sum(1 if option is not None else 0 for option in options) > 1:
@@ -97,6 +118,9 @@ def create_platform_event_trigger(
     elif source_pipeline_run_id is not None:
         source_type = SourceType.PIPELINE_RUN
         source_id = source_pipeline_run_id
+    elif source_pipeline_snapshot_id is not None:
+        source_type = SourceType.PIPELINE_SNAPSHOT
+        source_id = source_pipeline_snapshot_id
     else:
         raise ValueError("You must specify at least one source option")
 
@@ -141,7 +165,25 @@ def update_platform_event_trigger(
     *,
     trigger_name_id_or_prefix: str | UUID,
     name: str | None = None,
-    target_events: list[PipelineEvent] | list[PipelineRunEvent] | None = None,
+    source_pipeline_snapshot_id: UUID | None = None,
+    target_events: list[PipelineSnapshotEvent] | None = None,
+    active: bool | None = None,
+    concurrency: TriggerRunConcurrency | None = None,
+) -> PlatformEventTriggerResponse:
+    pass
+
+
+@overload
+def update_platform_event_trigger(
+    *,
+    trigger_name_id_or_prefix: str | UUID,
+    name: str | None = None,
+    target_events: (
+        list[PipelineEvent]
+        | list[PipelineRunEvent]
+        | list[PipelineSnapshotEvent]
+        | None
+    ) = None,
     active: bool | None = None,
     concurrency: TriggerRunConcurrency | None = None,
 ) -> PlatformEventTriggerResponse:
@@ -151,9 +193,15 @@ def update_platform_event_trigger(
 def update_platform_event_trigger(
     trigger_name_id_or_prefix: str | UUID,
     name: str | None = None,
-    target_events: list[PipelineEvent] | list[PipelineRunEvent] | None = None,
+    target_events: (
+        list[PipelineEvent]
+        | list[PipelineRunEvent]
+        | list[PipelineSnapshotEvent]
+        | None
+    ) = None,
     source_pipeline_id: UUID | None = None,
     source_pipeline_run_id: UUID | None = None,
+    source_pipeline_snapshot_id: UUID | None = None,
     active: bool | None = None,
     concurrency: TriggerRunConcurrency | None = None,
 ) -> PlatformEventTriggerResponse:
@@ -165,6 +213,7 @@ def update_platform_event_trigger(
         target_events: A list of target events (events that will cause trigger execution).
         source_pipeline_id: A Pipeline ID (one of the source options).
         source_pipeline_run_id: A Pipeline Run ID (one of the source options).
+        source_pipeline_snapshot_id: A Pipeline Snapshot ID (one of the source options).
         active: Flag - whether to activate the trigger on creation.
         concurrency: How to handle concurrent executions (SKIP/SUBMIT etc.).
 
@@ -179,6 +228,7 @@ def update_platform_event_trigger(
     options = [
         source_pipeline_id,
         source_pipeline_run_id,
+        source_pipeline_snapshot_id,
     ]
 
     if sum(1 if option is not None else 0 for option in options) > 1:
@@ -189,6 +239,9 @@ def update_platform_event_trigger(
     elif source_pipeline_run_id is not None:
         source_id = source_pipeline_run_id
         source_type = SourceType.PIPELINE_RUN
+    elif source_pipeline_snapshot_id is not None:
+        source_id = source_pipeline_snapshot_id
+        source_type = SourceType.PIPELINE_SNAPSHOT
     else:
         source_id = None
         source_type = None

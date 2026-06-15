@@ -25,10 +25,17 @@ from tests.integration.functional.zen_stores.utils import (
     UserContext,
 )
 from zenml.client import Client
-from zenml.enums import SecretsStoreType, StoreType
+from zenml.constants import ENV_ZENML_SERVER
+from zenml.enums import SecretsStoreType, StackComponentType, StoreType
 from zenml.exceptions import EntityExistsError, IllegalOperationError
-from zenml.models import SecretFilter, SecretUpdate
+from zenml.models import (
+    ComponentRequest,
+    SecretFilter,
+    SecretUpdate,
+    UserRequest,
+)
 from zenml.utils.string_utils import random_str
+from zenml.zen_server.auth import AuthContext
 
 
 def _get_secrets_store_type() -> SecretsStoreType:
@@ -781,6 +788,115 @@ def test_public_secret_is_visible_to_other_users():
                 ),
             ).items
             assert len(private_secrets) == 0
+
+
+def test_get_secret_by_name_or_id_respects_private_scope_for_sql_store(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """Tests that the SQL store does not resolve other users' private secrets."""
+    client = Client()
+    store = client.zen_store
+    if store.type != StoreType.SQL:
+        pytest.skip("This test only applies to direct SQL Zen Stores.")
+
+    with SecretContext() as public_secret:
+        with SecretContext(private=True) as private_secret:
+            other_user = store.create_user(
+                UserRequest(
+                    name=sample_name("private_secret_resolver_user"),
+                    password=random_str(32),
+                    active=True,
+                    is_admin=True,
+                )
+            )
+            try:
+                with monkeypatch.context() as m:
+                    from zenml.zen_server import utils as server_utils
+
+                    m.setenv(ENV_ZENML_SERVER, "true")
+                    m.setattr(
+                        server_utils,
+                        "get_auth_context",
+                        lambda: AuthContext(user=other_user),
+                    )
+
+                    resolved_public_secret = store.get_secret_by_name_or_id(
+                        public_secret.name
+                    )
+                    assert resolved_public_secret.id == public_secret.id
+
+                    with pytest.raises(KeyError):
+                        store.get_secret_by_name_or_id(private_secret.name)
+
+                    with pytest.raises(KeyError):
+                        store.get_secret_by_name_or_id(private_secret.id)
+
+                    component = store.create_stack_component(
+                        ComponentRequest(
+                            name=sample_name("component_with_public_secret"),
+                            flavor="local",
+                            type=StackComponentType.ARTIFACT_STORE,
+                            configuration={},
+                            secrets=[public_secret.name],
+                        )
+                    )
+                    store.delete_stack_component(component.id)
+
+                    with pytest.raises(KeyError):
+                        store.create_stack_component(
+                            ComponentRequest(
+                                name=sample_name(
+                                    "component_with_private_secret"
+                                ),
+                                flavor="local",
+                                type=StackComponentType.ARTIFACT_STORE,
+                                configuration={},
+                                secrets=[private_secret.name],
+                            )
+                        )
+            finally:
+                store.delete_user(other_user.id)
+
+
+def test_private_secret_cannot_be_referenced_by_other_users():
+    """Tests that private secrets cannot be referenced by other users."""
+    if Client().zen_store.type == StoreType.SQL:
+        pytest.skip("SQL Zen Stores do not support user switching.")
+
+    with SecretContext() as public_secret:
+        with SecretContext(private=True) as private_secret:
+            with UserContext(login=True):
+                other_client = Client()
+
+                component = other_client.create_stack_component(
+                    name=sample_name("component_with_public_secret"),
+                    flavor="local",
+                    component_type=StackComponentType.ARTIFACT_STORE,
+                    configuration={},
+                    secrets=[public_secret.name],
+                )
+                other_client.delete_stack_component(
+                    component.id,
+                    component_type=component.type,
+                )
+
+                with pytest.raises(KeyError):
+                    other_client.create_stack_component(
+                        name=sample_name("component_with_private_secret"),
+                        flavor="local",
+                        component_type=StackComponentType.ARTIFACT_STORE,
+                        configuration={},
+                        secrets=[private_secret.name],
+                    )
+
+                with pytest.raises(KeyError):
+                    other_client.create_stack_component(
+                        name=sample_name("component_with_private_secret_id"),
+                        flavor="local",
+                        component_type=StackComponentType.ARTIFACT_STORE,
+                        configuration={},
+                        secrets=[private_secret.id],
+                    )
 
 
 def test_private_secret_is_not_visible_to_other_users():
