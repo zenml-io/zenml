@@ -875,7 +875,10 @@ def test_private_secret_cannot_be_referenced_by_other_users():
                     configuration={},
                     secrets=[public_secret.name],
                 )
-                other_client.delete_stack_component(component.id)
+                other_client.delete_stack_component(
+                    component.id,
+                    component_type=component.type,
+                )
 
                 with pytest.raises(KeyError):
                     other_client.create_stack_component(
