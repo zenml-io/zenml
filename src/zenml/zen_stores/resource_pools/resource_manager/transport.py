@@ -68,6 +68,7 @@ if TYPE_CHECKING:
 
 COMPONENT_SUBJECT_TYPE = "component"
 ACCOUNT_SUBJECT_TYPE = "account"
+TEAM_SUBJECT_TYPE = "team"
 STEP_RUN_ID_METADATA_KEY = "step_run_id"
 PIPELINE_RUN_ID_METADATA_KEY = "pipeline_run_id"
 STEP_NAME_METADATA_KEY = "step_name"
@@ -173,12 +174,14 @@ class RMSubjectSelector(BaseModel):
         *,
         component_ids: list[UUID] | None,
         account_ids: list[UUID] | None,
+        team_ids: list[UUID] | None,
     ) -> list["RMSubjectSelector"]:
         """Build selectors from ZenML policy subject references.
 
         Args:
             component_ids: Optional stack component IDs.
             account_ids: Optional external account IDs.
+            team_ids: Optional team IDs.
 
         Returns:
             Resource Manager subject selectors.
@@ -194,17 +197,25 @@ class RMSubjectSelector(BaseModel):
             cls(subject_type=ACCOUNT_SUBJECT_TYPE, subject_id=account_id)
             for account_id in account_ids or []
         )
+        selectors.extend(
+            cls(subject_type=TEAM_SUBJECT_TYPE, subject_id=team_id)
+            for team_id in team_ids or []
+        )
         if not selectors:
             raise ValueError(
-                "Resource policies require component_ids or account_ids."
+                "Resource policies require component_ids, account_ids, "
+                "or team_ids."
             )
         return selectors
 
-    def to_policy_subject(self) -> tuple[Optional[UUID], Optional[UUID]]:
+    def to_policy_subject(
+        self,
+    ) -> tuple[Optional[UUID], Optional[UUID], Optional[UUID]]:
         """Parse this selector into ZenML policy subject IDs.
 
         Returns:
-            Tuple of component ID and account ID. Exactly one entry is set.
+            Tuple of component ID, account ID, and team ID. Exactly one entry
+            is set.
 
         Raises:
             ValueError: If the selector does not pin a supported subject.
@@ -215,9 +226,11 @@ class RMSubjectSelector(BaseModel):
                 "subject_type and subject_id."
             )
         if self.subject_type == COMPONENT_SUBJECT_TYPE:
-            return self.subject_id, None
+            return self.subject_id, None, None
         if self.subject_type == ACCOUNT_SUBJECT_TYPE:
-            return None, self.subject_id
+            return None, self.subject_id, None
+        if self.subject_type == TEAM_SUBJECT_TYPE:
+            return None, None, self.subject_id
         raise ValueError(
             f"Unsupported Resource Manager policy subject type "
             f"{self.subject_type!r}."
@@ -226,24 +239,27 @@ class RMSubjectSelector(BaseModel):
     @classmethod
     def to_policy_subjects(
         cls, selectors: list["RMSubjectSelector"]
-    ) -> tuple[list[UUID], list[UUID]]:
+    ) -> tuple[list[UUID], list[UUID], list[UUID]]:
         """Parse selectors into ZenML policy subject ID lists.
 
         Args:
             selectors: Resource Manager subject selectors.
 
         Returns:
-            Tuple of component IDs and account IDs.
+            Tuple of component IDs, account IDs, and team IDs.
         """
         component_ids: list[UUID] = []
         account_ids: list[UUID] = []
+        team_ids: list[UUID] = []
         for selector in selectors:
-            component_id, account_id = selector.to_policy_subject()
+            component_id, account_id, team_id = selector.to_policy_subject()
             if component_id is not None:
                 component_ids.append(component_id)
             if account_id is not None:
                 account_ids.append(account_id)
-        return component_ids, account_ids
+            if team_id is not None:
+                team_ids.append(team_id)
+        return component_ids, account_ids, team_ids
 
 
 class RMSubjectSettingsEntry(BaseModel):
@@ -742,6 +758,18 @@ class RMSubject(BaseModel):
             attributes=attributes,
         )
 
+    @classmethod
+    def from_team(cls, team_id: UUID) -> "RMSubject":
+        """Build an inline subject for a ZenML Pro team.
+
+        Args:
+            team_id: The team ID to attach to a runtime request.
+
+        Returns:
+            Inline subject payload for runtime requests.
+        """
+        return cls(subject_id=team_id, subject_type=TEAM_SUBJECT_TYPE)
+
 
 class RMPolicyGrant(BaseModel):
     """Policy grant payload for the Resource Manager API."""
@@ -834,6 +862,7 @@ class RMPolicyRequest(BaseModel):
             subject_selectors=RMSubjectSelector.from_policy_subjects(
                 component_ids=policy.component_ids,
                 account_ids=policy.account_ids,
+                team_ids=policy.team_ids,
             ),
             priority=policy.priority,
             priority_lane=policy.priority_lane,
@@ -867,6 +896,7 @@ class RMPolicyUpdate(BaseModel):
             subject_selectors = RMSubjectSelector.from_policy_subjects(
                 component_ids=update.component_ids,
                 account_ids=update.account_ids,
+                team_ids=update.team_ids,
             )
         grants = None
         if update.grants is not None:
@@ -907,9 +937,11 @@ class RMPolicyResponse(BaseModel):
             ZenML policy response.
         """
         created, updated = _normalize_timestamps(self.created, self.updated)
-        component_ids, account_ids = RMSubjectSelector.to_policy_subjects(
-            self.subject_selectors
-        )
+        (
+            component_ids,
+            account_ids,
+            team_ids,
+        ) = RMSubjectSelector.to_policy_subjects(self.subject_selectors)
         priority_lane = self.priority_lane or (
             self.priority == PRIORITY_LANE_PRIORITY
         )
@@ -923,6 +955,7 @@ class RMPolicyResponse(BaseModel):
                 pool_id=self.pool_id,
                 component_ids=component_ids,
                 account_ids=account_ids,
+                team_ids=team_ids,
                 priority_lane=priority_lane,
                 priority=priority,
                 grants=[grant.to_model() for grant in self.grants],
@@ -1252,15 +1285,18 @@ class RMAllocationResponse(BaseModel):
                 context.
 
         Returns:
-            Tuple of component ID and account ID. Exactly one entry is set
-            when request subjects identify the selected subject; otherwise
-            the selected subject ID is treated as a component ID.
+            Tuple of component ID and account ID. One entry is set when
+            request subjects identify a selected component or account; team
+            selections return no component/account ID. Without request subject
+            context, the selected subject ID is treated as a component ID.
         """
         for subject in request_subjects or []:
             if subject.subject_id != self.selected_subject_id:
                 continue
             if subject.subject_type == ACCOUNT_SUBJECT_TYPE:
                 return None, self.selected_subject_id
+            if subject.subject_type == TEAM_SUBJECT_TYPE:
+                return None, None
             return self.selected_subject_id, None
         return self.selected_subject_id, None
 

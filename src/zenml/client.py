@@ -2608,6 +2608,7 @@ class Client(metaclass=ClientMetaClass):
         *,
         component_ids: Optional[List[UUID]] = None,
         account_ids: Optional[List[UUID]] = None,
+        team_ids: Optional[List[UUID]] = None,
         priority_lane: bool = False,
     ) -> ResourcePolicyResponse:
         """Create a resource policy.
@@ -2621,6 +2622,7 @@ class Client(metaclass=ClientMetaClass):
             component_ids: Stack component IDs for component policies.
             account_ids: External account IDs for user or service account
                 policies.
+            team_ids: Team IDs for team policies.
             priority_lane: Whether this policy uses the maximum priority lane.
 
         Returns:
@@ -2629,6 +2631,7 @@ class Client(metaclass=ClientMetaClass):
         request = ResourcePolicyRequest(
             component_ids=component_ids or [],
             account_ids=account_ids or [],
+            team_ids=team_ids or [],
             pool_id=pool_id,
             pool=pool,
             priority_lane=priority_lane,
@@ -2665,6 +2668,7 @@ class Client(metaclass=ClientMetaClass):
         user: UUIDFilterOption = None,
         pool_id: UUIDFilterOption = None,
         component_id: UUIDFilterOption = None,
+        team_id: UUIDFilterOption = None,
         priority: IntegerFilterOption = None,
         hydrate: bool = False,
     ) -> Page[ResourcePolicyResponse]:
@@ -2681,6 +2685,7 @@ class Client(metaclass=ClientMetaClass):
             user: Filter by user name/ID.
             pool_id: Filter by resource pool name/ID.
             component_id: Filter by component name/ID.
+            team_id: Filter by team ID.
             priority: Filter by priority.
             hydrate: Whether to include metadata in the response.
 
@@ -2698,6 +2703,7 @@ class Client(metaclass=ClientMetaClass):
             user=user,
             pool_id=pool_id,
             component_id=component_id,
+            team_id=team_id,
             priority=priority,
         )
         return self.zen_store.list_resource_policies(
@@ -2714,6 +2720,7 @@ class Client(metaclass=ClientMetaClass):
         grants: Optional[List[ResourcePolicyGrant]] = None,
         *,
         account_ids: Optional[List[UUID]] = None,
+        team_ids: Optional[List[UUID]] = None,
         priority_lane: Optional[bool] = None,
     ) -> ResourcePolicyResponse:
         """Update a resource policy.
@@ -2726,6 +2733,7 @@ class Client(metaclass=ClientMetaClass):
             priority: Updated priority.
             grants: Updated full replacement grants.
             account_ids: Updated external account IDs.
+            team_ids: Updated team IDs.
             priority_lane: Updated priority-lane flag.
 
         Returns:
@@ -2736,6 +2744,7 @@ class Client(metaclass=ClientMetaClass):
             pool=pool,
             component_ids=component_ids,
             account_ids=account_ids,
+            team_ids=team_ids,
             priority_lane=priority_lane,
             priority=priority,
             grants=grants,

@@ -82,6 +82,17 @@ class RBACInterface(ABC):
         """
 
     @abstractmethod
+    def list_user_team_ids(self, user: "UserResponse") -> List[str]:
+        """List team IDs that a user belongs to.
+
+        Args:
+            user: User for which to list team memberships.
+
+        Returns:
+            Team IDs that include this user.
+        """
+
+    @abstractmethod
     def delete_resources(self, resources: List[Resource]) -> None:
         """Delete resource membership information for a list of resources.
 
