@@ -89,6 +89,12 @@ class BaseDeploymentInvocationResponse(BaseModel):
     )
 
 
+class BaseDeploymentSubmitResponse(BaseModel):
+    """Base pipeline submit response model."""
+
+    run_id: UUID = Field(title="The ID of the pipeline run.")
+
+
 class PipelineInfo(BaseModel):
     """Pipeline info model."""
 
@@ -130,6 +136,7 @@ class AppInfo(BaseModel):
     docs_url_path: str
     redoc_url_path: str
     invoke_url_path: str
+    submit_url_path: str
     health_url_path: str
     info_url_path: str
     metrics_url_path: str
