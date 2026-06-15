@@ -116,25 +116,6 @@ class TrackioExperimentTrackerConfig(
         ),
     )
 
-    backend: Literal[
-        "sqlite",
-        "space",
-        "http",
-        "static",
-    ] = Field(
-        default="sqlite",
-        description=(
-            "Trackio backend type. "
-            "Supported values include "
-            "'sqlite', 'space', 'http', and 'static'."
-        ),
-    )
-
-    local_dir: str = Field(
-        default="./trackio",
-        description=("Local directory used for Trackio storage."),
-    )
-
     hf_token: Optional[str] = SecretField(
         default=None,
         description=(

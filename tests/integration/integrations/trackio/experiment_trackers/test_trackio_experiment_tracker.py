@@ -75,7 +75,6 @@ def _mock_trackio_signature(
             "space_id",
             "dataset_id",
             "bucket_id",
-            "sdk",
             "auto_log_gpu",
             "gpu_log_interval",
         },
@@ -84,7 +83,6 @@ def _mock_trackio_signature(
             "space_id",
             "dataset_id",
             "bucket_id",
-            "sdk",
         },
         "freeze": {
             "project",
@@ -254,41 +252,6 @@ def test_trackio_tags_logged(
                 "prod",
             ]
         }
-    )
-
-
-@patch(
-    "zenml.integrations.trackio.experiment_trackers."
-    "trackio_experiment_tracker.trackio.finish"
-)
-@patch(
-    "zenml.integrations.trackio.experiment_trackers."
-    "trackio_experiment_tracker.trackio.sync"
-)
-def test_trackio_static_backend_adds_sdk(
-    mock_sync: MagicMock,
-    mock_finish: MagicMock,
-    mock_trackio_signature,  # Added signature fixture
-) -> None:
-    tracker = _tracker(
-        backend="static",
-    )
-
-    tracker.get_settings = MagicMock(
-        return_value=_settings(
-            auto_sync=True,
-            project="test-project",
-        )
-    )
-
-    tracker.cleanup_step_run(
-        _info(),
-        step_failed=False,
-    )
-
-    mock_sync.assert_called_once_with(
-        project="test-project",
-        sdk="static",
     )
 
 

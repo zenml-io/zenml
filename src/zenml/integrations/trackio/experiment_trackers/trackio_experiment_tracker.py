@@ -179,14 +179,11 @@ class TrackioExperimentTracker(BaseExperimentTracker):
                 if self.config.bucket_id:
                     sync_kwargs["bucket_id"] = self.config.bucket_id
 
-                if self.config.backend == "static":
-                    sync_kwargs["sdk"] = "static"
-
                 trackio_any = cast(Any, trackio)
 
                 valid_params = inspect.signature(trackio_any.sync).parameters
 
-                logger.info(
+                logger.debug(
                     "valid sync params: %s",
                     valid_params.keys(),
                 )
@@ -196,7 +193,7 @@ class TrackioExperimentTracker(BaseExperimentTracker):
                     if key in valid_params and value is not None
                 }
 
-                logger.info("Trackio sync kwargs: %s", filtered_kwargs)
+                logger.debug("Trackio sync kwargs: %s", filtered_kwargs)
                 cast(Any, trackio.sync)(**filtered_kwargs)
 
             if settings.auto_freeze and self.config.space_id:
@@ -210,14 +207,16 @@ class TrackioExperimentTracker(BaseExperimentTracker):
                 if self.config.bucket_id:
                     freeze_kwargs["bucket_id"] = self.config.bucket_id
 
-                valid_params = inspect.signature(trackio.freeze).parameters
+                valid_params = inspect.signature(
+                    cast(Any, trackio).freeze
+                ).parameters
                 filtered_kwargs = {
                     key: value
                     for key, value in freeze_kwargs.items()
                     if key in valid_params and value is not None
                 }
 
-                logger.info("Trackio freeze kwargs: %s", filtered_kwargs)
+                logger.debug("Trackio freeze kwargs: %s", filtered_kwargs)
                 cast(Any, trackio.freeze)(**filtered_kwargs)
 
         except Exception as e:
@@ -250,10 +249,9 @@ class TrackioExperimentTracker(BaseExperimentTracker):
         run_name: str,
     ) -> None:
         """Initialize a Trackio run."""
-        logger.info(
-            "Initializing Trackio with project=%s, backend=%s, run_name=%s.",
+        logger.debug(
+            "Initializing Trackio with project=%s, run_name=%s.",
             self.config.project_name,
-            self.config.backend,
             run_name,
         )
 
@@ -298,7 +296,7 @@ class TrackioExperimentTracker(BaseExperimentTracker):
             if key in valid_params and value is not None
         }
 
-        logger.info(
+        logger.debug(
             "Trackio init kwargs: %s",
             filtered_kwargs,
         )
