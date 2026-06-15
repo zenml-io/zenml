@@ -14,7 +14,6 @@
 """Shared Modal Sandbox helpers."""
 
 import math
-from dataclasses import dataclass
 from threading import Lock
 from typing import Any, Callable, Dict, List, Optional, Protocol, Tuple
 
@@ -32,21 +31,11 @@ SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY = f"{ENV_ZENML_STORE_PREFIX}API_TOKEN"
 SENSITIVE_ZENML_RUNTIME_ENV_KEYS = {SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY}
 
 
-@dataclass(frozen=True)
-class GpuValidationMessage:
-    """Human-readable context for Modal GPU validation errors."""
-
-    settings_field: str
-    settings_example: str
-
-
-DEFAULT_GPU_VALIDATION_MESSAGE = GpuValidationMessage(
-    settings_field="ModalStepOperatorSettings.gpu",
-    settings_example=(
-        "For example with @step(settings={'step_operator': "
-        "ModalStepOperatorSettings(gpu='<TYPE>'), 'resources': "
-        "ResourceSettings(gpu_count=1)}), or set gpu_count=0 to run on CPU."
-    ),
+DEFAULT_GPU_SETTINGS_FIELD = "ModalStepOperatorSettings.gpu"
+DEFAULT_GPU_SETTINGS_EXAMPLE = (
+    "For example with @step(settings={'step_operator': "
+    "ModalStepOperatorSettings(gpu='<TYPE>'), 'resources': "
+    "ResourceSettings(gpu_count=1)}), or set gpu_count=0 to run on CPU."
 )
 
 
@@ -193,7 +182,8 @@ def get_gpu_values(
     settings: ModalSandboxSettings,
     resource_settings: ResourceSettings,
     *,
-    gpu_validation_message: GpuValidationMessage = DEFAULT_GPU_VALIDATION_MESSAGE,
+    gpu_settings_field: str = DEFAULT_GPU_SETTINGS_FIELD,
+    gpu_settings_example: str = DEFAULT_GPU_SETTINGS_EXAMPLE,
 ) -> Optional[str]:
     """Compute and validate the Modal ``gpu`` argument string.
 
@@ -207,7 +197,8 @@ def get_gpu_values(
     Args:
         settings: Modal component settings describing the GPU type.
         resource_settings: Resource constraints providing the GPU count.
-        gpu_validation_message: Human-readable context for error messages.
+        gpu_settings_field: Settings field name to mention in GPU errors.
+        gpu_settings_example: Example configuration to mention in GPU errors.
 
     Returns:
         A Modal-compatible GPU specification string or ``None`` when running on
@@ -226,8 +217,8 @@ def get_gpu_values(
                 "GPU resources requested (gpu_count > 0) but no GPU type was "
                 "specified in Modal settings. Please set a GPU type (e.g., "
                 f"'T4', 'A100') via "
-                f"{gpu_validation_message.settings_field}. "
-                f"{gpu_validation_message.settings_example}"
+                f"{gpu_settings_field}. "
+                f"{gpu_settings_example}"
             )
         return None
 
@@ -272,7 +263,8 @@ def build_sandbox_create_kwargs(
     resource_settings: ResourceSettings,
     environment: Dict[str, str],
     modal_client: Optional["modal.Client"],
-    gpu_validation_message: GpuValidationMessage = DEFAULT_GPU_VALIDATION_MESSAGE,
+    gpu_settings_field: str = DEFAULT_GPU_SETTINGS_FIELD,
+    gpu_settings_example: str = DEFAULT_GPU_SETTINGS_EXAMPLE,
 ) -> Dict[str, Any]:
     """Build keyword arguments for ``modal.Sandbox.create``."""
     sandbox_environment, sensitive_environment = (
@@ -286,7 +278,8 @@ def build_sandbox_create_kwargs(
         "gpu": get_gpu_values(
             settings,
             resource_settings,
-            gpu_validation_message=gpu_validation_message,
+            gpu_settings_field=gpu_settings_field,
+            gpu_settings_example=gpu_settings_example,
         ),
         "cpu": resource_settings.cpu_count,
         "memory": get_memory_mb(resource_settings),
@@ -311,7 +304,8 @@ def create_modal_sandbox(
     resource_settings: ResourceSettings,
     environment: Dict[str, str],
     modal_client: Optional["modal.Client"],
-    gpu_validation_message: GpuValidationMessage = DEFAULT_GPU_VALIDATION_MESSAGE,
+    gpu_settings_field: str = DEFAULT_GPU_SETTINGS_FIELD,
+    gpu_settings_example: str = DEFAULT_GPU_SETTINGS_EXAMPLE,
 ) -> "modal.Sandbox":
     """Create a Modal sandbox for a ZenML entrypoint command."""
     sandbox_create_kwargs = build_sandbox_create_kwargs(
@@ -321,7 +315,8 @@ def create_modal_sandbox(
         resource_settings=resource_settings,
         environment=environment,
         modal_client=modal_client,
-        gpu_validation_message=gpu_validation_message,
+        gpu_settings_field=gpu_settings_field,
+        gpu_settings_example=gpu_settings_example,
     )
     return modal.Sandbox.create(*entrypoint_command, **sandbox_create_kwargs)
 
