@@ -579,7 +579,12 @@ class TestRegistryCredentials:
         )
         client = MagicMock()
         client.active_stack.container_registry = registry
-        monkeypatch.setattr("zenml.client.Client", lambda: client)
+        # modal_sandbox imports Client at module top, so patch the name
+        # where it is looked up, not at its source module.
+        monkeypatch.setattr(
+            "zenml.integrations.modal.sandboxes.modal_sandbox.Client",
+            lambda: client,
+        )
         return registry
 
     def test_credentials_passed_for_image_in_stack_registry(
