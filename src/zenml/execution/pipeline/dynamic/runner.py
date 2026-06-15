@@ -488,10 +488,6 @@ class DynamicPipelineRunner:
         """Monitoring loop.
 
         This should run in a separate thread and monitors the running steps.
-
-        Raises:
-            RuntimeError: If a regular (=non-command) step completed on the
-                infrastructure side but its status was not updated in the DB.
         """
         from zenml.config.step_configurations import Step
 

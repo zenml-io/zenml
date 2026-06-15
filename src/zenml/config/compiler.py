@@ -532,6 +532,10 @@ class Compiler:
             pipeline: Configuration for the pipeline.
             skip_input_validation: If True, will skip the input validation.
 
+        Raises:
+            StepInterfaceError: If a command step defines success or failure
+                hooks.
+
         Returns:
             The compiled step.
         """
