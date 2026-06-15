@@ -704,6 +704,7 @@ class SourceType(StrEnum):
 
     PIPELINE = "pipeline"
     PIPELINE_RUN = "pipeline_run"
+    PIPELINE_SNAPSHOT = "pipeline_snapshot"
 
 
 class PipelineEvent(DescribedValuesEnum):
@@ -744,7 +745,27 @@ class PipelineRunEvent(DescribedValuesEnum):
         }
 
 
+class PipelineSnapshotEvent(DescribedValuesEnum):
+    """Enum representing platform target events for pipeline snapshots."""
+
+    RUN_COMPLETED = "run_completed"
+    RUN_FAILED = "run_failed"
+
+    @classmethod
+    def value_description_index(cls) -> dict[str, str]:
+        """Helper utility to describe enum values.
+
+        Returns:
+            A dictionary with descriptions for each value.
+        """
+        return {
+            cls.RUN_COMPLETED: "A pipeline run of the source snapshot has completed successfully.",
+            cls.RUN_FAILED: "A pipeline run of the source snapshot has failed.",
+        }
+
+
 PLATFORM_EVENT_REGISTRY: dict[SourceType, type[DescribedValuesEnum]] = {
     SourceType.PIPELINE: PipelineEvent,
     SourceType.PIPELINE_RUN: PipelineRunEvent,
+    SourceType.PIPELINE_SNAPSHOT: PipelineSnapshotEvent,
 }

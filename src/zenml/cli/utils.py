@@ -2632,6 +2632,13 @@ def pretty_print_deployment(
         declare("[bold]CLI command example:[/bold]")
         console.print(cli_command)
 
+        declare("\n[bold]Asynchronous CLI command example:[/bold]")
+        console.print(f"{cli_command} --no-wait")
+        console.print(
+            "  [dim]Submit the run for background execution and return the "
+            "run ID immediately[/dim]"
+        )
+
         # cURL example
         declare("\n[bold]cURL example:[/bold]")
         curl_headers = []
@@ -2655,6 +2662,19 @@ def pretty_print_deployment(
   }}'"""
 
         console.print(curl_command)
+
+        declare("\n[bold]Asynchronous cURL example:[/bold]")
+        async_curl_command = f"""curl -X POST {deployment.url}/submit \\
+  {headers_str} \\
+  -d '{{
+    "parameters": {curl_params}
+  }}'"""
+
+        console.print(async_curl_command)
+        console.print(
+            "  [dim]Submit the run for background execution and return the "
+            "run ID immediately[/dim]"
+        )
 
     # JSON Schemas
     if show_schema:
