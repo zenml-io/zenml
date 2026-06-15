@@ -46,7 +46,6 @@ from zenml.integrations.aws.utils import (
 )
 from zenml.logger import get_logger
 from zenml.orchestrators.publish_utils import publish_step_run_metadata
-from zenml.orchestrators.utils import shell_join
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 from zenml.step_operators.step_operator_entrypoint_configuration import (
@@ -63,7 +62,6 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 SAGEMAKER_DOCKER_IMAGE_KEY = "sagemaker_step_operator"
-_ENTRYPOINT_ENV_VARIABLE = "__ZENML_ENTRYPOINT"
 STEP_JOB_NAME_METADATA_KEY = "job_name"
 
 
@@ -164,7 +162,6 @@ class SagemakerStepOperator(BaseStepOperator):
                     key=SAGEMAKER_DOCKER_IMAGE_KEY,
                     settings=step.config.docker_settings,
                     step_name=step_name,
-                    entrypoint=f"${_ENTRYPOINT_ENV_VARIABLE}",
                 )
                 builds.append(build)
 
@@ -259,7 +256,6 @@ class SagemakerStepOperator(BaseStepOperator):
             )
 
         image_name = info.get_image(key=SAGEMAKER_DOCKER_IMAGE_KEY)
-        environment[_ENTRYPOINT_ENV_VARIABLE] = shell_join(entrypoint_command)
 
         # Get and default fill SageMaker estimator arguments for full ZenML support
         estimator_args = settings.estimator_args
@@ -273,6 +269,10 @@ class SagemakerStepOperator(BaseStepOperator):
         estimator_args["environment"] = environment
         estimator_args["instance_count"] = 1
         estimator_args["sagemaker_session"] = self.sagemaker_session
+        # The max length of the container entry point is 256 characters. Not
+        # really anything we can do about that, it will just fail with a
+        # SageMaker error for command steps that exceed the limit.
+        estimator_args["container_entry_point"] = entrypoint_command
 
         # Create Estimator
         estimator = Estimator(image_name, self.config.role, **estimator_args)
