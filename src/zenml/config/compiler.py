@@ -588,10 +588,10 @@ class Compiler:
             if (
                 step_configuration_overrides.failure_hook_source
                 or step_configuration_overrides.success_hook_source
+                or step_configuration_overrides.end_hook_source
+                or step_configuration_overrides.start_hook_source
             ):
-                raise StepInterfaceError(
-                    "Command steps do not support success or failure hooks."
-                )
+                raise StepInterfaceError("Command steps do not support hooks.")
 
         full_step_config = (
             step_configuration_overrides.apply_pipeline_configuration(

@@ -52,18 +52,19 @@ def _build_function_command(func: Callable[[], Any]) -> List[str]:
 
     if hasattr(func, "__wrapped__"):
         raise StepInterfaceError(
-            f"The command step function `{func.__name__}` is decorated."
+            f"The command step function `{func.__name__}` cannot be decorated."
         )
 
     if func.__closure__ is not None:
         raise StepInterfaceError(
-            f"The command step function `{func.__name__}` references "
+            f"The command step function `{func.__name__}` cannot reference "
             "variables from an enclosing function."
         )
 
     if inspect.signature(func).parameters:
         raise StepInterfaceError(
-            f"The command step function `{func.__name__}` has parameters."
+            f"The command step function `{func.__name__}` cannot have "
+            "parameters."
         )
 
     try:
@@ -76,7 +77,7 @@ def _build_function_command(func: Callable[[], Any]) -> List[str]:
 
     if source.lstrip().startswith("@"):
         raise StepInterfaceError(
-            f"The command step function `{func.__name__}` is decorated."
+            f"The command step function `{func.__name__}` cannot be decorated."
         )
 
     code = f"{source}\n{func.__name__}()\n"
@@ -184,7 +185,10 @@ class CommandStep(BaseStep):
             config=config, runtime_parameters=runtime_parameters
         )
 
-        if config.failure_hook_source or config.success_hook_source:
-            raise StepInterfaceError(
-                "Command steps do not support success or failure hooks."
-            )
+        if (
+            config.failure_hook_source
+            or config.success_hook_source
+            or config.end_hook_source
+            or config.start_hook_source
+        ):
+            raise StepInterfaceError("Command steps do not support hooks.")
