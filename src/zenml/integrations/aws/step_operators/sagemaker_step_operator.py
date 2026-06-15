@@ -42,6 +42,7 @@ from zenml.integrations.aws.step_operators.sagemaker_step_operator_entrypoint_co
 )
 from zenml.integrations.aws.utils import (
     convert_training_job_status,
+    validate_command_step_environment,
 )
 from zenml.logger import get_logger
 from zenml.orchestrators.publish_utils import publish_step_run_metadata
@@ -242,11 +243,20 @@ class SagemakerStepOperator(BaseStepOperator):
         # characters to be passed to Estimator steps. If an environment variable
         # is longer than 512 characters, we split it into multiple environment
         # variables (chunks) and re-construct it on the other side using the
-        # custom entrypoint configuration.
-        split_environment_variables(
-            env=environment,
-            size_limit=SAGEMAKER_ESTIMATOR_STEP_ENV_VAR_SIZE_LIMIT,
-        )
+        # custom entrypoint configuration. Command steps run an opaque command
+        # instead of that entrypoint, so the reconstruction never runs. We
+        # therefore validate the sizes instead of splitting and fail if a
+        # variable exceeds the limit.
+        if info.config.command is not None:
+            validate_command_step_environment(
+                environment=environment,
+                size_limit=SAGEMAKER_ESTIMATOR_STEP_ENV_VAR_SIZE_LIMIT,
+            )
+        else:
+            split_environment_variables(
+                env=environment,
+                size_limit=SAGEMAKER_ESTIMATOR_STEP_ENV_VAR_SIZE_LIMIT,
+            )
 
         image_name = info.get_image(key=SAGEMAKER_DOCKER_IMAGE_KEY)
         environment[_ENTRYPOINT_ENV_VARIABLE] = shell_join(entrypoint_command)
