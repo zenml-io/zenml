@@ -144,12 +144,14 @@ from zenml.constants import (
     DEFAULT_PASSWORD,
     DEFAULT_STACK_AND_COMPONENT_NAME,
     DEFAULT_USERNAME,
+    DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE,
     ENV_ZENML_DEFAULT_USER_NAME,
     ENV_ZENML_DEFAULT_USER_PASSWORD,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_SERVER,
     FINISHED_ONBOARDING_SURVEY_KEY,
     MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION,
+    MAX_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE,
     SQL_STORE_BACKUP_DIRECTORY_NAME,
     TEXT_FIELD_MAX_LENGTH,
     handle_bool_env_var,
@@ -2386,17 +2388,105 @@ class SqlZenStore(BaseZenStore):
 
         return api_transaction_schema
 
-    def cleanup_expired_api_transactions(self) -> None:
-        """Delete completed API transactions that have expired."""
+    @staticmethod
+    def _api_transaction_has_expired(
+        api_transaction_schema: ApiTransactionSchema,
+    ) -> bool:
+        """Check whether a completed API transaction has expired."""
+        return (
+            api_transaction_schema.completed
+            and api_transaction_schema.expired is not None
+            and api_transaction_schema.expired < utc_now()
+        )
+
+    @staticmethod
+    def _claim_expired_api_transaction(
+        api_transaction_schema: ApiTransactionSchema,
+        session: Session,
+    ) -> Optional[ApiTransactionSchema]:
+        """Atomically claim an expired API transaction for re-execution.
+
+        The conditional UPDATE lets exactly one worker reset an expired
+        completed transaction back to pending. The winner deletes the stale
+        cached result so the retried mutation produces a fresh response.
+        """
+        now = utc_now()
+        result = session.execute(
+            update(ApiTransactionSchema)
+            .where(ApiTransactionSchema.id == api_transaction_schema.id)
+            .where(col(ApiTransactionSchema.completed))
+            .where(col(ApiTransactionSchema.expired) < now)
+            .values(completed=False, expired=None, updated=now)
+        )
+
+        if result.rowcount != 1:  # type: ignore[attr-defined]
+            session.rollback()
+            return None
+
+        result_schema = session.get(
+            ApiTransactionResultSchema, api_transaction_schema.id
+        )
+        if result_schema is not None:
+            session.delete(result_schema)
+
+        session.commit()
+        session.refresh(api_transaction_schema)
+        return api_transaction_schema
+
+    def cleanup_expired_api_transactions(
+        self,
+        batch_size: int = DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE,
+    ) -> int:
+        """Delete a bounded batch of completed API transactions that expired."""
+        if (
+            batch_size < 1
+            or batch_size > MAX_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE
+        ):
+            raise ValueError(
+                "Expired API transaction cleanup batch size must be between "
+                f"1 and {MAX_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE}."
+            )
+
         with Session(self.engine) as session:
-            session.execute(
-                delete(ApiTransactionSchema).where(
+            # MySQL supports SKIP LOCKED only on SELECT. Selecting a bounded
+            # locked batch first lets concurrent workers skip rows already
+            # claimed by another cleanup worker while keeping every DELETE
+            # small enough to avoid long-held locks and replication lag.
+            query = (
+                select(ApiTransactionSchema.id)
+                .where(
                     col(ApiTransactionSchema.completed),
                     col(ApiTransactionSchema.expired) < utc_now(),
+                )
+                .order_by(
+                    col(ApiTransactionSchema.expired),
+                    col(ApiTransactionSchema.id),
+                )
+                .limit(batch_size)
+            )
+            if self.config.driver == SQLDatabaseDriver.MYSQL:
+                query = query.with_for_update(skip_locked=True)
+
+            expired_transaction_ids = session.exec(query).all()
+
+            if not expired_transaction_ids:
+                return 0
+
+            session.execute(
+                delete(ApiTransactionResultSchema).where(
+                    col(ApiTransactionResultSchema.id).in_(
+                        expired_transaction_ids
+                    )
+                )
+            )
+            result = session.execute(
+                delete(ApiTransactionSchema).where(
+                    col(ApiTransactionSchema.id).in_(expired_transaction_ids)
                 )
             )
 
             session.commit()
+            return max(result.rowcount or 0, 0)  # type: ignore[attr-defined]
 
     def get_or_create_api_transaction(
         self, api_transaction: ApiTransactionRequest
@@ -2415,24 +2505,58 @@ class SqlZenStore(BaseZenStore):
                 request_model=api_transaction, session=session
             )
 
-            api_transaction_schema = ApiTransactionSchema.from_request(
-                api_transaction
-            )
-            session.add(api_transaction_schema)
             created = False
-            try:
-                session.commit()
-                created = True
-            except IntegrityError:
-                # We have to rollback the failed session first in order to
-                # continue using it
-                session.rollback()
-                api_transaction_schema = self._get_api_transaction(
-                    api_transaction_id=api_transaction_schema.id,
-                    method=api_transaction.method,
-                    url=api_transaction.url,
-                    session=session,
+            for retry in range(2):
+                api_transaction_schema = ApiTransactionSchema.from_request(
+                    api_transaction
                 )
+                session.add(api_transaction_schema)
+                try:
+                    session.commit()
+                    created = True
+                    break
+                except IntegrityError:
+                    # We have to rollback the failed session first in order to
+                    # continue using it.
+                    session.rollback()
+                    try:
+                        api_transaction_schema = self._get_api_transaction(
+                            api_transaction_id=api_transaction_schema.id,
+                            method=api_transaction.method,
+                            url=api_transaction.url,
+                            session=session,
+                        )
+                    except KeyError:
+                        if retry == 0:
+                            continue
+                        raise
+
+                    if self._api_transaction_has_expired(
+                        api_transaction_schema
+                    ):
+                        claimed_transaction_schema = (
+                            self._claim_expired_api_transaction(
+                                api_transaction_schema, session=session
+                            )
+                        )
+                        if claimed_transaction_schema is not None:
+                            api_transaction_schema = claimed_transaction_schema
+                            created = True
+                            break
+
+                        try:
+                            api_transaction_schema = self._get_api_transaction(
+                                api_transaction_id=api_transaction_schema.id,
+                                method=api_transaction.method,
+                                url=api_transaction.url,
+                                session=session,
+                            )
+                        except KeyError:
+                            if retry == 0:
+                                continue
+                            raise
+
+                    break
 
             return (
                 api_transaction_schema.to_model(
