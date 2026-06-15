@@ -77,7 +77,7 @@ def test_pipeline_run_list(clean_client_with_run):
 
 
 def test_pipeline_run_list_returns_newest_first(clean_client_with_run: Client):
-    """Test that pipeline runs are listed newest-first by default"""
+    """Test that pipeline runs are listed newest-first by default."""
     runner = cli_runner()
     run_command = cli.commands["pipeline"].commands["run"]
     list_command = cli.commands["pipeline"].commands["runs"].commands["list"]
@@ -95,7 +95,14 @@ def test_pipeline_run_list_returns_newest_first(clean_client_with_run: Client):
     # List only the most recent run
     result = runner.invoke(
         list_command,
-        ["--size", "1", "--columns", "name"],
+        [
+            "--pipeline_id",
+            str(pipeline_id),
+            "--size",
+            "1",
+            "--columns",
+            "name",
+        ],
         env={"ZENML_DISABLE_PAGER": "1"},
     )
     assert result.exit_code == 0
