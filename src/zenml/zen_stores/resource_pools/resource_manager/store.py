@@ -366,6 +366,8 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             list_kwargs["subject_id"] = UUID(str(filter_model.component_id))
         elif filter_model.account_id is not None:
             list_kwargs["subject_id"] = UUID(str(filter_model.account_id))
+        elif filter_model.team_id is not None:
+            list_kwargs["subject_id"] = UUID(str(filter_model.team_id))
         if filter_model.priority is not None:
             list_kwargs["priority"] = int(filter_model.priority)
         items = [
@@ -613,11 +615,8 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
                 "request."
             )
 
-        subjects = [
-            RMSubject.from_account(
-                self.store.get_user(resource_request.user, hydrate=False)
-            )
-        ]
+        user = self.store.get_user(resource_request.user, hydrate=False)
+        subjects = [RMSubject.from_account(user)]
         if resource_request.component_ids:
             subjects.extend(
                 [
@@ -629,6 +628,16 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
                     for component_id in resource_request.component_ids
                 ]
             )
+        try:
+            from zenml.zen_server.utils import rbac
+
+            team_ids = rbac().list_user_team_ids(user)
+        except RuntimeError:
+            team_ids = []
+
+        subjects.extend(
+            RMSubject.from_team(UUID(str(team_id))) for team_id in team_ids
+        )
 
         try:
             request = RMResourceRequestCreate.from_model(
