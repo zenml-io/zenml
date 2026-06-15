@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Test zenml pipeline CLI commands."""
 
+import os
+import subprocess
 from uuid import uuid4
 
 import pytest
@@ -80,7 +82,6 @@ def test_pipeline_run_list_returns_newest_first(clean_client_with_run: Client):
     """Test that pipeline runs are listed newest-first by default."""
     runner = cli_runner()
     run_command = cli.commands["pipeline"].commands["run"]
-    list_command = cli.commands["pipeline"].commands["runs"].commands["list"]
 
     pipeline_id = pipeline_instance.register().id
 
@@ -92,10 +93,15 @@ def test_pipeline_run_list_returns_newest_first(clean_client_with_run: Client):
         runner.invoke(run_command, [pipeline_instance_source]).exit_code == 0
     )
 
-    # List only the most recent run
-    result = runner.invoke(
-        list_command,
+    # List only the most recent run through the real CLI entrypoint. The
+    # in-process Click runner can miss output that intentionally bypasses
+    # redirected stdout to keep command output pipeable for users.
+    result = subprocess.run(
         [
+            "zenml",
+            "pipeline",
+            "runs",
+            "list",
             "--pipeline_id",
             str(pipeline_id),
             "--size",
@@ -103,12 +109,14 @@ def test_pipeline_run_list_returns_newest_first(clean_client_with_run: Client):
             "--columns",
             "name",
         ],
-        env={"ZENML_DISABLE_PAGER": "1"},
+        capture_output=True,
+        env={**os.environ, "ZENML_DISABLE_PAGER": "1"},
+        text=True,
     )
-    assert result.exit_code == 0
+    assert result.returncode == 0
 
     newest_run = Client().list_pipeline_runs(pipeline_id=pipeline_id)[0]
-    assert newest_run.name in result.output
+    assert newest_run.name in result.stdout
 
 
 def test_pipeline_run_delete(clean_client_with_run):
