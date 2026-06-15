@@ -46,7 +46,7 @@ The extracted source code is the entire program, nothing around the function tra
 
 ZenML rejects parameters, decorators, and references to enclosing functions when the step is created. The execution environment only needs a `python` binary on the `PATH`, ZenML does not have to be installed.
 
-## Running without ZenML in the image
+## Running without ZenML in the image (dynamic pipelines only)
 
 A regular step runs your Python function inside the container, so the image has to contain `zenml`, your step code, and all of its dependencies. A command step does not. ZenML treats the command as a black box and never imports anything inside the container, so you can run an image that does not have `zenml` installed.
 
@@ -65,14 +65,15 @@ train = CommandStep(
 )
 ```
 
-The image must be pullable by the backend and already carry your code and libraries. The container owns its own credentials for anything it accesses.
+The image must be pullable by the execution backend and already carry your code and libraries.
 
 ## Where command steps run
 
 A command step follows the same execution routing as any other step. It can run:
 
 - On a **step operator**, in both static and dynamic pipelines.
-- **Locally as a subprocess** in dynamic pipelines, without a step operator.
+- As an **isolated step** (dynamic pipelines only)
+- **Locally as a subprocess** as an inline step (dynamic pipelines only)
 
 A static pipeline without a step operator is rejected at compile time. Attach a step operator, or use a dynamic pipeline.
 
