@@ -570,8 +570,8 @@ def update_user(
                 "other user accounts."
             )
 
-        # Accept the admin status update
-        safe_user_update.is_admin = user_update.is_admin
+        # Accept the active status update
+        safe_user_update.active = user_update.active
 
     # Validate changes to private user account information
     if user_update.email_opted_in is not None or user_update.email is not None:

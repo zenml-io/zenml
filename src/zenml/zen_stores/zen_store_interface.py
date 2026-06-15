@@ -60,6 +60,9 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    HookInvocationFilter,
+    HookInvocationRequest,
+    HookInvocationResponse,
     LogsRequest,
     LogsResponse,
     LogsUpdate,
@@ -102,6 +105,8 @@ from zenml.models import (
     ProjectResponse,
     ProjectUpdate,
     RunMetadataRequest,
+    RunStatisticsRequest,
+    RunStatisticsResponse,
     RunTemplateFilter,
     RunTemplateRequest,
     RunTemplateResponse,
@@ -147,6 +152,8 @@ from zenml.models import (
     StepRunRequest,
     StepRunResponse,
     StepRunUpdate,
+    StreamBatchRequest,
+    StreamBatchResponse,
     TagFilter,
     TagRequest,
     TagResourceRequest,
@@ -1641,6 +1648,19 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
         """
 
     @abstractmethod
+    def get_run_statistics(
+        self, request: RunStatisticsRequest
+    ) -> RunStatisticsResponse:
+        """Compute grouped statistics over pipeline runs.
+
+        Args:
+            request: Statistics request.
+
+        Returns:
+            Grouped statistics.
+        """
+
+    @abstractmethod
     def update_run(
         self, run_id: UUID, run_update: PipelineRunUpdate
     ) -> PipelineRunResponse:
@@ -1693,6 +1713,24 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
 
         Returns:
             KeyError: if the pipeline run doesn't exist.
+        """
+
+    @abstractmethod
+    def publish_run_events(
+        self, pipeline_run_id: UUID, batch: StreamBatchRequest
+    ) -> StreamBatchResponse:
+        """Publish a batch of live events to a pipeline run's stream.
+
+        Args:
+            pipeline_run_id: The ID of the run the events belong to.
+            batch: The batch of events to publish.
+
+        Returns:
+            The server-side ingest response.
+
+        Raises:
+            NotImplementedError: If streaming is not configured on the
+                target store.
         """
 
     @abstractmethod
@@ -2689,6 +2727,71 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
 
         Returns:
             The step heartbeat response.
+        """
+
+    # -------------------- Hook invocations --------------------
+
+    @abstractmethod
+    def create_hook_invocation(
+        self, hook_invocation: HookInvocationRequest
+    ) -> HookInvocationResponse:
+        """Create a hook invocation.
+
+        Args:
+            hook_invocation: The hook invocation to create.
+
+        Returns:
+            The created hook invocation.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
+    @abstractmethod
+    def get_hook_invocation(
+        self, hook_invocation_id: UUID, hydrate: bool = True
+    ) -> HookInvocationResponse:
+        """Get a hook invocation by ID.
+
+        Args:
+            hook_invocation_id: The ID of the hook invocation to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The hook invocation.
+
+        Raises:
+            KeyError: if the hook invocation doesn't exist.
+        """
+
+    @abstractmethod
+    def list_hook_invocations(
+        self,
+        hook_invocation_filter_model: HookInvocationFilter,
+        hydrate: bool = False,
+    ) -> Page[HookInvocationResponse]:
+        """List all hook invocations matching the given filter criteria.
+
+        Args:
+            hook_invocation_filter_model: All filter parameters including
+                pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all hook invocations matching the filter criteria.
+        """
+
+    @abstractmethod
+    def delete_hook_invocation(self, hook_invocation_id: UUID) -> None:
+        """Delete a hook invocation.
+
+        Args:
+            hook_invocation_id: The ID of the hook invocation to delete.
+
+        Raises:
+            KeyError: if the hook invocation doesn't exist.
         """
 
     # -------------------- Users --------------------

@@ -76,8 +76,10 @@ from zenml.constants import (
     DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     DISABLE_HEARTBEAT,
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
+    EVENTS,
     FLAVORS,
     HEARTBEAT,
+    HOOK_INVOCATIONS,
     INFO,
     LOGIN,
     LOGS,
@@ -116,6 +118,7 @@ from zenml.constants import (
     STACK_COMPONENTS,
     STACK_DEPLOYMENT,
     STACKS,
+    STATISTICS,
     STEPS,
     TAG_RESOURCES,
     TAGS,
@@ -186,6 +189,9 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    HookInvocationFilter,
+    HookInvocationRequest,
+    HookInvocationResponse,
     LogsRequest,
     LogsResponse,
     LogsUpdate,
@@ -239,6 +245,8 @@ from zenml.models import (
     ResourceRequestFilter,
     ResourceRequestResponse,
     RunMetadataRequest,
+    RunStatisticsRequest,
+    RunStatisticsResponse,
     RunTemplateFilter,
     RunTemplateRequest,
     RunTemplateResponse,
@@ -284,6 +292,8 @@ from zenml.models import (
     StepRunRequest,
     StepRunResponse,
     StepRunUpdate,
+    StreamBatchRequest,
+    StreamBatchResponse,
     TagFilter,
     TagRequest,
     TagResourceRequest,
@@ -2335,6 +2345,20 @@ class RestZenStore(BaseZenStore):
             },
         )
 
+    def get_run_statistics(
+        self, request: RunStatisticsRequest
+    ) -> RunStatisticsResponse:
+        """Compute grouped statistics over pipeline runs.
+
+        Args:
+            request: Statistics request.
+
+        Returns:
+            Grouped statistics.
+        """
+        response_body = self.post(f"{RUNS}{STATISTICS}", body=request)
+        return RunStatisticsResponse.model_validate(response_body)
+
     def update_run(
         self, run_id: UUID, run_update: PipelineRunUpdate
     ) -> PipelineRunResponse:
@@ -2401,6 +2425,23 @@ class RestZenStore(BaseZenStore):
         self.put(
             path=f"{RUNS}/{str(run_id)}{DISABLE_HEARTBEAT}",
         )
+
+    def publish_run_events(
+        self, pipeline_run_id: UUID, batch: StreamBatchRequest
+    ) -> StreamBatchResponse:
+        """Publish a batch of live events to a pipeline run's stream.
+
+        Args:
+            pipeline_run_id: The ID of the run the events belong to.
+            batch: The batch of events to publish.
+
+        Returns:
+            The server-side ingest response.
+        """
+        response_body = self.post(
+            f"{RUNS}/{pipeline_run_id}{EVENTS}", body=batch
+        )
+        return StreamBatchResponse.model_validate(response_body)
 
     def create_run_wait_condition(
         self, run_wait_condition: RunWaitConditionRequest
@@ -3774,6 +3815,79 @@ class RestZenStore(BaseZenStore):
             response_model=StepRunResponse,
             filter_model=step_run_filter_model,
             params={"hydrate": hydrate},
+        )
+
+    # -------------------- Hook invocations --------------------
+
+    def create_hook_invocation(
+        self, hook_invocation: HookInvocationRequest
+    ) -> HookInvocationResponse:
+        """Create a hook invocation.
+
+        Args:
+            hook_invocation: The hook invocation to create.
+
+        Returns:
+            The created hook invocation.
+        """
+        return self._create_resource(
+            resource=hook_invocation,
+            response_model=HookInvocationResponse,
+            route=HOOK_INVOCATIONS,
+        )
+
+    def get_hook_invocation(
+        self, hook_invocation_id: UUID, hydrate: bool = True
+    ) -> HookInvocationResponse:
+        """Get a hook invocation by ID.
+
+        Args:
+            hook_invocation_id: The ID of the hook invocation to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The hook invocation.
+        """
+        return self._get_resource(
+            resource_id=hook_invocation_id,
+            route=HOOK_INVOCATIONS,
+            response_model=HookInvocationResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_hook_invocations(
+        self,
+        hook_invocation_filter_model: HookInvocationFilter,
+        hydrate: bool = False,
+    ) -> Page[HookInvocationResponse]:
+        """List all hook invocations matching the given filter criteria.
+
+        Args:
+            hook_invocation_filter_model: All filter parameters including
+                pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all hook invocations matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=HOOK_INVOCATIONS,
+            response_model=HookInvocationResponse,
+            filter_model=hook_invocation_filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def delete_hook_invocation(self, hook_invocation_id: UUID) -> None:
+        """Delete a hook invocation.
+
+        Args:
+            hook_invocation_id: The ID of the hook invocation to delete.
+        """
+        self._delete_resource(
+            resource_id=hook_invocation_id,
+            route=HOOK_INVOCATIONS,
         )
 
     def update_run_step(

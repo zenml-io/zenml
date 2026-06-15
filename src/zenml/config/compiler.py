@@ -584,7 +584,8 @@ class Compiler:
             )
         full_step_config = (
             step_configuration_overrides.apply_pipeline_configuration(
-                pipeline_configuration=pipeline.configuration
+                pipeline_configuration=pipeline.configuration,
+                exclude_hook_sources=pipeline.is_dynamic,
             )
         )
 

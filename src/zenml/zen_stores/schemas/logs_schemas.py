@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of pipeline logs tables."""
 
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 from uuid import UUID
 
 from sqlalchemy import TEXT, VARCHAR, Column
@@ -33,6 +33,11 @@ from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.hook_invocation_schemas import (
+        HookInvocationSchema,
+    )
 
 
 class LogsSchema(BaseSchema, table=True):
@@ -93,6 +98,14 @@ class LogsSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=True,
     )
+    hook_invocation_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target="hook_invocation",
+        source_column="hook_invocation_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
 
     # Relationships
     project: "ProjectSchema" = Relationship()
@@ -101,6 +114,9 @@ class LogsSchema(BaseSchema, table=True):
         back_populates="logs"
     )
     step_run: Optional["StepRunSchema"] = Relationship(back_populates="logs")
+    hook_invocation: Optional["HookInvocationSchema"] = Relationship(
+        back_populates="logs"
+    )
 
     @classmethod
     def from_request(cls, request: LogsRequest) -> "LogsSchema":
@@ -122,6 +138,7 @@ class LogsSchema(BaseSchema, table=True):
             step_run_id=request.step_run_id,
             artifact_store_id=request.artifact_store_id,
             log_store_id=request.log_store_id,
+            hook_invocation_id=request.hook_invocation_id,
         )
 
     def to_model(
@@ -156,6 +173,7 @@ class LogsSchema(BaseSchema, table=True):
                 pipeline_run_id=self.pipeline_run_id,
                 artifact_store_id=self.artifact_store_id,
                 log_store_id=self.log_store_id,
+                hook_invocation_id=self.hook_invocation_id,
             )
 
         resources = None

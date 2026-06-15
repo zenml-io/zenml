@@ -79,6 +79,7 @@ if TYPE_CHECKING:
         PipelineSnapshotResponse,
     )
     from zenml.orchestrators import BaseOrchestrator
+    from zenml.sandboxes import BaseSandbox
     from zenml.stack import StackComponent
     from zenml.step_operators import BaseStepOperator
     from zenml.utils import secret_utils
@@ -125,6 +126,7 @@ class Stack:
         deployer: Optional["BaseDeployer"] = None,
         log_store: Optional["BaseLogStore"] = None,
         metric_store: Optional["BaseMetricStore"] = None,
+        sandbox: Optional[Union["BaseSandbox", List["BaseSandbox"]]] = None,
     ):
         """Initializes and validates a stack instance.
 
@@ -150,6 +152,8 @@ class Stack:
             deployer: Deployer component of the stack.
             log_store: Log store component of the stack.
             metric_store: Metric store component of the stack.
+            sandbox: Sandbox component(s) of the stack. Repeatable; a single
+                component or a list of components.
         """
         self._id = id
         self._name = name
@@ -176,6 +180,7 @@ class Stack:
             deployer,
             log_store,
             metric_store,
+            sandbox,
         ]:
             components: List["StackComponent"] = list()
             if component_input:
@@ -299,6 +304,7 @@ class Stack:
         from zenml.model_deployers import BaseModelDeployer
         from zenml.model_registries import BaseModelRegistry
         from zenml.orchestrators import BaseOrchestrator
+        from zenml.sandboxes import BaseSandbox
         from zenml.step_operators import BaseStepOperator
 
         def _raise_type_error(
@@ -401,6 +407,10 @@ class Stack:
         ):
             _raise_type_error(metric_store, BaseMetricStore)
 
+        sandbox = components.get(StackComponentType.SANDBOX)
+        if sandbox is not None and not isinstance(sandbox, BaseSandbox):
+            _raise_type_error(sandbox, BaseSandbox)
+
         return Stack(
             id=id,
             name=name,
@@ -421,6 +431,7 @@ class Stack:
             deployer=deployer,
             log_store=log_store,
             metric_store=metric_store,
+            sandbox=sandbox,
         )
 
     @classmethod
@@ -467,6 +478,7 @@ class Stack:
         from zenml.model_deployers import BaseModelDeployer
         from zenml.model_registries import BaseModelRegistry
         from zenml.orchestrators import BaseOrchestrator
+        from zenml.sandboxes import BaseSandbox
         from zenml.step_operators import BaseStepOperator
 
         def _raise_type_error(
@@ -622,6 +634,14 @@ class Stack:
             if not isinstance(metric_store[0], BaseMetricStore):
                 _raise_type_error(metric_store[0], BaseMetricStore)
 
+        # Sandbox
+        sandbox = components.get(StackComponentType.SANDBOX)
+        if sandbox is not None and not isinstance(sandbox, list):
+            sandbox = [sandbox]
+        for sb in sandbox or []:
+            if not isinstance(sb, BaseSandbox):
+                _raise_type_error(sb, BaseSandbox)
+
         return Stack(
             id=id,
             name=name,
@@ -682,6 +702,10 @@ class Stack:
             metric_store=cast(
                 Optional["BaseMetricStore"],
                 metric_store[0] if metric_store else None,
+            ),
+            sandbox=cast(
+                Optional[Union["BaseSandbox", List["BaseSandbox"]]],
+                sandbox,
             ),
         )
 
@@ -927,6 +951,32 @@ class Stack:
             component.name: cast("BaseAlerter", component)
             for component in self.get_components_by_type(
                 StackComponentType.ALERTER
+            )
+        }
+
+    @property
+    def sandbox(self) -> Optional["BaseSandbox"]:
+        """The sandbox of the stack.
+
+        Returns:
+            The sandbox of the stack.
+        """
+        return cast(
+            "BaseSandbox",
+            self._get_default_component(StackComponentType.SANDBOX),
+        )
+
+    @property
+    def sandboxes(self) -> Dict[str, "BaseSandbox"]:
+        """All attached sandboxes keyed by component name.
+
+        Returns:
+            The stack sandboxes keyed by their names.
+        """
+        return {
+            component.name: cast("BaseSandbox", component)
+            for component in self.get_components_by_type(
+                StackComponentType.SANDBOX
             )
         }
 

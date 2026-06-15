@@ -46,6 +46,7 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_MAX_DEVICE_AUTH_ATTEMPTS,
     DEFAULT_ZENML_SERVER_MAX_REQUEST_BODY_SIZE_IN_BYTES,
     DEFAULT_ZENML_SERVER_NAME,
+    DEFAULT_ZENML_SERVER_OTEL_SERVICE_NAME,
     DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW,
     DEFAULT_ZENML_SERVER_REQUEST_CACHE_TIMEOUT,
     DEFAULT_ZENML_SERVER_REQUEST_TIMEOUT,
@@ -66,6 +67,14 @@ from zenml.models import ServerDeploymentType
 from zenml.utils.pydantic_utils import before_validator_handler
 
 logger = get_logger(__name__)
+
+SUPPORTED_STANDARD_OTEL_ENV_VARS = {
+    "OTEL_EXPORTER_OTLP_ENDPOINT",
+    "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
+    "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT",
+    "OTEL_EXPORTER_OTLP_LOGS_ENDPOINT",
+    "OTEL_SERVICE_NAME",
+}
 
 
 def generate_jwt_secret_key() -> str:
@@ -255,6 +264,27 @@ class ServerConfiguration(BaseModel):
             cleanup batches.
         dashboard_files_path: The path to the dashboard files directory. If not
             specified, the built-in dashboard files will be used.
+        otel_exporter_otlp_endpoint: Base OTLP/HTTP collector endpoint URL for
+            OpenTelemetry export (traces, metrics, logs). If not set,
+            OpenTelemetry instrumentation can also be activated with the
+            standard OTEL_EXPORTER_OTLP_ENDPOINT environment variable or
+            per-signal endpoint overrides.
+        otel_exporter_otlp_traces_endpoint: OTLP/HTTP endpoint URL for trace
+            export. If not set, ZenML derives it from the base endpoint.
+        otel_exporter_otlp_metrics_endpoint: OTLP/HTTP endpoint URL for metric
+            export. If not set, ZenML derives it from the base endpoint.
+        otel_exporter_otlp_logs_endpoint: OTLP/HTTP endpoint URL for log
+            export. If not set, ZenML derives it from the base endpoint.
+        otel_service_name: Service name reported in OTel resource attributes.
+            Appears as ``service.name`` in traces, metrics, and logs.
+            Defaults to 'zenml-server'. Can also be configured through the
+            standard OTEL_SERVICE_NAME environment variable.
+        otel_traces_enabled: Whether to export OpenTelemetry traces when the
+            OTLP endpoint is configured.
+        otel_metrics_enabled: Whether to export OpenTelemetry metrics when the
+            OTLP endpoint is configured.
+        otel_logs_enabled: Whether to export OpenTelemetry logs when the OTLP
+            endpoint is configured.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -298,6 +328,12 @@ class ServerConfiguration(BaseModel):
     reportable_resources: List[str] = []
     workload_manager_implementation_source: Optional[str] = None
     resource_pool_implementation_source: Optional[str] = None
+    stream_broker_implementation_source: Optional[str] = None
+    streaming_heartbeat_seconds: float = Field(default=30.0, gt=0.0)
+    streaming_max_subscribers_per_stream: int = Field(default=100, gt=0)
+    streaming_broadcaster_idle_grace_seconds: float = Field(
+        default=30.0, gt=0.0
+    )
     max_concurrent_snapshot_runs: int = (
         DEFAULT_ZENML_SERVER_MAX_CONCURRENT_SNAPSHOT_RUNS
     )
@@ -369,9 +405,68 @@ class ServerConfiguration(BaseModel):
     )
     dashboard_files_path: Optional[str] = None
 
+    otel_exporter_otlp_endpoint: Optional[str] = None
+    otel_exporter_otlp_traces_endpoint: Optional[str] = None
+    otel_exporter_otlp_metrics_endpoint: Optional[str] = None
+    otel_exporter_otlp_logs_endpoint: Optional[str] = None
+    otel_service_name: str = DEFAULT_ZENML_SERVER_OTEL_SERVICE_NAME
+    otel_traces_enabled: bool = True
+    otel_metrics_enabled: bool = True
+    otel_logs_enabled: bool = True
+
     _deployment_id: Optional[UUID] = None
 
     event_handler_sources: list[str] = []
+
+    @model_validator(mode="after")
+    def _resolve_otel_endpoints(self) -> "ServerConfiguration":
+        """Resolve effective OTLP/HTTP endpoints for all telemetry signals."""
+        # Resolve OTLP/HTTP endpoints for all telemetry signals
+        self.otel_exporter_otlp_traces_endpoint = (
+            self._get_otel_signal_endpoint(
+                enabled=self.otel_traces_enabled,
+                endpoint=self.otel_exporter_otlp_traces_endpoint,
+                signal_path="v1/traces",
+            )
+        )
+        self.otel_exporter_otlp_metrics_endpoint = (
+            self._get_otel_signal_endpoint(
+                enabled=self.otel_metrics_enabled,
+                endpoint=self.otel_exporter_otlp_metrics_endpoint,
+                signal_path="v1/metrics",
+            )
+        )
+        self.otel_exporter_otlp_logs_endpoint = self._get_otel_signal_endpoint(
+            enabled=self.otel_logs_enabled,
+            endpoint=self.otel_exporter_otlp_logs_endpoint,
+            signal_path="v1/logs",
+        )
+
+        return self
+
+    def _get_otel_signal_endpoint(
+        self,
+        enabled: bool,
+        endpoint: Optional[str],
+        signal_path: str,
+    ) -> Optional[str]:
+        """Get a configured or derived OTLP/HTTP signal endpoint."""
+        # If the signal is disabled, return None.
+        if not enabled:
+            return None
+
+        # If individual signal endpoints are configured, use them.
+        if endpoint:
+            return endpoint
+
+        # If the base endpoint is configured, use it and append the path.
+        if self.otel_exporter_otlp_endpoint:
+            return (
+                f"{self.otel_exporter_otlp_endpoint.rstrip('/')}/{signal_path}"
+            )
+
+        # If no endpoint is configured, return None.
+        return None
 
     @model_validator(mode="before")
     @classmethod
@@ -562,6 +657,15 @@ class ServerConfiguration(BaseModel):
         """
         return self.resource_pool_implementation_source is not None
 
+    @property
+    def streaming_enabled(self) -> bool:
+        """Whether live event streaming is enabled on the server or not.
+
+        Returns:
+            Whether live event streaming is enabled on the server or not.
+        """
+        return self.stream_broker_implementation_source is not None
+
     def get_jwt_token_issuer(self) -> str:
         """Get the JWT token issuer.
 
@@ -641,6 +745,8 @@ class ServerConfiguration(BaseModel):
                 env_server_config[
                     k[len(ENV_ZENML_SERVER_PREFIX) :].lower()
                 ] = v
+            elif k in SUPPORTED_STANDARD_OTEL_ENV_VARS:
+                env_server_config.setdefault(k.lower(), v)
 
         server_config = ServerConfiguration(**env_server_config)
 

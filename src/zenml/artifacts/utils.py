@@ -71,6 +71,7 @@ from zenml.models import (
 from zenml.stack import StackComponent
 from zenml.steps.step_context import get_step_context
 from zenml.utils import source_utils
+from zenml.utils.uuid_utils import to_uuid
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 if TYPE_CHECKING:
@@ -846,8 +847,7 @@ def load_artifact_store(
         NotImplementedError: If the artifact store could not be loaded.
     """
     client = Client()
-    if isinstance(artifact_store_id, str):
-        artifact_store_id = UUID(artifact_store_id)
+    artifact_store_id = to_uuid(artifact_store_id)
 
     if (
         ENV_ZENML_SERVER not in os.environ

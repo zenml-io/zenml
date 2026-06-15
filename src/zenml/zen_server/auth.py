@@ -16,7 +16,7 @@
 import functools
 from datetime import datetime, timedelta
 from functools import wraps
-from typing import Any, Awaitable, Callable, Dict, Optional, Tuple, Union, cast
+from typing import Any, Awaitable, Callable, Dict, Optional, Tuple, Union
 from urllib.parse import urlencode, urlparse
 from uuid import UUID, uuid4
 
@@ -154,7 +154,7 @@ def _fetch_and_verify_api_key(
         logger.error(error)
         raise CredentialsNotValid(error)
 
-    if key_to_verify and not api_key.verify_key(key_to_verify):
+    if key_to_verify is not None and not api_key.verify_key(key_to_verify):
         error = (
             f"Authentication error: could not verify key value for API key "
             f"{api_key.name}"
@@ -1168,13 +1168,10 @@ def verify_download_token(
 
     config = server_config()
     try:
-        claims = cast(
-            Dict[str, Any],
-            jwt.decode(
-                token,
-                config.jwt_secret_key,
-                algorithms=[config.jwt_token_algorithm],
-            ),
+        claims = jwt.decode(
+            token,
+            config.jwt_secret_key,
+            algorithms=[config.jwt_token_algorithm],
         )
     except jwt.PyJWTError as e:
         raise CredentialsNotValid(f"Invalid JWT token: {e}") from e
@@ -1323,7 +1320,7 @@ def get_authorization_provider() -> Callable[..., Awaitable[AuthContext]]:
 
     @wraps(provider)
     async def async_authorize_fn(*args: Any, **kwargs: Any) -> AuthContext:
-        from zenml.zen_server.utils import get_system_metrics_log_str
+        from zenml.zen_server.utils import get_system_metrics
 
         request_context = request_manager().current_request
 
@@ -1332,10 +1329,8 @@ def get_authorization_provider() -> Callable[..., Awaitable[AuthContext]]:
             assert request_context is not None
 
             logger.debug(
-                f"[{request_context.log_request_id}] API STATS - "
-                f"{request_context.log_request} "
-                f"AUTHORIZING "
-                f"{get_system_metrics_log_str(request_context.request)}"
+                "request.authorizing",
+                extra=get_system_metrics(),
             )
 
             try:
@@ -1344,10 +1339,8 @@ def get_authorization_provider() -> Callable[..., Awaitable[AuthContext]]:
                 return auth_context
             finally:
                 logger.debug(
-                    f"[{request_context.log_request_id}] API STATS - "
-                    f"{request_context.log_request} "
-                    f"AUTHORIZED "
-                    f"{get_system_metrics_log_str(request_context.request)}"
+                    "request.authorized",
+                    extra=get_system_metrics(),
                 )
 
         func = functools.partial(sync_authorize_fn, *args, **kwargs)

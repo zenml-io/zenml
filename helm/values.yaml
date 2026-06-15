@@ -59,6 +59,23 @@ server:
   #
   # requestCacheTimeout: 300
 
+  # Live event streaming for pipeline runs. Dormant unless
+  # `streamBrokerImplementationSource` is set. Source `ZENML_REDIS_BROKER_URL`
+  # from a secret via `server.environmentSecretKeyRefs`.
+  streaming:
+    # streamBrokerImplementationSource: zenml.zen_server.streaming.brokers.redis_streams.RedisStreamsBroker
+    #
+    # SSE heartbeat interval (seconds). Default: 30.
+    # heartbeatSeconds: 30
+    #
+    # Max simultaneous subscribers per run. The N+1th gets 503. Default: 100.
+    # maxSubscribersPerStream: 100
+    #
+    # How long the server keeps a stream's broker reader running after the
+    # last subscriber disconnects, so quick reconnects don't re-probe the
+    # broker. Default: 30.
+    # broadcasterIdleGraceSeconds: 30
+
   image:
     repository: zenmldocker/zenml-server
     pullPolicy: Always
@@ -1108,6 +1125,30 @@ server:
 
 
   # Extra environment variables to set in the ZenML server container.
+  #
+  # Examples:
+  #
+  #   # Controls the server stdout/stderr log format.
+  #   # Use "console" (default), "json", or a valid Python %-style format string.
+  #   ZENML_CONSOLE_LOGGING_FORMAT: "json"
+  #
+  #   # Disables ANSI color output in console logs. Default is "false".
+  #   ZENML_LOGGING_COLORS_DISABLED: "true"
+  #
+  #   # Enables server OpenTelemetry export for traces, metrics, and logs.
+  #   # The logs export to the OTel backend is independent of ZENML_CONSOLE_LOGGING_FORMAT
+  #   # Logs are exported as OTLP records with structured attributes derived from the
+  #   # underlying log record, not as console-formatted text or JSON.
+  #   ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
+  #   # Standard OTLP/HTTP endpoint env vars are also supported:
+  #   # OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
+  #   # OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "http://otel-collector:4318/v1/traces"
+  #   # OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "http://otel-collector:4318/v1/metrics"
+  #   # OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: "http://otel-collector:4318/v1/logs"
+  #   ZENML_SERVER_OTEL_SERVICE_NAME: "zenml-server"
+  #   ZENML_SERVER_OTEL_TRACES_ENABLED: "true"
+  #   ZENML_SERVER_OTEL_METRICS_ENABLED: "true"
+  #   ZENML_SERVER_OTEL_LOGS_ENABLED: "true"
   environment: {}
 
   # Extra environment variables to set in the ZenML server container that
@@ -1148,6 +1189,25 @@ server:
     type: ClusterIP
     port: 80
     annotations: {}
+
+  # Uvicorn proxy header handling.
+  #
+  # SECURITY WARNING: Only enable this if ZenML is behind trusted proxies that
+  # control the X-Forwarded-* headers. Client-supplied X-Forwarded-For values
+  # can be forged and may bypass IP-based protections such as login rate
+  # limiting if they are trusted blindly.
+  #
+  # Safe configurations are either:
+  #   1. Set forwardedAllowIPs to a strict comma-separated list of trusted
+  #      proxy IPs/CIDRs; or
+  #   2. Ensure your ingress/gateway sanitizes or overwrites incoming
+  #      X-Forwarded-* headers before forwarding requests to ZenML.
+  #
+  # When disabled, Uvicorn ignores X-Forwarded-* headers and ZenML sees the
+  # direct peer address, which is usually the ingress/gateway IP in Kubernetes.
+  proxyHeaders:
+    enabled: false
+    forwardedAllowIPs: "*"
 
   ingress:
     enabled: true

@@ -34,6 +34,12 @@ class RunMetadataSchema(BaseSchema, table=True):
     """SQL Model for run metadata."""
 
     __tablename__ = "run_metadata"
+    __table_args__ = (
+        build_index(
+            table_name=__tablename__,
+            column_names=["key"],
+        ),
+    )
 
     stack_component_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,

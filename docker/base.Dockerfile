@@ -90,7 +90,7 @@ RUN if [ "$ZENML_NIGHTLY" = "true" ]; then \
       PACKAGE_NAME="zenml"; \
     fi \
     && pip install --upgrade pip uv setuptools \
-    && uv pip install "${PACKAGE_NAME}[server,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]${ZENML_VERSION:+==$ZENML_VERSION}" "alembic==1.15.2" \
+    && uv pip install "${PACKAGE_NAME}[server,server-streaming,otel,secrets-aws,secrets-gcp,secrets-azure,secrets-hashicorp,s3fs,gcsfs,adlfs,connectors-aws,connectors-gcp,connectors-azure,azureml,sagemaker,vertex]${ZENML_VERSION:+==$ZENML_VERSION}" "alembic==1.15.2" \
     && pip freeze > requirements.txt
 
 FROM base AS client

@@ -22,7 +22,7 @@ def upgrade() -> None:
     # Create the new project table first
     op.create_table(
         "project",
-        sa.Column("id", sqlmodel.sql.sqltypes.GUID(), nullable=False),
+        sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("created", sa.DateTime(), nullable=False),
         sa.Column("updated", sa.DateTime(), nullable=False),
         sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
@@ -53,11 +53,7 @@ def upgrade() -> None:
     # Example for one table (repeat pattern for others)
     with op.batch_alter_table("action", schema=None) as batch_op:
         # Phase 1: Add new column as nullable
-        batch_op.add_column(
-            sa.Column(
-                "project_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
-        )
+        batch_op.add_column(sa.Column("project_id", sa.Uuid(), nullable=True))
 
     # Phase 2: Copy data
     op.execute(
@@ -71,7 +67,7 @@ def upgrade() -> None:
     with op.batch_alter_table("action", schema=None) as batch_op:
         batch_op.alter_column(
             "project_id",
-            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            existing_type=sa.Uuid(),
             nullable=False,
         )
         batch_op.drop_constraint(
@@ -94,11 +90,7 @@ def upgrade() -> None:
 
     with op.batch_alter_table("artifact", schema=None) as batch_op:
         # Phase 1: Add new column as nullable
-        batch_op.add_column(
-            sa.Column(
-                "project_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
-        )
+        batch_op.add_column(sa.Column("project_id", sa.Uuid(), nullable=True))
 
     # Phase 2: Copy data
     op.execute(
@@ -112,7 +104,7 @@ def upgrade() -> None:
     with op.batch_alter_table("artifact", schema=None) as batch_op:
         batch_op.alter_column(
             "project_id",
-            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            existing_type=sa.Uuid(),
             nullable=False,
         )
         batch_op.drop_constraint(
@@ -135,11 +127,7 @@ def upgrade() -> None:
 
     with op.batch_alter_table("artifact_version", schema=None) as batch_op:
         # Phase 1: Add new column as nullable
-        batch_op.add_column(
-            sa.Column(
-                "project_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
-        )
+        batch_op.add_column(sa.Column("project_id", sa.Uuid(), nullable=True))
 
     # Phase 2: Copy data
     op.execute(
@@ -153,7 +141,7 @@ def upgrade() -> None:
     with op.batch_alter_table("artifact_version", schema=None) as batch_op:
         batch_op.alter_column(
             "project_id",
-            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            existing_type=sa.Uuid(),
             nullable=False,
         )
         batch_op.drop_constraint(
@@ -170,11 +158,7 @@ def upgrade() -> None:
 
     with op.batch_alter_table("code_reference", schema=None) as batch_op:
         # Phase 1: Add new column as nullable
-        batch_op.add_column(
-            sa.Column(
-                "project_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
-        )
+        batch_op.add_column(sa.Column("project_id", sa.Uuid(), nullable=True))
 
     # Phase 2: Copy data
     op.execute(
@@ -188,7 +172,7 @@ def upgrade() -> None:
     with op.batch_alter_table("code_reference", schema=None) as batch_op:
         batch_op.alter_column(
             "project_id",
-            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            existing_type=sa.Uuid(),
             nullable=False,
         )
         batch_op.drop_constraint(
@@ -205,11 +189,7 @@ def upgrade() -> None:
 
     with op.batch_alter_table("code_repository", schema=None) as batch_op:
         # Phase 1: Add new column as nullable
-        batch_op.add_column(
-            sa.Column(
-                "project_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
-        )
+        batch_op.add_column(sa.Column("project_id", sa.Uuid(), nullable=True))
 
     # Phase 2: Copy data
     op.execute(
@@ -223,7 +203,7 @@ def upgrade() -> None:
     with op.batch_alter_table("code_repository", schema=None) as batch_op:
         batch_op.alter_column(
             "project_id",
-            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            existing_type=sa.Uuid(),
             nullable=False,
         )
         batch_op.drop_constraint(
@@ -246,11 +226,7 @@ def upgrade() -> None:
 
     with op.batch_alter_table("event_source", schema=None) as batch_op:
         # Phase 1: Add new column as nullable
-        batch_op.add_column(
-            sa.Column(
-                "project_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
-        )
+        batch_op.add_column(sa.Column("project_id", sa.Uuid(), nullable=True))
 
     # Phase 2: Copy data
     op.execute(
@@ -264,7 +240,7 @@ def upgrade() -> None:
     with op.batch_alter_table("event_source", schema=None) as batch_op:
         batch_op.alter_column(
             "project_id",
-            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            existing_type=sa.Uuid(),
             nullable=False,
         )
         batch_op.drop_constraint(
@@ -287,11 +263,7 @@ def upgrade() -> None:
 
     with op.batch_alter_table("model", schema=None) as batch_op:
         # Phase 1: Add new column as nullable
-        batch_op.add_column(
-            sa.Column(
-                "project_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
-        )
+        batch_op.add_column(sa.Column("project_id", sa.Uuid(), nullable=True))
 
     # Phase 2: Copy data
     op.execute(
@@ -305,7 +277,7 @@ def upgrade() -> None:
     with op.batch_alter_table("model", schema=None) as batch_op:
         batch_op.alter_column(
             "project_id",
-            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            existing_type=sa.Uuid(),
             nullable=False,
         )
         batch_op.drop_constraint(
@@ -328,11 +300,7 @@ def upgrade() -> None:
 
     with op.batch_alter_table("model_version", schema=None) as batch_op:
         # Phase 1: Add new column as nullable
-        batch_op.add_column(
-            sa.Column(
-                "project_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
-        )
+        batch_op.add_column(sa.Column("project_id", sa.Uuid(), nullable=True))
 
     # Phase 2: Copy data
     op.execute(
@@ -346,7 +314,7 @@ def upgrade() -> None:
     with op.batch_alter_table("model_version", schema=None) as batch_op:
         batch_op.alter_column(
             "project_id",
-            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            existing_type=sa.Uuid(),
             nullable=False,
         )
         batch_op.drop_constraint(
@@ -363,11 +331,7 @@ def upgrade() -> None:
 
     with op.batch_alter_table("pipeline", schema=None) as batch_op:
         # Phase 1: Add new column as nullable
-        batch_op.add_column(
-            sa.Column(
-                "project_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
-        )
+        batch_op.add_column(sa.Column("project_id", sa.Uuid(), nullable=True))
 
     # Phase 2: Copy data
     op.execute(
@@ -381,7 +345,7 @@ def upgrade() -> None:
     with op.batch_alter_table("pipeline", schema=None) as batch_op:
         batch_op.alter_column(
             "project_id",
-            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            existing_type=sa.Uuid(),
             nullable=False,
         )
         batch_op.drop_constraint(
@@ -405,11 +369,7 @@ def upgrade() -> None:
     # pipeline_build table
     with op.batch_alter_table("pipeline_build", schema=None) as batch_op:
         # Phase 1: Add new column as nullable
-        batch_op.add_column(
-            sa.Column(
-                "project_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
-        )
+        batch_op.add_column(sa.Column("project_id", sa.Uuid(), nullable=True))
 
     # Phase 2: Copy data
     op.execute(
@@ -423,7 +383,7 @@ def upgrade() -> None:
     with op.batch_alter_table("pipeline_build", schema=None) as batch_op:
         batch_op.alter_column(
             "project_id",
-            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            existing_type=sa.Uuid(),
             nullable=False,
         )
         batch_op.drop_constraint(
@@ -441,11 +401,7 @@ def upgrade() -> None:
     # pipeline_deployment table
     with op.batch_alter_table("pipeline_deployment", schema=None) as batch_op:
         # Phase 1: Add new column as nullable
-        batch_op.add_column(
-            sa.Column(
-                "project_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
-        )
+        batch_op.add_column(sa.Column("project_id", sa.Uuid(), nullable=True))
 
     # Phase 2: Copy data
     op.execute(
@@ -459,7 +415,7 @@ def upgrade() -> None:
     with op.batch_alter_table("pipeline_deployment", schema=None) as batch_op:
         batch_op.alter_column(
             "project_id",
-            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            existing_type=sa.Uuid(),
             nullable=False,
         )
         batch_op.drop_constraint(
@@ -477,11 +433,7 @@ def upgrade() -> None:
     # pipeline_run table
     with op.batch_alter_table("pipeline_run", schema=None) as batch_op:
         # Phase 1: Add new column as nullable
-        batch_op.add_column(
-            sa.Column(
-                "project_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
-        )
+        batch_op.add_column(sa.Column("project_id", sa.Uuid(), nullable=True))
 
     # Phase 2: Copy data
     op.execute(
@@ -495,7 +447,7 @@ def upgrade() -> None:
     with op.batch_alter_table("pipeline_run", schema=None) as batch_op:
         batch_op.alter_column(
             "project_id",
-            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            existing_type=sa.Uuid(),
             nullable=False,
         )
         batch_op.drop_constraint(
@@ -519,11 +471,7 @@ def upgrade() -> None:
     # run_metadata table
     with op.batch_alter_table("run_metadata", schema=None) as batch_op:
         # Phase 1: Add new column as nullable
-        batch_op.add_column(
-            sa.Column(
-                "project_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
-        )
+        batch_op.add_column(sa.Column("project_id", sa.Uuid(), nullable=True))
 
     # Phase 2: Copy data
     op.execute(
@@ -537,7 +485,7 @@ def upgrade() -> None:
     with op.batch_alter_table("run_metadata", schema=None) as batch_op:
         batch_op.alter_column(
             "project_id",
-            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            existing_type=sa.Uuid(),
             nullable=False,
         )
         batch_op.drop_constraint(
@@ -555,11 +503,7 @@ def upgrade() -> None:
     # run_template table
     with op.batch_alter_table("run_template", schema=None) as batch_op:
         # Phase 1: Add new column as nullable
-        batch_op.add_column(
-            sa.Column(
-                "project_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
-        )
+        batch_op.add_column(sa.Column("project_id", sa.Uuid(), nullable=True))
 
     # Phase 2: Copy data
     op.execute(
@@ -573,7 +517,7 @@ def upgrade() -> None:
     with op.batch_alter_table("run_template", schema=None) as batch_op:
         batch_op.alter_column(
             "project_id",
-            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            existing_type=sa.Uuid(),
             nullable=False,
         )
         batch_op.drop_constraint(
@@ -597,11 +541,7 @@ def upgrade() -> None:
     # schedule table
     with op.batch_alter_table("schedule", schema=None) as batch_op:
         # Phase 1: Add new column as nullable
-        batch_op.add_column(
-            sa.Column(
-                "project_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
-        )
+        batch_op.add_column(sa.Column("project_id", sa.Uuid(), nullable=True))
 
     # Phase 2: Copy data
     op.execute(
@@ -615,7 +555,7 @@ def upgrade() -> None:
     with op.batch_alter_table("schedule", schema=None) as batch_op:
         batch_op.alter_column(
             "project_id",
-            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            existing_type=sa.Uuid(),
             nullable=False,
         )
         batch_op.drop_constraint(
@@ -639,11 +579,7 @@ def upgrade() -> None:
     # service table
     with op.batch_alter_table("service", schema=None) as batch_op:
         # Phase 1: Add new column as nullable
-        batch_op.add_column(
-            sa.Column(
-                "project_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
-        )
+        batch_op.add_column(sa.Column("project_id", sa.Uuid(), nullable=True))
 
     # Phase 2: Copy data
     op.execute(
@@ -657,7 +593,7 @@ def upgrade() -> None:
     with op.batch_alter_table("service", schema=None) as batch_op:
         batch_op.alter_column(
             "project_id",
-            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            existing_type=sa.Uuid(),
             nullable=False,
         )
         batch_op.drop_constraint(
@@ -675,11 +611,7 @@ def upgrade() -> None:
     # step_run table
     with op.batch_alter_table("step_run", schema=None) as batch_op:
         # Phase 1: Add new column as nullable
-        batch_op.add_column(
-            sa.Column(
-                "project_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
-        )
+        batch_op.add_column(sa.Column("project_id", sa.Uuid(), nullable=True))
 
     # Phase 2: Copy data
     op.execute(
@@ -693,7 +625,7 @@ def upgrade() -> None:
     with op.batch_alter_table("step_run", schema=None) as batch_op:
         batch_op.alter_column(
             "project_id",
-            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            existing_type=sa.Uuid(),
             nullable=False,
         )
         batch_op.drop_constraint(
@@ -711,11 +643,7 @@ def upgrade() -> None:
     # trigger table
     with op.batch_alter_table("trigger", schema=None) as batch_op:
         # Phase 1: Add new column as nullable
-        batch_op.add_column(
-            sa.Column(
-                "project_id", sqlmodel.sql.sqltypes.GUID(), nullable=True
-            )
-        )
+        batch_op.add_column(sa.Column("project_id", sa.Uuid(), nullable=True))
 
     # Phase 2: Copy data
     op.execute(
@@ -729,7 +657,7 @@ def upgrade() -> None:
     with op.batch_alter_table("trigger", schema=None) as batch_op:
         batch_op.alter_column(
             "project_id",
-            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            existing_type=sa.Uuid(),
             nullable=False,
         )
         batch_op.drop_constraint(

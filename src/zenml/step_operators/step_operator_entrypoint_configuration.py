@@ -23,6 +23,8 @@ from zenml.entrypoints.step_entrypoint_configuration import (
     STEP_NAME_OPTION,
     StepEntrypointConfiguration,
 )
+from zenml.enums import ExecutionStatus
+from zenml.models import StepRunUpdate
 from zenml.orchestrators import input_utils, output_utils
 from zenml.orchestrators.step_runner import StepRunner
 
@@ -83,7 +85,18 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
         """
         if self._step_run is None:
             step_run_id = UUID(self.entrypoint_args[STEP_RUN_ID_OPTION])
-            self._step_run = Client().zen_store.get_run_step(step_run_id)
+            if self.snapshot.is_dynamic:
+                # Isolated steps in dynamic pipelines are created in
+                # provisioning status. Update the status to signal that the
+                # execution environment started.
+                self._step_run = Client().zen_store.update_run_step(
+                    step_run_id=step_run_id,
+                    step_run_update=StepRunUpdate(
+                        status=ExecutionStatus.RUNNING
+                    ),
+                )
+            else:
+                self._step_run = Client().zen_store.get_run_step(step_run_id)
         return self._step_run
 
     @property

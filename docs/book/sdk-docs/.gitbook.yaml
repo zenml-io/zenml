@@ -3,3 +3,10 @@ root: .
 structure:
   readme: README.md
   summary: toc.md
+
+redirects:
+  # ZenML pages moved under zenml/ when the Kitaru section was added.
+  client: zenml/client.md
+  example-usages: zenml/example-usages.md
+  # Short alias for the Kitaru section.
+  kitaru: kitaru/client.md

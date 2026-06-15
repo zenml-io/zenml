@@ -66,6 +66,7 @@ from zenml.utils.metadata_utils import log_metadata, bulk_log_metadata
 from zenml.utils.metric_sampling_utils import collect_metric
 from zenml.utils.tag_utils import Tag, add_tags, remove_tags
 from zenml.execution.pipeline.dynamic.utils import unmapped, wait
+from zenml.hooks import run_hook
 
 __all__ = [
     "add_tags",
@@ -85,6 +86,7 @@ __all__ = [
     "Model",
     "link_artifact_to_model",
     "pipeline",
+    "run_hook",
     "save_artifact",
     "register_artifact",
     "show",

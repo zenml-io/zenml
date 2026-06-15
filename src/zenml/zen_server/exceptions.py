@@ -171,9 +171,22 @@ def http_exception_from_error(error: Exception) -> "HTTPException":
     status_code = status_code or 500
     matching_exception_type = matching_exception_type or RuntimeError
 
+    # Attach request_id so clients can correlate error responses with
+    # server-side logs
+    headers: dict[str, str] = {}
+    try:
+        from zenml.logger import get_logging_context
+
+        ctx = get_logging_context()
+        if request_id := ctx.get("request_id"):
+            headers["X-Request-ID"] = str(request_id)
+    except Exception:
+        pass
+
     return HTTPException(
         status_code=status_code,
         detail=error_detail(error, matching_exception_type),
+        headers=headers or None,
     )
 
 

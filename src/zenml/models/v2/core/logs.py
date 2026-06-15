@@ -68,6 +68,10 @@ class LogsRequest(ProjectScopedRequest):
         default=None,
         title="The step run ID to associate the logs with.",
     )
+    hook_invocation_id: Optional[UUID] = Field(
+        default=None,
+        title="The hook invocation ID to associate the logs with.",
+    )
 
     @field_validator("uri")
     @classmethod
@@ -198,6 +202,10 @@ class LogsResponseMetadata(ProjectScopedResponseMetadata):
         default=None,
         title="The log store ID that collected these logs",
     )
+    hook_invocation_id: Optional[UUID] = Field(
+        default=None,
+        title="The hook invocation ID to associate the logs with.",
+    )
 
 
 class LogsResponseResources(ProjectScopedResponseResources):
@@ -275,6 +283,15 @@ class LogsResponse(
             the value of the property.
         """
         return self.get_metadata().log_store_id
+
+    @property
+    def hook_invocation_id(self) -> Optional[UUID]:
+        """The `hook_invocation_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().hook_invocation_id
 
 
 # ------------------ Filter Model ------------------

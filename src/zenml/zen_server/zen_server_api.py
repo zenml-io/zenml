@@ -51,6 +51,11 @@ from zenml.service_connectors.service_connector_registry import (
 from zenml.zen_server.cloud_utils import send_pro_workspace_status_update
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.middleware import add_middlewares
+from zenml.zen_server.otel import (
+    configure_otel,
+    instrument_sqlalchemy_store,
+    shutdown_otel,
+)
 from zenml.zen_server.routers import (
     artifact_endpoint,
     artifact_version_endpoints,
@@ -60,6 +65,7 @@ from zenml.zen_server.routers import (
     deployment_endpoints,
     devices_endpoints,
     flavors_endpoints,
+    hook_invocations_endpoints,
     logs_endpoints,
     model_versions_endpoints,
     models_endpoints,
@@ -100,13 +106,16 @@ from zenml.zen_server.utils import (
     initialize_request_manager,
     initialize_resource_pool_store,
     initialize_snapshot_executor,
+    initialize_streaming,
     initialize_workload_manager,
     initialize_zen_store,
     register_event_handlers,
     server_config,
+    shutdown_streaming,
     snapshot_executor,
     start_event_loop_lag_monitor,
     stop_event_loop_lag_monitor,
+    zen_store,
 )
 
 
@@ -122,6 +131,27 @@ def dashboard_directory() -> str:
     return os.path.join(os.path.dirname(__file__), "dashboard")
 
 
+def _configure_uvicorn_logging() -> None:
+    """Route uvicorn records through the ZenML root logging setup."""
+    # On startup uvicorn installs its own handlers and formatters on three loggers:
+    #
+    #   "uvicorn"        – parent logger (propagate=False by default)
+    #   "uvicorn.error"  – server lifecycle and internal errors
+    #   "uvicorn.access" – per-request access log
+    #
+    # These handlers use uvicorn's own output path. Clear them and let uvicorn
+    # propagate to the root logger so its records are handled by the same
+    # ZenML handlers that render console/JSON output and export logs to OTel.
+    for _uvicorn_logger_name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
+        _uvicorn_logger = logging.getLogger(_uvicorn_logger_name)
+
+        # clear uvicorn handlers to avoid double logging
+        _uvicorn_logger.handlers.clear()
+
+        # propagate uvicorn logs to the root logger
+        _uvicorn_logger.propagate = True
+
+
 app = FastAPI(
     title="ZenML",
     version=zenml.__version__,
@@ -130,6 +160,12 @@ app = FastAPI(
 )
 
 add_middlewares(app)
+
+# suppress uvicorn access logs
+_configure_uvicorn_logging()
+
+# Configure OpenTelemetry
+configure_otel(app)
 
 
 # Customize the default request validation handler that comes with FastAPI
@@ -162,6 +198,8 @@ async def initialize() -> None:
     # race conditions
     await initialize_request_manager()
     initialize_zen_store()
+    # Instrument the SQL store with OpenTelemetry after it has been initialized.
+    instrument_sqlalchemy_store(store=zen_store())
     initialize_resource_pool_store()
     service_connector_registry.register_builtin_service_connectors()
     initialize_rbac()
@@ -169,6 +207,7 @@ async def initialize() -> None:
     initialize_workload_manager()
     initialize_resource_pool_store()
     initialize_snapshot_executor()
+    await initialize_streaming()
     initialize_secure_headers()
     if cfg.deployment_type == ServerDeploymentType.CLOUD:
         # Send a workspace status update to the Cloud API to indicate that the
@@ -186,7 +225,9 @@ async def shutdown() -> None:
     """Shutdown the ZenML server."""
     if logger.isEnabledFor(logging.DEBUG):
         stop_event_loop_lag_monitor()
+    shutdown_otel()
     snapshot_executor().shutdown(wait=True)
+    await shutdown_streaming()
     await cleanup_request_manager()
 
 
@@ -265,6 +306,7 @@ app.include_router(code_repositories_endpoints.router)
 app.include_router(deployment_endpoints.router)
 app.include_router(curated_visualization_endpoints.router)
 app.include_router(flavors_endpoints.router)
+app.include_router(hook_invocations_endpoints.router)
 app.include_router(logs_endpoints.router)
 app.include_router(models_endpoints.router)
 app.include_router(model_versions_endpoints.router)

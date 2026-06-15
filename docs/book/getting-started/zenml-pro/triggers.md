@@ -434,11 +434,13 @@ Supported target events depend on the source type:
 |-------------|---------|---------------|
 | `pipeline` | React to runs of a pipeline | `run_completed`, `run_failed` |
 | `pipeline_run` | React to one specific pipeline run | `completed`, `failed` |
+| `pipeline_snapshot` | React to runs of a pipeline snapshot | `run_completed`, `run_failed` |
 
 That distinction is easy to miss. If the source is a pipeline, the event name
 includes the word `run` because the pipeline itself is not what completes; one
-of its runs does. If the source is already a pipeline run, the event is simply
-`completed` or `failed`.
+of its runs does. Pipeline snapshot events follow the same naming pattern. If
+the source is already a pipeline run, the event is simply `completed` or
+`failed`.
 
 
 ### Create Platform Event Trigger

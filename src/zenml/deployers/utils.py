@@ -23,6 +23,7 @@ import requests
 from zenml.client import Client
 from zenml.config.deployment_settings import (
     DEFAULT_DEPLOYMENT_APP_INVOKE_URL_PATH,
+    DEFAULT_DEPLOYMENT_APP_SUBMIT_URL_PATH,
     DeploymentSettings,
 )
 from zenml.config.step_configurations import Step
@@ -136,6 +137,7 @@ def invoke_deployment(
     deployment_name_or_id: Union[str, UUID],
     project: Optional[UUID] = None,
     timeout: int = 300,  # 5 minute timeout
+    submit: bool = False,
     **kwargs: Any,
 ) -> Any:
     """Call a deployment and return the result.
@@ -144,6 +146,9 @@ def invoke_deployment(
         deployment_name_or_id: The name or ID of the deployment to call.
         project: The project ID of the deployment to call.
         timeout: The timeout for the HTTP request to the deployment.
+        submit: If True, submit the pipeline run for background execution
+            and return immediately with the run ID instead of waiting for
+            the result.
         **kwargs: Keyword arguments to pass to the deployment.
 
     Returns:
@@ -226,12 +231,20 @@ def invoke_deployment(
             f"Failed to serialize request data to JSON: {e}"
         )
 
-    invoke_url_path = DEFAULT_DEPLOYMENT_APP_INVOKE_URL_PATH
-    if deployment.snapshot:
-        deployment_settings = (
-            deployment.snapshot.pipeline_configuration.deployment_settings
-        )
-        invoke_url_path = f"{deployment_settings.root_url_path}{deployment_settings.api_url_path}{deployment_settings.invoke_url_path}"
+    if submit:
+        invoke_url_path = DEFAULT_DEPLOYMENT_APP_SUBMIT_URL_PATH
+        if deployment.snapshot:
+            deployment_settings = (
+                deployment.snapshot.pipeline_configuration.deployment_settings
+            )
+            invoke_url_path = f"{deployment_settings.root_url_path}{deployment_settings.api_url_path}{deployment_settings.submit_url_path}"
+    else:
+        invoke_url_path = DEFAULT_DEPLOYMENT_APP_INVOKE_URL_PATH
+        if deployment.snapshot:
+            deployment_settings = (
+                deployment.snapshot.pipeline_configuration.deployment_settings
+            )
+            invoke_url_path = f"{deployment_settings.root_url_path}{deployment_settings.api_url_path}{deployment_settings.invoke_url_path}"
 
     # Construct the invoke endpoint URL
     invoke_url = deployment.url.rstrip("/") + invoke_url_path
@@ -342,7 +355,8 @@ def deployment_snapshot_request_from_source_snapshot(
             step.step_config_overrides, step_update
         )
         merged_step_config = step_config.apply_pipeline_configuration(
-            pipeline_configuration
+            pipeline_configuration,
+            exclude_hook_sources=source_snapshot.is_dynamic,
         )
 
         step_spec = step.spec.model_copy(update={"enable_heartbeat": False})

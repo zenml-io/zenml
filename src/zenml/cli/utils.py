@@ -2632,6 +2632,13 @@ def pretty_print_deployment(
         declare("[bold]CLI command example:[/bold]")
         console.print(cli_command)
 
+        declare("\n[bold]Asynchronous CLI command example:[/bold]")
+        console.print(f"{cli_command} --no-wait")
+        console.print(
+            "  [dim]Submit the run for background execution and return the "
+            "run ID immediately[/dim]"
+        )
+
         # cURL example
         declare("\n[bold]cURL example:[/bold]")
         curl_headers = []
@@ -2655,6 +2662,19 @@ def pretty_print_deployment(
   }}'"""
 
         console.print(curl_command)
+
+        declare("\n[bold]Asynchronous cURL example:[/bold]")
+        async_curl_command = f"""curl -X POST {deployment.url}/submit \\
+  {headers_str} \\
+  -d '{{
+    "parameters": {curl_params}
+  }}'"""
+
+        console.print(async_curl_command)
+        console.print(
+            "  [dim]Submit the run for background execution and return the "
+            "run ID immediately[/dim]"
+        )
 
     # JSON Schemas
     if show_schema:
@@ -2965,11 +2985,16 @@ def list_options(
         data_type_descriptors = set()
         for k, v in filter_model.model_fields.items():
             if k not in filter_model.CLI_EXCLUDE_FIELDS:
+                default_value = v.default
+
+                if k == "sort_by" and default_value == "created":
+                    default_value = "desc:created"
+
                 options.append(
                     click.option(
                         f"--{k}",
                         type=str,
-                        default=v.default,
+                        default=default_value,
                         required=False,
                         multiple=_is_list_field(v),
                         help=create_filter_help_text(filter_model, k),
