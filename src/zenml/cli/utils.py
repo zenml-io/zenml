@@ -2998,12 +2998,17 @@ def list_options(
                 is_multiple = _is_list_field(v)
                 if is_multiple:
                     multi_value_fields.add(k)
+                default_value = v.default
+
+                if k == "sort_by" and default_value == "created":
+                    default_value = "desc:created"
+
                 options.append(
                     click.option(
                         f"--{k}",
                         type=str,
                         default=_get_click_option_default(
-                            default=v.default, multiple=is_multiple
+                            default=default_value, multiple=is_multiple
                         ),
                         required=False,
                         multiple=is_multiple,
