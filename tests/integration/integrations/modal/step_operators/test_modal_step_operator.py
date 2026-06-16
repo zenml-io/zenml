@@ -188,7 +188,9 @@ def _submit_with_stubs(
 
     monkeypatch.setattr(modal_step_operator_module, "Client", ClientStub)
     monkeypatch.setattr(
-        modal_step_operator_module.modal, "Client", ModalClientModuleStub
+        sandbox_utils.modal,
+        "Client",
+        ModalClientModuleStub,
     )
     monkeypatch.setattr(
         modal_step_operator_module.modal, "Image", ImageFactoryStub
@@ -304,6 +306,57 @@ def test_gpu_arg_type_with_zero_count_warns_and_returns_cpu_only(
     assert "running on CPU only" in caplog.text
 
 
+def test_create_modal_client_from_credentials_normalizes_values(
+    monkeypatch,
+) -> None:
+    modal_client = ModalClientStub("explicit")
+    recorded = []
+
+    class ModalClientModuleStub:
+        @staticmethod
+        def from_credentials(token_id, token_secret):
+            recorded.append((token_id, token_secret))
+            return modal_client
+
+    monkeypatch.setattr(
+        sandbox_utils.modal,
+        "Client",
+        ModalClientModuleStub,
+    )
+
+    assert (
+        sandbox_utils.create_modal_client_from_credentials(
+            token_id=" ak-test ",
+            token_secret=" as-test ",
+        )
+        is modal_client
+    )
+    assert recorded == [("ak-test", "as-test")]
+
+
+def test_create_modal_client_from_credentials_rejects_partial_pair() -> None:
+    with pytest.raises(
+        StackComponentInterfaceError,
+        match="token_id and token_secret must be configured together",
+    ):
+        sandbox_utils.create_modal_client_from_credentials(
+            token_id="ak-test",
+            token_secret=None,
+        )
+
+
+def test_create_modal_client_from_credentials_returns_none_without_pair() -> (
+    None
+):
+    assert (
+        sandbox_utils.create_modal_client_from_credentials(
+            token_id=None,
+            token_secret=None,
+        )
+        is None
+    )
+
+
 def test_modal_client_preserves_ambient_auth(monkeypatch) -> None:
     recorded = []
 
@@ -316,7 +369,9 @@ def test_modal_client_preserves_ambient_auth(monkeypatch) -> None:
             )
 
     monkeypatch.setattr(
-        modal_step_operator_module.modal, "Client", ModalClientModuleStub
+        sandbox_utils.modal,
+        "Client",
+        ModalClientModuleStub,
     )
 
     operator = _make_operator(ModalStepOperatorConfig())
@@ -340,7 +395,9 @@ def test_modal_client_caches_and_rebuilds_explicit_client(
             return clients.pop(0)
 
     monkeypatch.setattr(
-        modal_step_operator_module.modal, "Client", ModalClientModuleStub
+        sandbox_utils.modal,
+        "Client",
+        ModalClientModuleStub,
     )
 
     operator = _make_operator(
@@ -375,7 +432,9 @@ def test_modal_client_returns_open_cache_without_reading_config(
             )
 
     monkeypatch.setattr(
-        modal_step_operator_module.modal, "Client", ModalClientModuleStub
+        sandbox_utils.modal,
+        "Client",
+        ModalClientModuleStub,
     )
     operator = _make_operator(
         ModalStepOperatorConfig(
@@ -416,7 +475,9 @@ def test_modal_client_uses_lock_for_concurrent_creation(
             return modal_client
 
     monkeypatch.setattr(
-        modal_step_operator_module.modal, "Client", ModalClientModuleStub
+        sandbox_utils.modal,
+        "Client",
+        ModalClientModuleStub,
     )
 
     operator = _make_operator(
@@ -649,7 +710,9 @@ def test_status_and_cancel_use_cached_explicit_modal_client(
     )
 
     monkeypatch.setattr(
-        modal_step_operator_module.modal, "Client", ModalClientModuleStub
+        sandbox_utils.modal,
+        "Client",
+        ModalClientModuleStub,
     )
     monkeypatch.setattr(
         modal_step_operator_module.modal, "Sandbox", SandboxFactoryStub
@@ -701,7 +764,9 @@ def test_status_and_cancel_preserve_ambient_auth_with_client_none(
     )
 
     monkeypatch.setattr(
-        modal_step_operator_module.modal, "Client", ModalClientModuleStub
+        sandbox_utils.modal,
+        "Client",
+        ModalClientModuleStub,
     )
     monkeypatch.setattr(
         modal_step_operator_module.modal, "Sandbox", SandboxFactoryStub

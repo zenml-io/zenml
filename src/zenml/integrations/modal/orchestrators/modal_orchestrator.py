@@ -205,24 +205,11 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             ):
                 return self._modal_client
 
-            token_id = sandbox_utils.normalize_optional_config_value(
-                self.config.token_id
-            )
-            token_secret = sandbox_utils.normalize_optional_config_value(
-                self.config.token_secret
-            )
-            if bool(token_id) != bool(token_secret):
-                raise StackComponentInterfaceError(
-                    "Modal token_id and token_secret must be configured "
-                    "together."
+            self._modal_client = (
+                sandbox_utils.create_modal_client_from_credentials(
+                    token_id=self.config.token_id,
+                    token_secret=self.config.token_secret,
                 )
-
-            if not token_id or not token_secret:
-                return None
-
-            self._modal_client = modal.Client.from_credentials(
-                token_id,
-                token_secret,
             )
             return self._modal_client
 

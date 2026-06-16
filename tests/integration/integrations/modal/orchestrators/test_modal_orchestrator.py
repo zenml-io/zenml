@@ -404,7 +404,9 @@ def test_orchestrator_modal_client_caches_and_rebuilds_explicit_client(
             return clients.pop(0)
 
     monkeypatch.setattr(
-        modal_orchestrator_module.modal, "Client", ModalClientModuleStub
+        modal_orchestrator_module.sandbox_utils.modal,
+        "Client",
+        ModalClientModuleStub,
     )
 
     orchestrator = _make_orchestrator(

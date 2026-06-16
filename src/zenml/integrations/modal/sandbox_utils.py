@@ -99,6 +99,34 @@ def split_modal_runtime_environment(
     return sandbox_environment, sensitive_environment
 
 
+def create_modal_client_from_credentials(
+    *,
+    token_id: Optional[str],
+    token_secret: Optional[str],
+) -> Optional["modal.Client"]:
+    """Create an explicit Modal client from component credentials.
+
+    If no component credentials are configured, this returns ``None`` so the
+    Modal SDK can use its ambient authentication configuration. If only one
+    credential value is configured, the component configuration is invalid.
+    """
+    normalized_token_id = normalize_optional_config_value(token_id)
+    normalized_token_secret = normalize_optional_config_value(token_secret)
+
+    if bool(normalized_token_id) != bool(normalized_token_secret):
+        raise StackComponentInterfaceError(
+            "Modal token_id and token_secret must be configured together."
+        )
+
+    if not normalized_token_id or not normalized_token_secret:
+        return None
+
+    return modal.Client.from_credentials(
+        normalized_token_id,
+        normalized_token_secret,
+    )
+
+
 def resolve_modal_token_pair(
     *,
     token_id: Optional[str],
