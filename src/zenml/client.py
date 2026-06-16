@@ -7567,8 +7567,8 @@ class Client(metaclass=ClientMetaClass):
     def list_service_connector_resources(
         self,
         connector_type: StringFilterOption = None,
-        resource_type: StringFilterOption = None,
-        resource_id: StringFilterOption = None,
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
     ) -> List[ServiceConnectorResourcesModel]:
         """List resources that can be accessed by service connectors.
 

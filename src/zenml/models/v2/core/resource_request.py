@@ -28,7 +28,7 @@ from pydantic import Field, PositiveInt, model_validator
 
 from zenml.enums import ResourceRequestStatus
 from zenml.models.v2.base.filter import (
-    StringFilterOption,
+    EnumFilterOption,
     UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
@@ -252,9 +252,10 @@ class ResourceRequestFilter(UserScopedFilter):
         default=None,
         description="The id of the request that initiated the preemption of this request.",
     )
-    status: StringFilterOption = Field(
+    status: EnumFilterOption[ResourceRequestStatus] = Field(
         default=None,
         description="The status of the resource request.",
+        union_mode="left_to_right",
     )
     pipeline_run_id: UUIDFilterOption = Field(
         default=None,
