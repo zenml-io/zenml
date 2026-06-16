@@ -60,7 +60,11 @@ DATABRICKS_HOST = "DATABRICKS_HOST"
 DATABRICKS_USERNAME = "DATABRICKS_USERNAME"
 DATABRICKS_PASSWORD = "DATABRICKS_PASSWORD"
 DATABRICKS_TOKEN = "DATABRICKS_TOKEN"
+DATABRICKS_CLIENT_ID = "DATABRICKS_CLIENT_ID"
+DATABRICKS_CLIENT_SECRET = "DATABRICKS_CLIENT_SECRET"
+DATABRICKS_AUTH_TYPE = "DATABRICKS_AUTH_TYPE"
 DATABRICKS_UNITY_CATALOG = "databricks-uc"
+MLFLOW_ENABLE_DB_SDK = "MLFLOW_ENABLE_DB_SDK"
 
 
 class MLFlowExperimentTracker(BaseExperimentTracker):
@@ -338,6 +342,18 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
                 os.environ[DATABRICKS_PASSWORD] = self.config.tracking_password
             if self.config.tracking_token:
                 os.environ[DATABRICKS_TOKEN] = self.config.tracking_token
+            if (
+                self.config.databricks_client_id
+                and self.config.databricks_client_secret
+            ):
+                os.environ[DATABRICKS_CLIENT_ID] = (
+                    self.config.databricks_client_id
+                )
+                os.environ[DATABRICKS_CLIENT_SECRET] = (
+                    self.config.databricks_client_secret
+                )
+                os.environ[DATABRICKS_AUTH_TYPE] = "oauth-m2m"
+                os.environ[MLFLOW_ENABLE_DB_SDK] = "true"
             if self.config.enable_unity_catalog:
                 mlflow.set_registry_uri(DATABRICKS_UNITY_CATALOG)
         else:
