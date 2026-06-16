@@ -38,11 +38,9 @@ from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models import PipelineRunUpdate
 from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
+from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.publish_utils import (
-    publish_pipeline_run_metadata,
-    publish_pipeline_run_status_update,
     publish_step_run_metadata,
-    publish_stopped_step_run,
 )
 from zenml.pipelines.dynamic.entrypoint_configuration import (
     DynamicPipelineEntrypointConfiguration,
@@ -402,17 +400,6 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         if modal_environment:
             metadata[MODAL_ENVIRONMENT_METADATA_KEY] = modal_environment
 
-        if placeholder_run:
-            try:
-                publish_pipeline_run_metadata(
-                    pipeline_run_id=placeholder_run.id,
-                    pipeline_run_metadata={self.id: metadata},
-                )
-                placeholder_run.run_metadata.update(metadata)
-            except Exception:
-                self._terminate_created_sandbox_after_metadata_error(sandbox)
-                raise
-
         wait_for_completion = None
         if settings.synchronous:
 
@@ -444,9 +431,10 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         self, step_run_info: "StepRunInfo", environment: Dict[str, str]
     ) -> None:
         """Submit a dynamic isolated step sandbox to Modal."""
-        command = StepOperatorEntrypointConfiguration.get_entrypoint_command()
-        args = StepOperatorEntrypointConfiguration.get_entrypoint_arguments(
-            step_name=step_run_info.pipeline_step_name,
+        command, args = orchestrator_utils.get_step_entrypoint_command(
+            invocation_id=step_run_info.pipeline_step_name,
+            config=step_run_info.config,
+            entrypoint_config_class=StepOperatorEntrypointConfiguration,
             snapshot_id=step_run_info.snapshot.id,
             step_run_id=str(step_run_info.step_run_id),
         )
@@ -590,9 +578,18 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             )
             return step_run.status
 
-        return sandbox_utils.get_sandbox_status(
-            sandbox_id, modal_client=self.get_modal_client()
-        )
+        try:
+            return sandbox_utils.get_sandbox_status(
+                sandbox_id, modal_client=self.get_modal_client()
+            )
+        except Exception as e:
+            logger.warning(
+                "Failed to fetch Modal sandbox `%s` for step run `%s`: %s",
+                sandbox_id,
+                step_run.id,
+                e,
+            )
+            return ExecutionStatus.FAILED
 
     def stop_isolated_step(self, step_run: "StepRunResponse") -> None:
         """Stop a dynamic isolated step sandbox if it is still running."""
@@ -773,63 +770,6 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             raise RuntimeError(
                 "Failed to stop all Modal sandboxes: " + "; ".join(errors)
             )
-
-        self._publish_stopped_statuses_for_unfinished_steps(run)
-        self._publish_stopped_pipeline_run_if_active(run)
-
-    def _publish_stopped_pipeline_run_if_active(
-        self, run: "PipelineRunResponse"
-    ) -> None:
-        """Publish a stopped pipeline status if cleanup won the race."""
-        final_run = self._get_fresh_pipeline_run(run)
-        if final_run.status in {
-            ExecutionStatus.INITIALIZING,
-            ExecutionStatus.PROVISIONING,
-            ExecutionStatus.RUNNING,
-            ExecutionStatus.STOPPING,
-            ExecutionStatus.CANCELLING,
-        }:
-            publish_pipeline_run_status_update(run.id, ExecutionStatus.STOPPED)
-
-    def _publish_stopped_statuses_for_unfinished_steps(
-        self, run: "PipelineRunResponse"
-    ) -> None:
-        """Record stopped statuses for step runs whose sandboxes were killed.
-
-        Terminating a Modal sandbox kills the step process before it can
-        publish its own terminal status, and the orchestration sandbox that
-        could reconcile step statuses is terminated as well, so the stopping
-        client records them here.
-        """
-        final_run = self._get_fresh_pipeline_run(run)
-        try:
-            steps = final_run.steps
-        except Exception:
-            logger.debug(
-                "Pipeline run `%s` is not hydrated with step metadata.",
-                run.id,
-                exc_info=True,
-            )
-            return
-
-        for step_name, step_run in steps.items():
-            if step_run.status.is_finished:
-                continue
-            # Steps backed by a step operator run on that operator's
-            # infrastructure, survive the sandbox terminations, and publish
-            # their own terminal status.
-            if step_run.config.step_operator:
-                continue
-            try:
-                publish_stopped_step_run(step_run.id)
-            except Exception as e:
-                logger.warning(
-                    "Failed to mark step `%s` of stopped run `%s` as "
-                    "stopped: %s",
-                    step_name,
-                    run.id,
-                    e,
-                )
 
     @staticmethod
     def _get_fresh_pipeline_run(

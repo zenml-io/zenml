@@ -40,7 +40,6 @@ from zenml.integrations.modal.orchestrators.modal_orchestrator import (
     ModalOrchestrator,
     get_static_step_sandbox_metadata_key,
 )
-from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.models import PipelineRunUpdate, StepRunResponse
 from zenml.orchestrators import publish_utils
@@ -93,7 +92,6 @@ class _StaticModalPipelineController:
         self.shared_env = shared_env
         self.step_run_request_factory = step_run_request_factory
         self.step_runs: Dict[str, StepRunResponse] = {}
-        self._last_interrupt_status: Optional[ExecutionStatus] = None
 
     def build_nodes(self) -> List[Node]:
         """Build DAG runner nodes from the static pipeline snapshot."""
@@ -128,16 +126,12 @@ class _StaticModalPipelineController:
             self.pipeline_run.run_metadata[
                 get_static_step_sandbox_metadata_key(step_name)
             ] = sandbox.object_id
-        except Exception:
-            try:
-                sandbox.terminate()
-            except Exception:
-                logger.exception(
-                    "Failed to terminate Modal sandbox `%s` after metadata "
-                    "publication failed.",
-                    sandbox.object_id,
-                )
-            raise
+        except Exception as e:
+            logger.warning(
+                "Failed to publish Modal sandbox metadata for step `%s`: %s",
+                step_name,
+                e,
+            )
 
         self._maybe_publish_step_sandbox_metadata(node)
 
@@ -191,37 +185,21 @@ class _StaticModalPipelineController:
             )
             return None
 
-        interrupt_status = (
-            run.status
-            if run.status
-            in {
-                ExecutionStatus.STOPPING,
-                ExecutionStatus.STOPPED,
-                ExecutionStatus.FAILED,
-            }
-            else None
-        )
-
         if run.status == ExecutionStatus.STOPPING:
-            if interrupt_status != self._last_interrupt_status:
-                logger.info(
-                    "Gracefully stopping Modal DAG because pipeline run `%s` "
-                    "is `%s`.",
-                    self.pipeline_run.id,
-                    run.status,
-                )
-            self._last_interrupt_status = interrupt_status
+            logger.info(
+                "Gracefully stopping Modal DAG because pipeline run `%s` "
+                "is `%s`.",
+                self.pipeline_run.id,
+                run.status,
+            )
             return InterruptMode.GRACEFUL
 
         if run.status == ExecutionStatus.STOPPED:
-            if interrupt_status != self._last_interrupt_status:
-                logger.info(
-                    "Force-stopping Modal DAG because pipeline run `%s` "
-                    "is `%s`.",
-                    self.pipeline_run.id,
-                    run.status,
-                )
-            self._last_interrupt_status = interrupt_status
+            logger.info(
+                "Force-stopping Modal DAG because pipeline run `%s` is `%s`.",
+                self.pipeline_run.id,
+                run.status,
+            )
             return InterruptMode.FORCE
 
         if run.status == ExecutionStatus.FAILED:
@@ -229,27 +207,22 @@ class _StaticModalPipelineController:
                 self.snapshot.pipeline_configuration.execution_mode
             )
             if execution_mode == ExecutionMode.STOP_ON_FAILURE:
-                if interrupt_status != self._last_interrupt_status:
-                    logger.info(
-                        "Gracefully stopping Modal DAG because pipeline run "
-                        "`%s` is `%s`.",
-                        self.pipeline_run.id,
-                        run.status,
-                    )
-                self._last_interrupt_status = interrupt_status
+                logger.info(
+                    "Gracefully stopping Modal DAG because pipeline run `%s` "
+                    "is `%s`.",
+                    self.pipeline_run.id,
+                    run.status,
+                )
                 return InterruptMode.GRACEFUL
             if execution_mode == ExecutionMode.FAIL_FAST:
-                if interrupt_status != self._last_interrupt_status:
-                    logger.info(
-                        "Force-stopping Modal DAG because pipeline run `%s` "
-                        "is `%s`.",
-                        self.pipeline_run.id,
-                        run.status,
-                    )
-                self._last_interrupt_status = interrupt_status
+                logger.info(
+                    "Force-stopping Modal DAG because pipeline run `%s` "
+                    "is `%s`.",
+                    self.pipeline_run.id,
+                    run.status,
+                )
                 return InterruptMode.FORCE
 
-        self._last_interrupt_status = None
         return None
 
     def _cache_step_run_if_possible(self, step_name: str) -> bool:
@@ -419,8 +392,6 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
     def run(self) -> None:
         """Start child Modal sandboxes for all steps in a static pipeline."""
         snapshot = self.snapshot
-        integration_registry.activate_integrations()
-        self.prepare_code_environment()
 
         client = Client()
         active_stack = client.active_stack
@@ -507,18 +478,13 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
         failed_step_names = [
             step_name
             for step_name, node_status in node_statuses.items()
-            if node_status
-            in {
-                NodeStatus.FAILED,
-                NodeStatus.SKIPPED,
-            }
+            if node_status == NodeStatus.FAILED
         ]
-        cancelled_step_names = [
+        skipped_step_names = [
             step_name
             for step_name, node_status in node_statuses.items()
-            if node_status == NodeStatus.CANCELLED
+            if node_status == NodeStatus.SKIPPED
         ]
-        unsuccessful_step_names = failed_step_names + cancelled_step_names
         active_statuses = {
             ExecutionStatus.INITIALIZING,
             ExecutionStatus.PROVISIONING,
@@ -540,29 +506,30 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
             if run.status == ExecutionStatus.STOPPED:
                 return
 
-            if not unsuccessful_step_names:
+            if skipped_step_names:
+                logger.warning(
+                    "The following Modal steps were skipped: %s",
+                    ", ".join(skipped_step_names),
+                )
+
+            if not failed_step_names:
                 if run.status in active_statuses:
                     publish_utils.publish_successful_pipeline_run(
                         pipeline_run_id
                     )
                 return
 
-            if failed_step_names:
-                logger.error(
-                    "The following Modal steps did not complete "
-                    "successfully: %s",
-                    ", ".join(failed_step_names),
-                )
+            logger.error(
+                "The following Modal steps did not complete successfully: %s",
+                ", ".join(failed_step_names),
+            )
             step_runs = fetch_step_runs_by_names(
-                step_run_names=unsuccessful_step_names,
+                step_run_names=failed_step_names,
                 pipeline_run=run,
             )
-            for step_name, step_run in step_runs.items():
+            for step_run in step_runs.values():
                 if not step_run.status.is_finished:
-                    if step_name in cancelled_step_names:
-                        publish_utils.publish_cancelled_step_run(step_run.id)
-                    else:
-                        publish_utils.publish_failed_step_run(step_run.id)
+                    publish_utils.publish_failed_step_run(step_run.id)
 
             refreshed_run = client.get_pipeline_run(pipeline_run_id)
             if refreshed_run.status == ExecutionStatus.STOPPING:
@@ -574,18 +541,11 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
             if refreshed_run.status == ExecutionStatus.STOPPED:
                 return
             if refreshed_run.status in active_statuses:
-                if failed_step_names:
-                    publish_utils.publish_failed_pipeline_run(pipeline_run_id)
-                else:
-                    publish_utils.publish_pipeline_run_status_update(
-                        pipeline_run_id,
-                        ExecutionStatus.STOPPED,
-                    )
-            if failed_step_names:
-                raise RuntimeError(
-                    "Modal steps did not complete successfully: "
-                    + ", ".join(failed_step_names)
-                )
+                publish_utils.publish_failed_pipeline_run(pipeline_run_id)
+            raise RuntimeError(
+                "Modal steps did not complete successfully: "
+                + ", ".join(failed_step_names)
+            )
         except AuthorizationException:
             if failed_step_names:
                 raise RuntimeError(
