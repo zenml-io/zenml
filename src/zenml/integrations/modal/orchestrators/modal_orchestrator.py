@@ -193,6 +193,35 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         """Get the Modal client used by orchestrator entrypoints."""
         return self._modal_client_factory.get_client()
 
+    def _inject_modal_credentials(self, environment: Dict[str, str]) -> None:
+        """Forward Modal credentials into a controller sandbox environment.
+
+        The controller sandbox creates child sandboxes by calling the Modal
+        API, so it needs its own Modal credentials. These are resolved from the
+        component config token pair when set, otherwise from the local Modal
+        config (`MODAL_TOKEN_ID` / `MODAL_TOKEN_SECRET` or `~/.modal.toml`), the
+        same source the step operator relies on. The keys are marked sensitive
+        in ``sandbox_utils``, so they are injected as a Modal Secret rather than
+        a plain environment variable.
+        """
+        token_pair = sandbox_utils.resolve_modal_token_pair(
+            token_id=self.config.token_id,
+            token_secret=self.config.token_secret,
+        )
+        if token_pair is None:
+            logger.warning(
+                "No Modal credentials could be resolved for the controller "
+                "sandbox. The controller will fail to create child sandboxes "
+                "unless Modal credentials are available in its environment. "
+                "Configure token_id and token_secret on the Modal orchestrator "
+                "or run `modal setup` before submitting the pipeline."
+            )
+            return
+
+        token_id, token_secret = token_pair
+        environment[sandbox_utils.MODAL_TOKEN_ID_ENV_KEY] = token_id
+        environment[sandbox_utils.MODAL_TOKEN_SECRET_ENV_KEY] = token_secret
+
     def get_orchestrator_run_id(self) -> str:
         """Return the stable Modal run ID from the sandbox environment."""
         try:
@@ -316,6 +345,12 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         sandbox_environment = environment.copy()
         sandbox_environment[ENV_ZENML_MODAL_RUN_ID] = modal_run_id
         sandbox_environment[ENV_ZENML_MODAL_APP_NAME] = app_name
+
+        # The controller sandbox itself calls the Modal API to create child
+        # sandboxes, but a fresh sandbox has neither the component token nor an
+        # ambient `~/.modal.toml`. Forward the resolved token pair so the
+        # controller can authenticate from inside the sandbox.
+        self._inject_modal_credentials(sandbox_environment)
 
         modal_client = self.get_modal_client()
         zenml_image = sandbox_utils.get_modal_image_from_registry(

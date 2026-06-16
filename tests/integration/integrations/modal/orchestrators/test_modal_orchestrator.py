@@ -43,6 +43,9 @@ from zenml.integrations.modal.orchestrators import (  # noqa: E402
 from zenml.integrations.modal.orchestrators import (  # noqa: E402
     modal_orchestrator_entrypoint as modal_entrypoint_module,
 )
+from zenml.integrations.modal.orchestrators.dag_runner import (  # noqa: E402
+    NodeStatus,
+)
 from zenml.integrations.modal.orchestrators.modal_orchestrator import (  # noqa: E402
     ENV_ZENML_MODAL_APP_NAME,
     ENV_ZENML_MODAL_RUN_ID,
@@ -53,9 +56,6 @@ from zenml.integrations.modal.orchestrators.modal_orchestrator import (  # noqa:
     ModalOrchestrator,
     get_modal_app_name,
     get_static_step_sandbox_metadata_key,
-)
-from zenml.integrations.modal.orchestrators.dag_runner import (  # noqa: E402
-    NodeStatus,
 )
 
 SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY = (
@@ -280,6 +280,14 @@ def test_static_submission_records_metadata_and_splits_secrets(monkeypatch):
 
     monkeypatch.setattr(modal_orchestrator_module, "Client", ClientStub)
 
+    # Resolve credentials deterministically so the test does not depend on the
+    # machine's ambient Modal configuration.
+    monkeypatch.setattr(
+        modal_orchestrator_module.sandbox_utils,
+        "resolve_modal_token_pair",
+        lambda **_kwargs: ("ak-token-id", "as-token-secret"),
+    )
+
     def publish_pipeline_run_metadata_stub(*args, **kwargs):
         published.append((args, kwargs))
 
@@ -349,8 +357,16 @@ def test_static_submission_records_metadata_and_splits_secrets(monkeypatch):
         ENV_ZENML_MODAL_APP_NAME
     ] == get_modal_app_name(str(placeholder_run.id))
     assert SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY not in sandbox_kwargs["env"]
+    assert sandbox_utils.MODAL_TOKEN_ID_ENV_KEY not in sandbox_kwargs["env"]
+    assert (
+        sandbox_utils.MODAL_TOKEN_SECRET_ENV_KEY not in sandbox_kwargs["env"]
+    )
+    # Modal credentials are forwarded into the controller sandbox as part of the
+    # runtime secret so the controller can create child sandboxes.
     assert recorded["secret_values"][-1] == {
-        SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY: "secret-token"
+        SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY: "secret-token",
+        sandbox_utils.MODAL_TOKEN_ID_ENV_KEY: "ak-token-id",
+        sandbox_utils.MODAL_TOKEN_SECRET_ENV_KEY: "as-token-secret",
     }
 
 
@@ -1695,6 +1711,64 @@ def test_static_controller_finalize_respects_late_stop_request(
     )
 
     assert published == [("status", pipeline_run_id, ExecutionStatus.STOPPED)]
+
+
+def test_resolve_modal_token_pair_prefers_component_config(monkeypatch):
+    def _fail_ambient(_key):
+        raise AssertionError(
+            "Ambient Modal config must not be read when the component token "
+            "is configured."
+        )
+
+    monkeypatch.setattr("modal.config.config.get", _fail_ambient)
+
+    assert sandbox_utils.resolve_modal_token_pair(
+        token_id="ak-config",
+        token_secret="as-config",
+    ) == ("ak-config", "as-config")
+
+
+def test_resolve_modal_token_pair_falls_back_to_ambient_config(monkeypatch):
+    ambient = {"token_id": "ak-ambient", "token_secret": "as-ambient"}
+    monkeypatch.setattr(
+        "modal.config.config.get",
+        lambda key: ambient.get(key),
+    )
+
+    assert sandbox_utils.resolve_modal_token_pair(
+        token_id=None,
+        token_secret=None,
+    ) == ("ak-ambient", "as-ambient")
+
+
+def test_resolve_modal_token_pair_returns_none_without_credentials(
+    monkeypatch,
+):
+    monkeypatch.setattr("modal.config.config.get", lambda _key: None)
+
+    assert (
+        sandbox_utils.resolve_modal_token_pair(
+            token_id=None,
+            token_secret=None,
+        )
+        is None
+    )
+
+
+def test_inject_modal_credentials_warns_and_skips_without_credentials(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        modal_orchestrator_module.sandbox_utils,
+        "resolve_modal_token_pair",
+        lambda **_kwargs: None,
+    )
+    environment: dict[str, str] = {}
+
+    _make_orchestrator()._inject_modal_credentials(environment)
+
+    assert sandbox_utils.MODAL_TOKEN_ID_ENV_KEY not in environment
+    assert sandbox_utils.MODAL_TOKEN_SECRET_ENV_KEY not in environment
 
 
 def test_get_orchestrator_run_id_reads_modal_environment(monkeypatch):
