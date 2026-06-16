@@ -180,6 +180,7 @@ def set_project(project_name_or_id: str, default: bool = False) -> None:
         cli_utils.declare(
             f"The default project has been set to {project.name}"
         )
+    warn_if_project_not_visible_on_oss(project_name=project_name_or_id)
 
 
 @project.command("describe")
@@ -205,6 +206,7 @@ def describe_project(project_name_or_id: Optional[str] = None) -> None:
             cli_utils.print_pydantic_models(
                 [project_], exclude_columns=["created", "updated"]
             )
+            warn_if_project_not_visible_on_oss(project_name=project_name_or_id)
 
 
 @project.command("delete")
