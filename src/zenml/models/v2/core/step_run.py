@@ -38,6 +38,12 @@ from zenml.enums import (
 )
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import (
+    DatetimeFilterOption,
+    IntegerFilterOption,
+    StringFilterOption,
+    UUIDFilterOption,
+)
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -761,66 +767,68 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *RunMetadataFilterMixin.CLI_EXCLUDE_FIELDS,
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
+        *RunMetadataFilterMixin.API_SINGLE_INPUT_PARAMS,
+        "exclude_retried",
+        "cache_expired",
+    ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *RunMetadataFilterMixin.CUSTOM_SORTING_OPTIONS,
     ]
-    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
-        *ProjectScopedFilter.API_MULTI_INPUT_PARAMS,
-        *RunMetadataFilterMixin.API_MULTI_INPUT_PARAMS,
-    ]
 
-    name: Optional[str] = Field(
+    name: StringFilterOption = Field(
         default=None,
         description="Name of the step run",
     )
-    code_hash: Optional[str] = Field(
+    code_hash: StringFilterOption = Field(
         default=None,
         description="Code hash for this step run",
     )
-    cache_key: Optional[str] = Field(
+    cache_key: StringFilterOption = Field(
         default=None,
         description="Cache key for this step run",
     )
-    status: Optional[str] = Field(
+    status: StringFilterOption = Field(
         default=None,
         description="Status of the Step Run",
     )
-    start_time: Optional[Union[datetime, str]] = Field(
+    start_time: DatetimeFilterOption = Field(
         default=None,
         description="Start time for this run",
         union_mode="left_to_right",
     )
-    end_time: Optional[Union[datetime, str]] = Field(
+    end_time: DatetimeFilterOption = Field(
         default=None,
         description="End time for this run",
         union_mode="left_to_right",
     )
-    pipeline_run_id: Optional[Union[UUID, str]] = Field(
+    pipeline_run_id: UUIDFilterOption = Field(
         default=None,
         description="Pipeline run of this step run",
         union_mode="left_to_right",
     )
-    snapshot_id: Optional[Union[UUID, str]] = Field(
+    snapshot_id: UUIDFilterOption = Field(
         default=None,
         description="Snapshot of this step run",
         union_mode="left_to_right",
     )
-    original_step_run_id: Optional[Union[UUID, str]] = Field(
+    original_step_run_id: UUIDFilterOption = Field(
         default=None,
         description="Original id for this step run",
         union_mode="left_to_right",
     )
-    model_version_id: Optional[Union[UUID, str]] = Field(
+    model_version_id: UUIDFilterOption = Field(
         default=None,
         description="Model version associated with the step run.",
         union_mode="left_to_right",
     )
-    model: Optional[Union[UUID, str]] = Field(
+    model: UUIDFilterOption = Field(
         default=None,
         description="Name/ID of the model associated with the step run.",
     )
-    version: Union[int, str, None] = Field(
+    version: IntegerFilterOption = Field(
         default=None,
         description="Version of the step run.",
         union_mode="left_to_right",
@@ -829,7 +837,7 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         default=None,
         description="Whether to exclude retried step runs.",
     )
-    cache_expires_at: Optional[Union[datetime, str]] = Field(
+    cache_expires_at: DatetimeFilterOption = Field(
         default=None,
         description="Cache expiration time of the step run.",
         union_mode="left_to_right",
@@ -863,14 +871,20 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
         )
 
         if self.model:
-            model_filter = and_(
-                StepRunSchema.model_version_id == ModelVersionSchema.id,
-                ModelVersionSchema.model_id == ModelSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.model, table=ModelSchema
-                ),
+            model_filters = (
+                self.model if isinstance(self.model, list) else [self.model]
             )
-            custom_filters.append(model_filter)
+            for model_filter in model_filters:
+                custom_filters.append(
+                    and_(
+                        StepRunSchema.model_version_id
+                        == ModelVersionSchema.id,
+                        ModelVersionSchema.model_id == ModelSchema.id,
+                        self.generate_name_or_id_query_conditions(
+                            value=model_filter, table=ModelSchema
+                        ),
+                    )
+                )
 
         if self.exclude_retried:
             custom_filters.append(
