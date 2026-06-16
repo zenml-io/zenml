@@ -296,7 +296,7 @@ class BaseStep:
         if isinstance(obj, BaseStep):
             return obj
         elif isinstance(obj, type) and issubclass(obj, BaseStep):
-            return obj()
+            return obj._load_from_source()
         elif inspect.isfunction(obj):
             from zenml.steps.step_decorator import step
 
@@ -310,6 +310,15 @@ class BaseStep:
                 f"resolve to a `BaseStep` instance/subclass or a function, "
                 f"got `{type(obj).__name__}`."
             )
+
+    @classmethod
+    def _load_from_source(cls) -> "BaseStep":
+        """Creates a step instance from a source class.
+
+        Returns:
+            A step instance.
+        """
+        return cls()
 
     def resolve(self) -> Source:
         """Resolves the step.
