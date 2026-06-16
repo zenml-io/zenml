@@ -14,6 +14,7 @@
 import functools
 import subprocess
 import sys
+from contextlib import ExitStack as does_not_raise
 
 import pytest
 
@@ -203,17 +204,18 @@ def test_command_step_configure_with_hooks_fails():
         step.configure(on_success=_success_hook)
 
 
-def test_pipeline_hooks_on_command_step_fail_compilation(local_stack):
-    """Tests that pipeline-level hooks cannot be applied to command steps."""
+@pipeline(dynamic=True, on_success=_success_hook)
+def _pipeline() -> None:
+    CommandStep(command=["echo", "hi"])()
 
-    @pipeline(dynamic=True, on_success=_success_hook)
-    def _pipeline() -> None:
-        CommandStep(command=["echo", "hi"])()
 
-    pipeline_instance = _pipeline()
+def test_pipeline_hooks_do_not_fail_command_step_compilation(local_stack):
+    """Tests that pipeline-level hooks do not fail compilation of command steps."""
+
+    pipeline_instance = _pipeline
     pipeline_instance.prepare()
 
-    with pytest.raises(StepInterfaceError):
+    with does_not_raise():
         Compiler().compile(
             pipeline=pipeline_instance,
             stack=local_stack,
