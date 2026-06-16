@@ -21,7 +21,6 @@ import modal
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.enums import ExecutionStatus, StackComponentType
-from zenml.exceptions import StackComponentInterfaceError
 from zenml.integrations.modal import sandbox_utils
 from zenml.integrations.modal.flavors import (
     ModalStepOperatorConfig,

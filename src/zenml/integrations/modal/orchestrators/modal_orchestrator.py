@@ -28,7 +28,6 @@ from zenml.constants import (
     ORCHESTRATOR_DOCKER_IMAGE_KEY,
 )
 from zenml.enums import ExecutionMode, ExecutionStatus, StackComponentType
-from zenml.exceptions import StackComponentInterfaceError
 from zenml.integrations.modal import sandbox_utils
 from zenml.integrations.modal.flavors import (
     ModalOrchestratorConfig,
