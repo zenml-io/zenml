@@ -1144,7 +1144,7 @@ def _make_static_controller(
     )
 
 
-def test_static_entrypoint_passes_execution_mode_to_dag_runner(monkeypatch):
+def test_static_entrypoint_runs_dumb_dag_runner(monkeypatch):
     snapshot = _make_snapshot()
     pipeline_run = _make_placeholder_run()
     pipeline_run.project_id = snapshot.project_id
@@ -1214,7 +1214,8 @@ def test_static_entrypoint_passes_execution_mode_to_dag_runner(monkeypatch):
 
     config.run()
 
-    assert captured_runner_kwargs["execution_mode"] == ExecutionMode.FAIL_FAST
+    assert "execution_mode" not in captured_runner_kwargs
+    assert captured_runner_kwargs["interrupt_function"] is not None
     assert finalized == [(pipeline_run.id, {"train": NodeStatus.COMPLETED})]
 
 
@@ -1226,10 +1227,10 @@ def test_static_entrypoint_passes_execution_mode_to_dag_runner(monkeypatch):
             modal_entrypoint_module.InterruptMode.GRACEFUL,
         ),
         (ExecutionStatus.STOPPED, modal_entrypoint_module.InterruptMode.FORCE),
-        (ExecutionStatus.FAILED, None),
+        (ExecutionStatus.FAILED, modal_entrypoint_module.InterruptMode.FORCE),
     ],
 )
-def test_static_controller_interrupts_only_for_external_stop(
+def test_static_controller_interrupts_for_external_stop_or_failure(
     monkeypatch,
     run_status,
     expected_interrupt,
