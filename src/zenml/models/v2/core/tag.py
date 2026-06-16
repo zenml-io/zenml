@@ -21,6 +21,10 @@ from pydantic import Field, field_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ColorVariants, TaggableResourceTypes
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import (
+    EnumFilterOption,
+    StringFilterOption,
+)
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
     UserScopedRequest,
@@ -199,18 +203,22 @@ class TagFilter(UserScopedFilter):
         *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "resource_type",
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *UserScopedFilter.API_SINGLE_INPUT_PARAMS,
+        "exclusive",
+    ]
 
-    name: Optional[str] = Field(
+    name: StringFilterOption = Field(
         description="The unique title of the tag.", default=None
     )
-    color: Optional[ColorVariants] = Field(
+    color: EnumFilterOption[ColorVariants] = Field(
         description="The color variant assigned to the tag.", default=None
     )
     exclusive: Optional[bool] = Field(
         description="The flag signifying whether the tag is an exclusive tag.",
         default=None,
     )
-    resource_type: Optional[TaggableResourceTypes] = Field(
+    resource_type: EnumFilterOption[TaggableResourceTypes] = Field(
         description="Filter tags associated with a specific resource type.",
         default=None,
     )
@@ -237,13 +245,24 @@ class TagFilter(UserScopedFilter):
 
         if self.resource_type:
             # Filter for tags that have at least one association with the specified resource type
-            resource_type_filter = exists(
-                select(TagResourceSchema).where(
-                    TagResourceSchema.tag_id == TagSchema.id,
-                    TagResourceSchema.resource_type
-                    == self.resource_type.value,
-                )
+            resource_type_filters = (
+                self.resource_type
+                if isinstance(self.resource_type, list)
+                else [self.resource_type]
             )
-            custom_filters.append(resource_type_filter)
+            for resource_type_filter in resource_type_filters:
+                resource_type = (
+                    resource_type_filter.value
+                    if isinstance(resource_type_filter, TaggableResourceTypes)
+                    else resource_type_filter
+                )
+                custom_filters.append(
+                    exists(
+                        select(TagResourceSchema).where(
+                            TagResourceSchema.tag_id == TagSchema.id,
+                            TagResourceSchema.resource_type == resource_type,
+                        )
+                    )
+                )
 
         return custom_filters

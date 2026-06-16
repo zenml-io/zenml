@@ -3016,11 +3016,11 @@ def test_filters_with_oneof_tags_and_run_metadata(clean_client):
     assert len(runs) == 2  # The first two runs
 
     # Test oneof: tags filtering
-    runs_filter = PipelineRunFilter(tag='oneof:["cats", "dogs"]')
+    runs_filter = PipelineRunFilter(tags='oneof:["cats", "dogs"]')
     runs = store.list_runs(runs_filter_model=runs_filter)
     assert len(runs) == len(metadata_values)  # All runs
 
-    runs_filter = PipelineRunFilter(tag='oneof:["dogs"]')
+    runs_filter = PipelineRunFilter(tags='oneof:["dogs"]')
     runs = store.list_runs(runs_filter_model=runs_filter)
     assert len(runs) == 0  # No runs
 
@@ -4733,7 +4733,7 @@ class TestModelVersion:
             )
             mvs = clean_client.zen_store.list_model_versions(
                 model_version_filter_model=ModelVersionFilter(
-                    tag="tag1",
+                    tags="tag1",
                     model=model.id,
                 ),
             )
@@ -4742,7 +4742,7 @@ class TestModelVersion:
 
             mvs = clean_client.zen_store.list_model_versions(
                 model_version_filter_model=ModelVersionFilter(
-                    tag="tag2",
+                    tags="tag2",
                     model=model.id,
                 ),
             )
@@ -4752,7 +4752,7 @@ class TestModelVersion:
 
             mvs = clean_client.zen_store.list_model_versions(
                 model_version_filter_model=ModelVersionFilter(
-                    tag="tag3",
+                    tags="tag3",
                     model=model.id,
                 ),
             )
@@ -4761,7 +4761,7 @@ class TestModelVersion:
 
             mvs = clean_client.zen_store.list_model_versions(
                 model_version_filter_model=ModelVersionFilter(
-                    tag="non_existent_tag",
+                    tags="ngon_existent_tag",
                     model=model.id,
                 ),
             )
@@ -5623,6 +5623,41 @@ class TestTagResource:
                 ),
             ]
         )
+
+    def test_batch_create_tag_resource_resolves_resources_in_bulk(
+        self, clean_client: "Client"
+    ):
+        """Tests batch tag resource creation resolves resources in bulk."""
+        if clean_client.zen_store.type != StoreType.SQL:
+            pytest.skip("Only SQL Zen Stores support tagging resources")
+
+        tag1 = clean_client.create_tag(name="foo1", color="red")
+        tag2 = clean_client.create_tag(name="foo2", color="green")
+        model1 = clean_client.create_model(name="bar1")
+        model2 = clean_client.create_model(name="bar2")
+
+        with patch.object(
+            clean_client.zen_store,
+            "_get_schema_by_id",
+            side_effect=AssertionError(
+                "Batch tag resource creation should not resolve resources "
+                "with individual get calls."
+            ),
+        ):
+            clean_client.zen_store.batch_create_tag_resource(
+                [
+                    TagResourceRequest(
+                        tag_id=tag1.id,
+                        resource_id=model1.id,
+                        resource_type=TaggableResourceTypes.MODEL,
+                    ),
+                    TagResourceRequest(
+                        tag_id=tag2.id,
+                        resource_id=model2.id,
+                        resource_type=TaggableResourceTypes.MODEL,
+                    ),
+                ]
+            )
 
     def test_delete_tag_resource_pass(self, clean_client: "Client"):
         """Tests deleting tag<>resource mapping pass."""

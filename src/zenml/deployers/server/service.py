@@ -155,6 +155,50 @@ class BasePipelineDeploymentService(ABC):
             A BaseDeploymentInvocationResponse describing the execution result.
         """
 
+    def prepare_pipeline_run(
+        self, request: BaseDeploymentInvocationRequest
+    ) -> Tuple[PipelineRunResponse, PipelineSnapshotResponse]:
+        """Create the placeholder run and snapshot for a deployment invocation.
+
+        Args:
+            request: Runtime parameters supplied by the caller.
+
+        Returns:
+            A tuple of the placeholder run and the deployment snapshot to
+            execute.
+
+        Raises:
+            NotImplementedError: If the method is not implemented.
+        """
+        raise NotImplementedError(
+            "Preparing a pipeline run is not implemented for "
+            f"{self.__class__.__name__}."
+        )
+
+    def execute_pipeline_run(
+        self,
+        request: BaseDeploymentInvocationRequest,
+        placeholder_run: PipelineRunResponse,
+        deployment_snapshot: PipelineSnapshotResponse,
+    ) -> BaseDeploymentInvocationResponse:
+        """Execute a previously prepared deployment run.
+
+        Args:
+            request: Runtime parameters supplied by the caller.
+            placeholder_run: The placeholder run to execute the pipeline on.
+            deployment_snapshot: The deployment snapshot to execute.
+
+        Returns:
+            A BaseDeploymentInvocationResponse describing the execution result.
+
+        Raises:
+            NotImplementedError: If the method is not implemented.
+        """
+        raise NotImplementedError(
+            "Executing a prepared pipeline run is not implemented for "
+            f"{self.__class__.__name__}."
+        )
+
     @abstractmethod
     def get_service_info(self) -> ServiceInfo:
         """Get service information.
@@ -350,22 +394,65 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
         Returns:
             A BaseDeploymentInvocationResponse describing the execution result.
         """
+        try:
+            placeholder_run, deployment_snapshot = self.prepare_pipeline_run(
+                request
+            )
+        except Exception as e:
+            logger.exception("❌ Pipeline execution failed")
+            return self._build_response(
+                placeholder_run=None,
+                mapped_outputs=None,
+                start_time=time.time(),
+                resolved_params=request.parameters.model_dump(),
+                error=e,
+            )
+
+        return self.execute_pipeline_run(
+            request=request,
+            placeholder_run=placeholder_run,
+            deployment_snapshot=deployment_snapshot,
+        )
+
+    def prepare_pipeline_run(
+        self,
+        request: BaseDeploymentInvocationRequest,
+    ) -> Tuple[PipelineRunResponse, PipelineSnapshotResponse]:
+        """Create the placeholder run and snapshot for a deployment invocation.
+
+        Args:
+            request: Runtime parameters supplied by the caller.
+
+        Returns:
+            A tuple of the placeholder run and the deployment snapshot to
+            execute.
+        """
+        return self._prepare_execute_with_orchestrator(
+            run_name=request.run_name,
+            resolved_params=request.parameters.model_dump(),
+        )
+
+    def execute_pipeline_run(
+        self,
+        request: BaseDeploymentInvocationRequest,
+        placeholder_run: PipelineRunResponse,
+        deployment_snapshot: PipelineSnapshotResponse,
+    ) -> BaseDeploymentInvocationResponse:
+        """Execute a previously prepared deployment run.
+
+        Args:
+            request: Runtime parameters supplied by the caller.
+            placeholder_run: The placeholder run to execute the pipeline on.
+            deployment_snapshot: The deployment snapshot to execute.
+
+        Returns:
+            A BaseDeploymentInvocationResponse describing the execution result.
+        """
         parameters = request.parameters.model_dump()
         start_time = time.time()
         logger.info("Starting pipeline execution")
 
-        placeholder_run: Optional[PipelineRunResponse] = None
         try:
-            # Create a placeholder run separately from the actual execution,
-            # so that we have a run ID to include in the response even if the
-            # pipeline execution fails.
-            placeholder_run, deployment_snapshot = (
-                self._prepare_execute_with_orchestrator(
-                    run_name=request.run_name,
-                    resolved_params=parameters,
-                )
-            )
-
             captured_outputs = self._execute_with_orchestrator(
                 placeholder_run=placeholder_run,
                 deployment_snapshot=deployment_snapshot,
@@ -425,6 +512,7 @@ class PipelineDeploymentService(BasePipelineDeploymentService):
                 docs_url_path=settings.docs_url_path,
                 redoc_url_path=settings.redoc_url_path,
                 invoke_url_path=api_urlpath + settings.invoke_url_path,
+                submit_url_path=api_urlpath + settings.submit_url_path,
                 health_url_path=api_urlpath + settings.health_url_path,
                 info_url_path=api_urlpath + settings.info_url_path,
                 metrics_url_path=api_urlpath + settings.metrics_url_path,

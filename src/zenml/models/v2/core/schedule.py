@@ -14,7 +14,7 @@
 """Models representing schedules."""
 
 from datetime import datetime, timedelta, timezone
-from typing import ClassVar, Dict, Optional, Union
+from typing import ClassVar, Dict, Optional
 from uuid import UUID
 
 from pydantic import Field, field_validator, model_validator
@@ -23,6 +23,12 @@ from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import (
+    DatetimeFilterOption,
+    FloatFilterOption,
+    StringFilterOption,
+    UUIDFilterOption,
+)
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -323,13 +329,19 @@ class ScheduleFilter(ProjectScopedFilter):
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         "is_archived",
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[list[str]] = [
+        *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
+        "active",
+        "catchup",
+        "is_archived",
+    ]
 
-    pipeline_id: Optional[Union[UUID, str]] = Field(
+    pipeline_id: UUIDFilterOption = Field(
         default=None,
         description="Pipeline that the schedule is attached to.",
         union_mode="left_to_right",
     )
-    orchestrator_id: Optional[Union[UUID, str]] = Field(
+    orchestrator_id: UUIDFilterOption = Field(
         default=None,
         description="Orchestrator that the schedule is attached to.",
         union_mode="left_to_right",
@@ -338,17 +350,21 @@ class ScheduleFilter(ProjectScopedFilter):
         default=None,
         description="If the schedule is active",
     )
-    cron_expression: Optional[str] = Field(
+    cron_expression: StringFilterOption = Field(
         default=None,
         description="The cron expression, describing the schedule",
     )
-    start_time: Optional[Union[datetime, str]] = Field(
-        default=None, description="Start time", union_mode="left_to_right"
+    start_time: DatetimeFilterOption = Field(
+        default=None,
+        description="Start time",
+        union_mode="left_to_right",
     )
-    end_time: Optional[Union[datetime, str]] = Field(
-        default=None, description="End time", union_mode="left_to_right"
+    end_time: DatetimeFilterOption = Field(
+        default=None,
+        description="End time",
+        union_mode="left_to_right",
     )
-    interval_second: Optional[Optional[float]] = Field(
+    interval_second: FloatFilterOption = Field(
         default=None,
         description="The repetition interval in seconds",
     )
@@ -357,15 +373,16 @@ class ScheduleFilter(ProjectScopedFilter):
         description="Whether or not the schedule is set to catchup past missed "
         "events",
     )
-    name: Optional[str] = Field(
+    name: StringFilterOption = Field(
         default=None,
         description="Name of the schedule",
     )
-    run_once_start_time: Optional[Union[datetime, str]] = Field(
+    run_once_start_time: DatetimeFilterOption = Field(
         default=None,
         description="The time at which the schedule should run once",
         union_mode="left_to_right",
     )
+
     is_archived: bool | None = Field(
         default=None,
         description="Whether or not the schedule is archived",
