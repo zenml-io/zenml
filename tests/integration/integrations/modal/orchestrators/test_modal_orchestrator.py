@@ -877,7 +877,9 @@ def test_graceful_stop_run_uses_fetched_static_snapshot(monkeypatch):
         monkeypatch, from_id_sandboxes=from_id_sandboxes
     )
     run_id = uuid4()
-    stale_run = SimpleNamespace(id=run_id, run_metadata={}, steps={})
+    stale_run = SimpleNamespace(
+        id=run_id, snapshot=None, run_metadata={}, steps={}
+    )
     hydrated_run = SimpleNamespace(
         id=run_id,
         snapshot=SimpleNamespace(is_dynamic=False),
@@ -1339,9 +1341,7 @@ def test_static_entrypoint_runs_dumb_dag_runner(monkeypatch):
         "StepRunRequestFactory",
         StepRunRequestFactoryStub,
     )
-    monkeypatch.setattr(
-        modal_entrypoint_module, "ModalDagRunner", DagRunnerStub
-    )
+    monkeypatch.setattr(modal_entrypoint_module, "DagRunner", DagRunnerStub)
 
     config = modal_entrypoint_module.ModalOrchestratorEntrypointConfiguration(
         ["--snapshot_id", str(snapshot.id)]
@@ -1565,12 +1565,6 @@ def test_static_controller_start_sandbox_records_run_and_step_metadata(
         dag_node.metadata[modal_entrypoint_module.NODE_METADATA_PUBLISHED_KEY]
         is True
     )
-    assert dag_node.metadata[
-        modal_entrypoint_module.NODE_METADATA_STEP_RUN_ID_KEY
-    ] == str(step_run_id)
-    assert setup.pipeline_run.run_metadata == {
-        get_static_step_sandbox_metadata_key("train"): "step-sandbox-id"
-    }
     assert published_pipeline_metadata == [
         (
             (

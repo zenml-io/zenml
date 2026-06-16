@@ -25,6 +25,9 @@ from zenml.entrypoints.base_entrypoint_configuration import (
 from zenml.enums import ExecutionMode, ExecutionStatus
 from zenml.exceptions import AuthorizationException
 from zenml.integrations.modal import sandbox_utils
+from zenml.integrations.modal.flavors.modal_orchestrator_flavor import (
+    ModalOrchestratorSettings,
+)
 from zenml.integrations.modal.orchestrators.modal_orchestrator import (
     ENV_ZENML_MODAL_APP_NAME,
     ENV_ZENML_MODAL_RUN_ID,
@@ -36,9 +39,7 @@ from zenml.logger import get_logger
 from zenml.models import PipelineRunUpdate, StepRunResponse
 from zenml.orchestrators import publish_utils
 from zenml.orchestrators.dag_runner import (
-    DagRunner as ModalDagRunner,
-)
-from zenml.orchestrators.dag_runner import (
+    DagRunner,
     InterruptMode,
     Node,
     NodeStatus,
@@ -57,7 +58,6 @@ logger = get_logger(__name__)
 
 RUN_ID_OPTION = "run_id"
 NODE_METADATA_PUBLISHED_KEY = "metadata_published"
-NODE_METADATA_STEP_RUN_ID_KEY = "step_run_id"
 NODE_METADATA_PUBLISH_ATTEMPTED_AT_KEY = "metadata_publish_attempted_at"
 
 # Step-level sandbox metadata is best-effort bookkeeping: every reader of
@@ -123,9 +123,6 @@ class _StaticModalPipelineController:
                     }
                 },
             )
-            self.pipeline_run.run_metadata[
-                get_static_step_sandbox_metadata_key(step_name)
-            ] = sandbox.object_id
         except Exception as e:
             logger.warning(
                 "Failed to publish Modal sandbox metadata for step `%s`: %s",
@@ -314,7 +311,7 @@ class _StaticModalPipelineController:
         step_run = step_runs[0]
         metadata = self.orchestrator.get_step_sandbox_metadata(
             cast(
-                Any,
+                ModalOrchestratorSettings,
                 self.orchestrator.get_settings(
                     self.snapshot.step_configurations[node.id]
                 ),
@@ -326,7 +323,6 @@ class _StaticModalPipelineController:
             {self.orchestrator.id: metadata},
         )
         node.metadata[NODE_METADATA_PUBLISHED_KEY] = True
-        node.metadata[NODE_METADATA_STEP_RUN_ID_KEY] = str(step_run.id)
         return True
 
     def _handle_failed_sandbox(self, step_name: str) -> NodeStatus:
@@ -428,7 +424,7 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
                 stack=active_stack,
             ),
         )
-        node_statuses = ModalDagRunner(
+        node_statuses = DagRunner(
             nodes=controller.build_nodes(),
             node_startup_function=controller.start_step_sandbox,
             node_monitoring_function=controller.check_step_sandbox,

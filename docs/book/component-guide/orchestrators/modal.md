@@ -115,8 +115,8 @@ from zenml.integrations.modal.flavors import ModalOrchestratorSettings
 
 gpu_step_settings = ModalOrchestratorSettings(
     gpu="A100",           # GPU type, e.g. "T4" or "A100"
-    # region="us-east-1", # optional, Modal Team/Enterprise only
-    # cloud="aws",        # optional, Modal Team/Enterprise only
+    # region="us-east-1", # optional; availability depends on your Modal plan
+    # cloud="aws",        # optional; availability depends on your Modal plan
 )
 
 step_resources = ResourceSettings(

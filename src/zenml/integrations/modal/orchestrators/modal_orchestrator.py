@@ -27,6 +27,9 @@ from zenml.constants import (
     METADATA_ORCHESTRATOR_RUN_ID,
     ORCHESTRATOR_DOCKER_IMAGE_KEY,
 )
+from zenml.entrypoints.step_entrypoint_configuration import (
+    StepEntrypointConfiguration,
+)
 from zenml.enums import ExecutionMode, ExecutionStatus, StackComponentType
 from zenml.integrations.modal import sandbox_utils
 from zenml.integrations.modal.flavors import (
@@ -363,10 +366,6 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         sandbox_environment[ENV_ZENML_MODAL_RUN_ID] = modal_run_id
         sandbox_environment[ENV_ZENML_MODAL_APP_NAME] = app_name
 
-        # The controller sandbox itself calls the Modal API to create child
-        # sandboxes, but a fresh sandbox has neither the component token nor an
-        # ambient `~/.modal.toml`. Forward the resolved token pair so the
-        # controller can authenticate from inside the sandbox.
         self._inject_modal_credentials(sandbox_environment)
 
         modal_client = self.get_modal_client()
@@ -480,8 +479,6 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         environment: Dict[str, str],
     ) -> "modal.Sandbox":
         """Create a child sandbox for a static pipeline step."""
-        from zenml.entrypoints import StepEntrypointConfiguration
-
         settings = cast(
             ModalOrchestratorSettings,
             self.get_settings(snapshot.step_configurations[step_name]),
@@ -689,10 +686,10 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         """Stop a Modal run, honoring graceful stops where possible."""
         refreshed_run: Optional["PipelineRunResponse"] = None
         if graceful:
-            snapshot = getattr(run, "snapshot", None)
+            snapshot = run.snapshot
             if snapshot is None:
                 refreshed_run = self._get_fresh_pipeline_run(run)
-                snapshot = getattr(refreshed_run, "snapshot", None)
+                snapshot = refreshed_run.snapshot
 
             if snapshot is not None and not snapshot.is_dynamic:
                 logger.info(

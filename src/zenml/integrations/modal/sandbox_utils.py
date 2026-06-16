@@ -265,10 +265,7 @@ def get_gpu_values(
     if gpu_count is None:
         return gpu_type
 
-    if gpu_count > 0:
-        return f"{gpu_type}:{gpu_count}"
-
-    return None
+    return f"{gpu_type}:{gpu_count}"
 
 
 def get_memory_mb(resource_settings: ResourceSettings) -> Optional[int]:

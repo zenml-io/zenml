@@ -22,7 +22,7 @@ from zenml.orchestrators.legacy_dag_runner import (
 
 
 def test_reverse_dag():
-    """Test `dag_runner.reverse_dag()`."""
+    """Test `legacy_dag_runner.reverse_dag()`."""
     dag = {"1": ["7"], "2": [], "3": ["2", "5"], "5": ["1", "7"], "7": []}
     assert reverse_dag(dag) == {
         "1": ["5"],
