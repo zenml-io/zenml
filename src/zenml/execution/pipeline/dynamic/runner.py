@@ -103,6 +103,7 @@ from zenml.execution.pipeline.dynamic.outputs import (
     StepRunOutputs,
     _InlineStepFuture,
     _IsolatedStepFuture,
+    wrap_step_failure,
 )
 from zenml.execution.pipeline.dynamic.pipeline_output_utils import (
     get_pipeline_entrypoint_output_names,
@@ -594,7 +595,9 @@ class DynamicPipelineRunner:
                             "infrastructure side but its status was not "
                             "updated."
                         )
-                        self.record_failure(exc)
+                        self.record_failure(
+                            wrap_step_failure(exc, invocation_id=invocation_id)
+                        )
 
                 # Get the updated status that we might have just published
                 db_status = step_run.status
@@ -1237,7 +1240,11 @@ class DynamicPipelineRunner:
                         initial_state=NodeState.FAILED,
                     )
                     self.mark_node_failed(node_id=invocation_id)
-                    self.record_failure(exception=exception)
+                    self.record_failure(
+                        exception=wrap_step_failure(
+                            exception, invocation_id=invocation_id
+                        )
+                    )
                     return future
                 else:
                     raise exception
@@ -2076,7 +2083,11 @@ class DynamicPipelineRunner:
                 )
             except BaseException as e:
                 self.mark_node_failed(node_id=step.spec.invocation_id)
-                self.record_failure(exception=e)
+                self.record_failure(
+                    exception=wrap_step_failure(
+                        e, invocation_id=step.spec.invocation_id
+                    )
+                )
                 raise e
 
             self._register_isolated_step_for_monitoring(
@@ -2113,7 +2124,11 @@ class DynamicPipelineRunner:
                 )
             except BaseException as e:
                 self.mark_node_failed(node_id=step.spec.invocation_id)
-                self.record_failure(exception=e)
+                self.record_failure(
+                    exception=wrap_step_failure(
+                        e, invocation_id=step.spec.invocation_id
+                    )
+                )
                 raise e
 
             self._on_step_finished(step_run=step_run)
@@ -2182,7 +2197,11 @@ class DynamicPipelineRunner:
         ):
             exception = self._get_step_exception(step_run=step_run)
             self.mark_node_failed(node_id=step_run.name)
-            self.record_failure(exception=exception)
+            self.record_failure(
+                exception=wrap_step_failure(
+                    exception, invocation_id=step_run.name
+                )
+            )
 
     # Concurrent map lifecycle
 
