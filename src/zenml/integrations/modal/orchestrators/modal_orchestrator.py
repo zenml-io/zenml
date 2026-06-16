@@ -14,6 +14,7 @@
 """Modal orchestrator implementation."""
 
 import os
+from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 from uuid import UUID, uuid4
 
@@ -85,7 +86,7 @@ def _metadata_value(metadata: Dict[str, Any], key: str) -> Optional[str]:
     if value is None:
         return None
 
-    if hasattr(value, "value"):
+    if isinstance(value, Enum):
         value = value.value
 
     return str(value)
