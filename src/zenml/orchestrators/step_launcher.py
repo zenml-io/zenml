@@ -477,15 +477,14 @@ class StepLauncher:
             step_operator_name=step_operator_name,
         )
 
-        entrypoint_cfg_class = step_operator.entrypoint_config_class
-        entrypoint_command = (
-            entrypoint_cfg_class.get_entrypoint_command()
-            + entrypoint_cfg_class.get_entrypoint_arguments(
-                step_name=self._invocation_id,
-                snapshot_id=self._snapshot.id,
-                step_run_id=str(step_run_info.step_run_id),
-            )
+        command, args = orchestrator_utils.get_step_entrypoint_command(
+            invocation_id=self._invocation_id,
+            config=self._step.config,
+            entrypoint_config_class=step_operator.entrypoint_config_class,
+            snapshot_id=self._snapshot.id,
+            step_run_id=str(step_run_info.step_run_id),
         )
+        entrypoint_command = command + args
         environment, secrets = orchestrator_utils.get_config_environment_vars(
             pipeline_run_id=step_run_info.run_id,
         )
@@ -553,15 +552,9 @@ class StepLauncher:
                 status = step_operator.wait(
                     step_run=step_run_info.step_run,
                 )
-                if not status.is_successful:
-                    step_run = Client().get_run_step(step_run_info.step_run_id)
-                    raise exception_utils.reconstruct_exception(
-                        exception_info=step_run.exception_info,
-                        fallback_message=(
-                            f"Step `{step_run_info.pipeline_step_name}` failed "
-                            f"with status `{status}`."
-                        ),
-                    )
+                self._finalize_remote_step(
+                    status=status, step_run_info=step_run_info
+                )
 
     def _run_step_with_dynamic_orchestrator(
         self,
@@ -595,15 +588,39 @@ class StepLauncher:
             status = self._stack.orchestrator.wait_for_isolated_step(
                 step_run_info.step_run
             )
-            if not status.is_successful:
-                step_run = Client().get_run_step(step_run_info.step_run_id)
-                raise exception_utils.reconstruct_exception(
-                    exception_info=step_run.exception_info,
-                    fallback_message=(
-                        f"Step `{step_run_info.pipeline_step_name}` failed "
-                        f"with status `{status}`."
-                    ),
-                )
+            self._finalize_remote_step(
+                status=status, step_run_info=step_run_info
+            )
+
+    def _finalize_remote_step(
+        self, status: ExecutionStatus, step_run_info: StepRunInfo
+    ) -> None:
+        """Finalizes a step that was executed in a remote environment.
+
+        Args:
+            status: The status reported by the remote environment.
+            step_run_info: Additional information needed to run the step.
+
+        Raises:
+            BaseException: If the step run failed.
+        """  # noqa: DOC502, DOC503
+        if not status.is_successful:
+            step_run = Client().get_run_step(step_run_info.step_run_id)
+            raise exception_utils.reconstruct_exception(
+                exception_info=step_run.exception_info,
+                fallback_message=(
+                    f"Step `{step_run_info.pipeline_step_name}` failed "
+                    f"with status `{status}`."
+                ),
+            )
+
+        if self._step.config.command is not None:
+            # Nothing in the execution environment publishes the status for
+            # a command step, so we do it here.
+            publish_utils.publish_successful_step_run(
+                step_run_id=step_run_info.step_run_id,
+                output_artifact_ids={},
+            )
 
     def _run_step_in_current_thread(
         self,
@@ -665,6 +682,14 @@ class StepLauncher:
             from zenml.execution.pipeline.dynamic.compilation import (
                 get_step_runtime,
             )
+
+            if self._step.config.command is not None:
+                # Command steps can't report themselves as running once the
+                # container started, so we start them in a running state.
+                # Once we extend all orchestrator/step operator implementations
+                # to distinguish between the provisioning and running states,
+                # we can remove this special case.
+                return ExecutionStatus.RUNNING
 
             step_runtime = get_step_runtime(
                 step_config=self._step.config,

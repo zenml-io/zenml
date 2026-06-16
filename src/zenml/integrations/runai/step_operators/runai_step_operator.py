@@ -73,6 +73,7 @@ from zenml.integrations.runai.flavors.runai_step_operator_flavor import (
 )
 from zenml.logger import get_logger
 from zenml.orchestrators.publish_utils import publish_step_run_metadata
+from zenml.orchestrators.utils import shell_join
 from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 
@@ -526,22 +527,18 @@ class RunAIStepOperator(BaseStepOperator):
         Returns:
             Tuple of (command, args) as strings. The args value is None when
             there are no extra tokens.
-
-        Raises:
-            ValueError: If entrypoint_command format is invalid.
         """
-        if len(entrypoint_command) < 3:
-            raise ValueError(
-                f"Expected entrypoint command with at least 3 elements "
-                f"(e.g., ['python', '-m', 'module_name']), but got "
-                f"{len(entrypoint_command)} elements: {entrypoint_command}"
-            )
+        if len(entrypoint_command) > 3:
+            command_tokens = entrypoint_command[:3]
+            args_tokens = entrypoint_command[3:]
+        else:
+            # For command steps, the entrypoint command can be of arbitrary
+            # length. We treat it as a single command with no arguments.
+            command_tokens = entrypoint_command
+            args_tokens = []
 
-        command_tokens = entrypoint_command[:3]
-        args_tokens = entrypoint_command[3:]
-
-        command = " ".join(command_tokens)
-        args = " ".join(args_tokens) if args_tokens else None
+        command = shell_join(command_tokens)
+        args = shell_join(args_tokens) if args_tokens else None
         return command, args
 
     def _build_environment_variables(

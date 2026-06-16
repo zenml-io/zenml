@@ -366,7 +366,7 @@ class BaseOrchestrator(StackComponent, ABC):
                                 )
                         except Exception as e:
                             logger.debug(
-                                "Something went went wrong trying to publish the"
+                                "Something went wrong trying to publish the "
                                 f"run metadata: {e}"
                             )
             else:
@@ -563,6 +563,10 @@ class BaseOrchestrator(StackComponent, ABC):
         self, step_run_info: "StepRunInfo", environment: Dict[str, str]
     ) -> None:
         """Submit an isolated step.
+
+        Implementations should use
+        `zenml.orchestrators.utils.get_step_entrypoint_command(...)` to get
+        the command and arguments to run the step.
 
         Args:
             step_run_info: The step run information.
