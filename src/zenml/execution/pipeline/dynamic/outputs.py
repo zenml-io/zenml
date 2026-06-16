@@ -32,6 +32,7 @@ from typing import (
 from uuid import UUID
 
 from zenml.enums import ExecutionStatus
+from zenml.exceptions import StepExecutionException
 from zenml.logger import get_logger
 from zenml.models import (
     ArtifactVersionResponse,
@@ -43,6 +44,33 @@ from zenml.utils import exception_utils
 logger = get_logger(__name__)
 
 T = TypeVar("T")
+
+
+def wrap_step_failure(
+    exception: BaseException, invocation_id: Optional[str] = None
+) -> StepExecutionException:
+    """Wrap a step failure that was not explicitly awaited.
+
+    Args:
+        exception: The original step failure.
+        invocation_id: The invocation ID of the failed step, if known.
+
+    Returns:
+        The exception unchanged if it already is a `StepExecutionException`,
+        otherwise a new `StepExecutionException` chaining the original.
+    """
+    if isinstance(exception, StepExecutionException):
+        return exception
+
+    if invocation_id:
+        message = f"Step `{invocation_id}` failed."
+    else:
+        message = "A step failed during pipeline execution."
+
+    wrapped = StepExecutionException(message, original_exception=exception)
+    wrapped.__cause__ = exception
+    wrapped.__suppress_context__ = True
+    return wrapped
 
 
 def _maybe_release_pipeline_thread() -> AbstractContextManager[None]:
