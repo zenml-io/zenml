@@ -1277,6 +1277,90 @@ def _make_static_controller(
     )
 
 
+def test_static_entrypoint_reuses_run_with_matching_modal_run_id(
+    monkeypatch,
+):
+    snapshot = _make_snapshot()
+    pipeline_run = SimpleNamespace(
+        id=uuid4(),
+        orchestrator_run_id="modal-run-id",
+    )
+
+    class ZenStoreStub:
+        @staticmethod
+        def update_run(**_kwargs):
+            raise AssertionError("Run should not be updated twice.")
+
+    class ClientStub:
+        zen_store = ZenStoreStub()
+
+        @staticmethod
+        def get_pipeline_run(run_id):
+            assert run_id == pipeline_run.id
+            return pipeline_run
+
+    monkeypatch.setattr(modal_entrypoint_module, "Client", ClientStub)
+
+    config = modal_entrypoint_module.ModalOrchestratorEntrypointConfiguration(
+        [
+            "--snapshot_id",
+            str(snapshot.id),
+            "--run_id",
+            str(pipeline_run.id),
+        ]
+    )
+    config._snapshot = snapshot
+
+    assert (
+        config._get_or_create_pipeline_run(
+            snapshot_id=snapshot.id,
+            modal_run_id="modal-run-id",
+        )
+        is pipeline_run
+    )
+
+
+def test_static_entrypoint_rejects_run_with_different_modal_run_id(
+    monkeypatch,
+):
+    snapshot = _make_snapshot()
+    pipeline_run = SimpleNamespace(
+        id=uuid4(),
+        orchestrator_run_id="other-modal-run-id",
+    )
+
+    class ZenStoreStub:
+        @staticmethod
+        def update_run(**_kwargs):
+            raise AssertionError("Mismatched run should not be updated.")
+
+    class ClientStub:
+        zen_store = ZenStoreStub()
+
+        @staticmethod
+        def get_pipeline_run(run_id):
+            assert run_id == pipeline_run.id
+            return pipeline_run
+
+    monkeypatch.setattr(modal_entrypoint_module, "Client", ClientStub)
+
+    config = modal_entrypoint_module.ModalOrchestratorEntrypointConfiguration(
+        [
+            "--snapshot_id",
+            str(snapshot.id),
+            "--run_id",
+            str(pipeline_run.id),
+        ]
+    )
+    config._snapshot = snapshot
+
+    with pytest.raises(RuntimeError, match="other-modal-run-id"):
+        config._get_or_create_pipeline_run(
+            snapshot_id=snapshot.id,
+            modal_run_id="modal-run-id",
+        )
+
+
 def test_static_entrypoint_runs_dumb_dag_runner(monkeypatch):
     snapshot = _make_snapshot()
     pipeline_run = _make_placeholder_run()

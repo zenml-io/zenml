@@ -477,8 +477,19 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
         run_id = self.entrypoint_args.get(RUN_ID_OPTION)
 
         if run_id:
+            run = client.get_pipeline_run(UUID(run_id))
+            if run.orchestrator_run_id:
+                if run.orchestrator_run_id != modal_run_id:
+                    raise RuntimeError(
+                        "Modal controller received run ID "
+                        f"`{run_id}` with orchestrator run ID "
+                        f"`{run.orchestrator_run_id}`, but the active "
+                        f"Modal run ID is `{modal_run_id}`."
+                    )
+                return run
+
             return client.zen_store.update_run(
-                run_id=UUID(run_id),
+                run_id=run.id,
                 run_update=PipelineRunUpdate(orchestrator_run_id=modal_run_id),
             )
 
