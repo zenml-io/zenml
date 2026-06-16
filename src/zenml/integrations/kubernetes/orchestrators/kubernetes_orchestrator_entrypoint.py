@@ -47,6 +47,12 @@ from zenml.integrations.kubernetes.manifest_utils import (
     build_pod_manifest,
     pod_template_manifest_from_pod,
 )
+from zenml.integrations.kubernetes.orchestrators.dag_runner import (
+    DagRunner,
+    InterruptMode,
+    Node,
+    NodeStatus,
+)
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (
     KubernetesOrchestrator,
 )
@@ -59,12 +65,6 @@ from zenml.models import (
     StepRunResponse,
 )
 from zenml.orchestrators import publish_utils
-from zenml.orchestrators.monitored_dag_runner import (
-    DagRunner,
-    InterruptMode,
-    Node,
-    NodeStatus,
-)
 from zenml.orchestrators.step_run_utils import (
     StepRunRequestFactory,
     fetch_step_runs_by_names,
@@ -813,8 +813,6 @@ def main() -> None:
                     )
                     return InterruptMode.GRACEFUL
                 elif run.status == ExecutionStatus.FAILED:
-                    # The DAG runner can miss failures published before
-                    # Kubernetes reports the step job as terminal.
                     if (
                         snapshot.pipeline_configuration.execution_mode
                         == ExecutionMode.STOP_ON_FAILURE

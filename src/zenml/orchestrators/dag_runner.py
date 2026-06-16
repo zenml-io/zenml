@@ -11,12 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Older generic threaded DAG runner for in-process Python callables.
-
-This module executes node functions directly in threads. Remote orchestrators
-that create backend resources should use ``monitored_dag_runner`` instead,
-because that runner tracks startup and cleanup for external resources.
-"""
+"""DAG (Directed Acyclic Graph) Runners."""
 
 import threading
 import time

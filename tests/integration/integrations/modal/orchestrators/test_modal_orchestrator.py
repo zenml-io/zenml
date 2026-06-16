@@ -54,7 +54,9 @@ from zenml.integrations.modal.orchestrators.modal_orchestrator import (  # noqa:
     get_modal_app_name,
     get_static_step_sandbox_metadata_key,
 )
-from zenml.orchestrators.monitored_dag_runner import NodeStatus  # noqa: E402
+from zenml.integrations.modal.orchestrators.dag_runner import (  # noqa: E402
+    NodeStatus,
+)
 
 SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY = (
     sandbox_utils.SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY
