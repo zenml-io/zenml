@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+# ruff: noqa: D100,D102,D103,D107
+
 import os
 import threading
 import time
@@ -126,7 +128,7 @@ def _submit_with_stubs(
     class ClientStub:
         active_stack = StackStub()
 
-    class ModalClientFactoryStub:
+    class ModalClientModuleStub:
         @staticmethod
         def from_credentials(token_id, token_secret):
             recorded["client_credentials"].append((token_id, token_secret))
@@ -186,7 +188,7 @@ def _submit_with_stubs(
 
     monkeypatch.setattr(modal_step_operator_module, "Client", ClientStub)
     monkeypatch.setattr(
-        modal_step_operator_module.modal, "Client", ModalClientFactoryStub
+        modal_step_operator_module.modal, "Client", ModalClientModuleStub
     )
     monkeypatch.setattr(
         modal_step_operator_module.modal, "Image", ImageFactoryStub
@@ -302,10 +304,10 @@ def test_gpu_arg_type_with_zero_count_warns_and_returns_cpu_only(
     assert "running on CPU only" in caplog.text
 
 
-def test_modal_client_factory_preserves_ambient_auth(monkeypatch) -> None:
+def test_modal_client_preserves_ambient_auth(monkeypatch) -> None:
     recorded = []
 
-    class ModalClientFactoryStub:
+    class ModalClientModuleStub:
         @staticmethod
         def from_credentials(token_id, token_secret):
             recorded.append((token_id, token_secret))
@@ -314,7 +316,7 @@ def test_modal_client_factory_preserves_ambient_auth(monkeypatch) -> None:
             )
 
     monkeypatch.setattr(
-        modal_step_operator_module.modal, "Client", ModalClientFactoryStub
+        modal_step_operator_module.modal, "Client", ModalClientModuleStub
     )
 
     operator = _make_operator(ModalStepOperatorConfig())
@@ -323,7 +325,7 @@ def test_modal_client_factory_preserves_ambient_auth(monkeypatch) -> None:
     assert recorded == []
 
 
-def test_modal_client_factory_caches_and_rebuilds_explicit_client(
+def test_modal_client_caches_and_rebuilds_explicit_client(
     monkeypatch,
 ) -> None:
     first_client = ModalClientStub("first")
@@ -331,14 +333,14 @@ def test_modal_client_factory_caches_and_rebuilds_explicit_client(
     clients = [first_client, second_client]
     recorded = []
 
-    class ModalClientFactoryStub:
+    class ModalClientModuleStub:
         @staticmethod
         def from_credentials(token_id, token_secret):
             recorded.append((token_id, token_secret))
             return clients.pop(0)
 
     monkeypatch.setattr(
-        modal_step_operator_module.modal, "Client", ModalClientFactoryStub
+        modal_step_operator_module.modal, "Client", ModalClientModuleStub
     )
 
     operator = _make_operator(
@@ -360,49 +362,50 @@ def test_modal_client_factory_caches_and_rebuilds_explicit_client(
     ]
 
 
-def test_modal_client_factory_returns_open_cache_without_reading_config(
+def test_modal_client_returns_open_cache_without_reading_config(
     monkeypatch,
 ) -> None:
     cached_client = ModalClientStub("cached")
-    should_fail_token_lookup = False
 
-    class ModalClientFactoryStub:
+    class ModalClientModuleStub:
         @staticmethod
         def from_credentials(token_id, token_secret):
-            assert (token_id, token_secret) == ("ak-test", "as-test")
-            return cached_client
-
-    def get_token_id():
-        if should_fail_token_lookup:
-            raise AssertionError("Cached clients must not read token_id.")
-        return "ak-test"
-
-    def get_token_secret():
-        if should_fail_token_lookup:
-            raise AssertionError("Cached clients must not read token_secret.")
-        return "as-test"
+            raise AssertionError(
+                "Cached clients must not create a new explicit client."
+            )
 
     monkeypatch.setattr(
-        modal_step_operator_module.modal, "Client", ModalClientFactoryStub
+        modal_step_operator_module.modal, "Client", ModalClientModuleStub
     )
-    factory = modal_step_operator_module.sandbox_utils.ModalClientFactory(
-        get_token_id=get_token_id,
-        get_token_secret=get_token_secret,
+    operator = _make_operator(
+        ModalStepOperatorConfig(
+            token_id="ak-test",
+            token_secret="as-test",
+        )
+    )
+    operator._modal_client = cached_client
+
+    monkeypatch.setattr(
+        modal_step_operator_module.ModalStepOperator,
+        "config",
+        property(
+            lambda _self: pytest.fail(
+                "Open cached clients must be returned before reading config."
+            )
+        ),
     )
 
-    assert factory.get_client() is cached_client
-    should_fail_token_lookup = True
-    assert factory.get_client() is cached_client
+    assert operator._get_modal_client() is cached_client
 
 
-def test_modal_client_factory_uses_lock_for_concurrent_creation(
+def test_modal_client_uses_lock_for_concurrent_creation(
     monkeypatch,
 ) -> None:
     modal_client = ModalClientStub("explicit")
     creation_lock = threading.Lock()
     creation_count = 0
 
-    class ModalClientFactoryStub:
+    class ModalClientModuleStub:
         @staticmethod
         def from_credentials(token_id, token_secret):
             nonlocal creation_count
@@ -413,7 +416,7 @@ def test_modal_client_factory_uses_lock_for_concurrent_creation(
             return modal_client
 
     monkeypatch.setattr(
-        modal_step_operator_module.modal, "Client", ModalClientFactoryStub
+        modal_step_operator_module.modal, "Client", ModalClientModuleStub
     )
 
     operator = _make_operator(
@@ -613,7 +616,7 @@ def test_status_and_cancel_use_cached_explicit_modal_client(
     modal_client = ModalClientStub("explicit")
     recorded = {"client_credentials": [], "from_id_calls": []}
 
-    class ModalClientFactoryStub:
+    class ModalClientModuleStub:
         @staticmethod
         def from_credentials(token_id, token_secret):
             recorded["client_credentials"].append((token_id, token_secret))
@@ -646,7 +649,7 @@ def test_status_and_cancel_use_cached_explicit_modal_client(
     )
 
     monkeypatch.setattr(
-        modal_step_operator_module.modal, "Client", ModalClientFactoryStub
+        modal_step_operator_module.modal, "Client", ModalClientModuleStub
     )
     monkeypatch.setattr(
         modal_step_operator_module.modal, "Sandbox", SandboxFactoryStub
@@ -669,7 +672,7 @@ def test_status_and_cancel_preserve_ambient_auth_with_client_none(
 ) -> None:
     recorded = {"client_credentials": [], "from_id_calls": []}
 
-    class ModalClientFactoryStub:
+    class ModalClientModuleStub:
         @staticmethod
         def from_credentials(token_id, token_secret):
             recorded["client_credentials"].append((token_id, token_secret))
@@ -698,7 +701,7 @@ def test_status_and_cancel_preserve_ambient_auth_with_client_none(
     )
 
     monkeypatch.setattr(
-        modal_step_operator_module.modal, "Client", ModalClientFactoryStub
+        modal_step_operator_module.modal, "Client", ModalClientModuleStub
     )
     monkeypatch.setattr(
         modal_step_operator_module.modal, "Sandbox", SandboxFactoryStub

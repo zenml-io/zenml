@@ -15,6 +15,7 @@
 
 import os
 from enum import Enum
+from threading import Lock
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 from uuid import UUID, uuid4
 
@@ -27,6 +28,7 @@ from zenml.constants import (
     ORCHESTRATOR_DOCKER_IMAGE_KEY,
 )
 from zenml.enums import ExecutionMode, ExecutionStatus, StackComponentType
+from zenml.exceptions import StackComponentInterfaceError
 from zenml.integrations.modal import sandbox_utils
 from zenml.integrations.modal.flavors import (
     ModalOrchestratorConfig,
@@ -38,6 +40,7 @@ from zenml.models import PipelineRunUpdate
 from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.orchestrators.publish_utils import (
     publish_pipeline_run_metadata,
+    publish_pipeline_run_status_update,
     publish_step_run_metadata,
     publish_stopped_step_run,
 )
@@ -116,10 +119,8 @@ class ModalOrchestrator(ContainerizedOrchestrator):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize the Modal orchestrator."""
         super().__init__(*args, **kwargs)
-        self._modal_client_factory = sandbox_utils.ModalClientFactory(
-            get_token_id=lambda: self.config.token_id,
-            get_token_secret=lambda: self.config.token_secret,
-        )
+        self._modal_client: Optional["modal.Client"] = None
+        self._modal_client_lock = Lock()
 
     @property
     def config(self) -> ModalOrchestratorConfig:
@@ -191,7 +192,39 @@ class ModalOrchestrator(ContainerizedOrchestrator):
 
     def get_modal_client(self) -> Optional["modal.Client"]:
         """Get the Modal client used by orchestrator entrypoints."""
-        return self._modal_client_factory.get_client()
+        if (
+            self._modal_client is not None
+            and not self._modal_client.is_closed()
+        ):
+            return self._modal_client
+
+        with self._modal_client_lock:
+            if (
+                self._modal_client is not None
+                and not self._modal_client.is_closed()
+            ):
+                return self._modal_client
+
+            token_id = sandbox_utils.normalize_optional_config_value(
+                self.config.token_id
+            )
+            token_secret = sandbox_utils.normalize_optional_config_value(
+                self.config.token_secret
+            )
+            if bool(token_id) != bool(token_secret):
+                raise StackComponentInterfaceError(
+                    "Modal token_id and token_secret must be configured "
+                    "together."
+                )
+
+            if not token_id or not token_secret:
+                return None
+
+            self._modal_client = modal.Client.from_credentials(
+                token_id,
+                token_secret,
+            )
+            return self._modal_client
 
     def _inject_modal_credentials(self, environment: Dict[str, str]) -> None:
         """Forward Modal credentials into a controller sandbox environment.
@@ -755,6 +788,21 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             )
 
         self._publish_stopped_statuses_for_unfinished_steps(run)
+        self._publish_stopped_pipeline_run_if_active(run)
+
+    def _publish_stopped_pipeline_run_if_active(
+        self, run: "PipelineRunResponse"
+    ) -> None:
+        """Publish a stopped pipeline status if cleanup won the race."""
+        final_run = self._get_fresh_pipeline_run(run)
+        if final_run.status in {
+            ExecutionStatus.INITIALIZING,
+            ExecutionStatus.PROVISIONING,
+            ExecutionStatus.RUNNING,
+            ExecutionStatus.STOPPING,
+            ExecutionStatus.CANCELLING,
+        }:
+            publish_pipeline_run_status_update(run.id, ExecutionStatus.STOPPED)
 
     def _publish_stopped_statuses_for_unfinished_steps(
         self, run: "PipelineRunResponse"

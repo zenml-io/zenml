@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Modal step operator implementation."""
 
+from threading import Lock
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 import modal
@@ -20,6 +21,7 @@ import modal
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.exceptions import StackComponentInterfaceError
 from zenml.integrations.modal import sandbox_utils
 from zenml.integrations.modal.flavors import (
     ModalStepOperatorConfig,
@@ -52,14 +54,44 @@ class ModalStepOperator(BaseStepOperator):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize the Modal step operator."""
         super().__init__(*args, **kwargs)
-        self._modal_client_factory = sandbox_utils.ModalClientFactory(
-            get_token_id=lambda: self.config.token_id,
-            get_token_secret=lambda: self.config.token_secret,
-        )
+        self._modal_client: Optional["modal.Client"] = None
+        self._modal_client_lock = Lock()
 
     def _get_modal_client(self) -> Optional["modal.Client"]:
         """Get an explicit Modal client when credentials are configured."""
-        return self._modal_client_factory.get_client()
+        if (
+            self._modal_client is not None
+            and not self._modal_client.is_closed()
+        ):
+            return self._modal_client
+
+        with self._modal_client_lock:
+            if (
+                self._modal_client is not None
+                and not self._modal_client.is_closed()
+            ):
+                return self._modal_client
+
+            token_id = sandbox_utils.normalize_optional_config_value(
+                self.config.token_id
+            )
+            token_secret = sandbox_utils.normalize_optional_config_value(
+                self.config.token_secret
+            )
+            if bool(token_id) != bool(token_secret):
+                raise StackComponentInterfaceError(
+                    "Modal token_id and token_secret must be configured "
+                    "together."
+                )
+
+            if not token_id or not token_secret:
+                return None
+
+            self._modal_client = modal.Client.from_credentials(
+                token_id,
+                token_secret,
+            )
+            return self._modal_client
 
     @property
     def config(self) -> ModalStepOperatorConfig:

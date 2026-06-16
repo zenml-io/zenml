@@ -15,8 +15,7 @@
 
 import math
 import time
-from threading import Lock
-from typing import Any, Callable, Dict, List, Optional, Protocol, Tuple
+from typing import Any, Dict, List, Optional, Protocol, Tuple
 
 import modal
 
@@ -98,63 +97,6 @@ def split_modal_runtime_environment(
             sandbox_environment[key] = value
 
     return sandbox_environment, sensitive_environment
-
-
-class ModalClientFactory:
-    """Create and cache explicit Modal clients from lazy token providers."""
-
-    def __init__(
-        self,
-        *,
-        get_token_id: Callable[[], Optional[str]],
-        get_token_secret: Callable[[], Optional[str]],
-    ) -> None:
-        """Initialize the factory without reading token values."""
-        self._get_token_id = get_token_id
-        self._get_token_secret = get_token_secret
-        self._cached_client: Optional["modal.Client"] = None
-        self._lock = Lock()
-
-    def get_client(self) -> Optional["modal.Client"]:
-        """Get an explicit Modal client when credentials are configured.
-
-        If no credentials are configured, this returns ``None`` so the Modal SDK
-        can use its ambient authentication configuration. If credentials are
-        configured, the created SDK client is cached until it is closed.
-        """
-        if (
-            self._cached_client is not None
-            and not self._cached_client.is_closed()
-        ):
-            return self._cached_client
-
-        with self._lock:
-            if (
-                self._cached_client is not None
-                and not self._cached_client.is_closed()
-            ):
-                return self._cached_client
-
-            normalized_token_id = normalize_optional_config_value(
-                self._get_token_id()
-            )
-            normalized_token_secret = normalize_optional_config_value(
-                self._get_token_secret()
-            )
-
-            if bool(normalized_token_id) != bool(normalized_token_secret):
-                raise StackComponentInterfaceError(
-                    "Modal token_id and token_secret must be configured "
-                    "together."
-                )
-
-            if not normalized_token_id or not normalized_token_secret:
-                return None
-
-            self._cached_client = modal.Client.from_credentials(
-                normalized_token_id, normalized_token_secret
-            )
-            return self._cached_client
 
 
 def resolve_modal_token_pair(

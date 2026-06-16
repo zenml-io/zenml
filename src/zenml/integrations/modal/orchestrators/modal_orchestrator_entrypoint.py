@@ -25,6 +25,14 @@ from zenml.entrypoints.base_entrypoint_configuration import (
 from zenml.enums import ExecutionMode, ExecutionStatus
 from zenml.exceptions import AuthorizationException
 from zenml.integrations.modal import sandbox_utils
+from zenml.integrations.modal.orchestrators.dag_runner import (
+    DagRunner as ModalDagRunner,
+)
+from zenml.integrations.modal.orchestrators.dag_runner import (
+    InterruptMode,
+    Node,
+    NodeStatus,
+)
 from zenml.integrations.modal.orchestrators.modal_orchestrator import (
     ENV_ZENML_MODAL_APP_NAME,
     ENV_ZENML_MODAL_RUN_ID,
@@ -36,14 +44,6 @@ from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.models import PipelineRunUpdate, StepRunResponse
 from zenml.orchestrators import publish_utils
-from zenml.integrations.modal.orchestrators.dag_runner import (
-    DagRunner as ModalDagRunner,
-)
-from zenml.integrations.modal.orchestrators.dag_runner import (
-    InterruptMode,
-    Node,
-    NodeStatus,
-)
 from zenml.orchestrators.step_run_utils import (
     StepRunRequestFactory,
     fetch_step_runs_by_names,
@@ -500,9 +500,14 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
             in {
                 NodeStatus.FAILED,
                 NodeStatus.SKIPPED,
-                NodeStatus.CANCELLED,
             }
         ]
+        cancelled_step_names = [
+            step_name
+            for step_name, node_status in node_statuses.items()
+            if node_status == NodeStatus.CANCELLED
+        ]
+        unsuccessful_step_names = failed_step_names + cancelled_step_names
         active_statuses = {
             ExecutionStatus.INITIALIZING,
             ExecutionStatus.PROVISIONING,
@@ -524,27 +529,29 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
             if run.status == ExecutionStatus.STOPPED:
                 return
 
-            if not failed_step_names:
+            if not unsuccessful_step_names:
                 if run.status in active_statuses:
                     publish_utils.publish_successful_pipeline_run(
                         pipeline_run_id
                     )
                 return
 
-            logger.error(
-                "The following Modal steps did not complete successfully: %s",
-                ", ".join(failed_step_names),
-            )
+            if failed_step_names:
+                logger.error(
+                    "The following Modal steps did not complete "
+                    "successfully: %s",
+                    ", ".join(failed_step_names),
+                )
             step_runs = fetch_step_runs_by_names(
-                step_run_names=failed_step_names,
+                step_run_names=unsuccessful_step_names,
                 pipeline_run=run,
             )
-            for step_run in step_runs.values():
-                if step_run.status in {
-                    ExecutionStatus.INITIALIZING,
-                    ExecutionStatus.RUNNING,
-                }:
-                    publish_utils.publish_failed_step_run(step_run.id)
+            for step_name, step_run in step_runs.items():
+                if not step_run.status.is_finished:
+                    if step_name in cancelled_step_names:
+                        publish_utils.publish_cancelled_step_run(step_run.id)
+                    else:
+                        publish_utils.publish_failed_step_run(step_run.id)
 
             refreshed_run = client.get_pipeline_run(pipeline_run_id)
             if refreshed_run.status == ExecutionStatus.STOPPING:
@@ -556,11 +563,18 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
             if refreshed_run.status == ExecutionStatus.STOPPED:
                 return
             if refreshed_run.status in active_statuses:
-                publish_utils.publish_failed_pipeline_run(pipeline_run_id)
-            raise RuntimeError(
-                "Modal steps did not complete successfully: "
-                + ", ".join(failed_step_names)
-            )
+                if failed_step_names:
+                    publish_utils.publish_failed_pipeline_run(pipeline_run_id)
+                else:
+                    publish_utils.publish_pipeline_run_status_update(
+                        pipeline_run_id,
+                        ExecutionStatus.STOPPED,
+                    )
+            if failed_step_names:
+                raise RuntimeError(
+                    "Modal steps did not complete successfully: "
+                    + ", ".join(failed_step_names)
+                )
         except AuthorizationException:
             if failed_step_names:
                 raise RuntimeError(

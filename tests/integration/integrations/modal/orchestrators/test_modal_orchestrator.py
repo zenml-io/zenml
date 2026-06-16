@@ -107,6 +107,17 @@ class SandboxStub:
         self.terminate_calls += 1
 
 
+class ModalClientStub:
+    """Small stand-in for an opened Modal client."""
+
+    def __init__(self, name: str):
+        self.name = name
+        self.closed = False
+
+    def is_closed(self) -> bool:
+        return self.closed
+
+
 class PageStub:
     """Small page stand-in for ZenML client list responses."""
 
@@ -375,6 +386,43 @@ def test_supported_execution_modes_include_static_failure_modes():
         ExecutionMode.FAIL_FAST,
         ExecutionMode.STOP_ON_FAILURE,
         ExecutionMode.CONTINUE_ON_FAILURE,
+    ]
+
+
+def test_orchestrator_modal_client_caches_and_rebuilds_explicit_client(
+    monkeypatch,
+):
+    first_client = ModalClientStub("first")
+    second_client = ModalClientStub("second")
+    clients = [first_client, second_client]
+    recorded = []
+
+    class ModalClientModuleStub:
+        @staticmethod
+        def from_credentials(token_id, token_secret):
+            recorded.append((token_id, token_secret))
+            return clients.pop(0)
+
+    monkeypatch.setattr(
+        modal_orchestrator_module.modal, "Client", ModalClientModuleStub
+    )
+
+    orchestrator = _make_orchestrator(
+        ModalOrchestratorConfig(
+            token_id="ak-test",
+            token_secret="as-test",
+        )
+    )
+
+    assert orchestrator.get_modal_client() is first_client
+    assert orchestrator.get_modal_client() is first_client
+
+    first_client.closed = True
+
+    assert orchestrator.get_modal_client() is second_client
+    assert recorded == [
+        ("ak-test", "as-test"),
+        ("ak-test", "as-test"),
     ]
 
 
@@ -892,6 +940,7 @@ def test_graceful_stop_run_force_stops_dynamic_runs(monkeypatch):
     run_id = uuid4()
     run = SimpleNamespace(
         id=run_id,
+        status=ExecutionStatus.STOPPING,
         snapshot=SimpleNamespace(is_dynamic=True),
         run_metadata={
             MODAL_ORCHESTRATION_SANDBOX_ID_METADATA_KEY: (
@@ -920,12 +969,19 @@ def test_graceful_stop_run_force_stops_dynamic_runs(monkeypatch):
         "publish_stopped_step_run",
         lambda step_run_id: stopped_step_run_ids.append(step_run_id),
     )
+    published_run_statuses = []
+    monkeypatch.setattr(
+        modal_orchestrator_module,
+        "publish_pipeline_run_status_update",
+        lambda run_id, status: published_run_statuses.append((run_id, status)),
+    )
 
     _make_orchestrator()._stop_run(run, graceful=True)
 
     assert recorded["termination_order"].count("child-running") == 1
     assert recorded["termination_order"].count("orchestrator-sandbox") == 1
     assert stopped_step_run_ids == [run.steps["train"].id]
+    assert published_run_statuses == [(run_id, ExecutionStatus.STOPPED)]
 
 
 def test_stop_run_refreshes_and_terminates_children_before_orchestration(
@@ -963,13 +1019,16 @@ def test_stop_run_refreshes_and_terminates_children_before_orchestration(
     )
     second_refresh = SimpleNamespace(
         id=run_id,
+        status=ExecutionStatus.STOPPING,
         run_metadata={
             MODAL_ORCHESTRATION_SANDBOX_ID_METADATA_KEY: "orchestrator-sandbox",
             get_static_step_sandbox_metadata_key("late"): "late-child",
         },
         steps={},
     )
-    refreshed_runs = iter([first_refresh, second_refresh])
+    refreshed_runs = iter(
+        [first_refresh, second_refresh, second_refresh, second_refresh]
+    )
 
     class ClientStub:
         @staticmethod
@@ -977,6 +1036,12 @@ def test_stop_run_refreshes_and_terminates_children_before_orchestration(
             return next(refreshed_runs)
 
     monkeypatch.setattr(modal_orchestrator_module, "Client", ClientStub)
+    published_run_statuses = []
+    monkeypatch.setattr(
+        modal_orchestrator_module,
+        "publish_pipeline_run_status_update",
+        lambda run_id, status: published_run_statuses.append((run_id, status)),
+    )
 
     _make_orchestrator()._stop_run(stale_run)
 
@@ -1002,6 +1067,7 @@ def test_stop_run_refreshes_and_terminates_children_before_orchestration(
     assert from_id_sandboxes["fallback-child"].terminate_calls == 1
     assert from_id_sandboxes["late-child"].terminate_calls == 1
     assert from_id_sandboxes["child-complete"].terminate_calls == 0
+    assert published_run_statuses == [(run_id, ExecutionStatus.STOPPED)]
 
 
 def test_stop_run_publishes_stopped_statuses_for_unfinished_steps(
@@ -1034,6 +1100,7 @@ def test_stop_run_publishes_stopped_statuses_for_unfinished_steps(
     )
     refreshed_run = SimpleNamespace(
         id=run_id,
+        status=ExecutionStatus.STOPPING,
         run_metadata={
             MODAL_ORCHESTRATION_SANDBOX_ID_METADATA_KEY: (
                 "orchestrator-sandbox"
@@ -1058,11 +1125,77 @@ def test_stop_run_publishes_stopped_statuses_for_unfinished_steps(
         "publish_stopped_step_run",
         lambda step_run_id: stopped_step_run_ids.append(step_run_id),
     )
+    published_run_statuses = []
+    monkeypatch.setattr(
+        modal_orchestrator_module,
+        "publish_pipeline_run_status_update",
+        lambda run_id, status: published_run_statuses.append((run_id, status)),
+    )
 
     stale_run = SimpleNamespace(id=run_id, run_metadata={}, steps={})
     _make_orchestrator()._stop_run(stale_run)
 
     assert stopped_step_run_ids == [running_step.id]
+    assert published_run_statuses == [(run_id, ExecutionStatus.STOPPED)]
+
+
+def test_stop_run_does_not_overwrite_late_failed_pipeline_status(
+    monkeypatch,
+):
+    from_id_sandboxes = {
+        "orchestrator-sandbox": SandboxStub("orchestrator-sandbox", [None]),
+        "child-running": SandboxStub("child-running", [None]),
+    }
+    _install_modal_sdk_stubs(monkeypatch, from_id_sandboxes=from_id_sandboxes)
+    run_id = uuid4()
+    running_step = SimpleNamespace(
+        id=uuid4(),
+        status=ExecutionStatus.RUNNING,
+        run_metadata={MODAL_SANDBOX_ID_METADATA_KEY: "child-running"},
+        config=SimpleNamespace(step_operator=None),
+    )
+    active_run = SimpleNamespace(
+        id=run_id,
+        status=ExecutionStatus.STOPPING,
+        run_metadata={
+            MODAL_ORCHESTRATION_SANDBOX_ID_METADATA_KEY: (
+                "orchestrator-sandbox"
+            ),
+        },
+        steps={"train": running_step},
+    )
+    failed_run = SimpleNamespace(
+        id=run_id,
+        status=ExecutionStatus.FAILED,
+        run_metadata=active_run.run_metadata,
+        steps=active_run.steps,
+    )
+    refreshed_runs = iter([active_run, active_run, active_run, failed_run])
+
+    class ClientStub:
+        @staticmethod
+        def get_pipeline_run(_run_id):
+            return next(refreshed_runs)
+
+    monkeypatch.setattr(modal_orchestrator_module, "Client", ClientStub)
+    stopped_step_run_ids = []
+    monkeypatch.setattr(
+        modal_orchestrator_module,
+        "publish_stopped_step_run",
+        lambda step_run_id: stopped_step_run_ids.append(step_run_id),
+    )
+    published_run_statuses = []
+    monkeypatch.setattr(
+        modal_orchestrator_module,
+        "publish_pipeline_run_status_update",
+        lambda run_id, status: published_run_statuses.append((run_id, status)),
+    )
+
+    stale_run = SimpleNamespace(id=run_id, run_metadata={}, steps={})
+    _make_orchestrator()._stop_run(stale_run)
+
+    assert stopped_step_run_ids == [running_step.id]
+    assert published_run_statuses == []
 
 
 class StaticStepRunRequestFactoryStub:
@@ -1624,6 +1757,122 @@ def test_static_controller_finalize_raises_after_failed_child_publish(
     assert published == [
         ("step", step_run_id),
         ("pipeline", pipeline_run_id),
+    ]
+
+
+def test_static_controller_finalize_cancels_cancelled_children(
+    monkeypatch,
+):
+    pipeline_run_id = uuid4()
+    failed_step_run_id = uuid4()
+    cancelled_step_run_id = uuid4()
+    published = []
+
+    class ClientStub:
+        @staticmethod
+        def get_pipeline_run(*args, **kwargs):
+            return SimpleNamespace(
+                id=pipeline_run_id,
+                status=ExecutionStatus.RUNNING,
+            )
+
+    monkeypatch.setattr(modal_entrypoint_module, "Client", ClientStub)
+    monkeypatch.setattr(
+        modal_entrypoint_module,
+        "fetch_step_runs_by_names",
+        lambda **_kwargs: {
+            "train": SimpleNamespace(
+                id=failed_step_run_id,
+                status=ExecutionStatus.PROVISIONING,
+            ),
+            "eval": SimpleNamespace(
+                id=cancelled_step_run_id,
+                status=ExecutionStatus.PROVISIONING,
+            ),
+        },
+    )
+    monkeypatch.setattr(
+        modal_entrypoint_module.publish_utils,
+        "publish_failed_step_run",
+        lambda step_id: published.append(("failed-step", step_id)),
+    )
+    monkeypatch.setattr(
+        modal_entrypoint_module.publish_utils,
+        "publish_cancelled_step_run",
+        lambda step_id: published.append(("cancelled-step", step_id)),
+    )
+    monkeypatch.setattr(
+        modal_entrypoint_module.publish_utils,
+        "publish_failed_pipeline_run",
+        lambda run_id: published.append(("failed-pipeline", run_id)),
+    )
+
+    with pytest.raises(RuntimeError, match="train"):
+        modal_entrypoint_module.ModalOrchestratorEntrypointConfiguration._finalize_pipeline_run(
+            pipeline_run_id,
+            {
+                "train": NodeStatus.FAILED,
+                "eval": NodeStatus.CANCELLED,
+            },
+        )
+
+    assert published == [
+        ("failed-step", failed_step_run_id),
+        ("cancelled-step", cancelled_step_run_id),
+        ("failed-pipeline", pipeline_run_id),
+    ]
+
+
+def test_static_controller_finalize_marks_cancelled_only_run_stopped(
+    monkeypatch,
+):
+    pipeline_run_id = uuid4()
+    cancelled_step_run_id = uuid4()
+    published = []
+
+    class ClientStub:
+        @staticmethod
+        def get_pipeline_run(*args, **kwargs):
+            return SimpleNamespace(
+                id=pipeline_run_id,
+                status=ExecutionStatus.RUNNING,
+            )
+
+    monkeypatch.setattr(modal_entrypoint_module, "Client", ClientStub)
+    monkeypatch.setattr(
+        modal_entrypoint_module,
+        "fetch_step_runs_by_names",
+        lambda **_kwargs: {
+            "train": SimpleNamespace(
+                id=cancelled_step_run_id,
+                status=ExecutionStatus.PROVISIONING,
+            )
+        },
+    )
+    monkeypatch.setattr(
+        modal_entrypoint_module.publish_utils,
+        "publish_failed_step_run",
+        lambda step_id: published.append(("failed-step", step_id)),
+    )
+    monkeypatch.setattr(
+        modal_entrypoint_module.publish_utils,
+        "publish_cancelled_step_run",
+        lambda step_id: published.append(("cancelled-step", step_id)),
+    )
+    monkeypatch.setattr(
+        modal_entrypoint_module.publish_utils,
+        "publish_pipeline_run_status_update",
+        lambda run_id, status: published.append((run_id, status)),
+    )
+
+    modal_entrypoint_module.ModalOrchestratorEntrypointConfiguration._finalize_pipeline_run(
+        pipeline_run_id,
+        {"train": NodeStatus.CANCELLED},
+    )
+
+    assert published == [
+        ("cancelled-step", cancelled_step_run_id),
+        (pipeline_run_id, ExecutionStatus.STOPPED),
     ]
 
 
