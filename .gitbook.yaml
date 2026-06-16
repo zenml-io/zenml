@@ -199,7 +199,6 @@ redirects:
   how-to/pipeline-development/trigger-pipelines/use-templates-rest-api: how-to/templates/templates.md
 
   # New redirects
-  concepts/steps_and_pipelines/command_steps: introduction.md
   getting-started/deploying-zenml: getting-started/deploying-zenml/README.md
   getting-started/deploying-zenml/custom-secret-stores: getting-started/deploying-zenml/custom-secret-stores.md
   getting-started/deploying-zenml/deploy-using-huggingface-spaces: getting-started/deploying-zenml/deploy-using-huggingface-spaces.md
