@@ -15,7 +15,10 @@
 from contextlib import ExitStack as does_not_raise
 from typing import Dict, List
 
-from zenml.orchestrators.dag_runner import ThreadedDagRunner, reverse_dag
+from zenml.orchestrators.legacy_dag_runner import (
+    ThreadedDagRunner,
+    reverse_dag,
+)
 
 
 def test_reverse_dag():

@@ -25,14 +25,6 @@ from zenml.entrypoints.base_entrypoint_configuration import (
 from zenml.enums import ExecutionMode, ExecutionStatus
 from zenml.exceptions import AuthorizationException
 from zenml.integrations.modal import sandbox_utils
-from zenml.integrations.modal.orchestrators.dag_runner import (
-    DagRunner as ModalDagRunner,
-)
-from zenml.integrations.modal.orchestrators.dag_runner import (
-    InterruptMode,
-    Node,
-    NodeStatus,
-)
 from zenml.integrations.modal.orchestrators.modal_orchestrator import (
     ENV_ZENML_MODAL_APP_NAME,
     ENV_ZENML_MODAL_RUN_ID,
@@ -43,6 +35,14 @@ from zenml.integrations.modal.orchestrators.modal_orchestrator import (
 from zenml.logger import get_logger
 from zenml.models import PipelineRunUpdate, StepRunResponse
 from zenml.orchestrators import publish_utils
+from zenml.orchestrators.dag_runner import (
+    DagRunner as ModalDagRunner,
+)
+from zenml.orchestrators.dag_runner import (
+    InterruptMode,
+    Node,
+    NodeStatus,
+)
 from zenml.orchestrators.step_run_utils import (
     StepRunRequestFactory,
     fetch_step_runs_by_names,
