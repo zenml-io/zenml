@@ -40,7 +40,12 @@ from zenml.enums import ArtifactSaveType, ArtifactType
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
-from zenml.models.v2.base.filter import FilterGenerator
+from zenml.models.v2.base.filter import (
+    FilterGenerator,
+    IntegerFilterOption,
+    StringFilterOption,
+    UUIDFilterOption,
+)
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -555,13 +560,15 @@ class ArtifactVersionFilter(
         *RunMetadataFilterMixin.CLI_EXCLUDE_FIELDS,
         "artifact_id",
     ]
-    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
-        *ProjectScopedFilter.API_MULTI_INPUT_PARAMS,
-        *TaggableFilter.API_MULTI_INPUT_PARAMS,
-        *RunMetadataFilterMixin.API_MULTI_INPUT_PARAMS,
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
+        *TaggableFilter.API_SINGLE_INPUT_PARAMS,
+        *RunMetadataFilterMixin.API_SINGLE_INPUT_PARAMS,
+        "only_unused",
+        "has_custom_name",
     ]
 
-    artifact: Optional[Union[UUID, str]] = Field(
+    artifact: UUIDFilterOption = Field(
         default=None,
         description="The name or ID of the artifact which the search is scoped "
         "to. This field must always be set and is always applied in addition "
@@ -569,42 +576,42 @@ class ArtifactVersionFilter(
         "logical_operator field.",
         union_mode="left_to_right",
     )
-    artifact_id: Optional[Union[UUID, str]] = Field(
+    artifact_id: UUIDFilterOption = Field(
         default=None,
         description="[Deprecated] Use 'artifact' instead. ID of the artifact to which this version belongs.",
         union_mode="left_to_right",
     )
-    version: Optional[str] = Field(
+    version: StringFilterOption = Field(
         default=None,
         description="Version of the artifact",
     )
-    version_number: Optional[Union[int, str]] = Field(
+    version_number: IntegerFilterOption = Field(
         default=None,
         description="Version of the artifact if it is an integer",
         union_mode="left_to_right",
     )
-    uri: Optional[str] = Field(
+    uri: StringFilterOption = Field(
         default=None,
         description="Uri of the artifact",
     )
-    materializer: Optional[str] = Field(
+    materializer: StringFilterOption = Field(
         default=None,
         description="Materializer used to produce the artifact",
     )
-    type: Optional[str] = Field(
+    type: StringFilterOption = Field(
         default=None,
         description="Type of the artifact",
     )
-    data_type: Optional[str] = Field(
+    data_type: StringFilterOption = Field(
         default=None,
         description="Datatype of the artifact",
     )
-    artifact_store_id: Optional[Union[UUID, str]] = Field(
+    artifact_store_id: UUIDFilterOption = Field(
         default=None,
         description="Artifact store for this artifact",
         union_mode="left_to_right",
     )
-    model_version_id: Optional[Union[UUID, str]] = Field(
+    model_version_id: UUIDFilterOption = Field(
         default=None,
         description="ID of the model version that is associated with this "
         "artifact version.",
@@ -617,12 +624,12 @@ class ArtifactVersionFilter(
         default=None,
         description="Filter only artifacts with/without custom names.",
     )
-    model: Optional[Union[UUID, str]] = Field(
+    model: UUIDFilterOption = Field(
         default=None,
         description="Name/ID of the model that is associated with this "
         "artifact version.",
     )
-    pipeline_run: Optional[Union[UUID, str]] = Field(
+    pipeline_run: UUIDFilterOption = Field(
         default=None,
         description="Name/ID of a pipeline run that is associated with this "
         "artifact version.",
@@ -718,41 +725,54 @@ class ArtifactVersionFilter(
 
         assert self.pipeline_run is not None
 
-        pipeline_run_condition = self.generate_name_or_id_query_conditions(
-            value=self.pipeline_run, table=PipelineRunSchema
+        pipeline_runs = (
+            self.pipeline_run
+            if isinstance(self.pipeline_run, list)
+            else [self.pipeline_run]
         )
+        queries = []
 
-        output_artifact_ids: "Select[Tuple[Any]]" = (
-            select(col(StepRunOutputArtifactSchema.artifact_id).label("id"))
-            .join(
-                StepRunSchema,
-                col(StepRunOutputArtifactSchema.step_id)
-                == col(StepRunSchema.id),
+        for pipeline_run in pipeline_runs:
+            pipeline_run_condition = self.generate_name_or_id_query_conditions(
+                value=pipeline_run, table=PipelineRunSchema
             )
-            .join(
-                PipelineRunSchema,
-                col(StepRunSchema.pipeline_run_id)
-                == col(PipelineRunSchema.id),
-            )
-            .where(pipeline_run_condition)
-        )
 
-        input_artifact_ids: "Select[Tuple[Any]]" = (
-            select(col(StepRunInputArtifactSchema.artifact_id).label("id"))
-            .join(
-                StepRunSchema,
-                col(StepRunInputArtifactSchema.step_id)
-                == col(StepRunSchema.id),
+            output_artifact_ids: "Select[Tuple[Any]]" = (
+                select(
+                    col(StepRunOutputArtifactSchema.artifact_id).label("id")
+                )
+                .join(
+                    StepRunSchema,
+                    col(StepRunOutputArtifactSchema.step_id)
+                    == col(StepRunSchema.id),
+                )
+                .join(
+                    PipelineRunSchema,
+                    col(StepRunSchema.pipeline_run_id)
+                    == col(PipelineRunSchema.id),
+                )
+                .where(pipeline_run_condition)
             )
-            .join(
-                PipelineRunSchema,
-                col(StepRunSchema.pipeline_run_id)
-                == col(PipelineRunSchema.id),
-            )
-            .where(pipeline_run_condition)
-        )
+            queries.append(output_artifact_ids)
 
-        return union(output_artifact_ids, input_artifact_ids)
+            input_artifact_ids: "Select[Tuple[Any]]" = (
+                select(col(StepRunInputArtifactSchema.artifact_id).label("id"))
+                .join(
+                    StepRunSchema,
+                    col(StepRunInputArtifactSchema.step_id)
+                    == col(StepRunSchema.id),
+                )
+                .join(
+                    PipelineRunSchema,
+                    col(StepRunSchema.pipeline_run_id)
+                    == col(PipelineRunSchema.id),
+                )
+                .where(pipeline_run_condition)
+            )
+
+            queries.append(input_artifact_ids)
+
+        return union(*queries)
 
     def get_custom_filters(
         self, table: Type["AnySchema"]
@@ -780,14 +800,21 @@ class ArtifactVersionFilter(
         )
 
         if self.artifact:
-            value, operator = self._resolve_operator(self.artifact)
-            artifact_filter = and_(
-                ArtifactVersionSchema.artifact_id == ArtifactSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.artifact, table=ArtifactSchema
-                ),
+            artifact_filters = (
+                self.artifact
+                if isinstance(self.artifact, list)
+                else [self.artifact]
             )
-            custom_filters.append(artifact_filter)
+            for artifact_filter in artifact_filters:
+                value, operator = self._resolve_operator(artifact_filter)
+                custom_filters.append(
+                    and_(
+                        ArtifactVersionSchema.artifact_id == ArtifactSchema.id,
+                        self.generate_name_or_id_query_conditions(
+                            value=artifact_filter, table=ArtifactSchema
+                        ),
+                    )
+                )
 
         if self.only_unused:
             unused_filter = and_(
@@ -801,18 +828,26 @@ class ArtifactVersionFilter(
             custom_filters.append(unused_filter)
 
         if self.model_version_id:
-            value, operator = self._resolve_operator(self.model_version_id)
-
-            model_version_filter = and_(
-                ArtifactVersionSchema.id
-                == ModelVersionArtifactSchema.artifact_version_id,
-                ModelVersionArtifactSchema.model_version_id
-                == ModelVersionSchema.id,
-                FilterGenerator(ModelVersionSchema)
-                .define_filter(column="id", value=value, operator=operator)
-                .generate_query_conditions(ModelVersionSchema),
+            model_version_filters = (
+                self.model_version_id
+                if isinstance(self.model_version_id, list)
+                else [self.model_version_id]
             )
-            custom_filters.append(model_version_filter)
+            for model_version_filter in model_version_filters:
+                value, operator = self._resolve_operator(model_version_filter)
+                custom_filters.append(
+                    and_(
+                        ArtifactVersionSchema.id
+                        == ModelVersionArtifactSchema.artifact_version_id,
+                        ModelVersionArtifactSchema.model_version_id
+                        == ModelVersionSchema.id,
+                        FilterGenerator(ModelVersionSchema)
+                        .define_filter(
+                            column="id", value=value, operator=operator
+                        )
+                        .generate_query_conditions(ModelVersionSchema),
+                    )
+                )
 
         if self.has_custom_name is not None:
             custom_name_filter = and_(
@@ -822,17 +857,22 @@ class ArtifactVersionFilter(
             custom_filters.append(custom_name_filter)
 
         if self.model:
-            model_filter = and_(
-                ArtifactVersionSchema.id
-                == ModelVersionArtifactSchema.artifact_version_id,
-                ModelVersionArtifactSchema.model_version_id
-                == ModelVersionSchema.id,
-                ModelVersionSchema.model_id == ModelSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.model, table=ModelSchema
-                ),
+            model_filters = (
+                self.model if isinstance(self.model, list) else [self.model]
             )
-            custom_filters.append(model_filter)
+            for model_filter in model_filters:
+                custom_filters.append(
+                    and_(
+                        ArtifactVersionSchema.id
+                        == ModelVersionArtifactSchema.artifact_version_id,
+                        ModelVersionArtifactSchema.model_version_id
+                        == ModelVersionSchema.id,
+                        ModelVersionSchema.model_id == ModelSchema.id,
+                        self.generate_name_or_id_query_conditions(
+                            value=model_filter, table=ModelSchema
+                        ),
+                    )
+                )
 
         return custom_filters
 
