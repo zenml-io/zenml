@@ -11,16 +11,59 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from types import SimpleNamespace
 from unittest import mock
+from uuid import uuid4
 
 import pytest
 
 from zenml.enums import StackComponentType
 from zenml.orchestrators.utils import (
     get_orchestrator_run_name,
+    get_step_entrypoint_command,
     is_setting_enabled,
     register_artifact_store_filesystem,
 )
+
+
+class _FakeEntrypointConfig:
+    """Fake entrypoint configuration class for testing."""
+
+    @classmethod
+    def get_entrypoint_command(cls):
+        return ["python", "-m", "zenml.entrypoint"]
+
+    @classmethod
+    def get_entrypoint_arguments(cls, step_name, snapshot_id, step_run_id):
+        return ["--step", step_name]
+
+
+def test_get_step_entrypoint_command_for_command_step():
+    """Tests that the helper returns the custom command for a command step."""
+    config = SimpleNamespace(command=["python", "train.py"])
+    command, args = get_step_entrypoint_command(
+        invocation_id="train",
+        config=config,
+        entrypoint_config_class=_FakeEntrypointConfig,
+        snapshot_id=uuid4(),
+        step_run_id=uuid4(),
+    )
+    assert command == ["python", "train.py"]
+    assert args == []
+
+
+def test_get_step_entrypoint_command_for_regular_step():
+    """Tests that the helper returns the ZenML entrypoint for a regular step."""
+    config = SimpleNamespace(command=None)
+    command, args = get_step_entrypoint_command(
+        invocation_id="train",
+        config=config,
+        entrypoint_config_class=_FakeEntrypointConfig,
+        snapshot_id=uuid4(),
+        step_run_id=uuid4(),
+    )
+    assert command == ["python", "-m", "zenml.entrypoint"]
+    assert args == ["--step", "train"]
 
 
 def test_is_setting_enabled():

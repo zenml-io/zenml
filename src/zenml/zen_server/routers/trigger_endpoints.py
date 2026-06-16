@@ -93,6 +93,11 @@ def verify_permissions_for_source_entity(
             model=zen_store().get_run(run_id=source_id),
             action=Action.UPDATE,
         )
+    elif source_type == SourceType.PIPELINE_SNAPSHOT:
+        verify_permission_for_model(
+            model=zen_store().get_snapshot(snapshot_id=source_id),
+            action=Action.UPDATE,
+        )
     else:
         raise ValueError(f"Unexpected source type: {format(source_type)}")
 
