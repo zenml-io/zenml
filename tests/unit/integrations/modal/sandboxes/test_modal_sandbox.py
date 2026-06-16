@@ -633,7 +633,7 @@ class TestGetModalClient:
     def test_returns_none_when_no_credentials_configured(self) -> None:
         sandbox = _make_modal_sandbox()
         # Default config has no token_id / token_secret.
-        assert sandbox._modal_client_factory.get_client() is None
+        assert sandbox._get_modal_client() is None
 
     def test_returns_client_when_credentials_configured(self) -> None:
         sandbox = _make_modal_sandbox(
@@ -645,13 +645,13 @@ class TestGetModalClient:
             fake_client = MagicMock()
             fake_client.is_closed.return_value = False
             modal_mock.Client.from_credentials.return_value = fake_client
-            client = sandbox._modal_client_factory.get_client()
+            client = sandbox._get_modal_client()
             assert client is fake_client
             modal_mock.Client.from_credentials.assert_called_once_with(
                 "ak-test", "as-test"
             )
             # Second call returns the cached client.
-            client2 = sandbox._modal_client_factory.get_client()
+            client2 = sandbox._get_modal_client()
             assert client2 is fake_client
             assert modal_mock.Client.from_credentials.call_count == 1
 

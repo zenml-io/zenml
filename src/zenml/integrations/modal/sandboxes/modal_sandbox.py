@@ -301,12 +301,32 @@ class ModalSandbox(BaseSandbox):
             **kwargs: Forwarded to ``StackComponent``.
         """
         super().__init__(*args, **kwargs)
-        # Lazy thread-safe Modal client cache, owned by the factory and
-        # rebuilt when the cached client closes.
-        self._modal_client_factory = sandbox_utils.ModalClientFactory(
-            get_token_id=lambda: self.config.token_id,
-            get_token_secret=lambda: self.config.token_secret,
+        # Explicit Modal client built lazily from the component's
+        # credentials and reused across sessions; rebuilt if it closes.
+        self._modal_client: Optional["modal.Client"] = None
+
+    def _get_modal_client(self) -> Optional["modal.Client"]:
+        """Return the explicit Modal client for this component, if any.
+
+        Built once from the component's configured credentials and cached
+        until it closes. Returns ``None`` when no credentials are set, so
+        the Modal SDK falls back to its ambient authentication.
+
+        Returns:
+            The cached Modal client, or ``None`` for ambient auth.
+        """
+        if (
+            self._modal_client is not None
+            and not self._modal_client.is_closed()
+        ):
+            return self._modal_client
+        self._modal_client = (
+            sandbox_utils.create_modal_client_from_credentials(
+                token_id=self.config.token_id,
+                token_secret=self.config.token_secret,
+            )
         )
+        return self._modal_client
 
     @property
     def config(self) -> ModalSandboxConfig:
@@ -408,7 +428,7 @@ class ModalSandbox(BaseSandbox):
             A ``ModalSandboxSession`` wrapping the live Modal Sandbox.
         """
         eff = cast(ModalSandboxSettings, self.resolve_settings(settings))
-        modal_client = self._modal_client_factory.get_client()
+        modal_client = self._get_modal_client()
         image = sandbox_utils.get_modal_image_from_registry(
             eff.image,
             registry_credentials=self._registry_credentials(eff.image),
@@ -436,7 +456,7 @@ class ModalSandbox(BaseSandbox):
             RuntimeError: If Modal can't find a sandbox with the given id,
                 or the sandbox has already terminated.
         """
-        modal_client = self._modal_client_factory.get_client()
+        modal_client = self._get_modal_client()
         try:
             sandbox = sandbox_utils.get_sandbox_by_id(
                 session_id, modal_client=modal_client
@@ -471,7 +491,7 @@ class ModalSandbox(BaseSandbox):
         """
         self._validate_snapshot(snapshot)
         eff = cast(ModalSandboxSettings, self.resolve_settings(None))
-        modal_client = self._modal_client_factory.get_client()
+        modal_client = self._get_modal_client()
         try:
             image = modal.Image.from_id(snapshot.ref, client=modal_client)
             # Env vars are runtime config, not filesystem state, so the
