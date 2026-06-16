@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import os
 from uuid import uuid4
 
 from fastapi import FastAPI
@@ -10,6 +11,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 import zenml.zen_server.utils as zen_server_utils
 from zenml.client import Client
+from zenml.constants import ENV_ZENML_SERVER
 from zenml.enums import TaggableResourceTypes
 from zenml.models import ModelRequest, TagRequest, UserRequest
 from zenml.zen_server.auth import AuthContext
@@ -73,6 +75,7 @@ async def _run_tag_resource_rbac_regression(client: Client) -> None:
     previous_rbac = zen_server_utils._rbac
     server_cfg = zen_server_utils.server_config()
     previous_rbac_source = server_cfg.rbac_implementation_source
+    previous_server_env = os.environ.get(ENV_ZENML_SERVER)
 
     logging.disable(logging.CRITICAL)
     await initialize_request_manager()
@@ -113,6 +116,7 @@ async def _run_tag_resource_rbac_regression(client: Client) -> None:
             skip_default_registrations=True,
         )
         zen_server_utils._zen_store = rbac_store
+        os.environ[ENV_ZENML_SERVER] = "true"
 
         app = FastAPI()
         app.add_middleware(BaseHTTPMiddleware, dispatch=record_requests)
@@ -135,6 +139,24 @@ async def _run_tag_resource_rbac_regression(client: Client) -> None:
         )
 
         http = TestClient(app)
+
+        zen_server_utils._rbac = AllowAllRBAC()
+        owned_model_response = http.post(
+            "/api/v1/models",
+            json={
+                "name": "owned_model_" + uuid4().hex[:8],
+                "project": str(project.id),
+            },
+        )
+        assert owned_model_response.status_code == 200, (
+            owned_model_response.text
+        )
+        owned_model_id = owned_model_response.json()["id"]
+        owned_tag_resource_body = {
+            "tag_id": str(marker_tag.id),
+            "resource_id": owned_model_id,
+            "resource_type": TaggableResourceTypes.MODEL.value,
+        }
 
         zen_server_utils._rbac = DenyAllRBAC()
         model_update = http.put(
@@ -159,6 +181,26 @@ async def _run_tag_resource_rbac_regression(client: Client) -> None:
         assert all(
             tag.id != marker_tag.id
             for tag in store.get_model(victim_model.id).tags
+        )
+
+        owned_attach = http.post(
+            "/api/v1/tag_resources", json=owned_tag_resource_body
+        )
+        assert owned_attach.status_code == 200, owned_attach.text
+        assert any(
+            tag.id == marker_tag.id
+            for tag in store.get_model(owned_model_id).tags
+        )
+
+        owned_batch_detach = http.request(
+            "DELETE",
+            "/api/v1/tag_resources/batch",
+            json=[owned_tag_resource_body],
+        )
+        assert owned_batch_detach.status_code == 200, owned_batch_detach.text
+        assert all(
+            tag.id != marker_tag.id
+            for tag in store.get_model(owned_model_id).tags
         )
 
         zen_server_utils._rbac = AllowAllRBAC()
@@ -203,6 +245,10 @@ async def _run_tag_resource_rbac_regression(client: Client) -> None:
         )
     finally:
         server_cfg.rbac_implementation_source = previous_rbac_source
+        if previous_server_env is None:
+            os.environ.pop(ENV_ZENML_SERVER, None)
+        else:
+            os.environ[ENV_ZENML_SERVER] = previous_server_env
         zen_server_utils._zen_store = previous_zen_store
         zen_server_utils._rbac = previous_rbac
         logging.disable(previous_logging_disable)

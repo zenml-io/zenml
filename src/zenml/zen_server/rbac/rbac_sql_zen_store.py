@@ -43,10 +43,12 @@ from zenml.zen_server.rbac.utils import (
     verify_permission,
     verify_permission_for_model,
 )
+from zenml.zen_server.utils import get_auth_context
 from zenml.zen_stores.sql_zen_store import Session, SqlZenStore
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import BaseSchema
+
 
 logger = get_logger(__name__)
 
@@ -85,8 +87,16 @@ class RBACSqlZenStore(SqlZenStore):
         Returns:
             The RBAC resources referenced by the tag resource requests.
         """
+        auth_context = get_auth_context()
+        assert auth_context
+        authenticated_user_id = auth_context.user.id
+
         resources = set()
         for tag_resource, resource in zip(tag_resources, resolved_resources):
+            user_id = getattr(resource, "user_id", None)
+            if not user_id or user_id == authenticated_user_id:
+                continue
+
             rbac_resource_type = (
                 self._get_rbac_resource_type_for_taggable_resource_type(
                     tag_resource.resource_type
