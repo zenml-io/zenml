@@ -1,3 +1,16 @@
+#  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
 """ZenML pipeline that runs a matrix of Harbor trials via the Sandbox bridge.
 
 ZenML owns the outer orchestration (matrix expansion, per-trial steps,
@@ -41,7 +54,7 @@ logger = get_logger(__name__)
 
 # Import path Harbor uses to load our bridge — the env-side equivalent
 # of ``--environment-import-path`` on the CLI.
-_BRIDGE_IMPORT_PATH = "zenml_sandbox_env:ZenMLSandboxEnvironment"
+_BRIDGE_IMPORT_PATH = "zenml_harbor_env:ZenMLSandboxEnvironment"
 
 # Default task: writes "42" to /app/answer.txt, verifier scores 1.0
 # iff the file matches. Hermetic — runs under the oracle agent so no
@@ -157,9 +170,9 @@ def _mean_reward(result: JobResult) -> float | None:
     """Pull a single mean-reward scalar out of ``JobResult.stats.evals``.
 
     Harbor's stats nest one ``mean`` per eval bucket
-    (``agent__dataset``). A POC job has a single bucket, so we flatten
-    by averaging across them — keeps the artifact's schema flat for
-    the dashboard's metadata table.
+    (``agent__dataset``). A single-trial job has one bucket, so we
+    flatten by averaging across them — keeps the artifact's schema flat
+    for the dashboard's metadata table.
     """
     means = [
         float(m["mean"])
@@ -297,7 +310,7 @@ def build_report(
 
 
 @pipeline(dynamic=True, enable_cache=False)
-def sandbox_harbor_poc_pipeline(
+def sandbox_harbor_pipeline(
     task_path: str = _DEFAULT_TASK_PATH,
     agent_name: str = _DEFAULT_AGENT,
     n_trials: int = 3,
@@ -327,7 +340,5 @@ if __name__ == "__main__":
     print(f"  task   = {task}")
     print(f"  agent  = {agent}")
     print(f"  trials = {trials}")
-    sandbox_harbor_poc_pipeline(
-        task_path=task, agent_name=agent, n_trials=trials
-    )
+    sandbox_harbor_pipeline(task_path=task, agent_name=agent, n_trials=trials)
     print("Done. Check the ZenML dashboard for the run + report.")
