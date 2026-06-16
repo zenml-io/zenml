@@ -22,7 +22,7 @@ from zenml.client import Client
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionMode, ExecutionStatus
 from zenml.exceptions import AuthorizationException
 from zenml.integrations.modal import sandbox_utils
 from zenml.integrations.modal.orchestrators.modal_orchestrator import (
@@ -36,10 +36,10 @@ from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 from zenml.models import PipelineRunUpdate, StepRunResponse
 from zenml.orchestrators import publish_utils
-from zenml.orchestrators.monitored_dag_runner import (
+from zenml.integrations.modal.orchestrators.dag_runner import (
     DagRunner as ModalDagRunner,
 )
-from zenml.orchestrators.monitored_dag_runner import (
+from zenml.integrations.modal.orchestrators.dag_runner import (
     InterruptMode,
     Node,
     NodeStatus,
@@ -194,7 +194,11 @@ class _StaticModalPipelineController:
         interrupt_status = (
             run.status
             if run.status
-            in {ExecutionStatus.STOPPING, ExecutionStatus.STOPPED}
+            in {
+                ExecutionStatus.STOPPING,
+                ExecutionStatus.STOPPED,
+                ExecutionStatus.FAILED,
+            }
             else None
         )
 
@@ -219,6 +223,31 @@ class _StaticModalPipelineController:
                 )
             self._last_interrupt_status = interrupt_status
             return InterruptMode.FORCE
+
+        if run.status == ExecutionStatus.FAILED:
+            execution_mode = (
+                self.snapshot.pipeline_configuration.execution_mode
+            )
+            if execution_mode == ExecutionMode.STOP_ON_FAILURE:
+                if interrupt_status != self._last_interrupt_status:
+                    logger.info(
+                        "Gracefully stopping Modal DAG because pipeline run "
+                        "`%s` is `%s`.",
+                        self.pipeline_run.id,
+                        run.status,
+                    )
+                self._last_interrupt_status = interrupt_status
+                return InterruptMode.GRACEFUL
+            if execution_mode == ExecutionMode.FAIL_FAST:
+                if interrupt_status != self._last_interrupt_status:
+                    logger.info(
+                        "Force-stopping Modal DAG because pipeline run `%s` "
+                        "is `%s`.",
+                        self.pipeline_run.id,
+                        run.status,
+                    )
+                self._last_interrupt_status = interrupt_status
+                return InterruptMode.FORCE
 
         self._last_interrupt_status = None
         return None
@@ -434,7 +463,6 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
             node_monitoring_function=controller.check_step_sandbox,
             node_stop_function=controller.stop_step_sandbox,
             interrupt_function=controller.should_interrupt_execution,
-            execution_mode=snapshot.pipeline_configuration.execution_mode,
         ).run()
 
         self._finalize_pipeline_run(pipeline_run.id, node_statuses)
