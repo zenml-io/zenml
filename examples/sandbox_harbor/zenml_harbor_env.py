@@ -260,7 +260,7 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
         # upload once, untar in the session — per-file calls would be
         # slow on remote flavors.
         source = Path(source_dir)
-        remote_tar = f"/tmp/.hb-{uuid.uuid4().hex}.tar.gz"
+        remote_tar = f"/tmp/.hb-{uuid.uuid4().hex}.tar.gz"  # nosec B108
         with tempfile.TemporaryDirectory() as host_tmp:
             archive = Path(host_tmp) / "upload.tar.gz"
             with tarfile.open(archive, "w:gz") as tf:
