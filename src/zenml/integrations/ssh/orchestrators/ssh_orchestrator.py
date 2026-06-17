@@ -530,6 +530,10 @@ class SSHOrchestrator(ContainerizedOrchestrator):
 
         Returns:
             ``None`` (submit-only; the orchestrator container runs detached).
+
+        Raises:
+            RuntimeError: If the dynamic pipeline has a schedule, which is not
+                supported.
         """
         from zenml.pipelines.dynamic.entrypoint_configuration import (
             DynamicPipelineEntrypointConfiguration,

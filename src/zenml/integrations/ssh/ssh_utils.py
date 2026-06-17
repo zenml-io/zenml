@@ -195,9 +195,6 @@ class SSHClient:
 
         Returns:
             Self with an active connection.
-
-        Raises:
-            RuntimeError: If paramiko is not installed or connection fails.
         """
         self._connect()
         return self
@@ -401,6 +398,9 @@ class SSHClient:
 
         Returns:
             RemoteCommandResult with exit code and captured output.
+
+        Raises:
+            RuntimeError: If the SSH transport is not available.
         """
         transport = client.get_transport()
         if transport is None:
@@ -467,7 +467,6 @@ class SSHClient:
 
         Raises:
             FileNotFoundError: If the file does not exist.
-            RuntimeError: If reading fails for another reason.
         """
         client = self._get_client()
         sftp = client.open_sftp()

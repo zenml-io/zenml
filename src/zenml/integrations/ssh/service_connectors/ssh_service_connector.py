@@ -246,6 +246,9 @@ class SSHServiceConnector(ServiceConnector):
             resource_id: The resource ID.
             kwargs: Additional implementation-specific keyword arguments.
 
+        Returns:
+            The auto-configured connector.
+
         Raises:
             NotImplementedError: Always, auto-configuration is not supported.
         """
