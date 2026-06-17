@@ -133,6 +133,13 @@ class SSHOrchestratorConfig(BaseOrchestratorConfig, SSHOrchestratorSettings):
         "stack's container registry credentials before launching, so "
         "private images can be pulled. Example: True for a private registry",
     )
+    automatic_cleanup_pipeline_files: bool = Field(
+        default=True,
+        description="Remove non-scheduled pipeline launch files on the remote "
+        "host once they are older than 7 days. Scheduled pipeline files are "
+        "kept because cron and at jobs reference their run scripts. Example: "
+        "False when an external cleanup job manages the remote workdir",
+    )
 
     @model_validator(mode="after")
     def _check_ssh_auth(self) -> "SSHOrchestratorConfig":
@@ -169,6 +176,16 @@ class SSHOrchestratorConfig(BaseOrchestratorConfig, SSHOrchestratorSettings):
             False; the SSH orchestrator always submits to a remote host.
         """
         return False
+
+    @property
+    def is_schedulable(self) -> bool:
+        """Whether the orchestrator supports scheduled pipeline runs.
+
+        Returns:
+            True for static pipelines. Dynamic scheduled pipelines are rejected
+            at submission time because they need separate lifecycle handling.
+        """
+        return True
 
 
 class SSHOrchestratorFlavor(BaseOrchestratorFlavor):

@@ -286,7 +286,9 @@ class TestBuildRemoteSupervisorScript:
         script = self._build(env_file_path="/tmp/zenml-ssh/env-secret")
         # env-file removal should appear after docker run
         lines = script.split("\n")
-        rm_lines = [l for l in lines if "rm -f" in l and "env-secret" in l]
+        rm_lines = [
+            line for line in lines if "rm -f" in line and "env-secret" in line
+        ]
         assert len(rm_lines) >= 1
 
     def test_gpu_locking_sorted_order(self) -> None:

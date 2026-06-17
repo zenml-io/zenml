@@ -108,6 +108,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         # guards concurrent submit/poll/stop from the dynamic runner's
         # thread pool.
         self._step_procs: Dict[UUID, "subprocess.Popen[bytes]"] = {}
+        self._stopped_step_ids: set[UUID] = set()
         self._step_procs_lock = threading.Lock()
 
     @property
@@ -235,27 +236,37 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         """
         return self.config.gpu_enabled_in_container
 
-    def _docker_login(self, ssh: SSHClient) -> None:
+    def _docker_login(self, ssh: SSHClient, stack: "Stack") -> None:
         """Log the remote Docker into the active container registry.
 
         Args:
             ssh: The open SSH connection.
+            stack: The stack used for this submission.
 
         Raises:
-            RuntimeError: If the remote `docker login` fails.
+            RuntimeError: If registry credentials are missing or the remote
+                `docker login` fails.
         """
-        from zenml.client import Client
-
-        registry = Client().active_stack.container_registry
-        if registry is None or not registry.credentials:
-            return
+        registry = stack.container_registry
+        if registry is None:
+            raise RuntimeError(
+                "Unable to find a container registry in the stack, but "
+                "`container_registry_autologin` is enabled for the SSH "
+                "orchestrator."
+            )
+        if not registry.credentials:
+            raise RuntimeError(
+                "The container registry in the stack has no credentials or "
+                "service connector configured, but the SSH orchestrator is set "
+                "to autologin to the container registry. Configure registry "
+                "credentials or disable `container_registry_autologin`."
+            )
         username, password = registry.credentials
         docker = self.config.docker_binary
-        # --password-stdin avoids the password in argv; echo still exposes it
-        # in the remote process list briefly, which the registry owner
-        # accepts by opting into autologin.
+        # --password-stdin keeps the password out of docker's argv. The remote
+        # shell still handles it briefly, so users must opt in explicitly.
         command = (
-            f"echo {shlex.quote(password)} | "
+            f"printf %s {shlex.quote(password)} | "
             f"{shlex.quote(docker)} login -u {shlex.quote(username)} "
             f"--password-stdin {shlex.quote(registry.config.uri)}"
         )
@@ -266,41 +277,140 @@ class SSHOrchestrator(ContainerizedOrchestrator):
                 f"{result.stderr or result.stdout}"
             )
 
-    def _launch_compose(self, run_id: str, compose: Dict[str, Any]) -> None:
-        """Write and run a Compose file on the remote host.
+    def _remote_run_directory(self, run_id: str, scheduled: bool) -> str:
+        """Get the remote run directory for a pipeline launch.
+
+        Args:
+            run_id: The orchestrator run id.
+            scheduled: Whether this launch installs a future schedule.
+
+        Returns:
+            The remote directory for the launch files.
+        """
+        parent = "scheduled-pipeline-runs" if scheduled else "pipeline-runs"
+        return f"{self.config.remote_workdir}/{parent}/{run_id}"
+
+    def _launch_compose(
+        self,
+        *,
+        run_id: str,
+        compose: Dict[str, Any],
+        stack: "Stack",
+        schedule: Optional[Any] = None,
+        snapshot_id: Optional[UUID] = None,
+    ) -> None:
+        """Write and run or schedule a Compose file on the remote host.
 
         Args:
             run_id: The orchestrator run id (used as the remote directory).
             compose: The Compose definition.
+            stack: The stack used for this submission.
+            schedule: Optional static pipeline schedule.
+            snapshot_id: Snapshot id used to stamp scheduled run ids.
 
         Raises:
             RuntimeError: If a remote command fails.
         """
         conn = self._build_ssh_connection_config()
-        remote_dir = f"{self.config.remote_workdir}/{run_id}"
+        scheduled = schedule is not None
+        remote_dir = self._remote_run_directory(run_id, scheduled=scheduled)
+        nonscheduled_dir = f"{self.config.remote_workdir}/pipeline-runs"
         compose_yaml = yaml.dump(
             compose, default_flow_style=False, sort_keys=False
         )
         docker = self.config.docker_binary
 
         with SSHClient(conn) as ssh:
-            mkdir = ssh.exec(f"mkdir -p {shlex.quote(remote_dir)}")
+            mkdir = ssh.exec(
+                f"mkdir -p {shlex.quote(remote_dir)} "
+                f"{shlex.quote(nonscheduled_dir)}"
+            )
             if mkdir.exit_code != 0:
                 raise RuntimeError(
                     f"Failed to create remote directory {remote_dir} on "
                     f"{self.config.hostname}: {mkdir.stderr}"
                 )
+            if self.config.automatic_cleanup_pipeline_files:
+                cleanup = ssh.exec(
+                    f"find {shlex.quote(nonscheduled_dir)} -type d "
+                    "-ctime +7 -exec rm -rf {} +"
+                )
+                if cleanup.exit_code != 0:
+                    logger.warning(
+                        "Failed to clean old SSH pipeline files on %s: %s",
+                        self.config.hostname,
+                        cleanup.stderr or cleanup.stdout,
+                    )
             ssh.put_text(f"{remote_dir}/docker-compose.yml", compose_yaml)
+            if scheduled:
+                if snapshot_id is None:
+                    raise RuntimeError(
+                        "A snapshot id is required for scheduled SSH "
+                        "orchestrator launches."
+                    )
+                run_script = (
+                    "#!/bin/bash\n"
+                    f"cd {shlex.quote(remote_dir)} && "
+                    f"echo {ENV_ZENML_SSH_RUN_ID}="
+                    f'"{snapshot_id}_$(date +\\%s)" > .env && '
+                    f"{shlex.quote(docker)} compose up -d\n"
+                )
+                ssh.put_text(f"{remote_dir}/run_pipeline.sh", run_script)
             if self.config.container_registry_autologin:
-                self._docker_login(ssh)
-            up = ssh.exec(
-                f"cd {shlex.quote(remote_dir)} && "
-                f"{shlex.quote(docker)} compose up -d"
-            )
-            if up.exit_code != 0:
+                self._docker_login(ssh, stack)
+            if schedule is None:
+                up = ssh.exec(
+                    f"cd {shlex.quote(remote_dir)} && "
+                    f"{shlex.quote(docker)} compose up -d"
+                )
+                if up.exit_code != 0:
+                    raise RuntimeError(
+                        f"`docker compose up` failed on "
+                        f"{self.config.hostname}: {up.stderr or up.stdout}"
+                    )
+            elif schedule.cron_expression:
+                cron_expression = schedule.cron_expression
+                expected_cron_pattern = r"^(?:(?:[0-9]|[1-5][0-9]|60)(?:,(?:[0-9]|[1-5][0-9]|60))*|[*](?:/[1-9][0-9]*)?)(?:[ \t]+(?:(?:[0-9]|[0-5][0-9]|60)(?:,(?:[0-9]|[0-5][0-9]|60))*|[*](?:/[1-9][0-9]*)?)){4}$"
+                if not re.match(expected_cron_pattern, cron_expression):
+                    raise RuntimeError(
+                        f"The cron expression {cron_expression!r} is not in "
+                        "a valid format."
+                    )
+                cron_job = (
+                    f"{cron_expression} bash {remote_dir}/run_pipeline.sh"
+                )
+                cron = ssh.exec(
+                    f"(crontab -l ; echo {shlex.quote(cron_job)}) | crontab -"
+                )
+                if cron.exit_code != 0:
+                    raise RuntimeError(
+                        f"Failed to schedule SSH pipeline on "
+                        f"{self.config.hostname}: "
+                        f"{cron.stderr or cron.stdout}"
+                    )
+            elif schedule.run_once_start_time:
+                at_check = ssh.exec("which at")
+                if at_check.exit_code != 0:
+                    raise RuntimeError(
+                        "The `at` command is not installed on the remote SSH "
+                        "host. Install it to use run_once_start_time schedules."
+                    )
+                start_time = schedule.run_once_start_time.strftime(
+                    "%Y%m%d%H%M.%S"
+                )
+                at = ssh.exec(
+                    f"echo {shlex.quote(f'bash {remote_dir}/run_pipeline.sh')} "
+                    f"| at -t {shlex.quote(start_time)}"
+                )
+                if at.exit_code != 0:
+                    raise RuntimeError(
+                        f"Failed to schedule SSH pipeline on "
+                        f"{self.config.hostname}: {at.stderr or at.stdout}"
+                    )
+            else:
                 raise RuntimeError(
-                    f"`docker compose up` failed on {self.config.hostname}: "
-                    f"{up.stderr or up.stdout}"
+                    "A cron expression or run-once start time is required for "
+                    "scheduled SSH pipelines."
                 )
         logger.info(
             "Submitted pipeline to %s (remote compose dir: %s).",
@@ -315,6 +425,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         step: Any,
         run_id: str,
         step_environment: Dict[str, str],
+        scheduled: bool = False,
     ) -> Dict[str, Any]:
         """Build the Compose service for a single static-pipeline step.
 
@@ -324,13 +435,15 @@ class SSHOrchestrator(ContainerizedOrchestrator):
             step: The step configuration.
             run_id: The orchestrator run id.
             step_environment: The step's environment variables.
+            scheduled: Whether this service is part of a scheduled launch.
 
         Returns:
             A Compose service definition.
         """
         settings = cast(SSHOrchestratorSettings, self.get_settings(step))
         env = dict(step_environment)
-        env[ENV_ZENML_SSH_RUN_ID] = run_id
+        if not scheduled:
+            env[ENV_ZENML_SSH_RUN_ID] = run_id
 
         service: Dict[str, Any] = {
             "image": self.get_image(snapshot=snapshot, step_name=step_name),
@@ -342,6 +455,8 @@ class SSHOrchestrator(ContainerizedOrchestrator):
             ),
             "environment": env,
         }
+        if scheduled:
+            service["env_file"] = [".env"]
 
         volumes = [
             f"{self._validate_mount_path(host)}:"
@@ -392,10 +507,17 @@ class SSHOrchestrator(ContainerizedOrchestrator):
                 step=step,
                 run_id=run_id,
                 step_environment=step_environments[step_name],
+                scheduled=snapshot.schedule is not None,
             )
             for step_name, step in snapshot.step_configurations.items()
         }
-        self._launch_compose(run_id, {"services": services})
+        self._launch_compose(
+            run_id=run_id,
+            compose={"services": services},
+            stack=stack,
+            schedule=snapshot.schedule,
+            snapshot_id=snapshot.id,
+        )
         return None
 
     def submit_dynamic_pipeline(
@@ -426,6 +548,18 @@ class SSHOrchestrator(ContainerizedOrchestrator):
             DynamicPipelineEntrypointConfiguration,
         )
 
+        if snapshot.schedule:
+            logger.warning(
+                "Scheduled dynamic pipelines are not supported by the SSH "
+                "orchestrator. Rejecting the submission instead of launching "
+                "an immediate one-off run."
+            )
+            raise RuntimeError(
+                "The SSH orchestrator supports scheduled static pipelines, "
+                "but scheduled dynamic pipelines are not supported. Remove "
+                "the schedule or use a static pipeline."
+            )
+
         run_id = (
             str(placeholder_run.id) if placeholder_run else str(snapshot.id)
         )
@@ -442,7 +576,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
             "command": (
                 DynamicPipelineEntrypointConfiguration.get_entrypoint_arguments(
                     snapshot_id=snapshot.id,
-                    run_id=placeholder_run.id if placeholder_run else None,
+                    run_id=run_id,
                 )
             ),
             "environment": env,
@@ -452,7 +586,11 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         if self._gpu_enabled():
             service["deploy"] = _NVIDIA_GPU_DEPLOY
 
-        self._launch_compose(run_id, {"services": {"orchestrator": service}})
+        self._launch_compose(
+            run_id=run_id,
+            compose={"services": {"orchestrator": service}},
+            stack=stack,
+        )
         return None
 
     # ------------------------------------------------------------------
@@ -492,6 +630,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         )
         with self._step_procs_lock:
             self._step_procs[step_run_info.step_run_id] = process
+            self._stopped_step_ids.discard(step_run_info.step_run_id)
 
     def get_isolated_step_status(
         self, step_run: "StepRunResponse"
@@ -508,11 +647,14 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         """
         with self._step_procs_lock:
             process = self._step_procs.get(step_run.id)
+            stopped = step_run.id in self._stopped_step_ids
         if process is None:
             return ExecutionStatus.RUNNING
         return_code = process.poll()
         if return_code is None:
             return ExecutionStatus.RUNNING
+        if stopped:
+            return ExecutionStatus.STOPPED
         if return_code == 0:
             return ExecutionStatus.COMPLETED
         return ExecutionStatus.FAILED
@@ -527,6 +669,8 @@ class SSHOrchestrator(ContainerizedOrchestrator):
             process = self._step_procs.get(step_run.id)
         if process is None or process.poll() is not None:
             return
+        with self._step_procs_lock:
+            self._stopped_step_ids.add(step_run.id)
         try:
             pgid = os.getpgid(process.pid)
         except ProcessLookupError:
@@ -536,3 +680,4 @@ class SSHOrchestrator(ContainerizedOrchestrator):
             process.wait(timeout=10)
         except subprocess.TimeoutExpired:
             os.killpg(pgid, signal.SIGKILL)
+            process.wait()

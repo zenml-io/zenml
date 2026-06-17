@@ -19,7 +19,9 @@ orchestrator-container launch, and subprocess-based isolated steps — without
 a live remote host.
 """
 
+import subprocess
 from contextlib import contextmanager
+from datetime import datetime, timezone
 from typing import Any, Iterator
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
@@ -70,6 +72,7 @@ def _fake_snapshot(steps: dict) -> MagicMock:
     snap = MagicMock()
     snap.id = uuid4()
     snap.step_configurations = steps
+    snap.schedule = None
     return snap
 
 
@@ -96,6 +99,9 @@ class TestFlavor:
 
     def test_is_remote(self) -> None:
         assert _make_orchestrator().config.is_remote is True
+
+    def test_is_schedulable_for_static_pipelines(self) -> None:
+        assert _make_orchestrator().config.is_schedulable is True
 
     def test_validator_requires_registry_and_builder(self) -> None:
         required = _make_orchestrator().validator._required_components
@@ -181,6 +187,114 @@ class TestStaticSubmit:
             "compose up -d" in call.args[0] for call in ssh.exec.call_args_list
         )
 
+    def test_cron_schedule_installs_run_script(self) -> None:
+        orch = _make_orchestrator()
+        snap = _fake_snapshot({"only": _fake_step()})
+        schedule = MagicMock()
+        schedule.cron_expression = "0 0 * * *"
+        schedule.run_once_start_time = None
+        snap.schedule = schedule
+        with (
+            _patched_ssh() as ssh,
+            patch.object(orch, "get_image", return_value="img"),
+            patch.object(
+                orch, "get_settings", return_value=SSHOrchestratorSettings()
+            ),
+        ):
+            orch.submit_pipeline(
+                snapshot=snap,
+                stack=MagicMock(),
+                base_environment={},
+                step_environments={"only": {"FOO": "bar"}},
+                placeholder_run=None,
+            )
+
+        compose_yaml = next(
+            call.args[1]
+            for call in ssh.put_text.call_args_list
+            if call.args[0].endswith("docker-compose.yml")
+        )
+        compose = yaml.safe_load(compose_yaml)
+        service = compose["services"][f"{snap.id}-only"]
+        assert service["env_file"] == [".env"]
+        assert ENV_ZENML_SSH_RUN_ID not in service["environment"]
+        assert service["environment"]["FOO"] == "bar"
+
+        run_script = next(
+            call.args[1]
+            for call in ssh.put_text.call_args_list
+            if call.args[0].endswith("run_pipeline.sh")
+        )
+        assert f"{ENV_ZENML_SSH_RUN_ID}=" in run_script
+        assert "date +\\%s" in run_script
+        assert any(
+            "crontab -l" in call.args[0] for call in ssh.exec.call_args_list
+        )
+        assert not any(
+            "cd /tmp/zenml-ssh/scheduled-pipeline-runs" in call.args[0]
+            and "compose up -d" in call.args[0]
+            for call in ssh.exec.call_args_list
+        )
+
+    def test_run_once_schedule_uses_at(self) -> None:
+        orch = _make_orchestrator()
+        snap = _fake_snapshot({"only": _fake_step()})
+        schedule = MagicMock()
+        schedule.cron_expression = None
+        schedule.run_once_start_time = datetime(
+            2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc
+        )
+        snap.schedule = schedule
+        with (
+            _patched_ssh() as ssh,
+            patch.object(orch, "get_image", return_value="img"),
+            patch.object(
+                orch, "get_settings", return_value=SSHOrchestratorSettings()
+            ),
+        ):
+            orch.submit_pipeline(
+                snapshot=snap,
+                stack=MagicMock(),
+                base_environment={},
+                step_environments={"only": {}},
+                placeholder_run=None,
+            )
+
+        assert any(
+            call.args[0] == "which at" for call in ssh.exec.call_args_list
+        )
+        assert any(
+            "at -t 202601020304.05" in call.args[0]
+            for call in ssh.exec.call_args_list
+        )
+
+    def test_cleanup_targets_only_non_scheduled_runs(self) -> None:
+        orch = _make_orchestrator()
+        snap = _fake_snapshot({"only": _fake_step()})
+        with (
+            _patched_ssh() as ssh,
+            patch.object(orch, "get_image", return_value="img"),
+            patch.object(
+                orch, "get_settings", return_value=SSHOrchestratorSettings()
+            ),
+        ):
+            orch.submit_pipeline(
+                snapshot=snap,
+                stack=MagicMock(),
+                base_environment={},
+                step_environments={"only": {}},
+                placeholder_run=None,
+            )
+        cleanup_commands = [
+            call.args[0]
+            for call in ssh.exec.call_args_list
+            if call.args[0].startswith("find ")
+        ]
+        assert cleanup_commands == [
+            "find /tmp/zenml-ssh/pipeline-runs -type d -ctime +7 "
+            "-exec rm -rf {} +"
+        ]
+
 
 class TestDynamicSubmit:
     def test_single_orchestrator_service(self) -> None:
@@ -217,6 +331,19 @@ class TestDynamicSubmit:
         assert orch.supports_dynamic_pipelines is True
         assert orch.can_run_isolated_steps is True
         assert orch.can_stop_isolated_steps is True
+
+    def test_dynamic_schedules_are_rejected(self) -> None:
+        orch = _make_orchestrator()
+        snap = _fake_snapshot({"a": _fake_step()})
+        snap.schedule = MagicMock(cron_expression="0 0 * * *")
+
+        with pytest.raises(RuntimeError, match="scheduled dynamic pipelines"):
+            orch.submit_dynamic_pipeline(
+                snapshot=snap,
+                stack=MagicMock(),
+                environment={},
+                placeholder_run=None,
+            )
 
 
 def _fake_step_run_info() -> MagicMock:
@@ -267,6 +394,10 @@ class TestIsolatedStepSubprocess:
         assert orch.get_isolated_step_status(step_run) == (
             ExecutionStatus.FAILED
         )
+        orch._stopped_step_ids.add(step_run.id)
+        assert orch.get_isolated_step_status(step_run) == (
+            ExecutionStatus.STOPPED
+        )
 
     def test_status_unknown_step_falls_back_to_running(self) -> None:
         orch = _make_orchestrator()
@@ -291,6 +422,24 @@ class TestIsolatedStepSubprocess:
             orch.stop_isolated_step(step_run)
         getpgid.assert_called_once_with(4321)
         killpg.assert_called_once()
+        assert step_run.id in orch._stopped_step_ids
+
+    def test_stop_reaps_after_sigkill(self) -> None:
+        orch = _make_orchestrator()
+        step_run = MagicMock()
+        step_run.id = uuid4()
+        proc = MagicMock()
+        proc.poll.return_value = None
+        proc.pid = 4321
+        proc.wait.side_effect = [subprocess.TimeoutExpired("cmd", 10), 1]
+        orch._step_procs[step_run.id] = proc
+        with (
+            patch(f"{_MODULE}.os.getpgid", return_value=4321),
+            patch(f"{_MODULE}.os.killpg") as killpg,
+        ):
+            orch.stop_isolated_step(step_run)
+        assert killpg.call_count == 2
+        assert proc.wait.call_count == 2
 
     def test_stop_noop_for_finished_step(self) -> None:
         orch = _make_orchestrator()

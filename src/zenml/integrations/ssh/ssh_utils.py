@@ -22,9 +22,12 @@ ZenML's registry even when paramiko is not installed.
 import io
 import time
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from zenml.logger import get_logger
+
+if TYPE_CHECKING:
+    import paramiko
 
 logger = get_logger(__name__)
 
