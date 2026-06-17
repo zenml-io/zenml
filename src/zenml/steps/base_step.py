@@ -61,6 +61,7 @@ from zenml.steps.utils import (
     run_as_single_step_pipeline,
 )
 from zenml.utils import (
+    async_utils,
     dict_utils,
     materializer_utils,
     notebook_utils,
@@ -295,7 +296,7 @@ class BaseStep:
         if isinstance(obj, BaseStep):
             return obj
         elif isinstance(obj, type) and issubclass(obj, BaseStep):
-            return obj()
+            return obj._load_from_source()
         elif inspect.isfunction(obj):
             from zenml.steps.step_decorator import step
 
@@ -309,6 +310,15 @@ class BaseStep:
                 f"resolve to a `BaseStep` instance/subclass or a function, "
                 f"got `{type(obj).__name__}`."
             )
+
+    @classmethod
+    def _load_from_source(cls) -> "BaseStep":
+        """Creates a step instance from a source class.
+
+        Returns:
+            A step instance.
+        """
+        return cls()
 
     def resolve(self) -> Source:
         """Resolves the step.
@@ -726,6 +736,11 @@ class BaseStep:
                 "Invalid step function entrypoint arguments. Check out the "
                 "pydantic error above for more details."
             ) from e
+
+        if async_utils.is_async_callable(self.entrypoint):
+            return async_utils.run_coroutine_isolated(
+                self.entrypoint(**validated_args)
+            )
 
         return self.entrypoint(**validated_args)
 

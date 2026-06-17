@@ -27,7 +27,12 @@ from zenml.models.v2.base.base import (
     BaseResponseResources,
     BaseUpdate,
 )
-from zenml.models.v2.base.filter import AnyQuery, BaseFilter
+from zenml.models.v2.base.filter import (
+    AnyQuery,
+    BaseFilter,
+    StringFilterOption,
+    UUIDFilterOption,
+)
 
 if TYPE_CHECKING:
     from zenml.models.v2.base.filter import AnySchema
@@ -271,11 +276,16 @@ class ServiceAccountResponse(
 class ServiceAccountFilter(BaseFilter):
     """Model to enable advanced filtering of service accounts."""
 
-    name: Optional[str] = Field(
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *BaseFilter.API_SINGLE_INPUT_PARAMS,
+        "active",
+    ]
+
+    name: StringFilterOption = Field(
         default=None,
         description="Name of the user",
     )
-    description: Optional[str] = Field(
+    description: StringFilterOption = Field(
         default=None,
         title="Filter by the service account description.",
     )
@@ -284,7 +294,7 @@ class ServiceAccountFilter(BaseFilter):
         description="Whether the user is active",
         union_mode="left_to_right",
     )
-    external_user_id: Optional[Union[UUID, str]] = Field(
+    external_user_id: UUIDFilterOption = Field(
         default=None,
         title="The external user ID associated with the account.",
         union_mode="left_to_right",

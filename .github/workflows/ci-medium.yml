@@ -1,18 +1,4 @@
 ---
-# Merge-queue gate. Runs heavier checks that are too expensive for every PR
-# but must pass before any commit enters develop:
-#   - random database migration tests (MySQL, MariaDB, SQLite) with a run-id
-#     seed so we hit a different random migration path on every queue entry
-#   - Python 3.13 linting and unit tests on all three platforms
-#   - docker-server-docker-orchestrator-mysql integration (moved from ci-fast
-#     because it's too slow for the PR tier)
-#   - base-package smoke tests
-#
-# The remote-mysql sandbox lane is added in PR 2 once the execution backend
-# lands.  The source branch's kill-switch guard job is NOT ported here — it
-# belongs to the PR 2 execution-backend decision (gap 3 in the implementation
-# notes).  The recommendation is to substitute the docker-server-mysql runner
-# lane rather than hard-blocking the queue when the kill switch fires.
 name: ci-medium
 on:
   merge_group:
@@ -90,19 +76,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh mariadb random
-  linting:
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ['3.13']
-      fail-fast: false
-    uses: ./.github/workflows/linting.yml
-    with:
-      python-version: ${{ matrix.python-version }}
-      os: ${{ matrix.os }}
-    secrets: inherit
   unit-test:
-    needs: [linting]
     strategy:
       matrix:
         include:
@@ -119,7 +93,6 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   docker-orchestrator-mysql-integration-test:
-    needs: [linting]
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -152,7 +125,6 @@ jobs:
       - sqlite-db-migration-testing-random
       - mysql-db-migration-testing-random
       - mariadb-db-migration-testing-random
-      - linting
       - unit-test
       - docker-orchestrator-mysql-integration-test
       - base-package-functionality

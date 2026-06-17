@@ -32,7 +32,12 @@ from zenml.models.v2.base.base import (
     BaseResponseResources,
     BaseUpdate,
 )
-from zenml.models.v2.base.filter import AnyQuery, BaseFilter
+from zenml.models.v2.base.filter import (
+    AnyQuery,
+    BaseFilter,
+    DatetimeFilterOption,
+    StringFilterOption,
+)
 from zenml.utils.string_utils import b64_decode, b64_encode
 from zenml.utils.time_utils import utc_now
 
@@ -346,16 +351,21 @@ class APIKeyFilter(BaseFilter):
         *BaseFilter.CLI_EXCLUDE_FIELDS,
         "service_account",
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *BaseFilter.API_SINGLE_INPUT_PARAMS,
+        "service_account",
+        "active",
+    ]
 
     service_account: Optional[UUID] = Field(
         default=None,
         description="The service account to scope this query to.",
     )
-    name: Optional[str] = Field(
+    name: StringFilterOption = Field(
         default=None,
         description="Name of the API key",
     )
-    description: Optional[str] = Field(
+    description: StringFilterOption = Field(
         default=None,
         title="Filter by the API key description.",
     )
@@ -364,12 +374,12 @@ class APIKeyFilter(BaseFilter):
         title="Whether the API key is active.",
         union_mode="left_to_right",
     )
-    last_login: Optional[Union[datetime, str]] = Field(
+    last_login: DatetimeFilterOption = Field(
         default=None,
         title="Time when the API key was last used to log in.",
         union_mode="left_to_right",
     )
-    last_rotated: Optional[Union[datetime, str]] = Field(
+    last_rotated: DatetimeFilterOption = Field(
         default=None,
         title="Time when the API key was last rotated.",
         union_mode="left_to_right",

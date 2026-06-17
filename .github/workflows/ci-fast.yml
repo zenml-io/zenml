@@ -1,19 +1,12 @@
 ---
-# PR tier: runs on every non-draft pull request, merge_group entry, and push
-# to develop.
-#
-#
 name: ci-fast
 on:
   workflow_dispatch:
   workflow_call:
   merge_group:
-  push:
-    branches: [develop]
   pull_request:
     types: [opened, synchronize, ready_for_review]
 concurrency:
-  # New commit on branch cancels running workflows of the same branch.
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 permissions:
@@ -38,6 +31,20 @@ jobs:
           python-version: '3.13'
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh sqlite random
+  spellcheck:
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
+      false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        with:
+          persist-credentials: false
+      - name: Spelling checker
+        uses: crate-ci/typos@37bb98842b0d8c4ffebdb75301a13db0267cef89  # v1.47.2
+        with:
+          files: .
+          config: ./.typos.toml
   api-docs-test:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
       false
@@ -53,59 +60,19 @@ jobs:
           python-version: '3.13'
       - name: Test API docs buildable
         run: bash scripts/generate-docs.sh -v DUMMY -c
-  static-checks:
-    # Consolidated: spellcheck + ruff + pydoclint in one job.
-    # Full py3.13 lint (linting.yml) runs in ci-medium, not here.
+  linting:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
       false
-    runs-on: ubuntu-latest
-    env:
-      ZENML_ANALYTICS_OPT_IN: false
-      ZENML_DEBUG: 1
-      PYTHONIOENCODING: utf-8
-      UV_HTTP_TIMEOUT: 600
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Set uv cache + temp dirs (/opt)
-        run: |
-          sudo mkdir -p /opt/uv-cache /opt/tmp
-          sudo chown -R "$(id -u)":"$(id -g)" /opt/uv-cache /opt/tmp
-          echo "UV_CACHE_DIR=/opt/uv-cache" >> "$GITHUB_ENV"
-          echo "TMPDIR=/opt/tmp" >> "$GITHUB_ENV"
-          echo "TMP=/opt/tmp" >> "$GITHUB_ENV"
-          echo "TEMP=/opt/tmp" >> "$GITHUB_ENV"
-      - name: Restore uv cache
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
-        with:
-          path: /opt/uv-cache
-          key: uv-${{ runner.os }}-3.13-${{ hashFiles('src/zenml/integrations/*/__init__.py')
-            }}
-          restore-keys: |
-            uv-${{ runner.os }}-3.13-
-      - name: Setup environment
-        uses: ./.github/actions/setup_environment
-        with:
-          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
-          python-version: '3.13'
-          os: ubuntu-latest
-          install_integrations: 'no'
-      - name: Spellcheck
-        uses: crate-ci/typos@7c572958218557a3272c2d6719629443b5cc26fd  # v1.45.2
-        with:
-          files: .
-          config: ./.typos.toml
-      - name: Lint
-        run: |
-          ruff check src/zenml tests/harness
-          ruff check tests examples --extend-ignore D --extend-exclude "*.ipynb"
-      - name: Docstring
-        run: |
-          uv pip install --system --force-reinstall --no-deps "docstring_parser_fork"
-          pydoclint src/zenml tests/harness
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ['3.13']
+      fail-fast: false
+    uses: ./.github/workflows/linting.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      os: ${{ matrix.os }}
+    secrets: inherit
   unit-test:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
       false
@@ -116,8 +83,6 @@ jobs:
       install_integrations: 'yes'
     secrets: inherit
   default-integration-test:
-    # Plain runner lane for the default environment (no docker server).
-    # PR 2 will add the fork/kill-switch conditions (§2.3).
     if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
       false
     uses: ./.github/workflows/integration-test-fast.yml
@@ -128,16 +93,10 @@ jobs:
       ci_tier: fast
     secrets: inherit
   update-templates-to-examples:
-    # Kept in ci-fast rather than re-homed to push-to-develop or retired.
-    # All jobs in the called workflow are internally guarded
-    # `if: github.event_name == 'pull_request'`, so this caller job
-    # naturally no-ops on push/merge_group events.
-    # Excluded from the required rollup because fork PRs and drafts
-    # legitimately skip it.
-    # Needs job-level contents:write/pull-requests:write because its jobs push
-    # sync commits back to the PR head branch; top-level permissions are read.
-    if: github.event.pull_request.head.repo.full_name == 'zenml-io/zenml' && github.event.pull_request.draft
-      == false
+    # This job is allowed to skip because it cannot push template sync commits
+    # for fork PRs, drafts, or merge-queue events.
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name
+      == 'zenml-io/zenml' && github.event.pull_request.draft == false
     permissions:
       contents: write
       pull-requests: write
@@ -147,15 +106,12 @@ jobs:
       os: ubuntu-latest
     secrets: inherit
   ci-fast-required:
-    # alls-green rolls up all required jobs into one status the branch
-    # protection rule checks.  update-templates-to-examples is listed as
-    # allowed-skips because it legitimately skips on fork PRs, drafts, and
-    # non-pull_request events.
     runs-on: ubuntu-latest
     needs:
       - sqlite-db-migration-testing-random
+      - spellcheck
       - api-docs-test
-      - static-checks
+      - linting
       - unit-test
       - default-integration-test
       - update-templates-to-examples

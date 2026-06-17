@@ -121,9 +121,13 @@ install_integrations() {
         ignore_integrations="$ignore_integrations pytorch neural_prophet pytorch_lightning"
     fi
     # Some integration SDKs still require NumPy 1.x. Keep Windows on Python
-    # 3.13 by skipping only these integration-specific exported requirements.
-    if [ "$os_name" = "Windows" ] && [ "$python_version" = "3.13" ]; then
-        ignore_integrations="$ignore_integrations azure langchain"
+    # 3.13 and 3.14 by skipping only these exported integration requirements.
+    if [ "$os_name" = "Windows" ]; then
+        case "$python_version" in
+            3.13|3.14)
+                ignore_integrations="$ignore_integrations azure langchain"
+                ;;
+        esac
     fi
 
     # turn the ignore integrations into a list of --ignore-integration args

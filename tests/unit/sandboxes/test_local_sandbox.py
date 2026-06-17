@@ -32,6 +32,9 @@ from zenml.sandboxes import (
     SandboxSessionClosedError,
 )
 
+# Portable long-running child (the `sleep` binary is POSIX-only).
+_LONG_RUNNING_CMD = [sys.executable, "-c", "import time; time.sleep(3600)"]
+
 
 def _make_local_sandbox(
     *,
@@ -140,6 +143,10 @@ class TestExec:
         finally:
             session.close()
 
+    @pytest.mark.skipif(
+        os.name == "nt",
+        reason="POSIX shlex splitting mangles the Windows exe path",
+    )
     def test_string_command_is_shell_split(self) -> None:
         session = _make_local_sandbox().create_session()
         try:
@@ -369,7 +376,7 @@ class TestCloseAndDestroy:
         # A long-running child must not outlive the session: close()
         # terminates anything exec() spawned that is still alive.
         session = _make_local_sandbox().create_session()
-        proc = session.exec(["sleep", "3600"])
+        proc = session.exec(_LONG_RUNNING_CMD)
         popen = proc._process  # type: ignore[attr-defined]
         assert popen.poll() is None
         session.close()
@@ -399,7 +406,7 @@ class TestNoFdLeakAcrossExecs:
     def test_exec_keeps_running_processes_tracked(self) -> None:
         sandbox = _make_local_sandbox()
         with sandbox.create_session() as session:
-            running = session.exec(["sleep", "3600"])
+            running = session.exec(_LONG_RUNNING_CMD)
             running_popen = running._process  # type: ignore[attr-defined]
             session.exec([sys.executable, "-c", "pass"]).collect()
             assert running_popen in session._processes  # type: ignore[attr-defined]

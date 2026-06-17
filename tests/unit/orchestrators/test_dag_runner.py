@@ -15,11 +15,14 @@
 from contextlib import ExitStack as does_not_raise
 from typing import Dict, List
 
-from zenml.orchestrators.dag_runner import ThreadedDagRunner, reverse_dag
+from zenml.orchestrators.legacy_dag_runner import (
+    ThreadedDagRunner,
+    reverse_dag,
+)
 
 
 def test_reverse_dag():
-    """Test `dag_runner.reverse_dag()`."""
+    """Test `legacy_dag_runner.reverse_dag()`."""
     dag = {"1": ["7"], "2": [], "3": ["2", "5"], "5": ["1", "7"], "7": []}
     assert reverse_dag(dag) == {
         "1": ["5"],

@@ -81,8 +81,7 @@ rules:
     ignore:
       - ci-fast.yml
       - ci-medium.yml
-      - ci-slow-develop.yml
-      - slow-ci-on-pr.yml
+      - ci-slow.yml
       - linting.yml
       - unit-test.yml
       - integration-test-fast.yml

@@ -195,6 +195,27 @@ def test_step_can_receive_the_same_input_artifact_multiple_times():
         test_pipeline.with_options(unlisted=True)()
 
 
+@step
+async def async_int_producer() -> int:
+    return 7
+
+
+@step
+def assert_input_is_seven(value: int) -> None:
+    assert value == 7
+
+
+def test_async_step_runs_in_static_pipeline():
+    """Tests that an async step runs to completion inside a static pipeline."""
+
+    @pipeline
+    def async_pipeline():
+        assert_input_is_seven(async_int_producer())
+
+    with does_not_raise():
+        async_pipeline.with_options(unlisted=True)()
+
+
 @step(step_operator="azureml")
 def step_that_requires_step_operator() -> None:
     pass

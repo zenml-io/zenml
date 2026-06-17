@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Models representing the link between model versions and pipeline runs."""
 
-from typing import TYPE_CHECKING, List, Optional, Type, TypeVar, Union
+from typing import TYPE_CHECKING, List, Type, TypeVar
 from uuid import UUID
 
 from pydantic import ConfigDict, Field
@@ -26,7 +26,12 @@ from zenml.models.v2.base.base import (
     BaseResponseMetadata,
     BaseResponseResources,
 )
-from zenml.models.v2.base.filter import BaseFilter, StrFilter
+from zenml.models.v2.base.filter import (
+    BaseFilter,
+    StrFilter,
+    StringFilterOption,
+    UUIDFilterOption,
+)
 from zenml.models.v2.core.pipeline_run import PipelineRunResponse
 
 if TYPE_CHECKING:
@@ -127,21 +132,21 @@ class ModelVersionPipelineRunFilter(BaseFilter):
         "id",
     ]
 
-    model_version_id: Optional[Union[UUID, str]] = Field(
+    model_version_id: UUIDFilterOption = Field(
         default=None,
         description="Filter by model version ID",
         union_mode="left_to_right",
     )
-    pipeline_run_id: Optional[Union[UUID, str]] = Field(
+    pipeline_run_id: UUIDFilterOption = Field(
         default=None,
         description="Filter by pipeline run ID",
         union_mode="left_to_right",
     )
-    pipeline_run_name: Optional[str] = Field(
+    pipeline_run_name: StringFilterOption = Field(
         default=None,
         description="Name of the pipeline run",
     )
-    user: Optional[Union[UUID, str]] = Field(
+    user: UUIDFilterOption = Field(
         default=None,
         description="Name/ID of the user that created the pipeline run.",
     )
@@ -176,32 +181,44 @@ class ModelVersionPipelineRunFilter(BaseFilter):
         )
 
         if self.pipeline_run_name:
-            value, filter_operator = self._resolve_operator(
+            pipeline_run_name_filters = (
                 self.pipeline_run_name
+                if isinstance(self.pipeline_run_name, list)
+                else [self.pipeline_run_name]
             )
-            filter_ = StrFilter(
-                operation=GenericFilterOps(filter_operator),
-                column="name",
-                value=value,
-            )
-            pipeline_run_name_filter = and_(
-                ModelVersionPipelineRunSchema.pipeline_run_id
-                == PipelineRunSchema.id,
-                filter_.generate_query_conditions(PipelineRunSchema),
-            )
-            custom_filters.append(pipeline_run_name_filter)
+            for pipeline_run_name_filter in pipeline_run_name_filters:
+                value, filter_operator = self._resolve_operator(
+                    pipeline_run_name_filter
+                )
+                filter_ = StrFilter(
+                    operation=GenericFilterOps(filter_operator),
+                    column="name",
+                    value=value,
+                )
+                custom_filters.append(
+                    and_(
+                        ModelVersionPipelineRunSchema.pipeline_run_id
+                        == PipelineRunSchema.id,
+                        filter_.generate_query_conditions(PipelineRunSchema),
+                    )
+                )
 
         if self.user:
-            user_filter = and_(
-                ModelVersionPipelineRunSchema.pipeline_run_id
-                == PipelineRunSchema.id,
-                PipelineRunSchema.user_id == UserSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.user,
-                    table=UserSchema,
-                    additional_columns=["full_name"],
-                ),
+            user_filters = (
+                self.user if isinstance(self.user, list) else [self.user]
             )
-            custom_filters.append(user_filter)
+            for user_filter in user_filters:
+                custom_filters.append(
+                    and_(
+                        ModelVersionPipelineRunSchema.pipeline_run_id
+                        == PipelineRunSchema.id,
+                        PipelineRunSchema.user_id == UserSchema.id,
+                        self.generate_name_or_id_query_conditions(
+                            value=user_filter,
+                            table=UserSchema,
+                            additional_columns=["full_name"],
+                        ),
+                    )
+                )
 
         return custom_filters
