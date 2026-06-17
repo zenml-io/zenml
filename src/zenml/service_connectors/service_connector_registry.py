@@ -259,5 +259,12 @@ class ServiceConnectorRegistry:
                     f"Could not import HyperAI service connector: {e}."
                 )
 
+            try:
+                from zenml.integrations.ssh.service_connectors.ssh_service_connector import (  # noqa
+                    SSHServiceConnector,
+                )
+            except ImportError as e:
+                logger.debug(f"Could not import SSH service connector: {e}.")
+
 
 service_connector_registry = ServiceConnectorRegistry()

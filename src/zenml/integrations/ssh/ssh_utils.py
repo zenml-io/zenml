@@ -20,6 +20,7 @@ ZenML's registry even when paramiko is not installed.
 """
 
 import io
+import socket
 import time
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Optional, Protocol
@@ -273,23 +274,65 @@ class SSHClient:
                         key_file, password=passphrase
                     )
 
-        try:
-            client.connect(
-                hostname=self.config.hostname,
-                port=self.config.port,
-                username=self.config.username,
-                pkey=pkey,
-                timeout=self.config.connection_timeout,
-            )
-        except Exception as e:
-            auth_method = (
-                "key file" if self.config.ssh_key_path else "key content"
-            )
+        auth_method = "key file" if self.config.ssh_key_path else "key content"
+        # Retry transient connection failures (e.g. a momentarily overloaded
+        # sshd dropping connections -> "Error reading SSH protocol banner",
+        # socket timeouts, resets). Without this a brief blip on the host
+        # fails the whole pipeline run with a cryptic paramiko error.
+        max_attempts = 3
+        last_error: Optional[Exception] = None
+        for attempt in range(1, max_attempts + 1):
+            try:
+                client.connect(
+                    hostname=self.config.hostname,
+                    port=self.config.port,
+                    username=self.config.username,
+                    pkey=pkey,
+                    timeout=self.config.connection_timeout,
+                )
+                last_error = None
+                break
+            except paramiko.AuthenticationException as e:
+                # Authentication won't succeed on retry, fail fast with
+                # actionable guidance.
+                raise RuntimeError(
+                    f"SSH authentication failed connecting to "
+                    f"{self.config.hostname}:{self.config.port} as "
+                    f"{self.config.username} using {auth_method}. Check that "
+                    f"the username is correct and the public key is authorized "
+                    f"on the host (~/.ssh/authorized_keys): {e}"
+                ) from e
+            except (
+                paramiko.SSHException,
+                socket.timeout,
+                OSError,
+                EOFError,
+            ) as e:
+                last_error = e
+                if attempt < max_attempts:
+                    backoff = 2**attempt
+                    logger.warning(
+                        "SSH connection to %s:%d failed (attempt %d/%d): %s. "
+                        "Retrying in %ds...",
+                        self.config.hostname,
+                        self.config.port,
+                        attempt,
+                        max_attempts,
+                        e,
+                        backoff,
+                    )
+                    time.sleep(backoff)
+        if last_error is not None:
             raise RuntimeError(
-                f"Failed to connect to {self.config.hostname}:"
-                f"{self.config.port} as {self.config.username} "
-                f"using {auth_method}: {e}"
-            ) from e
+                f"Could not establish an SSH connection to "
+                f"{self.config.hostname}:{self.config.port} as "
+                f"{self.config.username} after {max_attempts} attempts (using "
+                f"{auth_method}). The host may be unreachable, refusing "
+                f"connections, or overloaded (e.g. sshd hitting MaxStartups "
+                f"under heavy load). Verify network connectivity, that sshd is "
+                f"running, and that the host is not out of resources. Last "
+                f"error: {last_error}"
+            ) from last_error
 
         # Configure keepalive
         if self.config.keepalive_interval > 0:
