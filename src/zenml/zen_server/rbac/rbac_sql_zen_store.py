@@ -14,16 +14,12 @@
 """RBAC SQL Zen Store implementation."""
 
 from typing import (
-    TYPE_CHECKING,
     List,
     Optional,
-    Sequence,
-    Set,
     Tuple,
 )
 from uuid import UUID
 
-from zenml.enums import TaggableResourceTypes
 from zenml.logger import get_logger
 from zenml.models import (
     ModelRequest,
@@ -37,80 +33,19 @@ from zenml.zen_server.feature_gate.endpoint_utils import (
     check_entitlement,
     report_usage,
 )
-from zenml.zen_server.rbac.models import Action, Resource, ResourceType
+from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
-    batch_verify_permissions,
+    batch_verify_permissions_for_schemas,
     verify_permission,
     verify_permission_for_model,
 )
-from zenml.zen_server.utils import get_auth_context
 from zenml.zen_stores.sql_zen_store import Session, SqlZenStore
-
-if TYPE_CHECKING:
-    from zenml.zen_stores.schemas import BaseSchema
-
 
 logger = get_logger(__name__)
 
 
 class RBACSqlZenStore(SqlZenStore):
     """Wrapper around the SQLZenStore that implements RBAC functionality."""
-
-    def _get_rbac_resource_type_for_taggable_resource_type(
-        self, resource_type: TaggableResourceTypes
-    ) -> ResourceType:
-        """Get the RBAC resource type for a taggable resource type.
-
-        Args:
-            resource_type: The taggable resource type.
-
-        Returns:
-            The corresponding RBAC resource type.
-        """
-        if resource_type == TaggableResourceTypes.PIPELINE_SNAPSHOT:
-            return ResourceType.PIPELINE_SNAPSHOT
-
-        return ResourceType(resource_type.value)
-
-    def _get_rbac_resources_from_tag_resources(
-        self,
-        tag_resources: List[TagResourceRequest],
-        resolved_resources: Sequence["BaseSchema"],
-    ) -> Set[Resource]:
-        """Get RBAC resources referenced by tag resource requests in bulk.
-
-        Args:
-            tag_resources: The tag resource requests.
-            resolved_resources: The resources referenced by the tag resource
-                requests.
-
-        Returns:
-            The RBAC resources referenced by the tag resource requests.
-        """
-        auth_context = get_auth_context()
-        assert auth_context
-        authenticated_user_id = auth_context.user.id
-
-        resources = set()
-        for tag_resource, resource in zip(tag_resources, resolved_resources):
-            user_id = getattr(resource, "user_id", None)
-            if not user_id or user_id == authenticated_user_id:
-                continue
-
-            rbac_resource_type = (
-                self._get_rbac_resource_type_for_taggable_resource_type(
-                    tag_resource.resource_type
-                )
-            )
-            resources.add(
-                Resource(
-                    type=rbac_resource_type,
-                    id=resource.id,
-                    project_id=getattr(resource, "project_id"),
-                )
-            )
-
-        return resources
 
     def batch_create_tag_resource(
         self, tag_resources: List[TagResourceRequest]
@@ -127,11 +62,9 @@ class RBACSqlZenStore(SqlZenStore):
             resolved_resources = self._get_resources_from_tag_resources(
                 tag_resources=tag_resources, session=session
             )
-            resources = self._get_rbac_resources_from_tag_resources(
-                tag_resources=tag_resources,
-                resolved_resources=resolved_resources,
+            batch_verify_permissions_for_schemas(
+                schemas=resolved_resources, action=Action.UPDATE
             )
-            batch_verify_permissions(resources=resources, action=Action.UPDATE)
 
             return self._batch_create_tag_resource(
                 tag_resources=tag_resources,
@@ -151,11 +84,9 @@ class RBACSqlZenStore(SqlZenStore):
             resolved_resources = self._get_resources_from_tag_resources(
                 tag_resources=tag_resources, session=session
             )
-            resources = self._get_rbac_resources_from_tag_resources(
-                tag_resources=tag_resources,
-                resolved_resources=resolved_resources,
+            batch_verify_permissions_for_schemas(
+                schemas=resolved_resources, action=Action.UPDATE
             )
-            batch_verify_permissions(resources=resources, action=Action.UPDATE)
 
             self._delete_tag_resource_schemas(
                 tag_resources=tag_resources,
