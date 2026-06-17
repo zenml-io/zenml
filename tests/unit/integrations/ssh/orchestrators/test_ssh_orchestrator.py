@@ -324,7 +324,7 @@ class TestStaticSubmit:
 
 
 class TestDynamicSubmit:
-    def test_single_orchestrator_service(self) -> None:
+    def test_single_orchestrator_container_via_docker_run(self) -> None:
         orch = _make_orchestrator()
         snap = _fake_snapshot({"a": _fake_step(), "b": _fake_step()})
         run = MagicMock()
@@ -339,17 +339,31 @@ class TestDynamicSubmit:
                 environment={"ZENML_STORE_URL": "x"},
                 placeholder_run=run,
             )
-        compose_yaml = next(
+        # The dynamic path launches a single container via `docker run`
+        # (no Compose DAG, since it's one image).
+        run_cmds = [
+            call.args[0]
+            for call in ssh.exec.call_args_list
+            if "run -d" in call.args[0]
+        ]
+        assert len(run_cmds) == 1
+        cmd = run_cmds[0]
+        assert "orch-img" in cmd
+        assert "--network host" in cmd
+        assert "-orchestrator" in cmd  # container name suffix
+        # Environment is passed via an --env-file carrying the run id.
+        assert "--env-file" in cmd
+        env_file = next(
             call.args[1]
             for call in ssh.put_text.call_args_list
-            if call.args[0].endswith("docker-compose.yml")
+            if call.args[0].endswith("orchestrator.env")
         )
-        compose = yaml.safe_load(compose_yaml)
-        # exactly one service that runs the orchestrator image
-        assert list(compose["services"]) == ["orchestrator"]
-        svc = compose["services"]["orchestrator"]
-        assert svc["image"] == "orch-img"
-        assert svc["environment"][ENV_ZENML_SSH_RUN_ID]
+        assert ENV_ZENML_SSH_RUN_ID in env_file
+        # No Compose file is written for the dynamic path.
+        assert not any(
+            call.args[0].endswith("docker-compose.yml")
+            for call in ssh.put_text.call_args_list
+        )
 
     def test_supports_dynamic_and_isolated_flags(self) -> None:
         orch = _make_orchestrator()

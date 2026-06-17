@@ -406,6 +406,88 @@ class SSHOrchestrator(ContainerizedOrchestrator):
             remote_dir,
         )
 
+    def _launch_container(
+        self,
+        *,
+        run_id: str,
+        image: str,
+        entrypoint: List[str],
+        command: List[str],
+        environment: Dict[str, str],
+        stack: "Stack",
+    ) -> None:
+        """Launch a single detached container on the remote host via docker run.
+
+        Used for the dynamic-pipeline path, where only one orchestrator
+        container is launched (it spawns the isolated steps itself), so there
+        is no Compose DAG to express.
+
+        Args:
+            run_id: The orchestrator run id (used as the remote directory).
+            image: The orchestrator image to run.
+            entrypoint: The container entrypoint command.
+            command: Arguments passed to the entrypoint.
+            environment: Environment variables for the container.
+            stack: The stack used for this submission.
+
+        Raises:
+            RuntimeError: If a remote command fails.
+        """
+        conn = self._build_ssh_connection_config()
+        docker = self.config.docker_binary
+        remote_dir = self._remote_run_directory(run_id, scheduled=False)
+        container_name = f"{run_id}-orchestrator"
+        env_file = f"{remote_dir}/orchestrator.env"
+
+        run_args = [
+            shlex.quote(docker),
+            "run",
+            "-d",
+            "--name",
+            shlex.quote(container_name),
+            "--network",
+            "host",
+            "--env-file",
+            shlex.quote(env_file),
+        ]
+        # Isolated steps run as subprocesses inside this container, so it
+        # needs GPU access on behalf of all of them.
+        if self.config.gpu_enabled_in_container:
+            run_args += ["--gpus", "all"]
+        run_args += ["--entrypoint", shlex.quote(entrypoint[0])]
+        run_args.append(shlex.quote(image))
+        run_args += [
+            shlex.quote(arg) for arg in (list(entrypoint[1:]) + list(command))
+        ]
+        run_command = " ".join(run_args)
+
+        with SSHClient(conn) as ssh:
+            mkdir = ssh.exec(f"mkdir -p {shlex.quote(remote_dir)}")
+            if mkdir.exit_code != 0:
+                raise RuntimeError(
+                    f"Failed to create remote directory {remote_dir} on "
+                    f"{self.config.hostname}: {mkdir.stderr}"
+                )
+            # docker --env-file reads literal KEY=VALUE lines; keep the file
+            # private since it carries the ZenML store credentials.
+            env_lines = "".join(
+                f"{key}={value}\n" for key, value in environment.items()
+            )
+            ssh.put_text(env_file, env_lines, mode=0o600)
+            if self.config.container_registry_autologin:
+                self._docker_login(ssh, stack)
+            run = ssh.exec(run_command)
+            if run.exit_code != 0:
+                raise RuntimeError(
+                    f"`docker run` failed on {self.config.hostname}: "
+                    f"{run.stderr or run.stdout}"
+                )
+        logger.info(
+            "Submitted dynamic pipeline to %s (container: %s).",
+            self.config.hostname,
+            container_name,
+        )
+
     def _step_service(
         self,
         snapshot: "PipelineSnapshotResponse",
@@ -558,29 +640,22 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         env = dict(environment)
         env[ENV_ZENML_SSH_RUN_ID] = run_id
 
-        service: Dict[str, Any] = {
-            "image": self.get_image(snapshot=snapshot),
-            "container_name": f"{snapshot.id}-orchestrator",
-            "network_mode": "host",
-            "entrypoint": (
+        # A dynamic pipeline launches a single orchestrator container (the
+        # runner spawns the isolated steps itself), so there is no DAG to
+        # express. Use `docker run` directly instead of Compose.
+        self._launch_container(
+            run_id=run_id,
+            image=self.get_image(snapshot=snapshot),
+            entrypoint=(
                 DynamicPipelineEntrypointConfiguration.get_entrypoint_command()
             ),
-            "command": (
+            command=(
                 DynamicPipelineEntrypointConfiguration.get_entrypoint_arguments(
                     snapshot_id=snapshot.id,
                     run_id=run_id,
                 )
             ),
-            "environment": env,
-        }
-        # Isolated steps run as subprocesses inside this container, so it
-        # needs GPU access on behalf of all of them.
-        if self._gpu_enabled():
-            service["deploy"] = _NVIDIA_GPU_DEPLOY
-
-        self._launch_compose(
-            run_id=run_id,
-            compose={"services": {"orchestrator": service}},
+            environment=env,
             stack=stack,
         )
         return None
