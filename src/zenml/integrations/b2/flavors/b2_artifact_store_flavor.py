@@ -14,29 +14,21 @@
 """Backblaze B2 artifact store flavor.
 
 B2 is S3-compatible, so this flavor subclasses the S3 implementation
-rather than duplicating it. The only differences are:
-
-- A B2-specific default ``endpoint_url`` (Backblaze's US-West-004 region)
-  is injected into ``client_kwargs`` if the user does not provide one.
-- ``B2_APPLICATION_KEY_ID`` / ``B2_APPLICATION_KEY`` environment variables
-  are honored as a fallback for ``key`` / ``secret``, in addition to the
-  AWS-style credential resolution inherited from the S3 flavor.
-- A ``b2ai-zenml`` suffix is appended to ``config_kwargs.user_agent_extra``
-  so traffic from this integration is identifiable in B2-side server logs
-  (analogous to MLflow's existing B2 attribution convention). The suffix
-  is added once and merged with any user-provided ``user_agent_extra``.
+rather than duplicating it. The config layer only validates user-provided
+values. Runtime fallbacks such as environment credentials and endpoint/user
+agent defaults are applied in the artifact store implementation so they are
+not persisted as stack component configuration.
 """
 
-import os
+import json
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
     Optional,
     Type,
 )
 
-from pydantic import model_validator
+from pydantic import field_validator
 
 from zenml.integrations.b2 import B2_ARTIFACT_STORE_FLAVOR
 from zenml.integrations.s3.flavors.s3_artifact_store_flavor import (
@@ -59,7 +51,7 @@ DEFAULT_B2_ENDPOINT_URL = "https://s3.us-west-004.backblazeb2.com"
 B2_KEY_ID_ENV_VAR = "B2_APPLICATION_KEY_ID"
 B2_APPLICATION_KEY_ENV_VAR = "B2_APPLICATION_KEY"
 
-_B2_USER_AGENT = "b2ai-zenml"
+B2_USER_AGENT = "b2ai-zenml"
 
 
 class B2ArtifactStoreConfig(S3ArtifactStoreConfig):
@@ -70,51 +62,29 @@ class B2ArtifactStoreConfig(S3ArtifactStoreConfig):
     filesystem (s3fs) addresses B2 buckets through the S3 API.
     """
 
-    @model_validator(mode="before")
+    @field_validator("client_kwargs", "config_kwargs", mode="before")
     @classmethod
-    def _apply_b2_defaults(cls, data: Any) -> Any:
-        """Apply B2-specific defaults for endpoint URL and credentials.
-
-        Runs before model construction so values can be injected into
-        ``client_kwargs`` (which becomes immutable post-validation in
-        Pydantic v2). Sets the default Backblaze B2 endpoint URL when the
-        user has not configured one, and falls back to the
-        ``B2_APPLICATION_KEY_ID`` / ``B2_APPLICATION_KEY`` environment
-        variables for credentials when no key/secret is provided on the
-        config or via AWS-style env vars.
+    def _parse_json_dict(cls, value: Any) -> Any:
+        """Parse JSON string dictionaries passed through the CLI.
 
         Args:
-            data: Raw input data dict (or other value) prior to validation.
+            value: The raw field value.
+
+        Raises:
+            ValueError: If the value is a JSON string that does not decode to
+                a dictionary.
 
         Returns:
-            The (possibly mutated) raw input data with B2 defaults applied.
+            The parsed dictionary for JSON strings, otherwise the original
+            value so Pydantic can perform normal validation.
         """
-        if not isinstance(data, dict):
-            return data
+        if not isinstance(value, str):
+            return value
 
-        client_kwargs: Dict[str, Any] = dict(data.get("client_kwargs") or {})
-        if not client_kwargs.get("endpoint_url"):
-            client_kwargs["endpoint_url"] = DEFAULT_B2_ENDPOINT_URL
-            data["client_kwargs"] = client_kwargs
-
-        config_kwargs: Dict[str, Any] = dict(data.get("config_kwargs") or {})
-        existing_ua = (config_kwargs.get("user_agent_extra") or "").strip()
-        if _B2_USER_AGENT not in existing_ua:
-            config_kwargs["user_agent_extra"] = (
-                f"{existing_ua} {_B2_USER_AGENT}".strip()
-            )
-            data["config_kwargs"] = config_kwargs
-
-        if not data.get("key"):
-            b2_key_id = os.environ.get(B2_KEY_ID_ENV_VAR)
-            if b2_key_id:
-                data["key"] = b2_key_id
-        if not data.get("secret"):
-            b2_app_key = os.environ.get(B2_APPLICATION_KEY_ENV_VAR)
-            if b2_app_key:
-                data["secret"] = b2_app_key
-
-        return data
+        parsed_value = json.loads(value)
+        if not isinstance(parsed_value, dict):
+            raise ValueError("Expected a JSON object.")
+        return parsed_value
 
 
 class B2ArtifactStoreFlavor(S3ArtifactStoreFlavor):
@@ -160,9 +130,7 @@ class B2ArtifactStoreFlavor(S3ArtifactStoreFlavor):
         Returns:
             The flavor logo.
         """
-        # TODO: replace with a Backblaze-hosted logo once published to the
-        # public flavor logo bucket. Falls back to the S3 logo for now.
-        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/artifact_store/aws.png"
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/artifact_store/b2.png"
 
     @property
     def config_class(self) -> Type[B2ArtifactStoreConfig]:

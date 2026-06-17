@@ -15,10 +15,9 @@
 
 These tests intentionally exercise only the config/flavor surface that the
 B2 integration adds on top of the inherited S3 implementation: the flavor
-identifier, the default endpoint URL injection, the ``B2_APPLICATION_KEY*``
-environment variable fallback, and the typed ``config`` property on the
-artifact store. We mock ``boto3.resource`` so no real S3/B2 client is
-constructed during instantiation.
+identifier, CLI JSON parsing, runtime B2 fallbacks, and the typed ``config``
+property on the artifact store. We mock ``boto3.resource`` so no real S3/B2
+client is constructed during instantiation.
 """
 
 from datetime import datetime
@@ -32,6 +31,7 @@ from zenml.integrations.b2.artifact_stores.b2_artifact_store import (
 from zenml.integrations.b2.flavors.b2_artifact_store_flavor import (
     B2_APPLICATION_KEY_ENV_VAR,
     B2_KEY_ID_ENV_VAR,
+    B2_USER_AGENT,
     DEFAULT_B2_ENDPOINT_URL,
     B2ArtifactStoreConfig,
     B2ArtifactStoreFlavor,
@@ -57,15 +57,16 @@ def test_flavor_no_service_connector_requirements():
     assert flavor.service_connector_requirements is None
 
 
-def test_default_endpoint_url_injected_when_not_provided(monkeypatch):
-    """A bare config gets the default Backblaze endpoint url injected."""
-    # Clear any ambient B2 env vars so the validator doesn't read host creds.
+def test_config_does_not_persist_runtime_defaults(monkeypatch):
+    """A bare config does not store runtime B2 fallbacks."""
     monkeypatch.delenv(B2_KEY_ID_ENV_VAR, raising=False)
     monkeypatch.delenv(B2_APPLICATION_KEY_ENV_VAR, raising=False)
 
     config = B2ArtifactStoreConfig(path="s3://my-b2-bucket")
-    assert config.client_kwargs is not None
-    assert config.client_kwargs["endpoint_url"] == DEFAULT_B2_ENDPOINT_URL
+    assert config.client_kwargs is None
+    assert config.config_kwargs is None
+    assert config.key is None
+    assert config.secret is None
 
 
 def test_user_provided_endpoint_url_overrides_default(monkeypatch):
@@ -82,8 +83,8 @@ def test_user_provided_endpoint_url_overrides_default(monkeypatch):
     assert config.client_kwargs["endpoint_url"] == custom_endpoint
 
 
-def test_default_endpoint_only_added_when_endpoint_url_missing(monkeypatch):
-    """Other client_kwargs are preserved when injecting the default endpoint."""
+def test_missing_endpoint_url_is_not_persisted(monkeypatch):
+    """Client kwargs without an endpoint are persisted as provided."""
     monkeypatch.delenv(B2_KEY_ID_ENV_VAR, raising=False)
     monkeypatch.delenv(B2_APPLICATION_KEY_ENV_VAR, raising=False)
 
@@ -92,18 +93,52 @@ def test_default_endpoint_only_added_when_endpoint_url_missing(monkeypatch):
         client_kwargs={"region_name": "us-west-004"},
     )
     assert config.client_kwargs is not None
-    assert config.client_kwargs["endpoint_url"] == DEFAULT_B2_ENDPOINT_URL
     assert config.client_kwargs["region_name"] == "us-west-004"
+    assert "endpoint_url" not in config.client_kwargs
 
 
-def test_b2_env_vars_populate_credentials(monkeypatch):
-    """B2_APPLICATION_KEY_ID / B2_APPLICATION_KEY are mapped to key/secret."""
+def test_client_kwargs_json_string_is_parsed(monkeypatch):
+    """CLI-style JSON client kwargs are parsed before validation."""
+    monkeypatch.delenv(B2_KEY_ID_ENV_VAR, raising=False)
+    monkeypatch.delenv(B2_APPLICATION_KEY_ENV_VAR, raising=False)
+
+    config = B2ArtifactStoreConfig(
+        path="s3://my-b2-bucket",
+        client_kwargs=(
+            '{"endpoint_url": "https://s3.eu-central-003.backblazeb2.com"}'
+        ),
+    )
+
+    assert config.client_kwargs == {
+        "endpoint_url": "https://s3.eu-central-003.backblazeb2.com"
+    }
+
+
+def test_config_kwargs_json_string_is_parsed(monkeypatch):
+    """CLI-style JSON config kwargs are parsed before validation."""
+    monkeypatch.delenv(B2_KEY_ID_ENV_VAR, raising=False)
+    monkeypatch.delenv(B2_APPLICATION_KEY_ENV_VAR, raising=False)
+
+    config = B2ArtifactStoreConfig(
+        path="s3://my-b2-bucket",
+        config_kwargs='{"signature_version": "s3v4"}',
+    )
+
+    assert config.config_kwargs == {"signature_version": "s3v4"}
+
+
+def test_b2_env_vars_populate_runtime_credentials(monkeypatch):
+    """B2_APPLICATION_KEY_ID / B2_APPLICATION_KEY are runtime fallbacks."""
     monkeypatch.setenv(B2_KEY_ID_ENV_VAR, "b2-key-id")
     monkeypatch.setenv(B2_APPLICATION_KEY_ENV_VAR, "b2-app-key")
 
-    config = B2ArtifactStoreConfig(path="s3://my-b2-bucket")
-    assert config.key == "b2-key-id"
-    assert config.secret == "b2-app-key"
+    store = _build_b2_artifact_store(monkeypatch, clear_env=False)
+    assert store.config.key is None
+    assert store.config.secret is None
+
+    kwargs = store._build_boto3_kwargs()
+    assert kwargs["aws_access_key_id"] == "b2-key-id"
+    assert kwargs["aws_secret_access_key"] == "b2-app-key"
 
 
 def test_explicit_credentials_take_precedence_over_env(monkeypatch):
@@ -150,31 +185,33 @@ def test_b2_artifact_store_config_property_returns_b2_config(monkeypatch):
     assert isinstance(artifact_store.config, B2ArtifactStoreConfig)
     assert artifact_store.flavor == "b2"
     assert artifact_store.type == StackComponentType.ARTIFACT_STORE
-    # Default endpoint url is still injected on the active config.
-    assert artifact_store.config.client_kwargs is not None
-    assert (
-        artifact_store.config.client_kwargs["endpoint_url"]
-        == DEFAULT_B2_ENDPOINT_URL
-    )
+    assert artifact_store.config.client_kwargs is None
 
 
-def _build_b2_artifact_store(monkeypatch) -> B2ArtifactStore:
+def _build_b2_artifact_store(
+    monkeypatch,
+    clear_env: bool = True,
+    config: B2ArtifactStoreConfig | None = None,
+) -> B2ArtifactStore:
     """Construct a B2ArtifactStore with boto3.resource mocked.
 
     Args:
         monkeypatch: pytest's monkeypatch fixture.
+        clear_env: Whether to clear B2 credential environment variables.
+        config: Optional config for the artifact store.
 
     Returns:
         A B2ArtifactStore wired with a default config.
     """
-    monkeypatch.delenv(B2_KEY_ID_ENV_VAR, raising=False)
-    monkeypatch.delenv(B2_APPLICATION_KEY_ENV_VAR, raising=False)
+    if clear_env:
+        monkeypatch.delenv(B2_KEY_ID_ENV_VAR, raising=False)
+        monkeypatch.delenv(B2_APPLICATION_KEY_ENV_VAR, raising=False)
 
     with patch("boto3.resource", MagicMock()):
         return B2ArtifactStore(
             name="",
             id=uuid4(),
-            config=B2ArtifactStoreConfig(path="s3://my-b2-bucket"),
+            config=config or B2ArtifactStoreConfig(path="s3://my-b2-bucket"),
             flavor="b2",
             type=StackComponentType.ARTIFACT_STORE,
             user=uuid4(),
@@ -188,9 +225,8 @@ def test_build_boto3_kwargs_forwards_config_kwargs_into_boto3_config(
 ):
     """`_build_boto3_kwargs` wraps `config_kwargs` into a botocore Config.
 
-    The flavor's validator always populates `config_kwargs.user_agent_extra`
-    with `b2ai-zenml`, so the boto3.resource path must see a Config carrying
-    that suffix.
+    The boto3.resource path must see a Config carrying the B2 user agent
+    suffix even though it is not persisted on the component config.
     """
     from botocore.config import Config
 
@@ -206,22 +242,21 @@ def test_build_boto3_kwargs_forwards_config_kwargs_into_boto3_config(
 
     assert "config" in kwargs
     assert isinstance(kwargs["config"], Config)
-    assert "b2ai-zenml" in (kwargs["config"].user_agent_extra or "")
+    assert B2_USER_AGENT in (kwargs["config"].user_agent_extra or "")
     assert kwargs["endpoint_url"] == DEFAULT_B2_ENDPOINT_URL
 
 
-def test_build_boto3_kwargs_skips_config_when_config_kwargs_empty(
-    monkeypatch,
-):
-    """`_build_boto3_kwargs` adds nothing when `config_kwargs` is empty.
+def test_build_boto3_kwargs_preserves_user_agent_extra(monkeypatch):
+    """User-provided user agent extras are preserved."""
+    from botocore.config import Config
 
-    Guards the dict-merge logic in case future config-validator changes
-    leave `config_kwargs` unset.
-    """
-    store = _build_b2_artifact_store(monkeypatch)
-    # Bypass the frozen Pydantic model to simulate a future code path
-    # where the validator's user_agent_extra injection no longer fires.
-    object.__setattr__(store.config, "config_kwargs", None)
+    store = _build_b2_artifact_store(
+        monkeypatch,
+        config=B2ArtifactStoreConfig(
+            path="s3://my-b2-bucket",
+            config_kwargs={"user_agent_extra": "caller-supplied"},
+        ),
+    )
     parent_kwargs = {"endpoint_url": DEFAULT_B2_ENDPOINT_URL}
 
     with patch.object(
@@ -231,8 +266,9 @@ def test_build_boto3_kwargs_skips_config_when_config_kwargs_empty(
     ):
         kwargs = store._build_boto3_kwargs()
 
-    assert "config" not in kwargs
-    assert kwargs == parent_kwargs
+    assert isinstance(kwargs["config"], Config)
+    assert "caller-supplied" in kwargs["config"].user_agent_extra
+    assert B2_USER_AGENT in kwargs["config"].user_agent_extra
 
 
 def test_build_boto3_kwargs_preserves_existing_config(monkeypatch):
