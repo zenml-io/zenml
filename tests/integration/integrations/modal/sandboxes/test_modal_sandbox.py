@@ -650,9 +650,10 @@ class TestModalSandboxFileIO:
         src_path.write_bytes(b"payload")
         fake_sandbox = MagicMock(object_id="sb_xyz")
 
-        _make_session(fake_sandbox).upload_file(str(src_path), "/tmp/in.bin")
+        _make_session(fake_sandbox).upload_file(str(src_path), "/tmp/in.bin")  # nosec B108
         fake_sandbox.filesystem.copy_from_local.assert_called_once_with(
-            str(src_path), "/tmp/in.bin"
+            str(src_path),
+            "/tmp/in.bin",  # nosec B108
         )
 
     def test_download_file_delegates_to_filesystem_api(
@@ -662,10 +663,12 @@ class TestModalSandboxFileIO:
         fake_sandbox = MagicMock(object_id="sb_xyz")
 
         _make_session(fake_sandbox).download_file(
-            "/tmp/out.bin", str(dst_path)
+            "/tmp/out.bin",
+            str(dst_path),  # nosec B108
         )
         fake_sandbox.filesystem.copy_to_local.assert_called_once_with(
-            "/tmp/out.bin", str(dst_path)
+            "/tmp/out.bin",
+            str(dst_path),  # nosec B108
         )
 
 
