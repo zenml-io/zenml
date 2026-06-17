@@ -23,7 +23,7 @@ import io
 import socket
 import time
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Optional, Protocol
+from typing import TYPE_CHECKING, Optional, Protocol, cast
 
 from zenml.logger import get_logger
 from zenml.utils.secret_utils import PlainSerializedSecretStr
@@ -155,7 +155,12 @@ def resolve_ssh_connection_config(
             )
         return connection_config
 
-    return build_ssh_connection_config_from_config(component.config)
+    # The concrete SSH component configs (orchestrator/step operator) provide
+    # the SSHConnectionConfigSource fields; the base StackComponentConfig type
+    # doesn't express that, so narrow it here.
+    return build_ssh_connection_config_from_config(
+        cast(SSHConnectionConfigSource, component.config)
+    )
 
 
 @dataclass
@@ -505,7 +510,9 @@ class SSHClient:
         client = self._get_client()
         sftp = client.open_sftp()
         try:
-            stats = sftp.statvfs(remote_path)
+            # statvfs is a paramiko SFTP extension present at runtime but
+            # missing from the type stubs.
+            stats = sftp.statvfs(remote_path)  # type: ignore[attr-defined]
             return int(stats.f_bavail * stats.f_frsize)
         except Exception:
             logger.debug(
