@@ -636,7 +636,7 @@ class Compiler:
             # each step invocation.
             return list(pipeline.invocations.items())
 
-        from zenml.orchestrators.dag_runner import reverse_dag
+        from zenml.orchestrators.legacy_dag_runner import reverse_dag
         from zenml.orchestrators.topsort import topsorted_layers
 
         # Sort step names using topological sort
