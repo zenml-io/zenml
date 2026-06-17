@@ -127,25 +127,24 @@ class ModalSandboxProcess(SandboxProcess):
         )
 
     def kill(self) -> None:
-        """Terminate the owning Modal Sandbox.
+        """Killing a single command is not supported on Modal.
 
-        Modal's ``ContainerProcess`` exposes no per-command kill, so the
-        only way to honor the ``SandboxProcess.kill()`` contract (the
-        command must actually stop) is to terminate the whole Sandbox.
-        The session handle is closed afterwards — the sandbox is gone,
-        so further use would only fail later with a confusing Modal
-        error instead of ``SandboxSessionClosedError``. Delegates to
-        ``session.destroy()`` so a termination failure surfaces as the
-        documented retryable ``RuntimeError`` (with the billing warning)
-        and leaves the handle open for retry.
+        Modal's ``ContainerProcess`` exposes no per-command termination
+        (only ``poll``/``wait``/``stdin``/``stdout``/``stderr``), and
+        tearing down the whole Sandbox to stop one command would also stop
+        every other command in the session. Rather than that surprising
+        side effect, per-command kill is unsupported; call
+        ``session.destroy()`` to stop the entire sandbox.
+
+        Raises:
+            NotImplementedError: Always — the Modal SDK has no per-command
+                kill.
         """
-        session = cast("ModalSandboxSession", self._session)
-        logger.warning(
-            "Modal has no per-command kill; terminating the whole Modal "
-            "sandbox '%s' to stop the command.",
-            session.id,
+        raise NotImplementedError(
+            "The Modal sandbox cannot kill an individual command: Modal's "
+            "ContainerProcess has no per-command termination. Use "
+            "session.destroy() to tear down the whole sandbox instead."
         )
-        session.destroy()
 
     @property
     def exit_code(self) -> Optional[int]:
@@ -214,9 +213,7 @@ class ModalSandboxSession(SandboxSession):
             SandboxExecError: If Modal rejects the launch.
         """
         argv: List[str] = (
-            list(command)
-            if isinstance(command, list)
-            else shlex.split(command)
+            command if isinstance(command, list) else shlex.split(command)
         )
         self._log_command(argv)
 
@@ -224,11 +221,7 @@ class ModalSandboxSession(SandboxSession):
         if cwd is not None:
             kwargs["workdir"] = cwd
         if env:
-            # Unlike Sandbox.create, Sandbox.exec takes no env=; per-exec
-            # env is injected via secrets=.
-            kwargs["secrets"] = sandbox_utils.create_runtime_secrets(
-                cast(Dict[str, Optional[str]], env)
-            )
+            kwargs["env"] = env
         started_at = time.time()
         try:
             process = self._sandbox.exec(*argv, **kwargs)
@@ -389,7 +382,7 @@ class ModalSandbox(BaseSandbox):
 
     def _build_create_kwargs(
         self,
-        eff: ModalSandboxSettings,
+        settings: ModalSandboxSettings,
         *,
         image: "modal.Image",
         modal_client: Optional["modal.Client"],
@@ -402,7 +395,7 @@ class ModalSandbox(BaseSandbox):
         between sessions.
 
         Args:
-            eff: Effective per-step settings.
+            settings: The resolved sandbox settings.
             image: Modal Image to boot from.
             modal_client: Explicit Modal client (or ``None`` for ambient).
             environment: Env vars to inject into the new sandbox.
@@ -415,7 +408,7 @@ class ModalSandbox(BaseSandbox):
             ``ModalSandboxSettings`` directly.
         """
         environment_name = sandbox_utils.normalize_optional_config_value(
-            eff.modal_environment
+            settings.modal_environment
         )
         return sandbox_utils.build_sandbox_create_kwargs(
             app=sandbox_utils.lookup_modal_app(
@@ -424,9 +417,9 @@ class ModalSandbox(BaseSandbox):
                 modal_client=modal_client,
             ),
             image=image,
-            settings=eff,
+            settings=settings,
             resource_settings=ResourceSettings(
-                cpu_count=eff.cpu, memory=eff.memory
+                cpu_count=settings.cpu, memory=settings.memory
             ),
             environment=environment,
             modal_client=modal_client,
@@ -443,18 +436,18 @@ class ModalSandbox(BaseSandbox):
         Returns:
             A ``ModalSandboxSession`` wrapping the live Modal Sandbox.
         """
-        eff = cast(ModalSandboxSettings, self.resolve_settings(settings))
+        settings = cast(ModalSandboxSettings, self.resolve_settings(settings))
         modal_client = self._get_modal_client()
         image = sandbox_utils.get_modal_image_from_registry(
-            eff.image,
-            registry_credentials=self._registry_credentials(eff.image),
+            settings.image,
+            registry_credentials=self._registry_credentials(settings.image),
         )
         sandbox = modal.Sandbox.create(
             **self._build_create_kwargs(
-                eff,
+                settings,
                 image=image,
                 modal_client=modal_client,
-                environment=self._resolve_session_environment(eff),
+                environment=self._resolve_session_environment(settings),
             )
         )
         return ModalSandboxSession(sandbox, parent=self)
@@ -506,7 +499,7 @@ class ModalSandbox(BaseSandbox):
             RuntimeError: If Modal can't load the Image (e.g. id GC'd).
         """
         self._validate_snapshot(snapshot)
-        eff = cast(ModalSandboxSettings, self.resolve_settings(None))
+        settings = cast(ModalSandboxSettings, self.resolve_settings(None))
         modal_client = self._get_modal_client()
         try:
             image = modal.Image.from_id(snapshot.ref, client=modal_client)
@@ -515,10 +508,10 @@ class ModalSandbox(BaseSandbox):
             # session environment on restore.
             sandbox = modal.Sandbox.create(
                 **self._build_create_kwargs(
-                    eff,
+                    settings,
                     image=image,
                     modal_client=modal_client,
-                    environment=self._resolve_session_environment(eff),
+                    environment=self._resolve_session_environment(settings),
                 )
             )
         except Exception as e:

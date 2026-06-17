@@ -49,7 +49,6 @@ from zenml.integrations.modal.sandboxes.utils import (  # noqa: E402
 from zenml.sandboxes import (  # noqa: E402
     BaseSandbox,
     SandboxExecError,
-    SandboxSessionClosedError,
     SandboxSnapshot,
 )
 
@@ -246,47 +245,21 @@ class TestModalSandboxProcess:
         with pytest.raises(TimeoutError, match="did not exit"):
             proc.wait(timeout=0.3)
 
-    def test_kill_terminates_owning_sandbox(self) -> None:
-        # Modal has no per-command kill, so kill() must terminate the
-        # whole Sandbox to honor the SandboxProcess.kill() contract.
+    def test_kill_raises_not_implemented(self) -> None:
+        # Modal has no per-command termination, so kill() is unsupported
+        # rather than tearing down the whole sandbox (which would also stop
+        # sibling commands). The base collect() tolerates this — it wraps
+        # kill() in try/except.
         fake_sandbox = MagicMock(object_id="sb_xyz")
         session = _make_session(fake_sandbox)
-        fake = MagicMock()
-        ModalSandboxProcess(fake, session=session, started_at=0.0).kill()
-        fake_sandbox.terminate.assert_called_once()
-
-    def test_kill_closes_the_session(self) -> None:
-        # After kill() the sandbox is gone; the session handle must be
-        # closed so later use raises SandboxSessionClosedError instead
-        # of a confusing Modal error from a dead sandbox.
-        fake_sandbox = MagicMock(object_id="sb_xyz")
-        session = _make_session(fake_sandbox)
-        fake = MagicMock()
-        ModalSandboxProcess(fake, session=session, started_at=0.0).kill()
-        assert session.closed is True
-        with pytest.raises(SandboxSessionClosedError):
-            session.exec(["echo", "hi"])
-
-    def test_kill_failure_raises_retryable_runtime_error(self) -> None:
-        # kill() goes through session.destroy(), so a failed terminate
-        # surfaces as the documented RuntimeError (billing warning) and
-        # leaves the handle open for retry.
-        fake_sandbox = MagicMock(object_id="sb_xyz")
-        fake_sandbox.terminate.side_effect = RuntimeError("api down")
-        session = _make_session(fake_sandbox)
-        fake = MagicMock()
-        with pytest.raises(RuntimeError, match="Failed to terminate"):
-            ModalSandboxProcess(fake, session=session, started_at=0.0).kill()
+        proc = ModalSandboxProcess(
+            MagicMock(), session=session, started_at=0.0
+        )
+        with pytest.raises(NotImplementedError, match="per-command"):
+            proc.kill()
+        # The sandbox is left running and the session stays open.
+        fake_sandbox.terminate.assert_not_called()
         assert session.closed is False
-
-    def test_kill_does_not_use_per_command_stdin(self) -> None:
-        # kill() must not fall back to a stdin-EOF nudge, which leaves
-        # ill-behaved commands running until the sandbox TTL.
-        fake_sandbox = MagicMock(object_id="sb_xyz")
-        session = _make_session(fake_sandbox)
-        fake = MagicMock()
-        ModalSandboxProcess(fake, session=session, started_at=0.0).kill()
-        fake.stdin.write_eof.assert_not_called()
 
 
 # ---------------------------------------------------------------------------
@@ -313,20 +286,12 @@ class TestModalSandboxSession:
         fake_sandbox.exec.assert_called_once_with("python", "-c", "print(1)")
 
     def test_exec_passes_env(self) -> None:
-        # Confirm per-exec env vars are forwarded to modal.Sandbox.exec
-        # (currently via `secrets=` — see the comment in
-        # ModalSandboxSession.exec for the rationale).
-        with _patch_modal() as modal_mock:
-            fake_secret = MagicMock()
-            modal_mock.Secret.from_dict.return_value = fake_secret
-            fake_sandbox = MagicMock(object_id="sb_xyz")
-            fake_sandbox.exec.return_value = MagicMock()
-            _make_session(fake_sandbox).exec(
-                ["echo", "hi"], env={"FOO": "bar"}
-            )
-        modal_mock.Secret.from_dict.assert_called_once_with({"FOO": "bar"})
+        # Per-exec env vars are forwarded directly via Sandbox.exec(env=...).
+        fake_sandbox = MagicMock(object_id="sb_xyz")
+        fake_sandbox.exec.return_value = MagicMock()
+        _make_session(fake_sandbox).exec(["echo", "hi"], env={"FOO": "bar"})
         fake_sandbox.exec.assert_called_once_with(
-            "echo", "hi", secrets=[fake_secret]
+            "echo", "hi", env={"FOO": "bar"}
         )
 
     def test_exec_launch_failure_raises_sandbox_exec_error(self) -> None:
