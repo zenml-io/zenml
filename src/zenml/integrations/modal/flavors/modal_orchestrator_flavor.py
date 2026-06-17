@@ -15,51 +15,28 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
-from pydantic import Field, model_validator
+from pydantic import Field
 
-from zenml.config.base_settings import BaseSettings
 from zenml.integrations.modal import MODAL_ORCHESTRATOR_FLAVOR
-from zenml.integrations.modal.flavors.modal_step_operator_flavor import (
-    DEFAULT_TIMEOUT_SECONDS,
+from zenml.integrations.modal.flavors.modal_base_flavor import (
+    ModalCredentialsMixin,
+    ModalSettingsMixin,
 )
 from zenml.orchestrators import BaseOrchestratorConfig
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorFlavor
-from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.modal.orchestrators import ModalOrchestrator
 
 
-class ModalOrchestratorSettings(BaseSettings):
+class ModalOrchestratorSettings(ModalSettingsMixin):
     """Settings for Modal sandboxes created by the orchestrator.
 
-    These settings can apply to the sandbox that controls the run and to child
-    sandboxes that execute individual steps.
+    The shared compute/placement fields (gpu, region, cloud, modal_environment,
+    timeout) come from :class:`ModalSettingsMixin`. They apply to the sandbox
+    that controls the run and to child sandboxes that execute individual steps.
     """
 
-    gpu: Optional[str] = Field(
-        None,
-        description="GPU type for Modal sandboxes, for example 'T4' or 'A100'. "
-        "Use ResourceSettings.gpu_count to request multiple GPUs. If not set, sandboxes run on CPU.",
-    )
-    region: Optional[str] = Field(
-        None,
-        description="Cloud region for Modal sandboxes, for example 'us-east-1'. If not set, Modal chooses a default region.",
-    )
-    cloud: Optional[str] = Field(
-        None,
-        description="Cloud provider for Modal sandboxes, for example 'aws' or 'gcp'. If not set, Modal chooses a default provider.",
-    )
-    modal_environment: Optional[str] = Field(
-        None,
-        description="Modal environment name passed to App.lookup(..., environment_name=...), for example 'main' or 'staging'. If not set, Modal uses the default environment.",
-    )
-    timeout: int = Field(
-        DEFAULT_TIMEOUT_SECONDS,
-        ge=1,
-        le=DEFAULT_TIMEOUT_SECONDS,
-        description=f"Maximum Modal Sandbox lifetime in seconds, from 1 to {DEFAULT_TIMEOUT_SECONDS}. Modal terminates the sandbox if it exceeds this timeout.",
-    )
     synchronous: bool = Field(
         True,
         description="Whether to wait for the orchestration Modal Sandbox to finish after submission. When enabled, controller failures are surfaced to the submitting process.",
@@ -67,31 +44,13 @@ class ModalOrchestratorSettings(BaseSettings):
 
 
 class ModalOrchestratorConfig(
-    BaseOrchestratorConfig, ModalOrchestratorSettings
+    BaseOrchestratorConfig, ModalCredentialsMixin, ModalOrchestratorSettings
 ):
-    """Configuration for the Modal orchestrator."""
+    """Configuration for the Modal orchestrator.
 
-    token_id: Optional[str] = SecretField(
-        default=None,
-        description="Modal API token ID for authentication. Must be configured together with token_secret.",
-    )
-    token_secret: Optional[str] = SecretField(
-        default=None,
-        description="Modal API token secret for authentication. Must be configured together with token_id.",
-    )
-
-    @model_validator(mode="after")
-    def validate_modal_token_pair(self) -> "ModalOrchestratorConfig":
-        """Validate that Modal token fields are configured together."""
-        token_id = self.token_id.strip() if self.token_id else None
-        token_secret = self.token_secret.strip() if self.token_secret else None
-
-        if bool(token_id) != bool(token_secret):
-            raise ValueError(
-                "Modal token_id and token_secret must be configured together."
-            )
-
-        return self
+    Authentication fields (token_id, token_secret) come from
+    :class:`ModalCredentialsMixin`.
+    """
 
     @property
     def is_remote(self) -> bool:

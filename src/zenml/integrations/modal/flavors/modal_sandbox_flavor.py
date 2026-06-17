@@ -18,10 +18,10 @@ from typing import TYPE_CHECKING, Optional, Type
 from pydantic import Field
 
 from zenml.integrations.modal import MODAL_SANDBOX_FLAVOR
-from zenml.integrations.modal.flavors.modal_step_operator_flavor import (
+from zenml.integrations.modal.flavors.modal_base_flavor import (
     DEFAULT_TIMEOUT_SECONDS,
-    ModalStepOperatorConfig,
-    ModalStepOperatorSettings,
+    ModalCredentialsMixin,
+    ModalSettingsMixin,
 )
 from zenml.sandboxes import (
     BaseSandboxConfig,
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     from zenml.integrations.modal.sandboxes import ModalSandbox
 
 
-class ModalSandboxSettings(BaseSandboxSettings, ModalStepOperatorSettings):
+class ModalSandboxSettings(BaseSandboxSettings, ModalSettingsMixin):
     """Per-step settings for the Modal sandbox."""
 
     image: str = Field(
@@ -67,15 +67,32 @@ class ModalSandboxSettings(BaseSandboxSettings, ModalStepOperatorSettings):
 
 
 class ModalSandboxConfig(
-    BaseSandboxConfig, ModalSandboxSettings, ModalStepOperatorConfig
+    BaseSandboxConfig, ModalCredentialsMixin, ModalSandboxSettings
 ):
-    """Configuration for the Modal sandbox component."""
+    """Configuration for the Modal sandbox component.
+
+    Authentication fields (token_id, token_secret) come from
+    :class:`ModalCredentialsMixin`; compute/placement options come from
+    :class:`ModalSandboxSettings`.
+    """
 
     app_name: str = Field(
         default="zenml-sandbox",
         description="Name of the Modal App that hosts Sessions created by "
         "this component. Looked up (or created) lazily.",
     )
+
+    @property
+    def is_remote(self) -> bool:
+        """Checks if this stack component is running remotely.
+
+        Modal sandboxes always run in Modal's cloud, so they require a remote
+        ZenML server rather than a local database.
+
+        Returns:
+            Always True, since Modal sandboxes run remotely.
+        """
+        return True
 
 
 class ModalSandboxFlavor(BaseSandboxFlavor):
