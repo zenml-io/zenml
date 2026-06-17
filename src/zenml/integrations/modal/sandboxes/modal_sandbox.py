@@ -13,11 +13,9 @@
 #  permissions and limitations under the License.
 """Modal sandbox flavor implementation."""
 
-import inspect
 import logging
 import shlex
 import time
-from functools import lru_cache
 from threading import Lock
 from typing import (
     TYPE_CHECKING,
@@ -57,25 +55,6 @@ if TYPE_CHECKING:
     from modal.container_process import ContainerProcess
 
 logger = get_logger(__name__)
-
-
-@lru_cache(maxsize=1)
-def _modal_exec_supports_env() -> bool:
-    """Whether the installed modal SDK's ``Sandbox.exec`` accepts ``env``.
-
-    Modal added the ``env=`` parameter to ``Sandbox.exec`` after the 1.0.x
-    line. On versions that lack it (e.g. modal 1.0.0, which is inside our
-    supported ``modal>=1,<2`` range) per-exec env vars are inlined into argv
-    via the ``env`` coreutil instead. Cached because the signature cannot
-    change within a process.
-
-    Returns:
-        True if ``Sandbox.exec`` accepts an ``env`` keyword argument.
-    """
-    try:
-        return "env" in inspect.signature(modal.Sandbox.exec).parameters
-    except (ValueError, TypeError):
-        return False
 
 
 class ModalSandboxProcess(SandboxProcess):
@@ -242,20 +221,7 @@ class ModalSandboxSession(SandboxSession):
         if cwd is not None:
             kwargs["workdir"] = cwd
         if env:
-            if _modal_exec_supports_env():
-                kwargs["env"] = env
-            else:
-                # Older modal (e.g. 1.0.0) has no exec(env=...). Inline the
-                # vars via the `env` coreutil: pure argv, so it works across
-                # the whole modal>=1,<2 range and leaves no lingering Modal
-                # secrets behind. exec passes argv straight to the container
-                # (no shell), and `env` splits each token on the first '=',
-                # so values with spaces/special chars need no quoting.
-                argv = [
-                    "env",
-                    *(f"{key}={value}" for key, value in env.items()),
-                    *argv,
-                ]
+            kwargs["env"] = env
         started_at = time.time()
         try:
             process = self._sandbox.exec(*argv, **kwargs)

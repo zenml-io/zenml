@@ -285,36 +285,14 @@ class TestModalSandboxSession:
         _make_session(fake_sandbox).exec("python -c 'print(1)'")
         fake_sandbox.exec.assert_called_once_with("python", "-c", "print(1)")
 
-    def test_exec_passes_env_kwarg_when_supported(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        # Modal >=1.x exposes exec(env=...); forward env vars directly.
-        from zenml.integrations.modal.sandboxes import modal_sandbox
-
-        monkeypatch.setattr(
-            modal_sandbox, "_modal_exec_supports_env", lambda: True
-        )
+    def test_exec_passes_env(self) -> None:
+        # Per-exec env vars are forwarded directly via Sandbox.exec(env=...).
+        # The integration requires modal>=1.2, where exec/create accept env=.
         fake_sandbox = MagicMock(object_id="sb_xyz")
         fake_sandbox.exec.return_value = MagicMock()
         _make_session(fake_sandbox).exec(["echo", "hi"], env={"FOO": "bar"})
         fake_sandbox.exec.assert_called_once_with(
             "echo", "hi", env={"FOO": "bar"}
-        )
-
-    def test_exec_inlines_env_when_unsupported(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        # Older modal (e.g. 1.0.0) lacks exec(env=...); inline via `env`.
-        from zenml.integrations.modal.sandboxes import modal_sandbox
-
-        monkeypatch.setattr(
-            modal_sandbox, "_modal_exec_supports_env", lambda: False
-        )
-        fake_sandbox = MagicMock(object_id="sb_xyz")
-        fake_sandbox.exec.return_value = MagicMock()
-        _make_session(fake_sandbox).exec(["echo", "hi"], env={"FOO": "bar"})
-        fake_sandbox.exec.assert_called_once_with(
-            "env", "FOO=bar", "echo", "hi"
         )
 
     def test_exec_launch_failure_raises_sandbox_exec_error(self) -> None:
