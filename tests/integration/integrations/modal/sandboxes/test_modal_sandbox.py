@@ -287,7 +287,8 @@ class TestModalSandboxSession:
 
     def test_exec_passes_env(self) -> None:
         # Per-exec env vars are forwarded directly via Sandbox.exec(env=...).
-        # The integration requires modal>=1.2, where exec/create accept env=.
+        # The integration requires modal>=1.4 (exec/create env=, plus the
+        # filesystem accessor and get_dashboard_url the sandbox relies on).
         fake_sandbox = MagicMock(object_id="sb_xyz")
         fake_sandbox.exec.return_value = MagicMock()
         _make_session(fake_sandbox).exec(["echo", "hi"], env={"FOO": "bar"})
