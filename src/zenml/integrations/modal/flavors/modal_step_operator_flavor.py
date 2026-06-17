@@ -39,14 +39,6 @@ class ModalStepOperatorSettings(BaseSettings):
     pipeline execution failures. In the case of failures, however, Modal
     provides detailed error messages that can help identify what is
     incompatible. See more in the Modal docs at https://modal.com/docs/guide/region-selection.
-
-    Attributes:
-        gpu: The type of GPU to use for the step execution (e.g., "T4", "A100").
-            Use ResourceSettings.gpu_count to specify the number of GPUs.
-        region: The region to use for the step execution.
-        cloud: The cloud provider to use for the step execution.
-        modal_environment: The Modal environment to use for app lookup.
-        timeout: Maximum execution time in seconds (default 24h).
     """
 
     gpu: Optional[str] = Field(
