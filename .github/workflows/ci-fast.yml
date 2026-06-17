@@ -3,44 +3,6 @@
 # to develop.
 #
 #
-# (1) Linting leaves the PR tier — py3.13 full lint runs in ci-medium; ci-fast
-#     gets the cheap consolidated static-checks job (spellcheck + ruff +
-#     pydoclint) that completes in under two minutes.
-#
-# (2) docker-server-docker-orchestrator-mysql integration moved to ci-medium
-#     (merge-queue tier) — too slow for every PR.
-#
-# (3) mysql/mariadb random migration testing moved to ci-medium; PRs keep
-#     sqlite-random only.
-#
-# (4) update-templates-to-examples is KEPT in ci-fast (not retired).
-#     Its jobs are internally guarded `if: github.event_name == 'pull_request'`
-#     and push sync commits onto the PR head branch, so a push-to-develop
-#     re-home would silently no-op and pushing sync commits straight to develop
-#     would bypass review.  Kept out of the required rollup (legitimately skips
-#     on fork PRs and drafts).
-#
-# (5) ci-fast triggers on merge_group AND pull_request so the ci-fast-required
-#     rollup can report status on merge_group commits (required checks must
-#     report on every context they guard).  The resulting duplicate execution
-#     of the test lanes (PR + queue) is a known, accepted cost.
-#
-# (6) paths-ignore removed.  Required rollup jobs must always report a status,
-#     even for docs-only PRs.  The wall-clock cost is acceptable given that
-#     lint and docker-orchestrator integration have left the PR tier.
-#
-# (7) push trigger now targets `develop` (not `main`).
-#
-# (8) Ops change set: enable the merge queue in repo settings; required checks
-#     = ci-fast-required on PRs + ci-medium-required in the merge queue.
-#
-# (9) generate-test-duration.yml / .test_durations keep feeding pytest-split
-#     sharding for the runner lanes in this tier; this timing data must not be
-#     silently removed.
-#
-# (10) No coverage upload to codecov in this tier.  Runner lanes run plain
-#      pytest without `coverage run`; documenting here so it is not silently
-#      lost.
 name: ci-fast
 on:
   workflow_dispatch:
