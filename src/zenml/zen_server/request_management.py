@@ -595,18 +595,27 @@ class RequestManager:
                     )
                 )
 
-        # Wait for the request to complete; timeout if deduplication is enabled
+        # Wait for the request to complete. Only deduplicated requests are
+        # allowed to keep running after the client receives a timeout
+        # response because retries are tied to the same API transaction.
+        # Non-deduplicated requests keep the connection and operation
+        # lifetime aligned to avoid hidden duplicate mutations on retry.
         try:
-            # We take into account the time that has already elapsed since the
-            # request was received to avoid keeping the request for too long.
-            timeout = max(
-                0, self.request_timeout - request_context.process_time
-            )
+            timeout: Optional[float] = None
+            if deduplicate:
+                # We take into account the time that has already elapsed
+                # since the request was received to avoid keeping the
+                # request for too long.
+                timeout = max(
+                    0, self.request_timeout - request_context.process_time
+                )
             result = await asyncio.wait_for(
                 # We use asyncio.shield to prevent the request from being
-                # cancelled when the timeout is reached.
+                # cancelled when the timeout is reached. With timeout=None,
+                # wait_for simply waits for non-deduplicated requests to
+                # complete.
                 asyncio.shield(fut),
-                timeout=timeout if deduplicate else None,
+                timeout=timeout,
             )
 
             logger.debug(

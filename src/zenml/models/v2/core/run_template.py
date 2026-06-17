@@ -22,7 +22,6 @@ from typing import (
     Optional,
     Type,
     TypeVar,
-    Union,
 )
 from uuid import UUID
 
@@ -32,6 +31,10 @@ from zenml.config.pipeline_spec import PipelineSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import (
+    StringFilterOption,
+    UUIDFilterOption,
+)
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -351,8 +354,13 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
+        *TaggableFilter.API_SINGLE_INPUT_PARAMS,
+        "hidden",
+    ]
 
-    name: Optional[str] = Field(
+    name: StringFilterOption = Field(
         default=None,
         description="Name of the run template.",
     )
@@ -360,31 +368,31 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
         default=None,
         description="Whether the run template is hidden.",
     )
-    pipeline_id: Optional[Union[UUID, str]] = Field(
+    pipeline_id: UUIDFilterOption = Field(
         default=None,
         description="Pipeline associated with the template.",
         union_mode="left_to_right",
     )
-    build_id: Optional[Union[UUID, str]] = Field(
+    build_id: UUIDFilterOption = Field(
         default=None,
         description="Build associated with the template.",
         union_mode="left_to_right",
     )
-    stack_id: Optional[Union[UUID, str]] = Field(
+    stack_id: UUIDFilterOption = Field(
         default=None,
         description="Stack associated with the template.",
         union_mode="left_to_right",
     )
-    code_repository_id: Optional[Union[UUID, str]] = Field(
+    code_repository_id: UUIDFilterOption = Field(
         default=None,
         description="Code repository associated with the template.",
         union_mode="left_to_right",
     )
-    pipeline: Optional[Union[UUID, str]] = Field(
+    pipeline: UUIDFilterOption = Field(
         default=None,
         description="Name/ID of the pipeline associated with the template.",
     )
-    stack: Optional[Union[UUID, str]] = Field(
+    stack: UUIDFilterOption = Field(
         default=None,
         description="Name/ID of the stack associated with the template.",
     )
@@ -418,62 +426,118 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
             )
 
         if self.code_repository_id:
-            code_repo_filter = and_(
-                RunTemplateSchema.source_snapshot_id
-                == PipelineSnapshotSchema.id,
-                PipelineSnapshotSchema.code_reference_id
-                == CodeReferenceSchema.id,
-                CodeReferenceSchema.code_repository_id
-                == self.code_repository_id,
+            code_repo_filters = (
+                self.code_repository_id
+                if isinstance(self.code_repository_id, list)
+                else [self.code_repository_id]
             )
-            custom_filters.append(code_repo_filter)
+            for code_repo_filter in code_repo_filters:
+                custom_filters.append(
+                    and_(
+                        RunTemplateSchema.source_snapshot_id
+                        == PipelineSnapshotSchema.id,
+                        PipelineSnapshotSchema.code_reference_id
+                        == CodeReferenceSchema.id,
+                        self.generate_custom_query_conditions_for_column(
+                            value=code_repo_filter,
+                            table=CodeReferenceSchema,
+                            column="code_repository_id",
+                        ),
+                    )
+                )
 
         if self.stack_id:
-            stack_filter = and_(
-                RunTemplateSchema.source_snapshot_id
-                == PipelineSnapshotSchema.id,
-                PipelineSnapshotSchema.stack_id == self.stack_id,
+            stack_filters = (
+                self.stack_id
+                if isinstance(self.stack_id, list)
+                else [self.stack_id]
             )
-            custom_filters.append(stack_filter)
+            for stack_filter in stack_filters:
+                custom_filters.append(
+                    and_(
+                        RunTemplateSchema.source_snapshot_id
+                        == PipelineSnapshotSchema.id,
+                        self.generate_custom_query_conditions_for_column(
+                            value=stack_filter,
+                            table=PipelineSnapshotSchema,
+                            column="stack_id",
+                        ),
+                    )
+                )
 
         if self.build_id:
-            build_filter = and_(
-                RunTemplateSchema.source_snapshot_id
-                == PipelineSnapshotSchema.id,
-                PipelineSnapshotSchema.build_id == self.build_id,
+            build_filters = (
+                self.build_id
+                if isinstance(self.build_id, list)
+                else [self.build_id]
             )
-            custom_filters.append(build_filter)
+            for build_filter in build_filters:
+                custom_filters.append(
+                    and_(
+                        RunTemplateSchema.source_snapshot_id
+                        == PipelineSnapshotSchema.id,
+                        self.generate_custom_query_conditions_for_column(
+                            value=build_filter,
+                            table=PipelineSnapshotSchema,
+                            column="build_id",
+                        ),
+                    )
+                )
 
         if self.pipeline_id:
-            pipeline_filter = and_(
-                RunTemplateSchema.source_snapshot_id
-                == PipelineSnapshotSchema.id,
-                PipelineSnapshotSchema.pipeline_id == self.pipeline_id,
+            pipeline_filters = (
+                self.pipeline_id
+                if isinstance(self.pipeline_id, list)
+                else [self.pipeline_id]
             )
-            custom_filters.append(pipeline_filter)
+            for pipeline_filter in pipeline_filters:
+                custom_filters.append(
+                    and_(
+                        RunTemplateSchema.source_snapshot_id
+                        == PipelineSnapshotSchema.id,
+                        self.generate_custom_query_conditions_for_column(
+                            value=pipeline_filter,
+                            table=PipelineSnapshotSchema,
+                            column="pipeline_id",
+                        ),
+                    ),
+                )
 
         if self.pipeline:
-            pipeline_filter = and_(
-                RunTemplateSchema.source_snapshot_id
-                == PipelineSnapshotSchema.id,
-                PipelineSnapshotSchema.pipeline_id == PipelineSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.pipeline,
-                    table=PipelineSchema,
-                ),
+            pipeline_filters = (
+                self.pipeline
+                if isinstance(self.pipeline, list)
+                else [self.pipeline]
             )
-            custom_filters.append(pipeline_filter)
+            for pipeline_filter in pipeline_filters:
+                custom_filters.append(
+                    and_(
+                        RunTemplateSchema.source_snapshot_id
+                        == PipelineSnapshotSchema.id,
+                        PipelineSnapshotSchema.pipeline_id
+                        == PipelineSchema.id,
+                        self.generate_name_or_id_query_conditions(
+                            value=pipeline_filter,
+                            table=PipelineSchema,
+                        ),
+                    )
+                )
 
         if self.stack:
-            stack_filter = and_(
-                RunTemplateSchema.source_snapshot_id
-                == PipelineSnapshotSchema.id,
-                PipelineSnapshotSchema.stack_id == StackSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.stack,
-                    table=StackSchema,
-                ),
+            stack_filters = (
+                self.stack if isinstance(self.stack, list) else [self.stack]
             )
-            custom_filters.append(stack_filter)
+            for stack_filter in stack_filters:
+                custom_filters.append(
+                    and_(
+                        RunTemplateSchema.source_snapshot_id
+                        == PipelineSnapshotSchema.id,
+                        PipelineSnapshotSchema.stack_id == StackSchema.id,
+                        self.generate_name_or_id_query_conditions(
+                            value=stack_filter,
+                            table=StackSchema,
+                        ),
+                    )
+                )
 
         return custom_filters

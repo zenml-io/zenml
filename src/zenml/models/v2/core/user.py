@@ -38,7 +38,12 @@ from zenml.models.v2.base.base import (
     BaseResponseResources,
     BaseUpdate,
 )
-from zenml.models.v2.base.filter import AnyQuery, BaseFilter
+from zenml.models.v2.base.filter import (
+    AnyQuery,
+    BaseFilter,
+    StringFilterOption,
+    UUIDFilterOption,
+)
 
 if TYPE_CHECKING:
     from passlib.context import CryptContext
@@ -472,15 +477,21 @@ class UserResponse(
 class UserFilter(BaseFilter):
     """Model to enable advanced filtering of all Users."""
 
-    name: Optional[str] = Field(
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *BaseFilter.API_SINGLE_INPUT_PARAMS,
+        "active",
+        "email_opted_in",
+    ]
+
+    name: StringFilterOption = Field(
         default=None,
         description="Name of the user",
     )
-    full_name: Optional[str] = Field(
+    full_name: StringFilterOption = Field(
         default=None,
         description="Full Name of the user",
     )
-    email: Optional[str] = Field(
+    email: StringFilterOption = Field(
         default=None,
         description="Email of the user",
     )
@@ -494,7 +505,7 @@ class UserFilter(BaseFilter):
         description="Whether the user has opted in to emails",
         union_mode="left_to_right",
     )
-    external_user_id: Optional[Union[UUID, str]] = Field(
+    external_user_id: UUIDFilterOption = Field(
         default=None,
         title="The external user ID associated with the account.",
         union_mode="left_to_right",

@@ -21,13 +21,16 @@ from typing import (
     Optional,
     Type,
     TypeVar,
-    Union,
 )
 from uuid import UUID
 
 from pydantic import Field, PositiveInt, model_validator
 
 from zenml.enums import ResourceRequestStatus
+from zenml.models.v2.base.filter import (
+    EnumFilterOption,
+    UUIDFilterOption,
+)
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
     UserScopedRequest,
@@ -228,28 +231,33 @@ class ResourceRequestFilter(UserScopedFilter):
         *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "pipeline_run_id",
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *UserScopedFilter.API_SINGLE_INPUT_PARAMS,
+        "preemptible",
+    ]
 
     preemptible: Optional[bool] = Field(
         default=None,
         description="Whether the resource request is preemptible.",
     )
-    component_id: Union[UUID, str, None] = Field(
+    component_id: UUIDFilterOption = Field(
         default=None,
         description="The id of the component that is requesting the resources.",
     )
-    step_run_id: Union[UUID, str, None] = Field(
+    step_run_id: UUIDFilterOption = Field(
         default=None,
         description="The id of the step run that is requesting the resources.",
     )
-    preemption_initiated_by_id: Union[UUID, str, None] = Field(
+    preemption_initiated_by_id: UUIDFilterOption = Field(
         default=None,
         description="The id of the request that initiated the preemption of this request.",
     )
-    status: Union[ResourceRequestStatus, str, None] = Field(
+    status: EnumFilterOption[ResourceRequestStatus] = Field(
         default=None,
         description="The status of the resource request.",
+        union_mode="left_to_right",
     )
-    pipeline_run_id: Union[UUID, str, None] = Field(
+    pipeline_run_id: UUIDFilterOption = Field(
         default=None,
         description="The id of the pipeline run that is requesting the resources.",
     )
@@ -276,10 +284,21 @@ class ResourceRequestFilter(UserScopedFilter):
         )
 
         if self.pipeline_run_id:
-            pipeline_run_filter = and_(
-                ResourceRequestSchema.step_run_id == StepRunSchema.id,
-                StepRunSchema.pipeline_run_id == self.pipeline_run_id,
+            pipeline_run_filters = (
+                self.pipeline_run_id
+                if isinstance(self.pipeline_run_id, list)
+                else [self.pipeline_run_id]
             )
-            custom_filters.append(pipeline_run_filter)
+            for pipeline_run_filter in pipeline_run_filters:
+                custom_filters.append(
+                    and_(
+                        ResourceRequestSchema.step_run_id == StepRunSchema.id,
+                        self.generate_custom_query_conditions_for_column(
+                            value=pipeline_run_filter,
+                            table=StepRunSchema,
+                            column="pipeline_run_id",
+                        ),
+                    )
+                )
 
         return custom_filters

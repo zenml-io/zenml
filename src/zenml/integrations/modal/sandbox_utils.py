@@ -14,9 +14,8 @@
 """Shared Modal Sandbox helpers."""
 
 import math
-from dataclasses import dataclass
-from threading import Lock
-from typing import Any, Callable, Dict, List, Optional, Protocol, Tuple
+import time
+from typing import Any, Dict, List, Optional, Protocol, Tuple
 
 import modal
 
@@ -29,24 +28,25 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY = f"{ENV_ZENML_STORE_PREFIX}API_TOKEN"
-SENSITIVE_ZENML_RUNTIME_ENV_KEYS = {SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY}
+
+# Environment variable names that Modal's SDK reads as ambient authentication.
+# Injecting these into a sandbox lets code running inside it call the Modal API
+# without a stored ZenML component token or a `~/.modal.toml` config file.
+MODAL_TOKEN_ID_ENV_KEY = "MODAL_TOKEN_ID"
+MODAL_TOKEN_SECRET_ENV_KEY = "MODAL_TOKEN_SECRET"
+
+SENSITIVE_ZENML_RUNTIME_ENV_KEYS = {
+    SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY,
+    MODAL_TOKEN_ID_ENV_KEY,
+    MODAL_TOKEN_SECRET_ENV_KEY,
+}
 
 
-@dataclass(frozen=True)
-class GpuValidationMessage:
-    """Human-readable context for Modal GPU validation errors."""
-
-    settings_field: str
-    settings_example: str
-
-
-DEFAULT_GPU_VALIDATION_MESSAGE = GpuValidationMessage(
-    settings_field="ModalStepOperatorSettings.gpu",
-    settings_example=(
-        "For example with @step(settings={'step_operator': "
-        "ModalStepOperatorSettings(gpu='<TYPE>'), 'resources': "
-        "ResourceSettings(gpu_count=1)}), or set gpu_count=0 to run on CPU."
-    ),
+DEFAULT_GPU_SETTINGS_FIELD = "ModalStepOperatorSettings.gpu"
+DEFAULT_GPU_SETTINGS_EXAMPLE = (
+    "For example with @step(settings={'step_operator': "
+    "ModalStepOperatorSettings(gpu='<TYPE>'), 'resources': "
+    "ResourceSettings(gpu_count=1)}), or set gpu_count=0 to run on CPU."
 )
 
 
@@ -99,61 +99,82 @@ def split_modal_runtime_environment(
     return sandbox_environment, sensitive_environment
 
 
-class ModalClientFactory:
-    """Create and cache explicit Modal clients from lazy token providers."""
+def create_modal_client_from_credentials(
+    *,
+    token_id: Optional[str],
+    token_secret: Optional[str],
+) -> Optional["modal.Client"]:
+    """Create an explicit Modal client from component credentials.
 
-    def __init__(
-        self,
-        *,
-        get_token_id: Callable[[], Optional[str]],
-        get_token_secret: Callable[[], Optional[str]],
-    ) -> None:
-        """Initialize the factory without reading token values."""
-        self._get_token_id = get_token_id
-        self._get_token_secret = get_token_secret
-        self._cached_client: Optional["modal.Client"] = None
-        self._lock = Lock()
+    If no component credentials are configured, this returns ``None`` so the
+    Modal SDK can use its ambient authentication configuration. If only one
+    credential value is configured, the component configuration is invalid.
+    """
+    normalized_token_id = normalize_optional_config_value(token_id)
+    normalized_token_secret = normalize_optional_config_value(token_secret)
 
-    def get_client(self) -> Optional["modal.Client"]:
-        """Get an explicit Modal client when credentials are configured.
+    if bool(normalized_token_id) != bool(normalized_token_secret):
+        raise StackComponentInterfaceError(
+            "Modal token_id and token_secret must be configured together."
+        )
 
-        If no credentials are configured, this returns ``None`` so the Modal SDK
-        can use its ambient authentication configuration. If credentials are
-        configured, the created SDK client is cached until it is closed.
-        """
-        if (
-            self._cached_client is not None
-            and not self._cached_client.is_closed()
-        ):
-            return self._cached_client
+    if not normalized_token_id or not normalized_token_secret:
+        return None
 
-        with self._lock:
-            if (
-                self._cached_client is not None
-                and not self._cached_client.is_closed()
-            ):
-                return self._cached_client
+    return modal.Client.from_credentials(
+        normalized_token_id,
+        normalized_token_secret,
+    )
 
-            normalized_token_id = normalize_optional_config_value(
-                self._get_token_id()
+
+def resolve_modal_token_pair(
+    *,
+    token_id: Optional[str],
+    token_secret: Optional[str],
+) -> Optional[Tuple[str, str]]:
+    """Resolve the Modal token pair to forward into a sandbox.
+
+    The explicitly configured component token is preferred. When it is absent,
+    this falls back to Modal's ambient authentication config (``~/.modal.toml``
+    or the ``MODAL_TOKEN_ID`` / ``MODAL_TOKEN_SECRET`` environment variables),
+    the same source Modal's SDK uses when no explicit client is created.
+
+    Args:
+        token_id: Explicitly configured Modal token ID, if any.
+        token_secret: Explicitly configured Modal token secret, if any.
+
+    Returns:
+        The resolved ``(token_id, token_secret)`` pair, or ``None`` when no
+        credentials can be resolved from either source.
+    """
+    resolved_id = normalize_optional_config_value(token_id)
+    resolved_secret = normalize_optional_config_value(token_secret)
+
+    if not resolved_id or not resolved_secret:
+        from modal.config import config as modal_config
+
+        ambient_id: Optional[str] = None
+        ambient_secret: Optional[str] = None
+        try:
+            ambient_id = modal_config.get("token_id")  # type: ignore[no-untyped-call, unused-ignore]
+            ambient_secret = modal_config.get("token_secret")  # type: ignore[no-untyped-call, unused-ignore]
+        except Exception:
+            logger.debug(
+                "Failed to read ambient Modal token configuration.",
+                exc_info=True,
             )
-            normalized_token_secret = normalize_optional_config_value(
-                self._get_token_secret()
-            )
 
-            if bool(normalized_token_id) != bool(normalized_token_secret):
-                raise StackComponentInterfaceError(
-                    "Modal token_id and token_secret must be configured "
-                    "together."
-                )
+        resolved_id = resolved_id or normalize_optional_config_value(
+            ambient_id
+        )
+        resolved_secret = resolved_secret or normalize_optional_config_value(
+            ambient_secret
+        )
 
-            if not normalized_token_id or not normalized_token_secret:
-                return None
+    if not resolved_id or not resolved_secret:
+        return None
 
-            self._cached_client = modal.Client.from_credentials(
-                normalized_token_id, normalized_token_secret
-            )
-            return self._cached_client
+    return resolved_id, resolved_secret
 
 
 def get_modal_image_from_registry(
@@ -193,7 +214,8 @@ def get_gpu_values(
     settings: ModalSandboxSettings,
     resource_settings: ResourceSettings,
     *,
-    gpu_validation_message: GpuValidationMessage = DEFAULT_GPU_VALIDATION_MESSAGE,
+    gpu_settings_field: str = DEFAULT_GPU_SETTINGS_FIELD,
+    gpu_settings_example: str = DEFAULT_GPU_SETTINGS_EXAMPLE,
 ) -> Optional[str]:
     """Compute and validate the Modal ``gpu`` argument string.
 
@@ -207,7 +229,8 @@ def get_gpu_values(
     Args:
         settings: Modal component settings describing the GPU type.
         resource_settings: Resource constraints providing the GPU count.
-        gpu_validation_message: Human-readable context for error messages.
+        gpu_settings_field: Settings field name to mention in GPU errors.
+        gpu_settings_example: Example configuration to mention in GPU errors.
 
     Returns:
         A Modal-compatible GPU specification string or ``None`` when running on
@@ -226,8 +249,8 @@ def get_gpu_values(
                 "GPU resources requested (gpu_count > 0) but no GPU type was "
                 "specified in Modal settings. Please set a GPU type (e.g., "
                 f"'T4', 'A100') via "
-                f"{gpu_validation_message.settings_field}. "
-                f"{gpu_validation_message.settings_example}"
+                f"{gpu_settings_field}. "
+                f"{gpu_settings_example}"
             )
         return None
 
@@ -242,10 +265,7 @@ def get_gpu_values(
     if gpu_count is None:
         return gpu_type
 
-    if gpu_count > 0:
-        return f"{gpu_type}:{gpu_count}"
-
-    return None
+    return f"{gpu_type}:{gpu_count}"
 
 
 def get_memory_mb(resource_settings: ResourceSettings) -> Optional[int]:
@@ -272,7 +292,8 @@ def build_sandbox_create_kwargs(
     resource_settings: ResourceSettings,
     environment: Dict[str, str],
     modal_client: Optional["modal.Client"],
-    gpu_validation_message: GpuValidationMessage = DEFAULT_GPU_VALIDATION_MESSAGE,
+    gpu_settings_field: str = DEFAULT_GPU_SETTINGS_FIELD,
+    gpu_settings_example: str = DEFAULT_GPU_SETTINGS_EXAMPLE,
 ) -> Dict[str, Any]:
     """Build keyword arguments for ``modal.Sandbox.create``."""
     sandbox_environment, sensitive_environment = (
@@ -286,7 +307,8 @@ def build_sandbox_create_kwargs(
         "gpu": get_gpu_values(
             settings,
             resource_settings,
-            gpu_validation_message=gpu_validation_message,
+            gpu_settings_field=gpu_settings_field,
+            gpu_settings_example=gpu_settings_example,
         ),
         "cpu": resource_settings.cpu_count,
         "memory": get_memory_mb(resource_settings),
@@ -311,7 +333,8 @@ def create_modal_sandbox(
     resource_settings: ResourceSettings,
     environment: Dict[str, str],
     modal_client: Optional["modal.Client"],
-    gpu_validation_message: GpuValidationMessage = DEFAULT_GPU_VALIDATION_MESSAGE,
+    gpu_settings_field: str = DEFAULT_GPU_SETTINGS_FIELD,
+    gpu_settings_example: str = DEFAULT_GPU_SETTINGS_EXAMPLE,
 ) -> "modal.Sandbox":
     """Create a Modal sandbox for a ZenML entrypoint command."""
     sandbox_create_kwargs = build_sandbox_create_kwargs(
@@ -321,9 +344,21 @@ def create_modal_sandbox(
         resource_settings=resource_settings,
         environment=environment,
         modal_client=modal_client,
-        gpu_validation_message=gpu_validation_message,
+        gpu_settings_field=gpu_settings_field,
+        gpu_settings_example=gpu_settings_example,
     )
     return modal.Sandbox.create(*entrypoint_command, **sandbox_create_kwargs)
+
+
+def wait_for_sandbox(
+    sandbox: "modal.Sandbox", poll_interval: float = 1.0
+) -> int:
+    """Wait for a Modal sandbox by polling its return code."""
+    while True:
+        return_code = sandbox.poll()
+        if return_code is not None:
+            return return_code
+        time.sleep(poll_interval)
 
 
 def sandbox_status_from_return_code(

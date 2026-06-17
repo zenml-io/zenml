@@ -55,7 +55,7 @@ def test_build_shell_command_passes_string_commands_through() -> None:
 
 def test_build_shell_command_cwd_uses_brace_group() -> None:
     """Test that the cwd guard wraps the whole command in a brace group."""
-    assert _build_script("ls", cwd="/tmp") == "cd /tmp && { ls\n}"
+    assert _build_script("ls", cwd="/work") == "cd /work && { ls\n}"
 
 
 def test_build_shell_command_cwd_guard_covers_raw_separators() -> None:
@@ -66,8 +66,8 @@ def test_build_shell_command_cwd_guard_covers_raw_separators() -> None:
 def test_build_shell_command_cwd_guard_survives_trailing_comment() -> None:
     """Test that a trailing comment does not swallow the group close."""
     assert (
-        _build_script("ls # comment", cwd="/tmp")
-        == "cd /tmp && { ls # comment\n}"
+        _build_script("ls # comment", cwd="/work")
+        == "cd /work && { ls # comment\n}"
     )
 
 
@@ -82,8 +82,8 @@ def test_build_shell_command_prefixes_env_exports() -> None:
 def test_build_shell_command_env_inside_cwd_guard() -> None:
     """Test that env exports are placed inside the cwd guard."""
     assert (
-        _build_script("env", cwd="/tmp", env={"FOO": "bar baz"})
-        == "cd /tmp && { export FOO='bar baz'; env\n}"
+        _build_script("env", cwd="/work", env={"FOO": "bar baz"})
+        == "cd /work && { export FOO='bar baz'; env\n}"
     )
 
 

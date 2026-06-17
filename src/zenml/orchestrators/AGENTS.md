@@ -202,7 +202,7 @@ When implementing a new orchestrator:
 - [ ] Handle resource settings from step configurations appropriately (CPU, memory, GPU, etc.)
 - [ ] Return `SubmissionResult` with `wait_for_completion` for synchronous execution
 - [ ] Use `self.get_image(deployment, step_name)` to get the Docker image for each step
-- [ ] Use `StepEntrypointConfiguration.get_entrypoint_command/arguments()` for container commands
+- [ ] Use `orchestrator_utils.get_step_entrypoint_command(...)` for step container commands, so command steps can override the default ZenML step entrypoint
 
 ## Common Pitfalls
 
