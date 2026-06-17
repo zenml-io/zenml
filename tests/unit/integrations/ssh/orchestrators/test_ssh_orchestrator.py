@@ -492,3 +492,35 @@ class TestIsolatedStepSubprocess:
         with patch(f"{_MODULE}.os.killpg") as killpg:
             orch.stop_isolated_step(step_run)
         killpg.assert_not_called()
+
+
+class TestCronValidation:
+    def test_valid_expressions_accepted(self) -> None:
+        from zenml.integrations.ssh.orchestrators.ssh_orchestrator import (
+            _is_valid_cron_expression,
+        )
+
+        for expr in (
+            "0 0 * * *",
+            "*/15 * * * *",
+            "0 9-17 * * 1-5",
+            "0 0 1,15 * *",
+            "0 0 * * 7",
+        ):
+            assert _is_valid_cron_expression(expr), expr
+
+    def test_out_of_range_fields_rejected(self) -> None:
+        from zenml.integrations.ssh.orchestrators.ssh_orchestrator import (
+            _is_valid_cron_expression,
+        )
+
+        # minute 60, hour 25, weekday 8, day 32/month 13, wrong field count
+        for expr in (
+            "60 * * * *",
+            "0 25 * * *",
+            "* * * * 8",
+            "0 0 32 13 *",
+            "* * *",
+            "nonsense",
+        ):
+            assert not _is_valid_cron_expression(expr), expr

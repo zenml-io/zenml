@@ -97,6 +97,61 @@ _NVIDIA_GPU_DEPLOY = {
 # inject extra Compose/shell tokens.
 _MOUNT_PATH_PATTERN = re.compile(r"^(/[^:\n]*|[A-Za-z]:\\[^:\n]*)$")
 
+# Per-field value ranges for a standard 5-field cron expression:
+# minute, hour, day-of-month, month, day-of-week (0 and 7 are both Sunday).
+_CRON_FIELD_RANGES = ((0, 59), (0, 23), (1, 31), (1, 12), (0, 7))
+
+
+def _is_valid_cron_field(field: str, low: int, high: int) -> bool:
+    """Validate one cron field against its allowed value range.
+
+    Supports ``*``, ``*/step``, single values, ``a-b`` ranges, ``a-b/step``,
+    and comma-separated combinations of those.
+
+    Args:
+        field: The cron field to validate.
+        low: The minimum allowed value for this field.
+        high: The maximum allowed value for this field.
+
+    Returns:
+        True if every component of the field is within range.
+    """
+    for part in field.split(","):
+        if "/" in part:
+            part, _, step = part.partition("/")
+            if not step.isdigit() or int(step) < 1:
+                return False
+        if part == "*":
+            continue
+        if "-" in part:
+            start, _, end = part.partition("-")
+            if not (start.isdigit() and end.isdigit()):
+                return False
+            start_i, end_i = int(start), int(end)
+            if not (low <= start_i <= end_i <= high):
+                return False
+        elif not (part.isdigit() and low <= int(part) <= high):
+            return False
+    return True
+
+
+def _is_valid_cron_expression(expression: str) -> bool:
+    """Validate a standard 5-field cron expression with per-field ranges.
+
+    Args:
+        expression: The cron expression to validate.
+
+    Returns:
+        True if the expression has 5 fields, each within its allowed range.
+    """
+    fields = expression.split()
+    if len(fields) != 5:
+        return False
+    return all(
+        _is_valid_cron_field(field, low, high)
+        for field, (low, high) in zip(fields, _CRON_FIELD_RANGES)
+    )
+
 
 class SSHOrchestrator(ContainerizedOrchestrator):
     """Orchestrator that runs pipelines on a remote host via SSH + Docker."""
@@ -358,17 +413,27 @@ class SSHOrchestrator(ContainerizedOrchestrator):
                     )
             elif schedule.cron_expression:
                 cron_expression = schedule.cron_expression
-                expected_cron_pattern = r"^(?:(?:[0-9]|[1-5][0-9]|60)(?:,(?:[0-9]|[1-5][0-9]|60))*|[*](?:/[1-9][0-9]*)?)(?:[ \t]+(?:(?:[0-9]|[0-5][0-9]|60)(?:,(?:[0-9]|[0-5][0-9]|60))*|[*](?:/[1-9][0-9]*)?)){4}$"
-                if not re.match(expected_cron_pattern, cron_expression):
+                if not _is_valid_cron_expression(cron_expression):
                     raise RuntimeError(
                         f"The cron expression {cron_expression!r} is not in "
-                        "a valid format."
+                        "a valid 5-field format (minute 0-59, hour 0-23, "
+                        "day-of-month 1-31, month 1-12, day-of-week 0-7)."
+                    )
+                crontab_check = ssh.exec("which crontab")
+                if crontab_check.exit_code != 0:
+                    raise RuntimeError(
+                        "The `crontab` command is not installed on the remote "
+                        f"SSH host {self.config.hostname}. Install it (e.g. the "
+                        "`cron`/`cronie` package) to use cron schedules."
                     )
                 cron_job = (
                     f"{cron_expression} bash {remote_dir}/run_pipeline.sh"
                 )
+                # 2>/dev/null so a host with no existing crontab (where
+                # `crontab -l` errors) doesn't feed its banner into `crontab -`.
                 cron = ssh.exec(
-                    f"(crontab -l ; echo {shlex.quote(cron_job)}) | crontab -"
+                    f"(crontab -l 2>/dev/null ; echo {shlex.quote(cron_job)}) "
+                    "| crontab -"
                 )
                 if cron.exit_code != 0:
                     raise RuntimeError(
@@ -482,6 +547,10 @@ class SSHOrchestrator(ContainerizedOrchestrator):
                     f"`docker run` failed on {self.config.hostname}: "
                     f"{run.stderr or run.stdout}"
                 )
+            # docker has read the --env-file at container start, so remove it
+            # immediately: it carries the ZenML store API token and must not
+            # be left on the remote host.
+            ssh.exec(f"rm -f {shlex.quote(env_file)}")
         logger.info(
             "Submitted dynamic pipeline to %s (container: %s).",
             self.config.hostname,
