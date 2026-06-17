@@ -63,6 +63,15 @@ jobs:
           uv venv --python 3.11 .venv-audit-target
           uv pip install --python .venv-audit-target/bin/python '.[server,dev,local]'
           uv pip check --python .venv-audit-target/bin/python
+      - name: Drop zenml itself from the audit target
+        run: |
+          # pip-audit looks up installed package versions in advisory databases;
+          # ZenML's own package cannot be meaningfully audited that way, and during
+          # release prep its version is intentionally ahead of PyPI, which makes
+          # pip-audit --strict abort before it can scan anything. Uninstalling
+          # zenml removes only its own dist-info and leaves every dependency
+          # installed, so the audit still covers the full dependency set.
+          uv pip uninstall --python .venv-audit-target/bin/python zenml
       - name: Audit installed dependencies with pip-audit
         id: pip-audit
         run: |
