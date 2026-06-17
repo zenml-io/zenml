@@ -130,6 +130,24 @@ class RunInterruptedException(ZenMLBaseException):
     """Raised when a ZenML step gets interrupted for an unknown reason."""
 
 
+class StepExecutionException(ZenMLBaseException):
+    """Raised when a step fails and its result was not explicitly awaited."""
+
+    def __init__(
+        self,
+        message: Optional[str] = None,
+        original_exception: Optional[BaseException] = None,
+    ):
+        """Initializes the exception.
+
+        Args:
+            message: Message with details of the exception.
+            original_exception: The original step failure that this wraps.
+        """
+        super().__init__(message)
+        self.original_exception = original_exception
+
+
 class MethodNotAllowedError(ZenMLBaseException):
     """Raised when the server does not allow a request method."""
 

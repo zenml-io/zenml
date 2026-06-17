@@ -83,6 +83,32 @@ These methods always return a [Page](https://sdkdocs.zenml.io/latest/core_code_d
 
 You can further restrict your search by passing additional arguments that will be used to filter the results. E.g., most resources have a `user_id` associated with them that can be set to only list resources created by that specific user. The available filter argument options are different for each list method; check out the method declaration in the [Client SDK documentation](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html) to find out which exact arguments are supported or have a look at the fields of the corresponding filter model class.
 
+**Advanced Filters**
+
+By default, filter arguments check for equality. For fields that support advanced filters, you can use the `operator:value` syntax:
+
+```python
+# String matching
+client.list_pipeline_runs(name="contains:daily")
+client.list_pipeline_runs(name="notcontains:debug")
+
+# Multiple values. The value after oneof/notoneof must be a JSON list.
+client.list_pipeline_runs(status='oneof:["completed", "failed"]')
+client.list_pipeline_runs(status='notoneof:["completed"]')
+
+# Empty values
+client.list_pipeline_runs(end_time="isnull:")
+client.list_pipeline_runs(end_time="isnotnull:")
+
+# Metadata values use the key:operator:value format
+client.list_pipeline_runs(run_metadata=["duration:gt:10"])
+
+# Multiple filters for the same field
+client.list_pipelines(tags=["contains:prod", "notcontains:deprecated"])
+```
+
+Common operators include `equals`, `notequals`, `contains`, `notcontains`, `startswith`, `endswith`, `oneof`, `notoneof`, `isnull`, and `isnotnull`. Numeric, datetime, and numeric metadata filters can also support comparison operators such as `gt`, `gte`, `lt`, and `lte`.
+
 Except for pipeline runs, all other resources will by default be ordered by creation time ascending. E.g., `client.list_artifacts()` would return the first 50 artifacts ever created. You can change the ordering by specifying the `sort_by` argument when calling list methods.
 
 **Get Methods**

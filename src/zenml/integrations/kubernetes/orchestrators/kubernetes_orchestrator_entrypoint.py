@@ -47,12 +47,6 @@ from zenml.integrations.kubernetes.manifest_utils import (
     build_pod_manifest,
     pod_template_manifest_from_pod,
 )
-from zenml.integrations.kubernetes.orchestrators.dag_runner import (
-    DagRunner,
-    InterruptMode,
-    Node,
-    NodeStatus,
-)
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (
     KubernetesOrchestrator,
 )
@@ -65,6 +59,12 @@ from zenml.models import (
     StepRunResponse,
 )
 from zenml.orchestrators import publish_utils
+from zenml.orchestrators.dag_runner import (
+    DagRunner,
+    InterruptMode,
+    Node,
+    NodeStatus,
+)
 from zenml.orchestrators.step_run_utils import (
     StepRunRequestFactory,
     fetch_step_runs_by_names,

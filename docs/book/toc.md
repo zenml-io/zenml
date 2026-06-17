@@ -47,6 +47,7 @@
   * [Advanced Features](how-to/steps-pipelines/advanced_features.md)
   * [Hooks](how-to/steps-pipelines/hooks.md)
   * [Dynamic Pipelines](how-to/steps-pipelines/dynamic_pipelines.md)
+  * [Command Steps](how-to/steps-pipelines/command_steps.md)
   * [Streaming Events](how-to/steps-pipelines/streaming_events.md)
 * [Artifacts](how-to/artifacts/artifacts.md)
   * [Materializers](how-to/artifacts/materializers.md)

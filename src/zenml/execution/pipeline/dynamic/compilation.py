@@ -35,6 +35,7 @@ from zenml.config.step_configurations import (
 )
 from zenml.enums import StepRuntime
 from zenml.execution.pipeline.dynamic.inputs import (
+    _await_input_future,
     await_step_inputs,
     convert_to_keyword_arguments,
 )
@@ -93,7 +94,7 @@ def compile_dynamic_step_invocation(
     upstream_steps = set()
 
     for future in collect_futures(after=after, expand_map_results=True):
-        future.wait()
+        _await_input_future(future, return_result=False)
         if isinstance(future, PipelineFuture):
             # A pipeline future means we're waiting for a child pipeline to
             # finish. No such step exists in our pipeline, so we can't track

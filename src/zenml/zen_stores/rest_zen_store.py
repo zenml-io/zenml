@@ -361,9 +361,8 @@ class RestZenStoreConfiguration(StoreConfiguration):
     http_timeout: int = DEFAULT_HTTP_TIMEOUT
     connection_pool_size: int = 10
 
-    @field_validator("url")
-    @classmethod
-    def validate_url(cls, url: str) -> str:
+    @staticmethod
+    def _validate_url(url: str) -> str:
         """Validates that the URL is a well-formed REST store URL.
 
         Args:
@@ -455,7 +454,8 @@ class RestZenStoreConfiguration(StoreConfiguration):
         if not url:
             return data
 
-        url = replace_localhost_with_internal_hostname(url)
+        url = cls._validate_url(url)
+        data["url"] = url
 
         if api_token := data.pop("api_token", None):
             credentials_store = get_credentials_store()

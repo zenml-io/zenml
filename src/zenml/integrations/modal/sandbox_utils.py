@@ -14,6 +14,7 @@
 """Shared Modal Sandbox helpers."""
 
 import math
+import time
 from typing import Any, Dict, List, Optional, Protocol, Tuple
 
 import modal
@@ -27,7 +28,18 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY = f"{ENV_ZENML_STORE_PREFIX}API_TOKEN"
-SENSITIVE_ZENML_RUNTIME_ENV_KEYS = {SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY}
+
+# Environment variable names that Modal's SDK reads as ambient authentication.
+# Injecting these into a sandbox lets code running inside it call the Modal API
+# without a stored ZenML component token or a `~/.modal.toml` config file.
+MODAL_TOKEN_ID_ENV_KEY = "MODAL_TOKEN_ID"
+MODAL_TOKEN_SECRET_ENV_KEY = "MODAL_TOKEN_SECRET"
+
+SENSITIVE_ZENML_RUNTIME_ENV_KEYS = {
+    SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY,
+    MODAL_TOKEN_ID_ENV_KEY,
+    MODAL_TOKEN_SECRET_ENV_KEY,
+}
 
 
 DEFAULT_GPU_SETTINGS_FIELD = "ModalStepOperatorSettings.gpu"
@@ -113,6 +125,56 @@ def create_modal_client_from_credentials(
         normalized_token_id,
         normalized_token_secret,
     )
+
+
+def resolve_modal_token_pair(
+    *,
+    token_id: Optional[str],
+    token_secret: Optional[str],
+) -> Optional[Tuple[str, str]]:
+    """Resolve the Modal token pair to forward into a sandbox.
+
+    The explicitly configured component token is preferred. When it is absent,
+    this falls back to Modal's ambient authentication config (``~/.modal.toml``
+    or the ``MODAL_TOKEN_ID`` / ``MODAL_TOKEN_SECRET`` environment variables),
+    the same source Modal's SDK uses when no explicit client is created.
+
+    Args:
+        token_id: Explicitly configured Modal token ID, if any.
+        token_secret: Explicitly configured Modal token secret, if any.
+
+    Returns:
+        The resolved ``(token_id, token_secret)`` pair, or ``None`` when no
+        credentials can be resolved from either source.
+    """
+    resolved_id = normalize_optional_config_value(token_id)
+    resolved_secret = normalize_optional_config_value(token_secret)
+
+    if not resolved_id or not resolved_secret:
+        from modal.config import config as modal_config
+
+        ambient_id: Optional[str] = None
+        ambient_secret: Optional[str] = None
+        try:
+            ambient_id = modal_config.get("token_id")  # type: ignore[no-untyped-call, unused-ignore]
+            ambient_secret = modal_config.get("token_secret")  # type: ignore[no-untyped-call, unused-ignore]
+        except Exception:
+            logger.debug(
+                "Failed to read ambient Modal token configuration.",
+                exc_info=True,
+            )
+
+        resolved_id = resolved_id or normalize_optional_config_value(
+            ambient_id
+        )
+        resolved_secret = resolved_secret or normalize_optional_config_value(
+            ambient_secret
+        )
+
+    if not resolved_id or not resolved_secret:
+        return None
+
+    return resolved_id, resolved_secret
 
 
 def get_modal_image_from_registry(
@@ -203,10 +265,7 @@ def get_gpu_values(
     if gpu_count is None:
         return gpu_type
 
-    if gpu_count > 0:
-        return f"{gpu_type}:{gpu_count}"
-
-    return None
+    return f"{gpu_type}:{gpu_count}"
 
 
 def get_memory_mb(resource_settings: ResourceSettings) -> Optional[int]:
@@ -289,6 +348,17 @@ def create_modal_sandbox(
         gpu_settings_example=gpu_settings_example,
     )
     return modal.Sandbox.create(*entrypoint_command, **sandbox_create_kwargs)
+
+
+def wait_for_sandbox(
+    sandbox: "modal.Sandbox", poll_interval: float = 1.0
+) -> int:
+    """Wait for a Modal sandbox by polling its return code."""
+    while True:
+        return_code = sandbox.poll()
+        if return_code is not None:
+            return return_code
+        time.sleep(poll_interval)
 
 
 def sandbox_status_from_return_code(
