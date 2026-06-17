@@ -2757,13 +2757,30 @@ def pretty_print_deployment(
     console.print("  [dim]Deprovision and delete this deployment[/dim]")
 
 
-def check_zenml_pro_project_availability() -> None:
-    """Check if the ZenML Pro project feature is available."""
+def warn_if_project_not_visible_on_oss(project_name: str) -> None:
+    """Warn if operating on a non-default project in OSS ZenML.
+
+    The OSS dashboard only supports the default project, so users should
+    know when they're working outside it.
+
+    Args:
+        project_name: The name of the project being operated on. No warning
+            is shown for the default project.
+    """
+    from zenml.constants import DEFAULT_PROJECT_NAME
+
+    if project_name == DEFAULT_PROJECT_NAME:
+        return
+
     client = Client()
     if not client.zen_store.get_store_info().is_pro_server():
         warning(
-            "The ZenML projects feature is available only on ZenML Pro. "
-            "Please visit https://zenml.io/pro to learn more."
+            f"The ZenML OSS dashboard only works with the default project "
+            f"('{DEFAULT_PROJECT_NAME}'). If you use any other projects "
+            f"such as ('{project_name}'), your pipelines will run, but you "
+            f"won't be able to view them in the OSS dashboard. "
+            f"To use multiple projects with full dashboard support, "
+            f"please visit https://zenml.io/pro to learn more."
         )
 
 

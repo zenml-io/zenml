@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2022. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -11,297 +11,368 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""DAG (Directed Acyclic Graph) Runners."""
+"""DAG runner."""
 
+import contextvars
+import queue
 import threading
 import time
-from collections import defaultdict
-from enum import Enum
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Callable, Dict, List, Optional
 
+from pydantic import BaseModel
+
+from zenml.constants import (
+    ENV_ZENML_DAG_RUNNER_WORKER_COUNT,
+    handle_int_env_var,
+)
 from zenml.logger import get_logger
+from zenml.utils.enum_utils import StrEnum
 
 logger = get_logger(__name__)
 
 
-def reverse_dag(dag: Dict[str, List[str]]) -> Dict[str, List[str]]:
-    """Reverse a DAG.
+class NodeStatus(StrEnum):
+    """Status of a DAG node."""
 
-    Args:
-        dag: Adjacency list representation of a DAG.
-
-    Returns:
-        Adjacency list representation of the reversed DAG.
-    """
-    reversed_dag = defaultdict(list)
-
-    # Reverse all edges in the graph.
-    for node, upstream_nodes in dag.items():
-        for upstream_node in upstream_nodes:
-            reversed_dag[upstream_node].append(node)
-
-    # Add nodes without incoming edges back in.
-    for node in dag:
-        if node not in reversed_dag:
-            reversed_dag[node] = []
-
-    return reversed_dag
-
-
-class NodeStatus(Enum):
-    """Status of the execution of a node."""
-
-    NOT_STARTED = "not_started"
-    PENDING = "pending"
+    NOT_READY = "not_ready"  # Can not be started yet
+    READY = "ready"  # Can be started but is still waiting in the queue
+    STARTING = "starting"  # Is being started, but not yet running
     RUNNING = "running"
     COMPLETED = "completed"
     FAILED = "failed"
+    SKIPPED = "skipped"
     CANCELLED = "cancelled"
 
 
-class ThreadedDagRunner:
-    """Multi-threaded DAG Runner.
+class InterruptMode(StrEnum):
+    """Interrupt mode."""
 
-    This class expects a DAG of strings in adjacency list representation, as
-    well as a custom `run_fn` as input, then calls `run_fn(node)` for each
-    string node in the DAG.
+    GRACEFUL = "graceful"
+    FORCE = "force"
 
-    Steps that can be executed in parallel will be started in separate threads.
+
+class Node(BaseModel):
+    """DAG node."""
+
+    id: str
+    status: NodeStatus = NodeStatus.NOT_READY
+    upstream_nodes: List[str] = []
+    metadata: Dict[str, Any] = {}
+
+    @property
+    def is_finished(self) -> bool:
+        """Whether the node is finished.
+
+        Returns:
+            Whether the node is finished.
+        """
+        return self.status in {
+            NodeStatus.COMPLETED,
+            NodeStatus.FAILED,
+            NodeStatus.SKIPPED,
+            NodeStatus.CANCELLED,
+        }
+
+
+class DagRunner:
+    """DAG runner.
+
+    This class does the orchestration of running the nodes of a DAG. It is
+    running two loops in separate threads:
+    The main thread
+      - checks if any nodes should be skipped or are ready to
+        run, in which case the node will be added to the startup queue
+      - creates a worker thread to start the node and executes it in a thread
+        pool if there are nodes in the startup queue and the maximum
+        parallelism is not reached
+      - periodically checks if the DAG should be interrupted
+    The monitoring thread
+      - monitors the running nodes and updates their status
     """
 
     def __init__(
         self,
-        dag: Dict[str, List[str]],
-        run_fn: Callable[[str], Any],
-        preparation_fn: Optional[Callable[[str], bool]] = None,
-        finalize_fn: Optional[Callable[[Dict[str, NodeStatus]], None]] = None,
-        parallel_node_startup_waiting_period: float = 0.0,
+        nodes: List[Node],
+        node_startup_function: Callable[[Node], NodeStatus],
+        node_monitoring_function: Callable[[Node], NodeStatus],
+        node_stop_function: Optional[Callable[[Node], None]] = None,
+        interrupt_function: Optional[
+            Callable[[], Optional[InterruptMode]]
+        ] = None,
+        monitoring_interval: float = 1.0,
+        monitoring_delay: float = 0.0,
+        interrupt_check_interval: float = 1.0,
         max_parallelism: Optional[int] = None,
-        continue_fn: Optional[Callable[[], bool]] = None,
     ) -> None:
-        """Define attributes and initialize all nodes in waiting state.
+        """Initialize the DAG runner.
 
         Args:
-            dag: Adjacency list representation of a DAG.
-                E.g.: [(1->2), (1->3), (2->4), (3->4)] should be represented as
-                `dag={2: [1], 3: [1], 4: [2, 3]}`
-            run_fn: A function `run_fn(node)` that runs a single node
-            preparation_fn: A function that is called before the node is run.
-                If provided, the function return value determines whether the
-                node should be run or can be skipped.
-            finalize_fn: A function `finalize_fn(node_states)` that is called
-                when all nodes have completed.
-            parallel_node_startup_waiting_period: Delay in seconds to wait in
-                between starting parallel nodes.
-            max_parallelism: Maximum number of nodes to run in parallel
-            continue_fn: A function that returns True if the run should continue
-                after each step execution, False if it should stop (e.g., due
-                to cancellation). If None, execution continues normally.
+            nodes: The nodes of the DAG.
+            node_startup_function: The function to start a node.
+            node_monitoring_function: The function to monitor a node.
+            node_stop_function: The function to stop a node.
+            interrupt_function: Will be periodically called to check if the
+                DAG should be interrupted.
+            monitoring_interval: The interval in which the nodes are monitored.
+            monitoring_delay: The delay in seconds to wait between monitoring
+                different nodes.
+            interrupt_check_interval: The interval in which the interrupt
+                function is called.
+            max_parallelism: The maximum number of nodes to run in parallel.
+        """
+        self.nodes = {node.id: node for node in nodes}
+        self.startup_queue: queue.Queue[Node] = queue.Queue()
+        self.node_startup_function = node_startup_function
+        self.node_monitoring_function = node_monitoring_function
+        self.node_stop_function = node_stop_function
+        self.interrupt_function = interrupt_function
+
+        ctx = contextvars.copy_context()
+        self.monitoring_thread = threading.Thread(
+            name="DagRunner-Monitoring-Loop",
+            target=lambda: ctx.run(self._monitoring_loop),
+            daemon=True,
+        )
+        self.monitoring_interval = monitoring_interval
+        self.monitoring_delay = monitoring_delay
+        self.interrupt_check_interval = interrupt_check_interval
+        self.max_parallelism = max_parallelism
+        self.shutdown_event = threading.Event()
+        worker_count = handle_int_env_var(
+            ENV_ZENML_DAG_RUNNER_WORKER_COUNT, 10
+        )
+        self.startup_executor = ThreadPoolExecutor(
+            max_workers=worker_count, thread_name_prefix="DagRunner-Startup"
+        )
+
+    @property
+    def running_nodes(self) -> List[Node]:
+        """Running nodes.
+
+        Returns:
+            Running nodes.
+        """
+        return [
+            node
+            for node in self.nodes.values()
+            if node.status == NodeStatus.RUNNING
+        ]
+
+    @property
+    def active_nodes(self) -> List[Node]:
+        """Active nodes.
+
+        Active nodes are nodes that are either running or starting.
+
+        Returns:
+            Active nodes.
+        """
+        return [
+            node
+            for node in self.nodes.values()
+            if node.status in {NodeStatus.RUNNING, NodeStatus.STARTING}
+        ]
+
+    def _initialize_startup_queue(self) -> None:
+        """Initialize the startup queue.
+
+        The startup queue contains all nodes that are ready to be started.
+        """
+        for node in self.nodes.values():
+            if node.status in {NodeStatus.READY, NodeStatus.STARTING}:
+                self.startup_queue.put(node)
+
+    def _can_start_node(self, node: Node) -> bool:
+        """Check if a node can be started.
+
+        Args:
+            node: The node to check.
+
+        Returns:
+            Whether the node can be started.
+        """
+        return all(
+            self.nodes[upstream_node_id].status == NodeStatus.COMPLETED
+            for upstream_node_id in node.upstream_nodes
+        )
+
+    def _should_skip_node(self, node: Node) -> bool:
+        """Check if a node should be skipped.
+
+        Args:
+            node: The node to check.
+
+        Returns:
+            Whether the node should be skipped.
+        """
+        return any(
+            self.nodes[upstream_node_id].status
+            in {NodeStatus.FAILED, NodeStatus.SKIPPED, NodeStatus.CANCELLED}
+            for upstream_node_id in node.upstream_nodes
+        )
+
+    def _start_node(self, node: Node) -> None:
+        """Start a node.
+
+        This will start of a thread that will run the startup function.
+
+        Args:
+            node: The node to start.
+        """
+        node.status = NodeStatus.STARTING
+
+        def _start_node_task() -> None:
+            if self.shutdown_event.is_set():
+                logger.debug(
+                    "Cancelling startup of node `%s` because shutdown was "
+                    "requested.",
+                    node.id,
+                )
+                return
+
+            try:
+                node.status = self.node_startup_function(node)
+            except Exception:
+                node.status = NodeStatus.FAILED
+                logger.exception("Node `%s` failed to start.", node.id)
+            else:
+                logger.info(
+                    "Node `%s` started (status: %s)", node.id, node.status
+                )
+
+        ctx = contextvars.copy_context()
+        self.startup_executor.submit(ctx.run, _start_node_task)
+
+    def _stop_node(self, node: Node) -> None:
+        """Stop a node.
+
+        Args:
+            node: The node to stop.
 
         Raises:
-            ValueError: If max_parallelism is not greater than 0.
+            RuntimeError: If the node stop function is not set.
         """
-        if max_parallelism is not None and max_parallelism <= 0:
-            raise ValueError("max_parallelism must be greater than 0")
+        if not self.node_stop_function:
+            raise RuntimeError("Node stop function is not set.")
 
-        self.parallel_node_startup_waiting_period = (
-            parallel_node_startup_waiting_period
-        )
-        self.max_parallelism = max_parallelism
-        self.dag = dag
-        self.reversed_dag = reverse_dag(dag)
-        self.run_fn = run_fn
-        self.preparation_fn = preparation_fn
-        self.finalize_fn = finalize_fn
-        self.continue_fn = continue_fn
-        self.nodes = dag.keys()
-        self.node_states = {
-            node: NodeStatus.NOT_STARTED for node in self.nodes
-        }
-        self._lock = threading.Lock()
+        self.node_stop_function(node)
 
-        self._stop_requested = False
+    def _stop_all_nodes(self) -> None:
+        """Stop all running nodes."""
+        for node in self.running_nodes:
+            self._stop_node(node)
+            node.status = NodeStatus.CANCELLED
 
-    def _can_run(self, node: str) -> bool:
-        """Determine whether a node is ready to be run.
+    def _process_nodes(self) -> bool:
+        """Process the nodes.
 
-        This is the case if the node has not run yet and all of its upstream
-        node have already completed.
-
-        Args:
-            node: The node.
+        This method will check if any nodes should be skipped or are ready to
+        run, in which case the node will be added to the startup queue.
 
         Returns:
-            True if the node can run else False.
+            Whether the DAG is finished.
         """
-        if not self.node_states[node] == NodeStatus.NOT_STARTED:
-            return False
+        finished = True
 
-        # Check that all upstream nodes of this node have already completed.
-        for upstream_node in self.dag[node]:
-            if not self.node_states[upstream_node] == NodeStatus.COMPLETED:
-                return False
-
-        return True
-
-    def _prepare_node_run(self, node: str) -> None:
-        """Prepare a node run.
-
-        Args:
-            node: The node.
-        """
-        if self.max_parallelism is None:
-            with self._lock:
-                self.node_states[node] = NodeStatus.RUNNING
-        else:
-            while True:
-                with self._lock:
-                    logger.debug(f"Checking if {node} can run.")
-                    running_nodes = len(
-                        [
-                            state
-                            for state in self.node_states.values()
-                            if state == NodeStatus.RUNNING
-                        ]
+        for node in self.nodes.values():
+            if node.status == NodeStatus.NOT_READY:
+                if self._should_skip_node(node):
+                    node.status = NodeStatus.SKIPPED
+                    logger.warning(
+                        "Skipping node `%s` because upstream node failed.",
+                        node.id,
                     )
-                    if running_nodes < self.max_parallelism:
-                        self.node_states[node] = NodeStatus.RUNNING
-                        break
+                elif self._can_start_node(node):
+                    node.status = NodeStatus.READY
+                    self.startup_queue.put(node)
 
-                logger.debug(f"Waiting for {running_nodes} nodes to finish.")
-                time.sleep(1)
+            if not node.is_finished:
+                finished = False
 
-    def _run_node(self, node: str) -> None:
-        """Run a single node.
+        # Start nodes until we reach the maximum configured parallelism
+        max_parallelism = self.max_parallelism or len(self.nodes)
+        while len(self.active_nodes) < max_parallelism:
+            try:
+                node = self.startup_queue.get_nowait()
+            except queue.Empty:
+                break
+            else:
+                self.startup_queue.task_done()
+                self._start_node(node)
 
-        Calls the user-defined run_fn, then calls `self._finish_node`.
+        return finished
 
-        Args:
-            node: The node.
+    def _monitoring_loop(self) -> None:
+        """Monitoring loop.
+
+        This should run in a separate thread and monitors the running nodes.
         """
-        self._prepare_node_run(node)
+        while not self.shutdown_event.is_set():
+            start_time = time.time()
+            for node in self.running_nodes:
+                try:
+                    node.status = self.node_monitoring_function(node)
+                except Exception:
+                    node.status = NodeStatus.FAILED
+                    logger.exception("Node `%s` failed.", node.id)
+                else:
+                    logger.debug(
+                        "Node `%s` status updated to `%s`",
+                        node.id,
+                        node.status,
+                    )
+                    if node.status == NodeStatus.FAILED:
+                        logger.error("Node `%s` failed.", node.id)
+                    elif node.status == NodeStatus.COMPLETED:
+                        logger.info("Node `%s` completed.", node.id)
 
-        # Check if execution should continue (e.g., check for cancellation)
-        if self.continue_fn:
-            self._stop_requested = (
-                self._stop_requested or not self.continue_fn()
-            )
-            if self._stop_requested:
-                self._finish_node(node, cancelled=True)
-                return
+                time.sleep(self.monitoring_delay)
 
-        if self.preparation_fn:
-            run_required = self.preparation_fn(node)
-            if not run_required:
-                self._finish_node(node)
-                return
+            duration = time.time() - start_time
+            time_to_sleep = max(0, self.monitoring_interval - duration)
+            self.shutdown_event.wait(timeout=time_to_sleep)
 
-        try:
-            self.run_fn(node)
-            self._finish_node(node)
-        except Exception as e:
-            self._finish_node(node, failed=True)
-            logger.exception(f"Node `{node}` failed: {e}")
-
-    def _run_node_in_thread(self, node: str) -> threading.Thread:
-        """Run a single node in a separate thread.
-
-        Args:
-            node: The node.
+    def run(self) -> Dict[str, NodeStatus]:
+        """Run the DAG.
 
         Returns:
-            The thread in which the node was run.
+            The final node states.
         """
-        assert self.node_states[node] == NodeStatus.NOT_STARTED
-        with self._lock:
-            self.node_states[node] = NodeStatus.PENDING
+        self._initialize_startup_queue()
 
-        # Run node in new thread.
-        thread = threading.Thread(
-            name=node, target=self._run_node, args=(node,)
-        )
-        thread.start()
-        return thread
+        self.monitoring_thread.start()
 
-    def _finish_node(
-        self, node: str, failed: bool = False, cancelled: bool = False
-    ) -> None:
-        """Mark a node as finished and potentially start new nodes.
+        interrupt_mode = None
+        last_interrupt_check = time.time()
 
-        Args:
-            node: The node to mark as finished.
-            failed: Whether the node failed.
-            cancelled: Whether the node was cancelled.
-        """
-        with self._lock:
-            if failed:
-                self.node_states[node] = NodeStatus.FAILED
-            elif cancelled:
-                self.node_states[node] = NodeStatus.CANCELLED
-            else:
-                self.node_states[node] = NodeStatus.COMPLETED
+        while True:
+            if self.interrupt_function is not None:
+                if (
+                    time.time() - last_interrupt_check
+                    >= self.interrupt_check_interval
+                ):
+                    if interrupt_mode := self.interrupt_function():
+                        logger.warning("DAG execution interrupted.")
+                        break
+                    last_interrupt_check = time.time()
 
-        if failed or cancelled:
-            # If the node failed or was cancelled, we don't need to run any downstream nodes.
-            return
+            is_finished = self._process_nodes()
+            if is_finished:
+                break
 
-        # Run downstream nodes.
-        threads: List[threading.Thread] = []
-        for downstream_node in self.reversed_dag[node]:
-            if self._can_run(downstream_node):
-                if threads and self.parallel_node_startup_waiting_period > 0:
-                    time.sleep(self.parallel_node_startup_waiting_period)
+            time.sleep(0.5)
 
-                thread = self._run_node_in_thread(downstream_node)
-                threads.append(thread)
+        self.shutdown_event.set()
+        if interrupt_mode == InterruptMode.FORCE:
+            # If a force interrupt was requested, we stop all running nodes.
+            self._stop_all_nodes()
 
-        # Wait for all downstream nodes to complete.
-        for thread in threads:
-            thread.join()
+        self.monitoring_thread.join()
 
-    def run(self) -> None:
-        """Call `self.run_fn` on all nodes in `self.dag`.
+        node_statuses = {
+            node_id: node.status for node_id, node in self.nodes.items()
+        }
+        logger.debug("Finished with node statuses: %s", node_statuses)
 
-        The order of execution is determined using topological sort.
-        Each node is run in a separate thread to enable parallelism.
-        """
-        # Run all nodes that can be started immediately.
-        # These will, in turn, start other nodes once all of their respective
-        # upstream nodes have completed.
-        threads: List[threading.Thread] = []
-        for node in self.nodes:
-            if self._can_run(node):
-                if threads and self.parallel_node_startup_waiting_period > 0:
-                    time.sleep(self.parallel_node_startup_waiting_period)
-
-                thread = self._run_node_in_thread(node)
-                threads.append(thread)
-
-        # Wait till all nodes have completed.
-        for thread in threads:
-            thread.join()
-
-        # Call the finalize function.
-        if self.finalize_fn:
-            self.finalize_fn(self.node_states)
-
-        # Print a status report.
-        failed_nodes = []
-        skipped_nodes = []
-        for node in self.nodes:
-            if self.node_states[node] == NodeStatus.FAILED:
-                failed_nodes.append(node)
-            elif self.node_states[node] == NodeStatus.NOT_STARTED:
-                skipped_nodes.append(node)
-
-        if failed_nodes:
-            logger.error(
-                "The following nodes failed: " + ", ".join(failed_nodes)
-            )
-        if skipped_nodes:
-            logger.warning(
-                "The following nodes were not run because they depend on other "
-                "nodes that didn't complete: " + ", ".join(skipped_nodes)
-            )
-        if not failed_nodes and not skipped_nodes:
-            logger.info("All nodes completed successfully.")
+        return node_statuses
