@@ -87,3 +87,6 @@ redirects:
   step-operators/spark-kubernetes: step-operators/spark-kubernetes.md
   step-operators/ssh: step-operators/ssh.md
   step-operators/vertex: step-operators/vertex.md
+
+  # New redirects added by PR 4953
+  stack-components/sandboxes/modal: component-guide.md

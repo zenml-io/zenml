@@ -236,7 +236,7 @@ For ephemeral or test hosts, you can set `verify_host_key=False` to auto-accept 
 * The env-file uploaded to the remote host is created with **`0600` permissions** (owner read/write only) and is **automatically deleted** after the step completes.
 * Use ZenML secrets with `{{secret.key}}` syntax for `ssh_private_key` and `ssh_key_passphrase` to avoid storing credentials in plaintext.
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-ssh/) for the full API reference.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/) for the full API reference.
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

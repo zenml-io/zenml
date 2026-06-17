@@ -6,7 +6,7 @@ description: Orchestrating your pipelines on a remote host via SSH and Docker.
 
 The SSH orchestrator is an [orchestrator](./) flavor that runs your pipelines on a remote Linux host over SSH, using Docker Compose. It is a generic, vendor-neutral alternative to managed orchestrators: if you have a machine reachable over SSH that can run Docker, you can use it as a ZenML orchestrator.
 
-It is the spiritual successor to the [HyperAI orchestrator](hyperai.md) — it uses the same Compose-based execution model but is not tied to any particular cloud provider, and it adds support for [dynamic pipelines](https://docs.zenml.io/user-guides/tutorial/dynamic-pipelines).
+It is the spiritual successor to the [HyperAI orchestrator](hyperai.md) — it uses the same Compose-based execution model but is not tied to any particular cloud provider, and it adds support for [dynamic pipelines](https://docs.zenml.io/how-to/steps-pipelines/dynamic_pipelines).
 
 {% hint style="info" %}
 The SSH orchestrator supersedes the [HyperAI orchestrator](hyperai.md), which is now deprecated. New stacks should use the SSH orchestrator; existing HyperAI users can migrate by registering an `ssh` orchestrator pointed at the same host (see [Migrating from HyperAI](#migrating-from-hyperai) below).
