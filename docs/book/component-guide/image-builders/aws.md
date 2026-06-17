@@ -2,6 +2,11 @@
 description: Building container images with AWS CodeBuild
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # AWS Image Builder
 
 The AWS image builder is an [image builder](./) flavor provided by the ZenML `aws` integration that uses [AWS CodeBuild](https://aws.amazon.com/codebuild) to build container images.
