@@ -75,17 +75,22 @@ from zenml.integrations.aws.orchestrators.sagemaker_orchestrator_entrypoint_conf
     SagemakerEntrypointConfiguration,
 )
 from zenml.integrations.aws.step_operators.sagemaker_step_operator_entrypoint_config import (
+    SAGEMAKER_ESTIMATOR_STEP_ENV_VAR_SIZE_LIMIT,
     SagemakerStepOperatorEntrypointConfiguration,
 )
 from zenml.integrations.aws.utils import (
     convert_processing_job_status,
     convert_training_job_status,
+    validate_command_step_environment,
 )
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.orchestrators.publish_utils import publish_step_run_metadata
-from zenml.orchestrators.utils import get_orchestrator_run_name
+from zenml.orchestrators.utils import (
+    get_orchestrator_run_name,
+    get_step_entrypoint_command,
+)
 from zenml.stack import StackValidator
 from zenml.utils.env_utils import split_environment_variables
 from zenml.utils.time_utils import to_utc_timezone, utc_now_tz_aware
@@ -384,6 +389,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         step_name: Optional[str] = None,
         upstream_steps: Optional[List[str]] = None,
         wait: bool = True,
+        is_command_step: bool = False,
     ) -> Tuple[
         Union[Estimator, Processor, Step],
         Optional[str],
@@ -406,6 +412,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             step_name: The name of the pipeline step.
             upstream_steps: The upstream steps of the pipeline step.
             wait: Whether to wait for the job to complete.
+            is_command_step: Whether the job runs an opaque command step rather
+                than the ZenML entrypoint.
 
         Returns:
             The estimator or processor object or pipeline step object and the
@@ -415,16 +423,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             TypeError: If the network_config passed is not compatible with the
                 AWS SageMaker NetworkConfig class.
         """
-        # Sagemaker does not allow environment variables longer than 256
-        # characters to be passed to Processor steps. If an environment variable
-        # is longer than 256 characters, we split it into multiple environment
-        # variables (chunks) and re-construct it on the other side using the
-        # custom entrypoint configuration.
-        split_environment_variables(
-            size_limit=SAGEMAKER_PROCESSOR_STEP_ENV_VAR_SIZE_LIMIT,
-            env=environment,
-        )
-
         # Sagemaker requires the base job name to use alphanum and hyphens only
         base_job_name = re.sub(r"[^a-zA-Z0-9\-]", "-", base_job_name)
 
@@ -437,6 +435,28 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 else True
             )
         )
+
+        # Sagemaker does not allow environment variables longer than 256
+        # characters for Processor steps (512 for Estimator steps). Normally we
+        # split oversized variables into chunks and reconstruct them on the
+        # other side using the custom entrypoint configuration. Command steps
+        # run an opaque command instead of that entrypoint, so the
+        # reconstruction never runs. We therefore validate the sizes against the
+        # real per-job-type limit and fail if a variable exceeds it.
+        if is_command_step:
+            validate_command_step_environment(
+                environment=environment,
+                size_limit=(
+                    SAGEMAKER_ESTIMATOR_STEP_ENV_VAR_SIZE_LIMIT
+                    if use_training_step
+                    else SAGEMAKER_PROCESSOR_STEP_ENV_VAR_SIZE_LIMIT
+                ),
+            )
+        else:
+            split_environment_variables(
+                size_limit=SAGEMAKER_PROCESSOR_STEP_ENV_VAR_SIZE_LIMIT,
+                env=environment,
+            )
 
         if use_training_step:
             job_args = settings.estimator_args.copy() or {}
@@ -1086,9 +1106,12 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             SagemakerOrchestratorSettings, self.get_settings(step_run_info)
         )
 
-        command = SagemakerStepOperatorEntrypointConfiguration.get_entrypoint_command()
-        arguments = SagemakerStepOperatorEntrypointConfiguration.get_entrypoint_arguments(
-            step_name=step_run_info.pipeline_step_name,
+        command, arguments = get_step_entrypoint_command(
+            invocation_id=step_run_info.pipeline_step_name,
+            config=step_run_info.config,
+            entrypoint_config_class=(
+                SagemakerStepOperatorEntrypointConfiguration
+            ),
             snapshot_id=step_run_info.snapshot.id,
             step_run_id=str(step_run_info.step_run_id),
         )
@@ -1102,6 +1125,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             command=command,
             arguments=arguments,
             wait=False,
+            is_command_step=step_run_info.config.command is not None,
         )
         assert job_name
         job_type = "training" if isinstance(job, Estimator) else "processing"

@@ -30,24 +30,61 @@ from zenml.execution.pipeline.dynamic.outputs import (
     BaseStepFuture,
     MapResultsFuture,
     PipelineFuture,
+    PipelineRunOutputs,
     StepFuture,
+    wrap_step_failure,
 )
 from zenml.execution.pipeline.dynamic.utils import collect_futures
 from zenml.models import ArtifactVersionResponse
 
 
-def _resolve_single_child_pipeline_artifact(
-    future: PipelineFuture, key: str
-) -> ArtifactVersionResponse:
-    """Resolve a child pipeline future to its single output artifact.
-
-    Awaits the future and inspects the actual outputs rather than the
-    declared output count. This matters for unannotated child pipeline
-    entrypoints, whose `PipelineFuture.__len__` is `0` even when the
-    pipeline returns exactly one artifact at runtime.
+def _await_input_future(
+    future: AnyOutputFuture, return_result: bool = True
+) -> Any:
+    """Wait for a future used implicitly as a step input.
 
     Args:
-        future: The child pipeline future to resolve.
+        future: The future to wait for.
+        return_result: Whether to return the resolved result or only wait.
+
+    Raises:
+        StepExecutionException: If a step future failed.
+        Exception: If a non-step future failed.
+
+    Returns:
+        The resolved result if `return_result` is True, otherwise None.
+    """  # noqa: DOC502, DOC503
+    # A child pipeline failure is not a step failure, so it propagates raw.
+    if isinstance(future, PipelineFuture):
+        if return_result:
+            return future.result()
+        future.wait()
+        return None
+
+    try:
+        if return_result:
+            return future.result()
+        future.wait()
+        return None
+    except Exception as exc:
+        wrapped = wrap_step_failure(exc, invocation_id=future.invocation_id)
+        if wrapped is exc:
+            raise
+        raise wrapped
+
+
+def _resolve_single_child_pipeline_artifact(
+    outputs: PipelineRunOutputs, key: str
+) -> ArtifactVersionResponse:
+    """Extract the single output artifact from a child pipeline result.
+
+    Inspects the actual outputs rather than the declared output count. This
+    matters for unannotated child pipeline entrypoints, whose
+    `PipelineFuture.__len__` is `0` even when the pipeline returns exactly one
+    artifact at runtime.
+
+    Args:
+        outputs: The resolved child pipeline outputs.
         key: The step input name, used in the error message.
 
     Raises:
@@ -57,13 +94,12 @@ def _resolve_single_child_pipeline_artifact(
     Returns:
         The single output artifact produced by the child pipeline.
     """
-    artifacts = future.artifacts()
-    if isinstance(artifacts, ArtifactVersionResponse):
-        return artifacts
-    if isinstance(artifacts, tuple) and len(artifacts) == 1:
-        return artifacts[0]
+    if isinstance(outputs, ArtifactVersionResponse):
+        return outputs
+    if isinstance(outputs, tuple) and len(outputs) == 1:
+        return outputs[0]
 
-    actual_count = 0 if artifacts is None else len(artifacts)
+    actual_count = 0 if outputs is None else len(outputs)
     raise RuntimeError(
         f"Invalid step input `{key}`: a child pipeline future used as a "
         f"step input must produce exactly one output artifact, but the "
@@ -125,7 +161,7 @@ def await_step_inputs(inputs: Dict[str, Any]) -> Dict[str, Any]:
                     "to multiple output artifacts as an input to another step "
                     "is not allowed."
                 )
-            value = [item.artifacts() for item in value]
+            value = [_await_input_future(item) for item in value]
         elif isinstance(value, StepFuture):
             if len(value._output_keys) != 1:
                 raise RuntimeError(
@@ -133,28 +169,32 @@ def await_step_inputs(inputs: Dict[str, Any]) -> Dict[str, Any]:
                     "to multiple output artifacts as an input to another step "
                     "is not allowed."
                 )
-            value = value.artifacts()
+            value = _await_input_future(value)
         elif (
             isinstance(value, (list, tuple))
             and value
             and all(isinstance(item, PipelineFuture) for item in value)
         ):
             value = [
-                _resolve_single_child_pipeline_artifact(item, key=key)
+                _resolve_single_child_pipeline_artifact(
+                    _await_input_future(item), key=key
+                )
                 for item in value
             ]
         elif isinstance(value, PipelineFuture):
-            value = _resolve_single_child_pipeline_artifact(value, key=key)
+            value = _resolve_single_child_pipeline_artifact(
+                _await_input_future(value), key=key
+            )
 
         if (
             isinstance(value, (list, tuple))
             and value
             and all(isinstance(item, ArtifactFuture) for item in value)
         ):
-            value = [item.result() for item in value]
+            value = [_await_input_future(item) for item in value]
 
         if isinstance(value, ArtifactFuture):
-            value = value.result()
+            value = _await_input_future(value)
 
         result[key] = value
 

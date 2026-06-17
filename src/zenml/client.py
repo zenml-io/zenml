@@ -62,12 +62,8 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.enums import (
-    ArtifactType,
     ColorVariants,
     CuratedVisualizationSize,
-    DeploymentStatus,
-    ExecutionStatus,
-    HookType,
     LogicalOperators,
     ModelStages,
     OAuthDeviceStatus,
@@ -219,6 +215,14 @@ from zenml.models import (
     UserRequest,
     UserResponse,
     UserUpdate,
+)
+from zenml.models.v2.base.filter import (
+    DatetimeFilterOption,
+    EnumFilterOption,
+    FloatFilterOption,
+    IntegerFilterOption,
+    StringFilterOption,
+    UUIDFilterOption,
 )
 from zenml.utils import dict_utils, io_utils, source_utils, tag_utils
 from zenml.utils.dict_utils import dict_to_bytes
@@ -841,13 +845,13 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        external_user_id: Optional[str] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        full_name: Optional[str] = None,
-        email: Optional[str] = None,
+        id: UUIDFilterOption = None,
+        external_user_id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        full_name: StringFilterOption = None,
+        email: StringFilterOption = None,
         active: Optional[bool] = None,
         email_opted_in: Optional[bool] = None,
         hydrate: bool = False,
@@ -1060,11 +1064,11 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        display_name: Optional[str] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        display_name: StringFilterOption = None,
         hydrate: bool = False,
     ) -> Page[ProjectResponse]:
         """List all projects.
@@ -1194,11 +1198,11 @@ class Client(metaclass=ClientMetaClass):
         if project.name != DEFAULT_PROJECT_NAME:
             if not self.zen_store.get_store_info().is_pro_server():
                 logger.warning(
-                    f"You are running with a non-default project "
-                    f"'{project.name}'. The ZenML project feature is "
-                    "available only in ZenML Pro. Pipelines, pipeline runs and "
-                    "artifacts produced in this project will not be "
-                    "accessible through the dashboard. Please visit "
+                    f"The ZenML OSS dashboard only works with the default "
+                    f"project ('{DEFAULT_PROJECT_NAME}'). You are currently "
+                    f"working with project '{project.name}', so your pipelines "
+                    f"won't be visible in the OSS dashboard. To use multiple "
+                    f"projects with full dashboard support, please visit "
                     "https://zenml.io/pro to learn more."
                 )
         return project
@@ -1302,14 +1306,14 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        component_id: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        component: Optional[Union[UUID, str]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        description: StringFilterOption = None,
+        component_id: UUIDFilterOption = None,
+        user: UUIDFilterOption = None,
+        component: UUIDFilterOption = None,
         hydrate: bool = False,
     ) -> Page[StackResponse]:
         """Lists all stacks.
@@ -1773,20 +1777,20 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[datetime] = None,
-        updated: Optional[datetime] = None,
-        type: Optional[str] = None,
-        flavor: Optional[str] = None,
-        user: Optional[Union[UUID, str]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        type: StringFilterOption = None,
+        flavor: StringFilterOption = None,
+        user: UUIDFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
         running: Optional[bool] = None,
-        service_name: Optional[str] = None,
-        pipeline_name: Optional[str] = None,
-        pipeline_run_id: Optional[str] = None,
-        pipeline_step_name: Optional[str] = None,
-        model_version_id: Optional[Union[str, UUID]] = None,
+        service_name: StringFilterOption = None,
+        pipeline_name: StringFilterOption = None,
+        pipeline_run_id: UUIDFilterOption = None,
+        pipeline_step_name: StringFilterOption = None,
+        model_version_id: UUIDFilterOption = None,
         config: Optional[Dict[str, Any]] = None,
     ) -> Page[ServiceResponse]:
         """List all services.
@@ -1991,15 +1995,15 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[datetime] = None,
-        updated: Optional[datetime] = None,
-        name: Optional[str] = None,
-        flavor: Optional[str] = None,
-        type: Optional[str] = None,
-        connector_id: Optional[Union[str, UUID]] = None,
-        stack_id: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        flavor: StringFilterOption = None,
+        type: StringFilterOption = None,
+        connector_id: UUIDFilterOption = None,
+        stack_id: UUIDFilterOption = None,
+        user: UUIDFilterOption = None,
         hydrate: bool = False,
     ) -> Page[ComponentResponse]:
         """Lists all registered stack components.
@@ -2322,11 +2326,11 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[datetime] = None,
-        updated: Optional[datetime] = None,
-        name: Optional[str] = None,
-        user: Optional[Union[UUID, str]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        user: UUIDFilterOption = None,
         hydrate: bool = False,
     ) -> Page[ResourcePoolResponse]:
         """Lists resource pools.
@@ -2465,13 +2469,13 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[datetime] = None,
-        updated: Optional[datetime] = None,
-        user: Optional[Union[UUID, str]] = None,
-        pool_id: Optional[Union[UUID, str]] = None,
-        component_id: Optional[Union[UUID, str]] = None,
-        priority: Optional[Union[int, str]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        user: UUIDFilterOption = None,
+        pool_id: UUIDFilterOption = None,
+        component_id: UUIDFilterOption = None,
+        priority: IntegerFilterOption = None,
         hydrate: bool = False,
     ) -> Page[ResourcePoolSubjectPolicyResponse]:
         """List resource pool subject policies.
@@ -2611,14 +2615,14 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[datetime] = None,
-        updated: Optional[datetime] = None,
-        name: Optional[str] = None,
-        display_name: Optional[str] = None,
-        type: Optional[str] = None,
-        integration: Optional[str] = None,
-        user: Optional[Union[UUID, str]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        display_name: StringFilterOption = None,
+        type: StringFilterOption = None,
+        integration: StringFilterOption = None,
+        user: UUIDFilterOption = None,
         hydrate: bool = False,
     ) -> Page[FlavorResponse]:
         """Fetches all the flavor models.
@@ -2735,16 +2739,15 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
         latest_run_status: Optional[str] = None,
         latest_run_user: Optional[Union[UUID, str]] = None,
         project: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        tag: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        user: UUIDFilterOption = None,
+        tags: StringFilterOption = None,
         hydrate: bool = False,
     ) -> Page[PipelineResponse]:
         """List all pipelines.
@@ -2764,7 +2767,6 @@ class Client(metaclass=ClientMetaClass):
                 executed the latest run.
             project: The project name/ID to filter by.
             user: The name/ID of the user to filter by.
-            tag: Tag to filter by.
             tags: Tags to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
@@ -2785,7 +2787,6 @@ class Client(metaclass=ClientMetaClass):
             latest_run_user=latest_run_user,
             project=project or self.active_project.id,
             user=user,
-            tag=tag,
             tags=tags,
         )
         return self.zen_store.list_pipelines(
@@ -2904,21 +2905,21 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        pipeline_id: Optional[Union[str, UUID]] = None,
-        stack_id: Optional[Union[str, UUID]] = None,
-        container_registry_id: Optional[Union[UUID, str]] = None,
+        user: UUIDFilterOption = None,
+        pipeline_id: UUIDFilterOption = None,
+        stack_id: UUIDFilterOption = None,
+        container_registry_id: UUIDFilterOption = None,
         is_local: Optional[bool] = None,
         contains_code: Optional[bool] = None,
-        zenml_version: Optional[str] = None,
-        python_version: Optional[str] = None,
-        checksum: Optional[str] = None,
-        stack_checksum: Optional[str] = None,
-        duration: Optional[Union[int, str]] = None,
+        zenml_version: StringFilterOption = None,
+        python_version: StringFilterOption = None,
+        checksum: StringFilterOption = None,
+        stack_checksum: StringFilterOption = None,
+        duration: IntegerFilterOption = None,
         hydrate: bool = False,
     ) -> Page[PipelineBuildResponse]:
         """List all builds.
@@ -3107,23 +3108,22 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        name: Optional[str] = None,
+        user: UUIDFilterOption = None,
+        name: StringFilterOption = None,
         named_only: Optional[bool] = True,
-        pipeline: Optional[Union[str, UUID]] = None,
-        stack: Optional[Union[str, UUID]] = None,
-        build_id: Optional[Union[str, UUID]] = None,
-        schedule_id: Optional[Union[str, UUID]] = None,
-        source_snapshot_id: Optional[Union[str, UUID]] = None,
+        pipeline: UUIDFilterOption = None,
+        stack: UUIDFilterOption = None,
+        build_id: UUIDFilterOption = None,
+        schedule_id: UUIDFilterOption = None,
+        source_snapshot_id: UUIDFilterOption = None,
         runnable: Optional[bool] = None,
         deployable: Optional[bool] = None,
         deployed: Optional[bool] = None,
-        tag: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        tags: StringFilterOption = None,
         hydrate: bool = False,
         trigger_id: UUID | None = None,
     ) -> Page[PipelineSnapshotResponse]:
@@ -3150,7 +3150,6 @@ class Client(metaclass=ClientMetaClass):
             runnable: Whether the snapshot is runnable.
             deployable: Whether the snapshot is deployable.
             deployed: Whether the snapshot is deployed.
-            tag: Filter by tag.
             tags: Filter by tags.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
@@ -3179,7 +3178,6 @@ class Client(metaclass=ClientMetaClass):
             runnable=runnable,
             deployable=deployable,
             deployed=deployed,
-            tag=tag,
             tags=tags,
             trigger_id=trigger_id,
         )
@@ -3569,19 +3567,18 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        snapshot_id: Optional[Union[str, UUID]] = None,
-        deployer_id: Optional[Union[str, UUID]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        snapshot_id: UUIDFilterOption = None,
+        deployer_id: UUIDFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
-        status: Optional[DeploymentStatus] = None,
-        url: Optional[str] = None,
-        user: Optional[Union[UUID, str]] = None,
-        pipeline: Optional[Union[UUID, str]] = None,
-        tag: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        status: StringFilterOption = None,
+        url: StringFilterOption = None,
+        user: UUIDFilterOption = None,
+        pipeline: UUIDFilterOption = None,
+        tags: StringFilterOption = None,
         hydrate: bool = False,
     ) -> Page[DeploymentResponse]:
         """List deployments.
@@ -3602,7 +3599,6 @@ class Client(metaclass=ClientMetaClass):
             url: The url of the deployment to filter by.
             user: Filter by user name/ID.
             pipeline: Filter by pipeline name/ID.
-            tag: Tag to filter by.
             tags: Tags to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
@@ -3627,7 +3623,6 @@ class Client(metaclass=ClientMetaClass):
                 status=status,
                 url=url,
                 pipeline=pipeline,
-                tag=tag,
                 tags=tags,
             ),
             hydrate=hydrate,
@@ -4050,20 +4045,19 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        id: Optional[Union[UUID, str]] = None,
-        name: Optional[str] = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        id: UUIDFilterOption = None,
+        name: StringFilterOption = None,
         hidden: Optional[bool] = False,
-        tag: Optional[str] = None,
         project: Optional[Union[str, UUID]] = None,
-        pipeline_id: Optional[Union[str, UUID]] = None,
-        build_id: Optional[Union[str, UUID]] = None,
-        stack_id: Optional[Union[str, UUID]] = None,
-        code_repository_id: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        pipeline: Optional[Union[UUID, str]] = None,
-        stack: Optional[Union[UUID, str]] = None,
+        pipeline_id: UUIDFilterOption = None,
+        build_id: UUIDFilterOption = None,
+        stack_id: UUIDFilterOption = None,
+        code_repository_id: UUIDFilterOption = None,
+        user: UUIDFilterOption = None,
+        pipeline: UUIDFilterOption = None,
+        stack: UUIDFilterOption = None,
         hydrate: bool = False,
     ) -> Page[RunTemplateResponse]:
         """Get a page of run templates.
@@ -4078,7 +4072,6 @@ class Client(metaclass=ClientMetaClass):
             id: Filter by run template ID.
             name: Filter by run template name.
             hidden: Filter by run template hidden status.
-            tag: Filter by run template tags.
             project: Filter by project name/ID.
             pipeline_id: Filter by pipeline ID.
             build_id: Filter by build ID.
@@ -4103,7 +4096,6 @@ class Client(metaclass=ClientMetaClass):
             id=id,
             name=name,
             hidden=hidden,
-            tag=tag,
             project=project or self.active_project.id,
             pipeline_id=pipeline_id,
             build_id=build_id,
@@ -4390,19 +4382,21 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        user: str | UUID | None = None,
-        project: UUID | str | None = None,
-        id: UUID | str | None = None,
-        created: datetime | None = None,
-        updated: datetime | None = None,
-        name: str | None = None,
+        user: UUIDFilterOption = None,
+        project: Optional[Union[str, UUID]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
         active: bool | None = None,
-        concurrency: str | None = None,
+        concurrency: EnumFilterOption[TriggerRunConcurrency] = None,
         is_archived: bool = False,
-        flavor: TriggerFlavor | None = None,
-        next_occurrence: datetime | None = None,
-        pipeline_id: str | UUID | None = None,
-        snapshot_id: str | UUID | None = None,
+        flavor: EnumFilterOption[
+            TriggerFlavor
+        ] = TriggerFlavor.NATIVE_SCHEDULE,
+        next_occurrence: DatetimeFilterOption = None,
+        pipeline_id: UUIDFilterOption = None,
+        snapshot_id: UUIDFilterOption = None,
         hydrate: bool = True,
     ) -> Page[ScheduleTriggerResponse]:
         """List schedule triggers.
@@ -4431,6 +4425,20 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A Page of ScheduleTriggerResponse objects.
         """
+        pipeline_ids = None
+        if pipeline_id is not None:
+            if isinstance(pipeline_id, list):
+                pipeline_ids = [str(p) for p in pipeline_id]
+            else:
+                pipeline_ids = [str(pipeline_id)]
+
+        snapshot_ids = None
+        if snapshot_id is not None:
+            if isinstance(snapshot_id, list):
+                snapshot_ids = [str(s) for s in snapshot_id]
+            else:
+                snapshot_ids = [str(snapshot_id)]
+
         return self.zen_store.list_triggers(  # type: ignore[return-value]
             triggers_filter_model=TriggerFilter(
                 project=project or self.active_project.id,
@@ -4440,9 +4448,7 @@ class Client(metaclass=ClientMetaClass):
                 updated=updated,
                 name=name,
                 active=active,
-                concurrency=TriggerRunConcurrency(concurrency)
-                if concurrency
-                else None,
+                concurrency=concurrency,
                 is_archived=is_archived,
                 flavor=flavor,
                 type=TriggerType.SCHEDULE,
@@ -4451,8 +4457,8 @@ class Client(metaclass=ClientMetaClass):
                 size=size,
                 logical_operator=logical_operator,
                 next_occurrence=next_occurrence,
-                pipeline_id=str(pipeline_id) if pipeline_id else None,
-                snapshot_id=str(snapshot_id) if snapshot_id else None,
+                pipeline_id=pipeline_ids,
+                snapshot_id=snapshot_ids,
             ),
             hydrate=hydrate,
         )
@@ -4623,17 +4629,18 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        user: str | UUID | None = None,
-        project: UUID | str | None = None,
-        id: UUID | str | None = None,
-        created: datetime | None = None,
-        updated: datetime | None = None,
-        name: str | None = None,
+        user: UUIDFilterOption = None,
+        project: Optional[Union[str, UUID]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
         active: bool | None = None,
-        concurrency: str | None = None,
+        concurrency: EnumFilterOption[TriggerRunConcurrency] = None,
         is_archived: bool = False,
-        pipeline_id: str | UUID | None = None,
-        snapshot_id: str | UUID | None = None,
+        flavor: EnumFilterOption[TriggerFlavor] = TriggerFlavor.PLATFORM_EVENT,
+        pipeline_id: UUIDFilterOption = None,
+        snapshot_id: UUIDFilterOption = None,
         hydrate: bool = True,
     ) -> Page[PlatformEventTriggerResponse]:
         """List platform event triggers.
@@ -4652,6 +4659,7 @@ class Client(metaclass=ClientMetaClass):
             active: The active status of the trigger.
             concurrency: The concurrency of the trigger.
             is_archived: The archived status of the trigger.
+            flavor: The flavor of the trigger.
             pipeline_id: Filter triggers by pipeline with attached snapshots.
             snapshot_id: Filter triggers by attached snapshot.
             hydrate: Flag deciding whether to hydrate the output model(s)
@@ -4660,6 +4668,20 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A Page of PlatformEventTriggerResponse objects.
         """
+        pipeline_ids = None
+        if pipeline_id:
+            if isinstance(pipeline_id, list):
+                pipeline_ids = [str(p) for p in pipeline_id]
+            else:
+                pipeline_ids = [str(pipeline_id)]
+
+        snapshot_ids = None
+        if snapshot_id:
+            if isinstance(snapshot_id, list):
+                snapshot_ids = [str(s) for s in snapshot_id]
+            else:
+                snapshot_ids = [str(snapshot_id)]
+
         return self.zen_store.list_triggers(  # type: ignore[return-value]
             triggers_filter_model=TriggerFilter(
                 project=project or self.active_project.id,
@@ -4669,19 +4691,17 @@ class Client(metaclass=ClientMetaClass):
                 updated=updated,
                 name=name,
                 active=active,
-                concurrency=TriggerRunConcurrency(concurrency)
-                if concurrency
-                else None,
+                concurrency=concurrency,
                 is_archived=is_archived,
-                flavor=TriggerFlavor.PLATFORM_EVENT,
+                flavor=flavor,
                 type=TriggerType.PLATFORM_EVENT,
                 sort_by=sort_by,
                 page=page,
                 size=size,
                 logical_operator=logical_operator,
                 next_occurrence=None,
-                pipeline_id=str(pipeline_id) if pipeline_id else None,
-                snapshot_id=str(snapshot_id) if snapshot_id else None,
+                pipeline_id=pipeline_ids,
+                snapshot_id=snapshot_ids,
             ),
             hydrate=hydrate,
         )
@@ -4812,22 +4832,22 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        pipeline_id: Optional[Union[str, UUID]] = None,
-        orchestrator_id: Optional[Union[str, UUID]] = None,
+        user: UUIDFilterOption = None,
+        pipeline_id: UUIDFilterOption = None,
+        orchestrator_id: UUIDFilterOption = None,
         active: Optional[Union[str, bool]] = None,
-        cron_expression: Optional[str] = None,
-        start_time: Optional[Union[datetime, str]] = None,
-        end_time: Optional[Union[datetime, str]] = None,
-        interval_second: Optional[int] = None,
+        cron_expression: StringFilterOption = None,
+        start_time: DatetimeFilterOption = None,
+        end_time: DatetimeFilterOption = None,
+        interval_second: FloatFilterOption = None,
         catchup: Optional[Union[str, bool]] = None,
         hydrate: bool = False,
-        run_once_start_time: Optional[Union[datetime, str]] = None,
+        run_once_start_time: DatetimeFilterOption = None,
         is_archived: bool | None = False,
     ) -> Page[ScheduleResponse]:
         """List schedules.
@@ -5113,44 +5133,43 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
-        pipeline_id: Optional[Union[str, UUID]] = None,
-        pipeline_name: Optional[str] = None,
-        stack_id: Optional[Union[str, UUID]] = None,
-        schedule_id: Optional[Union[str, UUID]] = None,
-        build_id: Optional[Union[str, UUID]] = None,
-        snapshot_id: Optional[Union[str, UUID]] = None,
-        code_repository_id: Optional[Union[str, UUID]] = None,
-        template_id: Optional[Union[str, UUID]] = None,
-        source_snapshot_id: Optional[Union[str, UUID]] = None,
-        model_version_id: Optional[Union[str, UUID]] = None,
-        linked_to_model_version_id: Optional[Union[str, UUID]] = None,
-        orchestrator_run_id: Optional[str] = None,
-        status: Optional[str] = None,
-        index: Optional[int] = None,
-        start_time: Optional[Union[datetime, str]] = None,
-        end_time: Optional[Union[datetime, str]] = None,
+        pipeline_id: UUIDFilterOption = None,
+        pipeline_name: StringFilterOption = None,
+        stack_id: UUIDFilterOption = None,
+        schedule_id: UUIDFilterOption = None,
+        build_id: UUIDFilterOption = None,
+        snapshot_id: UUIDFilterOption = None,
+        code_repository_id: UUIDFilterOption = None,
+        template_id: UUIDFilterOption = None,
+        source_snapshot_id: UUIDFilterOption = None,
+        model_version_id: UUIDFilterOption = None,
+        linked_to_model_version_id: UUIDFilterOption = None,
+        orchestrator_run_id: StringFilterOption = None,
+        status: StringFilterOption = None,
+        index: IntegerFilterOption = None,
+        start_time: DatetimeFilterOption = None,
+        end_time: DatetimeFilterOption = None,
         templatable: Optional[bool] = None,
-        tag: Optional[str] = None,
-        tags: Optional[List[str]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        run_metadata: Optional[List[str]] = None,
-        pipeline: Optional[Union[UUID, str]] = None,
-        code_repository: Optional[Union[UUID, str]] = None,
-        model: Optional[Union[UUID, str]] = None,
-        stack: Optional[Union[UUID, str]] = None,
-        stack_component: Optional[Union[UUID, str]] = None,
+        tags: StringFilterOption = None,
+        user: UUIDFilterOption = None,
+        run_metadata: StringFilterOption = None,
+        pipeline: UUIDFilterOption = None,
+        code_repository: UUIDFilterOption = None,
+        model: UUIDFilterOption = None,
+        stack: UUIDFilterOption = None,
+        stack_component: UUIDFilterOption = None,
         in_progress: Optional[bool] = None,
         hydrate: bool = False,
         include_full_metadata: bool = False,
-        triggered_by_step_run_id: Optional[Union[UUID, str]] = None,
-        triggered_by_deployment_id: Optional[Union[UUID, str]] = None,
-        trigger_id: UUID | str | None = None,
-        parent_run_id: Optional[Union[str, UUID]] = None,
+        triggered_by_step_run_id: UUIDFilterOption = None,
+        triggered_by_deployment_id: UUIDFilterOption = None,
+        trigger_id: UUIDFilterOption = None,
+        parent_run_id: UUIDFilterOption = None,
         root_runs_only: Optional[bool] = None,
     ) -> Page[PipelineRunResponse]:
         """List all pipeline runs.
@@ -5187,7 +5206,6 @@ class Client(metaclass=ClientMetaClass):
             start_time: The start_time for the pipeline run
             end_time: The end_time for the pipeline run
             templatable: If the runs should be templatable or not.
-            tag: Tag to filter by.
             tags: Tags to filter by.
             user: The name/ID of the user to filter by.
             run_metadata: The run_metadata of the run to filter by.
@@ -5238,7 +5256,6 @@ class Client(metaclass=ClientMetaClass):
             index=index,
             start_time=start_time,
             end_time=end_time,
-            tag=tag,
             tags=tags,
             user=user,
             run_metadata=run_metadata,
@@ -5287,19 +5304,19 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        resolved_by: Optional[Union[UUID, str]] = None,
-        resolved_at: Optional[Union[datetime, str]] = None,
-        resolution: Optional[str] = None,
-        pipeline_run: Optional[Union[str, UUID]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        resolved_by: UUIDFilterOption = None,
+        resolved_at: DatetimeFilterOption = None,
+        resolution: StringFilterOption = None,
+        pipeline_run: UUIDFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        run_metadata: Optional[List[str]] = None,
-        status: Optional[str] = None,
-        type: Optional[str] = None,
+        user: UUIDFilterOption = None,
+        run_metadata: StringFilterOption = None,
+        status: StringFilterOption = None,
+        type: StringFilterOption = None,
         hydrate: bool = False,
     ) -> Page[RunWaitConditionResponse]:
         """List run wait conditions.
@@ -5406,26 +5423,27 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        cache_key: Optional[str] = None,
-        cache_expires_at: Optional[Union[datetime, str]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        cache_key: StringFilterOption = None,
+        cache_expires_at: DatetimeFilterOption = None,
         cache_expired: Optional[bool] = None,
-        code_hash: Optional[str] = None,
-        status: Optional[str] = None,
-        start_time: Optional[Union[datetime, str]] = None,
-        end_time: Optional[Union[datetime, str]] = None,
-        pipeline_run_id: Optional[Union[str, UUID]] = None,
-        snapshot_id: Optional[Union[str, UUID]] = None,
-        original_step_run_id: Optional[Union[str, UUID]] = None,
+        code_hash: StringFilterOption = None,
+        status: StringFilterOption = None,
+        start_time: DatetimeFilterOption = None,
+        end_time: DatetimeFilterOption = None,
+        pipeline_run_id: UUIDFilterOption = None,
+        snapshot_id: UUIDFilterOption = None,
+        original_step_run_id: UUIDFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        model_version_id: Optional[Union[str, UUID]] = None,
-        model: Optional[Union[UUID, str]] = None,
-        run_metadata: Optional[List[str]] = None,
+        user: UUIDFilterOption = None,
+        model_version_id: UUIDFilterOption = None,
+        model: UUIDFilterOption = None,
+        run_metadata: StringFilterOption = None,
         exclude_retried: Optional[bool] = None,
+        version: IntegerFilterOption = None,
         hydrate: bool = False,
     ) -> Page[StepRunResponse]:
         """List all pipelines.
@@ -5457,6 +5475,7 @@ class Client(metaclass=ClientMetaClass):
             status: The status of the step run.
             run_metadata: Filter by run metadata.
             exclude_retried: Whether to exclude retried step runs.
+            version: The version of the step run to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -5488,6 +5507,7 @@ class Client(metaclass=ClientMetaClass):
             model=model,
             run_metadata=run_metadata,
             exclude_retried=exclude_retried,
+            version=version,
         )
         return self.zen_store.list_run_steps(
             step_run_filter_model=step_run_filter_model,
@@ -5520,18 +5540,18 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        pipeline_run_id: Optional[Union[str, UUID]] = None,
-        step_run_id: Optional[Union[str, UUID]] = None,
-        hook_type: Optional[Union[str, HookType]] = None,
-        name: Optional[str] = None,
-        status: Optional[Union[str, ExecutionStatus]] = None,
-        start_time: Optional[Union[datetime, str]] = None,
-        end_time: Optional[Union[datetime, str]] = None,
-        project: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        pipeline_run_id: UUIDFilterOption = None,
+        step_run_id: UUIDFilterOption = None,
+        hook_type: StringFilterOption = None,
+        name: StringFilterOption = None,
+        status: StringFilterOption = None,
+        start_time: DatetimeFilterOption = None,
+        end_time: DatetimeFilterOption = None,
+        project: UUIDFilterOption = None,
+        user: UUIDFilterOption = None,
         hydrate: bool = False,
     ) -> Page[HookInvocationResponse]:
         """List all hook invocations matching the given filter criteria.
@@ -5643,16 +5663,15 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
         has_custom_name: Optional[bool] = None,
-        user: Optional[Union[UUID, str]] = None,
+        user: UUIDFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
-        tag: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        tags: StringFilterOption = None,
     ) -> Page[ArtifactResponse]:
         """Get a list of artifacts.
 
@@ -5670,7 +5689,6 @@ class Client(metaclass=ClientMetaClass):
             project: The project name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
-            tag: Filter artifacts by tag.
             tags: Tags to filter by.
 
         Returns:
@@ -5686,7 +5704,6 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             name=name,
             has_custom_name=has_custom_name,
-            tag=tag,
             tags=tags,
             user=user,
             project=project or self.active_project.id,
@@ -5843,28 +5860,27 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        artifact: Optional[Union[str, UUID]] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        artifact: UUIDFilterOption = None,
         name: Optional[str] = None,
-        version: Optional[Union[str, int]] = None,
-        version_number: Optional[int] = None,
-        artifact_store_id: Optional[Union[str, UUID]] = None,
-        type: Optional[Union[ArtifactType, str]] = None,
-        data_type: Optional[str] = None,
-        uri: Optional[str] = None,
-        materializer: Optional[str] = None,
+        version: IntegerFilterOption = None,
+        version_number: IntegerFilterOption = None,
+        artifact_store_id: UUIDFilterOption = None,
+        type: StringFilterOption = None,
+        data_type: StringFilterOption = None,
+        uri: StringFilterOption = None,
+        materializer: StringFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
-        model_version_id: Optional[Union[str, UUID]] = None,
+        model_version_id: UUIDFilterOption = None,
         only_unused: Optional[bool] = False,
         has_custom_name: Optional[bool] = None,
-        user: Optional[Union[UUID, str]] = None,
-        model: Optional[Union[UUID, str]] = None,
-        pipeline_run: Optional[Union[UUID, str]] = None,
-        run_metadata: Optional[List[str]] = None,
-        tag: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        user: UUIDFilterOption = None,
+        model: UUIDFilterOption = None,
+        pipeline_run: UUIDFilterOption = None,
+        run_metadata: StringFilterOption = None,
+        tags: StringFilterOption = None,
         hydrate: bool = False,
     ) -> Page[ArtifactVersionResponse]:
         """Get a list of artifact versions.
@@ -5891,7 +5907,6 @@ class Client(metaclass=ClientMetaClass):
             only_unused: Only return artifact versions that are not used in
                 any pipeline runs.
             has_custom_name: Filter artifacts with/without custom names.
-            tag: A tag to filter by.
             tags: Tags to filter by.
             user: Filter by user name or ID.
             model: Filter by model name or ID.
@@ -5906,6 +5921,12 @@ class Client(metaclass=ClientMetaClass):
         if name:
             artifact = name
 
+        if version:
+            if isinstance(version, list):
+                version = [str(v) for v in version]
+            else:
+                version = [str(version)]
+
         artifact_version_filter_model = ArtifactVersionFilter(
             sort_by=sort_by,
             page=page,
@@ -5915,7 +5936,7 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             artifact=artifact,
-            version=str(version) if version else None,
+            version=version,
             version_number=version_number,
             artifact_store_id=artifact_store_id,
             type=type,
@@ -5926,7 +5947,6 @@ class Client(metaclass=ClientMetaClass):
             model_version_id=model_version_id,
             only_unused=only_unused,
             has_custom_name=has_custom_name,
-            tag=tag,
             tags=tags,
             user=user,
             model=model,
@@ -6307,12 +6327,12 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[datetime] = None,
-        updated: Optional[datetime] = None,
-        name: Optional[str] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
         private: Optional[bool] = None,
-        user: Optional[Union[UUID, str]] = None,
+        user: UUIDFilterOption = None,
         hydrate: bool = False,
     ) -> Page[SecretResponse]:
         """Fetches all the secret models.
@@ -6667,12 +6687,12 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
-        user: Optional[Union[UUID, str]] = None,
+        user: UUIDFilterOption = None,
         hydrate: bool = False,
     ) -> Page[CodeRepositoryResponse]:
         """List all code repositories.
@@ -7037,15 +7057,15 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[datetime] = None,
-        updated: Optional[datetime] = None,
-        name: Optional[str] = None,
-        connector_type: Optional[str] = None,
-        auth_method: Optional[str] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        connector_type: StringFilterOption = None,
+        auth_method: StringFilterOption = None,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-        user: Optional[Union[UUID, str]] = None,
+        user: UUIDFilterOption = None,
         labels: Optional[Dict[str, Optional[str]]] = None,
         hydrate: bool = False,
         expand_secrets: bool = False,
@@ -7546,7 +7566,7 @@ class Client(metaclass=ClientMetaClass):
 
     def list_service_connector_resources(
         self,
-        connector_type: Optional[str] = None,
+        connector_type: StringFilterOption = None,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
     ) -> List[ServiceConnectorResourcesModel]:
@@ -7773,15 +7793,14 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        id: Optional[Union[UUID, str]] = None,
-        user: Optional[Union[UUID, str]] = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        id: UUIDFilterOption = None,
+        user: UUIDFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
-        tag: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        tags: StringFilterOption = None,
     ) -> Page[ModelResponse]:
         """Get models by filter from Model Control Plane.
 
@@ -7798,7 +7817,6 @@ class Client(metaclass=ClientMetaClass):
             project: The project name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
-            tag: The tag of the model to filter by.
             tags: Tags to filter by.
 
         Returns:
@@ -7813,7 +7831,6 @@ class Client(metaclass=ClientMetaClass):
             logical_operator=logical_operator,
             created=created,
             updated=updated,
-            tag=tag,
             tags=tags,
             user=user,
             project=project or self.active_project.id,
@@ -8001,23 +8018,22 @@ class Client(metaclass=ClientMetaClass):
 
     def list_model_versions(
         self,
-        model: Optional[Union[str, UUID]] = None,
+        model: UUIDFilterOption = None,
         model_name_or_id: Optional[Union[str, UUID]] = None,
         sort_by: str = "number",
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        id: Optional[Union[UUID, str]] = None,
-        number: Optional[int] = None,
-        stage: Optional[Union[str, ModelStages]] = None,
-        run_metadata: Optional[List[str]] = None,
-        user: Optional[Union[UUID, str]] = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        id: UUIDFilterOption = None,
+        number: IntegerFilterOption = None,
+        stage: EnumFilterOption[ModelStages] = None,
+        run_metadata: StringFilterOption = None,
+        user: UUIDFilterOption = None,
         hydrate: bool = False,
-        tag: Optional[str] = None,
-        tags: Optional[List[str]] = None,
+        tags: StringFilterOption = None,
         project: Optional[Union[str, UUID]] = None,
     ) -> Page[ModelVersionResponse]:
         """Get model versions by filter from Model Control Plane.
@@ -8040,7 +8056,6 @@ class Client(metaclass=ClientMetaClass):
             user: Filter by user name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
-            tag: The tag to filter by.
             tags: Tags to filter by.
             project: The project name/ID to filter by.
 
@@ -8072,7 +8087,6 @@ class Client(metaclass=ClientMetaClass):
             number=number,
             stage=stage,
             run_metadata=run_metadata,
-            tag=tag,
             tags=tags,
             user=user,
             model=model,
@@ -8144,16 +8158,16 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        model_version_id: Optional[Union[UUID, str]] = None,
-        artifact_version_id: Optional[Union[UUID, str]] = None,
-        artifact_name: Optional[str] = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        model_version_id: UUIDFilterOption = None,
+        artifact_version_id: UUIDFilterOption = None,
+        artifact_name: StringFilterOption = None,
         only_data_artifacts: Optional[bool] = None,
         only_model_artifacts: Optional[bool] = None,
         only_deployment_artifacts: Optional[bool] = None,
         has_custom_name: Optional[bool] = None,
-        user: Optional[Union[UUID, str]] = None,
+        user: UUIDFilterOption = None,
         hydrate: bool = False,
     ) -> Page[ModelVersionArtifactResponse]:
         """Get model version to artifact links by filter in Model Control Plane.
@@ -8256,12 +8270,12 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        model_version_id: Optional[Union[UUID, str]] = None,
-        pipeline_run_id: Optional[Union[UUID, str]] = None,
-        pipeline_run_name: Optional[str] = None,
-        user: Optional[Union[UUID, str]] = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        model_version_id: UUIDFilterOption = None,
+        pipeline_run_id: UUIDFilterOption = None,
+        pipeline_run_name: StringFilterOption = None,
+        user: UUIDFilterOption = None,
         hydrate: bool = False,
     ) -> Page[ModelVersionPipelineRunResponse]:
         """Get all model version to pipeline run links by filter.
@@ -8307,16 +8321,16 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        expires: Optional[Union[datetime, str]] = None,
-        client_id: Union[UUID, str, None] = None,
-        status: Union[OAuthDeviceStatus, str, None] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        expires: DatetimeFilterOption = None,
+        client_id: UUIDFilterOption = None,
+        status: EnumFilterOption[OAuthDeviceStatus] = None,
         trusted_device: Union[bool, str, None] = None,
-        user: Optional[Union[UUID, str]] = None,
-        failed_auth_attempts: Union[int, str, None] = None,
-        last_login: Optional[Union[datetime, str, None]] = None,
+        user: UUIDFilterOption = None,
+        failed_auth_attempts: IntegerFilterOption = None,
+        last_login: DatetimeFilterOption = None,
         hydrate: bool = False,
     ) -> Page[OAuthDeviceResponse]:
         """List all authorized devices.
@@ -8746,12 +8760,12 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        external_user_id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        id: UUIDFilterOption = None,
+        external_user_id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        description: StringFilterOption = None,
         active: Optional[bool] = None,
         hydrate: bool = False,
     ) -> Page[ServiceAccountResponse]:
@@ -8915,14 +8929,14 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        id: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        description: StringFilterOption = None,
         active: Optional[bool] = None,
-        last_login: Optional[Union[datetime, str]] = None,
-        last_rotated: Optional[Union[datetime, str]] = None,
+        last_login: DatetimeFilterOption = None,
+        last_rotated: DatetimeFilterOption = None,
         hydrate: bool = False,
     ) -> Page[APIKeyResponse]:
         """List all API keys.
@@ -9234,14 +9248,14 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
-        id: Optional[Union[UUID, str]] = None,
-        user: Optional[Union[UUID, str]] = None,
-        created: Optional[Union[datetime, str]] = None,
-        updated: Optional[Union[datetime, str]] = None,
-        name: Optional[str] = None,
-        color: Optional[Union[str, ColorVariants]] = None,
+        id: UUIDFilterOption = None,
+        user: UUIDFilterOption = None,
+        created: DatetimeFilterOption = None,
+        updated: DatetimeFilterOption = None,
+        name: StringFilterOption = None,
+        color: EnumFilterOption[ColorVariants] = None,
         exclusive: Optional[bool] = None,
-        resource_type: Optional[Union[str, TaggableResourceTypes]] = None,
+        resource_type: EnumFilterOption[TaggableResourceTypes] = None,
         hydrate: bool = False,
     ) -> Page[TagResponse]:
         """Get tags by filter.
@@ -9256,9 +9270,9 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation.
             updated: Use the last updated date for filtering.
             name: The name of the tag.
-            color: The color of the tag.
+            color: Filter by tag color (enum, string wire value, or list).
             exclusive: Flag indicating whether the tag is exclusive.
-            resource_type: Filter tags associated with a specific resource type.
+            resource_type: Filter by resource type (enum, string wire value, or list).
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 

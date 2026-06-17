@@ -26,8 +26,6 @@ from zenml.constants import (
 from zenml.models import TagResourceRequest, TagResourceResponse
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
-from zenml.zen_server.rbac.models import Action
-from zenml.zen_server.rbac.utils import batch_verify_permissions_for_models
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     zen_store,
@@ -38,16 +36,6 @@ router = APIRouter(
     tags=["tag_resources"],
     responses={401: error_response, 403: error_response},
 )
-
-
-def _verify_tag_resources_update_permission(
-    tag_resources: List[TagResourceRequest],
-) -> None:
-    """Verify update permission on all resources being tagged."""
-    resources = zen_store().get_resources_from_tag_resources(
-        tag_resources=tag_resources
-    )
-    batch_verify_permissions_for_models(models=resources, action=Action.UPDATE)
 
 
 @router.post(
@@ -67,7 +55,6 @@ def create_tag_resource(
     Returns:
         A tag resource response.
     """
-    _verify_tag_resources_update_permission(tag_resources=[tag_resource])
     return zen_store().create_tag_resource(tag_resource=tag_resource)
 
 
@@ -88,7 +75,6 @@ def batch_create_tag_resource(
     Returns:
         A list of tag resource responses.
     """
-    _verify_tag_resources_update_permission(tag_resources=tag_resources)
     return zen_store().batch_create_tag_resource(tag_resources=tag_resources)
 
 
@@ -106,7 +92,6 @@ def delete_tag_resource(
     Args:
         tag_resource: The tag resource relationship to delete.
     """
-    _verify_tag_resources_update_permission(tag_resources=[tag_resource])
     zen_store().delete_tag_resource(tag_resource=tag_resource)
 
 
@@ -124,5 +109,4 @@ def batch_delete_tag_resource(
     Args:
         tag_resources: A list of tag resource requests.
     """
-    _verify_tag_resources_update_permission(tag_resources=tag_resources)
     zen_store().batch_delete_tag_resource(tag_resources=tag_resources)
