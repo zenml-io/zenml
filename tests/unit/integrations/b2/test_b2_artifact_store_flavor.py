@@ -15,9 +15,9 @@
 
 These tests intentionally exercise only the config/flavor surface that the
 B2 integration adds on top of the inherited S3 implementation: the flavor
-identifier, CLI JSON parsing, runtime B2 fallbacks, and the typed ``config``
-property on the artifact store. We mock ``boto3.resource`` so no real S3/B2
-client is constructed during instantiation.
+identifier, runtime B2 fallbacks, and the typed ``config`` property on the
+artifact store. We mock ``boto3.resource`` so no real S3/B2 client is
+constructed during instantiation.
 """
 
 from datetime import datetime
@@ -95,36 +95,6 @@ def test_missing_endpoint_url_is_not_persisted(monkeypatch):
     assert config.client_kwargs is not None
     assert config.client_kwargs["region_name"] == "us-west-004"
     assert "endpoint_url" not in config.client_kwargs
-
-
-def test_client_kwargs_json_string_is_parsed(monkeypatch):
-    """CLI-style JSON client kwargs are parsed before validation."""
-    monkeypatch.delenv(B2_KEY_ID_ENV_VAR, raising=False)
-    monkeypatch.delenv(B2_APPLICATION_KEY_ENV_VAR, raising=False)
-
-    config = B2ArtifactStoreConfig(
-        path="s3://my-b2-bucket",
-        client_kwargs=(
-            '{"endpoint_url": "https://s3.eu-central-003.backblazeb2.com"}'
-        ),
-    )
-
-    assert config.client_kwargs == {
-        "endpoint_url": "https://s3.eu-central-003.backblazeb2.com"
-    }
-
-
-def test_config_kwargs_json_string_is_parsed(monkeypatch):
-    """CLI-style JSON config kwargs are parsed before validation."""
-    monkeypatch.delenv(B2_KEY_ID_ENV_VAR, raising=False)
-    monkeypatch.delenv(B2_APPLICATION_KEY_ENV_VAR, raising=False)
-
-    config = B2ArtifactStoreConfig(
-        path="s3://my-b2-bucket",
-        config_kwargs='{"signature_version": "s3v4"}',
-    )
-
-    assert config.config_kwargs == {"signature_version": "s3v4"}
 
 
 def test_b2_env_vars_populate_runtime_credentials(monkeypatch):

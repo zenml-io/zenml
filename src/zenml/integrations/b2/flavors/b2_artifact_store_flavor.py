@@ -20,15 +20,11 @@ agent defaults are applied in the artifact store implementation so they are
 not persisted as stack component configuration.
 """
 
-import json
 from typing import (
     TYPE_CHECKING,
-    Any,
     Optional,
     Type,
 )
-
-from pydantic import field_validator
 
 from zenml.integrations.b2 import B2_ARTIFACT_STORE_FLAVOR
 from zenml.integrations.s3.flavors.s3_artifact_store_flavor import (
@@ -61,30 +57,6 @@ class B2ArtifactStoreConfig(S3ArtifactStoreConfig):
     URI continues to use the ``s3://`` scheme because the underlying
     filesystem (s3fs) addresses B2 buckets through the S3 API.
     """
-
-    @field_validator("client_kwargs", "config_kwargs", mode="before")
-    @classmethod
-    def _parse_json_dict(cls, value: Any) -> Any:
-        """Parse JSON string dictionaries passed through the CLI.
-
-        Args:
-            value: The raw field value.
-
-        Raises:
-            ValueError: If the value is a JSON string that does not decode to
-                a dictionary.
-
-        Returns:
-            The parsed dictionary for JSON strings, otherwise the original
-            value so Pydantic can perform normal validation.
-        """
-        if not isinstance(value, str):
-            return value
-
-        parsed_value = json.loads(value)
-        if not isinstance(parsed_value, dict):
-            raise ValueError("Expected a JSON object.")
-        return parsed_value
 
 
 class B2ArtifactStoreFlavor(S3ArtifactStoreFlavor):
