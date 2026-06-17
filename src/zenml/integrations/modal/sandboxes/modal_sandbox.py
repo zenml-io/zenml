@@ -16,6 +16,7 @@
 import logging
 import shlex
 import time
+from threading import Lock
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -134,9 +135,9 @@ class ModalSandboxProcess(SandboxProcess):
         The session handle is closed afterwards — the sandbox is gone,
         so further use would only fail later with a confusing Modal
         error instead of ``SandboxSessionClosedError``. Delegates to
-        ``session.destroy()`` so termination failures surface as the
+        ``session.destroy()`` so a termination failure surfaces as the
         documented retryable ``RuntimeError`` (with the billing warning)
-        and leave the handle open for retry.
+        and leaves the handle open for retry.
         """
         session = cast("ModalSandboxSession", self._session)
         logger.warning(
@@ -273,13 +274,19 @@ class ModalSandboxSession(SandboxSession):
     def _destroy(self) -> None:
         """Terminate the Sandbox on Modal.
 
-        Raised failures propagate before the base `destroy()` template
-        closes the handle, so on failure the handle stays open and
-        destroy() can be retried.
+        A sandbox that has already exited (destroyed elsewhere or its TTL
+        expired) is a successful no-op. Otherwise a termination failure
+        propagates before the base `destroy()` template closes the handle,
+        so on failure the handle stays open and destroy() can be retried.
 
         Raises:
-            RuntimeError: If Modal fails to terminate the sandbox.
+            RuntimeError: If Modal fails to terminate a running sandbox.
         """
+        # Already gone: nothing to terminate, and surfacing a Modal error
+        # here would wrongly warn about a resource that is no longer
+        # running or billing.
+        if self._sandbox.poll() is not None:
+            return
         try:
             self._sandbox.terminate()
         except Exception as e:
@@ -303,7 +310,10 @@ class ModalSandbox(BaseSandbox):
         super().__init__(*args, **kwargs)
         # Explicit Modal client built lazily from the component's
         # credentials and reused across sessions; rebuilt if it closes.
+        # The lock guards the build against concurrent create_session calls
+        # (e.g. fanned-out mapped steps sharing this component instance).
         self._modal_client: Optional["modal.Client"] = None
+        self._modal_client_lock = Lock()
 
     def _get_modal_client(self) -> Optional["modal.Client"]:
         """Return the explicit Modal client for this component, if any.
@@ -320,13 +330,19 @@ class ModalSandbox(BaseSandbox):
             and not self._modal_client.is_closed()
         ):
             return self._modal_client
-        self._modal_client = (
-            sandbox_utils.create_modal_client_from_credentials(
-                token_id=self.config.token_id,
-                token_secret=self.config.token_secret,
+        with self._modal_client_lock:
+            if (
+                self._modal_client is not None
+                and not self._modal_client.is_closed()
+            ):
+                return self._modal_client
+            self._modal_client = (
+                sandbox_utils.create_modal_client_from_credentials(
+                    token_id=self.config.token_id,
+                    token_secret=self.config.token_secret,
+                )
             )
-        )
-        return self._modal_client
+            return self._modal_client
 
     @property
     def config(self) -> ModalSandboxConfig:

@@ -66,6 +66,9 @@ def _make_session(fake_sandbox: Any) -> ModalSandboxSession:
     parent = MagicMock(spec=BaseSandbox)
     parent.flavor = "modal"
     parent.id = uuid4()
+    # A freshly created session wraps a running sandbox; _destroy() only
+    # terminates when poll() reports it's still alive.
+    fake_sandbox.poll.return_value = None
     return ModalSandboxSession(fake_sandbox, parent=parent)
 
 
@@ -361,6 +364,17 @@ class TestModalSandboxSession:
         assert session.closed is False
         fake_sandbox.terminate.side_effect = None
         session.destroy()  # retry succeeds
+        assert session.closed is True
+
+    def test_destroy_is_noop_when_sandbox_already_terminated(self) -> None:
+        # If the sandbox already exited (destroyed elsewhere or TTL
+        # expired), destroy() must not call terminate() or surface an
+        # error about a resource that is no longer running/billing.
+        fake_sandbox = MagicMock(object_id="sb_xyz")
+        session = _make_session(fake_sandbox)
+        fake_sandbox.poll.return_value = 0  # already terminated
+        session.destroy()
+        fake_sandbox.terminate.assert_not_called()
         assert session.closed is True
 
     def test_close_is_a_noop(self) -> None:
