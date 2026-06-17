@@ -34,7 +34,7 @@ class SSHIntegration(Integration):
     """Definition of SSH integration for ZenML."""
 
     NAME = SSH
-    REQUIREMENTS = ["paramiko>=3.0.0,<5"]
+    REQUIREMENTS = ["paramiko>=3.0.0,<6"]
 
     @classmethod
     def activate(cls) -> None:

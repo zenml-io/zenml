@@ -114,7 +114,7 @@ class TestFlavor:
         assert StackComponentType.IMAGE_BUILDER in required
 
     def test_supports_all_execution_modes(self) -> None:
-        modes = _make_orchestrator().supported_execution_modes()
+        modes = _make_orchestrator().supported_execution_modes
         assert ExecutionMode.FAIL_FAST in modes
         assert ExecutionMode.STOP_ON_FAILURE in modes
         assert ExecutionMode.CONTINUE_ON_FAILURE in modes

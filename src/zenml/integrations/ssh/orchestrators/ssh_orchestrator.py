@@ -150,6 +150,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
             }
         )
 
+    @property
     def supported_execution_modes(self) -> List[ExecutionMode]:
         """Execution modes supported by this orchestrator.
 
