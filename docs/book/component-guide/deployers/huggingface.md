@@ -2,6 +2,11 @@
 description: Deploying your pipelines to Hugging Face Spaces.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Hugging Face Deployer
 
 [Hugging Face Spaces](https://huggingface.co/spaces) is a platform for hosting and sharing machine learning applications. The Hugging Face deployer is a [deployer](./) flavor included in the ZenML Hugging Face integration that deploys your pipelines to Hugging Face Spaces as Docker-based applications.
