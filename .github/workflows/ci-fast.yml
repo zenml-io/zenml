@@ -2,7 +2,6 @@
 # PR tier: runs on every non-draft pull request, merge_group entry, and push
 # to develop.
 #
-# Policy decisions recorded here (see CI-REWORK-PLAN.md §2.0 and §4.1):
 #
 # (1) Linting leaves the PR tier — py3.13 full lint runs in ci-medium; ci-fast
 #     gets the cheap consolidated static-checks job (spellcheck + ruff +
