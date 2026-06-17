@@ -25,6 +25,7 @@ from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
 SSH_STEP_OPERATOR_FLAVOR = "ssh"
+SSH_ORCHESTRATOR_FLAVOR = "ssh"
 
 
 class SSHIntegration(Integration):
@@ -40,6 +41,9 @@ class SSHIntegration(Integration):
         Returns:
             List of new stack component flavors.
         """
-        from zenml.integrations.ssh.flavors import SSHStepOperatorFlavor
+        from zenml.integrations.ssh.flavors import (
+            SSHOrchestratorFlavor,
+            SSHStepOperatorFlavor,
+        )
 
-        return [SSHStepOperatorFlavor]
+        return [SSHStepOperatorFlavor, SSHOrchestratorFlavor]
