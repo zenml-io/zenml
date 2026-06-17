@@ -18,6 +18,11 @@ from zenml.integrations.modal.flavors.modal_orchestrator_flavor import (
     ModalOrchestratorFlavor,
     ModalOrchestratorSettings,
 )
+from zenml.integrations.modal.flavors.modal_sandbox_flavor import (
+    ModalSandboxConfig,
+    ModalSandboxFlavor,
+    ModalSandboxSettings,
+)
 from zenml.integrations.modal.flavors.modal_step_operator_flavor import (
     ModalStepOperatorConfig,
     ModalStepOperatorFlavor,
@@ -28,6 +33,9 @@ __all__ = [
     "ModalOrchestratorConfig",
     "ModalOrchestratorFlavor",
     "ModalOrchestratorSettings",
+    "ModalSandboxConfig",
+    "ModalSandboxFlavor",
+    "ModalSandboxSettings",
     "ModalStepOperatorConfig",
     "ModalStepOperatorFlavor",
     "ModalStepOperatorSettings",
