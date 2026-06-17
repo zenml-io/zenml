@@ -25,7 +25,7 @@ from zenml.integrations.ssh import (
 )
 from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
-from zenml.utils.secret_utils import PlainSerializedSecretStr
+from zenml.utils.secret_utils import PlainSerializedSecretStr, SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.ssh.orchestrators import SSHOrchestrator
@@ -88,13 +88,13 @@ class SSHOrchestratorConfig(BaseOrchestratorConfig, SSHOrchestratorSettings):
         "machine. Supports RSA, Ed25519, and ECDSA keys. Example: "
         "'~/.ssh/id_ed25519'",
     )
-    ssh_private_key: Optional[PlainSerializedSecretStr] = Field(
+    ssh_private_key: Optional[PlainSerializedSecretStr] = SecretField(
         default=None,
         description="SSH private key content, used instead of ssh_key_path "
         "when the key is stored in a ZenML secret. Supports {{secret.key}} "
         "references",
     )
-    ssh_key_passphrase: Optional[PlainSerializedSecretStr] = Field(
+    ssh_key_passphrase: Optional[PlainSerializedSecretStr] = SecretField(
         default=None,
         description="Passphrase for an encrypted SSH private key. Leave "
         "unset if the key is not encrypted",
