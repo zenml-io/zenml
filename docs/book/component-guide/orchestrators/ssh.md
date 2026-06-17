@@ -24,7 +24,7 @@ You should use the SSH orchestrator if:
 * you want a simple, self-hosted orchestrator without Kubernetes or a cloud-managed service.
 * you are migrating away from the deprecated HyperAI orchestrator.
 
-If you only want to offload *individual* compute-heavy steps to a remote host while keeping a different orchestrator, consider the sibling [SSH step operator](https://docs.zenml.io/stacks/step-operators/ssh) instead. The two share the same connection layer and can target the same host.
+If you only want to offload *individual* compute-heavy steps to a remote host while keeping a different orchestrator, consider the sibling [SSH step operator](../step-operators/ssh.md) instead. The two share the same connection layer and can target the same host.
 
 ### Prerequisites
 
