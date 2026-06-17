@@ -147,6 +147,16 @@ class SSHOrchestratorConfig(BaseOrchestratorConfig, SSHOrchestratorSettings):
         "kept because cron and at jobs reference their run scripts. Example: "
         "False when an external cleanup job manages the remote workdir",
     )
+    minimum_free_disk_gb: float = Field(
+        default=5.0,
+        ge=0,
+        description="Pre-flight guard: fail a submission with a clear error if "
+        "the remote host has less free disk than this (in GB) on the "
+        "remote_workdir filesystem. The orchestrator pulls a Docker image per "
+        "pipeline version, which accumulates on the host, so this prevents the "
+        "cryptic failures that happen when the host runs out of disk. Set to 0 "
+        "to disable the check. Example: 10.0 for image-heavy pipelines",
+    )
 
     @property
     def is_remote(self) -> bool:

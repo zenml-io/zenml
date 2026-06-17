@@ -279,6 +279,40 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         """
         return self.config.gpu_enabled_in_container
 
+    def _check_remote_disk(self, ssh: SSHClient, path: str) -> None:
+        """Fail fast if the remote host is low on disk for the given path.
+
+        The orchestrator pulls a Docker image per pipeline version, which
+        accumulates on the host over time. Without this guard, a full disk
+        surfaces as a cryptic Docker/SSH failure mid-run; here it becomes a
+        clear, actionable error before anything is launched.
+
+        Args:
+            ssh: The open SSH connection.
+            path: An existing remote path on the filesystem to check.
+
+        Raises:
+            RuntimeError: If free disk is below ``minimum_free_disk_gb``.
+        """
+        minimum_gb = self.config.minimum_free_disk_gb
+        if minimum_gb <= 0:
+            return
+        free_bytes = ssh.free_disk_bytes(path)
+        if free_bytes is None:
+            # SFTP statvfs unsupported on this host; skip rather than block.
+            return
+        free_gb = free_bytes / (1024**3)
+        if free_gb < minimum_gb:
+            raise RuntimeError(
+                f"The remote host {self.config.hostname} has only "
+                f"{free_gb:.1f} GB free on the filesystem holding "
+                f"{self.config.remote_workdir}, below the required "
+                f"{minimum_gb:.1f} GB. The SSH orchestrator stores a Docker "
+                f"image per pipeline version, which accumulates over time. "
+                f"Free space on the host (e.g. `docker image prune -a`), grow "
+                f"the disk, or lower the orchestrator's `minimum_free_disk_gb`."
+            )
+
     def _docker_login(self, ssh: SSHClient, stack: "Stack") -> None:
         """Log the remote Docker into the stack's container registry.
 
@@ -373,6 +407,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
                     f"Failed to create remote directory {remote_dir} on "
                     f"{self.config.hostname}: {mkdir.stderr}"
                 )
+            self._check_remote_disk(ssh, remote_dir)
             if self.config.automatic_cleanup_pipeline_files:
                 cleanup = ssh.exec(
                     f"find {shlex.quote(nonscheduled_dir)} -type d "
@@ -533,6 +568,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
                     f"Failed to create remote directory {remote_dir} on "
                     f"{self.config.hostname}: {mkdir.stderr}"
                 )
+            self._check_remote_disk(ssh, remote_dir)
             # docker --env-file reads literal KEY=VALUE lines; keep the file
             # private since it carries the ZenML store credentials.
             env_lines = "".join(

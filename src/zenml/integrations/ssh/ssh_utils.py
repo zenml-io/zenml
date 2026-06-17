@@ -327,11 +327,18 @@ class SSHClient:
                 f"Could not establish an SSH connection to "
                 f"{self.config.hostname}:{self.config.port} as "
                 f"{self.config.username} after {max_attempts} attempts (using "
-                f"{auth_method}). The host may be unreachable, refusing "
-                f"connections, or overloaded (e.g. sshd hitting MaxStartups "
-                f"under heavy load). Verify network connectivity, that sshd is "
-                f"running, and that the host is not out of resources. Last "
-                f"error: {last_error}"
+                f"{auth_method}). To diagnose, run this from the machine "
+                f"executing the pipeline:\n"
+                f"    ssh -p {self.config.port} {self.config.username}@"
+                f"{self.config.hostname}\n"
+                f"- If that also fails: the host is unreachable — check it is "
+                f"running, that a firewall/security group allows inbound TCP "
+                f"on port {self.config.port}, and that the hostname/IP is "
+                f"correct.\n"
+                f"- If that succeeds: the host was likely transiently "
+                f"overloaded (re-run the pipeline) or low on resources — check "
+                f"its disk and memory (`df -h`, `free -m`).\n"
+                f"Last error: {last_error}"
             ) from last_error
 
         # Configure keepalive
@@ -479,6 +486,36 @@ class SSHClient:
             stdout="".join(stdout_chunks),
             stderr="",
         )
+
+    def free_disk_bytes(self, remote_path: str) -> Optional[int]:
+        """Get free disk space on the filesystem holding a remote path.
+
+        Uses the SFTP ``statvfs`` extension (no shell / ``df`` parsing). This
+        is best-effort: returns None if the SFTP server doesn't support the
+        extension, so callers should treat None as "unknown" rather than an
+        error.
+
+        Args:
+            remote_path: An existing path on the remote host.
+
+        Returns:
+            Free bytes available to a non-root user, or None if the SFTP
+            server does not support statvfs.
+        """
+        client = self._get_client()
+        sftp = client.open_sftp()
+        try:
+            stats = sftp.statvfs(remote_path)
+            return int(stats.f_bavail * stats.f_frsize)
+        except Exception:
+            logger.debug(
+                "Could not query free disk space on the remote host via "
+                "SFTP statvfs.",
+                exc_info=True,
+            )
+            return None
+        finally:
+            sftp.close()
 
     def put_text(
         self, remote_path: str, content: str, *, mode: int = 0o600
