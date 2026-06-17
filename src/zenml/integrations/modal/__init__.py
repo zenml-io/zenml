@@ -25,9 +25,6 @@ from zenml.stack import Flavor
 
 MODAL_ORCHESTRATOR_FLAVOR = "modal"
 MODAL_STEP_OPERATOR_FLAVOR = "modal"
-# Same string as the step-operator flavor; intentional. The framework
-# disambiguates by StackComponentType.SANDBOX vs STEP_OPERATOR, so the
-# two flavors can coexist without renaming either.
 MODAL_SANDBOX_FLAVOR = "modal"
 
 
