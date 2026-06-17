@@ -15,10 +15,15 @@
 
 from typing import TYPE_CHECKING, List, Optional, Type
 
-from pydantic import Field, model_validator
+from pydantic import Field
 
 from zenml.config.base_settings import BaseSettings
-from zenml.integrations.ssh import SSH_STEP_OPERATOR_FLAVOR
+from zenml.integrations.ssh import (
+    SSH_CONNECTOR_TYPE,
+    SSH_HOST_RESOURCE_TYPE,
+    SSH_STEP_OPERATOR_FLAVOR,
+)
+from zenml.models import ServiceConnectorRequirements
 from zenml.step_operators import BaseStepOperatorConfig, BaseStepOperatorFlavor
 from zenml.utils.secret_utils import PlainSerializedSecretStr
 
@@ -93,10 +98,12 @@ class SSHStepOperatorConfig(BaseStepOperatorConfig, SSHStepOperatorSettings):
         "Must be reachable from the machine running the orchestrator. "
         "Examples: 'gpu-box.internal', '10.0.1.42', 'my-server.example.com'",
     )
-    username: str = Field(
+    username: Optional[str] = Field(
+        default=None,
         description="SSH username for authentication on the remote host. "
         "This user must have permission to run Docker commands (typically "
-        "a member of the 'docker' group). Example: 'ubuntu'",
+        "a member of the 'docker' group). Optional when a linked SSH service "
+        "connector provides the username. Example: 'ubuntu'",
     )
     port: int = Field(
         default=22,
@@ -171,24 +178,6 @@ class SSHStepOperatorConfig(BaseStepOperatorConfig, SSHStepOperatorSettings):
         "Example: '/usr/local/bin/docker'",
     )
 
-    @model_validator(mode="after")
-    def _check_ssh_auth(self) -> "SSHStepOperatorConfig":
-        """Validate that at least one SSH authentication method is provided.
-
-        Returns:
-            The validated config.
-
-        Raises:
-            ValueError: If neither ssh_key_path nor ssh_private_key is set.
-        """
-        if not self.ssh_key_path and not self.ssh_private_key:
-            raise ValueError(
-                "SSH authentication requires either 'ssh_key_path' (path to "
-                "a private key file) or 'ssh_private_key' (key content, "
-                "ideally via a ZenML secret reference) to be set."
-            )
-        return self
-
     @property
     def is_remote(self) -> bool:
         """Checks if this stack component is running remotely.
@@ -219,6 +208,21 @@ class SSHStepOperatorFlavor(BaseStepOperatorFlavor):
             The name of the flavor.
         """
         return SSH_STEP_OPERATOR_FLAVOR
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector requirements for this flavor.
+
+        Returns:
+            Requirements for compatible SSH service connectors.
+        """
+        return ServiceConnectorRequirements(
+            connector_type=SSH_CONNECTOR_TYPE,
+            resource_type=SSH_HOST_RESOURCE_TYPE,
+            resource_id_attr="hostname",
+        )
 
     @property
     def docs_url(self) -> Optional[str]:

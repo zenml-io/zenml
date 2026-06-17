@@ -56,7 +56,11 @@ from zenml.integrations.ssh.flavors.ssh_orchestrator_flavor import (
     SSHOrchestratorConfig,
     SSHOrchestratorSettings,
 )
-from zenml.integrations.ssh.ssh_utils import SSHClient, SSHConnectionConfig
+from zenml.integrations.ssh.ssh_utils import (
+    SSHClient,
+    SSHConnectionConfig,
+    resolve_ssh_connection_config,
+)
 from zenml.logger import get_logger
 from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.orchestrators import utils as orchestrator_utils
@@ -66,10 +70,12 @@ from zenml.step_operators.step_operator_entrypoint_configuration import (
 )
 
 if TYPE_CHECKING:
+    from zenml.config.step_configurations import Step
     from zenml.config.step_run_info import StepRunInfo
     from zenml.models import (
         PipelineRunResponse,
         PipelineSnapshotResponse,
+        ScheduleResponse,
         StepRunResponse,
     )
     from zenml.stack import Stack
@@ -182,31 +188,12 @@ class SSHOrchestrator(ContainerizedOrchestrator):
     # ------------------------------------------------------------------
 
     def _build_ssh_connection_config(self) -> SSHConnectionConfig:
-        """Build an SSHConnectionConfig from the orchestrator config.
+        """Build an SSHConnectionConfig from connector or component config.
 
         Returns:
             The SSH connection configuration.
         """
-        private_key: Optional[str] = None
-        if self.config.ssh_private_key is not None:
-            private_key = self.config.ssh_private_key.get_secret_value()
-
-        passphrase: Optional[str] = None
-        if self.config.ssh_key_passphrase is not None:
-            passphrase = self.config.ssh_key_passphrase.get_secret_value()
-
-        return SSHConnectionConfig(
-            hostname=self.config.hostname,
-            port=self.config.port,
-            username=self.config.username,
-            ssh_key_path=self.config.ssh_key_path,
-            ssh_private_key=private_key,
-            ssh_key_passphrase=passphrase,
-            verify_host_key=self.config.verify_host_key,
-            known_hosts_path=self.config.known_hosts_path,
-            connection_timeout=self.config.connection_timeout,
-            keepalive_interval=self.config.keepalive_interval,
-        )
+        return resolve_ssh_connection_config(self)
 
     @staticmethod
     def _validate_mount_path(path: str) -> str:
@@ -237,7 +224,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         return self.config.gpu_enabled_in_container
 
     def _docker_login(self, ssh: SSHClient, stack: "Stack") -> None:
-        """Log the remote Docker into the active container registry.
+        """Log the remote Docker into the stack's container registry.
 
         Args:
             ssh: The open SSH connection.
@@ -296,7 +283,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         run_id: str,
         compose: Dict[str, Any],
         stack: "Stack",
-        schedule: Optional[Any] = None,
+        schedule: Optional["ScheduleResponse"] = None,
         snapshot_id: Optional[UUID] = None,
     ) -> None:
         """Write and run or schedule a Compose file on the remote host.
@@ -422,7 +409,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         self,
         snapshot: "PipelineSnapshotResponse",
         step_name: str,
-        step: Any,
+        step: "Step",
         run_id: str,
         step_environment: Dict[str, str],
         scheduled: bool = False,
@@ -667,9 +654,8 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         """
         with self._step_procs_lock:
             process = self._step_procs.get(step_run.id)
-        if process is None or process.poll() is not None:
-            return
-        with self._step_procs_lock:
+            if process is None or process.poll() is not None:
+                return
             self._stopped_step_ids.add(step_run.id)
         try:
             pgid = os.getpgid(process.pid)

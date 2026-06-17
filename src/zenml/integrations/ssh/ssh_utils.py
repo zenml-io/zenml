@@ -22,14 +22,32 @@ ZenML's registry even when paramiko is not installed.
 import io
 import time
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Protocol
 
 from zenml.logger import get_logger
+from zenml.utils.secret_utils import PlainSerializedSecretStr
 
 if TYPE_CHECKING:
     import paramiko
 
+    from zenml.stack import StackComponent
+
 logger = get_logger(__name__)
+
+
+class SSHConnectionConfigSource(Protocol):
+    """Config fields needed to build an SSH connection."""
+
+    hostname: str
+    port: int
+    username: Optional[str]
+    ssh_key_path: Optional[str]
+    ssh_private_key: Optional[PlainSerializedSecretStr]
+    ssh_key_passphrase: Optional[PlainSerializedSecretStr]
+    verify_host_key: bool
+    known_hosts_path: Optional[str]
+    connection_timeout: float
+    keepalive_interval: int
 
 
 @dataclass(frozen=True)
@@ -60,6 +78,83 @@ class SSHConnectionConfig:
     known_hosts_path: Optional[str] = None
     connection_timeout: float = 10.0
     keepalive_interval: int = 30
+
+
+def build_ssh_connection_config_from_config(
+    config: SSHConnectionConfigSource,
+) -> SSHConnectionConfig:
+    """Build an SSH connection config from component configuration.
+
+    Args:
+        config: Component configuration with SSH connection fields.
+
+    Returns:
+        The resolved SSH connection configuration.
+
+    Raises:
+        RuntimeError: If required explicit SSH auth fields are missing.
+    """
+    if not config.username:
+        raise RuntimeError(
+            "SSH authentication requires a `username` to be configured "
+            "directly on the component or supplied by a linked SSH service "
+            "connector."
+        )
+
+    private_key: Optional[str] = None
+    if config.ssh_private_key is not None:
+        private_key = config.ssh_private_key.get_secret_value()
+
+    if not config.ssh_key_path and private_key is None:
+        raise RuntimeError(
+            "SSH authentication requires either `ssh_key_path` or "
+            "`ssh_private_key` to be configured directly on the component, "
+            "or a linked SSH service connector to supply credentials."
+        )
+
+    passphrase: Optional[str] = None
+    if config.ssh_key_passphrase is not None:
+        passphrase = config.ssh_key_passphrase.get_secret_value()
+
+    return SSHConnectionConfig(
+        hostname=config.hostname,
+        port=config.port,
+        username=config.username,
+        ssh_key_path=config.ssh_key_path,
+        ssh_private_key=private_key,
+        ssh_key_passphrase=passphrase,
+        verify_host_key=config.verify_host_key,
+        known_hosts_path=config.known_hosts_path,
+        connection_timeout=config.connection_timeout,
+        keepalive_interval=config.keepalive_interval,
+    )
+
+
+def resolve_ssh_connection_config(
+    component: "StackComponent",
+) -> SSHConnectionConfig:
+    """Resolve an SSH connection from a linked connector or component config.
+
+    Args:
+        component: The SSH stack component.
+
+    Returns:
+        The resolved SSH connection configuration.
+
+    Raises:
+        RuntimeError: If a linked connector returns an unexpected value or if
+            explicit component credentials are incomplete.
+    """
+    if connector := component.get_connector():
+        connection_config = connector.connect(verify=False)
+        if not isinstance(connection_config, SSHConnectionConfig):
+            raise RuntimeError(
+                "Expected linked SSH service connector to return an "
+                f"SSHConnectionConfig, but got {type(connection_config)}."
+            )
+        return connection_config
+
+    return build_ssh_connection_config_from_config(component.config)
 
 
 @dataclass
@@ -121,8 +216,8 @@ class SSHClient:
             import paramiko
         except ImportError as e:
             raise RuntimeError(
-                "The 'paramiko' package is required for the SSH step "
-                "operator but is not installed. Install it with: "
+                "The 'paramiko' package is required for the SSH integration "
+                "but is not installed. Install it with: "
                 "zenml integration install ssh"
             ) from e
 

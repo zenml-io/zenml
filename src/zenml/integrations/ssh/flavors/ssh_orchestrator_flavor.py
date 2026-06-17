@@ -15,10 +15,15 @@
 
 from typing import TYPE_CHECKING, Dict, Optional, Type
 
-from pydantic import Field, model_validator
+from pydantic import Field
 
 from zenml.config.base_settings import BaseSettings
-from zenml.integrations.ssh import SSH_ORCHESTRATOR_FLAVOR
+from zenml.integrations.ssh import (
+    SSH_CONNECTOR_TYPE,
+    SSH_HOST_RESOURCE_TYPE,
+    SSH_ORCHESTRATOR_FLAVOR,
+)
+from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 from zenml.utils.secret_utils import PlainSerializedSecretStr
 
@@ -64,10 +69,12 @@ class SSHOrchestratorConfig(BaseOrchestratorConfig, SSHOrchestratorSettings):
         "be reachable from the machine submitting the pipeline. Examples: "
         "'gpu-box.internal', '10.0.1.42', 'my-server.example.com'",
     )
-    username: str = Field(
+    username: Optional[str] = Field(
+        default=None,
         description="SSH username for authentication on the remote host. "
         "This user must be able to run Docker (typically a member of the "
-        "'docker' group). Example: 'ubuntu'",
+        "'docker' group). Optional when a linked SSH service connector "
+        "provides the username. Example: 'ubuntu'",
     )
     port: int = Field(
         default=22,
@@ -129,8 +136,8 @@ class SSHOrchestratorConfig(BaseOrchestratorConfig, SSHOrchestratorSettings):
     )
     container_registry_autologin: bool = Field(
         default=False,
-        description="Run `docker login` on the remote host using the active "
-        "stack's container registry credentials before launching, so "
+        description="Run `docker login` on the remote host using the "
+        "submitted stack's container registry credentials before launching, so "
         "private images can be pulled. Example: True for a private registry",
     )
     automatic_cleanup_pipeline_files: bool = Field(
@@ -140,24 +147,6 @@ class SSHOrchestratorConfig(BaseOrchestratorConfig, SSHOrchestratorSettings):
         "kept because cron and at jobs reference their run scripts. Example: "
         "False when an external cleanup job manages the remote workdir",
     )
-
-    @model_validator(mode="after")
-    def _check_ssh_auth(self) -> "SSHOrchestratorConfig":
-        """Validate that an SSH authentication method is provided.
-
-        Returns:
-            The validated config.
-
-        Raises:
-            ValueError: If neither ssh_key_path nor ssh_private_key is set.
-        """
-        if not self.ssh_key_path and not self.ssh_private_key:
-            raise ValueError(
-                "SSH authentication requires either 'ssh_key_path' (path to "
-                "a private key file) or 'ssh_private_key' (key content, "
-                "ideally via a ZenML secret reference) to be set."
-            )
-        return self
 
     @property
     def is_remote(self) -> bool:
@@ -199,6 +188,21 @@ class SSHOrchestratorFlavor(BaseOrchestratorFlavor):
             The flavor name.
         """
         return SSH_ORCHESTRATOR_FLAVOR
+
+    @property
+    def service_connector_requirements(
+        self,
+    ) -> Optional[ServiceConnectorRequirements]:
+        """Service connector requirements for this flavor.
+
+        Returns:
+            Requirements for compatible SSH service connectors.
+        """
+        return ServiceConnectorRequirements(
+            connector_type=SSH_CONNECTOR_TYPE,
+            resource_type=SSH_HOST_RESOURCE_TYPE,
+            resource_id_attr="hostname",
+        )
 
     @property
     def docs_url(self) -> Optional[str]:

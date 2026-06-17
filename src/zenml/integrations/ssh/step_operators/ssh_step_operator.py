@@ -40,6 +40,7 @@ from zenml.integrations.ssh.ssh_utils import (
     RemoteCommandResult,
     SSHClient,
     SSHConnectionConfig,
+    resolve_ssh_connection_config,
 )
 from zenml.logger import get_logger
 from zenml.orchestrators.publish_utils import publish_step_run_metadata
@@ -159,32 +160,12 @@ class SSHStepOperator(BaseStepOperator):
         return builds
 
     def _build_ssh_connection_config(self) -> SSHConnectionConfig:
-        """Build an SSHConnectionConfig from the operator's config.
+        """Build an SSHConnectionConfig from connector or component config.
 
         Returns:
             The SSH connection configuration.
         """
-        # Resolve PlainSerializedSecretStr values to plain strings
-        private_key: Optional[str] = None
-        if self.config.ssh_private_key is not None:
-            private_key = self.config.ssh_private_key.get_secret_value()
-
-        passphrase: Optional[str] = None
-        if self.config.ssh_key_passphrase is not None:
-            passphrase = self.config.ssh_key_passphrase.get_secret_value()
-
-        return SSHConnectionConfig(
-            hostname=self.config.hostname,
-            port=self.config.port,
-            username=self.config.username,
-            ssh_key_path=self.config.ssh_key_path,
-            ssh_private_key=private_key,
-            ssh_key_passphrase=passphrase,
-            verify_host_key=self.config.verify_host_key,
-            known_hosts_path=self.config.known_hosts_path,
-            connection_timeout=self.config.connection_timeout,
-            keepalive_interval=self.config.keepalive_interval,
-        )
+        return resolve_ssh_connection_config(self)
 
     def _run_preflight_checks(self, ssh: SSHClient) -> None:
         """Verify the remote host has the required tools installed.
@@ -284,8 +265,8 @@ class SSHStepOperator(BaseStepOperator):
         logger.info(
             "Submitting step '%s' to %s:%d (image: %s, container: %s)",
             info.pipeline_step_name,
-            self.config.hostname,
-            self.config.port,
+            conn_config.hostname,
+            conn_config.port,
             image_name,
             container_name,
         )

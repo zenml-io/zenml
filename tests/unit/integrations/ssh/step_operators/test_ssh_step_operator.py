@@ -21,7 +21,10 @@ from typing import Any, Dict
 from unittest.mock import MagicMock, patch
 
 from zenml.enums import ExecutionStatus
-from zenml.integrations.ssh.ssh_utils import RemoteCommandResult
+from zenml.integrations.ssh.ssh_utils import (
+    RemoteCommandResult,
+    SSHConnectionConfig,
+)
 from zenml.integrations.ssh.step_operators.ssh_step_operator import (
     SSH_CANCEL_FILE_METADATA_KEY,
     SSH_CONTAINER_NAME_METADATA_KEY,
@@ -88,7 +91,25 @@ def _make_operator() -> SSHStepOperator:
     config.keepalive_interval = 30
     config.docker_binary = "docker"
     operator._config = config
+    operator.connector = None
     return operator
+
+
+class TestConnectionConfig:
+    def test_uses_linked_connector_when_available(self) -> None:
+        operator = _make_operator()
+        connector_config = SSHConnectionConfig(
+            hostname="connector-host",
+            port=2222,
+            username="connector-user",
+            ssh_private_key="key",
+        )
+        connector = MagicMock()
+        connector.connect.return_value = connector_config
+        operator.get_connector = MagicMock(return_value=connector)  # type: ignore[method-assign]
+
+        assert operator._build_ssh_connection_config() is connector_config
+        connector.connect.assert_called_once_with(verify=False)
 
 
 # --- _map_state_to_status ---

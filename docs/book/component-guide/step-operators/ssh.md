@@ -47,7 +47,7 @@ To use the SSH step operator, you need:
 
 * An [image builder](https://docs.zenml.io/stacks/image-builders/) to build the Docker images for your steps.
 
-We can then register the step operator. **At least one of** `ssh_key_path` **or** `ssh_private_key` **must be provided** for authentication.
+We can then register the step operator. SSH credentials can be configured directly on the step operator or supplied through a linked [SSH service connector](../service-connectors/connector-types/ssh-service-connector.md). When no connector is linked, **at least one of** `ssh_key_path` **or** `ssh_private_key` **must be provided** for authentication.
 
 **Using a key file:**
 
@@ -73,6 +73,27 @@ zenml step-operator register <NAME> \
     --ssh_private_key={{ssh_secret.private_key}} \
     --ssh_key_passphrase={{ssh_secret.passphrase}}
 ```
+
+**Using an SSH service connector shared with other SSH components:**
+
+```shell
+zenml service-connector register <CONNECTOR_NAME> \
+    --type=ssh \
+    --auth-method=private-key \
+    --resource-type=ssh-host \
+    --hostnames=<HOST> \
+    --username=<USER> \
+    --ssh_private_key=@<PATH_TO_PRIVATE_KEY>
+
+zenml step-operator register <NAME> \
+    --flavor=ssh \
+    --hostname=<HOST>
+
+zenml step-operator connect <NAME> \
+    --connector <CONNECTOR_NAME>
+```
+
+When a connector is linked, it supplies the username, private key, passphrase, host-key policy, timeout, and keepalive settings. The step operator's `hostname` selects the SSH host resource from the connector.
 
 We can then add the step operator to our active stack:
 
@@ -169,7 +190,7 @@ def preprocess():
 | Option | Type | Required | Default | Description |
 |--------|------|----------|---------|-------------|
 | `hostname` | str | Yes | - | Hostname or IP of the remote SSH server |
-| `username` | str | Yes | - | SSH username (must have Docker permissions) |
+| `username` | str | No* | - | SSH username (must have Docker permissions) |
 | `port` | int | No | `22` | SSH port on the remote host |
 | `ssh_key_path` | str | No* | - | Path to SSH private key file (RSA, Ed25519, ECDSA) |
 | `ssh_private_key` | str | No* | - | SSH private key content (supports `{{secret.key}}` references) |
@@ -182,7 +203,7 @@ def preprocess():
 | `gpu_lock_dir` | str | No | `/tmp/zenml-gpu-locks` | Directory for per-GPU lock files |
 | `docker_binary` | str | No | `docker` | Path to Docker binary on the remote host |
 
-\* At least one of `ssh_key_path` or `ssh_private_key` must be provided.
+\* `username` and at least one of `ssh_key_path` or `ssh_private_key` must be provided when no SSH service connector is linked.
 
 #### Step Settings (per-step configuration)
 
