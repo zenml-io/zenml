@@ -27,7 +27,10 @@ from pydantic import Field, SecretStr
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import BaseUpdate
-from zenml.models.v2.base.filter import AnyQuery
+from zenml.models.v2.base.filter import (
+    AnyQuery,
+    StringFilterOption,
+)
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
     UserScopedRequest,
@@ -262,8 +265,12 @@ class SecretFilter(UserScopedFilter):
         *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "values",
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *UserScopedFilter.API_SINGLE_INPUT_PARAMS,
+        "private",
+    ]
 
-    name: Optional[str] = Field(
+    name: StringFilterOption = Field(
         default=None,
         description="Name of the secret",
     )

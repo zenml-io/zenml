@@ -222,6 +222,20 @@ def test_platform_event_valid_and_inheritance():
     assert body.source_entity.type == SourceType.PIPELINE_RUN
 
 
+def test_platform_event_snapshot_source_valid():
+    req = PlatformEventTriggerRequest(
+        project=uuid4(),
+        name="evt",
+        active=True,
+        type=TriggerType.PLATFORM_EVENT,
+        flavor=TriggerFlavor.PLATFORM_EVENT,
+        source_entity={"type": SourceType.PIPELINE_SNAPSHOT, "id": uuid4()},
+        target_events=["run_completed"],
+    )
+
+    assert req.source_entity.type == SourceType.PIPELINE_SNAPSHOT
+
+
 def test_platform_event_invalid_combinations():
     # invalid: pipeline + COMPLETED
     with pytest.raises(ValidationError):
@@ -245,4 +259,19 @@ def test_platform_event_invalid_combinations():
             flavor=TriggerFlavor.PLATFORM_EVENT,
             source_entity={"type": SourceType.PIPELINE_RUN, "id": uuid4()},
             target_events=["run_completed"],
+        )
+
+    # invalid: pipeline_snapshot + COMPLETED
+    with pytest.raises(ValidationError):
+        PlatformEventTriggerRequest(
+            project=uuid4(),
+            name="evt",
+            active=True,
+            type=TriggerType.PLATFORM_EVENT,
+            flavor=TriggerFlavor.PLATFORM_EVENT,
+            source_entity={
+                "type": SourceType.PIPELINE_SNAPSHOT,
+                "id": uuid4(),
+            },
+            target_events=["completed"],
         )

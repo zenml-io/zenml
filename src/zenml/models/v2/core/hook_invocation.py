@@ -14,13 +14,18 @@
 """Models representing hook invocations."""
 
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 from uuid import UUID, uuid4
 
 from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus, HookType
+from zenml.models.v2.base.filter import (
+    DatetimeFilterOption,
+    StringFilterOption,
+    UUIDFilterOption,
+)
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -272,34 +277,34 @@ class HookInvocationResponse(
 class HookInvocationFilter(ProjectScopedFilter):
     """Model to enable advanced filtering of hook invocations."""
 
-    pipeline_run_id: Optional[Union[UUID, str]] = Field(
+    pipeline_run_id: UUIDFilterOption = Field(
         default=None,
         description="Pipeline run of this hook invocation",
         union_mode="left_to_right",
     )
-    step_run_id: Optional[Union[UUID, str]] = Field(
+    step_run_id: UUIDFilterOption = Field(
         default=None,
         description="Step run of this hook invocation",
         union_mode="left_to_right",
     )
-    hook_type: Optional[str] = Field(
+    hook_type: StringFilterOption = Field(
         default=None,
         description="Type of this hook invocation",
     )
-    name: Optional[str] = Field(
+    name: StringFilterOption = Field(
         default=None,
         description="Name of this hook invocation",
     )
-    status: Optional[str] = Field(
+    status: StringFilterOption = Field(
         default=None,
         description="Status of this hook invocation",
     )
-    start_time: Optional[Union[datetime, str]] = Field(
+    start_time: DatetimeFilterOption = Field(
         default=None,
         description="Start time of this hook invocation",
         union_mode="left_to_right",
     )
-    end_time: Optional[Union[datetime, str]] = Field(
+    end_time: DatetimeFilterOption = Field(
         default=None,
         description="End time of this hook invocation",
         union_mode="left_to_right",

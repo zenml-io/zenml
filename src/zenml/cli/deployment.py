@@ -624,11 +624,20 @@ def refresh_deployment(
     default=None,
     help="Maximum time in seconds to wait for the deployment to be invoked.",
 )
+@click.option(
+    "--no-wait",
+    "no_wait",
+    is_flag=True,
+    default=False,
+    help="Submit the pipeline run for background execution and return "
+    "immediately with the run ID instead of waiting for the result.",
+)
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 def invoke_deployment(
     deployment_name_or_id: str,
     args: List[str],
     timeout: Optional[int] = None,
+    no_wait: bool = False,
 ) -> None:
     """Call a deployment with arguments.
 
@@ -637,6 +646,9 @@ def invoke_deployment(
         args: The arguments to pass to the deployment call.
         timeout: The maximum time in seconds to wait for the deployment
             to be invoked.
+        no_wait: If True, submit the pipeline run for background execution
+            and return immediately with the run ID instead of waiting for
+            the result.
     """
     from zenml.deployers.utils import invoke_deployment
 
@@ -656,6 +668,7 @@ def invoke_deployment(
             deployment_name_or_id=name_or_id,
             timeout=timeout or 300,  # 5 minute timeout
             project=None,
+            submit=no_wait,
             **parsed_args,
         )
     except DeploymentInvalidParametersError as e:

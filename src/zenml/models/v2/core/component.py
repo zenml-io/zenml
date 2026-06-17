@@ -31,7 +31,11 @@ from pydantic import BaseModel, Field, field_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
 from zenml.models.v2.base.base import BaseUpdate
-from zenml.models.v2.base.filter import AnyQuery
+from zenml.models.v2.base.filter import (
+    AnyQuery,
+    StringFilterOption,
+    UUIDFilterOption,
+)
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
     UserScopedRequest,
@@ -401,28 +405,32 @@ class ComponentFilter(UserScopedFilter):
         *UserScopedFilter.CLI_EXCLUDE_FIELDS,
         "scope_type",
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *UserScopedFilter.API_SINGLE_INPUT_PARAMS,
+        "scope_type",
+    ]
     scope_type: Optional[str] = Field(
         default=None,
         description="The type to scope this query to.",
     )
-    name: Optional[str] = Field(
+    name: StringFilterOption = Field(
         default=None,
         description="Name of the stack component",
     )
-    flavor: Optional[str] = Field(
+    flavor: StringFilterOption = Field(
         default=None,
         description="Flavor of the stack component",
     )
-    type: Optional[str] = Field(
+    type: StringFilterOption = Field(
         default=None,
         description="Type of the stack component",
     )
-    connector_id: Optional[Union[UUID, str]] = Field(
+    connector_id: UUIDFilterOption = Field(
         default=None,
         description="Connector linked to the stack component",
         union_mode="left_to_right",
     )
-    stack_id: Optional[Union[UUID, str]] = Field(
+    stack_id: UUIDFilterOption = Field(
         default=None,
         description="Stack of the stack component",
         union_mode="left_to_right",
@@ -487,10 +495,22 @@ class ComponentFilter(UserScopedFilter):
         )
 
         if self.stack_id:
-            stack_filter = and_(
-                StackCompositionSchema.stack_id == self.stack_id,
-                StackCompositionSchema.component_id == StackComponentSchema.id,
+            stack_filters = (
+                self.stack_id
+                if isinstance(self.stack_id, list)
+                else [self.stack_id]
             )
-            custom_filters.append(stack_filter)
+            for stack_filter in stack_filters:
+                custom_filters.append(
+                    and_(
+                        self.generate_custom_query_conditions_for_column(
+                            value=stack_filter,
+                            table=StackCompositionSchema,
+                            column="stack_id",
+                        ),
+                        StackCompositionSchema.component_id
+                        == StackComponentSchema.id,
+                    )
+                )
 
         return custom_filters

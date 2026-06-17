@@ -112,6 +112,16 @@ def pytest_addoption(parser):
     )
 
 
+def pytest_runtest_logreport(report: pytest.TestReport) -> None:
+    """Log the traceback of attempts that were retried by pytest-rerunfailures.
+
+    Args:
+        report: Test report for a single test phase.
+    """
+    if report.outcome == "rerun" and report.longrepr is not None:
+        print(f"\nRERUN traceback for {report.nodeid}:\n{report.longreprtext}")
+
+
 @pytest.fixture(scope="session", autouse=True)
 def auto_environment(
     session_mocker: MockerFixture,

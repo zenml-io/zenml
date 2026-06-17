@@ -10,6 +10,7 @@
   * [Local Docker Orchestrator](orchestrators/local-docker.md)
   * [Kubeflow Orchestrator](orchestrators/kubeflow.md)
   * [Kubernetes Orchestrator](orchestrators/kubernetes.md)
+  * [Modal Orchestrator](orchestrators/modal.md)
   * [Google Cloud VertexAI Orchestrator](orchestrators/vertex.md)
   * [AWS Sagemaker Orchestrator](orchestrators/sagemaker.md)
   * [AzureML Orchestrator](orchestrators/azureml.md)

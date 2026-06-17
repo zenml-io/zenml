@@ -16,6 +16,7 @@
 import os
 import re
 from abc import ABC, abstractmethod
+from concurrent.futures import ThreadPoolExecutor
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -57,6 +58,7 @@ from zenml.deployers.server.extensions import BaseAppExtension
 from zenml.deployers.server.models import (
     BaseDeploymentInvocationRequest,
     BaseDeploymentInvocationResponse,
+    BaseDeploymentSubmitResponse,
 )
 from zenml.deployers.server.service import (
     BasePipelineDeploymentService,
@@ -152,6 +154,12 @@ class BaseDeploymentAppRunner(ABC):
         self.endpoints: List[EndpointSpec] = []
         self.middlewares: List[MiddlewareSpec] = []
         self.extensions: List[AppExtensionSpec] = []
+
+        # Thread pool used to run pipeline executions submitted via the submit
+        # endpoint in the background.
+        self._executor = ThreadPoolExecutor(
+            max_workers=self.settings.async_execution_thread_pool_size
+        )
 
     @property
     def asgi_app(self) -> ASGIApplication:
@@ -346,6 +354,33 @@ class BaseDeploymentAppRunner(ABC):
 
         return _invoke_endpoint
 
+    def _build_submit_endpoint(
+        self,
+    ) -> Callable[..., BaseDeploymentSubmitResponse]:
+        """Create the endpoint used to submit a pipeline deployment run.
+
+        Returns:
+            A callable endpoint that kicks off the run in the background and
+            returns its run ID.
+        """
+        PipelineInvokeRequest, _ = self.service.get_pipeline_invoke_models()
+
+        def _submit_endpoint(
+            request: PipelineInvokeRequest,  # type: ignore[valid-type]
+        ) -> BaseDeploymentSubmitResponse:
+            placeholder_run, deployment_snapshot = (
+                self.service.prepare_pipeline_run(request)
+            )
+            self._executor.submit(
+                self.service.execute_pipeline_run,
+                request,
+                placeholder_run,
+                deployment_snapshot,
+            )
+            return BaseDeploymentSubmitResponse(run_id=placeholder_run.id)
+
+        return _submit_endpoint
+
     def dashboard_files_path(self) -> Optional[str]:
         """Get the absolute path of the dashboard files directory.
 
@@ -408,6 +443,16 @@ class BaseDeploymentAppRunner(ABC):
                     path=f"{self.settings.api_url_path}{self.settings.invoke_url_path}",
                     method=EndpointMethod.POST,
                     handler=self._build_invoke_endpoint(),
+                    auth_required=True,
+                )
+            )
+
+        if self.settings.endpoint_enabled(DeploymentDefaultEndpoints.SUBMIT):
+            specs.append(
+                EndpointSpec(
+                    path=f"{self.settings.api_url_path}{self.settings.submit_url_path}",
+                    method=EndpointMethod.POST,
+                    handler=self._build_submit_endpoint(),
                     auth_required=True,
                 )
             )
@@ -753,6 +798,10 @@ class BaseDeploymentAppRunner(ABC):
         Raises:
             Exception: If the service cleanup fails.
         """
+        # Wait for in-flight background submit executions to finish before
+        # tearing down the service.
+        self._executor.shutdown(wait=True, cancel_futures=True)
+
         self._run_shutdown_hook()
 
         logger.info("🛑 Cleaning up the pipeline deployment service...")

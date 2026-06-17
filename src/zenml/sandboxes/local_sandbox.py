@@ -49,6 +49,27 @@ DEFAULT_FORWARDED_ENV_VARS = [
     "TERM",
 ]
 
+# Variables the host OS needs to launch a child process at all, injected
+# beneath the user's `forward_env` selection rather than gated behind it.
+# On Windows a child interpreter started without SYSTEMROOT aborts during
+# pre-init ("failed to get random numbers to initialize Python"), so a
+# curated forward list (which never includes OS plumbing) would otherwise
+# break every exec.
+_OS_REQUIRED_ENV_VARS = ["SYSTEMROOT"] if os.name == "nt" else []
+
+
+def _os_required_env() -> Dict[str, str]:
+    """Collect the host-OS variables required to launch any subprocess.
+
+    Returns:
+        The required OS environment variables present in the parent process.
+    """
+    return {
+        key: os.environ[key]
+        for key in _OS_REQUIRED_ENV_VARS
+        if key in os.environ
+    }
+
 
 class LocalSandboxSettings(BaseSandboxSettings):
     """Local sandbox settings."""
@@ -246,6 +267,7 @@ class LocalSandboxSession(SandboxSession):
             effective_cwd = os.path.join(self._workdir, cwd)
 
         env = {
+            **_os_required_env(),
             **self._env,
             **(env or {}),
         }

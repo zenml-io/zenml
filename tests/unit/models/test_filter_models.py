@@ -13,32 +13,39 @@
 #  permissions and limitations under the License.
 import uuid
 from datetime import datetime
-from typing import Any, List, Optional, Type, Union
-from uuid import UUID
+from typing import Any, List, Optional, Type
 
 import pytest
 from pydantic.error_wrappers import ValidationError
 
 import zenml.exceptions
 from zenml.constants import FILTERING_DATETIME_FORMAT
-from zenml.enums import GenericFilterOps, SorterOps
+from zenml.enums import GenericFilterOps, LogicalOperators, SorterOps
 from zenml.models.v2.base.filter import (
     BaseFilter,
+    BoolFilter,
     DatetimeFilter,
+    DatetimeFilterOption,
     Filter,
+    FloatFilterOption,
+    IntegerFilterOption,
     NumericFilter,
     StrFilter,
+    StringFilterOption,
     UUIDFilter,
+    UUIDFilterOption,
 )
 
 
 class SomeFilterModel(BaseFilter):
     """Test custom filter model with all supported field types."""
 
-    uuid_field: Optional[Union[UUID, str]] = None
-    datetime_field: Optional[Union[datetime, str]] = None
-    int_field: Optional[Union[int, str]] = None
-    str_field: Optional[str] = None
+    uuid_field: UUIDFilterOption = None
+    datetime_field: DatetimeFilterOption = None
+    int_field: IntegerFilterOption = None
+    float_field: FloatFilterOption = None
+    str_field: StringFilterOption = None
+    bool_field: bool | str | None = None
 
 
 def _test_filter_model(
@@ -72,7 +79,13 @@ def _test_filter_model(
         if filter_op in ignore_operators:
             continue
 
-        filter_str = f"{filter_op}:{filter_value}"
+        if filter_op in {
+            GenericFilterOps.IS_NULL,
+            GenericFilterOps.IS_NOT_NULL,
+        }:
+            filter_str = f"{filter_op}:"
+        else:
+            filter_str = f"{filter_op}:{filter_value}"
         filter_kwargs = {filter_field: filter_str}
 
         # Fail if incompatible filter operations are used.
@@ -87,7 +100,13 @@ def _test_filter_model(
         model_filter = model_instance.list_of_filters[0]
         assert isinstance(model_filter, filter_class)
         assert model_filter.operation == filter_op
-        assert model_filter.value == expected_value
+        if filter_op in {
+            GenericFilterOps.IS_NULL,
+            GenericFilterOps.IS_NOT_NULL,
+        }:
+            assert model_filter.value is None
+        else:
+            assert model_filter.value == expected_value
         assert model_filter.column == filter_field
 
 
@@ -182,7 +201,11 @@ def test_datetime_filter_model():
         filter_class=DatetimeFilter,
         filter_value=filter_value,
         expected_value=expected_value,
-        ignore_operators=[GenericFilterOps.IN, GenericFilterOps.ONEOF],
+        ignore_operators=[
+            GenericFilterOps.IN,
+            GenericFilterOps.ONEOF,
+            GenericFilterOps.NOT_ONEOF,
+        ],
     )
 
 
@@ -208,6 +231,13 @@ def test_datetime_filter_model_fails_for_wrong_formats(
     with pytest.raises(ValueError):
         SomeFilterModel(datetime_field=false_format_datetime)
     for filter_op in GenericFilterOps.values():
+        if filter_op in {
+            GenericFilterOps.IS_NULL,
+            GenericFilterOps.IS_NOT_NULL,
+            GenericFilterOps.ONEOF,
+            GenericFilterOps.NOT_ONEOF,
+        }:
+            continue
         with pytest.raises(ValueError):
             SomeFilterModel(
                 datetime_field=f"{filter_op}:{false_format_datetime}"
@@ -223,6 +253,91 @@ def test_int_filter_model():
     )
 
 
+def test_bool_filter_model():
+    """Test Filter model creation for bool fields."""
+    _test_filter_model(
+        filter_field="bool_field",
+        filter_class=BoolFilter,
+        filter_value=True,
+        ignore_operators=[
+            GenericFilterOps.CONTAINS,
+            GenericFilterOps.STARTSWITH,
+            GenericFilterOps.ENDSWITH,
+            GenericFilterOps.ONEOF,
+            GenericFilterOps.NOT_ONEOF,
+            GenericFilterOps.NOT_CONTAINS,
+            GenericFilterOps.GT,
+            GenericFilterOps.GTE,
+            GenericFilterOps.LT,
+            GenericFilterOps.LTE,
+            GenericFilterOps.IN,
+        ],
+    )
+
+
+@pytest.mark.parametrize(
+    "filter_value, expected_value",
+    [
+        ("true", True),
+        ("True", True),
+        ("YES", True),
+        ("1", True),
+        ("false", False),
+        ("False", False),
+        ("NO", False),
+        ("0", False),
+    ],
+)
+def test_bool_filter_parses_unambiguous_strings(
+    filter_value: str, expected_value: bool
+) -> None:
+    """Test that bool filters parse unambiguous string values."""
+    filter_model = SomeFilterModel(bool_field=f"equals:{filter_value}")
+
+    model_filter = filter_model.list_of_filters[0]
+    assert isinstance(model_filter, BoolFilter)
+    assert model_filter.operation == GenericFilterOps.EQUALS
+    assert model_filter.value is expected_value
+
+
+@pytest.mark.parametrize("filter_value", ["maybe", "2", "", "none"])
+def test_bool_filter_rejects_ambiguous_strings(filter_value: str) -> None:
+    """Test that bool filters reject ambiguous string values."""
+    with pytest.raises(ValueError):
+        SomeFilterModel(bool_field=f"equals:{filter_value}")
+
+
+def test_float_filter_model():
+    """Test Filter model creation for float fields.
+
+    Float fields currently resolve to `StrFilter` because the alias includes
+    `str` for operator support and there is no dedicated float filter type.
+    """
+    filter_model = SomeFilterModel(float_field="equals:1.3")
+    assert len(filter_model.list_of_filters) == 1
+    model_filter = filter_model.list_of_filters[0]
+    assert isinstance(model_filter, StrFilter)
+    assert model_filter.operation == GenericFilterOps.EQUALS
+    assert model_filter.value == "1.3"
+    assert model_filter.column == "float_field"
+
+
+def test_float_field_supports_multiple_string_filters():
+    """Test that float alias fields can receive multiple operator strings."""
+    filter_model = SomeFilterModel(
+        float_field=["contains:1", "startswith:1.3"]
+    )
+    filters = [
+        f for f in filter_model.list_of_filters if f.column == "float_field"
+    ]
+    assert len(filters) == 2
+    assert [f.operation for f in filters] == [
+        GenericFilterOps.CONTAINS,
+        GenericFilterOps.STARTSWITH,
+    ]
+    assert [f.value for f in filters] == ["1", "1.3"]
+
+
 def test_uuid_filter_model():
     """Test Filter model creation for UUID fields."""
     filter_value = uuid.uuid4()
@@ -231,7 +346,7 @@ def test_uuid_filter_model():
         filter_class=UUIDFilter,
         filter_value=filter_value,
         expected_value=str(filter_value).replace("-", ""),
-        ignore_operators=[GenericFilterOps.ONEOF],
+        ignore_operators=[GenericFilterOps.ONEOF, GenericFilterOps.NOT_ONEOF],
     )
 
 
@@ -239,17 +354,38 @@ def test_uuid_filter_model_succeeds_for_invalid_uuid_on_non_equality():
     """Test filtering with other UUID operations is possible with non-UUIDs."""
     filter_value = "a92k34"
     for filter_op in UUIDFilter.ALLOWED_OPS:
-        if filter_op == GenericFilterOps.ONEOF:
+        if filter_op in {GenericFilterOps.ONEOF, GenericFilterOps.NOT_ONEOF}:
             continue
-        filter_model = SomeFilterModel(
-            uuid_field=f"{filter_op}:{filter_value}"
-        )
+        if filter_op in {
+            GenericFilterOps.IS_NULL,
+            GenericFilterOps.IS_NOT_NULL,
+        }:
+            filter_str = f"{filter_op}:"
+        else:
+            filter_str = f"{filter_op}:{filter_value}"
+        filter_model = SomeFilterModel(uuid_field=filter_str)
         assert len(filter_model.list_of_filters) == 1
         model_filter = filter_model.list_of_filters[0]
         assert isinstance(model_filter, UUIDFilter)
         assert model_filter.operation == filter_op
-        assert model_filter.value == filter_value
+        if filter_op in {
+            GenericFilterOps.IS_NULL,
+            GenericFilterOps.IS_NOT_NULL,
+        }:
+            assert model_filter.value is None
+        else:
+            assert model_filter.value == filter_value
         assert model_filter.column == "uuid_field"
+
+
+@pytest.mark.parametrize(
+    "filter_op",
+    [GenericFilterOps.IS_NULL, GenericFilterOps.IS_NOT_NULL],
+)
+def test_valueless_filter_ops_reject_values(filter_op: GenericFilterOps):
+    """Test that valueless operators reject values after the colon."""
+    with pytest.raises(ValueError):
+        SomeFilterModel(str_field=f"{filter_op}:not-empty")
 
 
 def test_string_filter_model():
@@ -258,5 +394,76 @@ def test_string_filter_model():
         filter_field="str_field",
         filter_class=StrFilter,
         filter_value="a_random_string",
-        ignore_operators=[GenericFilterOps.ONEOF],
+        ignore_operators=[GenericFilterOps.ONEOF, GenericFilterOps.NOT_ONEOF],
     )
+
+
+def test_repeated_filters_support_valueless_operators() -> None:
+    """Test repeated filters with value-based and valueless operators."""
+    model = SomeFilterModel(str_field=["contains:first", "isnull:"])
+
+    filters = [f for f in model.list_of_filters if f.column == "str_field"]
+    assert len(filters) == 2
+    assert [f.operation for f in filters] == [
+        GenericFilterOps.CONTAINS,
+        GenericFilterOps.IS_NULL,
+    ]
+    assert [f.value for f in filters] == ["first", None]
+
+
+@pytest.mark.parametrize(
+    "filter_op",
+    [GenericFilterOps.ONEOF, GenericFilterOps.NOT_ONEOF],
+)
+def test_string_filter_oneof_operators_parse_json_lists(
+    filter_op: GenericFilterOps,
+) -> None:
+    """Test that oneof operators parse JSON list values."""
+    model = SomeFilterModel(str_field=f'{filter_op}:["first", "second"]')
+
+    assert len(model.list_of_filters) == 1
+    model_filter = model.list_of_filters[0]
+    assert isinstance(model_filter, StrFilter)
+    assert model_filter.operation == filter_op
+    assert model_filter.value == ["first", "second"]
+
+
+@pytest.mark.parametrize(
+    "filter_value",
+    ["not-json", '"not-a-list"', '{"key": "value"}'],
+)
+def test_string_filter_oneof_operators_reject_malformed_json(
+    filter_value: str,
+) -> None:
+    """Test that oneof operators reject non-list JSON values."""
+    with pytest.raises(ValueError):
+        SomeFilterModel(str_field=f"{GenericFilterOps.ONEOF}:{filter_value}")
+
+
+def test_multiple_filters_for_same_string_field() -> None:
+    """Test that a list creates multiple filters on one field."""
+    model = SomeFilterModel(
+        str_field=["contains:first", "startswith:second"],
+        logical_operator=LogicalOperators.OR,
+    )
+
+    filters = [f for f in model.list_of_filters if f.column == "str_field"]
+    assert len(filters) == 2
+    assert [f.operation for f in filters] == [
+        GenericFilterOps.CONTAINS,
+        GenericFilterOps.STARTSWITH,
+    ]
+    assert [f.value for f in filters] == ["first", "second"]
+
+
+def test_multiple_filters_for_same_numeric_field() -> None:
+    """Test that numeric fields support multiple operator strings."""
+    model = SomeFilterModel(int_field=["gte:1", "lt:10"])
+
+    filters = [f for f in model.list_of_filters if f.column == "int_field"]
+    assert len(filters) == 2
+    assert [f.operation for f in filters] == [
+        GenericFilterOps.GTE,
+        GenericFilterOps.LT,
+    ]
+    assert [f.value for f in filters] == [1, 10]
