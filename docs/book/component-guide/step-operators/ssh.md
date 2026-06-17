@@ -6,6 +6,10 @@ description: Executing individual steps on a remote host via SSH and Docker.
 
 The SSH step operator allows you to execute individual ZenML steps on a remote Linux host via SSH. Steps run inside Docker containers on the remote machine, with optional GPU selection and per-GPU mutual exclusion via `flock` locks. This is ideal for teams that have dedicated GPU machines they want to use for training without needing a full cluster orchestration platform.
 
+{% hint style="info" %}
+If you want to run *entire* pipelines on a remote host (not just individual steps), see the sibling [SSH orchestrator](https://docs.zenml.io/stacks/orchestrators/ssh). The two components share the same SSH connection layer and can target the same machine.
+{% endhint %}
+
 ### When to use it
 
 You should use the SSH step operator if:

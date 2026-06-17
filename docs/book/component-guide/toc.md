@@ -18,6 +18,7 @@
   * [Tekton Orchestrator](orchestrators/tekton.md)
   * [Airflow Orchestrator](orchestrators/airflow.md)
   * [Skypilot VM Orchestrator](orchestrators/skypilot-vm.md)
+  * [SSH Orchestrator](orchestrators/ssh.md)
   * [HyperAI Orchestrator](orchestrators/hyperai.md)
   * [Lightning AI Orchestrator](orchestrators/lightning.md)
   * [Develop a custom orchestrator](orchestrators/custom.md)
