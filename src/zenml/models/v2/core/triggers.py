@@ -68,6 +68,7 @@ class TriggerDispatchStatusCode(StrEnum):
     SUCCESS = "SUCCESS"
     SKIPPED_CONCURRENCY = "SKIPPED_CONCURRENCY"
     SKIPPED_MAX_RUNS = "SKIPPED_MAX_RUNS"
+    SKIPPED_TRIGGER_CYCLE = "SKIPPED_TRIGGER_CYCLE"
     ERROR = "ERROR"
 
 
@@ -94,6 +95,10 @@ class TriggerSnapshotDispatchState(BaseModel):
     last_status_at: datetime | None = Field(
         default=None,
         description="Timestamp of the latest recorded status transition.",
+    )
+    last_status_details: dict[str, Any] | None = Field(
+        default=None,
+        description="Structured details for the latest dispatch status.",
     )
     last_error_message: str | None = Field(
         default=None,
@@ -221,6 +226,7 @@ class TriggerSnapshotDispatchState(BaseModel):
 
         self.last_status = new_state.last_status
         self.last_status_at = new_state.last_status_at or utc_now()
+        self.last_status_details = new_state.last_status_details
 
     def clear_error_details(self) -> None:
         """Clear stored error details while keeping the last status."""
@@ -1065,6 +1071,7 @@ class TriggerExecutionInfo(BaseModel):
     """Class representing a trigger execution information."""
 
     upstream_run_id: UUID | None = None
+    upstream_pipeline_ids: list[UUID] = Field(default_factory=list)
 
 
 TRIGGER_UPDATE_TYPE_UNION: TypeAlias = Annotated[

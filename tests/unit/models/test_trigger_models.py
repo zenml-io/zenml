@@ -17,7 +17,21 @@ from zenml.models import (
     ScheduleTriggerRequest,
     ScheduleTriggerResponseBody,
     ScheduleTriggerUpdate,
+    TriggerExecutionInfo,
 )
+
+
+def test_trigger_execution_info_defaults_pipeline_lineage() -> None:
+    """Legacy trigger execution payloads should get an empty lineage."""
+    upstream_run_id = uuid4()
+
+    info = TriggerExecutionInfo.model_validate(
+        {"upstream_run_id": str(upstream_run_id)}
+    )
+
+    assert info.upstream_run_id == upstream_run_id
+    assert info.upstream_pipeline_ids == []
+    assert "upstream_pipeline_ids" in info.model_dump()
 
 
 def test_schedule_trigger_valid_and_inheritance():
