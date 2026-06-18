@@ -50,7 +50,6 @@ jobs:
               core.setOutput('should-run', 'true');
               return;
             }
-
             const pullRequest = context.payload.pull_request;
             const labels = pullRequest.labels ?? [];
             const hasSlowCiLabel = labels.some((label) => label.name === 'run-slow-ci');
@@ -60,7 +59,6 @@ jobs:
               hasSlowCiLabel
               && ['synchronize', 'reopened', 'ready_for_review'].includes(context.payload.action)
             );
-
             core.setOutput('git-ref', pullRequest.head.sha);
             core.setOutput('should-run', shouldRun ? 'true' : 'false');
             if (!shouldRun) {
