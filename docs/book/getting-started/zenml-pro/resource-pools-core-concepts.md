@@ -3,6 +3,11 @@ description: >-
   Precise definitions for ZenML Pro resource pools, subject policies, and
   resource requests.
 ---
+
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
 # Core concepts
 
 This page defines **pools**, **policies**, and **requests** for ZenML Pro.

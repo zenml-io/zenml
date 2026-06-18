@@ -2,6 +2,11 @@
 description: Learn how to evaluate the performance of your RAG system in practice.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Evaluation in practice
 
 Now that we've seen individually how to evaluate the retrieval and generation components of our pipeline, it's worth taking a step back to think through how all of this works in practice.

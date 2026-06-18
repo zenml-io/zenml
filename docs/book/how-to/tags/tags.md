@@ -3,6 +3,11 @@ description: Use tags to organize tags in ZenML.
 icon: tag
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Tags
 
 Organizing and categorizing your machine learning artifacts and models can\
