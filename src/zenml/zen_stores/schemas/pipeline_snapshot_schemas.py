@@ -533,6 +533,7 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             runnable=self.is_runnable,
             deployable=deployable,
             is_dynamic=self.is_dynamic,
+            pipeline_id=self.pipeline_id,
         )
         metadata = None
         if include_metadata:
