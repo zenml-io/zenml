@@ -15,7 +15,7 @@
 
 import logging
 import sys
-from typing import List
+from typing import Any, List
 
 # Global variable to store original stdout for CLI clean output
 _original_stdout = sys.stdout
@@ -28,7 +28,7 @@ def reroute_stdout() -> None:
     output goes to stderr, while preserving the original stdout for clean
     output that can be piped.
     """
-    modified_handlers: List[logging.StreamHandler] = []
+    modified_handlers: List[logging.StreamHandler[Any]] = []
 
     # Reroute stdout to stderr
     sys.stdout = sys.stderr
