@@ -84,6 +84,9 @@ def _patched_ssh() -> Iterator[MagicMock]:
     with patch(f"{_MODULE}.SSHClient") as ssh_cls:
         client = MagicMock()
         client.exec.return_value = MagicMock(exit_code=0, stdout="", stderr="")
+        # None = statvfs unsupported; the disk-space guard treats it as
+        # "unknown" and skips, so it doesn't interfere with these tests.
+        client.free_disk_bytes.return_value = None
         ssh_cls.return_value.__enter__.return_value = client
         yield client
 
@@ -524,3 +527,33 @@ class TestCronValidation:
             "nonsense",
         ):
             assert not _is_valid_cron_expression(expr), expr
+
+
+class TestDiskGuard:
+    """Tests for the remote disk-space pre-flight guard."""
+
+    def test_raises_when_below_threshold(self) -> None:
+        orch = _make_orchestrator(minimum_free_disk_gb=5.0)
+        ssh = MagicMock()
+        ssh.free_disk_bytes.return_value = 1 * 1024**3  # 1 GB < 5 GB
+        with pytest.raises(RuntimeError, match="free"):
+            orch._check_remote_disk(ssh, "/tmp/zenml-ssh")
+
+    def test_passes_when_enough_free(self) -> None:
+        orch = _make_orchestrator(minimum_free_disk_gb=5.0)
+        ssh = MagicMock()
+        ssh.free_disk_bytes.return_value = 50 * 1024**3  # 50 GB
+        orch._check_remote_disk(ssh, "/tmp/zenml-ssh")
+
+    def test_skips_when_statvfs_unsupported(self) -> None:
+        orch = _make_orchestrator(minimum_free_disk_gb=5.0)
+        ssh = MagicMock()
+        ssh.free_disk_bytes.return_value = None
+        orch._check_remote_disk(ssh, "/tmp/zenml-ssh")
+
+    def test_disabled_when_threshold_is_zero(self) -> None:
+        orch = _make_orchestrator(minimum_free_disk_gb=0.0)
+        ssh = MagicMock()
+        orch._check_remote_disk(ssh, "/tmp/zenml-ssh")
+        # Guard is disabled, so it should not even query the remote host.
+        ssh.free_disk_bytes.assert_not_called()
