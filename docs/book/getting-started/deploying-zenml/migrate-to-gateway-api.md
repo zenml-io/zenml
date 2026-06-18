@@ -2,6 +2,11 @@
 description: Migrate ZenML Helm deployments from Ingress to Kubernetes Gateway API.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Migrate to Gateway API
 
 Gateway API is the Kubernetes networking successor to the legacy Ingress model. If you currently expose ZenML through `server.ingress`, this guide shows how to migrate to `server.gateway` with minimal downtime.
