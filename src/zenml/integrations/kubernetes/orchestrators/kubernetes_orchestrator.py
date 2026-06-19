@@ -95,7 +95,11 @@ from zenml.orchestrators import (
     PipelineSubmissionError,
     SubmissionResult,
 )
+from zenml.orchestrators import utils as orchestrator_utils
 from zenml.stack import StackValidator
+from zenml.step_operators.step_operator_entrypoint_configuration import (
+    StepOperatorEntrypointConfiguration,
+)
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
@@ -884,10 +888,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             environment: The environment variables to set in the execution
                 environment.
         """
-        from zenml.step_operators.step_operator_entrypoint_configuration import (
-            StepOperatorEntrypointConfiguration,
-        )
-
         logger.info(
             "Launching job for step `%s`.",
             step_run_info.pipeline_step_name,
@@ -897,10 +897,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             KubernetesOrchestratorSettings, self.get_settings(step_run_info)
         )
         image = step_run_info.get_image(key=ORCHESTRATOR_DOCKER_IMAGE_KEY)
-        command = StepOperatorEntrypointConfiguration.get_entrypoint_command()
-        args = StepOperatorEntrypointConfiguration.get_entrypoint_arguments(
-            step_name=step_run_info.pipeline_step_name,
-            snapshot_id=(step_run_info.snapshot.id),
+        command, args = orchestrator_utils.get_step_entrypoint_command(
+            invocation_id=step_run_info.pipeline_step_name,
+            config=step_run_info.config,
+            entrypoint_config_class=StepOperatorEntrypointConfiguration,
+            snapshot_id=step_run_info.snapshot.id,
             step_run_id=str(step_run_info.step_run_id),
         )
 

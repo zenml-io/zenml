@@ -181,6 +181,94 @@ def test_execute_pipeline_calls_subroutines(mocker: MockerFixture) -> None:
     service._build_response.assert_called_once()
 
 
+def test_prepare_pipeline_run_creates_placeholder(
+    mocker: MockerFixture,
+) -> None:
+    """prepare_pipeline_run should delegate to the orchestrator preparation."""
+    service = _make_service_stub(mocker)
+
+    placeholder_run = mocker.MagicMock()
+    deployment_snapshot = mocker.MagicMock()
+    service._prepare_execute_with_orchestrator = mocker.MagicMock(
+        return_value=(placeholder_run, deployment_snapshot)
+    )
+
+    request = BaseDeploymentInvocationRequest(
+        parameters=WeatherParams(city="Berlin"), run_name="custom"
+    )
+    result = service.prepare_pipeline_run(request)
+
+    assert result == (placeholder_run, deployment_snapshot)
+    service._prepare_execute_with_orchestrator.assert_called_once_with(
+        run_name="custom",
+        resolved_params={"city": "Berlin", "temperature": 20},
+    )
+
+
+def test_execute_pipeline_run_calls_subroutines(mocker: MockerFixture) -> None:
+    """execute_pipeline_run should execute a prepared run and build a response."""
+    service = _make_service_stub(mocker)
+
+    placeholder_run = mocker.MagicMock()
+    deployment_snapshot = mocker.MagicMock()
+    captured_outputs: Dict[str, Dict[str, object]] = {
+        "step1": {"result": "value"}
+    }
+    mapped_outputs = {"result": "value"}
+
+    service._execute_with_orchestrator = mocker.MagicMock(
+        return_value=captured_outputs
+    )
+    service._map_outputs = mocker.MagicMock(return_value=mapped_outputs)
+    service._build_response = mocker.MagicMock(return_value="response")
+
+    request = BaseDeploymentInvocationRequest(
+        parameters=WeatherParams(city="Berlin")
+    )
+    result = service.execute_pipeline_run(
+        request=request,
+        placeholder_run=placeholder_run,
+        deployment_snapshot=deployment_snapshot,
+    )
+
+    assert result == "response"
+    service._execute_with_orchestrator.assert_called_once_with(
+        placeholder_run=placeholder_run,
+        deployment_snapshot=deployment_snapshot,
+        resolved_params={"city": "Berlin", "temperature": 20},
+        skip_artifact_materialization=False,
+    )
+    service._map_outputs.assert_called_once_with(captured_outputs)
+    service._build_response.assert_called_once()
+
+
+def test_execute_pipeline_run_builds_error_response(
+    mocker: MockerFixture,
+) -> None:
+    """execute_pipeline_run should build an error response on failure."""
+    service = _make_service_stub(mocker)
+
+    placeholder_run = mocker.MagicMock()
+    error = RuntimeError("boom")
+    service._execute_with_orchestrator = mocker.MagicMock(side_effect=error)
+    service._build_response = mocker.MagicMock(return_value="error-response")
+
+    request = BaseDeploymentInvocationRequest(
+        parameters=WeatherParams(city="Berlin")
+    )
+    result = service.execute_pipeline_run(
+        request=request,
+        placeholder_run=placeholder_run,
+        deployment_snapshot=mocker.MagicMock(),
+    )
+
+    assert result == "error-response"
+    _, kwargs = service._build_response.call_args
+    assert kwargs["error"] is error
+    assert kwargs["placeholder_run"] is placeholder_run
+    assert kwargs["mapped_outputs"] is None
+
+
 def test_map_outputs_returns_filtered_mapping(mocker: MockerFixture) -> None:
     """_map_outputs should align runtime outputs to pipeline spec."""
     service = _make_service_stub(mocker)

@@ -116,6 +116,26 @@ settings:
 
 You can also configure the orchestrator to always run asynchronously by setting `synchronous=False` in its configuration.
 
+### Async Steps
+
+Step functions can be defined with `async def`. ZenML runs the coroutine to completion when the step executes, so whether a step body is async is invisible at the call site:
+
+```python
+from zenml import step
+
+@step
+async def fetch_data(url: str) -> bytes:
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url)
+        return response.content
+```
+
+An async step behaves like any other step: call it inside a pipeline, pass its outputs downstream, or run several concurrently with [`.submit()`](dynamic_pipelines.md#parallel-step-execution). Submitted async steps run on separate threads, so their `await` points overlap and IO-bound work proceeds in parallel.
+
+{% hint style="warning" %}
+A blocking call inside an async body (`time.sleep`, a synchronous HTTP request, heavy CPU work) stalls that step's event loop and erases the concurrency. Use the async equivalents (`asyncio.sleep`, an async HTTP client) inside async steps.
+{% endhint %}
+
 ### Step Execution Order
 
 By default, ZenML determines step execution order based on data dependencies. When a step requires output from another step, it automatically creates a dependency.
@@ -143,7 +163,7 @@ This is particularly useful for steps with side effects (like data loading or mo
 ZenML provides three execution modes that control how your orchestrator behaves when a step fails during pipeline execution. These modes are:
 
 - `CONTINUE_ON_FAILURE`: The orchestrator continues executing steps that don't depend on any of the failed steps.
-- `STOP_ON_FAILURE`: The orchestrator allows the running steps to complete, but prevents new steps from starting. 
+- `STOP_ON_FAILURE`: The orchestrator allows the running steps to complete, but prevents new steps from starting.
 - `FAIL_FAST`: The orchestrator stops the run and any running steps immediately when a failure occurs.
 
 You can configure the execution mode of your pipeline in several ways:
@@ -185,7 +205,7 @@ If steps 2, 3, and 4 execute in parallel and step 2 fails:
 - With `CONTINUE_ON_FAILURE`: Step 1 finishes → Steps 2,3,4 start → Step 2 fails, Steps 3, 4 complete → Step 5 skipped (depends on failed Step 2), Steps 6, 7 run normally → Step 8 is skipped as well.
 
 {% hint style="info" %}
-All three execution modes are currently only supported by the `local`, `local_docker`, and `kubernetes` orchestrator flavors. For any other orchestrator flavor, the default (and only available) behavior is `CONTINUE_ON_FAILURE`. If you would like to see any of the other orchestrators extended to support the other execution modes, reach out to us in [Slack](https://zenml.io/slack-invite). 
+All three execution modes are currently only supported by the `local`, `local_docker`, `kubernetes`, and `modal` orchestrator flavors. For any other orchestrator flavor, the default (and only available) behavior is `CONTINUE_ON_FAILURE`. If you would like to see any of the other orchestrators extended to support the other execution modes, reach out to us in [Slack](https://zenml.io/slack-invite).
 {% endhint %}
 
 ### Step Heartbeat

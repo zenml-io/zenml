@@ -21,7 +21,7 @@ from uuid import UUID
 from pydantic import ConfigDict
 from sqlalchemy import String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
-from sqlalchemy.orm import Session, joinedload, object_session, selectinload
+from sqlalchemy.orm import Session, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import TEXT, Column, Field, Relationship, col, select
 
@@ -67,6 +67,7 @@ from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.schema_utils import (
     build_foreign_key_field,
+    build_index,
 )
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -118,6 +119,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             "parent_run_id",
             "child_key",
             name="unique_child_key_for_parent_run_id",
+        ),
+        build_index(
+            table_name=__tablename__,
+            column_names=["project_id", "created", "id"],
         ),
     )
 
@@ -428,7 +433,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     selectinload(jl_arg(PipelineRunSchema.user)),
                     selectinload(jl_arg(PipelineRunSchema.tags)),
                     selectinload(jl_arg(PipelineRunSchema.visualizations)),
-                    joinedload(jl_arg(PipelineRunSchema.trigger)),
+                    selectinload(jl_arg(PipelineRunSchema.trigger)),
                 ]
             )
 
