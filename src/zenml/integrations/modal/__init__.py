@@ -25,13 +25,14 @@ from zenml.stack import Flavor
 
 MODAL_ORCHESTRATOR_FLAVOR = "modal"
 MODAL_STEP_OPERATOR_FLAVOR = "modal"
+MODAL_SANDBOX_FLAVOR = "modal"
 
 
 class ModalIntegration(Integration):
     """Definition of Modal integration for ZenML."""
 
     NAME = MODAL
-    REQUIREMENTS = ["modal>=1,<2"]
+    REQUIREMENTS = ["modal>=1.4,<2"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
@@ -42,7 +43,12 @@ class ModalIntegration(Integration):
         """
         from zenml.integrations.modal.flavors import (
             ModalOrchestratorFlavor,
+            ModalSandboxFlavor,
             ModalStepOperatorFlavor,
         )
 
-        return [ModalStepOperatorFlavor, ModalOrchestratorFlavor]
+        return [
+            ModalStepOperatorFlavor,
+            ModalOrchestratorFlavor,
+            ModalSandboxFlavor,
+        ]

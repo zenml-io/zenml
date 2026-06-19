@@ -227,6 +227,7 @@ def test_modal_integration_registers_step_operator_and_orchestrator_flavors() ->
     assert [flavor.__name__ for flavor in ModalIntegration.flavors()] == [
         "ModalStepOperatorFlavor",
         "ModalOrchestratorFlavor",
+        "ModalSandboxFlavor",
     ]
 
 
@@ -313,11 +314,17 @@ def test_modal_flavor_imports_do_not_import_modal_sdk() -> None:
             )
         )
         importlib.reload(
+            importlib.import_module(
+                "zenml.integrations.modal.flavors.modal_sandbox_flavor"
+            )
+        )
+        importlib.reload(
             importlib.import_module("zenml.integrations.modal.flavors")
         )
         assert [flavor.__name__ for flavor in ModalIntegration.flavors()] == [
             "ModalStepOperatorFlavor",
             "ModalOrchestratorFlavor",
+            "ModalSandboxFlavor",
         ]
     finally:
         sys.meta_path.remove(blocker)
