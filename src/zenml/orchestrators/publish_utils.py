@@ -299,3 +299,29 @@ def publish_schedule_metadata(
             ],
             stack_component_id=stack_component_id,
         )
+
+
+def publish_step_run_chokepoint(step_run_id: "UUID") -> "StepRunResponse":
+    """Flag a step run as a replay chokepoint.
+
+    A chokepoint is a step whose completion drained the run -- no node is left
+    in flight, every step has reached a terminal state and is persisted, so the
+    run can be cleanly forked/replayed from here. The
+    `is_chokepoint` step runs are exactly the replayable points; the frozen
+    history and the step's inputs are already tracked on the run, so no separate
+    anchor record is needed.
+
+    Args:
+        step_run_id: The ID of the step run to flag.
+
+    Returns:
+        The updated step run.
+
+    Note:
+        The `is_chokepoint` field is assumed to already exist on the step run
+        model and update.
+    """
+    return Client().zen_store.update_run_step(
+        step_run_id=step_run_id,
+        step_run_update=StepRunUpdate(is_chokepoint=True),
+    )

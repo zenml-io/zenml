@@ -140,6 +140,7 @@ from zenml.orchestrators.publish_utils import (
     publish_pipeline_run_status_update,
     publish_stopped_step_run,
     publish_successful_step_run,
+    publish_step_run_chokepoint,
 )
 from zenml.pipelines.dynamic.pipeline_definition import DynamicPipeline
 from zenml.pipelines.run_utils import create_placeholder_run
@@ -363,6 +364,15 @@ class DynamicPipelineRunner:
             self._existing_child_runs = self._load_existing_child_runs()
 
         self._steps_to_monitor: Dict[str, "StepRunResponse"] = {}
+
+        # Chokepoint tracking: nodes that were ever NOT alone on the active
+        # frontier (READY/STARTING/RUNNING). A step is a clean fork/replay point
+        # only if it was the sole frontier node for its whole life -- the run
+        # necked down to a single node there. Counting READY (not just RUNNING)
+        # makes this independent of worker count: a fan-out readies all its
+        # siblings at once, so they disqualify each other even if executed
+        # sequentially.
+        self._non_solo_node_ids: Set[str] = set()
 
         self._shutdown_requested = False
         self._failure_detected = False
@@ -1020,6 +1030,43 @@ class DynamicPipelineRunner:
                 optional_args=(exception,),
             )
 
+    def _update_solo_frontier(self) -> None:
+        """Disqualify chokepoints whenever the active frontier widens.
+
+        The active frontier is every node that is ready or executing
+        (READY/STARTING/RUNNING) -- everything the orchestrator could work on
+        right now, including planned fan-out siblings not yet dispatched. A step
+        is a chokepoint only if it is ALONE on the frontier for its entire life.
+        Whenever more than one node shares the frontier, none of them is solo,
+        so all current frontier nodes are disqualified.
+
+        Only called when new nodes became ready, since that is the only moment
+        the frontier can grow (it otherwise only shrinks as nodes finish). All
+        node types count, so a running map expansion or child pipeline also
+        disqualifies a concurrent step.
+        """
+        frontier = self._dependency_graph.list_nodes(
+            states={NodeState.READY, NodeState.STARTING, NodeState.RUNNING}
+        )
+        if len(frontier) > 1:
+            with self._lifecycle_lock:
+                self._non_solo_node_ids.update(node.node_id for node in frontier)
+
+    def _is_solo_chokepoint(self, node_id: str) -> bool:
+        """Whether a node was the sole frontier node for its entire life.
+
+        A solo node is a clean fork/replay point: the run was a single thread at
+        that node, independent of how many workers were available.
+
+        Args:
+            node_id: The node to check.
+
+        Returns:
+            True if the node was never disqualified, False otherwise.
+        """
+        with self._lifecycle_lock:
+            return node_id not in self._non_solo_node_ids
+
     def notify_graph_changed(self, nodes_ready: bool) -> None:
         """Wake up the startup loop if new nodes became ready.
 
@@ -1027,6 +1074,9 @@ class DynamicPipelineRunner:
             nodes_ready: Whether any new nodes are ready.
         """
         if nodes_ready:
+            # New readiness is the only way the frontier can widen, so this is
+            # the only moment a chokepoint can be disqualified.
+            self._update_solo_frontier()
             self._startup_event.set()
 
     def mark_node_starting(self, node_id: str) -> None:
@@ -2190,7 +2240,10 @@ class DynamicPipelineRunner:
         )
 
         if step_run.status.is_successful:
+            is_chokepoint = self._is_solo_chokepoint(node_id=step_run.name)
             self.mark_node_succeeded(node_id=step_run.name)
+            if is_chokepoint:
+                publish_step_run_chokepoint(step_run.id)
         elif (
             step_run.status.is_failed
             or step_run.status == ExecutionStatus.STOPPED
