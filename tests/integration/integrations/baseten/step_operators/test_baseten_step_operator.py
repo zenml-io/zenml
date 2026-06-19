@@ -93,6 +93,24 @@ def fake_truss(monkeypatch):
     truss_remote.RemoteConfig = _Node
     remote_pkg = types.ModuleType("truss.remote")
 
+    # truss.remote.baseten.remote.BasetenRemote used to upsert the store token
+    # secret; record the upserted (name, value) pairs.
+    recorded["secrets"] = {}
+
+    class _Api:
+        def upsert_secret(self, name, value):
+            recorded["secrets"][name] = value
+
+    class _BasetenRemote:
+        def __init__(self, remote_url=None, api_key=None, **kwargs):
+            recorded["remote_url"] = remote_url
+            recorded["remote_api_key"] = api_key
+            self.api = _Api()
+
+    baseten_pkg = types.ModuleType("truss.remote.baseten")
+    baseten_remote_mod = types.ModuleType("truss.remote.baseten.remote")
+    baseten_remote_mod.BasetenRemote = _BasetenRemote
+
     monkeypatch.setitem(sys.modules, "truss_train", truss_train)
     monkeypatch.setitem(sys.modules, "truss", truss_pkg)
     monkeypatch.setitem(sys.modules, "truss.base", truss_base)
@@ -101,6 +119,10 @@ def fake_truss(monkeypatch):
         sys.modules, "truss.remote.remote_factory", remote_factory
     )
     monkeypatch.setitem(sys.modules, "truss.remote.truss_remote", truss_remote)
+    monkeypatch.setitem(sys.modules, "truss.remote.baseten", baseten_pkg)
+    monkeypatch.setitem(
+        sys.modules, "truss.remote.baseten.remote", baseten_remote_mod
+    )
     return recorded
 
 
@@ -259,12 +281,19 @@ def test_build_environment_inlines_plain_values(fake_truss):
     assert result == {"EPOCHS": "5"}
 
 
-def test_build_environment_refuses_unmapped_sensitive_token_regular_step(
+def test_build_environment_syncs_unmapped_sensitive_token_regular_step(
     fake_truss,
 ):
     operator = _make_operator()
-    with pytest.raises(RuntimeError, match=SENSITIVE_KEY):
-        operator._build_environment({SENSITIVE_KEY: "tok"}, {}, False)
+    result = operator._build_environment({SENSITIVE_KEY: "tok"}, {}, False)
+
+    # The token is never inlined: it is upserted into a managed Baseten secret
+    # and referenced from the runtime environment.
+    secret_name = "zenml-store-api-token-component-id"
+    assert fake_truss["secrets"] == {secret_name: "tok"}
+    assert isinstance(result[SENSITIVE_KEY], _Node)
+    assert result[SENSITIVE_KEY].name == secret_name
+    assert result[SENSITIVE_KEY].name != "tok"
 
 
 def test_build_environment_drops_unmapped_sensitive_token_command_step(

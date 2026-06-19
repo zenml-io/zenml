@@ -207,11 +207,15 @@ class BasetenStepOperator(BaseStepOperator):
 
         Variables named in the ``secrets`` mapping are replaced with Baseten
         secret references so their values are never inlined into the job
-        config. A known-sensitive value (the ZenML store API token) is never
-        inlined: for a regular step (which calls back to the ZenML server) it
-        must be routed through a secret, so an unmapped token is refused; for a
-        command step (an opaque command that never talks to ZenML) the token is
-        not needed and is simply dropped.
+        config. The known-sensitive ZenML store API token is never inlined:
+
+        * for a command step (an opaque command that never talks to ZenML) the
+          token is unnecessary and is dropped;
+        * for a regular step (which calls back to the ZenML server) the token is
+          required. If the user mapped it explicitly via ``secrets`` that
+          mapping wins; otherwise the operator transparently upserts the token
+          into a managed Baseten secret and references it, so the value lands in
+          Baseten's secret store rather than the inlined job config.
 
         Args:
             environment: The environment variables for the step.
@@ -222,10 +226,6 @@ class BasetenStepOperator(BaseStepOperator):
 
         Returns:
             The runtime environment with plain strings and secret references.
-
-        Raises:
-            RuntimeError: If a regular step's sensitive value would be inlined
-                into the job config without being mapped to a Baseten secret.
         """
         from truss_train import definitions
 
@@ -245,16 +245,48 @@ class BasetenStepOperator(BaseStepOperator):
                         key,
                     )
                     continue
-                raise RuntimeError(
-                    f"Refusing to inline the sensitive environment variable "
-                    f"`{key}` into the Baseten job config. Store it as a "
-                    f"Baseten secret and map it via the step operator "
-                    f"`secrets` setting, e.g. "
-                    f"secrets={{'{key}': '<baseten-secret-name>'}}."
+                # Never inline the token: sync it into a managed Baseten secret
+                # and reference that instead.
+                secret_name = self._sync_store_token_secret(value)
+                runtime_environment[key] = definitions.SecretReference(
+                    name=secret_name
                 )
             else:
                 runtime_environment[key] = value
         return runtime_environment
+
+    def _sync_store_token_secret(self, token: str) -> str:
+        """Upsert the ephemeral ZenML store token into a Baseten secret.
+
+        The token rotates per run, so the secret is upserted (created or
+        overwritten) on every submit under a name derived from this operator's
+        id. This keeps the value out of the inlined job config while letting
+        regular steps authenticate back to the ZenML server.
+
+        Note: concurrent runs on the same operator share this secret (last
+        writer wins). The tokens are scoped to the same server/user, so auth
+        still succeeds; map the token explicitly via the ``secrets`` setting if
+        you need per-run isolation.
+
+        Args:
+            token: The ZenML store API token value to store.
+
+        Returns:
+            The name of the Baseten secret holding the token.
+        """
+        from truss.remote.baseten.remote import BasetenRemote
+
+        secret_name = f"zenml-store-api-token-{self.id}"
+        remote = BasetenRemote(
+            remote_url=BASETEN_REMOTE_URL,
+            api_key=self.config.api_key.get_secret_value(),
+        )
+        remote.api.upsert_secret(secret_name, token)
+        logger.debug(
+            "Synced ZenML store API token into Baseten secret `%s`.",
+            secret_name,
+        )
+        return secret_name
 
     def _configure_truss_remote(self) -> None:
         """Write the Baseten remote into truss config so push() can auth.

@@ -146,15 +146,22 @@ with `node_count > 1` is rejected with a clear error.
 
 ### Passing secrets
 
-Sensitive environment variables must not be inlined into the job config. Store them as Baseten
-secrets and map them with the `secrets` setting; the ZenML store API token in particular is
-refused unless it is mapped:
+Sensitive environment variables are never inlined into the job config. Store your own secrets
+(API tokens, credentials) as Baseten secrets and map them with the `secrets` setting — the value
+is referenced rather than inlined:
 
 ```python
 BasetenStepOperatorSettings(
     secrets={"HF_TOKEN": "hf-access-token"},
 )
 ```
+
+The ZenML store API token (which regular steps need to call back to the server) is handled
+automatically: the operator upserts it into a managed Baseten secret named
+`zenml-store-api-token-<operator-id>` on each run and references that, so the token never lands
+in the inlined job config. You can override this by mapping the token name explicitly in
+`secrets`. Command steps never talk to the ZenML server, so the token is dropped for them
+entirely.
 
 ### Caching and checkpointing
 
