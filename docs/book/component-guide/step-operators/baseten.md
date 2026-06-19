@@ -156,6 +156,24 @@ BasetenStepOperatorSettings(
 )
 ```
 
+### Caching and checkpointing
+
+Baseten can [persist a training cache](https://docs.baseten.co/training/loading) so datasets and
+model weights downloaded by a job survive across jobs (avoiding re-downloads), and it can manage
+checkpoint storage. Both are **disabled by default** and opt-in through settings:
+
+```python
+BasetenStepOperatorSettings(
+    accelerator="H100",
+    enable_cache=True,           # mount the persistent training cache (off by default)
+    enable_checkpointing=True,   # persist checkpoints written to $BT_CHECKPOINT_DIR (off by default)
+)
+```
+
+When `enable_cache` is on, write your downloads (e.g. `HF_HOME`, dataset staging) into the cache so
+subsequent runs reuse them. When `enable_checkpointing` is on, write checkpoints to the Baseten
+checkpoint directory exposed as `$BT_CHECKPOINT_DIR`.
+
 For more information and a full list of configurable attributes, check out the
 [SDK docs](https://sdkdocs.zenml.io/latest/).
 

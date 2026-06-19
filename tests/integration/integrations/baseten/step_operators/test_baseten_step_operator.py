@@ -64,6 +64,8 @@ def fake_truss(monkeypatch):
         SecretReference=_Node,
         DockerAuth=_Node,
         RegistrySecretDockerAuth=_Node,
+        CacheConfig=_Node,
+        CheckpointingConfig=_Node,
     )
     truss_train = types.ModuleType("truss_train")
     truss_train.definitions = definitions
@@ -208,6 +210,35 @@ def test_submit_uses_empty_source_dir_and_disables_workdir(
     # The temp dir is cleaned up after push, so it should be empty/gone.
     assert not list(source_dir.glob("*")) if source_dir.exists() else True
     assert fake_truss["config"].job.enable_baseten_workdir is False
+
+
+# --- cache / checkpointing (opt-in) ------------------------------------------
+
+
+def test_cache_and_checkpointing_disabled_by_default(fake_truss, monkeypatch):
+    monkeypatch.setattr(
+        op_module, "publish_step_run_metadata", lambda *a: None
+    )
+    operator = _make_operator()
+    operator.get_settings = lambda _info: BasetenStepOperatorSettings()
+    operator.submit(_make_info(), _entrypoint(), {})
+    runtime = fake_truss["config"].job.runtime
+    assert "cache_config" not in runtime.kwargs
+    assert "checkpointing_config" not in runtime.kwargs
+
+
+def test_cache_and_checkpointing_enabled(fake_truss, monkeypatch):
+    monkeypatch.setattr(
+        op_module, "publish_step_run_metadata", lambda *a: None
+    )
+    operator = _make_operator()
+    operator.get_settings = lambda _info: BasetenStepOperatorSettings(
+        enable_cache=True, enable_checkpointing=True
+    )
+    operator.submit(_make_info(), _entrypoint(), {})
+    runtime = fake_truss["config"].job.runtime
+    assert runtime.cache_config.enabled is True
+    assert runtime.checkpointing_config.enabled is True
 
 
 # --- environment / secrets ---------------------------------------------------

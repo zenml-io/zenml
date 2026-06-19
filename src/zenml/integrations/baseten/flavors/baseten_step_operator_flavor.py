@@ -61,6 +61,21 @@ class BasetenStepOperatorSettings(BaseSettings):
         "credentials) here so they are referenced rather than inlined into "
         "the job config. Example: {'HF_TOKEN': 'hf-access-token'}",
     )
+    enable_cache: bool = Field(
+        False,
+        description="Enable Baseten's persistent training cache for the job. "
+        "When True, the job mounts the project cache so datasets and model "
+        "weights downloaded under it persist across jobs (avoiding re-download). "
+        "Defaults to False (disabled). See "
+        "https://docs.baseten.co/training/loading",
+    )
+    enable_checkpointing: bool = Field(
+        False,
+        description="Enable Baseten-managed checkpoint storage for the job. "
+        "When True, checkpoints written to the Baseten checkpoint directory "
+        "($BT_CHECKPOINT_DIR) are persisted and deployable. Defaults to False "
+        "(disabled)",
+    )
 
 
 class BasetenStepOperatorConfig(BaseStepOperatorConfig):

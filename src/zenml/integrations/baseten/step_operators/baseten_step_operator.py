@@ -358,6 +358,23 @@ class BasetenStepOperator(BaseStepOperator):
         if settings.memory is not None:
             compute_kwargs["memory"] = settings.memory
 
+        # Cache / checkpointing are opt-in (default disabled); only attach the
+        # config objects when enabled so the job keeps Baseten's defaults.
+        runtime_kwargs: Dict[str, Any] = {
+            "start_commands": [shell_join(entrypoint_command)],
+            "environment_variables": self._build_environment(
+                environment, settings.secrets, is_command_step
+            ),
+        }
+        if settings.enable_cache:
+            runtime_kwargs["cache_config"] = definitions.CacheConfig(
+                enabled=True
+            )
+        if settings.enable_checkpointing:
+            runtime_kwargs["checkpointing_config"] = (
+                definitions.CheckpointingConfig(enabled=True)
+            )
+
         project = definitions.TrainingProject(
             name=self.config.project,
             job=definitions.TrainingJob(
@@ -365,12 +382,7 @@ class BasetenStepOperator(BaseStepOperator):
                     base_image=image_name, docker_auth=self._docker_auth()
                 ),
                 compute=definitions.Compute(**compute_kwargs),
-                runtime=definitions.Runtime(
-                    start_commands=[shell_join(entrypoint_command)],
-                    environment_variables=self._build_environment(
-                        environment, settings.secrets, is_command_step
-                    ),
-                ),
+                runtime=definitions.Runtime(**runtime_kwargs),
                 # The ZenML image is the entire environment; do not extract an
                 # uploaded working directory on top of it.
                 enable_baseten_workdir=False,
