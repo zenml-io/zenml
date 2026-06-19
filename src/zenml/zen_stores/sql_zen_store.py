@@ -16002,6 +16002,46 @@ class SqlZenStore(BaseZenStore):
         """
         return self.batch_create_tag_resource(tag_resources=[tag_resource])[0]
 
+    def _batch_create_tag_resource(
+        self,
+        tag_resources: List[TagResourceRequest],
+        resolved_resources: List[BaseSchema],
+        session: Session,
+    ) -> List[TagResourceResponse]:
+        """Create a batch of tag resource relationships.
+
+        Args:
+            tag_resources: The tag resource relationships to be created.
+            resolved_resources: The resources referenced by the tag resource
+                requests.
+            session: The database session to use.
+
+        Returns:
+            The newly created tag resource relationships.
+        """
+        resources: List[
+            Tuple[TagSchema, TaggableResourceTypes, BaseSchema]
+        ] = []
+        for tag_resource, resource in zip(tag_resources, resolved_resources):
+            tag_schema = self._get_tag_schema(
+                tag_name_or_id=tag_resource.tag_id,
+                session=session,
+            )
+            resources.append(
+                (
+                    tag_schema,
+                    tag_resource.resource_type,
+                    resource,
+                )
+            )
+
+        return [
+            r.to_model()
+            for r in self._create_tag_resource_schemas(
+                tag_resources=resources, session=session
+            )
+        ]
+
     def batch_create_tag_resource(
         self, tag_resources: List[TagResourceRequest]
     ) -> List[TagResourceResponse]:
@@ -16017,29 +16057,11 @@ class SqlZenStore(BaseZenStore):
             resolved_resources = self._get_resources_from_tag_resources(
                 tag_resources=tag_resources, session=session
             )
-            resources: List[
-                Tuple[TagSchema, TaggableResourceTypes, BaseSchema]
-            ] = []
-            for tag_resource, resource in zip(
-                tag_resources, resolved_resources
-            ):
-                tag_schema = self._get_tag_schema(
-                    tag_name_or_id=tag_resource.tag_id,
-                    session=session,
-                )
-                resources.append(
-                    (
-                        tag_schema,
-                        tag_resource.resource_type,
-                        resource,
-                    )
-                )
-            return [
-                r.to_model()
-                for r in self._create_tag_resource_schemas(
-                    tag_resources=resources, session=session
-                )
-            ]
+            return self._batch_create_tag_resource(
+                tag_resources=tag_resources,
+                resolved_resources=resolved_resources,
+                session=session,
+            )
 
     def _delete_tag_resource_schemas(
         self,
