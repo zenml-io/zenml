@@ -1,0 +1,412 @@
+#  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Baseten step operator implementation."""
+
+import tempfile
+from pathlib import Path
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    cast,
+)
+
+from zenml.client import Client
+from zenml.config.build_configuration import BuildConfiguration
+from zenml.constants import ENV_ZENML_STORE_PREFIX
+from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.integrations.baseten.flavors import (
+    BasetenStepOperatorConfig,
+    BasetenStepOperatorSettings,
+)
+from zenml.logger import get_logger
+from zenml.orchestrators.publish_utils import publish_step_run_metadata
+from zenml.orchestrators.utils import shell_join
+from zenml.stack import Stack, StackValidator
+from zenml.step_operators import BaseStepOperator
+
+if TYPE_CHECKING:
+    from zenml.config.base_settings import BaseSettings
+    from zenml.config.step_run_info import StepRunInfo
+    from zenml.integrations.baseten.baseten_api import BasetenApiClient
+    from zenml.models import PipelineSnapshotBase, StepRunResponse
+
+logger = get_logger(__name__)
+
+BASETEN_STEP_OPERATOR_DOCKER_IMAGE_KEY = "baseten_step_operator"
+BASETEN_JOB_ID_METADATA_KEY = "baseten_job_id"
+BASETEN_PROJECT_ID_METADATA_KEY = "baseten_training_project_id"
+
+# The ZenML store API token grants access to the ZenML server, so it must be
+# routed through a Baseten secret rather than inlined into the job config where
+# it would be visible.
+SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY = f"{ENV_ZENML_STORE_PREFIX}API_TOKEN"
+
+# Baseten exposes both fully-qualified (TRAINING_JOB_*) and short job state
+# names depending on the surface; map both defensively.
+_BASETEN_STATE_TO_EXECUTION_STATUS = {
+    "TRAINING_JOB_PENDING": ExecutionStatus.QUEUED,
+    "TRAINING_JOB_CREATED": ExecutionStatus.INITIALIZING,
+    "TRAINING_JOB_DEPLOYING": ExecutionStatus.PROVISIONING,
+    "TRAINING_JOB_RUNNING": ExecutionStatus.RUNNING,
+    "TRAINING_JOB_COMPLETED": ExecutionStatus.COMPLETED,
+    "TRAINING_JOB_FAILED": ExecutionStatus.FAILED,
+    "TRAINING_JOB_STOPPED": ExecutionStatus.STOPPED,
+    "DEPLOY_FAILED": ExecutionStatus.FAILED,
+    "CREATED": ExecutionStatus.INITIALIZING,
+    "DEPLOYING": ExecutionStatus.PROVISIONING,
+    "RUNNING": ExecutionStatus.RUNNING,
+    "COMPLETED": ExecutionStatus.COMPLETED,
+    "FAILED": ExecutionStatus.FAILED,
+    "STOPPED": ExecutionStatus.STOPPED,
+}
+
+
+class BasetenStepOperator(BaseStepOperator):
+    """Step operator that runs a step as a Baseten training job."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize the step operator.
+
+        Args:
+            *args: Positional arguments forwarded to the base class.
+            **kwargs: Keyword arguments forwarded to the base class.
+        """
+        super().__init__(*args, **kwargs)
+        self._api: Optional["BasetenApiClient"] = None
+
+    @property
+    def api(self) -> "BasetenApiClient":
+        """Lazily constructed Baseten REST API client.
+
+        Returns:
+            The Baseten REST API client.
+        """
+        if self._api is None:
+            from zenml.integrations.baseten.baseten_api import (
+                BasetenApiClient,
+            )
+
+            self._api = BasetenApiClient(
+                self.config.api_key.get_secret_value()
+            )
+        return self._api
+
+    @property
+    def config(self) -> BasetenStepOperatorConfig:
+        """Get the Baseten step operator configuration.
+
+        Returns:
+            The Baseten step operator configuration.
+        """
+        return cast(BasetenStepOperatorConfig, self._config)
+
+    @property
+    def settings_class(self) -> Optional[Type["BaseSettings"]]:
+        """Get the settings class for the Baseten step operator.
+
+        Returns:
+            The Baseten step operator settings class.
+        """
+        return BasetenStepOperatorSettings
+
+    @property
+    def validator(self) -> Optional[StackValidator]:
+        """Get the stack validator for the Baseten step operator.
+
+        Returns:
+            The stack validator.
+        """
+
+        def _validate_remote_components(stack: "Stack") -> Tuple[bool, str]:
+            if stack.artifact_store.config.is_local:
+                return False, (
+                    "The Baseten step operator runs code remotely and needs "
+                    "to write files into the artifact store, but the artifact "
+                    f"store `{stack.artifact_store.name}` of the active stack "
+                    "is local. Please ensure that your stack contains a "
+                    "remote artifact store when using the Baseten step "
+                    "operator."
+                )
+
+            container_registry = stack.container_registry
+            assert container_registry is not None
+
+            if container_registry.config.is_local:
+                return False, (
+                    "The Baseten step operator runs code remotely and needs "
+                    "to push/pull Docker images, but the container registry "
+                    f"`{container_registry.name}` of the active stack is "
+                    "local. Please ensure that your stack contains a remote "
+                    "container registry when using the Baseten step operator."
+                )
+
+            return True, ""
+
+        return StackValidator(
+            required_components={
+                StackComponentType.CONTAINER_REGISTRY,
+                StackComponentType.IMAGE_BUILDER,
+            },
+            custom_validation_function=_validate_remote_components,
+        )
+
+    def get_docker_builds(
+        self, snapshot: "PipelineSnapshotBase"
+    ) -> List["BuildConfiguration"]:
+        """Get the Docker build configurations for the Baseten step operator.
+
+        Args:
+            snapshot: The pipeline snapshot.
+
+        Returns:
+            A list of Docker build configurations.
+        """
+        builds = []
+        for step_name, step in snapshot.step_configurations.items():
+            if step.config.uses_step_operator(self.name):
+                builds.append(
+                    BuildConfiguration(
+                        key=BASETEN_STEP_OPERATOR_DOCKER_IMAGE_KEY,
+                        settings=step.config.docker_settings,
+                        step_name=step_name,
+                    )
+                )
+
+        return builds
+
+    def _build_environment(
+        self, environment: Dict[str, str], secrets: Dict[str, str]
+    ) -> Dict[str, Any]:
+        """Build the Baseten runtime environment from the step environment.
+
+        Variables named in the ``secrets`` mapping are replaced with Baseten
+        secret references so their values are never inlined into the job
+        config. The ZenML store API token is refused unless it is routed
+        through such a secret.
+
+        Args:
+            environment: The environment variables for the step.
+            secrets: Mapping of environment variable name to an existing
+                Baseten secret name.
+
+        Returns:
+            The runtime environment with plain strings and secret references.
+
+        Raises:
+            RuntimeError: If a known-sensitive value would be inlined into the
+                job config without being mapped to a Baseten secret.
+        """
+        from truss_train import definitions
+
+        runtime_environment: Dict[str, Any] = {}
+        for key, value in environment.items():
+            if key in secrets:
+                runtime_environment[key] = definitions.SecretReference(
+                    name=secrets[key]
+                )
+            elif key == SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY:
+                raise RuntimeError(
+                    f"Refusing to inline the sensitive environment variable "
+                    f"`{key}` into the Baseten job config. Store it as a "
+                    f"Baseten secret and map it via the step operator "
+                    f"`secrets` setting, e.g. "
+                    f"secrets={{'{key}': '<baseten-secret-name>'}}."
+                )
+            else:
+                runtime_environment[key] = value
+        return runtime_environment
+
+    def _docker_auth(self) -> Optional[Any]:
+        """Build Baseten Docker auth from the configured registry secret.
+
+        Baseten only accepts registry credentials as a reference to a
+        pre-existing Baseten secret, never inline. Returns None for public
+        images (no registry secret configured).
+
+        Returns:
+            A Baseten ``DockerAuth`` object, or None.
+        """
+        if not self.config.registry_auth_secret:
+            return None
+
+        from truss.base import truss_config
+        from truss_train import definitions
+
+        container_registry = Client().active_stack.container_registry
+        assert container_registry is not None
+        return definitions.DockerAuth(
+            auth_method=truss_config.DockerAuthType.REGISTRY_SECRET,
+            registry=container_registry.config.uri,
+            registry_secret_docker_auth=definitions.RegistrySecretDockerAuth(
+                secret_ref=definitions.SecretReference(
+                    name=self.config.registry_auth_secret
+                ),
+            ),
+        )
+
+    def submit(
+        self,
+        info: "StepRunInfo",
+        entrypoint_command: List[str],
+        environment: Dict[str, str],
+    ) -> None:
+        """Submit a step run as a Baseten training job.
+
+        Args:
+            info: The step run information.
+            entrypoint_command: The entrypoint command for the step.
+            environment: The environment variables for the step.
+
+        Raises:
+            RuntimeError: If multi-node execution is requested for a regular
+                step, or if persisting the Baseten job ids fails.
+        """
+        from truss.base import truss_config
+        from truss_train import definitions, push
+
+        settings = cast(BasetenStepOperatorSettings, self.get_settings(info))
+
+        # A multi-node job runs the same entrypoint on every node. A regular
+        # step would therefore duplicate its artifacts, outputs and logs across
+        # nodes, so only command steps (which own their distributed launch) may
+        # scale out. This runs at submit time because dynamic pipelines execute
+        # from a server-side snapshot where no compile-time hook is available.
+        if settings.node_count > 1 and info.config.command is None:
+            raise RuntimeError(
+                f"The step `{info.pipeline_step_name}` requests "
+                f"node_count={settings.node_count} but is a regular step. "
+                "Running a regular step on multiple nodes would duplicate its "
+                "artifacts, outputs and logs across every node. Use a "
+                "CommandStep that owns its distributed launch instead, e.g. "
+                '`CommandStep(command=["torchrun", "train.py"], '
+                'step_operator="baseten")`, and keep node_count=1 for regular '
+                "steps."
+            )
+
+        image_name = info.get_image(key=BASETEN_STEP_OPERATOR_DOCKER_IMAGE_KEY)
+
+        project = definitions.TrainingProject(
+            name=self.config.project,
+            job=definitions.TrainingJob(
+                image=definitions.Image(
+                    base_image=image_name, docker_auth=self._docker_auth()
+                ),
+                compute=definitions.Compute(
+                    node_count=settings.node_count,
+                    cpu_count=settings.cpu_count,
+                    memory=settings.memory,
+                    accelerator=truss_config.AcceleratorSpec(
+                        accelerator=settings.accelerator,
+                        count=info.config.resource_settings.gpu_count or 1,
+                    ),
+                ),
+                runtime=definitions.Runtime(
+                    start_commands=[shell_join(entrypoint_command)],
+                    environment_variables=self._build_environment(
+                        environment, settings.secrets
+                    ),
+                ),
+                # The ZenML image is the entire environment; do not extract an
+                # uploaded working directory on top of it.
+                enable_baseten_workdir=False,
+            ),
+        )
+
+        # Push from an empty temp dir so the local working directory is not
+        # uploaded: the Docker image is the single source of truth for code.
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = push(config=project, source_dir=Path(tmpdir))
+
+        job_id = result["id"]
+        project_id = result["training_project_id"]
+        metadata: Dict[str, Any] = {
+            BASETEN_JOB_ID_METADATA_KEY: job_id,
+            BASETEN_PROJECT_ID_METADATA_KEY: project_id,
+        }
+
+        # The job ids are essential operational state: without them status
+        # checks and cancellation cannot find the job. Surface a persistence
+        # failure loudly (with the ids) so an orphaned, billable job can be
+        # found and stopped.
+        try:
+            publish_step_run_metadata(info.step_run_id, {self.id: metadata})
+            info.step_run.run_metadata.update(metadata)
+        except Exception:
+            logger.error(
+                "Failed to persist Baseten job ids for step `%s`. The job is "
+                "running on Baseten (job_id=%s, project_id=%s) but status "
+                "checks and cancellation will not work without these ids. Stop "
+                "it from the Baseten dashboard if needed.",
+                info.pipeline_step_name,
+                job_id,
+                project_id,
+            )
+            raise
+
+    def _job_ids(
+        self, step_run: "StepRunResponse"
+    ) -> Optional[Tuple[str, str]]:
+        """Recover the (project_id, job_id) for a step run from its metadata.
+
+        Args:
+            step_run: The step run.
+
+        Returns:
+            The (project_id, job_id) tuple, or None if not recorded.
+        """
+        job_id = step_run.run_metadata.get(BASETEN_JOB_ID_METADATA_KEY)
+        project_id = step_run.run_metadata.get(BASETEN_PROJECT_ID_METADATA_KEY)
+        if job_id is None or project_id is None:
+            return None
+        return str(project_id), str(job_id)
+
+    def get_status(self, step_run: "StepRunResponse") -> ExecutionStatus:
+        """Get the status of a submitted Baseten training job.
+
+        Args:
+            step_run: The step run.
+
+        Returns:
+            The execution status. Returns FAILED if the job ids are missing or
+            the job no longer exists.
+        """
+        ids = self._job_ids(step_run)
+        if ids is None:
+            return ExecutionStatus.FAILED
+
+        project_id, job_id = ids
+        state = self.api.get_job_status(project_id, job_id)
+        if state is None:
+            return ExecutionStatus.FAILED
+
+        return _BASETEN_STATE_TO_EXECUTION_STATUS.get(
+            state, ExecutionStatus.RUNNING
+        )
+
+    def cancel(self, step_run: "StepRunResponse") -> None:
+        """Cancel a submitted Baseten training job.
+
+        Args:
+            step_run: The step run.
+        """
+        ids = self._job_ids(step_run)
+        if ids is None:
+            return
+        project_id, job_id = ids
+        self.api.stop_job(project_id, job_id)
