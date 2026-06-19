@@ -260,6 +260,9 @@ class ServerConfiguration(BaseModel):
         server_request_timeout: The timeout for server requests in seconds. If
             not specified, the default value of 20 seconds will be used. This
             value should be lower than the client's request timeout.
+        artifact_store_cache_enabled: Whether the server caches and reuses
+            artifact store instances across requests instead of rebuilding them
+            on every request.
         api_transaction_cleanup_interval: The interval in seconds between
             cleanup batches.
         dashboard_files_path: The path to the dashboard files directory. If not
@@ -388,6 +391,7 @@ class ServerConfiguration(BaseModel):
     request_timeout: int = DEFAULT_ZENML_SERVER_REQUEST_TIMEOUT
     request_deduplication: bool = True
     request_cache_timeout: int = DEFAULT_ZENML_SERVER_REQUEST_CACHE_TIMEOUT
+    artifact_store_cache_enabled: bool = True
 
     api_transaction_cleanup_interval: int = (
         DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_INTERVAL
