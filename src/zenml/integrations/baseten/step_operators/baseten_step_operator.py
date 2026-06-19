@@ -351,7 +351,9 @@ class BasetenStepOperator(BaseStepOperator):
 
         Raises:
             RuntimeError: If multi-node execution is requested for a regular
-                step, or if persisting the Baseten job ids fails.
+                step.
+            Exception: Re-raised if persisting the Baseten job ids to the
+                ZenML server fails (the job is already running on Baseten).
         """
         from truss.base import truss_config
         from truss_train import definitions, push

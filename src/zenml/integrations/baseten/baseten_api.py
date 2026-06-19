@@ -77,10 +77,8 @@ class BasetenApiClient:
 
         Returns:
             The Baseten job status string, or None if the job no longer
-            exists (HTTP 404).
-
-        Raises:
-            HTTPError: If the request fails for a reason other than 404.
+            exists (HTTP 404). Raises ``requests.HTTPError`` if the request
+            fails for any other reason.
         """
         response = requests.get(
             self._job_url(project_id, job_id),
@@ -100,12 +98,11 @@ class BasetenApiClient:
     def stop_job(self, project_id: str, job_id: str) -> None:
         """Stop a running training job.
 
+        Raises ``requests.HTTPError`` if the stop request fails.
+
         Args:
             project_id: The Baseten training project id.
             job_id: The Baseten training job id.
-
-        Raises:
-            HTTPError: If the stop request fails.
         """
         response = requests.post(
             f"{self._job_url(project_id, job_id)}/stop",
