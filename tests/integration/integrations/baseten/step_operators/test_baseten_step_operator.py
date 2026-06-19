@@ -414,6 +414,62 @@ def test_submit_raises_when_metadata_publish_fails(fake_truss, monkeypatch):
         operator.submit(_make_info(), _entrypoint(), {})
 
 
+# --- submit error translation ------------------------------------------------
+
+
+class _HttpError(Exception):
+    """Stand-in for a requests.HTTPError carrying a response body."""
+
+    def __init__(self, message, body):
+        super().__init__(message)
+        self.response = SimpleNamespace(text=body)
+
+
+def test_explain_submit_error_flags_custom_base_image():
+    operator = _make_operator()
+    err = _HttpError(
+        "400 Client Error: Bad Request",
+        "Custom base images not supported for your organization.",
+    )
+    msg = operator._explain_submit_error(
+        err, BasetenStepOperatorSettings(), is_command_step=False
+    )
+    assert "custom base images" in msg.lower()
+    assert "Baseten" in msg
+    # Original detail and response body are preserved.
+    assert "400 Client Error" in msg
+
+
+def test_explain_submit_error_flags_multi_node():
+    operator = _make_operator()
+    err = _HttpError("400 Client Error: Bad Request", "")
+    msg = operator._explain_submit_error(
+        err,
+        BasetenStepOperatorSettings(node_count=4),
+        is_command_step=True,
+    )
+    assert "multi-node instance types" in msg.lower()
+    assert "node_count=4" in msg
+
+
+def test_submit_wraps_push_errors(fake_truss, monkeypatch):
+    monkeypatch.setattr(
+        op_module, "publish_step_run_metadata", lambda *a: None
+    )
+
+    def _boom(*args, **kwargs):
+        raise _HttpError(
+            "400 Client Error", "Custom base images not supported"
+        )
+
+    monkeypatch.setattr(sys.modules["truss_train"], "push", _boom)
+    operator = _make_operator()
+    operator.get_settings = lambda _info: BasetenStepOperatorSettings()
+
+    with pytest.raises(RuntimeError, match="custom base images"):
+        operator.submit(_make_info(), _entrypoint(), {})
+
+
 # --- status mapping ----------------------------------------------------------
 
 

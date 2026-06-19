@@ -430,12 +430,17 @@ class BasetenStepOperator(BaseStepOperator):
         # Push from an empty temp dir so the local working directory is not
         # uploaded: the Docker image is the single source of truth for code.
         self._configure_truss_remote()
-        with tempfile.TemporaryDirectory() as tmpdir:
-            result = push(
-                config=project,
-                source_dir=Path(tmpdir),
-                remote=BASETEN_REMOTE_NAME,
-            )
+        try:
+            with tempfile.TemporaryDirectory() as tmpdir:
+                result = push(
+                    config=project,
+                    source_dir=Path(tmpdir),
+                    remote=BASETEN_REMOTE_NAME,
+                )
+        except Exception as e:
+            raise RuntimeError(
+                self._explain_submit_error(e, settings, is_command_step)
+            ) from e
 
         job_id = result["id"]
         project_id = result["training_project_id"]
@@ -466,6 +471,60 @@ class BasetenStepOperator(BaseStepOperator):
                 project_id,
             )
             raise
+
+    @staticmethod
+    def _explain_submit_error(
+        error: Exception,
+        settings: BasetenStepOperatorSettings,
+        is_command_step: bool,
+    ) -> str:
+        """Turn a Baseten job submission failure into an actionable message.
+
+        Two common failures are Baseten *organization* entitlements rather than
+        problems with the submitted config: custom base images (needed by any
+        regular step, whose image must contain ZenML) and multi-node instance
+        types. Detect those from the response and point at the fix; the original
+        error detail is always preserved.
+
+        Args:
+            error: The exception raised by the truss ``push``.
+            settings: The resolved step operator settings.
+            is_command_step: Whether the step is a command step.
+
+        Returns:
+            A human-readable error message.
+        """
+        detail = str(error)
+        # The actionable reason lives in the HTTP response body, not the
+        # generic "400 Bad Request" message; read it defensively since the
+        # exception type comes from a third-party (truss/requests) client.
+        response = getattr(error, "response", None)
+        body = (getattr(response, "text", "") or "").strip()
+        combined = f"{detail} {body}".lower()
+
+        hints = []
+        if "base image" in combined:
+            kind = "regular step" if not is_command_step else "step"
+            hints.append(
+                f"This {kind} submits a custom image, which requires the "
+                "'custom base images' entitlement enabled for your Baseten "
+                "organization (contact Baseten support). Regular @steps always "
+                "need a custom image; to avoid it, run GPU work as a "
+                "CommandStep on a public base image."
+            )
+        if settings.node_count > 1:
+            hints.append(
+                f"Multi-node jobs (node_count={settings.node_count}) require "
+                "multi-node instance types enabled for your Baseten "
+                "organization (contact Baseten support)."
+            )
+
+        message = f"Baseten rejected the training job submission: {detail}"
+        if body:
+            message += f" (Baseten response: {body[:500]})"
+        if hints:
+            message += " " + " ".join(hints)
+        return message
 
     def _job_ids(
         self, step_run: "StepRunResponse"
