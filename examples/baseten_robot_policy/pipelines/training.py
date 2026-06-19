@@ -44,15 +44,23 @@ PUBLIC_TRAINING_IMAGE = "pytorch/pytorch:2.4.0-cuda12.1-cudnn9-runtime"
 _SCRIPT_PATH = Path(__file__).parents[1] / "training_script.py"
 
 
-def _build_command(node_count: int) -> List[str]:
+def _build_command(
+    node_count: int, seed: int, num_samples: int, epochs: int
+) -> List[str]:
     """Build the opaque training command for the `CommandStep`.
 
     The training script is embedded (base64) so it runs on the stock image
     without baking a custom image: the command materializes it on the node and
     then launches it directly (single node) or through `torchrun` (multi node).
+    The data/training knobs are baked in as environment variables so the
+    pipeline parameters genuinely drive the job (and the command reproduces the
+    same dataset the prep step versioned, via the shared seed).
 
     Args:
         node_count: Number of Baseten nodes the job will run on.
+        seed: Seed shared with the prep step to reproduce the dataset.
+        num_samples: Number of demonstration transitions to train on.
+        epochs: Training epochs for the policy network.
 
     Returns:
         The command argv for the `CommandStep`.
@@ -63,6 +71,7 @@ def _build_command(node_count: int) -> List[str]:
         f"pathlib.Path('/tmp/train.py').write_bytes("
         f"base64.b64decode('{encoded}'))"
     )
+    env = f"SEED={seed} N_SAMPLES={num_samples} EPOCHS={epochs}"
     if node_count > 1:
         launch = (
             "torchrun --nnodes=$BT_GROUP_SIZE --node-rank=$BT_NODE_RANK "
@@ -71,7 +80,11 @@ def _build_command(node_count: int) -> List[str]:
         )
     else:
         launch = "python /tmp/train.py"
-    return ["bash", "-lc", f'python -c "{materialize}" && {launch}']
+    return [
+        "bash",
+        "-lc",
+        f'python -c "{materialize}" && export {env} && {launch}',
+    ]
 
 
 @pipeline
@@ -80,7 +93,8 @@ def robot_policy_pipeline(
     accelerator: str = "H100",
     node_count: int = 1,
     gpu_count: int = 1,
-    num_episodes: int = 512,
+    seed: int = 42,
+    num_samples: int = 8192,
     epochs: int = 200,
 ) -> None:
     """Prepare a training run and execute it as a Baseten job.
@@ -91,10 +105,12 @@ def robot_policy_pipeline(
         accelerator: Baseten accelerator type for the job (e.g. 'H100').
         node_count: Number of nodes; > 1 launches multi-node training.
         gpu_count: GPUs per node.
-        num_episodes: Demonstration episodes to train on.
+        seed: Seed shared by the prep step and the training command so both use
+            the same demonstrations.
+        num_samples: Number of demonstration transitions to train on.
         epochs: Training epochs for the policy network.
     """
-    config = prepare_training_run(num_episodes=num_episodes, epochs=epochs)
+    demonstrations = prepare_training_run(seed=seed, num_samples=num_samples)
 
     settings: dict = {"resources": ResourceSettings(gpu_count=gpu_count)}
     if step_operator:
@@ -108,8 +124,8 @@ def robot_policy_pipeline(
         )
 
     train = CommandStep(
-        command=_build_command(node_count),
+        command=_build_command(node_count, seed, num_samples, epochs),
         step_operator=step_operator,
         settings=settings,
     )
-    train(after=config)
+    train(after=demonstrations)

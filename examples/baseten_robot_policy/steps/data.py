@@ -16,36 +16,55 @@
 
 """Upstream preparation step for the robot policy training pipeline.
 
-This regular step runs in the orchestrator environment (locally in the demo)
-and produces the training configuration that the downstream Baseten training
-job consumes. It exists to show a connected pipeline: a normal ZenML step
-feeding into a GPU `CommandStep` that runs on Baseten.
+This regular step runs in the orchestrator environment (locally in the demo). It
+generates and versions the demonstration dataset as a ZenML artifact so it is
+inspectable and reproducible in the dashboard. Because the downstream training
+runs as an opaque Baseten `CommandStep` (which cannot receive ZenML artifacts),
+the command regenerates the identical dataset from the same ``seed`` using the
+shared `make_demonstrations` routine — so both sides provably train on the same
+data without passing an artifact between them.
 """
 
-from typing import Annotated, Dict
+from typing import Annotated
+
+import pandas as pd
+from training_script import make_demonstrations
 
 from zenml import log_metadata, step
+
+OBS_COLUMNS = ["ee_x", "ee_y", "target_x", "target_y"]
+ACTION_COLUMNS = ["vel_x", "vel_y"]
 
 
 @step
 def prepare_training_run(
-    num_episodes: int = 512,
-    epochs: int = 200,
-) -> Annotated[Dict[str, int], "training_config"]:
-    """Assemble the behavior-cloning training configuration.
-
-    In a real robotics setup this step would version the demonstration dataset
-    and write it to the artifact store / a shared bucket that the (opaque)
-    training command then reads. Here it records the run configuration as
-    metadata and passes it downstream.
+    seed: int = 42,
+    num_samples: int = 8192,
+) -> Annotated[pd.DataFrame, "expert_demonstrations"]:
+    """Generate and version the demonstration dataset for the run.
 
     Args:
-        num_episodes: Number of demonstration episodes the policy trains on.
-        epochs: Training epochs for the policy network.
+        seed: Random seed; the training command reuses it to reproduce the exact
+            same demonstrations.
+        num_samples: Number of (observation, action) transitions to generate.
 
     Returns:
-        The training configuration consumed by the training job.
+        The demonstrations as a tidy table, stored as a ZenML artifact.
     """
-    config = {"num_episodes": num_episodes, "epochs": epochs}
-    log_metadata(metadata={**config, "task": "2d-reaching"})
-    return config
+    observations, actions = make_demonstrations(seed, num_samples)
+    demonstrations = pd.DataFrame(
+        data=list(map(list, observations)),
+        columns=OBS_COLUMNS,
+    )
+    demonstrations[ACTION_COLUMNS] = actions
+
+    log_metadata(
+        metadata={
+            "task": "2d-reaching",
+            "seed": seed,
+            "num_samples": int(num_samples),
+            "obs_dim": len(OBS_COLUMNS),
+            "action_dim": len(ACTION_COLUMNS),
+        }
+    )
+    return demonstrations

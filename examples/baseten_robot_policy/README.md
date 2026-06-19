@@ -11,15 +11,29 @@ train a policy on H100s → (in a real setup) evaluate and promote the model.
 
 ```
 prepare_training_run            # regular ZenML step, runs in the orchestrator
-        │  (training_config)
+        │  (versions the demonstration dataset as a ZenML artifact)
         ▼
    train  (CommandStep)         # opaque GPU command, runs on Baseten (H100)
 ```
 
-`prepare_training_run` is a normal `@step` that assembles the run configuration and logs
-metadata. `train` is a [`CommandStep`](https://docs.zenml.io/how-to/steps-pipelines/command_steps)
-— an opaque command (`python /tmp/train.py`, or `torchrun ...` for multi-node) that Baseten runs
-on a GPU. The whole run is tracked under a `reaching_policy` ZenML Model.
+`prepare_training_run` is a normal `@step` that generates the expert demonstrations from a
+`seed` and **versions them as a ZenML artifact** (inspectable in the dashboard). `train` is a
+[`CommandStep`](https://docs.zenml.io/how-to/steps-pipelines/command_steps) — an opaque command
+(`python /tmp/train.py`, or `torchrun ...` for multi-node) that Baseten runs on a GPU. The whole
+run is tracked under a `reaching_policy` ZenML Model.
+
+### How the two steps connect
+
+A `CommandStep` runs as an opaque job and **cannot receive ZenML artifacts at runtime**, so the
+prep step and the training command are connected by a **shared seed** rather than by passing the
+dataset object: both call the same `make_demonstrations(seed, num_samples)` routine (defined once
+in `training_script.py` and imported by the prep step), so they provably train on the *identical*
+data. The `--seed`, `--num-samples` and `--epochs` flags are baked into the training command as
+environment variables, so they genuinely drive the job — not just the prep step's metadata.
+
+> In production you would instead have the prep step write the versioned dataset to a shared
+> bucket and the command stream it from there (the standard Baseten data-loading pattern); the
+> seed approach keeps this example credential-free and fully reproducible.
 
 ## Why a `CommandStep` (and not a regular `@step`)?
 

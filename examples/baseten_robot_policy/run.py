@@ -56,6 +56,8 @@ from zenml import Model
     "--node-count", default=1, help="Number of nodes (>1 = multi-node)."
 )
 @click.option("--gpu-count", default=1, help="GPUs per node.")
+@click.option("--seed", default=42, help="Seed shared by prep and training.")
+@click.option("--num-samples", default=8192, help="Demonstration transitions.")
 @click.option("--epochs", default=200, help="Training epochs.")
 def main(
     step_operator: Optional[str],
@@ -63,6 +65,8 @@ def main(
     accelerator: str,
     node_count: int,
     gpu_count: int,
+    seed: int,
+    num_samples: int,
     epochs: int,
 ) -> None:
     """Configure and launch the robot policy pipeline."""
@@ -78,6 +82,8 @@ def main(
         accelerator=accelerator,
         node_count=node_count,
         gpu_count=gpu_count,
+        seed=seed,
+        num_samples=num_samples,
         epochs=epochs,
     )
 
