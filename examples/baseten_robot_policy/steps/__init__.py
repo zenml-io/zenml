@@ -16,14 +16,6 @@
 
 """Steps for the Baseten robot policy training example."""
 
-from steps.data import generate_demonstrations, prepare_datasets
-from steps.evaluate import evaluate_policy, promote_policy
-from steps.train import train_policy
+from steps.data import prepare_training_run
 
-__all__ = [
-    "generate_demonstrations",
-    "prepare_datasets",
-    "train_policy",
-    "evaluate_policy",
-    "promote_policy",
-]
+__all__ = ["prepare_training_run"]

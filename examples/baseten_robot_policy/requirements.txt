@@ -1,6 +1,5 @@
 zenml>=0.95.0
-numpy
-pandas
 click
-# torch is optional: installed in the Baseten training image for GPU training.
-# Locally the train step falls back to a NumPy least-squares fit.
+# torch is only needed wherever the training command actually runs:
+#   - on Baseten it is already present in the public PyTorch base image;
+#   - for a local smoke test (`python run.py --local`) install it yourself.

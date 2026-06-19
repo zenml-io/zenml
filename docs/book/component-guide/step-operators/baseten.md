@@ -31,6 +31,24 @@ Use the Baseten step operator if:
 You need a [Baseten account](https://www.baseten.co/) and an API key (create one in your
 Baseten workspace settings).
 
+### Baseten account requirements
+
+Two execution modes depend on **organization-level entitlements** that may need to be enabled by
+Baseten support for your account:
+
+| Mode | Requires | Symptom if not enabled |
+|---|---|---|
+| Single-node regular `@step` | **Custom base images** | Job creation fails with `Custom base images not supported for your organization` |
+| Multi-node (`node_count > 1`) | **Multi-node instance types** | Job creation fails with a `400 Bad Request` |
+
+This is because a regular `@step` runs the ZenML entrypoint, so its container must contain `zenml`,
+your code and dependencies — that is a *custom image*. A [`CommandStep`](https://docs.zenml.io/how-to/steps-pipelines/command_steps),
+by contrast, is an opaque command that can run on a **stock public image** (with `skip_build=True`),
+which any Baseten organization can pull — so the single-node `CommandStep` path works out of the
+box. If you plan to run regular `@step`s or multi-node jobs, ask Baseten to enable the
+corresponding entitlement first. These are Baseten account gates, not ZenML limitations — the
+operator builds, submits, polls, cancels and records metadata for every mode regardless.
+
 ## How to use it
 
 To use the Baseten step operator, you need:

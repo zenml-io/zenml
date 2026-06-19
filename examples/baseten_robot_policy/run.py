@@ -17,122 +17,69 @@
 """Run the Baseten robot policy example.
 
 Examples:
-    # Run everything locally (no Baseten, no GPU) for a quick smoke test:
+    # Run the training command locally (no Baseten) for a quick smoke test:
     python run.py --local
 
-    # Run the training step on Baseten H100 (requires a stack with the
-    # baseten step operator + a remote artifact store and container registry):
+    # Single-node training on Baseten (one H100):
     python run.py --step-operator baseten_operator
+
+    # Multi-node distributed training (requires the org to have multi-node
+    # instance types enabled, see the README):
+    python run.py --step-operator baseten_operator --node-count 4 --gpu-count 8
 """
 
-import site
-import sys
-from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 import click
 from pipelines import robot_policy_pipeline
 
-import zenml
 from zenml import Model
-from zenml.config import DockerSettings, ResourceSettings
-from zenml.integrations.baseten.flavors import BasetenStepOperatorSettings
-
-
-def _get_docker_settings(**kwargs: Any) -> DockerSettings:
-    """Build DockerSettings that bake the *current* zenml into the image.
-
-    NOTE: Temporary. While the Baseten step operator lives on a development
-    branch (not yet a released zenml), the image Baseten runs must contain that
-    exact branch checkout rather than a PyPI release. When running from an
-    editable/dev install this points the build at ``zenml-dev.Dockerfile`` so
-    the local source is copied in. Once the operator ships in a released zenml
-    this whole helper can be dropped in favor of a plain ``DockerSettings``.
-    """
-    settings_kwargs: dict = {
-        "build_config": {"build_options": {"platform": "linux/amd64"}},
-        "python_package_installer": "uv",
-    }
-
-    for path in site.getsitepackages() + [site.getusersitepackages()]:
-        if Path(path).resolve() in Path(zenml.__file__).resolve().parents:
-            break  # regular (non-editable) install: nothing special to do
-    else:
-        # Editable install: copy the local zenml checkout into the image.
-        zenml_git_root = Path(zenml.__file__).parents[2]
-        settings_kwargs.update(
-            {
-                "dockerfile": str(
-                    zenml_git_root / "docker" / "zenml-dev.Dockerfile"
-                ),
-                "build_context_root": str(zenml_git_root),
-                "parent_image_build_config": {
-                    "build_options": {
-                        "platform": "linux/amd64",
-                        "buildargs": {
-                            "PYTHON_VERSION": f"{sys.version_info.major}.{sys.version_info.minor}"
-                        },
-                    }
-                },
-                "prevent_build_reuse": True,
-            }
-        )
-
-    settings_kwargs.update(kwargs)
-    return DockerSettings(**settings_kwargs)
 
 
 @click.command()
 @click.option(
     "--step-operator",
     default=None,
-    help="Name of the Baseten step operator to run the training step on. "
-    "Omit (or use --local) to run the step in the orchestrator environment.",
+    help="Name of the Baseten step operator to run the training command on. "
+    "Omit (or use --local) to run it in the orchestrator environment.",
 )
 @click.option(
     "--local",
     is_flag=True,
     default=False,
-    help="Force fully local execution (ignores --step-operator).",
+    help="Force local execution (ignores --step-operator).",
 )
-@click.option("--epochs", default=50, help="Training epochs.")
 @click.option(
     "--accelerator", default="H100", help="Baseten accelerator type."
 )
+@click.option(
+    "--node-count", default=1, help="Number of nodes (>1 = multi-node)."
+)
+@click.option("--gpu-count", default=1, help="GPUs per node.")
+@click.option("--epochs", default=200, help="Training epochs.")
 def main(
-    step_operator: Optional[str], local: bool, epochs: int, accelerator: str
+    step_operator: Optional[str],
+    local: bool,
+    accelerator: str,
+    node_count: int,
+    gpu_count: int,
+    epochs: int,
 ) -> None:
     """Configure and launch the robot policy pipeline."""
+    operator = None if local else step_operator
     model = Model(
         name="reaching_policy",
         description="Behavior-cloning policy for a 2D reaching task.",
         tags=["robotics", "behavior-cloning", "baseten"],
     )
 
-    train_step_settings: dict = {}
-    if step_operator and not local:
-        # Run only the training step on Baseten; request a single H100 GPU.
-        train_step_settings = {
-            "step_operator": step_operator,
-            "settings": {
-                "step_operator": BasetenStepOperatorSettings(
-                    accelerator=accelerator,
-                    enable_cache=True,  # reuse downloaded weights across runs
-                ),
-                "resources": ResourceSettings(gpu_count=1),
-                "docker": _get_docker_settings(
-                    requirements=["torch", "numpy", "pandas"],
-                ),
-            },
-        }
-
-    pipeline = robot_policy_pipeline.with_options(
-        model=model,
-        steps={"train_policy": train_step_settings}
-        if train_step_settings
-        else {},
+    robot_policy_pipeline.with_options(model=model)(
+        step_operator=operator,
+        accelerator=accelerator,
+        node_count=node_count,
+        gpu_count=gpu_count,
+        epochs=epochs,
     )
-    pipeline(epochs=epochs)
 
 
 if __name__ == "__main__":

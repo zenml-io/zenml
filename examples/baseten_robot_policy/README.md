@@ -1,85 +1,87 @@
 # Robot Policy Training on Baseten 🤖
 
-This example trains a **behavior-cloning policy** for a simple 2D reaching task
-and runs the GPU-heavy training step as a **[Baseten](https://www.baseten.co/)
-training job** via the ZenML Baseten step operator — while the rest of the
-pipeline (data generation, preprocessing, evaluation, promotion) runs under your
-normal orchestrator.
+This example trains a **behavior-cloning policy** for a simple 2D reaching task and runs the
+GPU training as a **[Baseten](https://www.baseten.co/) training job** via the ZenML Baseten step
+operator, while the rest of the pipeline runs under your normal orchestrator.
 
-It's a compact, end-to-end illustration of the pattern a robotics team would use
-for policy learning: collect demonstrations → train a policy on H100s → evaluate
-against held-out demonstrations → promote the model when it clears a quality bar.
+It's a compact illustration of the pattern a robotics team would use: prepare a training run →
+train a policy on H100s → (in a real setup) evaluate and promote the model.
 
 ## The pipeline
 
 ```
-generate_demonstrations          # scripted expert rollouts -> trajectory table
-        │
-   prepare_datasets              # shuffle + train/val split
-        │  ┌──────────────┐
-        ├──┤  train_set    ├────► train_policy        ← runs on Baseten (H100)
-        │  └──────────────┘            │
-        │                              ▼
-        └──► val_set ──────────► evaluate_policy       ← validation MSE
-                                       │
-                                 promote_policy         ← promote if MSE ≤ threshold
+prepare_training_run            # regular ZenML step, runs in the orchestrator
+        │  (training_config)
+        ▼
+   train  (CommandStep)         # opaque GPU command, runs on Baseten (H100)
 ```
 
-Every step exchanges ZenML artifacts, logs rich metadata, and the run is tracked
-under a `reaching_policy` ZenML Model so versions, metrics and promotion stage
-are all visible in the dashboard — ideal for a live demo.
+`prepare_training_run` is a normal `@step` that assembles the run configuration and logs
+metadata. `train` is a [`CommandStep`](https://docs.zenml.io/how-to/steps-pipelines/command_steps)
+— an opaque command (`python /tmp/train.py`, or `torchrun ...` for multi-node) that Baseten runs
+on a GPU. The whole run is tracked under a `reaching_policy` ZenML Model.
 
-## Quick local run
+## Why a `CommandStep` (and not a regular `@step`)?
 
-No GPU or Baseten account required — the training step falls back to a NumPy
-least-squares fit when PyTorch isn't installed:
+This is the **recommended Baseten pattern**, and it's also shaped by two Baseten **organization
+entitlements** you should know about:
+
+| Capability | Needs from Baseten | Used by |
+|---|---|---|
+| **Custom base images** | Org entitlement (contact Baseten support) | Regular `@step`s on Baseten |
+| **Multi-node instance types** | Org entitlement (contact Baseten support) | `node_count > 1` |
+
+* A **regular `@step`** runs the ZenML entrypoint, so its container must contain `zenml`, your
+  code and dependencies — i.e. a **custom image**. If your Baseten org does not have *custom base
+  images* enabled, those jobs are rejected (`Custom base images not supported for your
+  organization`). This example therefore uses a `CommandStep` on a **stock public PyTorch image**
+  (`skip_build=True`), which every org can pull — no custom image is built or pushed.
+* **Multi-node** (`node_count > 1`) additionally requires your org to have **multi-node instance
+  types** enabled; otherwise job creation returns a `400`.
+
+So on a fresh Baseten org, the `CommandStep` + public-image single-node path below works out of
+the box; the regular-`@step` and multi-node paths need the corresponding entitlement enabled
+first. None of this is a ZenML limitation — the operator builds, submits, polls, cancels and
+records metadata for all of these; the gates are on the Baseten account.
+
+## Run it
 
 ```bash
 pip install -r requirements.txt
+zenml integration install baseten
+
+# Local smoke test (runs the training command locally; install torch first):
 python run.py --local
+
+# Single-node training on Baseten (one H100) — works on any org:
+python run.py --step-operator baseten_operator --accelerator H100
+
+# Multi-node distributed training (requires multi-node instance types enabled):
+python run.py --step-operator baseten_operator --node-count 4 --gpu-count 8
 ```
 
-## Running the training step on Baseten
+Register a stack with the Baseten step operator, a remote artifact store, a container registry
+and an image builder first:
 
-1. Install the integration and register a stack with the Baseten step operator, a
-   remote artifact store, a container registry and an image builder:
+```bash
+zenml step-operator register baseten_operator \
+    --flavor=baseten --api_key=<YOUR_BASETEN_API_KEY> --project=maven-robotics
 
-   ```bash
-   zenml integration install baseten
-   zenml step-operator register baseten_operator \
-       --flavor=baseten \
-       --api_key=<YOUR_BASETEN_API_KEY> \
-       --project=maven-robotics
+zenml stack register baseten_stack \
+    -s baseten_operator -a <REMOTE_ARTIFACT_STORE> \
+    -c <REMOTE_CONTAINER_REGISTRY> -i <IMAGE_BUILDER> --set
+```
 
-   zenml stack register baseten_stack \
-       -s baseten_operator \
-       -a <REMOTE_ARTIFACT_STORE> \
-       -c <REMOTE_CONTAINER_REGISTRY> \
-       -i <IMAGE_BUILDER> \
-       --set
-   ```
+For single-node `CommandStep` runs on a public image, the container registry and image builder
+are not exercised (nothing is built), but they are part of a complete Baseten stack and are
+needed as soon as you build custom images.
 
-2. Run the pipeline, sending only `train_policy` to Baseten:
+## How multi-node works
 
-   ```bash
-   python run.py --step-operator baseten_operator --accelerator H100
-   ```
+When `--node-count > 1`, Baseten provisions that many identical nodes and injects
+`BT_GROUP_SIZE`, `BT_NODE_RANK`, `BT_LEADER_ADDR` and `BT_NUM_GPUS`. The command wires those into
+`torchrun` so each node joins the same distributed job — see `training_script.py` (which reads the
+rank/world topology) and `pipelines/training.py` (which builds the `torchrun` command).
 
-The training step is built into a container, pushed to Baseten, executed on an
-H100, and its status is streamed back to ZenML. A clickable link to the Baseten
-job logs is attached to the step as metadata (`baseten_logs_url`).
-
-> **Caching:** the example enables Baseten's persistent training cache
-> (`enable_cache=True`) so model/dataset downloads are reused across runs. It is
-> off by default in the operator. See the
-> [step operator docs](https://docs.zenml.io/stacks/step-operators/baseten) for
-> caching, checkpointing, secrets and multi-node training.
-
-## Multi-node distributed training
-
-For real multi-node distributed training, replace `train_policy` with a
-[`CommandStep`](https://docs.zenml.io/how-to/steps-pipelines/command_steps) that
-launches `torchrun`, and set `node_count > 1` on the operator settings. Baseten
-provisions the nodes and injects `BT_GROUP_SIZE`, `BT_NODE_RANK`,
-`BT_LEADER_ADDR` and `BT_NUM_GPUS`, which your command wires into the distributed
-launcher.
+See the [step operator docs](https://docs.zenml.io/stacks/step-operators/baseten) for caching,
+checkpointing, secrets and the full settings reference.
