@@ -209,7 +209,6 @@ The first version of the Modal orchestrator has a few intentional limits:
 * The orchestrator does not handle step retries internally. ZenML's normal step retry behavior still applies.
 * Client-side caching is disabled for the orchestrator component. The static controller can still reuse already-cached steps when the ZenML run logic marks a step as cached.
 * Stop and status behavior depends on Modal sandbox IDs stored in ZenML metadata. If those IDs are missing, ZenML can only report the last known run or step status and may not be able to terminate already-started sandboxes.
-* This page does not describe a real-account end-to-end test setup. The targeted tests cover Modal SDK interactions with stubs; running against Modal requires a Modal account and remote stack components.
 
 For more details on the available settings, see the [Modal integration SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-modal.html).
 
