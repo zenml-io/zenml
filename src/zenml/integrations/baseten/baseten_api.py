@@ -91,8 +91,10 @@ class BasetenApiClient:
             return None
         response.raise_for_status()
         data = response.json()
-        # The response uses `current_status`; fall back to `status` defensively.
-        state = data.get("current_status") or data.get("status")
+        # The job payload may be returned at the top level or nested under
+        # `training_job`; handle both, preferring `current_status`.
+        job = data.get("training_job", data)
+        state = job.get("current_status") or job.get("status")
         return cast(Optional[str], state)
 
     def stop_job(self, project_id: str, job_id: str) -> None:
@@ -108,6 +110,7 @@ class BasetenApiClient:
         response = requests.post(
             f"{self._job_url(project_id, job_id)}/stop",
             headers=self._headers,
+            json={},
             timeout=_REQUEST_TIMEOUT,
         )
         response.raise_for_status()

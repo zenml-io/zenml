@@ -414,3 +414,91 @@ def test_validator_requires_registry_and_image_builder():
     required = operator.validator._required_components
     assert StackComponentType.CONTAINER_REGISTRY in required
     assert StackComponentType.IMAGE_BUILDER in required
+
+
+def test_validator_accepts_remote_components():
+    operator = _make_operator()
+    stack = SimpleNamespace(
+        artifact_store=SimpleNamespace(
+            name="s3", config=SimpleNamespace(is_local=False)
+        ),
+        container_registry=SimpleNamespace(
+            name="gcr", config=SimpleNamespace(is_local=False)
+        ),
+    )
+    ok, msg = operator.validator._custom_validation_function(stack)
+    assert ok is True
+    assert msg == ""
+
+
+# --- REST API client ---------------------------------------------------------
+
+
+class _FakeResponse:
+    def __init__(self, status_code, payload=None):
+        self.status_code = status_code
+        self._payload = payload or {}
+
+    def json(self):
+        return self._payload
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise RuntimeError(f"HTTP {self.status_code}")
+
+
+def _client():
+    from zenml.integrations.baseten.baseten_api import BasetenApiClient
+
+    return BasetenApiClient("bt-key")
+
+
+def test_api_get_status_reads_flat_payload(monkeypatch):
+    from zenml.integrations.baseten import baseten_api
+
+    monkeypatch.setattr(
+        baseten_api.requests,
+        "get",
+        lambda *a, **k: _FakeResponse(200, {"current_status": "RUNNING"}),
+    )
+    assert _client().get_job_status("p", "j") == "RUNNING"
+
+
+def test_api_get_status_reads_nested_training_job(monkeypatch):
+    from zenml.integrations.baseten import baseten_api
+
+    monkeypatch.setattr(
+        baseten_api.requests,
+        "get",
+        lambda *a, **k: _FakeResponse(
+            200, {"training_job": {"current_status": "TRAINING_JOB_COMPLETED"}}
+        ),
+    )
+    assert _client().get_job_status("p", "j") == "TRAINING_JOB_COMPLETED"
+
+
+def test_api_get_status_returns_none_on_404(monkeypatch):
+    from zenml.integrations.baseten import baseten_api
+
+    monkeypatch.setattr(
+        baseten_api.requests, "get", lambda *a, **k: _FakeResponse(404)
+    )
+    assert _client().get_job_status("p", "j") is None
+
+
+def test_api_stop_job_posts_to_stop_endpoint(monkeypatch):
+    from zenml.integrations.baseten import baseten_api
+
+    recorded = {}
+
+    def _post(url, **kwargs):
+        recorded["url"] = url
+        recorded["json"] = kwargs.get("json")
+        return _FakeResponse(200)
+
+    monkeypatch.setattr(baseten_api.requests, "post", _post)
+    _client().stop_job("proj-1", "job-1")
+    assert recorded["url"].endswith(
+        "/training_projects/proj-1/jobs/job-1/stop"
+    )
+    assert recorded["json"] == {}
