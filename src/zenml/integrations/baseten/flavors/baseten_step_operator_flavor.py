@@ -69,6 +69,21 @@ class BasetenStepOperatorSettings(BaseSettings):
         "Defaults to False (disabled). See "
         "https://docs.baseten.co/training/loading",
     )
+    cache_enable_legacy_hf_mount: bool = Field(
+        False,
+        description="Mount the legacy Hugging Face cache location when the "
+        "training cache is enabled, so code using the default HF cache path "
+        "reuses downloaded models/datasets across jobs. Only applies when "
+        "enable_cache is True. Defaults to False",
+    )
+    cache_require_affinity: bool = Field(
+        True,
+        description="Require the job to schedule onto nodes that already hold "
+        "the project cache. Set False to let the job run on any node (e.g. to "
+        "run the same project across different GPU types) at the cost of cache "
+        "warmth. Only applies when enable_cache is True. Defaults to True "
+        "(Baseten's default)",
+    )
     enable_checkpointing: bool = Field(
         False,
         description="Enable Baseten-managed checkpoint storage for the job. "

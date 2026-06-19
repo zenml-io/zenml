@@ -404,7 +404,9 @@ class BasetenStepOperator(BaseStepOperator):
         }
         if settings.enable_cache:
             runtime_kwargs["cache_config"] = definitions.CacheConfig(
-                enabled=True
+                enabled=True,
+                enable_legacy_hf_mount=settings.cache_enable_legacy_hf_mount,
+                require_cache_affinity=settings.cache_require_affinity,
             )
         if settings.enable_checkpointing:
             runtime_kwargs["checkpointing_config"] = (

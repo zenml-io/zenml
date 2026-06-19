@@ -4,8 +4,8 @@ description: Executing individual steps as Baseten training jobs, including mult
 
 # Baseten Step Operator
 
-[Baseten](https://www.baseten.co/) provides on-demand H100/H200 GPU capacity through its
-Training product. The ZenML Baseten step operator runs selected steps of your pipeline as
+[Baseten](https://www.baseten.co/) provides on-demand H100/H200 (and more) GPU capacity through
+its Training product. The ZenML Baseten step operator runs selected steps of your pipeline as
 Baseten training jobs, so the rest of the pipeline can run anywhere (locally, on Kubernetes,
 or any other orchestrator) while GPU-heavy steps execute on Baseten.
 
@@ -21,8 +21,8 @@ It supports both:
 
 Use the Baseten step operator if:
 
-* you need H100/H200 GPUs for specific steps but want to keep your existing orchestrator and
-  [remote artifact store](https://docs.zenml.io/stacks/artifact-stores/), or
+* you need H100/H200 (and more) GPUs for specific steps but want to keep your existing
+  orchestrator and [remote artifact store](https://docs.zenml.io/stacks/artifact-stores/), or
 * you want multi-node distributed training without managing a cluster — Baseten provisions and
   tears down the nodes per job.
 
@@ -190,14 +190,20 @@ checkpoint storage. Both are **disabled by default** and opt-in through settings
 ```python
 BasetenStepOperatorSettings(
     accelerator="H100",
-    enable_cache=True,           # mount the persistent training cache (off by default)
-    enable_checkpointing=True,   # persist checkpoints written to $BT_CHECKPOINT_DIR (off by default)
+    enable_cache=True,                  # mount the persistent training cache (off by default)
+    cache_enable_legacy_hf_mount=True,  # also reuse the default Hugging Face cache path
+    cache_require_affinity=False,       # allow running across different GPU types
+    enable_checkpointing=True,          # persist checkpoints written to $BT_CHECKPOINT_DIR (off by default)
 )
 ```
 
 When `enable_cache` is on, write your downloads (e.g. `HF_HOME`, dataset staging) into the cache so
-subsequent runs reuse them. When `enable_checkpointing` is on, write checkpoints to the Baseten
-checkpoint directory exposed as `$BT_CHECKPOINT_DIR`.
+subsequent runs reuse them. `cache_enable_legacy_hf_mount` additionally mounts the legacy Hugging
+Face cache location (handy for libraries that download to the default HF path), and
+`cache_require_affinity` (default `True`) controls whether the job must land on nodes that already
+hold the cache — set it `False` to let the same project run across different GPU types. When
+`enable_checkpointing` is on, write checkpoints to the Baseten checkpoint directory exposed as
+`$BT_CHECKPOINT_DIR`.
 
 For more information and a full list of configurable attributes, check out the
 [SDK docs](https://sdkdocs.zenml.io/latest/).
