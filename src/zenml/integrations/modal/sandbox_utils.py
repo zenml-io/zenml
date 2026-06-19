@@ -14,9 +14,8 @@
 """Shared Modal Sandbox helpers."""
 
 import math
-import threading
 import time
-from typing import Any, Callable, Dict, List, Optional, Protocol, Tuple
+from typing import Any, Dict, List, Optional, Protocol, Tuple
 
 import modal
 
@@ -126,51 +125,6 @@ def create_modal_client_from_credentials(
         normalized_token_id,
         normalized_token_secret,
     )
-
-
-class ModalClientFactory:
-    """Lazy, thread-safe cache for a Modal client built from credentials.
-
-    The client is constructed on first use from the component's token pair and
-    reused across sandbox operations so concurrent calls share a single client.
-    Credentials are read through callables so the factory always picks up the
-    component's current configuration rather than a value captured at init time.
-    """
-
-    def __init__(
-        self,
-        *,
-        get_token_id: Callable[[], Optional[str]],
-        get_token_secret: Callable[[], Optional[str]],
-    ) -> None:
-        """Initialize the factory.
-
-        Args:
-            get_token_id: Callable returning the configured Modal token ID, or
-                ``None`` to fall back to Modal's ambient authentication.
-            get_token_secret: Callable returning the configured Modal token
-                secret, or ``None`` for ambient authentication.
-        """
-        self._get_token_id = get_token_id
-        self._get_token_secret = get_token_secret
-        self._client: Optional["modal.Client"] = None
-        self._lock = threading.Lock()
-
-    def get_client(self) -> Optional["modal.Client"]:
-        """Return the cached Modal client, creating it on first use.
-
-        Returns:
-            An explicit Modal client built from the component credentials, or
-            ``None`` when no credentials are configured so the Modal SDK uses
-            its ambient authentication.
-        """
-        with self._lock:
-            if self._client is None:
-                self._client = create_modal_client_from_credentials(
-                    token_id=self._get_token_id(),
-                    token_secret=self._get_token_secret(),
-                )
-            return self._client
 
 
 def resolve_modal_token_pair(
