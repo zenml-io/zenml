@@ -12,12 +12,16 @@ from zenml.enums import (
 )
 from zenml.models import (
     PlatformEventTriggerRequest,
+    PlatformEventTriggerResponse,
     PlatformEventTriggerResponseBody,
     PlatformEventTriggerUpdate,
     ScheduleTriggerRequest,
     ScheduleTriggerResponseBody,
     ScheduleTriggerUpdate,
+    TriggerDispatchStatusCode,
     TriggerExecutionInfo,
+    TriggerResponseResources,
+    TriggerSnapshotDispatchState,
 )
 
 
@@ -234,6 +238,21 @@ def test_platform_event_valid_and_inheritance():
         target_events=["completed"],
     )
     assert body.source_entity.type == SourceType.PIPELINE_RUN
+
+    snapshot_id = uuid4()
+    dispatch_state = TriggerSnapshotDispatchState(
+        last_status=TriggerDispatchStatusCode.SKIPPED_TRIGGER_CYCLE,
+        last_status_details={"cycle_pipeline_ids": [uuid4(), uuid4()]},
+    )
+    response = PlatformEventTriggerResponse(
+        id=uuid4(),
+        body=body,
+        resources=TriggerResponseResources(
+            snapshot_dispatch_states={snapshot_id: dispatch_state}
+        ),
+    )
+
+    assert response.snapshot_dispatch_states == {snapshot_id: dispatch_state}
 
 
 def test_platform_event_snapshot_source_valid():

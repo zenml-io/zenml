@@ -830,6 +830,17 @@ class TriggerResponse(
         return self.get_resources().executable_snapshots
 
     @property
+    def snapshot_dispatch_states(
+        self,
+    ) -> dict[UUID, TriggerSnapshotDispatchState]:
+        """Get the latest dispatch state for each attached snapshot.
+
+        Returns:
+            Dispatch states keyed by snapshot ID.
+        """
+        return self.get_resources().snapshot_dispatch_states
+
+    @property
     def latest_run(self) -> Optional["PipelineRunResponse"]:
         """Implements the 'latest_run' property.
 
