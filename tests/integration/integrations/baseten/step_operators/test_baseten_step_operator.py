@@ -49,9 +49,10 @@ def fake_truss(monkeypatch):
     """Inject fake ``truss_train`` / ``truss.base`` modules into sys.modules."""
     recorded = {}
 
-    def push(config, source_dir=None):
+    def push(config, source_dir=None, remote=None):
         recorded["config"] = config
         recorded["source_dir"] = source_dir
+        recorded["remote"] = remote
         return {"id": "job-123", "training_project_id": "proj-456"}
 
     definitions = types.SimpleNamespace(
@@ -78,9 +79,26 @@ def fake_truss(monkeypatch):
     truss_base = types.ModuleType("truss.base")
     truss_base.truss_config = truss_config
 
+    # truss.remote.* used by _configure_truss_remote (no-op stubs that record).
+    class _RemoteFactory:
+        @staticmethod
+        def update_remote_config(config):
+            recorded["remote_config"] = config
+
+    remote_factory = types.ModuleType("truss.remote.remote_factory")
+    remote_factory.RemoteFactory = _RemoteFactory
+    truss_remote = types.ModuleType("truss.remote.truss_remote")
+    truss_remote.RemoteConfig = _Node
+    remote_pkg = types.ModuleType("truss.remote")
+
     monkeypatch.setitem(sys.modules, "truss_train", truss_train)
     monkeypatch.setitem(sys.modules, "truss", truss_pkg)
     monkeypatch.setitem(sys.modules, "truss.base", truss_base)
+    monkeypatch.setitem(sys.modules, "truss.remote", remote_pkg)
+    monkeypatch.setitem(
+        sys.modules, "truss.remote.remote_factory", remote_factory
+    )
+    monkeypatch.setitem(sys.modules, "truss.remote.truss_remote", truss_remote)
     return recorded
 
 
@@ -198,7 +216,7 @@ def test_submit_uses_empty_source_dir_and_disables_workdir(
 def test_build_environment_maps_secret_reference(fake_truss):
     operator = _make_operator()
     result = operator._build_environment(
-        {"HF_TOKEN": "value"}, {"HF_TOKEN": "hf-secret"}
+        {"HF_TOKEN": "value"}, {"HF_TOKEN": "hf-secret"}, False
     )
     assert isinstance(result["HF_TOKEN"], _Node)
     assert result["HF_TOKEN"].name == "hf-secret"
@@ -206,20 +224,33 @@ def test_build_environment_maps_secret_reference(fake_truss):
 
 def test_build_environment_inlines_plain_values(fake_truss):
     operator = _make_operator()
-    result = operator._build_environment({"EPOCHS": "5"}, {})
+    result = operator._build_environment({"EPOCHS": "5"}, {}, False)
     assert result == {"EPOCHS": "5"}
 
 
-def test_build_environment_refuses_unmapped_sensitive_token(fake_truss):
+def test_build_environment_refuses_unmapped_sensitive_token_regular_step(
+    fake_truss,
+):
     operator = _make_operator()
     with pytest.raises(RuntimeError, match=SENSITIVE_KEY):
-        operator._build_environment({SENSITIVE_KEY: "tok"}, {})
+        operator._build_environment({SENSITIVE_KEY: "tok"}, {}, False)
+
+
+def test_build_environment_drops_unmapped_sensitive_token_command_step(
+    fake_truss,
+):
+    operator = _make_operator()
+    result = operator._build_environment(
+        {SENSITIVE_KEY: "tok", "EPOCHS": "5"}, {}, True
+    )
+    assert SENSITIVE_KEY not in result
+    assert result == {"EPOCHS": "5"}
 
 
 def test_build_environment_allows_mapped_sensitive_token(fake_truss):
     operator = _make_operator()
     result = operator._build_environment(
-        {SENSITIVE_KEY: "tok"}, {SENSITIVE_KEY: "zenml-token-secret"}
+        {SENSITIVE_KEY: "tok"}, {SENSITIVE_KEY: "zenml-token-secret"}, False
     )
     assert isinstance(result[SENSITIVE_KEY], _Node)
     assert result[SENSITIVE_KEY].name == "zenml-token-secret"

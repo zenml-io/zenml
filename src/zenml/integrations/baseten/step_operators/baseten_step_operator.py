@@ -52,6 +52,11 @@ BASETEN_STEP_OPERATOR_DOCKER_IMAGE_KEY = "baseten_step_operator"
 BASETEN_JOB_ID_METADATA_KEY = "baseten_job_id"
 BASETEN_PROJECT_ID_METADATA_KEY = "baseten_training_project_id"
 
+# truss `push()` authenticates via a named remote in ~/.trussrc; the operator
+# writes it from the configured API key before pushing.
+BASETEN_REMOTE_NAME = "baseten"
+BASETEN_REMOTE_URL = "https://app.baseten.co"
+
 # The ZenML store API token grants access to the ZenML server, so it must be
 # routed through a Baseten secret rather than inlined into the job config where
 # it would be visible.
@@ -191,26 +196,34 @@ class BasetenStepOperator(BaseStepOperator):
         return builds
 
     def _build_environment(
-        self, environment: Dict[str, str], secrets: Dict[str, str]
+        self,
+        environment: Dict[str, str],
+        secrets: Dict[str, str],
+        is_command_step: bool,
     ) -> Dict[str, Any]:
         """Build the Baseten runtime environment from the step environment.
 
         Variables named in the ``secrets`` mapping are replaced with Baseten
         secret references so their values are never inlined into the job
-        config. The ZenML store API token is refused unless it is routed
-        through such a secret.
+        config. A known-sensitive value (the ZenML store API token) is never
+        inlined: for a regular step (which calls back to the ZenML server) it
+        must be routed through a secret, so an unmapped token is refused; for a
+        command step (an opaque command that never talks to ZenML) the token is
+        not needed and is simply dropped.
 
         Args:
             environment: The environment variables for the step.
             secrets: Mapping of environment variable name to an existing
                 Baseten secret name.
+            is_command_step: Whether the step is a command step (opaque command
+                that does not run ZenML code).
 
         Returns:
             The runtime environment with plain strings and secret references.
 
         Raises:
-            RuntimeError: If a known-sensitive value would be inlined into the
-                job config without being mapped to a Baseten secret.
+            RuntimeError: If a regular step's sensitive value would be inlined
+                into the job config without being mapped to a Baseten secret.
         """
         from truss_train import definitions
 
@@ -221,6 +234,15 @@ class BasetenStepOperator(BaseStepOperator):
                     name=secrets[key]
                 )
             elif key == SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY:
+                if is_command_step:
+                    # A command step never talks to the ZenML server, so the
+                    # token is unnecessary; drop it rather than leak it.
+                    logger.debug(
+                        "Dropping unneeded sensitive env var `%s` for command "
+                        "step.",
+                        key,
+                    )
+                    continue
                 raise RuntimeError(
                     f"Refusing to inline the sensitive environment variable "
                     f"`{key}` into the Baseten job config. Store it as a "
@@ -231,6 +253,26 @@ class BasetenStepOperator(BaseStepOperator):
             else:
                 runtime_environment[key] = value
         return runtime_environment
+
+    def _configure_truss_remote(self) -> None:
+        """Write the Baseten remote into truss config so push() can auth.
+
+        ``push()`` authenticates through a named remote in ~/.trussrc; this
+        writes/updates it from the configured API key.
+        """
+        from truss.remote.remote_factory import RemoteFactory
+        from truss.remote.truss_remote import RemoteConfig
+
+        RemoteFactory.update_remote_config(
+            RemoteConfig(
+                name=BASETEN_REMOTE_NAME,
+                configs={
+                    "remote_provider": "baseten",
+                    "remote_url": BASETEN_REMOTE_URL,
+                    "api_key": self.config.api_key.get_secret_value(),
+                },
+            )
+        )
 
     def _docker_auth(self) -> Optional[Any]:
         """Build Baseten Docker auth from the configured registry secret.
@@ -281,13 +323,14 @@ class BasetenStepOperator(BaseStepOperator):
         from truss_train import definitions, push
 
         settings = cast(BasetenStepOperatorSettings, self.get_settings(info))
+        is_command_step = info.config.command is not None
 
         # A multi-node job runs the same entrypoint on every node. A regular
         # step would therefore duplicate its artifacts, outputs and logs across
         # nodes, so only command steps (which own their distributed launch) may
         # scale out. This runs at submit time because dynamic pipelines execute
         # from a server-side snapshot where no compile-time hook is available.
-        if settings.node_count > 1 and info.config.command is None:
+        if settings.node_count > 1 and not is_command_step:
             raise RuntimeError(
                 f"The step `{info.pipeline_step_name}` requests "
                 f"node_count={settings.node_count} but is a regular step. "
@@ -301,25 +344,31 @@ class BasetenStepOperator(BaseStepOperator):
 
         image_name = info.get_image(key=BASETEN_STEP_OPERATOR_DOCKER_IMAGE_KEY)
 
+        # Only pass cpu_count/memory when set; truss `Compute` types them as
+        # int/str and rejects None (it applies its own defaults when omitted).
+        compute_kwargs: Dict[str, Any] = {
+            "node_count": settings.node_count,
+            "accelerator": truss_config.AcceleratorSpec(
+                accelerator=settings.accelerator,
+                count=info.config.resource_settings.gpu_count or 1,
+            ),
+        }
+        if settings.cpu_count is not None:
+            compute_kwargs["cpu_count"] = settings.cpu_count
+        if settings.memory is not None:
+            compute_kwargs["memory"] = settings.memory
+
         project = definitions.TrainingProject(
             name=self.config.project,
             job=definitions.TrainingJob(
                 image=definitions.Image(
                     base_image=image_name, docker_auth=self._docker_auth()
                 ),
-                compute=definitions.Compute(
-                    node_count=settings.node_count,
-                    cpu_count=settings.cpu_count,
-                    memory=settings.memory,
-                    accelerator=truss_config.AcceleratorSpec(
-                        accelerator=settings.accelerator,
-                        count=info.config.resource_settings.gpu_count or 1,
-                    ),
-                ),
+                compute=definitions.Compute(**compute_kwargs),
                 runtime=definitions.Runtime(
                     start_commands=[shell_join(entrypoint_command)],
                     environment_variables=self._build_environment(
-                        environment, settings.secrets
+                        environment, settings.secrets, is_command_step
                     ),
                 ),
                 # The ZenML image is the entire environment; do not extract an
@@ -330,8 +379,13 @@ class BasetenStepOperator(BaseStepOperator):
 
         # Push from an empty temp dir so the local working directory is not
         # uploaded: the Docker image is the single source of truth for code.
+        self._configure_truss_remote()
         with tempfile.TemporaryDirectory() as tmpdir:
-            result = push(config=project, source_dir=Path(tmpdir))
+            result = push(
+                config=project,
+                source_dir=Path(tmpdir),
+                remote=BASETEN_REMOTE_NAME,
+            )
 
         job_id = result["id"]
         project_id = result["training_project_id"]
