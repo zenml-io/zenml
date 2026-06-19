@@ -502,3 +502,17 @@ def test_api_stop_job_posts_to_stop_endpoint(monkeypatch):
         "/training_projects/proj-1/jobs/job-1/stop"
     )
     assert recorded["json"] == {}
+
+
+def test_api_client_sends_api_key_auth_header(monkeypatch):
+    from zenml.integrations.baseten import baseten_api
+
+    captured = {}
+
+    def _get(url, **kwargs):
+        captured["headers"] = kwargs.get("headers")
+        return _FakeResponse(200, {"current_status": "RUNNING"})
+
+    monkeypatch.setattr(baseten_api.requests, "get", _get)
+    _client().get_job_status("p", "j")
+    assert captured["headers"]["Authorization"] == "Api-Key bt-key"
