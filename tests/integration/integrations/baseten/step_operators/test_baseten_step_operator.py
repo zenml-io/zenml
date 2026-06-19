@@ -345,6 +345,10 @@ def test_submit_records_both_ids_as_metadata(fake_truss, monkeypatch):
     assert payload[op_module.BASETEN_JOB_ID_METADATA_KEY] == "job-123"
     assert payload[op_module.BASETEN_PROJECT_ID_METADATA_KEY] == "proj-456"
     assert (
+        payload[op_module.BASETEN_LOGS_URL_METADATA_KEY]
+        == "https://app.baseten.co/training/project/proj-456/logs/job-123"
+    )
+    assert (
         info.step_run.run_metadata[op_module.BASETEN_JOB_ID_METADATA_KEY]
         == "job-123"
     )

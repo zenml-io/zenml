@@ -35,6 +35,7 @@ from zenml.integrations.baseten.flavors import (
     BasetenStepOperatorSettings,
 )
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import Uri
 from zenml.orchestrators.publish_utils import publish_step_run_metadata
 from zenml.orchestrators.utils import shell_join
 from zenml.stack import Stack, StackValidator
@@ -51,6 +52,7 @@ logger = get_logger(__name__)
 BASETEN_STEP_OPERATOR_DOCKER_IMAGE_KEY = "baseten_step_operator"
 BASETEN_JOB_ID_METADATA_KEY = "baseten_job_id"
 BASETEN_PROJECT_ID_METADATA_KEY = "baseten_training_project_id"
+BASETEN_LOGS_URL_METADATA_KEY = "baseten_logs_url"
 
 # truss `push()` authenticates via a named remote in ~/.trussrc; the operator
 # writes it from the configured API key before pushing.
@@ -404,6 +406,10 @@ class BasetenStepOperator(BaseStepOperator):
         metadata: Dict[str, Any] = {
             BASETEN_JOB_ID_METADATA_KEY: job_id,
             BASETEN_PROJECT_ID_METADATA_KEY: project_id,
+            BASETEN_LOGS_URL_METADATA_KEY: Uri(
+                f"{BASETEN_REMOTE_URL}/training/project/{project_id}"
+                f"/logs/{job_id}"
+            ),
         }
 
         # The job ids are essential operational state: without them status
