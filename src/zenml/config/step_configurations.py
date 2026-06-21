@@ -261,7 +261,6 @@ class StepConfigurationUpdate(FrozenBaseModel):
         default=None,
         description="The group information for the step.",
     )
-
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
 
     def uses_step_operator(self, name: str) -> bool:
@@ -316,6 +315,7 @@ class PartialStepConfiguration(StepConfigurationUpdate):
     client_lazy_loaders: Mapping[str, ClientLazyLoader] = {}
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
     cache_policy: CachePolicyWithValidator = CachePolicy.default()
+    command: Optional[List[str]] = None
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.

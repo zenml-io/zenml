@@ -29,6 +29,7 @@ from uuid import UUID
 
 from pydantic import Field, model_validator
 
+from zenml.enums import GenericFilterOps
 from zenml.logger import get_logger
 from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
@@ -37,7 +38,12 @@ from zenml.models.v2.base.base import (
     BaseResponseMetadata,
     BaseResponseResources,
 )
-from zenml.models.v2.base.filter import AnyQuery, BaseFilter
+from zenml.models.v2.base.filter import (
+    AnyQuery,
+    BaseFilter,
+    StringFilterOption,
+    UUIDFilterOption,
+)
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
@@ -183,12 +189,16 @@ class UserScopedFilter(BaseFilter):
         *BaseFilter.CUSTOM_SORTING_OPTIONS,
         "user",
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *BaseFilter.API_SINGLE_INPUT_PARAMS,
+        "scope_user",
+    ]
 
     scope_user: Optional[UUID] = Field(
         default=None,
         description="The user to scope this query to.",
     )
-    user: Optional[Union[UUID, str]] = Field(
+    user: UUIDFilterOption = Field(
         default=None,
         description="Name/ID of the user that created the entity.",
         union_mode="left_to_right",
@@ -220,15 +230,20 @@ class UserScopedFilter(BaseFilter):
         from zenml.zen_stores.schemas import UserSchema
 
         if self.user:
-            user_filter = and_(
-                getattr(table, "user_id") == UserSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.user,
-                    table=UserSchema,
-                    additional_columns=["full_name"],
-                ),
+            user_values = (
+                self.user if isinstance(self.user, list) else [self.user]
             )
-            custom_filters.append(user_filter)
+            for user_value in user_values:
+                custom_filters.append(
+                    and_(
+                        getattr(table, "user_id") == UserSchema.id,
+                        self.generate_name_or_id_query_conditions(
+                            value=user_value,
+                            table=UserSchema,
+                            additional_columns=["full_name"],
+                        ),
+                    )
+                )
 
         return custom_filters
 
@@ -372,6 +387,10 @@ class ProjectScopedFilter(UserScopedFilter):
         *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "project",
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
+        *UserScopedFilter.API_SINGLE_INPUT_PARAMS,
+        "project",
+    ]
     project: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Name/ID of the project which the search is scoped to. "
@@ -428,10 +447,7 @@ class ProjectScopedFilter(UserScopedFilter):
 class TaggableFilter(BaseFilter):
     """Model to enable filtering and sorting by tags."""
 
-    tag: Optional[str] = Field(
-        description="Tag to apply to the filter query.", default=None
-    )
-    tags: Optional[List[str]] = Field(
+    tags: StringFilterOption = Field(
         description="Tags to apply to the filter query.", default=None
     )
 
@@ -440,38 +456,12 @@ class TaggableFilter(BaseFilter):
     ]
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *BaseFilter.FILTER_EXCLUDE_FIELDS,
-        "tag",
         "tags",
     ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
         *BaseFilter.CUSTOM_SORTING_OPTIONS,
         "tags",
     ]
-    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
-        *BaseFilter.API_MULTI_INPUT_PARAMS,
-        "tags",
-    ]
-
-    @model_validator(mode="after")
-    def add_tag_to_tags(self) -> "TaggableFilter":
-        """Deprecated the tag attribute in favor of the tags attribute.
-
-        Returns:
-            self
-        """
-        if self.tag is not None:
-            logger.warning(
-                "The `tag` attribute is deprecated in favor of the `tags` attribute. "
-                "Please update your code to use the `tags` attribute instead."
-            )
-            if self.tags is not None:
-                self.tags.append(self.tag)
-            else:
-                self.tags = [self.tag]
-
-            self.tag = None
-
-        return self
 
     def apply_filter(
         self,
@@ -487,11 +477,17 @@ class TaggableFilter(BaseFilter):
         Returns:
             The query with filter applied.
         """
+        from zenml.models.v2.base.filter import VALUELESS_FILTER_OPS
         from zenml.zen_stores.schemas import TagResourceSchema, TagSchema
 
         query = super().apply_filter(query=query, table=table)
 
-        if self.tags:
+        tag_values = [self.tags] if isinstance(self.tags, str) else self.tags
+
+        if tag_values and any(
+            self._resolve_operator(tag)[1] not in VALUELESS_FILTER_OPS
+            for tag in tag_values
+        ):
             query = query.join(
                 TagResourceSchema,
                 TagResourceSchema.resource_id == getattr(table, "id"),
@@ -512,12 +508,35 @@ class TaggableFilter(BaseFilter):
         """
         custom_filters = super().get_custom_filters(table)
 
-        if self.tags:
+        tag_values = [self.tags] if isinstance(self.tags, str) else self.tags
+
+        if tag_values:
             from sqlmodel import exists, select
 
             from zenml.zen_stores.schemas import TagResourceSchema, TagSchema
 
-            for tag in self.tags:
+            for tag in tag_values:
+                _, operator = self._resolve_operator(tag)
+                if operator == GenericFilterOps.IS_NULL:
+                    custom_filters.append(
+                        ~exists(
+                            select(TagResourceSchema).where(
+                                TagResourceSchema.resource_id == table.id
+                            )
+                        )
+                    )
+                    continue
+
+                if operator == GenericFilterOps.IS_NOT_NULL:
+                    custom_filters.append(
+                        exists(
+                            select(TagResourceSchema).where(
+                                TagResourceSchema.resource_id == table.id
+                            )
+                        )
+                    )
+                    continue
+
                 condition = self.generate_custom_query_conditions_for_column(
                     value=tag, table=TagSchema, column="name"
                 )
@@ -617,16 +636,12 @@ class TaggableFilter(BaseFilter):
 class RunMetadataFilterMixin(BaseFilter):
     """Model to enable filtering and sorting by run metadata."""
 
-    run_metadata: Optional[List[str]] = Field(
+    run_metadata: StringFilterOption = Field(
         default=None,
         description="The run_metadata to filter the pipeline runs by.",
     )
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *BaseFilter.FILTER_EXCLUDE_FIELDS,
-        "run_metadata",
-    ]
-    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
-        *BaseFilter.API_MULTI_INPUT_PARAMS,
         "run_metadata",
     ]
 
@@ -640,9 +655,13 @@ class RunMetadataFilterMixin(BaseFilter):
            - equals: Exact match
            - notequals: Not equal to
            - contains: String contains value
+           - notcontains: String does not contain value
            - startswith: String starts with value
            - endswith: String ends with value
            - oneof: Value is one of the specified options
+           - notoneof: Value is not one of the specified options
+           - isnull: Value is null
+           - isnotnull: Value is not null
            - gte: Greater than or equal to
            - gt: Greater than
            - lte: Less than or equal to
@@ -661,14 +680,20 @@ class RunMetadataFilterMixin(BaseFilter):
             ValueError: If any entry in run_metadata does not contain a colon.
         """
         if self.run_metadata:
-            for entry in self.run_metadata:
+            entries = (
+                [self.run_metadata]
+                if isinstance(self.run_metadata, str)
+                else self.run_metadata
+            )
+            for entry in entries:
                 if ":" not in entry:
                     raise ValueError(
                         f"Invalid run_metadata entry format: '{entry}'. "
                         "Entry must be in format 'key:value' for direct "
                         "equality comparison or 'key:filterop:value' where "
                         "filterop is one of: equals, notequals, "
-                        f"contains, startswith, endswith, oneof, gte, gt, "
+                        f"contains, notcontains, startswith, endswith, "
+                        f"oneof, notoneof, isnull, isnotnull, gte, gt, "
                         f"lte, lt, in."
                     )
         return self
@@ -711,7 +736,12 @@ class RunMetadataFilterMixin(BaseFilter):
             }
 
             # Create an EXISTS subquery for each run_metadata filter
-            for entry in self.run_metadata:
+            metadata_entries = (
+                [self.run_metadata]
+                if isinstance(self.run_metadata, str)
+                else self.run_metadata
+            )
+            for entry in metadata_entries:
                 # Split at the first colon to get the key
                 key, value = entry.split(":", 1)
 

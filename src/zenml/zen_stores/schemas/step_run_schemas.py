@@ -21,7 +21,7 @@ from uuid import UUID
 from pydantic import ConfigDict
 from sqlalchemy import TEXT, Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
-from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -91,6 +91,18 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             table_name=__tablename__,
             column_names=[
                 "cache_key",
+            ],
+        ),
+        # Optimizes hydrated step-run list queries scoped by project, run,
+        # and step name, then paginated by creation time and ID.
+        build_index(
+            table_name=__tablename__,
+            column_names=[
+                "project_id",
+                "pipeline_run_id",
+                "name",
+                "created",
+                "id",
             ],
         ),
     )
@@ -279,8 +291,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             selectinload(jl_arg(StepRunSchema.pipeline_run)).load_only(
                 jl_arg(PipelineRunSchema.start_time)
             ),
-            joinedload(jl_arg(StepRunSchema.static_config)),
-            joinedload(jl_arg(StepRunSchema.dynamic_config)),
+            selectinload(jl_arg(StepRunSchema.static_config)),
+            selectinload(jl_arg(StepRunSchema.dynamic_config)),
         ]
 
         # if include_metadata:

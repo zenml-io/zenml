@@ -60,7 +60,7 @@ from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.artifacts.external_artifact import ExternalArtifact
 from zenml.model.model import Model
 from zenml.pipelines import get_pipeline_context, pipeline
-from zenml.steps import step, get_step_context
+from zenml.steps import step, get_step_context, CommandStep
 from zenml.steps.utils import log_step_metadata
 from zenml.utils.metadata_utils import log_metadata, bulk_log_metadata
 from zenml.utils.metric_sampling_utils import collect_metric
@@ -74,6 +74,7 @@ __all__ = [
     "Tag",
     "ArtifactConfig",
     "collect_metric",
+    "CommandStep",
     "ExternalArtifact",
     "get_pipeline_context",
     "get_step_context",

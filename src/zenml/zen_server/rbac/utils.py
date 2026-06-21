@@ -23,6 +23,7 @@ from typing import (
     Set,
     Type,
     TypeVar,
+    Union,
 )
 from uuid import UUID
 
@@ -158,9 +159,7 @@ def _dehydrate_value(
 
         has_permissions = (permissions or {}).get(resource)
 
-        if has_permissions or is_owned_by_authenticated_user(
-            model=permission_model
-        ):
+        if has_permissions or is_owned_by_authenticated_user(permission_model):
             return dehydrate_response_model(value, permissions=permissions)
 
         if has_permissions is None:
@@ -256,6 +255,36 @@ def batch_verify_permissions_for_models(
 
         if resource := get_resource_for_model(permission_model):
             resources.add(resource)
+
+    batch_verify_permissions(resources=resources, action=action)
+
+
+def batch_verify_permissions_for_schemas(
+    schemas: Sequence["BaseSchema"],
+    action: Action,
+) -> None:
+    """Batch permission verification for schemas.
+
+    Args:
+        schemas: The schemas the user wants to perform the action on.
+        action: The action the user wants to perform.
+    """
+    if not server_config().rbac_enabled:
+        return
+
+    resources = set()
+    for schema in schemas:
+        if is_owned_by_authenticated_user(schema):
+            continue
+
+        if resource_type := get_resource_type_for_schema(schema):
+            resources.add(
+                Resource(
+                    type=resource_type,
+                    id=schema.id,
+                    project_id=getattr(schema, "project_id", None),
+                )
+            )
 
     batch_verify_permissions(resources=resources, action=action)
 
@@ -557,27 +586,35 @@ def get_resource_type_for_model(
     return mapping.get(type(model))
 
 
-def is_owned_by_authenticated_user(model: AnyModel) -> bool:
-    """Returns whether the currently authenticated user owns the model.
+def is_owned_by_authenticated_user(
+    resource: Union[AnyModel, "BaseSchema"],
+) -> bool:
+    """Returns whether the currently authenticated user owns the resource.
 
     Args:
-        model: The model for which to check the ownership.
+        resource: The model or schema for which to check the ownership.
 
     Returns:
-        Whether the currently authenticated user owns the model.
+        Whether the currently authenticated user owns the resource.
     """
     auth_context = get_auth_context()
     assert auth_context
 
-    if isinstance(model, UserScopedResponse):
-        if model.user_id:
-            return model.user_id == auth_context.user.id
-        else:
-            # The model is server-owned and for RBAC purposes we consider
-            # every user to be the owner of it
-            return True
+    from zenml.zen_stores.schemas import BaseSchema
 
-    return False
+    if isinstance(resource, UserScopedResponse):
+        user_id = resource.user_id
+    elif isinstance(resource, BaseSchema):
+        user_id = getattr(resource, "user_id", None)
+    else:
+        return False
+
+    if user_id:
+        return user_id == auth_context.user.id
+
+    # The resource is server-owned and for RBAC purposes we consider every
+    # user to be the owner of it.
+    return True
 
 
 def get_subresources_for_model(
@@ -644,17 +681,10 @@ def _get_subresources_for_value(value: Any) -> Set[Resource]:
         return set()
 
 
-def get_schema_for_resource_type(
-    resource_type: ResourceType,
-) -> Type["BaseSchema"]:
-    """Get the database schema for a resource type.
-
-    Args:
-        resource_type: The resource type for which to get the database schema.
-
-    Returns:
-        The database schema.
-    """
+def _get_resource_type_schema_mapping() -> Dict[
+    ResourceType, Type["BaseSchema"]
+]:
+    """Get the mapping between RBAC resource types and database schemas."""
     from zenml.zen_stores.schemas import (
         ArtifactSchema,
         ArtifactVersionSchema,
@@ -682,7 +712,7 @@ def get_schema_for_resource_type(
         UserSchema,
     )
 
-    mapping: Dict[ResourceType, Type["BaseSchema"]] = {
+    return {
         ResourceType.STACK: StackSchema,
         ResourceType.FLAVOR: FlavorSchema,
         ResourceType.STACK_COMPONENT: StackComponentSchema,
@@ -711,7 +741,41 @@ def get_schema_for_resource_type(
         ResourceType.RESOURCE_POOL_SUBJECT_POLICY: ResourcePoolSubjectPolicySchema,
     }
 
-    return mapping[resource_type]
+
+def get_schema_for_resource_type(
+    resource_type: ResourceType,
+) -> Type["BaseSchema"]:
+    """Get the database schema for a resource type.
+
+    Args:
+        resource_type: The resource type for which to get the database schema.
+
+    Returns:
+        The database schema.
+    """
+    return _get_resource_type_schema_mapping()[resource_type]
+
+
+def get_resource_type_for_schema(
+    schema: "BaseSchema",
+) -> Optional[ResourceType]:
+    """Get the RBAC resource type for a database schema.
+
+    Args:
+        schema: The database schema for which to get the resource type.
+
+    Returns:
+        The RBAC resource type associated with the schema, if any.
+    """
+    schema_type = type(schema)
+    for (
+        resource_type,
+        mapped_schema_type,
+    ) in _get_resource_type_schema_mapping().items():
+        if schema_type is mapped_schema_type:
+            return resource_type
+
+    return None
 
 
 def update_resource_membership(

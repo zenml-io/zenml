@@ -103,6 +103,7 @@ from zenml.execution.pipeline.dynamic.outputs import (
     StepRunOutputs,
     _InlineStepFuture,
     _IsolatedStepFuture,
+    wrap_step_failure,
 )
 from zenml.execution.pipeline.dynamic.pipeline_output_utils import (
     get_pipeline_entrypoint_output_names,
@@ -138,6 +139,7 @@ from zenml.orchestrators.publish_utils import (
     publish_failed_step_run,
     publish_pipeline_run_status_update,
     publish_stopped_step_run,
+    publish_successful_step_run,
 )
 from zenml.pipelines.dynamic.pipeline_definition import DynamicPipeline
 from zenml.pipelines.run_utils import create_placeholder_run
@@ -569,6 +571,33 @@ class DynamicPipelineRunner:
                     # Step failed/stopped on the infra side, but the
                     # code failed before it could report the status back to us.
                     step_run = publish_failed_step_run(step_run.id)
+                elif (
+                    infra_status == ExecutionStatus.COMPLETED
+                    and db_status == ExecutionStatus.RUNNING
+                ):
+                    if step_run.config.command is not None:
+                        # For isolated command steps, no zenml code is running
+                        # and therefore nothing publishes the status. We assume
+                        # the command finished successfully because of the
+                        # infra status.
+                        step_run = publish_successful_step_run(
+                            step_run_id=step_run.id,
+                            output_artifact_ids={},
+                        )
+                    else:
+                        # This should never happen, handle it just in case. If
+                        # this happens, the node would stay in `RUNNING` status
+                        # forever and keep the pipeline from finishing. We
+                        # record a failure but don't raise to keep the
+                        # monitoring loop alive during the shutdown phase.
+                        exc = RuntimeError(
+                            f"Step `{invocation_id}` completed on the "
+                            "infrastructure side but its status was not "
+                            "updated."
+                        )
+                        self.record_failure(
+                            wrap_step_failure(exc, invocation_id=invocation_id)
+                        )
 
                 # Get the updated status that we might have just published
                 db_status = step_run.status
@@ -1211,7 +1240,11 @@ class DynamicPipelineRunner:
                         initial_state=NodeState.FAILED,
                     )
                     self.mark_node_failed(node_id=invocation_id)
-                    self.record_failure(exception=exception)
+                    self.record_failure(
+                        exception=wrap_step_failure(
+                            exception, invocation_id=invocation_id
+                        )
+                    )
                     return future
                 else:
                     raise exception
@@ -2050,7 +2083,11 @@ class DynamicPipelineRunner:
                 )
             except BaseException as e:
                 self.mark_node_failed(node_id=step.spec.invocation_id)
-                self.record_failure(exception=e)
+                self.record_failure(
+                    exception=wrap_step_failure(
+                        e, invocation_id=step.spec.invocation_id
+                    )
+                )
                 raise e
 
             self._register_isolated_step_for_monitoring(
@@ -2087,7 +2124,11 @@ class DynamicPipelineRunner:
                 )
             except BaseException as e:
                 self.mark_node_failed(node_id=step.spec.invocation_id)
-                self.record_failure(exception=e)
+                self.record_failure(
+                    exception=wrap_step_failure(
+                        e, invocation_id=step.spec.invocation_id
+                    )
+                )
                 raise e
 
             self._on_step_finished(step_run=step_run)
@@ -2156,7 +2197,11 @@ class DynamicPipelineRunner:
         ):
             exception = self._get_step_exception(step_run=step_run)
             self.mark_node_failed(node_id=step_run.name)
-            self.record_failure(exception=exception)
+            self.record_failure(
+                exception=wrap_step_failure(
+                    exception, invocation_id=step_run.name
+                )
+            )
 
     # Concurrent map lifecycle
 

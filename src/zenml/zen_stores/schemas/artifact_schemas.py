@@ -48,7 +48,10 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
-from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.schema_utils import (
+    build_foreign_key_field,
+    build_index,
+)
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import (
     RunMetadataInterface,
@@ -279,6 +282,13 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
             "version",
             "artifact_id",
             name="unique_version_for_artifact_id",
+        ),
+        build_index(
+            table_name=__tablename__,
+            column_names=[
+                "artifact_id",
+                "version_number",
+            ],
         ),
     )
 

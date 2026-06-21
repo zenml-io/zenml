@@ -16,10 +16,21 @@
 import logging
 import os
 import threading
+from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import datetime
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Type,
+    Union,
+    cast,
+)
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -126,7 +137,7 @@ class LoggingContext(context_utils.BaseContext):
             **metadata: Additional metadata to attach to the log entry.
         """
         self.log_model = log_model
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self._disabled = False
         self._log_store = Client().active_stack.log_store
         self._metadata = metadata
@@ -143,6 +154,16 @@ class LoggingContext(context_utils.BaseContext):
             The name of the logging context.
         """
         return self._name
+
+    @contextmanager
+    def disabled(self) -> Iterator[None]:
+        """Temporarily stop this context from accepting dispatched records."""
+        previous = self._disabled
+        self._disabled = True
+        try:
+            yield
+        finally:
+            self._disabled = previous
 
     @classmethod
     def dispatch(
@@ -165,11 +186,8 @@ class LoggingContext(context_utils.BaseContext):
         context = LoggingContext.get()
         if context is None or context._disabled:
             return
-        context._disabled = True
-        try:
+        with context.disabled():
             context.emit(record, metadata)
-        finally:
-            context._disabled = False
 
     def update(
         self,
@@ -274,15 +292,14 @@ class LoggingContext(context_utils.BaseContext):
                     ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, True
                 )
             )
-        try:
-            self.begin()
-        except Exception:
-            with self._lock:
+            try:
+                self.begin()
+            except Exception:
                 if self._step_names_token is not None:
                     step_names_in_console.reset(self._step_names_token)
                     self._step_names_token = None
                 super().__exit__(None, None, None)
-            raise
+                raise
 
         return self
 
@@ -299,31 +316,40 @@ class LoggingContext(context_utils.BaseContext):
             exc_val: The instance of the exception.
             exc_tb: The traceback of the exception.
         """
-        if exc_type is not None:
-            self.emit(
-                logging.LogRecord(
-                    name="",
-                    level=logging.ERROR,
-                    msg="An exception has occurred.",
-                    args=(),
-                    exc_info=(exc_type, exc_val, exc_tb) if exc_val else None,
-                    func=None,
-                    pathname="",
-                    lineno=0,
-                ),
-                metadata={"zenml.event.type": "exception"},
-            )
+        if exc_type is not None and not self._disabled:
+            with self.disabled():
+                self.emit(
+                    logging.LogRecord(
+                        name="",
+                        level=logging.ERROR,
+                        msg="An exception has occurred.",
+                        args=(),
+                        exc_info=(exc_type, exc_val, exc_tb)
+                        if exc_val
+                        else None,
+                        func=None,
+                        pathname="",
+                        lineno=0,
+                    ),
+                    metadata={"zenml.event.type": "exception"},
+                )
 
-        try:
-            self.end()
-        finally:
-            with self._lock:
-                try:
-                    super().__exit__(exc_type, exc_val, exc_tb)
-                finally:
-                    if self._step_names_token is not None:
-                        step_names_in_console.reset(self._step_names_token)
-                        self._step_names_token = None
+        # Disable the context before shutting down. This is needed to avoid
+        # deadlocks that would happen if the shutdown process emits logs to
+        # the active logging context. This is for example the case for asy
+        # fsspec based artifact stores, which copy the context vars of the
+        # thread they're called from and then emit debug logs.
+        with self.disabled(), self._lock:
+            try:
+                self.end()
+            finally:
+                # Only once we've deregistered the origin and flushed the logs
+                # do we restore the previous context. Otherwise, logs happening
+                # during the flush would end up in the parent context.
+                super().__exit__(exc_type, exc_val, exc_tb)
+                if self._step_names_token is not None:
+                    step_names_in_console.reset(self._step_names_token)
+                    self._step_names_token = None
 
 
 def generate_logs_request(source: str) -> LogsRequest:

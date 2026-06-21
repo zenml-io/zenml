@@ -23,7 +23,7 @@ import re
 import shutil
 import subprocess
 import sys
-from functools import partial
+from functools import partial, wraps
 from typing import (
     IO,
     TYPE_CHECKING,
@@ -2757,13 +2757,30 @@ def pretty_print_deployment(
     console.print("  [dim]Deprovision and delete this deployment[/dim]")
 
 
-def check_zenml_pro_project_availability() -> None:
-    """Check if the ZenML Pro project feature is available."""
+def warn_if_project_not_visible_on_oss(project_name: str) -> None:
+    """Warn if operating on a non-default project in OSS ZenML.
+
+    The OSS dashboard only supports the default project, so users should
+    know when they're working outside it.
+
+    Args:
+        project_name: The name of the project being operated on. No warning
+            is shown for the default project.
+    """
+    from zenml.constants import DEFAULT_PROJECT_NAME
+
+    if project_name == DEFAULT_PROJECT_NAME:
+        return
+
     client = Client()
     if not client.zen_store.get_store_info().is_pro_server():
         warning(
-            "The ZenML projects feature is available only on ZenML Pro. "
-            "Please visit https://zenml.io/pro to learn more."
+            f"The ZenML OSS dashboard only works with the default project "
+            f"('{DEFAULT_PROJECT_NAME}'). If you use any other projects "
+            f"such as ('{project_name}'), your pipelines will run, but you "
+            f"won't be able to view them in the OSS dashboard. "
+            f"To use multiple projects with full dashboard support, "
+            f"please visit https://zenml.io/pro to learn more."
         )
 
 
@@ -2892,6 +2909,35 @@ def _is_list_field(field_info: Any) -> bool:
     )
 
 
+def _get_click_option_default(default: Any, multiple: bool) -> Any:
+    """Get a Click-compatible option default.
+
+    Click requires defaults for `multiple=True` options to be list-like.
+
+    Args:
+        default: The original field default.
+        multiple: Whether the click option accepts multiple values.
+
+    Returns:
+        A normalized default value compatible with Click.
+    """
+    if not multiple:
+        return default
+
+    if default is None:
+        return ()
+
+    # str and bytes are Sequence; exclude them so a string/bytes default is
+    # not expanded into per-code-unit tuples for Click multiple options.
+    if isinstance(default, Sequence) and not isinstance(default, (str, bytes)):
+        return tuple(default)
+
+    # Scalar defaults are not valid for `multiple=True` options and
+    # accidentally forcing them into a singleton tuple can change filtering
+    # semantics. Use an empty default instead.
+    return ()
+
+
 def _get_response_columns_for_filter(
     filter_model: Type[BaseFilter],
 ) -> List[str]:
@@ -2957,7 +3003,7 @@ def list_options(
 
     This decorator generates click options from a FilterModel and adds standard
     output formatting options (--columns, --output). The decorated function
-    receives these as regular parameters - no magic interception!
+    receives these as regular parameters.
 
     The function should call print_page() to render results.
 
@@ -2983,8 +3029,14 @@ def list_options(
     def inner_decorator(func: F) -> F:
         options = []
         data_type_descriptors = set()
+        multi_value_fields: set[str] = set()
         for k, v in filter_model.model_fields.items():
             if k not in filter_model.CLI_EXCLUDE_FIELDS:
+                is_multiple = _is_list_field(v)
+
+                if is_multiple:
+                    multi_value_fields.add(k)
+
                 default_value = v.default
 
                 if k == "sort_by" and default_value == "created":
@@ -2994,9 +3046,11 @@ def list_options(
                     click.option(
                         f"--{k}",
                         type=str,
-                        default=default_value,
+                        default=_get_click_option_default(
+                            default=default_value, multiple=is_multiple
+                        ),
                         required=False,
-                        multiple=_is_list_field(v),
+                        multiple=is_multiple,
                         help=create_filter_help_text(filter_model, k),
                     )
                 )
@@ -3038,9 +3092,45 @@ def list_options(
         )
 
         def wrapper(function: F) -> F:
+            """Wrap the function with the Click options.
+
+            Args:
+                function: The function to wrap.
+
+            Returns:
+                The wrapped function.
+            """
+
+            @wraps(function)
+            def normalized_function(*args: Any, **kwargs: Any) -> Any:
+                """Normalize Click tuples for multi-value filter options.
+
+                This is necessary because Click options for multi-value fields are
+                converted to tuples, and the client methods expect lists.
+
+                Args:
+                    args: The positional arguments.
+                    kwargs: The keyword arguments.
+
+                Returns:
+                    The wrapped function result.
+                """
+                for field_name in multi_value_fields:
+                    if field_name not in kwargs:
+                        continue
+                    value = kwargs[field_name]
+                    if isinstance(value, tuple):
+                        if not value:
+                            kwargs[field_name] = None
+                        elif len(value) == 1:
+                            kwargs[field_name] = value[0]
+                        else:
+                            kwargs[field_name] = list(value)
+                return function(*args, **kwargs)
+
             for option in reversed(options):
-                function = option(function)
-            return function
+                normalized_function = option(normalized_function)
+            return cast(F, normalized_function)
 
         func.__doc__ = (
             f"{func.__doc__} By default all filters are "

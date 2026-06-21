@@ -13,18 +13,15 @@
 #  permissions and limitations under the License.
 """Modal step operator implementation."""
 
-import math
-import threading
+from threading import Lock
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 
 import modal
 
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
-from zenml.config.resource_settings import ByteUnit, ResourceSettings
-from zenml.constants import ENV_ZENML_STORE_PREFIX
 from zenml.enums import ExecutionStatus, StackComponentType
-from zenml.exceptions import StackComponentInterfaceError
+from zenml.integrations.modal import sandbox_utils
 from zenml.integrations.modal.flavors import (
     ModalStepOperatorConfig,
     ModalStepOperatorSettings,
@@ -44,87 +41,6 @@ logger = get_logger(__name__)
 MODAL_STEP_OPERATOR_DOCKER_IMAGE_KEY = "modal_step_operator"
 STEP_SANDBOX_ID_METADATA_KEY = "sandbox_id"
 STEP_MODAL_ENVIRONMENT_METADATA_KEY = "modal_environment"
-SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY = f"{ENV_ZENML_STORE_PREFIX}API_TOKEN"
-SENSITIVE_ZENML_RUNTIME_ENV_KEYS = {SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY}
-
-
-def _normalize_optional_config_value(value: Optional[str]) -> Optional[str]:
-    """Normalize optional string config values."""
-    if value is None:
-        return None
-
-    stripped_value = value.strip()
-    return stripped_value or None
-
-
-def _split_modal_runtime_environment(
-    environment: Dict[str, str],
-) -> Tuple[Dict[str, str], Dict[str, Optional[str]]]:
-    """Split runtime environment variables into plain and secret values."""
-    sandbox_environment: Dict[str, str] = {}
-    sensitive_environment: Dict[str, Optional[str]] = {}
-
-    for key, value in environment.items():
-        if key in SENSITIVE_ZENML_RUNTIME_ENV_KEYS:
-            sensitive_environment[key] = value
-        else:
-            sandbox_environment[key] = value
-
-    return sandbox_environment, sensitive_environment
-
-
-def get_gpu_values(
-    settings: ModalStepOperatorSettings, resource_settings: ResourceSettings
-) -> Optional[str]:
-    """Compute and validate the Modal ``gpu`` argument string.
-
-    Modal expects GPU resources as either ``None`` (CPU only), a GPU type string
-    like ``"A100"`` (implicitly a single GPU), or ``"A100:2"`` when multiple
-    GPUs of the same type are requested. Within ZenML, the GPU type is captured
-    in :class:`ModalStepOperatorSettings` while the count lives in
-    :class:`~zenml.config.resource_settings.ResourceSettings`. This helper
-    reconciles both sources.
-
-    Args:
-        settings: The Modal step operator settings describing the GPU type.
-        resource_settings: Resource constraints for the step, providing the GPU count.
-
-    Returns:
-        A Modal-compatible GPU specification string or ``None`` when running on CPU.
-
-    Raises:
-        StackComponentInterfaceError: If the configuration is inconsistent or invalid.
-    """
-    gpu_type = _normalize_optional_config_value(settings.gpu)
-    gpu_count = resource_settings.gpu_count
-
-    if gpu_type is None:
-        if gpu_count is not None and gpu_count > 0:
-            raise StackComponentInterfaceError(
-                "GPU resources requested (gpu_count > 0) but no GPU type was specified "
-                "in Modal settings. Please set a GPU type (e.g., 'T4', 'A100') via "
-                "ModalStepOperatorSettings.gpu, for example with "
-                "@step(settings={'step_operator': ModalStepOperatorSettings(gpu='<TYPE>'), "
-                "'resources': ResourceSettings(gpu_count=1)}), or set gpu_count=0 "
-                "to run on CPU."
-            )
-        return None
-
-    if gpu_count == 0:
-        logger.warning(
-            "Modal GPU type '%s' is configured but ResourceSettings.gpu_count is 0. "
-            "Ignoring the GPU type and running on CPU only.",
-            gpu_type,
-        )
-        return None
-
-    if gpu_count is None:
-        return gpu_type
-
-    if gpu_count > 0:
-        return f"{gpu_type}:{gpu_count}"
-
-    return None
 
 
 class ModalStepOperator(BaseStepOperator):
@@ -138,38 +54,30 @@ class ModalStepOperator(BaseStepOperator):
         """Initialize the Modal step operator."""
         super().__init__(*args, **kwargs)
         self._modal_client: Optional["modal.Client"] = None
-        self._modal_client_lock = threading.Lock()
+        self._modal_client_lock = Lock()
 
     def _get_modal_client(self) -> Optional["modal.Client"]:
         """Get an explicit Modal client when credentials are configured."""
-        modal_client = self._modal_client
-        if modal_client is not None and not modal_client.is_closed():
-            return modal_client
+        if (
+            self._modal_client is not None
+            and not self._modal_client.is_closed()
+        ):
+            return self._modal_client
 
         with self._modal_client_lock:
-            modal_client = self._modal_client
-            if modal_client is not None and not modal_client.is_closed():
-                return modal_client
+            if (
+                self._modal_client is not None
+                and not self._modal_client.is_closed()
+            ):
+                return self._modal_client
 
-            token_id = _normalize_optional_config_value(self.config.token_id)
-            token_secret = _normalize_optional_config_value(
-                self.config.token_secret
-            )
-
-            if bool(token_id) != bool(token_secret):
-                raise StackComponentInterfaceError(
-                    "Modal token_id and token_secret must be configured together."
+            self._modal_client = (
+                sandbox_utils.create_modal_client_from_credentials(
+                    token_id=self.config.token_id,
+                    token_secret=self.config.token_secret,
                 )
-
-            if not token_id or not token_secret:
-                return None
-
-            modal_client = modal.Client.from_credentials(
-                token_id, token_secret
             )
-            self._modal_client = modal_client
-
-        return modal_client
+            return self._modal_client
 
     @property
     def config(self) -> ModalStepOperatorConfig:
@@ -286,68 +194,34 @@ class ModalStepOperator(BaseStepOperator):
                 "it is correctly configured."
             )
 
-        if docker_creds := stack.container_registry.credentials:
-            docker_username, docker_password = docker_creds
-            registry_secret = modal.Secret.from_dict(
-                {
-                    "REGISTRY_USERNAME": docker_username,
-                    "REGISTRY_PASSWORD": docker_password,
-                }
-            )
-            zenml_image = modal.Image.from_registry(
-                image_name, secret=registry_secret
-            )
-        else:
-            zenml_image = modal.Image.from_registry(image_name)
-
-        resource_settings = info.config.resource_settings
-        gpu_values = get_gpu_values(settings, resource_settings)
-        memory_mb = resource_settings.get_memory(ByteUnit.MB)
-        memory_int = math.ceil(memory_mb) if memory_mb is not None else None
-
         if not entrypoint_command:
             raise ValueError(
                 "Modal step operator received an empty entrypoint command."
             )
 
-        modal_environment = _normalize_optional_config_value(
+        zenml_image = sandbox_utils.get_modal_image_from_registry(
+            image_name,
+            stack.container_registry.credentials,
+        )
+        resource_settings = info.config.resource_settings
+        modal_environment = sandbox_utils.normalize_optional_config_value(
             settings.modal_environment
         )
         modal_client = self._get_modal_client()
 
-        app = modal.App.lookup(
+        app = sandbox_utils.lookup_modal_app(
             f"zenml-{info.step_run_id}-{info.pipeline_step_name}"[:64],
-            create_if_missing=True,
-            environment_name=modal_environment,
-            client=modal_client,
+            modal_environment=modal_environment,
+            modal_client=modal_client,
         )
-        sandbox_environment, sensitive_environment = (
-            _split_modal_runtime_environment(environment)
-        )
-        runtime_secrets = []
-        if sensitive_environment:
-            runtime_secrets.append(
-                modal.Secret.from_dict(sensitive_environment)
-            )
-
-        sandbox_create_kwargs: Dict[str, Any] = {
-            "app": app,
-            "image": zenml_image,
-            "gpu": gpu_values,
-            "cpu": resource_settings.cpu_count,
-            "memory": memory_int,
-            "cloud": settings.cloud,
-            "region": settings.region,
-            "timeout": settings.timeout,
-            "env": sandbox_environment,
-            "client": modal_client,
-        }
-        if runtime_secrets:
-            sandbox_create_kwargs["secrets"] = runtime_secrets
-
-        sandbox = modal.Sandbox.create(
-            *entrypoint_command,
-            **sandbox_create_kwargs,
+        sandbox = sandbox_utils.create_modal_sandbox(
+            entrypoint_command,
+            app=app,
+            image=zenml_image,
+            settings=settings,
+            resource_settings=resource_settings,
+            environment=environment,
+            modal_client=modal_client,
         )
         metadata: Dict[str, Any] = {
             STEP_SANDBOX_ID_METADATA_KEY: sandbox.object_id
@@ -380,13 +254,9 @@ class ModalStepOperator(BaseStepOperator):
         """
         sandbox_id = str(step_run.run_metadata[STEP_SANDBOX_ID_METADATA_KEY])
         modal_client = self._get_modal_client()
-        sandbox = modal.Sandbox.from_id(sandbox_id, client=modal_client)
-        return_code = sandbox.poll()
-        if return_code is None:
-            return ExecutionStatus.RUNNING
-        if return_code == 0:
-            return ExecutionStatus.COMPLETED
-        return ExecutionStatus.FAILED
+        return sandbox_utils.get_sandbox_status(
+            sandbox_id, modal_client=modal_client
+        )
 
     def cancel(self, step_run: "StepRunResponse") -> None:
         """Cancels a submitted Modal sandbox.
@@ -396,5 +266,4 @@ class ModalStepOperator(BaseStepOperator):
         """
         sandbox_id = str(step_run.run_metadata[STEP_SANDBOX_ID_METADATA_KEY])
         modal_client = self._get_modal_client()
-        sandbox = modal.Sandbox.from_id(sandbox_id, client=modal_client)
-        sandbox.terminate()
+        sandbox_utils.terminate_sandbox(sandbox_id, modal_client=modal_client)
