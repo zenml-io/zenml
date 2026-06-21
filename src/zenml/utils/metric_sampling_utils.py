@@ -302,8 +302,14 @@ class MetricSamplingContext(context_utils.BaseContext):
                 self._thread.join(timeout=self._interval + 5.0)
                 self._thread = None
             if self._origin is not None:
+                # Non-blocking: never make the step thread wait on the
+                # network at the step boundary. A blocking flush here can
+                # stall the step for minutes if the collector is flaky (the
+                # "retry storm"). The step's last samples still ship via the
+                # PeriodicExportingMetricReader timer and the atexit flush,
+                # so deregistering without waiting is data-safe.
                 self._metric_store.deregister_origin(
-                    self._origin, blocking=True
+                    self._origin, blocking=False
                 )
                 self._origin = None
 

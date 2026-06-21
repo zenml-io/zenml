@@ -89,19 +89,31 @@ class OTLPMetricExporter(MetricExporter):
         if headers:
             self._session.headers.update(headers)
 
-        # Retry transient failures (connection-level errors + standard
-        # retryable status codes) so a flaky collector does not drop a
-        # step's metrics on the floor.
+        # Retry transient failures, but keep every export() tightly time-
+        # bounded so a flaky collector can never turn one export into a
+        # multi-minute stall on any thread (step, background reader, or
+        # atexit). Two choices enforce the bound:
+        #   - total=2 is a single ceiling across ALL error types; the
+        #     per-type counts below cannot stack past it (e.g. a connection
+        #     that flaps between connect/read/status errors still stops at 2).
+        #   - respect_retry_after_header=False stops the collector from
+        #     dictating the backoff: a "Retry-After: 120" reply would
+        #     otherwise stretch even a small retry count into minutes.
+        # With the fixed per-request timeout, worst case is ~3 attempts plus
+        # sub-second backoff (~tens of seconds), not ~600s. A dropped batch
+        # under sustained flakiness is re-sent with fresh samples on the next
+        # reader tick, so fewer retries does not mean lost data.
         retries = Retry(
-            connect=5,
-            read=5,
-            redirect=3,
-            status=5,
+            total=2,
+            connect=2,
+            read=2,
+            redirect=2,
+            status=2,
+            other=2,
             allowed_methods=["POST"],
             status_forcelist=[408, 429, 500, 502, 503, 504],
-            other=3,
-            backoff_factor=0.5,
-            respect_retry_after_header=True,
+            backoff_factor=0.3,
+            respect_retry_after_header=False,
             raise_on_status=False,
         )
         http_adapter = HTTPAdapter(max_retries=retries, pool_maxsize=1)
