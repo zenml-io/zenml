@@ -3189,6 +3189,7 @@ class SqlZenStore(BaseZenStore):
                 table=ArtifactVersionSchema,
                 filter_model=artifact_version_filter_model,
                 hydrate=hydrate,
+                apply_query_options_from_schema=True,
             )
 
     def update_artifact_version(
