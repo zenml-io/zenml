@@ -202,7 +202,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         Returns:
             The configured GPU flag.
         """
-        return self.config.gpu_enabled_in_container
+        return self.config.gpu_enabled
 
     def _check_remote_disk(self, ssh: SSHClient, path: str) -> None:
         """Fail fast if the remote host is low on disk for the given path.
@@ -318,7 +318,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
                     f"{self.config.hostname}: {mkdir.stderr}"
                 )
             self._check_remote_disk(ssh, remote_dir)
-            if self.config.automatic_cleanup_pipeline_files:
+            if self.config.cleanup_old_files:
                 cleanup = ssh.exec(
                     f"find {shlex.quote(runs_dir)} -type d "
                     "-ctime +7 -exec rm -rf {} +"
@@ -389,7 +389,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         ]
         # Isolated steps run as subprocesses inside this container, so it
         # needs GPU access on behalf of all of them.
-        if self.config.gpu_enabled_in_container:
+        if self.config.gpu_enabled:
             run_args += ["--gpus", "all"]
         run_args += ["--entrypoint", shlex.quote(entrypoint[0])]
         run_args.append(shlex.quote(image))
@@ -472,7 +472,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         ]
         if volumes:
             service["volumes"] = volumes
-        if settings.gpu_enabled_in_container:
+        if settings.gpu_enabled:
             service["deploy"] = _NVIDIA_GPU_DEPLOY
         if step.spec.upstream_steps:
             service["depends_on"] = {

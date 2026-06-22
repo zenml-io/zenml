@@ -36,7 +36,7 @@ class SSHOrchestratorSettings(BaseSettings):
         "values are absolute paths inside the container. Example: "
         "{'/data/datasets': '/datasets'}",
     )
-    gpu_enabled_in_container: bool = Field(
+    gpu_enabled: bool = Field(
         default=True,
         description="Request all NVIDIA GPUs for each step container via the "
         "Compose device reservation. Set to False for CPU-only pipelines on "
@@ -131,7 +131,7 @@ class SSHOrchestratorConfig(BaseOrchestratorConfig, SSHOrchestratorSettings):
         "submitted stack's container registry credentials before launching, so "
         "private images can be pulled. Example: True for a private registry",
     )
-    automatic_cleanup_pipeline_files: bool = Field(
+    cleanup_old_files: bool = Field(
         default=True,
         description="Remove pipeline launch files (Compose files) on the "
         "remote host once they are older than 7 days. Example: False when an "

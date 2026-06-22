@@ -32,7 +32,7 @@ You will need the following to use the SSH orchestrator:
 
 * A remote Linux host reachable over SSH from the machine submitting the pipeline, with **SSH key-based** access (passwords are not supported).
 * A recent version of **Docker** including Docker Compose (the `docker compose` command must work) and the SSH user must be able to run it (typically a member of the `docker` group).
-* For GPU pipelines: the appropriate [NVIDIA Driver](https://www.nvidia.com/en-us/drivers/unix/) and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installed on the host. If GPUs are not available, set `gpu_enabled_in_container=False` (or per step via settings), otherwise the pipeline will not start correctly.
+* For GPU pipelines: the appropriate [NVIDIA Driver](https://www.nvidia.com/en-us/drivers/unix/) and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installed on the host. If GPUs are not available, set `gpu_enabled=False` (or per step via settings), otherwise the pipeline will not start correctly.
 
 ## How it works
 
@@ -90,8 +90,8 @@ Key configuration fields (set at registration time):
 * `remote_workdir` — base directory on the host for per-run files (default `/tmp/zenml-ssh`).
 * `docker_binary` — path to the Docker binary on the host (default `docker`).
 * `container_registry_autologin` — run `docker login` on the host before launching (default `False`).
-* `automatic_cleanup_pipeline_files` — remove run directories older than seven days before each launch (default `True`).
-* `gpu_enabled_in_container` — request all NVIDIA GPUs for step containers. This is also a per-step setting, so you can mix CPU and GPU steps in one pipeline.
+* `cleanup_old_files` — remove run directories older than seven days before each launch (default `True`).
+* `gpu_enabled` — request all NVIDIA GPUs for step containers. This is also a per-step setting, so you can mix CPU and GPU steps in one pipeline.
 
 Bind mounts can be configured per pipeline or per step via settings:
 
@@ -102,7 +102,7 @@ from zenml.integrations.ssh.flavors.ssh_orchestrator_flavor import (
 
 settings = SSHOrchestratorSettings(
     mounts={"/data/datasets": "/datasets"},
-    gpu_enabled_in_container=False,
+    gpu_enabled=False,
 )
 ```
 
