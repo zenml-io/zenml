@@ -122,7 +122,7 @@ DockerSettings(
 
 ## 4 Distributed training with a `CommandStep`
 
-Accelerate (section 3) is one way to fan a step out over GPUs. The more general pattern is to wrap a *distributed launcher* in a [`CommandStep`](https://docs.zenml.io/how-to/steps-pipelines/command_steps) that runs on a step operator. The same approach covers both **single-node multi-GPU** (one machine, several GPUs) and **true multi-node** training (several machines): ZenML owns the run, the launcher owns the worker processes.
+Accelerate (section 3) is one way to fan a step out over GPUs. The more general pattern is to wrap a *distributed launcher* in a [`CommandStep`](../../how-to/steps-pipelines/command_steps.md) that runs on a step operator. The same approach covers both **single-node multi-GPU** (one machine, several GPUs) and **true multi-node** training (several machines): ZenML owns the run, the launcher owns the worker processes.
 
 ### Why a launcher (and not ZenML) starts the workers
 
@@ -272,8 +272,8 @@ train = CommandStep(
 ### Things to keep in mind
 
 - **The image must carry the launcher (and `zenml`).** The `CommandStep` runs through ZenML's entrypoint on the step operator, so the launcher image needs both `zenml` and the launcher package. Either let ZenML install them with `requirements=[...]` (as above), or bake your own image and use `DockerSettings(skip_build=True, parent_image=...)` — a custom `parent_image` must already contain `zenml`. The *worker* image (passed to the launcher, e.g. `--image`) only needs your training stack, not `zenml`.
-- **Logs live in the launcher's backend.** Command-step logs are not tracked by ZenML — worker logs stay where the launcher puts them (pod logs, the Ray dashboard, etc.). See the [command steps limitations](https://docs.zenml.io/how-to/steps-pipelines/command_steps).
-- **`dynamic=True` is only needed for [resource pools](https://docs.zenml.io/getting-started/zenml-pro/resource-pools).** The launcher-on-a-step-operator pattern itself works in both static and dynamic pipelines.
+- **Logs live in the launcher's backend.** Command-step logs are not tracked by ZenML — worker logs stay where the launcher puts them (pod logs, the Ray dashboard, etc.). See the [command steps limitations](../../how-to/steps-pipelines/command_steps.md).
+- **`dynamic=True` is only needed for [resource pools](../../getting-started/zenml-pro/resource-pools.md).** The launcher-on-a-step-operator pattern itself works in both static and dynamic pipelines.
 - **Two capacity managers, two jobs.** The launcher's gang scheduler (e.g. Volcano) reserves the *worker* capacity all-or-nothing; ZenML resource pools (if you use them) govern the *launcher* step. They don't overlap.
 
 ---
