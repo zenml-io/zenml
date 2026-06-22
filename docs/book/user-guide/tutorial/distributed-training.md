@@ -11,7 +11,7 @@ Need more compute than your laptop can offer?  This tutorial shows how to:
 2. Build a **CUDA‑enabled container image** so the GPU is actually visible.
 3. Reset the CUDA cache between steps (optional but handy for memory‑heavy jobs).
 4. Scale to *multiple* GPUs or nodes with the [🤗 Accelerate](https://github.com/huggingface/accelerate) integration.
-5. Run **true multi-node** training by wrapping any distributed launcher (TorchX, Ray, SkyPilot) in a `CommandStep`.
+5. Run multi-GPU and **multi-node** training by wrapping a distributed launcher (`torchrun`, TorchX, Ray) in a `CommandStep`.
 
 ---
 
@@ -120,13 +120,13 @@ DockerSettings(
 
 ---
 
-## 4 Multi-node training: bring your own launcher with a `CommandStep`
+## 4 Distributed training with a `CommandStep`
 
-Accelerate is the easy path for a *single* machine with several GPUs. For **true multi-node** training (several machines, each with GPUs) the cleanest pattern is to let a dedicated *launcher* own the worker gang and let ZenML own the run. You wrap the launcher's CLI in a [`CommandStep`](https://docs.zenml.io/how-to/steps-pipelines/command_steps) that runs on a step operator.
+Accelerate (section 3) is one way to fan a step out over GPUs. The more general pattern is to wrap a *distributed launcher* in a [`CommandStep`](https://docs.zenml.io/how-to/steps-pipelines/command_steps) that runs on a step operator. The same approach covers both **single-node multi-GPU** (one machine, several GPUs) and **true multi-node** training (several machines): ZenML owns the run, the launcher owns the worker processes.
 
 ### Why a launcher (and not ZenML) starts the workers
 
-`torch.distributed` / `torchrun` only *coordinate* ranks through a rendezvous — they assign `RANK`, `WORLD_SIZE` and `LOCAL_RANK` and wire the processes together. They do **not** provision machines or start processes on other nodes. Something external has to launch N processes across N nodes that can all reach the rendezvous endpoint. That "something" is a launcher: TorchX, Ray, SkyPilot, Slurm, and so on.
+`torch.distributed` / `torchrun` only *coordinate* ranks through a rendezvous — they assign `RANK`, `WORLD_SIZE` and `LOCAL_RANK` and wire the processes together. They do **not** provision machines or start processes on other nodes. Something has to launch N worker processes that can all reach the rendezvous endpoint. On a single node `torchrun` can spawn those processes itself; across nodes you need a launcher that provisions and gang-schedules them: TorchX, Ray, Slurm, and so on.
 
 ZenML doesn't reimplement that. Instead it gives you a clean seam:
 
@@ -141,7 +141,7 @@ from zenml import CommandStep, pipeline
 from zenml.config import DockerSettings
 
 train = CommandStep(
-    command=[...launcher CLI...],          # TorchX / Ray / SkyPilot / torchrun
+    command=[...launcher CLI...],          # torchrun / TorchX / Ray
     step_operator="<your-step-operator>",  # where the launcher itself runs
     settings={"docker": DockerSettings(requirements=["<launcher-package>"])},
 )
@@ -155,12 +155,38 @@ def training() -> None:
 
 | Launcher | Starts workers on | Needs | Best when |
 |----------|-------------------|-------|-----------|
-| **TorchX** (`dist.ddp`) | Kubernetes, Slurm, local | [Volcano](https://volcano.sh) for gang scheduling on K8s | You're on bare Kubernetes and want plain `torch.distributed` |
+| **torchrun** (`--standalone`) | The node it runs on | Nothing extra | Single node, multiple GPUs |
+| **TorchX** (`dist.ddp`) | Kubernetes, Slurm, local | [Volcano](https://volcano.sh) for gang scheduling on K8s | Multi-node on bare Kubernetes with plain `torch.distributed` |
 | **Ray** (`ray job submit`) | A Ray cluster / KubeRay | A running Ray cluster | You already run Ray; Ray Train sets up `torch.distributed` for you |
-| **SkyPilot** (`sky launch`) | Cloud VMs or Kubernetes | Cloud creds / kubeconfig | Multi-cloud VMs without installing a gang scheduler |
-| **torchrun / Accelerate** | The node it runs on | Nothing extra | Single node, multiple GPUs (see section 3) |
 
-### Worked example: TorchX + Volcano on Kubernetes
+### Single node, multiple GPUs
+
+If you just need several GPUs on **one** machine, you don't need an external scheduler at all — `torchrun` spawns one process per GPU inside the step's own container. The whole thing runs in a single step operator pod that you size with the GPUs it needs:
+
+```python
+from zenml import CommandStep, pipeline
+from zenml.config import DockerSettings, ResourceSettings
+
+train = CommandStep(
+    command=["torchrun", "--standalone", "--nproc-per-node=4", "train.py"],
+    step_operator="gmi-k8s",
+    settings={
+        "docker": DockerSettings(
+            parent_image="pytorch/pytorch:2.4.0-cuda12.1-cudnn9-runtime",
+            requirements=["zenml"],
+        ),
+        "resources": ResourceSettings(gpu_count=4),
+    },
+)
+
+@pipeline
+def training() -> None:
+    train()
+```
+
+Here a single image carries everything (`zenml` + `torch` + `train.py`), because the launcher *and* the workers run in the same container. The same vanilla `train.py` below works unchanged — `torchrun --standalone` sets up the rendezvous locally.
+
+### Multiple nodes: TorchX + Volcano on Kubernetes
 
 Your training script is **vanilla `torch.distributed`** — it reads the rank/world-size that the launcher injects and contains nothing ZenML- or launcher-specific:
 
@@ -230,7 +256,7 @@ WORKDIR /app
 COPY train.py .
 ```
 
-### The same pattern with Ray or SkyPilot
+### The same pattern with Ray
 
 Only the command changes. With **Ray** (submitting to an existing cluster, letting Ray Train own `torch.distributed`):
 
@@ -240,16 +266,6 @@ train = CommandStep(
              "--", "python", "train_ray.py"],
     step_operator="gmi-k8s",
     settings={"docker": DockerSettings(requirements=["ray[client]"])},
-)
-```
-
-With **SkyPilot** (provisioning multi-node VMs or K8s pods, no Volcano needed):
-
-```python
-train = CommandStep(
-    command=["sky", "launch", "-y", "--num-nodes", "2", "dist.sky.yaml"],
-    step_operator="gmi-k8s",
-    settings={"docker": DockerSettings(requirements=["skypilot[kubernetes]"])},
 )
 ```
 

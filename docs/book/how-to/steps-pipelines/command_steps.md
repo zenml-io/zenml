@@ -93,7 +93,7 @@ Environment variables and secrets are passed to the command as environment varia
 
 ## Multi-node distributed training
 
-Because a command step is an opaque launcher that runs on a step operator, it's the recommended way to drive **multi-node** training: point the command at an external launcher (TorchX, Ray, SkyPilot) that owns the worker gang while ZenML owns the run. See [Train with GPUs and Accelerate](https://docs.zenml.io/user-guide/tutorial/distributed-training) for the full pattern and worked examples.
+Because a command step is an opaque launcher that runs on a step operator, it's the recommended way to drive distributed training — both single-node multi-GPU (`torchrun`) and **multi-node** (TorchX, Ray): point the command at a launcher that owns the worker processes while ZenML owns the run. See [Train with GPUs and Accelerate](https://docs.zenml.io/user-guide/tutorial/distributed-training) for the full pattern and worked examples.
 
 ## Limitations
 
