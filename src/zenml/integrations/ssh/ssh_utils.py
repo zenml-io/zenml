@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""SSH client wrapper with lazy paramiko import."""
+"""SSH client wrapper around paramiko."""
 
 import io
 import socket
@@ -19,12 +19,12 @@ import time
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Optional, Protocol, cast
 
+import paramiko
+
 from zenml.logger import get_logger
 from zenml.utils.secret_utils import PlainSerializedSecretStr
 
 if TYPE_CHECKING:
-    import paramiko
-
     from zenml.stack import StackComponent
 
 logger = get_logger(__name__)
@@ -187,15 +187,6 @@ class SSHClient:
         Raises:
             RuntimeError: If connection or authentication fails.
         """
-        try:
-            import paramiko
-        except ImportError as e:
-            raise RuntimeError(
-                "The 'paramiko' package is required for the SSH integration "
-                "but is not installed. Install it with: "
-                "zenml integration install ssh"
-            ) from e
-
         client = paramiko.SSHClient()
 
         # Host key policy
@@ -336,8 +327,6 @@ class SSHClient:
         """Close the SSH connection if open."""
         if self._client is not None:
             try:
-                import paramiko
-
                 if isinstance(self._client, paramiko.SSHClient):
                     self._client.close()
             except Exception:
@@ -354,8 +343,6 @@ class SSHClient:
         Raises:
             RuntimeError: If not connected.
         """
-        import paramiko
-
         if self._client is None or not isinstance(
             self._client, paramiko.SSHClient
         ):
