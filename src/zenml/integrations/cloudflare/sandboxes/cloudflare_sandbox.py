@@ -25,7 +25,6 @@ import urllib.parse
 from collections import deque
 from dataclasses import dataclass
 from typing import (
-    TYPE_CHECKING,
     Any,
     Deque,
     Dict,
@@ -38,6 +37,8 @@ from typing import (
     Union,
     cast,
 )
+
+import httpx
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.cloudflare.flavors.cloudflare_sandbox_flavor import (
@@ -53,10 +54,6 @@ from zenml.sandboxes import (
     SandboxProcess,
     SandboxSession,
 )
-
-if TYPE_CHECKING:
-    import httpx
-
 
 logger = get_logger(__name__)
 
@@ -225,8 +222,6 @@ class _CloudflareBridgeClient:
             api_key: Bearer token for the bridge (``SANDBOX_API_KEY``).
             transport: Optional httpx transport override, used by tests.
         """
-        import httpx
-
         headers: Dict[str, str] = {}
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
@@ -274,8 +269,6 @@ class _CloudflareBridgeClient:
         Raises:
             SandboxExecError: On a non-retryable error, or after retries exhausted.
         """
-        import httpx
-
         retryable_method = method in _RETRYABLE_METHODS
         attempt = 0
         while True:
