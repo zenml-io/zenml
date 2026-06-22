@@ -11,13 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""SSH client wrapper with lazy paramiko import.
-
-This module isolates all Paramiko-specific behavior so the step operator
-does not need to interact with Paramiko internals directly.  Paramiko is
-imported lazily (inside methods) so the integration can be discovered by
-ZenML's registry even when paramiko is not installed.
-"""
+"""SSH client wrapper with lazy paramiko import."""
 
 import io
 import socket
@@ -139,9 +133,6 @@ def resolve_ssh_connection_config(
 
     Returns:
         The resolved SSH connection configuration.
-
-    Raises:
-        RuntimeError: If the component's SSH credentials are incomplete.
     """
     # The concrete SSH component configs (orchestrator/step operator) provide
     # the SSHConnectionConfigSource fields; the base StackComponentConfig type
@@ -169,13 +160,6 @@ class RemoteCommandResult:
 @dataclass
 class SSHClient:
     """Context-managed SSH client that wraps paramiko.
-
-    Usage::
-
-        cfg = SSHConnectionConfig(hostname="gpu-box", ...)
-        with SSHClient(cfg) as ssh:
-            result = ssh.exec("docker --version")
-            ssh.put_text("/tmp/env", "KEY=VALUE\\n", mode=0o600)
 
     Attributes:
         config: Connection configuration.
@@ -482,11 +466,6 @@ class SSHClient:
 
     def free_disk_bytes(self, remote_path: str) -> Optional[int]:
         """Get free disk space on the filesystem holding a remote path.
-
-        Uses the SFTP ``statvfs`` extension (no shell / ``df`` parsing). This
-        is best-effort: returns None if the SFTP server doesn't support the
-        extension, so callers should treat None as "unknown" rather than an
-        error.
 
         Args:
             remote_path: An existing path on the remote host.

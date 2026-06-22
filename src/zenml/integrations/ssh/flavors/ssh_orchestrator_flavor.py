@@ -47,9 +47,6 @@ class SSHOrchestratorSettings(BaseSettings):
 class SSHOrchestratorConfig(BaseOrchestratorConfig, SSHOrchestratorSettings):
     """Configuration for the SSH orchestrator.
 
-    Connection fields mirror the SSH step operator so a single remote host
-    can be driven by both components with the same credentials.
-
     Example registration::
 
         zenml orchestrator register my-gpu-box \\
@@ -143,12 +140,9 @@ class SSHOrchestratorConfig(BaseOrchestratorConfig, SSHOrchestratorSettings):
     minimum_free_disk_gb: float = Field(
         default=5.0,
         ge=0,
-        description="Pre-flight guard: fail a submission with a clear error if "
-        "the remote host has less free disk than this (in GB) on the "
-        "remote_workdir filesystem. The orchestrator pulls a Docker image per "
-        "pipeline version, which accumulates on the host, so this prevents the "
-        "cryptic failures that happen when the host runs out of disk. Set to 0 "
-        "to disable the check. Example: 10.0 for image-heavy pipelines",
+        description="Pre-flight guard that fails a submission if the "
+        "remote_workdir filesystem has less free disk than this (in GB). Set "
+        "to 0 to disable the check. Example: 10.0 for image-heavy pipelines",
     )
 
     @property

@@ -29,19 +29,6 @@ if TYPE_CHECKING:
 class SSHStepOperatorSettings(BaseSettings):
     """Per-step settings for SSH step operator execution.
 
-    These settings can be configured per-step using the step decorator:
-
-    ```python
-    @step(
-        step_operator="ssh",
-        settings={"step_operator": SSHStepOperatorSettings(
-            gpu_indices=[0, 1],
-        )}
-    )
-    def my_training_step():
-        ...
-    ```
-
     Attributes:
         gpu_indices: Specific GPU device indices to expose to the container
             via Docker --gpus flag.
@@ -66,9 +53,6 @@ class SSHStepOperatorSettings(BaseSettings):
 
 class SSHStepOperatorConfig(BaseStepOperatorConfig, SSHStepOperatorSettings):
     """Configuration for the SSH step operator.
-
-    Combines connection settings (set once at registration) with per-step
-    defaults that individual steps can override via SSHStepOperatorSettings.
 
     Example registration:
     ```bash

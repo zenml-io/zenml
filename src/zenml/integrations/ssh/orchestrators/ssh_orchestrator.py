@@ -11,22 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""SSH orchestrator implementation.
-
-Runs ZenML pipelines on a remote Linux host over SSH + Docker Compose.
-
-Two execution paths:
-
-* **Static pipelines** — one Compose service per step, wired together with
-  ``depends_on`` (``service_completed_successfully``); the remote
-  ``docker compose up`` runs the whole DAG. This mirrors the legacy HyperAI
-  orchestrator.
-* **Dynamic pipelines** — a single Compose service launches the *orchestrator
-  image*, which runs ZenML's dynamic runner. That runner calls back into
-  :meth:`SSHOrchestrator.submit_isolated_step`, which launches each isolated
-  step as a **subprocess** (not a thread) so individual steps can be
-  independently resource-accounted and preempted (resource pools).
-"""
+"""SSH orchestrator implementation."""
 
 import os
 import re
@@ -183,10 +168,6 @@ class SSHOrchestrator(ContainerizedOrchestrator):
                 "inside the remote execution environment."
             )
 
-    # ------------------------------------------------------------------
-    # SSH / Compose launch (client side)
-    # ------------------------------------------------------------------
-
     def _build_ssh_connection_config(self) -> SSHConnectionConfig:
         """Build an SSHConnectionConfig from the component configuration.
 
@@ -225,11 +206,6 @@ class SSHOrchestrator(ContainerizedOrchestrator):
 
     def _check_remote_disk(self, ssh: SSHClient, path: str) -> None:
         """Fail fast if the remote host is low on disk for the given path.
-
-        The orchestrator pulls a Docker image per pipeline version, which
-        accumulates on the host over time. Without this guard, a full disk
-        surfaces as a cryptic Docker/SSH failure mid-run; here it becomes a
-        clear, actionable error before anything is launched.
 
         Args:
             ssh: The open SSH connection.
@@ -382,10 +358,6 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         stack: "Stack",
     ) -> None:
         """Launch a single detached container on the remote host via docker run.
-
-        Used for the dynamic-pipeline path, where only one orchestrator
-        container is launched (it spawns the isolated steps itself), so there
-        is no Compose DAG to express.
 
         Args:
             run_id: The orchestrator run id (used as the remote directory).
@@ -572,11 +544,6 @@ class SSHOrchestrator(ContainerizedOrchestrator):
     ) -> Optional[SubmissionResult]:
         """Submit a dynamic pipeline by launching the orchestrator image.
 
-        A single Compose service runs the orchestrator image with the
-        dynamic-pipeline entrypoint. That container runs ZenML's dynamic
-        runner, which calls back into :meth:`submit_isolated_step` for each
-        isolated step.
-
         Args:
             snapshot: The pipeline snapshot.
             stack: The active stack.
@@ -629,18 +596,10 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         )
         return None
 
-    # ------------------------------------------------------------------
-    # Isolated steps (runs inside the remote orchestrator container)
-    # ------------------------------------------------------------------
-
     def submit_isolated_step(
         self, step_run_info: "StepRunInfo", environment: Dict[str, str]
     ) -> None:
         """Launch one isolated step as a subprocess.
-
-        Runs inside the remote orchestrator container. A subprocess (not a
-        thread) is used so the step is an independently killable OS process
-        — required for resource-pool preemption and fail-fast.
 
         Args:
             step_run_info: The step run information.

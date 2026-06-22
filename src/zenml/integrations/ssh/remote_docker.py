@@ -11,12 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Pure helpers for building Docker commands and env-files.
-
-All functions in this module are side-effect-free: they take inputs and
-return strings. The actual execution happens over SSH in the step operator
-and orchestrator.
-"""
+"""Pure helpers for building Docker commands and env-files."""
 
 from typing import List, Mapping, Sequence
 
@@ -64,10 +59,6 @@ def build_docker_gpus_flag(gpu_indices: Sequence[int]) -> str:
 
 def serialize_env_for_docker_env_file(env: Mapping[str, str]) -> str:
     """Serialize environment variables into Docker --env-file format.
-
-    Each line is ``KEY=VALUE``.  Values containing newlines or NUL bytes
-    are rejected because the env-file format is line-based and ambiguous
-    for multi-line values.
 
     Args:
         env: Mapping of environment variable names to values.

@@ -11,12 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""SSH integration for remote step execution via SSH and Docker.
-
-The SSH integration provides a step operator and orchestrator that connect to
-a remote Linux host over SSH and run ZenML step entrypoints inside Docker
-containers, with optional GPU selection.
-"""
+"""SSH integration for remote step execution via SSH and Docker."""
 
 from typing import List, Type
 

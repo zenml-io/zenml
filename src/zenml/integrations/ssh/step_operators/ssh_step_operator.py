@@ -11,17 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""SSH step operator implementation.
-
-Runs ZenML step entrypoints inside Docker containers on a remote Linux
-host accessed over SSH, with optional GPU selection.
-
-Supports both the legacy blocking ``launch()`` path and the async
-``submit()``/``get_status()``/``cancel()`` contract required for dynamic
-pipelines (PR #4515). The container is started detached (``docker run -d``)
-and its status is read back with ``docker inspect`` — the Docker daemon is
-the single source of truth, so there is no remote helper script to babysit.
-"""
+"""SSH step operator implementation."""
 
 import shlex
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
@@ -61,12 +51,7 @@ SSH_CONTAINER_NAME_METADATA_KEY = "ssh_container_name"
 
 
 class SSHStepOperator(BaseStepOperator):
-    """Step operator that executes steps on a remote host via SSH + Docker.
-
-    Connects to a remote Linux host over SSH, pulls the pre-built step
-    image, and runs the step entrypoint inside a detached Docker container.
-    Status is reported directly by the Docker daemon (``docker inspect``).
-    """
+    """Step operator that executes steps on a remote host via SSH + Docker."""
 
     @property
     def config(self) -> SSHStepOperatorConfig:
@@ -89,12 +74,6 @@ class SSHStepOperator(BaseStepOperator):
     @property
     def validator(self) -> Optional[StackValidator]:
         """Validate that the stack meets remote execution requirements.
-
-        The SSH step operator needs:
-        - A container registry (to push/pull step images)
-        - An image builder (to build step images)
-        - A remote artifact store (the container cannot access local files)
-        - A remote container registry (the remote host must be able to pull)
 
         Returns:
             A stack validator.
@@ -203,12 +182,6 @@ class SSHStepOperator(BaseStepOperator):
         environment: Dict[str, str],
     ) -> None:
         """Submit a step for asynchronous execution on the remote host.
-
-        Pulls the step image and starts a **detached** Docker container
-        (``docker run -d``). The container name is recorded as step metadata
-        so ``get_status``/``cancel`` can find it; status is read straight from
-        the Docker daemon, so there is no remote helper script to babysit.
-        Returns immediately once the container is started.
 
         Args:
             info: The step run information.
@@ -332,10 +305,6 @@ class SSHStepOperator(BaseStepOperator):
     def get_status(self, step_run: "StepRunResponse") -> ExecutionStatus:
         """Get the execution status of a submitted step.
 
-        Reads the container state with ``docker inspect`` on the remote host.
-        The Docker daemon is the source of truth, so a step can never appear
-        perpetually "running" after its container has exited.
-
         Args:
             step_run: The step run to check.
 
@@ -414,10 +383,6 @@ class SSHStepOperator(BaseStepOperator):
         environment: Dict[str, str],
     ) -> None:
         """Execute a step on the remote host (blocking legacy path).
-
-        Delegates to ``submit()`` + ``wait()`` to reuse the async
-        infrastructure while preserving the blocking call semantics
-        expected by static pipelines.
 
         Args:
             info: The step run information.
