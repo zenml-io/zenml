@@ -41,18 +41,7 @@ PathType = Union[bytes, str]
 
 
 class R2ArtifactStore(S3ArtifactStore):
-    """Artifact Store for Cloudflare R2 based artifacts.
-
-    R2 exposes an S3-compatible API, so this reuses the entire S3 filesystem
-    stack (including the leak-safe ``ZenMLS3Filesystem`` and credential
-    handling). The only differences are:
-
-    - the ``r2://`` URI scheme, which ``s3fs`` does not understand and must be
-      stripped before paths reach the filesystem (and re-added on the way out),
-      and
-    - R2 does not expose the S3 bucket versioning API, so the versioning probe
-      that the S3 store performs on initialization is skipped.
-    """
+    """Artifact Store for Cloudflare R2 based artifacts."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initializes the R2 artifact store.
@@ -81,12 +70,10 @@ class R2ArtifactStore(S3ArtifactStore):
     ) -> Tuple[Optional[str], Optional[str], Optional[str], Optional[str]]:
         """Gets authentication credentials, requiring them to be explicit.
 
-        Unlike AWS S3, R2 has no ambient credential sources: botocore's
-        implicit fallback chain (instance profiles, IMDS, SSO) can never
-        yield R2 keys, but spends minutes on metadata-endpoint timeouts
-        before failing with an opaque ``NoCredentialsError``. Fail fast
-        instead, unless credentials are supplied via the standard AWS
-        environment variables (a legitimate way to pass R2 keys).
+        R2 has no ambient credential sources, so botocore's implicit fallback
+        chain can never yield R2 keys and would spend minutes on metadata
+        timeouts before failing. Fail fast unless credentials are supplied via
+        the standard AWS environment variables.
 
         Returns:
             Tuple (key, secret, token, region) of credentials used to

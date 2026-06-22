@@ -11,13 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the Cloudflare integration.
-
-The Cloudflare integration provides stack components backed by Cloudflare's
-developer platform: an artifact store on top of R2 (S3-compatible object
-storage), a container registry on top of the Cloudflare managed registry,
-and a sandbox flavor on top of the Cloudflare Sandbox bridge Worker.
-"""
+"""Initialization of the Cloudflare integration."""
 
 from typing import List, Type
 

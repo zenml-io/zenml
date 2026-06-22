@@ -46,21 +46,14 @@ class CloudflareOrchestratorSettings(BaseSettings):
         default=600_000,
         description="Per-command timeout in milliseconds for sandbox "
         "execs launched by the orchestrator (the pip bootstrap and the "
-        "step entrypoint each get this budget). Example: 600000 (10 "
-        "minutes). Long-running training steps need a higher value",
+        "step entrypoint each get this budget)",
     )
 
 
 class CloudflareOrchestratorConfig(
     BaseOrchestratorConfig, CloudflareOrchestratorSettings
 ):
-    """Configuration for the Cloudflare orchestrator.
-
-    The orchestrator connects to the same Cloudflare Sandbox bridge Worker
-    that the sandbox flavor uses, but holds its own connection
-    configuration: orchestration must not depend on an (optional) sandbox
-    component being part of the stack.
-    """
+    """Configuration for the Cloudflare orchestrator."""
 
     worker_url: str = Field(
         description="URL of the deployed Cloudflare Sandbox bridge Worker "
@@ -79,10 +72,6 @@ class CloudflareOrchestratorConfig(
     @classmethod
     def _validate_worker_url_scheme(cls, value: str) -> str:
         """Require https for the bridge URL.
-
-        Mirrors the Cloudflare sandbox flavor: the bearer token travels on
-        every request, so plain http is only acceptable for a local bridge
-        during development.
 
         Args:
             value: The configured worker URL.
@@ -113,9 +102,6 @@ class CloudflareOrchestratorConfig(
     def is_local(self) -> bool:
         """Whether this component runs locally.
 
-        The orchestration loop runs on the client, but the steps execute
-        on Cloudflare.
-
         Returns:
             False.
         """
@@ -125,24 +111,17 @@ class CloudflareOrchestratorConfig(
     def is_remote(self) -> bool:
         """Whether this component runs remotely.
 
-        Steps execute on Cloudflare, so this is conceptually a remote
-        orchestrator. It still reports ``False`` for now: ``True`` makes
-        pipeline submission require a remote ZenML server, and this proof
-        of concept must remain runnable against a local server (where the
-        in-sandbox step is expected to fail at server contact). Flip this
-        to ``True`` once the flavor graduates from POC.
-
         Returns:
             False.
         """
+        # Reports False even though steps run on Cloudflare: True would make
+        # pipeline submission require a remote ZenML server, and this POC must
+        # remain runnable against a local server. Flip once it graduates.
         return False
 
     @property
     def is_synchronous(self) -> bool:
         """Whether the orchestrator runs synchronously.
-
-        The POC drives sandboxes from the client and blocks until the
-        last step finished.
 
         Returns:
             True.

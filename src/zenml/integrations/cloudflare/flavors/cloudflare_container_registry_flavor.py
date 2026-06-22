@@ -24,13 +24,7 @@ from zenml.integrations.cloudflare import (
 
 
 class CloudflareContainerRegistryFlavor(BaseContainerRegistryFlavor):
-    """Flavor for the Cloudflare managed container registry.
-
-    The Cloudflare container registry is a standard Docker registry hosted at
-    ``registry.cloudflare.com``. Images are namespaced by account, so the
-    configured `uri` is typically
-    ``registry.cloudflare.com/<account_id>``.
-    """
+    """Flavor for the Cloudflare managed container registry."""
 
     @property
     def name(self) -> str:

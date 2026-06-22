@@ -39,13 +39,7 @@ if TYPE_CHECKING:
 
 
 class R2ArtifactStoreConfig(S3ArtifactStoreConfig):
-    """Configuration for the Cloudflare R2 Artifact Store.
-
-    R2 is S3-compatible, so this reuses the S3 artifact store configuration and
-    filesystem. The only R2-specific requirement is the S3 API endpoint, which
-    is derived from the Cloudflare account ID unless an explicit `endpoint_url`
-    is provided via `client_kwargs`.
-    """
+    """Configuration for the Cloudflare R2 Artifact Store."""
 
     SUPPORTED_SCHEMES: ClassVar[Set[str]] = {"r2://"}
 
@@ -54,16 +48,13 @@ class R2ArtifactStoreConfig(S3ArtifactStoreConfig):
         description="Cloudflare account ID used to construct the R2 "
         "S3-compatible endpoint "
         "'https://<account_id>.r2.cloudflarestorage.com'. Required unless an "
-        "explicit 'endpoint_url' is supplied in 'client_kwargs'. Example: "
-        "'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6'",
+        "explicit 'endpoint_url' is supplied in 'client_kwargs'",
     )
 
     @model_validator(mode="before")
     @classmethod
     def _configure_r2_endpoint(cls, data: Any) -> Any:
         """Derives R2-specific client/config defaults from the account ID.
-
-        Runs before validation because the config is frozen once constructed.
 
         Args:
             data: The raw input data for the config.

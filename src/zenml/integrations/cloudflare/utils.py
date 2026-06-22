@@ -44,10 +44,6 @@ def split_r2_path(r2_path: str) -> Tuple[str, str]:
 def strip_r2_scheme(path: str) -> str:
     """Remove the `r2://` scheme prefix from a path if present.
 
-    The underlying ``s3fs`` filesystem only understands the ``s3://`` scheme,
-    so R2 paths must be reduced to plain ``bucket/key`` form before they are
-    handed to it.
-
     Args:
         path: The path to normalize.
 

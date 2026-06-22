@@ -114,9 +114,6 @@ def _sanitize_remote_path(remote_path: str) -> str:
 def _parse_sse_stream(lines: Iterator[str]) -> Iterator[_BridgeEvent]:
     """Parse the bridge's text/event-stream into typed events.
 
-    Malformed frames and ``event: error`` payloads raise
-    ``SandboxExecError`` from the inner dispatch generator.
-
     Args:
         lines: Decoded SSE lines (no trailing newlines).
 
@@ -260,10 +257,6 @@ class _CloudflareBridgeClient:
     ) -> "httpx.Response":
         """Issue a request with the bridge's retry policy.
 
-        Connection errors and transient statuses (429/502/503/504) are
-        retried only for idempotent methods; a failed POST surfaces
-        immediately because it may already have executed on the bridge.
-
         Args:
             method: HTTP verb.
             path: Path under the worker base URL.
@@ -360,10 +353,6 @@ class _CloudflareBridgeClient:
     def delete_sandbox(self, sandbox_id: str) -> None:
         """Delete a sandbox.
 
-        A 404/410 means the sandbox is already gone (TTL expiry, double
-        destroy) — the desired end state, so it counts as success rather
-        than a failure that destroy() would retry forever.
-
         Args:
             sandbox_id: The sandbox to delete.
         """
@@ -373,9 +362,6 @@ class _CloudflareBridgeClient:
 
     def is_running(self, sandbox_id: str) -> bool:
         """Check whether the given sandbox is still alive.
-
-        A 404/410 from the bridge means the sandbox is gone (expired or
-        deleted), which is an answer — ``False`` — not an error.
 
         Args:
             sandbox_id: The sandbox to check.
@@ -742,12 +728,7 @@ class CloudflareSandboxProcess(SandboxProcess):
         return self._exit_code
 
     def kill(self) -> None:
-        """Stop reading the SSE stream and unblock consumers.
-
-        The bridge has no per-exec kill RPC — the command keeps running
-        on Cloudflare until ``timeout_ms``; ``session.destroy()``
-        terminates the whole sandbox.
-        """
+        """Stop reading the SSE stream and unblock consumers."""
         # Set the flag before closing so the pump treats the resulting
         # httpx error as a clean shutdown.
         self._killed.set()
@@ -919,11 +900,7 @@ class CloudflareSandboxSession(SandboxSession):
             f.write(data)
 
     def _close(self) -> None:
-        """Release local exec streams and bridge-session state.
-
-        The remote sandbox keeps running, but local SSE responses and
-        their pump threads must not outlive the session handle.
-        """
+        """Release local exec streams and bridge-session state."""
         for process in self._processes:
             if process.exit_code is None:
                 process.kill()
@@ -944,9 +921,6 @@ class CloudflareSandboxSession(SandboxSession):
 
     def _destroy(self) -> None:
         """Terminate the sandbox on Cloudflare.
-
-        Raising on failure keeps the handle open (the base ``destroy()``
-        only closes after this hook succeeds), so destroy() can be retried.
 
         Raises:
             RuntimeError: If the bridge fails to delete the sandbox.

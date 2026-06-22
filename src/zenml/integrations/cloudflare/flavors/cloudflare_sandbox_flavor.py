@@ -40,9 +40,8 @@ class CloudflareSandboxSettings(BaseSandboxSettings):
         default=DEFAULT_BRIDGE_TIMEOUT_MS,
         ge=1,
         description="Per-exec timeout in milliseconds. Passed to the bridge "
-        "as timeout_ms on POST /v1/sandbox/:id/exec. Must be a positive "
-        "integer. Example: 60000 for a one-minute cap. Defaults to 120000 "
-        "(two minutes)",
+        "as timeout_ms on POST /v1/sandbox/:id/exec. Example: 60000 for a "
+        "one-minute cap",
     )
     cwd: Optional[str] = Field(
         default=None,
@@ -74,9 +73,6 @@ class CloudflareSandboxConfig(BaseSandboxConfig, CloudflareSandboxSettings):
     @classmethod
     def _validate_worker_url_scheme(cls, value: str) -> str:
         """Require https for the bridge URL.
-
-        The bridge bearer token travels on every request, so plain http is
-        only acceptable when talking to a local bridge during development.
 
         Args:
             value: The configured worker URL.

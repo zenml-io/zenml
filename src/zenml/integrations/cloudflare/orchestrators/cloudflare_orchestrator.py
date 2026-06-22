@@ -11,13 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Implementation of the Cloudflare orchestrator (proof of concept).
-
-Runs every pipeline step in its own Cloudflare Sandbox via the bridge
-Worker configured on the orchestrator itself. The orchestration loop runs
-on the client, mirroring the local Docker orchestrator — Cloudflare
-Workflows are the natural home for it later.
-"""
+"""Implementation of the Cloudflare orchestrator (proof of concept)."""
 
 import os
 import time
@@ -87,12 +81,6 @@ class CloudflareOrchestrator(BaseOrchestrator):
 
     def _get_dispatch_sandbox(self) -> "CloudflareSandbox":
         """Returns the sandbox used to launch step containers.
-
-        The orchestrator owns its bridge connection config; internally it
-        drives the same machinery as the Cloudflare sandbox flavor (the
-        same pattern `ArtifactLogStore.from_artifact_store` uses to build
-        one component from another's configuration). Any sandbox component
-        in the stack remains untouched and available for in-step use.
 
         Returns:
             A Cloudflare sandbox bound to the orchestrator's bridge.
