@@ -49,9 +49,7 @@ class SSHStepOperatorSettings(BaseSettings):
 
     Attributes:
         gpu_indices: Specific GPU device indices to expose to the container
-            via Docker --gpus flag. Acquired locks prevent overlapping use.
-        use_gpu_locks: Whether to acquire per-GPU flock locks before running
-            the container, preventing concurrent jobs from sharing GPUs.
+            via Docker --gpus flag.
         docker_run_args: Additional arguments to pass to docker run (do not
             include secrets here as they may appear in process listings).
     """
@@ -59,15 +57,9 @@ class SSHStepOperatorSettings(BaseSettings):
     gpu_indices: Optional[List[int]] = Field(
         default=None,
         description="GPU device indices to expose inside the container via "
-        "Docker --gpus flag. Each index gets an exclusive flock lock when "
-        "use_gpu_locks is True. Examples: [0] for single GPU, [0, 2] for "
-        "specific GPUs, None for CPU-only execution",
-    )
-    use_gpu_locks: bool = Field(
-        default=True,
-        description="Acquire per-GPU-index flock locks on the remote host "
-        "before running the container. Prevents concurrent steps from "
-        "oversubscribing the same GPU. Only applies when gpu_indices is set",
+        "Docker --gpus flag. Examples: [0] for single GPU, [0, 2] for "
+        "specific GPUs, None for CPU-only execution. Give concurrent steps on "
+        "the same host distinct indices to avoid oversubscribing a GPU",
     )
     docker_run_args: Optional[List[str]] = Field(
         default=None,
@@ -162,14 +154,8 @@ class SSHStepOperatorConfig(BaseStepOperatorConfig, SSHStepOperatorSettings):
     remote_workdir: str = Field(
         default="/tmp/zenml-ssh",
         description="Base directory on the remote host for temporary files "
-        "(env-files, wrapper scripts). Created automatically if it does not "
-        "exist. Example: '/home/ubuntu/zenml-workdir'",
-    )
-    gpu_lock_dir: str = Field(
-        default="/tmp/zenml-gpu-locks",
-        description="Directory on the remote host where per-GPU flock lock "
-        "files are created. Each GPU index gets its own lock file "
-        "(e.g., gpu-0.lock, gpu-1.lock). Created automatically",
+        "(env-files). Created automatically if it does not exist. "
+        "Example: '/home/ubuntu/zenml-workdir'",
     )
     docker_binary: str = Field(
         default="docker",

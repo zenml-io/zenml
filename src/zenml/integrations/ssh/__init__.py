@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 """SSH integration for remote step execution via SSH and Docker.
 
-The SSH integration provides a step operator that connects to a remote Linux
-host over SSH and runs ZenML step entrypoints inside Docker containers, with
-optional GPU selection and per-GPU mutual exclusion via flock.
+The SSH integration provides a step operator and orchestrator that connect to
+a remote Linux host over SSH and run ZenML step entrypoints inside Docker
+containers, with optional GPU selection.
 """
 
 from typing import List, Type
