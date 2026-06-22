@@ -33,7 +33,6 @@ You will need the following to use the SSH orchestrator:
 * A remote Linux host reachable over SSH from the machine submitting the pipeline, with **SSH key-based** access (passwords are not supported).
 * A recent version of **Docker** including Docker Compose (the `docker compose` command must work) and the SSH user must be able to run it (typically a member of the `docker` group).
 * For GPU pipelines: the appropriate [NVIDIA Driver](https://www.nvidia.com/en-us/drivers/unix/) and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) installed on the host. If GPUs are not available, set `gpu_enabled_in_container=False` (or per step via settings), otherwise the pipeline will not start correctly.
-* For scheduled pipelines: `crontab` (for cron schedules) and/or `at` (for one-off start times) available on the host.
 
 ## How it works
 
@@ -44,20 +43,13 @@ The SSH orchestrator connects to the remote host with [paramiko](https://www.par
 
 If `container_registry_autologin` is enabled, the orchestrator runs `docker login` on the remote host using the submitted stack's container registry credentials before launching, so private images can be pulled.
 
-### Scheduled pipelines
-
-[Scheduled pipelines](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines) are supported for **static** pipelines, via the same mechanisms as HyperAI:
-
-* **Cron expressions** via `cron_expression` are installed as a `crontab` entry on the host. Use this for recurring runs.
-* **One-off runs** via `run_once_start_time` are installed as an `at` entry on the host. Use this for a single future run.
-
-{% hint style="warning" %}
-Scheduling is **not** supported for dynamic pipelines. Submitting a scheduled dynamic pipeline is rejected rather than silently run once — remove the schedule or use a static pipeline.
+{% hint style="info" %}
+The SSH orchestrator does not manage schedules. To run a pipeline on a schedule, trigger it directly from your own cron job or CI; submitting a pipeline with a ZenML schedule is rejected with a clear error.
 {% endhint %}
 
 ### How to deploy it
 
-The SSH orchestrator connects to an existing host; it does not provision infrastructure. Beyond the [prerequisites](#prerequisites) above, the orchestrator must be used in a stack that contains a **container registry** and an **image builder**. SSH credentials can be configured directly on the orchestrator or supplied through an [SSH service connector](../service-connectors/connector-types/ssh-service-connector.md).
+The SSH orchestrator connects to an existing host; it does not provision infrastructure. Beyond the [prerequisites](#prerequisites) above, the orchestrator must be used in a stack that contains a **container registry** and an **image builder**. SSH credentials are configured directly on the orchestrator.
 
 ### How to use it
 
@@ -82,27 +74,6 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 
 Instead of `ssh_key_path` (a path on the submitting machine) you can store the key content in a [ZenML secret](https://docs.zenml.io/getting-started/deploying-zenml/secret-management) and reference it via `ssh_private_key` (and `ssh_key_passphrase` if the key is encrypted).
 
-If multiple SSH components should share the same credentials, register and link an SSH service connector:
-
-```shell
-zenml service-connector register <CONNECTOR_NAME> \
-    --type=ssh \
-    --auth-method=private-key \
-    --resource-type=ssh-host \
-    --hostnames=<HOST_OR_IP> \
-    --username=<SSH_USERNAME> \
-    --ssh_private_key=@<PATH_TO_PRIVATE_KEY>
-
-zenml orchestrator register <ORCHESTRATOR_NAME> \
-    --flavor=ssh \
-    --hostname=<HOST_OR_IP>
-
-zenml orchestrator connect <ORCHESTRATOR_NAME> \
-    --connector <CONNECTOR_NAME>
-```
-
-When a connector is linked, it supplies the username, private key, passphrase, host-key policy, timeout, and keepalive settings. The orchestrator's `hostname` selects the SSH host resource from the connector.
-
 You can now run any ZenML pipeline using the SSH orchestrator:
 
 ```shell
@@ -114,12 +85,12 @@ python file_that_runs_a_zenml_pipeline.py
 Key configuration fields (set at registration time):
 
 * `hostname`, `port`, `username` — how to reach the host.
-* `ssh_key_path` / `ssh_private_key` / `ssh_key_passphrase` — authentication when no SSH service connector is linked.
+* `ssh_key_path` / `ssh_private_key` / `ssh_key_passphrase` — key-based authentication.
 * `verify_host_key` / `known_hosts_path` — host-key verification (on by default).
 * `remote_workdir` — base directory on the host for per-run files (default `/tmp/zenml-ssh`).
 * `docker_binary` — path to the Docker binary on the host (default `docker`).
 * `container_registry_autologin` — run `docker login` on the host before launching (default `False`).
-* `automatic_cleanup_pipeline_files` — remove non-scheduled run directories older than seven days before each launch (default `True`).
+* `automatic_cleanup_pipeline_files` — remove run directories older than seven days before each launch (default `True`).
 * `gpu_enabled_in_container` — request all NVIDIA GPUs for step containers. This is also a per-step setting, so you can mix CPU and GPU steps in one pipeline.
 
 Bind mounts can be configured per pipeline or per step via settings:
@@ -141,27 +112,18 @@ If you wish to run steps on a GPU, follow [the instructions on this page](https:
 
 ### Migrating from HyperAI
 
-The HyperAI orchestrator is deprecated in favor of the SSH orchestrator. Since both connect over SSH and run Docker Compose on the host, migration is straightforward: register an SSH service connector with the same host and SSH credentials, register an `ssh` orchestrator pointed at that host, then switch your stack to it.
+The HyperAI orchestrator is deprecated in favor of the SSH orchestrator. Since both connect over SSH and run Docker Compose on the host, migration is straightforward: register an `ssh` orchestrator pointed at the same host and SSH credentials, then switch your stack to it.
 
 ```shell
-zenml service-connector register <SSH_CONNECTOR_NAME> \
-    --type=ssh \
-    --auth-method=private-key \
-    --resource-type=ssh-host \
-    --hostnames=<SAME_HOST> \
-    --username=<SAME_USERNAME> \
-    --ssh_private_key=@<PATH_TO_PRIVATE_KEY>
-
 zenml orchestrator register <ORCHESTRATOR_NAME> \
     --flavor=ssh \
-    --hostname=<SAME_HOST>
-
-zenml orchestrator connect <ORCHESTRATOR_NAME> \
-    --connector <SSH_CONNECTOR_NAME>
+    --hostname=<SAME_HOST> \
+    --username=<SAME_USERNAME> \
+    --ssh_key_path=<PATH_TO_PRIVATE_KEY>
 
 zenml stack update <STACK_NAME> -o <ORCHESTRATOR_NAME>
 ```
 
-The main differences from HyperAI are that the SSH orchestrator uses the generic SSH integration and service connector instead of HyperAI-specific resources, and that it additionally supports dynamic pipelines.
+The main difference from HyperAI is that the SSH orchestrator uses the generic SSH integration and additionally supports dynamic pipelines.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

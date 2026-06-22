@@ -4,7 +4,7 @@ description: Executing individual steps on a remote host via SSH and Docker.
 
 # SSH Step Operator
 
-The SSH step operator allows you to execute individual ZenML steps on a remote Linux host via SSH. Steps run inside Docker containers on the remote machine, with optional GPU selection and per-GPU mutual exclusion via `flock` locks. This is ideal for teams that have dedicated GPU machines they want to use for training without needing a full cluster orchestration platform.
+The SSH step operator allows you to execute individual ZenML steps on a remote Linux host via SSH. Steps run inside detached Docker containers on the remote machine, with optional GPU selection. This is ideal for teams that have dedicated GPU machines they want to use for training without needing a full cluster orchestration platform.
 
 {% hint style="info" %}
 If you want to run *entire* pipelines on a remote host (not just individual steps), see the sibling [SSH orchestrator](../orchestrators/ssh.md). The two components share the same SSH connection layer and can target the same machine.
@@ -16,16 +16,15 @@ You should use the SSH step operator if:
 
 * You have a **dedicated remote machine** (e.g., a GPU workstation or server) reachable via SSH.
 * You want to run compute-heavy steps (training, inference) on that machine while keeping your orchestrator lightweight.
-* You need **per-GPU mutual exclusion** so concurrent pipeline steps don't compete for the same GPU.
+* You want to target **specific GPUs** on the host via `--gpus`.
 * You prefer a simple setup without Kubernetes or cloud-managed services.
 
 ### How to deploy it
 
 The SSH step operator connects to an existing remote host; it does not provision infrastructure. Your remote host must meet these requirements:
 
-* **Linux** operating system (the wrapper script relies on Linux tooling like `flock`).
+* **Linux** operating system.
 * **Docker** installed and accessible to the SSH user (the user should be in the `docker` group).
-* **`flock`** installed (part of `util-linux`, pre-installed on most Linux distributions).
 * **Network reachability** from the machine running your orchestrator to `hostname:port` over SSH.
 * If using GPUs: the **NVIDIA Container Toolkit** must be installed so Docker supports `--gpus`.
 
@@ -47,7 +46,7 @@ To use the SSH step operator, you need:
 
 * An [image builder](https://docs.zenml.io/stacks/image-builders/) to build the Docker images for your steps.
 
-We can then register the step operator. SSH credentials can be configured directly on the step operator or supplied through a linked [SSH service connector](../service-connectors/connector-types/ssh-service-connector.md). When no connector is linked, **at least one of** `ssh_key_path` **or** `ssh_private_key` **must be provided** for authentication.
+We can then register the step operator. SSH credentials are configured directly on the step operator: a `username` and **at least one of** `ssh_key_path` **or** `ssh_private_key` **must be provided** for authentication.
 
 **Using a key file:**
 
@@ -73,27 +72,6 @@ zenml step-operator register <NAME> \
     --ssh_private_key={{ssh_secret.private_key}} \
     --ssh_key_passphrase={{ssh_secret.passphrase}}
 ```
-
-**Using an SSH service connector shared with other SSH components:**
-
-```shell
-zenml service-connector register <CONNECTOR_NAME> \
-    --type=ssh \
-    --auth-method=private-key \
-    --resource-type=ssh-host \
-    --hostnames=<HOST> \
-    --username=<USER> \
-    --ssh_private_key=@<PATH_TO_PRIVATE_KEY>
-
-zenml step-operator register <NAME> \
-    --flavor=ssh \
-    --hostname=<HOST>
-
-zenml step-operator connect <NAME> \
-    --connector <CONNECTOR_NAME>
-```
-
-When a connector is linked, it supplies the username, private key, passphrase, host-key policy, timeout, and keepalive settings. The step operator's `hostname` selects the SSH host resource from the connector.
 
 We can then add the step operator to our active stack:
 
@@ -123,16 +101,15 @@ When a step runs via the SSH step operator:
 
 1. ZenML builds and pushes the step image using your stack's image builder and container registry.
 2. The step operator opens an SSH connection to the remote host.
-3. **Preflight checks** verify that `docker` and `flock` are available.
-4. An **env-file** (with step environment variables) and a **wrapper script** are uploaded to the remote working directory.
+3. A **preflight check** verifies that `docker` is available.
+4. An **env-file** (with the step's environment variables) is uploaded to the remote working directory.
 5. The Docker image is **pulled** on the remote host.
-6. The wrapper script is executed, which optionally acquires GPU locks, then runs the container with `docker run`.
-7. Logs are **streamed back** in real time to your local output.
-8. The env-file and script are automatically cleaned up on exit.
+6. The container is started **detached** (`docker run -d`), and the env-file is deleted immediately afterwards so the step's secrets do not linger on the host.
+7. ZenML polls the step's status with `docker inspect` until the container exits — the Docker daemon is the single source of truth — and reports success or failure. Step logs are captured by ZenML like any other step.
 
-### GPU execution and locking
+### GPU execution
 
-The SSH step operator has built-in support for GPU selection and mutual exclusion.
+The SSH step operator supports targeting specific GPUs on the host.
 
 #### Selecting GPUs
 
@@ -144,7 +121,6 @@ from zenml.integrations.ssh.flavors import SSHStepOperatorSettings
 
 ssh_settings = SSHStepOperatorSettings(
     gpu_indices=[0, 1],
-    use_gpu_locks=True,
     docker_run_args=["--shm-size=2g"],
 )
 
@@ -160,23 +136,16 @@ def train():
 
 GPU indices are passed to Docker as `--gpus "device=0,1"`. They must be non-negative integers matching the device indices reported by `nvidia-smi` on the remote host.
 
-#### Per-GPU mutual exclusion
-
-When `use_gpu_locks` is `True` (the default) and `gpu_indices` is set, the wrapper script acquires file-based `flock` locks for each GPU before starting the container:
-
-* Lock files are created in `gpu_lock_dir` (default: `/tmp/zenml-gpu-locks`), named `gpu-0.lock`, `gpu-1.lock`, etc.
-* Locks are acquired in **sorted index order** to prevent deadlocks.
-* Locks are held for the **entire lifetime** of the `docker run` process and released automatically on exit.
-* If another step is already using a GPU, the new step **blocks** until the lock is available.
-
-This prevents concurrent pipeline steps from oversubscribing the same physical GPU.
+{% hint style="info" %}
+The step operator does not coordinate GPU access between concurrent steps. If you run multiple GPU steps on the same host at once, give them distinct `gpu_indices` so they don't oversubscribe the same device.
+{% endhint %}
 
 #### CPU-only execution
 
-If `gpu_indices` is not set (the default), the step runs without GPU access and no locks are acquired:
+If `gpu_indices` is not set (the default), the step runs without GPU access:
 
 ```python
-ssh_settings = SSHStepOperatorSettings()  # CPU-only, no locks
+ssh_settings = SSHStepOperatorSettings()  # CPU-only
 
 @step(step_operator="<NAME>", settings={"step_operator": ssh_settings})
 def preprocess():
@@ -200,17 +169,15 @@ def preprocess():
 | `connection_timeout` | float | No | `10.0` | SSH connection timeout in seconds |
 | `keepalive_interval` | int | No | `30` | Seconds between SSH keepalive packets (0 to disable) |
 | `remote_workdir` | str | No | `/tmp/zenml-ssh` | Directory for temporary files on the remote host |
-| `gpu_lock_dir` | str | No | `/tmp/zenml-gpu-locks` | Directory for per-GPU lock files |
 | `docker_binary` | str | No | `docker` | Path to Docker binary on the remote host |
 
-\* `username` and at least one of `ssh_key_path` or `ssh_private_key` must be provided when no SSH service connector is linked.
+\* `username` and at least one of `ssh_key_path` or `ssh_private_key` must be provided.
 
 #### Step Settings (per-step configuration)
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `gpu_indices` | list[int] | `None` | GPU device indices to expose via `--gpus` flag |
-| `use_gpu_locks` | bool | `True` | Acquire per-GPU flock locks (only when `gpu_indices` is set) |
 | `docker_run_args` | list[str] | `None` | Additional `docker run` arguments (e.g., `["--shm-size=2g"]`) |
 
 {% hint style="warning" %}
