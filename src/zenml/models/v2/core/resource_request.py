@@ -15,13 +15,12 @@
 
 from datetime import datetime
 from typing import (
-    TYPE_CHECKING,
     Any,
     ClassVar,
-    List,
     Optional,
     Type,
     TypeVar,
+    Union,
 )
 from uuid import UUID
 
@@ -35,6 +34,7 @@ from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import (
     ResourceRequestReclaimTolerance,
     ResourceRequestStatus,
+    StackComponentType,
 )
 from zenml.models.v2.base.base import BaseZenModel
 from zenml.models.v2.base.scoped import (
@@ -45,17 +45,139 @@ from zenml.models.v2.base.scoped import (
     UserScopedResponseMetadata,
     UserScopedResponseResources,
 )
-from zenml.models.v2.core.resource_pool import (
-    ResourcePoolAllocation,
-    ResourcePoolQueueItem,
-)
 
-if TYPE_CHECKING:
-    from sqlalchemy.sql.elements import ColumnElement
 
-    from zenml.zen_stores.schemas import BaseSchema
+class ResourcePoolCapacityComponentSettings(BaseZenModel):
+    """Stack component settings applied when a request allocation is granted."""
 
-    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
+    component_type: StackComponentType = Field(
+        title="The stack component type to apply settings to.",
+    )
+    flavor: str = Field(
+        title="The stack component flavor to apply settings to.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    settings: dict[str, Any] = Field(
+        default_factory=dict,
+        title="The stack component settings to apply on allocation.",
+    )
+
+
+class ResourcePoolQueueItem(BaseZenModel):
+    """Queue item linked to a resource request."""
+
+    id: UUID = Field(title="The unique queue item ID.")
+    request_id: UUID = Field(title="The queued resource request ID.")
+    pool_id: UUID = Field(title="The resource pool ID.")
+    pool_name: Optional[str] = Field(
+        default=None,
+        title="The resource pool name.",
+    )
+    policy_id: UUID = Field(title="The resource policy ID.")
+    priority: int = Field(title="The priority snapshot for this queue item.")
+    priority_lane: bool = Field(
+        default=False,
+        title="Whether this queue item uses the priority lane.",
+    )
+    enqueued_at: datetime = Field(title="The queue insertion timestamp.")
+    created: Optional[datetime] = Field(
+        default=None,
+        title="The queue entry creation timestamp.",
+    )
+
+
+class ResourcePoolAllocation(BaseZenModel):
+    """Allocation grant linked to a resource request."""
+
+    id: UUID = Field(title="The unique allocation ID.")
+    request_id: UUID = Field(title="The allocated resource request ID.")
+    demand_index: int = Field(
+        ge=0,
+        title="The zero-based request demand index this grant satisfies.",
+    )
+    pool_id: UUID = Field(title="The resource pool ID.")
+    pool_name: Optional[str] = Field(
+        default=None,
+        title="The resource pool name.",
+    )
+    resource_id: UUID = Field(title="The allocated resource descriptor ID.")
+    resource: Optional[str] = Field(
+        default=None,
+        title="The allocated resource descriptor name.",
+    )
+    class_name: str = Field(
+        alias="class",
+        serialization_alias="class",
+        title="The allocated capacity class.",
+    )
+    quantity: PositiveInt = Field(title="The allocated quantity.")
+    unit: Optional[str] = Field(
+        default=None,
+        title="The optional unit for the allocated quantity.",
+        min_length=1,
+        max_length=64,
+    )
+    base_quantity: Optional[PositiveInt] = Field(
+        default=None,
+        title="The allocated quantity converted to the descriptor base unit.",
+    )
+    policy_id: UUID = Field(title="The policy that admitted this allocation.")
+    grant_id: Optional[UUID] = Field(
+        default=None,
+        title="The policy grant that matched the demand, if any.",
+    )
+    priority: int = Field(title="The priority snapshot for this allocation.")
+    priority_lane: bool = Field(
+        default=False,
+        title="Whether this allocation uses the priority lane.",
+    )
+    component_id: Optional[UUID] = Field(
+        default=None,
+        title="The stack component ID selected for this allocation.",
+    )
+    account_id: Optional[UUID] = Field(
+        default=None,
+        title="The external account ID selected for this allocation.",
+    )
+    component_settings: list[ResourcePoolCapacityComponentSettings] = Field(
+        default_factory=list,
+        title="Stack component settings applied for this allocation.",
+    )
+    preemption_state: str = Field(title="The preemption state.")
+    preemption_reason: Optional[str] = Field(
+        default=None,
+        title="The preemption reason.",
+    )
+    released_at: Optional[datetime] = Field(
+        default=None,
+        title="The release timestamp.",
+    )
+    created: Optional[datetime] = Field(
+        default=None,
+        title="The allocation creation timestamp.",
+    )
+    updated: Optional[datetime] = Field(
+        default=None,
+        title="The allocation last update timestamp.",
+    )
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    @model_validator(mode="after")
+    def _validate_subject_reference(self) -> "ResourcePoolAllocation":
+        """Validate that the allocation references a subject.
+
+        Returns:
+            The validated allocation.
+
+        Raises:
+            ValueError: If neither component ID nor account ID is set.
+        """
+        if self.component_id is None and self.account_id is None:
+            raise ValueError(
+                "An allocation requires component_id or account_id."
+            )
+        return self
 
 
 class ResourceRequestDemand(BaseZenModel):
@@ -182,20 +304,6 @@ class ResourceRequestRequest(UserScopedRequest):
                 "component_ids are required when step_run_id is set."
             )
         return self
-
-
-class ResourceRequestTerminateRequest(BaseZenModel):
-    """Request model for terminating a resource request."""
-
-    force: bool = Field(
-        default=False,
-        title="When true, skip coordinated preemption and terminate forcefully.",
-    )
-    reason: Optional[str] = Field(
-        default=None,
-        title="Optional operator-facing explanation for soft termination.",
-        max_length=1024,
-    )
 
 
 class ResourceRequestRenewalRequest(BaseZenModel):
@@ -425,7 +533,7 @@ class ResourceRequestResponse(
 class ResourceRequestFilter(UserScopedFilter):
     """Resource request filter model."""
 
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "pipeline_run_id",
     ]
@@ -461,49 +569,7 @@ class ResourceRequestFilter(UserScopedFilter):
         default=None,
         description="The pipeline run requesting resources.",
     )
-    pool_id: Union[UUID, str, None] = Field(
+    pool_id: UUIDFilterOption = Field(
         default=None,
         description="The resource pool linked to the request.",
     )
-
-    def get_custom_filters(
-        self,
-        table: Type["AnySchema"],
-    ) -> List["ColumnElement[bool]"]:
-        """Get custom SQL filters for resource request list queries.
-
-        Args:
-            table: Schema table used by the generic filter machinery.
-
-        Returns:
-            Additional SQL conditions for filters that cannot be represented as
-            direct columns on the resource request table.
-        """
-        custom_filters = super().get_custom_filters(table)
-
-        from sqlmodel import and_
-
-        from zenml.zen_stores.schemas import (
-            ResourceRequestSchema,
-            StepRunSchema,
-        )
-
-        if self.pipeline_run_id:
-            pipeline_run_filters = (
-                self.pipeline_run_id
-                if isinstance(self.pipeline_run_id, list)
-                else [self.pipeline_run_id]
-            )
-            for pipeline_run_filter in pipeline_run_filters:
-                custom_filters.append(
-                    and_(
-                        ResourceRequestSchema.step_run_id == StepRunSchema.id,
-                        self.generate_custom_query_conditions_for_column(
-                            value=pipeline_run_filter,
-                            table=StepRunSchema,
-                            column="pipeline_run_id",
-                        ),
-                    )
-                )
-
-        return custom_filters

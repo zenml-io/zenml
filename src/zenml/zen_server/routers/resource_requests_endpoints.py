@@ -18,14 +18,11 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, RESOURCE_REQUESTS, VERSION_1
-from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     Page,
     ResourceRequestFilter,
     ResourceRequestRenewalRequest,
-    ResourceRequestRequest,
     ResourceRequestResponse,
-    ResourceRequestTerminateRequest,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -57,8 +54,8 @@ def list_resource_requests(
     """Get a list of all resource requests.
 
     Args:
-        resource_request_filter_model: Filter model used for pagination, sorting,
-            filtering.
+        resource_request_filter_model: Filter model used for pagination,
+            sorting, filtering.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
@@ -69,38 +66,6 @@ def list_resource_requests(
         filter_model=resource_request_filter_model,
         hydrate=hydrate,
     )
-
-
-@router.post(
-    "",
-    responses={401: error_response, 409: error_response, 422: error_response},
-)
-@async_fastapi_endpoint_wrapper
-def create_resource_request(
-    resource_request: ResourceRequestRequest,
-    _: AuthContext = Security(authorize),
-) -> ResourceRequestResponse:
-    """Create a resource request for the authenticated caller.
-
-    Step-run fields must not be supplied through this endpoint.
-
-    Args:
-        resource_request: Resource request payload with demands and optional
-            lease settings.
-
-    Returns:
-        The created resource request.
-
-    Raises:
-        IllegalOperationError: If component_ids or step_run_id are supplied.
-    """
-    if resource_request.component_ids or resource_request.step_run_id:
-        raise IllegalOperationError(
-            "component_ids and step_run_id must not be supplied when creating "
-            "resource requests through the API."
-        )
-
-    return zen_store().create_resource_request(resource_request)
 
 
 @router.get(
@@ -171,50 +136,3 @@ def release_resource_request(
         The released resource request.
     """
     return zen_store().release_resource_request(resource_request_id)
-
-
-@router.post(
-    "/{resource_request_id}/terminate",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@async_fastapi_endpoint_wrapper
-def terminate_resource_request(
-    resource_request_id: UUID,
-    terminate_request: ResourceRequestTerminateRequest | None = None,
-    _: AuthContext = Security(authorize),
-) -> ResourceRequestResponse:
-    """Terminate a resource request as an operator or admin.
-
-    Soft termination cancels pending requests and marks reclaimable allocated
-    requests preempting. Forceful termination cancels pending requests,
-    releases other allocated requests, and completes preempting requests.
-
-    Args:
-        resource_request_id: ID of the resource request.
-        terminate_request: Optional force flag and termination reason.
-
-    Returns:
-        The terminated resource request.
-    """
-    payload = terminate_request or ResourceRequestTerminateRequest()
-    return zen_store().terminate_resource_request(
-        resource_request_id,
-        payload,
-    )
-
-
-@router.delete(
-    "/{resource_request_id}",
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@async_fastapi_endpoint_wrapper
-def delete_resource_request(
-    resource_request_id: UUID,
-    _: AuthContext = Security(authorize),
-) -> None:
-    """Delete a terminal resource request from persistence.
-
-    Args:
-        resource_request_id: ID of the resource request.
-    """
-    zen_store().delete_resource_request(resource_request_id)
