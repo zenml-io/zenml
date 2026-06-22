@@ -30,12 +30,7 @@ if TYPE_CHECKING:
 
 
 class ModalOrchestratorSettings(ModalSettingsMixin):
-    """Settings for Modal sandboxes created by the orchestrator.
-
-    The shared compute/placement fields (gpu, region, cloud, modal_environment,
-    timeout) come from :class:`ModalSettingsMixin`. They apply to the sandbox
-    that controls the run and to child sandboxes that execute individual steps.
-    """
+    """Settings for Modal sandboxes created by the orchestrator."""
 
     synchronous: bool = Field(
         True,
@@ -46,11 +41,7 @@ class ModalOrchestratorSettings(ModalSettingsMixin):
 class ModalOrchestratorConfig(
     BaseOrchestratorConfig, ModalCredentialsMixin, ModalOrchestratorSettings
 ):
-    """Configuration for the Modal orchestrator.
-
-    Authentication fields (token_id, token_secret) come from
-    :class:`ModalCredentialsMixin`.
-    """
+    """Configuration for the Modal orchestrator."""
 
     @property
     def is_remote(self) -> bool:

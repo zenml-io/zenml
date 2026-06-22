@@ -69,12 +69,7 @@ class ModalSandboxSettings(BaseSandboxSettings, ModalSettingsMixin):
 class ModalSandboxConfig(
     BaseSandboxConfig, ModalCredentialsMixin, ModalSandboxSettings
 ):
-    """Configuration for the Modal sandbox component.
-
-    Authentication fields (token_id, token_secret) come from
-    :class:`ModalCredentialsMixin`; compute/placement options come from
-    :class:`ModalSandboxSettings`.
-    """
+    """Configuration for the Modal sandbox component."""
 
     app_name: str = Field(
         default="zenml-sandbox",

@@ -35,23 +35,13 @@ __all__ = [
 
 
 class ModalStepOperatorSettings(ModalSettingsMixin):
-    """Settings for the Modal step operator.
-
-    The configurable fields (gpu, region, cloud, modal_environment, timeout)
-    are defined on :class:`ModalSettingsMixin`, which is shared across the
-    Modal stack components.
-    """
+    """Settings for the Modal step operator."""
 
 
 class ModalStepOperatorConfig(
     BaseStepOperatorConfig, ModalCredentialsMixin, ModalStepOperatorSettings
 ):
-    """Configuration for the Modal step operator.
-
-    Authentication fields (token_id, token_secret) come from
-    :class:`ModalCredentialsMixin`; all other options come from
-    :class:`ModalStepOperatorSettings`.
-    """
+    """Configuration for the Modal step operator."""
 
     @property
     def is_remote(self) -> bool:

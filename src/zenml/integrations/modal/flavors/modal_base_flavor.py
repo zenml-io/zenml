@@ -11,14 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Shared settings/credential mixins for Modal stack components.
-
-These mixins hold the configuration that every Modal-backed component (step
-operator, sandbox, and orchestrator) needs, so each component can compose them
-directly instead of inheriting from a sibling component's flavor. Keeping the
-shared surface here avoids cross-component inheritance (e.g. the sandbox
-depending on the step operator's config classes).
-"""
+"""Shared settings/credential mixins for Modal stack components."""
 
 from typing import Optional
 
@@ -32,15 +25,6 @@ DEFAULT_TIMEOUT_SECONDS = 86400  # 24 hours
 
 class ModalSettingsMixin(BaseSettings):
     """Shared Modal compute and placement settings.
-
-    Specifying the region and cloud provider is only available for Enterprise
-    and Team plan customers.
-
-    Certain combinations of settings are not available. It is suggested to err
-    on the side of looser settings rather than more restrictive ones to avoid
-    execution failures. In the case of failures, however, Modal provides
-    detailed error messages that can help identify what is incompatible. See
-    more in the Modal docs at https://modal.com/docs/guide/region-selection.
 
     Attributes:
         gpu: The type of GPU to use for execution (e.g., "T4", "A100").
@@ -61,13 +45,13 @@ class ModalSettingsMixin(BaseSettings):
         None,
         description="Cloud region for execution. Must be a valid region for the selected cloud provider. "
         "Examples: 'us-east-1', 'us-west-2', 'eu-west-1'. If not specified, Modal uses default region "
-        "based on cloud provider and availability",
+        "based on cloud provider and availability. Only available on Modal Enterprise and Team plans",
     )
     cloud: Optional[str] = Field(
         None,
         description="Cloud provider for execution. Must be a valid Modal-supported cloud provider. "
         "Examples: 'aws', 'gcp'. If not specified, Modal uses default cloud provider "
-        "based on workspace configuration",
+        "based on workspace configuration. Only available on Modal Enterprise and Team plans",
     )
     modal_environment: Optional[str] = Field(
         None,
@@ -93,10 +77,6 @@ class ModalCredentialsMixin(BaseSettings):
         token_id: Modal API token ID (ak-xxxxx format) for authentication.
         token_secret: Modal API token secret (as-xxxxx format) for
             authentication.
-
-    Note: If token_id and token_secret are provided, both fields must be set.
-    If they are not provided, Modal falls back to its default authentication
-    (~/.modal.toml or environment variables).
     """
 
     token_id: Optional[str] = SecretField(
