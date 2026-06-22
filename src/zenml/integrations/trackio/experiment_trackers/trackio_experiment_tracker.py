@@ -194,7 +194,7 @@ class TrackioExperimentTracker(BaseExperimentTracker):
                 }
 
                 logger.debug("Trackio sync kwargs: %s", filtered_kwargs)
-                cast(Any, trackio.sync)(**filtered_kwargs)
+                cast(Any, trackio).sync(**filtered_kwargs)
 
             if settings.auto_freeze and self.config.space_id:
                 logger.info("Freezing Trackio dashboard.")
@@ -217,7 +217,7 @@ class TrackioExperimentTracker(BaseExperimentTracker):
                 }
 
                 logger.debug("Trackio freeze kwargs: %s", filtered_kwargs)
-                cast(Any, trackio.freeze)(**filtered_kwargs)
+                cast(Any, trackio).freeze(**filtered_kwargs)
 
         except Exception as e:
             logger.warning(
