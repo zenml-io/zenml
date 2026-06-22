@@ -54,6 +54,12 @@ class BasetenStepOperatorSettings(BaseSettings):
         "weights downloaded by the job survive across runs. See "
         "https://docs.baseten.co/training/loading",
     )
+    cache_enable_legacy_hf_mount: bool = Field(
+        False,
+        description="Also mount the legacy Hugging Face cache location so code "
+        "using the default HF cache path reuses downloads across runs. Only "
+        "applies when enable_cache is True",
+    )
     cache_require_affinity: bool = Field(
         True,
         description="Require the job to schedule onto nodes that already hold "

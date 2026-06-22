@@ -242,22 +242,25 @@ def test_cache_and_checkpointing_enabled(fake_truss, monkeypatch):
     operator.submit(_make_info(), _entrypoint(), {})
     runtime = fake_truss["config"].job.runtime
     assert runtime.cache_config.enabled is True
-    # Defaults mirror truss: affinity required.
+    # Defaults mirror truss: no legacy HF mount, affinity required.
+    assert runtime.cache_config.enable_legacy_hf_mount is False
     assert runtime.cache_config.require_cache_affinity is True
     assert runtime.checkpointing_config.enabled is True
 
 
-def test_cache_affinity_override(fake_truss, monkeypatch):
+def test_cache_legacy_hf_mount_and_affinity_overrides(fake_truss, monkeypatch):
     monkeypatch.setattr(
         op_module, "publish_step_run_metadata", lambda *a: None
     )
     operator = _make_operator()
     operator.get_settings = lambda _info: BasetenStepOperatorSettings(
         enable_cache=True,
+        cache_enable_legacy_hf_mount=True,
         cache_require_affinity=False,
     )
     operator.submit(_make_info(), _entrypoint(), {})
     cache_config = fake_truss["config"].job.runtime.cache_config
+    assert cache_config.enable_legacy_hf_mount is True
     assert cache_config.require_cache_affinity is False
 
 
