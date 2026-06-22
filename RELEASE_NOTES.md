@@ -4,6 +4,19 @@
 
 ---
 
+# 0.95.1
+
+## What's Changed
+* Add version 0.94.6 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4957
+* Add 0.95.0 to the migration tests by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4959
+* Exclude `zenml` from its own dependency audit by @strickvl in https://github.com/zenml-io/zenml/pull/4961
+* Fallback to orchestrator image by @schustmi in https://github.com/zenml-io/zenml/pull/4960
+* Fix logging shutdown deadlock by @schustmi in https://github.com/zenml-io/zenml/pull/4964
+* Improve DB query plans by using selectinload by @schustmi in https://github.com/zenml-io/zenml/pull/4965
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.95.0...0.95.1
+
 # 0.95.0
 
 ## What's Changed

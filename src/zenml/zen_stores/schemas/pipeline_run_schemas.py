@@ -21,7 +21,7 @@ from uuid import UUID
 from pydantic import ConfigDict
 from sqlalchemy import String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
-from sqlalchemy.orm import Session, joinedload, object_session, selectinload
+from sqlalchemy.orm import Session, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import TEXT, Column, Field, Relationship, col, select
 
@@ -123,6 +123,11 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         build_index(
             table_name=__tablename__,
             column_names=["project_id", "created", "id"],
+        ),
+        # Composite index for sorting pipelines by their latest run (UI default)
+        build_index(
+            table_name=__tablename__,
+            column_names=["pipeline_id", "created"],
         ),
     )
 
@@ -433,7 +438,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     selectinload(jl_arg(PipelineRunSchema.user)),
                     selectinload(jl_arg(PipelineRunSchema.tags)),
                     selectinload(jl_arg(PipelineRunSchema.visualizations)),
-                    joinedload(jl_arg(PipelineRunSchema.trigger)),
+                    selectinload(jl_arg(PipelineRunSchema.trigger)),
                 ]
             )
 
