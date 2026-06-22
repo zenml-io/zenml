@@ -113,6 +113,25 @@ def _get_base_settings(
     return DatabricksBaseSettings(**overrides)
 
 
+@pytest.fixture(autouse=True)
+def _restore_custom_source_root(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Stop a test's custom source root from leaking into other tests.
+
+    ``configure_databricks_wheel_environment`` sets a process-global source
+    root via ``set_custom_source_root``. Without restoring it, a later test in
+    the same (randomly-ordered) run inherits the stale value and fails to
+    resolve its own modules. Snapshotting it with monkeypatch restores it on
+    teardown.
+    """
+    from zenml.utils import source_utils
+
+    monkeypatch.setattr(
+        source_utils,
+        "_CUSTOM_SOURCE_ROOT",
+        source_utils._CUSTOM_SOURCE_ROOT,
+    )
+
+
 def test_add_wheel_package_to_sys_path_is_idempotent(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
