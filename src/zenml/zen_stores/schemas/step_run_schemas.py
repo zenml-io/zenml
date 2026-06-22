@@ -70,9 +70,6 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
     from zenml.zen_stores.schemas.logs_schemas import LogsSchema
     from zenml.zen_stores.schemas.model_schemas import ModelVersionSchema
-    from zenml.zen_stores.schemas.resource_request_schemas import (
-        ResourceRequestSchema,
-    )
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 
 
@@ -255,10 +252,6 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             nullable=True,
         )
     )
-    resource_request: Optional["ResourceRequestSchema"] = Relationship(
-        back_populates="step_run"
-    )
-
     model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
 
     @classmethod
@@ -546,11 +539,6 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 ],
                 inputs=input_artifacts,
                 outputs=output_artifacts,
-                resource_request=self.resource_request.to_model(
-                    include_metadata=True, include_resources=False
-                )
-                if self.resource_request
-                else None,
             )
 
         return StepRunResponse(

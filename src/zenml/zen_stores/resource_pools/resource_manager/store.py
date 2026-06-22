@@ -30,24 +30,9 @@ from zenml.exceptions import (
 from zenml.logger import get_logger
 from zenml.models import (
     Page,
-    ResourceDescriptorFilter,
-    ResourceDescriptorRequest,
-    ResourceDescriptorResponse,
-    ResourceDescriptorUpdate,
-    ResourcePolicyFilter,
-    ResourcePolicyRequest,
-    ResourcePolicyResponse,
-    ResourcePolicyUpdate,
-    ResourcePoolAllocation,
-    ResourcePoolFilter,
-    ResourcePoolQueueItem,
-    ResourcePoolRequest,
-    ResourcePoolResponse,
-    ResourcePoolUpdate,
     ResourceRequestFilter,
     ResourceRequestRequest,
     ResourceRequestResponse,
-    ResourceRequestTerminateRequest,
     UserFilter,
     UserResponse,
 )
@@ -64,13 +49,7 @@ from zenml.zen_stores.resource_pools.resource_manager.transport import (
     PROJECT_ID_METADATA_KEY,
     STEP_NAME_METADATA_KEY,
     STEP_RUN_ID_METADATA_KEY,
-    RMPolicyRequest,
-    RMPolicyUpdate,
-    RMPoolRequest,
-    RMPoolUpdate,
-    RMResourceRequest,
     RMResourceRequestCreate,
-    RMResourceUpdate,
     RMSubject,
 )
 from zenml.zen_stores.resource_pools.store_interface import (
@@ -93,8 +72,6 @@ WORKSPACE_ID_METADATA_KEY = "workspace_id"
 class ResourceManagerResourcePoolsStoreSettings(BaseSettings):
     """Settings used by the Resource Manager resource pool store."""
 
-    url: str
-    token: Optional[str] = None
     timeout: int = 30
 
     model_config = SettingsConfigDict(
@@ -119,318 +96,10 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
                 built from Resource Manager store settings.
         """
         super().__init__(store=store)
-        self._client = client or self._client_from_settings(
-            ResourceManagerResourcePoolsStoreSettings()
+        settings = ResourceManagerResourcePoolsStoreSettings()
+        self._client = client or ResourceManagerClient(
+            timeout=settings.timeout,
         )
-
-    def create_resource_descriptor(
-        self, descriptor: ResourceDescriptorRequest
-    ) -> ResourceDescriptorResponse:
-        """Create a resource descriptor through Resource Manager.
-
-        Args:
-            descriptor: The ZenML descriptor request.
-
-        Returns:
-            The created ZenML descriptor response.
-        """
-        request = RMResourceRequest.from_model(descriptor)
-        request.metadata = self._metadata_with_server_context(
-            request.metadata,
-        )
-        response = self._client.create_resource(request)
-        return self._response_with_user(response, response.to_model())
-
-    def get_resource_descriptor(
-        self, descriptor_id: UUID
-    ) -> ResourceDescriptorResponse:
-        """Get a resource descriptor through Resource Manager.
-
-        Args:
-            descriptor_id: The descriptor ID.
-
-        Returns:
-            The requested ZenML descriptor response.
-        """
-        response = self._client.get_resource(descriptor_id)
-        return self._response_with_user(response, response.to_model())
-
-    def list_resource_descriptors(
-        self, filter_model: ResourceDescriptorFilter
-    ) -> Page[ResourceDescriptorResponse]:
-        """List resource descriptors through Resource Manager.
-
-        Args:
-            filter_model: ZenML filter model. Pagination fields are currently
-                ignored because Resource Manager returns a full page.
-
-        Returns:
-            Matching ZenML descriptor responses.
-        """
-        list_kwargs: dict[str, Any] = {}
-        if filter_model.id is not None:
-            list_kwargs["resource_id"] = UUID(str(filter_model.id))
-        elif filter_model.name is not None:
-            list_kwargs["name"] = str(filter_model.name)
-        if filter_model.kind is not None:
-            list_kwargs["kind"] = str(filter_model.kind)
-        responses = self._client.list_resources(**list_kwargs).items
-        return self._page(
-            self._responses_with_users(
-                responses, [response.to_model() for response in responses]
-            )
-        )
-
-    def update_resource_descriptor(
-        self, descriptor_id: UUID, update: ResourceDescriptorUpdate
-    ) -> ResourceDescriptorResponse:
-        """Update a resource descriptor through Resource Manager.
-
-        Args:
-            descriptor_id: The descriptor ID.
-            update: The ZenML descriptor update.
-
-        Returns:
-            The updated ZenML descriptor response.
-        """
-        response = self._client.update_resource(
-            descriptor_id,
-            RMResourceUpdate.from_model(update),
-        )
-        return self._response_with_user(response, response.to_model())
-
-    def delete_resource_descriptor(self, descriptor_id: UUID) -> None:
-        """Delete a resource descriptor through Resource Manager.
-
-        Args:
-            descriptor_id: The descriptor ID.
-        """
-        self._client.delete_resource(descriptor_id)
-
-    def create_resource_pool(
-        self, resource_pool: ResourcePoolRequest
-    ) -> ResourcePoolResponse:
-        """Create a resource pool through Resource Manager.
-
-        Args:
-            resource_pool: The ZenML pool request.
-
-        Returns:
-            The created ZenML pool response.
-        """
-        request = RMPoolRequest.from_model(resource_pool)
-        request.metadata = self._metadata_with_server_context(
-            request.metadata,
-        )
-        response = self._client.create_pool(request)
-        return self._response_with_user(response, response.to_model())
-
-    def get_resource_pool(
-        self, resource_pool_id: UUID, hydrate: bool = True
-    ) -> ResourcePoolResponse:
-        """Get a resource pool through Resource Manager.
-
-        Args:
-            resource_pool_id: The pool ID.
-            hydrate: Ignored for Resource Manager-backed pools.
-
-        Returns:
-            The requested ZenML pool response.
-        """
-        response = self._client.get_pool(resource_pool_id)
-        return self._response_with_user(response, response.to_model())
-
-    def list_resource_pools(
-        self, filter_model: ResourcePoolFilter, hydrate: bool = False
-    ) -> Page[ResourcePoolResponse]:
-        """List resource pools through Resource Manager.
-
-        Args:
-            filter_model: ZenML filter model. Pagination fields are currently
-                ignored because Resource Manager returns a full page.
-            hydrate: Ignored for Resource Manager-backed pools.
-
-        Returns:
-            Matching ZenML pool responses.
-        """
-        list_kwargs: dict[str, Any] = {}
-        if filter_model.id is not None:
-            list_kwargs["pool_id"] = UUID(str(filter_model.id))
-        if filter_model.name is not None:
-            list_kwargs["name"] = str(filter_model.name)
-        responses = self._client.list_pools(**list_kwargs).items
-        return self._page(
-            self._responses_with_users(
-                responses, [response.to_model() for response in responses]
-            )
-        )
-
-    def update_resource_pool(
-        self, resource_pool_id: UUID, update: ResourcePoolUpdate
-    ) -> ResourcePoolResponse:
-        """Update a resource pool through Resource Manager.
-
-        Args:
-            resource_pool_id: The pool ID.
-            update: The ZenML pool update.
-
-        Returns:
-            The updated ZenML pool response.
-        """
-        response = self._client.update_pool(
-            resource_pool_id,
-            RMPoolUpdate.from_model(update),
-        )
-        return self._response_with_user(response, response.to_model())
-
-    def delete_resource_pool(self, resource_pool_id: UUID) -> None:
-        """Delete a resource pool through Resource Manager.
-
-        Args:
-            resource_pool_id: The pool ID.
-        """
-        self._client.delete_pool(resource_pool_id)
-
-    def list_resource_pool_queue(
-        self, resource_pool_id: UUID
-    ) -> Page[ResourcePoolQueueItem]:
-        """List queued requests for a resource pool through Resource Manager.
-
-        Args:
-            resource_pool_id: The pool ID.
-
-        Returns:
-            Queue entries for the pool.
-        """
-        items = [
-            item.to_model()
-            for item in self._client.list_pool_queue(resource_pool_id).items
-        ]
-        return self._page(items)
-
-    def list_resource_pool_allocations(
-        self, resource_pool_id: UUID
-    ) -> Page[ResourcePoolAllocation]:
-        """List allocations for a resource pool through Resource Manager.
-
-        Args:
-            resource_pool_id: The pool ID.
-
-        Returns:
-            Allocations for the pool.
-        """
-        items = [
-            item.to_model()
-            for item in self._client.list_pool_allocations(
-                resource_pool_id
-            ).items
-        ]
-        return self._page(items)
-
-    def create_resource_policy(
-        self, policy: ResourcePolicyRequest
-    ) -> ResourcePolicyResponse:
-        """Create a resource policy through Resource Manager.
-
-        Args:
-            policy: The ZenML policy request.
-
-        Returns:
-            The created ZenML policy response.
-        """
-        request = RMPolicyRequest.from_model(policy)
-        request.metadata = self._metadata_with_server_context(
-            request.metadata,
-        )
-        response = self._client.create_policy(request)
-        return self._response_with_user(response, response.to_model())
-
-    def get_resource_policy(
-        self, policy_id: UUID, hydrate: bool = True
-    ) -> ResourcePolicyResponse:
-        """Get a resource policy through Resource Manager.
-
-        Args:
-            policy_id: The policy ID.
-            hydrate: Ignored for Resource Manager-backed policies.
-
-        Returns:
-            The requested ZenML policy response.
-        """
-        response = self._client.get_policy(policy_id)
-        return self._response_with_user(response, response.to_model())
-
-    def list_resource_policies(
-        self,
-        filter_model: ResourcePolicyFilter,
-        hydrate: bool = False,
-    ) -> Page[ResourcePolicyResponse]:
-        """List resource policies through Resource Manager.
-
-        Args:
-            filter_model: ZenML filter model. Pagination fields are currently
-                ignored because Resource Manager returns a full page.
-            hydrate: Ignored for Resource Manager-backed policies.
-
-        Returns:
-            Matching ZenML policy responses.
-        """
-        list_kwargs: dict[str, Any] = {}
-        if filter_model.id is not None:
-            list_kwargs["policy_id"] = UUID(str(filter_model.id))
-        if filter_model.pool_id is not None:
-            list_kwargs["pool_id"] = UUID(str(filter_model.pool_id))
-        if filter_model.pool is not None:
-            list_kwargs["pool"] = str(filter_model.pool)
-        if filter_model.component_id is not None:
-            list_kwargs["subject_id"] = UUID(str(filter_model.component_id))
-        elif filter_model.account_id is not None:
-            list_kwargs["subject_id"] = UUID(str(filter_model.account_id))
-        elif filter_model.team_id is not None:
-            list_kwargs["subject_id"] = UUID(str(filter_model.team_id))
-        if filter_model.priority is not None:
-            list_kwargs["priority"] = int(filter_model.priority)
-        responses = self._client.list_policies(**list_kwargs).items
-        return self._page(
-            self._responses_with_users(
-                responses, [response.to_model() for response in responses]
-            )
-        )
-
-    def update_resource_policy(
-        self, policy_id: UUID, update: ResourcePolicyUpdate
-    ) -> ResourcePolicyResponse:
-        """Update a resource policy through Resource Manager.
-
-        Args:
-            policy_id: The policy ID.
-            update: The ZenML policy update.
-
-        Returns:
-            The updated ZenML policy response.
-
-        Raises:
-            ValueError: If the update tries to move a policy to another pool.
-        """
-        if update.pool_id is not None or update.pool is not None:
-            raise ValueError(
-                "Resource Manager does not support moving an existing "
-                "resource policy to another pool."
-            )
-
-        response = self._client.update_policy(
-            policy_id,
-            RMPolicyUpdate.from_model(update),
-        )
-        return self._response_with_user(response, response.to_model())
-
-    def delete_resource_policy(self, policy_id: UUID) -> None:
-        """Delete a resource policy through Resource Manager.
-
-        Args:
-            policy_id: The policy ID.
-        """
-        self._client.delete_policy(policy_id)
 
     def get_resource_request(
         self, resource_request_id: UUID, hydrate: bool = True
@@ -445,7 +114,10 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             The requested ZenML resource request response.
         """
         response = self._client.get_request(resource_request_id)
-        return self._response_with_user(response, response.to_model())
+        logger.info(
+            f"Resource request response: {response.model_dump_json(indent=2)}"
+        )
+        return response.to_model()
 
     def list_resource_requests(
         self, filter_model: ResourceRequestFilter, hydrate: bool = False
@@ -461,6 +133,8 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             Matching ZenML request responses.
         """
         list_kwargs: dict[str, Any] = {}
+        if filter_model.id is not None:
+            list_kwargs["request_id"] = UUID(str(filter_model.id))
         if filter_model.component_id is not None:
             list_kwargs["subject_id"] = UUID(str(filter_model.component_id))
         elif filter_model.user is not None:
@@ -505,31 +179,6 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             )
         )
 
-    def terminate_resource_request(
-        self,
-        resource_request_id: UUID,
-        terminate_request: ResourceRequestTerminateRequest,
-    ) -> ResourceRequestResponse:
-        """Terminate a resource request through Resource Manager.
-
-        Soft termination cancels pending requests and marks reclaimable
-        allocated requests preempting. Forceful termination cancels pending
-        requests, releases allocated requests, and completes preempting requests.
-
-        Args:
-            resource_request_id: The request ID.
-            terminate_request: Termination options such as force and reason.
-
-        Returns:
-            The terminated resource request.
-        """
-        response = self._client.terminate_request(
-            resource_request_id,
-            force=terminate_request.force,
-            reason=terminate_request.reason,
-        )
-        return self._response_with_user(response, response.to_model())
-
     def release_resource_request(
         self,
         resource_request_id: UUID,
@@ -546,7 +195,7 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             The released resource request.
         """
         response = self._client.release_request(resource_request_id)
-        return self._response_with_user(response, response.to_model())
+        return response.to_model()
 
     def renew_resource_request(
         self,
@@ -566,15 +215,10 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             resource_request_id,
             lease_expires_at=renewal_request.lease_expires_at,
         )
-        return self._response_with_user(response, response.to_model())
-
-    def delete_resource_request(self, resource_request_id: UUID) -> None:
-        """Delete a terminal resource request through Resource Manager.
-
-        Args:
-            resource_request_id: The request ID.
-        """
-        self._client.delete_request(resource_request_id)
+        logger.info(
+            f"Resource request response: {response.model_dump_json(indent=2)}"
+        )
+        return response.to_model()
 
     def release_step_run_resources(
         self, session: "Session", step_run_id: UUID
@@ -594,104 +238,7 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
 
         self._client.release_request(step_run.resource_request_id)
 
-    def delete_component_subject(
-        self, session: "Session", component_id: UUID
-    ) -> None:
-        """Delete Resource Manager policies that reference a component.
-
-        Args:
-            session: DB session. The Resource Manager backend does not use the
-                session, but the SQL store callback requires it.
-            component_id: The ZenML stack component being deleted.
-        """
-        _ = session
-        for policy in self._client.list_policies(
-            subject_id=component_id
-        ).items:
-            self._client.delete_policy(policy.id)
-
     def create_resource_request(
-        self,
-        resource_request: ResourceRequestRequest,
-    ) -> ResourceRequestResponse:
-        """Create a resource request through Resource Manager.
-
-        Component-scoped requests carry an inline subject per requesting stack
-        component; account-scoped requests carry a single subject for the
-        request owner's external account.
-
-        Args:
-            resource_request: The ZenML resource request payload.
-
-        Returns:
-            The created ZenML resource request response.
-
-        Raises:
-            Exception: If an error occurs while creating the resource request.
-            ValueError: If the owner is unset, or a component-scoped request
-                omits the step run it belongs to.
-        """  # noqa: DOC503
-        if resource_request.user is None:
-            raise ValueError(
-                "user must be set by the server before creating a resource "
-                "request."
-            )
-
-        with self.store.get_session() as session:
-            user = self.store._get_active_user(session)
-
-        subjects = [RMSubject.from_account(user)]
-        if resource_request.component_ids:
-            subjects.extend(
-                [
-                    RMSubject.from_component(
-                        self.store.get_stack_component(
-                            component_id, hydrate=False
-                        )
-                    )
-                    for component_id in resource_request.component_ids
-                ]
-            )
-        try:
-            from zenml.zen_server.utils import rbac
-
-            team_ids = rbac().list_user_team_ids(user)
-        except RuntimeError:
-            team_ids = []
-
-        subjects.extend(
-            RMSubject.from_team(UUID(str(team_id))) for team_id in team_ids
-        )
-
-        try:
-            request = RMResourceRequestCreate.from_model(
-                resource_request,
-                subjects=subjects,
-            )
-            request.metadata = self._metadata_with_server_context(
-                request.metadata,
-                user=user,
-            )
-            logger.info(f"Creating resource request: {request}")
-
-            response = self._client.create_request(request)
-        except (
-            KeyError,
-            ValueError,
-            EntityExistsError,
-            IllegalOperationError,
-            CredentialsNotValid,
-            RuntimeError,
-        ) as exc:
-            raise type(exc)(
-                "An error occurred while trying to create a resource request: "
-                f"{exc}"
-            ) from exc
-
-        logger.info(f"Created resource request: {response}")
-        return self._response_with_user(response, response.to_model())
-
-    def create_resource_request_for_step_run(
         self,
         session: "Session",
         resource_request: ResourceRequestRequest,
@@ -700,8 +247,8 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
 
         Enriches the request metadata with step and pipeline-run context read
         from the in-flight session (the step run is not yet committed and is
-        only visible through this session), then defers submission to
-        :meth:`create_resource_request`.
+        only visible through this session), then submits directly to Resource
+        Manager.
 
         Args:
             session: DB session used to enrich step-run metadata.
@@ -709,37 +256,172 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
 
         Returns:
             The created ZenML resource request response.
+
+        Raises:
+            ValueError: If the request does not contain the required step-run,
+                pipeline, or user context.
+            KeyError: If the referenced step run or pipeline run does not
+                exist.
+            EntityExistsError: If Resource Manager rejects the request because
+                a matching entity already exists.
+            IllegalOperationError: If Resource Manager rejects the request as
+                invalid for the current state.
+            CredentialsNotValid: If Resource Manager authentication is no
+                longer valid.
+            RuntimeError: If Resource Manager request creation fails.
         """
-        metadata = dict(resource_request.metadata)
-        if resource_request.step_run_id is not None:
-            from zenml.zen_stores.schemas.step_run_schemas import (
-                StepRunSchema,
+        if resource_request.step_run_id is None:
+            raise ValueError(
+                "step_run_id is required when creating Resource Manager "
+                "resource requests."
             )
 
-            step_run = session.get(StepRunSchema, resource_request.step_run_id)
-            if step_run is not None:
-                metadata[STEP_NAME_METADATA_KEY] = step_run.name
-                if step_run.pipeline_run_id is not None:
-                    from zenml.zen_stores.schemas.pipeline_run_schemas import (
-                        PipelineRunSchema,
-                    )
-
-                    metadata[PIPELINE_RUN_ID_METADATA_KEY] = str(
-                        step_run.pipeline_run_id
-                    )
-                    pipeline_run = session.get(
-                        PipelineRunSchema, step_run.pipeline_run_id
-                    )
-                    if pipeline_run is not None:
-                        metadata[PIPELINE_RUN_NAME_METADATA_KEY] = (
-                            pipeline_run.name
-                        )
-                        metadata[PROJECT_ID_METADATA_KEY] = str(
-                            pipeline_run.project_id
-                        )
-        return self.create_resource_request(
-            resource_request.model_copy(update={"metadata": metadata})
+        from zenml.zen_stores.schemas.pipeline_run_schemas import (
+            PipelineRunSchema,
         )
+        from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
+
+        step_run = session.get(StepRunSchema, resource_request.step_run_id)
+        if step_run is None:
+            raise KeyError(
+                f"Step run '{resource_request.step_run_id}' does not exist."
+            )
+
+        pipeline_run_schema = session.get(
+            PipelineRunSchema, step_run.pipeline_run_id
+        )
+        if pipeline_run_schema is None:
+            raise KeyError(
+                f"Pipeline run '{step_run.pipeline_run_id}' does not exist."
+            )
+        pipeline_run = pipeline_run_schema.to_model(include_resources=True)
+        if pipeline_run.pipeline is None or pipeline_run.user is None:
+            raise ValueError(
+                "pipeline and user are required when creating Resource Manager "
+                "resource requests."
+            )
+
+        project = pipeline_run.project
+        user = pipeline_run.user
+        pipeline = pipeline_run.pipeline
+
+        pro_config = ServerProConfiguration.get_server_config()
+
+        subjects = [
+            RMSubject.from_account(
+                user,
+                organization_id=pro_config.organization_id,
+                organization_name=pro_config.organization_name,
+            ),
+            RMSubject.from_pipeline(
+                organization_id=pro_config.organization_id,
+                workspace_id=pro_config.workspace_id,
+                organization_name=pro_config.organization_name,
+                workspace_name=pro_config.workspace_name,
+                project_id=pipeline_run.project_id,
+                project_name=project.name,
+                pipeline_id=pipeline.id,
+                pipeline_name=pipeline.name,
+            ),
+            RMSubject.from_step_run(
+                organization_id=pro_config.organization_id,
+                workspace_id=pro_config.workspace_id,
+                organization_name=pro_config.organization_name,
+                workspace_name=pro_config.workspace_name,
+                project_id=pipeline_run.project_id,
+                project_name=project.name,
+                pipeline_run_id=step_run.pipeline_run_id,
+                pipeline_run_name=pipeline_run.name,
+                pipeline_id=pipeline.id,
+                pipeline_name=pipeline.name,
+                step_run_id=step_run.id,
+                step_name=step_run.name,
+            ),
+        ]
+        if resource_request.component_ids:
+            subjects.extend(
+                RMSubject.from_component(
+                    self.store.get_stack_component(
+                        component_id, hydrate=False
+                    ),
+                    organization_id=pro_config.organization_id,
+                    workspace_id=pro_config.workspace_id,
+                    organization_name=pro_config.organization_name,
+                    workspace_name=pro_config.workspace_name,
+                )
+                for component_id in resource_request.component_ids
+            )
+
+        try:
+            from zenml.zen_server.utils import rbac
+
+            team_ids = rbac().list_user_team_ids(user)
+        except RuntimeError:
+            team_ids = []
+
+        subjects.extend(
+            RMSubject.from_team(
+                UUID(str(team_id)),
+                organization_id=pro_config.organization_id,
+                organization_name=pro_config.organization_name,
+            )
+            for team_id in team_ids
+        )
+
+        metadata = dict(resource_request.metadata)
+        metadata[STEP_NAME_METADATA_KEY] = step_run.name
+        metadata[PIPELINE_RUN_ID_METADATA_KEY] = str(step_run.pipeline_run_id)
+        metadata[PIPELINE_RUN_NAME_METADATA_KEY] = pipeline_run.name
+        metadata[PROJECT_ID_METADATA_KEY] = str(pipeline_run.project_id)
+
+        try:
+            request = RMResourceRequestCreate.from_model(
+                resource_request.model_copy(update={"metadata": metadata}),
+                subjects=subjects,
+                user_id=user.external_user_id,
+            )
+            request.metadata = self._metadata_with_server_context(
+                request.metadata,
+                user=user,
+            )
+            logger.info(f"Creating resource request: {request}")
+
+            response = self._client.create_request(request)
+        except KeyError as exc:
+            raise KeyError(
+                "An error occurred while trying to create a resource request: "
+                f"{exc}"
+            ) from exc
+        except ValueError as exc:
+            raise ValueError(
+                "An error occurred while trying to create a resource request: "
+                f"{exc}"
+            ) from exc
+        except EntityExistsError as exc:
+            raise EntityExistsError(
+                "An error occurred while trying to create a resource request: "
+                f"{exc}"
+            ) from exc
+        except IllegalOperationError as exc:
+            raise IllegalOperationError(
+                "An error occurred while trying to create a resource request: "
+                f"{exc}"
+            ) from exc
+        except CredentialsNotValid as exc:
+            raise CredentialsNotValid(
+                "An error occurred while trying to create a resource request: "
+                f"{exc}"
+            ) from exc
+        except RuntimeError as exc:
+            raise RuntimeError(
+                "An error occurred while trying to create a resource request: "
+                f"{exc}"
+            ) from exc
+
+        logger.info(
+            f"Created resource request: {response.model_dump_json(indent=2)}"
+        )
+        return response.to_model()
 
     def _metadata_with_server_context(
         self,
@@ -770,37 +452,12 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
 
         return {**metadata, **server_metadata}
 
-    def _response_with_user(
-        self,
-        response: BaseModel,
-        model: UserScopedResponseT,
-    ) -> UserScopedResponseT:
-        """Populate ZenML user fields from Resource Manager metadata.
-
-        Args:
-            response: Resource Manager transport response.
-            model: ZenML response model converted from the transport response.
-
-        Returns:
-            The ZenML response model with user fields populated when possible.
-        """
-        return self._responses_with_users([response], [model])[0]
-
     def _responses_with_users(
         self,
         responses: Sequence[BaseModel],
         models: list[UserScopedResponseT],
     ) -> list[UserScopedResponseT]:
-        """Populate ZenML user fields from Resource Manager metadata in bulk.
-
-        Args:
-            responses: Resource Manager transport responses.
-            models: ZenML response models converted from the transport
-                responses, in matching order.
-
-        Returns:
-            The ZenML response models with user fields populated when possible.
-        """
+        """Populate ZenML user fields from Resource Manager metadata in bulk."""
         external_user_ids_by_index: dict[int, UUID] = {}
         external_user_ids: set[UUID] = set()
         for index, response in enumerate(responses):
@@ -858,42 +515,8 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         except ValueError:
             return None
 
-    def _client_from_settings(
-        self, settings: ResourceManagerResourcePoolsStoreSettings
-    ) -> ResourceManagerClient:
-        """Create a Resource Manager client from store settings.
-
-        Args:
-            settings: Resource Manager connection settings (URL, token,
-                timeout).
-
-        Returns:
-            A configured Resource Manager client.
-        """
-        pro_config = ServerProConfiguration.get_server_config()
-        headers = {
-            ResourceManagerClient.ORGANIZATION_HEADER: str(
-                pro_config.organization_id
-            ),
-        }
-        if token := settings.token:
-            headers["Authorization"] = f"Bearer {token}"
-
-        return ResourceManagerClient(
-            base_url=settings.url,
-            timeout=settings.timeout,
-            headers=headers,
-        )
-
     def _page(self, items: list[PageItemT]) -> Page[PageItemT]:
-        """Build a ZenML page for a full Resource Manager result set.
-
-        Args:
-            items: Result items.
-
-        Returns:
-            ZenML page with all items included.
-        """
+        """Build a ZenML page for a full Resource Manager result set."""
         return Page(
             index=1,
             max_size=max(len(items), 1),

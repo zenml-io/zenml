@@ -11,47 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Internal Resource Manager transport models.
-
-These models mirror the ZenML Pro Resource Manager service API. They are an
-implementation detail of the ZenStore resource pool backend and are not part of
-the public ZenML OSS API surface.
-"""
+"""Internal Resource Manager transport models for runtime requests."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Union
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from zenml.enums import ResourceRequestStatus, StackComponentType
 from zenml.models import (
-    PRIORITY_LANE_PRIORITY,
-    ResourceDescriptorRequest,
-    ResourceDescriptorResponse,
-    ResourceDescriptorResponseBody,
-    ResourceDescriptorResponseMetadata,
-    ResourceDescriptorResponseResources,
-    ResourceDescriptorUnit,
-    ResourceDescriptorUpdate,
-    ResourcePolicyGrant,
-    ResourcePolicyRequest,
-    ResourcePolicyResponse,
-    ResourcePolicyResponseBody,
-    ResourcePolicyResponseMetadata,
-    ResourcePolicyResponseResources,
-    ResourcePolicyUpdate,
     ResourcePoolAllocation,
-    ResourcePoolCapacityClass,
     ResourcePoolCapacityComponentSettings,
-    ResourcePoolLedgerOccupied,
     ResourcePoolQueueItem,
-    ResourcePoolRequest,
-    ResourcePoolResponse,
-    ResourcePoolResponseBody,
-    ResourcePoolResponseMetadata,
-    ResourcePoolResponseResources,
-    ResourcePoolUpdate,
     ResourceRequestDemand,
     ResourceRequestReclaimTolerance,
     ResourceRequestRequest,
@@ -60,12 +32,18 @@ from zenml.models import (
     ResourceRequestResponseMetadata,
     ResourceRequestResponseResources,
 )
-from zenml.models.v2.core.resource_pool import ResourcePoolReclaimable
 from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
     from zenml.models import ComponentResponse, UserResponse
 
+PRIORITY_LANE_PRIORITY = 2_147_483_647
+ORGANIZATION_SUBJECT_TYPE = "organization"
+WORKSPACE_SUBJECT_TYPE = "workspace"
+PROJECT_SUBJECT_TYPE = "project"
+PIPELINE_SUBJECT_TYPE = "pipeline"
+PIPELINE_RUN_SUBJECT_TYPE = "pipeline_run"
+STEP_RUN_SUBJECT_TYPE = "step_run"
 COMPONENT_SUBJECT_TYPE = "component"
 ACCOUNT_SUBJECT_TYPE = "account"
 TEAM_SUBJECT_TYPE = "team"
@@ -79,15 +57,7 @@ PROJECT_ID_METADATA_KEY = "project_id"
 def _normalize_timestamps(
     created: Optional[datetime], updated: Optional[datetime]
 ) -> tuple[datetime, datetime]:
-    """Normalize optional RM timestamps for ZenML response bodies.
-
-    Args:
-        created: Optional creation timestamp from Resource Manager.
-        updated: Optional update timestamp from Resource Manager.
-
-    Returns:
-        Creation and update timestamps accepted by ZenML response bodies.
-    """
+    """Normalize optional RM timestamps for ZenML response bodies."""
     now = utc_now()
     created_at = created or now
     updated_at = updated or created_at
@@ -95,29 +65,13 @@ def _normalize_timestamps(
 
 
 def _metadata_string(metadata: dict[str, Any], key: str) -> Optional[str]:
-    """Read a string metadata value when present.
-
-    Args:
-        metadata: Resource Manager request metadata.
-        key: Metadata key to read.
-
-    Returns:
-        The metadata value as a string, or None when absent.
-    """
+    """Read a string metadata value when present."""
     value = metadata.get(key)
     return None if value is None else str(value)
 
 
 def _metadata_uuid(metadata: dict[str, Any], key: str) -> Optional[UUID]:
-    """Read a UUID metadata value when present.
-
-    Args:
-        metadata: Resource Manager request metadata.
-        key: Metadata key to read.
-
-    Returns:
-        The metadata value as a UUID, or None when absent or invalid.
-    """
+    """Read a UUID metadata value when present."""
     value = metadata.get(key)
     if value is None:
         return None
@@ -128,579 +82,65 @@ def _metadata_uuid(metadata: dict[str, Any], key: str) -> Optional[UUID]:
 
 
 class RMSubjectSelector(BaseModel):
-    """Structured selector for policies and pool subject settings."""
+    """Structured selector used in Resource Manager subject settings."""
 
     subject_type: Optional[str] = None
     subject_id: Optional[UUID] = None
     attributes: dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    contains: Optional[
+        Union["RMSubjectSelector", "RMSubjectSelectorExpression"]
+    ] = None
 
-    @classmethod
-    def from_policy_subject(
-        cls,
-        *,
-        component_id: Optional[UUID],
-        account_id: Optional[UUID],
-    ) -> "RMSubjectSelector":
-        """Build a selector from ZenML policy subject references.
 
-        The selector pins the exact subject by id; account identity is keyed
-        by external account id, which is stable across renames.
+class RMSubjectSelectorExpression(BaseModel):
+    """Boolean expression over Resource Manager subject selectors."""
 
-        Args:
-            component_id: Optional stack component ID.
-            account_id: Optional external account ID.
+    all: list["RMSubjectSelectorNode"] = Field(default_factory=list)
+    any: list["RMSubjectSelectorNode"] = Field(default_factory=list)
+    not_: Optional["RMSubjectSelectorNode"] = Field(default=None, alias="not")
 
-        Returns:
-            Resource Manager subject selector.
+    model_config = ConfigDict(populate_by_name=True)
 
-        Raises:
-            ValueError: If neither reference is set.
-        """
-        if component_id is not None:
-            return cls(
-                subject_type=COMPONENT_SUBJECT_TYPE, subject_id=component_id
-            )
-        if account_id is not None:
-            return cls(
-                subject_type=ACCOUNT_SUBJECT_TYPE, subject_id=account_id
-            )
-        raise ValueError(
-            "Resource policies require component_id or account_id."
-        )
 
-    @classmethod
-    def from_policy_subjects(
-        cls,
-        *,
-        component_ids: list[UUID] | None,
-        account_ids: list[UUID] | None,
-        team_ids: list[UUID] | None,
-    ) -> list["RMSubjectSelector"]:
-        """Build selectors from ZenML policy subject references.
-
-        Args:
-            component_ids: Optional stack component IDs.
-            account_ids: Optional external account IDs.
-            team_ids: Optional team IDs.
-
-        Returns:
-            Resource Manager subject selectors.
-
-        Raises:
-            ValueError: If neither reference list contains subjects.
-        """
-        selectors = [
-            cls(subject_type=COMPONENT_SUBJECT_TYPE, subject_id=component_id)
-            for component_id in component_ids or []
-        ]
-        selectors.extend(
-            cls(subject_type=ACCOUNT_SUBJECT_TYPE, subject_id=account_id)
-            for account_id in account_ids or []
-        )
-        selectors.extend(
-            cls(subject_type=TEAM_SUBJECT_TYPE, subject_id=team_id)
-            for team_id in team_ids or []
-        )
-        if not selectors:
-            raise ValueError(
-                "Resource policies require component_ids, account_ids, "
-                "or team_ids."
-            )
-        return selectors
-
-    def to_policy_subject(
-        self,
-    ) -> tuple[Optional[UUID], Optional[UUID], Optional[UUID]]:
-        """Parse this selector into ZenML policy subject IDs.
-
-        Returns:
-            Tuple of component ID, account ID, and team ID. Exactly one entry
-            is set.
-
-        Raises:
-            ValueError: If the selector does not pin a supported subject.
-        """
-        if self.subject_type is None or self.subject_id is None:
-            raise ValueError(
-                "Resource Manager policy selectors must specify "
-                "subject_type and subject_id."
-            )
-        if self.subject_type == COMPONENT_SUBJECT_TYPE:
-            return self.subject_id, None, None
-        if self.subject_type == ACCOUNT_SUBJECT_TYPE:
-            return None, self.subject_id, None
-        if self.subject_type == TEAM_SUBJECT_TYPE:
-            return None, None, self.subject_id
-        raise ValueError(
-            f"Unsupported Resource Manager policy subject type "
-            f"{self.subject_type!r}."
-        )
-
-    @classmethod
-    def to_policy_subjects(
-        cls, selectors: list["RMSubjectSelector"]
-    ) -> tuple[list[UUID], list[UUID], list[UUID]]:
-        """Parse selectors into ZenML policy subject ID lists.
-
-        Args:
-            selectors: Resource Manager subject selectors.
-
-        Returns:
-            Tuple of component IDs, account IDs, and team IDs.
-        """
-        component_ids: list[UUID] = []
-        account_ids: list[UUID] = []
-        team_ids: list[UUID] = []
-        for selector in selectors:
-            component_id, account_id, team_id = selector.to_policy_subject()
-            if component_id is not None:
-                component_ids.append(component_id)
-            if account_id is not None:
-                account_ids.append(account_id)
-            if team_id is not None:
-                team_ids.append(team_id)
-        return component_ids, account_ids, team_ids
+RMSubjectSelectorNode = Union[RMSubjectSelector, RMSubjectSelectorExpression]
 
 
 class RMSubjectSettingsEntry(BaseModel):
-    """Subject settings entry in pool capacity payloads."""
+    """Subject settings entry returned on request allocations."""
 
-    subject_selector: RMSubjectSelector
+    subject_selector: RMSubjectSelectorNode
     settings: dict[str, Any] = Field(default_factory=dict)
-
-    @classmethod
-    def from_component_settings(
-        cls, settings: ResourcePoolCapacityComponentSettings
-    ) -> "RMSubjectSettingsEntry":
-        """Build a subject settings entry from ZenML component settings.
-
-        Args:
-            settings: ZenML capacity class component settings.
-
-        Returns:
-            Resource Manager subject settings payload.
-        """
-        return cls(
-            subject_selector=RMSubjectSelector(
-                subject_type=COMPONENT_SUBJECT_TYPE,
-                attributes={
-                    "component_type": settings.component_type.value,
-                    "flavor": settings.flavor,
-                },
-            ),
-            settings=settings.settings,
-        )
 
     def to_component_settings(
         self,
     ) -> ResourcePoolCapacityComponentSettings:
         """Convert this entry into ZenML component settings.
 
-        Returns:
-            ZenML capacity class component settings.
-
         Raises:
             ValueError: If the entry does not select a component subject.
         """
-        if self.subject_selector.subject_type != COMPONENT_SUBJECT_TYPE:
+        selector: RMSubjectSelectorNode | None = self.subject_selector
+        while (
+            isinstance(selector, RMSubjectSelector)
+            and selector.subject_type != COMPONENT_SUBJECT_TYPE
+        ):
+            selector = selector.contains
+        if (
+            not isinstance(selector, RMSubjectSelector)
+            or selector.subject_type != COMPONENT_SUBJECT_TYPE
+        ):
             raise ValueError(
                 "Resource Manager subject settings must use subject_type "
-                f"'{COMPONENT_SUBJECT_TYPE}', got "
-                f"{self.subject_selector.subject_type!r}."
+                f"'{COMPONENT_SUBJECT_TYPE}'."
             )
         return ResourcePoolCapacityComponentSettings(
             component_type=StackComponentType(
-                self.subject_selector.attributes["component_type"]
+                selector.attributes["component_type"]
             ),
-            flavor=self.subject_selector.attributes["flavor"],
+            flavor=selector.attributes["flavor"],
             settings=self.settings,
         )
-
-
-class RMResourceUnit(BaseModel):
-    """Resource descriptor unit entry for the Resource Manager API."""
-
-    name: str
-    multiplier: int
-
-    @classmethod
-    def from_model(cls, unit: ResourceDescriptorUnit) -> "RMResourceUnit":
-        """Build a unit payload from a ZenML descriptor unit.
-
-        Args:
-            unit: ZenML descriptor unit.
-
-        Returns:
-            Resource Manager descriptor unit entry.
-        """
-        return cls(name=unit.name, multiplier=unit.multiplier)
-
-    def to_model(self) -> ResourceDescriptorUnit:
-        """Convert this unit into a ZenML descriptor unit.
-
-        Returns:
-            ZenML descriptor unit.
-        """
-        return ResourceDescriptorUnit(
-            name=self.name,
-            multiplier=self.multiplier,
-        )
-
-
-class RMResourceRequest(BaseModel):
-    """Resource descriptor create payload for the Resource Manager API."""
-
-    name: str
-    kind: str
-    description: Optional[str] = None
-    attributes: dict[str, Any] = Field(default_factory=dict)
-    metadata: dict[str, Any] = Field(default_factory=dict)
-    units: list[RMResourceUnit] = Field(default_factory=list)
-    owner_id: Optional[UUID] = None
-
-    @classmethod
-    def from_model(
-        cls, descriptor: ResourceDescriptorRequest
-    ) -> "RMResourceRequest":
-        """Build a descriptor create payload from a ZenML request.
-
-        Args:
-            descriptor: ZenML descriptor create payload.
-
-        Returns:
-            Resource Manager descriptor create payload.
-        """
-        return cls(
-            name=descriptor.name,
-            kind=descriptor.kind,
-            description=descriptor.description,
-            attributes=descriptor.attributes,
-            units=[
-                RMResourceUnit.from_model(unit) for unit in descriptor.units
-            ],
-            owner_id=descriptor.user,
-        )
-
-
-class RMResourceUpdate(BaseModel):
-    """Resource descriptor update payload for the Resource Manager API."""
-
-    name: Optional[str] = None
-    kind: Optional[str] = None
-    description: Optional[str] = None
-    clear_description: bool = False
-    attributes: Optional[dict[str, Any]] = None
-    metadata: Optional[dict[str, Any]] = None
-    units: Optional[list[RMResourceUnit]] = None
-
-    @classmethod
-    def from_model(
-        cls, update: ResourceDescriptorUpdate
-    ) -> "RMResourceUpdate":
-        """Build a descriptor update payload from a ZenML update.
-
-        Args:
-            update: ZenML descriptor update payload.
-
-        Returns:
-            Resource Manager descriptor update payload.
-        """
-        return cls(
-            name=update.name,
-            kind=update.kind,
-            description=update.description,
-            clear_description=update.clear_description,
-            attributes=update.attributes,
-            units=(
-                [RMResourceUnit.from_model(unit) for unit in update.units]
-                if update.units is not None
-                else None
-            ),
-        )
-
-
-class RMResourceResponse(BaseModel):
-    """Resource descriptor response from the Resource Manager API."""
-
-    id: UUID
-    organization_id: Optional[UUID] = None
-    name: str
-    kind: str
-    description: Optional[str] = None
-    attributes: dict[str, Any]
-    metadata: dict[str, Any] = Field(default_factory=dict)
-    units: list[RMResourceUnit] = Field(default_factory=list)
-    owner_id: Optional[UUID] = None
-    is_system: bool = False
-    created: Optional[datetime] = None
-    updated: Optional[datetime] = None
-
-    def to_model(self) -> ResourceDescriptorResponse:
-        """Convert this descriptor response into a ZenML response.
-
-        Returns:
-            ZenML descriptor response.
-        """
-        created, updated = _normalize_timestamps(self.created, self.updated)
-        return ResourceDescriptorResponse(
-            id=self.id,
-            body=ResourceDescriptorResponseBody(
-                created=created,
-                updated=updated,
-                user_id=self.owner_id,
-                name=self.name,
-                kind=self.kind,
-            ),
-            metadata=ResourceDescriptorResponseMetadata(
-                description=self.description,
-                is_system=self.is_system,
-                attributes=self.attributes,
-                units=[unit.to_model() for unit in self.units],
-            ),
-            resources=ResourceDescriptorResponseResources(),
-        )
-
-
-class RMResourceListResponse(BaseModel):
-    """Resource descriptor list response from the Resource Manager API."""
-
-    items: list[RMResourceResponse]
-    total: int
-
-
-class RMPoolCapacityClass(BaseModel):
-    """Capacity class payload for the Resource Manager API."""
-
-    resource: UUID | str
-    class_name: str = Field(alias="class", serialization_alias="class")
-    quantity: int
-    unit: Optional[str] = None
-    rank: int
-    reclaimable: ResourcePoolReclaimable
-    attributes: dict[str, Any] = Field(default_factory=dict)
-    subject_settings: list[RMSubjectSettingsEntry] = Field(
-        default_factory=list
-    )
-
-    model_config = ConfigDict(populate_by_name=True)
-
-    @classmethod
-    def from_model(
-        cls, entry: ResourcePoolCapacityClass
-    ) -> "RMPoolCapacityClass":
-        """Build a capacity payload from a ZenML pool capacity entry.
-
-        Args:
-            entry: ZenML capacity entry.
-
-        Returns:
-            Resource Manager capacity entry.
-
-        Raises:
-            ValueError: If neither resource_id nor resource is set.
-        """
-        resource = entry.resource_id or entry.resource
-        if resource is None:
-            raise ValueError(
-                "Pool capacity classes require a resource ID or name."
-            )
-        return cls(
-            resource=resource,
-            class_name=entry.class_name,
-            quantity=entry.quantity,
-            unit=entry.unit,
-            rank=entry.rank,
-            reclaimable=entry.reclaimable,
-            attributes=entry.attributes,
-            subject_settings=[
-                RMSubjectSettingsEntry.from_component_settings(setting)
-                for setting in entry.component_settings
-            ],
-        )
-
-
-class RMPoolCapacityClassResponse(BaseModel):
-    """Capacity class response from the Resource Manager API."""
-
-    resource_id: UUID
-    resource: Optional[str] = None
-    class_name: str = Field(alias="class", serialization_alias="class")
-    quantity: int
-    unit: Optional[str] = None
-    rank: int
-    reclaimable: ResourcePoolReclaimable
-    attributes: dict[str, Any] = Field(default_factory=dict)
-    subject_settings: list[RMSubjectSettingsEntry] = Field(
-        default_factory=list
-    )
-
-    model_config = ConfigDict(populate_by_name=True)
-
-    def to_model(self) -> ResourcePoolCapacityClass:
-        """Convert this capacity class into a ZenML pool capacity entry.
-
-        Returns:
-            ZenML pool capacity class.
-        """
-        return ResourcePoolCapacityClass(
-            resource_id=self.resource_id,
-            resource=self.resource,
-            class_name=self.class_name,
-            quantity=self.quantity,
-            unit=self.unit,
-            rank=self.rank,
-            reclaimable=self.reclaimable,
-            attributes=self.attributes,
-            component_settings=[
-                setting.to_component_settings()
-                for setting in self.subject_settings
-            ],
-        )
-
-
-class RMPoolLedgerOccupied(BaseModel):
-    """Occupied pool capacity response from the Resource Manager API."""
-
-    resource_id: UUID
-    resource_name: Optional[str] = None
-    class_name: str = Field(alias="class", serialization_alias="class")
-    quantity: int
-
-    model_config = ConfigDict(populate_by_name=True)
-
-    def to_model(self) -> ResourcePoolLedgerOccupied:
-        """Convert this ledger entry into a ZenML occupied capacity row.
-
-        Returns:
-            ZenML pool ledger occupied entry.
-        """
-        return ResourcePoolLedgerOccupied(
-            resource_id=self.resource_id,
-            resource=self.resource_name,
-            class_name=self.class_name,
-            quantity=self.quantity,
-        )
-
-
-class RMPoolLedger(BaseModel):
-    """Pool ledger response from the Resource Manager API."""
-
-    occupied: list[RMPoolLedgerOccupied] = Field(default_factory=list)
-    queue_length: int = 0
-
-
-class RMPoolRequest(BaseModel):
-    """Resource pool create payload for the Resource Manager API."""
-
-    name: str
-    description: Optional[str] = None
-    attributes: dict[str, Any] = Field(default_factory=dict)
-    capacity: list[RMPoolCapacityClass]
-    metadata: dict[str, Any] = Field(default_factory=dict)
-
-    @classmethod
-    def from_model(cls, resource_pool: ResourcePoolRequest) -> "RMPoolRequest":
-        """Build a pool create payload from a ZenML request.
-
-        Args:
-            resource_pool: ZenML pool create payload.
-
-        Returns:
-            Resource Manager pool create payload.
-        """
-        return cls(
-            name=resource_pool.name,
-            description=resource_pool.description,
-            attributes=resource_pool.attributes,
-            capacity=[
-                RMPoolCapacityClass.from_model(entry)
-                for entry in resource_pool.capacity
-            ],
-        )
-
-
-class RMPoolUpdate(BaseModel):
-    """Resource pool update payload for the Resource Manager API."""
-
-    name: Optional[str] = None
-    description: Optional[str] = None
-    clear_description: bool = False
-    attributes: Optional[dict[str, Any]] = None
-    capacity: Optional[list[RMPoolCapacityClass]] = None
-    metadata: Optional[dict[str, Any]] = None
-
-    @classmethod
-    def from_model(cls, update: ResourcePoolUpdate) -> "RMPoolUpdate":
-        """Build a pool update payload from a ZenML update.
-
-        Args:
-            update: ZenML pool update payload.
-
-        Returns:
-            Resource Manager pool update payload.
-        """
-        capacity = None
-        if update.capacity is not None:
-            capacity = [
-                RMPoolCapacityClass.from_model(entry)
-                for entry in update.capacity
-            ]
-        return cls(
-            name=update.name,
-            description=update.description,
-            clear_description=update.clear_description,
-            attributes=update.attributes,
-            capacity=capacity,
-        )
-
-
-class RMPoolResponse(BaseModel):
-    """Resource pool response from the Resource Manager API."""
-
-    id: UUID
-    organization_id: UUID
-    name: str
-    description: Optional[str] = None
-    attributes: dict[str, Any] = Field(default_factory=dict)
-    capacity: list[RMPoolCapacityClassResponse]
-    ledger: RMPoolLedger
-    metadata: dict[str, Any] = Field(default_factory=dict)
-    created: Optional[datetime] = None
-    updated: Optional[datetime] = None
-
-    def to_model(self) -> ResourcePoolResponse:
-        """Convert this pool response into a ZenML response.
-
-        Returns:
-            ZenML pool response.
-        """
-        created, updated = _normalize_timestamps(self.created, self.updated)
-        return ResourcePoolResponse(
-            id=self.id,
-            name=self.name,
-            body=ResourcePoolResponseBody(
-                created=created,
-                updated=updated,
-                user_id=None,
-                attributes=self.attributes,
-                capacity=[entry.to_model() for entry in self.capacity],
-                occupied_resources=[
-                    entry.to_model() for entry in self.ledger.occupied
-                ],
-                queue_length=self.ledger.queue_length,
-            ),
-            metadata=ResourcePoolResponseMetadata(
-                description=self.description
-            ),
-            resources=ResourcePoolResponseResources(),
-        )
-
-
-class RMPoolListResponse(BaseModel):
-    """Resource pool list response from the Resource Manager API."""
-
-    items: list[RMPoolResponse]
-    total: int
 
 
 class RMSubject(BaseModel):
@@ -709,269 +149,260 @@ class RMSubject(BaseModel):
     subject_id: UUID
     subject_type: str
     attributes: dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    child: Optional["RMSubject"] = None
+
+    @property
+    def leaf(self) -> "RMSubject":
+        """Return the deepest subject in the root-first chain."""
+        if self.child is None:
+            return self
+        return self.child.leaf
+
+    def find(self, subject_id: UUID) -> Optional["RMSubject"]:
+        """Find a subject by ID in this chain."""
+        if self.subject_id == subject_id:
+            return self
+        if self.child is None:
+            return None
+        return self.child.find(subject_id)
+
+    @staticmethod
+    def _optional_values(**values: Any) -> dict[str, Any]:
+        """Build Resource Manager payload data without empty optional values."""
+        payload: dict[str, Any] = {}
+        for key, value in values.items():
+            if value is None:
+                continue
+            if isinstance(value, str) and not value:
+                continue
+            payload[key] = str(value) if isinstance(value, UUID) else value
+        return payload
 
     @classmethod
-    def from_component(cls, component: "ComponentResponse") -> "RMSubject":
-        """Build an inline subject for a ZenML stack component.
+    def _name_attributes(cls, name: Optional[str] = None) -> dict[str, Any]:
+        """Build common name attributes for hierarchy subjects."""
+        return cls._optional_values(name=name)
 
-        Args:
-            component: The stack component initiating the request.
-
-        Returns:
-            Inline subject payload for runtime requests.
-        """
+    @classmethod
+    def _organization(
+        cls,
+        *,
+        organization_id: UUID,
+        organization_name: Optional[str] = None,
+        child: Optional["RMSubject"] = None,
+    ) -> "RMSubject":
+        """Build an organization-rooted subject chain."""
         return cls(
-            subject_id=component.id,
-            subject_type=COMPONENT_SUBJECT_TYPE,
-            attributes={
-                "component_type": component.type.value,
-                "flavor": component.flavor_name,
-            },
+            subject_id=organization_id,
+            subject_type=ORGANIZATION_SUBJECT_TYPE,
+            attributes=cls._name_attributes(organization_name),
+            child=child,
         )
 
     @classmethod
-    def from_account(cls, user: "UserResponse") -> "RMSubject":
-        """Build an inline subject for a ZenML account identity.
+    def _workspace(
+        cls,
+        *,
+        workspace_id: UUID,
+        workspace_name: Optional[str] = None,
+        child: Optional["RMSubject"] = None,
+    ) -> "RMSubject":
+        """Build a workspace subject chain node."""
+        return cls(
+            subject_id=workspace_id,
+            subject_type=WORKSPACE_SUBJECT_TYPE,
+            attributes=cls._name_attributes(workspace_name),
+            child=child,
+        )
 
-        Args:
-            user: The user or service account initiating the request.
+    @classmethod
+    def from_component(
+        cls,
+        component: "ComponentResponse",
+        *,
+        organization_id: UUID,
+        workspace_id: UUID,
+        organization_name: Optional[str] = None,
+        workspace_name: Optional[str] = None,
+    ) -> "RMSubject":
+        """Build an inline subject for a ZenML stack component."""
+        return cls._organization(
+            organization_id=organization_id,
+            organization_name=organization_name,
+            child=cls._workspace(
+                workspace_id=workspace_id,
+                workspace_name=workspace_name,
+                child=cls(
+                    subject_id=component.id,
+                    subject_type=COMPONENT_SUBJECT_TYPE,
+                    attributes=cls._optional_values(
+                        name=component.name,
+                        stack_component_name=component.name,
+                        workspace_id=workspace_id,
+                        workspace_name=workspace_name,
+                        component_type=component.type.value,
+                        flavor=component.flavor_name,
+                    ),
+                    metadata=cls._optional_values(logo_url=component.logo_url),
+                ),
+            ),
+        )
 
-        Returns:
-            Inline subject payload for runtime requests.
-
-        Raises:
-            ValueError: If the account has no external account id configured.
-        """
+    @classmethod
+    def from_account(
+        cls,
+        user: "UserResponse",
+        *,
+        organization_id: UUID,
+        organization_name: Optional[str] = None,
+    ) -> "RMSubject":
+        """Build an inline subject for a ZenML account identity."""
         if user.external_user_id is None:
             raise ValueError(
                 f"User '{user.id}' has no external account id configured."
             )
-        account_type = (
-            "service_account" if user.is_service_account else "user_account"
-        )
-        attributes: dict[str, Any] = {"account_type": account_type}
-        if user.name:
-            attributes[f"{account_type}_name"] = user.name
-        return cls(
+        account_subject = cls(
             subject_id=user.external_user_id,
             subject_type=ACCOUNT_SUBJECT_TYPE,
-            attributes=attributes,
-        )
-
-    @classmethod
-    def from_team(cls, team_id: UUID) -> "RMSubject":
-        """Build an inline subject for a ZenML Pro team.
-
-        Args:
-            team_id: The team ID to attach to a runtime request.
-
-        Returns:
-            Inline subject payload for runtime requests.
-        """
-        return cls(subject_id=team_id, subject_type=TEAM_SUBJECT_TYPE)
-
-
-class RMPolicyGrant(BaseModel):
-    """Policy grant payload for the Resource Manager API."""
-
-    resource: UUID | str
-    classes: list[str]
-    reserved: int = 0
-    limit: int | None = None
-    unit: Optional[str] = None
-
-    @classmethod
-    def from_model(cls, grant: ResourcePolicyGrant) -> "RMPolicyGrant":
-        """Build a grant payload from a ZenML policy grant.
-
-        Args:
-            grant: ZenML policy grant.
-
-        Returns:
-            Resource Manager policy grant.
-
-        Raises:
-            ValueError: If neither resource_id nor resource is set.
-        """
-        resource = grant.resource_id or grant.resource
-        if resource is None:
-            raise ValueError("Policy grants require a resource ID or name.")
-        return cls(
-            resource=resource,
-            classes=grant.classes,
-            reserved=grant.reserved,
-            limit=grant.limit,
-            unit=grant.unit,
-        )
-
-
-class RMPolicyGrantResponse(BaseModel):
-    """Policy grant response from the Resource Manager API."""
-
-    resource_id: UUID
-    resource: Optional[str] = None
-    classes: list[str]
-    reserved: int = 0
-    limit: int | None = None
-    unit: Optional[str] = None
-
-    def to_model(self) -> ResourcePolicyGrant:
-        """Convert this grant into a ZenML policy grant.
-
-        Returns:
-            ZenML policy grant.
-        """
-        return ResourcePolicyGrant(
-            resource_id=self.resource_id,
-            resource=self.resource,
-            classes=self.classes,
-            reserved=self.reserved,
-            limit=self.limit,
-            unit=self.unit,
-        )
-
-
-class RMPolicyRequest(BaseModel):
-    """Resource policy create payload for the Resource Manager API."""
-
-    pool: UUID | str
-    subject_selectors: list[RMSubjectSelector]
-    priority: int | None = None
-    priority_lane: bool = False
-    grants: list[RMPolicyGrant] = Field(default_factory=list)
-    metadata: dict[str, Any] = Field(default_factory=dict)
-
-    @classmethod
-    def from_model(cls, policy: ResourcePolicyRequest) -> "RMPolicyRequest":
-        """Build a policy create payload from a ZenML request.
-
-        Args:
-            policy: ZenML policy create payload.
-
-        Returns:
-            Resource Manager policy create payload.
-
-        Raises:
-            ValueError: If neither pool_id nor pool is set.
-        """
-        pool = policy.pool_id or policy.pool
-        if pool is None:
-            raise ValueError("Resource policies require a pool ID or name.")
-        return cls(
-            pool=pool,
-            subject_selectors=RMSubjectSelector.from_policy_subjects(
-                component_ids=policy.component_ids,
-                account_ids=policy.account_ids,
-                team_ids=policy.team_ids,
+            attributes=cls._optional_values(
+                name=user.full_name or user.name,
+                email=user.email,
+                username=user.name,
+                is_superuser=user.is_admin,
+                is_service_account=user.is_service_account,
             ),
-            priority=policy.priority,
-            priority_lane=policy.priority_lane,
-            grants=[
-                RMPolicyGrant.from_model(grant) for grant in policy.grants
-            ],
+            metadata=cls._optional_values(avatar_url=user.avatar_url),
         )
-
-
-class RMPolicyUpdate(BaseModel):
-    """Resource policy update payload for the Resource Manager API."""
-
-    subject_selectors: Optional[list[RMSubjectSelector]] = None
-    priority: int | None = None
-    priority_lane: bool | None = None
-    grants: Optional[list[RMPolicyGrant]] = None
-    metadata: Optional[dict[str, Any]] = None
+        return cls._organization(
+            organization_id=organization_id,
+            organization_name=organization_name,
+            child=account_subject,
+        )
 
     @classmethod
-    def from_model(cls, update: ResourcePolicyUpdate) -> "RMPolicyUpdate":
-        """Build a policy update payload from a ZenML update.
-
-        Args:
-            update: ZenML policy update payload.
-
-        Returns:
-            Resource Manager policy update payload.
-        """
-        subject_selectors = None
-        if update.component_ids is not None or update.account_ids is not None:
-            subject_selectors = RMSubjectSelector.from_policy_subjects(
-                component_ids=update.component_ids,
-                account_ids=update.account_ids,
-                team_ids=update.team_ids,
-            )
-        grants = None
-        if update.grants is not None:
-            grants = [
-                RMPolicyGrant.from_model(grant) for grant in update.grants
-            ]
-        return cls(
-            subject_selectors=subject_selectors,
-            priority=update.priority,
-            priority_lane=update.priority_lane,
-            grants=grants,
+    def from_team(
+        cls,
+        team_id: UUID,
+        *,
+        organization_id: UUID,
+        organization_name: Optional[str] = None,
+    ) -> "RMSubject":
+        """Build an inline subject for a ZenML Pro team."""
+        return cls._organization(
+            organization_id=organization_id,
+            organization_name=organization_name,
+            child=cls(subject_id=team_id, subject_type=TEAM_SUBJECT_TYPE),
         )
 
-
-class RMPolicyResponse(BaseModel):
-    """Resource policy response from the Resource Manager API."""
-
-    id: UUID
-    organization_id: UUID
-    pool_id: UUID
-    pool: Optional[str] = None
-    subject_selectors: list[RMSubjectSelector]
-    priority: int | None = None
-    priority_lane: bool = False
-    grants: list[RMPolicyGrantResponse]
-    metadata: dict[str, Any] = Field(default_factory=dict)
-    created: Optional[datetime] = None
-    updated: Optional[datetime] = None
-
-    def to_model(self) -> ResourcePolicyResponse:
-        """Convert this policy response into a ZenML response.
-
-        A policy lands in the priority lane either when the backend flags it
-        explicitly or when its numeric priority equals the reserved lane
-        priority; lane policies report no numeric priority to callers.
-
-        Returns:
-            ZenML policy response.
-        """
-        created, updated = _normalize_timestamps(self.created, self.updated)
-        (
-            component_ids,
-            account_ids,
-            team_ids,
-        ) = RMSubjectSelector.to_policy_subjects(self.subject_selectors)
-        priority_lane = self.priority_lane or (
-            self.priority == PRIORITY_LANE_PRIORITY
-        )
-        priority = None if priority_lane else self.priority
-        return ResourcePolicyResponse(
-            id=self.id,
-            body=ResourcePolicyResponseBody(
-                created=created,
-                updated=updated,
-                user_id=None,
-                pool_id=self.pool_id,
-                component_ids=component_ids,
-                account_ids=account_ids,
-                team_ids=team_ids,
-                priority_lane=priority_lane,
-                priority=priority,
-                grants=[grant.to_model() for grant in self.grants],
+    @classmethod
+    def from_pipeline(
+        cls,
+        *,
+        organization_id: UUID,
+        workspace_id: UUID,
+        project_id: UUID,
+        pipeline_id: UUID,
+        organization_name: Optional[str] = None,
+        workspace_name: Optional[str] = None,
+        project_name: Optional[str] = None,
+        pipeline_name: Optional[str] = None,
+    ) -> "RMSubject":
+        """Build an organization -> workspace -> project -> pipeline subject."""
+        return cls._organization(
+            organization_id=organization_id,
+            organization_name=organization_name,
+            child=cls._workspace(
+                workspace_id=workspace_id,
+                workspace_name=workspace_name,
+                child=cls(
+                    subject_id=project_id,
+                    subject_type=PROJECT_SUBJECT_TYPE,
+                    attributes=cls._optional_values(
+                        name=project_name,
+                        workspace_id=workspace_id,
+                        workspace_name=workspace_name,
+                    ),
+                    child=cls(
+                        subject_id=pipeline_id,
+                        subject_type=PIPELINE_SUBJECT_TYPE,
+                        attributes=cls._optional_values(
+                            name=pipeline_name,
+                            project_id=project_id,
+                            project_name=project_name,
+                            workspace_id=workspace_id,
+                            workspace_name=workspace_name,
+                        ),
+                    ),
+                ),
             ),
-            metadata=ResourcePolicyResponseMetadata(
-                pool=self.pool,
-            ),
-            resources=ResourcePolicyResponseResources(),
         )
 
-
-class RMPolicyListResponse(BaseModel):
-    """Resource policy list response from the Resource Manager API."""
-
-    items: list[RMPolicyResponse]
-    total: int
+    @classmethod
+    def from_step_run(
+        cls,
+        *,
+        organization_id: UUID,
+        workspace_id: UUID,
+        project_id: UUID,
+        pipeline_run_id: UUID,
+        step_run_id: UUID,
+        organization_name: Optional[str] = None,
+        workspace_name: Optional[str] = None,
+        project_name: Optional[str] = None,
+        pipeline_run_name: Optional[str] = None,
+        pipeline_id: Optional[UUID] = None,
+        pipeline_name: Optional[str] = None,
+        step_name: Optional[str] = None,
+    ) -> "RMSubject":
+        """Build a scoped pipeline-run -> step-run subject chain."""
+        return cls._organization(
+            organization_id=organization_id,
+            organization_name=organization_name,
+            child=cls._workspace(
+                workspace_id=workspace_id,
+                workspace_name=workspace_name,
+                child=cls(
+                    subject_id=project_id,
+                    subject_type=PROJECT_SUBJECT_TYPE,
+                    attributes=cls._optional_values(
+                        name=project_name,
+                        workspace_id=workspace_id,
+                        workspace_name=workspace_name,
+                    ),
+                    child=cls(
+                        subject_id=pipeline_run_id,
+                        subject_type=PIPELINE_RUN_SUBJECT_TYPE,
+                        attributes=cls._optional_values(
+                            name=pipeline_run_name,
+                            run_name=pipeline_run_name,
+                            pipeline_id=pipeline_id,
+                            pipeline_name=pipeline_name,
+                            project_id=project_id,
+                            project_name=project_name,
+                            workspace_id=workspace_id,
+                            workspace_name=workspace_name,
+                        ),
+                        child=cls(
+                            subject_id=step_run_id,
+                            subject_type=STEP_RUN_SUBJECT_TYPE,
+                            attributes=cls._optional_values(
+                                name=step_name,
+                                step_name=step_name,
+                                pipeline_run_id=pipeline_run_id,
+                                pipeline_run_name=pipeline_run_name,
+                                pipeline_id=pipeline_id,
+                                pipeline_name=pipeline_name,
+                                project_id=project_id,
+                                project_name=project_name,
+                                workspace_id=workspace_id,
+                                workspace_name=workspace_name,
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
 
 
 class RMRequestDemand(BaseModel):
@@ -994,14 +425,7 @@ class RMRequestDemand(BaseModel):
 
     @classmethod
     def from_model(cls, demand: ResourceRequestDemand) -> "RMRequestDemand":
-        """Build a demand payload from a ZenML resource demand.
-
-        Args:
-            demand: ZenML resource request demand.
-
-        Returns:
-            Resource Manager demand entry.
-        """
+        """Build a demand payload from a ZenML resource demand."""
         resource = (
             demand.resource_id
             if demand.resource_id is not None
@@ -1018,11 +442,7 @@ class RMRequestDemand(BaseModel):
         )
 
     def to_model(self) -> ResourceRequestDemand:
-        """Convert this demand into a ZenML resource demand.
-
-        Returns:
-            ZenML resource request demand.
-        """
+        """Convert this demand into a ZenML resource demand."""
         return ResourceRequestDemand(
             resource_id=self.resource_id,
             resource=self.resource,
@@ -1044,6 +464,7 @@ class RMResourceRequestCreate(BaseModel):
     pool_selector: Optional[dict[str, Any]] = None
     reclaim_tolerance: str = "none"
     lease_expires_at: Optional[datetime] = None
+    user_id: Optional[UUID] = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 
     @classmethod
@@ -1052,19 +473,9 @@ class RMResourceRequestCreate(BaseModel):
         resource_request: ResourceRequestRequest,
         *,
         subjects: list[RMSubject],
+        user_id: Optional[UUID] = None,
     ) -> "RMResourceRequestCreate":
-        """Build a runtime request create payload from a ZenML request.
-
-        Args:
-            resource_request: ZenML resource request payload.
-            subjects: Inline Resource Manager subjects resolved by the store.
-
-        Returns:
-            Resource Manager runtime request create payload.
-
-        Raises:
-            ValueError: If a component-scoped request omits its step run.
-        """
+        """Build a runtime request create payload from a ZenML request."""
         if (
             resource_request.component_ids
             and resource_request.step_run_id is None
@@ -1094,15 +505,9 @@ class RMResourceRequestCreate(BaseModel):
                 or ResourceRequestReclaimTolerance.NONE
             ).value,
             lease_expires_at=resource_request.lease_expires_at,
+            user_id=user_id,
             metadata=metadata,
         )
-
-
-class RMResourceRequestTerminateRequest(BaseModel):
-    """Runtime resource request terminate payload for the Resource Manager API."""
-
-    force: bool = False
-    reason: Optional[str] = None
 
 
 class RMResourceRequestRenewalRequest(BaseModel):
@@ -1137,11 +542,7 @@ class RMResourceRequestResponse(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
     def to_model(self) -> ResourceRequestResponse:
-        """Convert this runtime request response into a ZenML response.
-
-        Returns:
-            ZenML runtime request response.
-        """
+        """Convert this runtime request response into a ZenML response."""
         created, updated = _normalize_timestamps(self.created, self.updated)
         return ResourceRequestResponse(
             id=self.id,
@@ -1150,7 +551,9 @@ class RMResourceRequestResponse(BaseModel):
                 updated=updated,
                 user_id=None,
                 component_ids=[
-                    subject.subject_id for subject in self.subjects
+                    subject.leaf.subject_id
+                    for subject in self.subjects
+                    if subject.leaf.subject_type == COMPONENT_SUBJECT_TYPE
                 ],
                 step_run_id=_metadata_uuid(
                     self.metadata, STEP_RUN_ID_METADATA_KEY
@@ -1204,7 +607,7 @@ class RMResourceRequestListResponse(BaseModel):
 
 
 class RMQueueEntryResponse(BaseModel):
-    """Pool queue entry response from the Resource Manager API."""
+    """Pool queue entry response included in runtime request resources."""
 
     id: UUID
     organization_id: UUID
@@ -1217,11 +620,7 @@ class RMQueueEntryResponse(BaseModel):
     created: Optional[datetime] = None
 
     def to_model(self) -> ResourcePoolQueueItem:
-        """Convert this queue entry into a ZenML queue item.
-
-        Returns:
-            ZenML queue item.
-        """
+        """Convert this queue entry into a ZenML queue item."""
         return ResourcePoolQueueItem(
             id=self.id,
             request_id=self.request_id,
@@ -1235,15 +634,8 @@ class RMQueueEntryResponse(BaseModel):
         )
 
 
-class RMQueueEntryListResponse(BaseModel):
-    """Pool queue list response from the Resource Manager API."""
-
-    items: list[RMQueueEntryResponse]
-    total: int
-
-
 class RMAllocationResponse(BaseModel):
-    """Allocation response from the Resource Manager API."""
+    """Allocation response included in runtime request resources."""
 
     id: UUID
     organization_id: UUID
@@ -1260,7 +652,7 @@ class RMAllocationResponse(BaseModel):
     admitted_by_policy_id: UUID
     resolved_grant_id: UUID | None = None
     allocation_priority: int
-    selected_subject_id: UUID
+    matched_subject_ids: tuple[UUID, ...]
     subject_settings: list[RMSubjectSettingsEntry] = Field(
         default_factory=list
     )
@@ -1277,43 +669,28 @@ class RMAllocationResponse(BaseModel):
         *,
         request_subjects: list[RMSubject] | None = None,
     ) -> tuple[Optional[UUID], Optional[UUID]]:
-        """Resolve the selected subject into component and account IDs.
-
-        Args:
-            request_subjects: Optional request subjects used to infer the
-                selected subject type when listing allocations in request
-                context.
-
-        Returns:
-            Tuple of component ID and account ID. One entry is set when
-            request subjects identify a selected component or account; team
-            selections return no component/account ID. Without request subject
-            context, the selected subject ID is treated as a component ID.
-        """
-        for subject in request_subjects or []:
-            if subject.subject_id != self.selected_subject_id:
-                continue
-            if subject.subject_type == ACCOUNT_SUBJECT_TYPE:
-                return None, self.selected_subject_id
-            if subject.subject_type == TEAM_SUBJECT_TYPE:
-                return None, None
-            return self.selected_subject_id, None
-        return self.selected_subject_id, None
+        """Resolve matched subjects into component and account IDs."""
+        for matched_subject_id in self.matched_subject_ids:
+            for subject in request_subjects or []:
+                matched_subject = subject.find(matched_subject_id)
+                if matched_subject is None:
+                    continue
+                if matched_subject.subject_type == ACCOUNT_SUBJECT_TYPE:
+                    return None, matched_subject_id
+                if matched_subject.subject_type == TEAM_SUBJECT_TYPE:
+                    continue
+                if matched_subject.subject_type == COMPONENT_SUBJECT_TYPE:
+                    return matched_subject_id, None
+        if self.matched_subject_ids:
+            return self.matched_subject_ids[0], None
+        return None, None
 
     def to_model(
         self,
         *,
         request_subjects: list[RMSubject] | None = None,
     ) -> ResourcePoolAllocation:
-        """Convert this allocation into a ZenML allocation.
-
-        Args:
-            request_subjects: Optional request subjects used to infer the
-                selected subject type.
-
-        Returns:
-            ZenML allocation.
-        """
+        """Convert this allocation into a ZenML allocation."""
         component_id, account_id = self._resolve_subject_ids(
             request_subjects=request_subjects
         )
@@ -1345,10 +722,3 @@ class RMAllocationResponse(BaseModel):
             created=self.created,
             updated=self.updated,
         )
-
-
-class RMAllocationListResponse(BaseModel):
-    """Allocation list response from the Resource Manager API."""
-
-    items: list[RMAllocationResponse]
-    total: int
