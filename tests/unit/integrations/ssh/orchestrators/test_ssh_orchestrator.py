@@ -108,8 +108,8 @@ class TestFlavor:
     def test_is_remote(self) -> None:
         assert _make_orchestrator().config.is_remote is True
 
-    def test_is_schedulable_for_static_pipelines(self) -> None:
-        assert _make_orchestrator().config.is_schedulable is True
+    def test_is_not_schedulable(self) -> None:
+        assert _make_orchestrator().config.is_schedulable is False
 
     def test_validator_requires_registry_and_builder(self) -> None:
         required = _make_orchestrator().validator._required_components
@@ -217,70 +217,17 @@ class TestStaticSubmit:
             "compose up -d" in call.args[0] for call in ssh.exec.call_args_list
         )
 
-    def test_cron_schedule_installs_run_script(self) -> None:
+    def test_scheduled_pipeline_is_rejected(self) -> None:
         orch = _make_orchestrator()
         snap = _fake_snapshot({"only": _fake_step()})
-        schedule = MagicMock()
-        schedule.cron_expression = "0 0 * * *"
-        schedule.run_once_start_time = None
-        snap.schedule = schedule
+        snap.schedule = MagicMock()
         with (
-            _patched_ssh() as ssh,
+            _patched_ssh(),
             patch.object(orch, "get_image", return_value="img"),
             patch.object(
                 orch, "get_settings", return_value=SSHOrchestratorSettings()
             ),
-        ):
-            orch.submit_pipeline(
-                snapshot=snap,
-                stack=MagicMock(),
-                base_environment={},
-                step_environments={"only": {"FOO": "bar"}},
-                placeholder_run=None,
-            )
-
-        compose_yaml = next(
-            call.args[1]
-            for call in ssh.put_text.call_args_list
-            if call.args[0].endswith("docker-compose.yml")
-        )
-        compose = yaml.safe_load(compose_yaml)
-        service = compose["services"][f"{snap.id}-only"]
-        assert service["env_file"] == [".env"]
-        assert ENV_ZENML_SSH_RUN_ID not in service["environment"]
-        assert service["environment"]["FOO"] == "bar"
-
-        run_script = next(
-            call.args[1]
-            for call in ssh.put_text.call_args_list
-            if call.args[0].endswith("run_pipeline.sh")
-        )
-        assert f"{ENV_ZENML_SSH_RUN_ID}=" in run_script
-        assert "date +\\%s" in run_script
-        assert any(
-            "crontab -l" in call.args[0] for call in ssh.exec.call_args_list
-        )
-        assert not any(
-            "cd /tmp/zenml-ssh/scheduled-pipeline-runs" in call.args[0]
-            and "compose up -d" in call.args[0]
-            for call in ssh.exec.call_args_list
-        )
-
-    def test_run_once_schedule_uses_at(self) -> None:
-        orch = _make_orchestrator()
-        snap = _fake_snapshot({"only": _fake_step()})
-        schedule = MagicMock()
-        schedule.cron_expression = None
-        schedule.run_once_start_time = datetime(
-            2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc
-        )
-        snap.schedule = schedule
-        with (
-            _patched_ssh() as ssh,
-            patch.object(orch, "get_image", return_value="img"),
-            patch.object(
-                orch, "get_settings", return_value=SSHOrchestratorSettings()
-            ),
+            pytest.raises(RuntimeError, match="does not support scheduled"),
         ):
             orch.submit_pipeline(
                 snapshot=snap,
@@ -290,15 +237,7 @@ class TestStaticSubmit:
                 placeholder_run=None,
             )
 
-        assert any(
-            call.args[0] == "which at" for call in ssh.exec.call_args_list
-        )
-        assert any(
-            "at -t 202601020304.05" in call.args[0]
-            for call in ssh.exec.call_args_list
-        )
-
-    def test_cleanup_targets_only_non_scheduled_runs(self) -> None:
+    def test_cleanup_targets_run_files(self) -> None:
         orch = _make_orchestrator()
         snap = _fake_snapshot({"only": _fake_step()})
         with (
@@ -381,7 +320,7 @@ class TestDynamicSubmit:
         snap = _fake_snapshot({"a": _fake_step()})
         snap.schedule = MagicMock(cron_expression="0 0 * * *")
 
-        with pytest.raises(RuntimeError, match="scheduled dynamic pipelines"):
+        with pytest.raises(RuntimeError, match="does not support scheduled"):
             orch.submit_dynamic_pipeline(
                 snapshot=snap,
                 stack=MagicMock(),
@@ -495,38 +434,6 @@ class TestIsolatedStepSubprocess:
         with patch(f"{_MODULE}.os.killpg") as killpg:
             orch.stop_isolated_step(step_run)
         killpg.assert_not_called()
-
-
-class TestCronValidation:
-    def test_valid_expressions_accepted(self) -> None:
-        from zenml.integrations.ssh.orchestrators.ssh_orchestrator import (
-            _is_valid_cron_expression,
-        )
-
-        for expr in (
-            "0 0 * * *",
-            "*/15 * * * *",
-            "0 9-17 * * 1-5",
-            "0 0 1,15 * *",
-            "0 0 * * 7",
-        ):
-            assert _is_valid_cron_expression(expr), expr
-
-    def test_out_of_range_fields_rejected(self) -> None:
-        from zenml.integrations.ssh.orchestrators.ssh_orchestrator import (
-            _is_valid_cron_expression,
-        )
-
-        # minute 60, hour 25, weekday 8, day 32/month 13, wrong field count
-        for expr in (
-            "60 * * * *",
-            "0 25 * * *",
-            "* * * * 8",
-            "0 0 32 13 *",
-            "* * *",
-            "nonsense",
-        ):
-            assert not _is_valid_cron_expression(expr), expr
 
 
 class TestDiskGuard:

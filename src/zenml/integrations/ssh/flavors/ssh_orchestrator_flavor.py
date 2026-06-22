@@ -142,10 +142,9 @@ class SSHOrchestratorConfig(BaseOrchestratorConfig, SSHOrchestratorSettings):
     )
     automatic_cleanup_pipeline_files: bool = Field(
         default=True,
-        description="Remove non-scheduled pipeline launch files on the remote "
-        "host once they are older than 7 days. Scheduled pipeline files are "
-        "kept because cron and at jobs reference their run scripts. Example: "
-        "False when an external cleanup job manages the remote workdir",
+        description="Remove pipeline launch files (Compose files) on the "
+        "remote host once they are older than 7 days. Example: False when an "
+        "external cleanup job manages the remote workdir",
     )
     minimum_free_disk_gb: float = Field(
         default=5.0,
@@ -181,10 +180,10 @@ class SSHOrchestratorConfig(BaseOrchestratorConfig, SSHOrchestratorSettings):
         """Whether the orchestrator supports scheduled pipeline runs.
 
         Returns:
-            True for static pipelines. Dynamic scheduled pipelines are rejected
-            at submission time because they need separate lifecycle handling.
+            False; the SSH orchestrator does not manage schedules. Trigger
+            pipelines directly (e.g. from your own cron job or CI).
         """
-        return True
+        return False
 
 
 class SSHOrchestratorFlavor(BaseOrchestratorFlavor):

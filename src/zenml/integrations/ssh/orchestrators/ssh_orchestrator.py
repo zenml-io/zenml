@@ -75,7 +75,6 @@ if TYPE_CHECKING:
     from zenml.models import (
         PipelineRunResponse,
         PipelineSnapshotResponse,
-        ScheduleResponse,
         StepRunResponse,
     )
     from zenml.stack import Stack
@@ -96,61 +95,6 @@ _NVIDIA_GPU_DEPLOY = {
 # Allow only absolute POSIX/Windows paths in bind mounts so settings can't
 # inject extra Compose/shell tokens.
 _MOUNT_PATH_PATTERN = re.compile(r"^(/[^:\n]*|[A-Za-z]:\\[^:\n]*)$")
-
-# Per-field value ranges for a standard 5-field cron expression:
-# minute, hour, day-of-month, month, day-of-week (0 and 7 are both Sunday).
-_CRON_FIELD_RANGES = ((0, 59), (0, 23), (1, 31), (1, 12), (0, 7))
-
-
-def _is_valid_cron_field(field: str, low: int, high: int) -> bool:
-    """Validate one cron field against its allowed value range.
-
-    Supports ``*``, ``*/step``, single values, ``a-b`` ranges, ``a-b/step``,
-    and comma-separated combinations of those.
-
-    Args:
-        field: The cron field to validate.
-        low: The minimum allowed value for this field.
-        high: The maximum allowed value for this field.
-
-    Returns:
-        True if every component of the field is within range.
-    """
-    for part in field.split(","):
-        if "/" in part:
-            part, _, step = part.partition("/")
-            if not step.isdigit() or int(step) < 1:
-                return False
-        if part == "*":
-            continue
-        if "-" in part:
-            start, _, end = part.partition("-")
-            if not (start.isdigit() and end.isdigit()):
-                return False
-            start_i, end_i = int(start), int(end)
-            if not (low <= start_i <= end_i <= high):
-                return False
-        elif not (part.isdigit() and low <= int(part) <= high):
-            return False
-    return True
-
-
-def _is_valid_cron_expression(expression: str) -> bool:
-    """Validate a standard 5-field cron expression with per-field ranges.
-
-    Args:
-        expression: The cron expression to validate.
-
-    Returns:
-        True if the expression has 5 fields, each within its allowed range.
-    """
-    fields = expression.split()
-    if len(fields) != 5:
-        return False
-    return all(
-        _is_valid_cron_field(field, low, high)
-        for field, (low, high) in zip(fields, _CRON_FIELD_RANGES)
-    )
 
 
 class SSHOrchestrator(ContainerizedOrchestrator):
@@ -354,18 +298,16 @@ class SSHOrchestrator(ContainerizedOrchestrator):
                 f"{result.stderr or result.stdout}"
             )
 
-    def _remote_run_directory(self, run_id: str, scheduled: bool) -> str:
+    def _remote_run_directory(self, run_id: str) -> str:
         """Get the remote run directory for a pipeline launch.
 
         Args:
             run_id: The orchestrator run id.
-            scheduled: Whether this launch installs a future schedule.
 
         Returns:
             The remote directory for the launch files.
         """
-        parent = "scheduled-pipeline-runs" if scheduled else "pipeline-runs"
-        return f"{self.config.remote_workdir}/{parent}/{run_id}"
+        return f"{self.config.remote_workdir}/pipeline-runs/{run_id}"
 
     def _launch_compose(
         self,
@@ -373,35 +315,27 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         run_id: str,
         compose: Dict[str, Any],
         stack: "Stack",
-        schedule: Optional["ScheduleResponse"] = None,
-        snapshot_id: Optional[UUID] = None,
     ) -> None:
-        """Write and run or schedule a Compose file on the remote host.
+        """Write and run a Compose file on the remote host.
 
         Args:
             run_id: The orchestrator run id (used as the remote directory).
             compose: The Compose definition.
             stack: The stack used for this submission.
-            schedule: Optional static pipeline schedule.
-            snapshot_id: Snapshot id used to stamp scheduled run ids.
 
         Raises:
             RuntimeError: If a remote command fails.
         """
         conn = self._build_ssh_connection_config()
-        scheduled = schedule is not None
-        remote_dir = self._remote_run_directory(run_id, scheduled=scheduled)
-        nonscheduled_dir = f"{self.config.remote_workdir}/pipeline-runs"
+        remote_dir = self._remote_run_directory(run_id)
+        runs_dir = f"{self.config.remote_workdir}/pipeline-runs"
         compose_yaml = yaml.dump(
             compose, default_flow_style=False, sort_keys=False
         )
         docker = self.config.docker_binary
 
         with SSHClient(conn) as ssh:
-            mkdir = ssh.exec(
-                f"mkdir -p {shlex.quote(remote_dir)} "
-                f"{shlex.quote(nonscheduled_dir)}"
-            )
+            mkdir = ssh.exec(f"mkdir -p {shlex.quote(remote_dir)}")
             if mkdir.exit_code != 0:
                 raise RuntimeError(
                     f"Failed to create remote directory {remote_dir} on "
@@ -410,7 +344,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
             self._check_remote_disk(ssh, remote_dir)
             if self.config.automatic_cleanup_pipeline_files:
                 cleanup = ssh.exec(
-                    f"find {shlex.quote(nonscheduled_dir)} -type d "
+                    f"find {shlex.quote(runs_dir)} -type d "
                     "-ctime +7 -exec rm -rf {} +"
                 )
                 if cleanup.exit_code != 0:
@@ -420,85 +354,16 @@ class SSHOrchestrator(ContainerizedOrchestrator):
                         cleanup.stderr or cleanup.stdout,
                     )
             ssh.put_text(f"{remote_dir}/docker-compose.yml", compose_yaml)
-            if scheduled:
-                if snapshot_id is None:
-                    raise RuntimeError(
-                        "A snapshot id is required for scheduled SSH "
-                        "orchestrator launches."
-                    )
-                run_script = (
-                    "#!/bin/bash\n"
-                    f"cd {shlex.quote(remote_dir)} && "
-                    f"echo {ENV_ZENML_SSH_RUN_ID}="
-                    f'"{snapshot_id}_$(date +\\%s)" > .env && '
-                    f"{shlex.quote(docker)} compose up -d\n"
-                )
-                ssh.put_text(f"{remote_dir}/run_pipeline.sh", run_script)
             if self.config.container_registry_autologin:
                 self._docker_login(ssh, stack)
-            if schedule is None:
-                up = ssh.exec(
-                    f"cd {shlex.quote(remote_dir)} && "
-                    f"{shlex.quote(docker)} compose up -d"
-                )
-                if up.exit_code != 0:
-                    raise RuntimeError(
-                        f"`docker compose up` failed on "
-                        f"{self.config.hostname}: {up.stderr or up.stdout}"
-                    )
-            elif schedule.cron_expression:
-                cron_expression = schedule.cron_expression
-                if not _is_valid_cron_expression(cron_expression):
-                    raise RuntimeError(
-                        f"The cron expression {cron_expression!r} is not in "
-                        "a valid 5-field format (minute 0-59, hour 0-23, "
-                        "day-of-month 1-31, month 1-12, day-of-week 0-7)."
-                    )
-                crontab_check = ssh.exec("which crontab")
-                if crontab_check.exit_code != 0:
-                    raise RuntimeError(
-                        "The `crontab` command is not installed on the remote "
-                        f"SSH host {self.config.hostname}. Install it (e.g. the "
-                        "`cron`/`cronie` package) to use cron schedules."
-                    )
-                cron_job = (
-                    f"{cron_expression} bash {remote_dir}/run_pipeline.sh"
-                )
-                # 2>/dev/null so a host with no existing crontab (where
-                # `crontab -l` errors) doesn't feed its banner into `crontab -`.
-                cron = ssh.exec(
-                    f"(crontab -l 2>/dev/null ; echo {shlex.quote(cron_job)}) "
-                    "| crontab -"
-                )
-                if cron.exit_code != 0:
-                    raise RuntimeError(
-                        f"Failed to schedule SSH pipeline on "
-                        f"{self.config.hostname}: "
-                        f"{cron.stderr or cron.stdout}"
-                    )
-            elif schedule.run_once_start_time:
-                at_check = ssh.exec("which at")
-                if at_check.exit_code != 0:
-                    raise RuntimeError(
-                        "The `at` command is not installed on the remote SSH "
-                        "host. Install it to use run_once_start_time schedules."
-                    )
-                start_time = schedule.run_once_start_time.strftime(
-                    "%Y%m%d%H%M.%S"
-                )
-                at = ssh.exec(
-                    f"echo {shlex.quote(f'bash {remote_dir}/run_pipeline.sh')} "
-                    f"| at -t {shlex.quote(start_time)}"
-                )
-                if at.exit_code != 0:
-                    raise RuntimeError(
-                        f"Failed to schedule SSH pipeline on "
-                        f"{self.config.hostname}: {at.stderr or at.stdout}"
-                    )
-            else:
+            up = ssh.exec(
+                f"cd {shlex.quote(remote_dir)} && "
+                f"{shlex.quote(docker)} compose up -d"
+            )
+            if up.exit_code != 0:
                 raise RuntimeError(
-                    "A cron expression or run-once start time is required for "
-                    "scheduled SSH pipelines."
+                    f"`docker compose up` failed on "
+                    f"{self.config.hostname}: {up.stderr or up.stdout}"
                 )
         logger.info(
             "Submitted pipeline to %s (remote compose dir: %s).",
@@ -535,7 +400,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         """
         conn = self._build_ssh_connection_config()
         docker = self.config.docker_binary
-        remote_dir = self._remote_run_directory(run_id, scheduled=False)
+        remote_dir = self._remote_run_directory(run_id)
         container_name = f"{run_id}-orchestrator"
         env_file = f"{remote_dir}/orchestrator.env"
 
@@ -600,7 +465,6 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         step: "Step",
         run_id: str,
         step_environment: Dict[str, str],
-        scheduled: bool = False,
     ) -> Dict[str, Any]:
         """Build the Compose service for a single static-pipeline step.
 
@@ -610,15 +474,13 @@ class SSHOrchestrator(ContainerizedOrchestrator):
             step: The step configuration.
             run_id: The orchestrator run id.
             step_environment: The step's environment variables.
-            scheduled: Whether this service is part of a scheduled launch.
 
         Returns:
             A Compose service definition.
         """
         settings = cast(SSHOrchestratorSettings, self.get_settings(step))
         env = dict(step_environment)
-        if not scheduled:
-            env[ENV_ZENML_SSH_RUN_ID] = run_id
+        env[ENV_ZENML_SSH_RUN_ID] = run_id
 
         service: Dict[str, Any] = {
             "image": self.get_image(snapshot=snapshot, step_name=step_name),
@@ -630,8 +492,6 @@ class SSHOrchestrator(ContainerizedOrchestrator):
             ),
             "environment": env,
         }
-        if scheduled:
-            service["env_file"] = [".env"]
 
         volumes = [
             f"{self._validate_mount_path(host)}:"
@@ -671,7 +531,18 @@ class SSHOrchestrator(ContainerizedOrchestrator):
 
         Returns:
             ``None`` (submit-only; the remote DAG runs detached).
+
+        Raises:
+            RuntimeError: If the pipeline has a schedule, which is not
+                supported.
         """
+        if snapshot.schedule:
+            raise RuntimeError(
+                "The SSH orchestrator does not support scheduled pipelines. "
+                "Remove the schedule and trigger the pipeline directly (e.g. "
+                "from your own cron job or CI), or use an orchestrator that "
+                "supports scheduling."
+            )
         run_id = (
             str(placeholder_run.id) if placeholder_run else str(snapshot.id)
         )
@@ -682,7 +553,6 @@ class SSHOrchestrator(ContainerizedOrchestrator):
                 step=step,
                 run_id=run_id,
                 step_environment=step_environments[step_name],
-                scheduled=snapshot.schedule is not None,
             )
             for step_name, step in snapshot.step_configurations.items()
         }
@@ -690,8 +560,6 @@ class SSHOrchestrator(ContainerizedOrchestrator):
             run_id=run_id,
             compose={"services": services},
             stack=stack,
-            schedule=snapshot.schedule,
-            snapshot_id=snapshot.id,
         )
         return None
 
@@ -728,15 +596,11 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         )
 
         if snapshot.schedule:
-            logger.warning(
-                "Scheduled dynamic pipelines are not supported by the SSH "
-                "orchestrator. Rejecting the submission instead of launching "
-                "an immediate one-off run."
-            )
             raise RuntimeError(
-                "The SSH orchestrator supports scheduled static pipelines, "
-                "but scheduled dynamic pipelines are not supported. Remove "
-                "the schedule or use a static pipeline."
+                "The SSH orchestrator does not support scheduled pipelines. "
+                "Remove the schedule and trigger the pipeline directly (e.g. "
+                "from your own cron job or CI), or use an orchestrator that "
+                "supports scheduling."
             )
 
         run_id = (
