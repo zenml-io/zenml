@@ -21,7 +21,6 @@ a live remote host.
 
 import subprocess
 from contextlib import contextmanager
-from datetime import datetime, timezone
 from typing import Any, Iterator
 from unittest.mock import MagicMock, patch
 from uuid import uuid4

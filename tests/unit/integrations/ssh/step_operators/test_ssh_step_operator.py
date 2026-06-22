@@ -20,10 +20,7 @@ from typing import Any, Dict
 from unittest.mock import MagicMock, patch
 
 from zenml.enums import ExecutionStatus
-from zenml.integrations.ssh.ssh_utils import (
-    RemoteCommandResult,
-    SSHConnectionConfig,
-)
+from zenml.integrations.ssh.ssh_utils import RemoteCommandResult
 from zenml.integrations.ssh.step_operators.ssh_step_operator import (
     SSH_CONTAINER_NAME_METADATA_KEY,
     SSHStepOperator,
