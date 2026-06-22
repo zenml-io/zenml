@@ -196,14 +196,6 @@ class SSHOrchestrator(ContainerizedOrchestrator):
             )
         return path
 
-    def _gpu_enabled(self) -> bool:
-        """Whether GPU reservations should be added to services.
-
-        Returns:
-            The configured GPU flag.
-        """
-        return self.config.gpu_enabled
-
     def _check_remote_disk(self, ssh: SSHClient, path: str) -> None:
         """Fail fast if the remote host is low on disk for the given path.
 
