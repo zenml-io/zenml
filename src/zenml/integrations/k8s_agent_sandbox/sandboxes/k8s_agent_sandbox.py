@@ -100,11 +100,7 @@ def _delete_sandbox_template(name: str, namespace: str) -> None:
 
 
 class K8sAgentSandboxProcess(SandboxProcess):
-    """Single-shot process wrapping an ``ExecutionResult``.
-
-    The SDK's ``commands.run`` blocks until the command exits, so the
-    full output is already captured by construction time.
-    """
+    """Single-shot process wrapping an ``ExecutionResult``."""
 
     def __init__(
         self,
@@ -267,21 +263,12 @@ class K8sAgentSandboxSession(SandboxSession):
         )
 
     def _close(self) -> None:
-        """Releases the session without terminating the sandbox.
-
-        Deletes any inline-synthesized SandboxTemplate CR. Idempotent.
-        """
+        """Releases the session without terminating the sandbox."""
         if self._inline_template_name and self._inline_template_namespace:
             self._delete_inline_template()
 
     def _destroy(self) -> None:
-        """Terminates the Sandbox and deletes any inline template CR.
-
-        Best-effort: failures are logged with the kubectl command to
-        reconcile manually, never raised. The base ``destroy()`` calls
-        ``close()`` afterwards, which routes through ``_close()`` —
-        the inline-template delete there is idempotent via the tracker.
-        """
+        """Terminates the Sandbox and deletes any inline template CR."""
         try:
             # terminate() routes through the SDK's k8s_helper, whose API
             # clients already captured the connector credentials at build
@@ -303,11 +290,7 @@ class K8sAgentSandboxSession(SandboxSession):
         self._delete_inline_template()
 
     def _delete_inline_template(self) -> None:
-        """Best-effort, idempotent delete of the inline SandboxTemplate CR.
-
-        Runs inside the parent's connector credential scope so the
-        delete targets the same cluster the template was created on.
-        """
+        """Best-effort, idempotent delete of the inline SandboxTemplate CR."""
         name = self._inline_template_name
         namespace = self._inline_template_namespace
         if name is None or namespace is None:
@@ -417,19 +400,11 @@ class K8sAgentSandbox(BaseSandbox):
     def _kube_default_config(self) -> Iterator[None]:
         """Scopes the connector's kubeconfig as the kubernetes default.
 
-        Without a connector, the user's ambient cluster config is
-        loaded instead (in-cluster first, then the local kubeconfig) —
-        leaving the library default untouched would silently point the
-        kubernetes SDK at localhost.
-
-        ``Configuration._default`` is process-global, so the module-
-        level lock is held for the duration of the context to keep
-        concurrent sessions (e.g. callers spawning parallel
-        ``create_session`` calls) from cross-wiring credentials. Callers
-        must therefore keep the scope tight — only the work that builds
-        API clients (which snapshot the default at construction) belongs
-        inside it; slow network operations should run afterwards on the
-        already-constructed clients so fan-out doesn't serialize.
+        Callers must keep the scope tight: only the work that builds API
+        clients (which snapshot the process-global default at
+        construction) belongs inside it; slow network operations should
+        run afterwards on the already-constructed clients so concurrent
+        sessions don't serialize on the module-level lock.
 
         Yields:
             ``None`` — used as a context manager.
@@ -499,8 +474,8 @@ class K8sAgentSandbox(BaseSandbox):
     def _build_client(self) -> "SandboxClient":
         """Builds a fresh ``SandboxClient`` per call.
 
-        Deliberately not cached: connector tokens are short-lived and
-        the SDK doesn't refresh them, so each session needs a rebuild.
+        Not cached: connector tokens are short-lived and the SDK doesn't
+        refresh them, so each session needs a rebuild.
 
         Returns:
             A new ``SandboxClient`` for this component's connection mode.
@@ -524,15 +499,10 @@ class K8sAgentSandbox(BaseSandbox):
 
         Returns:
             A dict ready to pass to ``CustomObjectsApi.
-            create_namespaced_custom_object``. Mirrors the layout of
-            the SDK's example ``python-sandbox-template.yaml``: a
-            single container exposing port 8888 with HTTP readiness /
-            liveness probes, plus any pod-level customizations from
-            settings.
+            create_namespaced_custom_object``.
 
         Raises:
-            ValueError: If no ``image`` is configured. Inline mode
-                requires an explicit image — reproducibility-first.
+            ValueError: If no ``image`` is configured.
         """
         from zenml.integrations.kubernetes.manifest_utils import (
             add_pod_settings,
@@ -616,9 +586,6 @@ class K8sAgentSandbox(BaseSandbox):
     ) -> str:
         """Creates a one-off SandboxTemplate CR for this session.
 
-        Synthesized templates are short-lived — they exist only to back
-        a single Sandbox claim and are deleted on session close.
-
         Args:
             eff: Effective settings.
             namespace: Target namespace for the CR.
@@ -657,9 +624,6 @@ class K8sAgentSandbox(BaseSandbox):
         self, settings: Optional[BaseSandboxSettings] = None
     ) -> SandboxSession:
         """Creates a new Agent Sandbox Session.
-
-        Uses the configured ``template_name``, or synthesizes an inline
-        SandboxTemplate CR from the resolved settings when unset.
 
         Args:
             settings: Per-call overrides on top of the component config.

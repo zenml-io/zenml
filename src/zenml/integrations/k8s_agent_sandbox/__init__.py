@@ -11,15 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Agent Sandbox integration.
-
-Wraps the ``k8s-agent-sandbox`` Python SDK (the client library for the
-``kubernetes-sigs/agent-sandbox`` operator + Google's Agent Substrate
-project) as a ZenML ``Sandbox`` stack component.
-
-Works against any Kubernetes cluster running the ``agent-sandbox``
-operator.
-"""
+"""Agent Sandbox integration."""
 
 from typing import List, Type
 

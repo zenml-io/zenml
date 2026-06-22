@@ -33,15 +33,7 @@ if TYPE_CHECKING:
 
 
 class ConnectionMode(str, Enum):
-    """How the Python client talks to the agent-sandbox API in the cluster.
-
-    Mirrors ``k8s_agent_sandbox.models`` connection-config variants.
-    ``LOCAL_TUNNEL`` (the SDK default) spawns ``kubectl port-forward``
-    per session, which is convenient for local dev but doesn't compose
-    well with remote orchestrators. ``GATEWAY`` is the recommended
-    production mode — uses a stable Gateway IP discovered via the
-    cluster's Gateway API.
-    """
+    """How the Python client talks to the agent-sandbox API in the cluster."""
 
     LOCAL_TUNNEL = "local_tunnel"
     GATEWAY = "gateway"
@@ -55,77 +47,51 @@ class K8sAgentSandboxSettings(BaseSandboxSettings):
     image: Optional[str] = Field(
         default=None,
         description="Container image used when synthesizing an inline "
-        "SandboxTemplate (i.e. when ``template_name`` is unset). MUST "
+        "SandboxTemplate (i.e. when ``template_name`` is unset). Must "
         "contain the agent-sandbox runtime that exposes the sandbox "
-        "HTTP API on port 8888 — ``commands.run`` POSTs to "
-        "``/execute`` and fails fast without it. No default: inline "
-        "mode refuses to run without an explicit image. Pin to a "
-        "digest or a stable tag — never ``:latest``. To bundle extra "
-        "deps, base a custom image on the upstream "
-        "``python-runtime-sandbox`` image. Examples: "
-        "``ghcr.io/agent-sandbox/python-runtime@sha256:...``, "
-        "``my-org/sandbox-runtime:1.0``. Ignored when "
-        "``template_name`` is set — the referenced SandboxTemplate's "
-        "image wins.",
+        "HTTP API on port 8888. Pin to a digest or a stable tag — "
+        "never ``:latest``. Example: "
+        "``ghcr.io/agent-sandbox/python-runtime@sha256:...``. Ignored "
+        "when ``template_name`` is set.",
     )
     template_name: Optional[str] = Field(
         default=None,
         description="Name of a pre-created SandboxTemplate custom "
-        "resource in the cluster. When set the flavor uses template "
-        "mode: ``client.create_sandbox(template=template_name, "
-        "namespace=namespace)``. When ``None`` the flavor creates an "
-        "inline SandboxTemplate per session from ``image``, "
-        "``sandbox_environment`` and ``pod_settings``. In template "
-        "mode the referenced SandboxTemplate's spec wins and the "
-        "inherited ``sandbox_environment`` setting is NOT applied — "
-        "bake env into the template or pass per-exec ``env``. "
-        "Examples: ``python-sandbox``, ``ml-workload-template``. "
-        "Template mode is recommended for production; inline mode is "
-        "convenient for prototyping.",
+        "resource in the cluster (template mode). When ``None`` the "
+        "flavor creates an inline SandboxTemplate per session from "
+        "``image``, ``sandbox_environment`` and ``pod_settings``. In "
+        "template mode the referenced SandboxTemplate's spec wins and "
+        "the inherited ``sandbox_environment`` setting is NOT applied — "
+        "bake env into the template or pass per-exec ``env``. Example: "
+        "``python-sandbox``.",
     )
     namespace: str = Field(
         default="default",
         description="Kubernetes namespace where the Sandbox claim is "
-        "created. Per-step override via settings; component-level "
-        "default lives on the config. Examples: ``default``, "
-        "``agent-workloads``. Must exist in the cluster — create with "
-        "``kubectl create namespace <name>`` before registering the "
-        "component.",
+        "created. Must already exist in the cluster. Example: "
+        "``agent-workloads``.",
     )
     sandbox_ready_timeout: int = Field(
         default=180,
         description="Seconds to wait for the SandboxClaim's underlying "
-        "pod to become Ready before ``create_session`` raises. "
-        "Defaults to 180s. Set higher when the pod image is large or "
-        "the cluster auto-scales from zero.",
+        "pod to become Ready before ``create_session`` raises. Set "
+        "higher when the pod image is large or the cluster auto-scales "
+        "from zero.",
         ge=1,
     )
     pod_settings: Optional[KubernetesPodSettings] = Field(
         default=None,
-        description="Full Kubernetes pod customization reusing the "
-        "Kubernetes orchestrator's ``KubernetesPodSettings`` surface — "
-        "node_selectors, affinity, tolerations, volume_mounts, env, "
-        "security_context, additional_pod_spec_args, etc. Sandbox pod "
-        "resources (cpu/memory/gpu) are sized exclusively via "
-        "``resources`` here — the active step's ``ResourceSettings`` "
-        "are not applied to the sandbox pod. Only applied in "
-        "inline-template mode (when ``template_name`` is unset); in "
-        "template mode the referenced SandboxTemplate's spec wins.",
+        description="Kubernetes pod customization (node_selectors, "
+        "affinity, tolerations, volume_mounts, resources, etc). Sandbox "
+        "pod resources are sized exclusively via ``resources`` here — "
+        "the active step's ``ResourceSettings`` are not applied to the "
+        "sandbox pod. Only applied in inline-template mode (when "
+        "``template_name`` is unset).",
     )
 
 
 class K8sAgentSandboxConfig(BaseSandboxConfig, K8sAgentSandboxSettings):
-    """Configuration for the Agent Sandbox component.
-
-    Inherits per-step settings so they act as component-level defaults;
-    ``K8sAgentSandboxSettings`` overrides them per step.
-
-    Authentication is handled via a linked ZenML service connector
-    (``gcp`` for GKE or ``kubernetes`` for any cluster) that exposes
-    a ``kubernetes-cluster`` resource. The connector mints a fresh
-    kubeconfig at session-creation time, so no ``~/.kube/config``
-    plumbing is required.
-    """
+    """Configuration for the Agent Sandbox component."""
 
     connection_mode: ConnectionMode = Field(
         default=ConnectionMode.GATEWAY,
@@ -140,8 +106,7 @@ class K8sAgentSandboxConfig(BaseSandboxConfig, K8sAgentSandboxSettings):
         default="sandbox-router",
         description="Name of the Gateway resource fronting the "
         "sandbox-router service. Only consulted when "
-        "``connection_mode=gateway``. Defaults match the operator's "
-        "sample manifests.",
+        "``connection_mode=gateway``.",
     )
     gateway_namespace: str = Field(
         default="agent-sandbox-system",
@@ -182,10 +147,6 @@ class K8sAgentSandboxFlavor(BaseSandboxFlavor):
         self,
     ) -> Optional[ServiceConnectorRequirements]:
         """Service connector requirements.
-
-        Accepts any connector that exposes a ``kubernetes-cluster``
-        resource — covers both the ``gcp`` connector (for GKE) and
-        the raw ``kubernetes`` connector (for any cluster).
 
         Returns:
             ``ServiceConnectorRequirements`` declaring the
