@@ -74,9 +74,6 @@ from zenml.zen_server.routers import (
     pipeline_snapshot_endpoints,
     pipelines_endpoints,
     projects_endpoints,
-    resource_descriptors_endpoints,
-    resource_policies_endpoints,
-    resource_pools_endpoints,
     resource_requests_endpoints,
     run_metadata_endpoints,
     run_templates_endpoints,
@@ -346,9 +343,6 @@ app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)
 app.include_router(projects_endpoints.workspace_router)
 app.include_router(projects_endpoints.router)
-app.include_router(resource_descriptors_endpoints.router)
-app.include_router(resource_pools_endpoints.router)
-app.include_router(resource_policies_endpoints.router)
 app.include_router(resource_requests_endpoints.router)
 app.include_router(trigger_endpoints.router)
 

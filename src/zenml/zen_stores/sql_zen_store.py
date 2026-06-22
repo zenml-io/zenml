@@ -295,25 +295,10 @@ from zenml.models import (
     ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectUpdate,
-    ResourceDescriptorFilter,
-    ResourceDescriptorRequest,
-    ResourceDescriptorResponse,
-    ResourceDescriptorUpdate,
-    ResourcePolicyFilter,
-    ResourcePolicyRequest,
-    ResourcePolicyResponse,
-    ResourcePolicyUpdate,
-    ResourcePoolAllocation,
-    ResourcePoolFilter,
-    ResourcePoolQueueItem,
-    ResourcePoolRequest,
-    ResourcePoolResponse,
-    ResourcePoolUpdate,
     ResourceRequestDemand,
     ResourceRequestFilter,
     ResourceRequestRequest,
     ResourceRequestResponse,
-    ResourceRequestTerminateRequest,
     RunMetadataRequest,
     RunMetadataResource,
     RunStatisticsRequest,
@@ -3935,11 +3920,6 @@ class SqlZenStore(BaseZenStore):
                     f"from all stacks."
                 )
 
-            if self.resource_pools_enabled:
-                self.resource_pools.delete_component_subject(
-                    session=session, component_id=component_id
-                )
-
             session.delete(stack_component)
             session.commit()
 
@@ -3989,197 +3969,6 @@ class SqlZenStore(BaseZenStore):
                 f"component with the same name and type."
             )
 
-    # -------------------- Resource Descriptors -------------
-
-    def create_resource_descriptor(
-        self, descriptor: ResourceDescriptorRequest
-    ) -> ResourceDescriptorResponse:
-        """Create a resource descriptor."""
-        with Session(self.engine) as session:
-            self._set_request_user_id(descriptor, session)
-        return self.resource_pools.create_resource_descriptor(descriptor)
-
-    def get_resource_descriptor(
-        self, descriptor_id: UUID
-    ) -> ResourceDescriptorResponse:
-        """Get a resource descriptor by ID."""
-        return self.resource_pools.get_resource_descriptor(descriptor_id)
-
-    def list_resource_descriptors(
-        self, filter_model: ResourceDescriptorFilter
-    ) -> Page[ResourceDescriptorResponse]:
-        """List resource descriptors."""
-        return self.resource_pools.list_resource_descriptors(filter_model)
-
-    def update_resource_descriptor(
-        self, descriptor_id: UUID, update: ResourceDescriptorUpdate
-    ) -> ResourceDescriptorResponse:
-        """Update a resource descriptor."""
-        return self.resource_pools.update_resource_descriptor(
-            descriptor_id, update
-        )
-
-    def delete_resource_descriptor(self, descriptor_id: UUID) -> None:
-        """Delete a resource descriptor."""
-        self.resource_pools.delete_resource_descriptor(descriptor_id)
-
-    # -------------------- Resource Pools -------------
-
-    def create_resource_pool(
-        self, resource_pool: ResourcePoolRequest
-    ) -> ResourcePoolResponse:
-        """Create a resource pool.
-
-        Args:
-            resource_pool: The resource pool to create.
-
-        Returns:
-            The created resource pool.
-        """
-        return self.resource_pools.create_resource_pool(resource_pool)
-
-    def get_resource_pool(
-        self, resource_pool_id: UUID, hydrate: bool = True
-    ) -> ResourcePoolResponse:
-        """Get a resource pool by ID.
-
-        Args:
-            resource_pool_id: The ID of the resource pool to get.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            The resource pool.
-        """
-        return self.resource_pools.get_resource_pool(
-            resource_pool_id, hydrate=hydrate
-        )
-
-    def list_resource_pools(
-        self, filter_model: ResourcePoolFilter, hydrate: bool = False
-    ) -> Page[ResourcePoolResponse]:
-        """List all resource pools matching the given filter criteria.
-
-        Args:
-            filter_model: All filter parameters including pagination
-                params.
-            hydrate: Flag deciding whether to hydrate the output model(s)
-                by including metadata fields in the response.
-
-        Returns:
-            A list of all resource pools matching the filter criteria.
-        """
-        return self.resource_pools.list_resource_pools(
-            filter_model, hydrate=hydrate
-        )
-
-    def update_resource_pool(
-        self, resource_pool_id: UUID, update: ResourcePoolUpdate
-    ) -> ResourcePoolResponse:
-        """Update an existing resource pool.
-
-        Args:
-            resource_pool_id: The ID of the resource pool to update.
-            update: The update to be applied to the resource pool.
-
-        Returns:
-            The updated resource pool.
-        """
-        return self.resource_pools.update_resource_pool(
-            resource_pool_id, update
-        )
-
-    def delete_resource_pool(self, resource_pool_id: UUID) -> None:
-        """Delete a resource pool.
-
-        Args:
-            resource_pool_id: The ID of the resource pool to delete.
-        """
-        self.resource_pools.delete_resource_pool(resource_pool_id)
-
-    def list_resource_pool_queue(
-        self, resource_pool_id: UUID
-    ) -> Page[ResourcePoolQueueItem]:
-        """List queued requests for a resource pool."""
-        return self.resource_pools.list_resource_pool_queue(resource_pool_id)
-
-    def list_resource_pool_allocations(
-        self, resource_pool_id: UUID
-    ) -> Page[ResourcePoolAllocation]:
-        """List active allocations for a resource pool."""
-        return self.resource_pools.list_resource_pool_allocations(
-            resource_pool_id
-        )
-
-    def create_resource_policy(
-        self, policy: ResourcePolicyRequest
-    ) -> ResourcePolicyResponse:
-        """Create a resource policy.
-
-        Args:
-            policy: The policy to create.
-
-        Returns:
-            The created policy.
-        """
-        return self.resource_pools.create_resource_policy(policy)
-
-    def get_resource_policy(
-        self, policy_id: UUID, hydrate: bool = True
-    ) -> ResourcePolicyResponse:
-        """Get a resource policy by ID.
-
-        Args:
-            policy_id: The ID of the policy to get.
-            hydrate: Ignored for Resource Manager-backed policies.
-
-        Returns:
-            The requested policy.
-        """
-        return self.resource_pools.get_resource_policy(
-            policy_id, hydrate=hydrate
-        )
-
-    def list_resource_policies(
-        self,
-        filter_model: ResourcePolicyFilter,
-        hydrate: bool = False,
-    ) -> Page[ResourcePolicyResponse]:
-        """List resource policies.
-
-        Args:
-            filter_model: All filter parameters including pagination params.
-            hydrate: Ignored for Resource Manager-backed policies.
-
-        Returns:
-            Matching policies.
-        """
-        return self.resource_pools.list_resource_policies(
-            filter_model, hydrate=hydrate
-        )
-
-    def update_resource_policy(
-        self, policy_id: UUID, update: ResourcePolicyUpdate
-    ) -> ResourcePolicyResponse:
-        """Update an existing resource policy.
-
-        Args:
-            policy_id: The ID of the policy to update.
-            update: The update model.
-
-        Returns:
-            The updated policy.
-        """
-        return self.resource_pools.update_resource_policy(policy_id, update)
-
-    def delete_resource_policy(self, policy_id: UUID) -> None:
-        """Delete a resource policy.
-
-        Args:
-            policy_id: The ID of the policy to delete.
-        """
-        self.resource_pools.delete_resource_policy(policy_id)
-
     # -------------------- Resource Requests -------------
 
     def get_resource_request(
@@ -4215,63 +4004,6 @@ class SqlZenStore(BaseZenStore):
         """
         return self.resource_pools.list_resource_requests(
             filter_model, hydrate=hydrate
-        )
-
-    def delete_resource_request(self, resource_request_id: UUID) -> None:
-        """Delete a resource request.
-
-        Args:
-            resource_request_id: The ID of the resource request to delete.
-        """
-        self.resource_pools.delete_resource_request(resource_request_id)
-
-    def create_resource_request(
-        self,
-        resource_request: ResourceRequestRequest,
-    ) -> ResourceRequestResponse:
-        """Create a resource request.
-
-        Args:
-            resource_request: The resource request to create.
-
-        Returns:
-            The created resource request.
-
-        Raises:
-            IllegalOperationError: If the request owner has no external
-                account ID configured for account-initiated requests.
-        """
-        if resource_request.user is None:
-            with Session(self.engine) as user_session:
-                self._set_request_user_id(resource_request, user_session)
-
-        if not resource_request.component_ids:
-            owner = self.get_user(resource_request.user, hydrate=False)
-            if owner.external_user_id is None:
-                raise IllegalOperationError(
-                    "The authenticated identity has no external account id "
-                    "configured."
-                )
-
-        return self.resource_pools.create_resource_request(resource_request)
-
-    def terminate_resource_request(
-        self,
-        resource_request_id: UUID,
-        terminate_request: ResourceRequestTerminateRequest,
-    ) -> ResourceRequestResponse:
-        """Terminate a resource request.
-
-        Args:
-            resource_request_id: The ID of the resource request to terminate.
-            terminate_request: Termination options such as force and reason.
-
-        Returns:
-            The terminated resource request.
-        """
-        return self.resource_pools.terminate_resource_request(
-            resource_request_id,
-            terminate_request,
         )
 
     def release_resource_request(
@@ -8473,7 +8205,7 @@ class SqlZenStore(BaseZenStore):
                     delete(TriggerSnapshotSchema).where(
                         col(TriggerSnapshotSchema.trigger_id) == trigger_id
                     )
-                )  # type: ignore[call-overload, unused-ignore]
+                )
 
             session.commit()
 
@@ -12226,7 +11958,7 @@ class SqlZenStore(BaseZenStore):
                             self._resource_request_lease_expires_at()
                         )
 
-                    request = self.resource_pools.create_resource_request_for_step_run(
+                    request = self.resource_pools.create_resource_request(
                         session,
                         ResourceRequestRequest(
                             user=step_run.user,

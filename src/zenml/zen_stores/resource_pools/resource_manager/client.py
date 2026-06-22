@@ -13,8 +13,9 @@
 #  permissions and limitations under the License.
 """Synchronous client for the ZenML Pro Resource Manager service."""
 
-from datetime import datetime
-from typing import Any, Optional, Type, TypeVar
+from datetime import datetime, timedelta
+from threading import RLock
+from typing import Any, Optional, Protocol, Type, TypeVar
 from uuid import UUID, uuid4
 
 import requests
@@ -26,401 +27,157 @@ from zenml.exceptions import (
     EntityExistsError,
     IllegalOperationError,
 )
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.resource_pools.resource_manager.transport import (
-    RMAllocationListResponse,
-    RMPolicyListResponse,
-    RMPolicyRequest,
-    RMPolicyResponse,
-    RMPolicyUpdate,
-    RMPoolListResponse,
-    RMPoolRequest,
-    RMPoolResponse,
-    RMPoolUpdate,
-    RMQueueEntryListResponse,
-    RMResourceListResponse,
-    RMResourceRequest,
     RMResourceRequestCreate,
     RMResourceRequestListResponse,
+    RMResourceRequestRenewalRequest,
     RMResourceRequestResponse,
-    RMResourceResponse,
-    RMResourceUpdate,
 )
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
 
 
-def _error_message_from_response(response: requests.Response) -> str:
-    """Extract a human-readable error message from a Resource Manager response.
+class CloudConnection(Protocol):
+    """Protocol for the Cloud API connection used by this client."""
 
-    Args:
-        response: Failed HTTP response from Resource Manager.
-
-    Returns:
-        Error message text suitable for ZenML exceptions.
-    """
-    try:
-        payload = response.json()
-    except requests.JSONDecodeError:
-        return response.text
-
-    if not isinstance(payload, dict):
-        return response.text
-
-    detail = payload.get("detail", response.text)
-    if isinstance(detail, str):
-        return detail
-    if isinstance(detail, list):
-        return ": ".join(str(item) for item in detail)
-    return response.text
+    def get(
+        self, endpoint: str, params: Optional[dict[str, Any]]
+    ) -> requests.Response:
+        """Send a GET request to the Cloud API."""
 
 
-def _exception_from_rm_response(response: requests.Response) -> Exception:
-    """Map a Resource Manager HTTP error to a ZenML store exception.
+class ResourceManagerAuthorization(BaseModel):
+    """Cloud API response for direct Resource Manager access."""
 
-    Resource Manager returns FastAPI-style ``{"detail": "..."}`` bodies. These
-    are translated to the same exception types the workspace REST API already
-    maps to HTTP status codes.
+    token: str
+    token_type: str = "bearer"
+    resource_manager_id: UUID
+    api_url: str
+    organization_id: UUID
+    workspace_id: Optional[UUID] = None
+    expires_at: datetime
 
-    Args:
-        response: Failed HTTP response from Resource Manager.
 
-    Returns:
-        Exception to raise to workspace callers.
-    """
-    message = _error_message_from_response(response)
-    status_code = response.status_code
+class ResourceManagerLoginRequest(BaseModel):
+    """Resource Manager login request."""
 
-    if status_code == 404:
-        return KeyError(message)
-    if status_code == 409:
-        lowered = message.lower()
-        if "already registered" in lowered or "duplicate" in lowered:
-            return EntityExistsError(message)
-        return IllegalOperationError(message)
-    if status_code in {400, 422}:
-        return ValueError(message)
-    if status_code == 403:
-        return IllegalOperationError(message)
-    if status_code == 401:
-        return CredentialsNotValid(message)
+    organization_id: Optional[UUID] = None
+    workspace_id: Optional[UUID] = None
 
-    return RuntimeError(
-        f"{status_code} HTTP Error received from Resource Manager: {message}"
-    )
+
+class ResourceManagerLoginResponse(BaseModel):
+    """Resource Manager local session response."""
+
+    access_token: str
+    token_type: str = "bearer"
+    expires_at: datetime
+    organization_id: UUID
+    workspace_id: Optional[UUID] = None
+    user_id: Optional[UUID] = None
+    resource_manager_id: UUID
 
 
 class ResourceManagerClient:
     """Minimal synchronous client for the Resource Manager REST API."""
 
     IDEMPOTENCY_HEADER = "X-Idempotency-Key"
-    ORGANIZATION_HEADER = "X-Test-Organization-Id"
+
+    @staticmethod
+    def error_message_from_response(response: requests.Response) -> str:
+        """Extract a human-readable error message from an RM response.
+
+        Args:
+            response: Failed HTTP response from Resource Manager.
+
+        Returns:
+            Error message text suitable for ZenML exceptions.
+        """
+        try:
+            payload = response.json()
+        except requests.JSONDecodeError:
+            return response.text
+
+        if not isinstance(payload, dict):
+            return response.text
+
+        detail = payload.get("detail", response.text)
+        if isinstance(detail, str):
+            return detail
+        if isinstance(detail, list):
+            return ": ".join(str(item) for item in detail)
+        return response.text
+
+    @staticmethod
+    def exception_from_rm_response(
+        response: requests.Response,
+    ) -> Exception:
+        """Map a Resource Manager HTTP error to a ZenML store exception.
+
+        Resource Manager returns FastAPI-style ``{"detail": "..."}`` bodies.
+        These are translated to the same exception types the workspace REST API
+        already maps to HTTP status codes.
+
+        Args:
+            response: Failed HTTP response from Resource Manager.
+
+        Returns:
+            Exception to raise to workspace callers.
+        """
+        message = ResourceManagerClient.error_message_from_response(response)
+        status_code = response.status_code
+
+        if status_code == 404:
+            return KeyError(message)
+        if status_code == 409:
+            lowered = message.lower()
+            if (
+                "already exists" in lowered
+                or "already registered" in lowered
+                or "duplicate" in lowered
+            ):
+                return EntityExistsError(message)
+            return IllegalOperationError(message)
+        if status_code in {400, 422}:
+            return ValueError(message)
+        if status_code == 403:
+            return IllegalOperationError(message)
+        if status_code == 401:
+            return CredentialsNotValid(message)
+
+        return RuntimeError(
+            f"{status_code} HTTP Error received from Resource Manager: "
+            f"{message}"
+        )
 
     def __init__(
         self,
-        base_url: str,
         *,
         timeout: int = 30,
         headers: Optional[dict[str, str]] = None,
         session: Optional[requests.Session] = None,
+        cloud_connection: Optional[CloudConnection] = None,
     ) -> None:
         """Initialize the Resource Manager client.
 
         Args:
-            base_url: Base URL of the Resource Manager service.
             timeout: Request timeout in seconds.
             headers: Optional headers included with every request.
             session: Optional preconfigured requests session.
+            cloud_connection: Optional Cloud API connection override.
         """
-        self._base_url = base_url.rstrip("/")
+        self._base_url: Optional[str] = None
         self._timeout = timeout
         self._session = session or requests.Session()
         self._configure_session(self._session)
         self._headers = headers or {}
-
-    def create_resource(
-        self, request: RMResourceRequest
-    ) -> RMResourceResponse:
-        """Create a Resource Manager resource descriptor.
-
-        Args:
-            request: Descriptor create payload.
-
-        Returns:
-            The created descriptor.
-        """
-        return self._request_model(
-            "POST", "/v1/resources", RMResourceResponse, json=request
-        )
-
-    def get_resource(self, resource_id: UUID) -> RMResourceResponse:
-        """Fetch a Resource Manager resource descriptor.
-
-        Args:
-            resource_id: Descriptor ID.
-
-        Returns:
-            The requested descriptor.
-        """
-        return self._request_model(
-            "GET", f"/v1/resources/{resource_id}", RMResourceResponse
-        )
-
-    def list_resources(
-        self,
-        *,
-        resource_id: Optional[UUID] = None,
-        name: Optional[str] = None,
-        kind: Optional[str] = None,
-        metadata: Optional[dict[str, str]] = None,
-    ) -> RMResourceListResponse:
-        """List Resource Manager resource descriptors.
-
-        Args:
-            resource_id: When set, return only the descriptor with this id.
-            name: When set, return only descriptors with this exact name.
-            kind: When set, return only descriptors with this exact kind.
-            metadata: Optional exact-match filters against opaque entity
-                metadata. Each entry is sent as ``metadata[key]=value``.
-
-        Returns:
-            A list wrapper containing matching descriptors.
-        """
-        params = self._list_params(
-            resource=resource_id if resource_id is not None else name,
-            kind=kind,
-            metadata=metadata,
-        )
-        return self._request_model(
-            "GET", "/v1/resources", RMResourceListResponse, params=params
-        )
-
-    def update_resource(
-        self, resource_id: UUID, update: RMResourceUpdate
-    ) -> RMResourceResponse:
-        """Update a Resource Manager resource descriptor.
-
-        Args:
-            resource_id: Descriptor ID.
-            update: Descriptor update payload.
-
-        Returns:
-            The updated descriptor.
-        """
-        return self._request_model(
-            "PATCH",
-            f"/v1/resources/{resource_id}",
-            RMResourceResponse,
-            json=update,
-        )
-
-    def delete_resource(self, resource_id: UUID) -> None:
-        """Delete a Resource Manager resource descriptor.
-
-        Args:
-            resource_id: Descriptor ID.
-        """
-        self._request("DELETE", f"/v1/resources/{resource_id}")
-
-    def create_pool(self, request: RMPoolRequest) -> RMPoolResponse:
-        """Create a Resource Manager resource pool.
-
-        Args:
-            request: Pool create payload.
-
-        Returns:
-            The created pool.
-        """
-        return self._request_model(
-            "POST", "/v1/resource-pools", RMPoolResponse, json=request
-        )
-
-    def get_pool(self, pool_id: UUID) -> RMPoolResponse:
-        """Fetch a Resource Manager resource pool.
-
-        Args:
-            pool_id: Pool ID.
-
-        Returns:
-            The requested pool.
-        """
-        return self._request_model(
-            "GET", f"/v1/resource-pools/{pool_id}", RMPoolResponse
-        )
-
-    def list_pools(
-        self,
-        *,
-        pool_id: Optional[UUID] = None,
-        name: Optional[str] = None,
-        metadata: Optional[dict[str, str]] = None,
-    ) -> RMPoolListResponse:
-        """List Resource Manager resource pools.
-
-        Args:
-            pool_id: When set, return only the pool with this id.
-            name: When set, return only pools with this exact name.
-            metadata: Optional exact-match filters against opaque entity
-                metadata. Each entry is sent as ``metadata[key]=value``.
-
-        Returns:
-            A list wrapper containing matching pools.
-        """
-        params = self._list_params(
-            pool=pool_id if pool_id is not None else name,
-            metadata=metadata,
-        )
-        return self._request_model(
-            "GET", "/v1/resource-pools", RMPoolListResponse, params=params
-        )
-
-    def update_pool(
-        self, pool_id: UUID, update: RMPoolUpdate
-    ) -> RMPoolResponse:
-        """Update a Resource Manager resource pool.
-
-        Args:
-            pool_id: Pool ID.
-            update: Pool update payload.
-
-        Returns:
-            The updated pool.
-        """
-        return self._request_model(
-            "PATCH",
-            f"/v1/resource-pools/{pool_id}",
-            RMPoolResponse,
-            json=update,
-        )
-
-    def delete_pool(self, pool_id: UUID) -> None:
-        """Delete a Resource Manager resource pool.
-
-        Args:
-            pool_id: Pool ID.
-        """
-        self._request("DELETE", f"/v1/resource-pools/{pool_id}")
-
-    def list_pool_queue(self, pool_id: UUID) -> RMQueueEntryListResponse:
-        """List queue entries for a Resource Manager pool.
-
-        Args:
-            pool_id: Pool ID.
-
-        Returns:
-            Queue entries for the pool.
-        """
-        return self._request_model(
-            "GET",
-            f"/v1/resource-pools/{pool_id}/queue",
-            RMQueueEntryListResponse,
-        )
-
-    def list_pool_allocations(self, pool_id: UUID) -> RMAllocationListResponse:
-        """List allocations for a Resource Manager pool.
-
-        Args:
-            pool_id: Pool ID.
-
-        Returns:
-            Active and historical allocations for the pool.
-        """
-        return self._request_model(
-            "GET",
-            f"/v1/resource-pools/{pool_id}/allocations",
-            RMAllocationListResponse,
-        )
-
-    def list_policies(
-        self,
-        *,
-        policy_id: Optional[UUID] = None,
-        pool_id: Optional[UUID] = None,
-        pool: Optional[str] = None,
-        subject_id: Optional[UUID] = None,
-        priority: Optional[int] = None,
-        metadata: Optional[dict[str, str]] = None,
-    ) -> RMPolicyListResponse:
-        """List Resource Manager policies.
-
-        Args:
-            policy_id: When set, return only the policy with this id.
-            pool_id: When set, return only policies bound to this pool id.
-            pool: When set, return only policies bound to this pool name.
-            subject_id: When set, return only policies whose selector
-                references this subject id.
-            priority: When set, return only policies with this exact priority.
-            metadata: Optional exact-match filters against opaque entity
-                metadata. Each entry is sent as ``metadata[key]=value``.
-
-        Returns:
-            A list wrapper containing matching policies.
-        """
-        params = self._list_params(
-            policy_id=policy_id,
-            pool=pool_id if pool_id is not None else pool,
-            subject_id=subject_id,
-            priority=priority,
-            metadata=metadata,
-        )
-        return self._request_model(
-            "GET",
-            "/v1/resource-policies",
-            RMPolicyListResponse,
-            params=params,
-        )
-
-    def create_policy(self, request: RMPolicyRequest) -> RMPolicyResponse:
-        """Create a Resource Manager policy.
-
-        Args:
-            request: Policy create payload.
-
-        Returns:
-            The created policy.
-        """
-        return self._request_model(
-            "POST", "/v1/resource-policies", RMPolicyResponse, json=request
-        )
-
-    def get_policy(self, policy_id: UUID) -> RMPolicyResponse:
-        """Fetch a Resource Manager policy.
-
-        Args:
-            policy_id: Policy ID.
-
-        Returns:
-            The requested policy.
-        """
-        return self._request_model(
-            "GET", f"/v1/resource-policies/{policy_id}", RMPolicyResponse
-        )
-
-    def update_policy(
-        self, policy_id: UUID, update: RMPolicyUpdate
-    ) -> RMPolicyResponse:
-        """Update a Resource Manager policy.
-
-        Args:
-            policy_id: Policy ID.
-            update: Policy update payload.
-
-        Returns:
-            The updated policy.
-        """
-        return self._request_model(
-            "PATCH",
-            f"/v1/resource-policies/{policy_id}",
-            RMPolicyResponse,
-            json=update,
-        )
-
-    def delete_policy(self, policy_id: UUID) -> None:
-        """Delete a Resource Manager policy.
-
-        Args:
-            policy_id: Policy ID.
-        """
-        self._request("DELETE", f"/v1/resource-policies/{policy_id}")
+        self._cloud_connection = cloud_connection
+        self._access_token: Optional[str] = None
+        self._access_token_expires_at: Optional[datetime] = None
+        self._resource_manager_id: Optional[UUID] = None
+        self._organization_id: Optional[UUID] = None
+        self._workspace_id: Optional[UUID] = None
+        self._lock = RLock()
 
     def create_request(
         self, request: RMResourceRequestCreate
@@ -501,38 +258,6 @@ class ResourceManagerClient:
             params=params,
         )
 
-    def terminate_request(
-        self,
-        request_id: UUID,
-        *,
-        force: bool = False,
-        reason: Optional[str] = None,
-    ) -> RMResourceRequestResponse:
-        """Terminate a runtime Resource Manager request idempotently.
-
-        Args:
-            request_id: Runtime request ID.
-            force: When ``True``, skip coordinated preemption and terminate
-                forcefully.
-            reason: Optional operator-facing explanation for soft termination.
-
-        Returns:
-            The terminated runtime request.
-        """
-        from zenml.zen_stores.resource_pools.resource_manager.transport import (
-            RMResourceRequestTerminateRequest,
-        )
-
-        return self._request_model(
-            "POST",
-            f"/v1/resource-requests/{request_id}/terminate",
-            RMResourceRequestResponse,
-            json=RMResourceRequestTerminateRequest(
-                force=force,
-                reason=reason,
-            ),
-        )
-
     def release_request(self, request_id: UUID) -> RMResourceRequestResponse:
         """Release a runtime Resource Manager request on behalf of its owner.
 
@@ -563,10 +288,6 @@ class ResourceManagerClient:
         Returns:
             The renewed runtime request.
         """
-        from zenml.zen_stores.resource_pools.resource_manager.transport import (
-            RMResourceRequestRenewalRequest,
-        )
-
         return self._request_model(
             "POST",
             f"/v1/resource-requests/{request_id}/renew",
@@ -574,17 +295,6 @@ class ResourceManagerClient:
             json=RMResourceRequestRenewalRequest(
                 lease_expires_at=lease_expires_at,
             ),
-        )
-
-    def delete_request(self, request_id: UUID) -> None:
-        """Delete a terminal runtime Resource Manager request.
-
-        Args:
-            request_id: Runtime request ID.
-        """
-        self._request(
-            "DELETE",
-            f"/v1/resource-requests/{request_id}",
         )
 
     def _request_model(
@@ -642,21 +352,164 @@ class ResourceManagerClient:
         if json is not None:
             payload = json.model_dump(mode="json", by_alias=True)
 
-        headers = {
-            **self._headers,
-            self.IDEMPOTENCY_HEADER: str(uuid4()),
-        }
+        idempotency_key = str(uuid4())
+        headers = self._request_headers(idempotency_key=idempotency_key)
         response = self._session.request(
             method=method,
-            url=f"{self._base_url}{path}",
+            url=f"{self._resolved_base_url}{path}",
             headers=headers,
             json=payload,
             params=params,
             timeout=self._timeout,
         )
+        if response.status_code == 401:
+            self._reset_login()
+            headers = self._request_headers(idempotency_key=idempotency_key)
+            response = self._session.request(
+                method=method,
+                url=f"{self._resolved_base_url}{path}",
+                headers=headers,
+                json=payload,
+                params=params,
+                timeout=self._timeout,
+            )
         if response.status_code >= 400:
-            raise _exception_from_rm_response(response)
+            raise self.exception_from_rm_response(response)
         return response
+
+    @property
+    def _resolved_base_url(self) -> str:
+        """Return the currently known Resource Manager base URL.
+
+        Raises:
+            RuntimeError: If no Resource Manager URL is available.
+
+        Returns:
+            The Resource Manager base URL.
+        """
+        if self._base_url is None:
+            raise RuntimeError(
+                "Resource Manager URL has not been discovered through the "
+                "Cloud API authorization exchange."
+            )
+        return self._base_url
+
+    def _request_headers(self, *, idempotency_key: str) -> dict[str, str]:
+        """Build headers for a Resource Manager request.
+
+        Args:
+            idempotency_key: Idempotency key to send with this request.
+
+        Returns:
+            HTTP headers for the request.
+        """
+        headers = {
+            **self._headers,
+            self.IDEMPOTENCY_HEADER: idempotency_key,
+        }
+        headers["Authorization"] = f"Bearer {self._fetch_access_token()}"
+        return headers
+
+    def _fetch_access_token(self) -> str:
+        """Fetch or refresh the Resource Manager local access token.
+
+        Returns:
+            A Resource Manager bearer token.
+        """
+        with self._lock:
+            if (
+                self._access_token is not None
+                and self._access_token_expires_at is not None
+                and utc_now(tz_aware=self._access_token_expires_at)
+                + timedelta(minutes=5)
+                < self._access_token_expires_at
+            ):
+                return self._access_token
+
+            authorization = self._fetch_authorization()
+            self._base_url = authorization.api_url.rstrip("/")
+            login = self._login_to_resource_manager(authorization)
+
+            self._access_token = login.access_token
+            self._access_token_expires_at = login.expires_at
+            self._resource_manager_id = login.resource_manager_id
+            self._organization_id = login.organization_id
+            self._workspace_id = login.workspace_id
+            return self._access_token
+
+    def _reset_login(self) -> None:
+        """Force a new Resource Manager login on the next request."""
+        with self._lock:
+            self._access_token = None
+            self._access_token_expires_at = None
+
+    def _fetch_authorization(self) -> ResourceManagerAuthorization:
+        """Fetch Resource Manager discovery and one-time auth from Cloud API.
+
+        Returns:
+            Cloud API authorization response.
+
+        Raises:
+            RuntimeError: If Cloud API returns an invalid authorization
+                response.
+        """
+        cloud_connection = self._cloud_connection
+        if cloud_connection is None:
+            from zenml.zen_server.cloud_utils import (
+                cloud_connection as connect,
+            )
+
+            cloud_connection = self._cloud_connection = connect()
+
+        response = cloud_connection.get(
+            "/auth/resource_manager_authorization",
+            params=None,
+        )
+        try:
+            return ResourceManagerAuthorization.model_validate(response.json())
+        except Exception as e:
+            raise RuntimeError(
+                "Could not fetch Resource Manager authorization from the "
+                f"Cloud API: {e}"
+            )
+
+    def _login_to_resource_manager(
+        self, authorization: ResourceManagerAuthorization
+    ) -> ResourceManagerLoginResponse:
+        """Exchange a Cloud API one-time token for an RM-local session.
+
+        Args:
+            authorization: Cloud API authorization response.
+
+        Raises:
+            exception_from_rm_response: If Resource Manager rejects the login
+                request.
+            RuntimeError: If the RM returns an invalid login response.
+
+        Returns:
+            Resource Manager local session response.
+        """
+        login_request = ResourceManagerLoginRequest(
+            organization_id=authorization.organization_id,
+            workspace_id=authorization.workspace_id,
+        )
+        response = self._session.post(
+            f"{self._resolved_base_url}/v1/auth/login",
+            headers={
+                "Authorization": f"Bearer {authorization.token}",
+            },
+            json=login_request.model_dump(mode="json"),
+            timeout=self._timeout,
+        )
+        if response.status_code >= 400:
+            raise self.exception_from_rm_response(response)
+
+        try:
+            return ResourceManagerLoginResponse.model_validate(response.json())
+        except Exception as e:
+            raise RuntimeError(
+                f"Could not log in to the Resource Manager API: {e}"
+            )
 
     def _configure_session(self, session: requests.Session) -> None:
         """Configure session retry behavior for transient HTTP failures.

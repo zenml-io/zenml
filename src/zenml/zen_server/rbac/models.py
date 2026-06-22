@@ -71,8 +71,6 @@ class ResourceType(StrEnum):
     SERVICE_CONNECTOR = "service_connector"
     STACK = "stack"
     STACK_COMPONENT = "stack_component"
-    RESOURCE_POOL = "resource_pool"
-    RESOURCE_POLICY = "resource_pool_subject_policy"
     TAG = "tag"
     PROJECT = "project"
     # Deactivated for now
@@ -91,8 +89,6 @@ class ResourceType(StrEnum):
             self.SERVICE_CONNECTOR,
             self.STACK,
             self.STACK_COMPONENT,
-            self.RESOURCE_POOL,
-            self.RESOURCE_POLICY,
             self.TAG,
             self.SERVICE_ACCOUNT,
             self.PROJECT,

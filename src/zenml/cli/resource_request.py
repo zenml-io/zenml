@@ -67,14 +67,3 @@ def list_resource_requests(
         output_format,
         empty_message="No resource requests found for this filter.",
     )
-
-
-@resource_request.command("delete", help="Delete a resource request.")
-@click.argument("resource_request_id", type=str, required=True)
-def delete_resource_request(resource_request_id: str) -> None:
-    """Delete a resource request.
-
-    Args:
-        resource_request_id: ID of the resource request.
-    """
-    Client().zen_store.delete_resource_request(UUID(resource_request_id))

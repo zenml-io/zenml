@@ -256,53 +256,18 @@ from zenml.models.v2.core.project import (
     ProjectResponseMetadata,
     ProjectUpdate,
 )
-from zenml.models.v2.core.resource_descriptor import (
-    ResourceDescriptorFilter,
-    ResourceDescriptorRequest,
-    ResourceDescriptorResponse,
-    ResourceDescriptorResponseBody,
-    ResourceDescriptorResponseMetadata,
-    ResourceDescriptorResponseResources,
-    ResourceDescriptorUnit,
-    ResourceDescriptorUpdate,
-)
-from zenml.models.v2.core.resource_policy import (
-    MAX_USER_POLICY_PRIORITY,
-    PRIORITY_LANE_PRIORITY,
-    ResourcePolicyFilter,
-    ResourcePolicyGrant,
-    ResourcePolicyRequest,
-    ResourcePolicyResponse,
-    ResourcePolicyResponseBody,
-    ResourcePolicyResponseMetadata,
-    ResourcePolicyResponseResources,
-    ResourcePolicyUpdate,
-)
-from zenml.models.v2.core.resource_pool import (
-    ResourcePoolAllocation,
-    ResourcePoolCapacityClass,
-    ResourcePoolCapacityComponentSettings,
-    ResourcePoolFilter,
-    ResourcePoolLedgerOccupied,
-    ResourcePoolQueueItem,
-    ResourcePoolReclaimable,
-    ResourcePoolRequest,
-    ResourcePoolResponse,
-    ResourcePoolResponseBody,
-    ResourcePoolResponseMetadata,
-    ResourcePoolResponseResources,
-    ResourcePoolUpdate,
-)
 from zenml.models.v2.core.resource_request import (
+    ResourcePoolAllocation,
+    ResourcePoolCapacityComponentSettings,
+    ResourcePoolQueueItem,
     ResourceRequestDemand,
     ResourceRequestFilter,
+    ResourceRequestRenewalRequest,
     ResourceRequestRequest,
     ResourceRequestResponse,
     ResourceRequestResponseBody,
     ResourceRequestResponseMetadata,
     ResourceRequestResponseResources,
-    ResourceRequestRenewalRequest,
-    ResourceRequestTerminateRequest,
 )
 from zenml.models.v2.core.run_metadata import (
     RunMetadataRequest,
@@ -636,25 +601,12 @@ ComponentInfo.model_rebuild()
 ServiceConnectorInfo.model_rebuild()
 ServiceConnectorResourcesInfo.model_rebuild()
 ResourcesInfo.model_rebuild()
-ResourceDescriptorResponseBody.model_rebuild()
-ResourceDescriptorResponseMetadata.model_rebuild()
-ResourceDescriptorResponseResources.model_rebuild()
-ResourceDescriptorResponse.model_rebuild()
-ResourcePoolResponseBody.model_rebuild()
-ResourcePoolResponseMetadata.model_rebuild()
-ResourcePoolResponseResources.model_rebuild()
-ResourcePoolResponse.model_rebuild()
 ResourceRequestResponseBody.model_rebuild()
 ResourceRequestResponseMetadata.model_rebuild()
 ResourceRequestResponseResources.model_rebuild()
 ResourceRequestResponse.model_rebuild()
 ResourcePoolAllocation.model_rebuild()
 ResourcePoolQueueItem.model_rebuild()
-ResourcePolicyRequest.model_rebuild()
-ResourcePolicyResponseBody.model_rebuild()
-ResourcePolicyResponseMetadata.model_rebuild()
-ResourcePolicyResponseResources.model_rebuild()
-ResourcePolicyResponse.model_rebuild()
 TriggerRequest.model_rebuild()
 TriggerResponseBody.model_rebuild()
 TriggerResponseMetadata.model_rebuild()
@@ -853,43 +805,14 @@ __all__ = [
     "PipelineRunResponseMetadata",
     "PipelineRunResponseResources",
     "PipelineRunTriggerInfo",
-    "ResourceDescriptorFilter",
-    "ResourceDescriptorRequest",
-    "ResourceDescriptorResponse",
-    "ResourceDescriptorResponseBody",
-    "ResourceDescriptorResponseMetadata",
-    "ResourceDescriptorResponseResources",
-    "ResourceDescriptorUnit",
-    "ResourceDescriptorUpdate",
-    "ResourcePoolRequest",
-    "ResourcePoolUpdate",
-    "ResourcePoolFilter",
-    "ResourcePoolResponse",
-    "ResourcePoolResponseBody",
-    "ResourcePoolResponseMetadata",
-    "ResourcePoolResponseResources",
-    "ResourcePoolCapacityClass",
     "ResourcePoolCapacityComponentSettings",
-    "ResourcePoolLedgerOccupied",
     "ResourcePoolAllocation",
     "ResourcePoolQueueItem",
-    "ResourcePoolReclaimable",
-    "ResourcePolicyFilter",
-    "ResourcePolicyGrant",
-    "ResourcePolicyRequest",
-    "ResourcePolicyResponse",
-    "ResourcePolicyResponseBody",
-    "ResourcePolicyResponseMetadata",
-    "ResourcePolicyResponseResources",
-    "ResourcePolicyUpdate",
-    "MAX_USER_POLICY_PRIORITY",
-    "PRIORITY_LANE_PRIORITY",
     "ResourceRequestDemand",
+    "ResourceRequestFilter",
     "ResourceRequestRequest",
     "ResourceRequestRenewalRequest",
-    "ResourceRequestTerminateRequest",
     "ResourceRequestReclaimTolerance",
-    "ResourceRequestFilter",
     "ResourceRequestResponse",
     "ResourceRequestResponseBody",
     "ResourceRequestResponseMetadata",
