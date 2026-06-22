@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 class SSHOrchestratorSettings(BaseSettings):
     """Per-pipeline/step settings for the SSH orchestrator."""
 
-    mounts_from_to: Dict[str, str] = Field(
+    mounts: Dict[str, str] = Field(
         default_factory=dict,
         description="Host-path to container-path bind mounts applied to "
         "every step container. Keys are absolute paths on the remote host, "

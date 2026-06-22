@@ -7,7 +7,7 @@ description: Orchestrating your pipelines to run on HyperAI.ai instances.
 [HyperAI](https://www.hyperai.ai) is a cutting-edge cloud compute platform designed to make AI accessible for everyone. The HyperAI orchestrator is an [orchestrator](./) flavor that allows you to easily deploy your pipelines on HyperAI instances.
 
 {% hint style="warning" %}
-**Deprecated:** the HyperAI orchestrator is deprecated in favor of the generic [SSH orchestrator](ssh.md), which uses the same Docker Compose execution model, is not tied to HyperAI, and additionally supports dynamic pipelines. See [Migrating from HyperAI](ssh.md#migrating-from-hyperai). The HyperAI orchestrator still works but will not receive new features.
+**Deprecated:** the HyperAI orchestrator is deprecated in favor of the generic [SSH orchestrator](ssh.md), which uses the same Docker Compose execution model, is not tied to HyperAI, and additionally supports dynamic pipelines. See [Migrating from HyperAI](ssh.md#migrating-from-hyperai). It still works but will not receive new features and will be removed in a future release — please migrate to the SSH orchestrator.
 {% endhint %}
 
 {% hint style="warning" %}

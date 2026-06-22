@@ -101,7 +101,7 @@ from zenml.integrations.ssh.flavors.ssh_orchestrator_flavor import (
 )
 
 settings = SSHOrchestratorSettings(
-    mounts_from_to={"/data/datasets": "/datasets"},
+    mounts={"/data/datasets": "/datasets"},
     gpu_enabled_in_container=False,
 )
 ```

@@ -496,7 +496,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         volumes = [
             f"{self._validate_mount_path(host)}:"
             f"{self._validate_mount_path(container)}"
-            for host, container in settings.mounts_from_to.items()
+            for host, container in settings.mounts.items()
         ]
         if volumes:
             service["volumes"] = volumes
