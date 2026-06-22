@@ -413,10 +413,17 @@ class BasetenStepOperator(BaseStepOperator):
                 f"node_count={settings.node_count} but is a regular step. "
                 "Running a regular step on multiple nodes would duplicate its "
                 "artifacts, outputs and logs across every node. Use a "
-                "CommandStep that owns its distributed launch instead, e.g. "
-                '`CommandStep(command=["torchrun", "train.py"], '
-                f'step_operator="{self.name}")`, and keep node_count=1 for '
-                "regular steps."
+                "CommandStep that owns its distributed launch instead. Wrap "
+                "the launcher in a shell so Baseten's per-node variables "
+                "(BT_GROUP_SIZE, BT_NODE_RANK, BT_LEADER_ADDR, BT_NUM_GPUS) "
+                "expand on each node, e.g. "
+                '`CommandStep(command=["bash", "-lc", "torchrun '
+                "--nnodes=$BT_GROUP_SIZE --node-rank=$BT_NODE_RANK "
+                "--master-addr=$BT_LEADER_ADDR --master-port=29500 "
+                '--nproc-per-node=$BT_NUM_GPUS train.py"], '
+                f'step_operator="{self.name}")`. Keep node_count=1 for '
+                "regular steps; see the Baseten step-operator docs "
+                "(multi-node distributed training) for the full pattern."
             )
 
         image_name = info.get_image(key=BASETEN_STEP_OPERATOR_DOCKER_IMAGE_KEY)
