@@ -261,7 +261,8 @@ def test_trackio_tags_logged(
 )
 @patch(
     "zenml.integrations.trackio.experiment_trackers."
-    "trackio_experiment_tracker.trackio.freeze"
+    "trackio_experiment_tracker.trackio.freeze",
+    create=True,
 )
 def test_trackio_cleanup_calls_freeze_on_failure(
     mock_freeze: MagicMock,
