@@ -97,9 +97,8 @@ def build_ssh_connection_config_from_config(
     """
     if not config.username:
         raise RuntimeError(
-            "SSH authentication requires a `username` to be configured "
-            "directly on the component or supplied by a linked SSH service "
-            "connector."
+            "SSH authentication requires a `username` to be configured on the "
+            "component."
         )
 
     private_key: Optional[str] = None
@@ -109,8 +108,7 @@ def build_ssh_connection_config_from_config(
     if not config.ssh_key_path and private_key is None:
         raise RuntimeError(
             "SSH authentication requires either `ssh_key_path` or "
-            "`ssh_private_key` to be configured directly on the component, "
-            "or a linked SSH service connector to supply credentials."
+            "`ssh_private_key` to be configured on the component."
         )
 
     passphrase: Optional[str] = None
@@ -134,7 +132,7 @@ def build_ssh_connection_config_from_config(
 def resolve_ssh_connection_config(
     component: "StackComponent",
 ) -> SSHConnectionConfig:
-    """Resolve an SSH connection from a linked connector or component config.
+    """Resolve an SSH connection from the component configuration.
 
     Args:
         component: The SSH stack component.
@@ -143,18 +141,8 @@ def resolve_ssh_connection_config(
         The resolved SSH connection configuration.
 
     Raises:
-        RuntimeError: If a linked connector returns an unexpected value or if
-            explicit component credentials are incomplete.
+        RuntimeError: If the component's SSH credentials are incomplete.
     """
-    if connector := component.get_connector():
-        connection_config = connector.connect(verify=False)
-        if not isinstance(connection_config, SSHConnectionConfig):
-            raise RuntimeError(
-                "Expected linked SSH service connector to return an "
-                f"SSHConnectionConfig, but got {type(connection_config)}."
-            )
-        return connection_config
-
     # The concrete SSH component configs (orchestrator/step operator) provide
     # the SSHConnectionConfigSource fields; the base StackComponentConfig type
     # doesn't express that, so narrow it here.

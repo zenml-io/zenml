@@ -18,12 +18,7 @@ from typing import TYPE_CHECKING, List, Optional, Type
 from pydantic import Field
 
 from zenml.config.base_settings import BaseSettings
-from zenml.integrations.ssh import (
-    SSH_CONNECTOR_TYPE,
-    SSH_HOST_RESOURCE_TYPE,
-    SSH_STEP_OPERATOR_FLAVOR,
-)
-from zenml.models import ServiceConnectorRequirements
+from zenml.integrations.ssh import SSH_STEP_OPERATOR_FLAVOR
 from zenml.step_operators import BaseStepOperatorConfig, BaseStepOperatorFlavor
 from zenml.utils.secret_utils import PlainSerializedSecretStr, SecretField
 
@@ -94,8 +89,8 @@ class SSHStepOperatorConfig(BaseStepOperatorConfig, SSHStepOperatorSettings):
         default=None,
         description="SSH username for authentication on the remote host. "
         "This user must have permission to run Docker commands (typically "
-        "a member of the 'docker' group). Optional when a linked SSH service "
-        "connector provides the username. Example: 'ubuntu'",
+        "a member of the 'docker' group). Required for authentication. "
+        "Example: 'ubuntu'",
     )
     port: int = Field(
         default=22,
@@ -194,21 +189,6 @@ class SSHStepOperatorFlavor(BaseStepOperatorFlavor):
             The name of the flavor.
         """
         return SSH_STEP_OPERATOR_FLAVOR
-
-    @property
-    def service_connector_requirements(
-        self,
-    ) -> Optional[ServiceConnectorRequirements]:
-        """Service connector requirements for this flavor.
-
-        Returns:
-            Requirements for compatible SSH service connectors.
-        """
-        return ServiceConnectorRequirements(
-            connector_type=SSH_CONNECTOR_TYPE,
-            resource_type=SSH_HOST_RESOURCE_TYPE,
-            resource_id_attr="hostname",
-        )
 
     @property
     def docs_url(self) -> Optional[str]:

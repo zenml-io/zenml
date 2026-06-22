@@ -26,8 +26,6 @@ from zenml.stack import Flavor
 
 SSH_STEP_OPERATOR_FLAVOR = "ssh"
 SSH_ORCHESTRATOR_FLAVOR = "ssh"
-SSH_CONNECTOR_TYPE = "ssh"
-SSH_HOST_RESOURCE_TYPE = "ssh-host"
 
 
 class SSHIntegration(Integration):
@@ -35,11 +33,6 @@ class SSHIntegration(Integration):
 
     NAME = SSH
     REQUIREMENTS = ["paramiko>=3.0.0,<6"]
-
-    @classmethod
-    def activate(cls) -> None:
-        """Activate the SSH integration."""
-        from zenml.integrations.ssh import service_connectors  # noqa
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:

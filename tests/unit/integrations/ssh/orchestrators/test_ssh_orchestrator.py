@@ -30,7 +30,6 @@ import pytest
 import yaml
 
 from zenml.enums import ExecutionMode, ExecutionStatus, StackComponentType
-from zenml.integrations.ssh import SSH_CONNECTOR_TYPE, SSH_HOST_RESOURCE_TYPE
 from zenml.integrations.ssh.flavors.ssh_orchestrator_flavor import (
     SSHOrchestratorConfig,
     SSHOrchestratorFlavor,
@@ -40,7 +39,6 @@ from zenml.integrations.ssh.orchestrators.ssh_orchestrator import (
     ENV_ZENML_SSH_RUN_ID,
     SSHOrchestrator,
 )
-from zenml.integrations.ssh.ssh_utils import SSHConnectionConfig
 
 _MODULE = "zenml.integrations.ssh.orchestrators.ssh_orchestrator"
 
@@ -98,13 +96,6 @@ class TestFlavor:
         assert f.config_class is SSHOrchestratorConfig
         assert f.implementation_class is SSHOrchestrator
 
-    def test_service_connector_requirements(self) -> None:
-        requirements = SSHOrchestratorFlavor().service_connector_requirements
-        assert requirements is not None
-        assert requirements.connector_type == SSH_CONNECTOR_TYPE
-        assert requirements.resource_type == SSH_HOST_RESOURCE_TYPE
-        assert requirements.resource_id_attr == "hostname"
-
     def test_is_remote(self) -> None:
         assert _make_orchestrator().config.is_remote is True
 
@@ -122,23 +113,12 @@ class TestFlavor:
         assert ExecutionMode.STOP_ON_FAILURE in modes
         assert ExecutionMode.CONTINUE_ON_FAILURE in modes
 
-    def test_uses_linked_connector_when_available(self) -> None:
-        orch = _make_orchestrator()
-        connector_config = SSHConnectionConfig(
-            hostname="connector-host",
-            port=2222,
-            username="connector-user",
-            ssh_private_key="key",
-        )
-        connector = MagicMock()
-        connector.connect.return_value = connector_config
+    def test_builds_connection_from_config(self) -> None:
+        conn = _make_orchestrator()._build_ssh_connection_config()
+        assert conn.hostname == "gpu-box"
+        assert conn.username == "ubuntu"
 
-        with patch.object(orch, "get_connector", return_value=connector):
-            assert orch._build_ssh_connection_config() is connector_config
-
-        connector.connect.assert_called_once_with(verify=False)
-
-    def test_missing_explicit_auth_without_connector_raises(self) -> None:
+    def test_missing_auth_raises(self) -> None:
         orch = _make_orchestrator(username=None, ssh_key_path=None)
 
         with pytest.raises(RuntimeError, match="username"):

@@ -188,7 +188,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
     # ------------------------------------------------------------------
 
     def _build_ssh_connection_config(self) -> SSHConnectionConfig:
-        """Build an SSHConnectionConfig from connector or component config.
+        """Build an SSHConnectionConfig from the component configuration.
 
         Returns:
             The SSH connection configuration.

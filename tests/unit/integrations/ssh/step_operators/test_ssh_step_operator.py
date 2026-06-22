@@ -80,20 +80,12 @@ def _make_operator() -> SSHStepOperator:
 
 
 class TestConnectionConfig:
-    def test_uses_linked_connector_when_available(self) -> None:
+    def test_builds_connection_from_config(self) -> None:
         operator = _make_operator()
-        connector_config = SSHConnectionConfig(
-            hostname="connector-host",
-            port=2222,
-            username="connector-user",
-            ssh_private_key="key",
-        )
-        connector = MagicMock()
-        connector.connect.return_value = connector_config
-        operator.get_connector = MagicMock(return_value=connector)  # type: ignore[method-assign]
-
-        assert operator._build_ssh_connection_config() is connector_config
-        connector.connect.assert_called_once_with(verify=False)
+        conn = operator._build_ssh_connection_config()
+        assert conn.hostname == "test-host"
+        assert conn.username == "testuser"
+        assert conn.ssh_key_path == "/fake/key"
 
 
 # --- get_status ---
