@@ -190,19 +190,17 @@ checkpoint storage. Both are **disabled by default** and opt-in through settings
 ```python
 BasetenStepOperatorSettings(
     accelerator="H100",
-    enable_cache=True,                  # mount the persistent training cache (off by default)
-    cache_enable_legacy_hf_mount=True,  # also reuse the default Hugging Face cache path
-    cache_require_affinity=False,       # allow running across different GPU types
-    enable_checkpointing=True,          # persist checkpoints written to $BT_CHECKPOINT_DIR (off by default)
+    enable_cache=True,             # mount the persistent training cache (off by default)
+    cache_require_affinity=False,  # allow running across different GPU types
+    enable_checkpointing=True,     # persist checkpoints written to $BT_CHECKPOINT_DIR (off by default)
 )
 ```
 
 When `enable_cache` is on, write your downloads (e.g. `HF_HOME`, dataset staging) into the cache so
-subsequent runs reuse them. `cache_enable_legacy_hf_mount` additionally mounts the legacy Hugging
-Face cache location (handy for libraries that download to the default HF path), and
-`cache_require_affinity` (default `True`) controls whether the job must land on nodes that already
-hold the cache — set it `False` to let the same project run across different GPU types. When
-`enable_checkpointing` is on, write checkpoints to the Baseten checkpoint directory exposed as
+subsequent runs reuse them. `cache_require_affinity` (default `True`) controls whether the job must
+land on nodes that already hold the cache — set it `False` to let the same project run across
+different GPU types. When `enable_checkpointing` is on, write checkpoints to the Baseten checkpoint
+directory exposed as
 `$BT_CHECKPOINT_DIR`.
 
 For more information and a full list of configurable attributes, check out the

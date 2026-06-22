@@ -27,69 +27,45 @@ if TYPE_CHECKING:
 
 
 class BasetenStepOperatorSettings(BaseSettings):
-    """Per-step settings for the Baseten step operator."""
+    """Settings for the Baseten step operator."""
 
     accelerator: str = Field(
         "H100",
-        description="GPU accelerator type for each node. Must be a Baseten "
-        "training accelerator. Examples: 'H100', 'H200'. Combine with "
-        "ResourceSettings.gpu_count to set the number of GPUs per node",
+        description="GPU accelerator type for each node, e.g. 'H100' or "
+        "'H200'. The number of GPUs per node comes from "
+        "ResourceSettings.gpu_count",
     )
     node_count: int = Field(
         1,
         ge=1,
-        description="Number of nodes to provision for the job. Values above 1 "
-        "run multi-node distributed training and require a CommandStep that "
-        "owns its distributed launch. Examples: 1 (single node), 4 (four "
-        "nodes). Keep at 1 for regular Python-function steps",
-    )
-    cpu_count: Optional[int] = Field(
-        None,
-        description="vCPUs to request per node. Defaults to the Baseten "
-        "default when unset. Examples: 4, 16",
-    )
-    memory: Optional[str] = Field(
-        None,
-        description="Memory to request per node as a Kubernetes-style "
-        "quantity. Defaults to the Baseten default when unset. Examples: "
-        "'16Gi', '64Gi'",
+        description="Number of nodes to provision. Values above 1 run "
+        "multi-node distributed training and require a CommandStep that owns "
+        "its distributed launch",
     )
     secrets: Dict[str, str] = Field(
         default_factory=dict,
         description="Mapping of environment variable name to the name of a "
-        "pre-existing Baseten secret. Route sensitive values (tokens, "
-        "credentials) here so they are referenced rather than inlined into "
-        "the job config. Example: {'HF_TOKEN': 'hf-access-token'}",
+        "pre-existing Baseten secret, so sensitive values are referenced "
+        "rather than inlined into the job config",
     )
     enable_cache: bool = Field(
         False,
-        description="Enable Baseten's persistent training cache for the job. "
-        "When True, the job mounts the project cache so datasets and model "
-        "weights downloaded under it persist across jobs (avoiding re-download). "
-        "Defaults to False (disabled). See "
+        description="Mount Baseten's persistent training cache so datasets and "
+        "weights downloaded by the job survive across runs. See "
         "https://docs.baseten.co/training/loading",
-    )
-    cache_enable_legacy_hf_mount: bool = Field(
-        False,
-        description="Mount the legacy Hugging Face cache location when the "
-        "training cache is enabled, so code using the default HF cache path "
-        "reuses downloaded models/datasets across jobs. Only applies when "
-        "enable_cache is True. Defaults to False",
     )
     cache_require_affinity: bool = Field(
         True,
         description="Require the job to schedule onto nodes that already hold "
-        "the project cache. Set False to let the job run on any node (e.g. to "
-        "run the same project across different GPU types) at the cost of cache "
-        "warmth. Only applies when enable_cache is True. Defaults to True "
-        "(Baseten's default)",
+        "the training cache. Set False to let it run on any node (e.g. across "
+        "different GPU types) at the cost of cache warmth. Only applies when "
+        "enable_cache is True",
     )
     enable_checkpointing: bool = Field(
         False,
-        description="Enable Baseten-managed checkpoint storage for the job. "
-        "When True, checkpoints written to the Baseten checkpoint directory "
-        "($BT_CHECKPOINT_DIR) are persisted and deployable. Defaults to False "
-        "(disabled)",
+        description="Persist checkpoints written to the Baseten checkpoint "
+        "directory ($BT_CHECKPOINT_DIR) so they survive the job and are "
+        "deployable",
     )
 
 
@@ -97,21 +73,18 @@ class BasetenStepOperatorConfig(BaseStepOperatorConfig):
     """Configuration for the Baseten step operator."""
 
     api_key: PlainSerializedSecretStr = Field(
-        description="Baseten API key used to submit and manage training jobs. "
-        "Create one in the Baseten workspace settings. Supports "
-        "{{secret.key}} references",
+        description="Baseten API key used to submit and manage training jobs, "
+        "created in the Baseten workspace settings",
     )
     project: str = Field(
         description="Baseten training project name that submitted jobs are "
-        "grouped under. Created automatically if it does not exist. Example: "
-        "'zenml-training'",
+        "grouped under. Created automatically if it does not exist",
     )
     registry_auth_secret: Optional[str] = Field(
         default=None,
         description="Name of a pre-existing Baseten secret holding container "
         "registry credentials in 'username:password' format, used to pull the "
-        "step image from a private registry. Leave unset for public images. "
-        "Example: 'gcr-pull-credentials'",
+        "step image from a private registry. Leave unset for public images",
     )
 
     @property

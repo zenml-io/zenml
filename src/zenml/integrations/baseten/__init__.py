@@ -11,13 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Baseten integration for running steps as Baseten training jobs.
-
-The Baseten integration provides a step operator that runs GPU steps as Baseten
-training jobs. Regular steps run on a single node; multi-node distributed
-training is expressed with a ``CommandStep`` that owns its own distributed
-launch (e.g. ``torchrun``).
-"""
+"""Baseten integration for running steps as Baseten training jobs."""
 
 from typing import List, Type
 

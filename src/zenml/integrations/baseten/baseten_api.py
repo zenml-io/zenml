@@ -11,16 +11,13 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Minimal REST client for the Baseten Training API.
-
-Job status and cancellation use the Baseten Training REST API directly rather
-than shelling out to the ``truss`` CLI. Endpoints are scoped by training
-project, so both the project id and the job id are required.
-"""
+"""Minimal REST client for the Baseten Training API."""
 
 from typing import Dict, Optional, cast
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 from zenml.logger import get_logger
 
@@ -28,6 +25,23 @@ logger = get_logger(__name__)
 
 BASETEN_API_BASE_URL = "https://api.baseten.co"
 _REQUEST_TIMEOUT = 30
+
+
+def _build_session() -> requests.Session:
+    """Build a requests session that retries transient failures.
+
+    Returns:
+        A session with retries mounted for HTTPS requests.
+    """
+    retry = Retry(
+        total=3,
+        backoff_factor=0.5,
+        status_forcelist=(429, 500, 502, 503, 504),
+        allowed_methods=("GET", "POST"),
+    )
+    session = requests.Session()
+    session.mount("https://", HTTPAdapter(max_retries=retry))
+    return session
 
 
 class BasetenApiClient:
@@ -44,6 +58,7 @@ class BasetenApiClient:
         """
         self._api_key = api_key
         self._base_url = base_url.rstrip("/")
+        self._session = _build_session()
 
     @property
     def _headers(self) -> Dict[str, str]:
@@ -80,7 +95,7 @@ class BasetenApiClient:
             exists (HTTP 404). Raises ``requests.HTTPError`` if the request
             fails for any other reason.
         """
-        response = requests.get(
+        response = self._session.get(
             self._job_url(project_id, job_id),
             headers=self._headers,
             timeout=_REQUEST_TIMEOUT,
@@ -88,12 +103,8 @@ class BasetenApiClient:
         if response.status_code == 404:
             return None
         response.raise_for_status()
-        data = response.json()
-        # The job payload may be returned at the top level or nested under
-        # `training_job`; handle both, preferring `current_status`.
-        job = data.get("training_job", data)
-        state = job.get("current_status") or job.get("status")
-        return cast(Optional[str], state)
+        job = response.json().get("training_job", {})
+        return cast(Optional[str], job.get("current_status"))
 
     def stop_job(self, project_id: str, job_id: str) -> None:
         """Stop a running training job.
@@ -104,7 +115,7 @@ class BasetenApiClient:
             project_id: The Baseten training project id.
             job_id: The Baseten training job id.
         """
-        response = requests.post(
+        response = self._session.post(
             f"{self._job_url(project_id, job_id)}/stop",
             headers=self._headers,
             json={},

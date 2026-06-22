@@ -26,6 +26,12 @@ from typing import (
     cast,
 )
 
+from truss.base import truss_config
+from truss.remote.baseten.remote import BasetenRemote
+from truss.remote.remote_factory import RemoteFactory
+from truss.remote.truss_remote import RemoteConfig
+from truss_train import definitions, push
+
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
 from zenml.constants import ENV_ZENML_STORE_PREFIX
@@ -82,6 +88,54 @@ _BASETEN_STATE_TO_EXECUTION_STATUS = {
     "FAILED": ExecutionStatus.FAILED,
     "STOPPED": ExecutionStatus.STOPPED,
 }
+
+
+def _explain_submit_error(
+    error: Exception,
+    settings: BasetenStepOperatorSettings,
+    is_command_step: bool,
+) -> str:
+    """Turn a Baseten job submission failure into an actionable message.
+
+    Args:
+        error: The exception raised by the truss ``push``.
+        settings: The resolved step operator settings.
+        is_command_step: Whether the step is a command step.
+
+    Returns:
+        A human-readable error message.
+    """
+    detail = str(error)
+    # The actionable reason lives in the HTTP response body, not the generic
+    # "400 Bad Request" message; read it defensively since the exception type
+    # comes from a third-party (truss/requests) client.
+    response = getattr(error, "response", None)
+    body = (getattr(response, "text", "") or "").strip()
+    combined = f"{detail} {body}".lower()
+
+    hints = []
+    if "base image" in combined:
+        kind = "regular step" if not is_command_step else "step"
+        hints.append(
+            f"This {kind} submits a custom image, which requires the "
+            "'custom base images' entitlement enabled for your Baseten "
+            "organization (contact Baseten support). Regular @steps always "
+            "need a custom image; to avoid it, run GPU work as a CommandStep "
+            "on a public base image."
+        )
+    if settings.node_count > 1:
+        hints.append(
+            f"Multi-node jobs (node_count={settings.node_count}) require "
+            "multi-node instance types enabled for your Baseten organization "
+            "(contact Baseten support)."
+        )
+
+    message = f"Baseten rejected the training job submission: {detail}"
+    if body:
+        message += f" (Baseten response: {body[:500]})"
+    if hints:
+        message += " " + " ".join(hints)
+    return message
 
 
 class BasetenStepOperator(BaseStepOperator):
@@ -227,8 +281,6 @@ class BasetenStepOperator(BaseStepOperator):
         Returns:
             The runtime environment with plain strings and secret references.
         """
-        from truss_train import definitions
-
         runtime_environment: Dict[str, Any] = {}
         for key, value in environment.items():
             if key in secrets:
@@ -274,8 +326,6 @@ class BasetenStepOperator(BaseStepOperator):
         Returns:
             The name of the Baseten secret holding the token.
         """
-        from truss.remote.baseten.remote import BasetenRemote
-
         secret_name = f"zenml-store-api-token-{self.id}"
         remote = BasetenRemote(
             remote_url=BASETEN_REMOTE_URL,
@@ -294,9 +344,6 @@ class BasetenStepOperator(BaseStepOperator):
         ``push()`` authenticates through a named remote in ~/.trussrc; this
         writes/updates it from the configured API key.
         """
-        from truss.remote.remote_factory import RemoteFactory
-        from truss.remote.truss_remote import RemoteConfig
-
         RemoteFactory.update_remote_config(
             RemoteConfig(
                 name=BASETEN_REMOTE_NAME,
@@ -320,9 +367,6 @@ class BasetenStepOperator(BaseStepOperator):
         """
         if not self.config.registry_auth_secret:
             return None
-
-        from truss.base import truss_config
-        from truss_train import definitions
 
         container_registry = Client().active_stack.container_registry
         assert container_registry is not None
@@ -355,9 +399,6 @@ class BasetenStepOperator(BaseStepOperator):
             Exception: Re-raised if persisting the Baseten job ids to the
                 ZenML server fails (the job is already running on Baseten).
         """
-        from truss.base import truss_config
-        from truss_train import definitions, push
-
         settings = cast(BasetenStepOperatorSettings, self.get_settings(info))
         is_command_step = info.config.command is not None
 
@@ -374,25 +415,31 @@ class BasetenStepOperator(BaseStepOperator):
                 "artifacts, outputs and logs across every node. Use a "
                 "CommandStep that owns its distributed launch instead, e.g. "
                 '`CommandStep(command=["torchrun", "train.py"], '
-                'step_operator="baseten")`, and keep node_count=1 for regular '
-                "steps."
+                f'step_operator="{self.name}")`, and keep node_count=1 for '
+                "regular steps."
             )
 
         image_name = info.get_image(key=BASETEN_STEP_OPERATOR_DOCKER_IMAGE_KEY)
 
-        # Only pass cpu_count/memory when set; truss `Compute` types them as
-        # int/str and rejects None (it applies its own defaults when omitted).
+        # Compute resources come from ResourceSettings (the standard ZenML
+        # place for them); only pass cpu_count/memory when set, since truss
+        # `Compute` types them as int/str and applies its own defaults when
+        # omitted. gpu_count defaults to 1 only when unset (0 stays 0).
+        resources = info.config.resource_settings
+        gpu_count = (
+            resources.gpu_count if resources.gpu_count is not None else 1
+        )
         compute_kwargs: Dict[str, Any] = {
             "node_count": settings.node_count,
             "accelerator": truss_config.AcceleratorSpec(
                 accelerator=settings.accelerator,
-                count=info.config.resource_settings.gpu_count or 1,
+                count=gpu_count,
             ),
         }
-        if settings.cpu_count is not None:
-            compute_kwargs["cpu_count"] = settings.cpu_count
-        if settings.memory is not None:
-            compute_kwargs["memory"] = settings.memory
+        if resources.cpu_count is not None:
+            compute_kwargs["cpu_count"] = int(resources.cpu_count)
+        if resources.memory is not None:
+            compute_kwargs["memory"] = resources.memory
 
         # Cache / checkpointing are opt-in (default disabled); only attach the
         # config objects when enabled so the job keeps Baseten's defaults.
@@ -405,7 +452,6 @@ class BasetenStepOperator(BaseStepOperator):
         if settings.enable_cache:
             runtime_kwargs["cache_config"] = definitions.CacheConfig(
                 enabled=True,
-                enable_legacy_hf_mount=settings.cache_enable_legacy_hf_mount,
                 require_cache_affinity=settings.cache_require_affinity,
             )
         if settings.enable_checkpointing:
@@ -439,7 +485,7 @@ class BasetenStepOperator(BaseStepOperator):
                 )
         except Exception as e:
             raise RuntimeError(
-                self._explain_submit_error(e, settings, is_command_step)
+                _explain_submit_error(e, settings, is_command_step)
             ) from e
 
         job_id = result["id"]
@@ -471,60 +517,6 @@ class BasetenStepOperator(BaseStepOperator):
                 project_id,
             )
             raise
-
-    @staticmethod
-    def _explain_submit_error(
-        error: Exception,
-        settings: BasetenStepOperatorSettings,
-        is_command_step: bool,
-    ) -> str:
-        """Turn a Baseten job submission failure into an actionable message.
-
-        Two common failures are Baseten *organization* entitlements rather than
-        problems with the submitted config: custom base images (needed by any
-        regular step, whose image must contain ZenML) and multi-node instance
-        types. Detect those from the response and point at the fix; the original
-        error detail is always preserved.
-
-        Args:
-            error: The exception raised by the truss ``push``.
-            settings: The resolved step operator settings.
-            is_command_step: Whether the step is a command step.
-
-        Returns:
-            A human-readable error message.
-        """
-        detail = str(error)
-        # The actionable reason lives in the HTTP response body, not the
-        # generic "400 Bad Request" message; read it defensively since the
-        # exception type comes from a third-party (truss/requests) client.
-        response = getattr(error, "response", None)
-        body = (getattr(response, "text", "") or "").strip()
-        combined = f"{detail} {body}".lower()
-
-        hints = []
-        if "base image" in combined:
-            kind = "regular step" if not is_command_step else "step"
-            hints.append(
-                f"This {kind} submits a custom image, which requires the "
-                "'custom base images' entitlement enabled for your Baseten "
-                "organization (contact Baseten support). Regular @steps always "
-                "need a custom image; to avoid it, run GPU work as a "
-                "CommandStep on a public base image."
-            )
-        if settings.node_count > 1:
-            hints.append(
-                f"Multi-node jobs (node_count={settings.node_count}) require "
-                "multi-node instance types enabled for your Baseten "
-                "organization (contact Baseten support)."
-            )
-
-        message = f"Baseten rejected the training job submission: {detail}"
-        if body:
-            message += f" (Baseten response: {body[:500]})"
-        if hints:
-            message += " " + " ".join(hints)
-        return message
 
     def _job_ids(
         self, step_run: "StepRunResponse"

@@ -14,7 +14,6 @@
 
 # ruff: noqa: D100,D101,D102,D103,D105,D107
 
-import sys
 import types
 from datetime import datetime
 from pathlib import Path
@@ -46,7 +45,11 @@ class _Node:
 
 @pytest.fixture
 def fake_truss(monkeypatch):
-    """Inject fake ``truss_train`` / ``truss.base`` modules into sys.modules."""
+    """Replace the truss objects bound in the operator module with fakes.
+
+    truss is imported at module top, so the names live on the operator module;
+    patch them there rather than via sys.modules.
+    """
     recorded = {}
 
     def push(config, source_dir=None, remote=None):
@@ -67,34 +70,19 @@ def fake_truss(monkeypatch):
         CacheConfig=_Node,
         CheckpointingConfig=_Node,
     )
-    truss_train = types.ModuleType("truss_train")
-    truss_train.definitions = definitions
-    truss_train.push = push
-
     truss_config = types.SimpleNamespace(
         AcceleratorSpec=_Node,
         DockerAuthType=types.SimpleNamespace(
             REGISTRY_SECRET="registry_secret"
         ),
     )
-    truss_pkg = types.ModuleType("truss")
-    truss_base = types.ModuleType("truss.base")
-    truss_base.truss_config = truss_config
 
-    # truss.remote.* used by _configure_truss_remote (no-op stubs that record).
     class _RemoteFactory:
         @staticmethod
         def update_remote_config(config):
             recorded["remote_config"] = config
 
-    remote_factory = types.ModuleType("truss.remote.remote_factory")
-    remote_factory.RemoteFactory = _RemoteFactory
-    truss_remote = types.ModuleType("truss.remote.truss_remote")
-    truss_remote.RemoteConfig = _Node
-    remote_pkg = types.ModuleType("truss.remote")
-
-    # truss.remote.baseten.remote.BasetenRemote used to upsert the store token
-    # secret; record the upserted (name, value) pairs.
+    # Records the store-token secrets upserted via the Baseten remote.
     recorded["secrets"] = {}
 
     class _Api:
@@ -107,22 +95,12 @@ def fake_truss(monkeypatch):
             recorded["remote_api_key"] = api_key
             self.api = _Api()
 
-    baseten_pkg = types.ModuleType("truss.remote.baseten")
-    baseten_remote_mod = types.ModuleType("truss.remote.baseten.remote")
-    baseten_remote_mod.BasetenRemote = _BasetenRemote
-
-    monkeypatch.setitem(sys.modules, "truss_train", truss_train)
-    monkeypatch.setitem(sys.modules, "truss", truss_pkg)
-    monkeypatch.setitem(sys.modules, "truss.base", truss_base)
-    monkeypatch.setitem(sys.modules, "truss.remote", remote_pkg)
-    monkeypatch.setitem(
-        sys.modules, "truss.remote.remote_factory", remote_factory
-    )
-    monkeypatch.setitem(sys.modules, "truss.remote.truss_remote", truss_remote)
-    monkeypatch.setitem(sys.modules, "truss.remote.baseten", baseten_pkg)
-    monkeypatch.setitem(
-        sys.modules, "truss.remote.baseten.remote", baseten_remote_mod
-    )
+    monkeypatch.setattr(op_module, "push", push)
+    monkeypatch.setattr(op_module, "definitions", definitions)
+    monkeypatch.setattr(op_module, "truss_config", truss_config)
+    monkeypatch.setattr(op_module, "RemoteFactory", _RemoteFactory)
+    monkeypatch.setattr(op_module, "RemoteConfig", _Node)
+    monkeypatch.setattr(op_module, "BasetenRemote", _BasetenRemote)
     return recorded
 
 
@@ -144,8 +122,12 @@ def _make_operator(**config_kwargs) -> BasetenStepOperator:
     return operator
 
 
-def _make_info(command=None, gpu_count=1, run_metadata=None):
-    resource_settings = SimpleNamespace(gpu_count=gpu_count)
+def _make_info(
+    command=None, gpu_count=1, cpu_count=None, memory=None, run_metadata=None
+):
+    resource_settings = SimpleNamespace(
+        gpu_count=gpu_count, cpu_count=cpu_count, memory=memory
+    )
     config = SimpleNamespace(
         command=command, resource_settings=resource_settings
     )
@@ -260,25 +242,22 @@ def test_cache_and_checkpointing_enabled(fake_truss, monkeypatch):
     operator.submit(_make_info(), _entrypoint(), {})
     runtime = fake_truss["config"].job.runtime
     assert runtime.cache_config.enabled is True
-    # Defaults mirror truss: no legacy HF mount, affinity required.
-    assert runtime.cache_config.enable_legacy_hf_mount is False
+    # Defaults mirror truss: affinity required.
     assert runtime.cache_config.require_cache_affinity is True
     assert runtime.checkpointing_config.enabled is True
 
 
-def test_cache_hf_mount_and_affinity_overrides(fake_truss, monkeypatch):
+def test_cache_affinity_override(fake_truss, monkeypatch):
     monkeypatch.setattr(
         op_module, "publish_step_run_metadata", lambda *a: None
     )
     operator = _make_operator()
     operator.get_settings = lambda _info: BasetenStepOperatorSettings(
         enable_cache=True,
-        cache_enable_legacy_hf_mount=True,
         cache_require_affinity=False,
     )
     operator.submit(_make_info(), _entrypoint(), {})
     cache_config = fake_truss["config"].job.runtime.cache_config
-    assert cache_config.enable_legacy_hf_mount is True
     assert cache_config.require_cache_affinity is False
 
 
@@ -426,12 +405,11 @@ class _HttpError(Exception):
 
 
 def test_explain_submit_error_flags_custom_base_image():
-    operator = _make_operator()
     err = _HttpError(
         "400 Client Error: Bad Request",
         "Custom base images not supported for your organization.",
     )
-    msg = operator._explain_submit_error(
+    msg = op_module._explain_submit_error(
         err, BasetenStepOperatorSettings(), is_command_step=False
     )
     assert "custom base images" in msg.lower()
@@ -441,9 +419,8 @@ def test_explain_submit_error_flags_custom_base_image():
 
 
 def test_explain_submit_error_flags_multi_node():
-    operator = _make_operator()
     err = _HttpError("400 Client Error: Bad Request", "")
-    msg = operator._explain_submit_error(
+    msg = op_module._explain_submit_error(
         err,
         BasetenStepOperatorSettings(node_count=4),
         is_command_step=True,
@@ -462,7 +439,7 @@ def test_submit_wraps_push_errors(fake_truss, monkeypatch):
             "400 Client Error", "Custom base images not supported"
         )
 
-    monkeypatch.setattr(sys.modules["truss_train"], "push", _boom)
+    monkeypatch.setattr(op_module, "push", _boom)
     operator = _make_operator()
     operator.get_settings = lambda _info: BasetenStepOperatorSettings()
 
@@ -623,50 +600,50 @@ def _client():
     return BasetenApiClient("bt-key")
 
 
-def test_api_get_status_reads_flat_payload(monkeypatch):
-    from zenml.integrations.baseten import baseten_api
-
-    monkeypatch.setattr(
-        baseten_api.requests,
-        "get",
-        lambda *a, **k: _FakeResponse(200, {"current_status": "RUNNING"}),
-    )
-    assert _client().get_job_status("p", "j") == "RUNNING"
-
-
 def test_api_get_status_reads_nested_training_job(monkeypatch):
-    from zenml.integrations.baseten import baseten_api
+    import requests
 
     monkeypatch.setattr(
-        baseten_api.requests,
+        requests.Session,
         "get",
-        lambda *a, **k: _FakeResponse(
+        lambda self, *a, **k: _FakeResponse(
             200, {"training_job": {"current_status": "TRAINING_JOB_COMPLETED"}}
         ),
     )
     assert _client().get_job_status("p", "j") == "TRAINING_JOB_COMPLETED"
 
 
-def test_api_get_status_returns_none_on_404(monkeypatch):
-    from zenml.integrations.baseten import baseten_api
+def test_api_get_status_missing_training_job_returns_none(monkeypatch):
+    import requests
 
     monkeypatch.setattr(
-        baseten_api.requests, "get", lambda *a, **k: _FakeResponse(404)
+        requests.Session,
+        "get",
+        lambda self, *a, **k: _FakeResponse(200, {}),
+    )
+    assert _client().get_job_status("p", "j") is None
+
+
+def test_api_get_status_returns_none_on_404(monkeypatch):
+    import requests
+
+    monkeypatch.setattr(
+        requests.Session, "get", lambda self, *a, **k: _FakeResponse(404)
     )
     assert _client().get_job_status("p", "j") is None
 
 
 def test_api_stop_job_posts_to_stop_endpoint(monkeypatch):
-    from zenml.integrations.baseten import baseten_api
+    import requests
 
     recorded = {}
 
-    def _post(url, **kwargs):
+    def _post(self, url, **kwargs):
         recorded["url"] = url
         recorded["json"] = kwargs.get("json")
         return _FakeResponse(200)
 
-    monkeypatch.setattr(baseten_api.requests, "post", _post)
+    monkeypatch.setattr(requests.Session, "post", _post)
     _client().stop_job("proj-1", "job-1")
     assert recorded["url"].endswith(
         "/training_projects/proj-1/jobs/job-1/stop"
@@ -675,14 +652,16 @@ def test_api_stop_job_posts_to_stop_endpoint(monkeypatch):
 
 
 def test_api_client_sends_api_key_auth_header(monkeypatch):
-    from zenml.integrations.baseten import baseten_api
+    import requests
 
     captured = {}
 
-    def _get(url, **kwargs):
+    def _get(self, url, **kwargs):
         captured["headers"] = kwargs.get("headers")
-        return _FakeResponse(200, {"current_status": "RUNNING"})
+        return _FakeResponse(
+            200, {"training_job": {"current_status": "RUNNING"}}
+        )
 
-    monkeypatch.setattr(baseten_api.requests, "get", _get)
+    monkeypatch.setattr(requests.Session, "get", _get)
     _client().get_job_status("p", "j")
     assert captured["headers"]["Authorization"] == "Api-Key bt-key"
