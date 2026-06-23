@@ -124,6 +124,9 @@ EXEMPT_DOMAIN_STATUS: Dict[str, set] = {
     "docs.aws.amazon.com": {403},
     # ghcr.io is a container registry API, not a web page; returns 502 to browsers.
     "ghcr.io": {502},
+    # Backblaze rejects automated HEAD/GET requests with 403.
+    "www.backblaze.com": {403},
+    "secure.backblaze.com": {403},
 }
 
 # Default policies for troublesome domains that frequently rate-limit automated traffic.
