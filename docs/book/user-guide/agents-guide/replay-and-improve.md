@@ -124,4 +124,4 @@ Keep the version that wins. Reject it if quality drops more than cost does.
 
 Everything on this page — rerun, replay, diff, cohort experiments — is exposed over both the CLI and an MCP server. That means a coding agent (Claude Code, Codex, Cursor) can drive the loop itself: pull a recent run, propose a change, replay it against the control, read the diff, and decide whether to widen it to a cohort.
 
-Point your agent at Kitaru's MCP server and it can hill-climb toward a cheaper, safer agent on its own — running the same experiments you'd run by hand, just faster and over more runs. See the [Kitaru MCP reference](https://docs.zenml.io/kitaru/reference/mcp) for the available tools.
+Point your agent at Kitaru's MCP server and it can hill-climb toward a cheaper, safer agent on its own — running the same experiments you'd run by hand, just faster and over more runs. See the [Kitaru MCP server reference](https://docs.zenml.io/kitaru/agent-native/mcp-server) for the available tools.
