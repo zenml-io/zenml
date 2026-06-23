@@ -96,30 +96,29 @@ You diff **Forked** against **Reproduced**, not against **Observed**. The reprod
 
 One replay tells you what a change did to one run. To decide whether to ship it, run the same change across a batch of recent runs and measure the aggregate.
 
-{% hint style="info" %}
-This cohort loop is a pattern you build on top of replay, not a separate API. List recent executions, replay each with the same override, and aggregate the metrics yourself.
-{% endhint %}
+The PydanticAI replay example in the kitaru repo (`examples/end_to_end/pydantic_replay_fork`) wraps this loop as `run_cohort`: for each recent run it reproduces the baseline, replays the variant, and scores the pair with bring-your-own metrics.
 
 ```python
-from kitaru import KitaruClient
+from cohort import run_cohort
+from utils import cost, latency, quality_judge
 
-client = KitaruClient()
-recent = client.executions.list(flow="support_agent", limit=50)
-
-rows = []
-for execution in recent:
-    control = flow.replay(execution.exec_id, from_="decide")
-    candidate = flow.replay(
-        execution.exec_id, from_="decide",
-        model="openai:gpt-5-nano", prompt_profile="trimmed_permissions",
-    )
-    rows.append((control, candidate))
-
-# Aggregate cost, latency, and a quality score across rows, then keep the
-# version that wins on cost without losing quality.
+# exec_ids: recent runs of your flow (e.g. from KitaruClient.executions.list)
+report = run_cohort(
+    exec_ids,
+    baseline_model="openai:gpt-5-mini",
+    variant_model="openai:gpt-5-nano",
+    variant_prompt_profile="trimmed_permissions",
+    metrics=[cost, latency, quality_judge],
+)
+report.summary()      # per-metric baseline-vs-variant deltas + an "is it better?" verdict
+report.regressions()  # the metrics (and decision changes) that got worse
 ```
 
-The loop reproduces and replays each run the same way, then aggregates the metrics: total cost, p50/p95 latency, and a quality score from an LLM judge. You get a side-by-side that answers the real question — does the cheaper model hold quality across realistic traffic, or only on the one run you happened to look at?
+{% hint style="info" %}
+`run_cohort` and the metric callables live in the example, not in the `kitaru` package — they're a pattern built on the real `flow.replay` and `KitaruClient`. Copy or adapt them; metrics are just `metric(baseline, variant) -> MetricDelta` callables, so you bring your own.
+{% endhint %}
+
+For each run, the cohort reproduces and replays the same way, then aggregates: total cost, latency, and a quality score from an LLM judge. You get the answer to the real question — does the cheaper model hold quality across realistic traffic, or only on the one run you happened to look at?
 
 Keep the version that wins. Reject it if quality drops more than cost does.
 
