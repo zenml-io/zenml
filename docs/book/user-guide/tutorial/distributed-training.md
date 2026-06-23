@@ -144,16 +144,21 @@ def _worker(rank: int, world_size: int) -> None:
     # ... your DDP training ...
     dist.destroy_process_group()
 
-@step(settings={"resources": ResourceSettings(gpu_count=4)})
+@step(
+    runtime="isolated",  # run in its own container with the GPUs, not inline
+    settings={"resources": ResourceSettings(gpu_count=4)},
+)
 def train() -> None:
     import torch.multiprocessing as mp
 
     mp.spawn(_worker, args=(4,), nprocs=4)  # one process per GPU
 
-@pipeline
+@pipeline(dynamic=True)
 def training() -> None:
     train()
 ```
+
+`runtime="isolated"` tells the orchestrator to run the step in a fresh container (sized for the GPUs it requests) instead of inline in the orchestration process — which is what you want for a heavy training step. It's a dynamic-pipeline feature, so the pipeline is `dynamic=True`. The isolated container uses the pipeline image, so make sure that image carries CUDA and torch (see section 2).
 
 **2. The Accelerate integration.** If you'd rather not wire up the process group yourself, decorate the step with `run_with_accelerate` (see section 3) and it handles the fan-out:
 
@@ -219,9 +224,10 @@ train = CommandStep(
     settings={"docker": DockerSettings(requirements=["<launcher-package>"])},
 )
 
-# A dynamic pipeline runs its body at runtime, so ZenML can't see which steps
-# it calls by static analysis. List the step in depends_on so ZenML builds and
-# registers it (and dynamic=True is what unlocks resource pools).
+# A command step runs on a step operator. In a dynamic pipeline, only steps
+# named in depends_on get their own image built — list it here so ZenML builds
+# an image with the launcher installed (otherwise the step falls back to the
+# orchestrator image). dynamic=True also unlocks resource pools.
 @pipeline(dynamic=True, depends_on=[train])
 def training() -> None:
     train()
@@ -319,7 +325,7 @@ train = CommandStep(
 
 #### Things to keep in mind
 
-- **Declare the command step with `depends_on`.** A dynamic pipeline runs its body at runtime, so ZenML can't discover which steps it calls by static analysis. Listing the step in `@pipeline(dynamic=True, depends_on=[train])` tells ZenML to build and register it. `dynamic=True` is also what unlocks [resource pools](../../getting-started/zenml-pro/resource-pools.md).
+- **List the command step in `depends_on`.** A command step runs on a step operator, and in a dynamic pipeline only the steps named in `depends_on` get a dedicated image built — otherwise the step falls back to the orchestrator image and won't have the launcher installed. `@pipeline(dynamic=True, depends_on=[train])` builds the right image; `dynamic=True` also unlocks [resource pools](../../getting-started/zenml-pro/resource-pools.md). (Regular steps like the single-node examples above don't need `depends_on` — they use the pipeline image.)
 - **The image must carry the launcher (and `zenml`).** The `CommandStep` runs through ZenML's entrypoint on the step operator, so the launcher image needs both `zenml` and the launcher package. Either let ZenML install them with `requirements=[...]` (as above), or bake your own image and use `DockerSettings(skip_build=True, parent_image=...)` — a custom `parent_image` must already contain `zenml`. The *worker* image (passed to the launcher, e.g. `--image`) only needs your training stack, not `zenml`.
 - **Logs live in the launcher's backend.** Command-step logs are not tracked by ZenML — worker logs stay where the launcher puts them (pod logs, the Ray dashboard, etc.). See the [command steps limitations](../../how-to/steps-pipelines/command_steps.md).
 - **Two capacity managers, two jobs.** The launcher's gang scheduler (e.g. Volcano) reserves the *worker* capacity all-or-nothing; ZenML resource pools (if you use them) govern the *launcher* step. They don't overlap.
