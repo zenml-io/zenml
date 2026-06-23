@@ -134,12 +134,13 @@ For several GPUs on **one** machine you don't need an external launcher or a gan
 **1. A native step that spawns the processes itself.** ZenML supports multi-process training out of the box — request the GPUs with `ResourceSettings` and let your code start one process per GPU (for example `torch.multiprocessing.spawn`, setting up DDP inside). No extra libraries, and you keep ZenML's input/output and log tracking.
 
 ```python
+import torch.distributed as dist
+import torch.multiprocessing as mp
+
 from zenml import pipeline, step
 from zenml.config import ResourceSettings
 
 def _worker(rank: int, world_size: int) -> None:
-    import torch.distributed as dist
-
     dist.init_process_group("nccl", rank=rank, world_size=world_size)
     # ... your DDP training ...
     dist.destroy_process_group()
@@ -149,8 +150,6 @@ def _worker(rank: int, world_size: int) -> None:
     settings={"resources": ResourceSettings(gpu_count=4)},
 )
 def train() -> None:
-    import torch.multiprocessing as mp
-
     mp.spawn(_worker, args=(4,), nprocs=4)  # one process per GPU
 
 @pipeline(dynamic=True)
