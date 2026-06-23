@@ -90,9 +90,7 @@ class BasetenStepOperatorConfig(BaseStepOperatorConfig):
         default=None,
         description="Name of a pre-existing Baseten secret holding container "
         "registry credentials in 'username:password' format, used to pull the "
-        "step image from a private registry. If unset, the active stack's "
-        "container registry credentials are upserted into a managed secret "
-        "automatically (public registries need none)",
+        "step image from a private registry. Leave unset for public registries",
     )
 
     @property

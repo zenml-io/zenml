@@ -122,20 +122,3 @@ class BasetenApiClient:
             timeout=_REQUEST_TIMEOUT,
         )
         response.raise_for_status()
-
-    def upsert_secret(self, name: str, value: str) -> None:
-        """Create a Baseten secret, or update it if the name already exists.
-
-        Raises ``requests.HTTPError`` if the request fails.
-
-        Args:
-            name: The secret name.
-            value: The secret value.
-        """
-        response = self._session.post(
-            f"{self._base_url}/v1/secrets",
-            headers=self._headers,
-            json={"name": name, "value": value},
-            timeout=_REQUEST_TIMEOUT,
-        )
-        response.raise_for_status()

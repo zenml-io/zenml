@@ -317,8 +317,8 @@ def test_docker_auth_built_from_explicit_registry_secret(
     )
 
 
-def test_docker_auth_none_for_public_registry(fake_truss, monkeypatch):
-    # Fixture default: container registry has no credentials -> no auth.
+def test_docker_auth_none_when_no_secret_configured(fake_truss, monkeypatch):
+    # No registry_auth_secret set -> no auth regardless of registry credentials.
     monkeypatch.setattr(
         op_module, "publish_step_run_metadata", lambda *a: None
     )
@@ -326,30 +326,6 @@ def test_docker_auth_none_for_public_registry(fake_truss, monkeypatch):
     operator.get_settings = lambda _info: BasetenStepOperatorSettings()
     operator.submit(_make_info(), _entrypoint(), {})
     assert fake_truss["config"].job.image.docker_auth is None
-
-
-def test_docker_auth_auto_created_from_registry_credentials(
-    fake_truss, monkeypatch
-):
-    monkeypatch.setattr(
-        op_module, "publish_step_run_metadata", lambda *a: None
-    )
-    fake_truss["registry"].credentials = ("user", "pass")
-
-    upserted = {}
-    operator = _make_operator()
-    operator._api = SimpleNamespace(
-        upsert_secret=lambda name, value: upserted.update({name: value})
-    )
-    operator.get_settings = lambda _info: BasetenStepOperatorSettings()
-    operator.submit(_make_info(), _entrypoint(), {})
-
-    secret_name = "zenml-registry-auth-component-id"
-    assert upserted == {secret_name: "user:pass"}
-    docker_auth = fake_truss["config"].job.image.docker_auth
-    assert (
-        docker_auth.registry_secret_docker_auth.secret_ref.name == secret_name
-    )
 
 
 # --- metadata recording ------------------------------------------------------
@@ -668,19 +644,3 @@ def test_api_client_sends_api_key_auth_header(monkeypatch):
     monkeypatch.setattr(requests.Session, "get", _get)
     _client().get_job_status("p", "j")
     assert captured["headers"]["Authorization"] == "Api-Key bt-key"
-
-
-def test_api_upsert_secret_posts_name_and_value(monkeypatch):
-    import requests
-
-    recorded = {}
-
-    def _post(self, url, **kwargs):
-        recorded["url"] = url
-        recorded["json"] = kwargs.get("json")
-        return _FakeResponse(200)
-
-    monkeypatch.setattr(requests.Session, "post", _post)
-    _client().upsert_secret("my-secret", "user:pass")
-    assert recorded["url"].endswith("/v1/secrets")
-    assert recorded["json"] == {"name": "my-secret", "value": "user:pass"}

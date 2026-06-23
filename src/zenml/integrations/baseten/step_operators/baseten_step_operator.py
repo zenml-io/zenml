@@ -290,31 +290,20 @@ class BasetenStepOperator(BaseStepOperator):
             )
         )
 
-    def _docker_auth(self) -> Optional[Any]:
+    def _docker_auth(self) -> Optional[definitions.DockerAuth]:
         """Build Baseten Docker auth for pulling the step image.
 
-        Baseten only accepts registry credentials as a reference to a Baseten
-        secret, never inline. If ``registry_auth_secret`` names a pre-existing
-        secret it is used directly; otherwise the active stack's container
-        registry credentials are upserted into a managed secret. Public
-        registries (no credentials) need no auth.
-
         Returns:
-            A Baseten ``DockerAuth`` object, or None when no credentials are
-            available.
+            A ``DockerAuth`` referencing the configured Baseten secret, or None
+            for public registries.
         """
+        secret_name = self.config.registry_auth_secret
+        if secret_name is None:
+            return None
+
         container_registry = Client().active_stack.container_registry
         if container_registry is None:
             return None
-
-        secret_name = self.config.registry_auth_secret
-        if secret_name is None:
-            credentials = container_registry.credentials
-            if credentials is None:
-                return None
-            username, password = credentials
-            secret_name = f"zenml-registry-auth-{self.id}"
-            self.api.upsert_secret(secret_name, f"{username}:{password}")
 
         return definitions.DockerAuth(
             auth_method=truss_config.DockerAuthType.REGISTRY_SECRET,
