@@ -46,11 +46,49 @@ def test_collect_metrics_returns_base_keys_as_floats() -> None:
     assert measurements["memory_used_bytes"] > 0.0
 
 
-def test_collect_gpu_metrics_absent_pynvml_is_graceful() -> None:
-    """No pynvml (the optional dep) yields an empty mapping, no raise."""
-    # pynvml is not a test dependency, so this exercises the ImportError
-    # branch and the one-time-warning path without mocking.
+def test_collect_gpu_metrics_absent_pynvml_is_graceful(
+    monkeypatch: Any,
+) -> None:
+    """No pynvml (the optional dep) yields an empty mapping, no raise.
+
+    Masking ``pynvml`` in ``sys.modules`` forces the ImportError branch
+    deterministically, so the test holds whether or not pynvml (and a GPU)
+    happen to be present in the dev/CI environment.
+    """
+    import sys
+
+    import zenml.utils.metric_sampling_utils as msu
+
+    monkeypatch.setitem(sys.modules, "pynvml", None)
+    monkeypatch.setattr(msu, "_pynvml_warned", False)
+
     assert _collect_gpu_metrics() == {}
+
+
+def test_collect_gpu_metrics_with_pynvml_aggregates_devices(
+    monkeypatch: Any,
+) -> None:
+    """A present pynvml reporting one GPU yields aggregated util + memory."""
+    import sys
+
+    import zenml.utils.metric_sampling_utils as msu
+
+    fake_pynvml = MagicMock()
+    fake_pynvml.nvmlDeviceGetCount.return_value = 1
+    fake_pynvml.nvmlDeviceGetHandleByIndex.return_value = object()
+    fake_pynvml.nvmlDeviceGetUtilizationRates.return_value = MagicMock(gpu=42)
+    fake_pynvml.nvmlDeviceGetMemoryInfo.return_value = MagicMock(used=2048)
+
+    monkeypatch.setitem(sys.modules, "pynvml", fake_pynvml)
+    # Reset the module-level init cache so the fake handles are picked up.
+    monkeypatch.setattr(msu, "_pynvml_initialized", False)
+    monkeypatch.setattr(msu, "_pynvml_handles", [])
+    monkeypatch.setattr(msu, "_pynvml_warned", False)
+
+    assert _collect_gpu_metrics() == {
+        "gpu_utilization_percent": 42.0,
+        "gpu_memory_used_bytes": 2048.0,
+    }
 
 
 def test_collect_metrics_enable_gpu_still_returns_base_keys() -> None:
