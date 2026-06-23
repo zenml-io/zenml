@@ -117,26 +117,23 @@ class SSHOrchestratorConfig(BaseOrchestratorConfig, SSHOrchestratorSettings):
     remote_workdir: str = Field(
         default="/tmp/zenml-ssh",
         description="Base directory on the remote host's filesystem for "
-        "per-run Compose files. Created automatically. Example: "
-        "'/opt/zenml-runs'",
+        "per-run Compose files. Created automatically",
     )
     docker_binary: str = Field(
         default="docker",
         description="Path to the Docker binary on the remote host. Override "
-        "if Docker is installed in a non-standard location. Example: "
-        "'/usr/local/bin/docker'",
+        "if Docker is installed in a non-standard location",
     )
     container_registry_autologin: bool = Field(
         default=False,
         description="Run `docker login` on the remote host using the "
         "submitted stack's container registry credentials before launching, so "
-        "private images can be pulled. Example: True for a private registry",
+        "private images can be pulled",
     )
     cleanup_old_files: bool = Field(
         default=True,
         description="Remove pipeline launch files (Compose files) on the "
-        "remote host once they are older than 7 days. Example: False when an "
-        "external cleanup job manages the remote workdir",
+        "remote host once they are older than 7 days",
     )
     minimum_free_disk_gb: float = Field(
         default=5.0,
