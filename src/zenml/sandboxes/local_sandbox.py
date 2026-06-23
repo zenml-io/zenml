@@ -199,6 +199,7 @@ class LocalSandboxSession(SandboxSession):
         env: Dict[str, str],
         *,
         parent: "BaseSandbox",
+        destroy_on_exit: bool = False,
     ) -> None:
         """Initialize the local sandbox session.
 
@@ -207,10 +208,13 @@ class LocalSandboxSession(SandboxSession):
                 This directory is cleaned up when the session is closed.
             env: Environment variables to set for this session.
             parent: The sandbox component that created this session.
+            destroy_on_exit: Whether to destroy the sandbox session when the
+                session context manager exits.
         """
         super().__init__(
             id=f"local-{uuid.uuid4().hex[:12]}",
             parent=parent,
+            destroy_on_exit=destroy_on_exit,
         )
         self._workdir = workdir
         self._env = env
@@ -392,12 +396,16 @@ class LocalSandbox(BaseSandbox):
         return env
 
     def create_session(
-        self, settings: Optional[BaseSandboxSettings] = None
+        self,
+        settings: Optional[BaseSandboxSettings] = None,
+        destroy_on_exit: bool = False,
     ) -> SandboxSession:
         """Create a local sandbox session in a clean working directory.
 
         Args:
             settings: Optional settings overrides.
+            destroy_on_exit: Whether to destroy the sandbox session when the
+                session context manager exits.
 
         Returns:
             A local sandbox session.
@@ -416,6 +424,7 @@ class LocalSandbox(BaseSandbox):
             workdir=workdir,
             env=env,
             parent=self,
+            destroy_on_exit=destroy_on_exit,
         )
 
 
