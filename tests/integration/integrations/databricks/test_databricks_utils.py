@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 import sys
 from collections.abc import Iterator
 from pathlib import Path
@@ -119,15 +120,21 @@ def _get_base_settings(
 def _restore_custom_source_root() -> Iterator[None]:
     """Stop a test's custom source root from leaking into other tests.
 
-    ``configure_databricks_wheel_environment`` sets a process-global source
-    root via ``set_custom_source_root``. Without restoring it, a later test in
-    the same (randomly-ordered) run inherits the stale value and fails to
-    resolve its own modules. Snapshot it before the test and restore it on
-    teardown.
+    ``configure_databricks_wheel_environment`` sets the source root both as a
+    process-global (``source_utils._CUSTOM_SOURCE_ROOT``) and as the
+    ``ENV_ZENML_CUSTOM_SOURCE_ROOT`` environment variable. The env var is the
+    one that leaks into subprocesses — the parallel-pipeline tests spawn worker
+    processes that inherit it and then resolve modules against the stale root —
+    so both must be restored on teardown.
     """
-    original = source_utils._CUSTOM_SOURCE_ROOT
+    original_root = source_utils._CUSTOM_SOURCE_ROOT
+    original_env = os.environ.get(ENV_ZENML_CUSTOM_SOURCE_ROOT)
     yield
-    source_utils._CUSTOM_SOURCE_ROOT = original
+    source_utils._CUSTOM_SOURCE_ROOT = original_root
+    if original_env is None:
+        os.environ.pop(ENV_ZENML_CUSTOM_SOURCE_ROOT, None)
+    else:
+        os.environ[ENV_ZENML_CUSTOM_SOURCE_ROOT] = original_env
 
 
 def test_add_wheel_package_to_sys_path_is_idempotent(
