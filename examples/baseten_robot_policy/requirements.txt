@@ -1,6 +1,7 @@
 # The Baseten step operator ships in a release after 0.95.1; click comes with
 # zenml, so it is not listed separately.
 zenml>=0.95.1
-# torch is only needed wherever the training command actually runs:
-#   - on Baseten it is already present in the public PyTorch base image;
-#   - for a local smoke test (`python run.py --local`) install it yourself.
+# torch is used by the training script, and imported transitively when the prep
+# step reuses its data generator. On Baseten it is already present in the public
+# PyTorch base image.
+torch

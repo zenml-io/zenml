@@ -34,6 +34,8 @@ import os
 from typing import Tuple
 
 import numpy as np
+import torch
+from torch import nn
 
 
 def make_demonstrations(
@@ -62,9 +64,6 @@ def make_demonstrations(
 
 def main() -> None:
     """Train a small reaching policy and report per-node metrics."""
-    import torch
-    from torch import nn
-
     seed = int(os.environ.get("SEED", "42"))
     n_samples = int(os.environ.get("N_SAMPLES", "8192"))
     epochs = int(os.environ.get("EPOCHS", "200"))

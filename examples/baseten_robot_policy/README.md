@@ -64,7 +64,7 @@ records metadata for all of these; the gates are on the Baseten account.
 pip install -r requirements.txt
 zenml integration install baseten
 
-# Local smoke test (runs the training command locally; install torch first):
+# Local smoke test (runs the training command locally):
 python run.py --local
 
 # Single-node training on Baseten (one H100) — works on any org:
