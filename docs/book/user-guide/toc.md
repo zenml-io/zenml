@@ -45,6 +45,15 @@
     * [Evaluation for finetuning](llmops-guide/finetuning-llms/evaluation-for-finetuning.md)
     * [Deploying finetuned models](llmops-guide/finetuning-llms/deploying-finetuned-models.md)
     * [Next steps](llmops-guide/finetuning-llms/next-steps.md)
+* [Agents guide](agents-guide/README.md)
+  * [A durable agent](agents-guide/01-durable-agent.md)
+  * [Replay and improve](agents-guide/replay-and-improve.md)
+  * [Sandboxed commands](agents-guide/02-sandbox.md)
+  * [Skills](agents-guide/03-skills.md)
+  * [Credential proxy](agents-guide/04-credential-proxy.md)
+  * [Typed services](agents-guide/05-typed-services.md)
+  * [Human in the loop](agents-guide/06-hitl.md)
+  * [Production notes](agents-guide/production-notes.md)
 
 ## Tutorials <a href="#tutorial" id="tutorial"></a>
 
@@ -80,6 +89,7 @@
 * [Deploying ML Models](https://github.com/zenml-io/zenml/tree/main/examples/deploying_ml_model)
 * [Deploying Agents](https://github.com/zenml-io/zenml/tree/main/examples/deploying_agent)
 * [Agent examples](https://github.com/zenml-io/zenml/tree/main/examples/agent_framework_integrations/)
+* [Durable agent platform (Kitaru)](https://github.com/zenml-io/kitaru/tree/develop/examples/end_to_end/agent_harness_platform)
 * [End-to-End Batch Inference](https://github.com/zenml-io/zenml/tree/main/examples/e2e)
 * [ML classification](https://github.com/zenml-io/zenml-projects/tree/main/oncoclear)
 * [Computer Vision with YoloV8](https://github.com/zenml-io/zenml/tree/main/examples/computer_vision)

@@ -14,16 +14,22 @@
 import os
 import shutil
 import tempfile
+from datetime import datetime
+from types import SimpleNamespace
+from unittest.mock import MagicMock
+from uuid import uuid4
 
 import pytest
 from pydantic import BaseModel
 
+import zenml.artifacts.utils as au
 from zenml.artifacts.utils import (
     _load_artifact_from_uri,
     _strip_timestamp_from_multiline_string,
     load_artifact_from_response,
     load_model_from_metadata,
     save_model_metadata,
+    should_use_artifact_store_cache,
 )
 from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
@@ -225,3 +231,55 @@ def test__load_artifact(builtin_type_file_uri):
 def test__strip_timestamp_from_multiline_string(raw: str, expected: str):
     """Test the _strip_timestamp_from_multiline_string function to properly strip the logs."""
     assert _strip_timestamp_from_multiline_string(raw) == expected
+
+
+def _artifact_store_model():
+    """Build a fake component model exposing id, updated and name."""
+    return SimpleNamespace(
+        id=uuid4(),
+        updated=datetime(2024, 1, 1),
+        name="artifact-store",
+    )
+
+
+def test_should_use_cache_respects_server_env_and_config(monkeypatch):
+    """The gate requires the server env and honors the config toggle."""
+    monkeypatch.delenv("ZENML_SERVER", raising=False)
+    monkeypatch.delenv(
+        "ZENML_SERVER_ARTIFACT_STORE_CACHE_ENABLED", raising=False
+    )
+    # Outside the server the config is never consulted.
+    assert should_use_artifact_store_cache() is False
+
+    monkeypatch.setenv("ZENML_SERVER", "true")
+    monkeypatch.setenv("ZENML_SERVER_ARTIFACT_STORE_CACHE_ENABLED", "true")
+    assert should_use_artifact_store_cache() is True
+
+    monkeypatch.setenv("ZENML_SERVER_ARTIFACT_STORE_CACHE_ENABLED", "false")
+    assert should_use_artifact_store_cache() is False
+
+
+def test_instantiate_artifact_store_uses_cache_when_active(monkeypatch):
+    """With the cache active, the store is served from the server cache."""
+    monkeypatch.setattr(au, "should_use_artifact_store_cache", lambda: True)
+    store = MagicMock()
+    cache = MagicMock()
+    cache.get_or_create.return_value = store
+    monkeypatch.setattr(
+        "zenml.zen_server.utils.artifact_store_cache", lambda: cache
+    )
+
+    model = _artifact_store_model()
+    assert au.instantiate_artifact_store(model) is store
+    cache.get_or_create.assert_called_once_with(model)
+
+
+def test_instantiate_artifact_store_builds_when_disabled(monkeypatch):
+    """With the cache off, a fresh store is built."""
+    monkeypatch.setattr(au, "should_use_artifact_store_cache", lambda: False)
+    store = MagicMock()
+    monkeypatch.setattr(
+        "zenml.stack.StackComponent.from_model", lambda model: store
+    )
+
+    assert au.instantiate_artifact_store(_artifact_store_model()) is store

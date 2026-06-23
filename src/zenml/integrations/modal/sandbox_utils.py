@@ -18,6 +18,7 @@ import time
 from typing import Any, Dict, List, Optional, Protocol, Tuple
 
 import modal
+from modal.config import config as modal_config
 
 from zenml.config.resource_settings import ByteUnit, ResourceSettings
 from zenml.constants import ENV_ZENML_STORE_PREFIX
@@ -151,8 +152,6 @@ def resolve_modal_token_pair(
     resolved_secret = normalize_optional_config_value(token_secret)
 
     if not resolved_id or not resolved_secret:
-        from modal.config import config as modal_config
-
         ambient_id: Optional[str] = None
         ambient_secret: Optional[str] = None
         try:

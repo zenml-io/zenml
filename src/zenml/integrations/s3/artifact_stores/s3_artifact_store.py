@@ -164,8 +164,7 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
     """Artifact Store for S3 based artifacts."""
 
     _filesystem: Optional[ZenMLS3Filesystem] = None
-
-    is_versioned: bool = False
+    _is_versioned: Optional[bool] = None
 
     def __init__(
         self,
@@ -181,18 +180,6 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         super().__init__(*args, **kwargs)
         self._boto3_bucket_holder = None
 
-        # determine bucket versioning status
-        versioning = self._boto3_bucket.Versioning()
-        with self._shield_lack_of_versioning_permissions(
-            "s3:GetBucketVersioning"
-        ):
-            if versioning.status == "Enabled":
-                self.is_versioned = True
-                logger.warning(
-                    f"The artifact store bucket `{self.config.bucket}` is versioned, "
-                    "this may slow down logging process significantly."
-                )
-
     @property
     def config(self) -> S3ArtifactStoreConfig:
         """Get the config of this artifact store.
@@ -201,6 +188,37 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
             The config of this artifact store.
         """
         return cast(S3ArtifactStoreConfig, self._config)
+
+    @property
+    def is_versioned(self) -> bool:
+        """Whether the artifact store bucket has versioning enabled.
+
+        Returns:
+            Whether the artifact store bucket has versioning enabled.
+        """
+        # Determined lazily on first use. The versioning status is only needed
+        # on the log-writing path, so the server read endpoints never pay for
+        # the boto3 client build and `GetBucketVersioning` call this requires.
+        if self._is_versioned is None:
+            with self._filesystem_lock:
+                if self._is_versioned is None:
+                    self._determine_versioning()
+        return bool(self._is_versioned)
+
+    def _determine_versioning(self) -> None:
+        """Query and cache the bucket versioning status."""
+        is_versioned = False
+        versioning = self._boto3_bucket.Versioning()
+        with self._shield_lack_of_versioning_permissions(
+            "s3:GetBucketVersioning"
+        ):
+            if versioning.status == "Enabled":
+                is_versioned = True
+                logger.warning(
+                    f"The artifact store bucket `{self.config.bucket}` is versioned, "
+                    "this may slow down logging process significantly."
+                )
+        self._is_versioned = is_versioned
 
     def get_credentials(
         self,
@@ -260,26 +278,30 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         if self._filesystem and not self.connector_has_expired():
             return self._filesystem
 
-        key, secret, token, region = self.get_credentials()
+        with self._filesystem_lock:
+            if self._filesystem and not self.connector_has_expired():
+                return self._filesystem
 
-        # Use the region from the connector if available, otherwise some
-        # remote workloads (e.g. Sagemaker) might not work correctly because
-        # they look for the bucket in the wrong region
-        client_kwargs = {}
-        if region:
-            client_kwargs["region_name"] = region
-        if self.config.client_kwargs:
-            client_kwargs.update(self.config.client_kwargs)
+            key, secret, token, region = self.get_credentials()
 
-        self._filesystem = ZenMLS3Filesystem(
-            key=key,
-            secret=secret,
-            token=token,
-            client_kwargs=client_kwargs,
-            config_kwargs=self.config.config_kwargs,
-            s3_additional_kwargs=self.config.s3_additional_kwargs,
-        )
-        return self._filesystem
+            # Use the region from the connector if available, otherwise some
+            # remote workloads (e.g. Sagemaker) might not work correctly because
+            # they look for the bucket in the wrong region
+            client_kwargs = {}
+            if region:
+                client_kwargs["region_name"] = region
+            if self.config.client_kwargs:
+                client_kwargs.update(self.config.client_kwargs)
+
+            self._filesystem = ZenMLS3Filesystem(
+                key=key,
+                secret=secret,
+                token=token,
+                client_kwargs=client_kwargs,
+                config_kwargs=self.config.config_kwargs,
+                s3_additional_kwargs=self.config.s3_additional_kwargs,
+            )
+            return self._filesystem
 
     def cleanup(self) -> None:
         """Close the filesystem."""
@@ -563,9 +585,13 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         if self._boto3_bucket_holder and not self.connector_has_expired():
             return self._boto3_bucket_holder
 
-        s3 = boto3.resource("s3", **self._build_boto3_kwargs())
-        self._boto3_bucket_holder = s3.Bucket(self.config.bucket)
-        return self._boto3_bucket_holder
+        with self._filesystem_lock:
+            if self._boto3_bucket_holder and not self.connector_has_expired():
+                return self._boto3_bucket_holder
+
+            s3 = boto3.resource("s3", **self._build_boto3_kwargs())
+            self._boto3_bucket_holder = s3.Bucket(self.config.bucket)
+            return self._boto3_bucket_holder
 
     @contextmanager
     def _shield_lack_of_versioning_permissions(
@@ -581,4 +607,4 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
                     "This is needed to remove previous versions of log files from your "
                     "Artifact Store bucket."
                 )
-                self.is_versioned = False
+                self._is_versioned = False

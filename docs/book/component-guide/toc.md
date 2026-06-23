@@ -35,6 +35,7 @@
   * [Azure Blob Storage](artifact-stores/azure.md)
   * [Alibaba Cloud OSS](artifact-stores/alibaba-oss.md)
   * [MinIO](artifact-stores/minio.md)
+  * [Backblaze B2](artifact-stores/b2.md)
   * [Develop a custom artifact store](artifact-stores/custom.md)
 * [Container Registries](container-registries/README.md)
   * [Default Container Registry](container-registries/default.md)

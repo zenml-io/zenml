@@ -124,6 +124,11 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             table_name=__tablename__,
             column_names=["project_id", "created", "id"],
         ),
+        # Composite index for sorting pipelines by their latest run (UI default)
+        build_index(
+            table_name=__tablename__,
+            column_names=["pipeline_id", "created"],
+        ),
     )
 
     # Fields
