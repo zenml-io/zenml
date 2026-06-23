@@ -19,8 +19,10 @@ from pydantic import Field
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.ssh import SSH_ORCHESTRATOR_FLAVOR
+from zenml.integrations.ssh.flavors.ssh_base_flavor import (
+    SSHConnectionConfigMixin,
+)
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
-from zenml.utils.secret_utils import PlainSerializedSecretStr, SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.ssh.orchestrators import SSHOrchestrator
@@ -44,8 +46,13 @@ class SSHOrchestratorSettings(BaseSettings):
     )
 
 
-class SSHOrchestratorConfig(BaseOrchestratorConfig, SSHOrchestratorSettings):
+class SSHOrchestratorConfig(
+    BaseOrchestratorConfig, SSHConnectionConfigMixin, SSHOrchestratorSettings
+):
     """Configuration for the SSH orchestrator.
+
+    Connection/auth fields (hostname, username, ssh_key_path, ...) come from
+    :class:`SSHConnectionConfigMixin`.
 
     Example registration::
 
@@ -56,74 +63,6 @@ class SSHOrchestratorConfig(BaseOrchestratorConfig, SSHOrchestratorSettings):
             --ssh_key_path=~/.ssh/id_ed25519
     """
 
-    hostname: str = Field(
-        description="Hostname or IP address of the remote SSH server. Must "
-        "be reachable from the machine submitting the pipeline. Examples: "
-        "'gpu-box.internal', '10.0.1.42', 'my-server.example.com'",
-    )
-    username: Optional[str] = Field(
-        default=None,
-        description="SSH username for authentication on the remote host. "
-        "This user must be able to run Docker (typically a member of the "
-        "'docker' group). Required for authentication. Example: 'ubuntu'",
-    )
-    port: int = Field(
-        default=22,
-        ge=1,
-        le=65535,
-        description="SSH port on the remote host. Standard SSH port is 22",
-    )
-    ssh_key_path: Optional[str] = Field(
-        default=None,
-        description="Path to the SSH private key file on the submitting "
-        "machine. Supports RSA, Ed25519, and ECDSA keys. Example: "
-        "'~/.ssh/id_ed25519'",
-    )
-    ssh_private_key: Optional[PlainSerializedSecretStr] = SecretField(
-        default=None,
-        description="SSH private key content, used instead of ssh_key_path "
-        "when the key is stored in a ZenML secret. Supports {{secret.key}} "
-        "references",
-    )
-    ssh_key_passphrase: Optional[PlainSerializedSecretStr] = SecretField(
-        default=None,
-        description="Passphrase for an encrypted SSH private key. Leave "
-        "unset if the key is not encrypted",
-    )
-    verify_host_key: bool = Field(
-        default=True,
-        description="Require the remote host key to be present in "
-        "known_hosts (paramiko RejectPolicy). Set to False to auto-accept "
-        "unknown host keys (less secure, convenient for ephemeral hosts)",
-    )
-    known_hosts_path: Optional[str] = Field(
-        default=None,
-        description="Path to a known_hosts file for host-key verification. "
-        "Defaults to ~/.ssh/known_hosts. Only used when verify_host_key is "
-        "True",
-    )
-    connection_timeout: float = Field(
-        default=10.0,
-        gt=0,
-        description="Timeout in seconds for establishing the SSH "
-        "connection. Increase for high-latency links. Example: 30.0",
-    )
-    keepalive_interval: int = Field(
-        default=30,
-        ge=0,
-        description="Interval in seconds between SSH keepalive packets, so "
-        "long-running launches survive idle timeouts. Set to 0 to disable",
-    )
-    remote_workdir: str = Field(
-        default="/tmp/zenml-ssh",
-        description="Base directory on the remote host's filesystem for "
-        "per-run Compose files. Created automatically",
-    )
-    docker_binary: str = Field(
-        default="docker",
-        description="Path to the Docker binary on the remote host. Override "
-        "if Docker is installed in a non-standard location",
-    )
     container_registry_autologin: bool = Field(
         default=False,
         description="Run `docker login` on the remote host using the "

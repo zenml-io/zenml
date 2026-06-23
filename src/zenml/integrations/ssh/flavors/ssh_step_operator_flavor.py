@@ -19,8 +19,10 @@ from pydantic import Field
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.ssh import SSH_STEP_OPERATOR_FLAVOR
+from zenml.integrations.ssh.flavors.ssh_base_flavor import (
+    SSHConnectionConfigMixin,
+)
 from zenml.step_operators import BaseStepOperatorConfig, BaseStepOperatorFlavor
-from zenml.utils.secret_utils import PlainSerializedSecretStr, SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.ssh.step_operators import SSHStepOperator
@@ -39,20 +41,24 @@ class SSHStepOperatorSettings(BaseSettings):
     gpu_indices: Optional[List[int]] = Field(
         default=None,
         description="GPU device indices to expose inside the container via "
-        "Docker --gpus flag. Examples: [0] for single GPU, [0, 2] for "
-        "specific GPUs, None for CPU-only execution. Give concurrent steps on "
-        "the same host distinct indices to avoid oversubscribing a GPU",
+        "the Docker --gpus flag, or None for CPU-only execution. Give "
+        "concurrent steps on the same host distinct indices to avoid "
+        "oversubscribing a GPU",
     )
     docker_run_args: Optional[List[str]] = Field(
         default=None,
-        description="Additional arguments for the docker run command. "
-        "Inserted before the image name. Do not include secrets here. "
-        "Example: ['--shm-size=2g', '--ulimit', 'memlock=-1']",
+        description="Additional arguments for the docker run command, "
+        "inserted before the image name. Do not include secrets here",
     )
 
 
-class SSHStepOperatorConfig(BaseStepOperatorConfig, SSHStepOperatorSettings):
+class SSHStepOperatorConfig(
+    BaseStepOperatorConfig, SSHConnectionConfigMixin, SSHStepOperatorSettings
+):
     """Configuration for the SSH step operator.
+
+    Connection/auth fields (hostname, username, ssh_key_path, ...) come from
+    :class:`SSHConnectionConfigMixin`.
 
     Example registration:
     ```bash
@@ -63,85 +69,6 @@ class SSHStepOperatorConfig(BaseStepOperatorConfig, SSHStepOperatorSettings):
         --ssh_key_path=~/.ssh/id_ed25519
     ```
     """
-
-    hostname: str = Field(
-        description="Hostname or IP address of the remote SSH server. "
-        "Must be reachable from the machine running the orchestrator. "
-        "Examples: 'gpu-box.internal', '10.0.1.42', 'my-server.example.com'",
-    )
-    username: Optional[str] = Field(
-        default=None,
-        description="SSH username for authentication on the remote host. "
-        "This user must have permission to run Docker commands (typically "
-        "a member of the 'docker' group). Required for authentication. "
-        "Example: 'ubuntu'",
-    )
-    port: int = Field(
-        default=22,
-        ge=1,
-        le=65535,
-        description="SSH port on the remote host. Standard SSH port is 22",
-    )
-
-    ssh_key_path: Optional[str] = Field(
-        default=None,
-        description="Path to the SSH private key file on the local machine. "
-        "Supports RSA, Ed25519, and ECDSA keys. The key may be encrypted "
-        "(provide ssh_key_passphrase). "
-        "Example: '~/.ssh/id_ed25519'",
-    )
-    ssh_private_key: Optional[PlainSerializedSecretStr] = SecretField(
-        default=None,
-        description="SSH private key content as a string. Use this instead of "
-        "ssh_key_path when the key is stored in a ZenML secret rather than "
-        "on disk. Supports {{secret.key}} references",
-    )
-    ssh_key_passphrase: Optional[PlainSerializedSecretStr] = SecretField(
-        default=None,
-        description="Passphrase for an encrypted SSH private key. Leave "
-        "unset if the key is not encrypted. Supports {{secret.key}} references",
-    )
-
-    verify_host_key: bool = Field(
-        default=True,
-        description="Require the remote host key to be present in "
-        "known_hosts. When True (recommended), uses paramiko RejectPolicy "
-        "to prevent MITM attacks. Set to False to auto-accept unknown "
-        "host keys (less secure, convenient for ephemeral hosts)",
-    )
-    known_hosts_path: Optional[str] = Field(
-        default=None,
-        description="Path to a known_hosts file for host key verification. "
-        "Defaults to ~/.ssh/known_hosts if not specified. Only used when "
-        "verify_host_key is True",
-    )
-
-    connection_timeout: float = Field(
-        default=10.0,
-        gt=0,
-        description="Timeout in seconds for establishing the SSH connection. "
-        "Increase for high-latency networks. Example: 30.0 for slow links",
-    )
-    keepalive_interval: int = Field(
-        default=30,
-        ge=0,
-        description="Interval in seconds between SSH keepalive packets. "
-        "Prevents long-running training jobs from being killed by idle "
-        "connection timeouts. Set to 0 to disable",
-    )
-
-    remote_workdir: str = Field(
-        default="/tmp/zenml-ssh",
-        description="Base directory on the remote host for temporary files "
-        "(env-files). Created automatically if it does not exist. "
-        "Example: '/home/ubuntu/zenml-workdir'",
-    )
-    docker_binary: str = Field(
-        default="docker",
-        description="Path to the Docker binary on the remote host. Override "
-        "if Docker is installed in a non-standard location. "
-        "Example: '/usr/local/bin/docker'",
-    )
 
     @property
     def is_remote(self) -> bool:
