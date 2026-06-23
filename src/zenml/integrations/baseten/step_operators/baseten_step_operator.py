@@ -27,14 +27,12 @@ from typing import (
 )
 
 from truss.base import truss_config
-from truss.remote.baseten.remote import BasetenRemote
 from truss.remote.remote_factory import RemoteFactory
 from truss.remote.truss_remote import RemoteConfig
 from truss_train import definitions, push
 
 from zenml.client import Client
 from zenml.config.build_configuration import BuildConfiguration
-from zenml.constants import ENV_ZENML_STORE_PREFIX
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.integrations.baseten.flavors import (
     BasetenStepOperatorConfig,
@@ -64,11 +62,6 @@ BASETEN_LOGS_URL_METADATA_KEY = "baseten_logs_url"
 # writes it from the configured API key before pushing.
 BASETEN_REMOTE_NAME = "baseten"
 BASETEN_REMOTE_URL = "https://app.baseten.co"
-
-# The ZenML store API token grants access to the ZenML server, so it must be
-# routed through a Baseten secret rather than inlined into the job config where
-# it would be visible.
-SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY = f"{ENV_ZENML_STORE_PREFIX}API_TOKEN"
 
 # Baseten exposes both fully-qualified (TRAINING_JOB_*) and short job state
 # names depending on the surface; map both defensively.
@@ -255,28 +248,17 @@ class BasetenStepOperator(BaseStepOperator):
         self,
         environment: Dict[str, str],
         secrets: Dict[str, str],
-        is_command_step: bool,
     ) -> Dict[str, Any]:
         """Build the Baseten runtime environment from the step environment.
 
         Variables named in the ``secrets`` mapping are replaced with Baseten
         secret references so their values are never inlined into the job
-        config. The known-sensitive ZenML store API token is never inlined:
-
-        * for a command step (an opaque command that never talks to ZenML) the
-          token is unnecessary and is dropped;
-        * for a regular step (which calls back to the ZenML server) the token is
-          required. If the user mapped it explicitly via ``secrets`` that
-          mapping wins; otherwise the operator transparently upserts the token
-          into a managed Baseten secret and references it, so the value lands in
-          Baseten's secret store rather than the inlined job config.
+        config; everything else is passed through as-is.
 
         Args:
             environment: The environment variables for the step.
             secrets: Mapping of environment variable name to an existing
                 Baseten secret name.
-            is_command_step: Whether the step is a command step (opaque command
-                that does not run ZenML code).
 
         Returns:
             The runtime environment with plain strings and secret references.
@@ -287,56 +269,9 @@ class BasetenStepOperator(BaseStepOperator):
                 runtime_environment[key] = definitions.SecretReference(
                     name=secrets[key]
                 )
-            elif key == SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY:
-                if is_command_step:
-                    # A command step never talks to the ZenML server, so the
-                    # token is unnecessary; drop it rather than leak it.
-                    logger.debug(
-                        "Dropping unneeded sensitive env var `%s` for command "
-                        "step.",
-                        key,
-                    )
-                    continue
-                # Never inline the token: sync it into a managed Baseten secret
-                # and reference that instead.
-                secret_name = self._sync_store_token_secret(value)
-                runtime_environment[key] = definitions.SecretReference(
-                    name=secret_name
-                )
             else:
                 runtime_environment[key] = value
         return runtime_environment
-
-    def _sync_store_token_secret(self, token: str) -> str:
-        """Upsert the ephemeral ZenML store token into a Baseten secret.
-
-        The token rotates per run, so the secret is upserted (created or
-        overwritten) on every submit under a name derived from this operator's
-        id. This keeps the value out of the inlined job config while letting
-        regular steps authenticate back to the ZenML server.
-
-        Note: concurrent runs on the same operator share this secret (last
-        writer wins). The tokens are scoped to the same server/user, so auth
-        still succeeds; map the token explicitly via the ``secrets`` setting if
-        you need per-run isolation.
-
-        Args:
-            token: The ZenML store API token value to store.
-
-        Returns:
-            The name of the Baseten secret holding the token.
-        """
-        secret_name = f"zenml-store-api-token-{self.id}"
-        remote = BasetenRemote(
-            remote_url=BASETEN_REMOTE_URL,
-            api_key=self.config.api_key.get_secret_value(),
-        )
-        remote.api.upsert_secret(secret_name, token)
-        logger.debug(
-            "Synced ZenML store API token into Baseten secret `%s`.",
-            secret_name,
-        )
-        return secret_name
 
     def _configure_truss_remote(self) -> None:
         """Write the Baseten remote into truss config so push() can auth.
@@ -396,8 +331,6 @@ class BasetenStepOperator(BaseStepOperator):
         Raises:
             RuntimeError: If multi-node execution is requested for a regular
                 step.
-            Exception: Re-raised if persisting the Baseten job ids to the
-                ZenML server fails (the job is already running on Baseten).
         """
         settings = cast(BasetenStepOperatorSettings, self.get_settings(info))
         is_command_step = info.config.command is not None
@@ -455,7 +388,6 @@ class BasetenStepOperator(BaseStepOperator):
             "environment_variables": self._build_environment(
                 environment=environment,
                 secrets=settings.secrets,
-                is_command_step=is_command_step,
             ),
         }
         if settings.enable_cache:
@@ -509,10 +441,10 @@ class BasetenStepOperator(BaseStepOperator):
             ),
         }
 
-        # The job ids are essential operational state: without them status
-        # checks and cancellation cannot find the job. Surface a persistence
-        # failure loudly (with the ids) so an orphaned, billable job can be
-        # found and stopped.
+        # The job ids let status checks and cancellation find the job. If
+        # persisting them fails, the job is already running on Baseten, so let
+        # it continue rather than failing the step over bookkeeping; log loudly
+        # (with the ids) so an otherwise untracked, billable job can be found.
         try:
             publish_step_run_metadata(info.step_run_id, {self.id: metadata})
             info.step_run.run_metadata.update(metadata)
@@ -526,7 +458,6 @@ class BasetenStepOperator(BaseStepOperator):
                 job_id,
                 project_id,
             )
-            raise
 
     def _extract_job_and_project_id(
         self, step_run: "StepRunResponse"

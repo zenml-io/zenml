@@ -32,7 +32,7 @@ from zenml.integrations.baseten.step_operators import (
     baseten_step_operator as op_module,
 )
 
-SENSITIVE_KEY = op_module.SENSITIVE_ZENML_STORE_API_TOKEN_ENV_KEY
+SENSITIVE_KEY = "ZENML_STORE_API_TOKEN"
 
 
 class _Node:
@@ -82,25 +82,11 @@ def fake_truss(monkeypatch):
         def update_remote_config(config):
             recorded["remote_config"] = config
 
-    # Records the store-token secrets upserted via the Baseten remote.
-    recorded["secrets"] = {}
-
-    class _Api:
-        def upsert_secret(self, name, value):
-            recorded["secrets"][name] = value
-
-    class _BasetenRemote:
-        def __init__(self, remote_url=None, api_key=None, **kwargs):
-            recorded["remote_url"] = remote_url
-            recorded["remote_api_key"] = api_key
-            self.api = _Api()
-
     monkeypatch.setattr(op_module, "push", push)
     monkeypatch.setattr(op_module, "definitions", definitions)
     monkeypatch.setattr(op_module, "truss_config", truss_config)
     monkeypatch.setattr(op_module, "RemoteFactory", _RemoteFactory)
     monkeypatch.setattr(op_module, "RemoteConfig", _Node)
-    monkeypatch.setattr(op_module, "BasetenRemote", _BasetenRemote)
     return recorded
 
 
@@ -270,7 +256,7 @@ def test_cache_legacy_hf_mount_and_affinity_overrides(fake_truss, monkeypatch):
 def test_build_environment_maps_secret_reference(fake_truss):
     operator = _make_operator()
     result = operator._build_environment(
-        {"HF_TOKEN": "value"}, {"HF_TOKEN": "hf-secret"}, False
+        {"HF_TOKEN": "value"}, {"HF_TOKEN": "hf-secret"}
     )
     assert isinstance(result["HF_TOKEN"], _Node)
     assert result["HF_TOKEN"].name == "hf-secret"
@@ -278,40 +264,22 @@ def test_build_environment_maps_secret_reference(fake_truss):
 
 def test_build_environment_inlines_plain_values(fake_truss):
     operator = _make_operator()
-    result = operator._build_environment({"EPOCHS": "5"}, {}, False)
+    result = operator._build_environment({"EPOCHS": "5"}, {})
     assert result == {"EPOCHS": "5"}
 
 
-def test_build_environment_syncs_unmapped_sensitive_token_regular_step(
-    fake_truss,
-):
+def test_build_environment_passes_store_token_through(fake_truss):
+    # The store token is treated like any other env var (no special-casing):
+    # passed through unless the user explicitly maps it to a Baseten secret.
     operator = _make_operator()
-    result = operator._build_environment({SENSITIVE_KEY: "tok"}, {}, False)
-
-    # The token is never inlined: it is upserted into a managed Baseten secret
-    # and referenced from the runtime environment.
-    secret_name = "zenml-store-api-token-component-id"
-    assert fake_truss["secrets"] == {secret_name: "tok"}
-    assert isinstance(result[SENSITIVE_KEY], _Node)
-    assert result[SENSITIVE_KEY].name == secret_name
-    assert result[SENSITIVE_KEY].name != "tok"
+    result = operator._build_environment({SENSITIVE_KEY: "tok"}, {})
+    assert result == {SENSITIVE_KEY: "tok"}
 
 
-def test_build_environment_drops_unmapped_sensitive_token_command_step(
-    fake_truss,
-):
+def test_build_environment_allows_mapped_store_token(fake_truss):
     operator = _make_operator()
     result = operator._build_environment(
-        {SENSITIVE_KEY: "tok", "EPOCHS": "5"}, {}, True
-    )
-    assert SENSITIVE_KEY not in result
-    assert result == {"EPOCHS": "5"}
-
-
-def test_build_environment_allows_mapped_sensitive_token(fake_truss):
-    operator = _make_operator()
-    result = operator._build_environment(
-        {SENSITIVE_KEY: "tok"}, {SENSITIVE_KEY: "zenml-token-secret"}, False
+        {SENSITIVE_KEY: "tok"}, {SENSITIVE_KEY: "zenml-token-secret"}
     )
     assert isinstance(result[SENSITIVE_KEY], _Node)
     assert result[SENSITIVE_KEY].name == "zenml-token-secret"
@@ -384,7 +352,9 @@ def test_submit_records_both_ids_as_metadata(fake_truss, monkeypatch):
     )
 
 
-def test_submit_raises_when_metadata_publish_fails(fake_truss, monkeypatch):
+def test_submit_continues_when_metadata_publish_fails(fake_truss, monkeypatch):
+    # The job is already running on Baseten, so a metadata-persist failure is
+    # logged but must not fail the step.
     def _boom(*args, **kwargs):
         raise RuntimeError("publish failed")
 
@@ -392,8 +362,7 @@ def test_submit_raises_when_metadata_publish_fails(fake_truss, monkeypatch):
     operator = _make_operator()
     operator.get_settings = lambda _info: BasetenStepOperatorSettings()
 
-    with pytest.raises(RuntimeError, match="publish failed"):
-        operator.submit(_make_info(), _entrypoint(), {})
+    operator.submit(_make_info(), _entrypoint(), {})  # does not raise
 
 
 # --- submit error translation ------------------------------------------------
