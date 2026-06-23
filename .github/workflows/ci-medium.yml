@@ -76,6 +76,17 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh mariadb random
+  linting:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ['3.13']
+      fail-fast: false
+    uses: ./.github/workflows/linting.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+      os: ${{ matrix.os }}
+    secrets: inherit
   unit-test:
     strategy:
       matrix:
@@ -118,13 +129,12 @@ jobs:
       python-version: ${{ matrix.python-version }}
     secrets: inherit
   ci-medium-required:
-    # alls-green reports a single green/red status for the rollup.
-    # PR 2 will extend this `needs` list with the sandbox integration lane.
     runs-on: ubuntu-latest
     needs:
       - sqlite-db-migration-testing-random
       - mysql-db-migration-testing-random
       - mariadb-db-migration-testing-random
+      - linting
       - unit-test
       - docker-orchestrator-mysql-integration-test
       - base-package-functionality

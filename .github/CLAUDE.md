@@ -47,9 +47,14 @@ deterministic local failures.
 
 Runs merge-queue validation beyond fast PR checks:
 - Random database migration coverage (MySQL, MariaDB, SQLite) with random seed per run
+- Full linting (ubuntu, Python 3.13) via `linting.yml`
 - Python 3.13 unit tests on Ubuntu, macOS, and Windows via `unit-test.yml`
 - Docker-orchestrator MySQL integration tests (via `integration-test-fast.yml`)
 - Base package functionality tests (via `base-package-functionality.yml`)
+
+`ci-medium` repeats full linting on the merge-queue ref even though `ci-fast`
+already runs it on PR refs. This catches deterministic failures introduced only
+by the combined merge-queue commit.
 
 ### ci-slow.yml (Develop Qualification And Advisory PR Slow CI)
 
@@ -57,7 +62,7 @@ Runs merge-queue validation beyond fast PR checks:
 
 The slow matrix includes:
 - Multi-OS: Ubuntu, Windows, macOS
-- Python 3.10, 3.11, 3.12, and 3.13 coverage where supported by the lane
+- Python 3.10, 3.11, 3.12, 3.13, and 3.14 coverage where supported by the lane
 - Full database migration tests (MySQL, MariaDB, SQLite)
 - VSCode tutorial pipeline tests
 - Base package functionality tests
