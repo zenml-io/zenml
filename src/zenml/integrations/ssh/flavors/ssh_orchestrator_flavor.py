@@ -116,8 +116,9 @@ class SSHOrchestratorConfig(BaseOrchestratorConfig, SSHOrchestratorSettings):
     )
     remote_workdir: str = Field(
         default="/tmp/zenml-ssh",
-        description="Base directory on the remote host for per-run Compose "
-        "files. Created automatically. Example: '/home/ubuntu/zenml-runs'",
+        description="Base directory on the remote host's filesystem for "
+        "per-run Compose files. Created automatically. Example: "
+        "'/opt/zenml-runs'",
     )
     docker_binary: str = Field(
         default="docker",

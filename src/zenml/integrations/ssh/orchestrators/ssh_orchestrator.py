@@ -277,6 +277,26 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         """
         return f"{self.config.remote_workdir}/pipeline-runs/{run_id}"
 
+    @staticmethod
+    def _run_id(
+        snapshot: "PipelineSnapshotResponse",
+        placeholder_run: Optional["PipelineRunResponse"],
+    ) -> str:
+        """Resolve the id used to namespace a run's remote files.
+
+        The placeholder run is the actual run and is the canonical id. It is
+        only absent when a run is triggered without one being created up front,
+        in which case the snapshot id keeps the remote directory unique.
+
+        Args:
+            snapshot: The pipeline snapshot.
+            placeholder_run: The placeholder run, if one was created.
+
+        Returns:
+            The run id to use for the remote run directory.
+        """
+        return str(placeholder_run.id) if placeholder_run else str(snapshot.id)
+
     def _launch_compose(
         self,
         *,
@@ -348,6 +368,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         command: List[str],
         environment: Dict[str, str],
         stack: "Stack",
+        gpu_enabled: bool,
     ) -> None:
         """Launch a single detached container on the remote host via docker run.
 
@@ -358,6 +379,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
             command: Arguments passed to the entrypoint.
             environment: Environment variables for the container.
             stack: The stack used for this submission.
+            gpu_enabled: Whether to request GPUs for the container.
 
         Raises:
             RuntimeError: If a remote command fails.
@@ -381,7 +403,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         ]
         # Isolated steps run as subprocesses inside this container, so it
         # needs GPU access on behalf of all of them.
-        if self.config.gpu_enabled:
+        if gpu_enabled:
             run_args += ["--gpus", "all"]
         run_args += ["--entrypoint", shlex.quote(entrypoint[0])]
         run_args.append(shlex.quote(image))
@@ -507,9 +529,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
                 "from your own cron job or CI), or use an orchestrator that "
                 "supports scheduling."
             )
-        run_id = (
-            str(placeholder_run.id) if placeholder_run else str(snapshot.id)
-        )
+        run_id = self._run_id(snapshot, placeholder_run)
         services = {
             f"{snapshot.id}-{step_name}": self._step_service(
                 snapshot=snapshot,
@@ -562,11 +582,11 @@ class SSHOrchestrator(ContainerizedOrchestrator):
                 "supports scheduling."
             )
 
-        run_id = (
-            str(placeholder_run.id) if placeholder_run else str(snapshot.id)
-        )
+        run_id = self._run_id(snapshot, placeholder_run)
         env = dict(environment)
         env[ENV_ZENML_SSH_RUN_ID] = run_id
+
+        settings = cast(SSHOrchestratorSettings, self.get_settings(snapshot))
 
         # A dynamic pipeline launches a single orchestrator container (the
         # runner spawns the isolated steps itself), so there is no DAG to
@@ -574,6 +594,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         self._launch_container(
             run_id=run_id,
             image=self.get_image(snapshot=snapshot),
+            gpu_enabled=settings.gpu_enabled,
             entrypoint=(
                 DynamicPipelineEntrypointConfiguration.get_entrypoint_command()
             ),
