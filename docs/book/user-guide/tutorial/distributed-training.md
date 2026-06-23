@@ -11,7 +11,7 @@ Need more compute than your laptop can offer?  This tutorial shows how to:
 2. Build a **CUDA‑enabled container image** so the GPU is actually visible.
 3. Reset the CUDA cache between steps (optional but handy for memory‑heavy jobs).
 4. Scale to *multiple* GPUs or nodes with the [🤗 Accelerate](https://github.com/huggingface/accelerate) integration.
-5. Run multi-GPU and **multi-node** training by wrapping a distributed launcher (`torchrun`, TorchX, Ray) in a `CommandStep`.
+5. Go **multi-node** by wrapping a distributed launcher (TorchX, Ray) in a `CommandStep`.
 
 ---
 
@@ -120,48 +120,55 @@ DockerSettings(
 
 ---
 
-## 4 Distributed training with a `CommandStep`
+## 4 Distributed training across processes and nodes
 
-Accelerate (section 3) is one way to fan a step out over GPUs. The more general pattern is to wrap a *distributed launcher* in a [`CommandStep`](../../how-to/steps-pipelines/command_steps.md) that runs on a step operator. The same approach covers both **single-node multi-GPU** (one machine, several GPUs) and **true multi-node** training (several machines): ZenML owns the run, the launcher owns the worker processes.
+Section 3 (Accelerate) already fans a single step out over the GPUs on one machine. More generally there are two cases, and they call for different tools:
 
-### Why a launcher (and not ZenML) starts the workers
+- **Single node, multiple GPUs** → a native step (your own multiprocessing, or the Accelerate integration), or a `CommandStep` running `torchrun`. No external launcher or gang scheduler needed.
+- **Multiple nodes** → wrap a distributed *launcher* in a [`CommandStep`](../../how-to/steps-pipelines/command_steps.md): ZenML owns the run, the launcher owns the worker processes.
 
-`torch.distributed` / `torchrun` only *coordinate* ranks through a rendezvous — they assign `RANK`, `WORLD_SIZE` and `LOCAL_RANK` and wire the processes together. They do **not** provision machines or start processes on other nodes. Something has to launch N worker processes that can all reach the rendezvous endpoint. On a single node `torchrun` can spawn those processes itself; across nodes you need a launcher that provisions and gang-schedules them: TorchX, Ray, Slurm, and so on.
+### Single node, multiple GPUs
 
-ZenML doesn't reimplement that. Instead it gives you a clean seam:
+For several GPUs on **one** machine you don't need an external launcher or a gang scheduler — every process lives in the step's own container. There are three patterns, and all three work today; pick whichever fits how you already train.
 
-- A `CommandStep` runs an **opaque command** in a container on a step operator.
-- Point that command at the launcher. The launcher schedules and starts the worker gang.
-- ZenML records the run and tracks the *launcher* process through the step operator's `submit`/`get_status`/`cancel` lifecycle. The launcher pod blocks until the whole job finishes, so the ZenML step succeeds or fails with the job.
-
-The skeleton is always the same — only the command changes:
+**1. A native step that spawns the processes itself.** ZenML supports multi-process training out of the box — request the GPUs with `ResourceSettings` and let your code start one process per GPU (for example `torch.multiprocessing.spawn`, setting up DDP inside). No extra libraries, and you keep ZenML's input/output and log tracking.
 
 ```python
-from zenml import CommandStep, pipeline
-from zenml.config import DockerSettings
+from zenml import pipeline, step
+from zenml.config import ResourceSettings
 
-train = CommandStep(
-    command=[...launcher CLI...],          # torchrun / TorchX / Ray
-    step_operator="<your-step-operator>",  # where the launcher itself runs
-    settings={"docker": DockerSettings(requirements=["<launcher-package>"])},
-)
+def _worker(rank: int, world_size: int) -> None:
+    import torch.distributed as dist
+
+    dist.init_process_group("nccl", rank=rank, world_size=world_size)
+    # ... your DDP training ...
+    dist.destroy_process_group()
+
+@step(settings={"resources": ResourceSettings(gpu_count=4)})
+def train() -> None:
+    import torch.multiprocessing as mp
+
+    mp.spawn(_worker, args=(4,), nprocs=4)  # one process per GPU
 
 @pipeline
 def training() -> None:
     train()
 ```
 
-### Pick a launcher
+**2. The Accelerate integration.** If you'd rather not wire up the process group yourself, decorate the step with `run_with_accelerate` (see section 3) and it handles the fan-out:
 
-| Launcher | Starts workers on | Needs | Best when |
-|----------|-------------------|-------|-----------|
-| **torchrun** (`--standalone`) | The node it runs on | Nothing extra | Single node, multiple GPUs |
-| **TorchX** (`dist.ddp`) | Kubernetes, Slurm, local | [Volcano](https://volcano.sh) for gang scheduling on K8s | Multi-node on bare Kubernetes with plain `torch.distributed` |
-| **Ray** (`ray job submit`) | A Ray cluster / KubeRay | A running Ray cluster | You already run Ray; Ray Train sets up `torch.distributed` for you |
+```python
+from zenml import step
+from zenml.config import ResourceSettings
+from zenml.integrations.huggingface.steps import run_with_accelerate
 
-### Single node, multiple GPUs
+@run_with_accelerate(num_processes=4, multi_gpu=True)
+@step(settings={"resources": ResourceSettings(gpu_count=4)})
+def train(...):
+    ...  # your training code
+```
 
-If you just need several GPUs on **one** machine, you don't need an external scheduler at all — `torchrun` spawns one process per GPU inside the step's own container. The whole thing runs in a single step operator pod that you size with the GPUs it needs:
+**3. A `CommandStep` running `torchrun`.** If you already drive training with `torchrun` (or any launcher CLI), wrap it in a command step. The launcher and its workers share the one container, so a single image carries `zenml` + `torch` + `train.py`:
 
 ```python
 from zenml import CommandStep, pipeline
@@ -179,14 +186,55 @@ train = CommandStep(
     },
 )
 
-@pipeline
+@pipeline(dynamic=True, depends_on=[train])
 def training() -> None:
     train()
 ```
 
-Here a single image carries everything (`zenml` + `torch` + `train.py`), because the launcher *and* the workers run in the same container. The same vanilla `train.py` below works unchanged — `torchrun --standalone` sets up the rendezvous locally.
+The trade-off: patterns 1 and 2 keep ZenML's artifact and log tracking; pattern 3 treats training as an opaque command (logs land in the backend, no inputs/outputs) but lets you reuse an existing `torchrun` entrypoint unchanged. The same vanilla `train.py` shown below works with pattern 3.
 
-### Multiple nodes: TorchX + Volcano on Kubernetes
+### Multiple nodes — wrap a launcher in a `CommandStep`
+
+Once training spans more than one machine, the cleanest approach is to let a dedicated launcher own the worker gang and let ZenML own the run.
+
+#### Why a launcher (and not ZenML) starts the workers
+
+`torch.distributed` / `torchrun` only *coordinate* ranks through a rendezvous — they assign `RANK`, `WORLD_SIZE` and `LOCAL_RANK` and wire the processes together. They do **not** provision machines or start processes on other nodes. Something has to launch N worker processes across N nodes that can all reach the rendezvous endpoint — a launcher that provisions and gang-schedules them: TorchX, Ray, Slurm, and so on.
+
+ZenML doesn't reimplement that. Instead it gives you a clean seam:
+
+- A `CommandStep` runs an **opaque command** in a container on a step operator.
+- Point that command at the launcher. The launcher schedules and starts the worker gang.
+- ZenML records the run and tracks the *launcher* process through the step operator's `submit`/`get_status`/`cancel` lifecycle. The launcher pod blocks until the whole job finishes, so the ZenML step succeeds or fails with the job.
+
+The skeleton is always the same — only the command changes:
+
+```python
+from zenml import CommandStep, pipeline
+from zenml.config import DockerSettings
+
+train = CommandStep(
+    command=[...launcher CLI...],          # TorchX / Ray
+    step_operator="<your-step-operator>",  # where the launcher itself runs
+    settings={"docker": DockerSettings(requirements=["<launcher-package>"])},
+)
+
+# A dynamic pipeline runs its body at runtime, so ZenML can't see which steps
+# it calls by static analysis. List the step in depends_on so ZenML builds and
+# registers it (and dynamic=True is what unlocks resource pools).
+@pipeline(dynamic=True, depends_on=[train])
+def training() -> None:
+    train()
+```
+
+#### Pick a launcher
+
+| Launcher | Starts workers on | Needs | Best when |
+|----------|-------------------|-------|-----------|
+| **TorchX** (`dist.ddp`) | Kubernetes, Slurm, local | [Volcano](https://volcano.sh) for gang scheduling on K8s | Multi-node on bare Kubernetes with plain `torch.distributed` |
+| **Ray** (`ray job submit`) | A Ray cluster / KubeRay | A running Ray cluster | You already run Ray; Ray Train sets up `torch.distributed` for you |
+
+#### Worked example: TorchX + Volcano on Kubernetes
 
 Your training script is **vanilla `torch.distributed`** — it reads the rank/world-size that the launcher injects and contains nothing ZenML- or launcher-specific:
 
@@ -239,7 +287,7 @@ train = CommandStep(
     },
 )
 
-@pipeline
+@pipeline(dynamic=True, depends_on=[train])
 def training() -> None:
     train()
 
@@ -256,7 +304,7 @@ WORKDIR /app
 COPY train.py .
 ```
 
-### The same pattern with Ray
+#### The same pattern with Ray
 
 Only the command changes. With **Ray** (submitting to an existing cluster, letting Ray Train own `torch.distributed`):
 
@@ -269,11 +317,11 @@ train = CommandStep(
 )
 ```
 
-### Things to keep in mind
+#### Things to keep in mind
 
+- **Declare the command step with `depends_on`.** A dynamic pipeline runs its body at runtime, so ZenML can't discover which steps it calls by static analysis. Listing the step in `@pipeline(dynamic=True, depends_on=[train])` tells ZenML to build and register it. `dynamic=True` is also what unlocks [resource pools](../../getting-started/zenml-pro/resource-pools.md).
 - **The image must carry the launcher (and `zenml`).** The `CommandStep` runs through ZenML's entrypoint on the step operator, so the launcher image needs both `zenml` and the launcher package. Either let ZenML install them with `requirements=[...]` (as above), or bake your own image and use `DockerSettings(skip_build=True, parent_image=...)` — a custom `parent_image` must already contain `zenml`. The *worker* image (passed to the launcher, e.g. `--image`) only needs your training stack, not `zenml`.
 - **Logs live in the launcher's backend.** Command-step logs are not tracked by ZenML — worker logs stay where the launcher puts them (pod logs, the Ray dashboard, etc.). See the [command steps limitations](../../how-to/steps-pipelines/command_steps.md).
-- **`dynamic=True` is only needed for [resource pools](../../getting-started/zenml-pro/resource-pools.md).** The launcher-on-a-step-operator pattern itself works in both static and dynamic pipelines.
 - **Two capacity managers, two jobs.** The launcher's gang scheduler (e.g. Volcano) reserves the *worker* capacity all-or-nothing; ZenML resource pools (if you use them) govern the *launcher* step. They don't overlap.
 
 ---
