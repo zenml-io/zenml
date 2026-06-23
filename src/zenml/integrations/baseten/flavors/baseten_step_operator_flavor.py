@@ -31,9 +31,9 @@ class BasetenStepOperatorSettings(BaseSettings):
 
     accelerator: str = Field(
         "H100",
-        description="GPU accelerator type for each node, e.g. 'H100' or "
-        "'H200'. The number of GPUs per node comes from "
-        "ResourceSettings.gpu_count",
+        description="GPU accelerator type for each node, e.g. 'H100', 'H200', "
+        "or other Baseten-supported accelerators. The number of GPUs per node "
+        "comes from ResourceSettings.gpu_count",
     )
     node_count: int = Field(
         1,
