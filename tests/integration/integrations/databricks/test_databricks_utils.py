@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -25,6 +26,7 @@ from pytest_mock import MockerFixture
 from zenml.config import DockerSettings
 from zenml.constants import ENV_ZENML_CUSTOM_SOURCE_ROOT
 from zenml.stack.stack import Stack
+from zenml.utils import source_utils
 
 DATABRICKS_INSTALLED = importlib.util.find_spec("databricks") is not None
 pytestmark = pytest.mark.skipif(
@@ -111,6 +113,21 @@ def _get_base_settings(
 ) -> DatabricksBaseSettings:
     """Create validated Databricks settings for cluster spec utility tests."""
     return DatabricksBaseSettings(**overrides)
+
+
+@pytest.fixture(autouse=True)
+def _restore_custom_source_root() -> Iterator[None]:
+    """Stop a test's custom source root from leaking into other tests.
+
+    ``configure_databricks_wheel_environment`` sets a process-global source
+    root via ``set_custom_source_root``. Without restoring it, a later test in
+    the same (randomly-ordered) run inherits the stale value and fails to
+    resolve its own modules. Snapshot it before the test and restore it on
+    teardown.
+    """
+    original = source_utils._CUSTOM_SOURCE_ROOT
+    yield
+    source_utils._CUSTOM_SOURCE_ROOT = original
 
 
 def test_add_wheel_package_to_sys_path_is_idempotent(
