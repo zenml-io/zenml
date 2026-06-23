@@ -26,6 +26,7 @@ from pytest_mock import MockerFixture
 from zenml.config import DockerSettings
 from zenml.constants import ENV_ZENML_CUSTOM_SOURCE_ROOT
 from zenml.stack.stack import Stack
+from zenml.utils import source_utils
 
 DATABRICKS_INSTALLED = importlib.util.find_spec("databricks") is not None
 pytestmark = pytest.mark.skipif(
@@ -124,8 +125,6 @@ def _restore_custom_source_root() -> Iterator[None]:
     resolve its own modules. Snapshot it before the test and restore it on
     teardown.
     """
-    from zenml.utils import source_utils
-
     original = source_utils._CUSTOM_SOURCE_ROOT
     yield
     source_utils._CUSTOM_SOURCE_ROOT = original
