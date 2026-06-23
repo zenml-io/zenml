@@ -359,11 +359,11 @@ class BasetenStepOperator(BaseStepOperator):
         """Build Baseten Docker auth from the configured registry secret.
 
         Baseten only accepts registry credentials as a reference to a
-        pre-existing Baseten secret, never inline. Returns None for public
-        images (no registry secret configured).
+        pre-existing Baseten secret, never inline.
 
         Returns:
-            A Baseten ``DockerAuth`` object, or None.
+            A Baseten ``DockerAuth`` object, or None for public images when no
+            registry secret is configured.
         """
         if not self.config.registry_auth_secret:
             return None
@@ -453,7 +453,9 @@ class BasetenStepOperator(BaseStepOperator):
         runtime_kwargs: Dict[str, Any] = {
             "start_commands": [shell_join(entrypoint_command)],
             "environment_variables": self._build_environment(
-                environment, settings.secrets, is_command_step
+                environment=environment,
+                secrets=settings.secrets,
+                is_command_step=is_command_step,
             ),
         }
         if settings.enable_cache:
@@ -526,7 +528,7 @@ class BasetenStepOperator(BaseStepOperator):
             )
             raise
 
-    def _job_ids(
+    def _extract_job_and_project_id(
         self, step_run: "StepRunResponse"
     ) -> Optional[Tuple[str, str]]:
         """Recover the (project_id, job_id) for a step run from its metadata.
@@ -553,7 +555,7 @@ class BasetenStepOperator(BaseStepOperator):
             The execution status. Returns FAILED if the job ids are missing or
             the job no longer exists.
         """
-        ids = self._job_ids(step_run)
+        ids = self._extract_job_and_project_id(step_run)
         if ids is None:
             return ExecutionStatus.FAILED
 
@@ -572,7 +574,7 @@ class BasetenStepOperator(BaseStepOperator):
         Args:
             step_run: The step run.
         """
-        ids = self._job_ids(step_run)
+        ids = self._extract_job_and_project_id(step_run)
         if ids is None:
             return
         project_id, job_id = ids
