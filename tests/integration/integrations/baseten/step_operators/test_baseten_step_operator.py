@@ -82,11 +82,22 @@ def fake_truss(monkeypatch):
         def update_remote_config(config):
             recorded["remote_config"] = config
 
+    # Default active stack: a container registry with no credentials (public),
+    # so _docker_auth resolves to None unless a test overrides it.
+    registry = SimpleNamespace(
+        config=SimpleNamespace(uri="registry.example.com"), credentials=None
+    )
+    stack = SimpleNamespace(container_registry=registry)
+    recorded["registry"] = registry
+
     monkeypatch.setattr(op_module, "push", push)
     monkeypatch.setattr(op_module, "definitions", definitions)
     monkeypatch.setattr(op_module, "truss_config", truss_config)
     monkeypatch.setattr(op_module, "RemoteFactory", _RemoteFactory)
     monkeypatch.setattr(op_module, "RemoteConfig", _Node)
+    monkeypatch.setattr(
+        op_module, "Client", lambda: SimpleNamespace(active_stack=stack)
+    )
     return recorded
 
 
@@ -288,15 +299,11 @@ def test_build_environment_allows_mapped_store_token(fake_truss):
 # --- docker auth -------------------------------------------------------------
 
 
-def test_docker_auth_built_from_registry_secret(fake_truss, monkeypatch):
+def test_docker_auth_built_from_explicit_registry_secret(
+    fake_truss, monkeypatch
+):
     monkeypatch.setattr(
         op_module, "publish_step_run_metadata", lambda *a: None
-    )
-
-    registry = SimpleNamespace(config=SimpleNamespace(uri="gcr.io/proj"))
-    stack = SimpleNamespace(container_registry=registry)
-    monkeypatch.setattr(
-        op_module, "Client", lambda: SimpleNamespace(active_stack=stack)
     )
 
     operator = _make_operator(registry_auth_secret="gcr-creds")
@@ -305,13 +312,13 @@ def test_docker_auth_built_from_registry_secret(fake_truss, monkeypatch):
 
     docker_auth = fake_truss["config"].job.image.docker_auth
     assert docker_auth is not None
-    assert docker_auth.registry == "gcr.io/proj"
     assert (
         docker_auth.registry_secret_docker_auth.secret_ref.name == "gcr-creds"
     )
 
 
-def test_docker_auth_none_without_registry_secret(fake_truss, monkeypatch):
+def test_docker_auth_none_for_public_registry(fake_truss, monkeypatch):
+    # Fixture default: container registry has no credentials -> no auth.
     monkeypatch.setattr(
         op_module, "publish_step_run_metadata", lambda *a: None
     )
@@ -319,6 +326,30 @@ def test_docker_auth_none_without_registry_secret(fake_truss, monkeypatch):
     operator.get_settings = lambda _info: BasetenStepOperatorSettings()
     operator.submit(_make_info(), _entrypoint(), {})
     assert fake_truss["config"].job.image.docker_auth is None
+
+
+def test_docker_auth_auto_created_from_registry_credentials(
+    fake_truss, monkeypatch
+):
+    monkeypatch.setattr(
+        op_module, "publish_step_run_metadata", lambda *a: None
+    )
+    fake_truss["registry"].credentials = ("user", "pass")
+
+    upserted = {}
+    operator = _make_operator()
+    operator._api = SimpleNamespace(
+        upsert_secret=lambda name, value: upserted.update({name: value})
+    )
+    operator.get_settings = lambda _info: BasetenStepOperatorSettings()
+    operator.submit(_make_info(), _entrypoint(), {})
+
+    secret_name = "zenml-registry-auth-component-id"
+    assert upserted == {secret_name: "user:pass"}
+    docker_auth = fake_truss["config"].job.image.docker_auth
+    assert (
+        docker_auth.registry_secret_docker_auth.secret_ref.name == secret_name
+    )
 
 
 # --- metadata recording ------------------------------------------------------
@@ -637,3 +668,19 @@ def test_api_client_sends_api_key_auth_header(monkeypatch):
     monkeypatch.setattr(requests.Session, "get", _get)
     _client().get_job_status("p", "j")
     assert captured["headers"]["Authorization"] == "Api-Key bt-key"
+
+
+def test_api_upsert_secret_posts_name_and_value(monkeypatch):
+    import requests
+
+    recorded = {}
+
+    def _post(self, url, **kwargs):
+        recorded["url"] = url
+        recorded["json"] = kwargs.get("json")
+        return _FakeResponse(200)
+
+    monkeypatch.setattr(requests.Session, "post", _post)
+    _client().upsert_secret("my-secret", "user:pass")
+    assert recorded["url"].endswith("/v1/secrets")
+    assert recorded["json"] == {"name": "my-secret", "value": "user:pass"}

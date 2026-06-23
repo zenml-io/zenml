@@ -291,27 +291,36 @@ class BasetenStepOperator(BaseStepOperator):
         )
 
     def _docker_auth(self) -> Optional[Any]:
-        """Build Baseten Docker auth from the configured registry secret.
+        """Build Baseten Docker auth for pulling the step image.
 
-        Baseten only accepts registry credentials as a reference to a
-        pre-existing Baseten secret, never inline.
+        Baseten only accepts registry credentials as a reference to a Baseten
+        secret, never inline. If ``registry_auth_secret`` names a pre-existing
+        secret it is used directly; otherwise the active stack's container
+        registry credentials are upserted into a managed secret. Public
+        registries (no credentials) need no auth.
 
         Returns:
-            A Baseten ``DockerAuth`` object, or None for public images when no
-            registry secret is configured.
+            A Baseten ``DockerAuth`` object, or None when no credentials are
+            available.
         """
-        if not self.config.registry_auth_secret:
+        container_registry = Client().active_stack.container_registry
+        if container_registry is None:
             return None
 
-        container_registry = Client().active_stack.container_registry
-        assert container_registry is not None
+        secret_name = self.config.registry_auth_secret
+        if secret_name is None:
+            credentials = container_registry.credentials
+            if credentials is None:
+                return None
+            username, password = credentials
+            secret_name = f"zenml-registry-auth-{self.id}"
+            self.api.upsert_secret(secret_name, f"{username}:{password}")
+
         return definitions.DockerAuth(
             auth_method=truss_config.DockerAuthType.REGISTRY_SECRET,
             registry=container_registry.config.uri,
             registry_secret_docker_auth=definitions.RegistrySecretDockerAuth(
-                secret_ref=definitions.SecretReference(
-                    name=self.config.registry_auth_secret
-                ),
+                secret_ref=definitions.SecretReference(name=secret_name),
             ),
         )
 
