@@ -47,6 +47,7 @@
     * [Next steps](llmops-guide/finetuning-llms/next-steps.md)
 * [Agents guide](agents-guide/README.md)
   * [A durable agent](agents-guide/01-durable-agent.md)
+  * [Replay and improve](agents-guide/replay-and-improve.md)
   * [Sandboxed commands](agents-guide/02-sandbox.md)
   * [Skills](agents-guide/03-skills.md)
   * [Credential proxy](agents-guide/04-credential-proxy.md)

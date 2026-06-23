@@ -5,9 +5,9 @@ icon: scroll
 
 # Stage 3 — Your agents need a procedure
 
-Stage 2 put the agent's shell commands inside a container, so a bad command wrecks a throwaway workspace instead of your host. The agent now has a safer place to use a shell. What it actually does with that shell, the steps it follows, is still frozen in Python.
+Operate at scale: let an operator change what an agent does by editing a markdown file, with no code change and no redeploy. The agent's procedure stops being a string literal in Python and becomes a file someone who doesn't own the code can edit.
 
-In stages 1 and 2 the agent's procedure lives in its system prompt, written as a string literal in the agent code. That is fine while the only person who ever changes the procedure is the engineer who wrote it. It stops being fine the moment the person who wants to change the steps is not the person who owns the code.
+Stage 2 put the agent's shell commands inside a container. But what the agent does with that shell, the steps it follows, is still frozen in its system prompt. That is fine while the only person who changes the procedure is the engineer who wrote it. It stops being fine the moment the person who wants to change the steps is not the person who owns the code.
 
 {% hint style="info" %}
 This walkthrough uses `stage_3_skills.py` from the runnable Agent Harness Platform example. If you have not cloned the repo yet, start with [Get the code](README.md#get-the-code) on the overview page.
@@ -15,9 +15,9 @@ This walkthrough uses `stage_3_skills.py` from the runnable Agent Harness Platfo
 
 ## When changing a step means changing code
 
-An agent's real instructions are a procedure: which commands to run, what to check before it calls a task done, how to summarize what it found, when to stop. Those steps change often, and the person who wants to change them is usually not the person who owns the agent's Python.
+An agent's real instructions are a procedure: which commands to run, what to check before it calls a task done, how to summarize, when to stop. Those steps change often, and the person who wants to change them is usually not the person who owns the agent's Python.
 
-Picture a support lead who wants the triage agent to run one extra verification before it reports "done." In plain English that is a single sentence. But while the procedure is a string literal in the system prompt, that one sentence turns into a project: find the engineer who owns the agent, get them to edit the string, open a pull request, wait for review, wait for a deploy. Until all of that lands, every agent in production keeps running the old steps. The change was trivial; the path to ship it was not. And sitting in source next to tool wiring and imports, the procedure is hard to even read, let alone review.
+Picture a support lead who wants the triage agent to run one extra verification before it reports "done." In plain English that is a single sentence. But while the procedure is a string literal in the system prompt, that sentence turns into a project: find the engineer who owns the agent, get them to edit the string, open a pull request, wait for review, wait for a deploy. Until all of that lands, every agent in production keeps running the old steps. The change was trivial; the path to ship it was not.
 
 Stage 3 pulls the procedure out of the code. It adds a `skill` tool, and the system prompt shrinks to a single instruction: find your skill and follow it. The steps themselves live in a markdown file, `skills/basic/default-agent/SKILL.md`, that an operator edits in their own editor. The agent calls `skill(action="list")` to discover its skill files, `skill(action="read", path=...)` to load one, then carries out what it read using the `exec` tool from the earlier stages. Edit the markdown, re-run, and the agent behaves differently with no change to Python.
 
@@ -64,6 +64,8 @@ Kitaru: HTTP Request: POST https://api.openai.com/v1/chat/completions   ← LLM 
 ## What just happened?
 
 PydanticAI could already call a tool that opens a markdown file and hands the text to the model. That part is ordinary. What this stage adds is everything around that read: where it sits, who is allowed to do it, and how easily you can point it somewhere else.
+
+Each of those edits ships without a code change, which is what makes this the scale tier: the people who change agent behavior most often are no longer gated on the people who own the code.
 
 The read-and-act cycle runs inside a durable flow. The agent reads its skill and acts on it inside `agent_harness_platform_flow`, a `@kitaru.flow`, and each `agent.run_sync()` turn is checkpointed, which is the same durability from [Stage 1](01-durable-agent.md). In this tutorial mode the whole turn is the unit of caching: once a turn finishes, a replay serves it from cache instead of re-running its model and tool calls, while a turn that crashed partway through re-executes in full, re-reading the skill and repeating its steps. (Reuse at the finer grain of individual model or tool calls is what the default `checkpoint_strategy="calls"` adds; see Stage 1's note.) A plain script gets none of this. A crash there throws away even the turns that already finished.
 

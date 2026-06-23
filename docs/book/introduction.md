@@ -16,12 +16,12 @@ layout:
 
 # Welcome to ZenML
 
-ZenML is an open-source framework for developing, evaluating, and deploying your entire AI portfolio — classical ML, LLM pipelines, and AI agents alike. It takes the battle-tested engineering principles that production ML is built on and applies them to everything you ship, so your organization doesn't maintain one toolchain for models and another for agents.
+ZenML is an open-source framework for developing, evaluating, and deploying your entire AI portfolio: classical ML, LLM pipelines, and AI agents alike. It brings the battle-tested engineering principles of production ML to everything you ship, so you don't maintain one toolchain for models and another for agents.
 
 That story has two open-source projects behind it:
 
 * **ZenML** is the MLOps framework: portable, production-ready **pipelines** for ML and LLM workloads, with versioned artifacts, caching, and infrastructure abstracted behind [stacks](https://docs.zenml.io/stacks).
-* **[Kitaru](https://docs.zenml.io/kitaru)** is for **AI agents**: every step of a run — each model call, tool call, and decision — recorded as a replayable checkpoint, so you can replay, compare, and improve agents in production.
+* **[Kitaru](https://docs.zenml.io/kitaru)** is for **AI agents**: run, replay, improve. It records every model call and tool call as a durable checkpoint, so you can replay a real run with one thing changed, diff the two, and roll the winning change across a cohort of runs.
 
 Each works on its own. You can run ZenML and never touch Kitaru, or pick up Kitaru purely to make one agent durable. If you do use both, they compose rather than coexist: a Kitaru flow is a dynamic ZenML pipeline under the hood, so your agents and pipelines run on the same stacks, persist artifacts to the same stores, and show up in the same server and dashboard.
 
@@ -29,7 +29,7 @@ Each works on its own. You can run ZenML and never touch Kitaru, or pick up Kita
 
 Pick the path that matches your work. Neither path requires the other, and adopting the second one later doesn't mean starting over.
 
-<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-cover data-type="files"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>ML Pipelines → ZenML</strong></td><td>Build, version, and deploy classical ML and LLM pipelines. Start with Hello World, then the Starter guide.</td><td><a href=".gitbook/assets/how-to.png">how-to.png</a></td><td><a href="getting-started/hello-world.md">hello-world.md</a></td></tr><tr><td><strong>AI Agents → Kitaru</strong></td><td>Run, understand, and improve agents in production — every step recorded, every run replayable. Start with the Kitaru quickstart, then the Agents guide.</td><td><a href=".gitbook/assets/llm.png">llm.png</a></td><td><a href="https://docs.zenml.io/kitaru/getting-started/quickstart">Kitaru quickstart</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-cover data-type="files"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>ML Pipelines → ZenML</strong></td><td>Build, version, and deploy classical ML and LLM pipelines. Start with Hello World, then the Starter guide.</td><td><a href=".gitbook/assets/how-to.png">how-to.png</a></td><td><a href="getting-started/hello-world.md">hello-world.md</a></td></tr><tr><td><strong>AI Agents → Kitaru</strong></td><td>Run agents durably, replay any run with one change, and keep the version that wins on cost, latency, and quality. Start with the Agents guide, or jump to the Kitaru quickstart.</td><td><a href=".gitbook/assets/llm.png">llm.png</a></td><td><a href="https://docs.zenml.io/user-guides/agents-guide">Agents guide</a></td></tr></tbody></table>
 
 ### How these docs are organized
 
@@ -58,6 +58,6 @@ If you use AI coding tools, see [LLM tooling](reference/llms-txt.md) for ZenML's
 
 ### Guides
 
-<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-cover data-type="files"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>Starter Guide</strong></td><td>Get started with ZenML fundamentals and set up your first pipeline</td><td><a href=".gitbook/assets/starter.png">starter.png</a></td><td><a href="https://docs.zenml.io/user-guides/starter-guide">Starter guide</a></td></tr><tr><td><strong>Production Guide</strong></td><td>Move your ML pipelines from development to production</td><td><a href=".gitbook/assets/prod.png">prod.png</a></td><td><a href="https://docs.zenml.io/user-guides/production-guide">Production guide</a></td></tr><tr><td><strong>Agents Guide</strong></td><td>Build production AI agents and an internal agent platform with Kitaru</td><td><a href=".gitbook/assets/llm.png">llm.png</a></td><td><a href="https://docs.zenml.io/user-guides/agents-guide">Agents guide</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-cover data-type="files"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>Starter Guide</strong></td><td>Get started with ZenML fundamentals and set up your first pipeline</td><td><a href=".gitbook/assets/starter.png">starter.png</a></td><td><a href="https://docs.zenml.io/user-guides/starter-guide">Starter guide</a></td></tr><tr><td><strong>Production Guide</strong></td><td>Move your ML pipelines from development to production</td><td><a href=".gitbook/assets/prod.png">prod.png</a></td><td><a href="https://docs.zenml.io/user-guides/production-guide">Production guide</a></td></tr><tr><td><strong>Agents Guide</strong></td><td>Run agents durably, replay a real run with one change, and improve them across a cohort with Kitaru</td><td><a href=".gitbook/assets/llm.png">llm.png</a></td><td><a href="https://docs.zenml.io/user-guides/agents-guide">Agents guide</a></td></tr></tbody></table>
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
