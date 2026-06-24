@@ -136,3 +136,104 @@ def test_dynamic_command_step_failure_raises(mocker):
     # Publishing the failed status is the responsibility of the generic
     # exception handling in `StepLauncher.launch(...)`.
     publish_failed.assert_not_called()
+
+
+def _make_isolated_step_launcher(mocker, status):
+    launcher = object.__new__(StepLauncher)
+    launcher._stack = mocker.Mock()
+    launcher._stack.orchestrator.wait_for_isolated_step.return_value = status
+    launcher._wait = True
+    launcher._invocation_id = "step_name"
+    launcher._step = mocker.Mock()
+    launcher._step.config.command = None
+    launcher._step.config.step_operator = None
+
+    mocker.patch(
+        "zenml.orchestrators.step_launcher.orchestrator_utils.get_config_environment_vars",
+        return_value=({}, {}),
+    )
+    mocker.patch(
+        "zenml.orchestrators.step_launcher.env_utils.get_runtime_environment",
+        return_value={},
+    )
+    return launcher
+
+
+def test_isolated_step_cleanup_called_on_success(mocker):
+    launcher = _make_isolated_step_launcher(mocker, ExecutionStatus.COMPLETED)
+    step_run_info = mocker.Mock()
+
+    launcher._run_step_with_dynamic_orchestrator(step_run_info=step_run_info)
+
+    launcher._stack.orchestrator.cleanup_isolated_step.assert_called_once_with(
+        step_run_info.step_run
+    )
+
+
+def test_isolated_step_cleanup_called_on_failure(mocker):
+    launcher = _make_isolated_step_launcher(mocker, ExecutionStatus.FAILED)
+    step_run_info = mocker.Mock()
+    step_run_info.pipeline_step_name = "step_name"
+
+    mocker.patch("zenml.orchestrators.step_launcher.Client.get_run_step")
+    mocker.patch(
+        "zenml.orchestrators.step_launcher.exception_utils.reconstruct_exception",
+        return_value=RuntimeError("step failed"),
+    )
+
+    with pytest.raises(RuntimeError, match="step failed"):
+        launcher._run_step_with_dynamic_orchestrator(
+            step_run_info=step_run_info
+        )
+
+    launcher._stack.orchestrator.cleanup_isolated_step.assert_called_once_with(
+        step_run_info.step_run
+    )
+
+
+def test_isolated_step_cleanup_skipped_when_not_waiting(mocker):
+    launcher = _make_isolated_step_launcher(mocker, ExecutionStatus.COMPLETED)
+    launcher._wait = False
+    step_run_info = mocker.Mock()
+
+    launcher._run_step_with_dynamic_orchestrator(step_run_info=step_run_info)
+
+    launcher._stack.orchestrator.wait_for_isolated_step.assert_not_called()
+    launcher._stack.orchestrator.cleanup_isolated_step.assert_not_called()
+
+
+def test_cleanup_remote_step_dispatches_to_step_operator(mocker):
+    launcher = object.__new__(StepLauncher)
+    launcher._stack = mocker.Mock()
+    launcher._invocation_id = "step_name"
+    launcher._step = mocker.Mock()
+    launcher._step.config.step_operator = "my_operator"
+
+    step_operator = mocker.Mock()
+    get_step_operator = mocker.patch(
+        "zenml.orchestrators.step_launcher._get_step_operator",
+        return_value=step_operator,
+    )
+    step_run = mocker.Mock()
+
+    launcher._cleanup_remote_step(step_run)
+
+    get_step_operator.assert_called_once_with(
+        stack=launcher._stack, step_operator_name="my_operator"
+    )
+    step_operator.cleanup_step_submission.assert_called_once_with(step_run)
+    launcher._stack.orchestrator.cleanup_isolated_step.assert_not_called()
+
+
+def test_cleanup_remote_step_swallows_errors(mocker):
+    launcher = object.__new__(StepLauncher)
+    launcher._stack = mocker.Mock()
+    launcher._invocation_id = "step_name"
+    launcher._step = mocker.Mock()
+    launcher._step.config.step_operator = None
+    launcher._stack.orchestrator.cleanup_isolated_step.side_effect = (
+        RuntimeError("cleanup boom")
+    )
+
+    with does_not_raise():
+        launcher._cleanup_remote_step(mocker.Mock())
