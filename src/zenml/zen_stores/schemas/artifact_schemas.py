@@ -18,7 +18,7 @@ from uuid import UUID
 
 from pydantic import ValidationError
 from sqlalchemy import TEXT, Column, UniqueConstraint
-from sqlalchemy.orm import joinedload, object_session
+from sqlalchemy.orm import joinedload, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, asc, col, desc, select
 
@@ -400,7 +400,9 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         Returns:
             A list of query options.
         """
-        options = []
+        options = [
+            selectinload(jl_arg(ArtifactVersionSchema.artifact)),
+        ]
 
         # if include_metadata:
         #     options.extend(
@@ -413,8 +415,8 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         if include_resources:
             options.extend(
                 [
-                    joinedload(jl_arg(ArtifactVersionSchema.user)),
-                    # joinedload(jl_arg(ArtifactVersionSchema.tags)),
+                    selectinload(jl_arg(ArtifactVersionSchema.user)),
+                    selectinload(jl_arg(ArtifactVersionSchema.tags)),
                 ]
             )
 
