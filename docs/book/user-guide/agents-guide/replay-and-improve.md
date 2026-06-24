@@ -54,11 +54,16 @@ Everything up to `decide` is replayed from the original checkpoints. From `decid
 Compare the fork against your control rerun:
 
 ```python
-delta = forked.diff(rerun)
-print(delta)
+from kitaru import KitaruClient
+
+client = KitaruClient()
+control = client.executions.get(rerun.exec_id)
+candidate = client.executions.get(forked.exec_id)
+
+# Compare their decision fields, per-checkpoint outputs, cost, and latency.
 ```
 
-The diff shows whether the decision changed, plus the cost and latency deltas. Because the control reproduced the baseline, any difference is attributable to your one change. That's the whole point: a trustworthy diff of a single variable.
+Because the control reproduced the baseline, any difference between it and the candidate is attributable to your one change. That's the whole point: a trustworthy comparison of a single variable.
 
 ### The CLI equivalent
 
@@ -91,28 +96,29 @@ You diff **Forked** against **Reproduced**, not against **Observed**. The reprod
 
 One replay tells you what a change did to one run. To decide whether to ship it, run the same change across a batch of recent runs and measure the aggregate.
 
-{% hint style="info" %}
-The `cohort`, `experiment`, `Recipe`, and metric helpers below are an **example pattern** built on the SDK primitives above (`flow.replay` and `diff`). They show one way to structure a cohort experiment; they aren't a separate core API.
-{% endhint %}
+The PydanticAI replay example in the kitaru repo (`examples/end_to_end/pydantic_replay_fork`) wraps this loop as `run_cohort`: for each recent run it reproduces the baseline, replays the variant, and scores the pair with bring-your-own metrics.
 
 ```python
-from kitaru_recipes import cohort, Recipe, cost, latency, quality_judge
+from cohort import run_cohort
+from utils import cost, latency, quality_judge
 
-# Take the last 50 runs of this flow as the cohort.
-batch = cohort(flow, last=50)
-
-# Define the one change to test, and how to score it.
-recipe = Recipe(
-    change={"model": "openai:gpt-5-nano", "prompt_profile": "trimmed_permissions"},
-    from_="decide",
+# exec_ids: recent runs of your flow (e.g. from KitaruClient.executions.list)
+report = run_cohort(
+    exec_ids,
+    baseline_model="openai:gpt-5-mini",
+    variant_model="openai:gpt-5-nano",
+    variant_prompt_profile="trimmed_permissions",
     metrics=[cost, latency, quality_judge],
 )
-
-result = batch.experiment(recipe)
-print(result.summary())
+report.summary()      # per-metric baseline-vs-variant deltas + an "is it better?" verdict
+report.regressions()  # the metrics (and decision changes) that got worse
 ```
 
-For each run in the cohort, the experiment does the same rerun-then-fork-then-diff loop and aggregates the metrics: total cost, p50/p95 latency, and a quality score from an LLM judge. You get a side-by-side that answers the real question — does the cheaper model hold quality across realistic traffic, or only on the one run you happened to look at?
+{% hint style="info" %}
+`run_cohort` and the metric callables live in the example, not in the `kitaru` package — they're a pattern built on the real `flow.replay` and `KitaruClient`. Copy or adapt them; metrics are just `metric(baseline, variant) -> MetricDelta` callables, so you bring your own.
+{% endhint %}
+
+For each run, the cohort reproduces and replays the same way, then aggregates: total cost, latency, and a quality score from an LLM judge. You get the answer to the real question — does the cheaper model hold quality across realistic traffic, or only on the one run you happened to look at?
 
 Keep the version that wins. Reject it if quality drops more than cost does.
 
@@ -122,6 +128,6 @@ Keep the version that wins. Reject it if quality drops more than cost does.
 
 ## Let an agent drive it
 
-Everything on this page — rerun, replay, diff, cohort experiments — is exposed over both the CLI and an MCP server. That means a coding agent (Claude Code, Codex, Cursor) can drive the loop itself: pull a recent run, propose a change, replay it against the control, read the diff, and decide whether to widen it to a cohort.
+Replay runs over both the CLI and an MCP server. That means a coding agent (Claude Code, Codex, Cursor) can drive the loop itself: pull a recent run, propose a change, replay it against the control, compare the results, and decide whether to widen it to a cohort.
 
 Point your agent at Kitaru's MCP server and it can hill-climb toward a cheaper, safer agent on its own — running the same experiments you'd run by hand, just faster and over more runs. See the [Kitaru MCP server reference](https://docs.zenml.io/kitaru/agent-native/mcp-server) for the available tools.
