@@ -127,6 +127,8 @@ EXEMPT_DOMAIN_STATUS: Dict[str, set] = {
     # Backblaze rejects automated HEAD/GET requests with 403.
     "www.backblaze.com": {403},
     "secure.backblaze.com": {403},
+    # vllm docs rate-limit CI traffic with 429.
+    "docs.vllm.ai": {429},
 }
 
 # Default policies for troublesome domains that frequently rate-limit automated traffic.

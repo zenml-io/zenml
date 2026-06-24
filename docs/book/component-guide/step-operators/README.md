@@ -22,6 +22,7 @@ Step operators to execute steps on one of the big cloud providers are provided b
 | Step Operator                      | Flavor       | Integration  | Dynamic Pipelines | Notes                                                                    |
 | ---------------------------------- | ------------ | ------------ | ----------------- | ------------------------------------------------------------------------ |
 | [AzureML](azureml.md)              | `azureml`    | `azure`      | ✅                 | Uses AzureML to execute steps                                            |
+| [Baseten](baseten.md)              | `baseten`    | `baseten`    | ✅                 | Uses Baseten training jobs, incl. multi-node, to execute steps          |
 | [Databricks](databricks.md)        | `databricks` | `databricks` | ✅                 | Uses Databricks one-time jobs to execute selected steps                  |
 | [Kubernetes](kubernetes.md)        | `kubernetes` | `kubernetes` | ✅                 | Uses Kubernetes Pods to execute steps                                    |
 | [Modal](modal.md)                  | `modal`      | `modal`      | ✅                 | Uses Modal to execute steps                                              |
