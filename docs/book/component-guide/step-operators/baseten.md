@@ -85,6 +85,10 @@ If your step image lives in a private registry, store the registry credentials
 (`username:password`) as a Baseten secret and reference it on the step operator with
 `--registry_auth_secret=<BASETEN_SECRET_NAME>`.
 
+{% hint style="info" %}
+Baseten only accepts references to named secrets that are pre-stored in its secrets backend — there is no way to pass credentials inline per-run. Create the secret once in the Baseten dashboard or with the Baseten CLI, then set `registry_auth_secret` to its name.
+{% endhint %}
+
 ### Single-node steps
 
 Point any step at the operator and request a GPU via `ResourceSettings`:
