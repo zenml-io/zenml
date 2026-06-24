@@ -54,7 +54,7 @@ class R2ArtifactStore(S3ArtifactStore):
         # R2 does not support that API. R2 buckets are never versioned.
         BaseArtifactStore.__init__(self, *args, **kwargs)
         self._boto3_bucket_holder = None
-        self.is_versioned = False
+        self._is_versioned = False
 
     @property
     def config(self) -> R2ArtifactStoreConfig:
