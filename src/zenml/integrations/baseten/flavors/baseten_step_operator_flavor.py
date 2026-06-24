@@ -98,7 +98,7 @@ class BasetenStepOperatorConfig(BaseStepOperatorConfig):
         """Whether the step operator runs steps remotely.
 
         Returns:
-            True; Baseten training jobs always run in Baseten's cloud.
+            True
         """
         return True
 
