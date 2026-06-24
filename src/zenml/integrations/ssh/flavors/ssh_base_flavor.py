@@ -22,11 +22,7 @@ from zenml.utils.secret_utils import PlainSerializedSecretStr, SecretField
 
 
 class SSHConnectionConfigMixin(BaseSettings):
-    """Shared SSH connection and authentication configuration.
-
-    Composed by the SSH orchestrator and step operator configs so the
-    connection fields are defined in one place.
-    """
+    """Shared SSH connection and authentication configuration."""
 
     hostname: str = Field(
         description="Hostname or IP address of the remote SSH server. Must be "

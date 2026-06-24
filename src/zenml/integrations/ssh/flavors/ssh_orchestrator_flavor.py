@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SSH orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Dict, Optional, Type
+from typing import TYPE_CHECKING, Dict, List, Optional, Type
 
 from pydantic import Field
 
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 
 class SSHOrchestratorSettings(BaseSettings):
-    """Per-pipeline/step settings for the SSH orchestrator."""
+    """Settings for the SSH orchestrator."""
 
     mounts: Dict[str, str] = Field(
         default_factory=dict,
@@ -40,28 +40,20 @@ class SSHOrchestratorSettings(BaseSettings):
     )
     gpu_enabled: bool = Field(
         default=True,
-        description="Request all NVIDIA GPUs for each step container via the "
-        "Compose device reservation. Set to False for CPU-only pipelines on "
-        "hosts without the NVIDIA container runtime",
+        description="Enable NVIDIA GPU access for each step container "
+        "(--gpus all). Set to False for CPU-only pipelines",
+    )
+    docker_run_args: Optional[List[str]] = Field(
+        default=None,
+        description="Additional arguments for the docker run command, "
+        "inserted before the image name.",
     )
 
 
 class SSHOrchestratorConfig(
     BaseOrchestratorConfig, SSHConnectionConfigMixin, SSHOrchestratorSettings
 ):
-    """Configuration for the SSH orchestrator.
-
-    Connection/auth fields (hostname, username, ssh_key_path, ...) come from
-    :class:`SSHConnectionConfigMixin`.
-
-    Example registration::
-
-        zenml orchestrator register my-gpu-box \\
-            --flavor=ssh \\
-            --hostname=gpu-box.example.com \\
-            --username=ubuntu \\
-            --ssh_key_path=~/.ssh/id_ed25519
-    """
+    """Configuration for the SSH orchestrator."""
 
     container_registry_autologin: bool = Field(
         default=False,
@@ -105,8 +97,7 @@ class SSHOrchestratorConfig(
         """Whether the orchestrator supports scheduled pipeline runs.
 
         Returns:
-            False; the SSH orchestrator does not manage schedules. Trigger
-            pipelines directly (e.g. from your own cron job or CI).
+            False.
         """
         return False
 

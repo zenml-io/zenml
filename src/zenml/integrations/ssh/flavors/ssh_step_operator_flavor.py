@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SSH step operator flavor."""
 
-from typing import TYPE_CHECKING, List, Optional, Type
+from typing import TYPE_CHECKING, Dict, List, Optional, Type
 
 from pydantic import Field
 
@@ -29,15 +29,14 @@ if TYPE_CHECKING:
 
 
 class SSHStepOperatorSettings(BaseSettings):
-    """Per-step settings for SSH step operator execution.
+    """Settings for the SSH step operator."""
 
-    Attributes:
-        gpu_indices: Specific GPU device indices to expose to the container
-            via Docker --gpus flag.
-        docker_run_args: Additional arguments to pass to docker run (do not
-            include secrets here as they may appear in process listings).
-    """
-
+    mounts: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Host-path to container-path bind mounts. Keys are "
+        "absolute paths on the remote host, values are absolute paths inside "
+        "the container. Example: {'/data/datasets': '/datasets'}",
+    )
     gpu_indices: Optional[List[int]] = Field(
         default=None,
         description="GPU device indices to expose inside the container via "
@@ -48,27 +47,14 @@ class SSHStepOperatorSettings(BaseSettings):
     docker_run_args: Optional[List[str]] = Field(
         default=None,
         description="Additional arguments for the docker run command, "
-        "inserted before the image name. Do not include secrets here",
+        "inserted before the image name.",
     )
 
 
 class SSHStepOperatorConfig(
     BaseStepOperatorConfig, SSHConnectionConfigMixin, SSHStepOperatorSettings
 ):
-    """Configuration for the SSH step operator.
-
-    Connection/auth fields (hostname, username, ssh_key_path, ...) come from
-    :class:`SSHConnectionConfigMixin`.
-
-    Example registration:
-    ```bash
-    zenml step-operator register my-gpu-box \\
-        --flavor=ssh \\
-        --hostname=gpu-server.example.com \\
-        --username=ubuntu \\
-        --ssh_key_path=~/.ssh/id_ed25519
-    ```
-    """
+    """Configuration for the SSH step operator."""
 
     @property
     def is_remote(self) -> bool:
