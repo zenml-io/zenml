@@ -584,8 +584,6 @@ def fetch_logs(
             "environment. Use the log store directly instead."
         )
 
-    log_store: Optional[BaseLogStore] = None
-
     if logs.log_store_id:
         try:
             log_store_model = verify_permissions_and_get_entity(
@@ -612,8 +610,14 @@ def fetch_logs(
                 f"Log store '{log_store_model.name}' could not be "
                 "instantiated."
             )
-    elif logs.artifact_store_id:
-        from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+
+        try:
+            return log_store.fetch(logs_model=logs, limit=limit)
+        finally:
+            log_store.cleanup()
+
+    if logs.artifact_store_id:
+        from zenml.artifacts.utils import instantiate_artifact_store
         from zenml.log_stores.artifact.artifact_log_store import (
             ArtifactLogStore,
         )
@@ -631,21 +635,14 @@ def fetch_logs(
             raise DoesNotExistException(
                 f"Stack component '{logs.artifact_store_id}' is not an artifact store."
             )
-        artifact_store = cast(
-            "BaseArtifactStore",
-            StackComponent.from_model(artifact_store_model),
-        )
+
+        artifact_store = instantiate_artifact_store(artifact_store_model)
         log_store = ArtifactLogStore.from_artifact_store(
             artifact_store=artifact_store
         )
-
-    else:
-        return []
-
-    try:
         return log_store.fetch(logs_model=logs, limit=limit)
-    finally:
-        log_store.cleanup()
+
+    return []
 
 
 def setup_logging_context(

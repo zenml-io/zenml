@@ -16,6 +16,7 @@
 import inspect
 import os
 import textwrap
+import threading
 from abc import abstractmethod
 from pathlib import Path
 from typing import (
@@ -462,12 +463,32 @@ class BaseArtifactStore(StackComponent):
             **kwargs: The keyword arguments to pass to the Pydantic object.
         """
         super(BaseArtifactStore, self).__init__(*args, **kwargs)
+        self._filesystem_lock = threading.RLock()
         self._add_path_sanitization()
 
         # If running in a ZenML server environment, we don't register
         # the filesystems. We always use the artifact stores directly.
         if ENV_ZENML_SERVER not in os.environ:
             self._register()
+
+    def __getstate__(self) -> Dict[str, Any]:
+        """Get state.
+
+        Returns:
+            The state.
+        """
+        state = self.__dict__.copy()
+        state.pop("_filesystem_lock", None)
+        return state
+
+    def __setstate__(self, state: Dict[str, Any]) -> None:
+        """Set state.
+
+        Args:
+            state: The state to set.
+        """
+        self.__dict__.update(state)
+        self._filesystem_lock = threading.RLock()
 
     def _add_path_sanitization(self) -> None:
         """Add path sanitization to the artifact store."""

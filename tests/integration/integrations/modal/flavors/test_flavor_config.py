@@ -28,6 +28,8 @@ from zenml.integrations.modal import ModalIntegration
 from zenml.integrations.modal.flavors import (
     ModalOrchestratorConfig,
     ModalOrchestratorSettings,
+    ModalSandboxConfig,
+    ModalSandboxSettings,
 )
 from zenml.integrations.modal.flavors.modal_step_operator_flavor import (
     DEFAULT_TIMEOUT_SECONDS,
@@ -164,6 +166,25 @@ def test_modal_config_rejects_partial_token_pair() -> None:
     assert "token_id and token_secret must be configured together" in str(
         token_secret_error.value
     )
+
+
+def test_modal_sandbox_config_is_remote() -> None:
+    # The sandbox no longer inherits is_remote from the step operator config,
+    # so it is re-supplied explicitly; guard that it stays True.
+    assert ModalSandboxConfig().is_remote is True
+
+
+def test_modal_sandbox_settings_keeps_own_timeout_default() -> None:
+    # The sandbox overrides the mixin's 86400 default with 3600.
+    assert ModalSandboxSettings().timeout == 3600
+
+
+def test_modal_sandbox_config_token_pair_validation() -> None:
+    assert ModalSandboxConfig().token_id is None
+    with pytest.raises(ValidationError):
+        ModalSandboxConfig(token_id="ak-test")
+    with pytest.raises(ValidationError):
+        ModalSandboxConfig(token_secret="as-test")
 
 
 def test_modal_orchestrator_settings_timeout_accepts_valid_values() -> None:
