@@ -359,8 +359,7 @@ class BasetenStepOperator(BaseStepOperator):
 
         image_name = info.get_image(key=BASETEN_STEP_OPERATOR_DOCKER_IMAGE_KEY)
 
-        # Compute resources come from ResourceSettings (the standard ZenML
-        # place for them); only pass cpu_count/memory when set, since truss
+        # Only pass cpu_count/memory when set, since truss
         # `Compute` types them as int/str and applies its own defaults when
         # omitted. gpu_count defaults to 1 only when unset (0 stays 0).
         resources = info.config.resource_settings
@@ -439,10 +438,6 @@ class BasetenStepOperator(BaseStepOperator):
             ),
         }
 
-        # The job ids let status checks and cancellation find the job. If
-        # persisting them fails, the job is already running on Baseten, so let
-        # it continue rather than failing the step over bookkeeping; log loudly
-        # (with the ids) so an otherwise untracked, billable job can be found.
         try:
             publish_step_run_metadata(info.step_run_id, {self.id: metadata})
             info.step_run.run_metadata.update(metadata)
