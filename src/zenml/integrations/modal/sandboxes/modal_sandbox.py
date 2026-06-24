@@ -169,18 +169,25 @@ class ModalSandboxSession(SandboxSession):
         sandbox: "modal.Sandbox",
         *,
         parent: "ModalSandbox",
+        destroy_on_exit: bool = False,
     ) -> None:
         """Initialize the session wrapper.
 
         Args:
             sandbox: The live Modal ``Sandbox`` object.
             parent: The owning Modal sandbox component.
+            destroy_on_exit: Whether to destroy the sandbox session when the
+                session context manager exits.
         """
         # Assign _sandbox before super().__init__ so the dashboard hook,
         # which is called during base __init__ via _publish_sandbox_metadata,
         # has the state it needs.
         self._sandbox = sandbox
-        super().__init__(id=sandbox.object_id, parent=parent)
+        super().__init__(
+            id=sandbox.object_id,
+            parent=parent,
+            destroy_on_exit=destroy_on_exit,
+        )
 
     def _get_dashboard_url(self) -> Optional[str]:
         """Returns the Modal sandbox's dashboard URL.
@@ -426,12 +433,16 @@ class ModalSandbox(BaseSandbox):
         )
 
     def create_session(
-        self, settings: Optional[BaseSandboxSettings] = None
+        self,
+        settings: Optional[BaseSandboxSettings] = None,
+        destroy_on_exit: bool = False,
     ) -> SandboxSession:
         """Boot a fresh Modal Sandbox.
 
         Args:
             settings: Optional per-step overrides for image / env.
+            destroy_on_exit: Whether to destroy the sandbox session when the
+                session context manager exits.
 
         Returns:
             A ``ModalSandboxSession`` wrapping the live Modal Sandbox.
@@ -450,7 +461,9 @@ class ModalSandbox(BaseSandbox):
                 environment=self._resolve_session_environment(settings),
             )
         )
-        return ModalSandboxSession(sandbox, parent=self)
+        return ModalSandboxSession(
+            sandbox, parent=self, destroy_on_exit=destroy_on_exit
+        )
 
     def attach(self, session_id: str) -> SandboxSession:
         """Reconnect to a still-live Modal Sandbox by id.
