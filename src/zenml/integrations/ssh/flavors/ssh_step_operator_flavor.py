@@ -61,7 +61,7 @@ class SSHStepOperatorConfig(
         """Checks if this stack component is running remotely.
 
         Returns:
-            True because the SSH step operator always runs remotely.
+            True
         """
         return True
 
@@ -70,7 +70,7 @@ class SSHStepOperatorConfig(
         """Checks if this stack component is running locally.
 
         Returns:
-            False because the SSH step operator always runs remotely.
+            False
         """
         return False
 

@@ -79,7 +79,7 @@ class SSHOrchestratorConfig(
         """Whether the orchestrator runs the pipeline remotely.
 
         Returns:
-            True; the SSH orchestrator always submits to a remote host.
+            True
         """
         return True
 
@@ -88,7 +88,7 @@ class SSHOrchestratorConfig(
         """Whether the orchestrator runs the pipeline locally.
 
         Returns:
-            False; the SSH orchestrator always submits to a remote host.
+            False
         """
         return False
 
