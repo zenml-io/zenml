@@ -121,6 +121,7 @@
   * [AWS Service Connector](service-connectors/connector-types/aws-service-connector.md)
   * [GCP Service Connector](service-connectors/connector-types/gcp-service-connector.md)
   * [Azure Service Connector](service-connectors/connector-types/azure-service-connector.md)
+  * [OAuth2 Service Connector](service-connectors/connector-types/oauth2-service-connector.md)
   * [HyperAI Service Connector](service-connectors/connector-types/hyperai-service-connector.md)
 
 ## Popular Stacks
