@@ -100,7 +100,9 @@ from zenml.zen_server.secure_headers import (
     initialize_secure_headers,
 )
 from zenml.zen_server.utils import (
+    cleanup_artifact_store_cache,
     cleanup_request_manager,
+    initialize_artifact_store_cache,
     initialize_feature_gate,
     initialize_rbac,
     initialize_request_manager,
@@ -207,6 +209,7 @@ async def initialize() -> None:
     initialize_workload_manager()
     initialize_resource_pool_store()
     initialize_snapshot_executor()
+    initialize_artifact_store_cache()
     await initialize_streaming()
     initialize_secure_headers()
     if cfg.deployment_type == ServerDeploymentType.CLOUD:
@@ -229,6 +232,7 @@ async def shutdown() -> None:
     snapshot_executor().shutdown(wait=True)
     await shutdown_streaming()
     await cleanup_request_manager()
+    cleanup_artifact_store_cache()
 
 
 DASHBOARD_REDIRECT_URL = None

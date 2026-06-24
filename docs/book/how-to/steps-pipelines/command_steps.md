@@ -91,6 +91,10 @@ def my_pipeline() -> None:
 
 Environment variables and secrets are passed to the command as environment variables. The step succeeds when the command exits with status `0` and fails on any non-zero exit. See [Configuration](configuration.md) for the full set of options and the difference between `.with_options()` and `.configure()`.
 
+## Multi-node distributed training
+
+For **multi-node** distributed training, a command step is the recommended launcher: point the command at a tool that owns the worker gang (TorchX, Ray) while ZenML owns the run. It's also one option for single-node multi-GPU (for example wrapping `torchrun`), though a native step works there too. See [Train with GPUs and Accelerate](../../user-guide/tutorial/distributed-training.md) for all the patterns and worked examples.
+
 ## Limitations
 
 - Command steps do not support inputs and outputs.

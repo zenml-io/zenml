@@ -73,6 +73,7 @@ from zenml.zen_stores.sql_zen_store import SqlZenStore
 if TYPE_CHECKING:
     from fastapi import Request
 
+    from zenml.zen_server.artifact_store_cache import ArtifactStoreCache
     from zenml.zen_server.auth import AuthContext
     from zenml.zen_server.pipeline_execution.utils import (
         BoundedThreadPoolExecutor,
@@ -98,6 +99,7 @@ _request_manager: Optional[RequestManager] = None
 _stream_broker: Optional[StreamBroker] = None
 _stream_broadcaster: Optional[StreamBroadcaster] = None
 _stream_end_handler: Optional["StreamEndEventHandler"] = None
+_artifact_store_cache: Optional["ArtifactStoreCache"] = None
 _auth_context: ContextVar[Optional["AuthContext"]] = ContextVar(
     "auth_context", default=None
 )
@@ -479,6 +481,37 @@ async def cleanup_request_manager() -> None:
     if _request_manager is not None:
         await _request_manager.shutdown()
         _request_manager = None
+
+
+def artifact_store_cache() -> "ArtifactStoreCache":
+    """Return the artifact store cache.
+
+    Returns:
+        The artifact store cache.
+
+    Raises:
+        RuntimeError: If the artifact store cache is not initialized.
+    """
+    global _artifact_store_cache
+    if _artifact_store_cache is None:
+        raise RuntimeError("Artifact store cache not initialized")
+    return _artifact_store_cache
+
+
+def initialize_artifact_store_cache() -> None:
+    """Initialize the artifact store cache."""
+    global _artifact_store_cache
+    from zenml.zen_server.artifact_store_cache import ArtifactStoreCache
+
+    _artifact_store_cache = ArtifactStoreCache()
+
+
+def cleanup_artifact_store_cache() -> None:
+    """Cleanup the artifact store cache."""
+    global _artifact_store_cache
+    if _artifact_store_cache is not None:
+        _artifact_store_cache.clear()
+        _artifact_store_cache = None
 
 
 def handle_endpoint_errors(
