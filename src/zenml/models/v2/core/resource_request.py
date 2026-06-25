@@ -280,6 +280,10 @@ class ResourceRequestRequest(UserScopedRequest):
         default=None,
         title="The optional initial lease expiration timestamp.",
     )
+    allocation_wait_timeout_seconds: Optional[int] = Field(
+        default=None,
+        title="Seconds to wait for future time-gated admission routes.",
+    )
     metadata: dict[str, Any] = Field(
         default_factory=dict,
         title="Optional opaque metadata attached to the request.",
@@ -366,6 +370,10 @@ class ResourceRequestResponseBody(UserScopedResponseBody):
     lease_expires_at: Optional[datetime] = Field(
         default=None,
         title="The optional lease expiration timestamp.",
+    )
+    allocation_deadline: Optional[datetime] = Field(
+        default=None,
+        title="The deadline for waiting on future time-gated admission routes.",
     )
     renewed_at: Optional[datetime] = Field(
         default=None,

@@ -46,7 +46,6 @@ PIPELINE_RUN_SUBJECT_TYPE = "pipeline_run"
 STEP_RUN_SUBJECT_TYPE = "step_run"
 COMPONENT_SUBJECT_TYPE = "component"
 ACCOUNT_SUBJECT_TYPE = "account"
-TEAM_SUBJECT_TYPE = "team"
 STEP_RUN_ID_METADATA_KEY = "step_run_id"
 PIPELINE_RUN_ID_METADATA_KEY = "pipeline_run_id"
 STEP_NAME_METADATA_KEY = "step_name"
@@ -284,21 +283,6 @@ class RMSubject(BaseModel):
         )
 
     @classmethod
-    def from_team(
-        cls,
-        team_id: UUID,
-        *,
-        organization_id: UUID,
-        organization_name: Optional[str] = None,
-    ) -> "RMSubject":
-        """Build an inline subject for a ZenML Pro team."""
-        return cls._organization(
-            organization_id=organization_id,
-            organization_name=organization_name,
-            child=cls(subject_id=team_id, subject_type=TEAM_SUBJECT_TYPE),
-        )
-
-    @classmethod
     def from_pipeline(
         cls,
         *,
@@ -467,6 +451,7 @@ class RMResourceRequestCreate(BaseModel):
     pool_selector: Optional[dict[str, Any]] = None
     reclaim_tolerance: str = "none"
     lease_expires_at: Optional[datetime] = None
+    allocation_wait_timeout_seconds: Optional[int] = None
     user_id: Optional[UUID] = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 
@@ -508,6 +493,9 @@ class RMResourceRequestCreate(BaseModel):
                 or ResourceRequestReclaimTolerance.NONE
             ).value,
             lease_expires_at=resource_request.lease_expires_at,
+            allocation_wait_timeout_seconds=(
+                resource_request.allocation_wait_timeout_seconds
+            ),
             user_id=user_id,
             metadata=metadata,
         )
@@ -534,6 +522,7 @@ class RMResourceRequestResponse(BaseModel):
     status: str
     reclaim_tolerance: str
     lease_expires_at: Optional[datetime] = None
+    allocation_deadline: Optional[datetime] = None
     renewed_at: Optional[datetime] = None
     created: Optional[datetime] = None
     updated: Optional[datetime] = None
@@ -582,6 +571,7 @@ class RMResourceRequestResponse(BaseModel):
                     self.reclaim_tolerance
                 ),
                 lease_expires_at=self.lease_expires_at,
+                allocation_deadline=self.allocation_deadline,
                 renewed_at=self.renewed_at,
                 allocated_at=self.allocated_at,
                 released_at=self.released_at,
@@ -680,8 +670,6 @@ class RMAllocationResponse(BaseModel):
                     continue
                 if matched_subject.subject_type == ACCOUNT_SUBJECT_TYPE:
                     return None, matched_subject_id
-                if matched_subject.subject_type == TEAM_SUBJECT_TYPE:
-                    continue
                 if matched_subject.subject_type == COMPONENT_SUBJECT_TYPE:
                     return matched_subject_id, None
         if self.matched_subject_ids:

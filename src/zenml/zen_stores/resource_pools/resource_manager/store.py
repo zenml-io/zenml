@@ -352,22 +352,6 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
                 for component_id in resource_request.component_ids
             )
 
-        try:
-            from zenml.zen_server.utils import rbac
-
-            team_ids = rbac().list_user_team_ids(user)
-        except RuntimeError:
-            team_ids = []
-
-        subjects.extend(
-            RMSubject.from_team(
-                UUID(str(team_id)),
-                organization_id=pro_config.organization_id,
-                organization_name=pro_config.organization_name,
-            )
-            for team_id in team_ids
-        )
-
         metadata = dict(resource_request.metadata)
         metadata[STEP_NAME_METADATA_KEY] = step_run.name
         metadata[PIPELINE_RUN_ID_METADATA_KEY] = str(step_run.pipeline_run_id)
