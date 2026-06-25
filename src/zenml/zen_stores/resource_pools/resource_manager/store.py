@@ -51,6 +51,7 @@ from zenml.zen_stores.resource_pools.resource_manager.transport import (
     STEP_RUN_ID_METADATA_KEY,
     RMResourceRequestCreate,
     RMSubject,
+    RMSubjectSelector,
 )
 from zenml.zen_stores.resource_pools.store_interface import (
     ResourcePoolsSQLStoreInterface,
@@ -362,6 +363,12 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             request = RMResourceRequestCreate.from_model(
                 resource_request.model_copy(update={"metadata": metadata}),
                 subjects=subjects,
+                preemption_group=RMSubjectSelector.from_pipeline_run(
+                    organization_id=pro_config.organization_id,
+                    workspace_id=pro_config.workspace_id,
+                    project_id=pipeline_run.project_id,
+                    pipeline_run_id=step_run.pipeline_run_id,
+                ),
                 user_id=user.external_user_id,
             )
             request.metadata = self._metadata_with_server_context(
