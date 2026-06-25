@@ -272,6 +272,10 @@ class ResourceRequestRequest(UserScopedRequest):
         default=None,
         title="Selector over pool attributes.",
     )
+    preemption_group: Optional[dict[str, Any]] = Field(
+        default=None,
+        title="Fallback selector for protected preemption peers.",
+    )
     reclaim_tolerance: ResourceRequestReclaimTolerance = Field(
         default=ResourceRequestReclaimTolerance.ANY,
         title="The capacity reclaim behavior tolerated by this request.",
@@ -356,6 +360,10 @@ class ResourceRequestResponseBody(UserScopedResponseBody):
     pool_selector: Optional[dict[str, Any]] = Field(
         default=None,
         title="Selector over pool attributes requested for the resource request.",
+    )
+    preemption_group: Optional[dict[str, Any]] = Field(
+        default=None,
+        title="The request-level fallback preemption group selector.",
     )
     demands: list[ResourceRequestDemand] = Field(
         default_factory=list,
@@ -482,6 +490,15 @@ class ResourceRequestResponse(
             The resource demands requested.
         """
         return self.get_body().demands
+
+    @property
+    def preemption_group(self) -> Optional[dict[str, Any]]:
+        """Request-level fallback preemption group selector.
+
+        Returns:
+            The optional selector configured on the request.
+        """
+        return self.get_body().preemption_group
 
     @property
     def reclaim_tolerance(self) -> ResourceRequestReclaimTolerance:
