@@ -14,6 +14,7 @@
 """Shared Modal Sandbox helpers."""
 
 import math
+import os
 import time
 from typing import Any, Dict, List, Optional, Protocol, Tuple
 
@@ -398,3 +399,56 @@ def terminate_sandbox(
     """Terminate a Modal sandbox by ID."""
     sandbox = get_sandbox_by_id(sandbox_id, modal_client=modal_client)
     sandbox.terminate()
+
+
+def stop_modal_app(
+    app_name: str,
+    *,
+    modal_environment: Optional[str],
+    token_id: Optional[str] = None,
+    token_secret: Optional[str] = None,
+) -> None:
+    """Stop a deployed Modal app by name using the Modal CLI.
+
+    Moves the app from 'deployed' to 'stopped' in the Modal dashboard,
+    eliminating the visual clutter of idle ``Tasks: 0`` app entries.
+    Stopped apps remain visible in the 'recently stopped' section with
+    their logs intact, so debugging is not affected.
+
+    This should only be called after the associated Modal sandbox has
+    reached a terminal state, because stopping the app does not wait for
+    running sandboxes to finish.
+
+    Args:
+        app_name: The Modal app name to stop (e.g. ``zenml-<id>-<step>``).
+        modal_environment: Modal environment name passed as ``--env``.
+            ``None`` uses the CLI's default environment.
+        token_id: Modal token ID to forward as ``MODAL_TOKEN_ID``. When
+            ``None``, the ambient CLI credential is used.
+        token_secret: Modal token secret to forward as
+            ``MODAL_TOKEN_SECRET``. When ``None``, the ambient CLI
+            credential is used.
+
+    Raises:
+        RuntimeError: If the ``modal app stop`` command exits with a
+            non-zero status code.
+    """
+    import subprocess
+
+    cmd = ["modal", "app", "stop", "--yes", app_name]
+    if modal_environment:
+        cmd += ["--env", modal_environment]
+
+    env = os.environ.copy()
+    token_pair = resolve_modal_token_pair(
+        token_id=token_id, token_secret=token_secret
+    )
+    if token_pair:
+        env[MODAL_TOKEN_ID_ENV_KEY] = token_pair[0]
+        env[MODAL_TOKEN_SECRET_ENV_KEY] = token_pair[1]
+
+    result = subprocess.run(cmd, capture_output=True, text=True, env=env)
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"Failed to stop Modal app '{app_name}': {result.stderr.strip()}"
+        )
