@@ -129,6 +129,11 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             table_name=__tablename__,
             column_names=["pipeline_id", "created"],
         ),
+        # Resolves step-triggered child runs without scanning pipeline_run.
+        build_index(
+            table_name=__tablename__,
+            column_names=["triggered_by", "triggered_by_type"],
+        ),
     )
 
     # Fields
