@@ -286,7 +286,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         options = [
             selectinload(jl_arg(StepRunSchema.snapshot)).load_only(
-                jl_arg(PipelineSnapshotSchema.pipeline_configuration)
+                jl_arg(PipelineSnapshotSchema.pipeline_configuration),
+                jl_arg(PipelineSnapshotSchema.is_dynamic),
             ),
             selectinload(jl_arg(StepRunSchema.pipeline_run)).load_only(
                 jl_arg(PipelineRunSchema.start_time)
@@ -298,6 +299,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         if include_metadata:
             options.extend(
                 [
+                    selectinload(jl_arg(StepRunSchema.parents)),
                     selectinload(jl_arg(StepRunSchema.run_metadata)),
                 ]
             )
@@ -311,6 +313,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                         jl_arg(ModelVersionSchema.model), innerjoin=True
                     ),
                     selectinload(jl_arg(StepRunSchema.user)),
+                    selectinload(jl_arg(StepRunSchema.resource_request)),
                     selectinload(jl_arg(StepRunSchema.input_artifacts))
                     .joinedload(
                         jl_arg(StepRunInputArtifactSchema.artifact_version),
