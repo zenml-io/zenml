@@ -143,6 +143,73 @@ class SSHStepOperator(BaseStepOperator):
         """
         return resolve_ssh_connection_config(self)
 
+    def _check_remote_disk(self, ssh: SSHClient, path: str) -> None:
+        """Fail fast if the remote host is low on disk for the given path.
+
+        Args:
+            ssh: The open SSH connection.
+            path: An existing remote path on the filesystem to check.
+
+        Raises:
+            RuntimeError: If free disk is below ``minimum_free_disk_gb``.
+        """
+        minimum_gb = self.config.minimum_free_disk_gb
+        if minimum_gb <= 0:
+            return
+        free_bytes = ssh.free_disk_bytes(path)
+        if free_bytes is None:
+            # SFTP statvfs unsupported on this host; skip rather than block.
+            return
+        free_gb = free_bytes / (1024**3)
+        if free_gb < minimum_gb:
+            raise RuntimeError(
+                f"The remote host {self.config.hostname} has only "
+                f"{free_gb:.1f} GB free on the filesystem holding "
+                f"{self.config.remote_workdir}, below the required "
+                f"{minimum_gb:.1f} GB. Free space on the host (e.g. "
+                f"`docker image prune -a`) or lower `minimum_free_disk_gb`."
+            )
+
+    def _docker_login(self, ssh: SSHClient, stack: Stack) -> None:
+        """Log the remote Docker into the stack's container registry.
+
+        Args:
+            ssh: The open SSH connection.
+            stack: The active stack.
+
+        Raises:
+            RuntimeError: If registry credentials are missing or the remote
+                `docker login` fails.
+        """
+        registry = stack.container_registry
+        if registry is None:
+            raise RuntimeError(
+                "Unable to find a container registry in the stack, but "
+                "`container_registry_autologin` is enabled for the SSH "
+                "step operator."
+            )
+        if not registry.credentials:
+            raise RuntimeError(
+                "The container registry in the stack has no credentials or "
+                "service connector configured, but the SSH step operator is "
+                "set to autologin to the container registry. Configure "
+                "registry credentials or disable `container_registry_autologin`."
+            )
+        username, password = registry.credentials
+        docker = self.config.docker_binary
+        # --password-stdin keeps the password out of docker's argv.
+        command = (
+            f"printf %s {shlex.quote(password)} | "
+            f"{shlex.quote(docker)} login -u {shlex.quote(username)} "
+            f"--password-stdin {shlex.quote(registry.config.uri)}"
+        )
+        result = ssh.exec(command)
+        if result.exit_code != 0:
+            raise RuntimeError(
+                f"`docker login` failed on {self.config.hostname}: "
+                f"{result.stderr or result.stdout}"
+            )
+
     def _run_preflight_checks(self, ssh: SSHClient) -> None:
         """Verify the remote host has the required tools installed.
 
@@ -229,6 +296,16 @@ class SSHStepOperator(BaseStepOperator):
         with SSHClient(conn_config) as ssh:
             self._run_preflight_checks(ssh)
             ssh.exec(f"mkdir -p {shlex.quote(remote_workdir)}")
+            self._check_remote_disk(ssh, remote_workdir)
+            if self.config.cleanup_old_files:
+                ssh.exec(
+                    f"find {shlex.quote(remote_workdir)} -maxdepth 1 "
+                    "-name 'env-*' -ctime +7 -delete"
+                )
+            if self.config.container_registry_autologin:
+                from zenml.client import Client
+
+                self._docker_login(ssh, Client().active_stack)
             ssh.put_text(env_file_path, env_content, mode=0o600)
 
             pull = ssh.exec(f"{docker} pull {shlex.quote(image_name)}")

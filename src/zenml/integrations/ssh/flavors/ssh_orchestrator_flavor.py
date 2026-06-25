@@ -20,7 +20,7 @@ from pydantic import Field
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.ssh import SSH_ORCHESTRATOR_FLAVOR
 from zenml.integrations.ssh.flavors.ssh_base_flavor import (
-    SSHConnectionConfigMixin,
+    SSHBaseMixin,
 )
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 
@@ -51,7 +51,7 @@ class SSHOrchestratorSettings(BaseSettings):
 
 
 class SSHOrchestratorConfig(
-    BaseOrchestratorConfig, SSHConnectionConfigMixin, SSHOrchestratorSettings
+    BaseOrchestratorConfig, SSHBaseMixin, SSHOrchestratorSettings
 ):
     """Configuration for the SSH orchestrator."""
 

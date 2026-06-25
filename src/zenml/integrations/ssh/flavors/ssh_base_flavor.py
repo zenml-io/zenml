@@ -21,8 +21,8 @@ from zenml.config.base_settings import BaseSettings
 from zenml.utils.secret_utils import PlainSerializedSecretStr, SecretField
 
 
-class SSHConnectionConfigMixin(BaseSettings):
-    """Shared SSH connection and authentication configuration."""
+class SSHBaseMixin(BaseSettings):
+    """Shared SSH configuration for all SSH stack components."""
 
     hostname: str = Field(
         description="Hostname or IP address of the remote SSH server. Must be "

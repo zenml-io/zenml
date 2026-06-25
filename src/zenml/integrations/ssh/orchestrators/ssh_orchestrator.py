@@ -139,9 +139,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         """Execution modes supported by this orchestrator.
 
         Returns:
-            The supported execution modes. Isolated steps run as separate
-            processes that ``stop_isolated_step`` can terminate, so all
-            modes (including fail-fast) are supported.
+            The supported execution modes.
         """
         return [
             ExecutionMode.FAIL_FAST,
@@ -278,11 +276,11 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         return f"{self.config.remote_workdir}/pipeline-runs/{run_id}"
 
     @staticmethod
-    def _run_id(
+    def _remote_dir_id(
         snapshot: "PipelineSnapshotResponse",
         placeholder_run: Optional["PipelineRunResponse"],
     ) -> str:
-        """Resolve the id used to namespace a run's remote files.
+        """Resolve the id used to namespace a run's remote directory.
 
         The placeholder run is the actual run and is the canonical id. It is
         only absent when a run is triggered without one being created up front,
@@ -293,7 +291,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
             placeholder_run: The placeholder run, if one was created.
 
         Returns:
-            The run id to use for the remote run directory.
+            The id for the remote run directory.
         """
         return str(placeholder_run.id) if placeholder_run else str(snapshot.id)
 
@@ -516,7 +514,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
             placeholder_run: The placeholder run for the pipeline.
 
         Returns:
-            ``None`` (submit-only; the remote DAG runs detached).
+            None
 
         Raises:
             RuntimeError: If the pipeline has a schedule, which is not
@@ -529,7 +527,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
                 "from your own cron job or CI), or use an orchestrator that "
                 "supports scheduling."
             )
-        run_id = self._run_id(snapshot, placeholder_run)
+        run_id = self._remote_dir_id(snapshot, placeholder_run)
         services = {
             f"{snapshot.id}-{step_name}": self._step_service(
                 snapshot=snapshot,
@@ -564,7 +562,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
             placeholder_run: The placeholder run for the pipeline.
 
         Returns:
-            ``None`` (submit-only; the orchestrator container runs detached).
+            None
 
         Raises:
             RuntimeError: If the dynamic pipeline has a schedule, which is not
@@ -582,7 +580,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
                 "supports scheduling."
             )
 
-        run_id = self._run_id(snapshot, placeholder_run)
+        run_id = self._remote_dir_id(snapshot, placeholder_run)
         env = dict(environment)
         env[ENV_ZENML_SSH_RUN_ID] = run_id
 
@@ -649,9 +647,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
             step_run: The step run to check.
 
         Returns:
-            The execution status. Returns ``RUNNING`` for steps this
-            instance didn't launch (e.g. after a restart) so the base wait
-            loop falls back to the server-reported status.
+            The execution status.
         """
         with self._step_procs_lock:
             process = self._step_procs.get(step_run.id)
