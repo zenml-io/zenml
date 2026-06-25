@@ -423,6 +423,8 @@ module = [
     "mlx.*",
     "runai",
     "runai.*",
+    "truss.*",
+    "truss_train.*",
     "jsonref",
 ]
 ignore_missing_imports = true

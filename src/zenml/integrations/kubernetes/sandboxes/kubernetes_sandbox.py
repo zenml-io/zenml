@@ -295,6 +295,7 @@ class KubernetesSandboxSession(SandboxSession):
         pod_name: str,
         namespace: str,
         parent: "BaseSandbox",
+        destroy_on_exit: bool = False,
     ) -> None:
         """Initialize a Kubernetes sandbox session.
 
@@ -303,6 +304,8 @@ class KubernetesSandboxSession(SandboxSession):
             pod_name: Name of the backing Kubernetes pod.
             namespace: Kubernetes namespace of the pod.
             parent: The sandbox component that created this session.
+            destroy_on_exit: Whether to destroy the sandbox session when the
+                session context manager exits.
         """
         self._pod_name = pod_name
         self._namespace = namespace
@@ -310,7 +313,7 @@ class KubernetesSandboxSession(SandboxSession):
         # `kubernetes.stream` swaps `ApiClient.request` in place during exec
         # handshakes, so all calls on the client are serialized behind this lock.
         self._client_lock = threading.Lock()
-        super().__init__(id=id, parent=parent)
+        super().__init__(id=id, parent=parent, destroy_on_exit=destroy_on_exit)
 
     def _get_core_api(self) -> k8s_client.CoreV1Api:
         """Get the session-private Kubernetes Core API client.
@@ -614,12 +617,16 @@ class KubernetesSandbox(BaseSandbox):
         return k8s_client.CoreV1Api(self.get_kube_client())
 
     def create_session(
-        self, settings: Optional[BaseSandboxSettings] = None
+        self,
+        settings: Optional[BaseSandboxSettings] = None,
+        destroy_on_exit: bool = False,
     ) -> SandboxSession:
         """Create a sandbox session backed by a Kubernetes pod.
 
         Args:
             settings: Optional settings overrides.
+            destroy_on_exit: Whether to destroy the sandbox session when the
+                session context manager exits.
 
         Raises:
             Exception: If the sandbox pod fails to start.
@@ -696,6 +703,7 @@ class KubernetesSandbox(BaseSandbox):
             pod_name=pod_name,
             namespace=self.config.kubernetes_namespace,
             parent=self,
+            destroy_on_exit=destroy_on_exit,
         )
 
     def attach(self, session_id: str) -> SandboxSession:

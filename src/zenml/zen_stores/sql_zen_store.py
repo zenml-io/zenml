@@ -84,6 +84,7 @@ from pydantic import (
 )
 from sqlalchemy import (
     QueuePool,
+    Table,
     event,
     func,
     update,
@@ -1230,6 +1231,26 @@ class SqlZenStore(BaseZenStore):
                         properties=analytics_metadata,
                     )
 
+    @staticmethod
+    def _query_requires_distinct(
+        query: Union[Select[Any], SelectOfScalar[Any]],
+    ) -> bool:
+        """Whether the query might require a DISTINCT clause.
+
+        We treat this in a pretty conservative way. Any query that isn't a pure
+        select(...) without any potential joins requires a DISTINCT clause.
+
+        Args:
+            query: The query to inspect.
+
+        Returns:
+            Whether the query might require a DISTINCT clause.
+        """
+        from_clauses = query.get_final_froms()
+        return not (
+            len(from_clauses) == 1 and isinstance(from_clauses[0], Table)
+        )
+
     @classmethod
     def filter_and_paginate(
         cls,
@@ -1284,23 +1305,28 @@ class SqlZenStore(BaseZenStore):
         """
         query = filter_model.apply_filter(query=query, table=table)
 
+        query_requires_distinct = cls._query_requires_distinct(query)
+
         # Get the total amount of items in the database for a given query.
         # Sorting is not applied here since it's irrelevant for counting.
         custom_fetch_result: Optional[Sequence[Any]] = None
         if custom_fetch:
+            fetch_query = (
+                query.distinct() if query_requires_distinct else query
+            )
             custom_fetch_result = custom_fetch(
-                session, query.distinct(), filter_model
+                session, fetch_query, filter_model
             )
             total = len(custom_fetch_result)
         else:
-            # For counting, we only need distinct IDs. Selecting only the ID
-            # column dramatically improves performance when the query involves
-            # JOINs and many columns.
-            count_query = (
-                query.with_only_columns(col(table.id))
-                .distinct()
-                .options(noload("*"))
+            # For counting, we only need the IDs. Selecting only the ID column
+            # dramatically improves performance when the query involves JOINs
+            # and many columns.
+            count_query = query.with_only_columns(col(table.id)).options(
+                noload("*")
             )
+            if query_requires_distinct:
+                count_query = count_query.distinct()
             result = session.scalar(
                 select(func.count()).select_from(count_query.subquery())
             )
@@ -1334,10 +1360,12 @@ class SqlZenStore(BaseZenStore):
                 filter_model.offset : filter_model.offset + filter_model.size
             ]
         else:
-            # Apply sorting and distinct for the data fetch
-            query = filter_model.apply_sorting(
-                query=query, table=table
-            ).distinct()
+            # Apply sorting for the data fetch. Sorting can introduce its own
+            # join (e.g. ordering by a related column), so re-check before
+            # applying DISTINCT.
+            query = filter_model.apply_sorting(query=query, table=table)
+            if cls._query_requires_distinct(query):
+                query = query.distinct()
 
             query_options = table.get_query_options(
                 include_metadata=hydrate, include_resources=True
@@ -3189,6 +3217,7 @@ class SqlZenStore(BaseZenStore):
                 table=ArtifactVersionSchema,
                 filter_model=artifact_version_filter_model,
                 hydrate=hydrate,
+                apply_query_options_from_schema=True,
             )
 
     def update_artifact_version(
@@ -5305,6 +5334,7 @@ class SqlZenStore(BaseZenStore):
                 table=PipelineSnapshotSchema,
                 filter_model=snapshot_filter_model,
                 hydrate=hydrate,
+                apply_query_options_from_schema=True,
             )
 
     def update_snapshot(
@@ -11661,8 +11691,9 @@ class SqlZenStore(BaseZenStore):
                         # artifacts we receive at creation time are inputs that
                         # are defined in the step config.
                         input_overrides = set(
-                            run.get_pipeline_configuration().step_input_overrides.get(
-                                step_run.name, {}
+                            run.get_pipeline_configuration().get_invocation_input_overrides(
+                                invocation_id=step_run.name,
+                                step_name=step_config.config.name,
                             )
                         )
                         input_type = self._get_step_run_input_type_from_config(

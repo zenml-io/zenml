@@ -599,6 +599,10 @@ class DynamicPipelineRunner:
                             wrap_step_failure(exc, invocation_id=invocation_id)
                         )
 
+                # Either infra or DB status indicates that the step has
+                # finished -> we run the step cleanup
+                self._cleanup_isolated_step(step_run)
+
                 # Get the updated status that we might have just published
                 db_status = step_run.status
 
@@ -795,6 +799,24 @@ class DynamicPipelineRunner:
             return self._step_operator.get_status(step_run)
         else:
             return self._orchestrator.get_isolated_step_status(step_run)
+
+    def _cleanup_isolated_step(self, step_run: "StepRunResponse") -> None:
+        """Clean up after an isolated step has finished.
+
+        Args:
+            step_run: The finished step run.
+        """
+        try:
+            if step_run.config.step_operator:
+                assert self._step_operator
+                self._step_operator.cleanup_step_submission(step_run)
+            else:
+                self._orchestrator.cleanup_isolated_step(step_run)
+        except Exception:
+            logger.exception(
+                "Failed to run cleanup for isolated step `%s`.",
+                step_run.name,
+            )
 
     def run_pipeline(self) -> None:
         """Run the pipeline.
