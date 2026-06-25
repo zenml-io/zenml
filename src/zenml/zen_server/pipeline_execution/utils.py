@@ -211,7 +211,7 @@ def create_snapshot_from_source(
         A new pipeline snapshot response.
     """
     if isinstance(run_configuration, ReplayRunConfiguration):
-        run_configuration = _maybe_upload_step_input_overrides(
+        run_configuration = _maybe_upload_input_artifact_overrides(
             run_configuration=run_configuration,
             stack=stack,
         )
@@ -229,29 +229,35 @@ def create_snapshot_from_source(
     return zen_store().create_snapshot(snapshot_request)
 
 
-def _maybe_upload_step_input_overrides(
+def _maybe_upload_input_artifact_overrides(
     run_configuration: ReplayRunConfiguration,
     stack: StackResponse,
 ) -> ReplayRunConfiguration:
-    """Maybe upload step input overrides for a replay run.
+    """Maybe upload input artifact overrides for a replay run.
 
     Args:
         run_configuration: The run configuration.
         stack: The stack for the run.
 
     Returns:
-        The run configuration with the step input overrides uploaded.
+        The run configuration with the input artifact overrides uploaded.
     """
-    from zenml.artifacts.external_artifact import ExternalArtifact
-    from zenml.artifacts.utils import load_artifact_store
+    from zenml.artifacts.utils import (
+        load_artifact_store,
+        upload_input_artifact_overrides,
+    )
 
-    if not run_configuration.step_input_overrides:
-        return run_configuration
+    override_maps = {
+        "step_input_overrides": run_configuration.step_input_overrides,
+        "step_default_input_overrides": run_configuration.step_default_input_overrides,
+    }
 
     if all(
         isinstance(value, UUID)
-        for overrides in run_configuration.step_input_overrides.values()
-        for value in overrides.values()
+        for overrides in override_maps.values()
+        if overrides
+        for inner in overrides.values()
+        for value in inner.values()
     ):
         return run_configuration
 
@@ -260,28 +266,15 @@ def _maybe_upload_step_input_overrides(
         zen_store=zen_store(),
     )
 
-    override_ids: Dict[str, Dict[str, UUID]] = {}
+    update = {
+        field: upload_input_artifact_overrides(
+            overrides, artifact_store=artifact_store
+        )
+        for field, overrides in override_maps.items()
+        if overrides
+    }
 
-    for (
-        invocation_id,
-        overrides,
-    ) in run_configuration.step_input_overrides.items():
-        override_ids[invocation_id] = {}
-        for input_name, value in overrides.items():
-            # We treat UUIDs as already uploaded artifact versions, and for the
-            # rest we try to upload them to the artifact store.
-            if isinstance(value, UUID):
-                artifact_version_id = value
-            else:
-                artifact_version_id = ExternalArtifact(
-                    value=value
-                ).upload_by_value(artifact_store=artifact_store)
-
-            override_ids[invocation_id][input_name] = artifact_version_id
-
-    return run_configuration.model_copy(
-        update={"step_input_overrides": override_ids}
-    )
+    return run_configuration.model_copy(update=update)
 
 
 def run_snapshot(
