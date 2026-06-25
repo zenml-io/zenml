@@ -535,11 +535,22 @@ class StepLauncher:
                     "step operator `%s`.",
                     step_operator.name,
                 )
-                step_operator.launch(
-                    info=step_run_info,
-                    entrypoint_command=entrypoint_command,
-                    environment=environment,
-                )
+                try:
+                    step_operator.launch(
+                        info=step_run_info,
+                        entrypoint_command=entrypoint_command,
+                        environment=environment,
+                    )
+                finally:
+                    try:
+                        step_operator.cleanup_step_submission(
+                            step_run_info.step_run
+                        )
+                    except Exception:
+                        logger.exception(
+                            "Failed to clean up for step `%s`.",
+                            self._invocation_id,
+                        )
             else:
                 raise NotImplementedError(
                     f"The step operator `{step_operator.name}` does not "
@@ -549,12 +560,15 @@ class StepLauncher:
             # We submitted the step run asynchronously, now we potentially need
             # to wait for it to finish.
             if self._wait:
-                status = step_operator.wait(
-                    step_run=step_run_info.step_run,
-                )
-                self._finalize_remote_step(
-                    status=status, step_run_info=step_run_info
-                )
+                try:
+                    status = step_operator.wait(
+                        step_run=step_run_info.step_run,
+                    )
+                    self._finalize_remote_step(
+                        status=status, step_run_info=step_run_info
+                    )
+                finally:
+                    self._cleanup_remote_step(step_run_info.step_run)
 
     def _run_step_with_dynamic_orchestrator(
         self,
@@ -585,12 +599,15 @@ class StepLauncher:
             environment=environment,
         )
         if self._wait:
-            status = self._stack.orchestrator.wait_for_isolated_step(
-                step_run_info.step_run
-            )
-            self._finalize_remote_step(
-                status=status, step_run_info=step_run_info
-            )
+            try:
+                status = self._stack.orchestrator.wait_for_isolated_step(
+                    step_run_info.step_run
+                )
+                self._finalize_remote_step(
+                    status=status, step_run_info=step_run_info
+                )
+            finally:
+                self._cleanup_remote_step(step_run_info.step_run)
 
     def _finalize_remote_step(
         self, status: ExecutionStatus, step_run_info: StepRunInfo
@@ -620,6 +637,32 @@ class StepLauncher:
             publish_utils.publish_successful_step_run(
                 step_run_id=step_run_info.step_run_id,
                 output_artifact_ids={},
+            )
+
+    def _cleanup_remote_step(self, step_run: StepRunResponse) -> None:
+        """Clean up infrastructure after a remote step has finished.
+
+        Args:
+            step_run: The finished step run.
+        """
+        try:
+            if self._step.config.step_operator:
+                step_operator_name = (
+                    self._step.config.step_operator
+                    if isinstance(self._step.config.step_operator, str)
+                    else None
+                )
+                step_operator = _get_step_operator(
+                    stack=self._stack,
+                    step_operator_name=step_operator_name,
+                )
+                step_operator.cleanup_step_submission(step_run)
+            else:
+                self._stack.orchestrator.cleanup_isolated_step(step_run)
+        except Exception:
+            logger.exception(
+                "Failed to clean up for step `%s`.",
+                self._invocation_id,
             )
 
     def _run_step_in_current_thread(
