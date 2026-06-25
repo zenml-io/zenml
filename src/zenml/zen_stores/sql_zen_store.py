@@ -1363,12 +1363,7 @@ class SqlZenStore(BaseZenStore):
                 filter_model.offset : filter_model.offset + filter_model.size
             ]
         else:
-            # Apply sorting for the data fetch. Sorting can introduce its own
-            # join (e.g. ordering by a related column), so re-check before
-            # applying DISTINCT.
             query = filter_model.apply_sorting(query=query, table=table)
-            if cls._query_requires_distinct(query):
-                query = query.distinct()
 
             query_options = table.get_query_options(
                 include_metadata=hydrate,
@@ -1378,6 +1373,12 @@ class SqlZenStore(BaseZenStore):
             )
             if apply_query_options_from_schema and query_options:
                 query = query.options(*query_options)
+
+            # Check for DISTINCT after sorting and query options are applied so
+            # the check sees every join in the final query, including the ones
+            # added by sorting on a related column and by eager loaders.
+            if cls._query_requires_distinct(query):
+                query = query.distinct()
 
             query_result = session.exec(
                 query.limit(filter_model.size).offset(filter_model.offset)
