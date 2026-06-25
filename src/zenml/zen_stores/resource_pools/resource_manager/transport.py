@@ -274,6 +274,9 @@ class RMSubject(BaseModel):
             ),
             metadata=cls._optional_values(avatar_url=user.avatar_url),
         )
+        if not user.is_service_account:
+            return account_subject
+
         return cls._organization(
             organization_id=organization_id,
             organization_name=organization_name,
