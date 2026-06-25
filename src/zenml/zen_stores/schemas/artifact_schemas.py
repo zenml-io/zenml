@@ -416,6 +416,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
                 [
                     selectinload(jl_arg(ArtifactVersionSchema.user)),
                     selectinload(jl_arg(ArtifactVersionSchema.tags)),
+                    selectinload(jl_arg(ArtifactVersionSchema.visualizations)),
                 ]
             )
 

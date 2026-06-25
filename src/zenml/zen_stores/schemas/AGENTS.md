@@ -248,6 +248,11 @@ class SecretSchema(NamedSchema, table=True):
 - Docstrings are mandatory for all classes and methods; include arguments, returns, and raised exceptions where applicable.
 - Comments where mapping/business rules are non-obvious; avoid redundant or change-log style comments.
 
+### `get_query_options` eager-loading rules
+- Collections (`List[...]`) always use `selectinload`. `joinedload` on a collection Cartesian-multiplies rows and breaks the list path.
+- Single-valued relationships use `single_loader = selectinload if many else joinedload` (joinedload for `get_*`, selectinload for lists)
+- Use `joinedload` for a single-valued relationship when the related row usually exists, or when it is a 1:1 where the other table points back to this one (like `pipeline_run.trigger_execution`, where `trigger_execution` holds `pipeline_run_id`): selectinload always runs a query there even when there is no match, so joinedload always wins. Keep `selectinload` only for a nullable foreign key on this table that is usually empty (like snapshot's `build`/`schedule`): selectinload already skips it when the column is null, so `joinedload` would only add a useless JOIN.
+
 Practical Checklist for New/Updated Schemas
 - Pick BaseSchema vs. NamedSchema appropriately.
 - Set table=True and __tablename__.

@@ -96,7 +96,6 @@ from sqlalchemy.exc import (
 )
 from sqlalchemy.orm import (
     Mapped,
-    joinedload,
     load_only,
     noload,
     selectinload,

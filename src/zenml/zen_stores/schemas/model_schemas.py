@@ -474,8 +474,8 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
             options.extend(
                 [
                     joinedload(jl_arg(ModelVersionSchema.user)),
-                    # joinedload(jl_arg(ModelVersionSchema.services)),
-                    # joinedload(jl_arg(ModelVersionSchema.tags)),
+                    selectinload(jl_arg(ModelVersionSchema.services)),
+                    selectinload(jl_arg(ModelVersionSchema.tags)),
                 ]
             )
 

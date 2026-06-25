@@ -21,7 +21,7 @@ from uuid import UUID
 from pydantic import ConfigDict
 from sqlalchemy import TEXT, Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -265,6 +265,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         cls,
         include_metadata: bool = False,
         include_resources: bool = False,
+        many: bool = False,
         **kwargs: Any,
     ) -> Sequence[ExecutableOption]:
         """Get the query options for the schema.
@@ -274,6 +275,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 the schema to a model.
             include_resources: Whether resources will be included when
                 converting the schema to a model.
+            many: Whether the options are applied to a query that returns many
+                rows.
             **kwargs: Keyword arguments to allow schema specific logic
 
         Returns:
@@ -284,16 +287,18 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             ModelVersionSchema,
         )
 
+        single_loader = selectinload if many else joinedload
+
         options = [
-            selectinload(jl_arg(StepRunSchema.snapshot)).load_only(
+            single_loader(jl_arg(StepRunSchema.snapshot)).load_only(
                 jl_arg(PipelineSnapshotSchema.pipeline_configuration),
                 jl_arg(PipelineSnapshotSchema.is_dynamic),
             ),
-            selectinload(jl_arg(StepRunSchema.pipeline_run)).load_only(
+            single_loader(jl_arg(StepRunSchema.pipeline_run)).load_only(
                 jl_arg(PipelineRunSchema.start_time)
             ),
-            selectinload(jl_arg(StepRunSchema.static_config)),
-            selectinload(jl_arg(StepRunSchema.dynamic_config)),
+            single_loader(jl_arg(StepRunSchema.static_config)),
+            single_loader(jl_arg(StepRunSchema.dynamic_config)),
         ]
 
         if include_metadata:
@@ -307,13 +312,13 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         if include_resources:
             options.extend(
                 [
-                    selectinload(
+                    single_loader(
                         jl_arg(StepRunSchema.model_version)
                     ).joinedload(
                         jl_arg(ModelVersionSchema.model), innerjoin=True
                     ),
-                    selectinload(jl_arg(StepRunSchema.user)),
-                    selectinload(jl_arg(StepRunSchema.resource_request)),
+                    single_loader(jl_arg(StepRunSchema.user)),
+                    single_loader(jl_arg(StepRunSchema.resource_request)),
                     selectinload(jl_arg(StepRunSchema.input_artifacts))
                     .joinedload(
                         jl_arg(StepRunInputArtifactSchema.artifact_version),
