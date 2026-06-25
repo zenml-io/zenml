@@ -20,7 +20,7 @@ from typing import Any, Dict
 from unittest.mock import MagicMock, patch
 
 from zenml.enums import ExecutionStatus
-from zenml.integrations.ssh.ssh_utils import RemoteCommandResult
+from zenml.integrations.ssh.ssh_client import RemoteCommandResult
 from zenml.integrations.ssh.step_operators.ssh_step_operator import (
     SSH_CONTAINER_NAME_METADATA_KEY,
     SSHStepOperator,
@@ -74,15 +74,6 @@ def _make_operator() -> SSHStepOperator:
     operator._config = config
     operator.connector = None
     return operator
-
-
-class TestConnectionConfig:
-    def test_builds_connection_from_config(self) -> None:
-        operator = _make_operator()
-        conn = operator._build_ssh_connection_config()
-        assert conn.hostname == "test-host"
-        assert conn.username == "testuser"
-        assert conn.ssh_key_path == "/fake/key"
 
 
 # --- get_status ---

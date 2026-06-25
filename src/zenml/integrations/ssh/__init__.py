@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""SSH integration for remote step execution via SSH and Docker."""
+"""SSH integration for remote pipeline and step execution."""
 
 from typing import List, Type
 

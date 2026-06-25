@@ -13,14 +13,12 @@
 #  permissions and limitations under the License.
 """SSH orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Optional, Type
 
-from pydantic import Field
-
-from zenml.config.base_settings import BaseSettings
 from zenml.integrations.ssh import SSH_ORCHESTRATOR_FLAVOR
-from zenml.integrations.ssh.flavors.ssh_base_flavor import (
-    SSHBaseMixin,
+from zenml.integrations.ssh.flavors.base import (
+    BaseSSHComponentConfig,
+    BaseSSHComponentSettings,
 )
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
 
@@ -28,51 +26,14 @@ if TYPE_CHECKING:
     from zenml.integrations.ssh.orchestrators import SSHOrchestrator
 
 
-class SSHOrchestratorSettings(BaseSettings):
+class SSHOrchestratorSettings(BaseSSHComponentSettings):
     """Settings for the SSH orchestrator."""
-
-    mounts: Dict[str, str] = Field(
-        default_factory=dict,
-        description="Host-path to container-path bind mounts applied to "
-        "every step container. Keys are absolute paths on the remote host, "
-        "values are absolute paths inside the container. Example: "
-        "{'/data/datasets': '/datasets'}",
-    )
-    gpu_enabled: bool = Field(
-        default=True,
-        description="Enable NVIDIA GPU access for each step container "
-        "(--gpus all). Set to False for CPU-only pipelines",
-    )
-    docker_run_args: Optional[List[str]] = Field(
-        default=None,
-        description="Additional arguments for the docker run command, "
-        "inserted before the image name.",
-    )
 
 
 class SSHOrchestratorConfig(
-    BaseOrchestratorConfig, SSHBaseMixin, SSHOrchestratorSettings
+    BaseOrchestratorConfig, BaseSSHComponentConfig, SSHOrchestratorSettings
 ):
     """Configuration for the SSH orchestrator."""
-
-    container_registry_autologin: bool = Field(
-        default=False,
-        description="Run `docker login` on the remote host using the "
-        "submitted stack's container registry credentials before launching, so "
-        "private images can be pulled",
-    )
-    cleanup_old_files: bool = Field(
-        default=True,
-        description="Remove pipeline launch files (Compose files) on the "
-        "remote host once they are older than 7 days",
-    )
-    minimum_free_disk_gb: float = Field(
-        default=5.0,
-        ge=0,
-        description="Pre-flight guard that fails a submission if the "
-        "remote_workdir filesystem has less free disk than this (in GB). Set "
-        "to 0 to disable the check. Example: 10.0 for image-heavy pipelines",
-    )
 
     @property
     def is_remote(self) -> bool:

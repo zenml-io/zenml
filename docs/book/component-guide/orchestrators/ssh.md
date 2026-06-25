@@ -41,7 +41,7 @@ The SSH orchestrator connects to the remote host with [paramiko](https://www.par
 * **Static pipelines** — one Compose service per step, wired together with `depends_on` (`service_completed_successfully`) so a step only runs once its upstream steps finish. The remote `docker compose up` runs the whole DAG. This mirrors the HyperAI execution model.
 * **Dynamic pipelines** — a single Compose service runs the *orchestrator image*, which executes ZenML's dynamic runner on the host. That runner launches each isolated step as its own OS **subprocess** (not a thread) so steps are independently accounted and can be preempted — required for resource pools and fail-fast execution.
 
-If `container_registry_autologin` is enabled, the orchestrator runs `docker login` on the remote host using the submitted stack's container registry credentials before launching, so private images can be pulled.
+If `authenticate_docker` is enabled, the orchestrator runs `docker login` on the remote host using the submitted stack's container registry credentials before launching, so private images can be pulled.
 
 {% hint style="info" %}
 The SSH orchestrator does not manage schedules. To run a pipeline on a schedule, trigger it directly from your own cron job or CI; submitting a pipeline with a ZenML schedule is rejected with a clear error.
@@ -89,7 +89,7 @@ Key configuration fields (set at registration time):
 * `verify_host_key` / `known_hosts_path` — host-key verification (on by default).
 * `remote_workdir` — base directory on the host for per-run files (default `/tmp/zenml-ssh`).
 * `docker_binary` — path to the Docker binary on the host (default `docker`).
-* `container_registry_autologin` — run `docker login` on the host before launching (default `False`).
+* `authenticate_docker` — run `docker login` on the host before launching (default `False`).
 * `cleanup_old_files` — remove run directories older than seven days before each launch (default `True`).
 * `gpu_enabled` — request all NVIDIA GPUs for step containers. This is also a per-step setting, so you can mix CPU and GPU steps in one pipeline.
 

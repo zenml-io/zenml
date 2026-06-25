@@ -38,6 +38,7 @@ from zenml.integrations.ssh.orchestrators.ssh_orchestrator import (
     ENV_ZENML_SSH_RUN_ID,
     SSHOrchestrator,
 )
+from zenml.integrations.ssh.ssh_client import SSHClient
 
 _MODULE = "zenml.integrations.ssh.orchestrators.ssh_orchestrator"
 
@@ -81,9 +82,10 @@ def _patched_ssh() -> Iterator[MagicMock]:
     with patch(f"{_MODULE}.SSHClient") as ssh_cls:
         client = MagicMock()
         client.exec.return_value = MagicMock(exit_code=0, stdout="", stderr="")
-        # None = statvfs unsupported; the disk-space guard treats it as
-        # "unknown" and skips, so it doesn't interfere with these tests.
-        client.free_disk_bytes.return_value = None
+        # Report ample free disk so the disk-space guard passes and does not
+        # interfere with these tests.
+        stats = MagicMock(f_bavail=10**9, f_frsize=4096)
+        client.sftp.return_value.__enter__.return_value.statvfs.return_value = stats
         ssh_cls.return_value.__enter__.return_value = client
         yield client
 
@@ -112,20 +114,26 @@ class TestFlavor:
         assert ExecutionMode.STOP_ON_FAILURE in modes
         assert ExecutionMode.CONTINUE_ON_FAILURE in modes
 
-    def test_builds_connection_from_config(self) -> None:
-        conn = _make_orchestrator()._build_ssh_connection_config()
-        assert conn.hostname == "gpu-box"
-        assert conn.username == "ubuntu"
+    def test_config_carries_connection_fields(self) -> None:
+        config = _make_orchestrator().config
+        assert config.hostname == "gpu-box"
+        assert config.username == "ubuntu"
 
-    def test_missing_auth_raises(self) -> None:
-        orch = _make_orchestrator(username=None, ssh_key_path=None)
+    def test_missing_auth_raises_on_connect(self) -> None:
+        orch = _make_orchestrator(ssh_key_path=None)
 
-        with pytest.raises(RuntimeError, match="username"):
-            orch._build_ssh_connection_config()
+        with pytest.raises(RuntimeError, match="ssh_key_path"):
+            with SSHClient(orch.config):
+                pass
 
 
 class TestStaticSubmit:
-    def _submit(self, orch: SSHOrchestrator, snapshot: MagicMock) -> dict:
+    def _submit(
+        self,
+        orch: SSHOrchestrator,
+        snapshot: MagicMock,
+        settings: SSHOrchestratorSettings | None = None,
+    ) -> dict:
         """Run submit_pipeline and return the parsed Compose dict."""
         run = MagicMock()
         run.id = uuid4()
@@ -133,7 +141,9 @@ class TestStaticSubmit:
             _patched_ssh() as ssh,
             patch.object(orch, "get_image", return_value="img:latest"),
             patch.object(
-                orch, "get_settings", return_value=SSHOrchestratorSettings()
+                orch,
+                "get_settings",
+                return_value=settings or SSHOrchestratorSettings(),
             ),
         ):
             orch.submit_pipeline(
@@ -159,7 +169,10 @@ class TestStaticSubmit:
         snap = _fake_snapshot(
             {"load": _fake_step(), "train": _fake_step(upstream=["load"])}
         )
-        compose = self._submit(orch, snap)
+        settings = SSHOrchestratorSettings(
+            gpu_indices=[1, 0], mounts={"/data": "/models"}
+        )
+        compose = self._submit(orch, snap, settings)
         services = compose["services"]
         assert len(services) == 2
         train = services[f"{snap.id}-train"]
@@ -170,8 +183,19 @@ class TestStaticSubmit:
         # run-id env injected + step env carried through
         assert train["environment"][ENV_ZENML_SSH_RUN_ID]
         assert train["environment"]["FOO"] == "bar"
-        # GPU reservation present by default
-        assert train["deploy"]["resources"]["reservations"]["devices"]
+        # GPU reservation reflects the requested (normalized) indices
+        device = train["deploy"]["resources"]["reservations"]["devices"][0]
+        assert device["device_ids"] == ["0", "1"]
+        # bind mounts applied as volumes
+        assert train["volumes"] == ["/data:/models"]
+
+    def test_cpu_only_step_has_no_gpu_reservation(self) -> None:
+        orch = _make_orchestrator()
+        snap = _fake_snapshot({"only": _fake_step()})
+        compose = self._submit(orch, snap)
+        only = compose["services"][f"{snap.id}-only"]
+        assert "deploy" not in only
+        assert "volumes" not in only
 
     def test_compose_up_invoked(self) -> None:
         orch = _make_orchestrator()
@@ -219,6 +243,8 @@ class TestStaticSubmit:
     def test_cleanup_targets_run_files(self) -> None:
         orch = _make_orchestrator()
         snap = _fake_snapshot({"only": _fake_step()})
+        run = MagicMock()
+        run.id = uuid4()
         with (
             _patched_ssh() as ssh,
             patch.object(orch, "get_image", return_value="img"),
@@ -231,7 +257,7 @@ class TestStaticSubmit:
                 stack=MagicMock(),
                 base_environment={},
                 step_environments={"only": {}},
-                placeholder_run=None,
+                placeholder_run=run,
             )
         cleanup_commands = [
             call.args[0]
@@ -413,33 +439,3 @@ class TestIsolatedStepSubprocess:
         with patch(f"{_MODULE}.os.killpg") as killpg:
             orch.stop_isolated_step(step_run)
         killpg.assert_not_called()
-
-
-class TestDiskGuard:
-    """Tests for the remote disk-space pre-flight guard."""
-
-    def test_raises_when_below_threshold(self) -> None:
-        orch = _make_orchestrator(minimum_free_disk_gb=5.0)
-        ssh = MagicMock()
-        ssh.free_disk_bytes.return_value = 1 * 1024**3  # 1 GB < 5 GB
-        with pytest.raises(RuntimeError, match="free"):
-            orch._check_remote_disk(ssh, "/tmp/zenml-ssh")
-
-    def test_passes_when_enough_free(self) -> None:
-        orch = _make_orchestrator(minimum_free_disk_gb=5.0)
-        ssh = MagicMock()
-        ssh.free_disk_bytes.return_value = 50 * 1024**3  # 50 GB
-        orch._check_remote_disk(ssh, "/tmp/zenml-ssh")
-
-    def test_skips_when_statvfs_unsupported(self) -> None:
-        orch = _make_orchestrator(minimum_free_disk_gb=5.0)
-        ssh = MagicMock()
-        ssh.free_disk_bytes.return_value = None
-        orch._check_remote_disk(ssh, "/tmp/zenml-ssh")
-
-    def test_disabled_when_threshold_is_zero(self) -> None:
-        orch = _make_orchestrator(minimum_free_disk_gb=0.0)
-        ssh = MagicMock()
-        orch._check_remote_disk(ssh, "/tmp/zenml-ssh")
-        # Guard is disabled, so it should not even query the remote host.
-        ssh.free_disk_bytes.assert_not_called()

@@ -16,130 +16,18 @@
 import io
 import socket
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Optional, Protocol, cast
+from typing import TYPE_CHECKING, Iterator, Optional
 
 import paramiko
 
 from zenml.logger import get_logger
-from zenml.utils.secret_utils import PlainSerializedSecretStr
 
 if TYPE_CHECKING:
-    from zenml.stack import StackComponent
+    from zenml.integrations.ssh.flavors.base import SSHConnectionConfigMixin
 
 logger = get_logger(__name__)
-
-
-class SSHConnectionConfigSource(Protocol):
-    """Config fields needed to build an SSH connection."""
-
-    hostname: str
-    port: int
-    username: Optional[str]
-    ssh_key_path: Optional[str]
-    ssh_private_key: Optional[PlainSerializedSecretStr]
-    ssh_key_passphrase: Optional[PlainSerializedSecretStr]
-    verify_host_key: bool
-    known_hosts_path: Optional[str]
-    connection_timeout: float
-    keepalive_interval: int
-
-
-@dataclass(frozen=True)
-class SSHConnectionConfig:
-    """Configuration for an SSH connection.
-
-    Attributes:
-        hostname: Remote host to connect to.
-        port: SSH port.
-        username: SSH username.
-        ssh_key_path: Path to a private key file (mutually exclusive with
-            ssh_private_key, but at least one must be set).
-        ssh_private_key: Private key content as a string.
-        ssh_key_passphrase: Passphrase for an encrypted private key.
-        verify_host_key: Whether to verify the remote host key.
-        known_hosts_path: Path to a known_hosts file.
-        connection_timeout: Timeout in seconds for connection.
-        keepalive_interval: Seconds between keepalive packets.
-    """
-
-    hostname: str
-    port: int
-    username: str
-    ssh_key_path: Optional[str] = None
-    ssh_private_key: Optional[str] = None
-    ssh_key_passphrase: Optional[str] = None
-    verify_host_key: bool = True
-    known_hosts_path: Optional[str] = None
-    connection_timeout: float = 10.0
-    keepalive_interval: int = 30
-
-
-def build_ssh_connection_config_from_config(
-    config: SSHConnectionConfigSource,
-) -> SSHConnectionConfig:
-    """Build an SSH connection config from component configuration.
-
-    Args:
-        config: Component configuration with SSH connection fields.
-
-    Returns:
-        The resolved SSH connection configuration.
-
-    Raises:
-        RuntimeError: If required explicit SSH auth fields are missing.
-    """
-    if not config.username:
-        raise RuntimeError(
-            "SSH authentication requires a `username` to be configured on the "
-            "component."
-        )
-
-    private_key: Optional[str] = None
-    if config.ssh_private_key is not None:
-        private_key = config.ssh_private_key.get_secret_value()
-
-    if not config.ssh_key_path and private_key is None:
-        raise RuntimeError(
-            "SSH authentication requires either `ssh_key_path` or "
-            "`ssh_private_key` to be configured on the component."
-        )
-
-    passphrase: Optional[str] = None
-    if config.ssh_key_passphrase is not None:
-        passphrase = config.ssh_key_passphrase.get_secret_value()
-
-    return SSHConnectionConfig(
-        hostname=config.hostname,
-        port=config.port,
-        username=config.username,
-        ssh_key_path=config.ssh_key_path,
-        ssh_private_key=private_key,
-        ssh_key_passphrase=passphrase,
-        verify_host_key=config.verify_host_key,
-        known_hosts_path=config.known_hosts_path,
-        connection_timeout=config.connection_timeout,
-        keepalive_interval=config.keepalive_interval,
-    )
-
-
-def resolve_ssh_connection_config(
-    component: "StackComponent",
-) -> SSHConnectionConfig:
-    """Resolve an SSH connection from the component configuration.
-
-    Args:
-        component: The SSH stack component.
-
-    Returns:
-        The resolved SSH connection configuration.
-    """
-    # The concrete SSH component configs (orchestrator/step operator) provide
-    # the SSHConnectionConfigSource fields; the base StackComponentConfig type
-    # doesn't express that, so narrow it here.
-    return build_ssh_connection_config_from_config(
-        cast(SSHConnectionConfigSource, component.config)
-    )
 
 
 @dataclass
@@ -165,7 +53,7 @@ class SSHClient:
         config: Connection configuration.
     """
 
-    config: SSHConnectionConfig
+    config: "SSHConnectionConfigMixin"
     _client: object = field(default=None, init=False, repr=False)
 
     def __enter__(self) -> "SSHClient":
@@ -185,8 +73,23 @@ class SSHClient:
         """Establish the SSH connection using paramiko.
 
         Raises:
-            RuntimeError: If connection or authentication fails.
+            RuntimeError: If required explicit SSH auth fields are missing, or
+                if connection or authentication fails.
         """
+        private_key: Optional[str] = None
+        if self.config.ssh_private_key is not None:
+            private_key = self.config.ssh_private_key.get_secret_value()
+
+        if not self.config.ssh_key_path and private_key is None:
+            raise RuntimeError(
+                "SSH authentication requires either `ssh_key_path` or "
+                "`ssh_private_key` to be configured on the component."
+            )
+
+        passphrase: Optional[str] = None
+        if self.config.ssh_key_passphrase is not None:
+            passphrase = self.config.ssh_key_passphrase.get_secret_value()
+
         client = paramiko.SSHClient()
 
         # Host key policy
@@ -207,7 +110,6 @@ class SSHClient:
             client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         # Load the private key
-        passphrase = self.config.ssh_key_passphrase
         pkey: Optional[paramiko.PKey] = None
         if self.config.ssh_key_path:
             try:
@@ -224,8 +126,8 @@ class SSHClient:
                     pkey = paramiko.ECDSAKey.from_private_key_file(
                         self.config.ssh_key_path, password=passphrase
                     )
-        elif self.config.ssh_private_key:
-            key_file = io.StringIO(self.config.ssh_private_key)
+        elif private_key:
+            key_file = io.StringIO(private_key)
             try:
                 pkey = paramiko.RSAKey.from_private_key(
                     key_file, password=passphrase
@@ -451,30 +353,17 @@ class SSHClient:
             stderr="",
         )
 
-    def free_disk_bytes(self, remote_path: str) -> Optional[int]:
-        """Get free disk space on the filesystem holding a remote path.
+    @contextmanager
+    def sftp(self) -> Iterator["paramiko.SFTPClient"]:
+        """Open an SFTP session over the active connection.
 
-        Args:
-            remote_path: An existing path on the remote host.
-
-        Returns:
-            Free bytes available to a non-root user, or None if the SFTP
-            server does not support statvfs.
+        Yields:
+            An open paramiko SFTP client.
         """
         client = self._get_client()
         sftp = client.open_sftp()
         try:
-            # statvfs is a paramiko SFTP extension present at runtime but
-            # missing from the type stubs.
-            stats = sftp.statvfs(remote_path)  # type: ignore[attr-defined]
-            return int(stats.f_bavail * stats.f_frsize)
-        except Exception:
-            logger.debug(
-                "Could not query free disk space on the remote host via "
-                "SFTP statvfs.",
-                exc_info=True,
-            )
-            return None
+            yield sftp
         finally:
             sftp.close()
 
@@ -488,14 +377,10 @@ class SSHClient:
             content: Text content to write.
             mode: File permissions (default: owner read/write only).
         """
-        client = self._get_client()
-        sftp = client.open_sftp()
-        try:
+        with self.sftp() as sftp:
             with sftp.file(remote_path, "w") as f:
                 f.write(content)
             sftp.chmod(remote_path, mode)
-        finally:
-            sftp.close()
 
     def read_text(self, remote_path: str) -> str:
         """Read a remote file's text contents via SFTP.
@@ -509,17 +394,14 @@ class SSHClient:
         Raises:
             FileNotFoundError: If the file does not exist.
         """
-        client = self._get_client()
-        sftp = client.open_sftp()
-        try:
-            with sftp.file(remote_path, "r") as f:
-                raw: bytes = f.read()
-                return raw.decode("utf-8", errors="replace")
-        except FileNotFoundError:
-            raise
-        except OSError as e:
-            raise FileNotFoundError(
-                f"Remote file not found or unreadable: {remote_path}"
-            ) from e
-        finally:
-            sftp.close()
+        with self.sftp() as sftp:
+            try:
+                with sftp.file(remote_path, "r") as f:
+                    raw: bytes = f.read()
+                    return raw.decode("utf-8", errors="replace")
+            except FileNotFoundError:
+                raise
+            except OSError as e:
+                raise FileNotFoundError(
+                    f"Remote file not found or unreadable: {remote_path}"
+                ) from e

@@ -13,14 +13,12 @@
 #  permissions and limitations under the License.
 """SSH step operator flavor."""
 
-from typing import TYPE_CHECKING, Dict, List, Optional, Type
+from typing import TYPE_CHECKING, Optional, Type
 
-from pydantic import Field
-
-from zenml.config.base_settings import BaseSettings
 from zenml.integrations.ssh import SSH_STEP_OPERATOR_FLAVOR
-from zenml.integrations.ssh.flavors.ssh_base_flavor import (
-    SSHBaseMixin,
+from zenml.integrations.ssh.flavors.base import (
+    BaseSSHComponentConfig,
+    BaseSSHComponentSettings,
 )
 from zenml.step_operators import BaseStepOperatorConfig, BaseStepOperatorFlavor
 
@@ -28,53 +26,14 @@ if TYPE_CHECKING:
     from zenml.integrations.ssh.step_operators import SSHStepOperator
 
 
-class SSHStepOperatorSettings(BaseSettings):
+class SSHStepOperatorSettings(BaseSSHComponentSettings):
     """Settings for the SSH step operator."""
-
-    mounts: Dict[str, str] = Field(
-        default_factory=dict,
-        description="Host-path to container-path bind mounts. Keys are "
-        "absolute paths on the remote host, values are absolute paths inside "
-        "the container. Example: {'/data/datasets': '/datasets'}",
-    )
-    gpu_indices: Optional[List[int]] = Field(
-        default=None,
-        description="GPU device indices to expose inside the container via "
-        "the Docker --gpus flag, or None for CPU-only execution. Give "
-        "concurrent steps on the same host distinct indices to avoid "
-        "oversubscribing a GPU",
-    )
-    docker_run_args: Optional[List[str]] = Field(
-        default=None,
-        description="Additional arguments for the docker run command, "
-        "inserted before the image name.",
-    )
 
 
 class SSHStepOperatorConfig(
-    BaseStepOperatorConfig, SSHBaseMixin, SSHStepOperatorSettings
+    BaseStepOperatorConfig, BaseSSHComponentConfig, SSHStepOperatorSettings
 ):
     """Configuration for the SSH step operator."""
-
-    container_registry_autologin: bool = Field(
-        default=False,
-        description="Run `docker login` on the remote host using the "
-        "submitted stack's container registry credentials before pulling the "
-        "step image. Leave disabled if the remote Docker daemon already has "
-        "valid credentials",
-    )
-    cleanup_old_files: bool = Field(
-        default=True,
-        description="Remove env files left in remote_workdir that are older "
-        "than 7 days. These accumulate when steps crash before cleanup runs",
-    )
-    minimum_free_disk_gb: float = Field(
-        default=5.0,
-        ge=0,
-        description="Pre-flight guard that fails a submission if the "
-        "remote_workdir filesystem has less free disk than this (in GB). Set "
-        "to 0 to disable the check. Example: 10.0 for image-heavy pipelines",
-    )
 
     @property
     def is_remote(self) -> bool:

@@ -14,7 +14,6 @@
 """SSH orchestrator implementation."""
 
 import os
-import re
 import shlex
 import signal
 import subprocess
@@ -41,10 +40,12 @@ from zenml.integrations.ssh.flavors.ssh_orchestrator_flavor import (
     SSHOrchestratorConfig,
     SSHOrchestratorSettings,
 )
-from zenml.integrations.ssh.ssh_utils import (
-    SSHClient,
-    SSHConnectionConfig,
-    resolve_ssh_connection_config,
+from zenml.integrations.ssh.ssh_client import SSHClient
+from zenml.integrations.ssh.utils import (
+    build_compose_gpu_deploy,
+    build_docker_run_command,
+    build_mount_mappings,
+    prepare_remote_workdir,
 )
 from zenml.logger import get_logger
 from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
@@ -67,19 +68,6 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 ENV_ZENML_SSH_RUN_ID = "ZENML_SSH_ORCHESTRATOR_RUN_ID"
-
-# Compose service GPU reservation: request all NVIDIA GPUs for the container.
-_NVIDIA_GPU_DEPLOY = {
-    "resources": {
-        "reservations": {
-            "devices": [{"driver": "nvidia", "capabilities": ["gpu"]}]
-        }
-    }
-}
-
-# Allow only absolute POSIX/Windows paths in bind mounts so settings can't
-# inject extra Compose/shell tokens.
-_MOUNT_PATH_PATTERN = re.compile(r"^(/[^:\n]*|[A-Za-z]:\\[^:\n]*)$")
 
 
 class SSHOrchestrator(ContainerizedOrchestrator):
@@ -166,104 +154,6 @@ class SSHOrchestrator(ContainerizedOrchestrator):
                 "inside the remote execution environment."
             )
 
-    def _build_ssh_connection_config(self) -> SSHConnectionConfig:
-        """Build an SSHConnectionConfig from the component configuration.
-
-        Returns:
-            The SSH connection configuration.
-        """
-        return resolve_ssh_connection_config(self)
-
-    @staticmethod
-    def _validate_mount_path(path: str) -> str:
-        """Validate a bind-mount path against injection.
-
-        Args:
-            path: The host or container path.
-
-        Returns:
-            The validated path.
-
-        Raises:
-            RuntimeError: If the path is not a plain absolute path.
-        """
-        if not _MOUNT_PATH_PATTERN.match(path):
-            raise RuntimeError(
-                f"Invalid mount path {path!r}: only absolute POSIX or "
-                "Windows paths without ':' are allowed."
-            )
-        return path
-
-    def _check_remote_disk(self, ssh: SSHClient, path: str) -> None:
-        """Fail fast if the remote host is low on disk for the given path.
-
-        Args:
-            ssh: The open SSH connection.
-            path: An existing remote path on the filesystem to check.
-
-        Raises:
-            RuntimeError: If free disk is below ``minimum_free_disk_gb``.
-        """
-        minimum_gb = self.config.minimum_free_disk_gb
-        if minimum_gb <= 0:
-            return
-        free_bytes = ssh.free_disk_bytes(path)
-        if free_bytes is None:
-            # SFTP statvfs unsupported on this host; skip rather than block.
-            return
-        free_gb = free_bytes / (1024**3)
-        if free_gb < minimum_gb:
-            raise RuntimeError(
-                f"The remote host {self.config.hostname} has only "
-                f"{free_gb:.1f} GB free on the filesystem holding "
-                f"{self.config.remote_workdir}, below the required "
-                f"{minimum_gb:.1f} GB. The SSH orchestrator stores a Docker "
-                f"image per pipeline version, which accumulates over time. "
-                f"Free space on the host (e.g. `docker image prune -a`), grow "
-                f"the disk, or lower the orchestrator's `minimum_free_disk_gb`."
-            )
-
-    def _docker_login(self, ssh: SSHClient, stack: "Stack") -> None:
-        """Log the remote Docker into the stack's container registry.
-
-        Args:
-            ssh: The open SSH connection.
-            stack: The stack used for this submission.
-
-        Raises:
-            RuntimeError: If registry credentials are missing or the remote
-                `docker login` fails.
-        """
-        registry = stack.container_registry
-        if registry is None:
-            raise RuntimeError(
-                "Unable to find a container registry in the stack, but "
-                "`container_registry_autologin` is enabled for the SSH "
-                "orchestrator."
-            )
-        if not registry.credentials:
-            raise RuntimeError(
-                "The container registry in the stack has no credentials or "
-                "service connector configured, but the SSH orchestrator is set "
-                "to autologin to the container registry. Configure registry "
-                "credentials or disable `container_registry_autologin`."
-            )
-        username, password = registry.credentials
-        docker = self.config.docker_binary
-        # --password-stdin keeps the password out of docker's argv. The remote
-        # shell still handles it briefly, so users must opt in explicitly.
-        command = (
-            f"printf %s {shlex.quote(password)} | "
-            f"{shlex.quote(docker)} login -u {shlex.quote(username)} "
-            f"--password-stdin {shlex.quote(registry.config.uri)}"
-        )
-        result = ssh.exec(command)
-        if result.exit_code != 0:
-            raise RuntimeError(
-                f"`docker login` failed on {self.config.hostname}: "
-                f"{result.stderr or result.stdout}"
-            )
-
     def _remote_run_directory(self, run_id: str) -> str:
         """Get the remote run directory for a pipeline launch.
 
@@ -275,25 +165,35 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         """
         return f"{self.config.remote_workdir}/pipeline-runs/{run_id}"
 
-    @staticmethod
-    def _remote_dir_id(
-        snapshot: "PipelineSnapshotResponse",
-        placeholder_run: Optional["PipelineRunResponse"],
-    ) -> str:
-        """Resolve the id used to namespace a run's remote directory.
-
-        The placeholder run is the actual run and is the canonical id. It is
-        only absent when a run is triggered without one being created up front,
-        in which case the snapshot id keeps the remote directory unique.
+    def _prepare_remote_dir(
+        self, ssh: SSHClient, remote_dir: str, stack: "Stack"
+    ) -> None:
+        """Run preflight checks and prepare the remote run directory.
 
         Args:
-            snapshot: The pipeline snapshot.
-            placeholder_run: The placeholder run, if one was created.
-
-        Returns:
-            The id for the remote run directory.
+            ssh: The open SSH connection.
+            remote_dir: The remote directory for this launch.
+            stack: The stack used for this submission.
         """
-        return str(placeholder_run.id) if placeholder_run else str(snapshot.id)
+        cleanup_command = None
+        if self.config.cleanup_old_files:
+            runs_dir = f"{self.config.remote_workdir}/pipeline-runs"
+            cleanup_command = (
+                f"find {shlex.quote(runs_dir)} -type d "
+                "-ctime +7 -exec rm -rf {} +"
+            )
+        prepare_remote_workdir(
+            ssh=ssh,
+            docker_binary=self.config.docker_binary,
+            workdir=remote_dir,
+            minimum_free_disk_gb=self.config.minimum_free_disk_gb,
+            cleanup_command=cleanup_command,
+            container_registry=(
+                stack.container_registry
+                if self.config.authenticate_docker
+                else None
+            ),
+        )
 
     def _launch_compose(
         self,
@@ -312,36 +212,15 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         Raises:
             RuntimeError: If a remote command fails.
         """
-        conn = self._build_ssh_connection_config()
         remote_dir = self._remote_run_directory(run_id)
-        runs_dir = f"{self.config.remote_workdir}/pipeline-runs"
         compose_yaml = yaml.dump(
             compose, default_flow_style=False, sort_keys=False
         )
         docker = self.config.docker_binary
 
-        with SSHClient(conn) as ssh:
-            mkdir = ssh.exec(f"mkdir -p {shlex.quote(remote_dir)}")
-            if mkdir.exit_code != 0:
-                raise RuntimeError(
-                    f"Failed to create remote directory {remote_dir} on "
-                    f"{self.config.hostname}: {mkdir.stderr}"
-                )
-            self._check_remote_disk(ssh, remote_dir)
-            if self.config.cleanup_old_files:
-                cleanup = ssh.exec(
-                    f"find {shlex.quote(runs_dir)} -type d "
-                    "-ctime +7 -exec rm -rf {} +"
-                )
-                if cleanup.exit_code != 0:
-                    logger.warning(
-                        "Failed to clean old SSH pipeline files on %s: %s",
-                        self.config.hostname,
-                        cleanup.stderr or cleanup.stdout,
-                    )
+        with SSHClient(self.config) as ssh:
+            self._prepare_remote_dir(ssh, remote_dir, stack)
             ssh.put_text(f"{remote_dir}/docker-compose.yml", compose_yaml)
-            if self.config.container_registry_autologin:
-                self._docker_login(ssh, stack)
             up = ssh.exec(
                 f"cd {shlex.quote(remote_dir)} && "
                 f"{shlex.quote(docker)} compose up -d"
@@ -366,7 +245,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         command: List[str],
         environment: Dict[str, str],
         stack: "Stack",
-        gpu_enabled: bool,
+        settings: SSHOrchestratorSettings,
     ) -> None:
         """Launch a single detached container on the remote host via docker run.
 
@@ -377,55 +256,38 @@ class SSHOrchestrator(ContainerizedOrchestrator):
             command: Arguments passed to the entrypoint.
             environment: Environment variables for the container.
             stack: The stack used for this submission.
-            gpu_enabled: Whether to request GPUs for the container.
+            settings: The orchestrator settings for this submission.
 
         Raises:
             RuntimeError: If a remote command fails.
         """
-        conn = self._build_ssh_connection_config()
-        docker = self.config.docker_binary
         remote_dir = self._remote_run_directory(run_id)
         container_name = f"{run_id}-orchestrator"
         env_file = f"{remote_dir}/orchestrator.env"
 
-        run_args = [
-            shlex.quote(docker),
-            "run",
-            "-d",
-            "--name",
-            shlex.quote(container_name),
-            "--network",
-            "host",
-            "--env-file",
-            shlex.quote(env_file),
-        ]
         # Isolated steps run as subprocesses inside this container, so it
-        # needs GPU access on behalf of all of them.
-        if gpu_enabled:
-            run_args += ["--gpus", "all"]
-        run_args += ["--entrypoint", shlex.quote(entrypoint[0])]
-        run_args.append(shlex.quote(image))
-        run_args += [
-            shlex.quote(arg) for arg in (list(entrypoint[1:]) + list(command))
-        ]
-        run_command = " ".join(run_args)
+        # carries the GPU access and bind mounts on behalf of all of them.
+        run_command = build_docker_run_command(
+            docker_binary=self.config.docker_binary,
+            image=image,
+            args=list(entrypoint[1:]) + list(command),
+            container_name=container_name,
+            env_file=env_file,
+            network="host",
+            entrypoint=entrypoint[0],
+            gpu_indices=settings.gpu_indices,
+            mounts=settings.mounts,
+            extra_args=settings.docker_run_args,
+        )
 
-        with SSHClient(conn) as ssh:
-            mkdir = ssh.exec(f"mkdir -p {shlex.quote(remote_dir)}")
-            if mkdir.exit_code != 0:
-                raise RuntimeError(
-                    f"Failed to create remote directory {remote_dir} on "
-                    f"{self.config.hostname}: {mkdir.stderr}"
-                )
-            self._check_remote_disk(ssh, remote_dir)
+        with SSHClient(self.config) as ssh:
+            self._prepare_remote_dir(ssh, remote_dir, stack)
             # docker --env-file reads literal KEY=VALUE lines; keep the file
             # private since it carries the ZenML store credentials.
             env_lines = "".join(
                 f"{key}={value}\n" for key, value in environment.items()
             )
             ssh.put_text(env_file, env_lines, mode=0o600)
-            if self.config.container_registry_autologin:
-                self._docker_login(ssh, stack)
             run = ssh.exec(run_command)
             if run.exit_code != 0:
                 raise RuntimeError(
@@ -477,15 +339,11 @@ class SSHOrchestrator(ContainerizedOrchestrator):
             "environment": env,
         }
 
-        volumes = [
-            f"{self._validate_mount_path(host)}:"
-            f"{self._validate_mount_path(container)}"
-            for host, container in settings.mounts.items()
-        ]
+        volumes = build_mount_mappings(settings.mounts)
         if volumes:
             service["volumes"] = volumes
-        if settings.gpu_enabled:
-            service["deploy"] = _NVIDIA_GPU_DEPLOY
+        if settings.gpu_indices:
+            service["deploy"] = build_compose_gpu_deploy(settings.gpu_indices)
         if step.spec.upstream_steps:
             service["depends_on"] = {
                 f"{snapshot.id}-{upstream}": {
@@ -527,7 +385,8 @@ class SSHOrchestrator(ContainerizedOrchestrator):
                 "from your own cron job or CI), or use an orchestrator that "
                 "supports scheduling."
             )
-        run_id = self._remote_dir_id(snapshot, placeholder_run)
+        assert placeholder_run is not None
+        run_id = str(placeholder_run.id)
         services = {
             f"{snapshot.id}-{step_name}": self._step_service(
                 snapshot=snapshot,
@@ -580,19 +439,16 @@ class SSHOrchestrator(ContainerizedOrchestrator):
                 "supports scheduling."
             )
 
-        run_id = self._remote_dir_id(snapshot, placeholder_run)
+        assert placeholder_run is not None
+
+        run_id = str(placeholder_run.id)
         env = dict(environment)
         env[ENV_ZENML_SSH_RUN_ID] = run_id
-
         settings = cast(SSHOrchestratorSettings, self.get_settings(snapshot))
-
-        # A dynamic pipeline launches a single orchestrator container (the
-        # runner spawns the isolated steps itself), so there is no DAG to
-        # express. Use `docker run` directly instead of Compose.
         self._launch_container(
             run_id=run_id,
             image=self.get_image(snapshot=snapshot),
-            gpu_enabled=settings.gpu_enabled,
+            settings=settings,
             entrypoint=(
                 DynamicPipelineEntrypointConfiguration.get_entrypoint_command()
             ),
