@@ -295,13 +295,12 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             selectinload(jl_arg(StepRunSchema.dynamic_config)),
         ]
 
-        # if include_metadata:
-        #     options.extend(
-        #         [
-        #             joinedload(jl_arg(StepRunSchema.parents)),
-        #             joinedload(jl_arg(StepRunSchema.run_metadata)),
-        #         ]
-        #     )
+        if include_metadata:
+            options.extend(
+                [
+                    selectinload(jl_arg(StepRunSchema.run_metadata)),
+                ]
+            )
 
         if include_resources:
             options.extend(

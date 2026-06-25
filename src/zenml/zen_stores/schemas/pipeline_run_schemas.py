@@ -21,7 +21,12 @@ from uuid import UUID
 from pydantic import ConfigDict
 from sqlalchemy import String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
-from sqlalchemy.orm import Session, object_session, selectinload
+from sqlalchemy.orm import (
+    Session,
+    joinedload,
+    object_session,
+    selectinload,
+)
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import TEXT, Column, Field, Relationship, col, select
 
@@ -381,6 +386,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         cls,
         include_metadata: bool = False,
         include_resources: bool = False,
+        many: bool = False,
+        include_full_metadata: bool = False,
         **kwargs: Any,
     ) -> Sequence[ExecutableOption]:
         """Get the query options for the schema.
@@ -390,60 +397,71 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 the schema to a model.
             include_resources: Whether resources will be included when
                 converting the schema to a model.
+            many: Whether the options are applied to a query that returns many
+                rows. Single-valued relationships then use selectin loading to
+                avoid duplicating their columns across every row. For a single
+                fetch they use joined loading to save a round-trip.
+            include_full_metadata: Whether step-level metadata will be included.
             **kwargs: Keyword arguments to allow schema specific logic
 
         Returns:
             A list of query options.
         """
-        from zenml.zen_stores.schemas import ModelVersionSchema
+        from zenml.zen_stores.schemas import (
+            ModelVersionSchema,
+            StepRunSchema,
+        )
+
+        single = selectinload if many else joinedload
 
         options = []
 
         if include_metadata:
             options.extend(
                 [
-                    selectinload(jl_arg(PipelineRunSchema.trigger_execution)),
+                    single(jl_arg(PipelineRunSchema.trigger_execution)),
+                    selectinload(jl_arg(PipelineRunSchema.run_metadata)),
                 ]
             )
+            if include_full_metadata:
+                options.append(
+                    selectinload(
+                        jl_arg(PipelineRunSchema.step_runs)
+                    ).selectinload(jl_arg(StepRunSchema.run_metadata))
+                )
 
         if include_resources:
             options.extend(
                 [
                     selectinload(jl_arg(PipelineRunSchema.outputs)),
-                    selectinload(jl_arg(PipelineRunSchema.parent_run)),
-                    selectinload(
-                        jl_arg(PipelineRunSchema.model_version)
-                    ).joinedload(
+                    single(jl_arg(PipelineRunSchema.parent_run)),
+                    single(jl_arg(PipelineRunSchema.model_version)).joinedload(
                         jl_arg(ModelVersionSchema.model), innerjoin=True
                     ),
-                    selectinload(
-                        jl_arg(PipelineRunSchema.snapshot)
-                    ).joinedload(
+                    single(jl_arg(PipelineRunSchema.snapshot)).joinedload(
                         jl_arg(PipelineSnapshotSchema.source_snapshot)
                     ),
-                    selectinload(
-                        jl_arg(PipelineRunSchema.snapshot)
-                    ).joinedload(jl_arg(PipelineSnapshotSchema.pipeline)),
-                    selectinload(
-                        jl_arg(PipelineRunSchema.snapshot)
-                    ).joinedload(jl_arg(PipelineSnapshotSchema.stack)),
-                    selectinload(
-                        jl_arg(PipelineRunSchema.snapshot)
-                    ).joinedload(jl_arg(PipelineSnapshotSchema.build)),
-                    selectinload(
-                        jl_arg(PipelineRunSchema.snapshot)
-                    ).joinedload(jl_arg(PipelineSnapshotSchema.schedule)),
-                    selectinload(
-                        jl_arg(PipelineRunSchema.snapshot)
-                    ).joinedload(
+                    single(jl_arg(PipelineRunSchema.snapshot)).joinedload(
+                        jl_arg(PipelineSnapshotSchema.pipeline)
+                    ),
+                    single(jl_arg(PipelineRunSchema.snapshot)).joinedload(
+                        jl_arg(PipelineSnapshotSchema.stack)
+                    ),
+                    single(jl_arg(PipelineRunSchema.snapshot)).joinedload(
+                        jl_arg(PipelineSnapshotSchema.build)
+                    ),
+                    single(jl_arg(PipelineRunSchema.snapshot)).joinedload(
+                        jl_arg(PipelineSnapshotSchema.schedule)
+                    ),
+                    single(jl_arg(PipelineRunSchema.snapshot)).joinedload(
                         jl_arg(PipelineSnapshotSchema.code_reference)
                     ),
                     selectinload(jl_arg(PipelineRunSchema.logs)),
                     selectinload(jl_arg(PipelineRunSchema.wait_conditions)),
-                    selectinload(jl_arg(PipelineRunSchema.user)),
+                    single(jl_arg(PipelineRunSchema.user)),
                     selectinload(jl_arg(PipelineRunSchema.tags)),
                     selectinload(jl_arg(PipelineRunSchema.visualizations)),
-                    selectinload(jl_arg(PipelineRunSchema.trigger)),
+                    single(jl_arg(PipelineRunSchema.trigger)),
                 ]
             )
 
