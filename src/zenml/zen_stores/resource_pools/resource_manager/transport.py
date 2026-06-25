@@ -91,6 +91,43 @@ class RMSubjectSelector(BaseModel):
         Union["RMSubjectSelector", "RMSubjectSelectorExpression"]
     ] = None
 
+    @classmethod
+    def from_pipeline_run(
+        cls,
+        *,
+        organization_id: UUID,
+        workspace_id: UUID,
+        project_id: UUID,
+        pipeline_run_id: UUID,
+    ) -> "RMSubjectSelector":
+        """Build a selector for one scoped ZenML pipeline run.
+
+        Args:
+            organization_id: ZenML Pro organization ID.
+            workspace_id: ZenML Pro workspace ID.
+            project_id: ZenML project ID.
+            pipeline_run_id: ZenML pipeline run ID.
+
+        Returns:
+            Resource Manager subject selector matching the pipeline run.
+        """
+        return cls(
+            subject_id=organization_id,
+            subject_type=ORGANIZATION_SUBJECT_TYPE,
+            contains=cls(
+                subject_id=workspace_id,
+                subject_type=WORKSPACE_SUBJECT_TYPE,
+                contains=cls(
+                    subject_id=project_id,
+                    subject_type=PROJECT_SUBJECT_TYPE,
+                    contains=cls(
+                        subject_id=pipeline_run_id,
+                        subject_type=PIPELINE_RUN_SUBJECT_TYPE,
+                    ),
+                ),
+            ),
+        )
+
 
 class RMSubjectSelectorExpression(BaseModel):
     """Boolean expression over Resource Manager subject selectors."""
@@ -449,6 +486,7 @@ class RMResourceRequestCreate(BaseModel):
     demands: list[RMRequestDemand]
     pool: UUID | str | None = None
     pool_selector: Optional[dict[str, Any]] = None
+    preemption_group: Optional[RMSubjectSelectorNode] = None
     reclaim_tolerance: str = "none"
     lease_expires_at: Optional[datetime] = None
     allocation_wait_timeout_seconds: Optional[int] = None
@@ -461,6 +499,7 @@ class RMResourceRequestCreate(BaseModel):
         resource_request: ResourceRequestRequest,
         *,
         subjects: list[RMSubject],
+        preemption_group: Optional[RMSubjectSelectorNode] = None,
         user_id: Optional[UUID] = None,
     ) -> "RMResourceRequestCreate":
         """Build a runtime request create payload from a ZenML request."""
@@ -488,6 +527,9 @@ class RMResourceRequestCreate(BaseModel):
                 else resource_request.pool
             ),
             pool_selector=resource_request.pool_selector,
+            preemption_group=(
+                preemption_group or resource_request.preemption_group
+            ),
             reclaim_tolerance=(
                 resource_request.reclaim_tolerance
                 or ResourceRequestReclaimTolerance.NONE
@@ -519,6 +561,7 @@ class RMResourceRequestResponse(BaseModel):
     pool_id: Optional[UUID] = None
     pool_name: Optional[str] = None
     pool_selector: Optional[dict[str, Any]] = None
+    preemption_group: Optional[RMSubjectSelectorNode] = None
     status: str
     reclaim_tolerance: str
     lease_expires_at: Optional[datetime] = None
@@ -565,6 +608,16 @@ class RMResourceRequestResponse(BaseModel):
                 ),
                 pool_name=self.pool_name,
                 pool_selector=self.pool_selector,
+                preemption_group=(
+                    self.preemption_group.model_dump(
+                        mode="json",
+                        by_alias=True,
+                        exclude_none=True,
+                        exclude_defaults=True,
+                    )
+                    if self.preemption_group is not None
+                    else None
+                ),
                 demands=[demand.to_model() for demand in self.demands],
                 status=ResourceRequestStatus(self.status),
                 reclaim_tolerance=ResourceRequestReclaimTolerance(
