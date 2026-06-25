@@ -154,6 +154,7 @@ dev = [
     "zizmor>=1.0.0",
     "coverage[toml]>=7.6.1,<8.0.0",
     "pytest>=9.0.3,<10.0.0",
+    "beautifulsoup4>=4.12.0,<5.0.0",
     "mypy==1.18.1",
     "pre-commit",
     "pyment>=0.3.3,<0.4.0",
@@ -377,6 +378,7 @@ module = [
     "azureml.*",
     "google.*",
     "google_cloud_pipeline_components.*",
+    "great_expectations.*",
     "neuralprophet.*",
     "lightgbm.*",
     "scipy.*",
@@ -426,6 +428,11 @@ module = [
     "jsonref",
 ]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["zenml.integrations.great_expectations.*"]
+warn_unused_ignores = false
+disallow_subclassing_any = false
 
 [[tool.mypy.overrides]]
 module = ["mlx.core.*"]  # workaround for failing mypy stub parsing (mlx==0.29.4 version)
