@@ -11969,6 +11969,9 @@ class SqlZenStore(BaseZenStore):
                                 resource_runtime
                             ),
                             lease_expires_at=lease_expires_at,
+                            allocation_wait_timeout_seconds=(
+                                resource_settings.allocation_wait_timeout_seconds
+                            ),
                         ),
                     )
                     if (
