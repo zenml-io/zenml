@@ -72,7 +72,9 @@ class BaseNode:
     node_id: str
     state: NodeState = NodeState.PENDING
     upstream_ids: Set[str] = field(default_factory=set)
+    start_upstream_ids: Set[str] = field(default_factory=set)
     downstream_ids: Set[str] = field(default_factory=set)
+    start_downstream_ids: Set[str] = field(default_factory=set)
 
     @property
     def is_terminal(self) -> bool:
@@ -82,6 +84,19 @@ class BaseNode:
             True if the node is terminal, False otherwise.
         """
         return self.state.is_terminal
+
+    @property
+    def has_started(self) -> bool:
+        """Whether the node has started running.
+
+        Returns:
+            True if the node has started running, False otherwise.
+        """
+        return self.state not in {
+            NodeState.PENDING,
+            NodeState.READY,
+            NodeState.STARTING,
+        }
 
 
 @dataclass(kw_only=True)
@@ -130,6 +145,7 @@ class InvocationDependencyGraph:
         self,
         node_id: str,
         upstream_ids: Optional[Sequence[str]] = None,
+        start_upstream_ids: Optional[Sequence[str]] = None,
         state: Optional[NodeState] = None,
         step: Optional[BaseStep] = None,
         inputs: Optional[Dict[str, Any]] = None,
@@ -142,7 +158,8 @@ class InvocationDependencyGraph:
 
         Args:
             node_id: The node ID.
-            upstream_ids: Optional upstream node IDs.
+            upstream_ids: Upstream node IDs that must succeed.
+            start_upstream_ids: Upstream node IDs that must start.
             state: Optional initial state for the node.
             step: Optional step payload for startup.
             inputs: Optional input payload for startup.
@@ -162,7 +179,9 @@ class InvocationDependencyGraph:
             config_overrides=config_overrides,
         )
         registered, newly_ready = self._register_node(
-            node=node, upstream_ids=upstream_ids
+            node=node,
+            upstream_ids=upstream_ids,
+            start_upstream_ids=start_upstream_ids,
         )
         assert isinstance(registered, StepNode)
         return registered, newly_ready
@@ -174,6 +193,7 @@ class InvocationDependencyGraph:
         inputs: Dict[str, Any],
         product: bool,
         upstream_ids: Optional[Sequence[str]] = None,
+        start_upstream_ids: Optional[Sequence[str]] = None,
         state: Optional[NodeState] = None,
         after: Optional[
             Union[AnyOutputFuture, Sequence[AnyOutputFuture]]
@@ -183,7 +203,8 @@ class InvocationDependencyGraph:
 
         Args:
             node_id: The graph node ID.
-            upstream_ids: Optional upstream node IDs.
+            upstream_ids: Upstream node IDs that must succeed.
+            start_upstream_ids: Upstream node IDs that must start.
             state: Optional initial state for the node.
             step: The mapped step payload for startup.
             inputs: The input payload for startup.
@@ -203,7 +224,9 @@ class InvocationDependencyGraph:
             product=product,
         )
         registered, newly_ready = self._register_node(
-            node=node, upstream_ids=upstream_ids
+            node=node,
+            upstream_ids=upstream_ids,
+            start_upstream_ids=start_upstream_ids,
         )
         assert isinstance(registered, MapNode)
         return registered, newly_ready
@@ -215,6 +238,7 @@ class InvocationDependencyGraph:
         args: Optional[Sequence[Any]] = None,
         kwargs: Optional[Dict[str, Any]] = None,
         upstream_ids: Optional[Sequence[str]] = None,
+        start_upstream_ids: Optional[Sequence[str]] = None,
         state: Optional[NodeState] = None,
     ) -> Tuple[ChildPipelineNode, bool]:
         """Register a child pipeline node.
@@ -224,7 +248,8 @@ class InvocationDependencyGraph:
             pipeline: The child pipeline payload for startup.
             args: Optional positional payload for startup.
             kwargs: Optional keyword payload for startup.
-            upstream_ids: Optional upstream node IDs.
+            upstream_ids: Upstream node IDs that must succeed.
+            start_upstream_ids: Upstream node IDs that must start.
             state: Optional initial state for the node.
 
         Returns:
@@ -239,7 +264,9 @@ class InvocationDependencyGraph:
             kwargs=kwargs or {},
         )
         registered, newly_ready = self._register_node(
-            node=node, upstream_ids=upstream_ids
+            node=node,
+            upstream_ids=upstream_ids,
+            start_upstream_ids=start_upstream_ids,
         )
         assert isinstance(registered, ChildPipelineNode)
         return registered, newly_ready
@@ -318,7 +345,9 @@ class InvocationDependencyGraph:
             should_wake_startup_loop = False
 
             if map_node.state in {NodeState.READY, NodeState.STARTING}:
-                self._set_node_state(
+                # Running the map node latches it as started, which can release
+                # nodes that only wait for the map to start.
+                should_wake_startup_loop = self._set_node_state(
                     node_id=map_node_id, state=NodeState.RUNNING
                 )
 
@@ -328,12 +357,16 @@ class InvocationDependencyGraph:
                 child_node.parent_id = map_node_id
 
             if not child_node_ids:
-                should_wake_startup_loop = self._set_node_state(
-                    node_id=map_node_id, state=NodeState.SUCCEEDED
+                should_wake_startup_loop = (
+                    self._set_node_state(
+                        node_id=map_node_id, state=NodeState.SUCCEEDED
+                    )
+                    or should_wake_startup_loop
                 )
             else:
-                should_wake_startup_loop = self._maybe_finalize_map_node(
-                    map_node_id=map_node_id
+                should_wake_startup_loop = (
+                    self._maybe_finalize_map_node(map_node_id=map_node_id)
+                    or should_wake_startup_loop
                 )
 
             return should_wake_startup_loop
@@ -463,16 +496,30 @@ class InvocationDependencyGraph:
         with self._lock:
             return self._get_node(node_id=node_id).state
 
+    def node_has_started(self, node_id: str) -> bool:
+        """Whether a node has started running.
+
+        Args:
+            node_id: The node ID.
+
+        Returns:
+            True if the node has started running, False otherwise.
+        """
+        with self._lock:
+            return self._get_node(node_id=node_id).has_started
+
     def _register_node(
         self,
         node: AnyNode,
         upstream_ids: Optional[Sequence[str]],
+        start_upstream_ids: Optional[Sequence[str]] = None,
     ) -> Tuple[AnyNode, bool]:
         """Register a graph node.
 
         Args:
             node: The node to register.
-            upstream_ids: Optional upstream node IDs.
+            upstream_ids: Optional upstream node IDs that must succeed.
+            start_upstream_ids: Optional upstream node IDs that must start.
 
         Raises:
             RuntimeError: If an upstream node is unknown or a node with the same
@@ -497,6 +544,13 @@ class InvocationDependencyGraph:
                 self._get_node(node_id=upstream_id)
                 node.upstream_ids.add(upstream_id)
                 self._nodes[upstream_id].downstream_ids.add(node.node_id)
+
+            for start_upstream_id in start_upstream_ids or []:
+                self._get_node(node_id=start_upstream_id)
+                node.start_upstream_ids.add(start_upstream_id)
+                self._nodes[start_upstream_id].start_downstream_ids.add(
+                    node.node_id
+                )
 
             if node.state == NodeState.READY:
                 return node, True
@@ -587,6 +641,10 @@ class InvocationDependencyGraph:
             if node.state.is_terminal:
                 return self._handle_terminal_node_transition(node_id=node_id)
 
+            if node.state == NodeState.RUNNING:
+                # Some downstream nodes might only wait for this node to start
+                return self._refresh_downstream_readiness(node_id=node_id)
+
             return node.state == NodeState.READY
 
     def _handle_terminal_node_transition(self, node_id: str) -> bool:
@@ -608,7 +666,24 @@ class InvocationDependencyGraph:
                 map_node_id=parent_map_id
             )
 
-        for downstream_id in node.downstream_ids:
+        return (
+            self._refresh_downstream_readiness(node_id=node_id)
+            or new_nodes_ready
+        )
+
+    def _refresh_downstream_readiness(self, node_id: str) -> bool:
+        """Re-evaluate the readiness of a node's downstream nodes.
+
+        Args:
+            node_id: The node ID.
+
+        Returns:
+            Whether any downstream node became ready.
+        """
+        node = self._get_node(node_id=node_id)
+
+        new_nodes_ready = False
+        for downstream_id in node.downstream_ids | node.start_downstream_ids:
             new_nodes_ready = (
                 self._maybe_mark_node_ready(node_id=downstream_id)
                 or new_nodes_ready
@@ -654,7 +729,7 @@ class InvocationDependencyGraph:
         return self._set_node_state(node_id=map_node_id, state=aggregate_state)
 
     def _maybe_mark_node_ready(self, node_id: str) -> bool:
-        """Mark a pending node as ready when all upstream nodes succeeded.
+        """Mark a pending node as ready when its dependencies are satisfied.
 
         Args:
             node_id: The node ID.
@@ -669,6 +744,12 @@ class InvocationDependencyGraph:
         if not all(
             self._get_node(node_id=upstream_id).state == NodeState.SUCCEEDED
             for upstream_id in node.upstream_ids
+        ):
+            return False
+
+        if not all(
+            self._get_node(node_id=start_upstream_id).has_started
+            for start_upstream_id in node.start_upstream_ids
         ):
             return False
 
