@@ -525,56 +525,6 @@ def build_required_images(
     return client.zen_store.create_build(build_request)
 
 
-def create_deployer_build(
-    snapshot: "PipelineSnapshotResponse",
-    stack: "Stack",
-    deployer: "BaseDeployer",
-) -> Optional["PipelineBuildResponse"]:
-    """Build the deployer image for a snapshot at deploy time.
-
-    Args:
-        snapshot: The pipeline snapshot to deploy.
-        stack: The stack supplying the image builder and container registry.
-        deployer: The deployer defining the required builds.
-
-    Returns:
-        The build containing the deployer image, or None if no build is
-        required.
-    """
-    from zenml.utils import code_repository_utils
-
-    assert snapshot.stack is not None
-
-    # The build machinery is typed against `PipelineSnapshotBase`. A deploy-time
-    # snapshot is a `PipelineSnapshotResponse`, which exposes the same
-    # pipeline configuration the build machinery reads.
-    snapshot_base = cast(PipelineSnapshotBase, snapshot)
-
-    required_builds = deployer.get_docker_builds(snapshot_base)
-    if not required_builds:
-        logger.debug("No deployer docker builds required.")
-        return None
-
-    # Building the deployer image requires an image builder even when the
-    # stack's orchestrator is local.
-    stack.ensure_image_builder()
-
-    local_repo = code_repository_utils.find_active_code_repository()
-    code_repository = verify_local_repository_context(
-        snapshot=snapshot_base, local_repo_context=local_repo
-    )
-
-    return build_required_images(
-        snapshot=snapshot_base,
-        stack=stack,
-        stack_model=snapshot.stack,
-        required_builds=required_builds,
-        project_id=snapshot.project_id,
-        pipeline_id=snapshot.pipeline.id,
-        code_repository=code_repository,
-    )
-
-
 def compute_build_checksum(
     items: List["BuildConfiguration"],
     stack: "Stack",

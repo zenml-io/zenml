@@ -17,8 +17,11 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from zenml.config import DockerSettings
+from zenml.config.build_configuration import BuildConfiguration
 from zenml.constants import DEPLOYER_DOCKER_IMAGE_KEY
 from zenml.deployers.containerized_deployer import ContainerizedDeployer
+from zenml.deployers.exceptions import DeployerError
 
 
 def test_get_image_reads_from_deployment_build():
@@ -47,3 +50,46 @@ def test_get_image_raises_without_deployer_image():
 
     with pytest.raises(RuntimeError):
         ContainerizedDeployer.get_image(deployment)
+
+
+def _deployer_builds(**docker_flags):
+    return [
+        BuildConfiguration(
+            key=DEPLOYER_DOCKER_IMAGE_KEY,
+            settings=DockerSettings(**docker_flags),
+        )
+    ]
+
+
+def test_prepare_build_refuses_bake_without_local_code():
+    """An existing snapshot that must bake code can't deploy without local code."""
+    deployer = MagicMock()
+    deployer.get_docker_builds.return_value = _deployer_builds(
+        allow_download_from_artifact_store=False,
+        allow_download_from_code_repository=False,
+        allow_including_files_in_images=True,
+    )
+    snapshot = MagicMock(code_path=None, code_reference=None)
+
+    with pytest.raises(DeployerError, match="no local code"):
+        ContainerizedDeployer._prepare_deployment_build(
+            deployer,
+            snapshot=snapshot,
+            stack=MagicMock(),
+            local_code_available=False,
+        )
+
+
+def test_prepare_build_refuses_code_free_image_without_code_source():
+    """A code-free deployer image needs the snapshot to carry downloadable code."""
+    deployer = MagicMock()
+    deployer.get_docker_builds.return_value = _deployer_builds()
+    snapshot = MagicMock(code_path=None, code_reference=None)
+
+    with pytest.raises(DeployerError, match="no code to download"):
+        ContainerizedDeployer._prepare_deployment_build(
+            deployer,
+            snapshot=snapshot,
+            stack=MagicMock(),
+            local_code_available=False,
+        )

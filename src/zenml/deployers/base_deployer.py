@@ -234,9 +234,9 @@ class BaseDeployer(StackComponent, ABC):
 
     def _prepare_deployment_build(
         self,
-        deployment: DeploymentResponse,
         snapshot: PipelineSnapshotResponse,
         stack: "Stack",
+        local_code_available: bool = False,
     ) -> Optional[UUID]:
         """Build the image required to provision the deployment.
 
@@ -244,9 +244,10 @@ class BaseDeployer(StackComponent, ABC):
         this to build the deployer image at deploy time.
 
         Args:
-            deployment: The deployment to build the image for.
             snapshot: The pipeline snapshot to deploy.
             stack: The stack supplying the image builder and container registry.
+            local_code_available: Whether the local code can be built into the
+                image, set only when deploying directly from local code.
 
         Returns:
             The ID of the build to attach to the deployment, or None if no
@@ -466,6 +467,7 @@ class BaseDeployer(StackComponent, ABC):
         deployment_name_or_id: Union[str, UUID],
         replace: bool = True,
         timeout: Optional[int] = None,
+        local_code_available: bool = False,
     ) -> DeploymentResponse:
         """Provision a deployment.
 
@@ -488,6 +490,9 @@ class BaseDeployer(StackComponent, ABC):
             timeout: The maximum time in seconds to wait for the pipeline
                 deployment to be provisioned. If provided, will override the
                 deployer's default timeout.
+            local_code_available: Whether the local code can be built into the
+                deployer image, set only when deploying directly from local
+                code.
 
         Raises:
             DeploymentAlreadyExistsError: if the deployment already
@@ -626,7 +631,9 @@ class BaseDeployer(StackComponent, ABC):
             build_id: Optional[UUID] = existing_build_id
         else:
             build_id = self._prepare_deployment_build(
-                deployment=deployment, snapshot=snapshot, stack=stack
+                snapshot=snapshot,
+                stack=stack,
+                local_code_available=local_code_available,
             )
 
         if build_id is not None and build_id != deployment.build_id:

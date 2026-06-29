@@ -898,12 +898,25 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         from zenml.deployers.base_deployer import BaseDeployer
 
         self.prepare(*args, **kwargs)
-        # Deployment serves the pipeline in-process, so the orchestrator image
-        # is not needed. The deployer image is built later at deploy time.
-        snapshot = self._create_snapshot(skip_build=True, **self._run_args)
+
+        docker_settings = self.configuration.docker_settings
+        local_repo = code_repository_utils.find_active_code_repository()
+        downloads_from_code_repository = (
+            local_repo is not None
+            and not local_repo.has_local_changes
+            and docker_settings.allow_download_from_code_repository
+        )
+        upload_code = (
+            not docker_settings.local_project_install_command
+            and docker_settings.allow_download_from_artifact_store
+            and not downloads_from_code_repository
+        )
+
+        snapshot = self._create_snapshot(
+            skip_build=True, upload_code=upload_code, **self._run_args
+        )
 
         stack = Client().active_stack
-
         stack.prepare_pipeline_submission(snapshot=snapshot)
 
         resolved_deployer = BaseDeployer.get_deployer(deployer)
@@ -912,6 +925,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             stack=stack,
             deployment_name_or_id=deployment_name,
             timeout=timeout,
+            local_code_available=True,
         )
 
     def _create_snapshot(
@@ -934,6 +948,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         prevent_build_reuse: bool = False,
         skip_schedule_registration: bool = False,
         skip_build: bool = False,
+        upload_code: Optional[bool] = None,
         **snapshot_request_kwargs: Any,
     ) -> PipelineSnapshotResponse:
         """Create a pipeline snapshot.
@@ -962,10 +977,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             prevent_build_reuse: DEPRECATED: Use
                 `DockerSettings.prevent_build_reuse` instead.
             skip_schedule_registration: Whether to skip schedule registration.
-            skip_build: Whether to skip building the pipeline images. Used when
-                deploying, where the pipeline is served in-process and the
-                orchestrator image is not needed. Code is still uploaded so the
-                deployer image can download it at runtime.
+            skip_build: Whether to skip building the pipeline images.
+            upload_code: Whether to upload the code. If None, it is decided
+                automatically from the build and the Docker settings.
             **snapshot_request_kwargs: Additional keyword arguments to pass to
                 the snapshot request.
 
@@ -1057,14 +1071,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             )
 
         if skip_build:
-            # When deploying, the orchestrator image is not needed, but the
-            # code is still uploaded if a runtime download from the artifact
-            # store is configured, so the deployer image can fetch it.
             build_model = None
-            upload_code = build_utils.requires_runtime_code_download(
-                snapshot=snapshot,
-                can_download_from_code_repository=can_download_from_code_repository,
-            )
         else:
             build_model = build_utils.reuse_or_create_pipeline_build(
                 snapshot=snapshot,
@@ -1073,6 +1080,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 build=build,
                 code_repository=code_repository,
             )
+
+        if upload_code is None:
             upload_code = build_utils.should_upload_code(
                 snapshot=snapshot,
                 build=build_model,
