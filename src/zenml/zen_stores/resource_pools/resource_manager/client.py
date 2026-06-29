@@ -482,8 +482,8 @@ class ResourceManagerClient:
             authorization: Cloud API authorization response.
 
         Raises:
-            exception_from_rm_response: If Resource Manager rejects the login
-                request.
+            self.exception_from_rm_response: If Resource Manager rejects the
+                login request.
             RuntimeError: If the RM returns an invalid login response.
 
         Returns:

@@ -161,6 +161,9 @@ class Stack:
         self._components: Dict[StackComponentType, List["StackComponent"]] = (
             defaultdict(list)
         )
+        self._component_override_cache: Dict[
+            Tuple[UUID, Optional[UUID], Optional[str]], "StackComponent"
+        ] = {}
 
         for component_input in [
             orchestrator,
@@ -741,6 +744,112 @@ class Stack:
         """
         return self._components.get(component_type, [])
 
+    def get_stack_component(
+        self,
+        component_type: StackComponentType,
+        name: Optional[str] = None,
+        service_connector_id: Optional[UUID] = None,
+        service_connector_resource_id: Optional[str] = None,
+    ) -> Optional["StackComponent"]:
+        """Get a stack component, optionally overriding its connector link.
+
+        This method returns the component attached to this stack when no
+        effective override is requested. If the requested service connector ID
+        or resource ID differs from the component's existing link, the stack
+        creates a shallow component copy with the requested connector link and
+        caches it locally. This keeps runtime overrides isolated to the stack
+        instance and avoids mutating the component that was loaded from the
+        stack model.
+
+        Args:
+            component_type: Type of component to fetch.
+            name: Optional component name. If omitted, the first component of
+                the requested type is used.
+            service_connector_id: Optional service connector ID to attach to
+                the returned component. If omitted, the component's current
+                connector ID is kept.
+            service_connector_resource_id: Optional service connector resource
+                ID to attach to the returned component. If omitted, the
+                component's current connector resource ID is kept.
+
+        Returns:
+            The matching component, a cached copy with the requested service
+            connector link, or `None` if the stack does not contain a matching
+            component.
+        """
+        components = self.get_components_by_type(component_type)
+        if name is None:
+            component = components[0] if components else None
+        else:
+            component = next(
+                (
+                    component
+                    for component in components
+                    if component.name == name
+                ),
+                None,
+            )
+
+        if component is None:
+            return None
+
+        return self._get_component_with_service_connector(
+            component=component,
+            service_connector_id=service_connector_id,
+            service_connector_resource_id=service_connector_resource_id,
+        )
+
+    def _get_component_with_service_connector(
+        self,
+        component: "StackComponent",
+        service_connector_id: Optional[UUID],
+        service_connector_resource_id: Optional[str],
+    ) -> "StackComponent":
+        """Apply a connector override to a component using the stack cache.
+
+        Args:
+            component: Component selected from this stack.
+            service_connector_id: Service connector ID requested for this
+                runtime lookup, or `None` to keep the component's current
+                connector ID.
+            service_connector_resource_id: Service connector resource ID
+                requested for this runtime lookup, or `None` to keep the
+                component's current resource ID.
+
+        Returns:
+            The original component when no effective override is requested,
+            otherwise a stack-local cached copy keyed by component ID,
+            connector ID, and connector resource ID.
+        """
+        if (
+            service_connector_id is None
+            and service_connector_resource_id is None
+        ):
+            return component
+
+        connector_id = service_connector_id or component.connector
+        connector_resource_id = (
+            service_connector_resource_id
+            if service_connector_resource_id is not None
+            else component.connector_resource_id
+        )
+        if (
+            connector_id == component.connector
+            and connector_resource_id == component.connector_resource_id
+        ):
+            return component
+
+        cache_key = (component.id, connector_id, connector_resource_id)
+        if cache_key not in self._component_override_cache:
+            self._component_override_cache[cache_key] = (
+                component.copy_with_service_connector(
+                    service_connector_id=connector_id,
+                    service_connector_resource_id=connector_resource_id,
+                )
+            )
+
+        return self._component_override_cache[cache_key]
+
     def _get_default_component(
         self, component_type: StackComponentType
     ) -> Optional["StackComponent"]:
@@ -851,6 +960,60 @@ class Stack:
             "BaseStepOperator",
             self._get_default_component(StackComponentType.STEP_OPERATOR),
         )
+
+    def get_step_operator(
+        self,
+        name: Optional[str] = None,
+        service_connector_id: Optional[UUID] = None,
+        service_connector_resource_id: Optional[str] = None,
+    ) -> "BaseStepOperator":
+        """Get a step operator, optionally overriding its connector link.
+
+        This is the step-operator-specific wrapper around
+        `get_stack_component()`. It preserves the existing step operator lookup
+        behavior and error messages while allowing runtime systems, such as
+        dynamic pipeline resource requests, to execute a step with a service
+        connector/resource pair selected after the stack was loaded.
+
+        Args:
+            name: Optional step operator name. If omitted, the default step
+                operator is used.
+            service_connector_id: Optional service connector ID to attach to
+                the returned step operator. If omitted, the step operator's
+                current connector ID is kept.
+            service_connector_resource_id: Optional service connector resource
+                ID to attach to the returned step operator. If omitted, the
+                step operator's current connector resource ID is kept.
+
+        Returns:
+            The requested step operator, or a cached stack-local copy with the
+            requested service connector link.
+
+        Raises:
+            RuntimeError: If the stack has no step operator, or if no step
+                operator with the requested name exists.
+        """
+        step_operator = self.get_stack_component(
+            component_type=StackComponentType.STEP_OPERATOR,
+            name=name,
+            service_connector_id=service_connector_id,
+            service_connector_resource_id=service_connector_resource_id,
+        )
+
+        if step_operator is None:
+            if name is None:
+                raise RuntimeError(
+                    "No step operators specified for active stack "
+                    f"'{self.name}'."
+                )
+
+            raise RuntimeError(
+                f"No step operator named '{name}' found in active "
+                f"stack '{self.name}'. Available step operators: "
+                f"{list(self.step_operators)}."
+            )
+
+        return cast("BaseStepOperator", step_operator)
 
     @property
     def step_operators(self) -> Dict[str, "BaseStepOperator"]:

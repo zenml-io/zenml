@@ -6,7 +6,6 @@ from uuid import UUID, uuid4
 from zenml.enums import (
     ResourceRequestReclaimTolerance,
     ResourceRequestStatus,
-    StackComponentType,
 )
 from zenml.integrations.kubernetes import kube_utils
 from zenml.integrations.kubernetes.flavors import (
@@ -21,6 +20,7 @@ from zenml.models import (
     ResourceRequestResponseBody,
     ResourceRequestResponseMetadata,
     ResourceRequestResponseResources,
+    ResourceRequestServiceConnectorSettings,
 )
 
 
@@ -58,6 +58,10 @@ def _resource_request(
     *,
     demands: list[ResourceRequestDemand],
     allocations: list[ResourcePoolAllocation],
+    component_settings: dict[str, object] | None = None,
+    service_connector_settings: (
+        ResourceRequestServiceConnectorSettings | None
+    ) = None,
 ) -> ResourceRequestResponse:
     request_id = allocations[0].request_id if allocations else uuid4()
     return ResourceRequestResponse(
@@ -74,6 +78,8 @@ def _resource_request(
         ),
         metadata=ResourceRequestResponseMetadata(),
         resources=ResourceRequestResponseResources(
+            component_settings=component_settings or {},
+            service_connector_settings=service_connector_settings,
             allocations=allocations,
         ),
     )
@@ -227,35 +233,29 @@ def test_multiple_allocations_for_same_kind_are_summed() -> None:
 
 
 def test_matching_component_settings_override_existing_settings() -> None:
-    """Matching allocation component settings override base settings."""
+    """Resource request component settings override base settings."""
     component_id = uuid4()
     request_id = uuid4()
     request = _resource_request(
         demands=[ResourceRequestDemand(kind="gpu", quantity=1)],
+        component_settings={
+            "pod_settings": {
+                "node_selectors": {
+                    "accelerator": "h200",
+                },
+                "resources": {
+                    "requests": {
+                        "nvidia.com/gpu": "{{ quantity }}",
+                    },
+                },
+            },
+        },
         allocations=[
             _allocation(
                 request_id=request_id,
                 demand_index=0,
                 quantity=1,
                 component_id=component_id,
-                component_settings=[
-                    ResourcePoolCapacityComponentSettings(
-                        component_type=StackComponentType.STEP_OPERATOR,
-                        flavor="kubernetes",
-                        settings={
-                            "pod_settings": {
-                                "node_selectors": {
-                                    "accelerator": "h200",
-                                },
-                                "resources": {
-                                    "requests": {
-                                        "nvidia.com/gpu": "{{ quantity }}",
-                                    },
-                                },
-                            },
-                        },
-                    ),
-                ],
             )
         ],
     )
@@ -268,9 +268,6 @@ def test_matching_component_settings_override_existing_settings() -> None:
     result = kube_utils.apply_resource_request_component_settings(
         settings=settings,
         allocated_resource_request=request,
-        component_id=component_id,
-        component_type=StackComponentType.STEP_OPERATOR,
-        flavor="kubernetes",
         settings_class=KubernetesStepOperatorSettings,
     )
 
@@ -282,55 +279,25 @@ def test_matching_component_settings_override_existing_settings() -> None:
     )
 
 
-def test_non_matching_component_settings_are_ignored() -> None:
-    """Allocation settings for other components are ignored."""
+def test_service_connector_settings_do_not_override_component_settings() -> (
+    None
+):
+    """Service connector settings do not affect component settings."""
     component_id = uuid4()
     request_id = uuid4()
     request = _resource_request(
         demands=[ResourceRequestDemand(kind="gpu", quantity=1)],
+        service_connector_settings=ResourceRequestServiceConnectorSettings(
+            service_connector_id=uuid4(),
+            resource_type="kubernetes-cluster",
+            resource_id="cluster",
+        ),
         allocations=[
             _allocation(
                 request_id=request_id,
                 demand_index=0,
                 quantity=1,
-                component_id=uuid4(),
-                component_settings=[
-                    ResourcePoolCapacityComponentSettings(
-                        component_type=StackComponentType.STEP_OPERATOR,
-                        flavor="kubernetes",
-                        settings={
-                            "pod_settings": {
-                                "node_selectors": {"accelerator": "h200"},
-                            },
-                        },
-                    ),
-                ],
-            ),
-            _allocation(
-                request_id=request_id,
-                demand_index=0,
-                quantity=1,
                 component_id=component_id,
-                component_settings=[
-                    ResourcePoolCapacityComponentSettings(
-                        component_type=StackComponentType.ORCHESTRATOR,
-                        flavor="kubernetes",
-                        settings={
-                            "pod_settings": {
-                                "node_selectors": {"accelerator": "a100"},
-                            },
-                        },
-                    ),
-                    ResourcePoolCapacityComponentSettings(
-                        component_type=StackComponentType.STEP_OPERATOR,
-                        flavor="other",
-                        settings={
-                            "pod_settings": {
-                                "node_selectors": {"accelerator": "l4"},
-                            },
-                        },
-                    ),
-                ],
             ),
         ],
     )
@@ -343,9 +310,6 @@ def test_non_matching_component_settings_are_ignored() -> None:
     result = kube_utils.apply_resource_request_component_settings(
         settings=settings,
         allocated_resource_request=request,
-        component_id=component_id,
-        component_type=StackComponentType.STEP_OPERATOR,
-        flavor="kubernetes",
         settings_class=KubernetesStepOperatorSettings,
     )
 
