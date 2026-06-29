@@ -340,18 +340,41 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             ),
         ]
         if resource_request.component_ids:
-            subjects.extend(
-                RMSubject.from_component(
-                    self.store.get_stack_component(
-                        component_id, hydrate=False
-                    ),
-                    organization_id=pro_config.organization_id,
-                    workspace_id=pro_config.workspace_id,
-                    organization_name=pro_config.organization_name,
-                    workspace_name=pro_config.workspace_name,
+            connector_ids: set[UUID] = set()
+            for component_id in resource_request.component_ids:
+                component = self.store.get_stack_component(
+                    component_id, hydrate=True
                 )
-                for component_id in resource_request.component_ids
-            )
+                subjects.append(
+                    RMSubject.from_component(
+                        component,
+                        organization_id=pro_config.organization_id,
+                        workspace_id=pro_config.workspace_id,
+                        organization_name=pro_config.organization_name,
+                        workspace_name=pro_config.workspace_name,
+                    )
+                )
+                connector = component.connector
+                if connector is None or connector.id in connector_ids:
+                    continue
+                connector_ids.add(connector.id)
+                effective_resource_type = (
+                    component.flavor.connector_resource_type
+                )
+                effective_resource_id = (
+                    component.connector_resource_id or connector.resource_id
+                )
+                subjects.append(
+                    RMSubject.from_service_connector(
+                        connector,
+                        organization_id=pro_config.organization_id,
+                        workspace_id=pro_config.workspace_id,
+                        organization_name=pro_config.organization_name,
+                        workspace_name=pro_config.workspace_name,
+                        effective_resource_type=effective_resource_type,
+                        effective_resource_id=effective_resource_id,
+                    )
+                )
 
         metadata = dict(resource_request.metadata)
         metadata[STEP_NAME_METADATA_KEY] = step_run.name

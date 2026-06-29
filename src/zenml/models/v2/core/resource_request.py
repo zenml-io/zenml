@@ -63,6 +63,27 @@ class ResourcePoolCapacityComponentSettings(BaseZenModel):
     )
 
 
+class ResourceRequestServiceConnectorSettings(BaseZenModel):
+    """Service connector settings selected for a resource request."""
+
+    service_connector_id: Optional[UUID] = Field(
+        default=None,
+        title="The service connector ID selected for the request.",
+    )
+    resource_type: Optional[str] = Field(
+        default=None,
+        title="The service connector resource type selected for the request.",
+        min_length=1,
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+    resource_id: Optional[str] = Field(
+        default=None,
+        title="The service connector resource ID selected for the request.",
+        min_length=1,
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
+
+
 class ResourcePoolQueueItem(BaseZenModel):
     """Queue item linked to a resource request."""
 
@@ -416,6 +437,16 @@ class ResourceRequestResponseMetadata(UserScopedResponseMetadata):
 class ResourceRequestResponseResources(UserScopedResponseResources):
     """Response resources for resource requests."""
 
+    component_settings: dict[str, Any] = Field(
+        default_factory=dict,
+        title="Stack component settings selected for this request.",
+    )
+    service_connector_settings: Optional[
+        ResourceRequestServiceConnectorSettings
+    ] = Field(
+        default=None,
+        title="Service connector settings selected for this request.",
+    )
     allocations: list[ResourcePoolAllocation] = Field(
         default_factory=list,
         title="Allocation grants linked to this request.",

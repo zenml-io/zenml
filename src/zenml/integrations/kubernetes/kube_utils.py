@@ -52,7 +52,6 @@ from typing import (
     Union,
     cast,
 )
-from uuid import UUID
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -60,7 +59,6 @@ from kubernetes.client.rest import ApiException
 from urllib3.exceptions import ReadTimeoutError
 
 from zenml.config.resource_settings import ByteUnit
-from zenml.enums import StackComponentType
 from zenml.integrations.kubernetes.constants import (
     STEP_NAME_ANNOTATION_KEY,
 )
@@ -1550,19 +1548,13 @@ def apply_default_resource_requests(
 def apply_resource_request_component_settings(
     settings: SettingsT,
     allocated_resource_request: Optional["ResourceRequestResponse"],
-    component_id: UUID,
-    component_type: StackComponentType,
-    flavor: str,
     settings_class: Type[SettingsT],
 ) -> SettingsT:
-    """Apply matching allocation component settings to stack settings.
+    """Apply matching request target settings to stack settings.
 
     Args:
         settings: The stack component settings to update.
         allocated_resource_request: The allocated resource request, if any.
-        component_id: The active stack component ID.
-        component_type: The active stack component type.
-        flavor: The active stack component flavor.
         settings_class: The settings class used to validate the result.
 
     Returns:
@@ -1572,18 +1564,9 @@ def apply_resource_request_component_settings(
         return settings
 
     settings_dict = settings.model_dump(exclude_unset=True)
-    for allocation in allocated_resource_request.get_resources().allocations:
-        if allocation.component_id != component_id:
-            continue
-
-        for component_settings in allocation.component_settings:
-            if (
-                component_settings.component_type != component_type
-                or component_settings.flavor != flavor
-            ):
-                continue
-
-            settings_dict.update(component_settings.settings)
+    settings_dict.update(
+        allocated_resource_request.get_resources().component_settings
+    )
 
     return settings_class.model_validate(settings_dict)
 

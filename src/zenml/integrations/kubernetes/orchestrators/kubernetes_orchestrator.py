@@ -907,9 +907,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         settings = kube_utils.apply_resource_request_component_settings(
             settings=settings,
             allocated_resource_request=allocated_resource_request,
-            component_id=self.id,
-            component_type=self.type,
-            flavor=self.flavor,
             settings_class=KubernetesOrchestratorSettings,
         )
         image = step_run_info.get_image(key=ORCHESTRATOR_DOCKER_IMAGE_KEY)

@@ -14,7 +14,15 @@
 """Kubernetes step operator implementation."""
 
 import random
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
+from typing import (
+    TYPE_CHECKING,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    cast,
+)
 
 from kubernetes import client as k8s_client
 
@@ -218,9 +226,6 @@ class KubernetesStepOperator(BaseStepOperator):
         settings = kube_utils.apply_resource_request_component_settings(
             settings=settings,
             allocated_resource_request=allocated_resource_request,
-            component_id=self.id,
-            component_type=self.type,
-            flavor=self.flavor,
             settings_class=KubernetesStepOperatorSettings,
         )
         image_name = info.get_image(
