@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the ZenML Stack Component class."""
 
+import copy
 import json
 from abc import ABC
 from collections.abc import Mapping, Sequence
@@ -400,6 +401,36 @@ class StackComponent:
         self.connector = connector
         self.connector_resource_id = connector_resource_id
         self._connector_instance: Optional[ServiceConnector] = None
+
+    def copy_with_service_connector(
+        self,
+        service_connector_id: Optional[UUID],
+        service_connector_resource_id: Optional[str],
+    ) -> "StackComponent":
+        """Create a component copy with a different service connector link.
+
+        The returned component keeps the same configuration, identity, flavor,
+        and runtime metadata as the original component. Only the linked service
+        connector fields are replaced. Any cached connector client is cleared
+        so the next call to `get_connector()` resolves a client for the new
+        connector/resource pair.
+
+        Args:
+            service_connector_id: ID of the service connector to attach to the
+                copied component, or `None` to detach it.
+            service_connector_resource_id: Resource ID to request from the
+                linked service connector, or `None` to use no explicit
+                resource ID.
+
+        Returns:
+            A shallow copy of this component with the requested service
+            connector link.
+        """
+        component = copy.copy(self)
+        component.connector = service_connector_id
+        component.connector_resource_id = service_connector_resource_id
+        component._connector_instance = None
+        return component
 
     @classmethod
     def from_model(

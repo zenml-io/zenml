@@ -19,10 +19,9 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from zenml.enums import ResourceRequestStatus, StackComponentType
+from zenml.enums import ResourceRequestStatus
 from zenml.models import (
     ResourcePoolAllocation,
-    ResourcePoolCapacityComponentSettings,
     ResourcePoolQueueItem,
     ResourceRequestDemand,
     ResourceRequestReclaimTolerance,
@@ -31,11 +30,16 @@ from zenml.models import (
     ResourceRequestResponseBody,
     ResourceRequestResponseMetadata,
     ResourceRequestResponseResources,
+    ResourceRequestServiceConnectorSettings,
 )
 from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
-    from zenml.models import ComponentResponse, UserResponse
+    from zenml.models import (
+        ComponentResponse,
+        ServiceConnectorResponse,
+        UserResponse,
+    )
 
 PRIORITY_LANE_PRIORITY = 2_147_483_647
 ORGANIZATION_SUBJECT_TYPE = "organization"
@@ -45,6 +49,7 @@ PIPELINE_SUBJECT_TYPE = "pipeline"
 PIPELINE_RUN_SUBJECT_TYPE = "pipeline_run"
 STEP_RUN_SUBJECT_TYPE = "step_run"
 COMPONENT_SUBJECT_TYPE = "component"
+SERVICE_CONNECTOR_SUBJECT_TYPE = "service_connector"
 ACCOUNT_SUBJECT_TYPE = "account"
 STEP_RUN_ID_METADATA_KEY = "step_run_id"
 PIPELINE_RUN_ID_METADATA_KEY = "pipeline_run_id"
@@ -140,43 +145,6 @@ class RMSubjectSelectorExpression(BaseModel):
 
 
 RMSubjectSelectorNode = Union[RMSubjectSelector, RMSubjectSelectorExpression]
-
-
-class RMSubjectSettingsEntry(BaseModel):
-    """Subject settings entry returned on request allocations."""
-
-    subject_selector: RMSubjectSelectorNode
-    settings: dict[str, Any] = Field(default_factory=dict)
-
-    def to_component_settings(
-        self,
-    ) -> ResourcePoolCapacityComponentSettings:
-        """Convert this entry into ZenML component settings.
-
-        Raises:
-            ValueError: If the entry does not select a component subject.
-        """
-        selector: RMSubjectSelectorNode | None = self.subject_selector
-        while (
-            isinstance(selector, RMSubjectSelector)
-            and selector.subject_type != COMPONENT_SUBJECT_TYPE
-        ):
-            selector = selector.contains
-        if (
-            not isinstance(selector, RMSubjectSelector)
-            or selector.subject_type != COMPONENT_SUBJECT_TYPE
-        ):
-            raise ValueError(
-                "Resource Manager subject settings must use subject_type "
-                f"'{COMPONENT_SUBJECT_TYPE}'."
-            )
-        return ResourcePoolCapacityComponentSettings(
-            component_type=StackComponentType(
-                selector.attributes["component_type"]
-            ),
-            flavor=selector.attributes["flavor"],
-            settings=self.settings,
-        )
 
 
 class RMSubject(BaseModel):
@@ -281,6 +249,40 @@ class RMSubject(BaseModel):
                         flavor=component.flavor_name,
                     ),
                     metadata=cls._optional_values(logo_url=component.logo_url),
+                ),
+            ),
+        )
+
+    @classmethod
+    def from_service_connector(
+        cls,
+        connector: "ServiceConnectorResponse",
+        *,
+        organization_id: UUID,
+        workspace_id: UUID,
+        organization_name: Optional[str] = None,
+        workspace_name: Optional[str] = None,
+        effective_resource_type: Optional[str] = None,
+        effective_resource_id: Optional[str] = None,
+    ) -> "RMSubject":
+        """Build an inline subject for a workspace service connector."""
+        return cls._organization(
+            organization_id=organization_id,
+            organization_name=organization_name,
+            child=cls._workspace(
+                workspace_id=workspace_id,
+                workspace_name=workspace_name,
+                child=cls(
+                    subject_id=connector.id,
+                    subject_type=SERVICE_CONNECTOR_SUBJECT_TYPE,
+                    attributes=cls._optional_values(
+                        name=connector.name,
+                        service_connector_name=connector.name,
+                        connector_type=connector.type,
+                        resource_types=connector.resource_types,
+                        effective_resource_type=effective_resource_type,
+                        effective_resource_id=effective_resource_id,
+                    ),
                 ),
             ),
         )
@@ -558,6 +560,9 @@ class RMResourceRequestResponse(BaseModel):
     demands: list[RMRequestDemand] = Field(default_factory=list)
     allocations: list["RMAllocationResponse"] = Field(default_factory=list)
     queue_entries: list["RMQueueEntryResponse"] = Field(default_factory=list)
+    target_settings: list["RMTargetSettingsResponse"] = Field(
+        default_factory=list
+    )
     pool_id: Optional[UUID] = None
     pool_name: Optional[str] = None
     pool_selector: Optional[dict[str, Any]] = None
@@ -579,6 +584,21 @@ class RMResourceRequestResponse(BaseModel):
     def to_model(self) -> ResourceRequestResponse:
         """Convert this runtime request response into a ZenML response."""
         created, updated = _normalize_timestamps(self.created, self.updated)
+        component_settings: dict[str, Any] = {}
+        service_connector_settings: (
+            ResourceRequestServiceConnectorSettings | None
+        ) = None
+        for settings in self.target_settings:
+            if settings.target_type == "component":
+                component_settings.update(settings.settings)
+            elif (
+                settings.target_type == "service_connector"
+                and service_connector_settings is None
+            ):
+                service_connector_settings = (
+                    settings.to_service_connector_settings()
+                )
+
         return ResourceRequestResponse(
             id=self.id,
             body=ResourceRequestResponseBody(
@@ -634,6 +654,8 @@ class RMResourceRequestResponse(BaseModel):
             ),
             metadata=ResourceRequestResponseMetadata(),
             resources=ResourceRequestResponseResources(
+                component_settings=component_settings,
+                service_connector_settings=service_connector_settings,
                 allocations=[
                     allocation.to_model(request_subjects=self.subjects)
                     for allocation in self.allocations
@@ -680,6 +702,26 @@ class RMQueueEntryResponse(BaseModel):
         )
 
 
+class RMTargetSettingsResponse(BaseModel):
+    """Pool target settings selected by Resource Manager for a request."""
+
+    target_type: str
+    settings: dict[str, Any] = Field(default_factory=dict)
+
+    def to_service_connector_settings(
+        self,
+    ) -> ResourceRequestServiceConnectorSettings:
+        """Convert service connector target settings into a ZenML model."""
+        service_connector_id = self.settings.get("service_connector_id")
+        return ResourceRequestServiceConnectorSettings(
+            service_connector_id=UUID(str(service_connector_id))
+            if service_connector_id
+            else None,
+            resource_type=self.settings.get("resource_type"),
+            resource_id=self.settings.get("resource_id"),
+        )
+
+
 class RMAllocationResponse(BaseModel):
     """Allocation response included in runtime request resources."""
 
@@ -699,9 +741,6 @@ class RMAllocationResponse(BaseModel):
     resolved_grant_id: UUID | None = None
     allocation_priority: int
     matched_subject_ids: tuple[UUID, ...]
-    subject_settings: list[RMSubjectSettingsEntry] = Field(
-        default_factory=list
-    )
     preemption_state: str
     preemption_reason: Optional[str] = None
     released_at: Optional[datetime] = None
@@ -756,10 +795,6 @@ class RMAllocationResponse(BaseModel):
             priority_lane=self.allocation_priority >= PRIORITY_LANE_PRIORITY,
             component_id=component_id,
             account_id=account_id,
-            component_settings=[
-                setting.to_component_settings()
-                for setting in self.subject_settings
-            ],
             preemption_state=self.preemption_state,
             preemption_reason=self.preemption_reason,
             released_at=self.released_at,
