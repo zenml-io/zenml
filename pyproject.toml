@@ -129,7 +129,7 @@ connectors-azure = [
     "azure-mgmt-containerservice>=20.0.0",
     "azure-mgmt-containerregistry>=10.0.0",
     "azure-mgmt-storage>=20.0.0",
-    "azure-storage-blob>=12.0.0",
+    "azure-storage-blob>=12.17.0,<13.0.0",
     "azure-mgmt-resource>=21.0.0,<25.0.0",
     "kubernetes>=18.20.0",
     "requests>=2.27.11,<3.0.0",
@@ -145,7 +145,7 @@ vertex = [
     "google-cloud-pipeline-components>=2.19.0",
 ]
 azureml = [
-    "azure-ai-ml==1.23.1",
+    "azure-ai-ml>=1.23.1,<2.0.0",
 ]
 dev = [
     "bandit>=1.7.5,<2.0.0",
@@ -154,6 +154,7 @@ dev = [
     "zizmor>=1.0.0",
     "coverage[toml]>=7.6.1,<8.0.0",
     "pytest>=9.0.3,<10.0.0",
+    "beautifulsoup4>=4.12.0,<5.0.0",
     "mypy==1.18.1",
     "pre-commit",
     "pyment>=0.3.3,<0.4.0",
@@ -377,6 +378,7 @@ module = [
     "azureml.*",
     "google.*",
     "google_cloud_pipeline_components.*",
+    "great_expectations.*",
     "neuralprophet.*",
     "lightgbm.*",
     "scipy.*",
@@ -428,6 +430,11 @@ module = [
     "jsonref",
 ]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["zenml.integrations.great_expectations.*"]
+warn_unused_ignores = false
+disallow_subclassing_any = false
 
 [[tool.mypy.overrides]]
 module = ["mlx.core.*"]  # workaround for failing mypy stub parsing (mlx==0.29.4 version)

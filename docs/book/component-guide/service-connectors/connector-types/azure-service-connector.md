@@ -813,7 +813,7 @@ Active repository stack set to:'gcp-demo'
 $ python run.py
 Building Docker image(s) for pipeline simple_pipeline.
 Building Docker image demozenmlcontainerregistry.azurecr.io/zenml:simple_pipeline-orchestrator.
-- Including integration requirements: adlfs==2021.10.0, azure-identity==1.10.0, azure-keyvault-keys, azure-keyvault-secrets, azure-mgmt-containerservice>=20.0.0, azureml-core==1.48.0, kubernetes, kubernetes==18.20.0
+- Including integration requirements: adlfs>=2021.10.0, azure-identity>=1.4.0, azure-mgmt-containerregistry>=10.0.0, azure-mgmt-containerservice>=20.0.0, azure-mgmt-resource>=21.0.0,<25.0.0, azure-mgmt-storage>=20.0.0, azure-storage-blob>=12.17.0,<13.0.0, kubernetes>=18.20.0, requests>=2.27.11,<3.0.0, azure-ai-ml>=1.23.1,<2.0.0, marshmallow<4.0.0
 No .dockerignore found, including all files inside build context.
 Step 1/10 : FROM zenmldocker/zenml:0.40.0-py3.8
 Step 2/10 : WORKDIR /app
