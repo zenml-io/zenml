@@ -11219,7 +11219,8 @@ class SqlZenStore(BaseZenStore):
         """Create the default stack components and stack.
 
         The default stack contains a local orchestrator and a local artifact
-        store.
+        store. The `default` local deployer is also created as a standalone
+        component, but it is not part of the default stack.
 
         Returns:
             The model of the created default stack.
@@ -11240,10 +11241,14 @@ class SqlZenStore(BaseZenStore):
                 ),
             )
 
-            deployer = self.create_stack_component(
+            # The `default` deployer is created as a standalone, immutable
+            # component. It is selected explicitly at deploy time and is no
+            # longer part of the default stack, but it must always exist as the
+            # fallback for `BaseDeployer.get_deployer`.
+            self.create_stack_component(
                 # Use `DefaultComponentRequest` instead of
                 # `ComponentRequest` here to force the `create_stack_component`
-                # call to use `None` for the user, meaning the orchestrator
+                # call to use `None` for the user, meaning the deployer
                 # is owned by the server, which for RBAC indicates that
                 # everyone can read it
                 component=DefaultComponentRequest(
@@ -11269,8 +11274,7 @@ class SqlZenStore(BaseZenStore):
             )
 
             components = {
-                c.type: [c.id]
-                for c in [orchestrator, deployer, artifact_store]
+                c.type: [c.id] for c in [orchestrator, artifact_store]
             }
 
             # Use `DefaultStackRequest` instead of `StackRequest` here to force

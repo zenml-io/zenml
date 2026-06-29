@@ -8,7 +8,7 @@ The local deployer is a [deployer](./) flavor that comes built-in with ZenML and
 
 ### When to use it
 
-The local deployer is part of your default stack when you're first getting started with ZenML. Due to it running locally on your machine, it requires no additional setup and is easy to use and debug.
+The local deployer is the built-in `default` deployer that ZenML uses when you don't select another deployer at deploy time, so it's ideal when you're first getting started with ZenML. Due to it running locally on your machine, it requires no additional setup and is easy to use and debug.
 
 You should use the local deployer if:
 
@@ -21,20 +21,20 @@ The local deployer comes with ZenML and works without any additional setup.
 
 ### How to use it
 
-To use the local deployer, you can register it and use it in your active stack:
+To use the local deployer, register it and then select it at deploy time:
 
 ```shell
 zenml deployer register <DEPLOYER_NAME> --flavor=local
-
-# Register and activate a stack with the new deployer
-zenml stack register <STACK_NAME> -D <DEPLOYER_NAME> ... --set
 ```
 
-You can now [deploy any ZenML pipeline](https://docs.zenml.io/concepts/deployment) using the local deployer:
+You can now [deploy any ZenML pipeline](https://docs.zenml.io/concepts/deployment) using the local deployer by selecting it with the `-D`/`--deployer` option:
 
 ```shell
-zenml pipeline deploy --name my_deployment my_module.my_pipeline
+zenml pipeline deploy --name my_deployment -D <DEPLOYER_NAME> my_module.my_pipeline
 ```
+
+If you omit the `-D`/`--deployer` option, ZenML uses the built-in `default` local deployer.
+
 ### Additional configuration
 
 For additional configuration of the Local deployer, you can pass the following `LocalDeployerSettings` attributes defined in the `zenml.deployers.local.local_deployer` module when configuring the deployer or defining or deploying your pipeline:

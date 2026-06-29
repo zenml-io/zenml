@@ -281,7 +281,7 @@ class HuggingFaceDeployer(ContainerizedDeployer):
 
         api = self._get_hf_api()
         space_id = self._get_space_id(deployment)
-        image = self.get_image(deployment.snapshot)
+        image = self.get_image(deployment)
 
         # Handle space_id mismatch (e.g., renamed deployment or changed prefix)
         old_space_id = deployment.deployment_metadata.get("space_id")

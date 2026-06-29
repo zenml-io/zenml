@@ -22,6 +22,7 @@ from typing import (
     List,
     Optional,
     Union,
+    cast,
 )
 from uuid import UUID
 
@@ -48,6 +49,8 @@ if TYPE_CHECKING:
     from zenml.code_repositories import LocalRepositoryContext
     from zenml.config.build_configuration import BuildConfiguration
     from zenml.config.docker_settings import DockerSettings
+    from zenml.deployers.base_deployer import BaseDeployer
+    from zenml.models import PipelineSnapshotResponse
 
 logger = get_logger(__name__)
 
@@ -353,13 +356,9 @@ def create_pipeline_build(
 
     Returns:
         The build output.
-
-    Raises:
-        RuntimeError: If multiple builds with the same key but different
-            settings were specified.
     """
     client = Client()
-    stack_model = Client().active_stack_model
+    stack_model = client.active_stack_model
     stack = client.active_stack
 
     pruned_snapshot = prune_snapshot_before_build(snapshot)
@@ -369,6 +368,47 @@ def create_pipeline_build(
     if not required_builds:
         logger.debug("No docker builds required.")
         return None
+
+    return build_required_images(
+        snapshot=snapshot,
+        stack=stack,
+        stack_model=stack_model,
+        required_builds=required_builds,
+        project_id=client.active_project.id,
+        pipeline_id=pipeline_id,
+        code_repository=code_repository,
+    )
+
+
+def build_required_images(
+    snapshot: "PipelineSnapshotBase",
+    stack: "Stack",
+    stack_model: "StackResponse",
+    required_builds: List["BuildConfiguration"],
+    project_id: UUID,
+    pipeline_id: Optional[UUID] = None,
+    code_repository: Optional["BaseCodeRepository"] = None,
+) -> "PipelineBuildResponse":
+    """Build a list of Docker images and register the output in the server.
+
+    Args:
+        snapshot: The pipeline snapshot.
+        stack: The stack used to build the images.
+        stack_model: The stack model referenced by the created build.
+        required_builds: The build configurations to build.
+        project_id: The project referenced by the created build.
+        pipeline_id: The ID of the pipeline.
+        code_repository: If provided, this code repository will be used to
+            download inside the build images.
+
+    Returns:
+        The build output.
+
+    Raises:
+        RuntimeError: If multiple builds with the same key but different
+            settings were specified.
+    """
+    client = Client()
 
     logger.info(
         "Building Docker image(s) for pipeline `%s`.",
@@ -470,7 +510,7 @@ def create_pipeline_build(
     )
     stack_checksum = compute_stack_checksum(stack=stack_model)
     build_request = PipelineBuildRequest(
-        project=client.active_project.id,
+        project=project_id,
         stack=stack_model.id,
         pipeline=pipeline_id,
         is_local=is_local,
@@ -483,6 +523,56 @@ def create_pipeline_build(
         duration=duration,
     )
     return client.zen_store.create_build(build_request)
+
+
+def create_deployer_build(
+    snapshot: "PipelineSnapshotResponse",
+    stack: "Stack",
+    deployer: "BaseDeployer",
+) -> Optional["PipelineBuildResponse"]:
+    """Build the deployer image for a snapshot at deploy time.
+
+    Args:
+        snapshot: The pipeline snapshot to deploy.
+        stack: The stack supplying the image builder and container registry.
+        deployer: The deployer defining the required builds.
+
+    Returns:
+        The build containing the deployer image, or None if no build is
+        required.
+    """
+    from zenml.utils import code_repository_utils
+
+    assert snapshot.stack is not None
+
+    # The build machinery is typed against `PipelineSnapshotBase`. A deploy-time
+    # snapshot is a `PipelineSnapshotResponse`, which exposes the same
+    # pipeline configuration the build machinery reads.
+    snapshot_base = cast(PipelineSnapshotBase, snapshot)
+
+    required_builds = deployer.get_docker_builds(snapshot_base)
+    if not required_builds:
+        logger.debug("No deployer docker builds required.")
+        return None
+
+    # Building the deployer image requires an image builder even when the
+    # stack's orchestrator is local.
+    stack.ensure_image_builder()
+
+    local_repo = code_repository_utils.find_active_code_repository()
+    code_repository = verify_local_repository_context(
+        snapshot=snapshot_base, local_repo_context=local_repo
+    )
+
+    return build_required_images(
+        snapshot=snapshot_base,
+        stack=stack,
+        stack_model=snapshot.stack,
+        required_builds=required_builds,
+        project_id=snapshot.project_id,
+        pipeline_id=snapshot.pipeline.id,
+        code_repository=code_repository,
+    )
 
 
 def compute_build_checksum(
@@ -756,6 +846,27 @@ def should_upload_code(
     if build.contains_code:
         return False
 
+    return requires_runtime_code_download(
+        snapshot=snapshot,
+        can_download_from_code_repository=can_download_from_code_repository,
+    )
+
+
+def requires_runtime_code_download(
+    snapshot: PipelineSnapshotBase,
+    can_download_from_code_repository: bool,
+) -> bool:
+    """Checks whether any step downloads its code from the artifact store.
+
+    Args:
+        snapshot: The snapshot.
+        can_download_from_code_repository: Whether the code can be downloaded
+            from a code repository.
+
+    Returns:
+        Whether the code must be uploaded so it can be downloaded from the
+        artifact store at runtime.
+    """
     for docker_settings in get_docker_settings(snapshot=snapshot):
         if (
             can_download_from_code_repository

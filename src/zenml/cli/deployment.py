@@ -188,6 +188,16 @@ def describe_deployment(
     help="The name or ID of the pipeline to which the snapshot belongs.",
 )
 @click.option(
+    "--deployer",
+    "-D",
+    "deployer",
+    type=str,
+    required=False,
+    default=None,
+    help="Name or ID of the deployer to use. Ignored when re-provisioning an "
+    "existing deployment, which keeps its stored deployer.",
+)
+@click.option(
     "--overtake",
     "-o",
     "overtake",
@@ -211,6 +221,7 @@ def provision_deployment(
     deployment_name_or_id: str,
     snapshot_name_or_id: Optional[str] = None,
     pipeline_name_or_id: Optional[str] = None,
+    deployer: Optional[str] = None,
     overtake: bool = False,
     timeout: Optional[int] = None,
 ) -> None:
@@ -221,6 +232,8 @@ def provision_deployment(
         snapshot_name_or_id: The ID or name of the pipeline snapshot to use.
         pipeline_name_or_id: The name or ID of the pipeline to which the
             snapshot belongs.
+        deployer: Name or ID of the deployer to use. Ignored when
+            re-provisioning an existing deployment.
         overtake: If True, provision the deployment with the given name
             even if it is owned by a different user.
         timeout: The maximum time in seconds to wait for the deployment
@@ -259,6 +272,7 @@ def provision_deployment(
             deployment = Client().provision_deployment(
                 name_id_or_prefix=deployment_name_or_id,
                 snapshot_id=snapshot_id,
+                deployer=deployer,
                 timeout=timeout,
             )
         except KeyError as e:

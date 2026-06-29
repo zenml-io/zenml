@@ -41,6 +41,7 @@ from zenml.models.v2.core.deployment import (
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
+from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.pipeline_snapshot_schemas import (
     PipelineSnapshotSchema,
 )
@@ -130,6 +131,16 @@ class DeploymentSchema(NamedSchema, table=True):
     )
     deployer: Optional["StackComponentSchema"] = Relationship()
 
+    build_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=PipelineBuildSchema.__tablename__,
+        source_column="build_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    build: Optional["PipelineBuildSchema"] = Relationship()
+
     tags: List["TagSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.DEPLOYMENT.value}', foreign(TagResourceSchema.resource_id)==DeploymentSchema.id)",
@@ -179,6 +190,7 @@ class DeploymentSchema(NamedSchema, table=True):
                 [
                     selectinload(jl_arg(DeploymentSchema.user)),
                     selectinload(jl_arg(DeploymentSchema.deployer)),
+                    selectinload(jl_arg(DeploymentSchema.build)),
                     selectinload(jl_arg(DeploymentSchema.snapshot)).joinedload(
                         jl_arg(PipelineSnapshotSchema.pipeline)
                     ),
@@ -241,6 +253,7 @@ class DeploymentSchema(NamedSchema, table=True):
                 tags=[tag.to_model() for tag in self.tags],
                 snapshot=self.snapshot.to_model() if self.snapshot else None,
                 deployer=self.deployer.to_model() if self.deployer else None,
+                build=self.build.to_model() if self.build else None,
                 pipeline=self.snapshot.pipeline.to_model()
                 if self.snapshot and self.snapshot.pipeline
                 else None,

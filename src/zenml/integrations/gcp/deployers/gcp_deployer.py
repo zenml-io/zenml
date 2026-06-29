@@ -1038,7 +1038,7 @@ class GCPDeployer(ContainerizedDeployer, GoogleCredentialsMixin):
                         f"deployment '{deployment.name}': {e}"
                     )
 
-        image = self.get_image(snapshot)
+        image = self.get_image(deployment)
 
         entrypoint = DeploymentEntrypointConfiguration.get_entrypoint_command()
         arguments = DeploymentEntrypointConfiguration.get_entrypoint_arguments(

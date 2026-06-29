@@ -112,6 +112,7 @@ if TYPE_CHECKING:
     from zenml.config.cache_policy import CachePolicyOrString
     from zenml.config.retry_config import StepRetryConfig
     from zenml.config.source import Source
+    from zenml.deployers.base_deployer import BaseDeployer
     from zenml.enums import ExecutionMode
     from zenml.model.lazy_load import ModelVersionDataLazyLoader
     from zenml.model.model import Model
@@ -875,6 +876,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
     def deploy(
         self,
         deployment_name: str,
+        deployer: Union[str, "UUID", "BaseDeployer", None] = None,
         timeout: Optional[int] = None,
         *args: Any,
         **kwargs: Any,
@@ -883,6 +885,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         Args:
             deployment_name: The name to use for the deployment.
+            deployer: The deployer to use. Can be a deployer instance, a name
+                or ID. If not provided, the `default` deployer is used.
             timeout: The maximum time in seconds to wait for the pipeline to be
                 deployed.
             *args: Pipeline entrypoint input arguments.
@@ -891,15 +895,22 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Returns:
             The deployment response.
         """
+        from zenml.deployers.base_deployer import BaseDeployer
+
         self.prepare(*args, **kwargs)
-        snapshot = self._create_snapshot(**self._run_args)
+        # Deployment serves the pipeline in-process, so the orchestrator image
+        # is not needed. The deployer image is built later at deploy time.
+        snapshot = self._create_snapshot(skip_build=True, **self._run_args)
 
         stack = Client().active_stack
 
         stack.prepare_pipeline_submission(snapshot=snapshot)
-        return stack.deploy_pipeline(
+
+        resolved_deployer = BaseDeployer.get_deployer(deployer)
+        return resolved_deployer.provision_deployment(
             snapshot=snapshot,
-            deployment_name=deployment_name,
+            stack=stack,
+            deployment_name_or_id=deployment_name,
             timeout=timeout,
         )
 
@@ -922,6 +933,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         config_path: Optional[str] = None,
         prevent_build_reuse: bool = False,
         skip_schedule_registration: bool = False,
+        skip_build: bool = False,
         **snapshot_request_kwargs: Any,
     ) -> PipelineSnapshotResponse:
         """Create a pipeline snapshot.
@@ -950,6 +962,10 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             prevent_build_reuse: DEPRECATED: Use
                 `DockerSettings.prevent_build_reuse` instead.
             skip_schedule_registration: Whether to skip schedule registration.
+            skip_build: Whether to skip building the pipeline images. Used when
+                deploying, where the pipeline is served in-process and the
+                orchestrator image is not needed. Code is still uploaded so the
+                deployer image can download it at runtime.
             **snapshot_request_kwargs: Additional keyword arguments to pass to
                 the snapshot request.
 
@@ -1040,13 +1056,28 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 "`DockerSettings.prevent_build_reuse` instead."
             )
 
-        build_model = build_utils.reuse_or_create_pipeline_build(
-            snapshot=snapshot,
-            pipeline_id=pipeline_id,
-            allow_build_reuse=not prevent_build_reuse,
-            build=build,
-            code_repository=code_repository,
-        )
+        if skip_build:
+            # When deploying, the orchestrator image is not needed, but the
+            # code is still uploaded if a runtime download from the artifact
+            # store is configured, so the deployer image can fetch it.
+            build_model = None
+            upload_code = build_utils.requires_runtime_code_download(
+                snapshot=snapshot,
+                can_download_from_code_repository=can_download_from_code_repository,
+            )
+        else:
+            build_model = build_utils.reuse_or_create_pipeline_build(
+                snapshot=snapshot,
+                pipeline_id=pipeline_id,
+                allow_build_reuse=not prevent_build_reuse,
+                build=build,
+                code_repository=code_repository,
+            )
+            upload_code = build_utils.should_upload_code(
+                snapshot=snapshot,
+                build=build_model,
+                can_download_from_code_repository=can_download_from_code_repository,
+            )
         build_id = build_model.id if build_model else None
 
         code_reference = None
@@ -1065,11 +1096,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             )
 
         code_path = None
-        if build_utils.should_upload_code(
-            snapshot=snapshot,
-            build=build_model,
-            can_download_from_code_repository=can_download_from_code_repository,
-        ):
+        if upload_code:
             source_root = source_utils.get_source_root()
             code_archive = code_utils.CodeArchive(root=source_root)
             logger.info(

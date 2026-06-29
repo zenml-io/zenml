@@ -784,7 +784,7 @@ class KubernetesDeployer(ContainerizedDeployer):
         if settings.labels:
             labels.update(**settings.labels)
 
-        image = self.get_image(snapshot)
+        image = self.get_image(deployment)
 
         return _DeploymentCtx(
             settings=settings,

@@ -70,14 +70,9 @@ zenml deployer register <DEPLOYER_NAME> \
     --token='{{hf_token.token}}'
 ```
 
-### Configuring the stack
+### Using the deployer
 
-With the deployer registered, it can be used in the active stack:
-
-```shell
-# Register and activate a stack with the new deployer
-zenml stack register <STACK_NAME> -D <DEPLOYER_NAME> ... --set
-```
+With the deployer registered, select it explicitly at deploy time with the `-D`/`--deployer` option. The active stack still supplies the image builder and container registry used to build the deployment image.
 
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which will be referenced in a Dockerfile deployed to your Hugging Face Space. Check out [this page](https://docs.zenml.io/how-to/customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
@@ -86,7 +81,7 @@ ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE
 You can now [deploy any ZenML pipeline](https://docs.zenml.io/concepts/deployment) using the Hugging Face deployer:
 
 ```shell
-zenml pipeline deploy --name my_deployment my_module.my_pipeline
+zenml pipeline deploy --name my_deployment -D <DEPLOYER_NAME> my_module.my_pipeline
 ```
 
 ### Additional configuration

@@ -15,9 +15,12 @@
 
 from abc import ABC
 from typing import (
+    TYPE_CHECKING,
     List,
+    Optional,
     Set,
 )
+from uuid import UUID
 
 import zenml
 from zenml.config.build_configuration import BuildConfiguration
@@ -29,9 +32,13 @@ from zenml.deployers.base_deployer import BaseDeployer
 from zenml.deployers.utils import load_deployment_requirements
 from zenml.logger import get_logger
 from zenml.models import (
+    DeploymentResponse,
     PipelineSnapshotBase,
     PipelineSnapshotResponse,
 )
+
+if TYPE_CHECKING:
+    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 
@@ -40,26 +47,50 @@ class ContainerizedDeployer(BaseDeployer, ABC):
     """Base class for all containerized deployers."""
 
     @staticmethod
-    def get_image(snapshot: PipelineSnapshotResponse) -> str:
-        """Get the docker image used to deploy a pipeline snapshot.
+    def get_image(deployment: DeploymentResponse) -> str:
+        """Get the docker image used to deploy a deployment.
 
         Args:
-            snapshot: The pipeline snapshot to get the image for.
+            deployment: The deployment to get the image for.
 
         Returns:
-            The docker image used to deploy the pipeline snapshot.
+            The docker image used to deploy the deployment.
 
         Raises:
-            RuntimeError: if the pipeline snapshot does not have a build or
-                if the deployer image is not in the build.
+            RuntimeError: if the deployment does not have a build or if the
+                deployer image is not in the build.
         """
-        if snapshot.build is None:
-            raise RuntimeError("Pipeline snapshot does not have a build. ")
-        if DEPLOYER_DOCKER_IMAGE_KEY not in snapshot.build.images:
+        if deployment.build is None:
+            raise RuntimeError("Deployment does not have a build.")
+        if DEPLOYER_DOCKER_IMAGE_KEY not in deployment.build.images:
             raise RuntimeError(
-                "Pipeline snapshot build does not have a deployer image. "
+                "Deployment build does not have a deployer image."
             )
-        return snapshot.build.images[DEPLOYER_DOCKER_IMAGE_KEY].image
+        return deployment.build.images[DEPLOYER_DOCKER_IMAGE_KEY].image
+
+    def _prepare_deployment_build(
+        self,
+        deployment: DeploymentResponse,
+        snapshot: PipelineSnapshotResponse,
+        stack: "Stack",
+    ) -> Optional[UUID]:
+        """Build the deployer image for the deployment.
+
+        Args:
+            deployment: The deployment to build the image for.
+            snapshot: The pipeline snapshot to deploy.
+            stack: The stack supplying the image builder and container registry.
+
+        Returns:
+            The ID of the build containing the deployer image, or None if no
+            build is required.
+        """
+        from zenml.pipelines.build_utils import create_deployer_build
+
+        build = create_deployer_build(
+            snapshot=snapshot, stack=stack, deployer=self
+        )
+        return build.id if build else None
 
     @property
     def requirements(self) -> Set[str]:
@@ -98,12 +129,25 @@ class ContainerizedDeployer(BaseDeployer, ABC):
         deployment_requirements = load_deployment_requirements(
             deployment_settings
         )
+        extra_requirements_files = {
+            ".zenml_deployment_requirements": deployment_requirements,
+        }
+
+        # The deployer is no longer part of the stack, so its own requirements
+        # are not picked up by `stack.requirements()` during the deploy-time
+        # build. Inject them here (e.g. the `zenml[local]` extra that provides
+        # the DB drivers needed for a direct database connection).
+        if docker_settings.install_stack_requirements:
+            deployer_requirements = sorted(self.requirements)
+            if deployer_requirements:
+                extra_requirements_files[".zenml_deployer_requirements"] = (
+                    deployer_requirements
+                )
+
         return [
             BuildConfiguration(
                 key=DEPLOYER_DOCKER_IMAGE_KEY,
-                settings=snapshot.pipeline_configuration.docker_settings,
-                extra_requirements_files={
-                    ".zenml_deployment_requirements": deployment_requirements,
-                },
+                settings=docker_settings,
+                extra_requirements_files=extra_requirements_files,
             )
         ]

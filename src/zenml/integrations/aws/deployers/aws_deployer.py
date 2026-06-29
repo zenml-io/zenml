@@ -1255,7 +1255,7 @@ class AWSDeployer(ContainerizedDeployer):
         )
 
         existing_service = self._get_app_runner_service(deployment)
-        image = self.get_image(snapshot)
+        image = self.get_image(deployment)
         region = self.region
 
         if existing_service and self._requires_service_replacement(

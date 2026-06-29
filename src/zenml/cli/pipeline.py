@@ -25,7 +25,6 @@ from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import OutputFormat, fetch_snapshot, list_options
 from zenml.client import Client
 from zenml.console import console
-from zenml.deployers.base_deployer import BaseDeployer
 from zenml.enums import (
     CliCategories,
     ExecutionStatus,
@@ -347,6 +346,16 @@ def run_pipeline(
     help="Name or ID of the stack to deploy on.",
 )
 @click.option(
+    "--deployer",
+    "-D",
+    "deployer",
+    type=str,
+    required=False,
+    default=None,
+    help="Name or ID of the deployer to use. Defaults to the `default` "
+    "deployer.",
+)
+@click.option(
     "--build",
     "-b",
     "build_path_or_id",
@@ -403,6 +412,7 @@ def deploy_pipeline(
     deployment_name: Optional[str] = None,
     config_path: Optional[str] = None,
     stack_name_or_id: Optional[str] = None,
+    deployer: Optional[str] = None,
     build_path_or_id: Optional[str] = None,
     prevent_build_reuse: bool = False,
     update: bool = False,
@@ -418,6 +428,8 @@ def deploy_pipeline(
         config_path: Path to pipeline configuration file.
         stack_name_or_id: Name or ID of the stack on which the pipeline should
             be deployed.
+        deployer: Name or ID of the deployer to use. Defaults to the `default`
+            deployer.
         build_path_or_id: ID of file path of the build to use for the pipeline
             deployment.
         prevent_build_reuse: If True, prevents automatic reusing of previous
@@ -493,7 +505,9 @@ def deploy_pipeline(
                     return
 
         deployment = pipeline_instance.deploy(
-            deployment_name=deployment_name, timeout=timeout
+            deployment_name=deployment_name,
+            deployer=deployer,
+            timeout=timeout,
         )
 
         cli_utils.pretty_print_deployment(deployment, show_secret=False)
@@ -506,9 +520,8 @@ def deploy_pipeline(
             )
 
         if attach:
-            deployer = BaseDeployer.get_active_deployer()
-            for log in deployer.get_deployment_logs(
-                deployment_name_or_id=deployment.id,
+            for log in client.get_deployment_logs(
+                deployment.id,
                 follow=True,
             ):
                 print(log)
@@ -1631,11 +1644,10 @@ def create_pipeline_snapshot(
             "* run this snapshot from the dashboard or by calling "
             f"`zenml pipeline snapshot run {snapshot.id}`"
         )
-    if snapshot.deployable:
-        options.append(
-            "* deploy this snapshot by calling "
-            f"`zenml pipeline snapshot deploy {snapshot.id}`"
-        )
+    options.append(
+        "* deploy this snapshot by calling "
+        f"`zenml pipeline snapshot deploy {snapshot.id}`"
+    )
 
     if options:
         cli_utils.declare("You can now:")
@@ -1705,6 +1717,16 @@ def run_snapshot(
     "raised, unless the --update or --overtake flag is used.",
 )
 @click.option(
+    "--deployer",
+    "-D",
+    "deployer",
+    type=str,
+    required=False,
+    default=None,
+    help="Name or ID of the deployer to use. Defaults to the `default` "
+    "deployer. Ignored when re-provisioning an existing deployment.",
+)
+@click.option(
     "--update",
     "-u",
     "update",
@@ -1736,6 +1758,7 @@ def deploy_snapshot(
     snapshot_name_or_id: str,
     pipeline_name_or_id: Optional[str] = None,
     deployment_name_or_id: Optional[str] = None,
+    deployer: Optional[str] = None,
     update: bool = False,
     overtake: bool = False,
     timeout: Optional[int] = None,
@@ -1747,6 +1770,8 @@ def deploy_snapshot(
         pipeline_name_or_id: The name or ID of the pipeline.
         deployment_name_or_id: Name or ID of the deployment to use for the
             pipeline.
+        deployer: Name or ID of the deployer to use. Defaults to the `default`
+            deployer. Ignored when re-provisioning an existing deployment.
         update: If True, update the deployment with the same name if it
             already exists.
         overtake: If True, update the deployment with the same name if
@@ -1808,6 +1833,7 @@ def deploy_snapshot(
             deployment = Client().provision_deployment(
                 name_id_or_prefix=deployment_name_or_id,
                 snapshot_id=snapshot.id,
+                deployer=deployer,
                 timeout=timeout,
             )
         except KeyError as e:
@@ -1835,7 +1861,6 @@ def deploy_snapshot(
         "pipeline",
         "is_dynamic",
         "runnable",
-        "deployable",
     ],
 )
 def list_pipeline_snapshots(

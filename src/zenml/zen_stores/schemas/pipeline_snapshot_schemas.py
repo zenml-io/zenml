@@ -521,17 +521,12 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
         Returns:
             The response.
         """
-        deployable = False
-        if self.build and self.stack and self.stack.has_deployer:
-            deployable = True
-
         body = PipelineSnapshotResponseBody(
             user_id=self.user_id,
             project_id=self.project_id,
             created=self.created,
             updated=self.updated,
             runnable=self.is_runnable,
-            deployable=deployable,
             is_dynamic=self.is_dynamic,
         )
         metadata = None

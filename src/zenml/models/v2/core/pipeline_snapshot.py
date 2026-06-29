@@ -33,7 +33,7 @@ from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import ExecutionStatus
 from zenml.models.v2.base.base import BaseUpdate, BaseZenModel
 from zenml.models.v2.base.filter import (
     StringFilterOption,
@@ -235,9 +235,6 @@ class PipelineSnapshotResponseBody(ProjectScopedResponseBody):
     runnable: bool = Field(
         title="If a run can be started from the snapshot.",
     )
-    deployable: bool = Field(
-        title="If the snapshot can be deployed.",
-    )
     is_dynamic: bool = Field(
         title="Whether this is a snapshot of a dynamic pipeline.",
     )
@@ -388,15 +385,6 @@ class PipelineSnapshotResponse(
             the value of the property.
         """
         return self.get_body().runnable
-
-    @property
-    def deployable(self) -> bool:
-        """The `deployable` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_body().deployable
 
     @property
     def is_dynamic(self) -> bool:
@@ -646,7 +634,6 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         "pipeline",
         "stack",
         "runnable",
-        "deployable",
         "deployed",
         "trigger_id",
     ]
@@ -666,7 +653,6 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         *TaggableFilter.API_SINGLE_INPUT_PARAMS,
         "named_only",
         "runnable",
-        "deployable",
         "deployed",
         "trigger_id",
     ]
@@ -708,10 +694,6 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
         default=None,
         description="Whether the snapshot is runnable.",
     )
-    deployable: Optional[bool] = Field(
-        default=None,
-        description="Whether the snapshot is deployable.",
-    )
     deployed: Optional[bool] = Field(
         default=None,
         description="Whether the snapshot is deployed.",
@@ -739,8 +721,6 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
             PipelineBuildSchema,
             PipelineSchema,
             PipelineSnapshotSchema,
-            StackComponentSchema,
-            StackCompositionSchema,
             StackSchema,
         )
 
@@ -795,30 +775,6 @@ class PipelineSnapshotFilter(ProjectScopedFilter, TaggableFilter):
             )
 
             custom_filters.append(runnable_filter)
-
-        if self.deployable is True:
-            deployer_exists = (
-                select(StackComponentSchema.id)
-                .where(
-                    StackComponentSchema.type
-                    == StackComponentType.DEPLOYER.value
-                )
-                .where(
-                    StackCompositionSchema.component_id
-                    == StackComponentSchema.id
-                )
-                .where(
-                    StackCompositionSchema.stack_id
-                    == PipelineSnapshotSchema.stack_id
-                )
-                .exists()
-            )
-            deployable_filter = and_(
-                col(PipelineSnapshotSchema.build_id).is_not(None),
-                deployer_exists,
-            )
-
-            custom_filters.append(deployable_filter)
 
         if self.deployed is not None:
             deployment_exists = (

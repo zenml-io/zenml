@@ -13,7 +13,7 @@ A deployed pipeline becomes a web service that can be invoked multiple times in 
 
 ### When to use it?
 
-Deployers are optional components in the ZenML stack. They are useful in the following scenarios:
+Deployers are optional stack components. They are useful in the following scenarios:
 
 - **Real-time Pipeline Execution**: Execute pipelines on-demand through HTTP requests rather than scheduled batch runs
 - **Interactive Workflows**: Build applications that need immediate pipeline responses
@@ -25,7 +25,7 @@ Use deployers when you need request-response patterns, and orchestrators for sch
 
 ### Deployer Flavors
 
-Out of the box, ZenML comes with a `local` deployer already part of the default stack that deploys pipelines on your local machine in the form of background processes. Additional Deployers are provided by integrations:
+Out of the box, ZenML comes with a built-in `default` local deployer that deploys pipelines on your local machine in the form of background processes and is used whenever you don't select another deployer at deploy time. Additional Deployers are provided by integrations:
 
 | Deployer                           | Flavor    | Integration   | Notes                                                                        |
 |------------------------------------|-----------|---------------|------------------------------------------------------------------------------|
@@ -44,24 +44,24 @@ zenml deployer flavor list
 
 ### How to use it
 
-You don't need to directly interact with the ZenML deployer stack component in your code. As long as the deployer that you want to use is part of your active [ZenML stack](../../user-guide/production-guide/understand-stacks.md), you can simply deploy a pipeline or snapshot using the ZenML CLI or the ZenML SDK. The resulting deployment can be managed using the ZenML CLI or the ZenML SDK.
+You don't need to directly interact with the ZenML deployer stack component in your code. Once you have registered the deployer that you want to use, you can select it explicitly at deploy time and deploy a pipeline or snapshot using the ZenML CLI or the ZenML SDK. If you don't select a deployer, ZenML falls back to the immutable `default` (local) deployer. The resulting deployment can be managed using the ZenML CLI or the ZenML SDK.
 
 Examples:
 
-* just use the default stack - it has a default local deployer that will deploy the pipeline on your local machine in the form of a background process:
+* just use the built-in `default` local deployer - omit the deployer at deploy time and the pipeline is deployed on your local machine in the form of a background process:
 
 ```bash
-zenml stack set default
+zenml pipeline deploy --name my_deployment my_module.my_pipeline
 ```
 
-* or set up a new stack with a deployer in it:
+* or register a deployer and select it explicitly at deploy time:
 
 ```bash
-zenml deployer register docker --flavor=local
-zenml stack register docker_deployment -a default -o default -D docker --set
+zenml deployer register docker --flavor=docker
+zenml pipeline deploy --name my_deployment -D docker my_module.my_pipeline
 ```
 
-* deploy a pipeline with the ZenML SDK:
+* deploy a pipeline with the ZenML SDK, selecting the deployer with the `deployer` argument (omit it to use the `default` local deployer):
 
 ```python
 from zenml import pipeline
@@ -76,14 +76,14 @@ def my_pipeline(name: str = "John") -> str:
 
 if __name__ == "__main__":
     # Deploy the pipeline `my_pipeline` as a deployment named `my_deployment`
-    deployment = my_pipeline.deploy(deployment_name="my_deployment")
+    deployment = my_pipeline.deploy(deployment_name="my_deployment", deployer="docker")
     print(f"Deployment URL: {deployment.url}")
 ```
 
 * deploy the same pipeline with the CLI:
 
 ```bash
-zenml pipeline deploy --name my_deployment my_module.my_pipeline
+zenml pipeline deploy --name my_deployment -D docker my_module.my_pipeline
 ```
 
 * send a request to the deployment with the ZenML CLI:

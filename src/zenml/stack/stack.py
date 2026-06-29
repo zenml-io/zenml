@@ -62,7 +62,6 @@ if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
     from zenml.container_registries import BaseContainerRegistry
     from zenml.data_validators import BaseDataValidator
-    from zenml.deployers import BaseDeployer
     from zenml.experiment_trackers.base_experiment_tracker import (
         BaseExperimentTracker,
     )
@@ -72,7 +71,6 @@ if TYPE_CHECKING:
     from zenml.model_deployers import BaseModelDeployer
     from zenml.model_registries import BaseModelRegistry
     from zenml.models import (
-        DeploymentResponse,
         PipelineRunResponse,
         PipelineSnapshotBase,
         PipelineSnapshotResponse,
@@ -122,7 +120,6 @@ class Stack:
         data_validator: Optional["BaseDataValidator"] = None,
         image_builder: Optional["BaseImageBuilder"] = None,
         model_registry: Optional["BaseModelRegistry"] = None,
-        deployer: Optional["BaseDeployer"] = None,
         log_store: Optional["BaseLogStore"] = None,
         sandbox: Optional[Union["BaseSandbox", List["BaseSandbox"]]] = None,
     ):
@@ -147,7 +144,6 @@ class Stack:
             data_validator: Data validator component of the stack.
             image_builder: Image builder component of the stack.
             model_registry: Model registry component of the stack.
-            deployer: Deployer component of the stack.
             log_store: Log store component of the stack.
             sandbox: Sandbox component(s) of the stack. Repeatable; a single
                 component or a list of components.
@@ -174,7 +170,6 @@ class Stack:
             data_validator,
             image_builder,
             model_registry,
-            deployer,
             log_store,
             sandbox,
         ]:
@@ -291,7 +286,6 @@ class Stack:
         from zenml.artifact_stores import BaseArtifactStore
         from zenml.container_registries import BaseContainerRegistry
         from zenml.data_validators import BaseDataValidator
-        from zenml.deployers import BaseDeployer
         from zenml.experiment_trackers import BaseExperimentTracker
         from zenml.feature_stores import BaseFeatureStore
         from zenml.image_builders import BaseImageBuilder
@@ -388,10 +382,6 @@ class Stack:
         ):
             _raise_type_error(model_registry, BaseModelRegistry)
 
-        deployer = components.get(StackComponentType.DEPLOYER)
-        if deployer is not None and not isinstance(deployer, BaseDeployer):
-            _raise_type_error(deployer, BaseDeployer)
-
         log_store = components.get(StackComponentType.LOG_STORE)
         if log_store is not None and not isinstance(log_store, BaseLogStore):
             _raise_type_error(log_store, BaseLogStore)
@@ -417,7 +407,6 @@ class Stack:
             data_validator=data_validator,
             image_builder=image_builder,
             model_registry=model_registry,
-            deployer=deployer,
             log_store=log_store,
             sandbox=sandbox,
         )
@@ -457,7 +446,6 @@ class Stack:
         from zenml.artifact_stores import BaseArtifactStore
         from zenml.container_registries import BaseContainerRegistry
         from zenml.data_validators import BaseDataValidator
-        from zenml.deployers import BaseDeployer
         from zenml.experiment_trackers import BaseExperimentTracker
         from zenml.feature_stores import BaseFeatureStore
         from zenml.image_builders import BaseImageBuilder
@@ -597,14 +585,6 @@ class Stack:
             if not isinstance(model_registry[0], BaseModelRegistry):
                 _raise_type_error(model_registry[0], BaseModelRegistry)
 
-        # Deployer
-        deployer = components.get(StackComponentType.DEPLOYER)
-        if deployer:
-            if len(deployer) > 1:
-                raise TypeError("Multiple deployers are not supported.")
-            if not isinstance(deployer[0], BaseDeployer):
-                _raise_type_error(deployer[0], BaseDeployer)
-
         # Log Store
         log_store = components.get(StackComponentType.LOG_STORE)
         if log_store:
@@ -671,9 +651,6 @@ class Stack:
             model_registry=cast(
                 Optional["BaseModelRegistry"],
                 model_registry[0] if model_registry else None,
-            ),
-            deployer=cast(
-                Optional["BaseDeployer"], deployer[0] if deployer else None
             ),
             log_store=cast(
                 Optional["BaseLogStore"], log_store[0] if log_store else None
@@ -1001,18 +978,6 @@ class Stack:
         return cast(
             "BaseModelRegistry",
             self._get_default_component(StackComponentType.MODEL_REGISTRY),
-        )
-
-    @property
-    def deployer(self) -> Optional["BaseDeployer"]:
-        """The deployer of the stack.
-
-        Returns:
-            The deployer of the stack.
-        """
-        return cast(
-            "BaseDeployer",
-            self._get_default_component(StackComponentType.DEPLOYER),
         )
 
     @property
@@ -1358,44 +1323,48 @@ class Stack:
         requires_image_builder = (
             self.orchestrator.flavor != "local"
             or self.step_operator
-            or self.deployer
             or (self.model_deployer and self.model_deployer.flavor != "mlflow")
         )
+        if requires_image_builder:
+            self.ensure_image_builder()
+
+    def ensure_image_builder(self) -> None:
+        """Assign a temporary local image builder if none is configured.
+
+        Building images (e.g. the deployer image at deploy time) requires an
+        image builder even when the stack's orchestrator is local.
+        """
         skip_default_image_builder = handle_bool_env_var(
             ENV_ZENML_SKIP_IMAGE_BUILDER_DEFAULT, default=False
         )
-        if (
-            requires_image_builder
-            and not skip_default_image_builder
-            and not self.image_builder
-        ):
-            from uuid import uuid4
+        if skip_default_image_builder or self.image_builder:
+            return
 
-            from zenml.image_builders import (
-                LocalImageBuilder,
-                LocalImageBuilderConfig,
-                LocalImageBuilderFlavor,
-            )
+        from uuid import uuid4
 
-            flavor = LocalImageBuilderFlavor()
+        from zenml.image_builders import (
+            LocalImageBuilder,
+            LocalImageBuilderConfig,
+            LocalImageBuilderFlavor,
+        )
 
-            now = utc_now()
-            image_builder = LocalImageBuilder(
-                id=uuid4(),
-                name="temporary_default",
-                flavor=flavor.name,
-                type=flavor.type,
-                config=LocalImageBuilderConfig(),
-                environment={},
-                user=Client().active_user.id,
-                created=now,
-                updated=now,
-                secrets=[],
-            )
+        flavor = LocalImageBuilderFlavor()
 
-            self._components[StackComponentType.IMAGE_BUILDER] = [
-                image_builder
-            ]
+        now = utc_now()
+        image_builder = LocalImageBuilder(
+            id=uuid4(),
+            name="temporary_default",
+            flavor=flavor.name,
+            type=flavor.type,
+            config=LocalImageBuilderConfig(),
+            environment={},
+            user=Client().active_user.id,
+            created=now,
+            updated=now,
+            secrets=[],
+        )
+
+        self._components[StackComponentType.IMAGE_BUILDER] = [image_builder]
 
     def validate_log_store(self) -> None:
         """Validates that the stack has a log store."""
@@ -1465,39 +1434,6 @@ class Stack:
         """
         self.orchestrator.run(
             snapshot=snapshot, stack=self, placeholder_run=placeholder_run
-        )
-
-    def deploy_pipeline(
-        self,
-        snapshot: "PipelineSnapshotResponse",
-        deployment_name: str,
-        timeout: Optional[int] = None,
-    ) -> "DeploymentResponse":
-        """Deploys a pipeline on this stack.
-
-        Args:
-            snapshot: The pipeline snapshot.
-            deployment_name: The name to use for the deployment.
-            timeout: The maximum time in seconds to wait for the pipeline to be
-                deployed.
-
-        Returns:
-            The deployment response.
-
-        Raises:
-            RuntimeError: If the stack does not have a deployer.
-        """
-        if not self.deployer:
-            raise RuntimeError(
-                "The stack does not have a deployer. Please add a "
-                "deployer to the stack in order to deploy a pipeline."
-            )
-
-        return self.deployer.provision_deployment(
-            snapshot=snapshot,
-            stack=self,
-            deployment_name_or_id=deployment_name,
-            timeout=timeout,
         )
 
     def _get_active_components_for_step(

@@ -51,6 +51,7 @@ if TYPE_CHECKING:
         CuratedVisualizationResponse,
     )
     from zenml.models.v2.core.pipeline import PipelineResponse
+    from zenml.models.v2.core.pipeline_build import PipelineBuildResponse
     from zenml.models.v2.core.pipeline_snapshot import (
         PipelineSnapshotResponse,
     )
@@ -115,6 +116,10 @@ class DeploymentUpdate(BaseUpdate):
     snapshot_id: Optional[UUID] = Field(
         default=None,
         title="New pipeline snapshot ID.",
+    )
+    build_id: Optional[UUID] = Field(
+        default=None,
+        title="New build ID.",
     )
     url: Optional[str] = Field(
         default=None,
@@ -201,6 +206,11 @@ class DeploymentResponseResources(ProjectScopedResponseResources):
         default=None,
         title="The deployer.",
         description="The deployer component managing this deployment.",
+    )
+    build: Optional["PipelineBuildResponse"] = Field(
+        default=None,
+        title="The build.",
+        description="The build containing the deployer image.",
     )
     pipeline: Optional["PipelineResponse"] = Field(
         default=None,
@@ -303,6 +313,15 @@ class DeploymentResponse(
         return self.get_resources().deployer
 
     @property
+    def build(self) -> Optional["PipelineBuildResponse"]:
+        """The build.
+
+        Returns:
+            The build.
+        """
+        return self.get_resources().build
+
+    @property
     def pipeline(self) -> Optional["PipelineResponse"]:
         """The pipeline.
 
@@ -359,6 +378,18 @@ class DeploymentResponse(
         deployer = self.get_resources().deployer
         if deployer:
             return deployer.id
+        return None
+
+    @property
+    def build_id(self) -> Optional[UUID]:
+        """The build ID.
+
+        Returns:
+            The build ID.
+        """
+        build = self.get_resources().build
+        if build:
+            return build.id
         return None
 
 

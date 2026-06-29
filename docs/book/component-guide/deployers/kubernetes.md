@@ -108,14 +108,9 @@ zenml deployer register <DEPLOYER_NAME> \
 
 This uses the service account token mounted into the pod running ZenML.
 
-### Configuring the stack
+### Using the deployer
 
-With the deployer registered, you can use it in your active stack:
-
-```shell
-# Register and activate a stack with the new deployer
-zenml stack register <STACK_NAME> -D <DEPLOYER_NAME> ... --set
-```
+With the deployer registered, select it explicitly at deploy time with the `-D`/`--deployer` option. The active stack still supplies the image builder and container registry used to build the deployment image.
 
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` and use it to deploy your pipeline as a Kubernetes Deployment with a Service. Check out [this page](https://docs.zenml.io/how-to/customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
@@ -124,7 +119,7 @@ ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE
 You can now [deploy any ZenML pipeline](https://docs.zenml.io/concepts/deployment) using the Kubernetes deployer:
 
 ```shell
-zenml pipeline deploy --name my_deployment my_module.my_pipeline
+zenml pipeline deploy --name my_deployment -D <DEPLOYER_NAME> my_module.my_pipeline
 ```
 
 ## Advanced configuration

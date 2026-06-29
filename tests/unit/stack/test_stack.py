@@ -113,6 +113,30 @@ def test_stack_returns_all_its_components(
     )
 
 
+def test_stack_does_not_accept_or_return_a_deployer(
+    local_orchestrator, local_artifact_store
+):
+    """Tests that the deployer is no longer part of the stack aggregation."""
+    stack = Stack(
+        id=uuid4(),
+        name="",
+        orchestrator=local_orchestrator,
+        artifact_store=local_artifact_store,
+    )
+
+    assert not hasattr(stack, "deployer")
+    assert StackComponentType.DEPLOYER not in stack._components
+
+    with pytest.raises(TypeError):
+        Stack(
+            id=uuid4(),
+            name="",
+            orchestrator=local_orchestrator,
+            artifact_store=local_artifact_store,
+            deployer=local_orchestrator,
+        )
+
+
 def test_stack_requirements(stack_with_mock_components):
     """Tests that the stack returns the requirements of all its components."""
     stack_with_mock_components.orchestrator.requirements = {"one_requirement"}

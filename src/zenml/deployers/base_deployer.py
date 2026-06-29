@@ -67,6 +67,7 @@ from zenml.stack.stack_component import StackComponentConfig
 from zenml.utils.uuid_utils import is_valid_uuid
 
 if TYPE_CHECKING:
+    from zenml.models import ComponentResponse
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -115,31 +116,40 @@ class BaseDeployer(StackComponent, ABC):
         return cast(BaseDeployerConfig, self._config)
 
     @classmethod
-    def get_active_deployer(cls) -> "BaseDeployer":
-        """Get the deployer registered in the active stack.
+    def get_deployer(
+        cls,
+        deployer: Union[
+            str, UUID, "BaseDeployer", "ComponentResponse", None
+        ] = None,
+    ) -> "BaseDeployer":
+        """Resolve a deployer instance.
+
+        Args:
+            deployer: The deployer to resolve. Can be a deployer instance, a
+                component model, a name or ID, or None to fall back to the
+                `default` deployer.
 
         Returns:
-            The deployer registered in the active stack.
-
-        Raises:
-            TypeError: if a deployer is not part of the
-                active stack.
+            The resolved deployer instance.
         """
+        from zenml.models import ComponentResponse
+
+        if isinstance(deployer, BaseDeployer):
+            return deployer
+
         client = Client()
-        deployer = client.active_stack.deployer
-        if not deployer or not isinstance(deployer, cls):
-            raise TypeError(
-                "The active stack needs to have a deployer "
-                "component registered to be able to deploy pipelines. "
-                "You can create a new stack with a deployer component "
-                "or update your active stack to add this component, e.g.:\n\n"
-                "  `zenml deployer register ...`\n"
-                "  `zenml stack register <STACK-NAME> -D ...`\n"
-                "  or:\n"
-                "  `zenml stack update -D ...`\n\n"
+        if isinstance(deployer, ComponentResponse):
+            component = deployer
+        elif deployer is not None:
+            component = client.get_stack_component(
+                StackComponentType.DEPLOYER, deployer
+            )
+        else:
+            component = client.get_stack_component(
+                StackComponentType.DEPLOYER, "default"
             )
 
-        return deployer
+        return cast(BaseDeployer, StackComponent.from_model(component))
 
     def _update_deployment(
         self,
@@ -222,33 +232,27 @@ class BaseDeployer(StackComponent, ABC):
                 "component\n"
             )
 
-    def _check_deployment_snapshot(
-        self, snapshot: Optional[PipelineSnapshotResponse] = None
-    ) -> None:
-        """Check if the snapshot was created for this deployer.
+    def _prepare_deployment_build(
+        self,
+        deployment: DeploymentResponse,
+        snapshot: PipelineSnapshotResponse,
+        stack: "Stack",
+    ) -> Optional[UUID]:
+        """Build the image required to provision the deployment.
+
+        The base deployer requires no image. Containerized deployers override
+        this to build the deployer image at deploy time.
 
         Args:
-            snapshot: The pipeline snapshot to check.
+            deployment: The deployment to build the image for.
+            snapshot: The pipeline snapshot to deploy.
+            stack: The stack supplying the image builder and container registry.
 
-        Raises:
-            DeploymentSnapshotMismatchError: if the pipeline snapshot is
-                not built for this deployer.
+        Returns:
+            The ID of the build to attach to the deployment, or None if no
+            build is required.
         """
-        if not snapshot:
-            return
-
-        if snapshot.stack and snapshot.stack.components.get(
-            StackComponentType.DEPLOYER
-        ):
-            deployer = snapshot.stack.components[StackComponentType.DEPLOYER][
-                0
-            ]
-            if deployer.id != self.id:
-                raise DeploymentSnapshotMismatchError(
-                    f"The pipeline snapshot with ID '{snapshot.id}' "
-                    f"was not created for the deployer {self.name}. This will "
-                    "lead to unexpected behavior and is not allowed."
-                )
+        return None
 
     def _check_snapshot_already_deployed(
         self,
@@ -533,11 +537,19 @@ class BaseDeployer(StackComponent, ABC):
                 "a different snapshot."
             )
 
+        # Track the build and snapshot already stored on the deployment (if
+        # any) so the deployer image can be reused on an unchanged re-provision.
+        existing_build_id: Optional[UUID] = None
+        existing_snapshot_id: Optional[UUID] = None
+
         try:
             # Get the existing deployment
             deployment = client.get_deployment(
                 deployment_name_or_id, project=snapshot.project_id
             )
+
+            existing_build_id = deployment.build_id
+            existing_snapshot_id = deployment.snapshot_id
 
             self._check_snapshot_already_deployed(snapshot, deployment.id)
 
@@ -581,7 +593,6 @@ class BaseDeployer(StackComponent, ABC):
                 )
 
             self._check_deployment_deployer(deployment)
-            self._check_deployment_snapshot(snapshot)
 
             deployment_update = DeploymentUpdate(
                 snapshot_id=snapshot.id,
@@ -604,6 +615,26 @@ class BaseDeployer(StackComponent, ABC):
             deployment = client.zen_store.update_deployment(
                 deployment.id,
                 deployment_update,
+            )
+
+        # Build the deployer image at deploy time. Reuse the existing build
+        # when the same snapshot is being re-provisioned.
+        if (
+            existing_build_id is not None
+            and existing_snapshot_id == snapshot.id
+        ):
+            build_id: Optional[UUID] = existing_build_id
+        else:
+            build_id = self._prepare_deployment_build(
+                deployment=deployment, snapshot=snapshot, stack=stack
+            )
+
+        if build_id is not None and build_id != deployment.build_id:
+            # `update_deployment` returns the deployment with its resources
+            # hydrated, so `get_image(deployment)` resolves the deployer image
+            # from the attached build.
+            deployment = client.zen_store.update_deployment(
+                deployment.id, DeploymentUpdate(build_id=build_id)
             )
 
         logger.info(

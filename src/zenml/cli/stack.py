@@ -202,14 +202,6 @@ def stack() -> None:
     required=False,
 )
 @click.option(
-    "-D",
-    "--deployer",
-    "deployer",
-    help="Name of the deployer for this stack.",
-    type=str,
-    required=False,
-)
-@click.option(
     "-l",
     "--log_store",
     "log_store",
@@ -279,7 +271,6 @@ def register_stack(
     annotator: Optional[str] = None,
     data_validator: Optional[str] = None,
     image_builder: Optional[str] = None,
-    deployer: Optional[str] = None,
     log_store: Optional[str] = None,
     sandbox: Tuple[str, ...] = (),
     set_stack: bool = False,
@@ -304,7 +295,6 @@ def register_stack(
         annotator: Name of the annotator for this stack.
         data_validator: Name of the data validator for this stack.
         image_builder: Name of the new image builder for this stack.
-        deployer: Name of the deployer for this stack.
         log_store: Name of the log store for this stack.
         sandbox: Names of sandboxes for this stack.
         set_stack: Immediately set this stack as active.
@@ -554,7 +544,6 @@ def register_stack(
             (StackComponentType.MODEL_DEPLOYER, model_deployer),
             (StackComponentType.MODEL_REGISTRY, model_registry),
             (StackComponentType.CONTAINER_REGISTRY, container_registry),
-            (StackComponentType.DEPLOYER, deployer),
         ]:
             if component_name_ and component_type_ not in components:
                 components[component_type_] = [
@@ -746,14 +735,6 @@ def register_stack(
     required=False,
 )
 @click.option(
-    "-D",
-    "--deployer",
-    "deployer",
-    help="Name of the deployer for this stack.",
-    type=str,
-    required=False,
-)
-@click.option(
     "-l",
     "--log_store",
     "log_store",
@@ -812,7 +793,6 @@ def update_stack(
     data_validator: Optional[str] = None,
     image_builder: Optional[str] = None,
     model_registry: Optional[str] = None,
-    deployer: Optional[str] = None,
     log_store: Optional[str] = None,
     sandbox: Tuple[str, ...] = (),
     secrets: List[str] = [],
@@ -836,7 +816,6 @@ def update_stack(
         data_validator: Name of the new data validator for this stack.
         image_builder: Name of the new image builder for this stack.
         model_registry: Name of the new model registry for this stack.
-        deployer: Name of the new deployer for this stack.
         log_store: Name of the log store for this stack.
         sandbox: Names of sandboxes for this stack.
         secrets: Secrets to attach to the stack.
@@ -883,8 +862,6 @@ def update_stack(
             updates[StackComponentType.ORCHESTRATOR] = [orchestrator]
         if step_operator:
             updates[StackComponentType.STEP_OPERATOR] = list(step_operator)
-        if deployer:
-            updates[StackComponentType.DEPLOYER] = [deployer]
         if log_store:
             updates[StackComponentType.LOG_STORE] = [log_store]
         if sandbox:
@@ -995,14 +972,6 @@ def update_stack(
     required=False,
 )
 @click.option(
-    "-D",
-    "--deployer",
-    "deployer_flag",
-    help="Include this to remove the deployer from this stack.",
-    is_flag=True,
-    required=False,
-)
-@click.option(
     "-l",
     "--log_store",
     "log_store_flag",
@@ -1030,7 +999,6 @@ def remove_stack_component(
     data_validator_flag: Optional[bool] = False,
     image_builder_flag: Optional[bool] = False,
     model_registry_flag: Optional[str] = None,
-    deployer_flag: Optional[bool] = False,
     log_store_flag: Optional[bool] = False,
     sandbox_flag: Optional[bool] = False,
 ) -> None:
@@ -1050,7 +1018,6 @@ def remove_stack_component(
         data_validator_flag: To remove the data validator from this stack.
         image_builder_flag: To remove the image builder from this stack.
         model_registry_flag: To remove the model registry from this stack.
-        deployer_flag: To remove the deployer from this stack.
         log_store_flag: To remove the log store from this stack.
         sandbox_flag: To remove the sandbox from this stack.
     """
@@ -1088,9 +1055,6 @@ def remove_stack_component(
 
         if image_builder_flag:
             stack_component_update[StackComponentType.IMAGE_BUILDER] = []
-
-        if deployer_flag:
-            stack_component_update[StackComponentType.DEPLOYER] = []
 
         if log_store_flag:
             stack_component_update[StackComponentType.LOG_STORE] = []
@@ -1270,7 +1234,6 @@ def rename_stack(
         "user",
         "artifact_store",
         "orchestrator",
-        "deployer",
     ],
 )
 @click.pass_context

@@ -20,23 +20,37 @@ To use the Docker deployer, you only need to have [Docker](https://www.docker.co
 
 ## How to use it
 
-To use the Docker deployer, you can register it and use it in your active stack:
+To use the Docker deployer, register it and then select it at deploy time:
 
 ```shell
 zenml deployer register docker --flavor=docker
-
-# Register and activate a stack with the new deployer
-zenml stack register docker-deployer -D docker -o default -a default --set
 ```
 {% hint style="info" %}
 ZenML will build a local Docker image called `zenml:<PIPELINE_NAME>` and use it to deploy your pipeline as a Docker container. Check out [this page](https://docs.zenml.io/how-to/customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
-You can now [deploy any ZenML pipeline](https://docs.zenml.io/concepts/deployment) using the Docker deployer:
+You can now [deploy any ZenML pipeline](https://docs.zenml.io/concepts/deployment) using the Docker deployer by selecting it with the `-D`/`--deployer` option:
 
 ```shell
-zenml pipeline deploy my_module.my_pipeline
+zenml pipeline deploy -D docker my_module.my_pipeline
 ```
+
+{% hint style="warning" %}
+**Local artifact stores are not supported with the Docker deployer.** By default, ZenML uploads your pipeline code to the artifact store and the deployment container downloads it on startup. A Docker container cannot reach a local artifact store, so the download fails and the container cannot import your pipeline (you will see a `ModuleNotFoundError` for your pipeline module). Use one of the following instead:
+
+* a [remote artifact store](https://docs.zenml.io/stacks/artifact-stores/) or a [code repository](https://docs.zenml.io/user-guides/production-guide/connect-code-repository) that the container can access, or
+* include the code in the image so nothing needs to be downloaded at runtime:
+
+```python
+from zenml.config import DockerSettings
+
+docker_settings = DockerSettings(
+    allow_including_files_in_images=True,
+    allow_download_from_artifact_store=False,
+    allow_download_from_code_repository=False,
+)
+```
+{% endhint %}
 
 ### Additional configuration
 

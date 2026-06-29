@@ -375,13 +375,8 @@ class Compiler:
 
         used_by_orchestrator = stack.orchestrator.flavor != "local"
         used_by_step_operator = stack.step_operator is not None
-        used_by_deployer = (
-            stack.deployer is not None and stack.deployer.flavor != "local"
-        )
 
-        if not (
-            used_by_orchestrator or used_by_step_operator or used_by_deployer
-        ):
+        if not (used_by_orchestrator or used_by_step_operator):
             WARNING_CONTROLLER.info(
                 warning_code=WarningCodes.ZML002, message=warning_message
             )

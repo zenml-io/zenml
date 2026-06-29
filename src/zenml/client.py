@@ -231,6 +231,7 @@ from zenml.utils.pagination_utils import depaginate
 from zenml.utils.uuid_utils import is_valid_uuid
 
 if TYPE_CHECKING:
+    from zenml.deployers.base_deployer import BaseDeployer
     from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
     from zenml.orchestrators import BaseOrchestrator
     from zenml.service_connectors.service_connector import ServiceConnector
@@ -3121,7 +3122,6 @@ class Client(metaclass=ClientMetaClass):
         schedule_id: UUIDFilterOption = None,
         source_snapshot_id: UUIDFilterOption = None,
         runnable: Optional[bool] = None,
-        deployable: Optional[bool] = None,
         deployed: Optional[bool] = None,
         tags: StringFilterOption = None,
         hydrate: bool = False,
@@ -3148,7 +3148,6 @@ class Client(metaclass=ClientMetaClass):
             schedule_id: The ID of the schedule to filter by.
             source_snapshot_id: The ID of the source snapshot to filter by.
             runnable: Whether the snapshot is runnable.
-            deployable: Whether the snapshot is deployable.
             deployed: Whether the snapshot is deployed.
             tags: Filter by tags.
             hydrate: Flag deciding whether to hydrate the output model(s)
@@ -3176,7 +3175,6 @@ class Client(metaclass=ClientMetaClass):
             schedule_id=schedule_id,
             source_snapshot_id=source_snapshot_id,
             runnable=runnable,
-            deployable=deployable,
             deployed=deployed,
             tags=tags,
             trigger_id=trigger_id,
@@ -3633,6 +3631,7 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: Union[str, UUID],
         project: Optional[Union[str, UUID]] = None,
         snapshot_id: Optional[Union[str, UUID]] = None,
+        deployer: Union[str, UUID, "BaseDeployer", None] = None,
         timeout: Optional[int] = None,
     ) -> DeploymentResponse:
         """Provision a deployment.
@@ -3643,6 +3642,10 @@ class Client(metaclass=ClientMetaClass):
             snapshot_id: The ID of the snapshot to use. If not provided,
                 the previous snapshot configured for the deployment will be
                 used.
+            deployer: The deployer to use. Can be a deployer instance, a name
+                or ID. Ignored when re-provisioning an existing deployment,
+                which keeps its stored deployer. If not provided for a new
+                deployment, the `default` deployer is used.
             timeout: The maximum time in seconds to wait for the pipeline
                 deployment to be provisioned.
 
@@ -3676,7 +3679,7 @@ class Client(metaclass=ClientMetaClass):
                 raise
 
         stack = Client().active_stack
-        deployer: Optional[BaseDeployer] = None
+        resolved_deployer: Optional[BaseDeployer] = None
 
         if snapshot_id:
             snapshot = self.get_snapshot(
@@ -3698,18 +3701,19 @@ class Client(metaclass=ClientMetaClass):
                 )
             snapshot = deployment.snapshot
 
-            if deployment.deployer:
-                try:
-                    deployer = cast(
-                        BaseDeployer,
-                        StackComponent.from_model(deployment.deployer),
-                    )
-                except ImportError:
-                    raise NotImplementedError(
-                        f"Deployer '{deployment.deployer.name}' could "
-                        f"not be instantiated. This is likely because the "
-                        f"deployer's dependencies are not installed."
-                    )
+        # An existing deployment keeps the deployer it was provisioned with.
+        if deployment and deployment.deployer:
+            try:
+                resolved_deployer = cast(
+                    BaseDeployer,
+                    StackComponent.from_model(deployment.deployer),
+                )
+            except ImportError:
+                raise NotImplementedError(
+                    f"Deployer '{deployment.deployer.name}' could "
+                    f"not be instantiated. This is likely because the "
+                    f"deployer's dependencies are not installed."
+                )
 
         if snapshot.stack and snapshot.stack.id != stack.id:
             # We really need to use the original stack for which the deployment
@@ -3717,19 +3721,11 @@ class Client(metaclass=ClientMetaClass):
             # might not have the correct dependencies installed.
             stack = Stack.from_model(snapshot.stack)
 
-        if not deployer:
-            if stack.deployer:
-                deployer = stack.deployer
-            else:
-                raise ValueError(
-                    f"No deployer was found in the deployment's stack "
-                    f"'{stack.name}' or in your active stack. Please add a "
-                    "deployer to your stack to be able to provision a "
-                    "deployment."
-                )
+        if not resolved_deployer:
+            resolved_deployer = BaseDeployer.get_deployer(deployer)
 
         # Provision the endpoint through the deployer
-        deployment = deployer.provision_deployment(
+        deployment = resolved_deployer.provision_deployment(
             snapshot=snapshot,
             stack=stack,
             deployment_name_or_id=deployment_name_or_id,

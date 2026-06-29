@@ -355,7 +355,7 @@ class DockerDeployer(ContainerizedDeployer):
             f"Starting container for deployment '{deployment.name}'..."
         )
 
-        image = self.get_image(deployment.snapshot)
+        image = self.get_image(deployment)
 
         try:
             self.docker_client.images.get(image)
