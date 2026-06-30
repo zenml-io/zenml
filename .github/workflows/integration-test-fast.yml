@@ -169,7 +169,7 @@ jobs:
           sudo systemctl start docker
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
       - name: Restore uv cache
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: ${{ inputs.os == 'ubuntu-latest' && '/opt/uv-cache' || '~/.cache/uv' }}
           key: |
