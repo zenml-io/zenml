@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Tests for step launcher helpers."""
 
 from contextlib import ExitStack as does_not_raise
 from uuid import uuid4
@@ -20,19 +21,14 @@ import pytest
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.orchestrators.step_launcher import (
     StepLauncher,
-    _get_step_operator,
 )
 from zenml.stack import Stack
 
 
 def test_step_operator_validation(local_stack, sample_step_operator):
-    """Tests that the step operator gets correctly extracted and validated
-    from the stack."""
-
+    """Tests that the step operator gets correctly extracted and validated."""
     with pytest.raises(RuntimeError):
-        _get_step_operator(
-            stack=local_stack, step_operator_name="step_operator"
-        )
+        local_stack.get_step_operator(name="step_operator")
 
     components = local_stack._components
     components[StackComponentType.STEP_OPERATOR] = [sample_step_operator]
@@ -40,15 +36,13 @@ def test_step_operator_validation(local_stack, sample_step_operator):
         id=uuid4(), name="", components=components
     )
     with pytest.raises(RuntimeError):
-        _get_step_operator(
-            stack=stack_with_step_operator,
-            step_operator_name="not_the_step_operator_name",
+        stack_with_step_operator.get_step_operator(
+            name="not_the_step_operator_name"
         )
 
     with does_not_raise():
-        _get_step_operator(
-            stack=stack_with_step_operator,
-            step_operator_name=sample_step_operator.name,
+        stack_with_step_operator.get_step_operator(
+            name=sample_step_operator.name
         )
 
 

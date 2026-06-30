@@ -66,7 +66,7 @@ class ResourcePoolCapacityComponentSettings(BaseZenModel):
 class ResourceRequestServiceConnectorSettings(BaseZenModel):
     """Service connector settings selected for a resource request."""
 
-    service_connector_id: Optional[UUID] = Field(
+    connector_id: Optional[UUID] = Field(
         default=None,
         title="The service connector ID selected for the request.",
     )
