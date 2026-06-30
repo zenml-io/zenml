@@ -166,6 +166,8 @@ class ServerConfiguration(BaseModel):
             server.
         workload_manager_implementation_source: Source pointing to a class
             implementing the workload management interface.
+        snapshot_run_dispatcher_implementation_source: Source pointing to a
+            class implementing the snapshot run dispatcher interface.
         max_concurrent_snapshot_runs: The maximum number of concurrent snapshot
             runs that can be executed on the server.
         pipeline_run_auth_window: The default time window in minutes for which
@@ -332,6 +334,11 @@ class ServerConfiguration(BaseModel):
     workload_manager_implementation_source: Optional[str] = None
     resource_pool_implementation_source: Optional[str] = None
     stream_broker_implementation_source: Optional[str] = None
+    # TODO: Configure this through workspace provisioning before merging. This
+    # temporary default intentionally requires the Pro plugin during development.
+    snapshot_run_dispatcher_implementation_source: Optional[str] = (
+        "zenml_cloud_plugins.snapshot_run_dispatcher.RedisSnapshotRunDispatcher"
+    )
     streaming_heartbeat_seconds: float = Field(default=30.0, gt=0.0)
     streaming_max_subscribers_per_stream: int = Field(default=100, gt=0)
     streaming_broadcaster_idle_grace_seconds: float = Field(

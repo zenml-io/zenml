@@ -108,11 +108,13 @@ from zenml.zen_server.utils import (
     initialize_request_manager,
     initialize_resource_pool_store,
     initialize_snapshot_executor,
+    initialize_snapshot_run_dispatcher,
     initialize_streaming,
     initialize_workload_manager,
     initialize_zen_store,
     register_event_handlers,
     server_config,
+    shutdown_snapshot_run_dispatcher,
     shutdown_streaming,
     snapshot_executor,
     start_event_loop_lag_monitor,
@@ -209,6 +211,7 @@ async def initialize() -> None:
     initialize_workload_manager()
     initialize_resource_pool_store()
     initialize_snapshot_executor()
+    await initialize_snapshot_run_dispatcher()
     initialize_artifact_store_cache()
     await initialize_streaming()
     initialize_secure_headers()
@@ -230,6 +233,7 @@ async def shutdown() -> None:
         stop_event_loop_lag_monitor()
     shutdown_otel()
     snapshot_executor().shutdown(wait=True)
+    await shutdown_snapshot_run_dispatcher()
     await shutdown_streaming()
     await cleanup_request_manager()
     cleanup_artifact_store_cache()
