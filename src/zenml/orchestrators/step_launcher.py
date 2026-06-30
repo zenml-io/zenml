@@ -487,23 +487,9 @@ class StepLauncher:
         Returns:
             The terminal step run if available, None otherwise.
         """  # noqa: DOC502, DOC503
-        service_connector_settings = (
-            allocated_resource_request.get_resources().service_connector_settings
-            if allocated_resource_request
-            else None
-        )
         step_operator = self._stack.get_step_operator(
             name=step_operator_name,
-            service_connector_id=(
-                service_connector_settings.service_connector_id
-                if service_connector_settings
-                else None
-            ),
-            service_connector_resource_id=(
-                service_connector_settings.resource_id
-                if service_connector_settings
-                else None
-            ),
+            allocated_resource_request=allocated_resource_request,
         )
 
         command, args = orchestrator_utils.get_step_entrypoint_command(

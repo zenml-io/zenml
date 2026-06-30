@@ -100,7 +100,7 @@ class KubernetesStepOperator(BaseStepOperator):
                     "needs to write files into the artifact store, but the "
                     f"artifact store `{stack.artifact_store.name}` of the "
                     "active stack is local. Please ensure that your stack "
-                    "contains a remote artifact store when using the Vertex "
+                    "contains a remote artifact store when using the Kubernetes "
                     "step operator."
                 )
 

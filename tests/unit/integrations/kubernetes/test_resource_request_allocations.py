@@ -288,7 +288,7 @@ def test_service_connector_settings_do_not_override_component_settings() -> (
     request = _resource_request(
         demands=[ResourceRequestDemand(kind="gpu", quantity=1)],
         service_connector_settings=ResourceRequestServiceConnectorSettings(
-            service_connector_id=uuid4(),
+            connector_id=uuid4(),
             resource_type="kubernetes-cluster",
             resource_id="cluster",
         ),

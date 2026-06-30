@@ -76,6 +76,7 @@ if TYPE_CHECKING:
         PipelineRunResponse,
         PipelineSnapshotBase,
         PipelineSnapshotResponse,
+        ResourceRequestResponse,
     )
     from zenml.orchestrators import BaseOrchestrator
     from zenml.sandboxes import BaseSandbox
@@ -748,33 +749,29 @@ class Stack:
         self,
         component_type: StackComponentType,
         name: Optional[str] = None,
-        service_connector_id: Optional[UUID] = None,
-        service_connector_resource_id: Optional[str] = None,
+        allocated_resource_request: Optional["ResourceRequestResponse"] = None,
     ) -> Optional["StackComponent"]:
-        """Get a stack component, optionally overriding its connector link.
+        """Get a stack component with optional resource request overrides.
 
         This method returns the component attached to this stack when no
-        effective override is requested. If the requested service connector ID
-        or resource ID differs from the component's existing link, the stack
-        creates a shallow component copy with the requested connector link and
-        caches it locally. This keeps runtime overrides isolated to the stack
-        instance and avoids mutating the component that was loaded from the
-        stack model.
+        effective override is requested. If the allocated resource request
+        selects runtime configuration that differs from the component's
+        existing configuration, the stack creates a shallow component copy with
+        the requested overrides and caches it locally. This keeps runtime
+        overrides isolated to the stack instance and avoids mutating the
+        component that was loaded from the stack model.
 
         Args:
             component_type: Type of component to fetch.
             name: Optional component name. If omitted, the first component of
                 the requested type is used.
-            service_connector_id: Optional service connector ID to attach to
-                the returned component. If omitted, the component's current
-                connector ID is kept.
-            service_connector_resource_id: Optional service connector resource
-                ID to attach to the returned component. If omitted, the
-                component's current connector resource ID is kept.
+            allocated_resource_request: Optional allocated resource request
+                whose selected runtime settings should be applied to the
+                returned component.
 
         Returns:
-            The matching component, a cached copy with the requested service
-            connector link, or `None` if the stack does not contain a matching
+            The matching component, a cached copy with the requested runtime
+            overrides, or `None` if the stack does not contain a matching
             component.
         """
         components = self.get_components_by_type(component_type)
@@ -793,11 +790,37 @@ class Stack:
         if component is None:
             return None
 
+        connector_id, connector_resource_id = (
+            self._get_service_connector_override(
+                allocated_resource_request=allocated_resource_request,
+            )
+        )
+
         return self._get_component_with_service_connector(
             component=component,
-            service_connector_id=service_connector_id,
-            service_connector_resource_id=service_connector_resource_id,
+            service_connector_id=connector_id,
+            service_connector_resource_id=connector_resource_id,
         )
+
+    @staticmethod
+    def _get_service_connector_override(
+        allocated_resource_request: Optional["ResourceRequestResponse"],
+    ) -> Tuple[Optional[UUID], Optional[str]]:
+        """Resolve connector overrides from a request.
+
+        Args:
+            allocated_resource_request: Optional allocated resource request
+                whose selected service connector settings should be applied.
+
+        Returns:
+            The effective service connector ID and resource ID overrides.
+        """
+        if allocated_resource_request:
+            settings = allocated_resource_request.get_resources().service_connector_settings
+            if settings:
+                return settings.connector_id, settings.resource_id
+
+        return None, None
 
     def _get_component_with_service_connector(
         self,
@@ -964,30 +987,26 @@ class Stack:
     def get_step_operator(
         self,
         name: Optional[str] = None,
-        service_connector_id: Optional[UUID] = None,
-        service_connector_resource_id: Optional[str] = None,
+        allocated_resource_request: Optional["ResourceRequestResponse"] = None,
     ) -> "BaseStepOperator":
-        """Get a step operator, optionally overriding its connector link.
+        """Get a step operator with optional resource request overrides.
 
         This is the step-operator-specific wrapper around
         `get_stack_component()`. It preserves the existing step operator lookup
         behavior and error messages while allowing runtime systems, such as
-        dynamic pipeline resource requests, to execute a step with a service
-        connector/resource pair selected after the stack was loaded.
+        dynamic pipeline resource requests, to execute a step with component
+        configuration selected after the stack was loaded.
 
         Args:
             name: Optional step operator name. If omitted, the default step
                 operator is used.
-            service_connector_id: Optional service connector ID to attach to
-                the returned step operator. If omitted, the step operator's
-                current connector ID is kept.
-            service_connector_resource_id: Optional service connector resource
-                ID to attach to the returned step operator. If omitted, the
-                step operator's current connector resource ID is kept.
+            allocated_resource_request: Optional allocated resource request
+                whose selected runtime settings should be applied to the
+                returned step operator.
 
         Returns:
-            The requested step operator, or a cached stack-local copy with the
-            requested service connector link.
+            The requested step operator, or a cached stack-local copy with
+            runtime overrides from the allocated resource request.
 
         Raises:
             RuntimeError: If the stack has no step operator, or if no step
@@ -996,8 +1015,7 @@ class Stack:
         step_operator = self.get_stack_component(
             component_type=StackComponentType.STEP_OPERATOR,
             name=name,
-            service_connector_id=service_connector_id,
-            service_connector_resource_id=service_connector_resource_id,
+            allocated_resource_request=allocated_resource_request,
         )
 
         if step_operator is None:
