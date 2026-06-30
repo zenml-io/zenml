@@ -712,11 +712,9 @@ class RMTargetSettingsResponse(BaseModel):
         self,
     ) -> ResourceRequestServiceConnectorSettings:
         """Convert service connector target settings into a ZenML model."""
-        service_connector_id = self.settings.get("service_connector_id")
+        connector_id = self.settings.get("connector_id")
         return ResourceRequestServiceConnectorSettings(
-            service_connector_id=UUID(str(service_connector_id))
-            if service_connector_id
-            else None,
+            connector_id=UUID(str(connector_id)) if connector_id else None,
             resource_type=self.settings.get("resource_type"),
             resource_id=self.settings.get("resource_id"),
         )

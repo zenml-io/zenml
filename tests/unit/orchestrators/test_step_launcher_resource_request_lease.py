@@ -403,15 +403,13 @@ def test_step_operator_receives_allocated_resource_request(monkeypatch):
         entrypoint_config_class=EntrypointConfiguration,
     )
     step_operator.submit = MagicMock()
-    launcher._stack = MagicMock()
+    launcher._stack = MagicMock(
+        get_step_operator=MagicMock(return_value=step_operator)
+    )
     launcher._snapshot = MagicMock(id=uuid4())
     launcher._invocation_id = "step"
     launcher._wait = False
 
-    monkeypatch.setattr(
-        "zenml.orchestrators.step_launcher._get_step_operator",
-        MagicMock(return_value=step_operator),
-    )
     monkeypatch.setattr(
         "zenml.orchestrators.step_launcher.orchestrator_utils.get_config_environment_vars",
         MagicMock(return_value=({}, {})),
@@ -434,4 +432,8 @@ def test_step_operator_receives_allocated_resource_request(monkeypatch):
     assert (
         step_operator.submit.call_args.kwargs["allocated_resource_request"]
         == allocated
+    )
+    launcher._stack.get_step_operator.assert_called_once_with(
+        name=None,
+        allocated_resource_request=allocated,
     )
