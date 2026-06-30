@@ -1273,6 +1273,7 @@ class SqlZenStore(BaseZenStore):
         ] = None,
         hydrate: bool = False,
         apply_query_options_from_schema: bool = False,
+        query_options_kwargs: Optional[Dict[str, Any]] = None,
     ) -> Page[AnyResponse]:
         """Given a query, return a Page instance with a list of filtered Models.
 
@@ -1295,6 +1296,8 @@ class SqlZenStore(BaseZenStore):
                 by including metadata fields in the response.
             apply_query_options_from_schema: Flag deciding whether to apply
                 query options defined on the schema.
+            query_options_kwargs: Extra keyword arguments forwarded to the
+                schema's `get_query_options`.
 
         Returns:
             The Domain Model representation of the DB resource
@@ -1360,18 +1363,22 @@ class SqlZenStore(BaseZenStore):
                 filter_model.offset : filter_model.offset + filter_model.size
             ]
         else:
-            # Apply sorting for the data fetch. Sorting can introduce its own
-            # join (e.g. ordering by a related column), so re-check before
-            # applying DISTINCT.
             query = filter_model.apply_sorting(query=query, table=table)
-            if cls._query_requires_distinct(query):
-                query = query.distinct()
 
             query_options = table.get_query_options(
-                include_metadata=hydrate, include_resources=True
+                include_metadata=hydrate,
+                include_resources=True,
+                many=True,
+                **(query_options_kwargs or {}),
             )
             if apply_query_options_from_schema and query_options:
                 query = query.options(*query_options)
+
+            # Check for DISTINCT after sorting and query options are applied so
+            # the check sees every join in the final query, including the ones
+            # added by sorting on a related column and by eager loaders.
+            if cls._query_requires_distinct(query):
+                query = query.distinct()
 
             query_result = session.exec(
                 query.limit(filter_model.size).offset(filter_model.offset)
@@ -6177,12 +6184,15 @@ class SqlZenStore(BaseZenStore):
         """
         helper = DAGGeneratorHelper()
         with Session(self.engine) as session:
-            # TODO: better loads for dynamic/static pipelines
             run = self._get_schema_by_id(
                 resource_id=pipeline_run_id,
                 schema_class=PipelineRunSchema,
                 session=session,
                 query_options=[
+                    load_only(
+                        jl_arg(PipelineRunSchema.status),
+                        jl_arg(PipelineRunSchema.start_time),
+                    ),
                     selectinload(jl_arg(PipelineRunSchema.snapshot)).load_only(
                         jl_arg(PipelineSnapshotSchema.pipeline_configuration),
                         jl_arg(PipelineSnapshotSchema.is_dynamic),
@@ -6194,10 +6204,34 @@ class SqlZenStore(BaseZenStore):
                     ),
                     selectinload(
                         jl_arg(PipelineRunSchema.step_runs)
-                    ).selectinload(jl_arg(StepRunSchema.input_artifacts)),
-                    selectinload(
-                        jl_arg(PipelineRunSchema.step_runs)
-                    ).selectinload(jl_arg(StepRunSchema.output_artifacts)),
+                    ).load_only(
+                        jl_arg(StepRunSchema.name),
+                        jl_arg(StepRunSchema.status),
+                        jl_arg(StepRunSchema.start_time),
+                        jl_arg(StepRunSchema.end_time),
+                    ),
+                    selectinload(jl_arg(PipelineRunSchema.step_runs))
+                    .selectinload(jl_arg(StepRunSchema.input_artifacts))
+                    .joinedload(
+                        jl_arg(StepRunInputArtifactSchema.artifact_version),
+                        innerjoin=True,
+                    )
+                    .load_only(
+                        jl_arg(ArtifactVersionSchema.type),
+                        jl_arg(ArtifactVersionSchema.data_type),
+                        jl_arg(ArtifactVersionSchema.save_type),
+                    ),
+                    selectinload(jl_arg(PipelineRunSchema.step_runs))
+                    .selectinload(jl_arg(StepRunSchema.output_artifacts))
+                    .joinedload(
+                        jl_arg(StepRunOutputArtifactSchema.artifact_version),
+                        innerjoin=True,
+                    )
+                    .load_only(
+                        jl_arg(ArtifactVersionSchema.type),
+                        jl_arg(ArtifactVersionSchema.data_type),
+                        jl_arg(ArtifactVersionSchema.save_type),
+                    ),
                     selectinload(
                         jl_arg(PipelineRunSchema.step_runs)
                     ).selectinload(jl_arg(StepRunSchema.dynamic_config)),
@@ -6897,7 +6931,9 @@ class SqlZenStore(BaseZenStore):
                 schema_class=PipelineRunSchema,
                 session=session,
                 query_options=PipelineRunSchema.get_query_options(
-                    include_metadata=hydrate, include_resources=True
+                    include_metadata=hydrate,
+                    include_resources=True,
+                    include_full_metadata=include_full_metadata,
                 ),
             )
             return run.to_model(
@@ -7238,6 +7274,9 @@ class SqlZenStore(BaseZenStore):
                     )
                 ),
                 apply_query_options_from_schema=True,
+                query_options_kwargs={
+                    "include_full_metadata": include_full_metadata
+                },
             )
 
     def update_run(

@@ -404,19 +404,19 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
             selectinload(jl_arg(ArtifactVersionSchema.artifact)),
         ]
 
-        # if include_metadata:
-        #     options.extend(
-        #         [
-        #             joinedload(jl_arg(ArtifactVersionSchema.visualizations)),
-        #             joinedload(jl_arg(ArtifactVersionSchema.run_metadata)),
-        #         ]
-        #     )
+        if include_metadata:
+            options.extend(
+                [
+                    selectinload(jl_arg(ArtifactVersionSchema.run_metadata)),
+                ]
+            )
 
         if include_resources:
             options.extend(
                 [
                     selectinload(jl_arg(ArtifactVersionSchema.user)),
                     selectinload(jl_arg(ArtifactVersionSchema.tags)),
+                    selectinload(jl_arg(ArtifactVersionSchema.visualizations)),
                 ]
             )
 
