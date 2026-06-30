@@ -17,11 +17,9 @@ from abc import ABC
 from typing import (
     TYPE_CHECKING,
     List,
-    Optional,
     Set,
     cast,
 )
-from uuid import UUID
 
 import zenml
 from zenml.config.build_configuration import BuildConfiguration
@@ -52,6 +50,8 @@ class ContainerizedDeployer(BaseDeployer, ABC):
     def get_image(deployment: DeploymentResponse) -> str:
         """Get the docker image used to deploy a deployment.
 
+        The serving image lives on the deployment's snapshot.
+
         Args:
             deployment: The deployment to get the image for.
 
@@ -59,89 +59,79 @@ class ContainerizedDeployer(BaseDeployer, ABC):
             The docker image used to deploy the deployment.
 
         Raises:
-            RuntimeError: if the deployment does not have a build or if the
-                deployer image is not in the build.
+            RuntimeError: if the snapshot has no build or the build has no
+                deployer image.
         """
-        if deployment.build is None:
-            raise RuntimeError("Deployment does not have a build.")
-        if DEPLOYER_DOCKER_IMAGE_KEY not in deployment.build.images:
-            raise RuntimeError(
-                "Deployment build does not have a deployer image."
-            )
-        return deployment.build.images[DEPLOYER_DOCKER_IMAGE_KEY].image
+        from zenml.client import Client
 
-    def _prepare_deployment_build(
+        if deployment.snapshot is None:
+            raise RuntimeError("Deployment does not have a snapshot.")
+
+        build = (
+            Client().get_snapshot(deployment.snapshot.id, hydrate=True).build
+        )
+        if build is None:
+            raise RuntimeError("Deployment snapshot does not have a build.")
+        if DEPLOYER_DOCKER_IMAGE_KEY not in build.images:
+            raise RuntimeError(
+                "Deployment snapshot build does not have a deployer image."
+            )
+        return build.images[DEPLOYER_DOCKER_IMAGE_KEY].image
+
+    def _validate_snapshot_deployable(
         self,
         snapshot: PipelineSnapshotResponse,
         stack: "Stack",
-        local_code_available: bool = False,
-    ) -> Optional[UUID]:
-        """Build the deployer image for the deployment.
+    ) -> None:
+        """Require a serving image in the snapshot built for this deployer.
 
-        The deployer image is built through the same machinery as any other
-        pipeline image. The code is built into the image from the local code
-        when deploying directly from local code, otherwise the image is
-        code-free and the running container downloads the code from the
-        snapshot.
+        The serving image is deployer-specific (it carries the deployer's
+        requirements), so a snapshot can only be deployed by the deployer its
+        image was built for. The match is checked against the stored image
+        settings checksum, which the deployer's requirements feed into.
 
         Args:
             snapshot: The pipeline snapshot to deploy.
-            stack: The stack supplying the image builder and container registry.
-            local_code_available: Whether the local code can be built into the
-                image, set only when deploying directly from local code.
+            stack: The stack the snapshot will be deployed on.
 
         Raises:
-            DeployerError: If the deployment has no code to run.
-
-        Returns:
-            The ID of the build containing the deployer image, or None if no
-            build is required.
+            DeployerError: If the snapshot has no serving image, or its image
+                was built for a different deployer.
         """
-        from zenml.pipelines.build_utils import build_required_images
-        from zenml.utils import code_repository_utils
-
-        assert snapshot.stack is not None
-
         snapshot_base = cast(PipelineSnapshotBase, snapshot)
         required_builds = self.get_docker_builds(snapshot_base)
         if not required_builds:
-            return None
+            return
 
-        code_repository = None
-        if local_code_available:
-            local_repo = code_repository_utils.find_active_code_repository()
-            if local_repo and not local_repo.has_local_changes:
-                code_repository = local_repo.code_repository
-
-        if required_builds[0].should_include_files(
-            code_repository=code_repository
+        if (
+            not snapshot.build
+            or DEPLOYER_DOCKER_IMAGE_KEY not in snapshot.build.images
         ):
-            if not local_code_available:
-                raise DeployerError(
-                    "The pipeline code must be built into the deployer image, "
-                    "but there is no local code to build from. Deploy from "
-                    "local code, or use a snapshot whose code is uploaded to "
-                    "the artifact store or tracked in a code repository."
-                )
-        elif not snapshot.code_path and not snapshot.code_reference:
             raise DeployerError(
-                "The deployer image does not contain the pipeline code and the "
-                "snapshot has no code to download at runtime. Use a snapshot "
-                "whose code is uploaded to the artifact store or tracked in a "
-                "code repository."
+                "The snapshot does not contain a serving image. Deploy the "
+                "pipeline with `pipeline.deploy(...)` to build one."
             )
 
-        stack.ensure_image_builder()
-        build = build_required_images(
-            snapshot=snapshot_base,
-            stack=stack,
-            stack_model=snapshot.stack,
-            required_builds=required_builds,
-            project_id=snapshot.project_id,
-            pipeline_id=snapshot.pipeline.id,
-            code_repository=code_repository,
+        code_repository = None
+        if snapshot.code_reference:
+            from zenml.code_repositories import BaseCodeRepository
+
+            code_repository = BaseCodeRepository.from_model(
+                snapshot.code_reference.code_repository
+            )
+
+        expected_checksum = required_builds[0].compute_settings_checksum(
+            stack, code_repository=code_repository
         )
-        return build.id if build else None
+        actual_checksum = snapshot.build.get_settings_checksum(
+            DEPLOYER_DOCKER_IMAGE_KEY
+        )
+        if expected_checksum != actual_checksum:
+            raise DeployerError(
+                "The snapshot's serving image was not built for the deployer "
+                f"'{self.name}'. Deploy with the deployer the snapshot was "
+                "built for, or build a new snapshot with `pipeline.deploy(...)`."
+            )
 
     @property
     def requirements(self) -> Set[str]:
@@ -185,8 +175,8 @@ class ContainerizedDeployer(BaseDeployer, ABC):
         }
 
         # The deployer is no longer part of the stack, so its own requirements
-        # are not picked up by `stack.requirements()` during the deploy-time
-        # build. Inject them here (e.g. the `zenml[local]` extra that provides
+        # are not picked up by `stack.requirements()` when the serving image is
+        # built. Inject them here (e.g. the `zenml[local]` extra that provides
         # the DB drivers needed for a direct database connection).
         if docker_settings.install_stack_requirements:
             deployer_requirements = sorted(self.requirements)

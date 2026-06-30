@@ -18,16 +18,6 @@ depends_on = None
 
 def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
-    with op.batch_alter_table("deployment", schema=None) as batch_op:
-        batch_op.add_column(sa.Column("build_id", sa.Uuid(), nullable=True))
-        batch_op.create_foreign_key(
-            "fk_deployment_build_id_pipeline_build",
-            "pipeline_build",
-            ["build_id"],
-            ["id"],
-            ondelete="SET NULL",
-        )
-
     # Detach every deployer from every stack while keeping the deployer
     # components themselves. Deployers are selected explicitly at deploy time
     # and are no longer part of the stack aggregation.
@@ -60,8 +50,5 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade database schema and/or data back to the previous revision."""
-    with op.batch_alter_table("deployment", schema=None) as batch_op:
-        batch_op.drop_constraint(
-            "fk_deployment_build_id_pipeline_build", type_="foreignkey"
-        )
-        batch_op.drop_column("build_id")
+    # The deployer-stack detachment is a data migration and is not reversed.
+    pass

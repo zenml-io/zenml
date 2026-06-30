@@ -232,26 +232,20 @@ class BaseDeployer(StackComponent, ABC):
                 "component\n"
             )
 
-    def _prepare_deployment_build(
+    def _validate_snapshot_deployable(
         self,
         snapshot: PipelineSnapshotResponse,
         stack: "Stack",
-        local_code_available: bool = False,
-    ) -> Optional[UUID]:
-        """Build the image required to provision the deployment.
+    ) -> None:
+        """Validate that the snapshot can be deployed by this deployer.
 
-        The base deployer requires no image. Containerized deployers override
-        this to build the deployer image at deploy time.
+        The base deployer requires no image, so any snapshot is deployable.
+        Containerized deployers override this to require a serving image that
+        was built for this deployer.
 
         Args:
             snapshot: The pipeline snapshot to deploy.
-            stack: The stack supplying the image builder and container registry.
-            local_code_available: Whether the local code can be built into the
-                image, set only when deploying directly from local code.
-
-        Returns:
-            The ID of the build to attach to the deployment, or None if no
-            build is required.
+            stack: The stack the snapshot will be deployed on.
         """
         return None
 
@@ -467,7 +461,6 @@ class BaseDeployer(StackComponent, ABC):
         deployment_name_or_id: Union[str, UUID],
         replace: bool = True,
         timeout: Optional[int] = None,
-        local_code_available: bool = False,
     ) -> DeploymentResponse:
         """Provision a deployment.
 
@@ -490,9 +483,6 @@ class BaseDeployer(StackComponent, ABC):
             timeout: The maximum time in seconds to wait for the pipeline
                 deployment to be provisioned. If provided, will override the
                 deployer's default timeout.
-            local_code_available: Whether the local code can be built into the
-                deployer image, set only when deploying directly from local
-                code.
 
         Raises:
             DeploymentAlreadyExistsError: if the deployment already
@@ -542,19 +532,15 @@ class BaseDeployer(StackComponent, ABC):
                 "a different snapshot."
             )
 
-        # Track the build and snapshot already stored on the deployment (if
-        # any) so the deployer image can be reused on an unchanged re-provision.
-        existing_build_id: Optional[UUID] = None
-        existing_snapshot_id: Optional[UUID] = None
+        # The snapshot must already carry a serving image built for this
+        # deployer. The image is built when the snapshot is created, never here.
+        self._validate_snapshot_deployable(snapshot=snapshot, stack=stack)
 
         try:
             # Get the existing deployment
             deployment = client.get_deployment(
                 deployment_name_or_id, project=snapshot.project_id
             )
-
-            existing_build_id = deployment.build_id
-            existing_snapshot_id = deployment.snapshot_id
 
             self._check_snapshot_already_deployed(snapshot, deployment.id)
 
@@ -620,28 +606,6 @@ class BaseDeployer(StackComponent, ABC):
             deployment = client.zen_store.update_deployment(
                 deployment.id,
                 deployment_update,
-            )
-
-        # Build the deployer image at deploy time. Reuse the existing build
-        # when the same snapshot is being re-provisioned.
-        if (
-            existing_build_id is not None
-            and existing_snapshot_id == snapshot.id
-        ):
-            build_id: Optional[UUID] = existing_build_id
-        else:
-            build_id = self._prepare_deployment_build(
-                snapshot=snapshot,
-                stack=stack,
-                local_code_available=local_code_available,
-            )
-
-        if build_id is not None and build_id != deployment.build_id:
-            # `update_deployment` returns the deployment with its resources
-            # hydrated, so `get_image(deployment)` resolves the deployer image
-            # from the attached build.
-            deployment = client.zen_store.update_deployment(
-                deployment.id, DeploymentUpdate(build_id=build_id)
             )
 
         logger.info(

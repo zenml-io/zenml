@@ -22,7 +22,6 @@ from typing import (
     List,
     Optional,
     Union,
-    cast,
 )
 from uuid import UUID
 
@@ -49,8 +48,7 @@ if TYPE_CHECKING:
     from zenml.code_repositories import LocalRepositoryContext
     from zenml.config.build_configuration import BuildConfiguration
     from zenml.config.docker_settings import DockerSettings
-    from zenml.deployers.base_deployer import BaseDeployer
-    from zenml.models import PipelineSnapshotResponse
+    from zenml.stack import StackComponent
 
 logger = get_logger(__name__)
 
@@ -203,6 +201,7 @@ def reuse_or_create_pipeline_build(
     pipeline_id: Optional[UUID] = None,
     build: Union["UUID", "PipelineBuildBase", None] = None,
     code_repository: Optional["BaseCodeRepository"] = None,
+    additional_build_component: Optional["StackComponent"] = None,
 ) -> Optional["PipelineBuildResponse"]:
     """Loads or creates a pipeline build.
 
@@ -217,6 +216,9 @@ def reuse_or_create_pipeline_build(
             be created.
         code_repository: If provided, this code repository can be used to
             download code inside the container images.
+        additional_build_component: A component whose images are built in
+            addition to the active stack's images. Build reuse is skipped
+            when this is set.
 
     Returns:
         The build response.
@@ -224,6 +226,7 @@ def reuse_or_create_pipeline_build(
     if not build:
         if (
             allow_build_reuse
+            and additional_build_component is None
             and not should_prevent_build_reuse(snapshot=snapshot)
             and not requires_included_code(
                 snapshot=snapshot, code_repository=code_repository
@@ -256,6 +259,7 @@ def reuse_or_create_pipeline_build(
             snapshot=snapshot,
             pipeline_id=pipeline_id,
             code_repository=code_repository,
+            additional_build_component=additional_build_component,
         )
 
     if isinstance(build, UUID):
@@ -345,6 +349,7 @@ def create_pipeline_build(
     snapshot: "PipelineSnapshotBase",
     pipeline_id: Optional[UUID] = None,
     code_repository: Optional["BaseCodeRepository"] = None,
+    additional_build_component: Optional["StackComponent"] = None,
 ) -> Optional["PipelineBuildResponse"]:
     """Builds images and registers the output in the server.
 
@@ -353,6 +358,8 @@ def create_pipeline_build(
         pipeline_id: The ID of the pipeline.
         code_repository: If provided, this code repository will be used to
             download inside the build images.
+        additional_build_component: A component whose images are built in
+            addition to the active stack's images.
 
     Returns:
         The build output.
@@ -364,6 +371,12 @@ def create_pipeline_build(
     pruned_snapshot = prune_snapshot_before_build(snapshot)
 
     required_builds = stack.get_docker_builds(snapshot=pruned_snapshot)
+    if additional_build_component is not None:
+        required_builds = required_builds + (
+            additional_build_component.get_docker_builds(
+                snapshot=pruned_snapshot
+            )
+        )
 
     if not required_builds:
         logger.debug("No docker builds required.")

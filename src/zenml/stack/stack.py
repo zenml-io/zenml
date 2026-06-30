@@ -237,6 +237,7 @@ class Stack:
             secrets=stack_model.secrets,
             components=stack_components,
         )
+        stack.ensure_image_builder()
         _STACK_CACHE[key] = stack
 
         client = Client()
@@ -1314,25 +1315,14 @@ class Stack:
         self._validate_secrets(raise_exception=fail_if_secrets_missing)
 
     def validate_image_builder(self) -> None:
-        """Validates that the stack has an image builder if required.
-
-        If the stack requires an image builder, but none is specified, a
-        local image builder will be created and assigned to the stack to
-        ensure backwards compatibility.
-        """
-        requires_image_builder = (
-            self.orchestrator.flavor != "local"
-            or self.step_operator
-            or (self.model_deployer and self.model_deployer.flavor != "mlflow")
-        )
-        if requires_image_builder:
-            self.ensure_image_builder()
+        """Assign a temporary local image builder if none is configured."""
+        self.ensure_image_builder()
 
     def ensure_image_builder(self) -> None:
         """Assign a temporary local image builder if none is configured.
 
-        Building images (e.g. the deployer image at deploy time) requires an
-        image builder even when the stack's orchestrator is local.
+        Building images (e.g. the deployer image) requires an image builder
+        even when the stack's orchestrator is local.
         """
         skip_default_image_builder = handle_bool_env_var(
             ENV_ZENML_SKIP_IMAGE_BUILDER_DEFAULT, default=False
