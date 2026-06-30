@@ -160,7 +160,7 @@ Built on the same infrastructure that powers ZenML. Two decorators (`@flow` + `@
 pip install kitaru
 ```
 
-👉 **[kitaru.ai](https://kitaru.ai)** · **[GitHub](https://github.com/zenml-io/kitaru)** · **[Docs](https://kitaru.ai/docs)**
+👉 **[kitaru.ai](https://kitaru.ai)** · **[GitHub](https://github.com/zenml-io/kitaru)** · **[Docs](https://docs.zenml.io/kitaru)**
 
 ### 🎓 Books & Resources
 

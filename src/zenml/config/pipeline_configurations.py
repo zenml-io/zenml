@@ -115,6 +115,7 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
     steps_to_skip: Set[str] = set()
     skip_successful_steps: bool = False
     step_input_overrides: Dict[str, Dict[str, UUID]] = {}
+    step_default_input_overrides: Dict[str, Dict[str, UUID]] = {}
 
     @property
     def docker_settings(self) -> "DockerSettings":
@@ -163,3 +164,31 @@ class PipelineConfiguration(PipelineConfigurationUpdate):
         if isinstance(model_or_dict, BaseSettings):
             model_or_dict = model_or_dict.model_dump()
         return DeploymentSettings.model_validate(model_or_dict)
+
+    def get_invocation_input_overrides(
+        self,
+        invocation_id: str,
+        step_name: str,
+        include_step_defaults: bool = True,
+    ) -> Dict[str, UUID]:
+        """Step input overrides for an invocation.
+
+        This method merges the step-wide overrides and the per-invocation
+        overrides.
+
+        Args:
+            invocation_id: The invocation ID of the step.
+            step_name: The name of the step.
+            include_step_defaults: Whether to include the step-wide default
+                overrides.
+
+        Returns:
+            The step input overrides for the invocation.
+        """
+        overrides: Dict[str, UUID] = {}
+        if include_step_defaults:
+            overrides.update(
+                self.step_default_input_overrides.get(step_name, {})
+            )
+        overrides.update(self.step_input_overrides.get(invocation_id, {}))
+        return overrides

@@ -69,10 +69,12 @@ class _FakeSession(SandboxSession):
         self,
         session_id: str = "sess-1",
         parent: Optional["BaseSandbox"] = None,
+        destroy_on_exit: bool = False,
     ) -> None:
         super().__init__(
             id=session_id,
             parent=parent or MagicMock(spec=BaseSandbox, flavor="fake"),
+            destroy_on_exit=destroy_on_exit,
         )
         self.was_closed = False
         self.close_count = 0
@@ -95,9 +97,11 @@ class _FakeSandbox(BaseSandbox):
     """Minimal BaseSandbox for testing. `create_session` returns a fake."""
 
     def create_session(
-        self, settings: Optional[BaseSandboxSettings] = None
+        self,
+        settings: Optional[BaseSandboxSettings] = None,
+        destroy_on_exit: bool = False,
     ) -> SandboxSession:
-        return _FakeSession()
+        return _FakeSession(destroy_on_exit=destroy_on_exit)
 
 
 class _FakeSandboxFlavor(BaseSandboxFlavor):
@@ -182,6 +186,25 @@ class TestSessionContextManager:
             assert session.was_closed is False
         assert session.was_closed is True
         assert session.closed is True
+
+    def test_with_block_destroys_when_destroy_on_exit(self) -> None:
+        class _DestroyableSession(_FakeSession):
+            def __init__(self) -> None:
+                super().__init__(destroy_on_exit=True)
+                self.destroyed = False
+
+            def _destroy(self) -> None:
+                self.destroyed = True
+
+        session = _DestroyableSession()
+        with session:
+            assert session.destroyed is False
+        assert session.destroyed is True
+        assert session.closed is True
+
+    def test_create_session_forwards_destroy_on_exit(self) -> None:
+        session = _make_sandbox().create_session(destroy_on_exit=True)
+        assert session._destroy_on_exit is True
 
     def test_use_after_close_raises(self) -> None:
         # close() is terminal: every session-using operation on a closed

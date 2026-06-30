@@ -21,7 +21,12 @@ from uuid import UUID
 from pydantic import ConfigDict
 from sqlalchemy import String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
-from sqlalchemy.orm import Session, joinedload, object_session, selectinload
+from sqlalchemy.orm import (
+    Session,
+    joinedload,
+    object_session,
+    selectinload,
+)
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import TEXT, Column, Field, Relationship, col, select
 
@@ -123,6 +128,16 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         build_index(
             table_name=__tablename__,
             column_names=["project_id", "created", "id"],
+        ),
+        # Composite index for sorting pipelines by their latest run (UI default)
+        build_index(
+            table_name=__tablename__,
+            column_names=["pipeline_id", "created"],
+        ),
+        # Resolves step-triggered child runs without scanning pipeline_run.
+        build_index(
+            table_name=__tablename__,
+            column_names=["triggered_by", "triggered_by_type"],
         ),
     )
 
@@ -371,6 +386,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         cls,
         include_metadata: bool = False,
         include_resources: bool = False,
+        many: bool = False,
+        include_full_metadata: bool = False,
         **kwargs: Any,
     ) -> Sequence[ExecutableOption]:
         """Get the query options for the schema.
@@ -380,60 +397,75 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 the schema to a model.
             include_resources: Whether resources will be included when
                 converting the schema to a model.
+            many: Whether the options are applied to a query that returns many
+                rows.
+            include_full_metadata: Whether step-level metadata will be included.
             **kwargs: Keyword arguments to allow schema specific logic
 
         Returns:
             A list of query options.
         """
-        from zenml.zen_stores.schemas import ModelVersionSchema
+        from zenml.zen_stores.schemas import (
+            ModelVersionSchema,
+            StepRunSchema,
+        )
+
+        single_loader = selectinload if many else joinedload
 
         options = []
 
         if include_metadata:
             options.extend(
                 [
-                    selectinload(jl_arg(PipelineRunSchema.trigger_execution)),
+                    single_loader(jl_arg(PipelineRunSchema.trigger_execution)),
+                    selectinload(jl_arg(PipelineRunSchema.run_metadata)),
                 ]
             )
+            if include_full_metadata:
+                options.append(
+                    selectinload(
+                        jl_arg(PipelineRunSchema.step_runs)
+                    ).selectinload(jl_arg(StepRunSchema.run_metadata))
+                )
 
         if include_resources:
             options.extend(
                 [
                     selectinload(jl_arg(PipelineRunSchema.outputs)),
-                    selectinload(jl_arg(PipelineRunSchema.parent_run)),
-                    selectinload(
+                    single_loader(jl_arg(PipelineRunSchema.parent_run)),
+                    single_loader(
                         jl_arg(PipelineRunSchema.model_version)
                     ).joinedload(
                         jl_arg(ModelVersionSchema.model), innerjoin=True
                     ),
-                    selectinload(
+                    single_loader(
                         jl_arg(PipelineRunSchema.snapshot)
                     ).joinedload(
                         jl_arg(PipelineSnapshotSchema.source_snapshot)
                     ),
-                    selectinload(
+                    single_loader(
                         jl_arg(PipelineRunSchema.snapshot)
                     ).joinedload(jl_arg(PipelineSnapshotSchema.pipeline)),
-                    selectinload(
+                    single_loader(
                         jl_arg(PipelineRunSchema.snapshot)
                     ).joinedload(jl_arg(PipelineSnapshotSchema.stack)),
-                    selectinload(
+                    single_loader(
                         jl_arg(PipelineRunSchema.snapshot)
                     ).joinedload(jl_arg(PipelineSnapshotSchema.build)),
-                    selectinload(
+                    single_loader(
                         jl_arg(PipelineRunSchema.snapshot)
                     ).joinedload(jl_arg(PipelineSnapshotSchema.schedule)),
-                    selectinload(
+                    single_loader(
                         jl_arg(PipelineRunSchema.snapshot)
                     ).joinedload(
                         jl_arg(PipelineSnapshotSchema.code_reference)
                     ),
                     selectinload(jl_arg(PipelineRunSchema.logs)),
                     selectinload(jl_arg(PipelineRunSchema.wait_conditions)),
-                    selectinload(jl_arg(PipelineRunSchema.user)),
+                    single_loader(jl_arg(PipelineRunSchema.user)),
                     selectinload(jl_arg(PipelineRunSchema.tags)),
                     selectinload(jl_arg(PipelineRunSchema.visualizations)),
-                    joinedload(jl_arg(PipelineRunSchema.trigger)),
+                    single_loader(jl_arg(PipelineRunSchema.trigger)),
                 ]
             )
 

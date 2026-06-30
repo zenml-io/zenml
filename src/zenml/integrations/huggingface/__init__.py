@@ -55,7 +55,12 @@ class HuggingfaceIntegration(Integration):
             "accelerate",
             "bitsandbytes>=0.41.3",
             "peft",
-            "transformers<4.55.0",
+            # Lower bound stops the resolver from backtracking to ancient
+            # transformers (e.g. 4.12.x) when the combined integration
+            # install hits a conflict. Those versions pin tokenizers<0.11,
+            # which has no wheels and fails to build from source on modern
+            # Rust toolchains.
+            "transformers>=4.40,<4.55.0",
         ]
 
         # Add the pandas integration requirements

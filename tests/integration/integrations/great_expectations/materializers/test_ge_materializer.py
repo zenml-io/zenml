@@ -11,20 +11,32 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Tests for the Great Expectations materializer."""
 
-from great_expectations.core import ExpectationSuite
+import sys
+
+import pytest
 
 from tests.unit.test_general import _test_materializer
-from zenml.integrations.great_expectations.data_validators.ge_data_validator import (
-    GreatExpectationsDataValidator,
-)
-from zenml.integrations.great_expectations.materializers.ge_materializer import (
-    GreatExpectationsMaterializer,
-)
 
 
+@pytest.mark.skipif(
+    sys.version_info >= (3, 14),
+    reason=(
+        "Great Expectations relies on Pydantic v1 internals that are not "
+        "compatible with Python 3.14."
+    ),
+)
 def test_great_expectations_materializer(clean_client, mocker):
     """Tests whether the steps work for the Great Expectations materializer."""
+    from great_expectations.core import ExpectationSuite
+
+    from zenml.integrations.great_expectations.data_validators.ge_data_validator import (
+        GreatExpectationsDataValidator,
+    )
+    from zenml.integrations.great_expectations.materializers.ge_materializer import (
+        GreatExpectationsMaterializer,
+    )
 
     class MockContext:
         """Mock class for the GE DataContext."""

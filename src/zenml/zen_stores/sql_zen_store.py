@@ -84,6 +84,7 @@ from pydantic import (
 )
 from sqlalchemy import (
     QueuePool,
+    Table,
     event,
     func,
     update,
@@ -1232,6 +1233,26 @@ class SqlZenStore(BaseZenStore):
                         properties=analytics_metadata,
                     )
 
+    @staticmethod
+    def _query_requires_distinct(
+        query: Union[Select[Any], SelectOfScalar[Any]],
+    ) -> bool:
+        """Whether the query might require a DISTINCT clause.
+
+        We treat this in a pretty conservative way. Any query that isn't a pure
+        select(...) without any potential joins requires a DISTINCT clause.
+
+        Args:
+            query: The query to inspect.
+
+        Returns:
+            Whether the query might require a DISTINCT clause.
+        """
+        from_clauses = query.get_final_froms()
+        return not (
+            len(from_clauses) == 1 and isinstance(from_clauses[0], Table)
+        )
+
     @classmethod
     def filter_and_paginate(
         cls,
@@ -1254,6 +1275,7 @@ class SqlZenStore(BaseZenStore):
         ] = None,
         hydrate: bool = False,
         apply_query_options_from_schema: bool = False,
+        query_options_kwargs: Optional[Dict[str, Any]] = None,
     ) -> Page[AnyResponse]:
         """Given a query, return a Page instance with a list of filtered Models.
 
@@ -1276,6 +1298,8 @@ class SqlZenStore(BaseZenStore):
                 by including metadata fields in the response.
             apply_query_options_from_schema: Flag deciding whether to apply
                 query options defined on the schema.
+            query_options_kwargs: Extra keyword arguments forwarded to the
+                schema's `get_query_options`.
 
         Returns:
             The Domain Model representation of the DB resource
@@ -1286,23 +1310,28 @@ class SqlZenStore(BaseZenStore):
         """
         query = filter_model.apply_filter(query=query, table=table)
 
+        query_requires_distinct = cls._query_requires_distinct(query)
+
         # Get the total amount of items in the database for a given query.
         # Sorting is not applied here since it's irrelevant for counting.
         custom_fetch_result: Optional[Sequence[Any]] = None
         if custom_fetch:
+            fetch_query = (
+                query.distinct() if query_requires_distinct else query
+            )
             custom_fetch_result = custom_fetch(
-                session, query.distinct(), filter_model
+                session, fetch_query, filter_model
             )
             total = len(custom_fetch_result)
         else:
-            # For counting, we only need distinct IDs. Selecting only the ID
-            # column dramatically improves performance when the query involves
-            # JOINs and many columns.
-            count_query = (
-                query.with_only_columns(col(table.id))
-                .distinct()
-                .options(noload("*"))
+            # For counting, we only need the IDs. Selecting only the ID column
+            # dramatically improves performance when the query involves JOINs
+            # and many columns.
+            count_query = query.with_only_columns(col(table.id)).options(
+                noload("*")
             )
+            if query_requires_distinct:
+                count_query = count_query.distinct()
             result = session.scalar(
                 select(func.count()).select_from(count_query.subquery())
             )
@@ -1336,16 +1365,22 @@ class SqlZenStore(BaseZenStore):
                 filter_model.offset : filter_model.offset + filter_model.size
             ]
         else:
-            # Apply sorting and distinct for the data fetch
-            query = filter_model.apply_sorting(
-                query=query, table=table
-            ).distinct()
+            query = filter_model.apply_sorting(query=query, table=table)
 
             query_options = table.get_query_options(
-                include_metadata=hydrate, include_resources=True
+                include_metadata=hydrate,
+                include_resources=True,
+                many=True,
+                **(query_options_kwargs or {}),
             )
             if apply_query_options_from_schema and query_options:
                 query = query.options(*query_options)
+
+            # Check for DISTINCT after sorting and query options are applied so
+            # the check sees every join in the final query, including the ones
+            # added by sorting on a related column and by eager loaders.
+            if cls._query_requires_distinct(query):
+                query = query.distinct()
 
             query_result = session.exec(
                 query.limit(filter_model.size).offset(filter_model.offset)
@@ -3313,6 +3348,7 @@ class SqlZenStore(BaseZenStore):
                 table=ArtifactVersionSchema,
                 filter_model=artifact_version_filter_model,
                 hydrate=hydrate,
+                apply_query_options_from_schema=True,
             )
 
     def update_artifact_version(
@@ -5429,6 +5465,7 @@ class SqlZenStore(BaseZenStore):
                 table=PipelineSnapshotSchema,
                 filter_model=snapshot_filter_model,
                 hydrate=hydrate,
+                apply_query_options_from_schema=True,
             )
 
     def update_snapshot(
@@ -6271,12 +6308,15 @@ class SqlZenStore(BaseZenStore):
         """
         helper = DAGGeneratorHelper()
         with Session(self.engine) as session:
-            # TODO: better loads for dynamic/static pipelines
             run = self._get_schema_by_id(
                 resource_id=pipeline_run_id,
                 schema_class=PipelineRunSchema,
                 session=session,
                 query_options=[
+                    load_only(
+                        jl_arg(PipelineRunSchema.status),
+                        jl_arg(PipelineRunSchema.start_time),
+                    ),
                     selectinload(jl_arg(PipelineRunSchema.snapshot)).load_only(
                         jl_arg(PipelineSnapshotSchema.pipeline_configuration),
                         jl_arg(PipelineSnapshotSchema.is_dynamic),
@@ -6288,10 +6328,34 @@ class SqlZenStore(BaseZenStore):
                     ),
                     selectinload(
                         jl_arg(PipelineRunSchema.step_runs)
-                    ).selectinload(jl_arg(StepRunSchema.input_artifacts)),
-                    selectinload(
-                        jl_arg(PipelineRunSchema.step_runs)
-                    ).selectinload(jl_arg(StepRunSchema.output_artifacts)),
+                    ).load_only(
+                        jl_arg(StepRunSchema.name),
+                        jl_arg(StepRunSchema.status),
+                        jl_arg(StepRunSchema.start_time),
+                        jl_arg(StepRunSchema.end_time),
+                    ),
+                    selectinload(jl_arg(PipelineRunSchema.step_runs))
+                    .selectinload(jl_arg(StepRunSchema.input_artifacts))
+                    .joinedload(
+                        jl_arg(StepRunInputArtifactSchema.artifact_version),
+                        innerjoin=True,
+                    )
+                    .load_only(
+                        jl_arg(ArtifactVersionSchema.type),
+                        jl_arg(ArtifactVersionSchema.data_type),
+                        jl_arg(ArtifactVersionSchema.save_type),
+                    ),
+                    selectinload(jl_arg(PipelineRunSchema.step_runs))
+                    .selectinload(jl_arg(StepRunSchema.output_artifacts))
+                    .joinedload(
+                        jl_arg(StepRunOutputArtifactSchema.artifact_version),
+                        innerjoin=True,
+                    )
+                    .load_only(
+                        jl_arg(ArtifactVersionSchema.type),
+                        jl_arg(ArtifactVersionSchema.data_type),
+                        jl_arg(ArtifactVersionSchema.save_type),
+                    ),
                     selectinload(
                         jl_arg(PipelineRunSchema.step_runs)
                     ).selectinload(jl_arg(StepRunSchema.dynamic_config)),
@@ -6991,7 +7055,9 @@ class SqlZenStore(BaseZenStore):
                 schema_class=PipelineRunSchema,
                 session=session,
                 query_options=PipelineRunSchema.get_query_options(
-                    include_metadata=hydrate, include_resources=True
+                    include_metadata=hydrate,
+                    include_resources=True,
+                    include_full_metadata=include_full_metadata,
                 ),
             )
             return run.to_model(
@@ -7332,6 +7398,9 @@ class SqlZenStore(BaseZenStore):
                     )
                 ),
                 apply_query_options_from_schema=True,
+                query_options_kwargs={
+                    "include_full_metadata": include_full_metadata
+                },
             )
 
     def update_run(
@@ -11785,8 +11854,9 @@ class SqlZenStore(BaseZenStore):
                         # artifacts we receive at creation time are inputs that
                         # are defined in the step config.
                         input_overrides = set(
-                            run.get_pipeline_configuration().step_input_overrides.get(
-                                step_run.name, {}
+                            run.get_pipeline_configuration().get_invocation_input_overrides(
+                                invocation_id=step_run.name,
+                                step_name=step_config.config.name,
                             )
                         )
                         input_type = self._get_step_run_input_type_from_config(
