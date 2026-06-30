@@ -121,13 +121,6 @@ def test_expired_api_transaction_cleanup_is_batched(clean_client):
                 for transaction_id in expired_transaction_ids
             ]
             + [
-                ApiTransactionResultSchema(
-                    id=transaction_id,
-                    result=gzip.compress(b'"stale-result"'),
-                )
-                for transaction_id in expired_transaction_ids
-            ]
-            + [
                 ApiTransactionSchema(
                     id=active_transaction_id,
                     method="GET",
@@ -136,6 +129,16 @@ def test_expired_api_transaction_cleanup_is_batched(clean_client):
                     completed=False,
                     expired=now,
                 )
+            ]
+        )
+        session.flush()
+        session.add_all(
+            [
+                ApiTransactionResultSchema(
+                    id=transaction_id,
+                    result=gzip.compress(b'"stale-result"'),
+                )
+                for transaction_id in expired_transaction_ids
             ]
         )
         session.commit()
@@ -165,15 +168,14 @@ def test_expired_api_transaction_cleanup_is_batched(clean_client):
     assert active_transaction is not None
 
 
-def test_mysql_expired_api_transaction_cleanup_uses_skip_locked(
+def test_mysql_expired_api_transaction_cleanup_uses_bounded_delete(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    """MySQL cleanup workers skip rows locked by another cleanup worker."""
+    """MySQL cleanup uses a bounded delete without row-locking selects."""
     compiled_queries: list[str] = []
 
-    class _EmptyResult:
-        def all(self) -> list[object]:
-            return []
+    class _DeleteResult:
+        rowcount = 0
 
     class _Session:
         def __init__(self, _engine: object) -> None:
@@ -185,21 +187,28 @@ def test_mysql_expired_api_transaction_cleanup_uses_skip_locked(
         def __exit__(self, *args: object) -> None:
             pass
 
-        def exec(self, query: object) -> _EmptyResult:
+        def execute(self, query: object) -> _DeleteResult:
             compiled_queries.append(
                 str(query.compile(dialect=mysql.dialect()))
             )
-            return _EmptyResult()
+            return _DeleteResult()
+
+        def commit(self) -> None:
+            pass
 
     store = object.__new__(SqlZenStore)
-    store.config = SimpleNamespace(driver=SQLDatabaseDriver.MYSQL)
-    store._engine = object()
+    object.__setattr__(
+        store, "config", SimpleNamespace(driver=SQLDatabaseDriver.MYSQL)
+    )
+    object.__setattr__(store, "_engine", object())
     monkeypatch.setattr(sql_zen_store_module, "Session", _Session)
 
     deleted_count = store.cleanup_expired_api_transactions(batch_size=1)
 
     assert deleted_count == 0
-    assert "FOR UPDATE SKIP LOCKED" in compiled_queries[0]
+    assert "DELETE FROM api_transaction" in compiled_queries[0]
+    assert "FOR UPDATE" not in compiled_queries[0]
+    assert "LIMIT" in compiled_queries[0]
 
 
 def test_completed_expired_api_transaction_is_reset(clean_client):

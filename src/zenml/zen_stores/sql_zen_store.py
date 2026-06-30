@@ -2483,11 +2483,7 @@ class SqlZenStore(BaseZenStore):
             )
 
         with Session(self.engine) as session:
-            # MySQL supports SKIP LOCKED only on SELECT. Selecting a bounded
-            # locked batch first lets concurrent workers skip rows already
-            # claimed by another cleanup worker while keeping every DELETE
-            # small enough to avoid long-held locks and replication lag.
-            query = (
+            expired_transaction_ids = (
                 select(ApiTransactionSchema.id)
                 .where(
                     col(ApiTransactionSchema.completed),
@@ -2498,25 +2494,18 @@ class SqlZenStore(BaseZenStore):
                     col(ApiTransactionSchema.id),
                 )
                 .limit(batch_size)
+                .subquery()
             )
-            if self.config.driver == SQLDatabaseDriver.MYSQL:
-                query = query.with_for_update(skip_locked=True)
 
-            expired_transaction_ids = session.exec(query).all()
-
-            if not expired_transaction_ids:
-                return 0
-
-            session.execute(
-                delete(ApiTransactionResultSchema).where(
-                    col(ApiTransactionResultSchema.id).in_(
-                        expired_transaction_ids
-                    )
-                )
-            )
+            # Keep cleanup as a short parent-table DELETE. The existing
+            # ON DELETE CASCADE foreign key removes result rows in the same
+            # statement, and avoiding SELECT FOR UPDATE keeps this maintenance
+            # task from competing with request-path transaction inserts.
             result = session.execute(
                 delete(ApiTransactionSchema).where(
-                    col(ApiTransactionSchema.id).in_(expired_transaction_ids)
+                    col(ApiTransactionSchema.id).in_(
+                        select(expired_transaction_ids.c.id)
+                    )
                 )
             )
 
