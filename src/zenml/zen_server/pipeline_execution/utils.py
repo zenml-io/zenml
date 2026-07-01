@@ -108,6 +108,7 @@ class _PreparedSnapshotRun:
     stack: StackResponse
     zenml_version: str
     request: SnapshotRunExecutionRequest
+    wait_for_completion: bool
     is_trigger_execution: bool
     use_run_workload: bool
 
@@ -330,9 +331,8 @@ def run_snapshot(
         original_run: The original run.
 
     Raises:
-        MaxConcurrentTasksError: If the maximum number of concurrent run
-            snapshot tasks is reached.
-        ValueError: If no original run is provided for a replay run.
+        SnapshotRunQueueFullError: If the dispatcher queue is full.
+        Exception: If preparation, dispatch, or synchronous execution fails.
 
     Returns:
         ID of the new pipeline run.
@@ -475,8 +475,8 @@ def prepare_snapshot_run(
             run_id=placeholder_run.id,
             snapshot_id=target_snapshot.id,
             source_snapshot_id=snapshot.id,
-            wait_for_completion=wait_runner_pod,
         ),
+        wait_for_completion=wait_runner_pod,
         is_trigger_execution=trigger_id is not None,
         use_run_workload=trigger_id is not None or original_run is not None,
     )
@@ -490,24 +490,27 @@ def _execute_snapshot_run(
     stack: StackResponse,
     zenml_version: str,
     auth_context: AuthContext,
+    wait_for_completion: bool,
     is_trigger_execution: bool,
     use_run_workload: bool,
 ) -> None:
     """Execute a snapshot run from hydrated preparation state.
 
     Args:
-        request: Durable identifiers and execution flags.
+        request: Durable execution identifiers.
         run: Prepared placeholder run.
         snapshot: Target execution snapshot.
         build: Build used for execution.
         stack: Stack used for execution.
         zenml_version: ZenML version used for execution.
         auth_context: Execution identity.
+        wait_for_completion: Whether to wait for runner completion.
         is_trigger_execution: Whether a trigger initiated the run.
         use_run_workload: Whether to identify the workload by run ID.
 
     Raises:
         ValueError: If the prepared run and snapshot do not match the request.
+        Exception: If runner submission fails while the run is initializing.
     """
     try:
         if run.snapshot is None or run.snapshot.id != snapshot.id:
@@ -562,7 +565,7 @@ def _execute_snapshot_run(
                 arguments=arguments,
                 environment=environment,
                 dockerfile=dockerfile,
-                wait_for_completion=request.wait_for_completion,
+                wait_for_completion=wait_for_completion,
                 success_message="Pipeline run started successfully.",
             )
     except Exception:
@@ -599,6 +602,7 @@ def _execute_prepared_snapshot_run(
         stack=prepared.stack,
         zenml_version=prepared.zenml_version,
         auth_context=auth_context,
+        wait_for_completion=prepared.wait_for_completion,
         is_trigger_execution=prepared.is_trigger_execution,
         use_run_workload=prepared.use_run_workload,
     )
@@ -615,6 +619,11 @@ def execute_snapshot_run(
     Args:
         request: Durable identifiers for the prepared run.
         auth_context: Optional explicit execution identity.
+
+    Raises:
+        ValueError: If the persisted run has no execution owner.
+        Exception: If validation or runner submission fails while the run is
+            initializing.
 
     Returns:
         Whether the prepared run was submitted for execution.
@@ -676,6 +685,7 @@ def execute_snapshot_run(
         stack=stack,
         auth_context=execution_auth,
         zenml_version=zenml_version,
+        wait_for_completion=True,
         is_trigger_execution=run.trigger is not None,
         use_run_workload=(
             run.trigger is not None or run.original_run is not None

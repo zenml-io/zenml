@@ -88,7 +88,6 @@ def test_async_snapshot_run_returns_placeholder_after_dispatch_acceptance(
             run_id=placeholder_run.id,
             snapshot_id=target_snapshot.id,
             source_snapshot_id=source_snapshot.id,
-            wait_for_completion=False,
         )
     )
     usage.assert_called_once_with(
@@ -314,14 +313,13 @@ def test_prepared_execution_uses_persisted_run_owner(monkeypatch) -> None:
             run_id=run.id,
             snapshot_id=target_snapshot.id,
             source_snapshot_id=source_snapshot_id,
-            wait_for_completion=False,
         )
     )
 
     assert executed is True
     set_auth_context.assert_called_once_with(execution_auth)
     build_and_run.assert_called_once()
-    assert build_and_run.call_args.kwargs["wait_for_completion"] is False
+    assert build_and_run.call_args.kwargs["wait_for_completion"] is True
 
 
 def test_prepared_execution_skips_stale_or_missing_state(monkeypatch) -> None:
