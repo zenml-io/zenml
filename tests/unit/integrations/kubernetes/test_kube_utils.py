@@ -3,6 +3,7 @@
 from datetime import datetime, timezone
 from typing import Any
 
+import pytest
 from kubernetes import client as k8s_client
 
 from zenml.integrations.kubernetes import kube_utils
@@ -239,3 +240,42 @@ def test_check_job_status_includes_pending_details_on_fail_fast() -> None:
         "(pod `step-job-pod`: container waiting reason: ImagePullBackOff, "
         "message=Back-off pulling image missing-image.)"
     )
+
+
+@pytest.mark.parametrize("max_retries", [0, 1, 3])
+def test_retry_on_api_exception_honors_max_retries(
+    max_retries: int, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Test that the wrapped function is called `max_retries` + 1 times."""
+    monkeypatch.setattr(kube_utils.time, "sleep", lambda _: None)
+
+    calls = []
+
+    def failing() -> None:
+        calls.append(1)
+        raise k8s_client.rest.ApiException(status=500)
+
+    with pytest.raises(k8s_client.rest.ApiException):
+        kube_utils.retry_on_api_exception(failing, max_retries=max_retries)()
+
+    assert len(calls) == max_retries + 1
+
+
+def test_retry_on_api_exception_returns_after_transient_failures(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that the wrapped function returns once a retried call succeeds."""
+    monkeypatch.setattr(kube_utils.time, "sleep", lambda _: None)
+
+    calls = []
+
+    def flaky() -> str:
+        calls.append(1)
+        if len(calls) < 3:
+            raise k8s_client.rest.ApiException(status=500)
+        return "ok"
+
+    result = kube_utils.retry_on_api_exception(flaky, max_retries=3)()
+
+    assert result == "ok"
+    assert len(calls) == 3

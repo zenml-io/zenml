@@ -72,20 +72,24 @@ class ContainerEngine(ABC):
         """
 
     def login_registry(
-        self, container_registry: "BaseContainerRegistry"
+        self, container_registry: "BaseContainerRegistry", **kwargs: Any
     ) -> None:
         """Authenticate the container engine with the container registry credentials.
 
         Args:
             container_registry: Container registry to authenticate with.
+            kwargs: Additional keyword arguments.
         """
         credentials = container_registry.credentials
         if credentials:
             username, password = credentials
+            registry_uri = container_registry.config.uri
+            base_registry_uri = registry_uri.split("/")[0]
             self.login(
                 username=username,
                 password=password,
-                registry=container_registry.config.uri,
+                registry=base_registry_uri,
+                **kwargs,
             )
 
     @abstractmethod
