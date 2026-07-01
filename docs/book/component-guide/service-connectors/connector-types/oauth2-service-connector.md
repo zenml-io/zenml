@@ -75,6 +75,30 @@ zenml service-connector register my-api --type oauth2 --auth-method token \
 
 If you know when the token expires, set the connector expiration when registering so that ZenML stops using it once it is no longer valid.
 
+## Client authentication method
+
+For the client credentials and refresh token methods, ZenML sends the client ID and secret to the token endpoint using HTTP Basic authentication by default (`client_secret_basic`). Some providers instead expect the client credentials in the request body (`client_secret_post`). Select the method with `client_auth_method`:
+
+```sh
+zenml service-connector register my-api --type oauth2 --auth-method client-credentials \
+    --api_url=https://api.example.com \
+    --token_url=https://auth.example.com/oauth/token \
+    --client_id=<CLIENT_ID> \
+    --client_secret=<CLIENT_SECRET> \
+    --client_auth_method=client_secret_post
+```
+
+For public refresh token clients that have no secret, this setting has no effect, since the client ID is always sent in the request body.
+
+## Custom token request parameters and headers
+
+Some providers require extra parameters or headers on the token request, such as a `resource` identifier for Azure AD or a vendor-specific flag. The client credentials and refresh token methods accept two optional dictionaries for this:
+
+- `token_params` adds form parameters to the token request body.
+- `token_headers` adds headers to the token request.
+
+The parameters `grant_type`, `client_id`, `client_secret`, `refresh_token`, `scope` and `audience`, as well as the `Authorization` header, are managed by the connector and cannot be overwritten through these options.
+
 ## Token expiration
 
 For the client credentials and refresh token methods, the lifetime of a minted access token is dictated by the OAuth2 server and read from the `expires_in` field of the token response. ZenML always respects the server value and does not let you request a different lifetime. If the server does not return an expiration, ZenML treats the token as non-expiring and keeps using it until the API rejects it.

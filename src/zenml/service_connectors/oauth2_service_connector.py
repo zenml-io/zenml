@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
 import requests
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
@@ -39,6 +39,14 @@ logger = get_logger(__name__)
 OAUTH2_CONNECTOR_TYPE = "oauth2"
 OAUTH2_API_RESOURCE_TYPE = "oauth2-api"
 OAUTH2_SESSION_EXPIRATION_BUFFER = 15  # 15 minutes
+OAUTH2_RESERVED_TOKEN_PARAMS = {
+    "grant_type",
+    "client_id",
+    "client_secret",
+    "refresh_token",
+    "scope",
+    "audience",
+}
 
 
 class OAuth2AuthenticationMethods(StrEnum):
@@ -47,6 +55,13 @@ class OAuth2AuthenticationMethods(StrEnum):
     CLIENT_CREDENTIALS = "client-credentials"
     REFRESH_TOKEN = "refresh-token"
     TOKEN = "token"
+
+
+class OAuth2ClientAuthenticationMethods(StrEnum):
+    """OAuth2 client authentication methods."""
+
+    CLIENT_SECRET_BASIC = "client_secret_basic"
+    CLIENT_SECRET_POST = "client_secret_post"
 
 
 class OAuth2BaseConfig(AuthenticationConfig):
@@ -70,6 +85,44 @@ class OAuth2GrantConfig(OAuth2BaseConfig):
         default=None,
         title="Space-separated OAuth2 scopes",
     )
+    client_auth_method: OAuth2ClientAuthenticationMethods = Field(
+        default=OAuth2ClientAuthenticationMethods.CLIENT_SECRET_BASIC,
+        title="OAuth2 client authentication method",
+    )
+    token_params: Dict[str, str] = Field(
+        default_factory=dict,
+        title="Additional OAuth2 token endpoint request parameters",
+    )
+    token_headers: Dict[str, str] = Field(
+        default_factory=dict,
+        title="Additional OAuth2 token endpoint request headers",
+    )
+
+    @model_validator(mode="after")
+    def _validate_token_request_overrides(self) -> "OAuth2GrantConfig":
+        """Reject token parameters or headers that override reserved fields.
+
+        Raises:
+            ValueError: If a reserved token parameter or header is set.
+
+        Returns:
+            The validated configuration.
+        """
+        reserved = OAUTH2_RESERVED_TOKEN_PARAMS.intersection(self.token_params)
+        if reserved:
+            raise ValueError(
+                f"The following OAuth2 token parameters are reserved and "
+                f"cannot be set through `token_params`: "
+                f"{', '.join(sorted(reserved))}."
+            )
+        if any(
+            header.lower() == "authorization" for header in self.token_headers
+        ):
+            raise ValueError(
+                "The `Authorization` OAuth2 token header is reserved and "
+                "cannot be set through `token_headers`."
+            )
+        return self
 
 
 class OAuth2ClientCredentialsConfig(OAuth2GrantConfig):
@@ -196,17 +249,31 @@ class OAuth2ServiceConnector(ServiceConnector):
 
         data: Dict[str, str] = {}
         auth: Optional[Tuple[str, str]] = None
+        send_secret_in_body = (
+            cfg.client_auth_method
+            == OAuth2ClientAuthenticationMethods.CLIENT_SECRET_POST
+        )
 
         if isinstance(cfg, OAuth2ClientCredentialsConfig):
             data["grant_type"] = "client_credentials"
             if cfg.audience:
                 data["audience"] = cfg.audience
-            auth = (cfg.client_id, cfg.client_secret.get_secret_value())
+            client_secret = cfg.client_secret.get_secret_value()
+            if send_secret_in_body:
+                data["client_id"] = cfg.client_id
+                data["client_secret"] = client_secret
+            else:
+                auth = (cfg.client_id, client_secret)
         elif isinstance(cfg, OAuth2RefreshTokenConfig):
             data["grant_type"] = "refresh_token"
             data["refresh_token"] = cfg.refresh_token.get_secret_value()
             if cfg.client_secret is not None:
-                auth = (cfg.client_id, cfg.client_secret.get_secret_value())
+                client_secret = cfg.client_secret.get_secret_value()
+                if send_secret_in_body:
+                    data["client_id"] = cfg.client_id
+                    data["client_secret"] = client_secret
+                else:
+                    auth = (cfg.client_id, client_secret)
             else:
                 # Public clients without a secret send the client ID in the
                 # request body.
@@ -215,33 +282,61 @@ class OAuth2ServiceConnector(ServiceConnector):
         if cfg.scope:
             data["scope"] = cfg.scope
 
+        data.update(cfg.token_params)
+
         try:
             response = requests.post(
                 cfg.token_url,
                 data=data,
                 auth=auth,
+                headers=cfg.token_headers,
                 timeout=30,
             )
             response.raise_for_status()
             payload = response.json()
-            token = payload["access_token"]
-        except (requests.RequestException, KeyError, ValueError) as e:
+        except (requests.RequestException, ValueError) as e:
             raise AuthorizationException(
                 f"Failed to fetch an OAuth2 token from {cfg.token_url}: {e}"
             ) from e
 
+        if not isinstance(payload, dict):
+            raise AuthorizationException(
+                f"The OAuth2 token endpoint at {cfg.token_url} returned an "
+                f"unexpected response."
+            )
+
+        token = payload.get("access_token")
         if not isinstance(token, str):
             raise AuthorizationException(
                 f"The OAuth2 token endpoint at {cfg.token_url} returned an "
                 f"invalid access token."
             )
 
+        token_type = payload.get("token_type")
+        if token_type is not None and str(token_type).lower() != "bearer":
+            raise AuthorizationException(
+                f"The OAuth2 token endpoint at {cfg.token_url} returned an "
+                f"unsupported token type '{token_type}'. Only Bearer tokens "
+                f"are supported."
+            )
+
         expires_at: Optional[datetime] = None
         expires_in = payload.get("expires_in")
         if expires_in is not None:
-            expires_at = utc_now(tz_aware=True) + timedelta(
-                seconds=int(expires_in)
-            )
+            try:
+                expires_in = int(expires_in)
+            except (TypeError, ValueError):
+                logger.warning(
+                    "The OAuth2 token endpoint at %s returned an invalid "
+                    "'expires_in' value: %r. The token expiration will be "
+                    "treated as unknown.",
+                    cfg.token_url,
+                    expires_in,
+                )
+            else:
+                expires_at = utc_now(tz_aware=True) + timedelta(
+                    seconds=expires_in
+                )
 
         return token, expires_at
 
