@@ -254,12 +254,12 @@ class DockerContainerEngine(ContainerEngine):
                 password=password,
                 registry=registry,
             )
-        else:
-            self.login_client(
-                username=username,
-                password=password,
-                registry=registry,
-            )
+
+        self.login_client(
+            username=username,
+            password=password,
+            registry=registry,
+        )
 
     def build(
         self,
