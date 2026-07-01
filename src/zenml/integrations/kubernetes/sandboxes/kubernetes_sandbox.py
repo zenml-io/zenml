@@ -538,6 +538,7 @@ class KubernetesSandboxSession(SandboxSession):
                 pod_name=self._pod_name,
                 namespace=self._namespace,
                 api_request_timeout=sandbox.config.api_request_timeout,
+                max_retries=sandbox.config.max_api_retries,
             )
 
 
@@ -667,6 +668,7 @@ class KubernetesSandbox(BaseSandbox):
             namespace=self.config.kubernetes_namespace,
             pod_manifest=pod_manifest,
             api_request_timeout=resolved_settings.api_request_timeout,
+            max_retries=resolved_settings.max_api_retries,
         )
 
         try:
@@ -680,6 +682,7 @@ class KubernetesSandbox(BaseSandbox):
                 ),
                 timeout_sec=resolved_settings.pod_startup_timeout,
                 api_request_timeout=resolved_settings.api_request_timeout,
+                max_retries=resolved_settings.max_api_retries,
             )
         except Exception:
             try:
@@ -688,6 +691,7 @@ class KubernetesSandbox(BaseSandbox):
                     pod_name=pod_name,
                     namespace=self.config.kubernetes_namespace,
                     api_request_timeout=resolved_settings.api_request_timeout,
+                    max_retries=resolved_settings.max_api_retries,
                 )
             except Exception:
                 logger.debug(
@@ -722,6 +726,7 @@ class KubernetesSandbox(BaseSandbox):
         pods = kube_utils.retry_on_api_exception(
             self.core_api.list_namespaced_pod,
             api_request_timeout=self.config.api_request_timeout,
+            max_retries=self.config.max_api_retries,
         )(
             namespace=self.config.kubernetes_namespace,
             label_selector=(
