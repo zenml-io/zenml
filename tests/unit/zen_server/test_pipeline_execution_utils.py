@@ -88,7 +88,6 @@ def test_async_snapshot_run_returns_placeholder_after_dispatch_acceptance(
         SnapshotRunExecutionRequest(
             run_id=placeholder_run.id,
             snapshot_id=target_snapshot.id,
-            source_snapshot_id=source_snapshot.id,
         )
     )
     usage.assert_called_once_with(
@@ -103,13 +102,19 @@ def test_synchronous_snapshot_run_executes_without_redispatch(
     """Synchronous runs report usage and expose submission outcomes."""
     snapshot = SimpleNamespace(id=uuid4(), source_snapshot_id=None)
     placeholder_run = SimpleNamespace(
-        id=uuid4(), snapshot=snapshot, status=ExecutionStatus.INITIALIZING
+        id=uuid4(),
+        snapshot=snapshot,
+        status=ExecutionStatus.INITIALIZING,
+        trigger=None,
+        original_run=None,
     )
     build = MagicMock()
     stack = MagicMock()
     auth_context = MagicMock()
     dispatcher = MagicMock()
     store = MagicMock()
+    store.get_run.return_value = placeholder_run
+    store.get_snapshot.return_value = snapshot
     usage = MagicMock()
     validate = MagicMock(return_value=(build, stack, "1.0.0"))
     build_and_run = MagicMock()
@@ -150,9 +155,11 @@ def test_synchronous_snapshot_run_executes_without_redispatch(
         feature=utils.RUN_TEMPLATE_TRIGGERS_FEATURE_NAME,
         resource_id=placeholder_run.id,
     )
-    validate.assert_called_once()
-    store.get_run.assert_not_called()
-    store.get_snapshot.assert_not_called()
+    assert validate.call_count == 2
+    assert store.get_run.call_count == 2
+    store.get_snapshot.assert_called_once_with(
+        snapshot_id=snapshot.id, hydrate=True
+    )
     build_and_run.assert_called_once()
     dispatcher.submit.assert_not_called()
 
@@ -316,7 +323,6 @@ def test_prepared_execution_uses_persisted_run_owner(monkeypatch) -> None:
         SnapshotRunExecutionRequest(
             run_id=run.id,
             snapshot_id=target_snapshot.id,
-            source_snapshot_id=source_snapshot_id,
         )
     )
 
@@ -339,7 +345,6 @@ def test_prepared_execution_skips_stale_or_missing_state(monkeypatch) -> None:
         SnapshotRunExecutionRequest(
             run_id=stale_run.id,
             snapshot_id=uuid4(),
-            source_snapshot_id=uuid4(),
         )
     )
 
@@ -358,7 +363,6 @@ def test_prepared_execution_skips_stale_or_missing_state(monkeypatch) -> None:
         SnapshotRunExecutionRequest(
             run_id=initializing_run.id,
             snapshot_id=uuid4(),
-            source_snapshot_id=uuid4(),
         )
     )
 

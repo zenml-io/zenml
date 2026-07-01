@@ -26,7 +26,6 @@ class SnapshotRunExecutionRequest(BaseModel):
 
     run_id: UUID
     snapshot_id: UUID
-    source_snapshot_id: UUID
 
 
 class SnapshotRunQueueFullError(MaxConcurrentTasksError):

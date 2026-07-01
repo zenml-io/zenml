@@ -18,7 +18,6 @@ import os
 import sys
 import threading
 from concurrent.futures import Future, ThreadPoolExecutor
-from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from uuid import UUID
 
@@ -97,21 +96,6 @@ logger = get_logger(__name__)
 
 RUNNER_IMAGE_REPOSITORY = "zenml-runner"
 SNAPSHOT_RUN_QUEUED_STATUS_REASON = "Queued for snapshot execution."
-
-
-@dataclass(frozen=True)
-class _PreparedSnapshotRun:
-    """Persisted state produced before dispatching a snapshot run."""
-
-    run: PipelineRunResponse
-    snapshot: PipelineSnapshotResponse
-    build: PipelineBuildResponse
-    stack: StackResponse
-    zenml_version: str
-    request: SnapshotRunExecutionRequest
-    wait_for_completion: bool
-    is_trigger_execution: bool
-    use_run_workload: bool
 
 
 def _use_legacy_stack_component_setting_keys(
@@ -338,14 +322,13 @@ def run_snapshot(
     Returns:
         ID of the new pipeline run.
     """
-    prepared = prepare_snapshot_run(
+    execution_request = prepare_snapshot_run(
         snapshot=snapshot,
         auth_context=auth_context,
         request=request,
         template_id=template_id,
         create_new_snapshot=create_new_snapshot,
         implicit_auth_context=implicit_auth_context,
-        wait_runner_pod=wait_runner_pod,
         trigger_id=trigger_id,
         trigger_execution_info=trigger_execution_info,
         replay_configuration=replay_configuration,
@@ -353,20 +336,24 @@ def run_snapshot(
     )
 
     if sync:
-        _execute_prepared_snapshot_run(prepared, auth_context=auth_context)
-        response_run = prepared.run
+        execute_snapshot_run(
+            execution_request,
+            auth_context=auth_context,
+            wait_for_completion=wait_runner_pod,
+        )
+        response_run = zen_store().get_run(run_id=execution_request.run_id)
     else:
         response_run = zen_store().update_run(
-            run_id=prepared.run.id,
+            run_id=execution_request.run_id,
             run_update=PipelineRunUpdate(
                 status_reason=SNAPSHOT_RUN_QUEUED_STATUS_REASON
             ),
         )
         try:
-            snapshot_run_dispatcher().submit(prepared.request)
+            snapshot_run_dispatcher().submit(execution_request)
         except SnapshotRunQueueFullError:
             zen_store().update_run(
-                run_id=prepared.run.id,
+                run_id=execution_request.run_id,
                 run_update=PipelineRunUpdate(
                     status=ExecutionStatus.FAILED,
                     status_reason="Snapshot execution queue is full.",
@@ -375,10 +362,11 @@ def run_snapshot(
             raise
         except Exception as exc:
             logger.exception(
-                "Failed to dispatch prepared snapshot run %s.", prepared.run.id
+                "Failed to dispatch prepared snapshot run %s.",
+                execution_request.run_id,
             )
             zen_store().update_run(
-                run_id=prepared.run.id,
+                run_id=execution_request.run_id,
                 run_update=PipelineRunUpdate(
                     status=ExecutionStatus.FAILED,
                     status_reason="Failed to queue run.",
@@ -398,12 +386,11 @@ def prepare_snapshot_run(
     template_id: UUID | None = None,
     create_new_snapshot: bool = True,
     implicit_auth_context: bool = True,
-    wait_runner_pod: bool = True,
     trigger_id: UUID | None = None,
     trigger_execution_info: TriggerExecutionInfo | None = None,
     replay_configuration: ReplayRunConfiguration | None = None,
     original_run: PipelineRunResponse | None = None,
-) -> _PreparedSnapshotRun:
+) -> SnapshotRunExecutionRequest:
     """Validate and persist the state required for snapshot execution.
 
     Args:
@@ -413,14 +400,13 @@ def prepare_snapshot_run(
         template_id: Optional source run template ID.
         create_new_snapshot: Whether to create a derived execution snapshot.
         implicit_auth_context: Whether the current auth context is already set.
-        wait_runner_pod: Whether execution waits for runner completion.
         trigger_id: Optional trigger responsible for the run.
         trigger_execution_info: Optional trigger lineage information.
         replay_configuration: Optional replay overrides.
         original_run: Original run for replay execution.
 
     Returns:
-        The prepared run and durable execution request.
+        The durable execution request.
 
     Raises:
         ValueError: If replay execution has no original run.
@@ -435,7 +421,7 @@ def prepare_snapshot_run(
         set_auth_context(auth_context)
     logger.info("Current auth context: %s", get_auth_context())
 
-    build, stack, zenml_version = validate_snapshot_for_server_execution(
+    _, stack, _ = validate_snapshot_for_server_execution(
         snapshot=snapshot,
         run_configuration=run_configuration,
     )
@@ -471,165 +457,27 @@ def prepare_snapshot_run(
             info=trigger_execution_info,
         )
 
-    return _PreparedSnapshotRun(
-        run=placeholder_run,
-        snapshot=target_snapshot,
-        build=build,
-        stack=stack,
-        zenml_version=zenml_version,
-        request=SnapshotRunExecutionRequest(
-            run_id=placeholder_run.id,
-            snapshot_id=target_snapshot.id,
-            source_snapshot_id=snapshot.id,
-        ),
-        wait_for_completion=wait_runner_pod,
-        is_trigger_execution=trigger_id is not None,
-        use_run_workload=trigger_id is not None or original_run is not None,
+    return SnapshotRunExecutionRequest(
+        run_id=placeholder_run.id,
+        snapshot_id=target_snapshot.id,
     )
-
-
-def _execute_snapshot_run(
-    request: SnapshotRunExecutionRequest,
-    run: PipelineRunResponse,
-    snapshot: PipelineSnapshotResponse,
-    build: PipelineBuildResponse,
-    stack: StackResponse,
-    zenml_version: str,
-    auth_context: AuthContext,
-    wait_for_completion: bool,
-    is_trigger_execution: bool,
-    use_run_workload: bool,
-) -> None:
-    """Execute a snapshot run from hydrated preparation state.
-
-    Args:
-        request: Durable execution identifiers.
-        run: Prepared placeholder run.
-        snapshot: Target execution snapshot.
-        build: Build used for execution.
-        stack: Stack used for execution.
-        zenml_version: ZenML version used for execution.
-        auth_context: Execution identity.
-        wait_for_completion: Whether to wait for runner completion.
-        is_trigger_execution: Whether a trigger initiated the run.
-        use_run_workload: Whether to identify the workload by run ID.
-
-    Raises:
-        ValueError: If the prepared run and snapshot do not match the request.
-        RuntimeError: If runner submission fails while the run is initializing.
-    """
-    try:
-        if run.snapshot is None or run.snapshot.id != snapshot.id:
-            raise ValueError(
-                "Prepared run does not reference its target snapshot."
-            )
-        if (
-            snapshot.id != request.source_snapshot_id
-            and snapshot.source_snapshot_id != request.source_snapshot_id
-        ):
-            raise ValueError(
-                "Target snapshot does not reference the source snapshot."
-            )
-
-        environment = build_runner_environment(
-            snapshot=snapshot,
-            stack=stack,
-            run_id=run.id,
-            auth_context=auth_context,
-            zenml_version=zenml_version,
-        )
-        command = RunnerEntrypointConfiguration.get_entrypoint_command()
-        arguments = RunnerEntrypointConfiguration.get_entrypoint_arguments(
-            snapshot_id=snapshot.id,
-            run_id=run.id,
-        )
-        dockerfile = build_runner_dockerfile(
-            stack=stack, build=build, zenml_version=zenml_version
-        )
-
-        with track_handler(
-            event=AnalyticsEvent.RUN_PIPELINE
-        ) as analytics_handler:
-            analytics_handler.metadata = get_pipeline_run_analytics_metadata(
-                snapshot=snapshot,
-                stack=stack,
-                source_snapshot_id=request.source_snapshot_id,
-                run_id=run.id,
-            )
-            analytics_handler.metadata["trigger_execution"] = (
-                is_trigger_execution
-            )
-            _build_and_run(
-                workload_id=run.id if use_run_workload else snapshot.id,
-                workload_type=(
-                    WorkloadType.RUN
-                    if use_run_workload
-                    else WorkloadType.SNAPSHOT
-                ),
-                command=command,
-                arguments=arguments,
-                environment=environment,
-                dockerfile=dockerfile,
-                wait_for_completion=wait_for_completion,
-                success_message="Pipeline run started successfully.",
-            )
-    except Exception as exc:
-        logger.exception("Failed to execute prepared snapshot run %s.", run.id)
-        if zen_store().get_run_status(run.id) == ExecutionStatus.INITIALIZING:
-            zen_store().update_run(
-                run_id=run.id,
-                run_update=PipelineRunUpdate(
-                    status=ExecutionStatus.FAILED,
-                    status_reason="Failed to start run.",
-                ),
-            )
-            raise RuntimeError("Failed to start pipeline run.") from exc
-
-
-def _execute_prepared_snapshot_run(
-    prepared: _PreparedSnapshotRun,
-    auth_context: AuthContext,
-) -> bool:
-    """Execute a snapshot run directly from its in-memory preparation result.
-
-    Args:
-        prepared: Hydrated snapshot run preparation result.
-        auth_context: Execution identity.
-
-    Returns:
-        Whether the prepared run was submitted for execution.
-    """
-    set_auth_context(auth_context)
-    _execute_snapshot_run(
-        request=prepared.request,
-        run=prepared.run,
-        snapshot=prepared.snapshot,
-        build=prepared.build,
-        stack=prepared.stack,
-        zenml_version=prepared.zenml_version,
-        auth_context=auth_context,
-        wait_for_completion=prepared.wait_for_completion,
-        is_trigger_execution=prepared.is_trigger_execution,
-        use_run_workload=prepared.use_run_workload,
-    )
-
-    return True
 
 
 def execute_snapshot_run(
     request: SnapshotRunExecutionRequest,
     auth_context: AuthContext | None = None,
+    wait_for_completion: bool = True,
 ) -> bool:
     """Execute a previously prepared snapshot run.
 
     Args:
         request: Durable identifiers for the prepared run.
         auth_context: Optional explicit execution identity.
+        wait_for_completion: Whether to wait for runner completion.
 
     Raises:
         ValueError: If the persisted run has no execution owner.
-        RuntimeError: If validation or runner submission fails while the run is
-            initializing.
+        RuntimeError: If runner submission fails while the run is initializing.
 
     Returns:
         Whether the prepared run was submitted for execution.
@@ -661,6 +509,11 @@ def execute_snapshot_run(
         return False
 
     try:
+        if run.snapshot is None or run.snapshot.id != snapshot.id:
+            raise ValueError(
+                "Prepared run does not reference its target snapshot."
+            )
+
         execution_auth = auth_context
         if execution_auth is None:
             if run.user is None:
@@ -671,6 +524,54 @@ def execute_snapshot_run(
         build, stack, zenml_version = validate_snapshot_for_server_execution(
             snapshot=snapshot
         )
+
+        environment = build_runner_environment(
+            snapshot=snapshot,
+            stack=stack,
+            run_id=run.id,
+            auth_context=execution_auth,
+            zenml_version=zenml_version,
+        )
+        command = RunnerEntrypointConfiguration.get_entrypoint_command()
+        arguments = RunnerEntrypointConfiguration.get_entrypoint_arguments(
+            snapshot_id=snapshot.id,
+            run_id=run.id,
+        )
+        dockerfile = build_runner_dockerfile(
+            stack=stack, build=build, zenml_version=zenml_version
+        )
+
+        with track_handler(
+            event=AnalyticsEvent.RUN_PIPELINE
+        ) as analytics_handler:
+            analytics_handler.metadata = get_pipeline_run_analytics_metadata(
+                snapshot=snapshot,
+                stack=stack,
+                source_snapshot_id=snapshot.source_snapshot_id or snapshot.id,
+                run_id=run.id,
+            )
+            analytics_handler.metadata["trigger_execution"] = (
+                run.trigger is not None
+            )
+            _build_and_run(
+                workload_id=(
+                    run.id
+                    if run.trigger is not None or run.original_run is not None
+                    else snapshot.id
+                ),
+                workload_type=(
+                    WorkloadType.RUN
+                    if run.trigger is not None or run.original_run is not None
+                    else WorkloadType.SNAPSHOT
+                ),
+                command=command,
+                arguments=arguments,
+                environment=environment,
+                dockerfile=dockerfile,
+                wait_for_completion=wait_for_completion,
+                success_message="Pipeline run started successfully.",
+            )
+        return True
     except Exception as exc:
         logger.exception("Failed to execute prepared snapshot run %s.", run.id)
         if zen_store().get_run_status(run.id) == ExecutionStatus.INITIALIZING:
@@ -683,23 +584,6 @@ def execute_snapshot_run(
             )
             raise RuntimeError("Failed to start pipeline run.") from exc
         return True
-
-    _execute_snapshot_run(
-        request=request,
-        run=run,
-        snapshot=snapshot,
-        build=build,
-        stack=stack,
-        auth_context=execution_auth,
-        zenml_version=zenml_version,
-        wait_for_completion=True,
-        is_trigger_execution=run.trigger is not None,
-        use_run_workload=(
-            run.trigger is not None or run.original_run is not None
-        ),
-    )
-
-    return True
 
 
 def resume_run(run: PipelineRunResponse) -> Future[None]:

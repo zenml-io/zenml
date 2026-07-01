@@ -334,11 +334,7 @@ class ServerConfiguration(BaseModel):
     workload_manager_implementation_source: Optional[str] = None
     resource_pool_implementation_source: Optional[str] = None
     stream_broker_implementation_source: Optional[str] = None
-    # TODO: Configure this through workspace provisioning before merging. This
-    # temporary default intentionally requires the Pro plugin during development.
-    snapshot_run_dispatcher_implementation_source: Optional[str] = (
-        "zenml_cloud_plugins.snapshot_run_dispatcher.RedisSnapshotRunDispatcher"
-    )
+    snapshot_run_dispatcher_implementation_source: Optional[str] = None
     streaming_heartbeat_seconds: float = Field(default=30.0, gt=0.0)
     streaming_max_subscribers_per_stream: int = Field(default=100, gt=0)
     streaming_broadcaster_idle_grace_seconds: float = Field(
