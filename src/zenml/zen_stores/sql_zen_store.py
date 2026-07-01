@@ -2467,6 +2467,10 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The API transaction and a boolean indicating whether the transaction
             was created.
+
+        Raises:
+            KeyError: If the API transaction cannot be retrieved after a
+                concurrent create conflict.
         """
         with Session(self.engine) as session:
             self._set_request_user_id(
