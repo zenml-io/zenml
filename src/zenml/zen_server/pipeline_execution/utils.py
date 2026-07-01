@@ -531,7 +531,6 @@ def _execute_snapshot_run(
                 "Target snapshot does not reference the source snapshot."
             )
 
-        set_auth_context(auth_context)
         environment = build_runner_environment(
             snapshot=snapshot,
             stack=stack,
@@ -600,6 +599,7 @@ def _execute_prepared_snapshot_run(
     Returns:
         Whether the prepared run was submitted for execution.
     """
+    set_auth_context(auth_context)
     _execute_snapshot_run(
         request=prepared.request,
         run=prepared.run,
@@ -667,6 +667,7 @@ def execute_snapshot_run(
                 raise ValueError("Prepared run owner is not available.")
             execution_auth = AuthContext(user=run.user)
 
+        set_auth_context(execution_auth)
         build, stack, zenml_version = validate_snapshot_for_server_execution(
             snapshot=snapshot
         )
