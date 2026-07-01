@@ -9,6 +9,7 @@ import pytest
 from zenml.enums import ExecutionStatus
 from zenml.zen_server.pipeline_execution import utils
 from zenml.zen_server.pipeline_execution.snapshot_run_dispatcher import (
+    SnapshotRunDispatchError,
     SnapshotRunExecutionRequest,
     SnapshotRunQueueFullError,
 )
@@ -157,7 +158,7 @@ def test_synchronous_snapshot_run_executes_without_redispatch(
 
     build_and_run.side_effect = RuntimeError("infrastructure failure")
     store.get_run_status.return_value = ExecutionStatus.INITIALIZING
-    with pytest.raises(RuntimeError, match="infrastructure failure"):
+    with pytest.raises(RuntimeError, match="Failed to start pipeline run"):
         utils.run_snapshot(
             snapshot=snapshot,
             auth_context=auth_context,
@@ -242,7 +243,10 @@ def test_unexpected_dispatch_failure_marks_prepared_run_failed(
     monkeypatch.setattr(utils, "get_auth_context", MagicMock())
     monkeypatch.setattr(utils, "report_usage", MagicMock())
 
-    with pytest.raises(RuntimeError, match="redis unavailable"):
+    with pytest.raises(
+        SnapshotRunDispatchError,
+        match="Failed to queue snapshot execution request",
+    ):
         utils.run_snapshot(
             snapshot=source_snapshot,
             auth_context=MagicMock(),

@@ -76,6 +76,7 @@ from zenml.zen_server.pipeline_execution.runner_entrypoint_configuration import 
     RunnerEntrypointConfiguration,
 )
 from zenml.zen_server.pipeline_execution.snapshot_run_dispatcher import (
+    SnapshotRunDispatchError,
     SnapshotRunExecutionRequest,
     SnapshotRunQueueFullError,
 )
@@ -332,7 +333,7 @@ def run_snapshot(
 
     Raises:
         SnapshotRunQueueFullError: If the dispatcher queue is full.
-        Exception: If preparation, dispatch, or synchronous execution fails.
+        SnapshotRunDispatchError: If dispatch fails unexpectedly.
 
     Returns:
         ID of the new pipeline run.
@@ -372,7 +373,10 @@ def run_snapshot(
                 ),
             )
             raise
-        except Exception:
+        except Exception as exc:
+            logger.exception(
+                "Failed to dispatch prepared snapshot run %s.", prepared.run.id
+            )
             zen_store().update_run(
                 run_id=prepared.run.id,
                 run_update=PipelineRunUpdate(
@@ -380,7 +384,9 @@ def run_snapshot(
                     status_reason="Failed to queue run.",
                 ),
             )
-            raise
+            raise SnapshotRunDispatchError(
+                "Failed to queue snapshot execution request."
+            ) from exc
 
     return response_run
 
@@ -510,7 +516,7 @@ def _execute_snapshot_run(
 
     Raises:
         ValueError: If the prepared run and snapshot do not match the request.
-        Exception: If runner submission fails while the run is initializing.
+        RuntimeError: If runner submission fails while the run is initializing.
     """
     try:
         if run.snapshot is None or run.snapshot.id != snapshot.id:
@@ -568,7 +574,7 @@ def _execute_snapshot_run(
                 wait_for_completion=wait_for_completion,
                 success_message="Pipeline run started successfully.",
             )
-    except Exception:
+    except Exception as exc:
         logger.exception("Failed to execute prepared snapshot run %s.", run.id)
         if zen_store().get_run_status(run.id) == ExecutionStatus.INITIALIZING:
             zen_store().update_run(
@@ -578,7 +584,7 @@ def _execute_snapshot_run(
                     status_reason="Failed to start run.",
                 ),
             )
-            raise
+            raise RuntimeError("Failed to start pipeline run.") from exc
 
 
 def _execute_prepared_snapshot_run(
@@ -622,7 +628,7 @@ def execute_snapshot_run(
 
     Raises:
         ValueError: If the persisted run has no execution owner.
-        Exception: If validation or runner submission fails while the run is
+        RuntimeError: If validation or runner submission fails while the run is
             initializing.
 
     Returns:
@@ -664,7 +670,7 @@ def execute_snapshot_run(
         build, stack, zenml_version = validate_snapshot_for_server_execution(
             snapshot=snapshot
         )
-    except Exception:
+    except Exception as exc:
         logger.exception("Failed to execute prepared snapshot run %s.", run.id)
         if zen_store().get_run_status(run.id) == ExecutionStatus.INITIALIZING:
             zen_store().update_run(
@@ -674,7 +680,7 @@ def execute_snapshot_run(
                     status_reason="Failed to start run.",
                 ),
             )
-            raise
+            raise RuntimeError("Failed to start pipeline run.") from exc
         return True
 
     _execute_snapshot_run(
