@@ -145,14 +145,12 @@ from zenml.constants import (
     DEFAULT_PASSWORD,
     DEFAULT_STACK_AND_COMPONENT_NAME,
     DEFAULT_USERNAME,
-    DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE,
     ENV_ZENML_DEFAULT_USER_NAME,
     ENV_ZENML_DEFAULT_USER_PASSWORD,
     ENV_ZENML_DISABLE_DATABASE_MIGRATION,
     ENV_ZENML_SERVER,
     FINISHED_ONBOARDING_SURVEY_KEY,
     MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION,
-    MAX_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE,
     SQL_STORE_BACKUP_DIRECTORY_NAME,
     TEXT_FIELD_MAX_LENGTH,
     handle_bool_env_var,
@@ -2423,65 +2421,11 @@ class SqlZenStore(BaseZenStore):
 
         return api_transaction_schema
 
-    @staticmethod
-    def _api_transaction_has_expired(
-        api_transaction_schema: ApiTransactionSchema,
-    ) -> bool:
-        """Check whether a completed API transaction has expired."""
-        return (
-            api_transaction_schema.completed
-            and api_transaction_schema.expired is not None
-            and api_transaction_schema.expired < utc_now()
-        )
-
-    @staticmethod
-    def _claim_expired_api_transaction(
-        api_transaction_schema: ApiTransactionSchema,
-        session: Session,
-    ) -> Optional[ApiTransactionSchema]:
-        """Atomically claim an expired API transaction for re-execution.
-
-        The conditional UPDATE lets exactly one worker reset an expired
-        completed transaction back to pending. The winner deletes the stale
-        cached result so the retried mutation produces a fresh response.
-        """
-        now = utc_now()
-        result = session.execute(
-            update(ApiTransactionSchema)
-            .where(ApiTransactionSchema.id == api_transaction_schema.id)
-            .where(col(ApiTransactionSchema.completed))
-            .where(col(ApiTransactionSchema.expired) < now)
-            .values(completed=False, expired=None, updated=now)
-        )
-
-        if result.rowcount != 1:  # type: ignore[attr-defined]
-            session.rollback()
-            return None
-
-        result_schema = session.get(
-            ApiTransactionResultSchema, api_transaction_schema.id
-        )
-        if result_schema is not None:
-            session.delete(result_schema)
-
-        session.commit()
-        session.refresh(api_transaction_schema)
-        return api_transaction_schema
-
     def cleanup_expired_api_transactions(
         self,
-        batch_size: int = DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE,
+        batch_size: int,
     ) -> int:
         """Delete a bounded batch of completed API transactions that expired."""
-        if (
-            batch_size < 1
-            or batch_size > MAX_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE
-        ):
-            raise ValueError(
-                "Expired API transaction cleanup batch size must be between "
-                f"1 and {MAX_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE}."
-            )
-
         with Session(self.engine) as session:
             expired_transaction_ids = (
                 select(ApiTransactionSchema.id)
@@ -2554,31 +2498,6 @@ class SqlZenStore(BaseZenStore):
                         if retry == 0:
                             continue
                         raise
-
-                    if self._api_transaction_has_expired(
-                        api_transaction_schema
-                    ):
-                        claimed_transaction_schema = (
-                            self._claim_expired_api_transaction(
-                                api_transaction_schema, session=session
-                            )
-                        )
-                        if claimed_transaction_schema is not None:
-                            api_transaction_schema = claimed_transaction_schema
-                            created = True
-                            break
-
-                        try:
-                            api_transaction_schema = self._get_api_transaction(
-                                api_transaction_id=api_transaction_schema.id,
-                                method=api_transaction.method,
-                                url=api_transaction.url,
-                                session=session,
-                            )
-                        except KeyError:
-                            if retry == 0:
-                                continue
-                            raise
 
                     break
 

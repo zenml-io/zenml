@@ -440,6 +440,22 @@ class ServerConfiguration(BaseModel):
     event_handler_sources: list[str] = []
 
     @model_validator(mode="after")
+    def _validate_api_transaction_cleanup_settings(
+        self,
+    ) -> "ServerConfiguration":
+        """Validate API transaction cleanup settings."""
+        if (
+            self.api_transaction_cleanup_time_budget
+            > self.api_transaction_cleanup_interval
+        ):
+            raise ValueError(
+                "`api_transaction_cleanup_time_budget` must be less than or "
+                "equal to `api_transaction_cleanup_interval`."
+            )
+
+        return self
+
+    @model_validator(mode="after")
     def _resolve_otel_endpoints(self) -> "ServerConfiguration":
         """Resolve effective OTLP/HTTP endpoints for all telemetry signals."""
         # Resolve OTLP/HTTP endpoints for all telemetry signals

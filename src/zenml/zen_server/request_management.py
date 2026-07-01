@@ -39,7 +39,6 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 _SLOW_TRANSACTION_CLEANUP_SECONDS = 1.0
-_SAFE_REQUEST_METHODS = {"GET", "HEAD", "OPTIONS"}
 
 
 class RequestContext:
@@ -123,13 +122,10 @@ class RequestContext:
         Returns:
             Whether the request is cacheable.
         """
-        # Read-only requests are already idempotent. Routing them through the
-        # SQL-backed transaction cache turns high-frequency control-plane
-        # polling into writes and cleanup work without adding mutation safety.
+        # Only cache requests that are authenticated and are part of a
+        # transaction.
         return (
-            self.auth_context is not None
-            and self.transaction_id is not None
-            and self.request.method.upper() not in _SAFE_REQUEST_METHODS
+            self.auth_context is not None and self.transaction_id is not None
         )
 
 

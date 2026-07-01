@@ -9,10 +9,9 @@ from uuid import UUID, uuid4
 
 import pytest
 from fastapi.responses import JSONResponse
-from starlette.requests import Request
 
 from zenml.zen_server import utils as server_utils
-from zenml.zen_server.request_management import RequestContext, RequestManager
+from zenml.zen_server.request_management import RequestManager
 
 pytestmark = pytest.mark.anyio
 
@@ -102,41 +101,6 @@ def _configure_request_manager(
         server_utils, "_server_config", config or _ServerConfig()
     )
     monkeypatch.setattr(server_utils, "get_system_metrics", lambda: {})
-
-
-def _request_context(method: str, transaction_id: UUID) -> RequestContext:
-    """Create a request context with authentication and idempotency headers."""
-    request = Request(
-        {
-            "type": "http",
-            "method": method,
-            "path": "/api/request",
-            "headers": [
-                (b"idempotency-key", str(transaction_id).encode()),
-                (b"user-agent", b"test-client"),
-            ],
-            "client": ("127.0.0.1", 12345),
-            "scheme": "http",
-            "server": ("testserver", 80),
-        }
-    )
-    context = RequestContext(request)
-    context.auth_context = SimpleNamespace(user=SimpleNamespace(id=uuid4()))
-    return context
-
-
-def test_safe_requests_are_not_transaction_cacheable() -> None:
-    """GET requests avoid SQL-backed API transactions."""
-    context = _request_context(method="GET", transaction_id=uuid4())
-
-    assert context.is_cacheable is False
-
-
-def test_mutating_requests_are_transaction_cacheable() -> None:
-    """Mutating requests can still use SQL-backed API transactions."""
-    context = _request_context(method="POST", transaction_id=uuid4())
-
-    assert context.is_cacheable is True
 
 
 def test_cleanup_expired_transactions_drains_full_batches(

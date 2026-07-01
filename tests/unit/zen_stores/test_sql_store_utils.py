@@ -1,7 +1,6 @@
 """Unit tests for SQL Zen Store utility behavior."""
 
 import gzip
-from datetime import timedelta
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 from uuid import uuid4
@@ -12,7 +11,6 @@ from sqlmodel import Session, col, select
 
 from zenml.client import Client
 from zenml.constants import ENV_ZENML_DISABLE_DATABASE_MIGRATION
-from zenml.models import ApiTransactionRequest
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores import sql_zen_store as sql_zen_store_module
 from zenml.zen_stores.schemas import (
@@ -168,10 +166,10 @@ def test_expired_api_transaction_cleanup_is_batched(clean_client):
     assert active_transaction is not None
 
 
-def test_mysql_expired_api_transaction_cleanup_uses_bounded_delete(
+def test_mysql_expired_api_transaction_cleanup_uses_bounded_predicate_delete(
     monkeypatch: pytest.MonkeyPatch,
 ):
-    """MySQL cleanup uses a bounded delete without row-locking selects."""
+    """MySQL cleanup uses a bounded delete with expiration predicates."""
     compiled_queries: list[str] = []
 
     class _DeleteResult:
@@ -207,124 +205,10 @@ def test_mysql_expired_api_transaction_cleanup_uses_bounded_delete(
 
     assert deleted_count == 0
     assert "DELETE FROM api_transaction" in compiled_queries[0]
+    assert "api_transaction.completed" in compiled_queries[0]
+    assert "api_transaction.expired" in compiled_queries[0]
     assert "FOR UPDATE" not in compiled_queries[0]
     assert "LIMIT" in compiled_queries[0]
-
-
-def test_completed_expired_api_transaction_is_reset(clean_client):
-    """Completed expired API transactions are reset for re-execution."""
-    store = clean_client.zen_store
-
-    if not isinstance(store, SqlZenStore):
-        pytest.skip(
-            "API transaction recreation is testable only for SQL ZenML store"
-        )
-
-    transaction_id = uuid4()
-    user_id = clean_client.active_user.id
-    expired_at = utc_now() - timedelta(seconds=1)
-
-    with Session(store.engine) as session:
-        transaction = ApiTransactionSchema(
-            id=transaction_id,
-            method="POST",
-            url="/api/retry",
-            user_id=user_id,
-            completed=True,
-            expired=expired_at,
-        )
-        session.add(transaction)
-        session.flush()
-        session.add(
-            ApiTransactionResultSchema(
-                id=transaction_id,
-                result=gzip.compress(b'"stale-result"'),
-            )
-        )
-        session.commit()
-
-    api_transaction, created = store.get_or_create_api_transaction(
-        ApiTransactionRequest(
-            transaction_id=transaction_id,
-            method="POST",
-            url="/api/retry",
-        )
-    )
-
-    assert created is True
-    assert api_transaction.id == transaction_id
-    assert api_transaction.completed is False
-
-    with Session(store.engine) as session:
-        transaction = session.get(ApiTransactionSchema, transaction_id)
-        result = session.get(ApiTransactionResultSchema, transaction_id)
-
-    assert transaction is not None
-    assert transaction.completed is False
-    assert transaction.expired is None
-    assert result is None
-
-
-def test_expired_api_transaction_claim_is_single_use(clean_client):
-    """Expired API transaction reset only succeeds once."""
-    store = clean_client.zen_store
-
-    if not isinstance(store, SqlZenStore):
-        pytest.skip(
-            "API transaction recreation is testable only for SQL ZenML store"
-        )
-
-    transaction_id = uuid4()
-    user_id = clean_client.active_user.id
-    expired_at = utc_now() - timedelta(seconds=1)
-
-    with Session(store.engine) as session:
-        transaction = ApiTransactionSchema(
-            id=transaction_id,
-            method="POST",
-            url="/api/retry",
-            user_id=user_id,
-            completed=True,
-            expired=expired_at,
-        )
-        session.add(transaction)
-        session.flush()
-        session.add(
-            ApiTransactionResultSchema(
-                id=transaction_id,
-                result=gzip.compress(b'"stale-result"'),
-            )
-        )
-        session.commit()
-
-    first_transaction, first_created = store.get_or_create_api_transaction(
-        ApiTransactionRequest(
-            transaction_id=transaction_id,
-            method="POST",
-            url="/api/retry",
-        )
-    )
-    second_transaction, second_created = store.get_or_create_api_transaction(
-        ApiTransactionRequest(
-            transaction_id=transaction_id,
-            method="POST",
-            url="/api/retry",
-        )
-    )
-
-    assert first_created is True
-    assert first_transaction.completed is False
-    assert second_created is False
-    assert second_transaction.completed is False
-
-    with Session(store.engine) as session:
-        transaction = session.get(ApiTransactionSchema, transaction_id)
-        result = session.get(ApiTransactionResultSchema, transaction_id)
-
-    assert transaction is not None
-    assert transaction.completed is False
-    assert transaction.expired is None
-    assert result is None
 
 
 def test_api_transaction_index_covers_expired_completed_cleanup():
