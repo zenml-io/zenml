@@ -14,6 +14,7 @@
 """SSH client wrapper around paramiko."""
 
 import io
+import os
 import socket
 import time
 from contextlib import contextmanager
@@ -76,19 +77,21 @@ class SSHClient:
             RuntimeError: If required explicit SSH auth fields are missing, or
                 if connection or authentication fails.
         """
-        private_key: Optional[str] = None
-        if self.config.ssh_private_key is not None:
-            private_key = self.config.ssh_private_key.get_secret_value()
+        private_key = self.config.ssh_private_key
 
-        if not self.config.ssh_key_path and private_key is None:
+        key_path = (
+            os.path.expanduser(self.config.ssh_key_path)
+            if self.config.ssh_key_path
+            else None
+        )
+
+        if not key_path and private_key is None:
             raise RuntimeError(
                 "SSH authentication requires either `ssh_key_path` or "
                 "`ssh_private_key` to be configured on the component."
             )
 
-        passphrase: Optional[str] = None
-        if self.config.ssh_key_passphrase is not None:
-            passphrase = self.config.ssh_key_passphrase.get_secret_value()
+        passphrase = self.config.ssh_key_passphrase
 
         client = paramiko.SSHClient()
 
@@ -111,20 +114,20 @@ class SSHClient:
 
         # Load the private key
         pkey: Optional[paramiko.PKey] = None
-        if self.config.ssh_key_path:
+        if key_path:
             try:
                 pkey = paramiko.RSAKey.from_private_key_file(
-                    self.config.ssh_key_path, password=passphrase
+                    key_path, password=passphrase
                 )
             except paramiko.ssh_exception.SSHException:
                 # Try other key types (Ed25519, ECDSA)
                 try:
                     pkey = paramiko.Ed25519Key.from_private_key_file(
-                        self.config.ssh_key_path, password=passphrase
+                        key_path, password=passphrase
                     )
                 except paramiko.ssh_exception.SSHException:
                     pkey = paramiko.ECDSAKey.from_private_key_file(
-                        self.config.ssh_key_path, password=passphrase
+                        key_path, password=passphrase
                     )
         elif private_key:
             key_file = io.StringIO(private_key)

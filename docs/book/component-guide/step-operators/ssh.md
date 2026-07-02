@@ -10,6 +10,10 @@ The SSH step operator allows you to execute individual ZenML steps on a remote L
 If you want to run *entire* pipelines on a remote host (not just individual steps), see the sibling [SSH orchestrator](../orchestrators/ssh.md). The two components share the same SSH connection layer and can target the same machine.
 {% endhint %}
 
+{% hint style="warning" %}
+When a step operator step runs under the [SSH orchestrator](../orchestrators/ssh.md), it executes inside a container on the remote host rather than on your client. In that case configure the key via `ssh_private_key` instead of `ssh_key_path`, and set `verify_host_key=False` (or point `known_hosts_path` at a file baked into the image), since the container has no local key file or `known_hosts`.
+{% endhint %}
+
 ### When to use it
 
 You should use the SSH step operator if:

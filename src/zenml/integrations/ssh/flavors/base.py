@@ -18,7 +18,7 @@ from typing import Dict, List, Optional
 from pydantic import Field
 
 from zenml.config.base_settings import BaseSettings
-from zenml.utils.secret_utils import PlainSerializedSecretStr, SecretField
+from zenml.utils.secret_utils import SecretField
 
 
 class SSHConnectionConfigMixin(BaseSettings):
@@ -43,13 +43,13 @@ class SSHConnectionConfigMixin(BaseSettings):
         description="Path to the SSH private key file on the submitting "
         "machine. Supports RSA, Ed25519, and ECDSA keys",
     )
-    ssh_private_key: Optional[PlainSerializedSecretStr] = SecretField(
+    ssh_private_key: Optional[str] = SecretField(
         default=None,
         description="SSH private key content, used instead of ssh_key_path "
         "when the key is stored in a ZenML secret. Supports {{secret.key}} "
         "references",
     )
-    ssh_key_passphrase: Optional[PlainSerializedSecretStr] = SecretField(
+    ssh_key_passphrase: Optional[str] = SecretField(
         default=None,
         description="Passphrase for an encrypted SSH private key. Leave unset "
         "if the key is not encrypted",
