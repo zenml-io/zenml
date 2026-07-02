@@ -2421,17 +2421,40 @@ class SqlZenStore(BaseZenStore):
 
         return api_transaction_schema
 
-    def cleanup_expired_api_transactions(self) -> None:
-        """Delete completed API transactions that have expired."""
+    def cleanup_expired_api_transactions(
+        self,
+        batch_size: int,
+    ) -> int:
+        """Delete a bounded batch of completed API transactions that expired."""
         with Session(self.engine) as session:
-            session.execute(
-                delete(ApiTransactionSchema).where(
+            expired_transaction_ids = (
+                select(ApiTransactionSchema.id)
+                .where(
                     col(ApiTransactionSchema.completed),
                     col(ApiTransactionSchema.expired) < utc_now(),
+                )
+                .order_by(
+                    col(ApiTransactionSchema.expired),
+                    col(ApiTransactionSchema.id),
+                )
+                .limit(batch_size)
+                .subquery()
+            )
+
+            # Keep cleanup as a short parent-table DELETE. The existing
+            # ON DELETE CASCADE foreign key removes result rows in the same
+            # statement, and avoiding SELECT FOR UPDATE keeps this maintenance
+            # task from competing with request-path transaction inserts.
+            result = session.execute(
+                delete(ApiTransactionSchema).where(
+                    col(ApiTransactionSchema.id).in_(
+                        select(expired_transaction_ids.c.id)
+                    )
                 )
             )
 
             session.commit()
+            return max(result.rowcount or 0, 0)  # type: ignore[attr-defined]
 
     def get_or_create_api_transaction(
         self, api_transaction: ApiTransactionRequest
@@ -2444,30 +2467,43 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The API transaction and a boolean indicating whether the transaction
             was created.
+
+        Raises:
+            KeyError: If the API transaction cannot be retrieved after a
+                concurrent create conflict.
         """
         with Session(self.engine) as session:
             self._set_request_user_id(
                 request_model=api_transaction, session=session
             )
 
-            api_transaction_schema = ApiTransactionSchema.from_request(
-                api_transaction
-            )
-            session.add(api_transaction_schema)
             created = False
-            try:
-                session.commit()
-                created = True
-            except IntegrityError:
-                # We have to rollback the failed session first in order to
-                # continue using it
-                session.rollback()
-                api_transaction_schema = self._get_api_transaction(
-                    api_transaction_id=api_transaction_schema.id,
-                    method=api_transaction.method,
-                    url=api_transaction.url,
-                    session=session,
+            for retry in range(2):
+                api_transaction_schema = ApiTransactionSchema.from_request(
+                    api_transaction
                 )
+                session.add(api_transaction_schema)
+                try:
+                    session.commit()
+                    created = True
+                    break
+                except IntegrityError:
+                    # We have to rollback the failed session first in order to
+                    # continue using it.
+                    session.rollback()
+                    try:
+                        api_transaction_schema = self._get_api_transaction(
+                            api_transaction_id=api_transaction_schema.id,
+                            method=api_transaction.method,
+                            url=api_transaction.url,
+                            session=session,
+                        )
+                    except KeyError:
+                        if retry == 0:
+                            continue
+                        raise
+
+                    break
 
             return (
                 api_transaction_schema.to_model(
