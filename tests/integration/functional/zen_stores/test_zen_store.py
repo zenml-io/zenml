@@ -683,6 +683,96 @@ class TestAdminUser:
                 user = zen_store.get_user(test_user.id)
                 assert not user.is_admin
 
+    def test_service_account_mutations_require_admin_without_rbac(self):
+        """Tests service account mutations as an admin and as a non-admin."""
+        if Client().zen_store.type == StoreType.SQL:
+            pytest.skip("SQL ZenStore does not support admin users.")
+
+        zen_store: RestZenStore = Client().zen_store
+        service_account = zen_store.create_service_account(
+            ServiceAccountRequest(
+                name=sample_name("admin_only_service_account"),
+                active=True,
+            )
+        )
+        api_key = zen_store.create_api_key(
+            service_account_id=service_account.id,
+            api_key=APIKeyRequest(name=sample_name("admin_only_api_key")),
+        )
+
+        try:
+            with UserContext(
+                password=self.default_pwd, is_admin=False
+            ) as test_user:
+                with LoginContext(
+                    user_name=test_user.name, password=self.default_pwd
+                ):
+                    non_admin_store: RestZenStore = Client().zen_store
+
+                    with pytest.raises(IllegalOperationError):
+                        non_admin_store.create_service_account(
+                            ServiceAccountRequest(
+                                name=sample_name("denied_service_account"),
+                                active=True,
+                            )
+                        )
+
+                    with pytest.raises(IllegalOperationError):
+                        non_admin_store.update_service_account(
+                            service_account_name_or_id=service_account.id,
+                            service_account_update=ServiceAccountUpdate(
+                                description="Non-admin update should fail.",
+                            ),
+                        )
+
+                    with pytest.raises(IllegalOperationError):
+                        non_admin_store.delete_service_account(
+                            service_account.id
+                        )
+
+                    with pytest.raises(IllegalOperationError):
+                        non_admin_store.create_api_key(
+                            service_account_id=service_account.id,
+                            api_key=APIKeyRequest(
+                                name=sample_name("denied_api_key")
+                            ),
+                        )
+
+                    with pytest.raises(IllegalOperationError):
+                        non_admin_store.update_api_key(
+                            service_account_id=service_account.id,
+                            api_key_name_or_id=api_key.id,
+                            api_key_update=APIKeyUpdate(
+                                description="Non-admin update should fail.",
+                            ),
+                        )
+
+                    with pytest.raises(IllegalOperationError):
+                        non_admin_store.rotate_api_key(
+                            service_account_id=service_account.id,
+                            api_key_name_or_id=api_key.id,
+                            rotate_request=APIKeyRotateRequest(),
+                        )
+
+                    with pytest.raises(IllegalOperationError):
+                        non_admin_store.delete_api_key(
+                            service_account_id=service_account.id,
+                            api_key_name_or_id=api_key.id,
+                        )
+        finally:
+            try:
+                zen_store.delete_api_key(
+                    service_account_id=service_account.id,
+                    api_key_name_or_id=api_key.id,
+                )
+            except KeyError:
+                pass
+
+            try:
+                zen_store.delete_service_account(service_account.id)
+            except (KeyError, IllegalOperationError):
+                pass
+
 
 def test_active_user():
     """Tests the active user can be queried with .get_user()."""
@@ -2200,7 +2290,16 @@ def test_login_inactive_api_key():
             active_user = new_zen_store.get_user()
             assert active_user.id == service_account.id
 
-            new_zen_store.update_api_key(
+            with pytest.raises(IllegalOperationError):
+                new_zen_store.update_api_key(
+                    service_account_id=service_account.id,
+                    api_key_name_or_id=api_key.id,
+                    api_key_update=APIKeyUpdate(
+                        active=False,
+                    ),
+                )
+
+            zen_store.update_api_key(
                 service_account_id=service_account.id,
                 api_key_name_or_id=api_key.id,
                 api_key_update=APIKeyUpdate(
@@ -2271,7 +2370,15 @@ def test_login_inactive_service_account():
             active_user = new_zen_store.get_user()
             assert active_user.id == service_account.id
 
-            new_zen_store.update_service_account(
+            with pytest.raises(IllegalOperationError):
+                new_zen_store.update_service_account(
+                    service_account_name_or_id=service_account.id,
+                    service_account_update=ServiceAccountUpdate(
+                        active=False,
+                    ),
+                )
+
+            zen_store.update_service_account(
                 service_account_name_or_id=service_account.id,
                 service_account_update=ServiceAccountUpdate(
                     active=False,
@@ -2331,7 +2438,13 @@ def test_login_deleted_api_key():
             active_user = new_zen_store.get_user()
             assert active_user.id == service_account.id
 
-            new_zen_store.delete_api_key(
+            with pytest.raises(IllegalOperationError):
+                new_zen_store.delete_api_key(
+                    service_account_id=service_account.id,
+                    api_key_name_or_id=api_key.id,
+                )
+
+            zen_store.delete_api_key(
                 service_account_id=service_account.id,
                 api_key_name_or_id=api_key.id,
             )
@@ -2390,14 +2503,21 @@ def test_login_rotate_api_key():
         with LoginContext(api_key=rotated_api_key.key):
             new_zen_store = Client().zen_store
 
-            new_zen_store.rotate_api_key(
+            with pytest.raises(IllegalOperationError):
+                new_zen_store.rotate_api_key(
+                    service_account_id=service_account.id,
+                    api_key_name_or_id=api_key.id,
+                    rotate_request=APIKeyRotateRequest(),
+                )
+
+            zen_store.rotate_api_key(
                 service_account_id=service_account.id,
                 api_key_name_or_id=api_key.id,
                 rotate_request=APIKeyRotateRequest(),
             )
 
-            active_user = new_zen_store.get_user()
-            assert active_user.id == service_account.id
+            with pytest.raises(AuthorizationException):
+                new_zen_store.get_user()
 
 
 def test_login_rotate_api_key_retain_period():
