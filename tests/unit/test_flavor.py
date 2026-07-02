@@ -11,14 +11,26 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from datetime import datetime
 from typing import Optional, Type
+from uuid import uuid4
+
+import pytest
 
 from zenml import __version__ as zenml_version
+from zenml.enums import StackComponentType
+from zenml.exceptions import CustomFlavorImportError
+from zenml.models import (
+    FlavorResponse,
+    FlavorResponseBody,
+    FlavorResponseMetadata,
+)
 from zenml.orchestrators.base_orchestrator import (
     BaseOrchestratorConfig,
     BaseOrchestratorFlavor,
 )
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
+from zenml.stack.flavor import Flavor, validate_flavor_source
 
 
 class AriaOrchestratorConfig(BaseOrchestratorConfig):
@@ -58,6 +70,43 @@ class AriaOrchestratorFlavor(BaseOrchestratorFlavor):
         return self.generate_default_docs_url()
 
 
+_ZERO_ARG_CALLABLE_WAS_CALLED = False
+
+
+def _zero_arg_callable() -> AriaOrchestratorFlavor:
+    global _ZERO_ARG_CALLABLE_WAS_CALLED
+    _ZERO_ARG_CALLABLE_WAS_CALLED = True
+    return AriaOrchestratorFlavor()
+
+
+def _flavor_response(source: str, is_custom: bool = True) -> FlavorResponse:
+    now = datetime.utcnow()
+    return FlavorResponse(
+        id=uuid4(),
+        name="aria",
+        body=FlavorResponseBody(
+            user_id=uuid4(),
+            type=StackComponentType.ORCHESTRATOR,
+            display_name="Aria",
+            integration=None,
+            source=source,
+            logo_url=None,
+            is_custom=is_custom,
+            created=now,
+            updated=now,
+        ),
+        metadata=FlavorResponseMetadata(
+            config_schema={},
+            connector_type=None,
+            connector_resource_type=None,
+            connector_resource_id_attr=None,
+            docs_url=None,
+            sdk_docs_url=None,
+        ),
+        resources=None,
+    )
+
+
 def test_sdk_docs_url():
     """Tests that SDK Docs URLs are correct."""
     assert AriaOrchestratorFlavor().sdk_docs_url == (
@@ -85,3 +134,35 @@ def test_integration_sdk_docs_url():
         f"#zenml.integrations.kubernetes.flavors.KubernetesOrchestratorConfig"
     )
     assert flavor.sdk_docs_url == expected_url
+
+
+def test_validate_flavor_source_returns_class_and_instance():
+    """Tests that flavor validation returns both the class and an instance."""
+    flavor_class, flavor = validate_flavor_source(
+        source=f"{__name__}.AriaOrchestratorFlavor",
+        component_type=StackComponentType.ORCHESTRATOR,
+    )
+
+    assert flavor_class is AriaOrchestratorFlavor
+    assert isinstance(flavor, AriaOrchestratorFlavor)
+
+
+def test_flavor_from_model_does_not_call_non_flavor_source():
+    """Tests that flavor hydration rejects callables without invoking them."""
+    global _ZERO_ARG_CALLABLE_WAS_CALLED
+    _ZERO_ARG_CALLABLE_WAS_CALLED = False
+
+    with pytest.raises(CustomFlavorImportError):
+        Flavor.from_model(
+            _flavor_response(source=f"{__name__}._zero_arg_callable")
+        )
+
+    assert _ZERO_ARG_CALLABLE_WAS_CALLED is False
+
+
+def test_flavor_from_model_raises_custom_import_error():
+    """Tests that custom flavor import errors are raised during validation."""
+    with pytest.raises(CustomFlavorImportError):
+        Flavor.from_model(
+            _flavor_response(source="not_a_real_module.NotARealFlavor")
+        )

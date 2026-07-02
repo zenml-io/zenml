@@ -2568,9 +2568,9 @@ class Client(metaclass=ClientMetaClass):
         """
         from zenml.stack.flavor import validate_flavor_source
 
-        flavor = validate_flavor_source(
+        _, flavor = validate_flavor_source(
             source=source, component_type=component_type
-        )()
+        )
 
         if len(flavor.config_schema) > TEXT_FIELD_MAX_LENGTH:
             raise ValueError(

@@ -15,7 +15,7 @@
 
 import os
 from abc import abstractmethod
-from typing import Any, Dict, Optional, Type, cast
+from typing import Any, Dict, Optional, Tuple, Type
 
 from zenml.enums import StackComponentType
 from zenml.exceptions import CustomFlavorImportError
@@ -146,10 +146,13 @@ class Flavor:
             The loaded flavor.
         """
         try:
-            flavor = source_utils.load(flavor_model.source)()
-        except (ModuleNotFoundError, ImportError, NotImplementedError) as err:
+            _, flavor = validate_flavor_source(
+                source=flavor_model.source,
+                component_type=flavor_model.type,
+            )
+        except (TypeError, ValueError) as err:
             if flavor_model.is_custom:
-                flavor_module, _ = flavor_model.source.rsplit(".", maxsplit=1)
+                flavor_module, _, _ = flavor_model.source.rpartition(".")
                 expected_file_path = os.path.join(
                     source_utils.get_source_root(),
                     flavor_module.replace(".", os.path.sep),
@@ -161,12 +164,12 @@ class Flavor:
                     "a library, make sure it is installed. If "
                     "it is a local code file, make sure it exists at "
                     f"`{expected_file_path}.py`."
-                )
+                ) from err
             else:
                 raise ImportError(
                     f"Couldn't import flavor {flavor_model.name}: {err}"
-                )
-        return cast(Flavor, flavor)
+                ) from err
+        return flavor
 
     def to_model(
         self,
@@ -267,16 +270,17 @@ class Flavor:
 
 
 def validate_flavor_source(
-    source: str, component_type: StackComponentType
-) -> Type["Flavor"]:
-    """Import a StackComponent class from a given source and validate its type.
+    source: str,
+    component_type: StackComponentType,
+) -> Tuple[Type["Flavor"], "Flavor"]:
+    """Import and instantiate a Flavor class from a source path.
 
     Args:
         source: source path of the implementation
         component_type: the type of the stack component
 
     Returns:
-        the imported class
+        the imported flavor class and an instance of it.
 
     Raises:
         ValueError: If ZenML cannot find the given module path
@@ -287,14 +291,13 @@ def validate_flavor_source(
         StackComponent,
         StackComponentConfig,
     )
-    from zenml.utils import source_utils
 
     try:
         flavor_class = source_utils.load(source)
     except (ValueError, AttributeError, ImportError) as e:
         raise ValueError(
             f"ZenML can not import the flavor class '{source}': {e}"
-        )
+        ) from e
 
     if not (
         isinstance(flavor_class, type) and issubclass(flavor_class, Flavor)
@@ -304,14 +307,21 @@ def validate_flavor_source(
             f"Flavor."
         )
 
-    flavor = flavor_class()
+    try:
+        flavor = flavor_class()
+    except (ModuleNotFoundError, ImportError, NotImplementedError) as e:
+        raise ValueError(
+            f"The flavor class '{flavor_class.__name__}' can not be "
+            f"instantiated: {e}"
+        ) from e
+
     try:
         impl_class = flavor.implementation_class
     except (ModuleNotFoundError, ImportError, NotImplementedError) as e:
         raise ValueError(
             f"The implementation class defined within the "
             f"'{flavor_class.__name__}' can not be imported: {e}"
-        )
+        ) from e
 
     if not issubclass(impl_class, StackComponent):
         raise TypeError(
@@ -331,7 +341,7 @@ def validate_flavor_source(
         raise ValueError(
             f"The config class defined within the "
             f"'{flavor_class.__name__}' can not be imported: {e}"
-        )
+        ) from e
 
     if not issubclass(conf_class, StackComponentConfig):
         raise TypeError(
@@ -339,4 +349,4 @@ def validate_flavor_source(
             f"needs to be a subclass of the ZenML StackComponentConfig."
         )
 
-    return flavor_class
+    return flavor_class, flavor
