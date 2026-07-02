@@ -3,6 +3,11 @@ description: Move the agent's procedure out of the system prompt and into a mark
 icon: scroll
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Stage 3 — Your agents need a procedure
 
 Operate at scale: let an operator change what an agent does by editing a markdown file, with no code change and no redeploy. The agent's procedure stops being a string literal in Python and becomes a file someone who doesn't own the code can edit.

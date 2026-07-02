@@ -4,6 +4,11 @@ description: >-
   benefits.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Understanding Retrieval-Augmented Generation (RAG)
 
 LLMs are powerful but not without their limitations. They are prone to generating incorrect responses, especially when it's unclear what the input prompt is asking for. They are also limited in the amount of text they can understand and generate. While some LLMs can handle more than 1 million tokens of input, most open-source models can handle far less. Your use case also might not require all the complexity and cost associated with running a large LLM.
