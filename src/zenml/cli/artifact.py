@@ -289,11 +289,17 @@ def update_artifact_version(
     is_flag=True,
     help="Ignore errors and continue with the next artifact version.",
 )
+@click.option(
+    "--server-side",
+    is_flag=True,
+    help="Delete artifact data from the server instead of the local stack.",
+)
 def prune_artifacts(
     only_artifact: bool = False,
     only_metadata: bool = False,
     yes: bool = False,
     ignore_errors: bool = False,
+    server_side: bool = False,
 ) -> None:
     """Delete all unused artifacts and artifact versions.
 
@@ -309,6 +315,8 @@ def prune_artifacts(
         yes: If set, don't ask for confirmation.
         ignore_errors: If set, ignore errors and continue with the next
             artifact version.
+        server_side: If set, delete artifact data from the server instead of
+            the local stack.
     """
     client = Client()
     unused_artifact_versions = depaginate(
@@ -334,6 +342,7 @@ def prune_artifacts(
                 name_id_or_prefix=unused_artifact_version.id,
                 delete_metadata=not only_artifact,
                 delete_from_artifact_store=not only_metadata,
+                server_side=server_side,
             )
             unused_artifact = unused_artifact_version.artifact
             if not unused_artifact.versions and not only_artifact:

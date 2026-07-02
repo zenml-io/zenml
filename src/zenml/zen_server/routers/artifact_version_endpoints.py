@@ -23,6 +23,7 @@ from pydantic import BaseModel
 from starlette.background import BackgroundTask
 
 from zenml.artifacts.utils import (
+    load_artifact_store,
     load_artifact_visualization,
 )
 from zenml.constants import (
@@ -57,7 +58,6 @@ from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_batch_create_entity,
     verify_permissions_and_create_entity,
-    verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
     verify_permissions_and_prune_entities,
     verify_permissions_and_update_entity,
@@ -66,7 +66,9 @@ from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
     batch_verify_permissions_for_models,
     dehydrate_page,
+    delete_model_resource,
     get_allowed_resource_ids,
+    verify_permission_for_model,
 )
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
@@ -233,18 +235,44 @@ def update_artifact_version(
 @async_fastapi_endpoint_wrapper
 def delete_artifact_version(
     artifact_version_id: UUID,
+    delete_metadata: bool = True,
+    delete_from_artifact_store: bool = False,
     _: AuthContext = Security(authorize),
 ) -> None:
     """Delete an artifact version by ID.
 
     Args:
         artifact_version_id: The ID of the artifact version to delete.
+        delete_metadata: Whether to delete the artifact version metadata.
+        delete_from_artifact_store: Whether to also delete the artifact data.
+
+    Raises:
+        RuntimeError: If the artifact data cannot be deleted from the artifact
+            store.
     """
-    verify_permissions_and_delete_entity(
-        id=artifact_version_id,
-        get_method=zen_store().get_artifact_version,
-        delete_method=zen_store().delete_artifact_version,
+    artifact_version = zen_store().get_artifact_version(
+        artifact_version_id, hydrate=True
     )
+    verify_permission_for_model(artifact_version, action=Action.DELETE)
+
+    if delete_metadata:
+        zen_store().delete_artifact_version(artifact_version.id)
+        delete_model_resource(artifact_version)
+
+    if delete_from_artifact_store and artifact_version.artifact_store_id:
+        try:
+            artifact_store = load_artifact_store(
+                artifact_store_id=artifact_version.artifact_store_id,
+                zen_store=zen_store(),
+            )
+            if artifact_store.exists(artifact_version.uri):
+                artifact_store.rmtree(artifact_version.uri)
+        except Exception as e:
+            raise RuntimeError(
+                f"Artifact data at '{artifact_version.uri}' could not be "
+                f"deleted. Delete the data manually from the artifact store. "
+                f"Full error: {e}"
+            ) from e
 
 
 @artifact_version_router.delete(
