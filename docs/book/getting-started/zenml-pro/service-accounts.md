@@ -3,6 +3,11 @@ description: Learn how to manage and use service accounts and API keys .
 icon: key
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Service Accounts
 
 Service accounts in ZenML Pro provide a secure way to authenticate automated systems, CI/CD pipelines, and other non-interactive applications with your ZenML Pro organization. Unlike user accounts, service accounts are designed specifically for programmatic access and can be managed centrally through the Organization Settings interface.
