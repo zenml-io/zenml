@@ -51,6 +51,9 @@ def is_secret_reference(value: Any) -> bool:
     Returns:
         `True` if the value is a secret reference, `False` otherwise.
     """
+    if isinstance(value, SecretStr):
+        value = value.get_secret_value()
+
     if not isinstance(value, str):
         return False
 
@@ -69,7 +72,9 @@ class SecretReference(NamedTuple):
     key: str
 
 
-def parse_secret_reference(reference: str) -> SecretReference:
+def parse_secret_reference(
+    reference: Union[str, SecretStr],
+) -> SecretReference:
     """Parses a secret reference.
 
     This function assumes the input string is a valid secret reference and
@@ -82,6 +87,9 @@ def parse_secret_reference(reference: str) -> SecretReference:
     Returns:
         The parsed secret reference.
     """
+    if isinstance(reference, SecretStr):
+        reference = reference.get_secret_value()
+
     reference = reference[2:]
     reference = reference[:-2]
 
