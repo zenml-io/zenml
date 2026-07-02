@@ -84,11 +84,10 @@ local = [
 ]
 server = [
     "zenml[local,native-schedules]",  # Includes all the DB dependencies
-    "fastapi>=0.120.1,<0.121.0",
+    "fastapi>=0.138.0,<0.139.0",
     "uvicorn[standard]>=0.17.5",
     "python-multipart~=0.0.9",
     "pyjwt[crypto]>=2.13.0,<2.14.0",
-    "fastapi-utils",
     "orjson>=3.11.6,<3.12.0",
     "Jinja2",
     "ipinfo>=4.4.3",
@@ -154,6 +153,10 @@ dev = [
     "zizmor>=1.0.0",
     "coverage[toml]>=7.6.1,<8.0.0",
     "pytest>=9.0.3,<10.0.0",
+    # starlette's TestClient imports httpx on 0.46.0 through 1.1.x and httpx2
+    # on 1.2.0 and newer.
+    "httpx>=0.23.0,<1.0.0",
+    "httpx2>=2.5.0,<3.0.0",
     "beautifulsoup4>=4.12.0,<5.0.0",
     "mypy==1.18.1",
     "pre-commit",
