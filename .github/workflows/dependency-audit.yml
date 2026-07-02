@@ -6,12 +6,15 @@ on:
     paths:
       - pyproject.toml
       - scripts/dependency_audit_severity_gate.py
+      - .github/dependency-audit-waivers.json
       - .github/workflows/dependency-audit.yml
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
     branches: [main, develop]
     paths:
       - pyproject.toml
       - scripts/dependency_audit_severity_gate.py
+      - .github/dependency-audit-waivers.json
       - .github/workflows/dependency-audit.yml
   # Weekly safety net to catch newly disclosed vulnerabilities
   schedule:
@@ -34,9 +37,12 @@ jobs:
     outputs:
       audit_error: ${{ steps.classify.outputs.audit_error }}
       blocking_count: ${{ steps.classify.outputs.blocking_count }}
+      waived_blocking_count: ${{ steps.classify.outputs.waived_blocking_count }}
       nonblocking_count: ${{ steps.classify.outputs.nonblocking_count }}
       unknown_count: ${{ steps.classify.outputs.unknown_count }}
+      has_waived_blocking: ${{ steps.classify.outputs.has_waived_blocking }}
       has_nonblocking: ${{ steps.classify.outputs.has_nonblocking }}
+      waiver_context: ${{ steps.waiver-context.outputs.waiver_context }}
     env:
       PYTHONIOENCODING: utf-8
       UV_HTTP_TIMEOUT: 600
@@ -72,6 +78,22 @@ jobs:
           # zenml removes only its own dist-info and leaves every dependency
           # installed, so the audit still covers the full dependency set.
           uv pip uninstall --python .venv-audit-target/bin/python zenml
+      - name: Determine dependency audit waiver context
+        id: waiver-context
+        run: |
+          if [[ "$IS_RELEASE_PR" == "true" ]]; then
+            echo "waiver_context=release-pr" >> "$GITHUB_OUTPUT"
+          else
+            echo "waiver_context=" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          IS_RELEASE_PR: >-
+            ${{
+              github.event_name == 'pull_request' &&
+              startsWith(github.head_ref, 'misc/prepare-release-') &&
+              contains(github.event.pull_request.labels.*.name, 'release') &&
+              github.event.pull_request.head.repo.full_name == github.repository
+            }}
       - name: Audit installed dependencies with pip-audit
         id: pip-audit
         run: |
@@ -99,11 +121,15 @@ jobs:
             --classified-json dependency-audit-reports/classified.json \
             --summary-md dependency-audit-reports/summary.md \
             --nonblocking-issue-md dependency-audit-reports/nonblocking-issue.md \
+            --waivers-json .github/dependency-audit-waivers.json \
+            --waiver-context "$WAIVER_CONTEXT" \
+            --waived-discord-md dependency-audit-reports/waived-discord.md \
             --github-output "$GITHUB_OUTPUT" \
             --github-token "$ADVISORY_GITHUB_TOKEN"
         env:
           ADVISORY_GITHUB_TOKEN: ${{ github.event_name != 'pull_request' && github.token || '' }}
           PIP_AUDIT_EXIT_CODE: ${{ steps.pip-audit.outputs.exit_code }}
+          WAIVER_CONTEXT: ${{ steps.waiver-context.outputs.waiver_context }}
       - name: Append dependency audit summary
         if: always()
         run: |
@@ -153,6 +179,46 @@ jobs:
           AUDIT_CLASSIFY_RESULT: ${{ needs.audit-classify.result }}
           AUDIT_ERROR: ${{ needs.audit-classify.outputs.audit_error }}
           BLOCKING_COUNT: ${{ needs.audit-classify.outputs.blocking_count }}
+  notify-waived-release-findings:
+    name: Notify waived release dependency findings
+    runs-on: ubuntu-latest
+    needs: audit-classify
+    if: >-
+      github.repository == 'zenml-io/zenml' &&
+      needs.audit-classify.result == 'success' &&
+      needs.audit-classify.outputs.waiver_context == 'release-pr' &&
+      needs.audit-classify.outputs.has_waived_blocking == 'true'
+    permissions:
+      contents: read
+    timeout-minutes: 5
+    steps:
+      - name: Download dependency audit reports
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          name: dependency-audit-reports
+          path: dependency-audit-reports
+      - name: Build Discord message
+        id: build_message
+        shell: bash
+        run: |
+          DELIMITER="GH_OUTPUT_DELIMITER_$$"
+          {
+            echo "message<<${DELIMITER}"
+            if [[ -f dependency-audit-reports/waived-discord.md ]]; then
+              sed -e 's/\r$//' dependency-audit-reports/waived-discord.md
+            else
+              echo "**Dependency Audit Waiver Used**"
+              echo
+              echo "Failed to generate waived finding summary."
+            fi
+            echo "${DELIMITER}"
+          } >> "$GITHUB_OUTPUT"
+      - name: Send Discord notification for waived findings
+        uses: Ilshidur/action-discord@d2594079a10f1d6739ee50a2471f0ca57418b554  # master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_SRE }}
+        with:
+          args: ${{ steps.build_message.outputs.message }}
   update-nonblocking-tracking-issue:
     name: Update medium/low dependency tracking issue
     runs-on: ubuntu-latest

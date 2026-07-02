@@ -1,0 +1,18 @@
+{
+  "waivers": [
+    {
+      "package": "starlette",
+      "advisories": [
+        "CVE-2026-48818",
+        "GHSA-wqp7-x3pw-xc5r",
+        "PYSEC-2026-249",
+        "CVE-2026-54283",
+        "GHSA-82w8-qh3p-5jfq"
+      ],
+      "allowed_contexts": ["release-pr"],
+      "expires_on": "2026-07-31",
+      "owner": "server-team",
+      "reason": "Starlette fixes require a FastAPI range bump. FastAPI upgrades affect ZenML server compatibility and need a dedicated test plan outside release prep."
+    }
+  ]
+}

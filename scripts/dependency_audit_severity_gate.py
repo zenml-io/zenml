@@ -16,6 +16,7 @@ import re
 import sys
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
+from datetime import date
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
@@ -73,6 +74,20 @@ class Finding:
     unknown_reason: str | None = None
     ghsa_id: str | None = None
     cve_id: str | None = None
+
+
+@dataclass(frozen=True)
+class AdvisoryWaiver:
+    """A temporary waiver for specific advisories in specific CI contexts."""
+
+    package: str
+    normalized_package: str
+    advisories: list[str]
+    normalized_advisories: list[str]
+    allowed_contexts: list[str]
+    expires_on: date
+    owner: str
+    reason: str
 
 
 class GitHubAdvisoryClient:
@@ -222,10 +237,15 @@ class GitHubAdvisoryClient:
 def classify_audit(
     audit_data: dict[str, Any],
     client: GitHubAdvisoryClient,
+    waivers: list[AdvisoryWaiver] | None = None,
+    waiver_context: str = "",
+    today: date | None = None,
     audit_error: bool = False,
     audit_error_message: str = "",
 ) -> dict[str, Any]:
     """Classify a parsed pip-audit JSON document."""
+    waivers = waivers or []
+    today = today or date.today()
     malformed_messages = _collect_malformed_audit_messages(audit_data)
     if malformed_messages:
         audit_error = True
@@ -245,7 +265,12 @@ def classify_audit(
             audit_error_message,
             _skipped_dependency_error_message(skipped_dependencies),
         )
-    blocking = [finding for finding in findings if finding.blocking]
+    blocking, waived_blocking = _split_blocking_findings(
+        findings,
+        waivers,
+        waiver_context,
+        today,
+    )
     nonblocking = [finding for finding in findings if not finding.blocking]
     unknown_count = sum(
         1 for finding in findings if finding.severity == "unknown"
@@ -257,6 +282,7 @@ def classify_audit(
         "counts": {
             "total": len(findings),
             "blocking": len(blocking),
+            "waived_blocking": len(waived_blocking),
             "nonblocking": len(nonblocking),
             "unknown": unknown_count,
             "skipped": len(skipped_dependencies),
@@ -266,6 +292,7 @@ def classify_audit(
         ],
         "findings": [asdict(finding) for finding in findings],
         "blocking": [asdict(finding) for finding in blocking],
+        "waived_blocking": waived_blocking,
         "nonblocking": [asdict(finding) for finding in nonblocking],
     }
 
@@ -283,6 +310,7 @@ def render_summary(report: dict[str, Any]) -> str:
         "| Bucket | Count |",
         "| --- | ---: |",
         f"| Blocking (`critical`, `high`, `unknown`) | {counts['blocking']} |",
+        f"| Waived blocking | {counts.get('waived_blocking', 0)} |",
         f"| Non-blocking (`medium`, `low`) | {counts['nonblocking']} |",
         f"| Unknown severity | {counts['unknown']} |",
         f"| Skipped/unauditable dependencies | {counts.get('skipped', 0)} |",
@@ -314,6 +342,12 @@ def render_summary(report: dict[str, Any]) -> str:
     )
     lines.extend(
         _render_finding_sections(report["blocking"], "Blocking findings")
+    )
+    lines.extend(
+        _render_waived_finding_sections(
+            report.get("waived_blocking", []),
+            "Waived blocking findings",
+        )
     )
     lines.extend(
         _render_finding_sections(
@@ -377,6 +411,45 @@ def render_tracking_issue_body(
     return "\n".join(lines).rstrip() + "\n"
 
 
+def render_waived_discord_message(
+    report: dict[str, Any],
+    run_url: str | None,
+) -> str:
+    """Render a concise Discord message for release-only waived findings."""
+    waived_findings = report.get("waived_blocking", [])
+    if not waived_findings:
+        return "No waived blocking dependency audit findings were found.\n"
+
+    lines = [
+        "**Dependency Audit Waiver Used**",
+        "",
+        "A release PR used temporary waivers for blocking dependency findings.",
+        "",
+        "**Waived findings:**",
+    ]
+    for finding in waived_findings:
+        waiver = finding.get("waiver", {})
+        lines.append(
+            "- "
+            f"{finding['package']} {finding['installed_version']} — "
+            f"{finding['advisory_id']} — {finding['severity']} "
+            f"(expires {waiver.get('expires_on', 'unknown')})"
+        )
+    reasons = sorted(
+        {
+            str(finding.get("waiver", {}).get("reason", "")).strip()
+            for finding in waived_findings
+            if str(finding.get("waiver", {}).get("reason", "")).strip()
+        }
+    )
+    if reasons:
+        lines.extend(["", "**Reason:**"])
+        lines.extend(f"- {reason}" for reason in reasons)
+    if run_url:
+        lines.extend(["", f"**Details:** {run_url}"])
+    return "\n".join(lines).rstrip() + "\n"
+
+
 def parse_args(argv: list[str]) -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -386,6 +459,10 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--classified-json", required=True, type=Path)
     parser.add_argument("--summary-md", required=True, type=Path)
     parser.add_argument("--nonblocking-issue-md", required=True, type=Path)
+    parser.add_argument("--waivers-json", type=Path)
+    parser.add_argument("--waiver-context", default="")
+    parser.add_argument("--waived-discord-md", type=Path)
+    parser.add_argument("--today", type=_parse_iso_date)
     parser.add_argument("--github-output", type=Path)
     parser.add_argument(
         "--github-token", default=os.environ.get("GITHUB_TOKEN")
@@ -402,6 +479,13 @@ def main(argv: list[str] | None = None) -> int:
     """Run the severity gate helper."""
     args = parse_args(argv or sys.argv[1:])
     audit_data, audit_error, audit_error_message = _load_audit_data(args)
+    waivers, waiver_error_message = _load_waivers(args.waivers_json)
+    if waiver_error_message:
+        audit_error = True
+        audit_error_message = _append_audit_error_message(
+            audit_error_message,
+            waiver_error_message,
+        )
     client = GitHubAdvisoryClient(
         token=args.github_token,
         api_url=args.github_api_url,
@@ -409,6 +493,9 @@ def main(argv: list[str] | None = None) -> int:
     report = classify_audit(
         audit_data,
         client,
+        waivers=waivers,
+        waiver_context=args.waiver_context,
+        today=args.today,
         audit_error=audit_error,
         audit_error_message=audit_error_message,
     )
@@ -418,6 +505,11 @@ def main(argv: list[str] | None = None) -> int:
         args.nonblocking_issue_md,
         render_tracking_issue_body(report, args.run_url),
     )
+    if args.waived_discord_md:
+        _write_text(
+            args.waived_discord_md,
+            render_waived_discord_message(report, args.run_url),
+        )
     _write_json(args.classified_json, report)
     if args.github_output:
         _write_github_outputs(args.github_output, report)
@@ -455,6 +547,98 @@ def _load_audit_data(
     return data, audit_error, " ".join(error_parts)
 
 
+def _load_waivers(
+    waivers_json: Path | None,
+) -> tuple[list[AdvisoryWaiver], str]:
+    """Load explicit advisory waivers from JSON."""
+    if waivers_json is None or not waivers_json.exists():
+        return [], ""
+    try:
+        data = json.loads(waivers_json.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return [], f"Invalid dependency audit waiver JSON: {exc}"
+    if not isinstance(data, dict):
+        return (
+            [],
+            "Invalid dependency audit waiver JSON: root was not an object.",
+        )
+    raw_waivers = data.get("waivers", [])
+    if not isinstance(raw_waivers, list):
+        return (
+            [],
+            "Invalid dependency audit waiver JSON: waivers was not a list.",
+        )
+
+    waivers: list[AdvisoryWaiver] = []
+    errors: list[str] = []
+    for index, raw_waiver in enumerate(raw_waivers):
+        waiver, error = _parse_waiver(raw_waiver, index)
+        if error:
+            errors.append(error)
+            continue
+        waivers.append(waiver)
+    return waivers, " ".join(errors)
+
+
+def _parse_waiver(
+    raw_waiver: Any,
+    index: int,
+) -> tuple[AdvisoryWaiver | None, str]:
+    """Parse one waiver entry and return a validation error if malformed."""
+    if not isinstance(raw_waiver, dict):
+        return None, f"waiver entry {index} was not an object."
+
+    package = str(raw_waiver.get("package") or "").strip()
+    advisories = _string_list(raw_waiver.get("advisories", []))
+    allowed_contexts = _string_list(raw_waiver.get("allowed_contexts", []))
+    expires_on_raw = str(raw_waiver.get("expires_on") or "").strip()
+    owner = str(raw_waiver.get("owner") or "").strip()
+    reason = str(raw_waiver.get("reason") or "").strip()
+
+    missing = []
+    if not package:
+        missing.append("package")
+    if not advisories:
+        missing.append("advisories")
+    if not allowed_contexts:
+        missing.append("allowed_contexts")
+    if not expires_on_raw:
+        missing.append("expires_on")
+    if not owner:
+        missing.append("owner")
+    if not reason:
+        missing.append("reason")
+    if missing:
+        return (
+            None,
+            f"waiver entry {index} is missing required fields: "
+            + ", ".join(missing)
+            + ".",
+        )
+
+    try:
+        expires_on = _parse_iso_date(expires_on_raw)
+    except argparse.ArgumentTypeError as exc:
+        return None, f"waiver entry {index} has invalid expires_on: {exc}"
+
+    return (
+        AdvisoryWaiver(
+            package=package,
+            normalized_package=_normalize_package_name(package),
+            advisories=advisories,
+            normalized_advisories=[
+                _normalize_advisory_identifier(advisory)
+                for advisory in advisories
+            ],
+            allowed_contexts=allowed_contexts,
+            expires_on=expires_on,
+            owner=owner,
+            reason=reason,
+        ),
+        "",
+    )
+
+
 def _iter_skipped_dependencies(
     audit_data: dict[str, Any],
 ) -> list[SkippedDependency]:
@@ -486,6 +670,75 @@ def _iter_skipped_dependencies(
             dependency.installed_version,
         ),
     )
+
+
+def _split_blocking_findings(
+    findings: list[Finding],
+    waivers: list[AdvisoryWaiver],
+    waiver_context: str,
+    today: date,
+) -> tuple[list[Finding], list[dict[str, Any]]]:
+    """Split blocking findings into unwaived and explicitly waived groups."""
+    blocking: list[Finding] = []
+    waived_blocking: list[dict[str, Any]] = []
+    for finding in findings:
+        if not finding.blocking:
+            continue
+        waiver = _matching_waiver(finding, waivers, waiver_context, today)
+        if waiver is None:
+            blocking.append(finding)
+            continue
+        waived_finding = asdict(finding)
+        waived_finding["waiver"] = _waiver_report_dict(waiver)
+        waived_blocking.append(waived_finding)
+    return blocking, waived_blocking
+
+
+def _matching_waiver(
+    finding: Finding,
+    waivers: list[AdvisoryWaiver],
+    waiver_context: str,
+    today: date,
+) -> AdvisoryWaiver | None:
+    """Return the active waiver that covers a finding, if one exists."""
+    if not waiver_context:
+        return None
+    finding_identifiers = set(_finding_advisory_identifiers(finding))
+    for waiver in waivers:
+        if waiver_context not in waiver.allowed_contexts:
+            continue
+        if waiver.expires_on < today:
+            continue
+        if waiver.normalized_package != finding.normalized_package:
+            continue
+        if finding_identifiers.intersection(waiver.normalized_advisories):
+            return waiver
+    return None
+
+
+def _finding_advisory_identifiers(finding: Finding) -> list[str]:
+    """Return all advisory identifiers that can match a waiver."""
+    identifiers = [finding.advisory_id, *finding.aliases]
+    if finding.ghsa_id:
+        identifiers.append(finding.ghsa_id)
+    if finding.cve_id:
+        identifiers.append(finding.cve_id)
+    return [
+        _normalize_advisory_identifier(identifier)
+        for identifier in identifiers
+    ]
+
+
+def _waiver_report_dict(waiver: AdvisoryWaiver) -> dict[str, Any]:
+    """Serialize waiver details included in audit artifacts."""
+    return {
+        "package": waiver.package,
+        "advisories": waiver.advisories,
+        "allowed_contexts": waiver.allowed_contexts,
+        "expires_on": waiver.expires_on.isoformat(),
+        "owner": waiver.owner,
+        "reason": waiver.reason,
+    }
 
 
 def _iter_raw_findings(audit_data: dict[str, Any]) -> list[dict[str, Any]]:
@@ -739,6 +992,16 @@ def _first_cve_identifier(identifiers: list[str]) -> str | None:
     return None
 
 
+def _parse_iso_date(value: str) -> date:
+    """Parse an ISO date used by waiver expiry checks."""
+    try:
+        return date.fromisoformat(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(
+            f"expected YYYY-MM-DD, got {value!r}"
+        ) from exc
+
+
 def _normalize_ghsa_id(identifier: Any) -> str | None:
     if not identifier:
         return None
@@ -751,10 +1014,16 @@ def _normalize_cve_id(identifier: Any) -> str | None:
     return str(identifier).upper()
 
 
+def _normalize_advisory_identifier(identifier: str) -> str:
+    """Normalize advisory IDs so waivers can match IDs or aliases."""
+    return identifier.strip().upper()
+
+
 def _string_list(value: Any) -> list[str]:
     if not isinstance(value, list):
         return []
-    return [str(item) for item in value if item]
+    strings = [str(item).strip() for item in value if item]
+    return [item for item in strings if item]
 
 
 def _normalize_package_name(name: str) -> str:
@@ -783,6 +1052,11 @@ def _summary_status_line(report: dict[str, Any]) -> str:
         return "❌ The audit result was unusable and the final gate will fail."
     if counts["blocking"]:
         return "❌ Blocking dependency vulnerabilities were found."
+    if counts.get("waived_blocking", 0):
+        return (
+            "⚠️ Blocking dependency vulnerabilities were waived for this "
+            "workflow context."
+        )
     if counts["nonblocking"]:
         return "⚠️ Only medium/low dependency vulnerabilities were found."
     return "✅ No dependency vulnerabilities were found."
@@ -852,20 +1126,57 @@ def _render_finding_sections(
     return lines
 
 
+def _render_waived_finding_sections(
+    findings: list[dict[str, Any]],
+    title: str,
+) -> list[str]:
+    """Render waived blocking findings and the waiver metadata."""
+    lines = [f"## {title}", ""]
+    if not findings:
+        lines.extend(["None.", ""])
+        return lines
+
+    lines.extend(
+        [
+            "These findings are still blocking-severity vulnerabilities, but "
+            "the final gate allows them in this workflow context because an "
+            "explicit, unexpired waiver matched the package and advisory.",
+            "",
+            "| Package | Installed | Advisory | Severity | Expires | Owner | Reason |",
+            "| --- | --- | --- | --- | --- | --- | --- |",
+        ]
+    )
+    for finding in findings:
+        waiver = finding.get("waiver", {})
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    _markdown_escape(finding["package"]),
+                    _markdown_escape(finding["installed_version"]),
+                    _advisory_cell(finding),
+                    _markdown_escape(finding["severity"]),
+                    _markdown_escape(str(waiver.get("expires_on", ""))),
+                    _markdown_escape(str(waiver.get("owner", ""))),
+                    _markdown_escape(str(waiver.get("reason", ""))),
+                ]
+            )
+            + " |"
+        )
+    lines.append("")
+    return lines
+
+
 def _finding_table_row(
     finding: dict[str, Any],
     include_reason: bool = False,
 ) -> str:
-    aliases = ", ".join(finding.get("aliases", []))
-    advisory = _markdown_escape(finding["advisory_id"])
-    if aliases:
-        advisory = f"{advisory}<br>{_markdown_escape(aliases)}"
     fix_versions = ", ".join(finding.get("fix_versions", [])) or "None listed"
     cells = [
         _markdown_escape(finding["severity"]),
         _markdown_escape(finding["package"]),
         _markdown_escape(finding["installed_version"]),
-        advisory,
+        _advisory_cell(finding),
         _markdown_escape(fix_versions),
     ]
     if include_reason:
@@ -877,6 +1188,15 @@ def _finding_table_row(
         )
         cells.append(_markdown_escape(reason))
     return "| " + " | ".join(cells) + " |"
+
+
+def _advisory_cell(finding: dict[str, Any]) -> str:
+    """Render the advisory ID and aliases for summary tables."""
+    aliases = ", ".join(finding.get("aliases", []))
+    advisory = _markdown_escape(finding["advisory_id"])
+    if aliases:
+        return f"{advisory}<br>{_markdown_escape(aliases)}"
+    return advisory
 
 
 def _markdown_escape(value: str) -> str:
@@ -910,9 +1230,13 @@ def _write_github_outputs(path: Path, report: dict[str, Any]) -> None:
     outputs = {
         "audit_error": str(report["audit_error"]).lower(),
         "blocking_count": str(counts["blocking"]),
+        "waived_blocking_count": str(counts.get("waived_blocking", 0)),
         "nonblocking_count": str(counts["nonblocking"]),
         "unknown_count": str(counts["unknown"]),
         "skipped_count": str(counts.get("skipped", 0)),
+        "has_waived_blocking": str(
+            counts.get("waived_blocking", 0) > 0
+        ).lower(),
         "has_nonblocking": str(counts["nonblocking"] > 0).lower(),
     }
     with path.open("a", encoding="utf-8") as output_file:

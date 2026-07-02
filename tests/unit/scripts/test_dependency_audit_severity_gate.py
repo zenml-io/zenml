@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import date
 from typing import Any
 from urllib.error import URLError
 
@@ -82,9 +83,40 @@ def install_fake_github_api(
 def classify(
     data: dict[str, Any],
     token: str | None = "token",
+    waivers: list[gate.AdvisoryWaiver] | None = None,
+    waiver_context: str = "",
+    today: date | None = None,
 ) -> dict[str, Any]:
     """Classify fixture audit data through the real helper path."""
-    return gate.classify_audit(data, gate.GitHubAdvisoryClient(token=token))
+    return gate.classify_audit(
+        data,
+        gate.GitHubAdvisoryClient(token=token),
+        waivers=waivers,
+        waiver_context=waiver_context,
+        today=today,
+    )
+
+
+def waiver(
+    package: str,
+    advisories: list[str],
+    allowed_contexts: list[str] | None = None,
+    expires_on: date = date(2026, 7, 31),
+) -> gate.AdvisoryWaiver:
+    """Build an advisory waiver fixture."""
+    return gate.AdvisoryWaiver(
+        package=package,
+        normalized_package=gate._normalize_package_name(package),
+        advisories=advisories,
+        normalized_advisories=[
+            gate._normalize_advisory_identifier(advisory)
+            for advisory in advisories
+        ],
+        allowed_contexts=allowed_contexts or ["release-pr"],
+        expires_on=expires_on,
+        owner="server-team",
+        reason="Needs a dedicated compatibility upgrade.",
+    )
 
 
 def test_no_vulnerabilities_pass_without_findings() -> None:
@@ -94,6 +126,7 @@ def test_no_vulnerabilities_pass_without_findings() -> None:
     assert report["counts"] == {
         "total": 0,
         "blocking": 0,
+        "waived_blocking": 0,
         "nonblocking": 0,
         "unknown": 0,
         "skipped": 0,
@@ -391,6 +424,100 @@ def test_high_and_critical_findings_are_blocking(
     }
 
 
+def test_matching_waiver_allows_blocking_finding_in_release_context(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Release PR waivers should move exact findings out of blocking."""
+    install_fake_github_api(
+        monkeypatch,
+        {
+            "https://api.github.com/advisories/GHSA-HIGH-1111-2222": {
+                "ghsa_id": "GHSA-high-1111-2222",
+                "severity": "high",
+            }
+        },
+    )
+
+    report = classify(
+        audit_data(
+            (
+                "package-a",
+                "1.0.0",
+                vulnerability("PYSEC-1", ["GHSA-high-1111-2222"]),
+            )
+        ),
+        waivers=[waiver("package-a", ["GHSA-HIGH-1111-2222"])],
+        waiver_context="release-pr",
+        today=date(2026, 7, 2),
+    )
+
+    assert report["counts"]["blocking"] == 0
+    assert report["counts"]["waived_blocking"] == 1
+    assert report["waived_blocking"][0]["package"] == "package-a"
+    assert report["waived_blocking"][0]["waiver"]["expires_on"] == "2026-07-31"
+    assert "Waived blocking findings" in gate.render_summary(report)
+
+
+def test_waiver_does_not_apply_outside_allowed_context(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Feature PRs should still fail on advisories waived for release PRs."""
+    install_fake_github_api(
+        monkeypatch,
+        {
+            "https://api.github.com/advisories/GHSA-HIGH-1111-2222": {
+                "ghsa_id": "GHSA-high-1111-2222",
+                "severity": "high",
+            }
+        },
+    )
+
+    report = classify(
+        audit_data(
+            ("package-a", "1.0.0", vulnerability("GHSA-high-1111-2222"))
+        ),
+        waivers=[waiver("package-a", ["GHSA-HIGH-1111-2222"])],
+        waiver_context="feature-pr",
+        today=date(2026, 7, 2),
+    )
+
+    assert report["counts"]["blocking"] == 1
+    assert report["counts"]["waived_blocking"] == 0
+
+
+def test_expired_waiver_does_not_apply(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Expired waivers should not keep CI green."""
+    install_fake_github_api(
+        monkeypatch,
+        {
+            "https://api.github.com/advisories/GHSA-HIGH-1111-2222": {
+                "ghsa_id": "GHSA-high-1111-2222",
+                "severity": "high",
+            }
+        },
+    )
+
+    report = classify(
+        audit_data(
+            ("package-a", "1.0.0", vulnerability("GHSA-high-1111-2222"))
+        ),
+        waivers=[
+            waiver(
+                "package-a",
+                ["GHSA-HIGH-1111-2222"],
+                expires_on=date(2026, 7, 1),
+            )
+        ],
+        waiver_context="release-pr",
+        today=date(2026, 7, 2),
+    )
+
+    assert report["counts"]["blocking"] == 1
+    assert report["counts"]["waived_blocking"] == 0
+
+
 def test_unmapped_advisory_becomes_unknown_and_blocks() -> None:
     """PYSEC/OSV-only findings should block when no GHSA/CVE is present."""
     report = classify(
@@ -674,3 +801,95 @@ def test_main_writes_compact_outputs(
     assert "Only medium/low" in summary_md.read_text(encoding="utf-8")
     assert "has_nonblocking=true" in github_output.read_text(encoding="utf-8")
     assert "blocking_count=0" in github_output.read_text(encoding="utf-8")
+    assert "has_waived_blocking=false" in github_output.read_text(
+        encoding="utf-8"
+    )
+
+
+def test_main_applies_release_waiver_and_writes_discord_message(
+    tmp_path: Any,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The CLI should expose waived blocking findings for release PR alerts."""
+    install_fake_github_api(
+        monkeypatch,
+        {
+            "https://api.github.com/advisories/GHSA-HIGH-1111-2222": {
+                "ghsa_id": "GHSA-high-1111-2222",
+                "severity": "high",
+            }
+        },
+    )
+    audit_json = tmp_path / "pip-audit.json"
+    classified_json = tmp_path / "classified.json"
+    summary_md = tmp_path / "summary.md"
+    issue_md = tmp_path / "issue.md"
+    waivers_json = tmp_path / "waivers.json"
+    discord_md = tmp_path / "discord.md"
+    github_output = tmp_path / "github-output.txt"
+    audit_json.write_text(
+        json.dumps(
+            audit_data(
+                (
+                    "package-a",
+                    "1.0.0",
+                    vulnerability("PYSEC-1", ["GHSA-high-1111-2222"]),
+                )
+            )
+        ),
+        encoding="utf-8",
+    )
+    waivers_json.write_text(
+        json.dumps(
+            {
+                "waivers": [
+                    {
+                        "package": "package-a",
+                        "advisories": ["GHSA-HIGH-1111-2222"],
+                        "allowed_contexts": ["release-pr"],
+                        "expires_on": "2026-07-31",
+                        "owner": "server-team",
+                        "reason": "Needs a dedicated compatibility upgrade.",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = gate.main(
+        [
+            "--audit-json",
+            str(audit_json),
+            "--pip-audit-exit-code",
+            "1",
+            "--classified-json",
+            str(classified_json),
+            "--summary-md",
+            str(summary_md),
+            "--nonblocking-issue-md",
+            str(issue_md),
+            "--waivers-json",
+            str(waivers_json),
+            "--waiver-context",
+            "release-pr",
+            "--waived-discord-md",
+            str(discord_md),
+            "--today",
+            "2026-07-02",
+            "--github-output",
+            str(github_output),
+        ]
+    )
+
+    classified = json.loads(classified_json.read_text(encoding="utf-8"))
+    output = github_output.read_text(encoding="utf-8")
+    discord = discord_md.read_text(encoding="utf-8")
+    assert exit_code == 0
+    assert classified["counts"]["blocking"] == 0
+    assert classified["counts"]["waived_blocking"] == 1
+    assert "blocking_count=0" in output
+    assert "waived_blocking_count=1" in output
+    assert "has_waived_blocking=true" in output
+    assert "Dependency Audit Waiver Used" in discord
+    assert "package-a 1.0.0" in discord
