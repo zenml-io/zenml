@@ -23,6 +23,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    PositiveFloat,
     PositiveInt,
     field_validator,
     model_validator,
@@ -33,7 +34,9 @@ from zenml.constants import (
     DEFAULT_REPORTABLE_RESOURCES,
     DEFAULT_ZENML_JWT_TOKEN_ALGORITHM,
     DEFAULT_ZENML_JWT_TOKEN_LEEWAY,
+    DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE,
     DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_INTERVAL,
+    DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_TIME_BUDGET,
     DEFAULT_ZENML_SERVER_AUTH_THREAD_POOL_SIZE,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_TIMEOUT,
@@ -60,6 +63,8 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_THREAD_POOL_SIZE,
     ENV_ZENML_SERVER_PREFIX,
     ENV_ZENML_SERVER_PRO_PREFIX,
+    MAX_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE,
+    MAX_ZENML_SERVER_API_TXN_CLEANUP_TIME_BUDGET,
 )
 from zenml.enums import AuthScheme
 from zenml.logger import get_logger
@@ -166,6 +171,8 @@ class ServerConfiguration(BaseModel):
             server.
         workload_manager_implementation_source: Source pointing to a class
             implementing the workload management interface.
+        snapshot_run_dispatcher_implementation_source: Source pointing to a
+            class implementing the snapshot run dispatcher interface.
         max_concurrent_snapshot_runs: The maximum number of concurrent snapshot
             runs that can be executed on the server.
         pipeline_run_auth_window: The default time window in minutes for which
@@ -264,7 +271,11 @@ class ServerConfiguration(BaseModel):
             artifact store instances across requests instead of rebuilding them
             on every request.
         api_transaction_cleanup_interval: The interval in seconds between
-            cleanup batches.
+            cleanup passes.
+        api_transaction_cleanup_batch_size: The maximum number of expired API
+            transactions to delete per SQL batch.
+        api_transaction_cleanup_time_budget: The maximum number of seconds a
+            cleanup pass spends draining full batches before sleeping again.
         dashboard_files_path: The path to the dashboard files directory. If not
             specified, the built-in dashboard files will be used.
         otel_exporter_otlp_endpoint: Base OTLP/HTTP collector endpoint URL for
@@ -280,7 +291,8 @@ class ServerConfiguration(BaseModel):
             export. If not set, ZenML derives it from the base endpoint.
         otel_service_name: Service name reported in OTel resource attributes.
             Appears as ``service.name`` in traces, metrics, and logs.
-            Defaults to 'zenml-server'. Can also be configured through the
+            Defaults to the ZenML Pro workspace name for cloud deployments and
+            'zenml-server' otherwise. Can also be configured through the
             standard OTEL_SERVICE_NAME environment variable.
         otel_traces_enabled: Whether to export OpenTelemetry traces when the
             OTLP endpoint is configured.
@@ -332,6 +344,7 @@ class ServerConfiguration(BaseModel):
     workload_manager_implementation_source: Optional[str] = None
     resource_pool_implementation_source: Optional[str] = None
     stream_broker_implementation_source: Optional[str] = None
+    snapshot_run_dispatcher_implementation_source: Optional[str] = None
     streaming_heartbeat_seconds: float = Field(default=30.0, gt=0.0)
     streaming_max_subscribers_per_stream: int = Field(default=100, gt=0)
     streaming_broadcaster_idle_grace_seconds: float = Field(
@@ -393,8 +406,16 @@ class ServerConfiguration(BaseModel):
     request_cache_timeout: int = DEFAULT_ZENML_SERVER_REQUEST_CACHE_TIMEOUT
     artifact_store_cache_enabled: bool = True
 
-    api_transaction_cleanup_interval: int = (
+    api_transaction_cleanup_interval: PositiveInt = (
         DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_INTERVAL
+    )
+    api_transaction_cleanup_batch_size: PositiveInt = Field(
+        default=DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE,
+        le=MAX_ZENML_SERVER_API_TXN_CLEANUP_BATCH_SIZE,
+    )
+    api_transaction_cleanup_time_budget: PositiveFloat = Field(
+        default=DEFAULT_ZENML_SERVER_API_TXN_CLEANUP_TIME_BUDGET,
+        le=MAX_ZENML_SERVER_API_TXN_CLEANUP_TIME_BUDGET,
     )
 
     max_request_body_size_in_bytes: int = (
@@ -421,6 +442,22 @@ class ServerConfiguration(BaseModel):
     _deployment_id: Optional[UUID] = None
 
     event_handler_sources: list[str] = []
+
+    @model_validator(mode="after")
+    def _validate_api_transaction_cleanup_settings(
+        self,
+    ) -> "ServerConfiguration":
+        """Validate API transaction cleanup settings."""
+        if (
+            self.api_transaction_cleanup_time_budget
+            > self.api_transaction_cleanup_interval
+        ):
+            raise ValueError(
+                "`api_transaction_cleanup_time_budget` must be less than or "
+                "equal to `api_transaction_cleanup_interval`."
+            )
+
+        return self
 
     @model_validator(mode="after")
     def _resolve_otel_endpoints(self) -> "ServerConfiguration":
@@ -781,10 +818,19 @@ class ServerConfiguration(BaseModel):
                     workspace_id=str(server_pro_config.workspace_id),
                 )
             )
-            if server_pro_config.workspace_name:
-                server_config.metadata.update(
-                    dict(workspace_name=server_pro_config.workspace_name)
+            if server_pro_config.organization_name:
+                server_config.metadata["organization_name"] = (
+                    server_pro_config.organization_name
                 )
+            if server_pro_config.workspace_name:
+                server_config.metadata["workspace_name"] = (
+                    server_pro_config.workspace_name
+                )
+                # Set default OTEL_SERVICE_NAME to the workspace name, if not set.
+                if "otel_service_name" not in env_server_config:
+                    server_config.otel_service_name = (
+                        server_pro_config.workspace_name
+                    )
 
             extra_cors_allow_origins = [
                 server_pro_config.dashboard_url,

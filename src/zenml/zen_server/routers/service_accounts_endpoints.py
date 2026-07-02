@@ -55,6 +55,7 @@ from zenml.zen_server.rbac.utils import (
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     make_dependable,
+    verify_admin_status_if_no_rbac,
     zen_store,
 )
 
@@ -97,17 +98,21 @@ def _raise_deprecated_pro_service_accounts() -> None:
 @async_fastapi_endpoint_wrapper
 def create_service_account(
     service_account: ServiceAccountRequest,
-    _: AuthContext = Security(authorize),
+    auth_context: AuthContext = Security(authorize),
 ) -> ServiceAccountResponse:
     """Creates a service account.
 
     Args:
         service_account: Service account to create.
+        auth_context: The authentication context.
 
     Returns:
         The created service account.
     """
     _raise_deprecated_pro_service_accounts()
+    verify_admin_status_if_no_rbac(
+        auth_context.user.is_admin, "create service account"
+    )
     return verify_permissions_and_create_entity(
         request_model=service_account,
         create_method=zen_store().create_service_account,
@@ -184,13 +189,14 @@ def list_service_accounts(
 def update_service_account(
     service_account_name_or_id: Union[str, UUID],
     service_account_update: ServiceAccountUpdate,
-    _: AuthContext = Security(authorize),
+    auth_context: AuthContext = Security(authorize),
 ) -> ServiceAccountResponse:
     """Updates a specific service account.
 
     Args:
         service_account_name_or_id: Name or ID of the service account.
         service_account_update: the service account to use for the update.
+        auth_context: The authentication context.
 
     Returns:
         The updated service account.
@@ -209,6 +215,9 @@ def update_service_account(
             "be updated."
         )
 
+    verify_admin_status_if_no_rbac(
+        auth_context.user.is_admin, "update service account"
+    )
     verify_permission_for_model(service_account, action=Action.UPDATE)
 
     return zen_store().update_service_account(
@@ -223,12 +232,13 @@ def update_service_account(
 @async_fastapi_endpoint_wrapper
 def delete_service_account(
     service_account_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize),
+    auth_context: AuthContext = Security(authorize),
 ) -> None:
     """Delete a specific service account.
 
     Args:
         service_account_name_or_id: Name or ID of the service account.
+        auth_context: The authentication context.
 
     Raises:
         IllegalOperationError: If the service account was created via external
@@ -243,6 +253,9 @@ def delete_service_account(
             "be deleted."
         )
 
+    verify_admin_status_if_no_rbac(
+        auth_context.user.is_admin, "delete service account"
+    )
     verify_permission_for_model(service_account, action=Action.DELETE)
 
     zen_store().delete_service_account(service_account_name_or_id)
@@ -263,7 +276,7 @@ def delete_service_account(
 def create_api_key(
     service_account_id: UUID,
     api_key: APIKeyRequest,
-    _: AuthContext = Security(authorize),
+    auth_context: AuthContext = Security(authorize),
 ) -> APIKeyResponse:
     """Creates an API key for a service account.
 
@@ -271,6 +284,7 @@ def create_api_key(
         service_account_id: ID of the service account for which to create the
             API key.
         api_key: API key to create.
+        auth_context: The authentication context.
 
     Returns:
         The created API key.
@@ -297,6 +311,9 @@ def create_api_key(
             "have associated API keys."
         )
 
+    verify_admin_status_if_no_rbac(
+        auth_context.user.is_admin, "create API key"
+    )
     return verify_permissions_and_create_entity(
         request_model=api_key,
         create_method=create_api_key_wrapper,
@@ -380,7 +397,7 @@ def update_api_key(
     service_account_id: UUID,
     api_key_name_or_id: Union[str, UUID],
     api_key_update: APIKeyUpdate,
-    _: AuthContext = Security(authorize),
+    auth_context: AuthContext = Security(authorize),
 ) -> APIKeyResponse:
     """Updates an API key for a service account.
 
@@ -389,6 +406,7 @@ def update_api_key(
             belongs.
         api_key_name_or_id: Name or ID of the API key to update.
         api_key_update: API key update.
+        auth_context: The authentication context.
 
     Returns:
         The updated API key.
@@ -406,6 +424,9 @@ def update_api_key(
             "have associated API keys."
         )
 
+    verify_admin_status_if_no_rbac(
+        auth_context.user.is_admin, "update API key"
+    )
     verify_permission_for_model(service_account, action=Action.UPDATE)
     return zen_store().update_api_key(
         service_account_id=service_account_id,
@@ -426,7 +447,7 @@ def rotate_api_key(
     service_account_id: UUID,
     api_key_name_or_id: Union[str, UUID],
     rotate_request: APIKeyRotateRequest,
-    _: AuthContext = Security(authorize),
+    auth_context: AuthContext = Security(authorize),
 ) -> APIKeyResponse:
     """Rotate an API key.
 
@@ -435,6 +456,7 @@ def rotate_api_key(
             belongs.
         api_key_name_or_id: Name or ID of the API key to rotate.
         rotate_request: API key rotation request.
+        auth_context: The authentication context.
 
     Returns:
         The updated API key.
@@ -452,6 +474,9 @@ def rotate_api_key(
             "have associated API keys."
         )
 
+    verify_admin_status_if_no_rbac(
+        auth_context.user.is_admin, "rotate API key"
+    )
     verify_permission_for_model(service_account, action=Action.UPDATE)
     return zen_store().rotate_api_key(
         service_account_id=service_account_id,
@@ -468,7 +493,7 @@ def rotate_api_key(
 def delete_api_key(
     service_account_id: UUID,
     api_key_name_or_id: Union[str, UUID],
-    _: AuthContext = Security(authorize),
+    auth_context: AuthContext = Security(authorize),
 ) -> None:
     """Deletes an API key.
 
@@ -476,8 +501,12 @@ def delete_api_key(
         service_account_id: ID of the service account to which the API key
             belongs.
         api_key_name_or_id: Name or ID of the API key to delete.
+        auth_context: The authentication context.
     """
     service_account = zen_store().get_service_account(service_account_id)
+    verify_admin_status_if_no_rbac(
+        auth_context.user.is_admin, "delete API key"
+    )
     verify_permission_for_model(service_account, action=Action.UPDATE)
     zen_store().delete_api_key(
         service_account_id=service_account_id,

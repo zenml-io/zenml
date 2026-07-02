@@ -17,7 +17,7 @@ jobs:
       PYTHONIOENCODING: utf-8
     steps:
       - name: Checkout repo
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
 
       # The following sed command replaces the version number in Chart.yaml with the tag version.
       # It replaces the line that starts with "version: " with "version: <tag version>"
@@ -38,7 +38,7 @@ jobs:
 
       # TODO: revisit the pinned helm version + find a higher version
       - name: install helm with version 3.9.2
-        uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2  # v5.0.0
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310  # v5.0.1
         with:
           version: v3.9.2  # default is latest (stable)
         id: install-helm
