@@ -446,6 +446,22 @@ class TestAdminUser:
                     )
                 )
 
+    def test_secret_operations_require_admin_without_rbac(self):
+        """Tests secret backup and restore require admin without RBAC."""
+        if not isinstance(Client().zen_store, RestZenStore):
+            pytest.skip("Secret operations admin checks run over REST.")
+
+        with UserContext(
+            password=self.default_pwd, login=True, is_admin=False
+        ):
+            zen_store: RestZenStore = Client().zen_store
+
+            with pytest.raises(IllegalOperationError):
+                zen_store.backup_secrets()
+
+            with pytest.raises(IllegalOperationError):
+                zen_store.restore_secrets()
+
     def test_listing_users(self):
         """Tests listing users as an admin and as a non-admin."""
         if Client().zen_store.type == StoreType.SQL:
