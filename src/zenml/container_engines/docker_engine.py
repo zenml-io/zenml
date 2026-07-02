@@ -248,12 +248,11 @@ class DockerContainerEngine(ContainerEngine):
             registry: Registry host or URI.
             **kwargs: Additional keyword arguments.
         """
-        if kwargs.get("use_subprocess", False):
-            self.login_cli(
-                username=username,
-                password=password,
-                registry=registry,
-            )
+        self.login_cli(
+            username=username,
+            password=password,
+            registry=registry,
+        )
 
         self.login_client(
             username=username,
