@@ -3,6 +3,11 @@ description: Wrap a PydanticAI agent in a Kitaru flow so every model and tool ca
 icon: bolt
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Run a durable agent
 
 Wrap your agent in a Kitaru flow and every model call and tool call is recorded as a durable checkpoint. If the process dies at step N, the retry resumes from step N. You don't re-pay for the calls that already finished.
