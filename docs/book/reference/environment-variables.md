@@ -140,7 +140,7 @@ export ZENML_SERVER_OTEL_METRICS_ENABLED=false
 export ZENML_SERVER_OTEL_LOGS_ENABLED=false
 ```
 
-You can also customize the service name reported in OpenTelemetry resource attributes. The standard `OTEL_SERVICE_NAME` environment variable is supported as well as a fallback:
+You can also customize the service name reported in OpenTelemetry resource attributes. The standard `OTEL_SERVICE_NAME` environment variable is supported as well as a fallback. If unset, it defaults to `zenml-server` for self-hosted deployments, or to the ZenML Pro workspace name for cloud deployments.
 
 ```bash
 export ZENML_SERVER_OTEL_SERVICE_NAME=zenml-server
