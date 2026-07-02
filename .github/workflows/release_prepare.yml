@@ -109,25 +109,6 @@ jobs:
         env:
           NEEDS_FETCH_VERSIONS_OUTPUTS_OLD_VERSION: ${{ needs.fetch-versions.outputs.old_version }}
           NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION: ${{ needs.fetch-versions.outputs.new_version }}
-      # Generate and append release notes
-      - name: Generate release notes
-        # Only run this part once when the release branch is created
-        if: ${{ github.event.created }}
-        run: |
-          RELEASE_NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes -F tag_name=${NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION} -F target_commitish=${{ github.sha }} -F previous_tag_name=${NEEDS_FETCH_VERSIONS_OUTPUTS_OLD_VERSION} | jq -r '.body')
-          {
-          head -n 1 RELEASE_NOTES.md
-          echo ""
-          echo "# ${NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION}"
-          echo ""
-          echo "$RELEASE_NOTES"
-          echo ""
-          tail -n +2 RELEASE_NOTES.md
-          } > RELEASE_NOTES.md.new && mv RELEASE_NOTES.md.new RELEASE_NOTES.md
-          git add RELEASE_NOTES.md
-        env:
-          NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION: ${{ needs.fetch-versions.outputs.new_version }}
-          NEEDS_FETCH_VERSIONS_OUTPUTS_OLD_VERSION: ${{ needs.fetch-versions.outputs.old_version }}
       # Push the changes
       - name: Push the changes
         run: |
