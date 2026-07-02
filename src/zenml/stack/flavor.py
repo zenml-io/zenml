@@ -149,6 +149,7 @@ class Flavor:
             _, flavor = validate_flavor_source(
                 source=flavor_model.source,
                 component_type=flavor_model.type,
+                validate_component_classes=False,
             )
         except (TypeError, ValueError) as err:
             if flavor_model.is_custom:
@@ -272,12 +273,15 @@ class Flavor:
 def validate_flavor_source(
     source: str,
     component_type: StackComponentType,
+    validate_component_classes: bool = True,
 ) -> Tuple[Type["Flavor"], "Flavor"]:
     """Import and instantiate a Flavor class from a source path.
 
     Args:
         source: source path of the implementation
         component_type: the type of the stack component
+        validate_component_classes: whether to validate the flavor's
+            implementation and config classes.
 
     Returns:
         the imported flavor class and an instance of it.
@@ -315,6 +319,14 @@ def validate_flavor_source(
             f"instantiated: {e}"
         ) from e
 
+    if flavor.type != component_type:  # noqa
+        raise TypeError(
+            f"The source points to a {flavor.type}, not a {component_type}."
+        )
+
+    if not validate_component_classes:
+        return flavor_class, flavor
+
     try:
         impl_class = flavor.implementation_class
     except (ModuleNotFoundError, ImportError, NotImplementedError) as e:
@@ -327,12 +339,6 @@ def validate_flavor_source(
         raise TypeError(
             f"The implementation class '{impl_class.__name__}' of a flavor "
             f"needs to be a subclass of the ZenML StackComponent."
-        )
-
-    if flavor.type != component_type:  # noqa
-        raise TypeError(
-            f"The source points to a {impl_class.type}, not a "  # noqa
-            f"{component_type}."
         )
 
     try:

@@ -70,6 +70,20 @@ class AriaOrchestratorFlavor(BaseOrchestratorFlavor):
         return self.generate_default_docs_url()
 
 
+class MissingImplementationFlavor(BaseOrchestratorFlavor):
+    @property
+    def name(self) -> str:
+        return "missing_implementation"
+
+    @property
+    def config_class(self) -> Type[AriaOrchestratorConfig]:
+        return AriaOrchestratorConfig
+
+    @property
+    def implementation_class(self) -> Type["LocalOrchestrator"]:
+        raise ImportError("No module named 'missing_dependency'")
+
+
 _ZERO_ARG_CALLABLE_WAS_CALLED = False
 
 
@@ -165,4 +179,22 @@ def test_flavor_from_model_raises_custom_import_error():
     with pytest.raises(CustomFlavorImportError):
         Flavor.from_model(
             _flavor_response(source="not_a_real_module.NotARealFlavor")
+        )
+
+
+def test_flavor_from_model_skips_implementation_class_validation():
+    """Tests that flavor hydration does not require optional dependencies."""
+    flavor = Flavor.from_model(
+        _flavor_response(source=f"{__name__}.MissingImplementationFlavor")
+    )
+
+    assert isinstance(flavor, MissingImplementationFlavor)
+
+
+def test_validate_flavor_source_validates_implementation_class_by_default():
+    """Tests that explicit flavor source validation still validates classes."""
+    with pytest.raises(ValueError, match="missing_dependency"):
+        validate_flavor_source(
+            source=f"{__name__}.MissingImplementationFlavor",
+            component_type=StackComponentType.ORCHESTRATOR,
         )
