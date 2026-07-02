@@ -785,6 +785,10 @@ class ServerConfiguration(BaseModel):
                     workspace_id=str(server_pro_config.workspace_id),
                 )
             )
+            if server_pro_config.organization_name:
+                server_config.metadata.update(
+                    dict(organization_name=server_pro_config.organization_name)
+                )
             if server_pro_config.workspace_name:
                 server_config.metadata.update(
                     dict(workspace_name=server_pro_config.workspace_name)
