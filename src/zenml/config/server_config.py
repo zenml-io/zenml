@@ -282,7 +282,8 @@ class ServerConfiguration(BaseModel):
             export. If not set, ZenML derives it from the base endpoint.
         otel_service_name: Service name reported in OTel resource attributes.
             Appears as ``service.name`` in traces, metrics, and logs.
-            Defaults to 'zenml-server'. Can also be configured through the
+            Defaults to the ZenML Pro workspace name for cloud deployments and
+            'zenml-server' otherwise. Can also be configured through the
             standard OTEL_SERVICE_NAME environment variable.
         otel_traces_enabled: Whether to export OpenTelemetry traces when the
             OTLP endpoint is configured.
@@ -788,6 +789,11 @@ class ServerConfiguration(BaseModel):
                 server_config.metadata.update(
                     dict(workspace_name=server_pro_config.workspace_name)
                 )
+                # Set default OTEL_SERVICE_NAME to the workspace name, if not set.
+                if "otel_service_name" not in env_server_config:
+                    server_config.otel_service_name = (
+                        server_pro_config.workspace_name
+                    )
 
             extra_cors_allow_origins = [
                 server_pro_config.dashboard_url,
