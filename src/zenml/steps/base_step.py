@@ -1047,7 +1047,10 @@ class BaseStep:
         Returns:
             The step instance that this method was called on.
         """
-        from zenml.config.step_configurations import StepConfigurationUpdate
+        from zenml.config.step_configurations import (
+            GroupInfo,
+            StepConfigurationUpdate,
+        )
         from zenml.hooks.validation import resolve_and_validate_hook
 
         def _resolve_if_necessary(
