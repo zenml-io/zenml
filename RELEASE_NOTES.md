@@ -1,5 +1,9 @@
 <!-- markdown-link-check-disable -->
 
+> **Note:** This file is no longer actively maintained. For the latest release notes, please visit the [ZenML Changelog](https://docs.zenml.io/changelog). Historical release notes are also available in [GitHub Releases](https://github.com/zenml-io/zenml/releases).
+
+---
+
 # 0.96.0
 
 ## What's Changed
@@ -46,11 +50,6 @@
 * @goanpeca made their first contribution in https://github.com/zenml-io/zenml/pull/4791
 
 **Full Changelog**: https://github.com/zenml-io/zenml/compare/0.95.1...0.96.0
-
-
-> **Note:** This file is no longer actively maintained. For the latest release notes, please visit the [ZenML Changelog](https://docs.zenml.io/changelog). Historical release notes are also available in [GitHub Releases](https://github.com/zenml-io/zenml/releases).
-
----
 
 # 0.95.1
 
