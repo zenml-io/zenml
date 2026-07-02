@@ -148,6 +148,7 @@ class OAuth2RefreshTokenConfig(OAuth2GrantConfig):
 
 OAUTH2_SERVICE_CONNECTOR_TYPE_SPEC = ServiceConnectorTypeModel(
     name="OAuth2 Service Connector",
+    logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/service_connector/oauth.webp",
     connector_type=OAUTH2_CONNECTOR_TYPE,
     description="""
 The ZenML OAuth2 Service Connector authenticates to an HTTP API using OAuth2.
@@ -192,6 +193,7 @@ Use a pre-obtained OAuth2 access token to authenticate with the API.
     resource_types=[
         ResourceTypeModel(
             name="OAuth2 API",
+            logo_url="https://public-flavor-logos.s3.eu-central-1.amazonaws.com/service_connector/oauth.webp",
             resource_type=OAUTH2_API_RESOURCE_TYPE,
             description="""
 Allows access to an HTTP API protected by OAuth2. When used by connector
