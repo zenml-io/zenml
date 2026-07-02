@@ -17,6 +17,7 @@ import os
 import shlex
 import signal
 import subprocess
+import sys
 import threading
 from typing import (
     TYPE_CHECKING,
@@ -530,6 +531,14 @@ class SSHOrchestrator(ContainerizedOrchestrator):
             if process is None or process.poll() is not None:
                 return
             self._stopped_step_ids.add(step_run.id)
+        if sys.platform == "win32":
+            process.terminate()
+            try:
+                process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
+            return
         try:
             pgid = os.getpgid(process.pid)
         except ProcessLookupError:
