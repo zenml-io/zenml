@@ -1,5 +1,53 @@
 <!-- markdown-link-check-disable -->
 
+# 0.96.0
+
+## What's Changed
+* Add version 0.95.0 to legacy docs by @github-actions[bot] in https://github.com/zenml-io/zenml/pull/4967
+* Improve Modal orchestrator docs by @strickvl in https://github.com/zenml-io/zenml/pull/4970
+* Bump the minor-and-patch group with 2 updates by @dependabot[bot] in https://github.com/zenml-io/zenml/pull/4962
+* Improve listing pipelines sorted by latest run by @schustmi in https://github.com/zenml-io/zenml/pull/4969
+* Fix CI-blocking dead docs links and transformers version floor by @htahir1 in https://github.com/zenml-io/zenml/pull/4976
+* Bump anthropics/claude-code-action from 1.0.143 to 1.0.150 in the minor-and-patch group by @dependabot[bot] in https://github.com/zenml-io/zenml/pull/4981
+* Add Trackio Integration for ZenML by @ParagEkbote in https://github.com/zenml-io/zenml/pull/4841
+* Document multi-node distributed training via CommandStep by @htahir1 in https://github.com/zenml-io/zenml/pull/4980
+* Fix databricks test leaking the global custom source root by @htahir1 in https://github.com/zenml-io/zenml/pull/4979
+* Cache artifact store in server to avoid OOM kills by @schustmi in https://github.com/zenml-io/zenml/pull/4974
+* Make the docs agent-aware: Agents guide in Learn, Kitaru routing across spaces by @htahir1 in https://github.com/zenml-io/zenml/pull/4897
+* Extract shared Modal settings/credentials mixins by @htahir1 in https://github.com/zenml-io/zenml/pull/4954
+* Add Backblaze B2 artifact store flavor by @goanpeca in https://github.com/zenml-io/zenml/pull/4791
+* Restore the source-root env var in the databricks test isolation fixture by @htahir1 in https://github.com/zenml-io/zenml/pull/4985
+* Add Missing Doc Links for Trackio by @ParagEkbote in https://github.com/zenml-io/zenml/pull/4989
+* Honesty pass on Replay and improve docs (drop non-existent cohort/Recipe/diff APIs) by @htahir1 in https://github.com/zenml-io/zenml/pull/4984
+* Misc DB improvements by @schustmi in https://github.com/zenml-io/zenml/pull/4982
+* Add option to destroy sandbox on session exit by @schustmi in https://github.com/zenml-io/zenml/pull/4986
+* Add Baseten step operator (single-node + multi-node distributed training) by @htahir1 in https://github.com/zenml-io/zenml/pull/4973
+* Improved snapshot fetching by @schustmi in https://github.com/zenml-io/zenml/pull/4991
+* Allow overwriting step inputs for all invocations when replaying by @schustmi in https://github.com/zenml-io/zenml/pull/4978
+* Add isolated step cleanup hooks by @schustmi in https://github.com/zenml-io/zenml/pull/4990
+* Update azure dependencies by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4987
+* Feature/prevent trigger execution loops by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/4971
+* More query improvements by @schustmi in https://github.com/zenml-io/zenml/pull/4994
+* Configurable Kubernetes API retries by @schustmi in https://github.com/zenml-io/zenml/pull/5004
+* Async snapshot execution by @Json-Andriopoulos in https://github.com/zenml-io/zenml/pull/5003
+* Fix configuration of docker credentials for building/pushing container images by @stefannica in https://github.com/zenml-io/zenml/pull/5005
+* Bump actions/checkout from 6.0.3 to 7.0.0 by @dependabot[bot] in https://github.com/zenml-io/zenml/pull/5002
+* Bump the minor-and-patch group across 1 directory with 3 updates by @dependabot[bot] in https://github.com/zenml-io/zenml/pull/5000
+* Bump actions/cache from 5.0.5 to 6.1.0 by @dependabot[bot] in https://github.com/zenml-io/zenml/pull/5001
+* OAuth2 service connector by @schustmi in https://github.com/zenml-io/zenml/pull/4992
+* Changed default otel-service-name as workspace name for zenml-pro workspaces by @amitvikramraj in https://github.com/zenml-io/zenml/pull/5006
+* Add catch-up cleanup for expired API transactions by @safoinme in https://github.com/zenml-io/zenml/pull/4943
+* Add admin permissions check to the secret backup/restore endpoints by @stefannica in https://github.com/zenml-io/zenml/pull/5009
+* Validate custom flavors at loading time by @stefannica in https://github.com/zenml-io/zenml/pull/5008
+* Enforce admin-only permissions for service account management in non-RBAC deployments by @stefannica in https://github.com/zenml-io/zenml/pull/5007
+
+## New Contributors
+* @ParagEkbote made their first contribution in https://github.com/zenml-io/zenml/pull/4841
+* @goanpeca made their first contribution in https://github.com/zenml-io/zenml/pull/4791
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.95.1...0.96.0
+
+
 > **Note:** This file is no longer actively maintained. For the latest release notes, please visit the [ZenML Changelog](https://docs.zenml.io/changelog). Historical release notes are also available in [GitHub Releases](https://github.com/zenml-io/zenml/releases).
 
 ---
