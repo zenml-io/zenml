@@ -84,7 +84,7 @@ class BaseSSHComponentConfig(SSHConnectionConfigMixin):
     """Shared SSH component configuration."""
 
     remote_workdir: str = Field(
-        default="/tmp/zenml-ssh",
+        default="/tmp/zenml-ssh",  # nosec
         description="Base directory on the remote host's filesystem for "
         "per-run files. Created automatically",
     )

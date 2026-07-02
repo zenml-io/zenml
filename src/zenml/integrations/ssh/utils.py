@@ -172,7 +172,7 @@ def build_docker_run_command(
         shlex.quote(container_name),
     ]
     if network:
-        parts += ["--network", network]
+        parts += ["--network", shlex.quote(network)]
     if env_file:
         parts += ["--env-file", shlex.quote(env_file)]
     if gpu_indices:
@@ -259,7 +259,7 @@ def run_preflight_checks(ssh: "SSHClient", docker_binary: str) -> None:
     Raises:
         RuntimeError: If a required tool is missing.
     """
-    result = ssh.exec(f"{docker_binary} --version")
+    result = ssh.exec(f"{shlex.quote(docker_binary)} --version")
     if result.exit_code != 0:
         raise RuntimeError(
             f"Preflight check failed: Docker is not available on "

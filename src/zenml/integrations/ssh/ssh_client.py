@@ -110,7 +110,7 @@ class SSHClient:
                     "file or set verify_host_key=False (less secure)."
                 )
         else:
-            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())  # nosec
 
         # Load the private key
         pkey: Optional[paramiko.PKey] = None
@@ -288,7 +288,7 @@ class SSHClient:
                 combine_stderr=combine_stderr,
             )
 
-        _, stdout_ch, stderr_ch = client.exec_command(command, get_pty=get_pty)
+        _, stdout_ch, stderr_ch = client.exec_command(command, get_pty=get_pty)  # nosec
         stdout_text = stdout_ch.read().decode("utf-8", errors="replace")
         stderr_text = stderr_ch.read().decode("utf-8", errors="replace")
         exit_code = stdout_ch.channel.recv_exit_status()
@@ -330,7 +330,7 @@ class SSHClient:
             channel.set_combine_stderr(True)
         if get_pty:
             channel.get_pty()
-        channel.exec_command(command)
+        channel.exec_command(command)  # nosec
 
         stdout_chunks: list[str] = []
         buf_size = 4096
