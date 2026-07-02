@@ -23,8 +23,8 @@ from zenml.enums import AuthScheme
 
 T = TypeVar("T")
 
+# Default OTEL_SERVICE_NAME for non-Pro ZenML Workspace.
 DEFAULT_ZENML_SERVER_OTEL_SERVICE_NAME = "zenml-server"
-"""Default OTEL_SERVICE_NAME for non-Pro ZenML Workspace."""
 
 
 def handle_json_env_var(
