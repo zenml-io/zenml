@@ -178,10 +178,11 @@ def test_synchronous_snapshot_run_executes_without_redispatch(
     assert failed_update.status == ExecutionStatus.FAILED
 
 
-def test_queue_rejection_marks_run_failed_and_retains_prepared_state(
-    monkeypatch,
+@pytest.mark.parametrize("create_new_snapshot", [True, False])
+def test_queue_rejection_removes_prepared_state(
+    monkeypatch, create_new_snapshot: bool
 ) -> None:
-    """Queue backpressure retains prepared state for visibility."""
+    """Queue backpressure only removes state created by the request."""
     source_snapshot = SimpleNamespace(id=uuid4())
     target_snapshot = SimpleNamespace(id=uuid4())
     placeholder_run = SimpleNamespace(id=uuid4())
@@ -210,13 +211,17 @@ def test_queue_rejection_marks_run_failed_and_retains_prepared_state(
         utils.run_snapshot(
             snapshot=source_snapshot,
             auth_context=MagicMock(),
+            create_new_snapshot=create_new_snapshot,
         )
 
-    failed_update = store.update_run.call_args_list[-1].kwargs["run_update"]
-    assert failed_update.status == ExecutionStatus.FAILED
-    assert failed_update.status_reason == "Snapshot execution queue is full."
-    store.delete_run.assert_not_called()
-    store.delete_snapshot.assert_not_called()
+    store.delete_run.assert_called_once_with(run_id=placeholder_run.id)
+    if create_new_snapshot:
+        store.delete_snapshot.assert_called_once_with(
+            snapshot_id=target_snapshot.id
+        )
+    else:
+        store.delete_snapshot.assert_not_called()
+    store.update_run.assert_called_once()
     usage.assert_called_once_with(
         feature=utils.RUN_TEMPLATE_TRIGGERS_FEATURE_NAME,
         resource_id=placeholder_run.id,
