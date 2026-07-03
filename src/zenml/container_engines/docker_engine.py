@@ -115,6 +115,7 @@ class DockerContainerEngine(ContainerEngine):
     def __init__(self) -> None:
         """Create a Docker engine (registry auth is per-operation)."""
         self._client: Optional[DockerClient] = None
+        self._cred_helper_failed: bool = False
 
     @property
     def engine_type(self) -> ContainerEngineType:
@@ -184,18 +185,22 @@ class DockerContainerEngine(ContainerEngine):
                 "Docker daemon running?"
             ) from e
 
-        # Install a fake credential helper backed by docker-py's in-memory
-        # auths. When a registry is bound to this store after login, docker-py
-        # resolves ZenML's explicit credentials before the user's system store.
-        auth_config: docker_auth.AuthConfig | None = (
-            self._client.api._auth_configs
-        )
-        if auth_config is not None:
-            auth_config._stores[_ZENML_CREDENTIAL_STORE] = (
-                _AuthsCredentialStore(auth_config.auths)
+        try:
+            # Install a fake credential helper backed by docker-py's in-memory
+            # auths. When a registry is bound to this store after login, docker-py
+            # resolves ZenML's explicit credentials before the user's system store.
+            auth_config: docker_auth.AuthConfig | None = (
+                self._client.api._auth_configs
             )
-            if "credHelpers" not in auth_config:
-                auth_config["credHelpers"] = {}
+            if auth_config is not None:
+                auth_config._stores[_ZENML_CREDENTIAL_STORE] = (
+                    _AuthsCredentialStore(auth_config.auths)
+                )
+                if "credHelpers" not in auth_config:
+                    auth_config["credHelpers"] = {}
+        except Exception as e:
+            logger.error(f"Error installing zenml credential helper: {e}")
+            self._cred_helper_failed = True
 
         return self._client
 
@@ -234,12 +239,23 @@ class DockerContainerEngine(ContainerEngine):
                 f"failed to authenticate with Docker registry {registry}: {e}"
             )
 
-        # DockerClient.login stores these credentials in auths. Binding the
-        # registry to our auths-backed credential helper makes docker-py prefer
-        # them over any matching credentials in the system Docker store.
-        auth_config: docker_auth.AuthConfig | None = client.api._auth_configs
-        if auth_config is not None:
-            auth_config.cred_helpers[docker_registry] = _ZENML_CREDENTIAL_STORE
+        if self._cred_helper_failed:
+            return
+
+        try:
+            # DockerClient.login stores these credentials in auths. Binding the
+            # registry to our auths-backed credential helper makes docker-py prefer
+            # them over any matching credentials in the system Docker store.
+            auth_config: docker_auth.AuthConfig | None = (
+                client.api._auth_configs
+            )
+            if auth_config is not None:
+                auth_config.cred_helpers[docker_registry] = (
+                    _ZENML_CREDENTIAL_STORE
+                )
+        except Exception as e:
+            logger.error(f"Error installing zenml credential helper: {e}")
+            self._cred_helper_failed = True
 
     @staticmethod
     def login_cli(
@@ -335,17 +351,18 @@ class DockerContainerEngine(ContainerEngine):
             registry: Registry host or URI.
             **kwargs: Additional keyword arguments.
         """
-        if kwargs.get("use_subprocess", False):
-            self.login_cli(
-                username=username,
-                password=password,
-                registry=registry,
-            )
         self.login_client(
             username=username,
             password=password,
             registry=registry,
         )
+
+        if kwargs.get("use_subprocess", False) or self._cred_helper_failed:
+            self.login_cli(
+                username=username,
+                password=password,
+                registry=registry,
+            )
 
     def build(
         self,
