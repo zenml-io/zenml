@@ -29,8 +29,8 @@ from typing import (
     cast,
 )
 
-from docker import auth as docker_auth
-from docker import credentials as docker_credentials
+import docker.auth as docker_auth
+import docker.credentials as docker_credentials
 from docker.client import DockerClient
 from docker.errors import DockerException
 

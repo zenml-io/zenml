@@ -15,9 +15,9 @@
 
 from typing import Any, Dict, Optional
 
+import docker.auth as docker_auth
+import docker.credentials as docker_credentials
 import pytest
-from docker import auth as docker_auth
-from docker import credentials as docker_credentials
 from docker.client import DockerClient
 
 from zenml.container_engines.docker_engine import (
