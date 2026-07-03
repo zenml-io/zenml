@@ -14,7 +14,7 @@
 
 from hypothesis import given
 from hypothesis.strategies import from_regex
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr
 
 from zenml.utils import secret_utils
 
@@ -39,6 +39,13 @@ def test_is_secret_reference(name, key):
 
 
 @given(name=strategy, key=strategy)
+def test_is_secret_reference_unwraps_secret_str(name, key):
+    """Check that secret reference detection unwraps `SecretStr` values."""
+    assert secret_utils.is_secret_reference(SecretStr(f"{{{{{name}.{key}}}}}"))
+    assert not secret_utils.is_secret_reference(SecretStr("plain text"))
+
+
+@given(name=strategy, key=strategy)
 def test_secret_reference_parsing(name, key):
     """Tests that secret reference parsing works correctly."""
     for value in [
@@ -49,6 +56,16 @@ def test_secret_reference_parsing(name, key):
         ref = secret_utils.parse_secret_reference(value)
         assert ref.name == name
         assert ref.key == key
+
+
+@given(name=strategy, key=strategy)
+def test_secret_reference_parsing_unwraps_secret_str(name, key):
+    """Tests that secret reference parsing unwraps `SecretStr` values."""
+    ref = secret_utils.parse_secret_reference(
+        SecretStr(f"{{{{{name}.{key}}}}}")
+    )
+    assert ref.name == name
+    assert ref.key == key
 
 
 def test_secret_field():
