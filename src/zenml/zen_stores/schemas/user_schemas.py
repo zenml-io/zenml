@@ -231,8 +231,7 @@ class UserSchema(NamedSchema, table=True):
 
             if field == "password":
                 setattr(self, field, user_update.create_hashed_password())
-                if value is not None:
-                    self.password_changed_at = utc_now()
+                self.password_changed_at = utc_now()
             elif field == "activation_token":
                 setattr(
                     self, field, user_update.create_hashed_activation_token()
