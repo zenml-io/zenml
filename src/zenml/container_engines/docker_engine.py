@@ -184,7 +184,7 @@ class DockerContainerEngine(ContainerEngine):
                 "Docker daemon running?"
             ) from e
 
-        # Install a fake credential store backed by docker-py's in-memory
+        # Install a fake credential helper backed by docker-py's in-memory
         # auths. When a registry is bound to this store after login, docker-py
         # resolves ZenML's explicit credentials before the user's system store.
         auth_config: docker_auth.AuthConfig | None = (
