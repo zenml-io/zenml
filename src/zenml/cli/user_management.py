@@ -268,6 +268,13 @@ def create_user(
     default=None,
     help="Use to activate or deactivate a user account.",
 )
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    default=False,
+    help="Don't ask for confirmation when demoting an admin.",
+)
 def update_user(
     user_name_or_id: str,
     updated_name: Optional[str] = None,
@@ -276,6 +283,7 @@ def update_user(
     make_admin: Optional[bool] = None,
     make_user: Optional[bool] = None,
     active: Optional[bool] = None,
+    yes: bool = False,
 ) -> None:
     """Update an existing user.
 
@@ -287,6 +295,7 @@ def update_user(
         make_admin: Whether the user should be an admin.
         make_user: Whether the user should be a regular user.
         active: Use to activate or deactivate a user account.
+        yes: If set, don't ask for confirmation when demoting an admin.
     """
     if make_admin is not None and make_user is not None:
         cli_utils.error(
@@ -296,7 +305,7 @@ def update_user(
         current_user = Client().get_user(
             user_name_or_id, allow_name_prefix_match=False
         )
-        if current_user.is_admin and make_user:
+        if current_user.is_admin and make_user and not yes:
             confirmation = cli_utils.confirmation(
                 f"Currently user `{current_user.name}` is an admin. Are you "
                 "sure you want to make them a regular user?"

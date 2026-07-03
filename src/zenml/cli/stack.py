@@ -594,7 +594,11 @@ def register_stack(
 
     labels: Dict[str, str] = {}
     components: Dict[StackComponentType, List[Union[UUID, ComponentInfo]]] = {}
-    component_previews: Dict[str, Dict[str, Any]] = {}
+    # Single-instance component types map to one preview dict; multi-instance
+    # types (alerter, step operator, ...) map to a list of preview dicts.
+    component_previews: Dict[
+        str, Union[Dict[str, Any], List[Dict[str, Any]]]
+    ] = {}
     service_connector_response: Optional[
         Union[ServiceConnectorRequest, ServiceConnectorResponse]
     ] = None
@@ -832,6 +836,32 @@ def register_stack(
                 cli_utils.exception(err)
             validated_secret_names.append(secret.name)
 
+        # Resolve multi-instance component types before the dry-run exit so
+        # that a dry run validates (and previews) them as well.
+        for component_type_, component_names_ in [
+            (StackComponentType.ALERTER, alerter),
+            (StackComponentType.STEP_OPERATOR, step_operator),
+            (StackComponentType.EXPERIMENT_TRACKER, experiment_tracker),
+            (StackComponentType.SANDBOX, sandbox),
+        ]:
+            if component_names_:
+                try:
+                    component_responses = [
+                        client.get_stack_component(
+                            component_type_, component_name_
+                        )
+                        for component_name_ in component_names_
+                    ]
+                except KeyError as err:
+                    cli_utils.exception(err)
+                components[component_type_] = [
+                    response.id for response in component_responses
+                ]
+                component_previews[component_type_.value] = [
+                    _serialize_component_response(component_type_, response)
+                    for response in component_responses
+                ]
+
         if dry_run:
             details: Dict[str, Any] = {
                 "would_activate": set_stack,
@@ -866,20 +896,6 @@ def register_stack(
                 details=details,
             )
             return
-
-        for component_type_, component_names_ in [
-            (StackComponentType.ALERTER, alerter),
-            (StackComponentType.STEP_OPERATOR, step_operator),
-            (StackComponentType.EXPERIMENT_TRACKER, experiment_tracker),
-            (StackComponentType.SANDBOX, sandbox),
-        ]:
-            if component_names_:
-                components[component_type_] = [
-                    client.get_stack_component(
-                        component_type_, component_name_
-                    ).id
-                    for component_name_ in component_names_
-                ]
 
         try:
             created_stack = client.zen_store.create_stack(
@@ -1206,14 +1222,18 @@ def update_stack(
 
             component_previews = {}
             for component_type, component_ids in updates.items():
-                component_response = client.get_stack_component(
-                    component_type, component_ids[0]
-                )
-                component_previews[component_type.value] = (
-                    _serialize_component_response(
-                        component_type, component_response
-                    )
-                )
+                try:
+                    component_previews[component_type.value] = [
+                        _serialize_component_response(
+                            component_type,
+                            client.get_stack_component(
+                                component_type, component_id
+                            ),
+                        )
+                        for component_id in component_ids
+                    ]
+                except KeyError as err:
+                    cli_utils.exception(err)
 
             added_secret_names = []
             for secret_name in secrets:
@@ -2307,6 +2327,13 @@ connectors.
     help="Immediately set this stack as active.",
     type=click.BOOL,
 )
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    default=False,
+    help="Don't ask for confirmation before opening the browser.",
+)
 @click.pass_context
 def deploy(
     ctx: click.Context,
@@ -2314,6 +2341,7 @@ def deploy(
     stack_name: Optional[str] = None,
     location: Optional[str] = None,
     set_stack: bool = False,
+    yes: bool = False,
 ) -> None:
     """Deploy and register a fully functional cloud ZenML stack.
 
@@ -2324,11 +2352,23 @@ def deploy(
             of the recipe deployment.
         location: The location to deploy the stack to.
         set_stack: Immediately set the deployed stack as active.
+        yes: If set, don't ask for confirmation before opening the browser.
 
     Raises:
         click.Abort: If the user aborts the deployment.
         KeyboardInterrupt: If the user interrupts the deployment.
     """
+    # This flow opens a browser and blocks until the cloud deployment
+    # finishes, so it can never complete in a non-interactive session.
+    if cli_utils.is_machine_mode():
+        cli_utils.error(
+            "Machine mode cannot run `zenml stack deploy`: the command "
+            "opens a browser session and waits for the deployment to "
+            "complete interactively. Please run it in an interactive "
+            "terminal instead.",
+            error_type="MachineModePromptError",
+        )
+
     stack_name = stack_name or f"zenml-{provider}-stack"
 
     # Set up the markdown renderer to use the old-school markdown heading
@@ -2396,7 +2436,7 @@ def deploy(
                 style=Style(bgcolor="grey15"),
             )
 
-        if not cli_utils.confirmation(
+        if not yes and not cli_utils.confirmation(
             "\n\nProceed to continue with the deployment. You will be "
             f"automatically redirected to "
             f"{deployment_config.deployment_url_text} in your browser.",

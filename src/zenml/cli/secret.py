@@ -173,7 +173,7 @@ def create_secret(
             else:
                 click.echo("Entering interactive mode:")
                 while True:
-                    k = click.prompt("Please enter a secret key")
+                    k = cli_utils.prompt("Please enter a secret key")
                     if k in parsed_args:
                         warning(
                             f"Key {k} already in this secret. Please restart "
@@ -444,7 +444,7 @@ def update_secret(
         secret_args_add_update = {}
         for k, _ in secret.secret_values.items():
             item_choice = (
-                click.prompt(
+                cli_utils.prompt(
                     text=f"Do you want to update key '{k}'? (enter to skip)",
                     type=click.Choice(["y", "n"]),
                     default="n",
@@ -467,7 +467,7 @@ def update_secret(
             if not addition_check:
                 break
 
-            new_key = click.prompt(
+            new_key = cli_utils.prompt(
                 text="Please enter the new key name",
                 type=click.STRING,
             )

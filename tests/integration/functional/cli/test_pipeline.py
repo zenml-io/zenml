@@ -41,6 +41,28 @@ from zenml.utils.pipeline_docker_image_builder import (
 )
 
 
+def test_resolve_wait_condition_interactive_blocked_in_machine_mode():
+    """Test that machine mode blocks interactive wait condition resolution."""
+    runner = CliRunner()
+    resolve_command = (
+        cli.commands["pipeline"]
+        .commands["runs"]
+        .commands["wait-conditions"]
+        .commands["resolve"]
+    )
+
+    result = runner.invoke(
+        resolve_command,
+        ["--interactive"],
+        env={"ZENML_CLI_MACHINE_MODE": "true"},
+    )
+
+    assert result.exit_code != 0
+    error_payload = json.loads(result.stderr)
+    assert error_payload["type"] == "MachineModePromptError"
+    assert "--resolution" in error_payload["error"]
+
+
 def test_pipeline_list(clean_client_with_run):
     """Test that zenml pipeline list does not fail."""
     runner = cli_runner()

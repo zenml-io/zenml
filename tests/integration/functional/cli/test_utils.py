@@ -134,14 +134,17 @@ def test_get_default_output_format_prefers_machine_mode(monkeypatch):
     assert cli_utils.get_default_output_format() == "json"
 
 
-def test_confirmation_auto_yes_in_machine_mode(monkeypatch):
-    """Tests that machine mode auto-confirms prompts."""
+def test_confirmation_errors_in_machine_mode(monkeypatch):
+    """Tests that machine mode blocks confirmations instead of auto-accepting."""
     monkeypatch.setenv(ENV_ZENML_CLI_MACHINE_MODE, "true")
 
     with patch("zenml.cli.utils.RichConfirm.ask") as confirm:
-        assert cli_utils.confirmation("Delete?") is True
+        with pytest.raises(cli_utils.StyledClickException) as exc_info:
+            cli_utils.confirmation("Delete?")
 
     confirm.assert_not_called()
+    assert exc_info.value.error_type == "MachineModeConfirmationError"
+    assert "--yes" in exc_info.value.raw_message
 
 
 def test_prompt_fails_in_machine_mode(monkeypatch):
@@ -150,6 +153,16 @@ def test_prompt_fails_in_machine_mode(monkeypatch):
 
     with pytest.raises(ClickException):
         cli_utils.prompt("Provide a value")
+
+
+def test_prompt_returns_default_in_machine_mode(monkeypatch):
+    """Tests that prompts with a default use it in machine mode."""
+    monkeypatch.setenv(ENV_ZENML_CLI_MACHINE_MODE, "true")
+
+    assert cli_utils.prompt("Provide a value", default="aria") == "aria"
+
+    with pytest.raises(ClickException):
+        cli_utils.prompt("Provide a value", default=None)
 
 
 def test_error_outputs_structured_json_in_machine_mode(monkeypatch):

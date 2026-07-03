@@ -161,19 +161,33 @@ def title(text: str) -> None:
     console.print(text.upper(), style=zenml_style_defaults["title"])
 
 
-def confirmation(text: str, *args: Any, **kwargs: Any) -> bool:
-    """Echo a confirmation string on the CLI.
+def confirmation(
+    text: str,
+    *args: Any,
+    machine_message: Optional[str] = None,
+    **kwargs: Any,
+) -> bool:
+    """Ask the user to confirm an operation, unless machine mode is enabled.
 
     Args:
         text: Input text string.
-        *args: Args to be passed to click.confirm().
-        **kwargs: Kwargs to be passed to click.confirm().
+        *args: Args to be passed to rich.prompt.Confirm.ask().
+        machine_message: Optional custom error shown in machine mode.
+        **kwargs: Kwargs to be passed to rich.prompt.Confirm.ask().
 
     Returns:
         Boolean based on user response.
     """
     if is_machine_mode():
-        return True
+        error(
+            machine_message
+            or (
+                "Machine mode blocks confirmation prompts. Please rerun "
+                "the command with the appropriate flag (e.g. `--yes`) to "
+                "confirm this operation explicitly."
+            ),
+            error_type="MachineModeConfirmationError",
+        )
 
     kwargs.setdefault("console", console)
     return RichConfirm.ask(text, *args, **kwargs)
@@ -313,6 +327,10 @@ def prompt(
         The prompted value.
     """
     if is_machine_mode():
+        # A default the user could accept by pressing Enter is equally
+        # acceptable non-interactively, so return it instead of failing.
+        if kwargs.get("default") is not None:
+            return kwargs["default"]
         error(
             machine_message
             or (

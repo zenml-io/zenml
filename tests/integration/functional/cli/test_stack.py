@@ -223,6 +223,42 @@ def test_register_stack_dry_run_outputs_preview_and_does_not_create(
         )
 
 
+def test_register_stack_dry_run_validates_multi_instance_components(
+    clean_client: "Client",
+) -> None:
+    """Tests that dry-run fails on invalid alerter/step-operator names."""
+    registered_stack = clean_client.active_stack_model
+    artifact_store_name = registered_stack.components[
+        StackComponentType.ARTIFACT_STORE
+    ][0].name
+    orchestrator_name = registered_stack.components[
+        StackComponentType.ORCHESTRATOR
+    ][0].name
+
+    runner = CliRunner()
+    register_command = cli.commands["stack"].commands["register"]
+    result = runner.invoke(
+        register_command,
+        [
+            "aria-dry-run-stack",
+            "-a",
+            artifact_store_name,
+            "-o",
+            orchestrator_name,
+            "-al",
+            "nonexistent-alerter",
+            "--dry-run",
+        ],
+        env={"ZENML_CLI_MACHINE_MODE": "true"},
+    )
+
+    assert result.exit_code != 0
+    with pytest.raises(KeyError):
+        clean_client.get_stack(
+            "aria-dry-run-stack", allow_name_prefix_match=False
+        )
+
+
 def test_updating_non_active_stack_succeeds(clean_client: "Client") -> None:
     """Test if stack update of existing stack of non-active stack succeeds."""
     registered_stack = clean_client.active_stack_model
@@ -311,7 +347,7 @@ def test_update_stack_dry_run_outputs_preview_and_does_not_update(
     assert payload["action"] == "stack.update"
     assert payload["target"]["name"] == new_stack.name
     assert (
-        payload["validated_input"]["component_updates"]["artifact_store"][
+        payload["validated_input"]["component_updates"]["artifact_store"][0][
             "name"
         ]
         == new_artifact_store_model.name
@@ -322,6 +358,63 @@ def test_update_stack_dry_run_outputs_preview_and_does_not_update(
         unchanged_stack.components[StackComponentType.ARTIFACT_STORE][0].name
         == artifact_store_name
     )
+
+
+def test_update_stack_dry_run_validates_all_component_values(
+    clean_client: "Client", mocker
+) -> None:
+    """Tests that dry-run validates every value of multi-value flags."""
+    registered_stack = clean_client.active_stack_model
+    artifact_store_name = registered_stack.components[
+        StackComponentType.ARTIFACT_STORE
+    ][0].name
+    orchestrator_response = registered_stack.components[
+        StackComponentType.ORCHESTRATOR
+    ][0]
+    new_stack = clean_client.create_stack(
+        name="arias_multi_value_stack",
+        components={
+            StackComponentType.ARTIFACT_STORE: artifact_store_name,
+            StackComponentType.ORCHESTRATOR: orchestrator_response.name,
+        },
+    )
+
+    # No step operator flavor is available in the test environment, so
+    # resolve a fake "valid" first value and fail the second one to check
+    # that the dry run validates values beyond the first.
+    original_get_component = Client.get_stack_component
+
+    def selective_get_component(
+        self, component_type, name_id_or_prefix=None, **kwargs
+    ):
+        if name_id_or_prefix == "valid-step-operator":
+            return orchestrator_response
+        if name_id_or_prefix == "broken-step-operator":
+            raise KeyError("Step operator not found")
+        return original_get_component(
+            self, component_type, name_id_or_prefix, **kwargs
+        )
+
+    mocker.patch.object(Client, "get_stack_component", selective_get_component)
+
+    runner = CliRunner()
+    update_command = cli.commands["stack"].commands["update"]
+    result = runner.invoke(
+        update_command,
+        [
+            new_stack.name,
+            "-s",
+            "valid-step-operator",
+            "-s",
+            "broken-step-operator",
+            "--dry-run",
+        ],
+        env={"ZENML_CLI_MACHINE_MODE": "true"},
+    )
+
+    assert result.exit_code != 0
+    unchanged_stack = clean_client.get_stack(new_stack.id)
+    assert StackComponentType.STEP_OPERATOR not in unchanged_stack.components
 
 
 def test_update_stack_adding_component_succeeds(

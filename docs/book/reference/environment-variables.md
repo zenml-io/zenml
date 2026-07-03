@@ -197,8 +197,8 @@ export ZENML_CLI_MACHINE_MODE=true
 When machine mode is enabled, ZenML CLI behavior changes in a few important ways:
 
 - commands that support `--output` default to `json` when that flag is omitted
-- confirmation prompts are auto-accepted
-- interactive prompts fail immediately instead of blocking
+- confirmation prompts fail immediately with a structured error instead of blocking; pass the command's explicit flag (usually `--yes`) to confirm the operation
+- interactive prompts fail immediately instead of blocking, unless the prompt has a default value, in which case the default is used
 - errors raised through ZenML's CLI error helpers are written to `stderr` as JSON objects
 
 Output precedence works like this:

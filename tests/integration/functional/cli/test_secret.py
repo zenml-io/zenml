@@ -375,8 +375,8 @@ def test_delete_secret_works():
         _check_deleting_nonexistent_secret_fails(runner, secret_name)
 
 
-def test_delete_secret_auto_confirms_in_machine_mode():
-    """Test that machine mode auto-confirms secret deletion."""
+def test_delete_secret_requires_yes_flag_in_machine_mode():
+    """Test that machine mode blocks deletion unless --yes is passed."""
     runner = CliRunner()
     client = Client()
     with cleanup_secrets() as secret_name:
@@ -385,14 +385,24 @@ def test_delete_secret_auto_confirms_in_machine_mode():
             [secret_name, "--test_value=aria", "--test_value2=axl"],
         )
 
-        result = runner.invoke(
+        blocked = runner.invoke(
             secret_delete_command,
             [secret_name],
             env={"ZENML_CLI_MACHINE_MODE": "true"},
         )
 
-        assert result.exit_code == 0
-        assert "deleted" in result.output
+        assert blocked.exit_code != 0
+        error_payload = json.loads(blocked.stderr)
+        assert error_payload["type"] == "MachineModeConfirmationError"
+        assert client.list_secrets(name=secret_name).items
+
+        confirmed = runner.invoke(
+            secret_delete_command,
+            [secret_name, "--yes"],
+            env={"ZENML_CLI_MACHINE_MODE": "true"},
+        )
+
+        assert confirmed.exit_code == 0
         assert not client.list_secrets(name=secret_name).items
 
 

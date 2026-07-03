@@ -1043,6 +1043,14 @@ def resolve_wait_condition(
         run_name_or_id: Optional run name or ID to scope interactive resolution.
     """
     if interactive:
+        if cli_utils.is_machine_mode():
+            cli_utils.error(
+                "Machine mode blocks interactive wait condition resolution. "
+                "Please rerun non-interactively: `zenml pipeline runs "
+                "wait-conditions resolve <WAIT_CONDITION_ID> --resolution "
+                "continue|abort [--result JSON]`.",
+                error_type="MachineModePromptError",
+            )
         if resolution is not None or result is not None:
             cli_utils.error(
                 "`--interactive` cannot be used with `--resolution` or "
