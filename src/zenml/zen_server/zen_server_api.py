@@ -30,7 +30,7 @@ from typing import Any, AsyncGenerator, List
 from anyio import to_thread
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import ORJSONResponse
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.responses import (
@@ -215,7 +215,6 @@ app = FastAPI(
     title="ZenML",
     version=zenml.__version__,
     root_path=server_config().root_url_path,
-    default_response_class=ORJSONResponse,
     lifespan=lifespan,
 )
 
@@ -231,9 +230,7 @@ configure_otel(app)
 # Customize the default request validation handler that comes with FastAPI
 # to return a JSON response that matches the ZenML API spec.
 @app.exception_handler(RequestValidationError)
-def validation_exception_handler(
-    request: Any, exc: Exception
-) -> ORJSONResponse:
+def validation_exception_handler(request: Any, exc: Exception) -> JSONResponse:
     """Custom validation exception handler.
 
     Args:
@@ -243,7 +240,7 @@ def validation_exception_handler(
     Returns:
         The error response formatted using the ZenML API conventions.
     """
-    return ORJSONResponse(error_detail(exc, ValueError), status_code=422)
+    return JSONResponse(error_detail(exc, ValueError), status_code=422)
 
 
 DASHBOARD_REDIRECT_URL = None
