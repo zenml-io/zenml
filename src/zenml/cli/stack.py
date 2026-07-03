@@ -150,8 +150,11 @@ def _serialize_component_response(
     Returns:
         A dry-run preview dictionary.
     """
-    flavor = getattr(component, "flavor", None) or getattr(
-        component, "flavor_name", None
+    # Prefer `flavor_name`: on `ComponentResponse`, `flavor` is a full
+    # `FlavorResponse` object, which would dump a noisy model repr into the
+    # dry-run payload instead of the flavor string.
+    flavor = getattr(component, "flavor_name", None) or getattr(
+        component, "flavor", None
     )
     return {
         "mode": "existing",

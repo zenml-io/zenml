@@ -351,14 +351,19 @@ def run_pipeline(
         except KeyError as e:
             cli_utils.exception(e)
 
-        pipeline_instance = _import_pipeline(source=source)
-        pipeline_instance = pipeline_instance.with_options(
-            config_path=config_path,
-            build=build,
-            prevent_build_reuse=prevent_build_reuse,
-        )
-        with prevent_pipeline_execution():
-            pipeline_instance()
+        # Validate against the requested stack, not whatever happens to be
+        # active, so the preview matches what the real run would do.
+        with cli_utils.temporary_active_stack(
+            stack_name_or_id=stack_name_or_id
+        ):
+            pipeline_instance = _import_pipeline(source=source)
+            pipeline_instance = pipeline_instance.with_options(
+                config_path=config_path,
+                build=build,
+                prevent_build_reuse=prevent_build_reuse,
+            )
+            with prevent_pipeline_execution():
+                pipeline_instance()
 
         cli_utils.handle_dry_run_output(
             action="pipeline.run",

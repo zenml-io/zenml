@@ -3734,7 +3734,9 @@ def print_page(
         active_id: ID of the active item for highlighting. Used together with
             row_generator to create the row_formatter.
     """
-    if not page.total:
+    # Structured formats must always emit a parseable payload, even for an
+    # empty page; the friendly message is only for human table output.
+    if not page.total and output_format == "table":
         declare(empty_message)
         return
 
@@ -3808,13 +3810,33 @@ def prepare_output(
             names. Use this to rename columns in the table output.
 
     Returns:
-        The rendered output in the specified format, or empty string if
-        no data is provided.
+        The rendered output in the specified format. For JSON/YAML an empty
+        item list still renders as a parseable payload; other formats return
+        an empty string when no data is provided.
 
     Raises:
         ValueError: If an unsupported output format is provided.
     """
+    # `Page.__len__` makes an empty page falsy, so check identity here or
+    # pagination metadata would be dropped for empty results.
+    pagination_dict = (
+        {
+            "index": page.index,
+            "max_size": page.max_size,
+            "total_pages": page.total_pages,
+            "total": page.total,
+        }
+        if page is not None
+        else None
+    )
+
     if not data:
+        # JSON/YAML consumers parse stdout, so they need a valid empty
+        # payload; formats without one (table, CSV, TSV) stay empty.
+        if output_format == "json":
+            return _render_json([], pagination=pagination_dict)
+        if output_format == "yaml":
+            return _render_yaml([], pagination=pagination_dict)
         return ""
 
     available_keys = list(data[0].keys())
@@ -3858,17 +3880,6 @@ def prepare_output(
     filtered_data = [
         {k: entry[k] for k in selected_columns if k in entry} for entry in data
     ]
-
-    pagination_dict = (
-        {
-            "index": page.index,
-            "max_size": page.max_size,
-            "total_pages": page.total_pages,
-            "total": page.total,
-        }
-        if page
-        else None
-    )
 
     if output_format == "json":
         return _render_json(filtered_data, pagination=pagination_dict)

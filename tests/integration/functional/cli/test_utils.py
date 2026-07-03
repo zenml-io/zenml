@@ -125,6 +125,33 @@ def test_prepare_output_filters_columns_for_structured_formats(
     assert payload == {"items": [{"name": "aria", "status": "active"}]}
 
 
+@pytest.mark.parametrize(
+    "output_format,loader",
+    [("json", json.loads), ("yaml", yaml.safe_load)],
+)
+def test_prepare_output_renders_empty_payload_for_structured_formats(
+    output_format, loader
+):
+    """Tests that empty results still produce a parseable payload."""
+    from zenml.models import Page
+
+    empty_page = Page(index=1, max_size=20, total_pages=0, total=0, items=[])
+
+    rendered = cli_utils.prepare_output(
+        data=[],
+        output_format=output_format,
+        columns="",
+        page=empty_page,
+    )
+
+    payload = loader(rendered)
+    assert payload["items"] == []
+    assert payload["pagination"]["total"] == 0
+
+    # Formats without a schema-free empty representation stay empty.
+    assert cli_utils.prepare_output(data=[], output_format="csv") == ""
+
+
 def test_get_default_output_format_prefers_machine_mode(monkeypatch):
     """Tests that machine mode overrides the default output env var."""
     monkeypatch.setenv(ENV_ZENML_DEFAULT_OUTPUT, "yaml")
