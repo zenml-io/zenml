@@ -23,13 +23,14 @@ To run this file locally, execute:
 import logging
 import os
 from asyncio.log import logger
+from contextlib import asynccontextmanager
 from genericpath import isfile
-from typing import Any, List
+from typing import Any, AsyncGenerator, List
 
 from anyio import to_thread
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import ORJSONResponse
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.responses import (
@@ -156,43 +157,16 @@ def _configure_uvicorn_logging() -> None:
         _uvicorn_logger.propagate = True
 
 
-app = FastAPI(
-    title="ZenML",
-    version=zenml.__version__,
-    root_path=server_config().root_url_path,
-    default_response_class=ORJSONResponse,
-)
-
-add_middlewares(app)
-
-# suppress uvicorn access logs
-_configure_uvicorn_logging()
-
-# Configure OpenTelemetry
-configure_otel(app)
-
-
-# Customize the default request validation handler that comes with FastAPI
-# to return a JSON response that matches the ZenML API spec.
-@app.exception_handler(RequestValidationError)
-def validation_exception_handler(
-    request: Any, exc: Exception
-) -> ORJSONResponse:
-    """Custom validation exception handler.
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    """Manage the ZenML server application lifespan.
 
     Args:
-        request: The request.
-        exc: The exception.
+        app: The FastAPI application instance.
 
-    Returns:
-        The error response formatted using the ZenML API conventions.
+    Yields:
+        None: Control is handed back to FastAPI once initialization completes.
     """
-    return ORJSONResponse(error_detail(exc, ValueError), status_code=422)
-
-
-@app.on_event("startup")
-async def initialize() -> None:
-    """Initialize the ZenML server."""
     cfg = server_config()
     # Set the maximum number of worker threads
     to_thread.current_default_thread_limiter().total_tokens = (
@@ -225,10 +199,8 @@ async def initialize() -> None:
 
     await register_event_handlers()
 
+    yield
 
-@app.on_event("shutdown")
-async def shutdown() -> None:
-    """Shutdown the ZenML server."""
     if logger.isEnabledFor(logging.DEBUG):
         stop_event_loop_lag_monitor()
     shutdown_otel()
@@ -237,6 +209,38 @@ async def shutdown() -> None:
     await shutdown_streaming()
     await cleanup_request_manager()
     cleanup_artifact_store_cache()
+
+
+app = FastAPI(
+    title="ZenML",
+    version=zenml.__version__,
+    root_path=server_config().root_url_path,
+    lifespan=lifespan,
+)
+
+add_middlewares(app)
+
+# suppress uvicorn access logs
+_configure_uvicorn_logging()
+
+# Configure OpenTelemetry
+configure_otel(app)
+
+
+# Customize the default request validation handler that comes with FastAPI
+# to return a JSON response that matches the ZenML API spec.
+@app.exception_handler(RequestValidationError)
+def validation_exception_handler(request: Any, exc: Exception) -> JSONResponse:
+    """Custom validation exception handler.
+
+    Args:
+        request: The request.
+        exc: The exception.
+
+    Returns:
+        The error response formatted using the ZenML API conventions.
+    """
+    return JSONResponse(error_detail(exc, ValueError), status_code=422)
 
 
 DASHBOARD_REDIRECT_URL = None
@@ -301,9 +305,7 @@ async def dashboard(request: Request) -> Any:
 
     if not os.path.isfile(os.path.join(dashboard_directory(), "index.html")):
         raise HTTPException(status_code=404)
-    return templates.TemplateResponse(
-        name="index.html", context={"request": request}
-    )
+    return templates.TemplateResponse(request=request, name="index.html")
 
 
 app.include_router(artifact_endpoint.artifact_router)
@@ -425,6 +427,4 @@ async def catch_all(request: Request, file_path: str) -> Any:
 
     # everything else is directed to the index.html file that hosts the
     # single-page application
-    return templates.TemplateResponse(
-        name="index.html", context={"request": request}
-    )
+    return templates.TemplateResponse(request=request, name="index.html")
