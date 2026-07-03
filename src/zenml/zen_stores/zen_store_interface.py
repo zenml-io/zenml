@@ -60,6 +60,9 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    HookInvocationFilter,
+    HookInvocationRequest,
+    HookInvocationResponse,
     LogsRequest,
     LogsResponse,
     LogsUpdate,
@@ -2724,6 +2727,71 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
 
         Returns:
             The step heartbeat response.
+        """
+
+    # -------------------- Hook invocations --------------------
+
+    @abstractmethod
+    def create_hook_invocation(
+        self, hook_invocation: HookInvocationRequest
+    ) -> HookInvocationResponse:
+        """Create a hook invocation.
+
+        Args:
+            hook_invocation: The hook invocation to create.
+
+        Returns:
+            The created hook invocation.
+
+        Raises:
+            KeyError: if the pipeline run doesn't exist.
+        """
+
+    @abstractmethod
+    def get_hook_invocation(
+        self, hook_invocation_id: UUID, hydrate: bool = True
+    ) -> HookInvocationResponse:
+        """Get a hook invocation by ID.
+
+        Args:
+            hook_invocation_id: The ID of the hook invocation to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The hook invocation.
+
+        Raises:
+            KeyError: if the hook invocation doesn't exist.
+        """
+
+    @abstractmethod
+    def list_hook_invocations(
+        self,
+        hook_invocation_filter_model: HookInvocationFilter,
+        hydrate: bool = False,
+    ) -> Page[HookInvocationResponse]:
+        """List all hook invocations matching the given filter criteria.
+
+        Args:
+            hook_invocation_filter_model: All filter parameters including
+                pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all hook invocations matching the filter criteria.
+        """
+
+    @abstractmethod
+    def delete_hook_invocation(self, hook_invocation_id: UUID) -> None:
+        """Delete a hook invocation.
+
+        Args:
+            hook_invocation_id: The ID of the hook invocation to delete.
+
+        Raises:
+            KeyError: if the hook invocation doesn't exist.
         """
 
     # -------------------- Users --------------------

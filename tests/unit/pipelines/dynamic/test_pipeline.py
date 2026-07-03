@@ -122,6 +122,22 @@ def test_step_with_single_artifact_list_input_works() -> None:
         pipeline_with_single_artifact_list_input()
 
 
+@step
+def bare_list_consumer(input_: list) -> None:
+    assert input_ == [1, 1]
+
+
+@pipeline(enable_cache=False, dynamic=True)
+def pipeline_with_bare_list_input() -> None:
+    bare_list_consumer([producer(), producer()])
+
+
+def test_step_with_bare_list_input_annotation_works() -> None:
+    """Tests that a step input annotated with bare `list` works."""
+    with does_not_raise():
+        pipeline_with_bare_list_input()
+
+
 def test_replay_skips_first_step_and_overrides_second_step_input():
     """Tests that replaying a pipeline and overriding step inputs works."""
     original_run = replay_pipeline(expected_consumer_input=1)
@@ -131,6 +147,31 @@ def test_replay_skips_first_step_and_overrides_second_step_input():
         input_overrides={"expected_consumer_input": 42},
         skip={"producer"},
         step_input_overrides={"consumer": {"input_": 42}},
+    )
+
+
+@pipeline(enable_cache=False, dynamic=True)
+def replay_pipeline_with_two_invocations(expected_consumer_input: int) -> None:
+    consumer(producer(), expected_input=expected_consumer_input)
+    consumer(producer(), expected_input=expected_consumer_input)
+
+
+def test_replay_overrides_step_input_by_name():
+    """Tests that a step-wide override applies to every invocation of a step."""
+    original_run = replay_pipeline_with_two_invocations(
+        expected_consumer_input=1
+    )
+
+    consumer_name = original_run.steps["consumer"].config.name
+
+    # Step-wide override applies to both `consumer` and `consumer_2`, while the
+    # per-invocation override wins for `consumer_2` only.
+    replay_pipeline_with_two_invocations.replay(
+        pipeline_run=original_run.id,
+        input_overrides={"expected_consumer_input": 42},
+        skip={"producer", "producer_2"},
+        step_default_input_overrides={consumer_name: {"input_": 42}},
+        step_input_overrides={"consumer_2": {"input_": 42}},
     )
 
 

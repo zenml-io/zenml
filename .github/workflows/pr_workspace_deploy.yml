@@ -74,7 +74,7 @@ jobs:
         env:
           GITHUB_EVENT_INPUTS_BRANCH: ${{ github.event.inputs.branch }}
       - name: Checkout repository with correct branch
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
           ref: ${{ steps.determine-branch.outputs.branch }}
           fetch-depth: 0
@@ -145,7 +145,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
           ref: ${{ needs.set-branch-info.outputs.original_branch }}
 
@@ -173,11 +173,11 @@ jobs:
       ZENML_VERSION: ${{ needs.set-branch-info.outputs.zenml_version }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
           ref: ${{ needs.set-branch-info.outputs.original_branch }}
       - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
         with:
           python-version: '3.11'
       - name: Install dependencies

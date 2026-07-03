@@ -41,7 +41,13 @@ from zenml.enums import (
     TriggerType,
 )
 from zenml.models.v2.base.base import BaseUpdate
-from zenml.models.v2.base.filter import AnyQuery, BaseFilter
+from zenml.models.v2.base.filter import (
+    AnyQuery,
+    BaseFilter,
+    DatetimeFilterOption,
+    EnumFilterOption,
+    StringFilterOption,
+)
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
     ProjectScopedRequest,
@@ -62,6 +68,7 @@ class TriggerDispatchStatusCode(StrEnum):
     SUCCESS = "SUCCESS"
     SKIPPED_CONCURRENCY = "SKIPPED_CONCURRENCY"
     SKIPPED_MAX_RUNS = "SKIPPED_MAX_RUNS"
+    SKIPPED_TRIGGER_CYCLE = "SKIPPED_TRIGGER_CYCLE"
     ERROR = "ERROR"
 
 
@@ -88,6 +95,10 @@ class TriggerSnapshotDispatchState(BaseModel):
     last_status_at: datetime | None = Field(
         default=None,
         description="Timestamp of the latest recorded status transition.",
+    )
+    last_status_details: dict[str, Any] | None = Field(
+        default=None,
+        description="Structured details for the latest dispatch status.",
     )
     last_error_message: str | None = Field(
         default=None,
@@ -215,6 +226,7 @@ class TriggerSnapshotDispatchState(BaseModel):
 
         self.last_status = new_state.last_status
         self.last_status_at = new_state.last_status_at or utc_now()
+        self.last_status_details = new_state.last_status_details
 
     def clear_error_details(self) -> None:
         """Clear stored error details while keeping the last status."""
@@ -358,8 +370,13 @@ class UnScopedTriggerFilter(BaseFilter):
         "is_archived",
         "type",
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[list[str]] = [
+        *BaseFilter.API_SINGLE_INPUT_PARAMS,
+        "is_archived",
+        "active",
+    ]
 
-    name: str | None = Field(
+    name: StringFilterOption = Field(
         default=None,
         description="The name of the trigger.",
     )
@@ -374,22 +391,22 @@ class UnScopedTriggerFilter(BaseFilter):
             "a global scope filter independently of logical_operator."
         ),
     )
-    flavor: TriggerFlavor | str | None = Field(
+    flavor: EnumFilterOption[TriggerFlavor] = Field(
         default=None,
         description="The trigger flavor.",
         union_mode="left_to_right",
     )
-    type: TriggerType | str | None = Field(
+    type: EnumFilterOption[TriggerType] = Field(
         default=None,
         description="The trigger type.",
         union_mode="left_to_right",
     )
-    next_occurrence: datetime | str | None = Field(
+    next_occurrence: DatetimeFilterOption = Field(
         default=None,
         description="The next occurrence of the trigger (applicable only for schedules).",
         union_mode="left_to_right",
     )
-    concurrency: TriggerRunConcurrency | None = Field(
+    concurrency: EnumFilterOption[TriggerRunConcurrency] = Field(
         default=None, description="The trigger concurrency."
     )
 
@@ -407,12 +424,19 @@ class UnScopedTriggerFilter(BaseFilter):
         Returns:
             The query with filter applied.
         """
+        from sqlmodel import col
+
         from zenml.zen_stores.schemas import TriggerSchema
 
         query = super().apply_filter(query=query, table=table)
         query = query.where(TriggerSchema.is_archived == self.is_archived)
+
         if self.type is not None:
-            query = query.where(TriggerSchema.type == self.type)
+            type_checks = (
+                self.type if isinstance(self.type, list) else [self.type]
+            )
+            query = query.where(col(TriggerSchema.type).in_(type_checks))
+
         return query
 
 
@@ -425,19 +449,23 @@ class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
         "pipeline_id",
         "snapshot_id",
     ]
-
     CLI_EXCLUDE_FIELDS: ClassVar[list[str]] = [
+        *UnScopedTriggerFilter.CLI_EXCLUDE_FIELDS,
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         "type",
         "flavor",
         "next_occurrence",
     ]
+    API_SINGLE_INPUT_PARAMS: ClassVar[list[str]] = [
+        *UnScopedTriggerFilter.API_SINGLE_INPUT_PARAMS,
+        *ProjectScopedFilter.API_SINGLE_INPUT_PARAMS,
+    ]
 
-    pipeline_id: str | None = Field(
+    pipeline_id: StringFilterOption = Field(
         default=None,
         description="Filter triggers by pipeline ID (triggers that are attached to this pipeline's snapshots)",
     )
-    snapshot_id: str | None = Field(
+    snapshot_id: StringFilterOption = Field(
         default=None,
         description="Filter triggers by snapshot ID (triggers that are attached to this snapshot)",
     )
@@ -463,6 +491,8 @@ class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
         Returns:
             The query with filter applied.
         """
+        from sqlmodel import col
+
         from zenml.zen_stores.schemas import (
             PipelineSnapshotSchema,
             TriggerSchema,
@@ -481,13 +511,23 @@ class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
             )
 
             if self.pipeline_id is not None:
+                pipeline_ids = (
+                    self.pipeline_id
+                    if isinstance(self.pipeline_id, list)
+                    else [self.pipeline_id]
+                )
                 query = query.where(
-                    PipelineSnapshotSchema.pipeline_id == self.pipeline_id
+                    col(PipelineSnapshotSchema.pipeline_id).in_(pipeline_ids)
                 )
 
             if self.snapshot_id is not None:
+                snapshot_ids = (
+                    self.snapshot_id
+                    if isinstance(self.snapshot_id, list)
+                    else [self.snapshot_id]
+                )
                 query = query.where(
-                    TriggerSnapshotSchema.snapshot_id == self.snapshot_id
+                    col(TriggerSnapshotSchema.snapshot_id).in_(snapshot_ids)
                 )
 
         return query
@@ -790,6 +830,17 @@ class TriggerResponse(
         return self.get_resources().executable_snapshots
 
     @property
+    def snapshot_dispatch_states(
+        self,
+    ) -> dict[UUID, TriggerSnapshotDispatchState]:
+        """Get the latest dispatch state for each attached snapshot.
+
+        Returns:
+            Dispatch states keyed by snapshot ID.
+        """
+        return self.get_resources().snapshot_dispatch_states
+
+    @property
     def latest_run(self) -> Optional["PipelineRunResponse"]:
         """Implements the 'latest_run' property.
 
@@ -1031,6 +1082,7 @@ class TriggerExecutionInfo(BaseModel):
     """Class representing a trigger execution information."""
 
     upstream_run_id: UUID | None = None
+    upstream_pipeline_ids: list[UUID] = Field(default_factory=list)
 
 
 TRIGGER_UPDATE_TYPE_UNION: TypeAlias = Annotated[

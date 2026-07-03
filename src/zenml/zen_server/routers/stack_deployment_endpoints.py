@@ -14,9 +14,10 @@
 """Endpoint definitions for stack deployments."""
 
 import datetime
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import APIRouter, Request, Security
+from pydantic import BaseModel
 
 from zenml.constants import (
     API,
@@ -37,7 +38,11 @@ from zenml.stack_deployments.utils import get_stack_deployment_class
 from zenml.zen_server.auth import AuthContext, authorize, generate_access_token
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.models import Action, ResourceType
-from zenml.zen_server.rbac.utils import verify_permission
+from zenml.zen_server.rbac.utils import (
+    batch_verify_permissions_for_models,
+    dehydrate_response_model,
+    verify_permission,
+)
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     server_config,
@@ -162,7 +167,7 @@ def get_deployed_stack(
         was not found.
     """
     stack_deployment_class = get_stack_deployment_class(provider)
-    return stack_deployment_class(
+    deployed_stack = stack_deployment_class(
         terraform=terraform,
         stack_name=stack_name,
         location=location,
@@ -170,3 +175,14 @@ def get_deployed_stack(
         zenml_server_url="",
         zenml_server_api_token="",
     ).get_stack(date_start=date_start)
+
+    if deployed_stack:
+        rbac_read_checks: List[BaseModel] = [deployed_stack.stack]
+        if deployed_stack.service_connector:
+            rbac_read_checks.append(deployed_stack.service_connector)
+        batch_verify_permissions_for_models(
+            models=rbac_read_checks, action=Action.READ
+        )
+        deployed_stack = dehydrate_response_model(deployed_stack)
+
+    return deployed_stack

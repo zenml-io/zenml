@@ -58,6 +58,9 @@ from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_server.feature_gate.feature_gate_interface import (
     FeatureGateInterface,
 )
+from zenml.zen_server.pipeline_execution.snapshot_run_dispatcher import (
+    SnapshotRunDispatcher,
+)
 from zenml.zen_server.pipeline_execution.workload_manager_interface import (
     WorkloadManagerInterface,
 )
@@ -73,6 +76,7 @@ from zenml.zen_stores.sql_zen_store import SqlZenStore
 if TYPE_CHECKING:
     from fastapi import Request
 
+    from zenml.zen_server.artifact_store_cache import ArtifactStoreCache
     from zenml.zen_server.auth import AuthContext
     from zenml.zen_server.pipeline_execution.utils import (
         BoundedThreadPoolExecutor,
@@ -94,10 +98,12 @@ _feature_gate: Optional[FeatureGateInterface] = None
 _workload_manager: Optional[WorkloadManagerInterface] = None
 _resource_pool_store: Optional[ResourcePoolsSQLStoreInterface] = None
 _snapshot_executor: Optional["BoundedThreadPoolExecutor"] = None
+_snapshot_run_dispatcher: Optional[SnapshotRunDispatcher] = None
 _request_manager: Optional[RequestManager] = None
 _stream_broker: Optional[StreamBroker] = None
 _stream_broadcaster: Optional[StreamBroadcaster] = None
 _stream_end_handler: Optional["StreamEndEventHandler"] = None
+_artifact_store_cache: Optional["ArtifactStoreCache"] = None
 _auth_context: ContextVar[Optional["AuthContext"]] = ContextVar(
     "auth_context", default=None
 )
@@ -411,6 +417,65 @@ def initialize_snapshot_executor() -> None:
     )
 
 
+def snapshot_run_dispatcher() -> SnapshotRunDispatcher:
+    """Return the initialized snapshot run dispatcher.
+
+    Returns:
+        The snapshot run dispatcher.
+
+    Raises:
+        RuntimeError: If the dispatcher is not initialized.
+    """
+    if _snapshot_run_dispatcher is None:
+        raise RuntimeError("Snapshot run dispatcher not initialized")
+    return _snapshot_run_dispatcher
+
+
+async def initialize_snapshot_run_dispatcher() -> None:
+    """Initialize and start the configured snapshot run dispatcher.
+
+    Raises:
+        RuntimeError: If the configured implementation cannot be initialized.
+    """
+    global _snapshot_run_dispatcher
+
+    from zenml.zen_server.pipeline_execution.snapshot_run_dispatcher import (
+        LocalSnapshotRunDispatcher,
+    )
+
+    source = server_config().snapshot_run_dispatcher_implementation_source
+    try:
+        if source:
+            from zenml.utils import source_utils
+
+            dispatcher_class: Type[SnapshotRunDispatcher] = (
+                source_utils.load_and_validate_class(
+                    source=source, expected_class=SnapshotRunDispatcher
+                )
+            )
+            dispatcher = dispatcher_class()
+        else:
+            dispatcher = LocalSnapshotRunDispatcher()
+        await dispatcher.start()
+    except Exception as exc:
+        _snapshot_run_dispatcher = None
+        raise RuntimeError(
+            f"Could not initialize snapshot run dispatcher {source or 'local'}: {exc}"
+        ) from exc
+
+    _snapshot_run_dispatcher = dispatcher
+
+
+async def shutdown_snapshot_run_dispatcher() -> None:
+    """Close the initialized snapshot run dispatcher."""
+    global _snapshot_run_dispatcher
+    if _snapshot_run_dispatcher is None:
+        return
+    dispatcher = _snapshot_run_dispatcher
+    _snapshot_run_dispatcher = None
+    await dispatcher.close()
+
+
 def initialize_zen_store() -> None:
     """Initialize the ZenML Store.
 
@@ -479,6 +544,37 @@ async def cleanup_request_manager() -> None:
     if _request_manager is not None:
         await _request_manager.shutdown()
         _request_manager = None
+
+
+def artifact_store_cache() -> "ArtifactStoreCache":
+    """Return the artifact store cache.
+
+    Returns:
+        The artifact store cache.
+
+    Raises:
+        RuntimeError: If the artifact store cache is not initialized.
+    """
+    global _artifact_store_cache
+    if _artifact_store_cache is None:
+        raise RuntimeError("Artifact store cache not initialized")
+    return _artifact_store_cache
+
+
+def initialize_artifact_store_cache() -> None:
+    """Initialize the artifact store cache."""
+    global _artifact_store_cache
+    from zenml.zen_server.artifact_store_cache import ArtifactStoreCache
+
+    _artifact_store_cache = ArtifactStoreCache()
+
+
+def cleanup_artifact_store_cache() -> None:
+    """Cleanup the artifact store cache."""
+    global _artifact_store_cache
+    if _artifact_store_cache is not None:
+        _artifact_store_cache.clear()
+        _artifact_store_cache = None
 
 
 def handle_endpoint_errors(
@@ -652,9 +748,10 @@ def make_dependable(cls: Type[BaseModel]) -> Callable[..., Any]:
             raise HTTPException(422, detail=detail)
 
     params = {v.name: v for v in inspect.signature(cls).parameters.values()}
-    query_params = getattr(cls, "API_MULTI_INPUT_PARAMS", [])
-    for qp in query_params:
-        if qp in params:
+    single_input_params = getattr(cls, "API_SINGLE_INPUT_PARAMS", [])
+
+    for qp in params.keys():
+        if qp not in single_input_params:
             params[qp] = inspect.Parameter(
                 name=params[qp].name,
                 default=Query(params[qp].default),
@@ -724,6 +821,25 @@ def verify_admin_status_if_no_rbac(
     return
 
 
+def get_request_path(request: "Request") -> str:
+    """Return the routed request path, immune to Host-header poisoning.
+
+    Security checks must not use ``request.url.path``. Starlette rebuilds
+    ``request.url`` from the (unvalidated) ``Host`` header, so a crafted Host
+    header can make ``request.url.path`` differ from the path the router
+    actually dispatched to (CVE-2026-48710 / GHSA-86qp-5c8j-p5mr). The raw ASGI
+    ``scope["path"]`` is the value routing uses and the Host header cannot
+    influence it, so it is the only safe basis for a path-based decision.
+
+    Args:
+        request: The incoming request.
+
+    Returns:
+        The raw ASGI path that routing dispatched to.
+    """
+    return str(request.scope["path"])
+
+
 def is_user_request(request: "Request") -> bool:
     """Determine if the incoming request is a user request.
 
@@ -749,18 +865,17 @@ def is_user_request(request: "Request") -> bool:
 
     user_prefix = f"{API}{VERSION_1}"
     excluded_user_apis = [INFO]
+    path = get_request_path(request)
     # Check if this is not an excluded endpoint
-    if request.url.path in [
-        user_prefix + suffix for suffix in excluded_user_apis
-    ]:
+    if path in [user_prefix + suffix for suffix in excluded_user_apis]:
         return False
 
     # Check if this is other user request
-    if request.url.path.startswith(user_prefix):
+    if path.startswith(user_prefix):
         return True
 
     # Exclude system paths
-    if any(request.url.path.startswith(path) for path in system_paths):
+    if any(path.startswith(system_path) for system_path in system_paths):
         return False
 
     # Exclude requests with specific headers

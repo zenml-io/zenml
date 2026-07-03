@@ -16,10 +16,21 @@
 import logging
 import os
 import threading
+from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import datetime
 from types import TracebackType
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Type,
+    Union,
+    cast,
+)
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -126,7 +137,7 @@ class LoggingContext(context_utils.BaseContext):
             **metadata: Additional metadata to attach to the log entry.
         """
         self.log_model = log_model
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self._disabled = False
         self._log_store = Client().active_stack.log_store
         self._metadata = metadata
@@ -144,38 +155,39 @@ class LoggingContext(context_utils.BaseContext):
         """
         return self._name
 
+    @contextmanager
+    def disabled(self) -> Iterator[None]:
+        """Temporarily stop this context from accepting dispatched records."""
+        previous = self._disabled
+        self._disabled = True
+        try:
+            yield
+        finally:
+            self._disabled = previous
+
     @classmethod
-    def emit(
+    def dispatch(
         cls,
         record: logging.LogRecord,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
-        """Emit a log record using the active logging context.
+        """Route a log record to the active logging context.
 
-        This class method is called by stdout/stderr wrappers and logging
-        handlers to route logs to the active log store.
+        Called by stdout/stderr wrappers and logging handlers to route
+        records to whatever context is currently on the stack. Side-
+        channel emitters (where the caller knows the target source)
+        should call `emit(record, metadata)` on a specific
+        `LoggingContext` instead.
 
         Args:
-            record: The log record to emit.
+            record: The log record to dispatch.
             metadata: Additional metadata to attach to the log entry.
         """
-        if context := LoggingContext.get():
-            if context._disabled:
-                return
-            context._disabled = True
-            try:
-                message = record.getMessage()
-                if message and message.strip():
-                    if context._origin:
-                        context._log_store.emit(
-                            origin=context._origin,
-                            record=record,
-                            metadata=metadata,
-                        )
-            except Exception:
-                logger.debug("Failed to emit log record", exc_info=True)
-            finally:
-                context._disabled = False
+        context = LoggingContext.get()
+        if context is None or context._disabled:
+            return
+        with context.disabled():
+            context.emit(record, metadata)
 
     def update(
         self,
@@ -219,6 +231,50 @@ class LoggingContext(context_utils.BaseContext):
             logs_id=self.log_model.id, logs_update=log_update
         )
 
+    def begin(self) -> None:
+        """Register the origin."""
+        with self._lock:
+            if self._origin is not None:
+                return
+            self._origin = self._log_store.register_origin(
+                name=self.name,
+                log_model=self.log_model,
+                metadata=self._metadata,
+            )
+
+    def end(self) -> None:
+        """Deregister the origin."""
+        with self._lock:
+            if self._origin is not None:
+                self._log_store.deregister_origin(
+                    self._origin, blocking=self._block_on_exit
+                )
+                self._origin = None
+
+    def emit(
+        self,
+        record: logging.LogRecord,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Emit a record to this context's origin.
+
+        Args:
+            record: The log record to emit.
+            metadata: Additional metadata to attach to the log entry.
+        """
+        if self._origin is None:
+            return
+        message = record.getMessage()
+        if message and message.strip():
+            try:
+                self._log_store.emit(
+                    origin=self._origin,
+                    record=record,
+                    metadata=metadata,
+                )
+            except Exception:
+                logger.debug("Failed to emit log record", exc_info=True)
+
     def __enter__(self) -> "LoggingContext":
         """Enter the context and set as active.
 
@@ -237,14 +293,11 @@ class LoggingContext(context_utils.BaseContext):
                 )
             )
             try:
-                self._origin = self._log_store.register_origin(
-                    name=self.name,
-                    log_model=self.log_model,
-                    metadata=self._metadata,
-                )
+                self.begin()
             except Exception:
-                step_names_in_console.reset(self._step_names_token)
-                self._step_names_token = None
+                if self._step_names_token is not None:
+                    step_names_in_console.reset(self._step_names_token)
+                    self._step_names_token = None
                 super().__exit__(None, None, None)
                 raise
 
@@ -263,30 +316,37 @@ class LoggingContext(context_utils.BaseContext):
             exc_val: The instance of the exception.
             exc_tb: The traceback of the exception.
         """
-        if exc_type is not None:
-            LoggingContext.emit(
-                logging.LogRecord(
-                    name="",
-                    level=logging.ERROR,
-                    msg="An exception has occurred.",
-                    args=(),
-                    exc_info=(exc_type, exc_val, exc_tb) if exc_val else None,
-                    func=None,
-                    pathname="",
-                    lineno=0,
-                ),
-                metadata={"zenml.event.type": "exception"},
-            )
+        if exc_type is not None and not self._disabled:
+            with self.disabled():
+                self.emit(
+                    logging.LogRecord(
+                        name="",
+                        level=logging.ERROR,
+                        msg="An exception has occurred.",
+                        args=(),
+                        exc_info=(exc_type, exc_val, exc_tb)
+                        if exc_val
+                        else None,
+                        func=None,
+                        pathname="",
+                        lineno=0,
+                    ),
+                    metadata={"zenml.event.type": "exception"},
+                )
 
-        with self._lock:
+        # Disable the context before shutting down. This is needed to avoid
+        # deadlocks that would happen if the shutdown process emits logs to
+        # the active logging context. This is for example the case for asy
+        # fsspec based artifact stores, which copy the context vars of the
+        # thread they're called from and then emit debug logs.
+        with self.disabled(), self._lock:
             try:
-                super().__exit__(exc_type, exc_val, exc_tb)
-                if self._origin:
-                    self._log_store.deregister_origin(
-                        self._origin, blocking=self._block_on_exit
-                    )
-                    self._origin = None
+                self.end()
             finally:
+                # Only once we've deregistered the origin and flushed the logs
+                # do we restore the previous context. Otherwise, logs happening
+                # during the flush would end up in the parent context.
+                super().__exit__(exc_type, exc_val, exc_tb)
                 if self._step_names_token is not None:
                     step_names_in_console.reset(self._step_names_token)
                     self._step_names_token = None
@@ -524,8 +584,6 @@ def fetch_logs(
             "environment. Use the log store directly instead."
         )
 
-    log_store: Optional[BaseLogStore] = None
-
     if logs.log_store_id:
         try:
             log_store_model = verify_permissions_and_get_entity(
@@ -552,8 +610,14 @@ def fetch_logs(
                 f"Log store '{log_store_model.name}' could not be "
                 "instantiated."
             )
-    elif logs.artifact_store_id:
-        from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+
+        try:
+            return log_store.fetch(logs_model=logs, limit=limit)
+        finally:
+            log_store.cleanup()
+
+    if logs.artifact_store_id:
+        from zenml.artifacts.utils import instantiate_artifact_store
         from zenml.log_stores.artifact.artifact_log_store import (
             ArtifactLogStore,
         )
@@ -571,21 +635,14 @@ def fetch_logs(
             raise DoesNotExistException(
                 f"Stack component '{logs.artifact_store_id}' is not an artifact store."
             )
-        artifact_store = cast(
-            "BaseArtifactStore",
-            StackComponent.from_model(artifact_store_model),
-        )
+
+        artifact_store = instantiate_artifact_store(artifact_store_model)
         log_store = ArtifactLogStore.from_artifact_store(
             artifact_store=artifact_store
         )
-
-    else:
-        return []
-
-    try:
         return log_store.fetch(logs_model=logs, limit=limit)
-    finally:
-        log_store.cleanup()
+
+    return []
 
 
 def setup_logging_context(

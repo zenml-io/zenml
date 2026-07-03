@@ -18,7 +18,7 @@ from uuid import UUID
 
 from pydantic import ValidationError
 from sqlalchemy import TEXT, Column, UniqueConstraint
-from sqlalchemy.orm import joinedload, object_session
+from sqlalchemy.orm import joinedload, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, asc, col, desc, select
 
@@ -48,7 +48,10 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
-from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.schema_utils import (
+    build_foreign_key_field,
+    build_index,
+)
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import (
     RunMetadataInterface,
@@ -280,6 +283,13 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
             "artifact_id",
             name="unique_version_for_artifact_id",
         ),
+        build_index(
+            table_name=__tablename__,
+            column_names=[
+                "artifact_id",
+                "version_number",
+            ],
+        ),
     )
 
     # Fields
@@ -390,21 +400,23 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         Returns:
             A list of query options.
         """
-        options = []
+        options = [
+            selectinload(jl_arg(ArtifactVersionSchema.artifact)),
+        ]
 
-        # if include_metadata:
-        #     options.extend(
-        #         [
-        #             joinedload(jl_arg(ArtifactVersionSchema.visualizations)),
-        #             joinedload(jl_arg(ArtifactVersionSchema.run_metadata)),
-        #         ]
-        #     )
+        if include_metadata:
+            options.extend(
+                [
+                    selectinload(jl_arg(ArtifactVersionSchema.run_metadata)),
+                ]
+            )
 
         if include_resources:
             options.extend(
                 [
-                    joinedload(jl_arg(ArtifactVersionSchema.user)),
-                    # joinedload(jl_arg(ArtifactVersionSchema.tags)),
+                    selectinload(jl_arg(ArtifactVersionSchema.user)),
+                    selectinload(jl_arg(ArtifactVersionSchema.tags)),
+                    selectinload(jl_arg(ArtifactVersionSchema.visualizations)),
                 ]
             )
 

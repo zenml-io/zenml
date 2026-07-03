@@ -238,6 +238,7 @@ class DockerContainerEngine(ContainerEngine):
         username: str,
         password: str,
         registry: str,
+        **kwargs: Any,
     ) -> None:
         """Authenticate the Docker client with the container registry credentials.
 
@@ -245,13 +246,15 @@ class DockerContainerEngine(ContainerEngine):
             username: Registry username.
             password: Registry password or token.
             registry: Registry host or URI.
+            **kwargs: Additional keyword arguments.
         """
-        self.login_client(
+        self.login_cli(
             username=username,
             password=password,
             registry=registry,
         )
-        self.login_cli(
+
+        self.login_client(
             username=username,
             password=password,
             registry=registry,
@@ -278,7 +281,7 @@ class DockerContainerEngine(ContainerEngine):
             None
         """
         if container_registry:
-            self.login_registry(container_registry)
+            self.login_registry(container_registry, **kwargs)
 
         if kwargs.get("use_subprocess", False):
             self._build_cli(image_name, build_context, docker_build_options)
@@ -365,7 +368,6 @@ class DockerContainerEngine(ContainerEngine):
         ):
             self.login_registry(container_registry)
             container_registry.prepare_image_push(image_name)
-
         logger.info("Pushing Docker image `%s`.", image_name)
         output_stream = self.client.images.push(image_name, stream=True)
         aux_info = self.process_docker_stream(output_stream)

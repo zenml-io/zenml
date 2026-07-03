@@ -162,6 +162,13 @@ class BaseStepOperator(StackComponent, ABC):
             f"the {self.__class__.__name__} step operator."
         )
 
+    def cleanup_step_submission(self, step_run: "StepRunResponse") -> None:
+        """Clean up after a submitted step run has finished.
+
+        Args:
+            step_run: The finished step run.
+        """
+
 
 class BaseStepOperatorFlavor(Flavor):
     """Base class for all ZenML step operator flavors."""

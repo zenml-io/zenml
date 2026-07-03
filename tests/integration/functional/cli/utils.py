@@ -16,6 +16,7 @@ from contextlib import contextmanager
 from typing import Generator, Optional, Tuple
 
 import zenml_cli
+from tests.cli_runner_utils import cli_runner as _shared_cli_runner
 from tests.harness.harness import TestHarness
 from zenml.cli import cli
 from zenml.cli.utils import (
@@ -35,6 +36,8 @@ SAMPLE_CUSTOM_ARGUMENTS = [
     "axl",
     '--best_cat="aria"',
 ]
+
+cli_runner = _shared_cli_runner
 
 
 # ----- #

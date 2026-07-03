@@ -84,6 +84,7 @@ from pydantic import (
 )
 from sqlalchemy import (
     QueuePool,
+    Table,
     event,
     func,
     update,
@@ -241,6 +242,9 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    HookInvocationFilter,
+    HookInvocationRequest,
+    HookInvocationResponse,
     LogsRequest,
     LogsResponse,
     LogsUpdate,
@@ -409,6 +413,8 @@ from zenml.zen_stores.schemas import (
     CuratedVisualizationSchema,
     DeploymentSchema,
     FlavorSchema,
+    HookInvocationOutputArtifactSchema,
+    HookInvocationSchema,
     ModelSchema,
     ModelVersionArtifactSchema,
     ModelVersionPipelineRunSchema,
@@ -1225,6 +1231,26 @@ class SqlZenStore(BaseZenStore):
                         properties=analytics_metadata,
                     )
 
+    @staticmethod
+    def _query_requires_distinct(
+        query: Union[Select[Any], SelectOfScalar[Any]],
+    ) -> bool:
+        """Whether the query might require a DISTINCT clause.
+
+        We treat this in a pretty conservative way. Any query that isn't a pure
+        select(...) without any potential joins requires a DISTINCT clause.
+
+        Args:
+            query: The query to inspect.
+
+        Returns:
+            Whether the query might require a DISTINCT clause.
+        """
+        from_clauses = query.get_final_froms()
+        return not (
+            len(from_clauses) == 1 and isinstance(from_clauses[0], Table)
+        )
+
     @classmethod
     def filter_and_paginate(
         cls,
@@ -1247,6 +1273,7 @@ class SqlZenStore(BaseZenStore):
         ] = None,
         hydrate: bool = False,
         apply_query_options_from_schema: bool = False,
+        query_options_kwargs: Optional[Dict[str, Any]] = None,
     ) -> Page[AnyResponse]:
         """Given a query, return a Page instance with a list of filtered Models.
 
@@ -1269,6 +1296,8 @@ class SqlZenStore(BaseZenStore):
                 by including metadata fields in the response.
             apply_query_options_from_schema: Flag deciding whether to apply
                 query options defined on the schema.
+            query_options_kwargs: Extra keyword arguments forwarded to the
+                schema's `get_query_options`.
 
         Returns:
             The Domain Model representation of the DB resource
@@ -1279,23 +1308,28 @@ class SqlZenStore(BaseZenStore):
         """
         query = filter_model.apply_filter(query=query, table=table)
 
+        query_requires_distinct = cls._query_requires_distinct(query)
+
         # Get the total amount of items in the database for a given query.
         # Sorting is not applied here since it's irrelevant for counting.
         custom_fetch_result: Optional[Sequence[Any]] = None
         if custom_fetch:
+            fetch_query = (
+                query.distinct() if query_requires_distinct else query
+            )
             custom_fetch_result = custom_fetch(
-                session, query.distinct(), filter_model
+                session, fetch_query, filter_model
             )
             total = len(custom_fetch_result)
         else:
-            # For counting, we only need distinct IDs. Selecting only the ID
-            # column dramatically improves performance when the query involves
-            # JOINs and many columns.
-            count_query = (
-                query.with_only_columns(col(table.id))
-                .distinct()
-                .options(noload("*"))
+            # For counting, we only need the IDs. Selecting only the ID column
+            # dramatically improves performance when the query involves JOINs
+            # and many columns.
+            count_query = query.with_only_columns(col(table.id)).options(
+                noload("*")
             )
+            if query_requires_distinct:
+                count_query = count_query.distinct()
             result = session.scalar(
                 select(func.count()).select_from(count_query.subquery())
             )
@@ -1329,16 +1363,22 @@ class SqlZenStore(BaseZenStore):
                 filter_model.offset : filter_model.offset + filter_model.size
             ]
         else:
-            # Apply sorting and distinct for the data fetch
-            query = filter_model.apply_sorting(
-                query=query, table=table
-            ).distinct()
+            query = filter_model.apply_sorting(query=query, table=table)
 
             query_options = table.get_query_options(
-                include_metadata=hydrate, include_resources=True
+                include_metadata=hydrate,
+                include_resources=True,
+                many=True,
+                **(query_options_kwargs or {}),
             )
             if apply_query_options_from_schema and query_options:
                 query = query.options(*query_options)
+
+            # Check for DISTINCT after sorting and query options are applied so
+            # the check sees every join in the final query, including the ones
+            # added by sorting on a related column and by eager loaders.
+            if cls._query_requires_distinct(query):
+                query = query.distinct()
 
             query_result = session.exec(
                 query.limit(filter_model.size).offset(filter_model.offset)
@@ -2381,17 +2421,40 @@ class SqlZenStore(BaseZenStore):
 
         return api_transaction_schema
 
-    def cleanup_expired_api_transactions(self) -> None:
-        """Delete completed API transactions that have expired."""
+    def cleanup_expired_api_transactions(
+        self,
+        batch_size: int,
+    ) -> int:
+        """Delete a bounded batch of completed API transactions that expired."""
         with Session(self.engine) as session:
-            session.execute(
-                delete(ApiTransactionSchema).where(
+            expired_transaction_ids = (
+                select(ApiTransactionSchema.id)
+                .where(
                     col(ApiTransactionSchema.completed),
                     col(ApiTransactionSchema.expired) < utc_now(),
+                )
+                .order_by(
+                    col(ApiTransactionSchema.expired),
+                    col(ApiTransactionSchema.id),
+                )
+                .limit(batch_size)
+                .subquery()
+            )
+
+            # Keep cleanup as a short parent-table DELETE. The existing
+            # ON DELETE CASCADE foreign key removes result rows in the same
+            # statement, and avoiding SELECT FOR UPDATE keeps this maintenance
+            # task from competing with request-path transaction inserts.
+            result = session.execute(
+                delete(ApiTransactionSchema).where(
+                    col(ApiTransactionSchema.id).in_(
+                        select(expired_transaction_ids.c.id)
+                    )
                 )
             )
 
             session.commit()
+            return max(result.rowcount or 0, 0)  # type: ignore[attr-defined]
 
     def get_or_create_api_transaction(
         self, api_transaction: ApiTransactionRequest
@@ -2404,30 +2467,43 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The API transaction and a boolean indicating whether the transaction
             was created.
+
+        Raises:
+            KeyError: If the API transaction cannot be retrieved after a
+                concurrent create conflict.
         """
         with Session(self.engine) as session:
             self._set_request_user_id(
                 request_model=api_transaction, session=session
             )
 
-            api_transaction_schema = ApiTransactionSchema.from_request(
-                api_transaction
-            )
-            session.add(api_transaction_schema)
             created = False
-            try:
-                session.commit()
-                created = True
-            except IntegrityError:
-                # We have to rollback the failed session first in order to
-                # continue using it
-                session.rollback()
-                api_transaction_schema = self._get_api_transaction(
-                    api_transaction_id=api_transaction_schema.id,
-                    method=api_transaction.method,
-                    url=api_transaction.url,
-                    session=session,
+            for retry in range(2):
+                api_transaction_schema = ApiTransactionSchema.from_request(
+                    api_transaction
                 )
+                session.add(api_transaction_schema)
+                try:
+                    session.commit()
+                    created = True
+                    break
+                except IntegrityError:
+                    # We have to rollback the failed session first in order to
+                    # continue using it.
+                    session.rollback()
+                    try:
+                        api_transaction_schema = self._get_api_transaction(
+                            api_transaction_id=api_transaction_schema.id,
+                            method=api_transaction.method,
+                            url=api_transaction.url,
+                            session=session,
+                        )
+                    except KeyError:
+                        if retry == 0:
+                            continue
+                        raise
+
+                    break
 
             return (
                 api_transaction_schema.to_model(
@@ -3184,6 +3260,7 @@ class SqlZenStore(BaseZenStore):
                 table=ArtifactVersionSchema,
                 filter_model=artifact_version_filter_model,
                 hydrate=hydrate,
+                apply_query_options_from_schema=True,
             )
 
     def update_artifact_version(
@@ -3280,6 +3357,11 @@ class SqlZenStore(BaseZenStore):
                             ),
                             col(ArtifactVersionSchema.id).notin_(
                                 select(PipelineRunOutputSchema.artifact_id)
+                            ),
+                            col(ArtifactVersionSchema.id).notin_(
+                                select(
+                                    HookInvocationOutputArtifactSchema.artifact_version_id
+                                )
                             ),
                             col(ArtifactVersionSchema.project_id)
                             == project_id,
@@ -5295,6 +5377,7 @@ class SqlZenStore(BaseZenStore):
                 table=PipelineSnapshotSchema,
                 filter_model=snapshot_filter_model,
                 hydrate=hydrate,
+                apply_query_options_from_schema=True,
             )
 
     def update_snapshot(
@@ -6137,12 +6220,15 @@ class SqlZenStore(BaseZenStore):
         """
         helper = DAGGeneratorHelper()
         with Session(self.engine) as session:
-            # TODO: better loads for dynamic/static pipelines
             run = self._get_schema_by_id(
                 resource_id=pipeline_run_id,
                 schema_class=PipelineRunSchema,
                 session=session,
                 query_options=[
+                    load_only(
+                        jl_arg(PipelineRunSchema.status),
+                        jl_arg(PipelineRunSchema.start_time),
+                    ),
                     selectinload(jl_arg(PipelineRunSchema.snapshot)).load_only(
                         jl_arg(PipelineSnapshotSchema.pipeline_configuration),
                         jl_arg(PipelineSnapshotSchema.is_dynamic),
@@ -6154,10 +6240,34 @@ class SqlZenStore(BaseZenStore):
                     ),
                     selectinload(
                         jl_arg(PipelineRunSchema.step_runs)
-                    ).selectinload(jl_arg(StepRunSchema.input_artifacts)),
-                    selectinload(
-                        jl_arg(PipelineRunSchema.step_runs)
-                    ).selectinload(jl_arg(StepRunSchema.output_artifacts)),
+                    ).load_only(
+                        jl_arg(StepRunSchema.name),
+                        jl_arg(StepRunSchema.status),
+                        jl_arg(StepRunSchema.start_time),
+                        jl_arg(StepRunSchema.end_time),
+                    ),
+                    selectinload(jl_arg(PipelineRunSchema.step_runs))
+                    .selectinload(jl_arg(StepRunSchema.input_artifacts))
+                    .joinedload(
+                        jl_arg(StepRunInputArtifactSchema.artifact_version),
+                        innerjoin=True,
+                    )
+                    .load_only(
+                        jl_arg(ArtifactVersionSchema.type),
+                        jl_arg(ArtifactVersionSchema.data_type),
+                        jl_arg(ArtifactVersionSchema.save_type),
+                    ),
+                    selectinload(jl_arg(PipelineRunSchema.step_runs))
+                    .selectinload(jl_arg(StepRunSchema.output_artifacts))
+                    .joinedload(
+                        jl_arg(StepRunOutputArtifactSchema.artifact_version),
+                        innerjoin=True,
+                    )
+                    .load_only(
+                        jl_arg(ArtifactVersionSchema.type),
+                        jl_arg(ArtifactVersionSchema.data_type),
+                        jl_arg(ArtifactVersionSchema.save_type),
+                    ),
                     selectinload(
                         jl_arg(PipelineRunSchema.step_runs)
                     ).selectinload(jl_arg(StepRunSchema.dynamic_config)),
@@ -6226,6 +6336,7 @@ class SqlZenStore(BaseZenStore):
                     name: Step.from_dict(
                         json.loads(step_run.dynamic_config.config),  # type: ignore[union-attr]
                         pipeline_configuration=pipeline_configuration,
+                        exclude_hook_sources=True,
                     )
                     for name, step_run in step_runs.items()
                 }
@@ -6234,6 +6345,7 @@ class SqlZenStore(BaseZenStore):
                     config_table.name: Step.from_dict(
                         json.loads(config_table.config),
                         pipeline_configuration=pipeline_configuration,
+                        exclude_hook_sources=False,
                     )
                     for config_table in snapshot.step_configurations
                 }
@@ -6855,7 +6967,9 @@ class SqlZenStore(BaseZenStore):
                 schema_class=PipelineRunSchema,
                 session=session,
                 query_options=PipelineRunSchema.get_query_options(
-                    include_metadata=hydrate, include_resources=True
+                    include_metadata=hydrate,
+                    include_resources=True,
+                    include_full_metadata=include_full_metadata,
                 ),
             )
             return run.to_model(
@@ -7196,6 +7310,9 @@ class SqlZenStore(BaseZenStore):
                     )
                 ),
                 apply_query_options_from_schema=True,
+                query_options_kwargs={
+                    "include_full_metadata": include_full_metadata
+                },
             )
 
     def update_run(
@@ -9094,6 +9211,39 @@ class SqlZenStore(BaseZenStore):
         if self.backup_secrets_store:
             self.backup_secrets_store.delete_secret_values(secret_id=secret_id)
 
+    def _get_visible_secret_schema(
+        self,
+        secret_name_or_id: Union[str, UUID],
+        session: Session,
+    ) -> SecretSchema:
+        """Get a non-internal secret schema visible to the active user.
+
+        Args:
+            secret_name_or_id: The name or ID of the secret to fetch.
+            session: The database session to use.
+
+        Returns:
+            The secret schema.
+
+        Raises:
+            KeyError: If the secret does not exist, is internal, or is private
+                and not owned by the current user.
+        """
+        secret_schema = self._get_schema_by_name_or_id(
+            secret_name_or_id, schema_class=SecretSchema, session=session
+        )
+        if (
+            secret_schema.internal
+            or secret_schema.private
+            and secret_schema.user.id != self._get_active_user(session).id
+        ):
+            raise KeyError(
+                f"Secret with name or ID {secret_name_or_id} not found "
+                "or is private and not owned by the current user."
+            )
+
+        return secret_schema
+
     def _link_secrets_to_resource(
         self,
         secrets: Optional[Sequence[Union[str, UUID]]],
@@ -9123,8 +9273,8 @@ class SqlZenStore(BaseZenStore):
                     # Not a valid UUID string, proceed normally
                     pass
 
-            secret_schema = self._get_schema_by_name_or_id(
-                secret, schema_class=SecretSchema, session=session
+            secret_schema = self._get_visible_secret_schema(
+                secret, session=session
             )
             resource_type = resource_types[type(resource)]
             secret_resource = SecretResourceSchema(
@@ -9171,8 +9321,8 @@ class SqlZenStore(BaseZenStore):
                     # Not a valid UUID string, proceed normally
                     pass
 
-            secret_schema = self._get_schema_by_name_or_id(
-                secret, schema_class=SecretSchema, session=session
+            secret_schema = self._get_visible_secret_schema(
+                secret, session=session
             )
             resource_type = resource_types[type(resource)]
 
@@ -9275,29 +9425,11 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The secret.
-
-        Raises:
-            KeyError: if the secret doesn't exist.
         """
         with Session(self.engine) as session:
-            secret_in_db = session.exec(
-                select(SecretSchema).where(
-                    SecretSchema.id == secret_id,
-                    # Don't return internal secrets
-                    col(SecretSchema.internal).is_(False),
-                )
-            ).first()
-            if (
-                secret_in_db is None
-                # Private secrets are only accessible to their owner
-                or secret_in_db.private
-                and secret_in_db.user.id != self._get_active_user(session).id
-            ):
-                raise KeyError(
-                    f"Secret with ID {secret_id} not found or is private and "
-                    "not owned by the current user."
-                )
-
+            secret_in_db = self._get_visible_secret_schema(
+                secret_id, session=session
+            )
             secret_model = secret_in_db.to_model(
                 include_metadata=hydrate, include_resources=True
             )
@@ -9311,7 +9443,10 @@ class SqlZenStore(BaseZenStore):
         secret_name_or_id: Union[str, UUID],
         include_secret_values: bool = False,
     ) -> SecretResponse:
-        """Get a secret by name or ID.
+        """Get a non-internal secret by name or ID.
+
+        Private secrets are only accessible to their owner. Internal secrets
+        are not returned by this method.
 
         Args:
             secret_name_or_id: The name or ID of the secret to fetch.
@@ -9322,16 +9457,17 @@ class SqlZenStore(BaseZenStore):
             The secret.
         """
         with Session(self.engine) as session:
-            secret_in_db = self._get_schema_by_name_or_id(
-                secret_name_or_id, schema_class=SecretSchema, session=session
+            secret_in_db = self._get_visible_secret_schema(
+                secret_name_or_id, session=session
             )
             secret_model = secret_in_db.to_model(
                 include_metadata=True, include_resources=True
             )
+            secret_id = secret_in_db.id
 
         if include_secret_values:
             secret_model.set_secrets(
-                self._get_secret_values(secret_id=secret_in_db.id)
+                self._get_secret_values(secret_id=secret_id)
             )
 
         return secret_model
@@ -9400,32 +9536,16 @@ class SqlZenStore(BaseZenStore):
             The updated secret.
 
         Raises:
-            KeyError: if the secret doesn't exist.
             EntityExistsError: If a secret with the same name already exists in
                 the same scope.
             IllegalOperationError: if the secret is private and the current user
                 is not the owner of the secret.
         """
         with Session(self.engine) as session:
-            existing_secret = session.exec(
-                select(SecretSchema).where(
-                    SecretSchema.id == secret_id,
-                    # Don't update internal secrets
-                    col(SecretSchema.internal).is_(False),
-                )
-            ).first()
-
+            existing_secret = self._get_visible_secret_schema(
+                secret_id, session=session
+            )
             active_user = self._get_active_user(session)
-
-            if not existing_secret or (
-                # Private secrets are only accessible to their owner
-                existing_secret.private
-                and existing_secret.user.id != active_user.id
-            ):
-                raise KeyError(
-                    f"Secret with ID {secret_id} not found or is private and "
-                    "not owned by the current user."
-                )
 
             if (
                 secret_update.private is not None
@@ -9506,30 +9626,9 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             secret_id: The id of the secret to delete.
-
-        Raises:
-            KeyError: if the secret doesn't exist.
         """
         with Session(self.engine) as session:
-            existing_secret = session.exec(
-                select(SecretSchema).where(
-                    SecretSchema.id == secret_id,
-                    # Don't delete internal secrets
-                    col(SecretSchema.internal).is_(False),
-                )
-            ).first()
-
-            if not existing_secret or (
-                # Private secrets are only accessible to their owner
-                existing_secret.private
-                and existing_secret.user.id
-                != self._get_active_user(session).id
-            ):
-                raise KeyError(
-                    f"Secret with ID {secret_id} not found or is private and "
-                    "not owned by the current user."
-                )
-
+            self._get_visible_secret_schema(secret_id, session=session)
             self._delete_secret_schema(secret_id=secret_id, session=session)
 
     def backup_secrets(
@@ -11667,8 +11766,9 @@ class SqlZenStore(BaseZenStore):
                         # artifacts we receive at creation time are inputs that
                         # are defined in the step config.
                         input_overrides = set(
-                            run.get_pipeline_configuration().step_input_overrides.get(
-                                step_run.name, {}
+                            run.get_pipeline_configuration().get_invocation_input_overrides(
+                                invocation_id=step_run.name,
+                                step_name=step_config.config.name,
                             )
                         )
                         input_type = self._get_step_run_input_type_from_config(
@@ -11853,6 +11953,181 @@ class SqlZenStore(BaseZenStore):
                 apply_query_options_from_schema=True,
             )
 
+    # -------------------- Hook invocations --------------------
+
+    def create_hook_invocation(
+        self, hook_invocation: HookInvocationRequest
+    ) -> HookInvocationResponse:
+        """Create a hook invocation.
+
+        Args:
+            hook_invocation: The hook invocation to create.
+
+        Returns:
+            The created hook invocation.
+        """
+        with Session(self.engine) as session:
+            self._set_request_user_id(
+                request_model=hook_invocation, session=session
+            )
+
+            # Check that the pipeline run exists.
+            self._get_reference_schema_by_id(
+                resource=hook_invocation,
+                reference_schema=PipelineRunSchema,
+                reference_id=hook_invocation.pipeline_run_id,
+                session=session,
+            )
+            # Check that the step run exists (if set).
+            self._get_reference_schema_by_id(
+                resource=hook_invocation,
+                reference_schema=StepRunSchema,
+                reference_id=hook_invocation.step_run_id,
+                session=session,
+                reference_type="step run",
+            )
+
+            hook_invocation_schema = HookInvocationSchema.from_request(
+                hook_invocation
+            )
+            session.add(hook_invocation_schema)
+            session.flush()
+
+            for (
+                output_name,
+                artifact_version_ids,
+            ) in hook_invocation.outputs.items():
+                for artifact_version_id in artifact_version_ids:
+                    self._set_hook_invocation_output_artifact(
+                        hook_invocation=hook_invocation_schema,
+                        artifact_version_id=artifact_version_id,
+                        name=output_name,
+                        session=session,
+                    )
+
+            if hook_invocation.logs_id is not None:
+                logs_schema = session.get(LogsSchema, hook_invocation.logs_id)
+                if logs_schema is not None:
+                    logs_schema.hook_invocation_id = hook_invocation_schema.id
+                    session.add(logs_schema)
+
+            session.commit()
+            session.refresh(hook_invocation_schema)
+            return hook_invocation_schema.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def get_hook_invocation(
+        self, hook_invocation_id: UUID, hydrate: bool = True
+    ) -> HookInvocationResponse:
+        """Get a hook invocation by ID.
+
+        Args:
+            hook_invocation_id: The ID of the hook invocation to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The hook invocation.
+        """
+        with Session(self.engine) as session:
+            hook_invocation = self._get_schema_by_id(
+                resource_id=hook_invocation_id,
+                schema_class=HookInvocationSchema,
+                session=session,
+                query_options=HookInvocationSchema.get_query_options(
+                    include_metadata=hydrate, include_resources=True
+                ),
+            )
+            return hook_invocation.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
+
+    def list_hook_invocations(
+        self,
+        hook_invocation_filter_model: HookInvocationFilter,
+        hydrate: bool = False,
+    ) -> Page[HookInvocationResponse]:
+        """List all hook invocations matching the given filter criteria.
+
+        Args:
+            hook_invocation_filter_model: All filter parameters including
+                pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all hook invocations matching the filter criteria.
+        """
+        with Session(self.engine) as session:
+            self._set_filter_project_id(
+                filter_model=hook_invocation_filter_model,
+                session=session,
+            )
+            query = select(HookInvocationSchema)
+            return self.filter_and_paginate(
+                session=session,
+                query=query,
+                table=HookInvocationSchema,
+                filter_model=hook_invocation_filter_model,
+                hydrate=hydrate,
+                apply_query_options_from_schema=True,
+            )
+
+    def delete_hook_invocation(self, hook_invocation_id: UUID) -> None:
+        """Delete a hook invocation.
+
+        Args:
+            hook_invocation_id: The ID of the hook invocation to delete.
+        """
+        with Session(self.engine) as session:
+            hook_invocation = self._get_schema_by_id(
+                resource_id=hook_invocation_id,
+                schema_class=HookInvocationSchema,
+                session=session,
+            )
+            # Deleting the hook invocation cascades to its output artifact
+            # links, but leaves the linked artifact versions in place.
+            session.delete(hook_invocation)
+            session.commit()
+
+    def _set_hook_invocation_output_artifact(
+        self,
+        hook_invocation: HookInvocationSchema,
+        artifact_version_id: UUID,
+        name: str,
+        session: Session,
+    ) -> None:
+        """Links an artifact version as an output of a hook invocation.
+
+        Args:
+            hook_invocation: The hook invocation.
+            artifact_version_id: The ID of the artifact version.
+            name: The name of the output in the hook invocation.
+            session: The database session to use.
+        """
+        # Check if the artifact version exists.
+        self._get_reference_schema_by_id(
+            resource=hook_invocation,
+            reference_schema=ArtifactVersionSchema,
+            reference_id=artifact_version_id,
+            session=session,
+            reference_type="output artifact",
+        )
+
+        # No need to check for an existing link. The hook invocation is created
+        # with a fresh ID in the same transaction, so no link can pre-exist, and
+        # the composite primary key prevents duplicates. If we ever allow
+        # updating the outputs of hook invocations, we'll need to add a check
+        # here.
+        session.add(
+            HookInvocationOutputArtifactSchema(
+                hook_invocation_id=hook_invocation.id,
+                artifact_version_id=artifact_version_id,
+                name=name,
+            )
+        )
+
     def update_step_heartbeat(
         self, step_run_id: UUID
     ) -> StepHeartbeatResponse:
@@ -11980,13 +12255,32 @@ class SqlZenStore(BaseZenStore):
                     new_status=step_run_update.status,
                 )
 
-            if existing_step_run.is_retriable and step_run_update.status in {
+            if step_run_update.status in {
                 ExecutionStatus.FAILED,
                 ExecutionStatus.CANCELLED,
             }:
-                # This step will be retried by the orchestrator, so we
-                # set its status accordingly.
-                step_run_update.status = ExecutionStatus.RETRYING
+                can_retry = existing_step_run.is_retriable
+
+                if can_retry:
+                    run_status = ExecutionStatus(
+                        session.exec(
+                            select(PipelineRunSchema.status).where(
+                                PipelineRunSchema.id
+                                == existing_step_run.pipeline_run_id
+                            )
+                        ).one()
+                    )
+                    if run_status in {
+                        ExecutionStatus.STOPPING,
+                        ExecutionStatus.STOPPED,
+                    }:
+                        # The run is stopping, which prevents any step retries.
+                        can_retry = False
+
+                if can_retry:
+                    # This step will be retried by the orchestrator, so we
+                    # set its status accordingly.
+                    step_run_update.status = ExecutionStatus.RETRYING
 
             # If the step is stopping and fails, we need to set its status to stopped.
             if (
@@ -14999,6 +15293,74 @@ class SqlZenStore(BaseZenStore):
 
         return resource_type_to_schema_mapping[resource_type]
 
+    def _get_resources_from_tag_resources(
+        self,
+        tag_resources: List[TagResourceRequest],
+        session: Session,
+    ) -> List[BaseSchema]:
+        """Get resources referenced by tag resource requests in bulk.
+
+        Args:
+            tag_resources: The tag resource requests.
+            session: The database session to use.
+
+        Returns:
+            The resources referenced by the tag resource requests.
+
+        Raises:
+            KeyError: If a referenced resource does not exist.
+        """
+        resource_ids_by_type: Dict[TaggableResourceTypes, Set[UUID]] = (
+            defaultdict(set)
+        )
+        for tag_resource in tag_resources:
+            resource_ids_by_type[tag_resource.resource_type].add(
+                tag_resource.resource_id
+            )
+
+        resources_by_key: Dict[
+            Tuple[TaggableResourceTypes, UUID], BaseSchema
+        ] = {}
+        for resource_type, resource_ids in resource_ids_by_type.items():
+            schema_class = self._get_schema_from_resource_type(resource_type)
+            query = select(schema_class).where(
+                col(schema_class.id).in_(resource_ids)
+            )
+            resources = session.exec(query).all()
+            for resource in resources:
+                resources_by_key[(resource_type, resource.id)] = resource
+
+        resolved_resources: List[BaseSchema] = []
+        for tag_resource in tag_resources:
+            key = (tag_resource.resource_type, tag_resource.resource_id)
+            try:
+                resolved_resources.append(resources_by_key[key])
+            except KeyError:
+                raise KeyError(
+                    f"{tag_resource.resource_type.value} with ID "
+                    f"`{tag_resource.resource_id}` not found."
+                )
+
+        return resolved_resources
+
+    def get_resources_from_tag_resources(
+        self,
+        tag_resources: List[TagResourceRequest],
+    ) -> List[Any]:
+        """Get resource models referenced by tag resource requests in bulk.
+
+        Args:
+            tag_resources: The tag resource requests.
+
+        Returns:
+            The resource models referenced by the tag resource requests.
+        """
+        with Session(self.engine) as session:
+            resources = self._get_resources_from_tag_resources(
+                tag_resources=tag_resources, session=session
+            )
+            return [resource.to_model() for resource in resources]
+
     def _get_tag_schema(
         self,
         tag_name_or_id: Union[str, UUID],
@@ -15746,6 +16108,46 @@ class SqlZenStore(BaseZenStore):
         """
         return self.batch_create_tag_resource(tag_resources=[tag_resource])[0]
 
+    def _batch_create_tag_resource(
+        self,
+        tag_resources: List[TagResourceRequest],
+        resolved_resources: List[BaseSchema],
+        session: Session,
+    ) -> List[TagResourceResponse]:
+        """Create a batch of tag resource relationships.
+
+        Args:
+            tag_resources: The tag resource relationships to be created.
+            resolved_resources: The resources referenced by the tag resource
+                requests.
+            session: The database session to use.
+
+        Returns:
+            The newly created tag resource relationships.
+        """
+        resources: List[
+            Tuple[TagSchema, TaggableResourceTypes, BaseSchema]
+        ] = []
+        for tag_resource, resource in zip(tag_resources, resolved_resources):
+            tag_schema = self._get_tag_schema(
+                tag_name_or_id=tag_resource.tag_id,
+                session=session,
+            )
+            resources.append(
+                (
+                    tag_schema,
+                    tag_resource.resource_type,
+                    resource,
+                )
+            )
+
+        return [
+            r.to_model()
+            for r in self._create_tag_resource_schemas(
+                tag_resources=resources, session=session
+            )
+        ]
+
     def batch_create_tag_resource(
         self, tag_resources: List[TagResourceRequest]
     ) -> List[TagResourceResponse]:
@@ -15758,35 +16160,14 @@ class SqlZenStore(BaseZenStore):
             The newly created tag resource relationships.
         """
         with Session(self.engine) as session:
-            resources: List[
-                Tuple[TagSchema, TaggableResourceTypes, BaseSchema]
-            ] = []
-            for tag_resource in tag_resources:
-                resource_schema = self._get_schema_from_resource_type(
-                    tag_resource.resource_type
-                )
-                resource = self._get_schema_by_id(
-                    resource_id=tag_resource.resource_id,
-                    schema_class=resource_schema,
-                    session=session,
-                )
-                tag_schema = self._get_tag_schema(
-                    tag_name_or_id=tag_resource.tag_id,
-                    session=session,
-                )
-                resources.append(
-                    (
-                        tag_schema,
-                        tag_resource.resource_type,
-                        resource,
-                    )
-                )
-            return [
-                r.to_model()
-                for r in self._create_tag_resource_schemas(
-                    tag_resources=resources, session=session
-                )
-            ]
+            resolved_resources = self._get_resources_from_tag_resources(
+                tag_resources=tag_resources, session=session
+            )
+            return self._batch_create_tag_resource(
+                tag_resources=tag_resources,
+                resolved_resources=resolved_resources,
+                session=session,
+            )
 
     def _delete_tag_resource_schemas(
         self,

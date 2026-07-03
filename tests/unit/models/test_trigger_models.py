@@ -12,12 +12,30 @@ from zenml.enums import (
 )
 from zenml.models import (
     PlatformEventTriggerRequest,
+    PlatformEventTriggerResponse,
     PlatformEventTriggerResponseBody,
     PlatformEventTriggerUpdate,
     ScheduleTriggerRequest,
     ScheduleTriggerResponseBody,
     ScheduleTriggerUpdate,
+    TriggerDispatchStatusCode,
+    TriggerExecutionInfo,
+    TriggerResponseResources,
+    TriggerSnapshotDispatchState,
 )
+
+
+def test_trigger_execution_info_defaults_pipeline_lineage() -> None:
+    """Legacy trigger execution payloads should get an empty lineage."""
+    upstream_run_id = uuid4()
+
+    info = TriggerExecutionInfo.model_validate(
+        {"upstream_run_id": str(upstream_run_id)}
+    )
+
+    assert info.upstream_run_id == upstream_run_id
+    assert info.upstream_pipeline_ids == []
+    assert "upstream_pipeline_ids" in info.model_dump()
 
 
 def test_schedule_trigger_valid_and_inheritance():
@@ -221,6 +239,35 @@ def test_platform_event_valid_and_inheritance():
     )
     assert body.source_entity.type == SourceType.PIPELINE_RUN
 
+    snapshot_id = uuid4()
+    dispatch_state = TriggerSnapshotDispatchState(
+        last_status=TriggerDispatchStatusCode.SKIPPED_TRIGGER_CYCLE,
+        last_status_details={"cycle_pipeline_ids": [uuid4(), uuid4()]},
+    )
+    response = PlatformEventTriggerResponse(
+        id=uuid4(),
+        body=body,
+        resources=TriggerResponseResources(
+            snapshot_dispatch_states={snapshot_id: dispatch_state}
+        ),
+    )
+
+    assert response.snapshot_dispatch_states == {snapshot_id: dispatch_state}
+
+
+def test_platform_event_snapshot_source_valid():
+    req = PlatformEventTriggerRequest(
+        project=uuid4(),
+        name="evt",
+        active=True,
+        type=TriggerType.PLATFORM_EVENT,
+        flavor=TriggerFlavor.PLATFORM_EVENT,
+        source_entity={"type": SourceType.PIPELINE_SNAPSHOT, "id": uuid4()},
+        target_events=["run_completed"],
+    )
+
+    assert req.source_entity.type == SourceType.PIPELINE_SNAPSHOT
+
 
 def test_platform_event_invalid_combinations():
     # invalid: pipeline + COMPLETED
@@ -245,4 +292,19 @@ def test_platform_event_invalid_combinations():
             flavor=TriggerFlavor.PLATFORM_EVENT,
             source_entity={"type": SourceType.PIPELINE_RUN, "id": uuid4()},
             target_events=["run_completed"],
+        )
+
+    # invalid: pipeline_snapshot + COMPLETED
+    with pytest.raises(ValidationError):
+        PlatformEventTriggerRequest(
+            project=uuid4(),
+            name="evt",
+            active=True,
+            type=TriggerType.PLATFORM_EVENT,
+            flavor=TriggerFlavor.PLATFORM_EVENT,
+            source_entity={
+                "type": SourceType.PIPELINE_SNAPSHOT,
+                "id": uuid4(),
+            },
+            target_events=["completed"],
         )

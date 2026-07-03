@@ -13,7 +13,40 @@
 #  permissions and limitations under the License.
 """Utility functions for the AWS integration."""
 
+from typing import Dict
+
 from zenml.enums import ExecutionStatus
+
+
+def validate_command_step_environment(
+    environment: Dict[str, str],
+    size_limit: int,
+) -> None:
+    """Validate environment variable sizes for a SageMaker command step.
+
+    Args:
+        environment: The environment variables to validate.
+        size_limit: The maximum allowed length of an environment variable
+            value.
+
+    Raises:
+        RuntimeError: If an environment variable value exceeds the size limit.
+    """
+    oversized = {
+        key: len(value)
+        for key, value in environment.items()
+        if len(value) > size_limit
+    }
+    if oversized:
+        details = ", ".join(
+            f"`{key}` ({length} characters)"
+            for key, length in sorted(oversized.items())
+        )
+        raise RuntimeError(
+            "Unable to run command step. The following environment variables "
+            f"exceed the maximum length of {size_limit} characters allowed by "
+            f"SageMaker: {details}."
+        )
 
 
 def convert_training_job_status(status: str) -> ExecutionStatus:

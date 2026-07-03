@@ -95,10 +95,14 @@ class GCPArtifactStore(BaseArtifactStore, AuthenticationMixin):
         if self._filesystem and not self.connector_has_expired():
             return self._filesystem
 
-        token = self.get_credentials()
-        self._filesystem = gcsfs.GCSFileSystem(token=token)
+        with self._filesystem_lock:
+            if self._filesystem and not self.connector_has_expired():
+                return self._filesystem
 
-        return self._filesystem
+            token = self.get_credentials()
+            self._filesystem = gcsfs.GCSFileSystem(token=token)
+
+            return self._filesystem
 
     def open(self, path: PathType, mode: str = "r") -> Any:
         """Open a file at the given path.

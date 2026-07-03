@@ -23,6 +23,7 @@ from typing import (
     ContextManager,
     Dict,
     List,
+    Optional,
     Tuple,
     Type,
 )
@@ -32,9 +33,9 @@ from zenml.artifacts.utils import _store_artifact_data_and_prepare_request
 from zenml.client import Client
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
-from zenml.enums import ArtifactSaveType, ExecutionStatus
+from zenml.enums import ArtifactSaveType, ExecutionStatus, HookType
 from zenml.exceptions import StepInterfaceError
-from zenml.hooks.hook_validators import load_and_run_hook
+from zenml.hooks.execution import run_lifecycle_hook
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.in_memory_materializer import InMemoryMaterializer
@@ -81,6 +82,7 @@ from zenml.utils.typing_utils import get_args, get_origin, is_union
 
 if TYPE_CHECKING:
     from zenml.artifact_stores import BaseArtifactStore
+    from zenml.config.source import Source
     from zenml.config.step_configurations import Step
     from zenml.models import (
         ArtifactVersionResponse,
@@ -213,6 +215,12 @@ class StepRunner:
 
                 heartbeat_worker = StepHeartbeatWorker(step_id=step_run.id)
 
+                self._fire_step_hook(
+                    self.configuration.start_hook_source,
+                    HookType.STEP_START,
+                    step_environment,
+                )
+
                 try:
                     if self._step.spec.enable_heartbeat:
                         logger.info(
@@ -260,6 +268,17 @@ class StepRunner:
                                 ),
                             )
 
+                        # A remote stop is a graceful, non-failure termination,
+                        # so the per-attempt end hook fires here as it does on
+                        # the success and failure paths. The exception is None,
+                        # since the step did not fail.
+                        self._fire_step_hook(
+                            self.configuration.end_hook_source,
+                            HookType.STEP_END,
+                            step_environment,
+                            optional_args=(None,),
+                        )
+
                         raise StepHeartBeatTerminationException(
                             "Remotely stopped step - terminating execution."
                         )
@@ -274,21 +293,22 @@ class StepRunner:
                             step_run_id=step_run_info.step_run_id
                         )
 
+                        # The per-attempt end hook fires before the retry
+                        # decision, so it precedes the terminal failure hook.
+                        self._fire_step_hook(
+                            self.configuration.end_hook_source,
+                            HookType.STEP_END,
+                            step_environment,
+                            optional_args=(step_exception,),
+                        )
+
                         if not step_run.is_retriable:
-                            if (
-                                failure_hook_source
-                                := self.configuration.failure_hook_source
-                            ):
-                                logger.info(
-                                    "Detected failure hook. Running..."
-                                )
-                                with env_utils.temporary_environment(
-                                    step_environment
-                                ):
-                                    load_and_run_hook(
-                                        failure_hook_source,
-                                        step_exception=step_exception,
-                                    )
+                            self._fire_step_hook(
+                                self.configuration.failure_hook_source,
+                                HookType.STEP_FAILURE,
+                                step_environment,
+                                optional_args=(step_exception,),
+                            )
                     raise step_exception
                 finally:
                     heartbeat_worker.stop()
@@ -303,18 +323,17 @@ class StepRunner:
                         info=step_run_info, step_failed=step_failed
                     )
                     if not step_failed:
-                        if (
-                            success_hook_source
-                            := self.configuration.success_hook_source
-                        ):
-                            logger.info("Detected success hook. Running...")
-                            with env_utils.temporary_environment(
-                                step_environment
-                            ):
-                                load_and_run_hook(
-                                    success_hook_source,
-                                    step_exception=None,
-                                )
+                        self._fire_step_hook(
+                            self.configuration.end_hook_source,
+                            HookType.STEP_END,
+                            step_environment,
+                            optional_args=(None,),
+                        )
+                        self._fire_step_hook(
+                            self.configuration.success_hook_source,
+                            HookType.STEP_SUCCESS,
+                            step_environment,
+                        )
 
                         # Store and publish the output artifacts of the step function.
                         output_data = self._validate_outputs(
@@ -375,6 +394,26 @@ class StepRunner:
             publish_successful_step_run(
                 step_run_id=step_run_info.step_run_id,
                 output_artifact_ids=output_artifact_ids,
+            )
+
+    def _fire_step_hook(
+        self,
+        hook_source: Optional["Source"],
+        hook_type: HookType,
+        step_environment: Dict[str, str],
+        optional_args: Optional[Tuple[Any, ...]] = None,
+    ) -> None:
+        """Fires a configured step lifecycle hook in the step environment.
+
+        Args:
+            hook_source: The configured hook source, or None.
+            hook_type: The type of the lifecycle hook.
+            step_environment: The step environment to run the hook in.
+            optional_args: Candidate arguments offered to the hook in order.
+        """
+        with env_utils.temporary_environment(step_environment):
+            run_lifecycle_hook(
+                hook_source, hook_type, optional_args=optional_args
             )
 
     def _evaluate_artifact_names_in_collections(
@@ -503,9 +542,17 @@ class StepRunner:
                         pass
                     elif issubclass(arg_type, (list, tuple)):
                         assert annotation
-                        item_arg_type = get_args(annotation)[0]
-                        item_arg_type = resolve_type_annotation(item_arg_type)
                         collection_type = arg_type
+                        type_args = get_args(annotation)
+                        if type_args:
+                            item_arg_type = resolve_type_annotation(
+                                type_args[0]
+                            )
+                        else:
+                            # Bare `list` or `tuple` annotation without type
+                            # arguments, load each item using the data type
+                            # stored with the artifact.
+                            item_arg_type = Any
                     else:
                         raise StepInterfaceError(
                             "Passing multiple artifacts to a step is only "

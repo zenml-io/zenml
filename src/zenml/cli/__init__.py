@@ -199,13 +199,26 @@ type:
 zenml orchestrator list --sort_by "asc:name"
 ```
 
-For fields marked as being of type `TEXT` or `UUID`, you can use the `contains`,
-`startswith` and `endswith` keywords along with their particular identifier. For
-example, for the orchestrator `list` command, you can use the following filter
-to find all orchestrators that contain the string `sagemaker` in their name:
+For fields marked as being of type `TEXT` or `UUID`, you can use operators like
+`contains`, `notcontains`, `startswith`, `endswith`, `oneof` and `notoneof`
+along with their particular identifier. For example, for the orchestrator `list`
+command, you can use the following filter to find all orchestrators that contain
+the string `sagemaker` in their name:
 
 ```shell
 zenml orchestrator list --name "contains:sagemaker"
+```
+
+The `oneof` and `notoneof` operators expect a JSON list:
+
+```shell
+zenml pipeline runs list --status 'notoneof:["completed"]'
+```
+
+For nullable fields, use `isnull` and `isnotnull` without a value:
+
+```shell
+zenml pipeline runs list --end_time "isnull:"
 ```
 
 For fields marked as being of type `BOOL`, you can use the 'True' or 'False'
@@ -2559,6 +2572,7 @@ from zenml.cli.config import *  # noqa
 from zenml.cli.deployment import *  # noqa
 from zenml.cli.downgrade import *  # noqa
 from zenml.cli.feature import *  # noqa
+from zenml.cli.hook_invocation import *  # noqa
 from zenml.cli.integration import *  # noqa
 from zenml.cli.login import *
 from zenml.cli.model import *  # noqa

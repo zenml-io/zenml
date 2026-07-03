@@ -21,6 +21,7 @@ import pytest
 from click.testing import CliRunner
 
 from tests.cli_runner_utils import cli_runner
+from tests.integration.functional.cli import utils as functional_cli_utils
 from tests.integration.functional.cli.utils import capture_clean_stdout
 from zenml.cli.cli import ZenMLCLI, cli
 from zenml.cli.formatter import ZenFormatter
@@ -41,9 +42,13 @@ def test_cli_command_defines_a_cli_group() -> None:
 def test_cli(runner):
     """Check that invoking the CLI without arguments shows help."""
     result = runner.invoke(cli)
-    assert "Usage: cli [OPTIONS] COMMAND [ARGS]..." in result.output
-    # Click 8.1 exits with 0, Click 8.2+ exits with 2 for no-args help
+
+    # Click 8.1 exits with 0 (shows help), Click 8.2+ exits with 2 for
+    # a missing command. The pin allows both, so accept either.
     assert result.exit_code in (0, 2)
+    assert "Usage:" in result.output
+    assert "COMMAND [ARGS]" in result.output
+    assert "Available ZenML Commands" in result.output
 
 
 def test_machine_mode_defaults_list_output_to_json(clean_project):
@@ -61,6 +66,22 @@ def test_machine_mode_defaults_list_output_to_json(clean_project):
     payload = json.loads(output.getvalue())
     assert "items" in payload
     assert payload["items"]
+
+
+def test_functional_cli_utils_cli_runner_passes_kwargs() -> None:
+    """Check that functional CLI utils expose compatible runner behavior."""
+    runner = functional_cli_utils.cli_runner(
+        env={"ZENML_TEST": "1"}, mix_stderr=False
+    )
+
+    assert runner.env == {"ZENML_TEST": "1"}
+
+
+def test_cli_runner_passes_kwargs() -> None:
+    """Check that the shared CLI runner still accepts normal Click kwargs."""
+    runner = cli_runner(env={"ZENML_TEST": "1"}, mix_stderr=False)
+
+    assert runner.env == {"ZENML_TEST": "1"}
 
 
 def test_ZenMLCLI_formatter():

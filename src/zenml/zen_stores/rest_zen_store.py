@@ -79,6 +79,7 @@ from zenml.constants import (
     EVENTS,
     FLAVORS,
     HEARTBEAT,
+    HOOK_INVOCATIONS,
     INFO,
     LOGIN,
     LOGS,
@@ -188,6 +189,9 @@ from zenml.models import (
     FlavorRequest,
     FlavorResponse,
     FlavorUpdate,
+    HookInvocationFilter,
+    HookInvocationRequest,
+    HookInvocationResponse,
     LogsRequest,
     LogsResponse,
     LogsUpdate,
@@ -357,9 +361,8 @@ class RestZenStoreConfiguration(StoreConfiguration):
     http_timeout: int = DEFAULT_HTTP_TIMEOUT
     connection_pool_size: int = 10
 
-    @field_validator("url")
-    @classmethod
-    def validate_url(cls, url: str) -> str:
+    @staticmethod
+    def _validate_url(url: str) -> str:
         """Validates that the URL is a well-formed REST store URL.
 
         Args:
@@ -451,7 +454,8 @@ class RestZenStoreConfiguration(StoreConfiguration):
         if not url:
             return data
 
-        url = replace_localhost_with_internal_hostname(url)
+        url = cls._validate_url(url)
+        data["url"] = url
 
         if api_token := data.pop("api_token", None):
             credentials_store = get_credentials_store()
@@ -3811,6 +3815,79 @@ class RestZenStore(BaseZenStore):
             response_model=StepRunResponse,
             filter_model=step_run_filter_model,
             params={"hydrate": hydrate},
+        )
+
+    # -------------------- Hook invocations --------------------
+
+    def create_hook_invocation(
+        self, hook_invocation: HookInvocationRequest
+    ) -> HookInvocationResponse:
+        """Create a hook invocation.
+
+        Args:
+            hook_invocation: The hook invocation to create.
+
+        Returns:
+            The created hook invocation.
+        """
+        return self._create_resource(
+            resource=hook_invocation,
+            response_model=HookInvocationResponse,
+            route=HOOK_INVOCATIONS,
+        )
+
+    def get_hook_invocation(
+        self, hook_invocation_id: UUID, hydrate: bool = True
+    ) -> HookInvocationResponse:
+        """Get a hook invocation by ID.
+
+        Args:
+            hook_invocation_id: The ID of the hook invocation to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The hook invocation.
+        """
+        return self._get_resource(
+            resource_id=hook_invocation_id,
+            route=HOOK_INVOCATIONS,
+            response_model=HookInvocationResponse,
+            params={"hydrate": hydrate},
+        )
+
+    def list_hook_invocations(
+        self,
+        hook_invocation_filter_model: HookInvocationFilter,
+        hydrate: bool = False,
+    ) -> Page[HookInvocationResponse]:
+        """List all hook invocations matching the given filter criteria.
+
+        Args:
+            hook_invocation_filter_model: All filter parameters including
+                pagination params.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            A list of all hook invocations matching the filter criteria.
+        """
+        return self._list_paginated_resources(
+            route=HOOK_INVOCATIONS,
+            response_model=HookInvocationResponse,
+            filter_model=hook_invocation_filter_model,
+            params={"hydrate": hydrate},
+        )
+
+    def delete_hook_invocation(self, hook_invocation_id: UUID) -> None:
+        """Delete a hook invocation.
+
+        Args:
+            hook_invocation_id: The ID of the hook invocation to delete.
+        """
+        self._delete_resource(
+            resource_id=hook_invocation_id,
+            route=HOOK_INVOCATIONS,
         )
 
     def update_run_step(

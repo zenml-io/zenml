@@ -41,6 +41,7 @@ redirects:
   experiment-trackers/neptune: experiment-trackers/neptune.md
   experiment-trackers/vertexai: experiment-trackers/vertexai.md
   experiment-trackers/wandb: experiment-trackers/wandb.md
+  experiment-trackers/trackio: experiment-trackers/trackio.md
   feature-stores: feature-stores/README.md
   feature-stores/custom: feature-stores/custom.md
   feature-stores/feast: feature-stores/feast.md
@@ -72,6 +73,7 @@ redirects:
   orchestrators/lightning: orchestrators/lightning.md
   orchestrators/local: orchestrators/local.md
   orchestrators/local-docker: orchestrators/local-docker.md
+  orchestrators/modal: orchestrators/modal.md
   orchestrators/sagemaker: orchestrators/sagemaker.md
   orchestrators/skypilot-vm: orchestrators/skypilot-vm.md
   orchestrators/tekton: orchestrators/tekton.md

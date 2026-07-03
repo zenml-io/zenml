@@ -281,7 +281,7 @@ for run in runs.items:
 
 #### Monitoring with Alerters
 
-For critical pipelines, [add alerting](https://docs.zenml.io/stacks/alerters) to notify you of failures:
+For critical pipelines, [add alerting](https://docs.zenml.io/stacks/alerters) to notify you of failures via a [failure hook](https://docs.zenml.io/concepts/steps_and_pipelines/hooks):
 
 ```python
 from zenml.hooks import alerter_failure_hook

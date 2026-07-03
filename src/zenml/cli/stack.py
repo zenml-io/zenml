@@ -451,6 +451,16 @@ def stack() -> None:
     required=False,
 )
 @click.option(
+    "-sb",
+    "--sandbox",
+    "sandbox",
+    help="Name of a sandbox for this stack. Repeat the flag to attach "
+    "multiple sandboxes; the first one becomes the default.",
+    type=str,
+    required=False,
+    multiple=True,
+)
+@click.option(
     "--set",
     "set_stack",
     is_flag=True,
@@ -505,6 +515,7 @@ def register_stack(
     image_builder: Optional[str] = None,
     deployer: Optional[str] = None,
     log_store: Optional[str] = None,
+    sandbox: Tuple[str, ...] = (),
     set_stack: bool = False,
     provider: Optional[str] = None,
     connector: Optional[str] = None,
@@ -530,6 +541,7 @@ def register_stack(
         image_builder: Name of the new image builder for this stack.
         deployer: Name of the deployer for this stack.
         log_store: Name of the log store for this stack.
+        sandbox: Names of sandboxes for this stack.
         set_stack: Immediately set this stack as active.
         provider: Name of the cloud provider for this stack.
         connector: Name of the service connector for this stack.
@@ -859,6 +871,7 @@ def register_stack(
             (StackComponentType.ALERTER, alerter),
             (StackComponentType.STEP_OPERATOR, step_operator),
             (StackComponentType.EXPERIMENT_TRACKER, experiment_tracker),
+            (StackComponentType.SANDBOX, sandbox),
         ]:
             if component_names_:
                 components[component_type_] = [
@@ -1053,6 +1066,17 @@ def register_stack(
     required=False,
 )
 @click.option(
+    "-sb",
+    "--sandbox",
+    "sandbox",
+    help="Name of a sandbox for this stack. Repeat the flag to replace "
+    "the stack sandboxes with multiple attached sandboxes; the first one "
+    "becomes the default.",
+    type=str,
+    required=False,
+    multiple=True,
+)
+@click.option(
     "--secret",
     "secrets",
     help="Secrets to attach to the stack.",
@@ -1095,6 +1119,7 @@ def update_stack(
     model_registry: Optional[str] = None,
     deployer: Optional[str] = None,
     log_store: Optional[str] = None,
+    sandbox: Tuple[str, ...] = (),
     secrets: List[str] = [],
     remove_secrets: List[str] = [],
     environment_variables: List[str] = [],
@@ -1119,6 +1144,7 @@ def update_stack(
         model_registry: Name of the new model registry for this stack.
         deployer: Name of the new deployer for this stack.
         log_store: Name of the log store for this stack.
+        sandbox: Names of sandboxes for this stack.
         secrets: Secrets to attach to the stack.
         remove_secrets: Secrets to remove from the stack.
         environment_variables: Environment variables to set when running on this
@@ -1165,6 +1191,8 @@ def update_stack(
             updates[StackComponentType.DEPLOYER] = [deployer]
         if log_store:
             updates[StackComponentType.LOG_STORE] = [log_store]
+        if sandbox:
+            updates[StackComponentType.SANDBOX] = list(sandbox)
 
         if dry_run:
             try:
@@ -1350,6 +1378,14 @@ def update_stack(
     is_flag=True,
     required=False,
 )
+@click.option(
+    "-sb",
+    "--sandbox",
+    "sandbox_flag",
+    help="Include this to remove the sandbox from this stack.",
+    is_flag=True,
+    required=False,
+)
 def remove_stack_component(
     stack_name_or_id: Optional[str] = None,
     container_registry_flag: Optional[bool] = False,
@@ -1364,6 +1400,7 @@ def remove_stack_component(
     model_registry_flag: Optional[str] = None,
     deployer_flag: Optional[bool] = False,
     log_store_flag: Optional[bool] = False,
+    sandbox_flag: Optional[bool] = False,
 ) -> None:
     """Remove stack components from a stack.
 
@@ -1383,6 +1420,7 @@ def remove_stack_component(
         model_registry_flag: To remove the model registry from this stack.
         deployer_flag: To remove the deployer from this stack.
         log_store_flag: To remove the log store from this stack.
+        sandbox_flag: To remove the sandbox from this stack.
     """
     client = Client()
 
@@ -1425,6 +1463,9 @@ def remove_stack_component(
         if log_store_flag:
             stack_component_update[StackComponentType.LOG_STORE] = []
 
+        if sandbox_flag:
+            stack_component_update[StackComponentType.SANDBOX] = []
+
         try:
             updated_stack = client.update_stack(
                 name_id_or_prefix=stack_name_or_id,
@@ -1466,11 +1507,20 @@ def remove_stack_component(
     type=str,
     required=False,
 )
+@click.option(
+    "-sb",
+    "--sandbox",
+    "sandbox",
+    help="Name of the sandbox to set as the default for this stack.",
+    type=str,
+    required=False,
+)
 def set_default_stack_component(
     stack: Optional[str] = None,
     step_operator: Optional[str] = None,
     experiment_tracker: Optional[str] = None,
     alerter: Optional[str] = None,
+    sandbox: Optional[str] = None,
 ) -> None:
     """Set defaults for repeatable stack component types.
 
@@ -1480,6 +1530,7 @@ def set_default_stack_component(
         step_operator: Name or ID of the step operator to promote.
         experiment_tracker: Name or ID of the experiment tracker to promote.
         alerter: Name or ID of the alerter to promote.
+        sandbox: Name or ID of the sandbox to promote.
     """
     client = Client()
 
@@ -1493,11 +1544,14 @@ def set_default_stack_component(
         )
     if alerter is not None:
         default_components[StackComponentType.ALERTER] = alerter
+    if sandbox is not None:
+        default_components[StackComponentType.SANDBOX] = sandbox
 
     if not default_components:
         cli_utils.error(
             "Select at least one repeatable component type using "
-            "`--step_operator`, `--experiment_tracker`, or `--alerter`."
+            "`--step_operator`, `--experiment_tracker`, `--alerter`, or "
+            "`--sandbox`."
         )
 
     with console.status("Setting stack component default...\n"):

@@ -42,7 +42,7 @@ from zenml.exceptions import (
     IllegalOperationError,
     RunMonitoringError,
 )
-from zenml.hooks.hook_validators import load_and_run_hook
+from zenml.hooks.execution import run_hook
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.orchestrators.exceptions import PipelineSubmissionError
@@ -366,7 +366,7 @@ class BaseOrchestrator(StackComponent, ABC):
                                 )
                         except Exception as e:
                             logger.debug(
-                                "Something went went wrong trying to publish the"
+                                "Something went wrong trying to publish the "
                                 f"run metadata: {e}"
                             )
             else:
@@ -564,6 +564,10 @@ class BaseOrchestrator(StackComponent, ABC):
     ) -> None:
         """Submit an isolated step.
 
+        Implementations should use
+        `zenml.orchestrators.utils.get_step_entrypoint_command(...)` to get
+        the command and arguments to run the step.
+
         Args:
             step_run_info: The step run information.
             environment: The environment variables to set in the execution
@@ -667,6 +671,13 @@ class BaseOrchestrator(StackComponent, ABC):
             f"the {self.__class__.__name__} orchestrator."
         )
 
+    def cleanup_isolated_step(self, step_run: "StepRunResponse") -> None:
+        """Clean up after an isolated step run has finished.
+
+        Args:
+            step_run: The finished step run.
+        """
+
     @staticmethod
     def requires_resources_in_orchestration_environment(
         step: "Step",
@@ -759,10 +770,10 @@ class BaseOrchestrator(StackComponent, ABC):
                 with temporary_environment(
                     snapshot.pipeline_configuration.environment
                 ):
-                    run_state = load_and_run_hook(
+                    run_state = run_hook(
                         init_hook_source,
-                        hook_parameters=init_hook_kwargs,
-                        raise_on_error=True,
+                        kwargs=init_hook_kwargs,
+                        track=False,
                     )
             except Exception as e:
                 raise HookExecutionException(
@@ -792,10 +803,10 @@ class BaseOrchestrator(StackComponent, ABC):
             with temporary_environment(
                 snapshot.pipeline_configuration.environment
             ):
-                load_and_run_hook(
-                    cleanup_hook_source,
-                    raise_on_error=False,
-                )
+                try:
+                    run_hook(cleanup_hook_source, track=False)
+                except Exception as e:
+                    logger.error("Failed to run cleanup hook: %s", e)
 
         # Destroy the run context, so it's created anew for the next run
         RunContext._clear()

@@ -87,6 +87,7 @@ from zenml.exceptions import (
 )
 from zenml.metadata.metadata_types import MetadataTypeEnum
 from zenml.models import (
+    APIKey,
     APIKeyFilter,
     APIKeyRequest,
     APIKeyRotateRequest,
@@ -445,6 +446,22 @@ class TestAdminUser:
                     )
                 )
 
+    def test_secret_operations_require_admin_without_rbac(self):
+        """Tests secret backup and restore require admin without RBAC."""
+        if not isinstance(Client().zen_store, RestZenStore):
+            pytest.skip("Secret operations admin checks run over REST.")
+
+        with UserContext(
+            password=self.default_pwd, login=True, is_admin=False
+        ):
+            zen_store: RestZenStore = Client().zen_store
+
+            with pytest.raises(IllegalOperationError):
+                zen_store.backup_secrets()
+
+            with pytest.raises(IllegalOperationError):
+                zen_store.restore_secrets()
+
     def test_listing_users(self):
         """Tests listing users as an admin and as a non-admin."""
         if Client().zen_store.type == StoreType.SQL:
@@ -665,6 +682,96 @@ class TestAdminUser:
                 )
                 user = zen_store.get_user(test_user.id)
                 assert not user.is_admin
+
+    def test_service_account_mutations_require_admin_without_rbac(self):
+        """Tests service account mutations as an admin and as a non-admin."""
+        if Client().zen_store.type == StoreType.SQL:
+            pytest.skip("SQL ZenStore does not support admin users.")
+
+        zen_store: RestZenStore = Client().zen_store
+        service_account = zen_store.create_service_account(
+            ServiceAccountRequest(
+                name=sample_name("admin_only_service_account"),
+                active=True,
+            )
+        )
+        api_key = zen_store.create_api_key(
+            service_account_id=service_account.id,
+            api_key=APIKeyRequest(name=sample_name("admin_only_api_key")),
+        )
+
+        try:
+            with UserContext(
+                password=self.default_pwd, is_admin=False
+            ) as test_user:
+                with LoginContext(
+                    user_name=test_user.name, password=self.default_pwd
+                ):
+                    non_admin_store: RestZenStore = Client().zen_store
+
+                    with pytest.raises(IllegalOperationError):
+                        non_admin_store.create_service_account(
+                            ServiceAccountRequest(
+                                name=sample_name("denied_service_account"),
+                                active=True,
+                            )
+                        )
+
+                    with pytest.raises(IllegalOperationError):
+                        non_admin_store.update_service_account(
+                            service_account_name_or_id=service_account.id,
+                            service_account_update=ServiceAccountUpdate(
+                                description="Non-admin update should fail.",
+                            ),
+                        )
+
+                    with pytest.raises(IllegalOperationError):
+                        non_admin_store.delete_service_account(
+                            service_account.id
+                        )
+
+                    with pytest.raises(IllegalOperationError):
+                        non_admin_store.create_api_key(
+                            service_account_id=service_account.id,
+                            api_key=APIKeyRequest(
+                                name=sample_name("denied_api_key")
+                            ),
+                        )
+
+                    with pytest.raises(IllegalOperationError):
+                        non_admin_store.update_api_key(
+                            service_account_id=service_account.id,
+                            api_key_name_or_id=api_key.id,
+                            api_key_update=APIKeyUpdate(
+                                description="Non-admin update should fail.",
+                            ),
+                        )
+
+                    with pytest.raises(IllegalOperationError):
+                        non_admin_store.rotate_api_key(
+                            service_account_id=service_account.id,
+                            api_key_name_or_id=api_key.id,
+                            rotate_request=APIKeyRotateRequest(),
+                        )
+
+                    with pytest.raises(IllegalOperationError):
+                        non_admin_store.delete_api_key(
+                            service_account_id=service_account.id,
+                            api_key_name_or_id=api_key.id,
+                        )
+        finally:
+            try:
+                zen_store.delete_api_key(
+                    service_account_id=service_account.id,
+                    api_key_name_or_id=api_key.id,
+                )
+            except KeyError:
+                pass
+
+            try:
+                zen_store.delete_service_account(service_account.id)
+            except (KeyError, IllegalOperationError):
+                pass
 
 
 def test_active_user():
@@ -2122,6 +2229,11 @@ def test_login_api_key():
             active_user = new_zen_store.get_user()
             assert active_user.id == service_account.id
 
+        forged_api_key = APIKey(id=api_key.id, key="").encode()
+        with pytest.raises(AuthorizationException):
+            with LoginContext(api_key=forged_api_key):
+                Client().zen_store.get_user()
+
         api_key = zen_store.get_api_key(
             service_account_id=service_account.id,
             api_key_name_or_id=api_key.id,
@@ -2178,7 +2290,16 @@ def test_login_inactive_api_key():
             active_user = new_zen_store.get_user()
             assert active_user.id == service_account.id
 
-            new_zen_store.update_api_key(
+            with pytest.raises(IllegalOperationError):
+                new_zen_store.update_api_key(
+                    service_account_id=service_account.id,
+                    api_key_name_or_id=api_key.id,
+                    api_key_update=APIKeyUpdate(
+                        active=False,
+                    ),
+                )
+
+            zen_store.update_api_key(
                 service_account_id=service_account.id,
                 api_key_name_or_id=api_key.id,
                 api_key_update=APIKeyUpdate(
@@ -2249,7 +2370,15 @@ def test_login_inactive_service_account():
             active_user = new_zen_store.get_user()
             assert active_user.id == service_account.id
 
-            new_zen_store.update_service_account(
+            with pytest.raises(IllegalOperationError):
+                new_zen_store.update_service_account(
+                    service_account_name_or_id=service_account.id,
+                    service_account_update=ServiceAccountUpdate(
+                        active=False,
+                    ),
+                )
+
+            zen_store.update_service_account(
                 service_account_name_or_id=service_account.id,
                 service_account_update=ServiceAccountUpdate(
                     active=False,
@@ -2309,7 +2438,13 @@ def test_login_deleted_api_key():
             active_user = new_zen_store.get_user()
             assert active_user.id == service_account.id
 
-            new_zen_store.delete_api_key(
+            with pytest.raises(IllegalOperationError):
+                new_zen_store.delete_api_key(
+                    service_account_id=service_account.id,
+                    api_key_name_or_id=api_key.id,
+                )
+
+            zen_store.delete_api_key(
                 service_account_id=service_account.id,
                 api_key_name_or_id=api_key.id,
             )
@@ -2368,14 +2503,21 @@ def test_login_rotate_api_key():
         with LoginContext(api_key=rotated_api_key.key):
             new_zen_store = Client().zen_store
 
-            new_zen_store.rotate_api_key(
+            with pytest.raises(IllegalOperationError):
+                new_zen_store.rotate_api_key(
+                    service_account_id=service_account.id,
+                    api_key_name_or_id=api_key.id,
+                    rotate_request=APIKeyRotateRequest(),
+                )
+
+            zen_store.rotate_api_key(
                 service_account_id=service_account.id,
                 api_key_name_or_id=api_key.id,
                 rotate_request=APIKeyRotateRequest(),
             )
 
-            active_user = new_zen_store.get_user()
-            assert active_user.id == service_account.id
+            with pytest.raises(AuthorizationException):
+                new_zen_store.get_user()
 
 
 def test_login_rotate_api_key_retain_period():
@@ -3010,11 +3152,11 @@ def test_filters_with_oneof_tags_and_run_metadata(clean_client):
     assert len(runs) == 2  # The first two runs
 
     # Test oneof: tags filtering
-    runs_filter = PipelineRunFilter(tag='oneof:["cats", "dogs"]')
+    runs_filter = PipelineRunFilter(tags='oneof:["cats", "dogs"]')
     runs = store.list_runs(runs_filter_model=runs_filter)
     assert len(runs) == len(metadata_values)  # All runs
 
-    runs_filter = PipelineRunFilter(tag='oneof:["dogs"]')
+    runs_filter = PipelineRunFilter(tags='oneof:["dogs"]')
     runs = store.list_runs(runs_filter_model=runs_filter)
     assert len(runs) == 0  # No runs
 
@@ -4727,7 +4869,7 @@ class TestModelVersion:
             )
             mvs = clean_client.zen_store.list_model_versions(
                 model_version_filter_model=ModelVersionFilter(
-                    tag="tag1",
+                    tags="tag1",
                     model=model.id,
                 ),
             )
@@ -4736,7 +4878,7 @@ class TestModelVersion:
 
             mvs = clean_client.zen_store.list_model_versions(
                 model_version_filter_model=ModelVersionFilter(
-                    tag="tag2",
+                    tags="tag2",
                     model=model.id,
                 ),
             )
@@ -4746,7 +4888,7 @@ class TestModelVersion:
 
             mvs = clean_client.zen_store.list_model_versions(
                 model_version_filter_model=ModelVersionFilter(
-                    tag="tag3",
+                    tags="tag3",
                     model=model.id,
                 ),
             )
@@ -4755,7 +4897,7 @@ class TestModelVersion:
 
             mvs = clean_client.zen_store.list_model_versions(
                 model_version_filter_model=ModelVersionFilter(
-                    tag="non_existent_tag",
+                    tags="ngon_existent_tag",
                     model=model.id,
                 ),
             )
@@ -5617,6 +5759,41 @@ class TestTagResource:
                 ),
             ]
         )
+
+    def test_batch_create_tag_resource_resolves_resources_in_bulk(
+        self, clean_client: "Client"
+    ):
+        """Tests batch tag resource creation resolves resources in bulk."""
+        if clean_client.zen_store.type != StoreType.SQL:
+            pytest.skip("Only SQL Zen Stores support tagging resources")
+
+        tag1 = clean_client.create_tag(name="foo1", color="red")
+        tag2 = clean_client.create_tag(name="foo2", color="green")
+        model1 = clean_client.create_model(name="bar1")
+        model2 = clean_client.create_model(name="bar2")
+
+        with patch.object(
+            clean_client.zen_store,
+            "_get_schema_by_id",
+            side_effect=AssertionError(
+                "Batch tag resource creation should not resolve resources "
+                "with individual get calls."
+            ),
+        ):
+            clean_client.zen_store.batch_create_tag_resource(
+                [
+                    TagResourceRequest(
+                        tag_id=tag1.id,
+                        resource_id=model1.id,
+                        resource_type=TaggableResourceTypes.MODEL,
+                    ),
+                    TagResourceRequest(
+                        tag_id=tag2.id,
+                        resource_id=model2.id,
+                        resource_type=TaggableResourceTypes.MODEL,
+                    ),
+                ]
+            )
 
     def test_delete_tag_resource_pass(self, clean_client: "Client"):
         """Tests deleting tag<>resource mapping pass."""

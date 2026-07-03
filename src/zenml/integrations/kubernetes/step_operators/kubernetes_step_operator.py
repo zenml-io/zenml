@@ -279,6 +279,7 @@ class KubernetesStepOperator(BaseStepOperator):
             namespace=self.config.kubernetes_namespace,
             job_manifest=job_manifest,
             api_request_timeout=settings.api_request_timeout,
+            max_retries=settings.max_api_retries,
         )
 
     def get_status(self, step_run: "StepRunResponse") -> ExecutionStatus:
@@ -299,6 +300,7 @@ class KubernetesStepOperator(BaseStepOperator):
                 namespace=self.config.kubernetes_namespace,
                 label_selector=label_selector,
                 api_request_timeout=self.config.api_request_timeout,
+                max_retries=self.config.max_api_retries,
             )
         except Exception as e:
             logger.warning(
@@ -335,6 +337,7 @@ class KubernetesStepOperator(BaseStepOperator):
                 namespace=self.config.kubernetes_namespace,
                 label_selector=label_selector,
                 api_request_timeout=self.config.api_request_timeout,
+                max_retries=self.config.max_api_retries,
             )
         except Exception as e:
             logger.warning(

@@ -19,6 +19,7 @@ and an `io` module to handle file operations on Azure Blob Storage.
 The Azure Step Operator integration submodule provides a way to run ZenML steps
 in AzureML.
 """
+
 from typing import List, Type
 
 from zenml.integrations.constants import AZURE
@@ -41,27 +42,23 @@ class AzureIntegration(Integration):
     NAME = AZURE
     REQUIREMENTS = [
         "adlfs>=2021.10.0",
-        "azure-keyvault-keys",
-        "azure-keyvault-secrets",
-        "azure-identity",
-        "azureml-core==1.56.0",
+        "azure-identity>=1.4.0",
+        "azure-mgmt-containerregistry>=10.0.0",
         "azure-mgmt-containerservice>=20.0.0",
+        "azure-mgmt-storage>=20.0.0",
         # The 25.0.0 release splits the azure-mgmt-resource package into
         # multiple packages, some of which don't have a stable (non-prerelease)
         # version yet. See https://github.com/Azure/azure-sdk-for-python/releases/tag/azure-mgmt-resource_25.0.0
-        "azure-mgmt-resource<25.0.0",
-        "azure-storage-blob==12.17.0",  # temporary fix for https://github.com/Azure/azure-sdk-for-python/issues/32056
-        "kubernetes",
-        "azure-ai-ml==1.23.1",
-        # In azureml/core/_metrics.py:212 of azureml-core 1.56.0, they use 
-        # an attribute that was removed in Numpy 2.0. However, AzureML itself
-        # does not have a limitation on numpy.
-        "numpy<2.0",
+        "azure-mgmt-resource>=21.0.0,<25.0.0",
+        "azure-storage-blob>=12.17.0,<13.0.0",
+        "kubernetes>=18.20.0",
+        "requests>=2.27.11,<3.0.0",
+        "azure-ai-ml>=1.23.1,<2.0.0",
         # Marshmallow>4.0 leads to the following error with the AzureML SDK:
         # ImportError: cannot import name 'FieldInstanceResolutionError' from 'marshmallow.utils'
         "marshmallow<4.0.0",
     ]
-    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["kubernetes", "numpy"]
+    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["kubernetes"]
 
     @classmethod
     def activate(cls) -> None:
@@ -77,8 +74,8 @@ class AzureIntegration(Integration):
         """
         from zenml.integrations.azure.flavors import (
             AzureArtifactStoreFlavor,
-            AzureMLStepOperatorFlavor,
             AzureMLOrchestratorFlavor,
+            AzureMLStepOperatorFlavor,
         )
 
         return [
@@ -86,4 +83,3 @@ class AzureIntegration(Integration):
             AzureMLStepOperatorFlavor,
             AzureMLOrchestratorFlavor,
         ]
-

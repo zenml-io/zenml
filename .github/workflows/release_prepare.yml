@@ -24,7 +24,7 @@ jobs:
       # Check out main to get the old version
       - name: Checkout code
         id: checkout-code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
           ref: main
       # Configure Git
@@ -46,7 +46,7 @@ jobs:
     steps:
       # Check out the code
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
       # Configure Git
       - name: Configure git
         shell: bash
@@ -62,7 +62,7 @@ jobs:
           NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION: ${{ needs.fetch-versions.outputs.new_version }}
       # Set up Python
       - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
         with:
           python-version: '3.12'
       # Install ZenML
@@ -109,25 +109,6 @@ jobs:
         env:
           NEEDS_FETCH_VERSIONS_OUTPUTS_OLD_VERSION: ${{ needs.fetch-versions.outputs.old_version }}
           NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION: ${{ needs.fetch-versions.outputs.new_version }}
-      # Generate and append release notes
-      - name: Generate release notes
-        # Only run this part once when the release branch is created
-        if: ${{ github.event.created }}
-        run: |
-          RELEASE_NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes -F tag_name=${NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION} -F target_commitish=${{ github.sha }} -F previous_tag_name=${NEEDS_FETCH_VERSIONS_OUTPUTS_OLD_VERSION} | jq -r '.body')
-          {
-          head -n 1 RELEASE_NOTES.md
-          echo ""
-          echo "# ${NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION}"
-          echo ""
-          echo "$RELEASE_NOTES"
-          echo ""
-          tail -n +2 RELEASE_NOTES.md
-          } > RELEASE_NOTES.md.new && mv RELEASE_NOTES.md.new RELEASE_NOTES.md
-          git add RELEASE_NOTES.md
-        env:
-          NEEDS_FETCH_VERSIONS_OUTPUTS_NEW_VERSION: ${{ needs.fetch-versions.outputs.new_version }}
-          NEEDS_FETCH_VERSIONS_OUTPUTS_OLD_VERSION: ${{ needs.fetch-versions.outputs.old_version }}
       # Push the changes
       - name: Push the changes
         run: |
@@ -157,7 +138,7 @@ jobs:
     steps:
       # Check out the prepare-release branch
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
       # Sign in to Google
       - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093  # v3.0.0
         with:
@@ -183,10 +164,10 @@ jobs:
     steps:
       # Check out the code
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
       # Setting up Python
       - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
         with:
           python-version: '3.12'
       # Install requests
@@ -234,9 +215,9 @@ jobs:
       - name: Reload Docker
         run: sudo systemctl restart docker
       - name: Checkout code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
       - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
         with:
           python-version: '3.12'
       - name: Install ZenML

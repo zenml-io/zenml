@@ -38,6 +38,8 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
+_SLOW_TRANSACTION_CLEANUP_SECONDS = 1.0
+
 
 class RequestContext:
     """Context for a request."""
@@ -188,6 +190,8 @@ class RequestManager:
         )
 
         self._cleanup_interval = cfg.api_transaction_cleanup_interval
+        self._cleanup_batch_size = cfg.api_transaction_cleanup_batch_size
+        self._cleanup_time_budget = cfg.api_transaction_cleanup_time_budget
 
         self._cleanup_task: Optional[asyncio.Task[None]] = None
         self._shutdown_event = asyncio.Event()
@@ -275,14 +279,39 @@ class RequestManager:
                 pass
 
     def _cleanup_expired_transactions(self) -> None:
-        """Execute the cleanup operation in a thread pool."""
+        """Execute bounded cleanup batches within the configured budget."""
         from zenml.zen_server.utils import zen_store
 
         start_time = time.perf_counter()
-        zen_store().cleanup_expired_api_transactions()
+        deadline = start_time + self._cleanup_time_budget
+        batch_count = 0
+        total_deleted_count = 0
+
+        while True:
+            deleted_count = zen_store().cleanup_expired_api_transactions(
+                batch_size=self._cleanup_batch_size
+            )
+            batch_count += 1
+            total_deleted_count += deleted_count
+
+            if deleted_count < self._cleanup_batch_size:
+                break
+
+            if time.perf_counter() >= deadline:
+                break
+
         duration = time.perf_counter() - start_time
 
-        logger.debug(f"Cleaning up expired transactions took {duration:.2f}s")
+        if (
+            total_deleted_count > 0
+            or duration >= _SLOW_TRANSACTION_CLEANUP_SECONDS
+        ):
+            logger.debug(
+                "Cleaned up %d expired transactions in %d batches over %.2fs",
+                total_deleted_count,
+                batch_count,
+                duration,
+            )
 
     async def async_run_and_cache_result(
         self,
@@ -595,18 +624,27 @@ class RequestManager:
                     )
                 )
 
-        # Wait for the request to complete; timeout if deduplication is enabled
+        # Wait for the request to complete. Only deduplicated requests are
+        # allowed to keep running after the client receives a timeout
+        # response because retries are tied to the same API transaction.
+        # Non-deduplicated requests keep the connection and operation
+        # lifetime aligned to avoid hidden duplicate mutations on retry.
         try:
-            # We take into account the time that has already elapsed since the
-            # request was received to avoid keeping the request for too long.
-            timeout = max(
-                0, self.request_timeout - request_context.process_time
-            )
+            timeout: Optional[float] = None
+            if deduplicate:
+                # We take into account the time that has already elapsed
+                # since the request was received to avoid keeping the
+                # request for too long.
+                timeout = max(
+                    0, self.request_timeout - request_context.process_time
+                )
             result = await asyncio.wait_for(
                 # We use asyncio.shield to prevent the request from being
-                # cancelled when the timeout is reached.
+                # cancelled when the timeout is reached. With timeout=None,
+                # wait_for simply waits for non-deduplicated requests to
+                # complete.
                 asyncio.shield(fut),
-                timeout=timeout if deduplicate else None,
+                timeout=timeout,
             )
 
             logger.debug(

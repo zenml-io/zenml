@@ -47,12 +47,6 @@ from zenml.integrations.kubernetes.manifest_utils import (
     build_pod_manifest,
     pod_template_manifest_from_pod,
 )
-from zenml.integrations.kubernetes.orchestrators.dag_runner import (
-    DagRunner,
-    InterruptMode,
-    Node,
-    NodeStatus,
-)
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (
     KubernetesOrchestrator,
 )
@@ -65,6 +59,12 @@ from zenml.models import (
     StepRunResponse,
 )
 from zenml.orchestrators import publish_utils
+from zenml.orchestrators.dag_runner import (
+    DagRunner,
+    InterruptMode,
+    Node,
+    NodeStatus,
+)
 from zenml.orchestrators.step_run_utils import (
     StepRunRequestFactory,
     fetch_step_runs_by_names,
@@ -102,6 +102,7 @@ def _get_orchestrator_job_state(
     namespace: str,
     job_name: str,
     api_request_timeout: Optional[int],
+    max_retries: int,
 ) -> Tuple[Optional[UUID], Optional[str]]:
     """Get the existing status of the orchestrator job.
 
@@ -110,6 +111,7 @@ def _get_orchestrator_job_state(
         namespace: The namespace.
         job_name: The name of the orchestrator job.
         api_request_timeout: The request timeout in seconds.
+        max_retries: The maximum number of API request retries.
 
     Returns:
         The run id and orchestrator run id.
@@ -122,6 +124,7 @@ def _get_orchestrator_job_state(
         namespace=namespace,
         job_name=job_name,
         api_request_timeout=api_request_timeout,
+        max_retries=max_retries,
     )
 
     if job.metadata and job.metadata.annotations:
@@ -141,6 +144,7 @@ def _reconstruct_nodes(
     namespace: str,
     batch_api: k8s_client.BatchV1Api,
     api_request_timeout: Optional[int] = None,
+    max_retries: int = 3,
 ) -> List[Node]:
     """Reconstruct the nodes from the pipeline run.
 
@@ -150,6 +154,7 @@ def _reconstruct_nodes(
         namespace: The namespace.
         batch_api: The batch api.
         api_request_timeout: The request timeout in seconds.
+        max_retries: The maximum number of API request retries.
 
     Returns:
         The reconstructed nodes.
@@ -171,6 +176,7 @@ def _reconstruct_nodes(
         namespace=namespace,
         label_selector=f"run_id={pipeline_run.id}",
         api_request_timeout=api_request_timeout,
+        max_retries=max_retries,
     )
     for job in job_list.items:
         annotations = job.metadata.annotations or {}
@@ -257,6 +263,7 @@ def main() -> None:
             pod_name=orchestrator_pod_name,
             namespace=namespace,
             api_request_timeout=pipeline_settings.api_request_timeout,
+            max_retries=pipeline_settings.max_api_retries,
         )
         if not job_name:
             raise RuntimeError(
@@ -268,6 +275,7 @@ def main() -> None:
             namespace=namespace,
             job_name=job_name,
             api_request_timeout=pipeline_settings.api_request_timeout,
+            max_retries=pipeline_settings.max_api_retries,
         )
 
         if run_id and orchestrator_run_id:
@@ -279,6 +287,7 @@ def main() -> None:
                 namespace=namespace,
                 batch_api=batch_api,
                 api_request_timeout=pipeline_settings.api_request_timeout,
+                max_retries=pipeline_settings.max_api_retries,
             )
             logger.debug("Reconstructed nodes: %s", nodes)
 
@@ -309,6 +318,7 @@ def main() -> None:
                     ORCHESTRATOR_RUN_ID_ANNOTATION_KEY: orchestrator_run_id,
                 },
                 api_request_timeout=pipeline_settings.api_request_timeout,
+                max_retries=pipeline_settings.max_api_retries,
             )
             nodes = [
                 Node(id=step_name, upstream_nodes=step.spec.upstream_steps)
@@ -333,6 +343,7 @@ def main() -> None:
                     pod_name=orchestrator_pod_name,
                     namespace=namespace,
                     api_request_timeout=pipeline_settings.api_request_timeout,
+                    max_retries=pipeline_settings.max_api_retries,
                 )
                 # Make sure None of the owner references are marked as
                 # controllers of the created pod, which messes with the
@@ -600,6 +611,7 @@ def main() -> None:
                 namespace=namespace,
                 job_manifest=job_manifest,
                 api_request_timeout=settings.api_request_timeout,
+                max_retries=settings.max_api_retries,
             )
 
             try:
@@ -746,13 +758,14 @@ def main() -> None:
                     snapshot.step_configurations[step_name]
                 ),
             )
-            status, error_message = kube_utils.check_job_status(
+            status, status_message = kube_utils.check_job_status(
                 batch_api=batch_api,
                 core_api=core_api,
                 namespace=namespace,
                 job_name=job_name,
                 fail_on_container_waiting_reasons=settings.fail_on_container_waiting_reasons,
                 api_request_timeout=settings.api_request_timeout,
+                max_retries=settings.max_api_retries,
             )
             if status == kube_utils.JobStatus.SUCCEEDED:
                 return NodeStatus.COMPLETED
@@ -760,7 +773,7 @@ def main() -> None:
                 logger.error(
                     "Job for step `%s` failed: %s",
                     step_name,
-                    error_message,
+                    status_message,
                 )
                 return _handle_failed_job(step_name)
             elif (
@@ -774,6 +787,19 @@ def main() -> None:
                 stop_step(node=node)
                 return NodeStatus.FAILED
             else:
+                if status_message:
+                    last_pending_message = node.metadata.get(
+                        "last_pending_status_message"
+                    )
+                    if last_pending_message != status_message:
+                        logger.info(
+                            "Job for step `%s` is pending: %s",
+                            step_name,
+                            status_message,
+                        )
+                        node.metadata["last_pending_status_message"] = (
+                            status_message
+                        )
                 return NodeStatus.RUNNING
 
         def should_interrupt_execution() -> Optional[InterruptMode]:

@@ -14,6 +14,7 @@
 """Dynamic pipeline execution outputs."""
 
 import threading
+import time
 from abc import ABC, abstractmethod
 from concurrent.futures import Future
 from contextlib import AbstractContextManager, nullcontext
@@ -31,6 +32,7 @@ from typing import (
 from uuid import UUID
 
 from zenml.enums import ExecutionStatus
+from zenml.exceptions import StepExecutionException
 from zenml.logger import get_logger
 from zenml.models import (
     ArtifactVersionResponse,
@@ -42,6 +44,33 @@ from zenml.utils import exception_utils
 logger = get_logger(__name__)
 
 T = TypeVar("T")
+
+
+def wrap_step_failure(
+    exception: BaseException, invocation_id: Optional[str] = None
+) -> StepExecutionException:
+    """Wrap a step failure that was not explicitly awaited.
+
+    Args:
+        exception: The original step failure.
+        invocation_id: The invocation ID of the failed step, if known.
+
+    Returns:
+        The exception unchanged if it already is a `StepExecutionException`,
+        otherwise a new `StepExecutionException` chaining the original.
+    """
+    if isinstance(exception, StepExecutionException):
+        return exception
+
+    if invocation_id:
+        message = f"Step `{invocation_id}` failed."
+    else:
+        message = "A step failed during pipeline execution."
+
+    wrapped = StepExecutionException(message, original_exception=exception)
+    wrapped.__cause__ = exception
+    wrapped.__suppress_context__ = True
+    return wrapped
 
 
 def _maybe_release_pipeline_thread() -> AbstractContextManager[None]:
@@ -231,22 +260,10 @@ class _IsolatedStepFuture(BaseFuture):
         Returns:
             The result of the step future.
         """  # noqa: DOC503
-        from zenml.execution.pipeline.dynamic.utils import (
-            wait_for_step_to_finish,
-        )
-
         if self._finished_step_run is not None:
             step_run = self._finished_step_run
         else:
-            if self._wrapped:
-                # We first wait until the step run is submitted and only then
-                # start monitoring the actual step.
-                self._wrapped.result()
-
-            step_run = wait_for_step_to_finish(
-                pipeline_run_id=self.pipeline_run_id,
-                step_name=self.invocation_id,
-            )
+            step_run = self._wait_for_step_to_finish()
             self._finished_step_run = step_run
 
         if (
@@ -262,6 +279,44 @@ class _IsolatedStepFuture(BaseFuture):
             )
 
         return step_run
+
+    def _wait_for_step_to_finish(self) -> "StepRunResponse":
+        """Wait until the step is finished.
+
+        Returns:
+            The finished step run.
+        """
+        from zenml.execution.pipeline.dynamic.utils import get_latest_step_run
+
+        sleep_interval = 1
+        max_sleep_interval = 64
+
+        while True:
+            # Re-check the wrapped future in case it got replaced.
+            if wrapped := self._wrapped:
+                wrapped.result()
+
+            step_run = get_latest_step_run(
+                self.pipeline_run_id, self.invocation_id, hydrate=False
+            )
+            # If a step is in `retrying` status, another step run will be
+            # created and we will try to pick it up in the next iteration.
+            if step_run.status not in {
+                ExecutionStatus.PROVISIONING,
+                ExecutionStatus.RUNNING,
+                ExecutionStatus.RETRYING,
+            }:
+                return step_run
+
+            logger.debug(
+                "Waiting for step `%s` to finish (current status: %s)",
+                self.invocation_id,
+                step_run.status,
+            )
+
+            time.sleep(sleep_interval)
+            if sleep_interval < max_sleep_interval:
+                sleep_interval *= 2
 
 
 StepExecutionFuture = Union[_InlineStepFuture, _IsolatedStepFuture]
@@ -621,15 +676,25 @@ class StepFuture(BaseStepFuture):
         """
         return self._startup.result().result()
 
-    def _set_startup_result(
-        self, wrapped: Union[_InlineStepFuture, _IsolatedStepFuture]
-    ) -> None:
+    def _set_startup_result(self, wrapped: StepExecutionFuture) -> None:
         """Store the future that represents the started step.
 
         Args:
             wrapped: The future that represents the started step.
         """
         self._startup.set_result(wrapped)
+
+    def _rebind_execution_future(self, future: StepExecutionFuture) -> None:
+        """Rebind the execution future to a new attempt of the step.
+
+        Args:
+            future: The future that represents the new step execution attempt.
+        """
+        existing_future = self._startup.result()
+        assert isinstance(future, _IsolatedStepFuture)
+        assert isinstance(existing_future, _IsolatedStepFuture)
+
+        existing_future._wrapped = future._wrapped
 
     def _set_startup_failed(self, exception: BaseException) -> None:
         """Store a startup exception for the step.

@@ -207,6 +207,8 @@ trigger tried to launch this snapshot?" The status can be:
   rule said not to start another one yet.
 - `SKIPPED_MAX_RUNS`: a run was skipped because the configured run limit for
   this trigger-snapshot attachment has already been reached.
+- `SKIPPED_TRIGGER_CYCLE`: a platform event trigger dispatch was skipped
+  because it would revisit a pipeline already present in the trigger chain.
 - `ERROR`: ZenML tried to dispatch the run, but something failed.
 
 When the last status is `ERROR`, the dispatch state can also include the last
@@ -434,11 +436,13 @@ Supported target events depend on the source type:
 |-------------|---------|---------------|
 | `pipeline` | React to runs of a pipeline | `run_completed`, `run_failed` |
 | `pipeline_run` | React to one specific pipeline run | `completed`, `failed` |
+| `pipeline_snapshot` | React to runs of a pipeline snapshot | `run_completed`, `run_failed` |
 
 That distinction is easy to miss. If the source is a pipeline, the event name
 includes the word `run` because the pipeline itself is not what completes; one
-of its runs does. If the source is already a pipeline run, the event is simply
-`completed` or `failed`.
+of its runs does. Pipeline snapshot events follow the same naming pattern. If
+the source is already a pipeline run, the event is simply `completed` or
+`failed`.
 
 
 ### Create Platform Event Trigger
@@ -571,8 +575,38 @@ turn can trigger Pipeline C. This enables lightweight orchestration patterns dir
 to break down complex workflows into smaller, reusable pipeline components that execute in sequence based on platform events.
 
 {% hint style="warning" %}
-However, care must be taken when designing such workflows. Since cyclic dependencies are not currently validated, 
-it is possible to create loops where pipelines continuously trigger each other (for example, Pipeline 
-A triggers B, and B triggers A). This can lead to unintended behavior such as infinite execution cycles and 
-resource exhaustion. Users should ensure that their trigger configurations form an acyclic graph and avoid circular dependencies.
+ZenML detects trigger loops at the **pipeline level** while dispatching platform
+event triggers. Snapshots, runs, trigger IDs, and trigger configuration do not
+create separate nodes in the cycle: two different snapshots of the same
+pipeline still refer to the same pipeline in the trigger chain.
+
+If a downstream snapshot would revisit a pipeline that is already in the
+current chain, ZenML skips only that trigger-snapshot dispatch and records
+`SKIPPED_TRIGGER_CYCLE`. Other non-cyclic snapshots attached to the same trigger
+continue to dispatch normally. This protection does not disable or modify the
+trigger configuration, and it does not cancel runs that have already started.
 {% endhint %}
+
+Dispatch states are stored per attached snapshot, and
+`cycle_pipeline_ids` contains the ordered closed cycle (the first and last IDs
+are the pipeline that closes the loop):
+
+```python
+from zenml.client import Client
+from zenml.models import TriggerDispatchStatusCode
+
+client = Client()
+trigger = client.get_platform_event_trigger(
+    trigger_name_id_or_prefix="on-hello-pipeline-complete",
+)
+
+for snapshot_id, state in trigger.snapshot_dispatch_states.items():
+    if state.last_status == TriggerDispatchStatusCode.SKIPPED_TRIGGER_CYCLE:
+        cycle_pipeline_ids = (state.last_status_details or {}).get(
+            "cycle_pipeline_ids", []
+        )
+        print(
+            f"Snapshot {snapshot_id} was skipped because of pipeline cycle: "
+            f"{cycle_pipeline_ids}"
+        )
+```

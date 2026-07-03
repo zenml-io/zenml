@@ -11,10 +11,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+"""Integration tests for the MLflow experiment tracker."""
 
 import os
 from contextlib import ExitStack as does_not_raise
 from datetime import datetime
+from typing import Any, Dict
 from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
@@ -25,13 +27,17 @@ from pydantic import ValidationError
 from zenml.enums import StackComponentType
 from zenml.exceptions import StackValidationError
 from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker import (
+    DATABRICKS_AUTH_TYPE,
+    DATABRICKS_CLIENT_ID,
+    DATABRICKS_CLIENT_SECRET,
     DATABRICKS_HOST,
     DATABRICKS_PASSWORD,
-    DATABRICKS_TOKEN,
     DATABRICKS_USERNAME,
+    LOCAL_MLFLOW_ARTIFACTS_DIRECTORY,
+    LOCAL_MLFLOW_BACKEND_FILENAME,
+    MLFLOW_ENABLE_DB_SDK,
     MLFLOW_TRACKING_INSECURE_TLS,
     MLFLOW_TRACKING_PASSWORD,
-    MLFLOW_TRACKING_TOKEN,
     MLFLOW_TRACKING_USERNAME,
     MLFlowExperimentTracker,
 )
@@ -50,9 +56,7 @@ def test_mlflow_experiment_tracker_attributes() -> None:
             tracking_uri="http://localhost:5000",
             tracking_username="john_doe",
             tracking_password="password",
-            tracking_token="token1234",
             tracking_insecure_tls=True,
-            databricks_host="https://databricks.com",
         ),
         flavor="mlflow",
         type=StackComponentType.EXPERIMENT_TRACKER,
@@ -99,107 +103,180 @@ def test_mlflow_experiment_tracker_stack_validation(
         ).validate()
 
 
-def test_mlflow_experiment_tracker_authentication() -> None:
-    """Tests that the MLflow experiment tracker validates the authentication parameters."""
-    # should raise because no authentication parameters are set
+def _create_mlflow_experiment_tracker(
+    config: MLFlowExperimentTrackerConfig,
+) -> MLFlowExperimentTracker:
+    """Creates an MLflow experiment tracker for validation tests."""
+    return MLFlowExperimentTracker(
+        name="",
+        id=uuid4(),
+        config=config,
+        flavor="mlflow",
+        type=StackComponentType.EXPERIMENT_TRACKER,
+        user=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        MLFlowExperimentTrackerConfig(
+            tracking_uri="http://localhost:5000",
+            tracking_username="john_doe",
+            tracking_password="password",
+        ),
+        MLFlowExperimentTrackerConfig(
+            tracking_uri="http://localhost:5000",
+            tracking_token="token1234",
+        ),
+        MLFlowExperimentTrackerConfig(
+            tracking_uri="databricks",
+            tracking_username="john_doe",
+            tracking_password="password",
+            databricks_host="https://databricks.com",
+        ),
+        MLFlowExperimentTrackerConfig(
+            tracking_uri="databricks",
+            tracking_token="token1234",
+            databricks_host="https://databricks.com",
+        ),
+        MLFlowExperimentTrackerConfig(
+            tracking_uri="databricks",
+            databricks_client_id="client-id",
+            databricks_client_secret="client-secret",
+            databricks_host="https://databricks.com",
+        ),
+    ],
+)
+def test_mlflow_experiment_tracker_authentication_options_are_valid(
+    config: MLFlowExperimentTrackerConfig,
+) -> None:
+    """Tests that each supported MLflow authentication option is valid."""
+    with does_not_raise():
+        _create_mlflow_experiment_tracker(config)
+
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        {"tracking_uri": "http://localhost:5000"},
+        {
+            "tracking_uri": "databricks",
+            "databricks_host": "https://databricks.com",
+        },
+        {
+            "tracking_uri": "http://localhost:5000",
+            "tracking_username": "john_doe",
+            "tracking_password": "password",
+            "tracking_token": "token1234",
+        },
+        {
+            "tracking_uri": "databricks",
+            "tracking_username": "john_doe",
+            "tracking_password": "password",
+            "tracking_token": "token1234",
+            "databricks_host": "https://databricks.com",
+        },
+        {
+            "tracking_uri": "databricks",
+            "tracking_token": "token1234",
+            "databricks_client_id": "client-id",
+            "databricks_client_secret": "client-secret",
+            "databricks_host": "https://databricks.com",
+        },
+    ],
+)
+def test_mlflow_experiment_tracker_requires_exactly_one_remote_authentication_method(
+    config: Dict[str, str],
+) -> None:
+    """Tests that remote tracking requires exactly one auth method."""
     with pytest.raises(ValidationError):
-        MLFlowExperimentTracker(
-            name="",
-            id=uuid4(),
-            config=MLFlowExperimentTrackerConfig(
-                tracking_uri="http://localhost:5000",
-            ),
-            flavor="mlflow",
-            type=StackComponentType.EXPERIMENT_TRACKER,
-            user=uuid4(),
-            created=datetime.now(),
-            updated=datetime.now(),
-        )
+        MLFlowExperimentTrackerConfig(**config)
 
-    # should raise because no authentication parameters are set
+
+@pytest.mark.parametrize(
+    "config",
+    [
+        {
+            "tracking_uri": "http://localhost:5000",
+            "tracking_username": "john_doe",
+        },
+        {
+            "tracking_uri": "http://localhost:5000",
+            "tracking_password": "password",
+        },
+        {
+            "tracking_uri": "databricks",
+            "databricks_client_id": "client-id",
+            "databricks_host": "https://databricks.com",
+        },
+        {
+            "tracking_uri": "databricks",
+            "databricks_client_secret": "client-secret",
+            "databricks_host": "https://databricks.com",
+        },
+    ],
+)
+def test_mlflow_experiment_tracker_requires_complete_credential_pairs(
+    config: Dict[str, str],
+) -> None:
+    """Tests that paired authentication credentials are configured together."""
     with pytest.raises(ValidationError):
-        MLFlowExperimentTracker(
-            name="",
-            id=uuid4(),
-            config=MLFlowExperimentTrackerConfig(
-                tracking_uri="databricks",
-            ),
-            flavor="mlflow",
-            type=StackComponentType.EXPERIMENT_TRACKER,
-            user=uuid4(),
-            created=datetime.now(),
-            updated=datetime.now(),
-        )
+        MLFlowExperimentTrackerConfig(**config)
 
-    # should not raise because username and password are set
-    with does_not_raise():
-        MLFlowExperimentTracker(
-            name="",
-            id=uuid4(),
-            config=MLFlowExperimentTrackerConfig(
-                tracking_uri="http://localhost:5000",
-                tracking_username="john_doe",
-                tracking_password="password",
-            ),
-            flavor="mlflow",
-            type=StackComponentType.EXPERIMENT_TRACKER,
-            user=uuid4(),
-            created=datetime.now(),
-            updated=datetime.now(),
-        )
 
-    with does_not_raise():
-        MLFlowExperimentTracker(
-            name="",
-            id=uuid4(),
-            config=MLFlowExperimentTrackerConfig(
-                tracking_uri="databricks",
-                tracking_username="john_doe",
-                tracking_password="password",
-                databricks_host="https://databricks.com",
-            ),
-            flavor="mlflow",
-            type=StackComponentType.EXPERIMENT_TRACKER,
-            user=uuid4(),
-            created=datetime.now(),
-            updated=datetime.now(),
-        )
+@pytest.mark.parametrize(
+    "config",
+    [
+        {
+            "tracking_uri": "http://localhost:5000",
+            "tracking_token": "token1234",
+            "databricks_host": "https://databricks.com",
+        },
+        {
+            "tracking_uri": "http://localhost:5000",
+            "tracking_token": "token1234",
+            "databricks_client_id": "client-id",
+            "databricks_client_secret": "client-secret",
+        },
+        {
+            "tracking_uri": "http://localhost:5000",
+            "tracking_token": "token1234",
+            "enable_unity_catalog": True,
+        },
+    ],
+)
+def test_mlflow_experiment_tracker_rejects_databricks_options_without_databricks_tracking_uri(
+    config: Dict[str, Any],
+) -> None:
+    """Tests that Databricks options require a Databricks tracking URI."""
+    with pytest.raises(ValidationError):
+        MLFlowExperimentTrackerConfig(**config)
 
-    # should not raise because token is set
-    with does_not_raise():
-        MLFlowExperimentTracker(
-            name="",
-            id=uuid4(),
-            config=MLFlowExperimentTrackerConfig(
-                tracking_uri="http://localhost:5000",
-                tracking_token="token1234",
-            ),
-            flavor="mlflow",
-            type=StackComponentType.EXPERIMENT_TRACKER,
-            user=uuid4(),
-            created=datetime.now(),
-            updated=datetime.now(),
-        )
 
-    with does_not_raise():
-        MLFlowExperimentTracker(
-            name="",
-            id=uuid4(),
-            config=MLFlowExperimentTrackerConfig(
-                tracking_uri="databricks",
-                tracking_token="token1234",
-                databricks_host="https://databricks.com",
-            ),
-            flavor="mlflow",
-            type=StackComponentType.EXPERIMENT_TRACKER,
-            user=uuid4(),
-            created=datetime.now(),
-            updated=datetime.now(),
+def test_mlflow_experiment_tracker_requires_databricks_host() -> None:
+    """Tests that Databricks tracking requires a workspace host."""
+    with pytest.raises(ValidationError):
+        MLFlowExperimentTrackerConfig(
+            tracking_uri="databricks",
+            tracking_token="token1234",
         )
 
 
-def test_mlflow_experiment_tracker_set_config(local_stack: Stack) -> None:
+def test_mlflow_experiment_tracker_set_config(
+    local_stack: Stack, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Tests that the MLflow experiment tracker sets the MLflow configuration correctly."""
+    for env_var in [
+        DATABRICKS_AUTH_TYPE,
+        DATABRICKS_CLIENT_ID,
+        DATABRICKS_CLIENT_SECRET,
+        MLFLOW_ENABLE_DB_SDK,
+    ]:
+        monkeypatch.delenv(env_var, raising=False)
+
     local_stack._experiment_tracker = MLFlowExperimentTracker(
         name="",
         id=uuid4(),
@@ -207,7 +284,6 @@ def test_mlflow_experiment_tracker_set_config(local_stack: Stack) -> None:
             tracking_uri="http://localhost:5000",
             tracking_username="john_doe",
             tracking_password="password",
-            tracking_token="token1234",
             tracking_insecure_tls=True,
         ),
         flavor="mlflow",
@@ -221,7 +297,6 @@ def test_mlflow_experiment_tracker_set_config(local_stack: Stack) -> None:
 
     assert os.environ[MLFLOW_TRACKING_USERNAME] == "john_doe"
     assert os.environ[MLFLOW_TRACKING_PASSWORD] == "password"
-    assert os.environ[MLFLOW_TRACKING_TOKEN] == "token1234"
     assert os.environ[MLFLOW_TRACKING_INSECURE_TLS] == "true"
 
     local_stack._experiment_tracker = MLFlowExperimentTracker(
@@ -231,7 +306,6 @@ def test_mlflow_experiment_tracker_set_config(local_stack: Stack) -> None:
             tracking_uri="databricks",
             tracking_username="john_doe",
             tracking_password="password",
-            tracking_token="token1234",
             databricks_host="https://databricks.com",
         ),
         flavor="mlflow",
@@ -245,8 +319,80 @@ def test_mlflow_experiment_tracker_set_config(local_stack: Stack) -> None:
 
     assert os.environ[DATABRICKS_USERNAME] == "john_doe"
     assert os.environ[DATABRICKS_PASSWORD] == "password"
-    assert os.environ[DATABRICKS_TOKEN] == "token1234"
     assert os.environ[DATABRICKS_HOST] == "https://databricks.com"
+
+    local_stack._experiment_tracker = MLFlowExperimentTracker(
+        name="",
+        id=uuid4(),
+        config=MLFlowExperimentTrackerConfig(
+            tracking_uri="databricks",
+            databricks_client_id="client-id",
+            databricks_client_secret="client-secret",
+            databricks_host="https://databricks.com",
+        ),
+        flavor="mlflow",
+        type=StackComponentType.EXPERIMENT_TRACKER,
+        user=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+    local_stack._experiment_tracker.configure_mlflow()
+
+    assert os.environ[DATABRICKS_HOST] == "https://databricks.com"
+    assert os.environ[DATABRICKS_CLIENT_ID] == "client-id"
+    assert os.environ[DATABRICKS_CLIENT_SECRET] == "client-secret"
+    assert os.environ[DATABRICKS_AUTH_TYPE] == "oauth-m2m"
+    assert os.environ[MLFLOW_ENABLE_DB_SDK] == "true"
+
+
+def test_mlflow_experiment_tracker_uses_sqlite_for_local_backend(
+    tmp_path, monkeypatch
+) -> None:
+    """Tests that the implicit local MLflow backend does not use the file store."""
+    import mlflow
+
+    artifact_store = MagicMock()
+    artifact_store.path = str(tmp_path)
+    stack = MagicMock()
+    stack.artifact_store = artifact_store
+    client = MagicMock()
+    client.active_stack = stack
+
+    monkeypatch.setattr(
+        "zenml.integrations.mlflow.experiment_trackers."
+        "mlflow_experiment_tracker.Client",
+        lambda: client,
+    )
+
+    experiment_tracker = MLFlowExperimentTracker(
+        name="",
+        id=uuid4(),
+        config=MLFlowExperimentTrackerConfig(),
+        flavor="mlflow",
+        type=StackComponentType.EXPERIMENT_TRACKER,
+        user=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
+
+    expected_tracking_uri = "sqlite:///" + os.path.abspath(
+        str(tmp_path / LOCAL_MLFLOW_BACKEND_FILENAME)
+    )
+    expected_artifact_path = os.path.abspath(
+        str(tmp_path / LOCAL_MLFLOW_ARTIFACTS_DIRECTORY)
+    )
+
+    assert experiment_tracker.get_tracking_uri() == expected_tracking_uri
+    assert experiment_tracker.local_path == expected_artifact_path
+
+    experiment_tracker.configure_mlflow()
+    experiment = experiment_tracker._set_active_experiment("test_pipeline")
+
+    assert mlflow.get_tracking_uri() == expected_tracking_uri
+    assert experiment.artifact_location == "file:" + expected_artifact_path
+
+    mlflow.set_tracking_uri("")
 
 
 @patch("mlflow.start_run")

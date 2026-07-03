@@ -60,6 +60,7 @@ from zenml.enums import (
     ExecutionMode,
     ExecutionStatus,
     GroupType,
+    HookType,
     RunWaitConditionLeaseMode,
     RunWaitConditionResolution,
     RunWaitConditionStatus,
@@ -102,6 +103,7 @@ from zenml.execution.pipeline.dynamic.outputs import (
     StepRunOutputs,
     _InlineStepFuture,
     _IsolatedStepFuture,
+    wrap_step_failure,
 )
 from zenml.execution.pipeline.dynamic.pipeline_output_utils import (
     get_pipeline_entrypoint_output_names,
@@ -119,6 +121,7 @@ from zenml.execution.pipeline.dynamic.utils import (
 )
 from zenml.execution.pipeline.utils import compute_invocation_id
 from zenml.execution.step.utils import launch_step
+from zenml.hooks.execution import run_lifecycle_hook
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineRunResponse,
@@ -136,6 +139,7 @@ from zenml.orchestrators.publish_utils import (
     publish_failed_step_run,
     publish_pipeline_run_status_update,
     publish_stopped_step_run,
+    publish_successful_step_run,
 )
 from zenml.pipelines.dynamic.pipeline_definition import DynamicPipeline
 from zenml.pipelines.run_utils import create_placeholder_run
@@ -557,14 +561,47 @@ class DynamicPipelineRunner:
                     # Resource preemption sets the status to CANCELLING. We now
                     # update the status to CANCELLED.
                     step_run = publish_cancelled_step_run(step_run.id)
-                elif (
-                    infra_status
-                    in [ExecutionStatus.FAILED, ExecutionStatus.STOPPED]
-                    and db_status == ExecutionStatus.RUNNING
-                ):
+                elif infra_status in [
+                    ExecutionStatus.FAILED,
+                    ExecutionStatus.STOPPED,
+                ] and db_status in [
+                    ExecutionStatus.PROVISIONING,
+                    ExecutionStatus.RUNNING,
+                ]:
                     # Step failed/stopped on the infra side, but the
                     # code failed before it could report the status back to us.
                     step_run = publish_failed_step_run(step_run.id)
+                elif (
+                    infra_status == ExecutionStatus.COMPLETED
+                    and db_status == ExecutionStatus.RUNNING
+                ):
+                    if step_run.config.command is not None:
+                        # For isolated command steps, no zenml code is running
+                        # and therefore nothing publishes the status. We assume
+                        # the command finished successfully because of the
+                        # infra status.
+                        step_run = publish_successful_step_run(
+                            step_run_id=step_run.id,
+                            output_artifact_ids={},
+                        )
+                    else:
+                        # This should never happen, handle it just in case. If
+                        # this happens, the node would stay in `RUNNING` status
+                        # forever and keep the pipeline from finishing. We
+                        # record a failure but don't raise to keep the
+                        # monitoring loop alive during the shutdown phase.
+                        exc = RuntimeError(
+                            f"Step `{invocation_id}` completed on the "
+                            "infrastructure side but its status was not "
+                            "updated."
+                        )
+                        self.record_failure(
+                            wrap_step_failure(exc, invocation_id=invocation_id)
+                        )
+
+                # Either infra or DB status indicates that the step has
+                # finished -> we run the step cleanup
+                self._cleanup_isolated_step(step_run)
 
                 # Get the updated status that we might have just published
                 db_status = step_run.status
@@ -645,7 +682,17 @@ class DynamicPipelineRunner:
                                 config=step_run.config,
                                 step_config_overrides=step_run.config,
                             )
-                            self._queue_concurrent_isolated_step(step=step)
+                            execution_future = (
+                                self._queue_concurrent_isolated_step(step=step)
+                            )
+                            # Replace the execution future of the registered
+                            # step future. This is done so a failed submission
+                            # resolves the future instead of leaving it polling
+                            # the step run that is stuck in `RETRYING` status.
+                            self._future_registry.rebind_step_execution_future(
+                                invocation_id=invocation_id,
+                                future=execution_future,
+                            )
 
                 time.sleep(monitoring_delay)
 
@@ -753,10 +800,29 @@ class DynamicPipelineRunner:
         else:
             return self._orchestrator.get_isolated_step_status(step_run)
 
+    def _cleanup_isolated_step(self, step_run: "StepRunResponse") -> None:
+        """Clean up after an isolated step has finished.
+
+        Args:
+            step_run: The finished step run.
+        """
+        try:
+            if step_run.config.step_operator:
+                assert self._step_operator
+                self._step_operator.cleanup_step_submission(step_run)
+            else:
+                self._orchestrator.cleanup_isolated_step(step_run)
+        except Exception:
+            logger.exception(
+                "Failed to run cleanup for isolated step `%s`.",
+                step_run.name,
+            )
+
     def run_pipeline(self) -> None:
         """Run the pipeline.
 
         Raises:
+            BaseException: If the init hook fails.
             Exception: If loading the pipeline fails.
         """
         self._state.id = threading.get_ident()
@@ -767,6 +833,12 @@ class DynamicPipelineRunner:
             )
 
         with logs_context:
+            run_start_hook = False
+            run_resume_hook = self._run.status in {
+                ExecutionStatus.RESUMING,
+                ExecutionStatus.PAUSED,
+            }
+
             if self._run.status.is_finished:
                 logger.info("Run `%s` is already finished.", str(self._run.id))
                 return
@@ -800,6 +872,7 @@ class DynamicPipelineRunner:
                         status=ExecutionStatus.RUNNING,
                     ),
                 )
+                run_start_hook = True
 
             assert self._snapshot.stack
 
@@ -824,11 +897,33 @@ class DynamicPipelineRunner:
                 monitoring_thread = self._start_monitoring_loop()
                 startup_thread = self._start_startup_loop()
 
+                if run_start_hook:
+                    run_lifecycle_hook(
+                        self._snapshot.pipeline_configuration.start_hook_source,
+                        HookType.RUN_START,
+                    )
+                elif run_resume_hook:
+                    run_lifecycle_hook(
+                        self._snapshot.pipeline_configuration.resume_hook_source,
+                        HookType.RUN_RESUME,
+                    )
+
                 if not self._run.triggered_by_deployment:
                     # Only run the init hook if the run is not triggered by
                     # a deployment, as the deployment service will have
                     # already run the init hook.
-                    self._orchestrator.run_init_hook(snapshot=self._snapshot)
+                    try:
+                        self._orchestrator.run_init_hook(
+                            snapshot=self._snapshot
+                        )
+                    except BaseException as e:
+                        # The init hook itself is not tracked, but its failure
+                        # ends the run, so the run end and failure hooks fire
+                        # before the failure propagates.
+                        self._fire_terminal_run_hooks(
+                            ExecutionStatus.FAILED, e
+                        )
+                        raise
 
                 try:
                     self._run_entrypoint_and_finalize()
@@ -872,12 +967,16 @@ class DynamicPipelineRunner:
                 self._run.id,
             )
             self._abort_and_drain(exception=abort_exception)
-            # The server already published the status in this case.
+            # The server already published the terminal status. Refresh the run
+            # so the end hook sees it, then fire the run end hook.
+            self._run = Client().zen_store.get_run(self._run.id)
+            self._fire_terminal_run_hooks(self._run.status)
             return
         except BaseException as e:
             logger.debug("Exception in pipeline function: %s", e)
             self._abort_and_drain(exception=e)
             self._publish_run_status(exception=e)
+            self._fire_terminal_run_hooks(ExecutionStatus.FAILED, e)
             raise
 
         # The user code has returned. But there might still be concurrent work
@@ -889,10 +988,21 @@ class DynamicPipelineRunner:
             logger.debug("Failure during settle: %s", e)
             self._abort_and_drain(exception=e)
             self._publish_run_status(exception=e)
+            self._fire_terminal_run_hooks(ExecutionStatus.FAILED, e)
             raise
 
         try:
             self._publish_run_status(return_value=return_value)
+            # A completed run fires end then success. A concurrent stop can
+            # resolve the run to a terminal, non-completed status, which fires
+            # the end hook only. A paused run fires the pause hook instead.
+            if self._run.status == ExecutionStatus.PAUSED:
+                run_lifecycle_hook(
+                    self._snapshot.pipeline_configuration.pause_hook_source,
+                    HookType.RUN_PAUSE,
+                )
+            elif self._run.status.is_finished:
+                self._fire_terminal_run_hooks(self._run.status)
         except Exception as e:
             # Publish failed for some reason (e.g., invalid return value).
             # Mark the run failed instead of leaving it stuck in RUNNING.
@@ -901,7 +1011,36 @@ class DynamicPipelineRunner:
                 self.snapshot.pipeline.name,
             )
             self._publish_run_status(exception=e)
+            self._fire_terminal_run_hooks(ExecutionStatus.FAILED, e)
             raise
+
+    def _fire_terminal_run_hooks(
+        self,
+        status: ExecutionStatus,
+        exception: Optional[BaseException] = None,
+    ) -> None:
+        """Fire the run end hook, then the terminal hook matching the status.
+
+        Args:
+            status: The terminal status of the run.
+            exception: The exception that ended the run, if any.
+        """
+        config = self._snapshot.pipeline_configuration
+        run_lifecycle_hook(
+            config.end_hook_source,
+            HookType.RUN_END,
+            optional_args=(exception,),
+        )
+        if status == ExecutionStatus.COMPLETED:
+            run_lifecycle_hook(
+                config.success_hook_source, HookType.RUN_SUCCESS
+            )
+        elif exception is not None:
+            run_lifecycle_hook(
+                config.failure_hook_source,
+                HookType.RUN_FAILURE,
+                optional_args=(exception,),
+            )
 
     def notify_graph_changed(self, nodes_ready: bool) -> None:
         """Wake up the startup loop if new nodes became ready.
@@ -1123,14 +1262,21 @@ class DynamicPipelineRunner:
                         initial_state=NodeState.FAILED,
                     )
                     self.mark_node_failed(node_id=invocation_id)
-                    self.record_failure(exception=exception)
+                    self.record_failure(
+                        exception=wrap_step_failure(
+                            exception, invocation_id=invocation_id
+                        )
+                    )
                     return future
                 else:
                     raise exception
 
             remaining_retries = get_remaining_retries(step_run=step_run)
 
-            if step_run.status == ExecutionStatus.RUNNING:
+            if step_run.status in {
+                ExecutionStatus.PROVISIONING,
+                ExecutionStatus.RUNNING,
+            }:
                 logger.info(
                     "Restarting the monitoring of existing step `%s` "
                     "(ID: %s). Remaining retries: %d",
@@ -1959,7 +2105,11 @@ class DynamicPipelineRunner:
                 )
             except BaseException as e:
                 self.mark_node_failed(node_id=step.spec.invocation_id)
-                self.record_failure(exception=e)
+                self.record_failure(
+                    exception=wrap_step_failure(
+                        e, invocation_id=step.spec.invocation_id
+                    )
+                )
                 raise e
 
             self._register_isolated_step_for_monitoring(
@@ -1996,7 +2146,11 @@ class DynamicPipelineRunner:
                 )
             except BaseException as e:
                 self.mark_node_failed(node_id=step.spec.invocation_id)
-                self.record_failure(exception=e)
+                self.record_failure(
+                    exception=wrap_step_failure(
+                        e, invocation_id=step.spec.invocation_id
+                    )
+                )
                 raise e
 
             self._on_step_finished(step_run=step_run)
@@ -2065,7 +2219,11 @@ class DynamicPipelineRunner:
         ):
             exception = self._get_step_exception(step_run=step_run)
             self.mark_node_failed(node_id=step_run.name)
-            self.record_failure(exception=exception)
+            self.record_failure(
+                exception=wrap_step_failure(
+                    exception, invocation_id=step_run.name
+                )
+            )
 
     # Concurrent map lifecycle
 

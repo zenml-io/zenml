@@ -75,10 +75,7 @@ def batch_create_tag_resource(
     Returns:
         A list of tag resource responses.
     """
-    return [
-        zen_store().create_tag_resource(tag_resource=tag_resource)
-        for tag_resource in tag_resources
-    ]
+    return zen_store().batch_create_tag_resource(tag_resources=tag_resources)
 
 
 @router.delete(

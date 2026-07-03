@@ -118,12 +118,10 @@ class IntegrationRegistry(object):
                 logger.debug(f"Activating integration `{name}`...")
                 try:
                     integration.activate()
-                # ImportError: broken/incomplete install or undeclared
-                # transitive dependency despite declared requirements
-                # appearing installed.
-                # OSError: native library or binary/DLL load failure
-                # at import time.
-                except (ImportError, OSError) as e:
+                # Activation crosses optional third-party import boundaries.
+                # Those imports can fail in many ways even if metadata checks
+                # pass, so keep unrelated pipeline compilation paths alive.
+                except Exception as e:
                     logger.exception(
                         f"Failed to activate integration `{name}`: "
                         f"{type(e).__name__}: {e}. "

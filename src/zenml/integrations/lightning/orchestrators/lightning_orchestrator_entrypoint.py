@@ -36,7 +36,7 @@ from zenml.integrations.lightning.orchestrators.utils import (
     sanitize_studio_name,
 )
 from zenml.logger import get_logger
-from zenml.orchestrators.dag_runner import ThreadedDagRunner
+from zenml.orchestrators.legacy_dag_runner import ThreadedDagRunner
 
 logger = get_logger(__name__)
 

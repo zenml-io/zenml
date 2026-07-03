@@ -53,12 +53,18 @@ MLFLOW_TRACKING_PASSWORD = "MLFLOW_TRACKING_PASSWORD"
 MLFLOW_TRACKING_TOKEN = "MLFLOW_TRACKING_TOKEN"
 MLFLOW_TRACKING_INSECURE_TLS = "MLFLOW_TRACKING_INSECURE_TLS"
 MLFLOW_BACKEND_STORE_URI = "_MLFLOW_SERVER_FILE_STORE"
+LOCAL_MLFLOW_BACKEND_FILENAME = "mlflow.db"
+LOCAL_MLFLOW_ARTIFACTS_DIRECTORY = "mlflow_artifacts"
 
 DATABRICKS_HOST = "DATABRICKS_HOST"
 DATABRICKS_USERNAME = "DATABRICKS_USERNAME"
 DATABRICKS_PASSWORD = "DATABRICKS_PASSWORD"
 DATABRICKS_TOKEN = "DATABRICKS_TOKEN"
+DATABRICKS_CLIENT_ID = "DATABRICKS_CLIENT_ID"
+DATABRICKS_CLIENT_SECRET = "DATABRICKS_CLIENT_SECRET"
+DATABRICKS_AUTH_TYPE = "DATABRICKS_AUTH_TYPE"
 DATABRICKS_UNITY_CATALOG = "databricks-uc"
+MLFLOW_ENABLE_DB_SDK = "MLFLOW_ENABLE_DB_SDK"
 
 
 class MLFlowExperimentTracker(BaseExperimentTracker):
@@ -114,9 +120,12 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         tracking_uri = self.get_tracking_uri()
         if is_remote_mlflow_tracking_uri(tracking_uri):
             return None
-        else:
-            assert tracking_uri.startswith("file:")
+        elif tracking_uri.startswith("file:"):
             return tracking_uri[5:]
+        elif self.config.tracking_uri:
+            return None
+        else:
+            return self._local_mlflow_artifact_path()
 
     @property
     def validator(self) -> Optional["StackValidator"]:
@@ -149,19 +158,35 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         """
         return MLFlowExperimentTrackerSettings
 
-    @staticmethod
-    def _local_mlflow_backend() -> str:
-        """Gets the local MLflow backend inside the ZenML artifact repository directory.
+    @classmethod
+    def _local_mlflow_artifact_path(cls) -> str:
+        """Gets the local directory where MLflow artifacts are stored.
+
+        Returns:
+            The local MLflow artifact path.
+        """
+        client = Client()
+        artifact_store = client.active_stack.artifact_store
+        local_mlflow_artifact_path = os.path.abspath(
+            os.path.join(artifact_store.path, LOCAL_MLFLOW_ARTIFACTS_DIRECTORY)
+        )
+        os.makedirs(local_mlflow_artifact_path, exist_ok=True)
+        return local_mlflow_artifact_path
+
+    @classmethod
+    def _local_mlflow_backend(cls) -> str:
+        """Gets the local MLflow backend inside the ZenML artifact store.
 
         Returns:
             The MLflow tracking URI for the local MLflow backend.
         """
         client = Client()
         artifact_store = client.active_stack.artifact_store
-        local_mlflow_tracking_uri = os.path.join(artifact_store.path, "mlruns")
-        if not os.path.exists(local_mlflow_tracking_uri):
-            os.makedirs(local_mlflow_tracking_uri)
-        return "file:" + local_mlflow_tracking_uri
+        local_mlflow_backend_path = os.path.abspath(
+            os.path.join(artifact_store.path, LOCAL_MLFLOW_BACKEND_FILENAME)
+        )
+        os.makedirs(os.path.dirname(local_mlflow_backend_path), exist_ok=True)
+        return "sqlite:///" + local_mlflow_backend_path
 
     def get_tracking_uri(self, as_plain_text: bool = True) -> str:
         """Returns the configured tracking URI or a local fallback.
@@ -317,6 +342,18 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
                 os.environ[DATABRICKS_PASSWORD] = self.config.tracking_password
             if self.config.tracking_token:
                 os.environ[DATABRICKS_TOKEN] = self.config.tracking_token
+            if (
+                self.config.databricks_client_id
+                and self.config.databricks_client_secret
+            ):
+                os.environ[DATABRICKS_CLIENT_ID] = (
+                    self.config.databricks_client_id
+                )
+                os.environ[DATABRICKS_CLIENT_SECRET] = (
+                    self.config.databricks_client_secret
+                )
+                os.environ[DATABRICKS_AUTH_TYPE] = "oauth-m2m"
+                os.environ[MLFLOW_ENABLE_DB_SDK] = "true"
             if self.config.enable_unity_catalog:
                 mlflow.set_registry_uri(DATABRICKS_UNITY_CATALOG)
         else:
@@ -375,6 +412,7 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
             experiment_name: Name of the experiment to activate.
 
         Raises:
+            MlflowException: If the experiment creation failed.
             RuntimeError: If the experiment creation or activation failed.
 
         Returns:
@@ -382,8 +420,24 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         """
         experiment_name = self._adjust_experiment_name(experiment_name)
 
-        mlflow.set_experiment(experiment_name=experiment_name)
         experiment = mlflow.get_experiment_by_name(experiment_name)
+        if experiment:
+            return mlflow.set_experiment(experiment_name=experiment_name)
+
+        artifact_location = None
+        if not self.config.tracking_uri:
+            artifact_location = "file:" + self._local_mlflow_artifact_path()
+
+        try:
+            mlflow.tracking.MlflowClient().create_experiment(
+                name=experiment_name,
+                artifact_location=artifact_location,
+            )
+        except MlflowException:
+            if not mlflow.get_experiment_by_name(experiment_name):
+                raise
+
+        experiment = mlflow.set_experiment(experiment_name=experiment_name)
         if not experiment:
             raise RuntimeError("Failed to set active mlflow experiment.")
         return experiment

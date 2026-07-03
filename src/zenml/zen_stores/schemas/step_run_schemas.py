@@ -93,6 +93,18 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 "cache_key",
             ],
         ),
+        # Optimizes hydrated step-run list queries scoped by project, run,
+        # and step name, then paginated by creation time and ID.
+        build_index(
+            table_name=__tablename__,
+            column_names=[
+                "project_id",
+                "pipeline_run_id",
+                "name",
+                "created",
+                "id",
+            ],
+        ),
     )
 
     # Fields
@@ -253,6 +265,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         cls,
         include_metadata: bool = False,
         include_resources: bool = False,
+        many: bool = False,
         **kwargs: Any,
     ) -> Sequence[ExecutableOption]:
         """Get the query options for the schema.
@@ -262,6 +275,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 the schema to a model.
             include_resources: Whether resources will be included when
                 converting the schema to a model.
+            many: Whether the options are applied to a query that returns many
+                rows.
             **kwargs: Keyword arguments to allow schema specific logic
 
         Returns:
@@ -272,34 +287,38 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             ModelVersionSchema,
         )
 
+        single_loader = selectinload if many else joinedload
+
         options = [
-            selectinload(jl_arg(StepRunSchema.snapshot)).load_only(
-                jl_arg(PipelineSnapshotSchema.pipeline_configuration)
+            single_loader(jl_arg(StepRunSchema.snapshot)).load_only(
+                jl_arg(PipelineSnapshotSchema.pipeline_configuration),
+                jl_arg(PipelineSnapshotSchema.is_dynamic),
             ),
-            selectinload(jl_arg(StepRunSchema.pipeline_run)).load_only(
+            single_loader(jl_arg(StepRunSchema.pipeline_run)).load_only(
                 jl_arg(PipelineRunSchema.start_time)
             ),
-            joinedload(jl_arg(StepRunSchema.static_config)),
-            joinedload(jl_arg(StepRunSchema.dynamic_config)),
+            single_loader(jl_arg(StepRunSchema.static_config)),
+            single_loader(jl_arg(StepRunSchema.dynamic_config)),
         ]
 
-        # if include_metadata:
-        #     options.extend(
-        #         [
-        #             joinedload(jl_arg(StepRunSchema.parents)),
-        #             joinedload(jl_arg(StepRunSchema.run_metadata)),
-        #         ]
-        #     )
+        if include_metadata:
+            options.extend(
+                [
+                    selectinload(jl_arg(StepRunSchema.parents)),
+                    selectinload(jl_arg(StepRunSchema.run_metadata)),
+                ]
+            )
 
         if include_resources:
             options.extend(
                 [
-                    selectinload(
+                    single_loader(
                         jl_arg(StepRunSchema.model_version)
                     ).joinedload(
                         jl_arg(ModelVersionSchema.model), innerjoin=True
                     ),
-                    selectinload(jl_arg(StepRunSchema.user)),
+                    single_loader(jl_arg(StepRunSchema.user)),
+                    single_loader(jl_arg(StepRunSchema.resource_request)),
                     selectinload(jl_arg(StepRunSchema.input_artifacts))
                     .joinedload(
                         jl_arg(StepRunInputArtifactSchema.artifact_version),
@@ -388,6 +407,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 step = Step.from_dict(
                     json.loads(config_schema.config),
                     pipeline_configuration=pipeline_configuration,
+                    exclude_hook_sources=self.snapshot.is_dynamic,
                 )
         if not step and self.step_configuration:
             # In this legacy case, we're guaranteed to have the merged

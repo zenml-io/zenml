@@ -41,7 +41,7 @@ from zenml.config.step_configurations import (
 )
 from zenml.enums import StepRuntime
 from zenml.environment import get_run_environment_dict
-from zenml.exceptions import StackValidationError
+from zenml.exceptions import StackValidationError, StepInterfaceError
 from zenml.models import PipelineSnapshotBase
 from zenml.pipelines.run_utils import get_default_run_name
 from zenml.utils import pydantic_utils, secret_utils, settings_utils
@@ -150,6 +150,7 @@ class Compiler:
         }
 
         self._ensure_required_stack_components_exist(stack=stack, steps=steps)
+        self._validate_command_steps(pipeline=pipeline, steps=steps)
 
         run_name = run_configuration.run_name or get_default_run_name(
             pipeline_name=pipeline.name
@@ -531,6 +532,10 @@ class Compiler:
             pipeline: Configuration for the pipeline.
             skip_input_validation: If True, will skip the input validation.
 
+        Raises:
+            StepInterfaceError: If a command step defines success or failure
+                hooks.
+
         Returns:
             The compiled step.
         """
@@ -574,9 +579,24 @@ class Compiler:
                 parameters_to_ignore=parameters_to_ignore,
                 skip_input_validation=skip_input_validation,
             )
+
+        if step_configuration_overrides.command:
+            # Do not allow explicit hooks on a command step. In case they get
+            # applied from the pipeline level, we do not fail but just ignore
+            # them. Otherwise, the hook defaults from the pipeline would be
+            # unusable if the pipeline contains a command step.
+            if (
+                step_configuration_overrides.failure_hook_source
+                or step_configuration_overrides.success_hook_source
+                or step_configuration_overrides.end_hook_source
+                or step_configuration_overrides.start_hook_source
+            ):
+                raise StepInterfaceError("Command steps do not support hooks.")
+
         full_step_config = (
             step_configuration_overrides.apply_pipeline_configuration(
-                pipeline_configuration=pipeline.configuration
+                pipeline_configuration=pipeline.configuration,
+                exclude_hook_sources=pipeline.is_dynamic,
             )
         )
 
@@ -616,7 +636,7 @@ class Compiler:
             # each step invocation.
             return list(pipeline.invocations.items())
 
-        from zenml.orchestrators.dag_runner import reverse_dag
+        from zenml.orchestrators.legacy_dag_runner import reverse_dag
         from zenml.orchestrators.topsort import topsorted_layers
 
         # Sort step names using topological sort
@@ -638,6 +658,34 @@ class Compiler:
             for name_in_pipeline in sorted_step_names
         ]
         return sorted_invocations
+
+    @staticmethod
+    def _validate_command_steps(
+        pipeline: "Pipeline", steps: Mapping[str, "Step"]
+    ) -> None:
+        """Validates the command steps of a pipeline.
+
+        Args:
+            pipeline: The pipeline to validate.
+            steps: The steps of the pipeline.
+
+        Raises:
+            StackValidationError: If a command step in a static pipeline has no
+                step operator.
+        """
+        if pipeline.is_dynamic:
+            return
+
+        for name, step in steps.items():
+            if (
+                step.config.command is not None
+                and not step.config.step_operator
+            ):
+                raise StackValidationError(
+                    f"Command step `{name}` in a static pipeline requires a "
+                    "step operator. Configure a step operator for the step, or "
+                    "use a dynamic pipeline."
+                )
 
     @staticmethod
     def _ensure_required_stack_components_exist(

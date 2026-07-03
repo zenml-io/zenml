@@ -17,7 +17,7 @@ jobs:
       PYTHONIOENCODING: utf-8
     steps:
       - name: Checkout repo
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
 
       # The following sed command replaces the version number in Chart.yaml with the tag version.
       # It replaces the line that starts with "version: " with "version: <tag version>"
@@ -25,20 +25,20 @@ jobs:
         run: |
           sed -i "s/version: .*/version: \"${GITHUB_REF_NAME}\"/" helm/Chart.yaml
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885  # v6.1.1
+        uses: aws-actions/configure-aws-credentials@e7f100cf4c008499ea8adda475de1042d6975c7b  # v6.2.0
         with:
           role-to-assume: arn:aws:iam::715803424590:role/gh-action-role-zenml-helm
           aws-region: us-east-1
       - name: Login to Amazon ECR Public
         id: login-ecr-public
-        uses: aws-actions/amazon-ecr-login@fa648b43de3d4d023bcb3f89ed6940096949c419  # v2.1.5
+        uses: aws-actions/amazon-ecr-login@d539f0932e70871a027e9d5a9d8fc38589180a64  # v2.1.6
         with:
           mask-password: 'true'
           registry-type: public
 
       # TODO: revisit the pinned helm version + find a higher version
       - name: install helm with version 3.9.2
-        uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2  # v5.0.0
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310  # v5.0.1
         with:
           version: v3.9.2  # default is latest (stable)
         id: install-helm

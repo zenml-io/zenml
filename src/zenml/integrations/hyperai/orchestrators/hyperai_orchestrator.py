@@ -202,6 +202,13 @@ class HyperAIOrchestrator(ContainerizedOrchestrator):
             HyperAIServiceConnector,
         )
 
+        logger.warning(
+            "The HyperAI orchestrator is deprecated in favor of the generic "
+            "`ssh` orchestrator, which runs pipelines over SSH + Docker on "
+            "any host and additionally supports dynamic pipelines. Register "
+            "one with `zenml orchestrator register ... --flavor=ssh`."
+        )
+
         compose_definition: Dict[str, Any] = {"version": "3", "services": {}}
         snapshot_id = snapshot.id
 

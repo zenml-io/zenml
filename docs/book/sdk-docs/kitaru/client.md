@@ -4,7 +4,7 @@ icon: plug
 
 # Client
 
-[Kitaru](https://docs.zenml.io/kitaru) is ZenML's durable execution layer for AI agents. `KitaruClient` is the programmatic interface to a Kitaru server — inspect and control flow executions, browse artifacts, invoke deployments, and manage authentication from Python.
+[Kitaru](https://docs.zenml.io/kitaru) is ZenML's sibling project for running, replaying, and improving AI agents. `KitaruClient` is the programmatic interface to a Kitaru server — inspect and control flow executions, browse artifacts, invoke deployments, and manage authentication from Python.
 
 This page groups the client into thematic areas. For the complete, auto-generated API (every method and signature), see the [full Kitaru SDK reference](https://sdkdocs.kitaru.ai/reference/python/client/).
 
