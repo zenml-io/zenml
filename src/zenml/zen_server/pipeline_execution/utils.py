@@ -352,13 +352,18 @@ def run_snapshot(
         try:
             snapshot_run_dispatcher().submit(execution_request)
         except SnapshotRunQueueFullError:
-            zen_store().update_run(
-                run_id=execution_request.run_id,
-                run_update=PipelineRunUpdate(
-                    status=ExecutionStatus.FAILED,
-                    status_reason="Snapshot execution queue is full.",
-                ),
-            )
+            try:
+                zen_store().delete_run(run_id=execution_request.run_id)
+                if create_new_snapshot:
+                    zen_store().delete_snapshot(
+                        snapshot_id=execution_request.snapshot_id
+                    )
+            except Exception:
+                logger.exception(
+                    "Failed to clean up snapshot run %s after queue "
+                    "rejection.",
+                    execution_request.run_id,
+                )
             raise
         except Exception as exc:
             logger.exception(
