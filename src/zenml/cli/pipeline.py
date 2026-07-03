@@ -389,9 +389,19 @@ def run_pipeline(
                 "execution_prevented": True,
             },
             warnings=[
-                "Dry-run validated pipeline import, configuration, and "
-                "preparation. Stack activation, snapshot creation, and "
-                "submission were intentionally skipped."
+                # Dynamic pipelines bail on the execution-prevention check
+                # before `prepare()` runs, so only claim preparation was
+                # validated when it actually happened.
+                (
+                    "Dry-run validated pipeline import, configuration, and "
+                    "preparation."
+                    if pipeline_instance.is_prepared
+                    else "Dry-run validated pipeline import and "
+                    "configuration. Preparation is skipped for dynamic "
+                    "pipelines."
+                )
+                + " The stack was only activated temporarily and reverted; "
+                "snapshot creation and submission were intentionally skipped."
             ],
         )
         return

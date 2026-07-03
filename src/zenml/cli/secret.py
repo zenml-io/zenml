@@ -265,11 +265,12 @@ def list_secrets(
         except NotImplementedError as e:
             error(f"Centralized secrets management is disabled: {str(e)}")
 
-    if not secrets.items:
-        warning("No secrets found for the given filters.")
-        return
-
-    print_page(secrets, columns, output_format)
+    print_page(
+        secrets,
+        columns,
+        output_format,
+        empty_message="No secrets found for the given filters.",
+    )
 
 
 @secret.command("get", help="Get a secret with a given name, prefix or id.")

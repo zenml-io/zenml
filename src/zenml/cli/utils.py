@@ -3734,11 +3734,13 @@ def print_page(
         active_id: ID of the active item for highlighting. Used together with
             row_generator to create the row_formatter.
     """
-    # Structured formats must always emit a parseable payload, even for an
-    # empty page; the friendly message is only for human table output.
-    if not page.total and output_format == "table":
+    # The friendly message goes to stderr for every format, so it never
+    # pollutes parseable stdout. JSON/YAML additionally fall through to emit
+    # an empty payload, since their consumers parse stdout unconditionally.
+    if not page.total:
         declare(empty_message)
-        return
+        if output_format not in ("json", "yaml"):
+            return
 
     if row_generator is not None:
         row_formatter = partial(row_generator, active_id=active_id)
@@ -3783,7 +3785,8 @@ def handle_output(
             logger.warning("Failed to write clean output: %s", err)
             print(cli_output)
 
-    if page and output_format == "table":
+    # Identity check: `Page.__len__` makes an empty page falsy.
+    if page is not None and output_format == "table":
         print_page_info(page)
 
 

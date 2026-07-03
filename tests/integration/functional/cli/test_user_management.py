@@ -67,6 +67,35 @@ def test_create_user_fails_fast_in_machine_mode_without_password() -> None:
     assert "--password" in payload["error"]
 
 
+def test_demote_admin_requires_yes_flag_in_machine_mode() -> None:
+    """Test that machine mode blocks admin demotion unless --yes is passed."""
+    u = create_sample_user()
+    runner = cli_runner()
+    result = runner.invoke(user_update_command, [u.name, "--admin"])
+    assert result.exit_code == 0
+
+    machine_runner = CliRunner()
+    blocked = machine_runner.invoke(
+        user_update_command,
+        [u.name, "--user"],
+        env={"ZENML_CLI_MACHINE_MODE": "true"},
+    )
+
+    assert blocked.exit_code != 0
+    payload = json.loads(blocked.stderr)
+    assert payload["type"] == "MachineModeConfirmationError"
+    assert Client().get_user(u.name).is_admin
+
+    confirmed = machine_runner.invoke(
+        user_update_command,
+        [u.name, "--user", "--yes"],
+        env={"ZENML_CLI_MACHINE_MODE": "true"},
+    )
+
+    assert confirmed.exit_code == 0
+    assert not Client().get_user(u.name).is_admin
+
+
 def test_update_user_with_new_name_succeeds() -> None:
     """Test that creating a new user succeeds."""
     u = create_sample_user()

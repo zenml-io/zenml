@@ -241,8 +241,10 @@ def stop(h: Union[FileHandler, RemoteHandler]) -> None:
 
 ### Prerequisites
 - Set up a Python environment with ZenML dev dependencies
-- Install ZenML in development mode: `pip install -e ".[dev]"`
+- Install ZenML in development mode with the `local`, `server`, and `dev` extras — the `dev` extra alone is NOT enough to run tests or the local server:
+  `uv pip install --python .venv/bin/python -e ".[local,server,dev]"`
 - Most scripts require these dependencies to be available
+- If `.venv/bin/pytest` or `.venv/bin/mypy` are suddenly missing mid-session, the venv was likely rebuilt — rerun the install command above rather than installing tools one by one
 - ZenML recommends using `uv` for Python package installation in local environments
   - `uv` is also used in CI workflows
   - It resolves dependencies more quickly and reliably than pip

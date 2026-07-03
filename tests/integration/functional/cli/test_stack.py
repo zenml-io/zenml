@@ -781,6 +781,50 @@ def test_delete_stack_dry_run_outputs_preview_and_does_not_delete(
     assert clean_client.get_stack(new_stack.id)
 
 
+def test_delete_stack_requires_yes_flag_in_machine_mode(
+    clean_client: "Client",
+) -> None:
+    """Tests that machine mode blocks stack deletion unless --yes is passed."""
+    registered_stack = clean_client.active_stack_model
+    artifact_store_name = registered_stack.components[
+        StackComponentType.ARTIFACT_STORE
+    ][0].name
+    orchestrator_name = registered_stack.components[
+        StackComponentType.ORCHESTRATOR
+    ][0].name
+    new_stack = clean_client.create_stack(
+        name="arias_doomed_stack",
+        components={
+            StackComponentType.ARTIFACT_STORE: artifact_store_name,
+            StackComponentType.ORCHESTRATOR: orchestrator_name,
+        },
+    )
+
+    runner = CliRunner()
+    delete_command = cli.commands["stack"].commands["delete"]
+
+    blocked = runner.invoke(
+        delete_command,
+        [new_stack.name],
+        env={"ZENML_CLI_MACHINE_MODE": "true"},
+    )
+
+    assert blocked.exit_code != 0
+    error_payload = json.loads(blocked.stderr)
+    assert error_payload["type"] == "MachineModeConfirmationError"
+    assert clean_client.get_stack(new_stack.id)
+
+    confirmed = runner.invoke(
+        delete_command,
+        [new_stack.name, "--yes"],
+        env={"ZENML_CLI_MACHINE_MODE": "true"},
+    )
+
+    assert confirmed.exit_code == 0
+    with pytest.raises(KeyError):
+        clean_client.get_stack(new_stack.id)
+
+
 def test_delete_stack_default_stack_fails(clean_client: "Client") -> None:
     """Test stack delete default stack fails."""
     # first we set the active stack to a non-default stack
