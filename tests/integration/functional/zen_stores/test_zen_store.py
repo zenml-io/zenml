@@ -683,6 +683,29 @@ class TestAdminUser:
                 user = zen_store.get_user(test_user.id)
                 assert not user.is_admin
 
+                new_password = "new-password"
+                new_zen_store.put(
+                    "/current-user",
+                    body=UserUpdate(
+                        name=test_user.name,
+                        old_password=self.default_pwd,
+                        password=new_password,
+                    ),
+                )
+
+                with pytest.raises(AuthorizationException):
+                    new_zen_store.get_user()
+
+            with pytest.raises(AuthorizationException):
+                with LoginContext(
+                    user_name=test_user.name, password=self.default_pwd
+                ):
+                    Client().zen_store.get_user()
+
+            with LoginContext(user_name=test_user.name, password=new_password):
+                new_zen_store = Client().zen_store
+                assert new_zen_store.get_user().id == test_user.id
+
     def test_service_account_mutations_require_admin_without_rbac(self):
         """Tests service account mutations as an admin and as a non-admin."""
         if Client().zen_store.type == StoreType.SQL:

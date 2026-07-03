@@ -101,13 +101,17 @@ class AuthContext(BaseModel):
 
 
 def _fetch_and_verify_api_key(
-    api_key_id: UUID, key_to_verify: Optional[str] = None
+    api_key_id: UUID,
+    key_to_verify: Optional[str] = None,
+    token_generation: Optional[int] = None,
 ) -> APIKeyInternalResponse:
     """Fetches an API key from the database and verifies it.
 
     Args:
         api_key_id: The API key ID.
         key_to_verify: Optional API key value to verify against the API key.
+        token_generation: Optional API key generation embedded in a JWT that
+            was derived from the API key.
 
     Returns:
         The fetched API key.
@@ -160,6 +164,14 @@ def _fetch_and_verify_api_key(
             f"{api_key.name}"
         )
         logger.exception(error)
+        raise CredentialsNotValid(error)
+
+    if not api_key.is_token_generation_valid(token_generation):
+        error = (
+            f"Authentication error: access token for API key {api_key.name} "
+            "was issued for an API key generation that is no longer valid"
+        )
+        logger.error(error)
         raise CredentialsNotValid(error)
 
     # Update the "last used" timestamp of the API key
@@ -324,12 +336,26 @@ def authenticate_credentials(
             logger.error(error)
             raise CredentialsNotValid(error)
 
+        if not user_model.is_token_issued_after_password_change(
+            decoded_token.issued_at
+        ):
+            error = (
+                f"Authentication error: access token for user "
+                f"{user_model.name} was issued before the user's password "
+                "was changed"
+            )
+            logger.error(error)
+            raise CredentialsNotValid(error)
+
         api_key_model: Optional[APIKeyInternalResponse] = None
         if decoded_token.api_key_id:
             # The API token was generated from an API key. We still have to
             # verify if the API key hasn't been deactivated or deleted in the
             # meantime.
-            api_key_model = _fetch_and_verify_api_key(decoded_token.api_key_id)
+            api_key_model = _fetch_and_verify_api_key(
+                decoded_token.api_key_id,
+                token_generation=decoded_token.api_key_generation,
+            )
 
         device_model: Optional[OAuthDeviceInternalResponse] = None
         if decoded_token.device_id:
@@ -1081,6 +1107,7 @@ def generate_access_token(
         user_id=user_id,
         device_id=device.id if device else None,
         api_key_id=api_key.id if api_key else None,
+        api_key_generation=api_key.key_generation if api_key else None,
         schedule_id=schedule_id,
         pipeline_run_id=pipeline_run_id,
         deployment_id=deployment_id,
