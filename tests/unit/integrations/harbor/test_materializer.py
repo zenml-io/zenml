@@ -132,7 +132,7 @@ def test_materializer_warns_on_dangling_job_dir(
 
 def test_materializer_metadata() -> None:
     """The extracted metadata carries the queryable campaign facts."""
-    materializer = HarborShardResultMaterializer(uri="/tmp/unused")
+    materializer = HarborShardResultMaterializer(uri="unused-uri")
     metadata = materializer.extract_metadata(_shard_result())
     assert metadata["shard_id"] == "abc123def456"
     assert metadata["task"] == "hello"
@@ -147,9 +147,9 @@ def test_materializer_metadata() -> None:
 
 def test_materializer_content_hash_ignores_transient_fields() -> None:
     """The content hash is stable across differing local job dirs."""
-    materializer = HarborShardResultMaterializer(uri="/tmp/unused")
-    a = _shard_result(job_dir="/tmp/dir-a")
-    b = _shard_result(job_dir="/tmp/dir-b")
+    materializer = HarborShardResultMaterializer(uri="unused-uri")
+    a = _shard_result(job_dir="local/dir-a")
+    b = _shard_result(job_dir="local/dir-b")
     b.archive_uri = "s3://bucket/somewhere.tar.gz"
     assert materializer.compute_content_hash(
         a

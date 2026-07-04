@@ -131,7 +131,7 @@ def _shard_result(n_errored: int = 0) -> HarborShardResult:
                 cost_usd=0.01,
             ),
         ],
-        job_dir="/tmp/jobs/shard-abc123def456",
+        job_dir="local/jobs/shard-abc123def456",
     )
 
 

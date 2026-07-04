@@ -195,7 +195,7 @@ def test_shard_result_json_round_trip_excludes_transient_fields() -> None:
     """job_dir and archive_uri never enter the serialized form."""
     result = _shard_result(
         [_trial("a", rewards={"reward": 1.0})],
-        job_dir="/tmp/somewhere",
+        job_dir="local/job-dir",
         archive_uri="s3://bucket/archive.tar.gz",
     )
     dumped = result.model_dump_json()
@@ -242,4 +242,4 @@ def test_download_jobs_dir_requires_archive_uri() -> None:
     """Without an archive reference, downloading fails clearly."""
     result = _shard_result([])
     with pytest.raises(RuntimeError, match="no job archive"):
-        result.download_jobs_dir("/tmp/anywhere")
+        result.download_jobs_dir("anywhere")
