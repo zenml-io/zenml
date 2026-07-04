@@ -1,4 +1,4 @@
-# Run Harbor Eval Campaigns with ZenML
+# Harbor Agent Evals with ZenML
 
 Run [Harbor](https://www.harborframework.com/) agent-eval campaigns as ZenML pipelines, with each trial's container backed by whatever Sandbox flavor is on the active stack — powered by the `zenml.integrations.harbor` integration.
 
@@ -28,7 +28,7 @@ ZenML owns the outer orchestration — matrix expansion, per-shard steps (own sa
 pip install "zenml[local]"
 zenml integration install harbor modal -y
 
-# Default campaign: tasks/hello, oracle agent, 3 trials
+# Default campaign: tasks/hello, oracle vs nop head-to-head, 3 trials each
 python run.py
 ```
 
@@ -48,8 +48,8 @@ python run.py
 ## 🏗️ What's Inside
 
 ```
-📁 sandbox_harbor/
-├── run.py           - The campaign pipeline (thin consumer of the integration)
+📁 harbor_agent_evals/
+├── run.py           - The campaign pipeline + post-run receipts (report, metadata query, log restore)
 ├── tasks/hello/     - Hermetic smoke task: write "42", verifier scores 1.0
 └── requirements.txt
 ```
@@ -107,7 +107,7 @@ result.download_jobs_dir("logs")  # restores agent/verifier logs + trajectory
 
 ## 🚀 Run the Example
 
-1. **Run the default smoke campaign** (hermetic, no LLM keys — the `oracle` agent runs each task's reference solution):
+1. **Run the default head-to-head** (hermetic, no LLM keys): the `oracle` agent runs each task's reference solution (reward 1.0) while `nop` attempts nothing (reward 0.0), 3 trials each, packed 2 trials per shard — the report shows the contrast, a metadata query finds the losing shards, and one shard's Harbor logs are restored to `harbor_logs/`:
 
    ```bash
    python run.py
