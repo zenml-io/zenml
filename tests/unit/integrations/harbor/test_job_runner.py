@@ -19,7 +19,10 @@ from types import SimpleNamespace
 
 import pytest
 
-pytest.importorskip("harbor")
+# Skip on a concrete submodule: without harbor installed, the bare
+# "harbor" import can still succeed as an accidental namespace
+# package (e.g. this test directory itself on sys.path).
+pytest.importorskip("harbor.job")
 
 from zenml.integrations.harbor import (  # noqa: E402
     ZENML_HARBOR_ENV_IMPORT_PATH,

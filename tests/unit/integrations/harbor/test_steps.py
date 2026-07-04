@@ -17,7 +17,10 @@ from pathlib import Path
 
 import pytest
 
-pytest.importorskip("harbor")
+# Skip on a concrete submodule: without harbor installed, the bare
+# "harbor" import can still succeed as an accidental namespace
+# package (e.g. this test directory itself on sys.path).
+pytest.importorskip("harbor.job")
 
 from zenml.integrations.harbor.models import (  # noqa: E402
     HarborShardResult,

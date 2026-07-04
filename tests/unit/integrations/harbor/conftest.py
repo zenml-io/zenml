@@ -21,6 +21,12 @@ distribution and defeating ``pytest.importorskip("harbor")``. As a
 consequence, test modules here import as top-level modules, so their
 basenames must stay unique across all ``__init__``-less test dirs in
 the repository.
+
+Even without an ``__init__.py``, this directory still satisfies a bare
+``import harbor`` as a *namespace package* when the real distribution
+is absent (regular packages win when it is installed) — which is why
+the Harbor-gated test modules skip on ``harbor.job``, a submodule the
+namespace package can never provide.
 """
 
 import os
