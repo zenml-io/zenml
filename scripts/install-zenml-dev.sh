@@ -121,6 +121,12 @@ install_integrations() {
         ignore_integrations="$ignore_integrations tensorflow deepchecks"
     fi
 
+    # harbor requires Python >= 3.12; on newer interpreters it installs so
+    # its gated tests (incl. the Harbor API canary) actually run in CI.
+    if [ "$python_version" = "3.10" ] || [ "$python_version" = "3.11" ]; then
+        ignore_integrations="$ignore_integrations harbor"
+    fi
+
     # TODO: Revisit once pytorch Windows support stabilizes.
     # torch DLL loading on Windows CI is unreliable (OSError / FileNotFoundError
     # at import time). Tracked in: https://github.com/zenml-io/zenml/issues/4471

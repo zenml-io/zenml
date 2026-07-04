@@ -11,7 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-#
-# Harbor itself comes in via `zenml integration install harbor` (needs
-# Python >= 3.12); the Modal SDK via `zenml integration install modal`.
-zenml[local]
+"""Initialization of the Harbor campaign steps."""
+
+from zenml.integrations.harbor.steps.harbor_eval_steps import (
+    build_harbor_matrix,
+    build_harbor_report,
+    run_harbor_shard,
+)
+
+__all__ = [
+    "build_harbor_matrix",
+    "build_harbor_report",
+    "run_harbor_shard",
+]

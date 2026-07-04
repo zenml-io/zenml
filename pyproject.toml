@@ -430,12 +430,19 @@ module = [
     "truss.*",
     "truss_train.*",
     "jsonref",
+    "harbor",
+    "harbor.*",
 ]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = ["zenml.integrations.great_expectations.*"]
 warn_unused_ignores = false
+disallow_subclassing_any = false
+
+# harbor ships no py.typed, so its BaseEnvironment resolves to Any.
+[[tool.mypy.overrides]]
+module = ["zenml.integrations.harbor.environment"]
 disallow_subclassing_any = false
 
 [[tool.mypy.overrides]]

@@ -101,6 +101,10 @@ Sandbox stdout/stderr automatically lands on the active step as a dedicated `san
 
 Multi-session steps don't clobber: each session's metadata (flavor, dashboard URL when the flavor exposes one) is keyed by session id (`sandbox.<id>.flavor`, `sandbox.<id>.dashboard_url`).
 
+### Run Harbor evals on your sandbox
+
+The [Harbor](https://www.harborframework.com/) integration (`zenml integration install harbor`, Python 3.12+) runs agent-eval campaigns as ZenML pipelines, with every trial's container backed by the active stack's Sandbox component through a `ZenMLSandboxEnvironment` bridge. See the [sandbox_harbor example](https://github.com/zenml-io/zenml/tree/main/examples/sandbox_harbor) for a full campaign pipeline with sharding, caching, and per-shard artifacts.
+
 ## Security considerations
 
 Every value you put in a Session's environment (`sandbox_environment`) is **readable by code running inside the Session**. If you run LLM-generated code in the Sandbox and care about credential isolation, treat the Session environment as visible to the agent.

@@ -11,7 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Harbor BaseEnvironment backed by ZenML's Sandbox stack component."""
+"""Harbor BaseEnvironment backed by ZenML's Sandbox stack component.
+
+Known limitations, preserved deliberately rather than papered over:
+Harbor resource requests (``cpus``/``memory_mb``/``gpus``) are not
+translated to sandbox settings; tasks requiring network isolation
+(``allow_internet=false``) are refused; ``exec(user=...)`` is ignored;
+task-level ``docker_image`` overrides are Modal-only.
+"""
 
 import asyncio
 import shlex
@@ -38,6 +45,9 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
     def _live_session(self) -> SandboxSession:
         """The open SandboxSession.
 
+        Returns:
+            The open sandbox session.
+
         Raises:
             RuntimeError: If the environment has not been started yet
                 (or has been stopped).
@@ -51,7 +61,11 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
 
     @staticmethod
     def type() -> str:
-        """The environment identifier surfaced to Harbor."""
+        """The environment identifier surfaced to Harbor.
+
+        Returns:
+            The environment type identifier.
+        """
         return "zenml-sandbox"
 
     def _validate_definition(self) -> None:
@@ -105,6 +119,8 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
                 active stack.
             NotImplementedError: If the task requires network isolation
                 (allow_internet=false), which the bridge can't enforce.
+            Exception: Re-raised from preparing the Harbor log dirs after
+                the session was torn down again.
         """
         sandbox = Client().active_stack.sandbox
         if sandbox is None:
@@ -148,7 +164,7 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
         try:
             await self._ensure_harbor_log_dirs()
         except Exception:
-            # Tear down so a half-started env doesn't leak a paid Modal
+            # Tear down so a half-started env doesn't leak a paid remote
             # sandbox up to its TTL.
             await self.stop(delete=True)
             raise
@@ -208,6 +224,8 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
                 "runs as the container default user.",
                 user,
             )
+        # _merge_env is a documented hook Harbor's base class provides
+        # for combining per-call env vars with the persistent env.
         merged_env = self._merge_env(env)
         session = self._live_session
         argv = (
@@ -219,6 +237,15 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
         def _run() -> ExecResult:
             process = session.exec(argv, cwd=cwd, env=merged_env)
             out = process.collect()
+            if out.stdout_truncated or out.stderr_truncated:
+                logger.warning(
+                    "Sandbox command output exceeded the collection cap "
+                    "and was truncated (stdout_truncated=%s, "
+                    "stderr_truncated=%s): %.200s",
+                    out.stdout_truncated,
+                    out.stderr_truncated,
+                    command,
+                )
             return ExecResult(
                 stdout=out.stdout,
                 stderr=out.stderr,
@@ -230,7 +257,12 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
     async def upload_file(
         self, source_path: Path | str, target_path: str
     ) -> None:
-        """Stream a local file into the SandboxSession."""
+        """Stream a local file into the SandboxSession.
+
+        Args:
+            source_path: Local file to upload.
+            target_path: Destination path inside the sandbox.
+        """
         await asyncio.to_thread(
             self._live_session.upload_file, str(source_path), target_path
         )
@@ -238,7 +270,12 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
     async def download_file(
         self, source_path: str, target_path: Path | str
     ) -> None:
-        """Stream a remote file out of the SandboxSession."""
+        """Stream a remote file out of the SandboxSession.
+
+        Args:
+            source_path: File inside the sandbox to download.
+            target_path: Local destination path.
+        """
         await asyncio.to_thread(
             self._live_session.download_file, source_path, str(target_path)
         )
@@ -283,7 +320,12 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
     async def download_dir(
         self, source_dir: str, target_dir: Path | str
     ) -> None:
-        """Download a directory tree via tar + ``download_file``."""
+        """Download a directory tree via tar + ``download_file``.
+
+        Args:
+            source_dir: Directory inside the sandbox to download.
+            target_dir: Local destination directory.
+        """
         await self.download_dir_with_exclusions(
             source_dir=source_dir, target_dir=target_dir, exclude=[]
         )
