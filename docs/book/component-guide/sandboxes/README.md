@@ -103,7 +103,7 @@ Multi-session steps don't clobber: each session's metadata (flavor, dashboard UR
 
 ### Run Harbor evals on your sandbox
 
-The [Harbor](https://www.harborframework.com/) integration (`zenml integration install harbor`, Python 3.12+) runs agent-eval campaigns as ZenML pipelines, with every trial's container backed by the active stack's Sandbox component through a `ZenMLSandboxEnvironment` bridge. See the [Agent evals guide](../../user-guide/agent-evals-guide/README.md) for the full story, and the [harbor_agent_evals example](https://github.com/zenml-io/zenml/tree/main/examples/harbor_agent_evals) for a runnable campaign with sharding, caching, and per-shard artifacts.
+The [Harbor](https://www.harborframework.com/) integration (`zenml integration install harbor`, Python 3.12+) runs agent-eval campaigns as ZenML pipelines, with every trial's container backed by the active stack's Sandbox component through a `ZenMLSandboxEnvironment` bridge. See the **Agent evals guide** in the user guide section for the full story, and the [harbor_agent_evals example](https://github.com/zenml-io/zenml/tree/main/examples/harbor_agent_evals) for a runnable campaign with sharding, caching, and per-shard artifacts.
 
 ## Security considerations
 

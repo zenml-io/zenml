@@ -41,7 +41,7 @@ def build_sft_dataset(
     return examples
 ```
 
-From here it is the standard ZenML fine-tuning story: the dataset is a versioned artifact, the fine-tune step is whatever your training stack is (see the [LLMOps guide](../llmops-guide/README.md) for finetuning pipelines), and — the part that closes the loop — the re-eval is the *same campaign* with the new model:
+From here it is the standard ZenML fine-tuning story: the dataset is a versioned artifact, the fine-tune step is whatever your training stack is (see the [LLMOps guide](https://docs.zenml.io/user-guides/llmops-guide) for finetuning pipelines), and — the part that closes the loop — the re-eval is the *same campaign* with the new model:
 
 ```python
 agent_evals(
@@ -78,7 +78,7 @@ The report gives each configuration its own row; `harbor.cost_usd` metadata turn
 
 ## Eval-gated promotion
 
-The last arrow in the loop is deployment. Attach campaign metrics to a [Model Control Plane](../../how-to/models/models.md) version and promote on thresholds — the same gate pattern teams use for classic ML models, now keyed on agent benchmark scores:
+The last arrow in the loop is deployment. Attach campaign metrics to a [Model Control Plane](https://docs.zenml.io/concepts/models) version and promote on thresholds — the same gate pattern teams use for classic ML models, now keyed on agent benchmark scores:
 
 ```python
 log_metadata(
