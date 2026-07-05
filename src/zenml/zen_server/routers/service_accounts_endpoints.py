@@ -73,7 +73,7 @@ def _raise_deprecated_pro_service_accounts() -> None:
     from zenml.config.server_config import ServerConfiguration
 
     config = ServerConfiguration.get_server_config()
-    if config.deployment_type == ServerDeploymentType.CLOUD:
+    if config.is_pro_server:
         logger.warning(
             "ZenML Pro workspace level service accounts and API keys are "
             "deprecated and will be removed in a future version. Please use "

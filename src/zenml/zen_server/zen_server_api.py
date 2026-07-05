@@ -189,7 +189,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     initialize_artifact_store_cache()
     await initialize_streaming()
     initialize_secure_headers()
-    if cfg.deployment_type == ServerDeploymentType.CLOUD:
+    if cfg.is_pro_server:
         # Send a workspace status update to the Cloud API to indicate that the
         # ZenML server is running or to update the version and server URL.
         send_pro_workspace_status_update()
@@ -246,7 +246,7 @@ def validation_exception_handler(request: Any, exc: Exception) -> JSONResponse:
 DASHBOARD_REDIRECT_URL = None
 if (
     server_config().dashboard_url
-    and server_config().deployment_type == ServerDeploymentType.CLOUD
+    and server_config().is_pro_server
 ):
     DASHBOARD_REDIRECT_URL = server_config().dashboard_url
 
