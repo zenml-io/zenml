@@ -5,7 +5,7 @@ icon: arrows-spin
 
 # From evals to training
 
-Evaluating an agent is rarely the end goal. The campaign you ran in [Evaluate agents with Harbor](agent-evals.md) produced more than a report: every trial left behind a reward, a full trajectory, token counts, and a cost — all versioned in your artifact store, all joined by a stable trial identity. That is training signal, and the loop that consumes it is the same loop ZenML has always run for ML: **evaluate → select → build a dataset → train → re-evaluate → promote**. Harbor scores one attempt; ZenML operationalizes the flywheel around it.
+Evaluating an agent is rarely the end goal. The campaign you ran in [Run an eval campaign](run-a-campaign.md) produced more than a report: every trial left behind a reward, a full trajectory, token counts, and a cost — all versioned in your artifact store, all joined by a stable trial identity. That is training signal, and the loop that consumes it is the same loop ZenML has always run for ML: **evaluate → select → build a dataset → train → re-evaluate → promote**. Harbor scores one attempt; ZenML operationalizes the flywheel around it.
 
 This page maps the loop onto the primitives you already have. Nothing here requires new framework features — each stage is a pipeline consuming the previous stage's artifacts.
 
@@ -15,34 +15,6 @@ Each shard's `HarborShardResult` carries two layers:
 
 * A **flat summary** — per-trial `rewards`, `exception_type`, `n_input_tokens` / `n_output_tokens`, `cost_usd`, and a `trial_identity`: a content hash of (task, agent, model, kwargs, env, trial index). Identical campaign cells hash identically across runs — this is the join key for every comparison below.
 * The **archived job tree** — Harbor's full per-trial record, including the agent's rollout (for CLI agents like `claude-code`, the complete `stream-json` interaction log) and the verifier's output. `result.download_jobs_dir(target)` restores it on demand.
-
-## Regression gates and baselines
-
-The simplest training-adjacent use-case is not training at all: knowing when your agent got worse. Because trial identities are stable, a nightly campaign compares directly against any previous run of the same campaign:
-
-```python
-@step
-def regression_gate(
-    current: list[HarborShardResult], baseline_run_id: str, tolerance: float = 0.05
-) -> None:
-    baseline = {}
-    run = Client().get_pipeline_run(baseline_run_id)
-    for name, step_ in run.steps.items():
-        if name.startswith("map:run_harbor_shard:"):
-            for t in step_.outputs["harbor_shard_result"][0].load().trials:
-                baseline[t.trial_identity] = t.rewards or {}
-
-    for shard in current:
-        for t in shard.trials:
-            then = baseline.get(t.trial_identity, {}).get("reward")
-            now = (t.rewards or {}).get("reward")
-            if then is not None and now is not None and now < then - tolerance:
-                raise RuntimeError(
-                    f"Regression on {t.task_name}: {then:.2f} -> {now:.2f}"
-                )
-```
-
-Append this step to the campaign pipeline and a reward drop fails the run — visible, alertable, and attached to the exact trials that regressed.
 
 ## SFT from winning trajectories
 
@@ -87,7 +59,7 @@ Different `model_name` means different trial identities, so both generations of 
 1. Campaign with high `trials_per_cell` (sharding keeps each slice retryable and cached).
 2. Selection step: filter or pair rollouts by reward.
 3. Training step on the selected set.
-4. Re-eval campaign with the updated model; the regression gate from above becomes your improvement meter.
+4. Re-eval campaign with the updated model; the [regression gate](benchmark-ops.md#regression-gates) becomes your improvement meter.
 
 Each iteration is one pipeline run, so the whole optimization history — which rollouts trained which checkpoint, which checkpoint scored what — is lineage you can walk, not tribal knowledge.
 

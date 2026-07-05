@@ -3,7 +3,7 @@ description: Run Harbor agent-eval campaigns as ZenML pipelines on your sandbox.
 icon: gauge-high
 ---
 
-# Evaluate agents with Harbor
+# Run an eval campaign
 
 [Harbor](https://www.harborframework.com/) is an agent-evaluation framework: a *task* is one containerized problem with a verifier, a *trial* is one agent attempt on one task, and a *job* runs a set of trials. The `harbor` integration runs Harbor eval campaigns as ZenML pipelines: ZenML owns the outer orchestration — matrix expansion, per-shard steps, retries, caching, artifacts, reports — while Harbor keeps the trial eval kernel (task loading, agent loop, verifier, reward). Every trial's container is backed by whatever [Sandbox](../../component-guide/sandboxes/README.md) flavor is on your active stack.
 
@@ -46,7 +46,7 @@ Datasets expand through Harbor's own resolver, so task sets and commit pins matc
 
 Shards are packed so that one shard never mixes campaign cells, and every trial carries a stable content-based identity (task + agent + model + kwargs + env + index). Step caching is left enabled on `run_harbor_shard`: rerunning an identical campaign cache-hits every shard that already completed and executes only failed or new ones — extending a campaign (more trials, more tasks, another agent) reruns just the delta.
 
-One consequence to know: an *errored* trial (infrastructure failure, not a low reward) still completes its shard by default, and that result gets cached. Pass `fail_on_trial_error=True` to make such shards fail instead — before raising, the step rescues the shard result and its full log archive as a manual artifact named `harbor_shard_result_<shard_id>_failed`, so the logs you need for debugging survive the failed step.
+How caching, error handling, and cross-run comparison compose into a recurring benchmark is the subject of [Benchmark operations](benchmark-ops.md).
 
 ## What lands where
 
@@ -76,10 +76,6 @@ harbor run --environment-import-path zenml.integrations.harbor.environment:ZenML
 ```
 
 Known limitations, preserved deliberately: Harbor resource requests (`cpus`/`memory_mb`/`gpus`) are not translated to sandbox settings, tasks with `allow_internet=false` are refused, `exec(user=...)` is ignored, task-level `docker_image` overrides are Modal-only, and multi-step tasks or separate verifier sandboxes are rejected with `NotImplementedError`. The sandbox image must provide `bash`, `timeout`(1), and `tar`.
-
-## From evals to training
-
-A campaign's rewards, trajectories, and costs are training signal, not just a scoreboard. [From evals to training](evals-to-training.md) maps the improvement loop onto these artifacts: regression gates, SFT from winning trajectories, rejection sampling, config sweeps, and eval-gated promotion.
 
 ## Learn more
 
