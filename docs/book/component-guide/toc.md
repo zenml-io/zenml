@@ -55,6 +55,7 @@
   * [Local](sandboxes/local.md)
   * [Kubernetes](sandboxes/kubernetes.md)
   * [Modal](sandboxes/modal.md)
+  * [Harbor agent evals](sandboxes/harbor-evals.md)
 * [Step Operators](step-operators/README.md)
   * [Amazon SageMaker](step-operators/sagemaker.md)
   * [AzureML](step-operators/azureml.md)
