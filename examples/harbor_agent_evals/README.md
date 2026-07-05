@@ -133,7 +133,24 @@ result.download_jobs_dir("logs")  # restores agent/verifier logs + trajectory
 
    The registry has 30+ benchmarks beyond Terminal Bench (quixbugs, BFCL, SWE-bench multilingual, spreadsheetbench, ...) — list them with `harbor dataset list`.
 
-3. **Benchmark a real agent**: swap in `terminus-2`, `claude-code-agent`, ... plus its API key instead of `oracle`.
+3. **Benchmark a real LLM agent.** Harbor's agents read their provider key from the *host* environment and inject it into the sandbox (`claude-code` reads `ANTHROPIC_API_KEY`, `terminus-2` reads the key matching its litellm model prefix). The model rides the agent spec:
+
+   ```python
+   # export ANTHROPIC_API_KEY=sk-ant-...   (host env — never in code or config)
+   harbor_agent_evals(
+       dataset={"name": "terminal-bench-sample", "version": "2.0", "n_tasks": 1},
+       agents=[{"name": "claude-code", "model_name": "claude-sonnet-4-5"}],
+       trials_per_cell=1,
+   )
+   ```
+
+   Token usage and cost flow into the trial results, the `harbor.cost_usd` step metadata, and the report's Cost column:
+
+   | Task | Agent | Model | Completed | Errored | Mean reward | Cost (USD) |
+   |---|---|---|---|---|---|---|
+   | chess-best-move | claude-code | claude-sonnet-4-5 | 1 | 0 | reward=0.000 | 0.1193 |
+
+   (A real result: the oracle scores 1.000 on this task, so the harness is fine — finding the best chess move from a board image is just genuinely hard for the model.) Note that the key is visible to code running inside the sandbox, so treat sandboxed tasks as able to read it.
 
 The pipeline prints the dashboard URL on start; the campaign report lands as a markdown artifact on the run.
 
@@ -142,7 +159,7 @@ The pipeline prints the dashboard URL on start; the campaign report lands as a m
 - **Batch trials per step**: set `trials_per_step=10` in `run.py` to run 10 trials per pod via Harbor's internal concurrency (`run_harbor_shard(n_concurrent_trials=...)`)
 - **Add step retries**: `run_harbor_shard.with_options(retry=StepRetryConfig(max_retries=2))` for flaky-infrastructure resilience
 - **Compare agents**: pass several dicts in `agents=[...]`, each optionally with `model_name`, `kwargs`, `env`
-- **Gate on errors**: `run_harbor_shard.with_options(parameters={"fail_on_trial_error": True})` so a rerun re-executes exactly the errored shards
+- **Gate on errors**: `run_harbor_shard.with_options(parameters={"fail_on_trial_error": True})` so a rerun re-executes exactly the errored shards. Before failing, the step rescues the shard result and its full log archive as a manual artifact named `harbor_shard_result_<shard_id>_failed` — load it and call `download_jobs_dir()` to debug the errored trials. Without the flag, an errored shard *completes* and gets cached, so an identical rerun returns the errored result instead of retrying
 
 ## ⚠️ Known limitations
 
