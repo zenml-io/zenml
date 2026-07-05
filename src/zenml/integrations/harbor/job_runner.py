@@ -134,13 +134,19 @@ def build_job_config(
         quiet=True,
         retry=RetryConfig(max_retries=harbor_retry_max),
         tasks=[
+            # `source` (the dataset name) is deliberately NOT forwarded:
+            # shards resolve datasets client-side, so Harbor only
+            # registers metrics under its "adhoc" key — a sourced trial
+            # would crash Harbor 0.8's quiet-mode progress display with
+            # an IndexError on the missing dataset metric bucket. The
+            # provenance stays on the shard spec's TaskRef and is
+            # restored onto trial results after the run.
             TaskConfig(
                 path=Path(task.path) if task.path else None,
                 git_url=task.git_url,
                 git_commit_id=task.git_commit_id,
                 name=task.name,
                 ref=task.ref,
-                source=task.source,
             )
         ],
         agents=[
@@ -215,6 +221,10 @@ def run_shard_job(
         HarborTrialResult.from_harbor(result, identity)
         for identity, result in zip(spec.trial_identities, trial_results)
     ]
+    # Restore the dataset provenance that build_job_config strips from
+    # the Harbor-side task config.
+    for trial in trials:
+        trial.source = trial.source or spec.task.source
     stats = job_result.stats
     return HarborShardResult(
         spec=spec,

@@ -247,18 +247,26 @@ def test_build_job_config_maps_shard_onto_single_cell_job(
 
 
 def test_build_job_config_git_task(tmp_path: Path) -> None:
-    """Git-pinned tasks pass through with their commit pin."""
+    """Git-pinned tasks pass through with their commit pin.
+
+    The dataset `source` must NOT reach the Harbor job config: shards
+    resolve datasets client-side, and a sourced trial crashes Harbor
+    0.8's quiet-mode progress display (IndexError on the missing
+    dataset metric bucket).
+    """
     spec = _spec(
         task=TaskRef(
             git_url="https://github.com/org/tasks",
             git_commit_id="deadbeef",
             path="tasks/chess",
+            source="terminal-bench",
         )
     )
     config = build_job_config(spec=spec, jobs_dir=tmp_path)
     assert config.tasks[0].git_url == "https://github.com/org/tasks"
     assert config.tasks[0].git_commit_id == "deadbeef"
     assert config.tasks[0].path == Path("tasks/chess")
+    assert config.tasks[0].source is None
 
 
 def test_build_job_config_missing_local_task(tmp_path: Path) -> None:
@@ -335,8 +343,14 @@ def test_run_shard_job_assembles_result(
 
     monkeypatch.setattr("zenml.integrations.harbor.job_runner.Job", _FakeJob)
 
-    spec = _spec(task=TaskRef(path=str(task_dir)))
+    spec = _spec(
+        task=TaskRef(path=str(task_dir), source="terminal-bench-sample")
+    )
     result = run_shard_job(spec=spec, jobs_dir=tmp_path / "jobs")
+
+    # Dataset provenance is restored even though build_job_config
+    # strips it from the Harbor-side task config.
+    assert all(t.source == "terminal-bench-sample" for t in result.trials)
 
     assert captured["config"].n_attempts == 2
     assert result.job_id == "00000000-0000-0000-0000-000000000001"
