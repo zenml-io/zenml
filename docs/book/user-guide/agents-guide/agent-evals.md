@@ -1,10 +1,11 @@
 ---
 description: Run Harbor agent-eval campaigns as ZenML pipelines on your sandbox.
+icon: gauge-high
 ---
 
-# Harbor agent evals
+# Evaluate agents with Harbor
 
-[Harbor](https://www.harborframework.com/) is an agent-evaluation framework: a *task* is one containerized problem with a verifier, a *trial* is one agent attempt on one task, and a *job* runs a set of trials. The `harbor` integration runs Harbor eval campaigns as ZenML pipelines: ZenML owns the outer orchestration — matrix expansion, per-shard steps, retries, caching, artifacts, reports — while Harbor keeps the trial eval kernel (task loading, agent loop, verifier, reward). Every trial's container is backed by whatever [Sandbox](README.md) flavor is on your active stack.
+[Harbor](https://www.harborframework.com/) is an agent-evaluation framework: a *task* is one containerized problem with a verifier, a *trial* is one agent attempt on one task, and a *job* runs a set of trials. The `harbor` integration runs Harbor eval campaigns as ZenML pipelines: ZenML owns the outer orchestration — matrix expansion, per-shard steps, retries, caching, artifacts, reports — while Harbor keeps the trial eval kernel (task loading, agent loop, verifier, reward). Every trial's container is backed by whatever [Sandbox](../../component-guide/sandboxes/README.md) flavor is on your active stack.
 
 ```bash
 zenml integration install harbor -y   # requires Python 3.12+

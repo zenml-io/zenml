@@ -53,6 +53,7 @@
   * [Credential proxy](agents-guide/04-credential-proxy.md)
   * [Typed services](agents-guide/05-typed-services.md)
   * [Human in the loop](agents-guide/06-hitl.md)
+  * [Evaluate agents with Harbor](agents-guide/agent-evals.md)
   * [Production notes](agents-guide/production-notes.md)
 
 ## Tutorials <a href="#tutorial" id="tutorial"></a>
