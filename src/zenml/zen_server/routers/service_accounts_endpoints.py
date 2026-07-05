@@ -26,7 +26,6 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.exceptions import IllegalOperationError
-from zenml.logger import get_logger
 from zenml.models import (
     APIKeyFilter,
     APIKeyRequest,
@@ -39,7 +38,6 @@ from zenml.models import (
     ServiceAccountResponse,
     ServiceAccountUpdate,
 )
-from zenml.models.v2.misc.server_models import ServerDeploymentType
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -59,27 +57,11 @@ from zenml.zen_server.utils import (
     zen_store,
 )
 
-logger = get_logger(__name__)
-
 router = APIRouter(
     prefix=API + VERSION_1 + SERVICE_ACCOUNTS,
     tags=["service_accounts", "api_keys"],
     responses={401: error_response},
 )
-
-
-def _raise_deprecated_pro_service_accounts() -> None:
-    """Logs a warning if Pro workspace level service accounts are used."""
-    from zenml.config.server_config import ServerConfiguration
-
-    config = ServerConfiguration.get_server_config()
-    if config.is_pro_server:
-        logger.warning(
-            "ZenML Pro workspace level service accounts and API keys are "
-            "deprecated and will be removed in a future version. Please use "
-            "ZenML Pro organization level service accounts and API keys "
-            "instead (see https://docs.zenml.io/pro/access-management/service-accounts)."
-        )
 
 
 # ----------------
@@ -109,7 +91,6 @@ def create_service_account(
     Returns:
         The created service account.
     """
-    _raise_deprecated_pro_service_accounts()
     verify_admin_status_if_no_rbac(
         auth_context.user.is_admin, "create service account"
     )
@@ -205,7 +186,6 @@ def update_service_account(
         IllegalOperationError: If the service account was created via external
             authentication.
     """
-    _raise_deprecated_pro_service_accounts()
     service_account = zen_store().get_service_account(
         service_account_name_or_id, hydrate=True
     )
@@ -302,7 +282,6 @@ def create_api_key(
             api_key=api_key,
         )
 
-    _raise_deprecated_pro_service_accounts()
     service_account = zen_store().get_service_account(service_account_id)
 
     if service_account.external_user_id is not None:
@@ -415,7 +394,6 @@ def update_api_key(
         IllegalOperationError: If the service account was created via external
             authentication.
     """
-    _raise_deprecated_pro_service_accounts()
     service_account = zen_store().get_service_account(service_account_id)
 
     if service_account.external_user_id is not None:
@@ -465,7 +443,6 @@ def rotate_api_key(
         IllegalOperationError: If the service account was created via external
             authentication.
     """
-    _raise_deprecated_pro_service_accounts()
     service_account = zen_store().get_service_account(service_account_id)
 
     if service_account.external_user_id is not None:

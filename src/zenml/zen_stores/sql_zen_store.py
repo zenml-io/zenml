@@ -327,7 +327,6 @@ from zenml.models import (
     SecretUpdate,
     ServerActivationRequest,
     ServerDatabaseType,
-    ServerDeploymentType,
     ServerModel,
     ServerSettingsResponse,
     ServerSettingsUpdate,

@@ -7,12 +7,6 @@ icon: key
 
 Service accounts in ZenML Pro provide a secure way to authenticate automated systems, CI/CD pipelines, and other non-interactive applications with your ZenML Pro organization. Unlike user accounts, service accounts are designed specifically for programmatic access and can be managed centrally through the Organization Settings interface.
 
-{% hint style="info" %}
-**Organization-Level Management**
-
-Service accounts in ZenML Pro are managed at the organization level, not at the workspace level. This provides centralized control and consistent access patterns across all workspaces within your organization.
-{% endhint %}
-
 ## Accessing Service Account Management
 
 To manage service accounts in your ZenML Pro organization, navigate to your ZenML Pro dashboard, click on **"Settings"** in the organization navigation menu and select **"Service Accounts"** from the settings sidebar. This is the main interface where you can perform all service account and API key operations.
@@ -283,7 +277,7 @@ Deactivating a service account has immediate effect on all ZenML Pro API calls u
 {% endhint %}
 
 {% hint style="warning" %}
-**Delayed workspace-level effect**
+**Delayed workspace token effect**
 
 Short-lived API tokens associated with the deactivated service account issued for workspaces in your organization may still be valid for up to one hour after the service account is deactivated.
 {% endhint %}
@@ -293,7 +287,7 @@ Short-lived API tokens associated with the deactivated service account issued fo
 Deleting a service account permanently removes it and all associated API keys from your organization.
 
 {% hint style="warning" %}
-**Delayed workspace-level effect**
+**Delayed workspace token effect**
 
 Short-lived API tokens associated with the deleted service account issued for workspaces in your organization may still be valid for up to one hour after the service account is deleted.
 {% endhint %}
@@ -315,7 +309,7 @@ The API key value is only shown once during creation and cannot be retrieved lat
 Individual API keys can be activated or deactivated independently of the service account status.
 
 {% hint style="warning" %}
-**Delayed workspace-level effect**
+**Delayed workspace token effect**
 
 Short-lived API tokens associated with the deactivated API key issued for workspaces in your organization may still be valid for up to one hour after the API key is deactivated.
 {% endhint %}
@@ -333,7 +327,7 @@ By setting a retention period, you can update your applications to use the new A
 ### Deleting API Keys
 
 {% hint style="warning" %}
-**Delayed workspace-level effect**
+**Delayed workspace token effect**
 
 Short-lived API tokens associated with the deleted API key issued for workspaces in your organization may still be valid for up to one hour after the API key is deleted.
 {% endhint %}
@@ -358,14 +352,6 @@ Short-lived API tokens associated with the deleted API key issued for workspaces
 * **Immediate Deactivation**: Deactivate service accounts and API keys immediately when they're no longer needed
 * **Incident Response**: Have procedures in place to quickly rotate or deactivate compromised keys
 * **Team Coordination**: Coordinate with your team before making changes to production service accounts
-
-## Migration of workspace level service accounts
-
-Service accounts and API keys at the workspace level are deprecated and will be removed in the future. You can migrate them to the organization level by following these steps:
-
-1. Create a new service account in the organization. Make sure to use the exact same username as the old service account, if you want to preserve the assigned resources, but be aware that all workspaces will share this service account.
-2. [Assign Organization and Workspace roles](roles.md) to the new service account. At a minimum, you should assign the Organization Member role and the Workspace Admin role to the service account for it to be equivalent to the old service account. It is, however, recommended to assign only the roles and permissions that are actually needed.
-3. (Optional) Delete all API keys for the old service account.
 
 ## Troubleshooting
 

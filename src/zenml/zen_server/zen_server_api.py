@@ -45,7 +45,6 @@ from zenml.constants import (
     READY,
 )
 from zenml.enums import AuthScheme
-from zenml.models import ServerDeploymentType
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
@@ -244,10 +243,7 @@ def validation_exception_handler(request: Any, exc: Exception) -> JSONResponse:
 
 
 DASHBOARD_REDIRECT_URL = None
-if (
-    server_config().dashboard_url
-    and server_config().is_pro_server
-):
+if server_config().dashboard_url and server_config().is_pro_server:
     DASHBOARD_REDIRECT_URL = server_config().dashboard_url
 
 if not DASHBOARD_REDIRECT_URL:
@@ -334,7 +330,8 @@ app.include_router(schedule_endpoints.router)
 app.include_router(secrets_endpoints.router)
 app.include_router(secrets_endpoints.op_router)
 app.include_router(server_endpoints.router)
-app.include_router(service_accounts_endpoints.router)
+if server_config().auth_scheme != AuthScheme.EXTERNAL:
+    app.include_router(service_accounts_endpoints.router)
 app.include_router(service_connectors_endpoints.router)
 app.include_router(service_connectors_endpoints.types_router)
 app.include_router(service_endpoints.router)

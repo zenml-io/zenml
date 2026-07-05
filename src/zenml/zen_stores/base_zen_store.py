@@ -48,7 +48,6 @@ from zenml.models import (
     ProjectFilter,
     ProjectResponse,
     ServerDatabaseType,
-    ServerDeploymentType,
     ServerModel,
     StackFilter,
     StackResponse,
