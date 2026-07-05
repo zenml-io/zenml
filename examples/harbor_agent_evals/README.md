@@ -113,15 +113,25 @@ result.download_jobs_dir("logs")  # restores agent/verifier logs + trajectory
    python run.py
    ```
 
-2. **Run a registry benchmark.** Pass a `dataset:NAME@VERSION` spec naming a dataset from the Harbor registry — Terminal Bench, SWE-bench Verified, and friends. The spec expands via Harbor's own resolver into git-pinned per-task refs (commit pins match `harbor run` exactly, nothing ships with the example); tasks that pin a prebuilt `docker_image` boot it directly:
+2. **Run a real registry benchmark.** Pass a `dataset:NAME@VERSION[:N]` spec naming a dataset from the Harbor registry (the optional `:N` slices to the first N tasks). The spec expands via Harbor's own resolver into git-pinned per-task refs (commit pins match `harbor run` exactly, nothing ships with the example); tasks that pin a prebuilt `docker_image` boot it directly on the sandbox:
 
    ```bash
-   # The 10-task Terminal Bench sample — a fast real-benchmark smoke test:
-   python run.py dataset:terminal-bench-sample@2.0 oracle 1
+   # Three Terminal Bench tasks — a fast real-benchmark smoke test (~2 min):
+   python run.py dataset:terminal-bench-sample@2.0:3 oracle 1
 
    # The full 89-task Terminal Bench 2.0 (fans out 89 shard steps):
    python run.py dataset:terminal-bench@2.0 oracle 1
    ```
+
+   The three-task run produces this report (oracle runs each task's reference solution, so green rewards validate the orchestration and environment path, not model quality):
+
+   | Task | Agent | Trials | Completed | Errored | Mean reward |
+   |---|---|---|---|---|---|
+   | chess-best-move | oracle | 1 | 1 | 0 | reward=1.000 |
+   | polyglot-c-py | oracle | 1 | 1 | 0 | reward=1.000 |
+   | sqlite-with-gcov | oracle | 1 | 1 | 0 | reward=1.000 |
+
+   The registry has 30+ benchmarks beyond Terminal Bench (quixbugs, BFCL, SWE-bench multilingual, spreadsheetbench, ...) — list them with `harbor dataset list`.
 
 3. **Benchmark a real agent**: swap in `terminus-2`, `claude-code-agent`, ... plus its API key instead of `oracle`.
 

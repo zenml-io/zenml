@@ -121,7 +121,18 @@ if __name__ == "__main__":
     dataset: Optional[Dict[str, Any]] = None
     if task.startswith(_DATASET_PREFIX):
         name, _, version = task[len(_DATASET_PREFIX) :].partition("@")
-        dataset = {"name": name, "version": version or None}
+        # An optional trailing :N slices the dataset to its first N
+        # tasks (e.g. dataset:terminal-bench-sample@2.0:3) so a first
+        # benchmark run doesn't fan out the full task set.
+        n_tasks: Optional[int] = None
+        version, _, slice_part = version.partition(":")
+        if slice_part:
+            n_tasks = int(slice_part)
+        dataset = {
+            "name": name,
+            "version": version or None,
+            "n_tasks": n_tasks,
+        }
     elif task.startswith("git+"):
         tasks = [task]
     else:
