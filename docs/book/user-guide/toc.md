@@ -54,6 +54,7 @@
   * [Typed services](agents-guide/05-typed-services.md)
   * [Human in the loop](agents-guide/06-hitl.md)
   * [Evaluate agents with Harbor](agents-guide/agent-evals.md)
+  * [From evals to training](agents-guide/evals-to-training.md)
   * [Production notes](agents-guide/production-notes.md)
 
 ## Tutorials <a href="#tutorial" id="tutorial"></a>

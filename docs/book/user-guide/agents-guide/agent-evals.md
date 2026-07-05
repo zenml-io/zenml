@@ -77,6 +77,10 @@ harbor run --environment-import-path zenml.integrations.harbor.environment:ZenML
 
 Known limitations, preserved deliberately: Harbor resource requests (`cpus`/`memory_mb`/`gpus`) are not translated to sandbox settings, tasks with `allow_internet=false` are refused, `exec(user=...)` is ignored, task-level `docker_image` overrides are Modal-only, and multi-step tasks or separate verifier sandboxes are rejected with `NotImplementedError`. The sandbox image must provide `bash`, `timeout`(1), and `tar`.
 
+## From evals to training
+
+A campaign's rewards, trajectories, and costs are training signal, not just a scoreboard. [From evals to training](evals-to-training.md) maps the improvement loop onto these artifacts: regression gates, SFT from winning trajectories, rejection sampling, config sweeps, and eval-gated promotion.
+
 ## Learn more
 
 * The [harbor_agent_evals example](https://github.com/zenml-io/zenml/tree/main/examples/harbor_agent_evals) — a runnable campaign with an oracle-vs-nop head-to-head default and real Terminal-Bench invocations.
