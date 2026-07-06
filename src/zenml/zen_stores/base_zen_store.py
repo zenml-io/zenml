@@ -384,8 +384,11 @@ class BaseZenStore(
 
         return active_project, active_stack
 
-    def get_store_info(self) -> ServerModel:
+    def get_store_info(self, force_refresh: bool = False) -> ServerModel:
         """Get information about the store.
+
+        Args:
+            force_refresh: Ignored, the information is always fresh.
 
         Returns:
             Information about the store.

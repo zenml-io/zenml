@@ -578,18 +578,20 @@ class RestZenStore(BaseZenStore):
         Returns:
             Cached information about the server.
         """
-        if self._server_info is None:
-            return self.get_store_info()
-        return self._server_info
+        return self.get_store_info()
 
-    def get_store_info(self) -> ServerModel:
+    def get_store_info(self, force_refresh: bool = False) -> ServerModel:
         """Get information about the server.
+
+        Args:
+            force_refresh: Fetch the server information even if it is cached.
 
         Returns:
             Information about the server.
         """
-        body = self.get(INFO)
-        self._server_info = ServerModel.model_validate(body)
+        if self._server_info is None or force_refresh:
+            body = self.get(INFO)
+            self._server_info = ServerModel.model_validate(body)
         return self._server_info
 
     def get_deployment_id(self) -> UUID:
@@ -4880,7 +4882,7 @@ class RestZenStore(BaseZenStore):
             # NOTE: this is the best place to do this because we know that
             # the token is valid and the server is reachable.
             try:
-                server_info = self.get_store_info()
+                server_info = self.get_store_info(force_refresh=True)
             except Exception as e:
                 logger.warning(f"Failed to get server info: {e}.")
             else:
