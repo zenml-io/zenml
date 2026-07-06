@@ -538,7 +538,6 @@ class UUIDFilter(StrFilter):
             A list of query conditions.
         """
         import sqlalchemy
-        from sqlalchemy_utils.functions import cast_if
 
         from zenml.utils import uuid_utils
 
@@ -557,9 +556,9 @@ class UUIDFilter(StrFilter):
             assert isinstance(self.value, (str, UUID))
             return column != uuid_utils.to_uuid(self.value)
 
-        # For all other operations, cast and handle the column as string
+        # For all other operations, handle the column as a string
         return super().generate_query_conditions_from_column(
-            column=cast_if(column, sqlalchemy.String)
+            column=sqlalchemy.type_coerce(column, sqlalchemy.String)
         )
 
 
