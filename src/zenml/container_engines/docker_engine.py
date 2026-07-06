@@ -29,6 +29,8 @@ from typing import (
     cast,
 )
 
+import docker.auth as docker_auth
+import docker.credentials as docker_credentials
 from docker.client import DockerClient
 from docker.errors import DockerException
 
@@ -47,6 +49,65 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
+_ZENML_CREDENTIAL_STORE = "zenml-auths"
+
+
+class _AuthsCredentialStore:
+    """Credential store facade backed by docker-py's in-memory auths.
+
+    Docker-py gives configured credential helpers precedence over the
+    in-memory ``auths`` dictionary populated by ``DockerClient.login``. This
+    facade lets ZenML expose those in-memory credentials as a credential store
+    so explicit registry logins win over credentials from the user's system
+    Docker credential store.
+    """
+
+    def __init__(self, auths: Dict[str, Dict[str, Any]]) -> None:
+        """Initialize the credential store facade.
+
+        Args:
+            auths: Docker-py in-memory auth entries.
+        """
+        self._auths = auths
+
+    def get(self, server: str) -> Dict[str, str]:
+        """Get credentials for a registry from in-memory auths.
+
+        Args:
+            server: Registry server.
+
+        Returns:
+            Credentials in Docker credential helper format.
+
+        Raises:
+            docker_credentials.CredentialsNotFound: If no in-memory auth exists
+                for the registry.
+        """
+        registry = docker_auth.resolve_index_name(server)
+        auth_config = self._auths.get(server) or self._auths.get(registry)
+
+        if not auth_config:
+            raise docker_credentials.CredentialsNotFound(
+                f"No in-memory Docker credentials found for {server}."
+            )
+
+        return {
+            "Username": auth_config["username"],
+            "Secret": auth_config["password"],
+        }
+
+    def list(self) -> Dict[str, str]:
+        """List in-memory auths in Docker credential helper format.
+
+        Returns:
+            Registry-to-username mapping in Docker credential helper format.
+        """
+        return {
+            registry: auth_config.get("username", "")
+            for registry, auth_config in self._auths.items()
+            if auth_config
+        }
+
 
 class DockerContainerEngine(ContainerEngine):
     """Container engine using the Docker CLI and/or docker-py."""
@@ -54,6 +115,7 @@ class DockerContainerEngine(ContainerEngine):
     def __init__(self) -> None:
         """Create a Docker engine (registry auth is per-operation)."""
         self._client: Optional[DockerClient] = None
+        self._cred_helper_failed: bool = False
 
     @property
     def engine_type(self) -> ContainerEngineType:
@@ -122,6 +184,24 @@ class DockerContainerEngine(ContainerEngine):
                 "Could not create a Docker client from the environment. Is your "
                 "Docker daemon running?"
             ) from e
+
+        try:
+            # Install a fake credential helper backed by docker-py's in-memory
+            # auths. When a registry is bound to this store after login, docker-py
+            # resolves ZenML's explicit credentials before the user's system store.
+            auth_config: docker_auth.AuthConfig | None = (
+                self._client.api._auth_configs
+            )
+            if auth_config is not None:
+                auth_config._stores[_ZENML_CREDENTIAL_STORE] = (
+                    _AuthsCredentialStore(auth_config.auths)
+                )
+                if "credHelpers" not in auth_config:
+                    auth_config["credHelpers"] = {}
+        except Exception as e:
+            logger.error(f"Error installing zenml credential helper: {e}")
+            self._cred_helper_failed = True
+
         return self._client
 
     def login_client(
@@ -140,19 +220,42 @@ class DockerContainerEngine(ContainerEngine):
         Raises:
             AuthorizationException: If registry login fails.
         """
+        client = self.client
+        docker_registry = (
+            registry
+            if registry != DOCKERHUB_REGISTRY_URI
+            else docker_auth.INDEX_URL
+        )
+
         try:
-            self.client.login(
+            client.login(
                 username=username,
                 password=password,
-                registry=registry
-                if registry != DOCKERHUB_REGISTRY_URI
-                else None,
+                registry=docker_registry,
                 reauth=True,
             )
         except DockerException as e:
             raise AuthorizationException(
                 f"failed to authenticate with Docker registry {registry}: {e}"
             )
+
+        if self._cred_helper_failed:
+            return
+
+        try:
+            # DockerClient.login stores these credentials in auths. Binding the
+            # registry to our auths-backed credential helper makes docker-py prefer
+            # them over any matching credentials in the system Docker store.
+            auth_config: docker_auth.AuthConfig | None = (
+                client.api._auth_configs
+            )
+            if auth_config is not None:
+                auth_config.cred_helpers[docker_registry] = (
+                    _ZENML_CREDENTIAL_STORE
+                )
+        except Exception as e:
+            logger.error(f"Error installing zenml credential helper: {e}")
+            self._cred_helper_failed = True
 
     @staticmethod
     def login_cli(
@@ -248,17 +351,18 @@ class DockerContainerEngine(ContainerEngine):
             registry: Registry host or URI.
             **kwargs: Additional keyword arguments.
         """
-        self.login_cli(
-            username=username,
-            password=password,
-            registry=registry,
-        )
-
         self.login_client(
             username=username,
             password=password,
             registry=registry,
         )
+
+        if kwargs.get("use_subprocess", False) or self._cred_helper_failed:
+            self.login_cli(
+                username=username,
+                password=password,
+                registry=registry,
+            )
 
     def build(
         self,
@@ -368,6 +472,7 @@ class DockerContainerEngine(ContainerEngine):
         ):
             self.login_registry(container_registry)
             container_registry.prepare_image_push(image_name)
+
         logger.info("Pushing Docker image `%s`.", image_name)
         output_stream = self.client.images.push(image_name, stream=True)
         aux_info = self.process_docker_stream(output_stream)
