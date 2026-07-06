@@ -327,7 +327,6 @@ from zenml.models import (
     SecretUpdate,
     ServerActivationRequest,
     ServerDatabaseType,
-    ServerDeploymentType,
     ServerModel,
     ServerSettingsResponse,
     ServerSettingsUpdate,
@@ -1190,7 +1189,7 @@ class SqlZenStore(BaseZenStore):
 
         server_config = ServerConfiguration.get_server_config()
 
-        if server_config.deployment_type == ServerDeploymentType.CLOUD:
+        if server_config.is_pro_server:
             # Do not send events for Pro workspaces where the event comes from
             # the Pro API
             return
@@ -13538,10 +13537,7 @@ class SqlZenStore(BaseZenStore):
         if ENV_ZENML_SERVER in os.environ:
             from zenml.config.server_config import ServerConfiguration
 
-            if (
-                ServerConfiguration.get_server_config().deployment_type
-                == ServerDeploymentType.CLOUD
-            ):
+            if ServerConfiguration.get_server_config().is_pro_server:
                 default_project_enabled = False
 
         return default_project_enabled

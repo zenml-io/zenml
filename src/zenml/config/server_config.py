@@ -768,6 +768,15 @@ class ServerConfiguration(BaseModel):
 
         return self.external_server_id
 
+    @property
+    def is_pro_server(self) -> bool:
+        """Return whether the server is a ZenML Pro server.
+
+        Returns:
+            True if the server is a ZenML Pro server, False otherwise.
+        """
+        return self.deployment_type == ServerDeploymentType.CLOUD
+
     @classmethod
     def get_server_config(cls) -> "ServerConfiguration":
         """Get the server configuration.
@@ -791,7 +800,7 @@ class ServerConfiguration(BaseModel):
 
         server_config = ServerConfiguration(**env_server_config)
 
-        if server_config.deployment_type == ServerDeploymentType.CLOUD:
+        if server_config.is_pro_server:
             # If the zenml server is a Pro server, we will apply the Pro
             # configuration overrides to the server config automatically.
             # TODO: these should be retrieved dynamically from the ZenML Pro

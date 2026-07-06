@@ -48,7 +48,6 @@ from zenml.models import (
     ProjectFilter,
     ProjectResponse,
     ServerDatabaseType,
-    ServerDeploymentType,
     ServerModel,
     StackFilter,
     StackResponse,
@@ -414,7 +413,7 @@ class BaseZenStore(
         )
 
         # Add ZenML Pro specific store information to the server model, if available.
-        if store_info.deployment_type == ServerDeploymentType.CLOUD:
+        if server_config.is_pro_server:
             from zenml.config.server_config import ServerProConfiguration
 
             pro_config = ServerProConfiguration.get_server_config()

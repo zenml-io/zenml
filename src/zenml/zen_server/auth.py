@@ -327,7 +327,6 @@ def authenticate_credentials(
         if (
             config.auth_scheme == AuthScheme.EXTERNAL
             and not user_model.external_user_id
-            and not user_model.is_service_account
         ):
             error = (
                 f"Authentication error: local account {user_model.name} is not "
@@ -980,6 +979,14 @@ def authenticate_api_key(
             error = f"Authentication error: {e}."
             logger.exception(error)
             raise CredentialsNotValid(error)
+
+    if server_config().auth_scheme == AuthScheme.EXTERNAL:
+        error = (
+            "Authentication error: local service account API keys are not "
+            "supported with external authentication."
+        )
+        logger.error(error)
+        raise CredentialsNotValid(error)
 
     try:
         decoded_api_key = APIKey.decode_api_key(api_key)
