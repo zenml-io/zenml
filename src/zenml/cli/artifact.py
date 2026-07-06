@@ -252,6 +252,62 @@ def update_artifact_version(
         cli_utils.declare(f"Artifact version '{artifact_version.id}' updated.")
 
 
+@version.command("delete", help="Delete an artifact version by ID.")
+@click.argument("artifact_version_id")
+@click.option(
+    "--delete-data",
+    is_flag=True,
+    help="Also delete the artifact data from the artifact store.",
+)
+@click.option(
+    "--server-side",
+    is_flag=True,
+    help="Delete artifact data from the server instead of the local stack.",
+)
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    help="Don't ask for confirmation.",
+)
+def delete_artifact_version(
+    artifact_version_id: str,
+    delete_data: bool = False,
+    server_side: bool = False,
+    yes: bool = False,
+) -> None:
+    """Delete an artifact version by ID.
+
+    Args:
+        artifact_version_id: The ID of the artifact version to delete.
+        delete_data: If set, also delete the artifact data from the artifact
+            store.
+        server_side: If set, delete artifact data from the server instead of
+            the local stack.
+        yes: If set, don't ask for confirmation.
+    """
+    if not yes:
+        confirmation = cli_utils.confirmation(
+            f"Are you sure you want to delete artifact version "
+            f"'{artifact_version_id}'?"
+        )
+        if not confirmation:
+            cli_utils.declare("Artifact version deletion canceled.")
+            return
+
+    try:
+        Client().delete_artifact_version(
+            name_id_or_prefix=artifact_version_id,
+            delete_metadata=True,
+            delete_from_artifact_store=delete_data,
+            server_side=server_side,
+        )
+    except Exception as e:
+        cli_utils.exception(e)
+    else:
+        cli_utils.declare(f"Artifact version '{artifact_version_id}' deleted.")
+
+
 @artifact.command(
     "prune",
     help=(
