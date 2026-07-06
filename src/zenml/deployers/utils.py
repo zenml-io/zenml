@@ -375,7 +375,9 @@ def deployment_snapshot_request_from_source_snapshot(
             code_repository=source_snapshot.code_reference.code_repository.id,
         )
 
-    zenml_version = Client().zen_store.get_store_info().version
+    zenml_version = (
+        Client().zen_store.get_store_info(force_refresh=True).version
+    )
 
     # Compute the source snapshot ID:
     # - If the source snapshot has a name, we use it as the source snapshot.

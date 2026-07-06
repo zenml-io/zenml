@@ -374,7 +374,17 @@ class ProjectScopedResponse(
         """
         from zenml.client import Client
 
-        return Client().get_project(self.project_id)
+        client = Client()
+
+        try:
+            active_project = client.active_project
+        except Exception:
+            active_project = None
+
+        if active_project is not None and active_project.id == self.project_id:
+            return active_project
+
+        return client.get_project(self.project_id)
 
 
 # ---------------------- Filter Models ----------------------
