@@ -110,6 +110,9 @@ from zenml.zen_stores.schemas.trigger_assoc import (
 )
 from zenml.zen_stores.schemas.trigger_schemas import TriggerSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.webhook_integration_schemas import (
+    WebhookIntegrationSchema,
+)
 
 __all__ = [
     "APIKeySchema",
@@ -172,4 +175,5 @@ __all__ = [
     "TriggerSchema",
     "TriggerSnapshotSchema",
     "TriggerExecutionSchema",
+    "WebhookIntegrationSchema",
 ]

@@ -43,6 +43,7 @@ import math
 import os
 import random
 import re
+import secrets
 import sys
 import time
 import uuid
@@ -374,6 +375,14 @@ from zenml.models import (
     UserResponse,
     UserScopedRequest,
     UserUpdate,
+    WebhookEventStatsUpdate,
+    WebhookIntegrationCreateResponse,
+    WebhookIntegrationFilter,
+    WebhookIntegrationRequest,
+    WebhookIntegrationResponse,
+    WebhookIntegrationSecretRequest,
+    WebhookIntegrationSecretResponse,
+    WebhookIntegrationUpdate,
 )
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
@@ -457,6 +466,7 @@ from zenml.zen_stores.schemas import (
     TriggerSchema,
     TriggerSnapshotSchema,
     UserSchema,
+    WebhookIntegrationSchema,
 )
 from zenml.zen_stores.schemas.artifact_visualization_schemas import (
     ArtifactVisualizationSchema,
@@ -8111,6 +8121,270 @@ class SqlZenStore(BaseZenStore):
                         session.commit()
         return None
 
+    # -------------------- Webhook integrations ---------------------
+
+    def _create_webhook_integration_secret(
+        self, secret: str, session: Session
+    ) -> UUID:
+        """Create an internal secret containing a webhook signing secret.
+
+        Args:
+            secret: The signing secret value.
+            session: The active database session.
+
+        Returns:
+            The internal secret ID.
+        """
+        return self._create_secret_schema(
+            SecretRequest(
+                user=self._get_active_user(session=session).id,
+                name=f"webhook-{uuid.uuid4().hex}",
+                private=False,
+                values={"secret": PlainSerializedSecretStr(secret)},
+            ),
+            session=session,
+            internal=True,
+        ).id
+
+    def create_webhook_integration(
+        self, integration: WebhookIntegrationRequest
+    ) -> WebhookIntegrationCreateResponse:
+        """Create a webhook integration and its internal signing secret.
+
+        Args:
+            integration: The webhook integration creation request.
+
+        Returns:
+            The created integration and any generated signing secret.
+        """  # noqa: DOC501, DOC503
+        generated_secret = integration.secret is None
+        if integration.secret is None:
+            secret = secrets.token_urlsafe(32)
+        else:
+            secret = integration.secret.get_secret_value()
+        with Session(self.engine) as session:
+            self._set_request_user_id(
+                request_model=integration, session=session
+            )
+            self._verify_name_uniqueness(
+                resource=integration,
+                schema=WebhookIntegrationSchema,
+                session=session,
+            )
+            secret_id = self._create_webhook_integration_secret(
+                secret=secret,
+                session=session,
+            )
+            try:
+                schema = WebhookIntegrationSchema.from_request(
+                    request=integration, secret_id=secret_id
+                )
+                session.add(schema)
+                session.commit()
+            except Exception:
+                session.rollback()
+                self._delete_secret_schema(
+                    secret_id=secret_id, session=session
+                )
+                raise
+            return WebhookIntegrationCreateResponse(
+                integration=schema.to_model(include_metadata=True),
+                secret=(
+                    PlainSerializedSecretStr(secret)
+                    if generated_secret
+                    else None
+                ),
+            )
+
+    def get_webhook_integration(
+        self, integration_id: UUID, hydrate: bool = True
+    ) -> WebhookIntegrationResponse:
+        """Get a webhook integration.
+
+        Args:
+            integration_id: The webhook integration ID.
+            hydrate: Whether to include intake statistics.
+
+        Returns:
+            The webhook integration.
+        """
+        with Session(self.engine) as session:
+            schema = self._get_schema_by_id(
+                resource_id=integration_id,
+                schema_class=WebhookIntegrationSchema,
+                session=session,
+            )
+            return schema.to_model(include_metadata=hydrate)
+
+    def list_webhook_integrations(
+        self,
+        filter_model: WebhookIntegrationFilter,
+        hydrate: bool = False,
+    ) -> Page[WebhookIntegrationResponse]:
+        """List webhook integrations in the active project.
+
+        Args:
+            filter_model: The webhook integration filters.
+            hydrate: Whether to include intake statistics.
+
+        Returns:
+            A page of webhook integrations.
+        """
+        with Session(self.engine) as session:
+            self._set_filter_project_id(
+                filter_model=filter_model, session=session
+            )
+            return self.filter_and_paginate(
+                session=session,
+                query=select(WebhookIntegrationSchema),
+                table=WebhookIntegrationSchema,
+                filter_model=filter_model,
+                hydrate=hydrate,
+            )
+
+    def update_webhook_integration(
+        self,
+        integration_id: UUID,
+        update: WebhookIntegrationUpdate,
+    ) -> WebhookIntegrationResponse:
+        """Update a webhook integration.
+
+        Args:
+            integration_id: The webhook integration ID.
+            update: The webhook integration update.
+
+        Returns:
+            The updated webhook integration.
+        """
+        with Session(self.engine) as session:
+            schema = self._get_schema_by_id(
+                resource_id=integration_id,
+                schema_class=WebhookIntegrationSchema,
+                session=session,
+            )
+            self._verify_name_uniqueness(
+                resource=update, schema=schema, session=session
+            )
+            schema.update(update)
+            session.add(schema)
+            session.commit()
+            return schema.to_model(include_metadata=True)
+
+    def delete_webhook_integration(self, integration_id: UUID) -> None:
+        """Delete a webhook integration and its internal secret.
+
+        Args:
+            integration_id: The webhook integration ID.
+        """
+        with Session(self.engine) as session:
+            schema = self._get_schema_by_id(
+                resource_id=integration_id,
+                schema_class=WebhookIntegrationSchema,
+                session=session,
+            )
+            self._delete_secret_schema(
+                secret_id=schema.secret_id, session=session
+            )
+
+    def rotate_webhook_integration_secret(
+        self,
+        integration_id: UUID,
+        request: WebhookIntegrationSecretRequest,
+    ) -> WebhookIntegrationSecretResponse:
+        """Replace the active webhook signing secret.
+
+        Args:
+            integration_id: The webhook integration ID.
+            request: The secret rotation request.
+
+        Returns:
+            The newly active signing secret.
+        """
+        secret = (
+            request.secret.get_secret_value()
+            if request.secret is not None
+            else secrets.token_urlsafe(32)
+        )
+        with Session(self.engine) as session:
+            schema = self._get_schema_by_id(
+                resource_id=integration_id,
+                schema_class=WebhookIntegrationSchema,
+                session=session,
+            )
+            self._update_secret_values(
+                secret_id=schema.secret_id,
+                values={"secret": secret},
+                overwrite=True,
+            )
+            schema.updated = utc_now()
+            session.add(schema)
+            session.commit()
+        return WebhookIntegrationSecretResponse(
+            secret=PlainSerializedSecretStr(secret)
+        )
+
+    def get_webhook_integration_secret(self, integration_id: UUID) -> str:
+        """Get the signing secret used to validate webhook requests.
+
+        Args:
+            integration_id: The webhook integration ID.
+
+        Returns:
+            The signing secret.
+        """
+        with Session(self.engine) as session:
+            schema = self._get_schema_by_id(
+                resource_id=integration_id,
+                schema_class=WebhookIntegrationSchema,
+                session=session,
+            )
+            return self._get_secret_values(schema.secret_id)["secret"]
+
+    def record_webhook_event(
+        self, integration_id: UUID, update: WebhookEventStatsUpdate
+    ) -> None:
+        """Atomically record a webhook intake outcome.
+
+        Args:
+            integration_id: The webhook integration ID.
+            update: The terminal intake outcome.
+
+        Raises:
+            KeyError: If the webhook integration no longer exists.
+        """
+        now = utc_now()
+        values: dict[str, Any] = {
+            "received_count": WebhookIntegrationSchema.received_count + 1,
+            "last_received_at": now,
+        }
+        if update.accepted:
+            values["accepted_count"] = (
+                WebhookIntegrationSchema.accepted_count + 1
+            )
+            values["last_accepted_at"] = now
+        elif update.auth_failed:
+            values["auth_failed_count"] = (
+                WebhookIntegrationSchema.auth_failed_count + 1
+            )
+        elif update.invalid_payload:
+            values["invalid_payload_count"] = (
+                WebhookIntegrationSchema.invalid_payload_count + 1
+            )
+        if update.error_summary is not None:
+            values["last_error_at"] = now
+            values["last_error_summary"] = update.error_summary
+        with Session(self.engine) as session:
+            result = session.exec(
+                sqlalchemy.update(WebhookIntegrationSchema)
+                .where(col(WebhookIntegrationSchema.id) == integration_id)
+                .values(**values)
+            )
+            if result.rowcount == 0:
+                raise KeyError(
+                    f"Webhook integration {integration_id} not found."
+                )
+            session.commit()
+
     # -------------------- Triggers ---------------------
 
     @track_decorator(AnalyticsEvent.CREATED_TRIGGER)
@@ -13476,8 +13750,17 @@ class SqlZenStore(BaseZenStore):
                     "The default project cannot be deleted."
                 )
 
+            webhook_secret_ids = session.exec(
+                select(WebhookIntegrationSchema.secret_id).where(
+                    WebhookIntegrationSchema.project_id == project.id
+                )
+            ).all()
             session.delete(project)
             session.commit()
+            for secret_id in webhook_secret_ids:
+                self._delete_secret_schema(
+                    secret_id=secret_id, session=session
+                )
 
     def count_projects(
         self, filter_model: Optional[ProjectFilter] = None

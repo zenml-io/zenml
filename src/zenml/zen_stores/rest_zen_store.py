@@ -126,6 +126,7 @@ from zenml.constants import (
     TRIGGERS,
     USERS,
     VERSION_1,
+    WEBHOOK_INTEGRATIONS,
     ZENML_PRO_API_KEY_PREFIX,
 )
 from zenml.enums import (
@@ -307,6 +308,13 @@ from zenml.models import (
     UserRequest,
     UserResponse,
     UserUpdate,
+    WebhookIntegrationCreateResponse,
+    WebhookIntegrationFilter,
+    WebhookIntegrationRequest,
+    WebhookIntegrationResponse,
+    WebhookIntegrationSecretRequest,
+    WebhookIntegrationSecretResponse,
+    WebhookIntegrationUpdate,
 )
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
@@ -2576,6 +2584,109 @@ class RestZenStore(BaseZenStore):
             run_metadata: The run metadata to create.
         """
         self.post(RUN_METADATA, body=run_metadata)
+
+    # ------------------------ Webhook integrations -----------------------
+
+    def create_webhook_integration(
+        self, integration: WebhookIntegrationRequest
+    ) -> WebhookIntegrationCreateResponse:
+        """Create a webhook integration.
+
+        Args:
+            integration: The webhook integration creation request.
+
+        Returns:
+            The created integration and any generated signing secret.
+        """
+        response = self.post(WEBHOOK_INTEGRATIONS, body=integration)
+        return WebhookIntegrationCreateResponse.model_validate(response)
+
+    def get_webhook_integration(
+        self, integration_id: UUID, hydrate: bool = True
+    ) -> WebhookIntegrationResponse:
+        """Get a webhook integration.
+
+        Args:
+            integration_id: The webhook integration ID.
+            hydrate: Whether to include intake statistics.
+
+        Returns:
+            The webhook integration.
+        """
+        response = self.get(
+            f"{WEBHOOK_INTEGRATIONS}/{integration_id}",
+            params={"hydrate": hydrate},
+        )
+        return WebhookIntegrationResponse.model_validate(response)
+
+    def list_webhook_integrations(
+        self,
+        filter_model: WebhookIntegrationFilter,
+        hydrate: bool = False,
+    ) -> Page[WebhookIntegrationResponse]:
+        """List webhook integrations.
+
+        Args:
+            filter_model: The webhook integration filters.
+            hydrate: Whether to include intake statistics.
+
+        Returns:
+            A page of webhook integrations.
+        """
+        response = self.get(
+            WEBHOOK_INTEGRATIONS,
+            params={
+                "hydrate": hydrate,
+                **filter_model.model_dump(exclude_none=True),
+            },
+        )
+        return Page[WebhookIntegrationResponse].model_validate(response)
+
+    def update_webhook_integration(
+        self,
+        integration_id: UUID,
+        update: WebhookIntegrationUpdate,
+    ) -> WebhookIntegrationResponse:
+        """Update a webhook integration.
+
+        Args:
+            integration_id: The webhook integration ID.
+            update: The webhook integration update.
+
+        Returns:
+            The updated webhook integration.
+        """
+        response = self.put(
+            f"{WEBHOOK_INTEGRATIONS}/{integration_id}", body=update
+        )
+        return WebhookIntegrationResponse.model_validate(response)
+
+    def delete_webhook_integration(self, integration_id: UUID) -> None:
+        """Delete a webhook integration.
+
+        Args:
+            integration_id: The webhook integration ID.
+        """
+        self.delete(f"{WEBHOOK_INTEGRATIONS}/{integration_id}")
+
+    def rotate_webhook_integration_secret(
+        self,
+        integration_id: UUID,
+        request: WebhookIntegrationSecretRequest,
+    ) -> WebhookIntegrationSecretResponse:
+        """Rotate a webhook integration signing secret.
+
+        Args:
+            integration_id: The webhook integration ID.
+            request: The secret rotation request.
+
+        Returns:
+            The newly active signing secret.
+        """
+        response = self.put(
+            f"{WEBHOOK_INTEGRATIONS}/{integration_id}/secret", body=request
+        )
+        return WebhookIntegrationSecretResponse.model_validate(response)
 
     # ----------------------------- Triggers ------------------------------
 

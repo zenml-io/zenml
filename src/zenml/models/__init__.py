@@ -381,9 +381,9 @@ from zenml.models.v2.core.step_run import (
     StepRunUpdate,
 )
 from zenml.models.v2.core.stream_event import (
-    StreamEvent,
     StreamBatchRequest,
     StreamBatchResponse,
+    StreamEvent,
 )
 from zenml.models.v2.core.tag import (
     TagFilter,
@@ -431,6 +431,20 @@ from zenml.models.v2.core.user import (
     UserResponseBody,
     UserResponseMetadata,
     UserUpdate,
+)
+from zenml.models.v2.core.webhook_integration import (
+    WebhookEventStatsUpdate,
+    WebhookIntegrationCreateResponse,
+    WebhookIntegrationFilter,
+    WebhookIntegrationRequest,
+    WebhookIntegrationResponse,
+    WebhookIntegrationResponseBody,
+    WebhookIntegrationResponseMetadata,
+    WebhookIntegrationResponseResources,
+    WebhookIntegrationSecretRequest,
+    WebhookIntegrationSecretResponse,
+    WebhookIntegrationStats,
+    WebhookIntegrationUpdate,
 )
 from zenml.models.v2.misc.auth_models import (
     OAuthDeviceAuthorizationRequest,
@@ -643,6 +657,11 @@ PlatformEventTriggerRequest.model_rebuild()
 PlatformEventTriggerUpdate.model_rebuild()
 PlatformEventTriggerResponse.model_rebuild()
 PlatformEventTriggerResponseBody.model_rebuild()
+WebhookIntegrationResponseBody.model_rebuild()
+WebhookIntegrationStats.model_rebuild()
+WebhookIntegrationResponseMetadata.model_rebuild()
+WebhookIntegrationResponseResources.model_rebuild()
+WebhookIntegrationResponse.model_rebuild()
 
 
 __all__ = [
@@ -1027,4 +1046,16 @@ __all__ = [
     "TRIGGER_RETURN_TYPE_UNION",
     "SourceEntity",
     "TriggerExecutionInfo",
+    "WebhookEventStatsUpdate",
+    "WebhookIntegrationCreateResponse",
+    "WebhookIntegrationFilter",
+    "WebhookIntegrationRequest",
+    "WebhookIntegrationResponse",
+    "WebhookIntegrationResponseBody",
+    "WebhookIntegrationResponseMetadata",
+    "WebhookIntegrationResponseResources",
+    "WebhookIntegrationSecretRequest",
+    "WebhookIntegrationSecretResponse",
+    "WebhookIntegrationStats",
+    "WebhookIntegrationUpdate",
 ]

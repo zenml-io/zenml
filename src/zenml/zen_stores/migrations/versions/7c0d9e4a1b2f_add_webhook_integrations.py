@@ -1,0 +1,95 @@
+"""Add webhook integrations [7c0d9e4a1b2f].
+
+Revision ID: 7c0d9e4a1b2f
+Revises: b6f2a8d9c3e1
+Create Date: 2026-07-07
+
+"""
+
+import sqlalchemy as sa
+import sqlmodel
+from alembic import op
+
+revision = "7c0d9e4a1b2f"
+down_revision = "b6f2a8d9c3e1"
+branch_labels = None
+depends_on = None
+
+
+def upgrade() -> None:
+    """Create the webhook integration table."""
+    op.create_table(
+        "webhook_integration",
+        sa.Column("id", sa.Uuid(), nullable=False),
+        sa.Column("created", sa.DateTime(), nullable=False),
+        sa.Column("updated", sa.DateTime(), nullable=False),
+        sa.Column("name", sqlmodel.sql.sqltypes.AutoString(), nullable=False),
+        sa.Column("project_id", sa.Uuid(), nullable=False),
+        sa.Column("user_id", sa.Uuid(), nullable=True),
+        sa.Column("secret_id", sa.Uuid(), nullable=False),
+        sa.Column(
+            "webhook_type", sqlmodel.sql.sqltypes.AutoString(), nullable=False
+        ),
+        sa.Column("active", sa.Boolean(), nullable=False),
+        sa.Column("received_count", sa.Integer(), nullable=False),
+        sa.Column("accepted_count", sa.Integer(), nullable=False),
+        sa.Column("auth_failed_count", sa.Integer(), nullable=False),
+        sa.Column("invalid_payload_count", sa.Integer(), nullable=False),
+        sa.Column("last_received_at", sa.DateTime(), nullable=True),
+        sa.Column("last_accepted_at", sa.DateTime(), nullable=True),
+        sa.Column("last_error_at", sa.DateTime(), nullable=True),
+        sa.Column(
+            "last_error_summary",
+            sa.TEXT(),
+            nullable=True,
+        ),
+        sa.ForeignKeyConstraint(
+            ["project_id"],
+            ["project.id"],
+            name="fk_webhook_integration_project_id_project",
+            ondelete="CASCADE",
+        ),
+        sa.ForeignKeyConstraint(
+            ["user_id"],
+            ["user.id"],
+            name="fk_webhook_integration_user_id_user",
+            ondelete="SET NULL",
+        ),
+        sa.ForeignKeyConstraint(
+            ["secret_id"],
+            ["secret.id"],
+            name="fk_webhook_integration_secret_id_secret",
+            ondelete="CASCADE",
+        ),
+        sa.PrimaryKeyConstraint("id"),
+        sa.UniqueConstraint(
+            "name",
+            "project_id",
+            name="unique_webhook_integration_name_in_project",
+        ),
+    )
+    op.create_index(
+        op.f("ix_webhook_integration_active"),
+        "webhook_integration",
+        ["active"],
+        unique=False,
+    )
+    op.create_index(
+        op.f("ix_webhook_integration_webhook_type"),
+        "webhook_integration",
+        ["webhook_type"],
+        unique=False,
+    )
+
+
+def downgrade() -> None:
+    """Drop the webhook integration table."""
+    op.drop_index(
+        op.f("ix_webhook_integration_webhook_type"),
+        table_name="webhook_integration",
+    )
+    op.drop_index(
+        op.f("ix_webhook_integration_active"),
+        table_name="webhook_integration",
+    )
+    op.drop_table("webhook_integration")

@@ -522,6 +522,8 @@ def get_resource_type_for_model(
         TagRequest,
         TagResponse,
         TriggerRequest,
+        WebhookIntegrationRequest,
+        WebhookIntegrationResponse,
     )
 
     mapping: Dict[
@@ -581,6 +583,8 @@ def get_resource_type_for_model(
         ScheduleTriggerRequest: ResourceType.TRIGGER,
         ScheduleTriggerResponse: ResourceType.TRIGGER,
         TriggerRequest: ResourceType.TRIGGER,
+        WebhookIntegrationRequest: ResourceType.WEBHOOK_INTEGRATION,
+        WebhookIntegrationResponse: ResourceType.WEBHOOK_INTEGRATION,
     }
 
     return mapping.get(type(model))
