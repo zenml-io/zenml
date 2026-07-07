@@ -25,6 +25,7 @@ from zenml.constants import (
     SERVICE_ACCOUNTS,
     VERSION_1,
 )
+from zenml.enums import AuthScheme
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     APIKeyFilter,
@@ -53,6 +54,7 @@ from zenml.zen_server.rbac.utils import (
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     make_dependable,
+    server_config,
     verify_admin_status_if_no_rbac,
     zen_store,
 )
@@ -62,6 +64,16 @@ router = APIRouter(
     tags=["service_accounts", "api_keys"],
     responses={401: error_response},
 )
+
+
+def _ensure_workspace_service_account_mutation_allowed() -> None:
+    """Block deprecated workspace-level service account mutations in Pro."""
+    if server_config().auth_scheme == AuthScheme.EXTERNAL:
+        raise IllegalOperationError(
+            "Workspace-level service accounts and API keys are deprecated in "
+            "ZenML Pro workspaces. Use ZenML Pro organization service "
+            "accounts and API keys instead."
+        )
 
 
 # ----------------
@@ -91,6 +103,8 @@ def create_service_account(
     Returns:
         The created service account.
     """
+    _ensure_workspace_service_account_mutation_allowed()
+
     verify_admin_status_if_no_rbac(
         auth_context.user.is_admin, "create service account"
     )
@@ -186,6 +200,8 @@ def update_service_account(
         IllegalOperationError: If the service account was created via external
             authentication.
     """
+    _ensure_workspace_service_account_mutation_allowed()
+
     service_account = zen_store().get_service_account(
         service_account_name_or_id, hydrate=True
     )
@@ -273,6 +289,7 @@ def create_api_key(
         IllegalOperationError: If the service account was created via external
             authentication.
     """
+    _ensure_workspace_service_account_mutation_allowed()
 
     def create_api_key_wrapper(
         api_key: APIKeyRequest,
@@ -394,6 +411,8 @@ def update_api_key(
         IllegalOperationError: If the service account was created via external
             authentication.
     """
+    _ensure_workspace_service_account_mutation_allowed()
+
     service_account = zen_store().get_service_account(service_account_id)
 
     if service_account.external_user_id is not None:
@@ -443,6 +462,8 @@ def rotate_api_key(
         IllegalOperationError: If the service account was created via external
             authentication.
     """
+    _ensure_workspace_service_account_mutation_allowed()
+
     service_account = zen_store().get_service_account(service_account_id)
 
     if service_account.external_user_id is not None:
