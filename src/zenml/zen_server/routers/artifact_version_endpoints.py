@@ -255,6 +255,20 @@ def delete_artifact_version(
     )
     verify_permission_for_model(artifact_version, action=Action.DELETE)
 
+    if delete_from_artifact_store and artifact_version.artifact_store_id:
+        artifact_store_model = zen_store().get_stack_component(
+            artifact_version.artifact_store_id, hydrate=True
+        )
+        verify_permission_for_model(
+            artifact_store_model,
+            action=Action.READ,
+        )
+        if artifact_store_model.connector:
+            verify_permission_for_model(
+                artifact_store_model.connector,
+                action=Action.READ,
+            )
+
     if delete_metadata:
         zen_store().delete_artifact_version(artifact_version.id)
         delete_model_resource(artifact_version)
