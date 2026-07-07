@@ -326,6 +326,9 @@ def authenticate_credentials(
 
         if (
             config.auth_scheme == AuthScheme.EXTERNAL
+            and not (
+                decoded_token.api_key_id and user_model.is_service_account
+            )
             and not user_model.external_user_id
         ):
             error = (
@@ -981,12 +984,12 @@ def authenticate_api_key(
             raise CredentialsNotValid(error)
 
     if server_config().auth_scheme == AuthScheme.EXTERNAL:
-        error = (
-            "Authentication error: local service account API keys are not "
-            "supported with external authentication."
+        warning = (
+            "Authentication error: using local service account API keys with "
+            "external authentication is deprecated. Please use ZenML Pro API "
+            "keys instead."
         )
-        logger.error(error)
-        raise CredentialsNotValid(error)
+        logger.warning(warning)
 
     try:
         decoded_api_key = APIKey.decode_api_key(api_key)

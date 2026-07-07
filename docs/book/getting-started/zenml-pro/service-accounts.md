@@ -258,6 +258,37 @@ This will return a response like this (the workspace API token is the `access_to
 {% endtab %}
 {% endtabs %}
 
+## Migration of workspace level service accounts
+
+Workspace-level service accounts and workspace-level API keys in ZenML Pro are deprecated. Existing workspace-level API keys and the short-lived tokens generated from them may continue to authenticate temporarily for compatibility, but service account and API key management is no longer available inside ZenML Pro workspaces. This means you cannot create, update, rotate, or delete workspace-level service accounts and API keys from a Pro workspace.
+
+Use ZenML Pro organization service accounts instead. They are managed centrally in the ZenML Pro control plane and can be used to authenticate both to the ZenML Pro API and to the Workspace API for the workspaces in your organization.
+
+To migrate automation that still uses a workspace-level service account API key:
+
+1. Create or identify a ZenML Pro organization service account in **Organization Settings** > **Service Accounts**.
+2. Create an API key for that organization service account and store it in your secret manager or CI/CD platform.
+3. Replace the old workspace-level API key with the ZenML Pro organization service account API key.
+4. Keep using the workspace URL as the ZenML store URL:
+
+   ```bash
+   export ZENML_STORE_URL=https://your-workspace-url
+   export ZENML_STORE_API_KEY=<your-zenml-pro-organization-api-key>
+   ```
+
+5. For self-hosted ZenML Pro API servers, also set the ZenML Pro API URL:
+
+   ```bash
+   export ZENML_PRO_API_URL=https://your-pro-api-url
+   ```
+
+6. Run the affected pipeline, snapshot, or automation once to verify that it authenticates successfully with the organization service account API key.
+7. Remove the old workspace-level service account API key from your automation.
+
+{% hint style="warning" %}
+Workspace-level service account API keys are only kept working as a temporary compatibility measure. Migrate to ZenML Pro organization service accounts as soon as possible.
+{% endhint %}
+
 ## Service Account Operations
 
 ### Managing Service Account Roles and Permissions

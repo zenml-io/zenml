@@ -4790,6 +4790,24 @@ class RestZenStore(BaseZenStore):
             if api_key is not None:
                 # An API key is configured. Use it as a password to
                 # authenticate.
+                if self.server_info.is_pro_server() and not api_key.startswith(
+                    ZENML_PRO_API_KEY_PREFIX
+                ):
+                    logger.warning(
+                        "\n"
+                        "===============================================================\n"
+                        "DEPRECATED ZENML PRO AUTHENTICATION METHOD\n\n"
+                        "This client is authenticating to a ZenML Pro workspace with a "
+                        "workspace-level service account API key. Existing "
+                        "keys still work temporarily for compatibility, but "
+                        "workspace-level service accounts are deprecated and "
+                        "can no longer be managed in ZenML Pro workspaces.\n\n"
+                        "Migrate this automation to a ZenML Pro organization "
+                        "service account and API key as soon as possible:\n"
+                        "https://docs.zenml.io/pro/access-management/"
+                        "service-accounts#migration-of-workspace-level-service-accounts\n"
+                        "==============================================================="
+                    )
                 data = {
                     "grant_type": OAuthGrantTypes.ZENML_API_KEY.value,
                     "password": api_key,

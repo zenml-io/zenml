@@ -64,12 +64,13 @@ def _api_key_model(
     key_generation: int,
     last_rotated: datetime,
     retain_period_minutes: int,
+    service_account=None,
 ) -> APIKeyInternalResponse:
     return APIKeyInternalResponse.model_construct(
         id=uuid4(),
         name="test-key",
         key_generation=key_generation,
-        body=SimpleNamespace(active=True),
+        body=SimpleNamespace(active=True, service_account=service_account),
         metadata=APIKeyResponseMetadata(
             description="",
             retain_period_minutes=retain_period_minutes,
@@ -143,18 +144,45 @@ def test_authenticate_api_key_keeps_pro_api_key_flow(monkeypatch):
     assert authenticated_tokens == [token]
 
 
-def test_authenticate_api_key_rejects_local_keys_for_external_auth(
+def test_authenticate_api_key_allows_local_keys_for_external_auth(
     monkeypatch,
 ):
-    """Ensure external auth servers reject local service account API keys."""
+    """Ensure existing local service account API keys remain usable."""
+    user = _user_model(is_service_account=True)
+    service_account = SimpleNamespace(to_user_model=lambda: user)
+    api_key = _api_key_model(
+        key_generation=1,
+        last_rotated=datetime.utcnow(),
+        retain_period_minutes=0,
+        service_account=service_account,
+    )
+    fetch_calls = []
+
     monkeypatch.setattr(
         auth,
         "server_config",
         lambda: SimpleNamespace(auth_scheme=AuthScheme.EXTERNAL),
     )
+    monkeypatch.setattr(
+        auth.APIKey,
+        "decode_api_key",
+        lambda _: SimpleNamespace(id=api_key.id, key="valid"),
+    )
+    monkeypatch.setattr(
+        auth,
+        "_fetch_and_verify_api_key",
+        lambda **kwargs: fetch_calls.append(kwargs) or api_key,
+    )
 
-    with pytest.raises(CredentialsNotValid):
-        auth.authenticate_api_key(api_key=f"{ZENML_API_KEY_PREFIX}test-token")
+    auth_context = auth.authenticate_api_key(
+        api_key=f"{ZENML_API_KEY_PREFIX}test-token"
+    )
+
+    assert auth_context.user is user
+    assert auth_context.api_key is api_key
+    assert fetch_calls == [
+        {"api_key_id": api_key.id, "key_to_verify": "valid"}
+    ]
 
 
 def test_authenticate_credentials_rejects_local_service_account_token_for_external_auth(
@@ -191,6 +219,53 @@ def test_authenticate_credentials_rejects_local_service_account_token_for_extern
 
     with pytest.raises(CredentialsNotValid):
         auth.authenticate_credentials(access_token="access-token")
+
+
+def test_authenticate_credentials_allows_local_service_account_api_key_token_for_external_auth(
+    monkeypatch,
+):
+    """Ensure API key-issued JWTs remain usable for local service accounts."""
+    user = _user_model(is_service_account=True)
+    api_key = _api_key_model(
+        key_generation=1,
+        last_rotated=datetime.utcnow(),
+        retain_period_minutes=0,
+    )
+    decoded_token = auth.JWTToken(
+        user_id=user.id,
+        issued_at=datetime.utcnow(),
+        api_key_id=api_key.id,
+    )
+    fetch_calls = []
+
+    class Store:
+        def get_user(self, user_name_or_id, include_private):
+            assert user_name_or_id == user.id
+            assert include_private
+            return user
+
+    monkeypatch.setattr(auth, "zen_store", lambda: Store())
+    monkeypatch.setattr(
+        auth,
+        "server_config",
+        lambda: SimpleNamespace(auth_scheme=AuthScheme.EXTERNAL),
+    )
+    monkeypatch.setattr(
+        auth.JWTToken, "decode_token", lambda token: decoded_token
+    )
+    monkeypatch.setattr(
+        auth,
+        "_fetch_and_verify_api_key",
+        lambda *args, **kwargs: fetch_calls.append((args, kwargs)) or api_key,
+    )
+
+    auth_context = auth.authenticate_credentials(access_token="access-token")
+
+    assert auth_context.user is user
+    assert auth_context.api_key is api_key
+    assert fetch_calls == [
+        ((api_key.id,), {"token_generation": None}),
+    ]
 
 
 def test_api_key_token_generation_allows_legacy_tokens():
