@@ -20,10 +20,15 @@ from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.enums import StepRunInputArtifactType
 from zenml.exceptions import InputResolutionError
+from zenml.execution.context import ExecutionContext
 from zenml.utils import string_utils
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineRunResponse, StepRunResponse
+    from zenml.models import (
+        ModelVersionResponse,
+        PipelineRunResponse,
+        StepRunResponse,
+    )
     from zenml.models.v2.core.step_run import StepRunInputResponse
 
 
@@ -124,11 +129,20 @@ def resolve_step_inputs(
             )
         ]
 
+    model_version: Optional["ModelVersionResponse"] = None
+    if step.config.model_artifacts_or_metadata:
+        model_version = pipeline_run.model_version
+        if model_version and ExecutionContext.is_active():
+            # The pipeline run from the execution context may hold a stale
+            # model version that is missing metadata and artifacts attached
+            # by earlier steps, so we use a freshly fetched one instead.
+            model_version = model_version.get_hydrated_version()
+
     for name, config_ in step.config.model_artifacts_or_metadata.items():
         err_msg = ""
         try:
             context_model_version = config_._get_model_response(
-                pipeline_run=pipeline_run
+                model_version=model_version
             )
         except RuntimeError as e:
             err_msg = str(e)
