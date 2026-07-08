@@ -71,8 +71,15 @@ def main() -> None:
         f"group_size={group_size} dry_run={args.dry_run} "
         f"stack={stack.name} sandbox={stack.sandbox.flavor}"
     )
+    pipeline = rl_spike
+    if not args.dry_run:
+        # Docker settings must attach before submission — the image is
+        # built client-side, before the pipeline function ever runs.
+        from k8s_settings import DOCKER_SETTINGS
+
+        pipeline = rl_spike.with_options(settings={"docker": DOCKER_SETTINGS})
     started = time.time()
-    rl_spike(
+    pipeline(
         model_name=model,
         iterations=iterations,
         group_size=group_size,

@@ -146,3 +146,14 @@ temp dir or the generated pipelines would hit the real (staging Pro!) server.
    letting GRPOTrainer create one internally, so iteration 1's generation
    step loads an adapter exactly the way iteration N does — no special
    first-iteration path.
+6. **(Stage 2) Remote placement lives in `k8s_settings.py`**, applied
+   conditionally in the pipeline body via `with_options(runtime=ISOLATED,
+   settings=...)` when `dry_run=False`, and Docker settings attach in
+   `run.py` before submission (the image builds client-side). GPU steps:
+   `init_lora`, `generate_rollouts`, `grpo_update` (also switched to bf16
+   on CUDA — fp32 4B wouldn't fit the 24GB L4 comfortably, and would OOM
+   the 16GB CPU nodes). Watch out: component settings keys must be
+   flavor-scoped (`"orchestrator.kubernetes"`, `"sandbox.kubernetes"`) —
+   bare `"orchestrator"` keys validate but are silently ignored
+   (BREAKAGE_LOG entry 8). `gpu_smoke.py` is the one-step CUDA smoke
+   pipeline for GPU_SETUP.md part 6.

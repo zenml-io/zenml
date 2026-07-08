@@ -171,7 +171,14 @@ zenml core would need to change.
   the identical step) — not a ZenML bug per se, but worth knowing that
   step code doesn't automatically get the parallelism an interactive
   process gets.
-- **Hit:** Stage 1, 2026-07-08.
+- Settings keys fail open: `settings={"sandbox": ...}` passes validation
+  (the key regex makes the `.flavor`/`:name` suffix optional) but
+  `get_settings` only ever looks up `"type.flavor"`/`"type:name"` keys —
+  a bare `"sandbox"` or `"orchestrator"` key is accepted and then
+  silently never applied. Found while wiring GPU placement; the failure
+  mode would have been every sandbox pod using the wrong image with no
+  error pointing at the settings key.
+- **Hit:** Stage 1-2, 2026-07-08.
 
 ## 9. `log_metadata` crashes the step on inf/NaN floats, with a cryptic error
 

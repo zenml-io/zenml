@@ -72,9 +72,11 @@ def grpo_update(
 
     started = time.time()
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    base_model = AutoModelForCausalLM.from_pretrained(
-        model_name, dtype=torch.float32
-    )
+    # bf16 on CUDA (halves GPU memory for the 4B model — fits the 24GB
+    # L4 with room for activations); float32 on CPU/MPS where bf16 is
+    # slow or flaky.
+    dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
+    base_model = AutoModelForCausalLM.from_pretrained(model_name, dtype=dtype)
     model = PeftModel.from_pretrained(
         base_model, str(adapter), is_trainable=True
     )

@@ -41,9 +41,8 @@ def init_lora(model_name: str, lora_rank: int = 16) -> Path:
     from transformers import AutoModelForCausalLM
 
     started = time.time()
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name, dtype=torch.float32
-    )
+    dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
+    model = AutoModelForCausalLM.from_pretrained(model_name, dtype=dtype)
     lora_config = LoraConfig(
         r=lora_rank,
         lora_alpha=2 * lora_rank,
