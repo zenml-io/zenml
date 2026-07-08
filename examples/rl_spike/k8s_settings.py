@@ -31,7 +31,10 @@ ECR = "339712793861.dkr.ecr.eu-central-1.amazonaws.com"
 
 # Built once by hand in GPU_SETUP.md part 3; used for every sandbox
 # session pod.
-SANDBOX_IMAGE = f"{ECR}/zenml-rl-spike-sandbox:0.1"
+# 0.2 = zenml[local] — the bare `zenml` package cannot run pipelines
+# against the scorer's throwaway local sqlite store (see GPU_SETUP.md
+# part 3).
+SANDBOX_IMAGE = f"{ECR}/zenml-rl-spike-sandbox:0.2"
 
 # Parent image for the pipeline image: torch + CUDA + vLLM preinstalled,
 # x86_64 to match the cluster nodes. ZenML layers the example's
@@ -43,7 +46,10 @@ VLLM_PARENT_IMAGE = "vllm/vllm-openai:v0.24.0-x86_64-ubuntu2404"
 # store support for the exec-based adapter materialization helper to copy
 # `<adapter artifact uri>/data.tar.gz` into the running pod. See
 # GPU_SETUP.md part 4b for the tiny derivative image.
-VLLM_SERVER_IMAGE = f"{ECR}/zenml-rl-spike-vllm-server:0.1"
+# 0.2 = boto3 resolved together with zenml[s3fs]: aiobotocore pins
+# botocore, and the boto3 preinstalled in the vLLM image crashes the
+# server at import against that pin (see GPU_SETUP.md part 4b).
+VLLM_SERVER_IMAGE = f"{ECR}/zenml-rl-spike-vllm-server:0.2"
 VLLM_NAMESPACE = "michael"
 VLLM_DEPLOYMENT_NAME = "rl-spike-vllm"
 VLLM_SERVICE_NAME = "rl-spike-vllm"
@@ -105,7 +111,25 @@ ORCHESTRATOR_ON_GPU_NODE = KubernetesOrchestratorSettings(
                 "effect": "NoSchedule",
             }
         ],
-    )
+        # The mapped episode fan-out starts N pods at once, and each pod
+        # makes several ZenML API calls at startup (auth,
+        # service-connector credentials for S3, sandbox session CRUD).
+        # 10 simultaneous pods got the staging Pro server to answer 429
+        # until client retries were exhausted — killing steps before the
+        # step body ran (BREAKAGE_LOG entry 12). `max_parallelism` is
+        # IGNORED by dynamic pipelines; their real concurrency cap is
+        # this env var read by the dynamic runner's thread pool in the
+        # orchestrator pod (default 10).
+        env=[
+            {
+                "name": "ZENML_DYNAMIC_PIPELINE_WORKER_COUNT",
+                "value": "3",
+            }
+        ],
+    ),
+    # Kept for documentation value: this is the advertised knob, even
+    # though the dynamic runner does not consult it (entry 12).
+    max_parallelism=4,
 )
 
 # settings= dict for steps that need the GPU node. The keys must be

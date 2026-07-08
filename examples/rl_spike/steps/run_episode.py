@@ -185,6 +185,9 @@ def run_episode(episode: Dict[str, Any]) -> Dict[str, Any]:
         result["reward_breakdown"] = reward_data["breakdown"]
         result["spec_clauses"] = reward_data.get("spec_clauses", {})
         result["error"] = reward_data.get("error")
+        # The generated pipeline's own stdout/stderr tail — without it,
+        # "pipeline exited nonzero" is undiagnosable (Stage 3 lesson).
+        result["run_output_tail"] = reward_data.get("run_output_tail", "")
         timings.update(
             {
                 f"scorer_{key}": value

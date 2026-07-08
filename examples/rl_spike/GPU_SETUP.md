@@ -161,16 +161,20 @@ aws ecr create-repository --repository-name zenml-rl-spike-sandbox
 
 cat > /tmp/Dockerfile.sandbox <<'EOF'
 FROM python:3.11-slim
-# The sandbox runs generated toy pipelines against a local sqlite store;
-# zenml[server] not needed. Pin to the server's version line.
-RUN pip install --no-cache-dir "zenml==0.96.1"
+# The sandbox runs generated toy pipelines against a local sqlite store —
+# that REQUIRES the `local` extra. Plain `zenml==0.96.1` imports fine but
+# every pipeline run dies at store init with "installed without the
+# `local` extra" (cost us a full smoke-run cycle: every episode scored
+# 0.3 and the failure looked like bad model output). zenml[server] not
+# needed. Pin to the server's version line.
+RUN pip install --no-cache-dir "zenml[local]==0.96.1"
 EOF
 
 # --platform matters: your Mac is arm64, the cluster is x86_64.
 docker build --platform linux/amd64 \
-  -t 339712793861.dkr.ecr.eu-central-1.amazonaws.com/zenml-rl-spike-sandbox:0.1 \
+  -t 339712793861.dkr.ecr.eu-central-1.amazonaws.com/zenml-rl-spike-sandbox:0.2 \
   -f /tmp/Dockerfile.sandbox /tmp
-docker push 339712793861.dkr.ecr.eu-central-1.amazonaws.com/zenml-rl-spike-sandbox:0.1
+docker push 339712793861.dkr.ecr.eu-central-1.amazonaws.com/zenml-rl-spike-sandbox:0.2
 ```
 
 This image URI is already referenced as `SANDBOX_IMAGE` in
@@ -256,13 +260,17 @@ cat > /tmp/Dockerfile.vllm-server <<'EOF'
 FROM vllm/vllm-openai:v0.24.0-x86_64-ubuntu2404
 RUN apt-get update && apt-get install -y --no-install-recommends python-is-python3 \
   && rm -rf /var/lib/apt/lists/*
-RUN python -m pip install --no-cache-dir "zenml[s3fs]==0.96.1"
+# boto3 must be in the SAME pip command as zenml[s3fs]: aiobotocore pins
+# botocore, and the boto3 that ships inside the vLLM image is incompatible
+# with that pin — vLLM imports boto3 at startup and the server crash-loops
+# with "cannot import name 'DocumentModifiedShape'" (hit live, image 0.1).
+RUN python -m pip install --no-cache-dir "zenml[s3fs]==0.96.1" boto3
 EOF
 
 docker build --platform linux/amd64 \
-  -t 339712793861.dkr.ecr.eu-central-1.amazonaws.com/zenml-rl-spike-vllm-server:0.1 \
+  -t 339712793861.dkr.ecr.eu-central-1.amazonaws.com/zenml-rl-spike-vllm-server:0.2 \
   -f /tmp/Dockerfile.vllm-server /tmp
-docker push 339712793861.dkr.ecr.eu-central-1.amazonaws.com/zenml-rl-spike-vllm-server:0.1
+docker push 339712793861.dkr.ecr.eu-central-1.amazonaws.com/zenml-rl-spike-vllm-server:0.2
 ```
 
 If the stack uses a non-S3 artifact store later, change the extra in that

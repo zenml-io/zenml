@@ -322,3 +322,49 @@ multi-GB build/push/pull cycle:
   size.
 - **Hit:** Stage 3 smoke, 2026-07-08.
 
+## 12. The server rate-limits its own fan-out: 10 concurrent mapped steps → 429s → dead steps
+
+- **Tried:** Attempt 4 of the offline smoke: `run_episode.map(seeds)`
+  started 10 episode pods, all healthy this time (image/pinning fixed).
+- **What happened:** Each step pod independently calls the ZenML server
+  at startup — auth, then
+  `/api/v1/service_connectors/<id>/client?resource_type=s3-bucket` for
+  artifact-store credentials, plus sandbox-session and metadata calls.
+  Ten pods doing this simultaneously tripped the staging Pro server's
+  rate limiting; the REST client retried, got "too many 429 error
+  responses", exhausted its retry budget, and raised — killing 5 of 10
+  episode steps *before the step function ever ran*. `run_episode`'s
+  own never-raise containment could not help because the failure is in
+  ZenML's input/credential resolution, not user code. So the platform's
+  own fan-out primitive (`.map()`) generated enough control-plane
+  traffic to get itself rate-limited by the platform's own server, at
+  N=10. The full-scale run maps 400 episodes.
+- **Workaround (first try, failed):** The Kubernetes orchestrator
+  advertises `max_parallelism` ("Maximum number of step pods to run
+  concurrently") as a per-run setting. Applied `max_parallelism=4`;
+  the rerun launched all 10 pods simultaneously again and failed the
+  same way. Reading the source: `max_parallelism` feeds the *static*
+  `DagRunner` — **dynamic pipelines never consult it**. Their real
+  concurrency cap is a `ThreadPoolExecutor` in the dynamic runner,
+  sized by the undocumented env var
+  `ZENML_DYNAMIC_PIPELINE_WORKER_COUNT` (default 10). So the
+  documented knob silently does nothing for exactly the pipeline type
+  whose `.map()` creates the fan-out problem. (The third knob,
+  `parallel_step_startup_waiting_period`, is registration-time
+  component config — not settable per run on a shared stack.)
+- **Workaround (actual):** set
+  `ZENML_DYNAMIC_PIPELINE_WORKER_COUNT=3` via `env` on the
+  orchestrator pod settings.
+- **Severity:** breaks (default settings, modest N, total step death;
+  and 429 + backoff-until-dead is a bad failure shape for a *retryable*
+  condition).
+- **Core change:** Two things. (1) Make `max_parallelism` work for
+  dynamic pipelines (or fail loudly when set on one), and promote
+  `ZENML_DYNAMIC_PIPELINE_WORKER_COUNT` from undocumented env var to a
+  real setting. (2) 429s deserve smarter client handling than generic
+  retry-then-raise (respect Retry-After, longer/jittered backoff for
+  fan-out startup calls, or a shared credentials cache seeded by the
+  orchestrator so N mapped pods don't each re-fetch identical connector
+  credentials).
+- **Hit:** Stage 3 smoke, 2026-07-08.
+

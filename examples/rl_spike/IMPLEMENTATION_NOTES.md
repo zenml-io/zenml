@@ -180,3 +180,20 @@ temp dir or the generated pipelines would hit the real (staging Pro!) server.
    of the vLLM image, and `VLLM_SERVER_IMAGE` points at that tag. The HTTP
    rollout path also fails loudly if vLLM's OpenAI response logprobs do not
    align with the tokenizer IDs that TRL needs.
+9. **(Stage 3 execution) Four fixes from the first real offline runs:**
+   (a) `max_model_len=8192` on both the offline `LLM(...)` and the warm
+   `vllm serve` command — Qwen3-4B declares a 262k context and the KV
+   cache for one full-length request (36GiB) doesn't fit an L4
+   (BREAKAGE_LOG entry 10 documents the fork-safety noise that sat on
+   top of that error). (b) Episode step pods are pinned to the RL GPU
+   node — letting the mapped fan-out schedule freely pulled the 30GB
+   pipeline image onto a shared CPU node and evicted other tenants'
+   pods via DiskPressure (entry 11). (c) Sandbox image 0.2 installs
+   `zenml[local]` — bare `zenml` cannot run pipelines against the
+   scorer's throwaway sqlite store, which silently floored every
+   episode at reward 0.3 ("pipeline exited nonzero"); episodes now also
+   record `run_output_tail` so that failure mode is diagnosable from
+   the artifact. (d) `SamplingParams(seed=os.urandom(...))` — a fresh
+   vLLM engine reproduces identical samples per run, so with an
+   unchanged adapter, iteration 2's completions were byte-identical to
+   iteration 1's (612 tokens both times).

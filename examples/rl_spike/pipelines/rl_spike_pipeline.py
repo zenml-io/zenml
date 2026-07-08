@@ -17,6 +17,7 @@ from steps import (
 )
 
 from zenml import pipeline
+from zenml.config.retry_config import StepRetryConfig
 from zenml.enums import StepRuntime
 
 # Caching must stay off: the group_size rollouts of one task have identical
@@ -89,7 +90,13 @@ def rl_spike(
             runtime=StepRuntime.ISOLATED, settings=GPU_STEP_SETTINGS
         )
         episode_step = run_episode.with_options(
-            runtime=StepRuntime.ISOLATED, settings=EPISODE_STEP_SETTINGS
+            runtime=StepRuntime.ISOLATED,
+            settings=EPISODE_STEP_SETTINGS,
+            # The mapped fan-out has no working concurrency cap (see
+            # BREAKAGE_LOG entry 12), so N pods hit the server at once
+            # and some die on 429 rate limits before the step body
+            # runs. Retries let those pods come back after the burst.
+            retry=StepRetryConfig(max_retries=3, delay=30, backoff=2),
         )
         update_step = grpo_update.with_options(
             runtime=StepRuntime.ISOLATED, settings=GPU_STEP_SETTINGS

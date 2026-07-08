@@ -14,6 +14,7 @@ zero code changes. The contract every generator must honor:
   contract requires them.
 """
 
+import os
 from typing import Any, Dict, List, Optional
 
 # One episode dict per completion; these keys flow through the pipeline
@@ -189,6 +190,11 @@ class VLLMGenerator:
             temperature=self.temperature,
             max_tokens=self.max_tokens,
             logprobs=0,  # sampled token's logprob only
+            # Without an explicit seed, a fresh vLLM engine reproduces the
+            # same samples every time — observed live: two iterations in
+            # separate step pods returned byte-identical completions
+            # (612 tokens both times). RL needs new samples per iteration.
+            seed=int.from_bytes(os.urandom(4), "little"),
         )
         lora_request = (
             LoRARequest("rl-spike-adapter", 1, self.adapter_path)
