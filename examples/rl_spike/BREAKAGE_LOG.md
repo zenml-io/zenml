@@ -178,6 +178,16 @@ zenml core would need to change.
   silently never applied. Found while wiring GPU placement; the failure
   mode would have been every sandbox pod using the wrong image with no
   error pointing at the settings key.
+- Custom parent images hit two sharp edges in the image builder (found
+  using `vllm/vllm-openai` as parent, GPU_SETUP.md part 4): (a) the
+  default `uv` installer runs plain `uv pip install`, and modern uv
+  refuses to install into system Python without `--system` — the build
+  dies with a bare "exit code 2" and no captured uv output; fix is the
+  non-obvious `python_package_installer_args={"system": None}`. (b)
+  ZenML's container entrypoint execs `python`, but Ubuntu-based images
+  ship only `python3` — the pod crashes at start with "python: executable
+  file not found"; fix is `apt_packages=["python-is-python3"]`. Both cost
+  a full ~30GB image rebuild/push cycle to discover on a real image.
 - **Hit:** Stage 1-2, 2026-07-08.
 
 ## 9. `log_metadata` crashes the step on inf/NaN floats, with a cryptic error
