@@ -207,14 +207,8 @@ class StepLauncher:
             if isinstance(logs_context, LoggingContext):
                 step_run_request.logs = logs_context.log_model.id
 
-            execution_context = ExecutionContext.get()
             try:
-                request_factory.populate_request(
-                    request=step_run_request,
-                    step_runs=execution_context.step_runs
-                    if execution_context
-                    else None,
-                )
+                request_factory.populate_request(request=step_run_request)
             except BaseException as e:
                 logger.exception(
                     f"Failed preparing step `{self._invocation_id}`."

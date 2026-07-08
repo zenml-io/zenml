@@ -15,9 +15,50 @@
 
 import base64
 import json
-from typing import Any, Dict
+from typing import Any, Dict, TypeVar
 
 from zenml.utils.json_utils import pydantic_encoder
+
+K = TypeVar("K")
+V = TypeVar("V")
+
+
+class BoundedDict(Dict[K, V]):
+    """Dictionary that evicts the oldest entries beyond a maximum size."""
+
+    def __init__(self, max_size: int) -> None:
+        """Initialize the dictionary.
+
+        Args:
+            max_size: The maximum number of entries to retain.
+        """
+        super().__init__()
+        self._max_size = max_size
+
+    def __setitem__(self, key: K, value: V) -> None:
+        """Set an entry and evict the oldest entries beyond the size limit.
+
+        Args:
+            key: The entry key.
+            value: The entry value.
+        """
+        super().__setitem__(key, value)
+        self._evict()
+
+    def update(self, *args: Any, **kwargs: Any) -> None:
+        """Update the dictionary and evict the oldest entries beyond the limit.
+
+        Args:
+            *args: Positional arguments for the update.
+            **kwargs: Keyword arguments for the update.
+        """
+        super().update(*args, **kwargs)
+        self._evict()
+
+    def _evict(self) -> None:
+        """Evict the oldest entries beyond the maximum size."""
+        while len(self) > self._max_size:
+            del self[next(iter(self))]
 
 
 def recursive_update(

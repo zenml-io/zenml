@@ -117,14 +117,11 @@ jobs:
               echo "<details><summary>Per-endpoint changes</summary>"
               echo ""
               for pipeline in $pipelines; do
-                jq ".\"${pipeline}\".requests" $BASE_RESULTS_FILE > "base_${pipeline}.json"
-                jq ".\"${pipeline}\".requests" $CURRENT_RESULTS_FILE > "current_${pipeline}.json"
-                if ! diff -q "base_${pipeline}.json" "current_${pipeline}.json" > /dev/null; then
-                  echo "#### ${pipeline}"
-                  echo '```diff'
-                  diff -U0 --label "${GITHUB_BASE_REF}" --label "${GITHUB_HEAD_REF}" "base_${pipeline}.json" "current_${pipeline}.json" || true
-                  echo '```'
-                  echo ""
+                endpoint_diff=$(diff -U0 --label "${GITHUB_BASE_REF}" --label "${GITHUB_HEAD_REF}" \
+                  <(jq ".\"${pipeline}\".requests" $BASE_RESULTS_FILE) \
+                  <(jq ".\"${pipeline}\".requests" $CURRENT_RESULTS_FILE) || true)
+                if [ -n "$endpoint_diff" ]; then
+                  printf '#### %s\n```diff\n%s\n```\n\n' "$pipeline" "$endpoint_diff"
                 fi
               done
               echo "</details>"

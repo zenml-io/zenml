@@ -24,45 +24,10 @@ from zenml.constants import (
     handle_int_env_var,
 )
 from zenml.utils import context_utils
+from zenml.utils.dict_utils import BoundedDict
 
 if TYPE_CHECKING:
     from zenml.models import PipelineRunResponse, StepRunResponse
-
-
-class _StepRunCache(Dict[str, "StepRunResponse"]):
-    """Step run cache that evicts the oldest entries beyond its size limit."""
-
-    def __init__(self) -> None:
-        """Initialize the cache."""
-        super().__init__()
-        self._max_size = handle_int_env_var(
-            ENV_ZENML_EXECUTION_CONTEXT_STEP_RUN_CACHE_SIZE, default=100
-        )
-
-    def __setitem__(self, key: str, value: "StepRunResponse") -> None:
-        """Set a step run.
-
-        Args:
-            key: The step run name.
-            value: The step run.
-        """
-        super().__setitem__(key, value)
-        self._evict()
-
-    def update(self, *args: Any, **kwargs: Any) -> None:
-        """Update the cache.
-
-        Args:
-            *args: Positional arguments for the dict update.
-            **kwargs: Keyword arguments for the dict update.
-        """
-        super().update(*args, **kwargs)
-        self._evict()
-
-    def _evict(self) -> None:
-        """Evict the oldest entries beyond the size limit."""
-        while len(self) > self._max_size:
-            del self[next(iter(self))]
 
 
 class ExecutionContext(context_utils.BaseContext):
@@ -80,7 +45,11 @@ class ExecutionContext(context_utils.BaseContext):
         """
         super().__init__()
         self.pipeline_run = pipeline_run
-        self.step_runs: Dict[str, "StepRunResponse"] = _StepRunCache()
+        self.step_runs: Dict[str, "StepRunResponse"] = BoundedDict(
+            max_size=handle_int_env_var(
+                ENV_ZENML_EXECUTION_CONTEXT_STEP_RUN_CACHE_SIZE, default=100
+            )
+        )
 
 
 def setup_execution_context(
@@ -109,5 +78,5 @@ def record_step_run(step_run: "StepRunResponse") -> None:
     if not step_run.status.is_successful:
         return
 
-    if context := ExecutionContext.get():
-        context.step_runs[step_run.name] = step_run
+    if execution_context := ExecutionContext.get():
+        execution_context.step_runs[step_run.name] = step_run
