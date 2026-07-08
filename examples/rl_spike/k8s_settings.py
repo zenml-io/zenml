@@ -118,8 +118,26 @@ GPU_STEP_SETTINGS: Dict[str, Union[Dict[str, Any], BaseSettings]] = {
     ),
 }
 
-# settings= dict for the episode step: CPU pod, but its sandbox sessions
-# need the zenml-capable image.
+# settings= dict for the episode step: CPU-only work, but the step pod
+# still runs the ~30GB pipeline image — so it must be pinned to OUR GPU
+# node like the orchestrator pod (no GPU requested). Letting the mapped
+# fan-out schedule freely pulled the image onto a shared CPU node and
+# put it into DiskPressure, evicting other tenants' pods (observed live
+# during the Stage 3 smoke). The sandbox *session* pods use the small
+# dedicated image and may schedule anywhere.
 EPISODE_STEP_SETTINGS: Dict[str, Union[Dict[str, Any], BaseSettings]] = {
+    "orchestrator.kubernetes": KubernetesOrchestratorSettings(
+        pod_settings=KubernetesPodSettings(
+            node_selectors={"pool": "gpu"},
+            tolerations=[
+                {
+                    "key": "pool",
+                    "operator": "Equal",
+                    "value": "gpu",
+                    "effect": "NoSchedule",
+                }
+            ],
+        )
+    ),
     "sandbox.kubernetes": KubernetesSandboxSettings(image=SANDBOX_IMAGE),
 }

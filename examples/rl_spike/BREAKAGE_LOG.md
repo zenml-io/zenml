@@ -286,3 +286,39 @@ multi-GB build/push/pull cycle:
   letting fsspec raise.
 - **Hit:** Stage 3 smoke, 2026-07-08.
 
+## 11. Mapped fan-out drags the full pipeline image onto shared nodes — and evicted other tenants' pods
+
+- **Tried:** First Stage 3 smoke: `run_episode.map(seeds)` fanned out
+  10 isolated step pods. Each isolated step pod runs the *pipeline
+  image* — ~30GB here, because the RL image carries torch + CUDA +
+  vLLM — even though `run_episode` itself is CPU-only glue that
+  uploads files to a sandbox and reads back a JSON reward.
+- **What happened:** The Kubernetes scheduler packed all 10 pods onto
+  one shared CPU node (~50GB ephemeral disk). The single 30GB image
+  pull tipped the node into `DiskPressure: True`, and the kubelet
+  started evicting *other tenants' pods* — three staging ZenML server
+  pods from unrelated namespaces were evicted before we force-stopped
+  the run. On a shared staging cluster, our RL experiment degraded
+  someone else's service.
+- **Workaround:** Two-part. (1) `zenml pipeline runs stop <id>` worked
+  exactly as hoped — it deleted the step jobs and marked the run
+  `stopped` (positive counterpoint to entry 6's zombie behavior).
+  (2) `EPISODE_STEP_SETTINGS` now pins episode step pods to our own
+  tainted GPU node (100GB disk, image already present), same trick as
+  the orchestrator pod.
+- **Severity:** breaks (for multi-tenant clusters) — and the failure is
+  invisible until a *neighbor* pages.
+- **Core change:** The root issue is that a step which only shuffles
+  files into a sandbox ships the pipeline's 30GB CUDA/vLLM image.
+  ZenML *does* support per-step `DockerSettings`
+  (`step.config.docker_settings` feeds the build), which would be the
+  clean fix — but it is unclear whether that works for steps invoked
+  at runtime inside a *dynamic* pipeline, since images build
+  client-side at submission before the DAG shape exists (untested
+  here; worth a follow-up). Short of that: docs for dynamic `.map()`
+  on Kubernetes should warn that N mapped pods × fat image lands on
+  whatever nodes have room, and recommend `pod_settings` pinning plus
+  an ephemeral-storage request so the scheduler accounts for image
+  size.
+- **Hit:** Stage 3 smoke, 2026-07-08.
+
