@@ -246,12 +246,15 @@ x86_64 Linux box with docker + repo access.
 
 ## Part 4b — Build the warm-vLLM server image (for `--serving-mode warm_vllm`)
 
-Warm mode creates a raw Kubernetes Deployment whose pod later receives an
-exec call from `load_adapter_into_vllm`. That exec helper imports
-`zenml.io.fileio` and copies the ZenML `Path` artifact archive from the
-active artifact store into `/adapters/<adapter-name>`. The bare vLLM image
-has vLLM, but not necessarily ZenML's artifact-store dependencies, so build
-one thin derivative:
+Warm mode creates a raw Kubernetes Deployment whose pod later receives the
+adapter from `load_adapter_into_vllm` over the exec websocket (the step
+materializes the ZenML `Path` artifact locally and pushes the bytes; the
+pod never touches S3 — see BREAKAGE_LOG entry 13 for why pulling from the
+pod can't work). Strictly, the plain vLLM image would now suffice, but the
+0.2 derivative below is what was verified live (its zenml[s3fs]+boto3
+layer is harmless; the boto3 pin matters because installing anything that
+drags in aiobotocore breaks the image's own boto3, which vLLM imports at
+startup):
 
 ```bash
 aws ecr create-repository --repository-name zenml-rl-spike-vllm-server

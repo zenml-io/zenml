@@ -173,13 +173,13 @@ temp dir or the generated pipelines would hit the real (staging Pro!) server.
    is killed, manual scale-down still matters. This is intentionally not a
    ZenML model deployer; the spike is testing the gap between ZenML lineage
    and raw serving infrastructure.
-8. **Warm-vLLM caveat before first run:** the vLLM server image must contain
-   enough ZenML artifact-store support for `zenml.io.fileio.copy` to read
-   the active artifact store URI from inside the vLLM pod. `GPU_SETUP.md`
-   now includes a thin derivative image that installs `zenml[s3fs]` on top
-   of the vLLM image, and `VLLM_SERVER_IMAGE` points at that tag. The HTTP
-   rollout path also fails loudly if vLLM's OpenAI response logprobs do not
-   align with the tokenizer IDs that TRL needs.
+8. **Warm-vLLM caveat before first run** *(superseded by deviation 10)*:
+   the original design had the vLLM pod pull the adapter archive itself
+   via `zenml.io.fileio` — that cannot work (fileio's remote schemes
+   only exist inside ZenML step bootstrap; see BREAKAGE_LOG entry 13)
+   and the node IAM role has no S3 access either. The verified design
+   materializes the adapter in the step and pushes it into the pod over
+   the exec websocket.
 9. **(Stage 3 execution) Four fixes from the first real offline runs:**
    (a) `max_model_len=8192` on both the offline `LLM(...)` and the warm
    `vllm serve` command — Qwen3-4B declares a 262k context and the KV
@@ -196,4 +196,28 @@ temp dir or the generated pipelines would hit the real (staging Pro!) server.
    the artifact. (d) `SamplingParams(seed=os.urandom(...))` — a fresh
    vLLM engine reproduces identical samples per run, so with an
    unchanged adapter, iteration 2's completions were byte-identical to
-   iteration 1's (612 tokens both times).
+   iteration 1's (612 tokens both times). Postscript: even with random
+   seeds the completions for the difficulty-1 tasks stayed identical —
+   the distribution is near-argmax at every token on these formulaic
+   prompts. Not a bug, but it means the full run needs harder tasks
+   (and possibly higher temperature) or GRPO groups stay flat.
+10. **(Stage 3 execution) Warm-vLLM mode is now VERIFIED** — green
+    end-to-end run (ensure server → push+hot-load adapter → HTTP
+    rollouts → sandbox episodes → GRPO update on the second GPU →
+    delete server). Five fixes on the way, all in the example:
+    (a) server image 0.2 installs `boto3` in the same pip command as
+    `zenml[s3fs]` — aiobotocore's botocore pin breaks the boto3 baked
+    into the vLLM image, and vLLM imports boto3 at startup
+    (crash-loop); (b) the adapter transport was inverted to
+    materialize-in-step + exec-websocket push, because `fileio` can't
+    work in the raw pod (BREAKAGE_LOG entry 13) — the server image no
+    longer needs zenml at all; (c) `_post_json` tolerates vLLM's
+    plain-text "Success" responses; (d) completion token IDs come from
+    the logprobs entries via `return_tokens_as_token_ids` instead of
+    re-tokenizing text (stop token made counts differ by one);
+    (e) prompt_ids are tokenized explicitly (`apply_chat_template`'s
+    return type varies across transformers versions; a str became
+    per-character "ids" and crashed TRL). Timing: warm iteration
+    wall-clock 209.6s vs 555–727s offline — the offline path pays
+    169–226s of vLLM engine load per iteration, the warm server pays
+    it once.

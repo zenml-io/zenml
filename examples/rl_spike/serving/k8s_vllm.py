@@ -76,7 +76,9 @@ def _deployment_manifest(
         metadata=client.V1ObjectMeta(name=deployment_name, labels=labels),
         spec=client.V1DeploymentSpec(
             replicas=1,
-            selector=client.V1LabelSelector(match_labels={"app": service_name}),
+            selector=client.V1LabelSelector(
+                match_labels={"app": service_name}
+            ),
             template=client.V1PodTemplateSpec(
                 metadata=client.V1ObjectMeta(labels=labels),
                 spec=client.V1PodSpec(
@@ -186,7 +188,9 @@ def _wait_for_deployment_rollout(
     apps = client.AppsV1Api()
     deadline = time.time() + timeout_seconds
     while time.time() < deadline:
-        deployment = apps.read_namespaced_deployment(deployment_name, namespace)
+        deployment = apps.read_namespaced_deployment(
+            deployment_name, namespace
+        )
         spec_replicas = deployment.spec.replicas or 1
         status = deployment.status
         if (
@@ -213,7 +217,9 @@ def _wait_for_ready_pod(
     deadline = time.time() + timeout_seconds
     selector = f"app={service_name}"
     while time.time() < deadline:
-        pods = core.list_namespaced_pod(namespace, label_selector=selector).items
+        pods = core.list_namespaced_pod(
+            namespace, label_selector=selector
+        ).items
         for pod in pods:
             conditions = pod.status.conditions or []
             ready = any(
@@ -313,26 +319,73 @@ def ensure_vllm_deployment(
     }
 
 
-def _exec_python_in_pod(
-    *, namespace: str, pod_name: str, script: str, args: List[str]
-) -> str:
-    """Run a Python helper inside the vLLM pod and return combined output."""
+def _stream_dir_into_pod(
+    *,
+    namespace: str,
+    pod_name: str,
+    local_dir: str,
+    target_dir: str,
+) -> None:
+    """Stream a local directory into a pod over the exec websocket.
+
+    Why push instead of pull: the raw vLLM pod has no ZenML session, so it
+    cannot get artifact-store credentials the canonical way (an
+    instantiated `S3ArtifactStore` with connector-issued temporary
+    credentials — that only exists inside ZenML step bootstrap), and the
+    node IAM role has no S3 access either (verified live: AccessDenied).
+    The *step* already has the adapter materialized locally, so the bytes
+    go over the same kubectl-exec channel we already have RBAC for —
+    tar.gz, base64-encoded for websocket text frames, decoded by `sh` in
+    the pod. Same trick as the local-sandbox file transfer
+    (BREAKAGE_LOG entry 4).
+
+    Args:
+        namespace: Kubernetes namespace of the pod.
+        pod_name: Name of the target pod.
+        local_dir: Local directory to copy.
+        target_dir: Absolute directory inside the pod to extract into.
+    """
+    import io
+    import tarfile
+
     from kubernetes import client
     from kubernetes.stream import stream
 
-    encoded = base64.b64encode(script.encode()).decode()
+    buffer = io.BytesIO()
+    with tarfile.open(fileobj=buffer, mode="w:gz") as tar:
+        tar.add(local_dir, arcname=".")
+    payload = base64.b64encode(buffer.getvalue()).decode()
+
     command = [
-        "python",
+        "sh",
         "-c",
-        (
-            "import base64, sys; "
-            "code = base64.b64decode(sys.argv[1]).decode(); "
-            "sys.argv = sys.argv[1:]; "
-            "exec(compile(code, '<adapter-loader>', 'exec'))"
-        ),
-        encoded,
-        *args,
+        f"mkdir -p {target_dir} && base64 -d | tar xzf - -C {target_dir}",
     ]
+    ws = stream(
+        client.CoreV1Api().connect_get_namespaced_pod_exec,
+        pod_name,
+        namespace,
+        command=command,
+        stderr=True,
+        stdin=True,
+        stdout=True,
+        tty=False,
+        _preload_content=False,
+    )
+    chunk_size = 1 << 16
+    for i in range(0, len(payload), chunk_size):
+        ws.write_stdin(payload[i : i + chunk_size])
+    # Closing the websocket is the only way to signal EOF to the in-pod
+    # pipeline; success is verified with a follow-up exec instead of
+    # reading this stream's output.
+    ws.close()
+
+
+def _exec_in_pod(*, namespace: str, pod_name: str, command: List[str]) -> str:
+    """Run a command in a pod and return its combined output."""
+    from kubernetes import client
+    from kubernetes.stream import stream
+
     return stream(
         client.CoreV1Api().connect_get_namespaced_pod_exec,
         pod_name,
@@ -345,58 +398,6 @@ def _exec_python_in_pod(
     )
 
 
-def _adapter_loader_script() -> str:
-    """Return the helper script that materializes one ZenML adapter artifact."""
-    return r'''
-import json
-import os
-import shutil
-import sys
-import tarfile
-import tempfile
-from pathlib import Path
-
-from zenml.io import fileio
-
-
-def _safe_members(tar, directory):
-    directory = str(Path(directory).resolve())
-    safe = []
-    for member in tar.getmembers():
-        if member.issym() or member.islnk():
-            raise RuntimeError(f"Adapter archive may not contain links: {member.name}")
-        target = str(Path(directory, member.name).resolve())
-        if os.path.commonpath([directory, target]) != directory:
-            raise RuntimeError(f"Unsafe tar member path: {member.name}")
-        safe.append(member)
-    return safe
-
-archive_uri = sys.argv[1].rstrip("/") + "/data.tar.gz"
-adapter_name = sys.argv[2]
-adapter_root = Path(sys.argv[3])
-target = adapter_root / adapter_name
-staging = adapter_root / f".{adapter_name}.tmp"
-
-adapter_root.mkdir(parents=True, exist_ok=True)
-if staging.exists():
-    shutil.rmtree(staging)
-staging.mkdir(parents=True)
-
-with tempfile.NamedTemporaryFile(suffix=".tar.gz", delete=False) as tmp:
-    local_archive = tmp.name
-
-fileio.copy(archive_uri, local_archive)
-with tarfile.open(local_archive, "r:gz") as tar:
-    tar.extractall(staging, members=_safe_members(tar, staging))
-os.remove(local_archive)
-
-if target.exists():
-    shutil.rmtree(target)
-staging.rename(target)
-print(json.dumps({"ok": True, "adapter_path": str(target)}))
-'''
-
-
 def _post_json(url: str, payload: Dict[str, Any]) -> Dict[str, Any]:
     """POST JSON and return the parsed response, if any."""
     request = urllib.request.Request(
@@ -407,7 +408,15 @@ def _post_json(url: str, payload: Dict[str, Any]) -> Dict[str, Any]:
     )
     with urllib.request.urlopen(request, timeout=60) as response:
         body = response.read().decode()
-    return json.loads(body) if body else {}
+    if not body:
+        return {}
+    try:
+        result = json.loads(body)
+    except json.JSONDecodeError:
+        # vLLM's runtime LoRA endpoints answer 200 with a plain-text
+        # body ("Success: ..."), not JSON.
+        return {"raw": body}
+    return result if isinstance(result, dict) else {"raw": body}
 
 
 def delete_vllm_deployment(*, endpoint: Dict[str, Any]) -> None:
@@ -438,25 +447,33 @@ def delete_vllm_deployment(*, endpoint: Dict[str, Any]) -> None:
 def load_lora_adapter(
     *,
     endpoint: Dict[str, Any],
+    adapter_dir: str,
     adapter_uri: str,
     adapter_name: str,
     adapter_root: str = DEFAULT_ADAPTER_ROOT,
 ) -> Dict[str, Any]:
-    """Materialize a ZenML Path artifact in the vLLM pod and hot-load it.
+    """Push a locally materialized LoRA adapter into vLLM and hot-load it.
 
-    The PathMaterializer stores directory artifacts as `data.tar.gz` under
-    the artifact URI. This helper copies that archive into the running vLLM
-    pod, extracts it to `/adapters/<adapter_name>`, and calls vLLM's runtime
-    LoRA endpoint with `load_inplace=true`.
+    The calling *step* declares the adapter as a materialized `Path`
+    input, so ZenML has already downloaded the directory using the
+    artifact store's connector credentials — the canonical in-step way to
+    touch artifact storage. This helper only moves the local bytes into
+    the running vLLM pod (exec websocket) and calls vLLM's runtime LoRA
+    endpoint with `load_inplace=true`. The raw pod never needs S3 access
+    or a ZenML install.
 
     Args:
         endpoint: Endpoint record returned by `ensure_vllm_deployment`.
-        adapter_uri: ZenML artifact URI for the LoRA adapter Path artifact.
+        adapter_dir: Local directory with the materialized adapter files.
+        adapter_uri: ZenML artifact URI, recorded for lineage/metadata.
         adapter_name: Versioned adapter name used in rollout requests.
         adapter_root: Directory inside the vLLM pod that stores adapters.
 
     Returns:
         A JSON-serializable record with the loaded adapter name and path.
+
+    Raises:
+        RuntimeError: If the adapter files do not appear in the pod.
     """
     _load_kubernetes_config()
     namespace = endpoint["namespace"]
@@ -465,27 +482,28 @@ def load_lora_adapter(
         service_name=endpoint["service_name"],
         timeout_seconds=120,
     )
-    output = _exec_python_in_pod(
+    adapter_path = f"{adapter_root.rstrip('/')}/{adapter_name}"
+    _stream_dir_into_pod(
         namespace=namespace,
         pod_name=pod_name,
-        script=_adapter_loader_script(),
-        args=[adapter_uri, adapter_name, adapter_root],
+        local_dir=adapter_dir,
+        target_dir=adapter_path,
     )
-    result = None
-    for line in reversed(output.strip().splitlines()):
-        try:
-            candidate = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        if isinstance(candidate, dict) and "ok" in candidate:
-            result = candidate
-            break
-    if not result or not result.get("ok"):
+    check = _exec_in_pod(
+        namespace=namespace,
+        pod_name=pod_name,
+        command=[
+            "sh",
+            "-c",
+            f"test -s {adapter_path}/adapter_config.json && echo TRANSFER_OK",
+        ],
+    )
+    if "TRANSFER_OK" not in check:
         raise RuntimeError(
-            "Adapter materialization inside the vLLM pod failed or did not "
-            f"emit a success record. Output:\n{output}"
+            "Adapter transfer into the vLLM pod failed: "
+            f"{adapter_path}/adapter_config.json missing or empty. "
+            f"Check output: {check!r}"
         )
-    adapter_path = str(result["adapter_path"])
     _post_json(
         f"{endpoint['url'].rstrip('/')}/v1/load_lora_adapter",
         {

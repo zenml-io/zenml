@@ -7,7 +7,9 @@ from typing import Any, Dict, List
 from generation import EPISODE_KEYS
 
 
-def _post_json(url: str, payload: Dict[str, Any], timeout: int = 600) -> Dict[str, Any]:
+def _post_json(
+    url: str, payload: Dict[str, Any], timeout: int = 600
+) -> Dict[str, Any]:
     """POST JSON to the vLLM OpenAI-compatible API."""
     request = urllib.request.Request(
         url,
@@ -19,16 +21,48 @@ def _post_json(url: str, payload: Dict[str, Any], timeout: int = 600) -> Dict[st
         return json.loads(response.read().decode())
 
 
-def _extract_completion_logprobs(choice: Dict[str, Any]) -> List[float]:
-    """Extract sampled-token logprobs from a vLLM chat completion choice."""
-    content = ((choice.get("logprobs") or {}).get("content") or [])
-    logprobs = [entry.get("logprob") for entry in content]
-    if not logprobs or any(value is None for value in logprobs):
+def _extract_ids_and_logprobs(
+    choice: Dict[str, Any],
+) -> "tuple[List[int], List[float]]":
+    """Extract sampled token IDs and logprobs from one completion choice.
+
+    Requires the request to set `return_tokens_as_token_ids`, which makes
+    vLLM encode each logprob entry's token as "token_id:<int>". Taking the
+    IDs from the same array as the logprobs makes the two aligned by
+    construction — re-tokenizing the completion *text* undercounts by one
+    because the stop token (`<|im_end|>`) is generated (and carries a
+    logprob) but is not part of the returned text (hit live: 57 logprobs
+    vs 56 re-tokenized IDs).
+
+    Args:
+        choice: One OpenAI chat completion choice from vLLM.
+
+    Returns:
+        Parallel lists of sampled token IDs and their logprobs.
+
+    Raises:
+        ValueError: If the response lacks token-ID-encoded logprobs.
+    """
+    content = (choice.get("logprobs") or {}).get("content") or []
+    ids: List[int] = []
+    logprobs: List[float] = []
+    for entry in content:
+        token = entry.get("token") or ""
+        logprob = entry.get("logprob")
+        if logprob is None or not token.startswith("token_id:"):
+            raise ValueError(
+                "vLLM HTTP response did not include token-ID-encoded "
+                f"sampled-token logprobs (got token={token!r}). The "
+                "warm-vLLM mode needs `return_tokens_as_token_ids`."
+            )
+        ids.append(int(token.split(":", 1)[1]))
+        logprobs.append(float(logprob))
+    if not ids:
         raise ValueError(
-            "vLLM HTTP response did not include sampled-token logprobs. "
+            "vLLM HTTP response contained no sampled-token logprobs. "
             "The warm-vLLM mode needs per-token logprobs for TRL."
         )
-    return [float(value) for value in logprobs]
+    return ids, logprobs
 
 
 def _completion_text(choice: Dict[str, Any]) -> str:
@@ -78,10 +112,14 @@ def generate_vllm_chat_completions(
     completions_url = f"{endpoint_url.rstrip('/')}/v1/chat/completions"
     for task in tasks:
         messages = build_prompt(task["prompt"])
-        prompt_ids = tokenizer.apply_chat_template(
-            messages, add_generation_prompt=True
+        # Two explicit calls instead of one apply_chat_template: its
+        # return type shifts across transformers versions, and a str
+        # slipping through becomes list-of-characters prompt_ids that
+        # crash TRL with "too many dimensions 'str'" (hit live).
+        prompt_text = tokenizer.apply_chat_template(
+            messages, add_generation_prompt=True, tokenize=False
         )
-        prompt_text = tokenizer.decode(prompt_ids)
+        prompt_ids = tokenizer(prompt_text, add_special_tokens=False).input_ids
         response = _post_json(
             completions_url,
             {
@@ -91,6 +129,9 @@ def generate_vllm_chat_completions(
                 "temperature": temperature,
                 "max_tokens": max_tokens,
                 "logprobs": True,
+                # vLLM extension: encode logprob tokens as "token_id:<n>"
+                # so completion IDs come from the same array as logprobs.
+                "return_tokens_as_token_ids": True,
             },
             timeout=timeout,
         )
@@ -102,17 +143,7 @@ def generate_vllm_chat_completions(
             )
         for rollout_index, choice in enumerate(choices):
             completion_text = _completion_text(choice)
-            completion_ids = tokenizer(
-                completion_text, add_special_tokens=False
-            ).input_ids
-            logprobs = _extract_completion_logprobs(choice)
-            if len(logprobs) != len(completion_ids):
-                raise ValueError(
-                    "vLLM HTTP logprobs did not align with tokenizer IDs "
-                    f"for task {task['id']} rollout {rollout_index}: "
-                    f"{len(logprobs)} logprobs vs "
-                    f"{len(completion_ids)} token IDs."
-                )
+            completion_ids, logprobs = _extract_ids_and_logprobs(choice)
             episodes.append(
                 {
                     "task_id": task["id"],

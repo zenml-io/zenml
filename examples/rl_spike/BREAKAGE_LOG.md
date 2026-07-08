@@ -368,3 +368,41 @@ multi-GB build/push/pull cycle:
   credentials).
 - **Hit:** Stage 3 smoke, 2026-07-08.
 
+## 13. `zenml.io.fileio` looks like a standalone file API — it isn't, and outside a step it fails at runtime
+
+- **Tried:** The warm-vLLM design's original adapter transport: exec
+  into the raw vLLM pod (which has `zenml[s3fs]` installed) and run a
+  helper that calls `fileio.copy("s3://<artifact-uri>/data.tar.gz", ...)`
+  to pull the adapter archive.
+- **What happened:** `ValueError: No file systems were found for the
+  scheme: s3://`. Reading the source: `fileio` only learns a remote
+  scheme when a `BaseArtifactStore` subclass is *instantiated* —
+  `S3ArtifactStore.__init__` registers a filesystem whose methods are
+  bound to that instance and its credentials. That instantiation
+  happens during ZenML step bootstrap (where connector-issued temporary
+  credentials are fetched from the server). A process outside ZenML's
+  execution context — our raw serving pod, but equally any user
+  sidecar, cron job, or notebook without an active stack — has
+  installed all the right packages and still can't use `fileio` for
+  remote paths. The failure surfaces only at runtime, deep in a
+  registry lookup. (Fallback attempt: raw `s3fs` with the node IAM
+  role — `AccessDenied`; the credentials genuinely live only in the
+  ZenML connector flow.)
+- **Workaround:** Invert the transport: the *step* declares the
+  adapter as a materialized `Path` input (ZenML downloads it with
+  connector credentials — the canonical in-step pattern), then streams
+  the bytes into the serving pod over the exec websocket
+  (tar.gz + base64, same trick as entry 4). The serving pod needs no
+  S3 access and no zenml install at all.
+- **Severity:** chafes (the API's import-and-use surface hides a hard
+  dependency on stack-component lifecycle; error message doesn't say
+  "you're not in a ZenML context").
+- **Core change:** Document the coupling prominently on `fileio`, and
+  make the unregistered-scheme error explain the fix ("remote schemes
+  are registered by an instantiated artifact store; outside a step,
+  construct one via `Client().active_stack.artifact_store` with a
+  connected client"). A supported "give me an authenticated filesystem
+  for this artifact store" helper for out-of-step processes would
+  close the gap properly.
+- **Hit:** Stage 3 warm-vLLM smoke, 2026-07-08.
+
