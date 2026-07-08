@@ -1,0 +1,12 @@
+# Pinned: rollout_func is experimental and its behavior changed across TRL
+# releases (verified against exactly this version — see grpo_update.py).
+trl==1.7.1
+peft>=0.17,<1
+transformers>=4.56,<5
+datasets>=3.0
+torch>=2.4
+
+# GPU runs only (generation via vLLM offline batch API); not needed for
+# the dry run. On the cluster it comes preinstalled via the parent image
+# vllm/vllm-openai:v0.24.0 (see k8s_settings.py / GPU_SETUP.md part 4):
+# vllm==0.24.0
