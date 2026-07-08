@@ -5,6 +5,7 @@ peft>=0.17,<1
 transformers>=4.56,<5
 datasets>=3.0
 torch>=2.4
+kubernetes>=21.7,<26
 
 # GPU runs only (generation via vLLM offline batch API); not needed for
 # the dry run. On the cluster it comes preinstalled via the parent image

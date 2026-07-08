@@ -41,8 +41,11 @@ zenml core would need to change.
 - **Workaround:** v0 loads the vLLM engine *inside* a per-iteration
   `generate_rollouts` step (offline batch API, per-call `LoRARequest`).
   Costs an engine cold-load per iteration — wall-clock measured and logged
-  in Stage 3. Michael's own read when asked: "I'll just do it in-step for
-  now, but note that people will want more flexibility."
+  in Stage 3. After the Michael follow-up, `--serving-mode warm_vllm`
+  adds the real next workaround: a raw Kubernetes vLLM Deployment held warm
+  on one GPU, while `grpo_update` trains on a second GPU. ZenML records the
+  control steps and adapter artifacts, but the serving object itself still
+  lives outside ZenML's component model.
 - **Severity:** chafes (in-step works, pays repeated engine loads; anything
   needing a warm engine across steps has no supported shape).
 - **Core change:** A serving-shaped component or step lifetime concept:
@@ -189,6 +192,44 @@ zenml core would need to change.
   file not found"; fix is `apt_packages=["python-is-python3"]`. Both cost
   a full ~30GB image rebuild/push cycle to discover on a real image.
 - **Hit:** Stage 1-2, 2026-07-08.
+
+## 8b. Custom parent images: the full gauntlet (GPU smoke, Stage 2 execution)
+
+Getting one trivial GPU step to run green on the remote stack with a
+custom (vLLM) parent image took **five submissions**, each failing one
+layer deeper. Individually these are paper cuts; the sequence is the
+finding — every failure was discovered at pod runtime, minutes after a
+multi-GB build/push/pull cycle:
+
+1. `uv pip install` → bare "exit code 2" (no venv in parent; needs
+   `python_package_installer_args={"system": None}`).
+2. Pod StartError: entrypoint execs `python`, Ubuntu images ship only
+   `python3` (needs `apt_packages=["python-is-python3"]`).
+3. Pod Error: `No module named 'zenml'` — with a custom parent, ZenML
+   does not install itself into the image; nothing checks at build time.
+4. `No module named 'k8s_settings'` — a `.zen` directory at the *repo*
+   root silently made the whole monorepo the source root, so the
+   example's flat imports broke only in the container (fix: `zenml init`
+   inside the example dir). Bonus trap: the fresh `.zen` reset the
+   active project and stack, so the next submission silently went to the
+   default LOCAL stack in the wrong project.
+5. Green.
+
+- **Also observed along the way:** the ~30GB image landed on a shared
+  CPU node and got the orchestrator pod **evicted for node
+  ephemeral-storage pressure** (workaround: pin the orchestrator pod to
+  our own tainted GPU node, `ORCHESTRATOR_ON_GPU_NODE`); and runs whose
+  orchestrator pod dies before ZenML code starts (StartError/eviction)
+  stay in `provisioning` forever — the Kubernetes orchestrator only
+  marks runs failed once its own code is running, so entry 6's zombie
+  problem exists on Kubernetes too, just with a narrower window.
+- **Severity:** chafes, repeatedly; each iteration costs a
+  build/push/pull cycle (~10-40 min).
+- **Core change:** build-time validation (import `zenml` inside the
+  freshly built image before pushing would have caught 1-3 instantly), a
+  documented "custom parent image checklist", and a failure-detection
+  window that covers pod-start failures.
+- **Hit:** Stage 2 execution, 2026-07-08.
 
 ## 9. `log_metadata` crashes the step on inf/NaN floats, with a cryptic error
 

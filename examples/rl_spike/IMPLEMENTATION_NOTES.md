@@ -157,3 +157,26 @@ temp dir or the generated pipelines would hit the real (staging Pro!) server.
    bare `"orchestrator"` keys validate but are silently ignored
    (BREAKAGE_LOG entry 8). `gpu_smoke.py` is the one-step CUDA smoke
    pipeline for GPU_SETUP.md part 6.
+7. **(Stage 3 direction) Warm vLLM mode is now wired but unverified.**
+   `run.py --serving-mode warm_vllm` starts or patches a raw Kubernetes
+   vLLM Deployment + ClusterIP Service from a ZenML step, then keeps that
+   server warm across iterations. The loop uses two GPUs: the vLLM server
+   holds one GPU continuously, and `grpo_update` schedules on the other.
+   Adapter transport stays inside ZenML's artifact model: `init_lora` and
+   `grpo_update` still return `Path` artifacts, ZenML stores those
+   directories as `<artifact_uri>/data.tar.gz`, and
+   `load_adapter_into_vllm` passes the unmaterialized artifact URI to an
+   exec helper in the vLLM pod. The helper copies the archive into
+   `/adapters/<adapter-name>`, extracts it, and POSTs
+   `/v1/load_lora_adapter` with `load_inplace=true`. On normal completion,
+   `delete_vllm_server` deletes the raw Deployment and Service; if the run
+   is killed, manual scale-down still matters. This is intentionally not a
+   ZenML model deployer; the spike is testing the gap between ZenML lineage
+   and raw serving infrastructure.
+8. **Warm-vLLM caveat before first run:** the vLLM server image must contain
+   enough ZenML artifact-store support for `zenml.io.fileio.copy` to read
+   the active artifact store URI from inside the vLLM pod. `GPU_SETUP.md`
+   now includes a thin derivative image that installs `zenml[s3fs]` on top
+   of the vLLM image, and `VLLM_SERVER_IMAGE` points at that tag. The HTTP
+   rollout path also fails loudly if vLLM's OpenAI response logprobs do not
+   align with the tokenizer IDs that TRL needs.

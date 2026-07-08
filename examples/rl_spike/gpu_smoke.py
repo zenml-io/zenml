@@ -14,7 +14,11 @@ everything except vLLM and the sandbox.
 
 import subprocess
 
-from k8s_settings import DOCKER_SETTINGS, GPU_STEP_SETTINGS
+from k8s_settings import (
+    DOCKER_SETTINGS,
+    GPU_STEP_SETTINGS,
+    ORCHESTRATOR_ON_GPU_NODE,
+)
 
 from zenml import pipeline, step
 from zenml.enums import StepRuntime
@@ -60,4 +64,9 @@ def gpu_smoke() -> None:
 
 
 if __name__ == "__main__":
-    gpu_smoke.with_options(settings={"docker": DOCKER_SETTINGS})()
+    gpu_smoke.with_options(
+        settings={
+            "docker": DOCKER_SETTINGS,
+            "orchestrator.kubernetes": ORCHESTRATOR_ON_GPU_NODE,
+        }
+    )()

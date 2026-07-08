@@ -4,6 +4,8 @@
 
 *Decisions locked on the call: task stays "write ZenML pipelines" (reward must be computed in the sandbox where the harness ran — that's the RL-specific property a structured-extraction toy would hide); v0 is **synchronous, one dynamic pipeline**; **TRL + vLLM** as the stack (common, self-hosted, stresses our infra); no full-span framework (verifiers/prime-rl would swallow the whole loop into one step — no ZenML tracking, at that point you'd just use their platform); **Alex builds v0, Michael reads up then iterates with him** toward async / two pipelines / shared storage.*
 
+*Post-Michael follow-up, same day: keep the offline vLLM-in-step path as the smokeable proof, but add the real next architecture as `--serving-mode warm_vllm`: two GPUs, one raw Kubernetes vLLM server kept warm, one GPU for `grpo_update`, and LoRA adapter transport through ZenML `Path` artifacts rather than an ad-hoc S3 prefix.*
+
 ## 1 · v0 architecture: one synchronous dynamic pipeline
 
 ```python

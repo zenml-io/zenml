@@ -4,9 +4,13 @@ import time
 from typing import List, Optional
 
 from steps import (
+    delete_vllm_server,
+    ensure_vllm_server,
     generate_rollouts,
+    generate_rollouts_from_endpoint,
     grpo_update,
     init_lora,
+    load_adapter_into_vllm,
     load_tasks,
     log_iteration_metrics,
     run_episode,
@@ -29,6 +33,7 @@ def rl_spike(
     task_ids: Optional[List[str]] = None,
     num_tasks: Optional[int] = None,
     dry_run: bool = True,
+    serving_mode: str = "offline",
     learning_rate: float = 5e-6,
     lora_rank: int = 16,
 ) -> None:
@@ -48,14 +53,29 @@ def rl_spike(
             have canned perfect completions).
         num_tasks: Alternative to task_ids: first N tasks.
         dry_run: True = stub generator, no GPU anywhere.
+        serving_mode: "offline" loads vLLM inside generate_rollouts;
+            "warm_vllm" uses a long-lived Kubernetes vLLM service and
+            hot-loads each ZenML LoRA adapter artifact into it.
         learning_rate: GRPO learning rate.
         lora_rank: Rank of the LoRA adapter.
     """
+    if dry_run and serving_mode != "offline":
+        raise ValueError("dry_run only supports serving_mode='offline'.")
+    if serving_mode not in {"offline", "warm_vllm"}:
+        raise ValueError(
+            "serving_mode must be either 'offline' or 'warm_vllm', got "
+            f"{serving_mode!r}."
+        )
+
     if dry_run:
         init_lora_step = init_lora
         generate_step = generate_rollouts
         episode_step = run_episode
         update_step = grpo_update
+        delete_server_step = delete_vllm_server
+        ensure_server_step = ensure_vllm_server
+        load_adapter_step = load_adapter_into_vllm
+        generate_http_step = generate_rollouts_from_endpoint
     else:
         # Remote placement (see k8s_settings.py and GPU_SETUP.md): the
         # model-loading steps run isolated on the GPU node; episodes run
@@ -74,19 +94,61 @@ def rl_spike(
         update_step = grpo_update.with_options(
             runtime=StepRuntime.ISOLATED, settings=GPU_STEP_SETTINGS
         )
+        delete_server_step = delete_vllm_server
+        ensure_server_step = ensure_vllm_server
+        load_adapter_step = load_adapter_into_vllm
+        generate_http_step = generate_rollouts_from_endpoint
 
     tasks = load_tasks(task_ids=task_ids, num_tasks=num_tasks)
     adapter = init_lora_step(model_name=model_name, lora_rank=lora_rank)
 
+    if serving_mode == "warm_vllm":
+        from k8s_settings import (
+            VLLM_DEPLOYMENT_NAME,
+            VLLM_NAMESPACE,
+            VLLM_SERVER_IMAGE,
+            VLLM_SERVICE_ACCOUNT_NAME,
+            VLLM_SERVICE_NAME,
+        )
+
+        endpoint = ensure_server_step(
+            model_name=model_name,
+            image=VLLM_SERVER_IMAGE,
+            namespace=VLLM_NAMESPACE,
+            deployment_name=VLLM_DEPLOYMENT_NAME,
+            service_name=VLLM_SERVICE_NAME,
+            max_lora_rank=lora_rank,
+            service_account_name=VLLM_SERVICE_ACCOUNT_NAME,
+        )
+        loaded_adapter = load_adapter_step(
+            adapter=adapter,
+            endpoint=endpoint,
+            adapter_name="rl-spike-iter-000",
+        )
+    else:
+        endpoint = None
+        loaded_adapter = None
+
     for iteration in range(iterations):
         iteration_started = time.time()
-        seeds = generate_step(
-            tasks=tasks,
-            adapter=adapter,
-            group_size=group_size,
-            model_name=model_name,
-            dry_run=dry_run,
-        )
+        if serving_mode == "warm_vllm":
+            assert endpoint is not None
+            assert loaded_adapter is not None
+            seeds = generate_http_step(
+                tasks=tasks,
+                endpoint=endpoint,
+                loaded_adapter=loaded_adapter,
+                group_size=group_size,
+                model_name=model_name,
+            )
+        else:
+            seeds = generate_step(
+                tasks=tasks,
+                adapter=adapter,
+                group_size=group_size,
+                model_name=model_name,
+                dry_run=dry_run,
+            )
         episodes = episode_step.map(seeds)
         adapter = update_step(
             episodes=episodes,
@@ -95,6 +157,13 @@ def rl_spike(
             group_size=group_size,
             learning_rate=learning_rate,
         )
+        if serving_mode == "warm_vllm" and iteration < iterations - 1:
+            assert endpoint is not None
+            loaded_adapter = load_adapter_step(
+                adapter=adapter,
+                endpoint=endpoint,
+                adapter_name=f"rl-spike-iter-{iteration + 1:03d}",
+            )
         # grpo_update is a synchronous call, so by this line the whole
         # iteration (including all mapped episodes) has finished — the
         # elapsed time is the true iteration wall clock, measured by hand
@@ -104,3 +173,7 @@ def rl_spike(
             episodes=episodes,
             iteration_wall_clock_seconds=time.time() - iteration_started,
         )
+
+    if serving_mode == "warm_vllm":
+        assert endpoint is not None
+        delete_server_step(endpoint=endpoint, final_adapter=adapter)

@@ -26,6 +26,16 @@ def main() -> None:
     """Parse CLI args, validate the stack, and launch the pipeline."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--serving-mode",
+        choices=["offline", "warm_vllm"],
+        default="offline",
+        help=(
+            "offline loads vLLM inside each generation step; warm_vllm "
+            "uses a long-lived Kubernetes vLLM server and hot-loads "
+            "ZenML LoRA adapter artifacts"
+        ),
+    )
     parser.add_argument("--model", default="Qwen/Qwen3-4B-Instruct-2507")
     parser.add_argument("--iterations", type=int, default=None)
     parser.add_argument("--group-size", type=int, default=None)
@@ -47,6 +57,8 @@ def main() -> None:
         )
 
     if args.dry_run:
+        if args.serving_mode != "offline":
+            sys.exit("--dry-run only supports --serving-mode offline")
         if args.model != parser.get_default("model"):
             print(
                 f"note: --model {args.model} is ignored in dry-run mode; "
@@ -69,15 +81,21 @@ def main() -> None:
     print(
         f"rl_spike: model={model} iterations={iterations} "
         f"group_size={group_size} dry_run={args.dry_run} "
+        f"serving_mode={args.serving_mode} "
         f"stack={stack.name} sandbox={stack.sandbox.flavor}"
     )
     pipeline = rl_spike
     if not args.dry_run:
         # Docker settings must attach before submission — the image is
         # built client-side, before the pipeline function ever runs.
-        from k8s_settings import DOCKER_SETTINGS
+        from k8s_settings import DOCKER_SETTINGS, ORCHESTRATOR_ON_GPU_NODE
 
-        pipeline = rl_spike.with_options(settings={"docker": DOCKER_SETTINGS})
+        pipeline = rl_spike.with_options(
+            settings={
+                "docker": DOCKER_SETTINGS,
+                "orchestrator.kubernetes": ORCHESTRATOR_ON_GPU_NODE,
+            }
+        )
     started = time.time()
     pipeline(
         model_name=model,
@@ -86,6 +104,7 @@ def main() -> None:
         task_ids=task_ids,
         num_tasks=num_tasks,
         dry_run=args.dry_run,
+        serving_mode=args.serving_mode,
         learning_rate=args.learning_rate,
     )
     print(f"total wall clock: {time.time() - started:.0f}s")

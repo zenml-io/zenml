@@ -59,10 +59,13 @@ Key properties:
 - **TRL is a library, not an orchestrator** — its experimental
   `rollout_func` hook (pinned `trl==1.7.1`) returns the *pre-generated,
   pre-scored* episodes, so TRL only does advantages/loss/gradient.
-- **No vLLM server** — generation uses vLLM's offline batch API inside the
-  step, with the LoRA adapter passed per call (`LoRARequest`). The adapter
-  artifact is the thread through the loop; "weight sync" is just artifact
-  lineage.
+- **Two serving modes** — `offline` keeps the original proof path:
+  generation uses vLLM's offline batch API inside the step, with the LoRA
+  adapter passed per call (`LoRARequest`). `warm_vllm` is the next
+  architecture: one raw Kubernetes vLLM Deployment stays warm on GPU 1,
+  `grpo_update` trains on GPU 2, a ZenML step hot-loads each new LoRA
+  adapter artifact into the server before the next rollout, and a cleanup
+  step deletes the raw Kubernetes Deployment/Service on normal completion.
 - **Reward is computed inside the sandbox** where the generated pipeline
   actually runs: +0.3 parses/imports, +0.4 defines a pipeline and runs
   green, +0.3 declarative spec checks (step count, required API, expected
@@ -74,10 +77,11 @@ Key properties:
 |---|---|
 | `tasks/tasks.jsonl` | 50 "write a ZenML dynamic pipeline that X" tasks + machine-checkable specs |
 | `prompts.py` | System prompt with the slim dynamic-pipelines cheatsheet |
-| `generation.py` | `VLLMGenerator` (GPU) / `StubGenerator` (dry run) behind one interface |
+| `generation.py` | `VLLMGenerator` (GPU offline) / `StubGenerator` (dry run) behind one interface |
+| `serving/` | Raw Kubernetes vLLM Deployment helpers + HTTP rollout client for `--serving-mode warm_vllm` |
 | `stub_completions/` | Canned completions at four quality tiers for the dry run |
 | `sandbox_scripts/score_pipeline.py` | Self-contained in-sandbox runner + reward scorer |
-| `steps/` | The five pipeline steps |
+| `steps/` | Pipeline steps for task loading, rollout generation, sandbox scoring, GRPO training, metrics, and warm-vLLM lifecycle control |
 | `pipelines/rl_spike_pipeline.py` | The dynamic pipeline (the diagram above) |
 | `run.py` | Entrypoint |
 | `tests/test_reward.py` | Exact expected reward per canned completion |
@@ -127,13 +131,22 @@ pytest tests/test_reward.py -v
 
 ## Run for real (GPU)
 
-Stage 3 of the spike — requires a CUDA GPU (~24GB for the default
-`Qwen/Qwen3-4B-Instruct-2507`), `vllm` installed, and a stack whose sandbox
-can run untrusted-ish generated code. Not verified yet; see `GPU_SETUP.md`
-(written in Stage 2) before attempting.
+Stage 3 of the spike — requires CUDA GPUs, `vllm` installed, and a stack
+whose sandbox can run untrusted-ish generated code. The original offline
+path needs one 24GB GPU and reloads vLLM in every generation step. The
+The new warm-server path needs two GPUs: one held by vLLM, one for TRL
+training. It currently assumes only one warm-vLLM run per Kubernetes
+namespace because the raw Deployment and Service names are fixed for the
+spike. Not verified yet; see `GPU_SETUP.md` before attempting.
 
 ```bash
-python run.py --iterations 5 --group-size 8 --num-tasks 50
+# Original one-GPU proof path: vLLM loads inside generate_rollouts each iteration.
+python run.py --iterations 5 --group-size 8 --num-tasks 50 \
+  --serving-mode offline
+
+# Agreed next path: warm vLLM server + ZenML adapter artifact hot-loads.
+python run.py --iterations 5 --group-size 8 --num-tasks 50 \
+  --serving-mode warm_vllm
 ```
 
 ## Cost/timing capture
