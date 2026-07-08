@@ -82,6 +82,9 @@ ZenML is used by thousands of companies to run their AI workflows. Here are some
 
 ```bash
 # Install ZenML with server capabilities
+
+[![Listed on TakoAPI](https://takoapi.com/api/badge/zenml-io-zenml)](https://takoapi.com/agents/zenml-io-zenml)
+
 pip install "zenml[server]"  # pip install zenml will install a slimmer client
 
 # Initialize your ZenML repository
