@@ -342,13 +342,13 @@ class DynamicPipelineRunner:
         )
         self._executor = ThreadPoolExecutor(max_workers=worker_count)
 
-        stack = Stack.from_model(snapshot.stack)
+        self._stack = Stack.from_model(snapshot.stack)
         if orchestrator:
             self._orchestrator = orchestrator
         else:
-            self._orchestrator = stack.orchestrator
+            self._orchestrator = self._stack.orchestrator
 
-        self._step_operator = stack.step_operator
+        self._step_operator = self._stack.step_operator
         self._invocation_id_lock = threading.Lock()
         self._invocation_ids: Set[str] = set()
         self._last_successful_sync_invocation_id: Optional[str] = None
@@ -890,7 +890,7 @@ class DynamicPipelineRunner:
                 InMemoryArtifactCache(),
                 setup_execution_context(pipeline_run=self._run),
                 env_utils.temporary_runtime_environment(
-                    self._snapshot.pipeline_configuration, self._snapshot.stack
+                    self._snapshot.pipeline_configuration, self._stack
                 ),
                 DynamicPipelineRunContext(
                     pipeline=pipeline,
