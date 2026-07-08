@@ -43,6 +43,10 @@ DOCKER_SETTINGS = DockerSettings(
         "peft>=0.17,<1",
         "datasets>=3.0",
     ],
+    # The vLLM image has no active virtualenv, and modern uv refuses to
+    # install into system Python without --system; ZenML's generated
+    # `uv pip install` fails with a bare exit code 2 otherwise.
+    python_package_installer_args={"system": None},
     # The cluster is x86_64; Apple Silicon laptops must cross-build.
     build_options={"platform": "linux/amd64"},
 )
