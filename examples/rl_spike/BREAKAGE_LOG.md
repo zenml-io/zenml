@@ -406,3 +406,35 @@ multi-GB build/push/pull cycle:
   close the gap properly.
 - **Hit:** Stage 3 warm-vLLM smoke, 2026-07-08.
 
+## 14. The orchestrator pod is BestEffort QoS — its own fan-out OOM-kills it, leaving a headless run
+
+- **Tried:** Calibration chunk: 16 tasks × group 4 = 64 mapped episode
+  steps on one 32GB GPU node (episode pods pinned there since entry 11).
+- **What happened:** ZenML's orchestrator pod ships with **no memory
+  request or limit**, which makes it BestEffort QoS — the first
+  container the kernel kills under node memory pressure. The ~50
+  concurrently packed episode pods (each a full ZenML runtime, also
+  BestEffort) filled the node's memory, the kernel OOM-killed the
+  orchestrator, and the run went headless: 3 orphaned steps stuck in
+  `running`/`provisioning`, run stuck `running`, nobody left to record
+  failure (the K8s Job did not restart the pod). The bitter irony: the
+  orchestrator was evicted to make room for the very pods it launched.
+  Also observed during cleanup: sandbox session pods from force-stopped
+  runs are never cleaned up (`zenml pipeline runs stop` deletes step
+  jobs but not sandbox sessions — two 5-hour-old session pods were
+  still running).
+- **Workaround:** Give the orchestrator pod explicit resources
+  (request 4Gi/limit 8Gi → Burstable QoS, so BestEffort episode pods
+  are sacrificed first and retried), and give episode pods memory
+  requests (700Mi) so the scheduler stops packing unbounded pods onto
+  the node in the first place.
+- **Severity:** breaks (default settings + large fan-out = headless
+  zombie run; the failure mode is invisible until you inspect pod
+  states).
+- **Core change:** Default the orchestrator pod to a sane memory
+  request (it is the single most load-bearing pod in a run), or at
+  least document loudly that fan-out-heavy dynamic pipelines must set
+  one. `stop` should also clean up sandbox sessions belonging to the
+  stopped run.
+- **Hit:** Calibration run, 2026-07-08.
+

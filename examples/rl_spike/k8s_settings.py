@@ -111,6 +111,17 @@ ORCHESTRATOR_ON_GPU_NODE = KubernetesOrchestratorSettings(
                 "effect": "NoSchedule",
             }
         ],
+        # Without a memory request the orchestrator pod is BestEffort
+        # QoS — the FIRST thing the kernel OOM-kills when its own
+        # episode fan-out fills the node's memory. Observed live during
+        # the calibration run: ~50 episode pods + orchestrator on one
+        # 32GB node -> orchestrator OOMKilled -> headless run stuck
+        # "running" with orphaned steps. A request makes it Burstable,
+        # so BestEffort episode pods die first (and retry) instead.
+        resources={
+            "requests": {"memory": "4Gi", "cpu": "1"},
+            "limits": {"memory": "8Gi"},
+        },
         # The mapped episode fan-out starts N pods at once, and each pod
         # makes several ZenML API calls at startup (auth,
         # service-connector credentials for S3, sandbox session CRUD).
@@ -161,6 +172,14 @@ EPISODE_STEP_SETTINGS: Dict[str, Union[Dict[str, Any], BaseSettings]] = {
                     "effect": "NoSchedule",
                 }
             ],
+            # Memory requests make the scheduler account for episode
+            # pods (~700Mi each caps one 32GB node at ~35 concurrent
+            # episodes) instead of packing unbounded BestEffort pods
+            # until the node OOMs and takes the orchestrator with it.
+            resources={
+                "requests": {"memory": "700Mi", "cpu": "200m"},
+                "limits": {"memory": "1536Mi"},
+            },
         )
     ),
     "sandbox.kubernetes": KubernetesSandboxSettings(image=SANDBOX_IMAGE),
