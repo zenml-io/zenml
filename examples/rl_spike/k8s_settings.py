@@ -38,6 +38,9 @@ VLLM_PARENT_IMAGE = "vllm/vllm-openai:v0.24.0-x86_64-ubuntu2404"
 
 DOCKER_SETTINGS = DockerSettings(
     parent_image=VLLM_PARENT_IMAGE,
+    # ZenML's container entrypoint execs `python`; the vLLM/Ubuntu image
+    # ships only `python3`. python-is-python3 restores the symlink.
+    apt_packages=["python-is-python3"],
     requirements=[
         "trl==1.7.1",
         "peft>=0.17,<1",
