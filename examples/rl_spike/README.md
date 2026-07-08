@@ -1,0 +1,114 @@
+# RL spike: GRPO post-training on ZenML
+
+A toy-but-real RL loop, built entirely as one ZenML dynamic pipeline: a small
+Qwen model is post-trained (GRPO + LoRA) to write better **ZenML dynamic
+pipelines**. The model quality is not the point — the point is the
+**breakage report**: where ZenML works, chafes, or breaks for RL workloads.
+Read [`BREAKAGE_LOG.md`](BREAKAGE_LOG.md) for the findings,
+[`PLAN.md`](PLAN.md) for the assignment and locked design decisions, and
+[`IMPLEMENTATION_NOTES.md`](IMPLEMENTATION_NOTES.md) for what got built and
+every deviation from the plan.
+
+## The loop
+
+```
+load_tasks ──► init_lora (adapter v0)
+                  │
+   ┌──────────────▼──────────────── per iteration ────────────┐
+   │ generate_rollouts   ONE step, vLLM offline batch (GPU)    │
+   │        │            or the dry-run stub (CPU)             │
+   │        ▼                                                  │
+   │ run_episode.map     one sandbox session per completion:   │
+   │        │            run the generated pipeline.py against │
+   │        │            a throwaway local ZenML store, score  │
+   │        │            it 0-1 (reward computed IN-sandbox)   │
+   │        ▼                                                  │
+   │ grpo_update         ONE TRL GRPOTrainer optimizer step;   │
+   │        │            emits adapter v(N+1)                  │
+   │        ▼                                                  │
+   │ log_iteration_metrics                                     │
+   └───────┴── adapter v(N+1) feeds the next iteration ────────┘
+```
+
+Key properties:
+
+- **Single-turn episodes** — one completion per episode, by design (avoids
+  TRL's multi-turn importance-sampling problem, see PLAN.md §2).
+- **TRL is a library, not an orchestrator** — its experimental
+  `rollout_func` hook (pinned `trl==1.7.1`) returns the *pre-generated,
+  pre-scored* episodes, so TRL only does advantages/loss/gradient.
+- **No vLLM server** — generation uses vLLM's offline batch API inside the
+  step, with the LoRA adapter passed per call (`LoRARequest`). The adapter
+  artifact is the thread through the loop; "weight sync" is just artifact
+  lineage.
+- **Reward is computed inside the sandbox** where the generated pipeline
+  actually runs: +0.3 parses/imports, +0.4 defines a pipeline and runs
+  green, +0.3 declarative spec checks (step count, required API, expected
+  output value). See `sandbox_scripts/score_pipeline.py`.
+
+## Layout
+
+| Path | What it is |
+|---|---|
+| `tasks/tasks.jsonl` | 50 "write a ZenML dynamic pipeline that X" tasks + machine-checkable specs |
+| `prompts.py` | System prompt with the slim dynamic-pipelines cheatsheet |
+| `generation.py` | `VLLMGenerator` (GPU) / `StubGenerator` (dry run) behind one interface |
+| `stub_completions/` | Canned completions at four quality tiers for the dry run |
+| `sandbox_scripts/score_pipeline.py` | Self-contained in-sandbox runner + reward scorer |
+| `steps/` | The five pipeline steps |
+| `pipelines/rl_spike_pipeline.py` | The dynamic pipeline (the diagram above) |
+| `run.py` | Entrypoint |
+| `tests/test_reward.py` | Exact expected reward per canned completion |
+
+## Run the dry run (no GPU, ~2-3 min on an Apple Silicon laptop)
+
+The dry run replaces vLLM with canned completions (one perfect, one that
+runs but computes the wrong thing, one that crashes at runtime, one with a
+syntax error — so every GRPO group has reward variance) but keeps
+**everything else real**: real sandbox sessions, real in-sandbox reward
+computation, and a real `GRPOTrainer` optimizer step on CPU with
+`Qwen/Qwen3-0.6B` that saves a real LoRA adapter which the next iteration
+actually loads.
+
+```bash
+# from examples/rl_spike, with the zenml repo venv active
+uv pip install -r requirements.txt
+
+# a stack with a sandbox component (local flavor is fine):
+zenml sandbox register local_sandbox --flavor=local   # if none exists
+zenml stack register rl-spike-local -o default -a default -sb local_sandbox --set
+
+python run.py --dry-run
+```
+
+Expected: a `rl_spike` run with 2 iterations × (1 generation step + 12
+mapped episode steps + 1 training step + 1 metrics step), mean reward
+exactly **0.5125** per iteration (deterministic tiers: 1.0 / 0.85 or 0.7 /
+0.3 / 0.0), `flat_groups: 0`, and an `iteration_report` markdown artifact
+per iteration. The training step uses Apple MPS if available (~8s per
+optimizer step); on pure CPU it takes ~45 minutes per step — it works, but
+you want the MPS path.
+
+Reward unit tests (asserts exact scores for every canned completion):
+
+```bash
+pytest tests/test_reward.py -v
+```
+
+## Run for real (GPU)
+
+Stage 3 of the spike — requires a CUDA GPU (~24GB for the default
+`Qwen/Qwen3-4B-Instruct-2507`), `vllm` installed, and a stack whose sandbox
+can run untrusted-ish generated code. Not verified yet; see `GPU_SETUP.md`
+(written in Stage 2) before attempting.
+
+```bash
+python run.py --iterations 5 --group-size 8 --num-tasks 50
+```
+
+## Cost/timing capture
+
+ZenML tracks none of this natively (that's a finding), so every step logs
+wall-clock and token counts into its metadata (`engine_load_seconds`,
+`generation_seconds`, per-episode sandbox timings, `train_seconds`), and
+each iteration's totals land in the `iteration_report` artifact.
