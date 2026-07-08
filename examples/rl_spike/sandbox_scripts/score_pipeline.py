@@ -18,19 +18,35 @@ runs on whatever server the host is logged into (in this repo's case, the
 staging Pro server). Subprocesses inherit the override via the
 environment.
 
-Reward (0-1), mirroring PLAN.md:
-    +0.3  the file parses (ast) AND imports cleanly (module top-level runs)
-    +0.4  executing the file completes with exit code 0 AND a completed
+Reward (0-1). Weights were rebalanced for Stage 3+: the base model never
+misses parse/run on these toy tasks, so the reward mass sits on the spec
+clauses, where sampled completions actually differ (GRPO needs
+within-group variance to have any gradient at all):
+    +0.2  the file parses (ast) AND imports cleanly (module top-level runs)
+    +0.3  executing the file completes with exit code 0 AND a completed
           pipeline run exists in the local store
-    +0.3  declarative spec clauses, partial credit per clause:
-          - min_steps:        the run has at least N step runs
-          - required_api:     every listed substring appears in the source
-          - expected_output:  some output artifact of the run equals the value
+    +0.5  declarative spec clauses, partial credit per clause:
+          - min_steps:         the run has at least N step invocations
+          - required_api:      every listed substring appears in the source
+          - forbidden_source:  none of the listed substrings appears in the
+                               source (anti-hardcoding: ban the answer
+                               literal so the value must be computed)
+          - expected_output:   some output artifact of the run equals the
+                               value
+          - expected_outputs:  each listed value is its own clause; each
+                               must match some output artifact
+          - step_run_counts:   each entry {name: n} is its own clause; the
+                               step function `name` must have exactly n
+                               runs in the completed run. This grades
+                               *runtime shape* (fan-out width, loop
+                               iterations, which branch ran) from ZenML's
+                               own run history rather than source text.
 """
 
 import ast
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -44,9 +60,9 @@ os.environ["AUTO_OPEN_DASHBOARD"] = "false"
 os.environ["ZENML_ENABLE_RICH_TRACEBACK"] = "false"
 os.environ["ZENML_LOGGING_VERBOSITY"] = "WARN"
 
-PARSE_IMPORT_REWARD = 0.3
-RUNS_GREEN_REWARD = 0.4
-SPEC_REWARD = 0.3
+PARSE_IMPORT_REWARD = 0.2
+RUNS_GREEN_REWARD = 0.3
+SPEC_REWARD = 0.5
 
 # Generous ceiling for toy pipelines: local sqlite init dominates, the
 # pipelines themselves are trivial arithmetic.
@@ -163,13 +179,48 @@ def values_equal(expected, actual) -> bool:
         return False
 
 
+def step_base_name(invocation_id: str) -> str:
+    """Map a step invocation id back to its step function name.
+
+    Dynamic runs name invocations `<name>` for the first call, `<name>_2`
+    for repeats (loop iterations), and `map:<name>:<i>` for mapped
+    fan-outs. The spec's `step_run_counts` keys are function names, so
+    counting requires undoing that decoration.
+    """
+    if ":" in invocation_id:
+        parts = [
+            part
+            for part in invocation_id.split(":")
+            if part and part != "map" and not part.isdigit()
+        ]
+        if parts:
+            return parts[0]
+    return re.sub(r"_\d+$", "", invocation_id)
+
+
+def count_step_runs(run) -> dict:
+    """Count completed step invocations per step function name."""
+    counts: dict = {}
+    if run is None:
+        return counts
+    for invocation_id in run.steps:
+        name = step_base_name(invocation_id)
+        counts[name] = counts.get(name, 0) + 1
+    return counts
+
+
 def check_spec(spec: dict, source: str, run) -> "tuple[float, dict]":
     """Score the declarative spec clauses; each clause weighs equally.
+
+    `expected_outputs` and `step_run_counts` expand to one clause per
+    entry, so a task with many entries has a finer-grained reward ladder
+    (more distinct scores a group of samples can land on).
 
     Returns:
         (fraction of SPEC_REWARD earned, per-clause breakdown).
     """
     clauses = {}
+    output_values = list(iter_output_values(run)) if run is not None else []
     if "min_steps" in spec:
         clauses["min_steps"] = (
             run is not None and len(run.steps) >= spec["min_steps"]
@@ -178,11 +229,26 @@ def check_spec(spec: dict, source: str, run) -> "tuple[float, dict]":
         clauses["required_api"] = all(
             substring in source for substring in spec["required_api"]
         )
+    if "forbidden_source" in spec:
+        clauses["forbidden_source"] = all(
+            substring not in source for substring in spec["forbidden_source"]
+        )
     if "expected_output" in spec:
         expected = spec["expected_output"]["value"]
-        clauses["expected_output"] = run is not None and any(
-            values_equal(expected, value) for value in iter_output_values(run)
+        clauses["expected_output"] = any(
+            values_equal(expected, value) for value in output_values
         )
+    if "expected_outputs" in spec:
+        for index, expected in enumerate(spec["expected_outputs"]):
+            clauses[f"expected_outputs[{index}]"] = any(
+                values_equal(expected, value) for value in output_values
+            )
+    if "step_run_counts" in spec:
+        counts = count_step_runs(run)
+        for name, expected_count in spec["step_run_counts"].items():
+            clauses[f"step_runs:{name}"] = (
+                counts.get(name, 0) == expected_count
+            )
     if not clauses:
         return 0.0, {}
     fraction = sum(clauses.values()) / len(clauses)

@@ -221,3 +221,33 @@ temp dir or the generated pipelines would hit the real (staging Pro!) server.
     wall-clock 209.6s vs 555–727s offline — the offline path pays
     169–226s of vLLM engine load per iteration, the warm server pays
     it once.
+11. **(Post-smoke) Task set v2 + reward v2, designed for GRPO variance.**
+    The Stage 3 smoke exposed that difficulty-1 tasks produce all-1.0
+    groups AND near-argmax identical samples — zero within-group
+    variance, zero gradient. The redesign targets pass rates in the
+    20–80% band and a finer reward ladder:
+    - Weights rebalanced to 0.2 parse + 0.3 runs-green + 0.5 spec
+      (the base model never misses parse/run; the reward mass now sits
+      where samples differ). Dry-run expected mean changes from 0.5125
+      to 0.4458.
+    - New declarative clauses in `score_pipeline.py`, all graded from
+      the sandbox run's own history: `step_run_counts` (exact
+      invocation counts per step function name — grades fan-out width,
+      loop iterations, and which conditional branch ran, from ZenML's
+      store instead of source text; mapped `map:<name>:<i>` and
+      repeated `<name>_<k>` invocation ids verified empirically),
+      `forbidden_source` (anti-hardcoding: the answer literal must not
+      appear in source), and `expected_outputs` (one clause per listed
+      value).
+    - `tasks/tasks.jsonl` regenerated: 55 tasks (7 D1 keepers incl.
+      the three dry-run stub tasks unchanged, 14 D2 compute-through-DAG
+      chains, 18 D3 conditionals/two-stage maps, 16 D4 runtime-width
+      fan-outs and loops). Harder prompts dictate step function names
+      so shape clauses are checkable. Re-mapping over a mapped result
+      (`add_one.map(double.map(nums))`) verified working locally via
+      the real scorer before authoring tasks that require it.
+    - Before the full run: a CALIBRATION run (1 iteration, all tasks,
+      group 4, learning rate ~0) to measure per-task reward mean and
+      within-group variance; drop or re-tier tasks that are uniformly
+      1.0 or uniformly floored. This also catches wrong expected
+      values in specs.

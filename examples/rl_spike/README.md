@@ -117,9 +117,10 @@ if you don't need shared visibility.
 
 Expected: a `rl_spike` run with 2 iterations × (1 generation step + 12
 mapped episode steps + 1 training step + 1 metrics step), mean reward
-exactly **0.5125** per iteration (deterministic tiers: 1.0 / 0.85 or 0.7 /
-0.3 / 0.0), `flat_groups: 0`, and an `iteration_report` markdown artifact
-per iteration. The training step uses Apple MPS if available (~8s per
+exactly **0.4458** per iteration (deterministic tiers: 1.0 / 0.75 or 0.5 /
+0.2 / 0.0 under the Stage-3+ reward weights 0.2 parse + 0.3 runs-green +
+0.5 spec clauses), `flat_groups: 0`, and an `iteration_report` markdown
+artifact per iteration. The training step uses Apple MPS if available (~8s per
 optimizer step); on pure CPU it takes ~45 minutes per step — it works, but
 you want the MPS path.
 
