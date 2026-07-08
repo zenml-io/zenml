@@ -9,6 +9,28 @@ Read [`BREAKAGE_LOG.md`](BREAKAGE_LOG.md) for the findings,
 [`IMPLEMENTATION_NOTES.md`](IMPLEMENTATION_NOTES.md) for what got built and
 every deviation from the plan.
 
+## Terms you need (30 seconds)
+
+If you know ZenML but not RL post-training, these five terms cover
+everything in this example:
+
+- **Episode / rollout**: one attempt — the model gets a task prompt and
+  produces one candidate `pipeline.py`. Single-turn: no follow-ups.
+- **Group**: `group_size` independent attempts at the *same* task, sampled
+  with temperature so they differ. GRPO's learning signal is *within-group
+  comparison* — which attempts beat their siblings.
+- **GRPO** (Group Relative Policy Optimization): the training algorithm.
+  Each episode's **advantage** = its reward minus the group's mean (scaled
+  by the group's spread). Above-average completions get pushed up,
+  below-average pushed down. Consequence worth remembering: if all
+  attempts in a group score the same, the group teaches nothing.
+- **LoRA adapter**: a small set of add-on weight matrices (MBs, not GBs)
+  trained instead of the full model. It's the only thing that changes
+  between iterations, which is why it works as a regular ZenML artifact.
+- **logprobs**: for each generated token, the log-probability the model
+  assigned to it when sampling. TRL needs them to weight its loss; they
+  ride along in every episode record.
+
 ## The loop
 
 ```

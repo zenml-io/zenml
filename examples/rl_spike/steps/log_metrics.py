@@ -30,7 +30,10 @@ def log_iteration_metrics(
         Markdown report artifact.
     """
     rewards = [e["reward"] for e in episodes]
-    errors = [e for e in episodes if e["error"]]
+    # error = the generated code was bad (expected, healthy signal);
+    # infra_error = the episode harness itself broke (must stay at 0).
+    scored_failures = [e for e in episodes if e["error"]]
+    infra_errors = [e for e in episodes if e.get("infra_error")]
     mean_reward = sum(rewards) / len(rewards) if rewards else 0.0
     completion_tokens = sum(len(e["completion_ids"]) for e in episodes)
 
@@ -47,7 +50,8 @@ def log_iteration_metrics(
         f"iteration_{iteration}.max_reward": max(rewards, default=0.0),
         f"iteration_{iteration}.min_reward": min(rewards, default=0.0),
         f"iteration_{iteration}.num_episodes": len(episodes),
-        f"iteration_{iteration}.num_errored": len(errors),
+        f"iteration_{iteration}.num_scored_failures": len(scored_failures),
+        f"iteration_{iteration}.num_infra_errors": len(infra_errors),
         f"iteration_{iteration}.flat_groups": flat_groups,
         f"iteration_{iteration}.completion_tokens": completion_tokens,
         f"iteration_{iteration}.wall_clock_seconds": round(
@@ -59,7 +63,9 @@ def log_iteration_metrics(
     lines = [
         f"# Iteration {iteration}",
         "",
-        f"- episodes: **{len(episodes)}** ({len(errors)} errored)",
+        f"- episodes: **{len(episodes)}** "
+        f"({len(scored_failures)} scored as failing code, "
+        f"{len(infra_errors)} harness/infra errors)",
         f"- reward: mean **{mean_reward:.3f}**, "
         f"min {min(rewards, default=0):.2f}, max {max(rewards, default=0):.2f}",
         f"- flat groups (no variance -> no gradient): {flat_groups}/{len(by_task)}",

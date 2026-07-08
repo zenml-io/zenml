@@ -47,6 +47,11 @@ def main() -> None:
         )
 
     if args.dry_run:
+        if args.model != parser.get_default("model"):
+            print(
+                f"note: --model {args.model} is ignored in dry-run mode; "
+                f"the dry run always uses {DRY_RUN_MODEL}"
+            )
         model = DRY_RUN_MODEL
         iterations = args.iterations or 2
         group_size = args.group_size or 4

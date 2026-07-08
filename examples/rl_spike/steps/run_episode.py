@@ -36,8 +36,10 @@ def _put_file(session: Any, content: str, remote_path: str) -> None:
         remote_path: Destination path inside the sandbox (relative to the
             session workdir).
     """
+    import os
     import tempfile
 
+    local_path = None
     try:
         with tempfile.NamedTemporaryFile(
             "w", suffix=".tmp", delete=False
@@ -48,6 +50,9 @@ def _put_file(session: Any, content: str, remote_path: str) -> None:
         return
     except NotImplementedError:
         pass
+    finally:
+        if local_path:
+            os.unlink(local_path)
 
     encoded = base64.b64encode(content.encode()).decode()
     code = (
@@ -75,15 +80,18 @@ def _get_file(session: Any, remote_path: str) -> str:
     Raises:
         RuntimeError: If the file cannot be read.
     """
+    import os
     import tempfile
 
     try:
         with tempfile.NamedTemporaryFile(suffix=".tmp", delete=False) as f:
             local_path = f.name
         session.download_file(remote_path, local_path)
-        return Path(local_path).read_text()
+        content = Path(local_path).read_text()
+        os.unlink(local_path)
+        return content
     except NotImplementedError:
-        pass
+        os.unlink(local_path)
 
     code = (
         "import base64, sys; "
@@ -117,12 +125,17 @@ def run_episode(episode: Dict[str, Any]) -> Dict[str, Any]:
         timing fields.
     """
     timings: Dict[str, float] = {}
+    # `error` = the scorer's verdict on the generated code (a bad
+    # completion earning 0.0 is EXPECTED and healthy). `infra_error` =
+    # this step itself broke (sandbox, upload, scorer crash) — the reward
+    # is 0.0 either way, but only infra_error means the harness is sick.
     result: Dict[str, Any] = {
         **episode,
         "reward": 0.0,
         "reward_breakdown": {},
         "spec_clauses": {},
         "error": None,
+        "infra_error": None,
     }
 
     try:
@@ -139,7 +152,13 @@ def run_episode(episode: Dict[str, Any]) -> Dict[str, Any]:
             timings["session_create_s"] = round(time.time() - started, 2)
 
             started = time.time()
-            _put_file(session, episode["completion_text"], PIPELINE_FILE)
+            # program_text = fence-stripped completion; falls back to the
+            # raw text for episodes produced before the field existed.
+            _put_file(
+                session,
+                episode.get("program_text", episode["completion_text"]),
+                PIPELINE_FILE,
+            )
             _put_file(session, json.dumps(episode["spec"]), SPEC_FILE)
             _put_file(session, SCORER_PATH.read_text(), SCORER_FILE)
             timings["upload_s"] = round(time.time() - started, 2)
@@ -173,7 +192,7 @@ def run_episode(episode: Dict[str, Any]) -> Dict[str, Any]:
             }
         )
     except Exception as e:
-        result["error"] = f"{type(e).__name__}: {e}"
+        result["infra_error"] = f"{type(e).__name__}: {e}"
 
     result["timings"] = timings
     log_metadata(
@@ -182,6 +201,7 @@ def run_episode(episode: Dict[str, Any]) -> Dict[str, Any]:
             "rollout_index": episode.get("rollout_index", -1),
             "reward": result["reward"],
             "error": result["error"] or "",
+            "infra_error": result["infra_error"] or "",
             **{k: v for k, v in timings.items()},
         }
     )

@@ -119,9 +119,18 @@ temp dir or the generated pipelines would hit the real (staging Pro!) server.
    real contract also differs from its docstring: prompts arrive already
    repeated `num_generations` times and the function returns exactly one
    completion per entry (see BREAKAGE_LOG.md entry 5). Verified with a
-   standalone CPU proof before wiring into the step: one optimizer step,
-   grad_norm ≈ 2.26, all 56 lora_B tensors changed, adapter save/reload
-   round-trip green.
+   standalone CPU proof before wiring into the step (one optimizer step,
+   all 56 lora_B tensors changed, adapter save/reload round-trip green).
+   Caveat discovered later: that proof's tiny grad_norm (≈2.3) was an
+   artifact of its *fake* old-logprobs — they made every importance ratio
+   collapse to ~0, so PPO-style clipping zeroed most of the gradient. With
+   real logprobs (ratio ≈ 1, gradient flows fully), canned completions are
+   maximally off-policy text and grad norms in the wired pipeline reach
+   1e5–1e6 before TRL clips the update to `max_grad_norm=1.0`. On Apple
+   MPS this occasionally overflows to NaN — `grpo_update` now logs
+   grad_norm and hard-fails rather than save non-finite weights (see
+   BREAKAGE_LOG entry 7 postscript). Real sampled completions (Stage 3)
+   are on-policy by construction and should not exhibit this magnitude.
 2. **The scorer isolates itself.** `score_pipeline.py` sets
    `ZENML_CONFIG_PATH` to a fresh temp dir *in its own process* before any
    zenml import, instead of relying on the episode step to pass sandbox

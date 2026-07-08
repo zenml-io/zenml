@@ -4,7 +4,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List
 
-from generation import get_generator
+from generation import EPISODE_KEYS, get_generator
 
 from zenml import log_metadata, step
 
@@ -16,6 +16,8 @@ def generate_rollouts(
     group_size: int,
     model_name: str,
     dry_run: bool,
+    temperature: float = 0.9,
+    max_tokens: int = 1024,
 ) -> List[Dict[str, Any]]:
     """Generate group_size completions per task in one batch.
 
@@ -33,20 +35,38 @@ def generate_rollouts(
         model_name: HF model ID of the policy base model.
         dry_run: True = canned completions via StubGenerator (CPU),
             False = vLLM offline batch inference (GPU).
+        temperature: Sampling temperature (vLLM path; must be > 0 for
+            within-group variance).
+        max_tokens: Generation cap per completion (vLLM path).
 
     Returns:
         One episode dict per (task, rollout_index) — see
         generation.EPISODE_KEYS.
+
+    Raises:
+        ValueError: If a generator emits episodes missing contract keys.
     """
     started = time.time()
     generator = get_generator(
-        dry_run=dry_run, model_name=model_name, adapter_path=str(adapter)
+        dry_run=dry_run,
+        model_name=model_name,
+        adapter_path=str(adapter),
+        temperature=temperature,
+        max_tokens=max_tokens,
     )
     engine_load_seconds = round(time.time() - started, 2)
 
     started = time.time()
     episodes = generator.generate(tasks, group_size)
     generation_seconds = round(time.time() - started, 2)
+
+    for episode in episodes:
+        missing = set(EPISODE_KEYS) - set(episode)
+        if missing:
+            raise ValueError(
+                f"Generator emitted an episode missing keys {missing} "
+                f"(task {episode.get('task_id')})."
+            )
 
     completion_tokens = sum(len(e["completion_ids"]) for e in episodes)
     log_metadata(

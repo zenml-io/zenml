@@ -17,12 +17,21 @@ zero code changes. The contract every generator must honor:
 from typing import Any, Dict, List, Optional
 
 # One episode dict per completion; these keys flow through the pipeline
-# into grpo_update's rollout_func hand-off.
+# into grpo_update's rollout_func hand-off. generate_rollouts validates
+# every episode against this contract.
+#
+# completion_text vs program_text: training uses the RAW sampled tokens
+# (completion_ids match completion_text exactly — required for correct
+# logprob alignment), while the sandbox runs and rewards program_text,
+# the markdown-fence-stripped version. Rewarding an extracted program
+# while training on raw tokens is standard RL practice; the two must not
+# be conflated.
 EPISODE_KEYS = (
     "task_id",
     "rollout_index",
     "prompt_text",
     "completion_text",
+    "program_text",
     "prompt_ids",
     "completion_ids",
     "logprobs",
@@ -74,7 +83,7 @@ class StubGenerator:
             One episode dict per (task, rollout_index).
         """
         import torch
-        from prompts import build_prompt
+        from prompts import build_prompt, strip_markdown_fences
         from stub_completions import canned_completion
 
         episodes = []
@@ -109,6 +118,7 @@ class StubGenerator:
                         "rollout_index": rollout_index,
                         "prompt_text": prompt_text,
                         "completion_text": completion_text,
+                        "program_text": strip_markdown_fences(completion_text),
                         "prompt_ids": list(prompt_ids),
                         "completion_ids": list(completion_ids),
                         "logprobs": logprobs,
@@ -165,7 +175,7 @@ class VLLMGenerator:
         Returns:
             One episode dict per (task, rollout_index).
         """
-        from prompts import build_prompt
+        from prompts import build_prompt, strip_markdown_fences
         from vllm import SamplingParams
         from vllm.lora.request import LoRARequest
 
@@ -201,6 +211,7 @@ class VLLMGenerator:
                         "rollout_index": rollout_index,
                         "prompt_text": output.prompt,
                         "completion_text": sample.text,
+                        "program_text": strip_markdown_fences(sample.text),
                         "prompt_ids": list(output.prompt_token_ids),
                         "completion_ids": completion_ids,
                         "logprobs": logprobs,
@@ -211,7 +222,11 @@ class VLLMGenerator:
 
 
 def get_generator(
-    dry_run: bool, model_name: str, adapter_path: Optional[str] = None
+    dry_run: bool,
+    model_name: str,
+    adapter_path: Optional[str] = None,
+    max_tokens: int = 1024,
+    temperature: float = 0.9,
 ):
     """The single switch between stub and real inference.
 
@@ -219,10 +234,20 @@ def get_generator(
         dry_run: True selects the stub; False selects vLLM.
         model_name: HF model ID.
         adapter_path: Local path to the current LoRA adapter directory.
+        max_tokens: Generation cap per completion (vLLM path only; the
+            stub's completions are canned).
+        temperature: Sampling temperature (vLLM path only). Must be > 0:
+            greedy sampling would make every rollout in a group identical
+            and GRPO's group advantages collapse to zero.
 
     Returns:
         A generator with a `.generate(tasks, group_size)` method.
     """
     if dry_run:
         return StubGenerator(model_name, adapter_path)
-    return VLLMGenerator(model_name, adapter_path)
+    return VLLMGenerator(
+        model_name,
+        adapter_path,
+        max_tokens=max_tokens,
+        temperature=temperature,
+    )

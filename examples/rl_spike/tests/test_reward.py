@@ -20,6 +20,7 @@ import pytest
 EXAMPLE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(EXAMPLE_DIR))
 
+from prompts import strip_markdown_fences  # noqa: E402
 from stub_completions import (  # noqa: E402
     PERFECT,
     RUNS_WRONG,
@@ -37,8 +38,13 @@ TASKS = {
 
 
 def score(tmp_path: Path, completion: str, spec: dict) -> dict:
-    """Run the scorer exactly as run_episode does inside the sandbox."""
-    (tmp_path / "pipeline.py").write_text(completion)
+    """Run the scorer exactly as run_episode does inside the sandbox.
+
+    Mirrors the generation layer: the scorer receives the
+    fence-stripped program, never the raw completion (RUNS_WRONG is
+    deliberately fenced to exercise this).
+    """
+    (tmp_path / "pipeline.py").write_text(strip_markdown_fences(completion))
     (tmp_path / "spec.json").write_text(json.dumps(spec))
     result = subprocess.run(
         [

@@ -41,6 +41,9 @@ def grpo_update(
 
     Raises:
         ValueError: If episodes don't form complete groups.
+        RuntimeError: If training produced non-finite weights (the
+            adapter must not be saved or the corruption propagates to
+            every later iteration).
     """
     os.environ["TRL_EXPERIMENTAL_SILENCE"] = "1"
 
@@ -136,6 +139,32 @@ def grpo_update(
     train_result = trainer.train()
     train_seconds = round(time.time() - started, 2)
 
+    grad_norm = next(
+        (
+            entry["grad_norm"]
+            for entry in reversed(trainer.state.log_history)
+            if "grad_norm" in entry
+        ),
+        None,
+    )
+
+    # Fail LOUDLY on numerical corruption. Unlike episode failures (which
+    # are legitimately reward=0), a non-finite update poisons every
+    # subsequent iteration — a green run that ships a NaN adapter is the
+    # worst outcome (we shipped exactly that once; see BREAKAGE_LOG
+    # entry 7's postscript).
+    corrupted = [
+        name
+        for name, parameter in model.named_parameters()
+        if parameter.requires_grad and not torch.isfinite(parameter).all()
+    ]
+    if corrupted:
+        raise RuntimeError(
+            f"grpo_update produced non-finite weights in {len(corrupted)} "
+            f"tensors (grad_norm={grad_norm}); refusing to save the "
+            f"adapter. First corrupted: {corrupted[:3]}"
+        )
+
     new_adapter_dir = (
         Path(tempfile.mkdtemp(prefix="rl-spike-adapter-")) / "adapter"
     )
@@ -148,6 +177,7 @@ def grpo_update(
             "num_groups": len(unique_prompts),
             "mean_reward": round(sum(rewards) / len(rewards), 4),
             "train_loss": float(train_result.training_loss),
+            "grad_norm": float(grad_norm) if grad_norm is not None else -1.0,
             "model_load_seconds": model_load_seconds,
             "train_seconds": train_seconds,
             "wall_clock_seconds": round(time.time() - started_total, 2),

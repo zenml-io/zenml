@@ -74,6 +74,39 @@ zenml core would need to change.
   steps in RL/agentic workloads.
 - **Hit:** anticipated Stage 0; confirmed empirically Stage 1, 2026-07-08.
 
+## 4. Local sandbox flavor has no file transfer
+
+- **Tried:** Upload the generated `pipeline.py`, the spec, and the scorer
+  into a local-flavor sandbox session with `session.upload_file(...)` —
+  the documented session API (and what the episode step must do on every
+  flavor).
+- **What happened:** `NotImplementedError`. `LocalSandboxSession`
+  implements only `_exec`/`_close`/`_destroy`; `upload_file`/
+  `download_file` fall through to the base class raise. The Kubernetes
+  flavor implements both. So the flavor you develop against locally has a
+  *smaller* API than the one you deploy on — the opposite of what a local
+  dev flavor is for.
+- **Workaround:** `steps/run_episode.py::_put_file/_get_file` — try
+  `upload_file`, fall back to smuggling the file content through
+  `session.exec(["python", "-c", ...])` as base64. Works on every flavor,
+  should be needed on none.
+- **Severity:** chafes.
+- **Core change:** Implement `_upload_file`/`_download_file` on
+  `LocalSandboxSession` (trivial: it has a workdir on the same
+  filesystem — `shutil.copy` suffices).
+- **Hit:** Stage 1 build, 2026-07-08.
+
+## 5. TRL's rollout_func docs don't match its behavior (context, not ZenML)
+
+- Not a ZenML finding, but recorded because anyone rebuilding this will
+  hit it: TRL 1.7.1's docstring says rollout_func "receives the raw
+  per-process prompt slice with no duplication". Empirically each prompt
+  arrives already repeated `num_generations` times, and the function must
+  return exactly one completion per received entry (returning
+  `num_generations` per entry crashes with an IndexError inside batch
+  shuffling). Reinforces the plan's "pin the TRL version" instruction —
+  the experimental API's docs lag its behavior.
+- **Hit:** Stage 1 build, standalone TRL proof, 2026-07-08.
 ## 6. A dead orchestration process leaves a zombie "running" run forever
 
 - **Tried:** Kill the local dry-run process mid-`grpo_update` (first by
@@ -117,6 +150,15 @@ zenml core would need to change.
   state (or CONTINUE_ON_FAILURE for dynamic pipelines) so containment
   doesn't have to lie to the dashboard.
 - **Hit:** Stage 1, 2026-07-08.
+- **Postscript (same day, found by an adversarial fresh-eyes review):** we
+  then shipped a second instance of the same failure class ourselves: on
+  Apple MPS the GRPO optimizer step can produce NaN gradients, and the
+  pipeline published an **all-NaN adapter as its final artifact from a
+  green run** — finite train_loss in metadata, nothing red anywhere.
+  `grpo_update` now logs grad_norm to step metadata and refuses to save
+  non-finite weights (fails the step loudly). The general lesson stands:
+  numerical health of artifacts is invisible to ZenML; any "is this
+  artifact sane" check is the user's job today.
 
 ## 8. Minor API paper cuts hit during the build
 
@@ -131,36 +173,3 @@ zenml core would need to change.
   process gets.
 - **Hit:** Stage 1, 2026-07-08.
 
-## 4. Local sandbox flavor has no file transfer
-
-- **Tried:** Upload the generated `pipeline.py`, the spec, and the scorer
-  into a local-flavor sandbox session with `session.upload_file(...)` —
-  the documented session API (and what the episode step must do on every
-  flavor).
-- **What happened:** `NotImplementedError`. `LocalSandboxSession`
-  implements only `_exec`/`_close`/`_destroy`; `upload_file`/
-  `download_file` fall through to the base class raise. The Kubernetes
-  flavor implements both. So the flavor you develop against locally has a
-  *smaller* API than the one you deploy on — the opposite of what a local
-  dev flavor is for.
-- **Workaround:** `steps/run_episode.py::_put_file/_get_file` — try
-  `upload_file`, fall back to smuggling the file content through
-  `session.exec(["python", "-c", ...])` as base64. Works on every flavor,
-  should be needed on none.
-- **Severity:** chafes.
-- **Core change:** Implement `_upload_file`/`_download_file` on
-  `LocalSandboxSession` (trivial: it has a workdir on the same
-  filesystem — `shutil.copy` suffices).
-- **Hit:** Stage 1 build, 2026-07-08.
-
-## 5. TRL's rollout_func docs don't match its behavior (context, not ZenML)
-
-- Not a ZenML finding, but recorded because anyone rebuilding this will
-  hit it: TRL 1.7.1's docstring says rollout_func "receives the raw
-  per-process prompt slice with no duplication". Empirically each prompt
-  arrives already repeated `num_generations` times, and the function must
-  return exactly one completion per received entry (returning
-  `num_generations` per entry crashes with an IndexError inside batch
-  shuffling). Reinforces the plan's "pin the TRL version" instruction —
-  the experimental API's docs lag its behavior.
-- **Hit:** Stage 1 build, standalone TRL proof, 2026-07-08.

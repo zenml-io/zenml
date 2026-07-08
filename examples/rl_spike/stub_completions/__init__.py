@@ -5,7 +5,9 @@ contains reward variance (without variance, advantages are all zero and
 the training step is a no-op — see BREAKAGE_LOG.md entry 3):
 
     0: PERFECT      — a correct solution for the specific task (1.0)
-    1: RUNS_WRONG   — valid pipeline, green run, wrong result (0.7 + partial spec)
+    1: RUNS_WRONG   — valid pipeline (wrapped in markdown fences, which
+                      the generation layer strips), green run, wrong
+                      result (0.7 + partial spec)
     2: RUNTIME_FAIL — parses and imports, crashes when executed (0.3)
     3: SYNTAX_ERROR — not even Python (0.0)
 
@@ -14,7 +16,13 @@ stub for a task without one raises, on purpose, rather than silently
 degrading the dry-run signal.
 """
 
+# Deliberately wrapped in markdown fences: small models add them no
+# matter what the prompt says, so the dry run must exercise the
+# fence-stripping path (prompts.strip_markdown_fences) end-to-end. The
+# reward is computed on the stripped program; training uses the raw
+# tokens including the fences.
 RUNS_WRONG = '''\
+```python
 from zenml import step, pipeline
 
 @step
@@ -27,6 +35,7 @@ def generated_pipeline():
 
 if __name__ == "__main__":
     generated_pipeline()
+```
 '''
 
 RUNTIME_FAIL = '''\
