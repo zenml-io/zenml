@@ -246,6 +246,18 @@ temp dir or the generated pipelines would hit the real (staging Pro!) server.
       so shape clauses are checkable. Re-mapping over a mapped result
       (`add_one.map(double.map(nums))`) verified working locally via
       the real scorer before authoring tasks that require it.
+    - Nine OUT-OF-DISTRIBUTION tasks (Alex's suggestion): invented
+      operations with nonsense names (`blorbify`, `zorp`, `florp`,
+      `gruntle`), arbitrary rules no textbook contains (replace every
+      3rd character with 'q', loop until the value ends in digit 1),
+      and ACTIVELY MISLEADING names (`fake_triple`: a step named
+      triple that must add 4; `crossed_reports`: even numbers must
+      call report_odd; `mixed_signs`: add_one subtracts). Standard
+      tasks like fibonacci/collatz are all over the base model's
+      training data, so it can score by retrieving the algorithm;
+      these tasks only score if the model reads the spec and follows
+      it against its priors — which is also where within-group sample
+      disagreement (GRPO's signal) is most likely.
     - Before the full run: a CALIBRATION run (1 iteration, all tasks,
       group 4, learning rate ~0) to measure per-task reward mean and
       within-group variance; drop or re-tier tasks that are uniformly
