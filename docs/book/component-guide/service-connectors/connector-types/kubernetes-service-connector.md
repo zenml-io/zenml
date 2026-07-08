@@ -138,7 +138,7 @@ Cluster "35.185.95.223" set.
 ⠇ Attempting to configure local client using service connector 'kube-auto'...
 ⠏ Attempting to configure local client using service connector 'kube-auto'...
 Updated local kubeconfig with the cluster details. The current kubectl context was set to '35.185.95.223'.
-The 'kube-auto' Kubernetes Service Connector connector was used to successfully configure the local Kubernetes cluster client/SDK.
+The 'kube-auto' Kubernetes Service Connector was used to successfully configure the local Kubernetes cluster client/SDK.
 ```
 {% endcode %}
 
