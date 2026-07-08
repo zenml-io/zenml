@@ -18,6 +18,7 @@ from zenml.models import (
     WebhookIntegrationResponse,
     WebhookIntegrationResponseBody,
     WebhookIntegrationResponseMetadata,
+    WebhookIntegrationResponseResources,
     WebhookIntegrationStats,
     WebhookIntegrationUpdate,
 )
@@ -134,6 +135,13 @@ class WebhookIntegrationSchema(NamedSchema, table=True):
                     last_error_summary=self.last_error_summary,
                 )
             )
+
+        resources = None
+        if include_resources:
+            resources = WebhookIntegrationResponseResources(
+                user=self.user.to_model() if self.user else None,
+            )
+
         return WebhookIntegrationResponse(
             id=self.id,
             name=self.name,
@@ -150,6 +158,7 @@ class WebhookIntegrationSchema(NamedSchema, table=True):
                 ),
             ),
             metadata=metadata,
+            resources=resources,
         )
 
     def update(

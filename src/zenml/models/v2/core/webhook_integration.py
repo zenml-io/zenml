@@ -133,6 +133,15 @@ class WebhookIntegrationResponse(
         """
         return self.get_body().endpoint_path
 
+    @property
+    def stats(self) -> WebhookIntegrationStats:
+        """Return intake statistics for this webhook integration.
+
+        Returns:
+            Intake statistics for this webhook integration.
+        """
+        return self.get_metadata().stats
+
 
 class WebhookIntegrationFilter(ProjectScopedFilter):
     """Filter model for webhook integrations."""
