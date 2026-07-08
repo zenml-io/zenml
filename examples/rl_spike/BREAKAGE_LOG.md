@@ -173,3 +173,24 @@ zenml core would need to change.
   process gets.
 - **Hit:** Stage 1, 2026-07-08.
 
+## 9. `log_metadata` crashes the step on inf/NaN floats, with a cryptic error
+
+- **Tried:** `log_metadata(metadata={"grad_norm": float(...)})` in the
+  training step — and one iteration legitimately produced
+  `grad_norm=inf` (gradient explosion on deliberately off-policy data;
+  ML training emits non-finite floats routinely).
+- **What happened:** The step failed with
+  `requests.exceptions.InvalidJSONError: Out of range float values are
+  not JSON compliant`, raised from deep inside the REST client
+  (`json.dumps(allow_nan=False)`). No validation at the `log_metadata`
+  API surface, no hint which key was the problem, and the *step* fails —
+  after training succeeded — because *telemetry* was unserializable.
+- **Workaround:** `json_safe()` in `steps/grpo_update.py` stringifies
+  non-finite floats before logging.
+- **Severity:** chafes (metrics code shouldn't be able to kill a
+  succeeded step; the error names neither the key nor the fix).
+- **Core change:** Validate/sanitize metadata values in `log_metadata`
+  (stringify or drop non-finite floats with a warning), and name the
+  offending key in any rejection.
+- **Hit:** Stage 1, 2026-07-08.
+

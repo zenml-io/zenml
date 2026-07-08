@@ -1,5 +1,6 @@
 """GRPO training step: one optimizer pass over the iteration's episodes."""
 
+import math
 import os
 import tempfile
 import time
@@ -170,14 +171,33 @@ def grpo_update(
     )
     trainer.model.save_pretrained(str(new_adapter_dir))
 
+    if grad_norm is not None and not math.isfinite(grad_norm):
+        # A non-finite gradient norm means TRL's clipping zeroed this
+        # update (clip coefficient max_norm/inf = 0): the adapter passes
+        # through unchanged. Warn loudly but keep going — the weights are
+        # valid, and on MPS this happens sporadically with the dry run's
+        # deliberately off-policy canned completions (see
+        # IMPLEMENTATION_NOTES deviation 1).
+        print(
+            f"WARNING: non-finite grad_norm ({grad_norm}) — this "
+            "optimizer update was zeroed by gradient clipping."
+        )
+
+    def json_safe(value: float) -> "float | str":
+        # ZenML's metadata endpoint rejects IEEE inf/NaN at the HTTP
+        # layer (BREAKAGE_LOG entry 9); stringify non-finite floats.
+        return value if math.isfinite(value) else str(value)
+
     rewards = [e["reward"] for e in episodes]
     log_metadata(
         metadata={
             "num_episodes": len(episodes),
             "num_groups": len(unique_prompts),
             "mean_reward": round(sum(rewards) / len(rewards), 4),
-            "train_loss": float(train_result.training_loss),
-            "grad_norm": float(grad_norm) if grad_norm is not None else -1.0,
+            "train_loss": json_safe(float(train_result.training_loss)),
+            "grad_norm": (
+                json_safe(float(grad_norm)) if grad_norm is not None else -1.0
+            ),
             "model_load_seconds": model_load_seconds,
             "train_seconds": train_seconds,
             "wall_clock_seconds": round(time.time() - started_total, 2),
