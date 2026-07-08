@@ -262,7 +262,7 @@ def update_artifact_version(
 @click.option(
     "--server-side",
     is_flag=True,
-    help="Delete artifact data from the server instead of the local stack.",
+    help="Flag to decide whether the deletion should happen client-side or server-side.",
 )
 @click.option(
     "--yes",
@@ -282,8 +282,7 @@ def delete_artifact_version(
         artifact_version_id: The ID of the artifact version to delete.
         delete_data: If set, also delete the artifact data from the artifact
             store.
-        server_side: If set, delete artifact data from the server instead of
-            the local stack.
+        server_side: If set, artifact deletion will happen on the server side.
         yes: If set, don't ask for confirmation.
     """
     if not yes:
@@ -348,7 +347,7 @@ def delete_artifact_version(
 @click.option(
     "--server-side",
     is_flag=True,
-    help="Delete artifact data from the server instead of the local stack.",
+    help="Flag to decide whether the deletion should happen client-side or server-side.",
 )
 def prune_artifacts(
     only_artifact: bool = False,
@@ -371,8 +370,7 @@ def prune_artifacts(
         yes: If set, don't ask for confirmation.
         ignore_errors: If set, ignore errors and continue with the next
             artifact version.
-        server_side: If set, delete artifact data from the server instead of
-            the local stack.
+        server_side: If set, artifact deletion will happen on the server side.
     """
     client = Client()
     unused_artifact_versions = depaginate(

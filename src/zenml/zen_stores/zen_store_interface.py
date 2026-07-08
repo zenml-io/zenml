@@ -670,19 +670,11 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
         """
 
     @abstractmethod
-    def delete_artifact_version(
-        self,
-        artifact_version_id: UUID,
-        delete_metadata: bool = True,
-        delete_from_artifact_store: bool = False,
-    ) -> None:
+    def delete_artifact_version(self, artifact_version_id: UUID) -> None:
         """Deletes an artifact version.
 
         Args:
             artifact_version_id: The ID of the artifact version to delete.
-            delete_metadata: Whether to delete the artifact version metadata.
-            delete_from_artifact_store: Whether to also delete the artifact
-                data from the artifact store.
 
         Raises:
             KeyError: if the artifact version doesn't exist.

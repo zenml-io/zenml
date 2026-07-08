@@ -3312,32 +3312,12 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=True, include_resources=True
             )
 
-    def delete_artifact_version(
-        self,
-        artifact_version_id: UUID,
-        delete_metadata: bool = True,
-        delete_from_artifact_store: bool = False,
-    ) -> None:
+    def delete_artifact_version(self, artifact_version_id: UUID) -> None:
         """Deletes an artifact version.
 
         Args:
             artifact_version_id: The ID of the artifact version to delete.
-            delete_metadata: Whether to delete the artifact version metadata.
-            delete_from_artifact_store: Whether to also delete the artifact
-                data from the artifact store.
-
-        Raises:
-            ValueError: If artifact data deletion is requested.
         """
-        if delete_from_artifact_store:
-            raise ValueError(
-                "Deleting artifact data through the ZenStore is only "
-                "supported when connected to a ZenML server."
-            )
-
-        if not delete_metadata:
-            return
-
         with Session(self.engine) as session:
             artifact_version = self._get_schema_by_id(
                 resource_id=artifact_version_id,

@@ -6053,6 +6053,8 @@ class Client(metaclass=ClientMetaClass):
 
         Raises:
             ValueError: If the artifact version is still used in any runs.
+            TypeError: If server-side artifact data deletion is requested
+                without a REST store.
         """
         if delete_metadata:
             unused_versions = self.list_artifact_versions(
@@ -6064,11 +6066,21 @@ class Client(metaclass=ClientMetaClass):
                     "cannot be deleted. Please delete all runs that use this "
                     "artifact first."
                 )
-        self.zen_store.delete_artifact_version(
-            artifact_version.id,
-            delete_metadata=delete_metadata,
-            delete_from_artifact_store=delete_from_artifact_store,
-        )
+        if delete_from_artifact_store:
+            from zenml.zen_stores.rest_zen_store import RestZenStore
+
+            if not isinstance(self.zen_store, RestZenStore):
+                raise TypeError(
+                    "Server-side artifact data deletion is only supported "
+                    "when connected to a ZenML server through the REST API."
+                )
+            self.zen_store.delete_artifact_version_server_side(
+                artifact_version.id,
+                delete_metadata=delete_metadata,
+                delete_from_artifact_store=delete_from_artifact_store,
+            )
+        elif delete_metadata:
+            self.zen_store.delete_artifact_version(artifact_version.id)
         if delete_metadata:
             logger.info(
                 f"Deleted version '{artifact_version.version}' of artifact "

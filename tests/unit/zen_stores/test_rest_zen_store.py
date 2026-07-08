@@ -55,7 +55,7 @@ def test_delete_artifact_version_can_request_server_side_data_deletion(
     store = mocker.Mock()
     artifact_version_id = uuid4()
 
-    RestZenStore.delete_artifact_version(
+    RestZenStore.delete_artifact_version_server_side(
         store,
         artifact_version_id=artifact_version_id,
         delete_from_artifact_store=True,
@@ -78,7 +78,7 @@ def test_delete_artifact_version_can_preserve_metadata(
     store = mocker.Mock()
     artifact_version_id = uuid4()
 
-    RestZenStore.delete_artifact_version(
+    RestZenStore.delete_artifact_version_server_side(
         store,
         artifact_version_id=artifact_version_id,
         delete_metadata=False,
