@@ -158,6 +158,11 @@ class VLLMGenerator:
             model=model_name,
             enable_lora=adapter_path is not None,
             max_lora_rank=32,
+            # Qwen3-4B-Instruct-2507 declares a 262k context; vLLM sizes
+            # the KV cache for one full-length request and refuses to
+            # start on a 24GB L4 (needs 36GiB). Our prompts + completions
+            # fit in 8k with lots of headroom.
+            max_model_len=8192,
         )
         self.adapter_path = adapter_path
         self.max_tokens = max_tokens

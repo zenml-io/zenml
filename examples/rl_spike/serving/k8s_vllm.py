@@ -52,6 +52,10 @@ def _vllm_command(model_name: str, max_lora_rank: int) -> List[str]:
         "--enable-lora",
         "--max-lora-rank",
         str(max_lora_rank),
+        # Same constraint as VLLMGenerator: Qwen3-4B's 262k declared
+        # context needs a 36GiB KV cache, which no single L4 has.
+        "--max-model-len",
+        "8192",
     ]
 
 

@@ -252,3 +252,37 @@ multi-GB build/push/pull cycle:
   offending key in any rejection.
 - **Hit:** Stage 1, 2026-07-08.
 
+## 10. ZenML's step log handler is not fork-safe with the S3 artifact store
+
+- **Tried:** First real `generate_rollouts` on the GPU node: the step
+  loads vLLM in-process, and vLLM forks a child process (`EngineCore`)
+  to run the engine.
+- **What happened:** The *actual* failure was a vLLM config error
+  (Qwen3-4B declares a 262k context; the KV cache for one full-length
+  request needs 36GiB and the L4 has ~11.6GiB after weights — fixed by
+  passing `max_model_len=8192`). But stacked on top of it in the logs
+  was a second, unrelated traceback: `RuntimeError: This class is not
+  fork-safe` from fsspec/s3fs, raised out of
+  `artifact_store.exists(logs_base_uri)` in ZenML's log storage. Chain:
+  the step's log handler flushes to the S3 artifact store; the s3fs
+  filesystem object (with its asyncio event loop) was created in the
+  parent step process; the forked vLLM child inherited the handler,
+  emitted a log line, and fsspec refuses to use a parent-process event
+  loop from a child pid. Any log line emitted from any forked child
+  inside a step produces this crash noise.
+- **Workaround:** None needed for the run itself once the real error
+  was fixed — but the fork-unsafe traceback sat *above* the real error
+  in the pod logs and cost real time to see past. Worse: in the
+  *successful* rerun, the same traceback repeats for **every single log
+  line** the forked EngineCore emits (dozens of times in one green
+  step), interleaved with the real output. Frameworks that fork (vLLM,
+  torch DataLoader workers, multiprocessing pools) are the norm in ML
+  steps, not the exception.
+- **Severity:** chafes (error masking; users debugging their own step
+  failure first have to diagnose ZenML's logging internals).
+- **Core change:** Make the log storage handler fork-aware — e.g. check
+  `os.getpid()` against the pid that created the filesystem and
+  reinitialize (or silently drop child-process log flushes) instead of
+  letting fsspec raise.
+- **Hit:** Stage 3 smoke, 2026-07-08.
+
