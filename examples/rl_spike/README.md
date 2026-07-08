@@ -103,6 +103,14 @@ zenml stack register rl-spike-local -o default -a default -sb local_sandbox --se
 python run.py --dry-run
 ```
 
+Note on the artifact store: the team's `rl-spike-local` stack on the
+staging server uses the shared **`s3` artifact store** instead of the
+local default, so dry-run artifacts and logs are visible to everyone in
+the dashboard (project `rl-spike`) — useful for a distributed team
+reviewing runs by link. Verified working 2026-07-08 (~45s slower per
+dry run from upload time). A purely local `-a default` stack works too
+if you don't need shared visibility.
+
 Expected: a `rl_spike` run with 2 iterations × (1 generation step + 12
 mapped episode steps + 1 training step + 1 metrics step), mean reward
 exactly **0.5125** per iteration (deterministic tiers: 1.0 / 0.85 or 0.7 /
