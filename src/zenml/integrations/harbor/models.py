@@ -141,12 +141,25 @@ class HarborShardSpec(BaseModel):
 
 
 class HarborTrialResult(BaseModel):
-    """Flat summary of one Harbor trial, extracted from its result."""
+    """Flat summary of one Harbor trial, extracted from its result.
+
+    ``task_checksum`` is Harbor's content hash of the task definition —
+    the content-addressed complement to the coordinate-based
+    ``trial_identity`` (it joins trials of the same task content even
+    when specified via different local paths). ``sandbox_flavor`` and
+    ``sandbox_docker_image`` are stamped by the shard runner from what
+    the environment bridge recorded at session start: the bridge is the
+    only party that knows which image actually backed a trial when the
+    task pins a ``docker_image`` override.
+    """
 
     trial_identity: str
     trial_name: str
     task_name: str
     source: Optional[str] = None
+    task_checksum: Optional[str] = None
+    sandbox_flavor: Optional[str] = None
+    sandbox_docker_image: Optional[str] = None
     agent_name: Optional[str] = None
     model_name: Optional[str] = None
     rewards: Optional[Dict[str, float]] = None
@@ -197,6 +210,7 @@ class HarborTrialResult(BaseModel):
             trial_name=trial_result.trial_name,
             task_name=trial_result.task_name,
             source=trial_result.source,
+            task_checksum=trial_result.task_checksum,
             agent_name=agent_info.name if agent_info else None,
             model_name=model_info.name if model_info else None,
             rewards={
@@ -243,6 +257,19 @@ class HarborShardResult(BaseModel):
 
     job_dir: Optional[str] = Field(default=None, exclude=True)
     archive_uri: Optional[str] = Field(default=None, exclude=True)
+
+    @property
+    def n_succeeded(self) -> int:
+        """Trials that finished without erroring.
+
+        Harbor's ``n_completed`` counts every finished trial, errored
+        ones included — reporting it as-is reads as a contradiction
+        ("Completed=1, Errored=1" for a single crashed trial).
+
+        Returns:
+            The number of trials that finished without an error.
+        """
+        return max(self.n_completed - self.n_errored, 0)
 
     @property
     def mean_reward(self) -> Optional[Dict[str, float]]:

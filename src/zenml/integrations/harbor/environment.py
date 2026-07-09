@@ -26,6 +26,7 @@ import tarfile
 import tempfile
 import uuid
 from pathlib import Path
+from typing import NamedTuple
 
 from harbor.environments.base import BaseEnvironment, ExecResult
 
@@ -36,10 +37,40 @@ from zenml.sandboxes import BaseSandbox, BaseSandboxSettings, SandboxSession
 logger = get_logger(__name__)
 
 
+class SandboxProvenance(NamedTuple):
+    """Sandbox facts only the bridge knows at trial runtime."""
+
+    flavor: str
+    docker_image: str | None
+
+
+# Resolved-sandbox facts per environment session, keyed by Harbor's
+# session_id (== the trial name for the main trial environment). The
+# shard runner pops entries after ``job.run()`` to stamp provenance onto
+# trial results — reconstructing the image from the run's stack config
+# gives wrong answers for tasks that pin a ``docker_image`` override.
+# Pop-on-read keeps the dict bounded within a step's process lifetime.
+_session_provenance: dict[str, SandboxProvenance] = {}
+
+
+def pop_session_provenance(session_id: str) -> SandboxProvenance | None:
+    """Remove and return the recorded provenance for one session.
+
+    Args:
+        session_id: The Harbor session id (trial name) to look up.
+
+    Returns:
+        The recorded provenance, or None if no session with that id
+        ever started in this process.
+    """
+    return _session_provenance.pop(session_id, None)
+
+
 class ZenMLSandboxEnvironment(BaseEnvironment):
     """A Harbor environment that delegates to the active stack's Sandbox."""
 
     _session: SandboxSession | None = None
+    _start_failure: str | None = None
 
     @property
     def _live_session(self) -> SandboxSession:
@@ -50,9 +81,21 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
 
         Raises:
             RuntimeError: If the environment has not been started yet
-                (or has been stopped).
+                (or has been stopped). If ``start()`` itself failed, the
+                message carries that root cause — Harbor's cleanup still
+                calls ``exec()``/log download on the never-started
+                environment, and those follow-up errors would otherwise
+                bury the real failure.
         """
         if self._session is None:
+            if self._start_failure is not None:
+                raise RuntimeError(
+                    "ZenMLSandboxEnvironment has no open session because "
+                    f"start() failed with: {self._start_failure} — any "
+                    "further errors from this environment (e.g. Harbor's "
+                    "post-failure log download) are fallout of that "
+                    "failure."
+                )
             raise RuntimeError(
                 "ZenMLSandboxEnvironment used before start() (or after "
                 "stop()). Call await env.start(...) first."
@@ -122,6 +165,23 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
             Exception: Re-raised from preparing the Harbor log dirs after
                 the session was torn down again.
         """
+        try:
+            await self._start()
+        except Exception as e:
+            # Remembered so that _live_session can point Harbor's
+            # post-failure cleanup calls at the root cause.
+            self._start_failure = f"{type(e).__name__}: {e}"
+            raise
+
+    async def _start(self) -> None:
+        """Start implementation, separated for failure bookkeeping.
+
+        Raises:
+            RuntimeError: If no Sandbox component is registered on the
+                active stack.
+            NotImplementedError: If the task requires network isolation
+                (allow_internet=false), which the bridge can't enforce.
+        """
         sandbox = Client().active_stack.sandbox
         if sandbox is None:
             raise RuntimeError(
@@ -155,6 +215,10 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
         settings = self._settings_override(sandbox)
         self._session = await asyncio.to_thread(
             sandbox.create_session, settings=settings
+        )
+        _session_provenance[self.session_id] = SandboxProvenance(
+            flavor=sandbox.flavor,
+            docker_image=cfg.docker_image,
         )
         logger.info(
             "ZenML Sandbox session %s started for Harbor trial %s",

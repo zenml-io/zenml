@@ -49,6 +49,27 @@ def test_trial_identity_distinguishes_every_field(other) -> None:
     assert trial_identity(TASK_A, "oracle", None, 0) != trial_identity(*other)
 
 
+def test_trial_identity_ignores_resolver_metadata() -> None:
+    """Dataset-resolved and direct refs to the same pin hash identically.
+
+    The dataset resolver stamps `source`/`name`/`ref` onto its TaskRefs;
+    a direct git+ spec carries none of them. Identities must join on the
+    pin coordinates, not on how the task was specified.
+    """
+    direct = TaskRef.parse("git+https://github.com/org/tasks@deadbeef:tasks/b")
+    resolved = TaskRef(
+        git_url="https://github.com/org/tasks",
+        git_commit_id="deadbeef",
+        path="tasks/b",
+        name="b",
+        ref="main",
+        source="terminal-bench",
+    )
+    assert trial_identity(direct, "oracle", None, 0) == trial_identity(
+        resolved, "oracle", None, 0
+    )
+
+
 def test_trial_identity_distinguishes_agent_config() -> None:
     """Same agent+model with different kwargs/env must not collide."""
     base = trial_identity(

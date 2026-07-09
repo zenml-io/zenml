@@ -13,7 +13,7 @@ This page maps the loop onto the primitives you already have. Nothing here requi
 
 Each shard's `HarborShardResult` carries two layers:
 
-* A **flat summary** — per-trial `rewards`, `exception_type`, `n_input_tokens` / `n_output_tokens`, `cost_usd`, and a `trial_identity`: a content hash of (task, agent, model, kwargs, env, trial index). Identical campaign cells hash identically across runs — this is the join key for every comparison below.
+* A **flat summary** — per-trial `rewards`, `exception_type`, `n_input_tokens` / `n_output_tokens`, `cost_usd`, sandbox provenance (`sandbox_flavor`, `sandbox_docker_image` — the image that actually backed the trial, which only the environment bridge knows for tasks that pin a `docker_image`), and a `trial_identity`: a content hash of (pinned task coordinates, agent, model, kwargs, env, trial index). The task enters as its canonical `git+URL@COMMIT:SUBPATH` pin, so the same task hashes identically whether it came from a dataset expansion or a direct ref — this is the join key for every comparison below. Harbor's `task_checksum` (a content hash of the task definition itself) rides along as the content-addressed complement.
 * The **archived job tree** — Harbor's full per-trial record, including the agent's rollout (for CLI agents like `claude-code`, the complete `stream-json` interaction log) and the verifier's output. `result.download_jobs_dir(target)` restores it on demand.
 
 ## SFT from winning trajectories

@@ -47,6 +47,7 @@ def _harbor_trial_result(**kwargs) -> SimpleNamespace:
         trial_name="hello__abc1234",
         task_name="hello",
         source="terminal-bench",
+        task_checksum="sha256-of-task",
         step_results=None,
         agent_info=SimpleNamespace(
             name="oracle", model_info=SimpleNamespace(name="gpt-x")
@@ -107,6 +108,10 @@ def test_trial_result_from_harbor() -> None:
     assert result.trial_name == "hello__abc1234"
     assert result.task_name == "hello"
     assert result.source == "terminal-bench"
+    assert result.task_checksum == "sha256-of-task"
+    # Sandbox provenance is stamped by the shard runner, not here.
+    assert result.sandbox_flavor is None
+    assert result.sandbox_docker_image is None
     assert result.agent_name == "oracle"
     assert result.model_name == "gpt-x"
     assert result.rewards == {"reward": 1.0}
@@ -189,6 +194,18 @@ def test_shard_result_mean_reward_none_when_unscored() -> None:
     result = _shard_result([_trial("a"), _trial("b")])
     assert result.mean_reward is None
     assert result.total_cost_usd is None
+
+
+def test_shard_result_n_succeeded_excludes_errored() -> None:
+    """Harbor counts errored trials as completed; n_succeeded must not."""
+    result = _shard_result(
+        [_trial("a"), _trial("b")], n_completed=2, n_errored=2
+    )
+    assert result.n_succeeded == 0
+    result = _shard_result(
+        [_trial("a"), _trial("b")], n_completed=2, n_errored=1
+    )
+    assert result.n_succeeded == 1
 
 
 def test_shard_result_json_round_trip_excludes_transient_fields() -> None:

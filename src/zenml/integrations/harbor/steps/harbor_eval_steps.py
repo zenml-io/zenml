@@ -150,6 +150,10 @@ def run_harbor_shard(
     ``@step(retry=...)`` via ``with_options`` for flaky-infrastructure
     resilience.
 
+    A shard whose trials all errored logs ``harbor.mean_reward = 0.0``
+    (there is no scored reward to report), so reward-threshold
+    regression gates fail safe on an all-error campaign.
+
     Args:
         shard: A shard specification produced by ``build_harbor_matrix``.
         n_concurrent_trials: Upper bound on trials Harbor runs
@@ -189,7 +193,10 @@ def run_harbor_shard(
         "harbor.task": spec.task.display_name,
         "harbor.agent": spec.agent_name,
         "harbor.n_trials": len(spec.trial_indices),
-        "harbor.n_completed": result.n_completed,
+        # Harbor's own n_completed counts errored trials too; the
+        # succeeded count is the one that reads correctly next to
+        # n_errored.
+        "harbor.n_succeeded": result.n_succeeded,
         "harbor.n_errored": result.n_errored,
     }
     if spec.model_name:
@@ -200,6 +207,12 @@ def run_harbor_shard(
             metadata["harbor.mean_reward"] = next(iter(mean_reward.values()))
         else:
             metadata["harbor.mean_rewards"] = mean_reward
+    elif result.n_total_trials > 0:
+        # A shard whose trials all errored has no scored reward. Log an
+        # explicit 0.0 so reward-threshold regression gates
+        # (`harbor.mean_reward:lt:X`) fail safe instead of silently
+        # skipping the shard because the key is absent.
+        metadata["harbor.mean_reward"] = 0.0
     cost = result.total_cost_usd
     if cost is not None:
         metadata["harbor.cost_usd"] = cost
@@ -269,7 +282,7 @@ def build_harbor_report(
         f"{n_trials} trial(s) in {len(results)} shard(s) across "
         f"{len(cells)} (task, agent, model) cell(s).",
         "",
-        "| Task | Agent | Model | Trials | Completed | Errored | "
+        "| Task | Agent | Model | Trials | Succeeded | Errored | "
         "Mean reward | Cost (USD) |",
         "|---|---|---|---|---|---|---|---|",
     ]
@@ -295,22 +308,25 @@ def build_harbor_report(
         cost = f"{sum(costs):.4f}" if costs else "n/a"
         return rewards, cost
 
-    total_completed = 0
+    total_succeeded = 0
     total_errored = 0
     for (task, agent, model), shards in sorted(cells.items()):
-        completed = sum(s.n_completed for s in shards)
+        # n_succeeded, not Harbor's raw n_completed: Harbor counts
+        # errored trials as completed, which would render a fully
+        # crashed cell as "Completed=n, Errored=n".
+        succeeded = sum(s.n_succeeded for s in shards)
         errored = sum(s.n_errored for s in shards)
-        total_completed += completed
+        total_succeeded += succeeded
         total_errored += errored
         rewards, cost = _format_cell(shards)
         lines.append(
             f"| {task} | {agent} | {model or 'n/a'} | "
-            f"{sum(s.n_total_trials for s in shards)} | {completed} | "
+            f"{sum(s.n_total_trials for s in shards)} | {succeeded} | "
             f"{errored} | {rewards} | {cost} |"
         )
     rewards, cost = _format_cell(results)
     lines.append(
-        f"| **Total** | | | {n_trials} | {total_completed} | "
+        f"| **Total** | | | {n_trials} | {total_succeeded} | "
         f"{total_errored} | {rewards} | {cost} |"
     )
     return MarkdownString("\n".join(lines))

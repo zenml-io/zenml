@@ -44,6 +44,8 @@ losing = Client().list_run_steps(
 )
 ```
 
+A shard whose trials all errored logs `harbor.mean_reward = 0.0` (there is no scored reward), so this reward gate also catches campaigns that crashed rather than scored; use `harbor.n_errored:gt:0` to isolate the crashes themselves.
+
 For anything deeper, load the `HarborShardResult` artifacts: per-trial rewards, exceptions, token counts, and the archived Harbor job trees.
 
 ## Regression gates

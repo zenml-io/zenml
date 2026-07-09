@@ -125,7 +125,7 @@ result.download_jobs_dir("logs")  # restores agent/verifier logs + trajectory
 
    The three-task run produces this report (oracle runs each task's reference solution, so green rewards validate the orchestration and environment path, not model quality):
 
-   | Task | Agent | Trials | Completed | Errored | Mean reward |
+   | Task | Agent | Trials | Succeeded | Errored | Mean reward |
    |---|---|---|---|---|---|
    | chess-best-move | oracle | 1 | 1 | 0 | reward=1.000 |
    | polyglot-c-py | oracle | 1 | 1 | 0 | reward=1.000 |
@@ -146,7 +146,7 @@ result.download_jobs_dir("logs")  # restores agent/verifier logs + trajectory
 
    Token usage and cost flow into the trial results, the `harbor.cost_usd` step metadata, and the report's Cost column:
 
-   | Task | Agent | Model | Completed | Errored | Mean reward | Cost (USD) |
+   | Task | Agent | Model | Succeeded | Errored | Mean reward | Cost (USD) |
    |---|---|---|---|---|---|---|
    | chess-best-move | claude-code | claude-sonnet-4-5 | 1 | 0 | reward=0.000 | 0.1193 |
 

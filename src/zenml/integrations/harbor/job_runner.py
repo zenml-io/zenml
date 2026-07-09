@@ -35,6 +35,7 @@ from harbor.models.trial.config import (
 )
 
 from zenml.integrations.harbor import ZENML_HARBOR_ENV_IMPORT_PATH
+from zenml.integrations.harbor.environment import pop_session_provenance
 from zenml.integrations.harbor.models import (
     HarborShardResult,
     HarborShardSpec,
@@ -222,9 +223,15 @@ def run_shard_job(
         for identity, result in zip(spec.trial_identities, trial_results)
     ]
     # Restore the dataset provenance that build_job_config strips from
-    # the Harbor-side task config.
+    # the Harbor-side task config, and stamp the sandbox facts the
+    # bridge recorded at session start (Harbor uses the trial name as
+    # the environment session id).
     for trial in trials:
         trial.source = trial.source or spec.task.source
+        provenance = pop_session_provenance(trial.trial_name)
+        if provenance is not None:
+            trial.sandbox_flavor = provenance.flavor
+            trial.sandbox_docker_image = provenance.docker_image
     stats = job_result.stats
     return HarborShardResult(
         spec=spec,

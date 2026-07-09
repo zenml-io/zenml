@@ -98,7 +98,13 @@ def test_build_harbor_matrix_requires_tasks() -> None:
 
 
 def _shard_result(n_errored: int = 0) -> HarborShardResult:
-    """Build a shard result for step tests."""
+    """Build a shard result for step tests.
+
+    Mirrors Harbor's counting semantics: ``n_completed`` counts every
+    finished trial, errored ones included, so it stays at the trial
+    count regardless of ``n_errored``. Errored trials carry exception
+    info instead of rewards.
+    """
     spec = HarborShardSpec(
         shard_id="abc123def456",
         task=TaskRef(path="/tasks/hello"),
@@ -106,31 +112,42 @@ def _shard_result(n_errored: int = 0) -> HarborShardResult:
         trial_indices=[0, 1],
         trial_identities=["identity-0", "identity-1"],
     )
+    scored = [
+        HarborTrialResult(
+            trial_identity="identity-0",
+            trial_name="hello__aaaaaaa",
+            task_name="hello",
+            rewards={"reward": 1.0},
+            cost_usd=0.02,
+        ),
+        HarborTrialResult(
+            trial_identity="identity-1",
+            trial_name="hello__bbbbbbb",
+            task_name="hello",
+            rewards={"reward": 0.0},
+            cost_usd=0.01,
+        ),
+    ]
+    errored = [
+        HarborTrialResult(
+            trial_identity=trial.trial_identity,
+            trial_name=trial.trial_name,
+            task_name="hello",
+            exception_type="RuntimeError",
+            exception_message="agent crashed",
+        )
+        for trial in scored
+    ]
     return HarborShardResult(
         spec=spec,
         job_id="job-1",
         job_name="shard-abc123def456",
         n_total_trials=2,
-        n_completed=2 - n_errored,
+        n_completed=2,
         n_errored=n_errored,
         n_cancelled=0,
         n_retries=0,
-        trials=[
-            HarborTrialResult(
-                trial_identity="identity-0",
-                trial_name="hello__aaaaaaa",
-                task_name="hello",
-                rewards={"reward": 1.0},
-                cost_usd=0.02,
-            ),
-            HarborTrialResult(
-                trial_identity="identity-1",
-                trial_name="hello__bbbbbbb",
-                task_name="hello",
-                rewards={"reward": 0.0},
-                cost_usd=0.01,
-            ),
-        ],
+        trials=errored[:n_errored] + scored[n_errored:],
         job_dir="local/jobs/shard-abc123def456",
     )
 
@@ -165,10 +182,35 @@ def test_run_harbor_shard_wires_job_and_metadata(
     assert metadata["harbor.task"] == "hello"
     assert metadata["harbor.agent"] == "oracle"
     assert metadata["harbor.n_trials"] == 2
-    assert metadata["harbor.n_completed"] == 2
+    assert metadata["harbor.n_succeeded"] == 2
     assert metadata["harbor.n_errored"] == 0
     assert metadata["harbor.mean_reward"] == 0.5
     assert metadata["harbor.cost_usd"] == pytest.approx(0.03)
+
+
+def test_run_harbor_shard_all_errored_logs_gateable_metadata(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An all-errored shard must not slip past reward-threshold gates.
+
+    Without the 0.0 sentinel, `harbor.mean_reward:lt:1` would return
+    zero shards for a campaign where every trial crashed.
+    """
+    captured = {}
+    monkeypatch.setattr(
+        f"{STEPS_MODULE}.run_shard_job",
+        lambda **kwargs: _shard_result(n_errored=2),
+    )
+    monkeypatch.setattr(
+        f"{STEPS_MODULE}.log_metadata",
+        lambda metadata: captured.update(metadata),
+    )
+    shard = _shard_result().spec.model_dump(mode="json")
+    run_harbor_shard.entrypoint(shard=shard)
+
+    assert captured["harbor.n_succeeded"] == 0
+    assert captured["harbor.n_errored"] == 2
+    assert captured["harbor.mean_reward"] == 0.0
 
 
 def test_run_harbor_shard_fail_on_trial_error(

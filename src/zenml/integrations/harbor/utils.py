@@ -36,6 +36,15 @@ def trial_identity(
     including kwargs and env, so e.g. two temperature settings of the
     same agent never collide.
 
+    The task enters the hash as its canonical pin coordinates
+    (``TaskRef.to_string()``), not the full ref: resolver metadata like
+    ``source`` or ``name`` varies with how the task was specified
+    (dataset expansion vs. a direct ``git+`` ref) and must not fragment
+    identities for the byte-identical pinned task. Local-path tasks
+    hash as the given path, which stays machine-specific — the
+    content-addressed ``task_checksum`` on the trial result is the
+    complement for joining those.
+
     Args:
         task: The task the trial runs.
         agent_name: The Harbor agent attempting the task.
@@ -49,7 +58,7 @@ def trial_identity(
     """
     payload = json.dumps(
         {
-            "task": task.model_dump(mode="json", exclude_none=True),
+            "task": task.to_string(),
             "agent_name": agent_name,
             "model_name": model_name,
             "trial_index": trial_index,

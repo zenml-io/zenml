@@ -29,6 +29,7 @@ from harbor.models.task.config import (  # noqa: E402
 
 from zenml.integrations.harbor.environment import (  # noqa: E402
     ZenMLSandboxEnvironment,
+    pop_session_provenance,
 )
 
 
@@ -155,6 +156,50 @@ def test_start_requires_sandbox_component(
     )
     with pytest.raises(RuntimeError, match="No Sandbox component"):
         asyncio.run(env.start(force_build=False))
+
+
+def test_start_records_session_provenance(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A started session leaves the sandbox facts for the shard runner."""
+    session = _FakeSession()
+    env = _bridge(session=None)
+    monkeypatch.setattr(
+        "zenml.integrations.harbor.environment.Client",
+        lambda: SimpleNamespace(
+            active_stack=SimpleNamespace(
+                sandbox=SimpleNamespace(
+                    flavor="modal",
+                    create_session=lambda settings=None: session,
+                )
+            )
+        ),
+    )
+    asyncio.run(env.start(force_build=False))
+    provenance = pop_session_provenance("hello__test123")
+    assert provenance is not None
+    assert provenance.flavor == "modal"
+    # No task docker_image override was pinned.
+    assert provenance.docker_image is None
+    # Pop-on-read: a second lookup finds nothing.
+    assert pop_session_provenance("hello__test123") is None
+
+
+def test_exec_after_failed_start_carries_root_cause(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Harbor's post-failure cleanup errors point at the start failure."""
+    env = _bridge(session=None)
+    monkeypatch.setattr(
+        "zenml.integrations.harbor.environment.Client",
+        lambda: SimpleNamespace(active_stack=SimpleNamespace(sandbox=None)),
+    )
+    with pytest.raises(RuntimeError, match="No Sandbox component"):
+        asyncio.run(env.start(force_build=False))
+    # Harbor's cleanup calls exec() on the never-started env; the error
+    # must surface the original failure, not a bare "before start()".
+    with pytest.raises(RuntimeError, match="No Sandbox component"):
+        asyncio.run(env.exec("cat /agent/logs"))
 
 
 def test_stop_destroys_or_closes() -> None:

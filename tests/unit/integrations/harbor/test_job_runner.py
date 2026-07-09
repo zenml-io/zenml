@@ -104,6 +104,7 @@ def test_harbor_api_canary() -> None:
         "trial_name",
         "task_name",
         "source",
+        "task_checksum",
         "step_results",
         "agent_info",
         "verifier_result",
@@ -307,6 +308,7 @@ def test_run_shard_job_assembles_result(
             trial_name=name,
             task_name="hello",
             source=None,
+            task_checksum="sha256-of-task",
             step_results=None,
             agent_info=SimpleNamespace(name="oracle", model_info=None),
             verifier_result=SimpleNamespace(rewards={"reward": reward}),
@@ -343,6 +345,17 @@ def test_run_shard_job_assembles_result(
 
     monkeypatch.setattr("zenml.integrations.harbor.job_runner.Job", _FakeJob)
 
+    # The bridge records sandbox facts at session start, keyed by the
+    # trial name; the runner stamps them onto the matching trial only.
+    from zenml.integrations.harbor.environment import (
+        SandboxProvenance,
+        _session_provenance,
+    )
+
+    _session_provenance["hello__aaaaaaa"] = SandboxProvenance(
+        flavor="modal", docker_image="python:3.11-slim"
+    )
+
     spec = _spec(
         task=TaskRef(path=str(task_dir), source="terminal-bench-sample")
     )
@@ -351,6 +364,12 @@ def test_run_shard_job_assembles_result(
     # Dataset provenance is restored even though build_job_config
     # strips it from the Harbor-side task config.
     assert all(t.source == "terminal-bench-sample" for t in result.trials)
+    assert result.trials[0].task_checksum == "sha256-of-task"
+    assert result.trials[0].sandbox_flavor == "modal"
+    assert result.trials[0].sandbox_docker_image == "python:3.11-slim"
+    assert result.trials[1].sandbox_flavor is None
+    # The runner drained the provenance registry.
+    assert "hello__aaaaaaa" not in _session_provenance
 
     assert captured["config"].n_attempts == 2
     assert result.job_id == "00000000-0000-0000-0000-000000000001"
