@@ -519,9 +519,12 @@ def _prompt_email(event_source: AnalyticsEventSource) -> bool:
         zenml_cli_thank_you_message,
     )
 
+    if cli_utils.is_machine_mode():
+        return False
+
     console.print(zenml_cli_email_prompt, width=80)
 
-    email = click.prompt(
+    email = cli_utils.prompt(
         click.style("Email", fg="blue"), default="", show_default=False
     )
     client = Client()

@@ -170,11 +170,24 @@ def register_code_repository(
     type=str,
     required=True,
 )
-def describe_code_repository(name_id_or_prefix: str) -> None:
+@click.option(
+    "--output",
+    "-o",
+    "output_format",
+    type=click.Choice(["table", "json", "yaml", "tsv", "csv"]),
+    default=None,
+    callback=cli_utils.resolve_output_format_option,
+    help="Output format for the code repository.",
+)
+def describe_code_repository(
+    name_id_or_prefix: str,
+    output_format: OutputFormat = "table",
+) -> None:
     """Describe a code repository.
 
     Args:
         name_id_or_prefix: Name, ID or prefix of the code repository.
+        output_format: Format for output (table/json/yaml/csv/tsv).
     """
     client = Client()
     try:
@@ -184,9 +197,16 @@ def describe_code_repository(name_id_or_prefix: str) -> None:
     except KeyError as err:
         cli_utils.exception(err)
     else:
-        cli_utils.print_pydantic_model(
-            title=f"Code repository '{code_repository.name}'",
-            model=code_repository,
+        if output_format == "table":
+            cli_utils.print_pydantic_model(
+                title=f"Code repository '{code_repository.name}'",
+                model=code_repository,
+            )
+            return
+
+        cli_utils.handle_output_single(
+            data=cli_utils.serialize_pydantic_model(code_repository),
+            output_format=output_format,
         )
 
 

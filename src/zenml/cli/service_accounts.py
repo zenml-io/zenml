@@ -164,11 +164,24 @@ def create_service_account(
 
 @service_account.command("describe")
 @click.argument("service_account_name_or_id", type=str, required=True)
-def describe_service_account(service_account_name_or_id: str) -> None:
+@click.option(
+    "--output",
+    "-o",
+    "output_format",
+    type=click.Choice(["table", "json", "yaml", "tsv", "csv"]),
+    default=None,
+    callback=cli_utils.resolve_output_format_option,
+    help="Output format for the service account.",
+)
+def describe_service_account(
+    service_account_name_or_id: str,
+    output_format: OutputFormat = "table",
+) -> None:
     """Describe a service account.
 
     Args:
         service_account_name_or_id: The name or ID of the service account.
+        output_format: Format for output (table/json/yaml/csv/tsv).
     """
     client = Client()
     try:
@@ -178,9 +191,16 @@ def describe_service_account(service_account_name_or_id: str) -> None:
     except KeyError as err:
         cli_utils.exception(err)
     else:
-        cli_utils.print_pydantic_model(
-            title=f"Service account '{service_account.name}'",
-            model=service_account,
+        if output_format == "table":
+            cli_utils.print_pydantic_model(
+                title=f"Service account '{service_account.name}'",
+                model=service_account,
+            )
+            return
+
+        cli_utils.handle_output_single(
+            data=cli_utils.serialize_pydantic_model(service_account),
+            output_format=output_format,
         )
 
 
@@ -356,14 +376,28 @@ def create_api_key(
 
 @api_key.command("describe", help="Describe an API key.")
 @click.argument("name_or_id", type=str, required=True)
+@click.option(
+    "--output",
+    "-o",
+    "output_format",
+    type=click.Choice(["table", "json", "yaml", "tsv", "csv"]),
+    default=None,
+    callback=cli_utils.resolve_output_format_option,
+    help="Output format for the API key.",
+)
 @click.pass_obj
-def describe_api_key(service_account_name_or_id: str, name_or_id: str) -> None:
+def describe_api_key(
+    service_account_name_or_id: str,
+    name_or_id: str,
+    output_format: OutputFormat = "table",
+) -> None:
     """Describe an API key.
 
     Args:
         service_account_name_or_id: The name or ID of the service account to
             which the API key belongs.
         name_or_id: The name or ID of the API key to describe.
+        output_format: Format for output (table/json/yaml/csv/tsv).
     """
     with console.status(f"Getting API key `{name_or_id}`...\n"):
         try:
@@ -374,12 +408,22 @@ def describe_api_key(service_account_name_or_id: str, name_or_id: str) -> None:
         except KeyError as e:
             cli_utils.exception(e)
 
-        cli_utils.print_pydantic_model(
-            title=f"API key '{api_key.name}'",
-            model=api_key,
-            exclude_columns={
-                "key",
-            },
+        if output_format == "table":
+            cli_utils.print_pydantic_model(
+                title=f"API key '{api_key.name}'",
+                model=api_key,
+                exclude_columns={
+                    "key",
+                },
+            )
+            return
+
+        cli_utils.handle_output_single(
+            data=cli_utils.serialize_pydantic_model(
+                model=api_key,
+                exclude_columns={"key"},
+            ),
+            output_format=output_format,
         )
 
 

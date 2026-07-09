@@ -119,9 +119,19 @@ def register_annotator_subcommands() -> None:
         help="Use this flag to delete all datasets.",
         type=click.BOOL,
     )
+    @click.option(
+        "--yes",
+        "-y",
+        is_flag=True,
+        default=False,
+        help="Don't ask for confirmation.",
+    )
     @click.pass_obj
     def dataset_delete(
-        annotator: "BaseAnnotator", dataset_name: str, all_: bool
+        annotator: "BaseAnnotator",
+        dataset_name: str,
+        all_: bool,
+        yes: bool = False,
     ) -> None:
         """Delete a dataset.
 
@@ -131,8 +141,9 @@ def register_annotator_subcommands() -> None:
             annotator: The annotator stack component.
             dataset_name: Name of the dataset to delete.
             all_: Whether to delete all datasets.
+            yes: If set, don't ask for confirmation.
         """
-        if not cli_utils.confirmation(
+        if not yes and not cli_utils.confirmation(
             f"Are you sure you want to delete dataset '{dataset_name}'?"
         ):
             return

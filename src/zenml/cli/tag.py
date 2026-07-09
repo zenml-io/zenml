@@ -161,7 +161,7 @@ def delete_tag(
     except (KeyError, ValueError) as e:
         cli_utils.exception(e)
 
-    if not yes or tagged_count > 0:
+    if not yes:
         confirmation = cli_utils.confirmation(
             f"Are you sure you want to delete tag '{tag_name_or_id}'?"
             + (

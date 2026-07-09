@@ -55,7 +55,8 @@ from rich.console import Console
 from rich.emoji import Emoji, NoEmoji
 from rich.markdown import Markdown
 from rich.padding import Padding
-from rich.prompt import Confirm, Prompt
+from rich.prompt import Confirm as RichConfirm
+from rich.prompt import Prompt as RichPrompt
 from rich.style import Style
 from rich.syntax import Syntax
 from rich.table import Table
@@ -64,9 +65,11 @@ from zenml.client import Client
 from zenml.console import console, zenml_style_defaults
 from zenml.constants import (
     ENV_ZENML_CLI_COLUMN_WIDTH,
+    ENV_ZENML_CLI_MACHINE_MODE,
     ENV_ZENML_DEFAULT_OUTPUT,
     FILTERING_DATETIME_FORMAT,
     IS_DEBUG_ENV,
+    handle_bool_env_var,
     handle_int_env_var,
 )
 from zenml.deployers.utils import (
@@ -158,18 +161,81 @@ def title(text: str) -> None:
     console.print(text.upper(), style=zenml_style_defaults["title"])
 
 
-def confirmation(text: str, *args: Any, **kwargs: Any) -> bool:
-    """Echo a confirmation string on the CLI.
+def confirmation(
+    text: str,
+    *args: Any,
+    machine_message: Optional[str] = None,
+    **kwargs: Any,
+) -> bool:
+    """Ask the user to confirm an operation, unless machine mode is enabled.
 
     Args:
         text: Input text string.
-        *args: Args to be passed to click.confirm().
-        **kwargs: Kwargs to be passed to click.confirm().
+        *args: Args to be passed to rich.prompt.Confirm.ask().
+        machine_message: Optional custom error shown in machine mode.
+        **kwargs: Kwargs to be passed to rich.prompt.Confirm.ask().
 
     Returns:
         Boolean based on user response.
     """
-    return Confirm.ask(text, console=console)
+    if is_machine_mode():
+        error(
+            machine_message
+            or (
+                "Machine mode blocks confirmation prompts. Please rerun "
+                "the command with the appropriate flag (e.g. `--yes`) to "
+                "confirm this operation explicitly."
+            ),
+            error_type="MachineModeConfirmationError",
+        )
+
+    kwargs.setdefault("console", console)
+    return RichConfirm.ask(text, *args, **kwargs)
+
+
+class StyledClickException(click.ClickException):
+    """Click exception that can emit human or machine-friendly output."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        raw_message: str,
+        error_type: str = "error",
+        exit_code: int = 1,
+    ) -> None:
+        """Initialize the exception.
+
+        Args:
+            message: Human-friendly message to display.
+            raw_message: Unstyled error message for machine output.
+            error_type: Error category for machine-readable output.
+            exit_code: Exit code for machine-readable output.
+        """
+        super().__init__(message=message)
+        self.raw_message = raw_message
+        self.error_type = error_type
+        self.exit_code = exit_code
+
+    def show(self, file: Optional[IO[Any]] = None) -> None:
+        """Render the exception to the given file handle.
+
+        Args:
+            file: Optional file handle to write to.
+        """
+        if file is None:
+            file = click.get_text_stream("stderr")
+
+        if is_machine_mode():
+            payload = {
+                "error": self.raw_message,
+                "type": self.error_type,
+                "exit_code": self.exit_code,
+            }
+            click.echo(json.dumps(payload), file=file)
+            return
+
+        click.echo(self.message, file=file)
 
 
 def declare(
@@ -191,11 +257,18 @@ def declare(
     console.print(text, style=style, **kwargs)
 
 
-def error(text: str) -> NoReturn:
+def error(
+    text: str,
+    *,
+    error_type: str = "error",
+    exit_code: int = 1,
+) -> NoReturn:
     """Echo an error string on the CLI.
 
     Args:
         text: Input text string.
+        error_type: Error category for machine-readable output.
+        exit_code: Exit code for machine-readable output.
 
     Raises:
         StyledClickException: when called.
@@ -203,13 +276,12 @@ def error(text: str) -> NoReturn:
     error_prefix = click.style("Error: ", fg="red", bold=True)
     error_message = click.style(text, fg="red", bold=False)
 
-    class StyledClickException(click.ClickException):
-        def show(self, file: Optional[IO[Any]] = None) -> None:
-            if file is None:
-                file = click.get_text_stream("stderr")
-            click.echo(self.message, file=file)
-
-    raise StyledClickException(message=error_prefix + error_message)
+    raise StyledClickException(
+        message=error_prefix + error_message,
+        raw_message=text,
+        error_type=error_type,
+        exit_code=exit_code,
+    )
 
 
 def exception(exception: Exception) -> NoReturn:
@@ -234,7 +306,41 @@ def exception(exception: Exception) -> NoReturn:
     else:
         error_message = str(exception)
 
-    error(error_message)
+    error(error_message, error_type=type(exception).__name__)
+
+
+def prompt(
+    text: str,
+    *args: Any,
+    machine_message: Optional[str] = None,
+    **kwargs: Any,
+) -> Any:
+    """Prompt the user for input, unless machine mode is enabled.
+
+    Args:
+        text: Prompt text.
+        *args: Positional arguments passed to `click.prompt`.
+        machine_message: Optional custom error shown in machine mode.
+        **kwargs: Keyword arguments passed to `click.prompt`.
+
+    Returns:
+        The prompted value.
+    """
+    if is_machine_mode():
+        # A default the user could accept by pressing Enter is equally
+        # acceptable non-interactively, so return it instead of failing.
+        if kwargs.get("default") is not None:
+            return kwargs["default"]
+        error(
+            machine_message
+            or (
+                "Machine mode blocks interactive prompts. Please rerun the "
+                "command with all required values provided explicitly."
+            ),
+            error_type="MachineModePromptError",
+        )
+
+    return click.prompt(text, *args, **kwargs)
 
 
 def warning(
@@ -446,18 +552,49 @@ def print_pydantic_model(
         exclude_columns: Optionally specify columns to exclude.
         columns: Optionally specify subset and order of columns to display.
     """
+    items = serialize_pydantic_model(
+        model=model,
+        exclude_columns=exclude_columns,
+        columns=columns,
+    )
+    _print_key_value_table(items, title=title)
+
+
+def serialize_pydantic_model(
+    model: BaseModel,
+    exclude_columns: Optional[AbstractSet[str]] = None,
+    columns: Optional[AbstractSet[str]] = None,
+) -> Dict[str, Any]:
+    """Serialize a Pydantic model for structured CLI output.
+
+    Args:
+        model: Pydantic model that should be serialized.
+        exclude_columns: Optionally specify columns to exclude.
+        columns: Optionally specify subset and order of columns to include.
+
+    Returns:
+        A serialized representation of the model.
+    """
     include_columns = _extract_model_columns(
         model=model,
         columns=list(columns) if columns else None,
         exclude_columns=list(exclude_columns) if exclude_columns else None,
     )
 
-    items: Dict[str, Any] = {}
-    for k in include_columns:
-        value = getattr(model, k)
-        items[k] = _format_response_value(value)
+    if isinstance(model, BaseIdentifiedResponse):
+        serialized = prepare_response_data(model)
+        return {
+            column: serialized[column]
+            for column in include_columns
+            if column in serialized
+        }
 
-    _print_key_value_table(items, title=title)
+    items: Dict[str, Any] = {}
+    for key in include_columns:
+        value = getattr(model, key)
+        items[key] = _format_response_value(value)
+
+    return items
 
 
 def format_integration_list(
@@ -923,6 +1060,14 @@ def prompt_configuration(
     Returns:
         The configuration values provided by the user.
     """
+    if is_machine_mode():
+        error(
+            "Machine mode blocks interactive configuration prompts. Please "
+            "rerun this command with configuration values supplied "
+            "explicitly.",
+            error_type="MachineModePromptError",
+        )
+
     is_update = False
     if existing_config is not None:
         is_update = True
@@ -976,7 +1121,7 @@ def prompt_configuration(
 
         while True:
             # Ask the user to enter a value for the attribute
-            value = click.prompt(
+            value = prompt(
                 title,
                 type=str,
                 hide_input=hidden and not show_secrets,
@@ -1002,7 +1147,7 @@ def prompt_configuration(
             and value == existing_value
             and not required
         ):
-            confirm = click.confirm(
+            confirm = confirmation(
                 "You left this optional attribute unchanged. Would you "
                 "like to remove its value instead?",
                 default=False,
@@ -3085,7 +3230,8 @@ def list_options(
                     "-o",
                     "output_format",
                     type=click.Choice(["table", "json", "yaml", "tsv", "csv"]),
-                    default=get_default_output_format(),
+                    default=None,
+                    callback=resolve_output_format_option,
                     help="Output format for the list.",
                 ),
             ]
@@ -3155,6 +3301,23 @@ def list_options(
         return wrapper(func)
 
     return inner_decorator
+
+
+def dry_run_option(func: F) -> F:
+    """Add a shared dry-run option to a CLI command.
+
+    Args:
+        func: The command function.
+
+    Returns:
+        The decorated function.
+    """
+    return click.option(
+        "--dry-run",
+        is_flag=True,
+        default=False,
+        help="Validate inputs and show what would happen without making changes.",
+    )(func)
 
 
 @contextlib.contextmanager
@@ -3293,6 +3456,13 @@ def multi_choice_prompt(
     Raises:
         RuntimeError: If no choice is made.
     """
+    if is_machine_mode():
+        error(
+            "Machine mode blocks interactive selection prompts. Please rerun "
+            "the command with the required option specified explicitly.",
+            error_type="MachineModePromptError",
+        )
+
     table = Table(
         title=f"Available {object_type}",
         show_header=True,
@@ -3316,7 +3486,7 @@ def multi_choice_prompt(
         table.add_row(f"[{i + i_shift}]", *[str(x) for x in one_choice])
     Console().print(table)
 
-    selected = Prompt.ask(
+    selected = RichPrompt.ask(
         prompt_text,
         choices=[str(i) for i in range(0, len(choices) + 1)],
         default=default_choice,
@@ -3348,6 +3518,15 @@ def requires_mac_env_var_warning() -> bool:
     return False
 
 
+def is_machine_mode() -> bool:
+    """Check whether CLI machine mode is enabled.
+
+    Returns:
+        `True` if machine mode is enabled, `False` otherwise.
+    """
+    return handle_bool_env_var(ENV_ZENML_CLI_MACHINE_MODE, default=False)
+
+
 def get_default_output_format() -> OutputFormat:
     """Get the default output format from environment variable.
 
@@ -3355,11 +3534,36 @@ def get_default_output_format() -> OutputFormat:
         The default output format, falling back to "table" if not configured
         or if the configured value is invalid.
     """
+    if is_machine_mode():
+        return "json"
+
     value = os.environ.get(ENV_ZENML_DEFAULT_OUTPUT, "table")
     valid_formats = get_args(OutputFormat)
     if value in valid_formats:
         return cast(OutputFormat, value)
     return "table"
+
+
+def resolve_output_format_option(
+    ctx: click.Context,
+    param: click.Parameter,
+    value: Optional[str],
+) -> OutputFormat:
+    """Resolve the output format at invocation time.
+
+    Args:
+        ctx: The click context.
+        param: The click parameter.
+        value: The explicitly provided value, if any.
+
+    Returns:
+        The resolved output format.
+    """
+    del ctx, param
+    if value is not None:
+        return cast(OutputFormat, value)
+
+    return get_default_output_format()
 
 
 def prepare_response_data(item: AnyResponse) -> Dict[str, Any]:
@@ -3530,9 +3734,13 @@ def print_page(
         active_id: ID of the active item for highlighting. Used together with
             row_generator to create the row_formatter.
     """
+    # The friendly message goes to stderr for every format, so it never
+    # pollutes parseable stdout. JSON/YAML additionally fall through to emit
+    # an empty payload, since their consumers parse stdout unconditionally.
     if not page.total:
         declare(empty_message)
-        return
+        if output_format not in ("json", "yaml"):
+            return
 
     if row_generator is not None:
         row_formatter = partial(row_generator, active_id=active_id)
@@ -3577,7 +3785,8 @@ def handle_output(
             logger.warning("Failed to write clean output: %s", err)
             print(cli_output)
 
-    if page and output_format == "table":
+    # Identity check: `Page.__len__` makes an empty page falsy.
+    if page is not None and output_format == "table":
         print_page_info(page)
 
 
@@ -3604,13 +3813,33 @@ def prepare_output(
             names. Use this to rename columns in the table output.
 
     Returns:
-        The rendered output in the specified format, or empty string if
-        no data is provided.
+        The rendered output in the specified format. For JSON/YAML an empty
+        item list still renders as a parseable payload; other formats return
+        an empty string when no data is provided.
 
     Raises:
         ValueError: If an unsupported output format is provided.
     """
+    # `Page.__len__` makes an empty page falsy, so check identity here or
+    # pagination metadata would be dropped for empty results.
+    pagination_dict = (
+        {
+            "index": page.index,
+            "max_size": page.max_size,
+            "total_pages": page.total_pages,
+            "total": page.total,
+        }
+        if page is not None
+        else None
+    )
+
     if not data:
+        # JSON/YAML consumers parse stdout, so they need a valid empty
+        # payload; formats without one (table, CSV, TSV) stay empty.
+        if output_format == "json":
+            return _render_json([], pagination=pagination_dict)
+        if output_format == "yaml":
+            return _render_yaml([], pagination=pagination_dict)
         return ""
 
     available_keys = list(data[0].keys())
@@ -3654,17 +3883,6 @@ def prepare_output(
     filtered_data = [
         {k: entry[k] for k in selected_columns if k in entry} for entry in data
     ]
-
-    pagination_dict = (
-        {
-            "index": page.index,
-            "max_size": page.max_size,
-            "total_pages": page.total_pages,
-            "total": page.total,
-        }
-        if page
-        else None
-    )
 
     if output_format == "json":
         return _render_json(filtered_data, pagination=pagination_dict)
@@ -3885,6 +4103,41 @@ def handle_output_single(
         except (IOError, OSError) as err:
             logger.warning("Failed to write clean output: %s", err)
             print(cli_output)
+
+
+def handle_dry_run_output(
+    *,
+    action: str,
+    summary: str,
+    target: Dict[str, Any],
+    validated_input: Dict[str, Any],
+    details: Optional[Dict[str, Any]] = None,
+    warnings: Optional[List[str]] = None,
+) -> None:
+    """Emit a consistent dry-run payload.
+
+    Args:
+        action: Canonical action name for the previewed command.
+        summary: Human-readable summary of what would happen.
+        target: Target resource metadata.
+        validated_input: Parsed and validated command input.
+        details: Optional additional dry-run details.
+        warnings: Optional dry-run warnings.
+    """
+    payload = {
+        "dry_run": True,
+        "status": "validated",
+        "action": action,
+        "summary": summary,
+        "target": target,
+        "validated_input": validated_input,
+        "details": details or {},
+        "warnings": warnings or [],
+    }
+    handle_output_single(
+        data=payload,
+        output_format=get_default_output_format(),
+    )
 
 
 def _get_terminal_width() -> Optional[int]:

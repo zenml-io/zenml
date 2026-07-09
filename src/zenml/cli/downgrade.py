@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """CLI command to downgrade the ZenML Global Configuration version."""
 
+import click
+
 from zenml import __version__
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import cli
@@ -20,8 +22,19 @@ from zenml.config.global_config import GlobalConfiguration
 
 
 @cli.command("downgrade", help="Downgrade zenml version in global config.")
-def disconnect_server() -> None:
-    """Downgrade zenml version in global config to match the current version."""
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    default=False,
+    help="Don't ask for confirmation.",
+)
+def disconnect_server(yes: bool = False) -> None:
+    """Downgrade zenml version in global config to match the current version.
+
+    Args:
+        yes: If set, don't ask for confirmation.
+    """
     gc = GlobalConfiguration()
 
     if gc.version == __version__:
@@ -31,7 +44,7 @@ def disconnect_server() -> None:
         )
         return
 
-    if cli_utils.confirmation(
+    if yes or cli_utils.confirmation(
         "Are you sure you want to downgrade the ZenML Global Configuration "
         "version to match the current ZenML client version? It is "
         "recommended to upgrade the ZenML Global Configuration version "

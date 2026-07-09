@@ -14,10 +14,11 @@
 """Functionality to generate stack component CLI commands."""
 
 import getpass
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import click
 
+from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
     OutputFormat,
@@ -26,6 +27,7 @@ from zenml.cli.utils import (
     declare,
     error,
     expand_argument_value_from_file,
+    is_machine_mode,
     list_options,
     parse_name_and_extra_arguments,
     pretty_print_secret,
@@ -44,6 +46,43 @@ from zenml.logger import get_logger
 from zenml.models import SecretFilter, SecretResponse
 
 logger = get_logger(__name__)
+
+
+def _parse_secret_cli_values(
+    name_or_id: str, extra_args: List[str], values: Optional[str]
+) -> Tuple[str, Dict[str, str]]:
+    """Parse secret values from CLI arguments and structured input.
+
+    Args:
+        name_or_id: The secret name or identifier.
+        extra_args: Additional `--key=value` style CLI arguments.
+        values: Secret values passed via `--values`.
+
+    Returns:
+        The parsed name and secret values.
+    """
+    name, parsed_args = parse_name_and_extra_arguments(
+        list(extra_args) + [name_or_id], expand_args=True
+    )
+    if values:
+        inline_values = expand_argument_value_from_file(SECRET_VALUES, values)
+        inline_values_dict = convert_structured_str_to_dict(inline_values)
+        parsed_args.update(inline_values_dict)
+
+    assert name is not None
+    return name, parsed_args
+
+
+def _redact_secret_values(values: Dict[str, str]) -> Dict[str, str]:
+    """Create a redacted preview for secret values.
+
+    Args:
+        values: Secret values keyed by name.
+
+    Returns:
+        A redacted preview dictionary.
+    """
+    return {key: "***" for key in values}
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.IDENTITY_AND_SECURITY)
@@ -82,9 +121,15 @@ def secret() -> None:
     required=False,
     type=str,
 )
+@cli_utils.dry_run_option
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 def create_secret(
-    name: str, private: bool, interactive: bool, values: str, args: List[str]
+    name: str,
+    private: bool,
+    interactive: bool,
+    values: str,
+    dry_run: bool,
+    args: List[str],
 ) -> None:
     """Create a secret.
 
@@ -93,15 +138,10 @@ def create_secret(
         private: Whether the secret is private.
         interactive: Whether to use interactive mode to enter the secret values.
         values: Secret key-value pairs to be passed as JSON or YAML.
+        dry_run: Whether to validate and preview the secret without creating it.
         args: The arguments to pass to the secret.
     """
-    name, parsed_args = parse_name_and_extra_arguments(  # type: ignore[assignment]
-        list(args) + [name], expand_args=True
-    )
-    if values:
-        inline_values = expand_argument_value_from_file(SECRET_VALUES, values)
-        inline_values_dict = convert_structured_str_to_dict(inline_values)
-        parsed_args.update(inline_values_dict)
+    name, parsed_args = _parse_secret_cli_values(name, args, values)
 
     if "name" in parsed_args:
         error("You can't use 'name' as the key for one of your secrets.")
@@ -111,6 +151,20 @@ def create_secret(
     try:
         client = Client()
         if interactive:
+            if dry_run:
+                error(
+                    "Dry-run cannot prompt for secret values. Please rerun "
+                    "without `--interactive` and provide secret values with "
+                    "`--values` or `--key=value` arguments.",
+                    error_type="DryRunPromptError",
+                )
+            if is_machine_mode():
+                error(
+                    "Machine mode blocks interactive secret creation. Please "
+                    "rerun without `--interactive` and provide secret values "
+                    "with `--values` or `--key=value` arguments.",
+                    error_type="MachineModePromptError",
+                )
             if parsed_args:
                 error(
                     "Cannot pass secret fields as arguments when using "
@@ -119,7 +173,7 @@ def create_secret(
             else:
                 click.echo("Entering interactive mode:")
                 while True:
-                    k = click.prompt("Please enter a secret key")
+                    k = cli_utils.prompt("Please enter a secret key")
                     if k in parsed_args:
                         warning(
                             f"Key {k} already in this secret. Please restart "
@@ -146,6 +200,34 @@ def create_secret(
 
         for key in parsed_args:
             validate_keys(key)
+        if dry_run:
+            try:
+                client.get_secret(
+                    name_id_or_prefix=name,
+                    allow_partial_name_match=False,
+                    allow_partial_id_match=False,
+                )
+            except KeyError:
+                pass
+            else:
+                error(f"Secret with name `{name}` already exists.")
+
+            cli_utils.handle_dry_run_output(
+                action="secret.create",
+                summary=f"Secret `{name}` would be created.",
+                target={"resource": "secret", "name": name},
+                validated_input={
+                    "name": name,
+                    "private": private,
+                    "value_keys": list(parsed_args.keys()),
+                    "value_count": len(parsed_args),
+                },
+                details={
+                    "values_redacted": _redact_secret_values(parsed_args)
+                },
+            )
+            return
+
         declare("The following secret will be registered.")
         pretty_print_secret(secret=parsed_args, hide_secret=True)
 
@@ -183,11 +265,12 @@ def list_secrets(
         except NotImplementedError as e:
             error(f"Centralized secrets management is disabled: {str(e)}")
 
-    if not secrets.items:
-        warning("No secrets found for the given filters.")
-        return
-
-    print_page(secrets, columns, output_format)
+    print_page(
+        secrets,
+        columns,
+        output_format,
+        empty_message="No secrets found for the given filters.",
+    )
 
 
 @secret.command("get", help="Get a secret with a given name, prefix or id.")
@@ -289,6 +372,7 @@ def _get_secret(
     type=str,
 )
 @click.option("--remove-keys", "-r", type=click.STRING, multiple=True)
+@cli_utils.dry_run_option
 @click.argument("extra_args", nargs=-1, type=click.UNPROCESSED)
 def update_secret(
     name_or_id: str,
@@ -297,6 +381,7 @@ def update_secret(
     remove_keys: List[str] = [],
     interactive: bool = False,
     values: str = "",
+    dry_run: bool = False,
 ) -> None:
     """Update a secret for a given name or id.
 
@@ -307,14 +392,11 @@ def update_secret(
         interactive: Whether to use interactive mode to update the secret.
         remove_keys: The keys to remove from the secret.
         values: Secret key-value pairs to be passed as JSON or YAML.
+        dry_run: Whether to validate and preview the update without saving it.
     """
-    name, parsed_args = parse_name_and_extra_arguments(
-        list(extra_args) + [name_or_id], expand_args=True
+    name, parsed_args = _parse_secret_cli_values(
+        name_or_id, extra_args, values
     )
-    if values:
-        inline_values = expand_argument_value_from_file(SECRET_VALUES, values)
-        inline_values_dict = convert_structured_str_to_dict(inline_values)
-        parsed_args.update(inline_values_dict)
 
     client = Client()
 
@@ -337,6 +419,20 @@ def update_secret(
         error("The word 'name' cannot be used as a key for a secret.")
 
     if interactive:
+        if dry_run:
+            error(
+                "Dry-run cannot prompt for secret values. Please rerun "
+                "without `--interactive` and provide secret values with "
+                "`--values` or `--key=value` arguments.",
+                error_type="DryRunPromptError",
+            )
+        if is_machine_mode():
+            error(
+                "Machine mode blocks interactive secret updates. Please rerun "
+                "without `--interactive` and provide secret values with "
+                "`--values` or `--key=value` arguments.",
+                error_type="MachineModePromptError",
+            )
         if parsed_args:
             error(
                 "Cannot pass secret fields as arguments when using "
@@ -349,7 +445,7 @@ def update_secret(
         secret_args_add_update = {}
         for k, _ in secret.secret_values.items():
             item_choice = (
-                click.prompt(
+                cli_utils.prompt(
                     text=f"Do you want to update key '{k}'? (enter to skip)",
                     type=click.Choice(["y", "n"]),
                     default="n",
@@ -372,7 +468,7 @@ def update_secret(
             if not addition_check:
                 break
 
-            new_key = click.prompt(
+            new_key = cli_utils.prompt(
                 text="Please enter the new key name",
                 type=click.STRING,
             )
@@ -382,6 +478,43 @@ def update_secret(
             secret_args_add_update[new_key] = new_value
     else:
         secret_args_add_update = parsed_args
+
+    for key in secret_args_add_update:
+        validate_keys(key)
+
+    if dry_run:
+        overlapping_keys = sorted(
+            set(secret_args_add_update).intersection(remove_keys)
+        )
+        warnings = []
+        if overlapping_keys:
+            warnings.append(
+                "The following keys appear in both add/update and remove "
+                f"operations: {', '.join(overlapping_keys)}."
+            )
+
+        cli_utils.handle_dry_run_output(
+            action="secret.update",
+            summary=f"Secret `{secret.name}` would be updated.",
+            target={
+                "resource": "secret",
+                "name": secret.name,
+                "id": str(secret.id),
+            },
+            validated_input={
+                "update_private": private,
+                "add_or_update_keys": list(secret_args_add_update.keys()),
+                "remove_keys": list(remove_keys),
+            },
+            details={
+                "existing_private": secret.private,
+                "values_redacted": _redact_secret_values(
+                    secret_args_add_update
+                ),
+            },
+            warnings=warnings,
+        )
+        return
 
     client.update_secret(
         name_id_or_prefix=secret.id,

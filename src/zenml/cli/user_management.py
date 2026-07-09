@@ -165,14 +165,21 @@ def create_user(
         is_admin: Whether the user should be an admin.
     """
     client = Client()
-    if not password:
+    if password is None:
+        if cli_utils.is_machine_mode():
+            cli_utils.error(
+                "Machine mode blocks interactive password prompts. Please "
+                "rerun with `--password`. If you want activation-token "
+                "semantics on a REST store, pass an empty string explicitly.",
+                error_type="MachineModePromptError",
+            )
         if client.zen_store.type != StoreType.REST:
-            password = click.prompt(
+            password = cli_utils.prompt(
                 f"Password for user {user_name}",
                 hide_input=True,
             )
         else:
-            password = click.prompt(
+            password = cli_utils.prompt(
                 f"Password for user {user_name}. Leave empty to generate an "
                 f"activation token",
                 default="",
@@ -261,6 +268,13 @@ def create_user(
     default=None,
     help="Use to activate or deactivate a user account.",
 )
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    default=False,
+    help="Don't ask for confirmation when demoting an admin.",
+)
 def update_user(
     user_name_or_id: str,
     updated_name: Optional[str] = None,
@@ -269,6 +283,7 @@ def update_user(
     make_admin: Optional[bool] = None,
     make_user: Optional[bool] = None,
     active: Optional[bool] = None,
+    yes: bool = False,
 ) -> None:
     """Update an existing user.
 
@@ -280,6 +295,7 @@ def update_user(
         make_admin: Whether the user should be an admin.
         make_user: Whether the user should be a regular user.
         active: Use to activate or deactivate a user account.
+        yes: If set, don't ask for confirmation when demoting an admin.
     """
     if make_admin is not None and make_user is not None:
         cli_utils.error(
@@ -289,7 +305,7 @@ def update_user(
         current_user = Client().get_user(
             user_name_or_id, allow_name_prefix_match=False
         )
-        if current_user.is_admin and make_user:
+        if current_user.is_admin and make_user and not yes:
             confirmation = cli_utils.confirmation(
                 f"Currently user `{current_user.name}` is an admin. Are you "
                 "sure you want to make them a regular user?"
@@ -354,17 +370,26 @@ def change_user_password(
             "Please consider using the prompt option."
         )
 
+    if cli_utils.is_machine_mode() and (
+        old_password is None or password is None
+    ):
+        cli_utils.error(
+            "Machine mode blocks interactive password prompts. Please rerun "
+            "with both `--old-password` and `--password`.",
+            error_type="MachineModePromptError",
+        )
+
     if old_password is None:
-        old_password = click.prompt(
+        old_password = cli_utils.prompt(
             f"Current password for user {active_user.name}",
             hide_input=True,
         )
     if password is None:
-        password = click.prompt(
+        password = cli_utils.prompt(
             f"New password for user {active_user.name}",
             hide_input=True,
         )
-        password_again = click.prompt(
+        password_again = cli_utils.prompt(
             f"Please re-enter the new password for user {active_user.name}",
             hide_input=True,
         )

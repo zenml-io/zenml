@@ -12,14 +12,17 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import json
 import os
 from datetime import datetime
 from typing import Optional
 from uuid import UUID, uuid4
 
 import pytest
+from click.testing import CliRunner
 
 from tests.cli_runner_utils import cli_runner
+from tests.integration.functional.cli.utils import capture_clean_stdout
 from zenml.artifact_stores.local_artifact_store import (
     LocalArtifactStore,
     LocalArtifactStoreConfig,
@@ -177,6 +180,85 @@ def test_update_stack_active_stack_succeeds(clean_client: "Client") -> None:
     )
 
 
+def test_register_stack_dry_run_outputs_preview_and_does_not_create(
+    clean_client: "Client",
+) -> None:
+    """Tests stack register dry-run output and no-op behavior."""
+    registered_stack = clean_client.active_stack_model
+    artifact_store_name = registered_stack.components[
+        StackComponentType.ARTIFACT_STORE
+    ][0].name
+    orchestrator_name = registered_stack.components[
+        StackComponentType.ORCHESTRATOR
+    ][0].name
+
+    runner = CliRunner()
+    register_command = cli.commands["stack"].commands["register"]
+    with capture_clean_stdout() as buffer:
+        result = runner.invoke(
+            register_command,
+            [
+                "aria-dry-run-stack",
+                "-a",
+                artifact_store_name,
+                "-o",
+                orchestrator_name,
+                "--dry-run",
+            ],
+            env={"ZENML_CLI_MACHINE_MODE": "true"},
+        )
+
+    assert result.exit_code == 0
+    payload = json.loads(buffer.getvalue())
+    assert payload["dry_run"] is True
+    assert payload["action"] == "stack.register"
+    assert payload["target"]["name"] == "aria-dry-run-stack"
+    assert (
+        payload["validated_input"]["components"]["artifact_store"]["name"]
+        == artifact_store_name
+    )
+    with pytest.raises(KeyError):
+        clean_client.get_stack(
+            "aria-dry-run-stack", allow_name_prefix_match=False
+        )
+
+
+def test_register_stack_dry_run_validates_multi_instance_components(
+    clean_client: "Client",
+) -> None:
+    """Tests that dry-run fails on invalid alerter/step-operator names."""
+    registered_stack = clean_client.active_stack_model
+    artifact_store_name = registered_stack.components[
+        StackComponentType.ARTIFACT_STORE
+    ][0].name
+    orchestrator_name = registered_stack.components[
+        StackComponentType.ORCHESTRATOR
+    ][0].name
+
+    runner = CliRunner()
+    register_command = cli.commands["stack"].commands["register"]
+    result = runner.invoke(
+        register_command,
+        [
+            "aria-dry-run-stack",
+            "-a",
+            artifact_store_name,
+            "-o",
+            orchestrator_name,
+            "-al",
+            "nonexistent-alerter",
+            "--dry-run",
+        ],
+        env={"ZENML_CLI_MACHINE_MODE": "true"},
+    )
+
+    assert result.exit_code != 0
+    with pytest.raises(KeyError):
+        clean_client.get_stack(
+            "aria-dry-run-stack", allow_name_prefix_match=False
+        )
+
+
 def test_updating_non_active_stack_succeeds(clean_client: "Client") -> None:
     """Test if stack update of existing stack of non-active stack succeeds."""
     registered_stack = clean_client.active_stack_model
@@ -221,6 +303,118 @@ def test_updating_non_active_stack_succeeds(clean_client: "Client") -> None:
         .name
         == new_orchestrator.name
     )
+
+
+def test_update_stack_dry_run_outputs_preview_and_does_not_update(
+    clean_client: "Client",
+) -> None:
+    """Tests stack update dry-run output and no-op behavior."""
+    registered_stack = clean_client.active_stack_model
+    artifact_store_name = registered_stack.components[
+        StackComponentType.ARTIFACT_STORE
+    ][0].name
+    orchestrator_name = registered_stack.components[
+        StackComponentType.ORCHESTRATOR
+    ][0].name
+    new_stack = clean_client.create_stack(
+        name="arias_new_stack",
+        components={
+            StackComponentType.ARTIFACT_STORE: artifact_store_name,
+            StackComponentType.ORCHESTRATOR: orchestrator_name,
+        },
+    )
+
+    new_artifact_store = _create_local_artifact_store(clean_client)
+    new_artifact_store_model = clean_client.create_stack_component(
+        name=new_artifact_store.name,
+        flavor=new_artifact_store.flavor,
+        component_type=new_artifact_store.type,
+        configuration=new_artifact_store.config.model_dump(),
+    )
+
+    runner = CliRunner()
+    update_command = cli.commands["stack"].commands["update"]
+    with capture_clean_stdout() as buffer:
+        result = runner.invoke(
+            update_command,
+            [new_stack.name, "-a", new_artifact_store_model.name, "--dry-run"],
+            env={"ZENML_CLI_MACHINE_MODE": "true"},
+        )
+
+    assert result.exit_code == 0
+    payload = json.loads(buffer.getvalue())
+    assert payload["dry_run"] is True
+    assert payload["action"] == "stack.update"
+    assert payload["target"]["name"] == new_stack.name
+    assert (
+        payload["validated_input"]["component_updates"]["artifact_store"][0][
+            "name"
+        ]
+        == new_artifact_store_model.name
+    )
+
+    unchanged_stack = clean_client.get_stack(new_stack.id)
+    assert (
+        unchanged_stack.components[StackComponentType.ARTIFACT_STORE][0].name
+        == artifact_store_name
+    )
+
+
+def test_update_stack_dry_run_validates_all_component_values(
+    clean_client: "Client", mocker
+) -> None:
+    """Tests that dry-run validates every value of multi-value flags."""
+    registered_stack = clean_client.active_stack_model
+    artifact_store_name = registered_stack.components[
+        StackComponentType.ARTIFACT_STORE
+    ][0].name
+    orchestrator_response = registered_stack.components[
+        StackComponentType.ORCHESTRATOR
+    ][0]
+    new_stack = clean_client.create_stack(
+        name="arias_multi_value_stack",
+        components={
+            StackComponentType.ARTIFACT_STORE: artifact_store_name,
+            StackComponentType.ORCHESTRATOR: orchestrator_response.name,
+        },
+    )
+
+    # No step operator flavor is available in the test environment, so
+    # resolve a fake "valid" first value and fail the second one to check
+    # that the dry run validates values beyond the first.
+    original_get_component = Client.get_stack_component
+
+    def selective_get_component(
+        self, component_type, name_id_or_prefix=None, **kwargs
+    ):
+        if name_id_or_prefix == "valid-step-operator":
+            return orchestrator_response
+        if name_id_or_prefix == "broken-step-operator":
+            raise KeyError("Step operator not found")
+        return original_get_component(
+            self, component_type, name_id_or_prefix, **kwargs
+        )
+
+    mocker.patch.object(Client, "get_stack_component", selective_get_component)
+
+    runner = CliRunner()
+    update_command = cli.commands["stack"].commands["update"]
+    result = runner.invoke(
+        update_command,
+        [
+            new_stack.name,
+            "-s",
+            "valid-step-operator",
+            "-s",
+            "broken-step-operator",
+            "--dry-run",
+        ],
+        env={"ZENML_CLI_MACHINE_MODE": "true"},
+    )
+
+    assert result.exit_code != 0
+    unchanged_stack = clean_client.get_stack(new_stack.id)
+    assert StackComponentType.STEP_OPERATOR not in unchanged_stack.components
 
 
 def test_update_stack_adding_component_succeeds(
@@ -544,6 +738,89 @@ def test_delete_stack_with_flag_succeeds(clean_client: "Client") -> None:
     delete_command = cli.commands["stack"].commands["delete"]
     result = runner.invoke(delete_command, [new_stack.name, "-y"])
     assert result.exit_code == 0
+    with pytest.raises(KeyError):
+        clean_client.get_stack(new_stack.id)
+
+
+def test_delete_stack_dry_run_outputs_preview_and_does_not_delete(
+    clean_client: "Client",
+) -> None:
+    """Tests stack delete dry-run output and no-op behavior."""
+    registered_stack = clean_client.active_stack_model
+
+    artifact_store_name = registered_stack.components[
+        StackComponentType.ARTIFACT_STORE
+    ][0].name
+    orchestrator_name = registered_stack.components[
+        StackComponentType.ORCHESTRATOR
+    ][0].name
+
+    new_stack = clean_client.create_stack(
+        name="arias_new_stack",
+        components={
+            StackComponentType.ARTIFACT_STORE: artifact_store_name,
+            StackComponentType.ORCHESTRATOR: orchestrator_name,
+        },
+    )
+
+    runner = CliRunner()
+    delete_command = cli.commands["stack"].commands["delete"]
+    with capture_clean_stdout() as buffer:
+        result = runner.invoke(
+            delete_command,
+            [new_stack.name, "--dry-run"],
+            env={"ZENML_CLI_MACHINE_MODE": "true"},
+        )
+
+    assert result.exit_code == 0
+    payload = json.loads(buffer.getvalue())
+    assert payload["dry_run"] is True
+    assert payload["action"] == "stack.delete"
+    assert payload["target"]["name"] == new_stack.name
+    assert payload["validated_input"]["recursive"] is False
+    assert clean_client.get_stack(new_stack.id)
+
+
+def test_delete_stack_requires_yes_flag_in_machine_mode(
+    clean_client: "Client",
+) -> None:
+    """Tests that machine mode blocks stack deletion unless --yes is passed."""
+    registered_stack = clean_client.active_stack_model
+    artifact_store_name = registered_stack.components[
+        StackComponentType.ARTIFACT_STORE
+    ][0].name
+    orchestrator_name = registered_stack.components[
+        StackComponentType.ORCHESTRATOR
+    ][0].name
+    new_stack = clean_client.create_stack(
+        name="arias_doomed_stack",
+        components={
+            StackComponentType.ARTIFACT_STORE: artifact_store_name,
+            StackComponentType.ORCHESTRATOR: orchestrator_name,
+        },
+    )
+
+    runner = CliRunner()
+    delete_command = cli.commands["stack"].commands["delete"]
+
+    blocked = runner.invoke(
+        delete_command,
+        [new_stack.name],
+        env={"ZENML_CLI_MACHINE_MODE": "true"},
+    )
+
+    assert blocked.exit_code != 0
+    error_payload = json.loads(blocked.stderr)
+    assert error_payload["type"] == "MachineModeConfirmationError"
+    assert clean_client.get_stack(new_stack.id)
+
+    confirmed = runner.invoke(
+        delete_command,
+        [new_stack.name, "--yes"],
+        env={"ZENML_CLI_MACHINE_MODE": "true"},
+    )
+
+    assert confirmed.exit_code == 0
     with pytest.raises(KeyError):
         clean_client.get_stack(new_stack.id)
 

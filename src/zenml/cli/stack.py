@@ -26,13 +26,13 @@ from typing import (
     Set,
     Tuple,
     Union,
+    cast,
 )
 from uuid import UUID
 
 import click
 from rich.console import Console
 from rich.markdown import Markdown
-from rich.prompt import Confirm
 from rich.style import Style
 from rich.syntax import Syntax
 
@@ -50,7 +50,9 @@ from zenml.cli.utils import (
     print_model_url,
 )
 from zenml.client import Client
+from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
+from zenml.constants import DEFAULT_STACK_AND_COMPONENT_NAME
 from zenml.enums import (
     CliCategories,
     StackComponentType,
@@ -83,6 +85,240 @@ if TYPE_CHECKING:
     from zenml.models import StackResponse
 
 logger = get_logger(__name__)
+
+
+def _parse_stack_environment(
+    environment_variables: List[str], *, allow_empty_value: bool
+) -> Dict[str, Optional[str]]:
+    """Parse stack environment variables from CLI input.
+
+    Args:
+        environment_variables: Raw CLI environment variable entries.
+        allow_empty_value: Whether empty values are allowed.
+
+    Returns:
+        Parsed environment mapping.
+    """
+    environment: Dict[str, Optional[str]] = {}
+    for environment_variable in environment_variables:
+        if "=" not in environment_variable:
+            cli_utils.error(
+                "Environment variables must be passed as `KEY=VALUE`."
+            )
+
+        key, value = environment_variable.split("=", 1)
+        if not key:
+            cli_utils.error(
+                "Environment variables must be passed as `KEY=VALUE`."
+            )
+        if value == "" and not allow_empty_value:
+            cli_utils.error(
+                "Environment variables must be passed as `KEY=VALUE`."
+            )
+
+        environment[key] = value or None
+
+    return environment
+
+
+def _environment_preview(
+    environment: Dict[str, Optional[str]],
+) -> Dict[str, str]:
+    """Convert environment updates to a redacted preview.
+
+    Args:
+        environment: Environment values keyed by variable name.
+
+    Returns:
+        A preview showing set/remove intent without exposing values.
+    """
+    return {
+        key: "remove" if value is None else "set"
+        for key, value in environment.items()
+    }
+
+
+def _serialize_component_response(
+    component_type: StackComponentType, component: Any
+) -> Dict[str, Any]:
+    """Serialize a stack component response for dry-run output.
+
+    Args:
+        component_type: The component type.
+        component: The component response model.
+
+    Returns:
+        A dry-run preview dictionary.
+    """
+    # Prefer `flavor_name`: on `ComponentResponse`, `flavor` is a full
+    # `FlavorResponse` object, which would dump a noisy model repr into the
+    # dry-run payload instead of the flavor string.
+    flavor = getattr(component, "flavor_name", None) or getattr(
+        component, "flavor", None
+    )
+    return {
+        "mode": "existing",
+        "type": component_type.value,
+        "name": component.name,
+        "id": str(component.id),
+        "flavor": flavor,
+    }
+
+
+def _serialize_component_info(
+    component_type: StackComponentType, component: ComponentInfo
+) -> Dict[str, Any]:
+    """Serialize a generated stack component preview.
+
+    Args:
+        component_type: The component type.
+        component: The generated component info.
+
+    Returns:
+        A dry-run preview dictionary.
+    """
+    return {
+        "mode": "generated",
+        "type": component_type.value,
+        "flavor": component.flavor,
+        "resource_id": component.service_connector_resource_id,
+    }
+
+
+def _serialize_service_connector_preview(
+    connector: Union[UUID, ServiceConnectorInfo],
+    connector_response: Optional["ServiceConnectorResponse"] = None,
+) -> Dict[str, Any]:
+    """Serialize service connector data for dry-run output.
+
+    Args:
+        connector: The connector reference or generated connector info.
+        connector_response: Resolved connector response if one already exists.
+
+    Raises:
+        ValueError: If an existing connector preview is requested without a
+            resolved connector response.
+
+    Returns:
+        A dry-run preview dictionary.
+    """
+    if isinstance(connector, UUID):
+        if connector_response is None:
+            raise ValueError(
+                "Connector response is required for existing connectors."
+            )
+        connector_type = getattr(
+            connector_response,
+            "type",
+            getattr(connector_response, "connector_type", None),
+        )
+
+        return {
+            "mode": "existing",
+            "id": str(connector_response.id),
+            "name": connector_response.name,
+            "type": connector_type,
+        }
+
+    return {
+        "mode": "generated",
+        "type": connector.type,
+        "auth_method": connector.auth_method,
+    }
+
+
+def _get_stack_for_update_preview(
+    client: Client, stack_name_or_id: Optional[str]
+) -> "StackResponse":
+    """Resolve the stack targeted by an update-style command.
+
+    Args:
+        client: The active client.
+        stack_name_or_id: Optional stack name or ID.
+
+    Returns:
+        The resolved stack model.
+    """
+    if stack_name_or_id:
+        return client.get_stack(
+            name_id_or_prefix=stack_name_or_id,
+            allow_name_prefix_match=False,
+        )
+
+    return client.active_stack_model
+
+
+def _ensure_stack_can_be_modified(stack_: "StackResponse") -> None:
+    """Ensure a stack is not the immutable default stack.
+
+    Args:
+        stack_: The stack model to validate.
+    """
+    if stack_.name == DEFAULT_STACK_AND_COMPONENT_NAME:
+        cli_utils.error("The default stack cannot be modified.")
+
+
+def _ensure_stack_can_be_deleted(
+    client: Client, stack_: "StackResponse"
+) -> None:
+    """Ensure a stack can be deleted.
+
+    Args:
+        client: The active client.
+        stack_: The stack model to validate.
+    """
+    if stack_.name == DEFAULT_STACK_AND_COMPONENT_NAME:
+        cli_utils.error("The default stack cannot be deleted.")
+
+    if stack_.id == client.active_stack_model.id:
+        cli_utils.error(
+            f"Unable to deregister active stack '{stack_.name}'. Make sure "
+            "to designate a new active stack before deleting this one."
+        )
+
+    if stack_.id == GlobalConfiguration().active_stack_id:
+        cli_utils.error(
+            f"Unable to deregister '{stack_.name}' as it is the active stack "
+            "within your global configuration. Make sure to designate a new "
+            "active stack before deleting this one."
+        )
+
+
+def _get_recursive_stack_delete_preview(
+    client: Client, stack_: "StackResponse"
+) -> Dict[str, Any]:
+    """Compute a recursive delete preview for a stack.
+
+    Args:
+        client: The active client.
+        stack_: The stack to inspect.
+
+    Returns:
+        Preview details for a recursive delete.
+    """
+    exclusive_components = []
+    shared_components = []
+
+    for component_type, component_models in stack_.components.items():
+        if not component_models:
+            continue
+
+        component = component_models[0]
+        stacks = client.list_stacks(component_id=component.id, size=2, page=1)
+        preview = {
+            "type": component_type.value,
+            "name": component.name,
+            "id": str(component.id),
+        }
+        if len(stacks) == 1 and stack_.id == stacks[0].id:
+            exclusive_components.append(preview)
+        else:
+            shared_components.append(preview)
+
+    return {
+        "exclusive_components": exclusive_components,
+        "shared_components": shared_components,
+    }
 
 
 @cli.group(
@@ -265,6 +501,7 @@ def stack() -> None:
     required=False,
     multiple=True,
 )
+@cli_utils.dry_run_option
 def register_stack(
     stack_name: str,
     artifact_store: Optional[str] = None,
@@ -287,6 +524,7 @@ def register_stack(
     connector: Optional[str] = None,
     secrets: List[str] = [],
     environment_variables: List[str] = [],
+    dry_run: bool = False,
 ) -> None:
     """Register a stack.
 
@@ -313,6 +551,7 @@ def register_stack(
         secrets: List of secrets to attach to the stack.
         environment_variables: List of environment variables to set when
             running on this stack. Must be of the format "KEY=VALUE".
+        dry_run: Whether to validate and preview the stack without creating it.
     """
     if (provider is None and connector is None) and (
         artifact_store is None or orchestrator is None
@@ -352,19 +591,25 @@ def register_stack(
     except KeyError:
         pass
 
-    environment: Dict[str, str] = {}
-    for environment_variable in environment_variables:
-        key, value = environment_variable.split("=", 1)
-        environment[key] = value
+    environment = _parse_stack_environment(
+        environment_variables, allow_empty_value=False
+    )
 
     labels: Dict[str, str] = {}
     components: Dict[StackComponentType, List[Union[UUID, ComponentInfo]]] = {}
+    # Single-instance component types map to one preview dict; multi-instance
+    # types (alerter, step operator, ...) map to a list of preview dicts.
+    component_previews: Dict[
+        str, Union[Dict[str, Any], List[Dict[str, Any]]]
+    ] = {}
+    service_connector_response: Optional[
+        Union[ServiceConnectorRequest, ServiceConnectorResponse]
+    ] = None
 
     # Cloud Flow
     created_objects: Set[str] = set()
     service_connector: Optional[Union[UUID, ServiceConnectorInfo]] = None
     if provider is not None and connector is None:
-        service_connector_response = None
         use_auto_configure = False
         try:
             service_connector_response, _ = client.create_service_connector(
@@ -385,7 +630,7 @@ def register_stack(
             pass
 
         if service_connector_response:
-            use_auto_configure = Confirm.ask(
+            use_auto_configure = cli_utils.confirmation(
                 f"[bold]{provider.upper()} cloud service connector[/bold] "
                 "has detected connection credentials in your environment.\n"
                 "Would you like to use these credentials or create a new "
@@ -424,6 +669,7 @@ def register_stack(
         else:
             selected_connector = existing_connectors.items[connector_selected]
             service_connector = selected_connector.id
+            service_connector_response = selected_connector
             connector = selected_connector.name
             if isinstance(selected_connector.connector_type, str):
                 provider = selected_connector.connector_type
@@ -473,6 +719,11 @@ def register_stack(
                 )
                 component_info = component_response.id
                 component_name = component_response.name
+                component_previews[component_type.value] = (
+                    _serialize_component_response(
+                        component_type, component_response
+                    )
+                )
             else:
                 if isinstance(service_connector, UUID):
                     # find existing components under same connector
@@ -526,12 +777,22 @@ def register_stack(
                     )
                     component_name = stack_name
                     created_objects.add(component_type.value)
+                    component_previews[component_type.value] = (
+                        _serialize_component_info(
+                            component_type, component_info
+                        )
+                    )
                 else:
                     selected_component = existing_components[
                         component_selected
                     ]
                     component_info = selected_component.id
                     component_name = selected_component.name
+                    component_previews[component_type.value] = (
+                        _serialize_component_response(
+                            component_type, selected_component
+                        )
+                    )
 
             components[component_type] = [component_info]
             if component_type == StackComponentType.ARTIFACT_STORE:
@@ -557,12 +818,29 @@ def register_stack(
             (StackComponentType.DEPLOYER, deployer),
         ]:
             if component_name_ and component_type_ not in components:
-                components[component_type_] = [
-                    client.get_stack_component(
-                        component_type_, component_name_
-                    ).id
-                ]
+                component_response = client.get_stack_component(
+                    component_type_, component_name_
+                )
+                components[component_type_] = [component_response.id]
+                component_previews[component_type_.value] = (
+                    _serialize_component_response(
+                        component_type_, component_response
+                    )
+                )
 
+        validated_secret_names = []
+        for secret_name in secrets:
+            try:
+                secret = client.get_secret(
+                    name_id_or_prefix=secret_name,
+                    allow_partial_name_match=False,
+                )
+            except KeyError as err:
+                cli_utils.exception(err)
+            validated_secret_names.append(secret.name)
+
+        # Resolve multi-instance component types before the dry-run exit so
+        # that a dry run validates (and previews) them as well.
         for component_type_, component_names_ in [
             (StackComponentType.ALERTER, alerter),
             (StackComponentType.STEP_OPERATOR, step_operator),
@@ -570,12 +848,57 @@ def register_stack(
             (StackComponentType.SANDBOX, sandbox),
         ]:
             if component_names_:
+                try:
+                    component_responses = [
+                        client.get_stack_component(
+                            component_type_, component_name_
+                        )
+                        for component_name_ in component_names_
+                    ]
+                except KeyError as err:
+                    cli_utils.exception(err)
                 components[component_type_] = [
-                    client.get_stack_component(
-                        component_type_, component_name_
-                    ).id
-                    for component_name_ in component_names_
+                    response.id for response in component_responses
                 ]
+                component_previews[component_type_.value] = [
+                    _serialize_component_response(component_type_, response)
+                    for response in component_responses
+                ]
+
+        if dry_run:
+            details: Dict[str, Any] = {
+                "would_activate": set_stack,
+                "generated_resources": sorted(created_objects),
+                "environment_updates": _environment_preview(environment),
+            }
+            if labels:
+                details["labels"] = labels
+            if service_connector:
+                details["service_connector"] = (
+                    _serialize_service_connector_preview(
+                        service_connector,
+                        connector_response=cast(
+                            ServiceConnectorResponse,
+                            service_connector_response,
+                        ),
+                    )
+                )
+
+            cli_utils.handle_dry_run_output(
+                action="stack.register",
+                summary=f"Stack `{stack_name}` would be registered.",
+                target={"resource": "stack", "name": stack_name},
+                validated_input={
+                    "name": stack_name,
+                    "provider": provider,
+                    "connector": connector,
+                    "components": component_previews,
+                    "secrets": validated_secret_names,
+                    "set_active": set_stack,
+                },
+                details=details,
+            )
+            return
 
         try:
             created_stack = client.zen_store.create_stack(
@@ -798,6 +1121,7 @@ def register_stack(
     required=False,
     multiple=True,
 )
+@cli_utils.dry_run_option
 def update_stack(
     stack_name_or_id: Optional[str] = None,
     artifact_store: Optional[str] = None,
@@ -818,6 +1142,7 @@ def update_stack(
     secrets: List[str] = [],
     remove_secrets: List[str] = [],
     environment_variables: List[str] = [],
+    dry_run: bool = False,
 ) -> None:
     """Update a stack.
 
@@ -843,15 +1168,13 @@ def update_stack(
         remove_secrets: Secrets to remove from the stack.
         environment_variables: Environment variables to set when running on this
             stack. Must be of the format "KEY=VALUE".
+        dry_run: Whether to validate and preview the update without saving it.
     """
     client = Client()
 
-    environment: Dict[str, Any] = {}
-    for environment_variable in environment_variables:
-        key, value = environment_variable.split("=", 1)
-        # Fallback to None if the value is empty so the existing environment
-        # variable is removed
-        environment[key] = value or None
+    environment = _parse_stack_environment(
+        environment_variables, allow_empty_value=True
+    )
 
     with console.status("Updating stack...\n"):
         updates: Dict[StackComponentType, List[Union[str, UUID]]] = dict()
@@ -889,6 +1212,74 @@ def update_stack(
             updates[StackComponentType.LOG_STORE] = [log_store]
         if sandbox:
             updates[StackComponentType.SANDBOX] = list(sandbox)
+
+        if dry_run:
+            try:
+                target_stack = _get_stack_for_update_preview(
+                    client, stack_name_or_id
+                )
+            except KeyError as err:
+                cli_utils.exception(err)
+
+            _ensure_stack_can_be_modified(target_stack)
+
+            component_previews = {}
+            for component_type, component_ids in updates.items():
+                try:
+                    component_previews[component_type.value] = [
+                        _serialize_component_response(
+                            component_type,
+                            client.get_stack_component(
+                                component_type, component_id
+                            ),
+                        )
+                        for component_id in component_ids
+                    ]
+                except KeyError as err:
+                    cli_utils.exception(err)
+
+            added_secret_names = []
+            for secret_name in secrets:
+                try:
+                    secret = client.get_secret(
+                        name_id_or_prefix=secret_name,
+                        allow_partial_name_match=False,
+                    )
+                except KeyError as err:
+                    cli_utils.exception(err)
+                added_secret_names.append(secret.name)
+
+            removed_secret_names = []
+            for secret_name in remove_secrets:
+                try:
+                    secret = client.get_secret(
+                        name_id_or_prefix=secret_name,
+                        allow_partial_name_match=False,
+                    )
+                except KeyError as err:
+                    cli_utils.exception(err)
+                removed_secret_names.append(secret.name)
+
+            cli_utils.handle_dry_run_output(
+                action="stack.update",
+                summary=f"Stack `{target_stack.name}` would be updated.",
+                target={
+                    "resource": "stack",
+                    "name": target_stack.name,
+                    "id": str(target_stack.id),
+                },
+                validated_input={
+                    "component_updates": component_previews,
+                    "add_secrets": added_secret_names,
+                    "remove_secrets": removed_secret_names,
+                    "environment_updates": _environment_preview(environment),
+                },
+                details={
+                    "uses_active_stack_default": stack_name_or_id is None,
+                    "current_stack_name": target_stack.name,
+                },
+            )
+            return
 
         try:
             updated_stack = client.update_stack(
@@ -1373,8 +1764,12 @@ def describe_stack(
     is_flag=True,
     help="Recursively delete all stack components",
 )
+@cli_utils.dry_run_option
 def delete_stack(
-    stack_name_or_id: str, yes: bool = False, recursive: bool = False
+    stack_name_or_id: str,
+    yes: bool = False,
+    recursive: bool = False,
+    dry_run: bool = False,
 ) -> None:
     """Delete a stack.
 
@@ -1384,7 +1779,41 @@ def delete_stack(
             confirmation.
         recursive: The stack will be deleted along with the corresponding stack
             associated with it.
+        dry_run: Whether to validate and preview the deletion without
+            performing it.
     """
+    client = Client()
+
+    if dry_run:
+        try:
+            stack_model = client.get_stack(
+                name_id_or_prefix=stack_name_or_id,
+                allow_name_prefix_match=False,
+            )
+        except KeyError as err:
+            cli_utils.exception(err)
+
+        _ensure_stack_can_be_deleted(client, stack_model)
+
+        details = {"recursive": recursive}
+        if recursive:
+            details.update(
+                _get_recursive_stack_delete_preview(client, stack_model)
+            )
+
+        cli_utils.handle_dry_run_output(
+            action="stack.delete",
+            summary=f"Stack `{stack_model.name}` would be deleted.",
+            target={
+                "resource": "stack",
+                "name": stack_model.name,
+                "id": str(stack_model.id),
+            },
+            validated_input={"recursive": recursive},
+            details=details,
+        )
+        return
+
     recursive_confirmation = False
     if recursive:
         recursive_confirmation = yes or cli_utils.confirmation(
@@ -1411,8 +1840,6 @@ def delete_stack(
         return
 
     with console.status(f"Deleting stack '{stack_name_or_id}'...\n"):
-        client = Client()
-
         if recursive and recursive_confirmation:
             client.delete_stack(stack_name_or_id, recursive=True)
             return
@@ -1525,7 +1952,15 @@ def _import_stack_component(
             return component.id
         else:
             display_name = _component_display_name(component_type)
-            name = click.prompt(
+            if cli_utils.is_machine_mode():
+                cli_utils.error(
+                    f"A component of type '{display_name}' with the name "
+                    f"'{name}' already exists but is configured differently. "
+                    "Please rerun the import with a different target name.",
+                    error_type="MachineModePromptError",
+                )
+
+            name = cli_utils.prompt(
                 f"A component of type '{display_name}' with the name "
                 f"'{name}' already exists, "
                 f"but is configured differently. "
@@ -1634,7 +2069,14 @@ def import_stack(
     # ask user for a new stack_name if current one already exists
     client = Client()
     if client.list_stacks(name=stack_name):
-        stack_name = click.prompt(
+        if cli_utils.is_machine_mode():
+            cli_utils.error(
+                f"Stack `{stack_name}` already exists. Please rerun the "
+                "import with a different stack name.",
+                error_type="MachineModePromptError",
+            )
+
+        stack_name = cli_utils.prompt(
             f"Stack `{stack_name}` already exists. Please choose a different "
             f"name",
             type=str,
@@ -1721,6 +2163,14 @@ def register_secrets(
                           If empty, the active stack will be used.
     """
     from zenml.stack.stack import Stack
+
+    if cli_utils.is_machine_mode():
+        cli_utils.error(
+            "Machine mode blocks interactive secret registration. Please "
+            "register or update the required secrets explicitly before using "
+            "this command.",
+            error_type="MachineModePromptError",
+        )
 
     client = Client()
 
@@ -1880,6 +2330,13 @@ connectors.
     help="Immediately set this stack as active.",
     type=click.BOOL,
 )
+@click.option(
+    "--yes",
+    "-y",
+    is_flag=True,
+    default=False,
+    help="Don't ask for confirmation before opening the browser.",
+)
 @click.pass_context
 def deploy(
     ctx: click.Context,
@@ -1887,6 +2344,7 @@ def deploy(
     stack_name: Optional[str] = None,
     location: Optional[str] = None,
     set_stack: bool = False,
+    yes: bool = False,
 ) -> None:
     """Deploy and register a fully functional cloud ZenML stack.
 
@@ -1897,11 +2355,23 @@ def deploy(
             of the recipe deployment.
         location: The location to deploy the stack to.
         set_stack: Immediately set the deployed stack as active.
+        yes: If set, don't ask for confirmation before opening the browser.
 
     Raises:
         click.Abort: If the user aborts the deployment.
         KeyboardInterrupt: If the user interrupts the deployment.
     """
+    # This flow opens a browser and blocks until the cloud deployment
+    # finishes, so it can never complete in a non-interactive session.
+    if cli_utils.is_machine_mode():
+        cli_utils.error(
+            "Machine mode cannot run `zenml stack deploy`: the command "
+            "opens a browser session and waits for the deployment to "
+            "complete interactively. Please run it in an interactive "
+            "terminal instead.",
+            error_type="MachineModePromptError",
+        )
+
     stack_name = stack_name or f"zenml-{provider}-stack"
 
     # Set up the markdown renderer to use the old-school markdown heading
@@ -1969,7 +2439,7 @@ def deploy(
                 style=Style(bgcolor="grey15"),
             )
 
-        if not cli_utils.confirmation(
+        if not yes and not cli_utils.confirmation(
             "\n\nProceed to continue with the deployment. You will be "
             f"automatically redirected to "
             f"{deployment_config.deployment_url_text} in your browser.",
@@ -2141,6 +2611,13 @@ def _get_service_connector_info(
     """
     from rich.prompt import Prompt
 
+    if cli_utils.is_machine_mode():
+        cli_utils.error(
+            "Machine mode blocks the interactive cloud stack wizard. Please "
+            "provide connector and component configuration explicitly.",
+            error_type="MachineModePromptError",
+        )
+
     if cloud_provider not in {"aws", "gcp", "azure"}:
         raise ValueError(f"Unknown cloud provider {cloud_provider}")
 
@@ -2226,6 +2703,13 @@ def _get_stack_component_info(
             supported.
     """
     from rich.prompt import Prompt
+
+    if cli_utils.is_machine_mode():
+        cli_utils.error(
+            "Machine mode blocks the interactive cloud stack wizard. Please "
+            "provide connector and component configuration explicitly.",
+            error_type="MachineModePromptError",
+        )
 
     if cloud_provider not in {"aws", "azure", "gcp"}:
         raise ValueError(f"Unknown cloud provider {cloud_provider}")

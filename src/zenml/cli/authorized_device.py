@@ -36,11 +36,24 @@ def authorized_device() -> None:
 
 @authorized_device.command("describe")
 @click.argument("id_or_prefix", type=str, required=True)
-def describe_authorized_device(id_or_prefix: str) -> None:
+@click.option(
+    "--output",
+    "-o",
+    "output_format",
+    type=click.Choice(["table", "json", "yaml", "tsv", "csv"]),
+    default=None,
+    callback=cli_utils.resolve_output_format_option,
+    help="Output format for the authorized device.",
+)
+def describe_authorized_device(
+    id_or_prefix: str,
+    output_format: OutputFormat = "table",
+) -> None:
     """Fetch an authorized device.
 
     Args:
         id_or_prefix: The ID of the authorized device to fetch.
+        output_format: Format for output (table/json/yaml/csv/tsv).
     """
     try:
         device = Client().get_authorized_device(
@@ -49,10 +62,20 @@ def describe_authorized_device(id_or_prefix: str) -> None:
     except KeyError as e:
         cli_utils.exception(e)
 
-    cli_utils.print_pydantic_model(
-        title=f"Authorized device `{device.id}`",
-        model=device,
-        exclude_columns={"user"},
+    if output_format == "table":
+        cli_utils.print_pydantic_model(
+            title=f"Authorized device `{device.id}`",
+            model=device,
+            exclude_columns={"user"},
+        )
+        return
+
+    cli_utils.handle_output_single(
+        data=cli_utils.serialize_pydantic_model(
+            model=device,
+            exclude_columns={"user"},
+        ),
+        output_format=output_format,
     )
 
 
