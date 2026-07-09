@@ -1,7 +1,8 @@
 # RL spike — findings for core (2026-07-09)
 
-*Audience: Michael, Hamza. This synthesizes `BREAKAGE_LOG.md` (16 entries),
-`CALIBRATION.md`, and `TRAINING_RUN.md` into themes and asks. The log stays
+*Audience: Michael, Hamza. This synthesizes [`BREAKAGE_LOG.md`](BREAKAGE_LOG.md)
+(16 entries), [`CALIBRATION.md`](CALIBRATION.md), and
+[`TRAINING_RUN.md`](TRAINING_RUN.md) into themes and asks. The log stays
 the source of truth for reproduction detail; entry numbers below refer to it.
 Michael has been following the log as it grew, so this document orders and
 weighs rather than re-tells.*
@@ -25,7 +26,8 @@ Warm serving cut per-iteration cost by ~5–8 min of engine loading versus
 offline mode (209.6s vs 555–727s per iteration at smoke scale — the
 serving-gap evidence, entry 2). The training outcome itself was
 inconclusive (three clean optimizer steps, statistically flat rewards —
-see TRAINING_RUN.md), but the training outcome was never the deliverable.
+see [`TRAINING_RUN.md`](TRAINING_RUN.md)), but the training outcome was
+never the deliverable.
 
 ## Theme 1 — Dynamic fan-out has no working concurrency or placement story (entries 11, 12, 14, 15)
 
@@ -153,7 +155,8 @@ pipelines**. Everything in themes 1–2 is what happens when a workload is
 long, wide, and stochastic. None of it looks architectural; all of it is
 defaults, caps, heartbeats, and honest failure states.
 
-Per `framework_breakout.md`, the closing question is now wider than RL:
+Per [`framework_breakout.md`](framework_breakout.md), the closing question
+is now wider than RL:
 the same loop (generate → sandbox-verify → update an artifact → iterate)
 underlies prompt evolution, eval campaigns, and trajectory export, and the
 follow-up spikes are chosen to test whether ZenML is the harness for that
