@@ -3,8 +3,9 @@
 *Audience: Michael, Hamza. This synthesizes [`BREAKAGE_LOG.md`](BREAKAGE_LOG.md)
 (18 entries), [`CALIBRATION.md`](CALIBRATION.md),
 [`TRAINING_RUN.md`](TRAINING_RUN.md), [`SNAPSHOTS.md`](SNAPSHOTS.md)
-(task F1), and [`DATA_LAYER.md`](DATA_LAYER.md) (task E3) into themes and
-asks. The log stays the source of truth for reproduction detail; entry
+(task F1), [`DATA_LAYER.md`](DATA_LAYER.md) (task E3), and
+[`verifiers_c2/README.md`](verifiers_c2/README.md) (task C2) into themes
+and asks. The log stays the source of truth for reproduction detail; entry
 numbers below refer to it. Michael has been following the log as it grew,
 so this document orders and weighs rather than re-tells.*
 
@@ -210,6 +211,63 @@ Theme 1's per-step overhead.
   what a relative remote path means at the base class, or reject
   relative paths uniformly.
 
+## Theme 5 — The sandbox travels: what the first ecosystem test found (task C2)
+
+Everything above is about ZenML running the loop itself. Task C2 asked
+the opposite question: what happens when *someone else's* framework owns
+the loop and ZenML only supplies the sandbox? The framework was
+`verifiers` (Prime Intellect), which the RL-environments ecosystem is
+converging on for packaging "task + reward" as a reusable object. The
+collision to test: our reward runs *inside* a sandbox where the
+generated code executes; verifiers runs reward functions in its own
+process, with no sandbox in sight.
+
+It works. A verifiers reward function that opens a ZenML Sandbox
+session per completion and runs our unmodified scorer inside it
+reproduces the spike's rewards exactly — 18/18 canned completions
+across five tasks — and verifiers' own concurrency machinery happily
+ran four sandbox sessions at a time
+([`verifiers_c2/`](verifiers_c2/README.md)). It took two adaptations,
+both small and both generalizable: the blocking session calls go onto a
+thread (their event loop must not stall while a pipeline runs), and
+concurrency gets a cap (Theme 1's lesson travels — any framework will
+stampede the sandbox backend if you let it).
+
+Three findings matter beyond the mechanics:
+
+1. **The sandbox is separable from the orchestration.** This is the
+   first evidence that a ZenML Sandbox is useful with no ZenML pipeline
+   anywhere in sight — created, used, and destroyed as a library call
+   from inside someone else's harness. The loop owner and the sandbox
+   owner can be different products. That reframes the "is ZenML the
+   harness for this spectrum?" question: even where the answer is no,
+   the sandbox can still be in the room.
+2. **verifiers built its own sandbox lifecycle and welded it to one
+   vendor.** Their new sandbox support (the "safer sandbox lifecycle"
+   from their release notes) is per-rollout create/destroy with retries
+   and teardown — and it constructs Prime Intellect's paid
+   `prime_sandboxes` client directly, with no way to hand it anything
+   else. The contract underneath is five duck-typed async methods
+   (create, run a command, upload, read a file, delete), every one of
+   which ZenML's session API can satisfy. The distance between "ZenML
+   Sandbox as a verifiers backend" and reality is one hardcoded import,
+   in their code. If that's a direction we want, it's time-sensitive:
+   the contract is ossifying around Prime's cloud right now.
+3. **Theme 2 is an ecosystem blind spot, not a ZenML quirk.** verifiers
+   swallows any exception a reward function raises and scores the
+   rollout 0.0 — the exact "bad completion, or broken harness?"
+   ambiguity that entry 16 turned into hours of archaeology, rebuilt
+   independently by another team. And their own docs concede that
+   anything a reward needs from a sandbox must be captured before the
+   sandbox is destroyed — which is precisely what F1's snapshots do,
+   one layer down. Nobody in this ecosystem has solved failure
+   forensics. We have the beginnings of it, and it would differentiate.
+
+**Asks:** none for core plumbing — this theme is product direction, not
+bug fixes. The concrete decision it tees up: whether to pursue an
+upstream PR (or a published shim) making ZenML Sandbox a verifiers
+backend while the contract is still five methods wide.
+
 ## The verdict question, widened
 
 The honest summary for "would we recommend ZenML for this workload
@@ -221,8 +279,8 @@ themes 1–2 is what happens when a workload is long, wide, and
 stochastic. None of it looks architectural. All of it is defaults, caps,
 heartbeats, and honest failure states.
 
-The two follow-up tasks (F1 snapshots, E3 measurement) sharpen that
-verdict rather than change it. The snapshot work proves the thing Hamza
+The follow-up tasks (F1 snapshots, E3 measurement, C2 ecosystem test)
+sharpen that verdict rather than change it. The snapshot work proves the thing Hamza
 described on the 7/8 call already works: a failed sandbox can become an
 object you reopen with one command and look around in. What blocks it is
 that only the Modal flavor implements the API — a coverage problem, not
@@ -237,5 +295,9 @@ is now wider than RL:
 the same loop (generate → sandbox-verify → update an artifact → iterate)
 underlies prompt evolution, eval campaigns, and trajectory export, and the
 follow-up spikes are chosen to test whether ZenML is the harness for that
-whole spectrum rather than for GRPO specifically. The findings above are
-the platform work that any of those consumers would hit first.
+whole spectrum rather than for GRPO specifically. C2 supplied the first
+datapoint, and it cuts both ways: where a framework already owns the
+loop, ZenML's harness adds nothing they miss — but the sandbox slots
+into their machinery today, and their own sandbox story is a single
+vendor hardcoded. The findings above are the platform work that any of
+those consumers would hit first.
