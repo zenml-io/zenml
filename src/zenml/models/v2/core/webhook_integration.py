@@ -30,7 +30,10 @@ from zenml.models.v2.base.scoped import (
     ProjectScopedResponseMetadata,
     ProjectScopedResponseResources,
 )
-from zenml.utils.secret_utils import PlainSerializedSecretStr
+from zenml.utils.secret_utils import (
+    NonEmptyPlainSerializedSecretStr,
+    PlainSerializedSecretStr,
+)
 
 
 class WebhookIntegrationRequest(ProjectScopedRequest):
@@ -39,7 +42,7 @@ class WebhookIntegrationRequest(ProjectScopedRequest):
     name: str = Field(max_length=STR_FIELD_MAX_LENGTH)
     webhook_type: WebhookType
     active: bool = True
-    secret: PlainSerializedSecretStr | None = Field(
+    secret: NonEmptyPlainSerializedSecretStr | None = Field(
         default=None,
         description="Optional signing secret. One is generated when omitted.",
     )
@@ -166,7 +169,7 @@ class WebhookIntegrationCreateResponse(BaseZenModel):
 class WebhookIntegrationSecretRequest(BaseZenModel):
     """Request model for rotating a webhook integration secret."""
 
-    secret: PlainSerializedSecretStr | None = None
+    secret: NonEmptyPlainSerializedSecretStr | None = None
 
 
 class WebhookIntegrationSecretResponse(BaseZenModel):

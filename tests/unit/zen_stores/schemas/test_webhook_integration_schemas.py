@@ -1,3 +1,5 @@
+"""Unit tests for webhook integration schemas and request models."""
+
 from datetime import datetime
 from uuid import uuid4
 
@@ -6,7 +8,11 @@ from pydantic import ValidationError
 
 from zenml.constants import API, VERSION_1, WEBHOOKS
 from zenml.enums import WebhookType
-from zenml.models import WebhookEventStatsUpdate
+from zenml.models import (
+    WebhookEventStatsUpdate,
+    WebhookIntegrationRequest,
+    WebhookIntegrationSecretRequest,
+)
 from zenml.zen_stores.schemas.webhook_integration_schemas import (
     WebhookIntegrationSchema,
 )
@@ -45,6 +51,7 @@ def _webhook_integration_schema() -> WebhookIntegrationSchema:
 def test_webhook_event_stats_update_accepts_single_outcome(
     update: WebhookEventStatsUpdate,
 ) -> None:
+    """Webhook stats updates accept exactly one terminal outcome."""
     assert (
         sum([update.accepted, update.auth_failed, update.invalid_payload]) == 1
     )
@@ -61,13 +68,51 @@ def test_webhook_event_stats_update_accepts_single_outcome(
 def test_webhook_event_stats_update_rejects_invalid_outcome(
     kwargs: dict[str, object],
 ) -> None:
+    """Webhook stats updates reject missing or conflicting outcomes."""
     with pytest.raises(ValidationError):
         WebhookEventStatsUpdate(**kwargs)
+
+
+@pytest.mark.parametrize("secret", ["", "   "])
+def test_webhook_integration_request_rejects_empty_secret(
+    secret: str,
+) -> None:
+    """Webhook integration creation rejects empty signing secrets."""
+    with pytest.raises(ValidationError):
+        WebhookIntegrationRequest(
+            name="github-intake",
+            project=uuid4(),
+            webhook_type=WebhookType.GITHUB,
+            secret=secret,
+        )
+
+
+@pytest.mark.parametrize("secret", ["", "   "])
+def test_webhook_integration_secret_request_rejects_empty_secret(
+    secret: str,
+) -> None:
+    """Webhook integration secret rotation rejects empty signing secrets."""
+    with pytest.raises(ValidationError):
+        WebhookIntegrationSecretRequest(secret=secret)
+
+
+def test_webhook_integration_requests_allow_missing_secret() -> None:
+    """Webhook integration requests allow missing secrets for generation."""
+    integration_request = WebhookIntegrationRequest(
+        name="github-intake",
+        project=uuid4(),
+        webhook_type=WebhookType.GITHUB,
+    )
+    secret_request = WebhookIntegrationSecretRequest()
+
+    assert integration_request.secret is None
+    assert secret_request.secret is None
 
 
 def test_webhook_integration_schema_to_model_includes_body_and_metadata() -> (
     None
 ):
+    """Webhook integration schemas include body and stats metadata."""
     schema = _webhook_integration_schema()
 
     response = schema.to_model(include_metadata=True)
@@ -93,6 +138,7 @@ def test_webhook_integration_schema_to_model_includes_body_and_metadata() -> (
 def test_webhook_integration_schema_to_model_can_include_empty_resources() -> (
     None
 ):
+    """Webhook integration schemas can include empty resources."""
     schema = _webhook_integration_schema()
     schema.user = None
 
