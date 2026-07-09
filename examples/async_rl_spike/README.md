@@ -51,6 +51,7 @@ the stack points there.
 ```
 <artifact_store>/<run_name>/
   versions/v{n}/adapter/   + v{n}/LIVE (servable) | v{n}/RETIRED (shutting down)
+  versions/v{n}/ENDPOINT   remote mode: the version's vLLM endpoint record
   current                  atomic pointer: newest live version
   rollouts/pending/        generators drop complete groups here
   rollouts/claimed/        trainer moves a group here while consuming it
@@ -129,17 +130,64 @@ pytest tests/test_reward.py -v
   sandbox-scoring idle time.
 - **`--groups-per-step`** is the target GRPO batch size per optimizer step.
 
-## Transition to remote
+## Serving modes
 
-Coordination already runs through `fileio` against the stack's artifact
-store, so pointing the stack at S3 or GCS moves weights, queue, and markers
-off the local disk with no code change. Two things still need work for a
-real distributed run: generation moves to a vLLM server (the local adapter
-directory becomes a served version), and the atomicity the pointer and
-queue rely on has to be reconsidered. `rename` is atomic on local disk but
-copy-then-delete on object storage, so `current` and the enqueue/claim
-handoff need a real backend (a DB row or a queue) once writers are on
-different machines.
+Generation runs in one of two modes, selected with `--serving-mode` on both
+entrypoints:
+
+- **`local`** (default): each generator loads the current version's adapter
+  from the artifact store and runs vLLM in-process (or the stub, in a dry
+  run). This is the mode the dry run above uses.
+- **`remote`**: the trainer deploys a vLLM server serving each published
+  version's adapter and records the endpoint under `versions/v{n}/ENDPOINT`.
+  Generators read the current version's endpoint and call it over HTTP, never
+  touching the adapter on disk. `--max-versions` caps how many versions stay
+  served: when a version ages out of the window the trainer spins its serving
+  down, and a generator whose version was already torn down fails with a
+  clear `version_retired` message while the rollout loop continues against
+  the new current version on the next wave.
+
+Remote mode is GPU-only (no dry run). Pick a serving backend with `--backend`
+on the trainer.
+
+### Kubernetes backend (`--backend k8s`, default)
+
+Each version gets its own raw Kubernetes Deployment plus Service (see
+`serving/k8s_vllm.py`), and retiring a version deletes its deployment. Needs
+`kubernetes` installed and a reachable cluster. Deployment names, namespace,
+and the server image live in `k8s_settings.py`.
+
+```bash
+python run_trainer.py  --run-name async_rl_run --serving-mode remote --backend k8s --max-versions 2
+python run_rollouts.py --run-name async_rl_run --serving-mode remote --num-parallel 2
+```
+
+### Modal backend (`--backend modal`)
+
+One long-lived Modal vLLM app serves every version as a separately loaded
+LoRA (see `serving/modal_app.py` and `serving/modal_vllm.py`), and retiring a
+version unloads its adapter. This needs no cluster and no local GPU, so it is
+the way to exercise real vLLM from a laptop. Deploy the app once, then run
+remote:
+
+```bash
+# deploy the vLLM app (model / GPU / rank are set via env, defaults shown):
+ASYNC_RL_MODEL=Qwen/Qwen3-0.6B ASYNC_RL_GPU=L4 modal deploy serving/modal_app.py
+
+python run_trainer.py  --run-name async_rl_run --serving-mode remote --backend modal --max-versions 2
+python run_rollouts.py --run-name async_rl_run --serving-mode remote --num-parallel 2
+```
+
+The trainer uploads each version's adapter to a Modal Volume and hot-loads it
+into the running app. The app reloads the Volume on an interval so it picks
+up new adapters, and `--max-versions` caps how many LoRAs stay loaded.
+
+Coordination runs through `fileio` against the stack's artifact store either
+way, so pointing the stack at S3 or GCS moves weights, queue, and markers off
+local disk with no code change. One caveat remains for a fully distributed
+run: `rename` is atomic on local disk but copy-then-delete on object storage,
+so `current` and the enqueue/claim handoff need a real backend (a DB row or a
+queue) once writers are on different machines.
 
 ## Layout
 
@@ -147,9 +195,11 @@ different machines.
 |---|---|
 | `tasks/tasks.jsonl` | 50 "write a ZenML dynamic pipeline that X" tasks + machine-checkable specs |
 | `prompts.py` | System prompt with the slim dynamic-pipelines cheatsheet |
-| `generation.py` | `VLLMGenerator` (GPU) / `StubGenerator` (dry run) behind one interface |
+| `generation.py` | `VLLMGenerator` (local GPU) / `StubGenerator` (dry run) / `RemoteVLLMGenerator` (remote HTTP) behind one interface |
 | `stub_completions/` | Canned completions at four quality tiers for the dry run |
 | `sandbox_scripts/score_pipeline.py` | Self-contained in-sandbox runner + reward scorer |
+| `serving/` | vLLM serving backends (Kubernetes + Modal) and the shared HTTP client (remote mode) |
+| `k8s_settings.py` | Deployment names, namespace, and server image for the Kubernetes backend |
 | `async_shared.py` | Version registry, rollout queue, and markers over the artifact store via `fileio` |
 | `async_training.py` | One GRPO optimizer step as a plain function |
 | `async_scoring.py` | Sandbox scoring for the rollout pipeline |

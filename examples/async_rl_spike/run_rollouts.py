@@ -62,11 +62,15 @@ def main() -> None:
     parser.add_argument("--num-parallel", type=int, default=4)
     parser.add_argument("--dry-run", action="store_true", default=True)
     parser.add_argument("--no-dry-run", dest="dry_run", action="store_false")
+    parser.add_argument(
+        "--serving-mode", choices=["local", "remote"], default="local"
+    )
     parser.add_argument("--num-tasks", type=int, default=None)
     parser.add_argument("--task-ids", nargs="*", default=None)
     parser.add_argument("--temperature", type=float, default=0.9)
     parser.add_argument("--max-tokens", type=int, default=1024)
-    parser.add_argument("--max-waves", type=int, default=None)
+    parser.add_argument("--max-rollouts", type=int, default=None)
+    parser.add_argument("--first-version-timeout", type=float, default=300.0)
     args = parser.parse_args()
 
     if Client().active_stack.sandbox is None:
@@ -77,7 +81,10 @@ def main() -> None:
             "-sb local_sandbox --set"
         )
 
-    if args.dry_run:
+    # Remote serving has no stub path, so it is always a real (non-dry) run.
+    dry_run = args.dry_run if args.serving_mode == "local" else False
+
+    if dry_run:
         task_ids = args.task_ids or sorted(PERFECT)
         num_tasks = None
     else:
@@ -88,7 +95,8 @@ def main() -> None:
     run_dir = resolve_run_root(args.run_name)
     print(
         f"rollouts: run_dir={run_dir} model={args.model} "
-        f"num_parallel={args.num_parallel} dry_run={args.dry_run} "
+        f"serving_mode={args.serving_mode} "
+        f"num_parallel={args.num_parallel} dry_run={dry_run} "
         f"tasks={len(tasks)}"
     )
     rollout_pipeline(
@@ -97,10 +105,12 @@ def main() -> None:
         model_name=args.model,
         group_size=args.group_size,
         num_parallel=args.num_parallel,
-        dry_run=args.dry_run,
+        dry_run=dry_run,
         temperature=args.temperature,
         max_tokens=args.max_tokens,
-        max_waves=args.max_waves,
+        serving_mode=args.serving_mode,
+        first_version_timeout_seconds=args.first_version_timeout,
+        max_rollouts=args.max_rollouts,
     )
 
 
