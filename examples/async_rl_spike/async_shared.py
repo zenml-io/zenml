@@ -37,6 +37,7 @@ from zenml.utils import io_utils
 
 LIVE_MARKER = "LIVE"
 RETIRED_MARKER = "RETIRED"
+ENDPOINT_MARKER = "ENDPOINT"
 
 
 def resolve_run_root(run_name: str) -> str:
@@ -113,6 +114,43 @@ def is_live(root: str, version: int) -> bool:
     return fileio.exists(
         os.path.join(version_root(root, version), LIVE_MARKER)
     )
+
+
+def set_endpoint(root: str, version: int, endpoint: Dict[str, Any]) -> None:
+    """Record a version's vLLM endpoint so generators can reach it.
+
+    Written before the version is published so a generator that sees the
+    LIVE marker always finds the endpoint too.
+
+    Args:
+        root: The run directory.
+        version: Version number.
+        endpoint: Endpoint record from ensure_vllm_deployment plus the
+            loaded adapter name.
+    """
+    io_utils.write_file_contents_as_string(
+        os.path.join(version_root(root, version), ENDPOINT_MARKER),
+        json.dumps(endpoint),
+    )
+
+
+def get_endpoint(root: str, version: int) -> Optional[Dict[str, Any]]:
+    """Read a version's vLLM endpoint record.
+
+    Args:
+        root: The run directory.
+        version: Version number.
+
+    Returns:
+        The endpoint record, or None if the version has no server.
+    """
+    path = os.path.join(version_root(root, version), ENDPOINT_MARKER)
+    if not fileio.exists(path):
+        return None
+    try:
+        return json.loads(io_utils.read_file_contents_as_string(path))
+    except ValueError:
+        return None
 
 
 def set_current(root: str, version: int) -> None:
@@ -236,7 +274,9 @@ def stage_adapter_in(local_dir: str, root: str, version: int) -> None:
         root: The run directory.
         version: Version number to publish the adapter as.
     """
-    io_utils.copy_dir(str(local_dir), adapter_dir(root, version), overwrite=True)
+    io_utils.copy_dir(
+        str(local_dir), adapter_dir(root, version), overwrite=True
+    )
 
 
 def stage_adapter_out(root: str, version: int) -> str:
@@ -358,18 +398,6 @@ def discard_group(path: str) -> None:
     """
     if fileio.exists(path):
         fileio.remove(path)
-
-
-def queue_depth(root: str) -> int:
-    """Return the number of groups waiting in the queue.
-
-    Args:
-        root: The run directory.
-
-    Returns:
-        Count of pending group files.
-    """
-    return len(_pending_group_names(os.path.join(root, "rollouts", "pending")))
 
 
 def signal_stop(root: str) -> None:

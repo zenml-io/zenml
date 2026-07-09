@@ -10,3 +10,11 @@ torch>=2.4
 # the dry run. On the cluster it comes preinstalled via the parent image
 # vllm/vllm-openai:v0.24.0 (see k8s_settings.py / GPU_SETUP.md part 4):
 # vllm==0.24.0
+
+# Remote serving with the Kubernetes backend only: the trainer deploys and
+# tears down per-version vLLM servers via the Kubernetes API.
+kubernetes>=21.7,<26
+
+# Remote serving with the Modal backend only: the trainer resolves the vLLM
+# app endpoint and loads/unloads a LoRA per version.
+modal>=0.64

@@ -17,10 +17,11 @@ from zenml.client import Client
 SCORER_PATH = (
     Path(__file__).resolve().parent / "sandbox_scripts" / "score_pipeline.py"
 )
-PIPELINE_FILE = "pipeline.py"
-SPEC_FILE = "spec.json"
-SCORER_FILE = "score_pipeline.py"
-REWARD_FILE = "reward.json"
+SCORER_SRC = SCORER_PATH.read_text()
+PIPELINE_FILE = "/tmp/pipeline.py"
+SPEC_FILE = "/tmp/spec.json"
+SCORER_FILE = "/tmp/score_pipeline.py"
+REWARD_FILE = "/tmp/reward.json"
 
 
 def _put_file(session: Any, content: str, remote_path: str) -> None:
@@ -135,7 +136,7 @@ def score_one(episode: Dict[str, Any]) -> Dict[str, Any]:
                 PIPELINE_FILE,
             )
             _put_file(session, json.dumps(episode["spec"]), SPEC_FILE)
-            _put_file(session, SCORER_PATH.read_text(), SCORER_FILE)
+            _put_file(session, SCORER_SRC, SCORER_FILE)
             timings["upload_s"] = round(time.time() - started, 2)
 
             started = time.time()

@@ -16,26 +16,29 @@ zero code changes. The contract every generator must honor:
 
 from typing import Any, Dict, List, Optional
 
-# One episode dict per completion. These keys flow through the rollout
-# queue into the trainer's rollout_func hand-off.
-#
-# completion_text vs program_text: training uses the RAW sampled tokens
-# (completion_ids match completion_text exactly — required for correct
-# logprob alignment), while the sandbox runs and rewards program_text,
-# the markdown-fence-stripped version. Rewarding an extracted program
-# while training on raw tokens is standard RL practice; the two must not
-# be conflated.
-EPISODE_KEYS = (
-    "task_id",
-    "rollout_index",
-    "prompt_text",
-    "completion_text",
-    "program_text",
-    "prompt_ids",
-    "completion_ids",
-    "logprobs",
-    "spec",
-)
+
+def _make_episode(
+    task: Dict[str, Any],
+    rollout_index: int,
+    prompt_text: str,
+    completion_text: str,
+    prompt_ids: List[int],
+    completion_ids: List[int],
+    logprobs: List[float],
+) -> Dict[str, Any]:
+    from prompts import strip_markdown_fences
+
+    return {
+        "task_id": task["id"],
+        "rollout_index": rollout_index,
+        "prompt_text": prompt_text,
+        "completion_text": completion_text,
+        "program_text": strip_markdown_fences(completion_text),
+        "prompt_ids": list(prompt_ids),
+        "completion_ids": list(completion_ids),
+        "logprobs": logprobs,
+        "spec": task["spec"],
+    }
 
 
 class StubGenerator:
@@ -82,7 +85,7 @@ class StubGenerator:
             One episode dict per (task, rollout_index).
         """
         import torch
-        from prompts import build_prompt, strip_markdown_fences
+        from prompts import build_prompt
         from stub_completions import canned_completion
 
         episodes = []
@@ -112,17 +115,15 @@ class StubGenerator:
                 ]
 
                 episodes.append(
-                    {
-                        "task_id": task["id"],
-                        "rollout_index": rollout_index,
-                        "prompt_text": prompt_text,
-                        "completion_text": completion_text,
-                        "program_text": strip_markdown_fences(completion_text),
-                        "prompt_ids": list(prompt_ids),
-                        "completion_ids": list(completion_ids),
-                        "logprobs": logprobs,
-                        "spec": task["spec"],
-                    }
+                    _make_episode(
+                        task=task,
+                        rollout_index=rollout_index,
+                        prompt_text=prompt_text,
+                        completion_text=completion_text,
+                        prompt_ids=prompt_ids,
+                        completion_ids=completion_ids,
+                        logprobs=logprobs,
+                    )
                 )
         return episodes
 
@@ -174,7 +175,7 @@ class VLLMGenerator:
         Returns:
             One episode dict per (task, rollout_index).
         """
-        from prompts import build_prompt, strip_markdown_fences
+        from prompts import build_prompt
         from vllm import SamplingParams
         from vllm.lora.request import LoRARequest
 
@@ -205,17 +206,107 @@ class VLLMGenerator:
                     )
                 ]
                 episodes.append(
-                    {
-                        "task_id": task["id"],
-                        "rollout_index": rollout_index,
-                        "prompt_text": output.prompt,
-                        "completion_text": sample.text,
-                        "program_text": strip_markdown_fences(sample.text),
-                        "prompt_ids": list(output.prompt_token_ids),
-                        "completion_ids": completion_ids,
-                        "logprobs": logprobs,
-                        "spec": task["spec"],
-                    }
+                    _make_episode(
+                        task=task,
+                        rollout_index=rollout_index,
+                        prompt_text=output.prompt,
+                        completion_text=sample.text,
+                        prompt_ids=output.prompt_token_ids,
+                        completion_ids=completion_ids,
+                        logprobs=logprobs,
+                    )
+                )
+        return episodes
+
+
+class RemoteVLLMGenerator:
+    """Remote generator: calls a version's warm vLLM HTTP endpoint.
+
+    The adapter already lives in the server's memory (the trainer loaded
+    it when it deployed the version), so this generator never touches the
+    adapter on disk. It only needs the tokenizer to build prompt IDs.
+    """
+
+    def __init__(
+        self,
+        endpoint_url: str,
+        adapter_name: str,
+        model_name: str,
+        max_tokens: int = 1024,
+        temperature: float = 0.9,
+    ):
+        """Load the tokenizer for the version's endpoint.
+
+        Args:
+            endpoint_url: Base URL of the version's vLLM server.
+            adapter_name: LoRA adapter name loaded into that server.
+            model_name: HF model ID, used only for the tokenizer.
+            max_tokens: Generation cap per completion.
+            temperature: Sampling temperature (>0 for group variance).
+        """
+        from transformers import AutoTokenizer
+
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.endpoint_url = endpoint_url
+        self.adapter_name = adapter_name
+        self.max_tokens = max_tokens
+        self.temperature = temperature
+
+    def generate(
+        self, tasks: List[Dict[str, Any]], group_size: int
+    ) -> List[Dict[str, Any]]:
+        """Batch-generate group_size completions per task over HTTP.
+
+        Args:
+            tasks: Task records from tasks.jsonl.
+            group_size: Rollouts per task (GRPO group size).
+
+        Raises:
+            VLLMEndpointError: If the version's server is unreachable.
+
+        Returns:
+            One episode dict per (task, rollout_index).
+        """
+        from prompts import build_prompt
+        from serving.vllm_http import (
+            completion_text,
+            extract_ids_and_logprobs,
+            post_chat_completions,
+        )
+
+        episodes = []
+        for task in tasks:
+            messages = build_prompt(task["prompt"])
+            # Two explicit calls: apply_chat_template's return type shifts
+            # across transformers versions, and a str slipping through
+            # becomes list-of-characters prompt_ids that crash TRL.
+            prompt_text = self.tokenizer.apply_chat_template(
+                messages, add_generation_prompt=True, tokenize=False
+            )
+            prompt_ids = self.tokenizer(
+                prompt_text, add_special_tokens=False
+            ).input_ids
+            choices = post_chat_completions(
+                endpoint_url=self.endpoint_url,
+                adapter_name=self.adapter_name,
+                messages=messages,
+                group_size=group_size,
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+            )
+            for rollout_index, choice in enumerate(choices):
+                text = completion_text(choice)
+                completion_ids, logprobs = extract_ids_and_logprobs(choice)
+                episodes.append(
+                    _make_episode(
+                        task=task,
+                        rollout_index=rollout_index,
+                        prompt_text=prompt_text,
+                        completion_text=text,
+                        prompt_ids=prompt_ids,
+                        completion_ids=completion_ids,
+                        logprobs=logprobs,
+                    )
                 )
         return episodes
 
