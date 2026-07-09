@@ -1,0 +1,10 @@
+# C2 pins (framework_breakout.md rule: re-check latest at build time and
+# record the pin). verifiers==0.1.14 verified as latest stable on PyPI on
+# 2026-07-09; releases are ~monthly and the API moves (SingleTurnEnv is
+# now a lazy top-level export; the v1 Taskset/Harness API is new), so
+# treat any bump as tracked work.
+verifiers==0.1.14
+
+# zenml comes from the repo checkout, with the `local` extra (the rubric
+# runs generated pipelines against a throwaway local sqlite store):
+#   uv pip install -e "../../..[local]"
