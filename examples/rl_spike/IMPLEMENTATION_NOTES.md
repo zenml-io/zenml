@@ -263,3 +263,27 @@ temp dir or the generated pipelines would hit the real (staging Pro!) server.
       within-group variance; drop or re-tier tasks that are uniformly
       1.0 or uniformly floored. This also catches wrong expected
       values in specs.
+
+## Deviation 12: full training run (2026-07-09)
+
+Three example-side changes for STOP GATE 4, results in TRAINING_RUN.md:
+
+1. `grpo_update` micro-batching decoupled from `group_size`
+   (`per_device_train_batch_size=2`, grad-accum `episodes/2`): group 8 ×
+   280 episodes CUDA-OOMed the L4 when the micro-batch was tied to the
+   group. Verified against TRL 1.7.1 source: the only constraint is
+   `generation_batch_size % num_generations == 0`, and advantages are
+   computed over the full generation batch before micro-slicing, so
+   groups may straddle micro-batches.
+2. `temperature` threaded through the pipeline signature into both
+   generation steps (was a step default nobody could reach from run.py);
+   `--temperature` CLI flag added.
+3. `--task-ids-file` CLI flag + `tasks/training_mix_v1.txt` (the
+   calibration-derived 35-task mix), so the training mix is versioned
+   instead of a 35-item command line.
+
+Also learned: re-submitting after a code-only change reuses the Docker
+build and ships code via the artifact-store archive (12s submission),
+and the idempotent `ensure_vllm_server` adopts a still-running server
+from a previous failed run — together they make crash-iterate loops on
+the warm stack pleasantly cheap.

@@ -112,10 +112,18 @@ def grpo_update(
         assert reward is not None
         return [float(r) for r in reward]
 
+    # Micro-batch is deliberately decoupled from group_size: activations
+    # scale with micro-batch x sequence length, and per_device=group_size
+    # OOMed the 24GB L4 at group 8 x 280 episodes (calibration at group 4
+    # fit). TRL only requires generation_batch_size (= per_device x
+    # grad_accum here) to be divisible by num_generations; it computes
+    # advantages over the full generation batch before slicing it into
+    # micro-batches, so groups may straddle micro-batch boundaries.
+    micro_batch = 2 if len(episodes) % 2 == 0 else 1
     config = GRPOConfig(
         output_dir=tempfile.mkdtemp(prefix="rl-spike-grpo-"),
-        per_device_train_batch_size=group_size,
-        gradient_accumulation_steps=len(unique_prompts),
+        per_device_train_batch_size=micro_batch,
+        gradient_accumulation_steps=len(episodes) // micro_batch,
         num_generations=group_size,
         max_steps=1,
         learning_rate=learning_rate,

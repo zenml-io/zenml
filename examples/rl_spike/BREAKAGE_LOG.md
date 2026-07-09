@@ -438,3 +438,79 @@ multi-GB build/push/pull cycle:
   stopped run.
 - **Hit:** Calibration run, 2026-07-08.
 
+## 15. A step retry can die silently, leaving the step in `retrying` forever and the run deadlocked
+
+- **Tried:** Full training run: 5 iterations × 280 mapped episode steps,
+  each episode step configured with
+  `StepRetryConfig(max_retries=3, delay=30, backoff=2)` (the entry-12
+  mitigation).
+- **What happened:** During iteration 4's fan-out the server threw
+  another 429 burst. Two episodes died in a way the retry machinery did
+  not survive: one failed *during step preparation* (the orchestrator's
+  own `list steps` call to the server exhausted urllib3 retries on
+  429s — logged as `Failed preparing step`), the other failed normally
+  and logged `failed after 9m20s. Remaining retries: 3` — **and then
+  nothing**. No relaunch ever happened. Both step runs sat in status
+  `retrying` on the server with no pod, no job, and no thread working
+  on them. The pipeline function's `episode_step.map()` then waited
+  forever on 280 episodes of which only 278 could ever arrive:
+  orchestrator pod healthy, vLLM server healthy, run permanently
+  `running`. Had to force-stop the run and lose the final optimizer
+  step. The irony: the retry config added to survive 429 bursts is
+  itself killed by 429 bursts — the retry relaunch path talks to the
+  same rate-limited server, and when *that* call dies, the retry
+  counter is never consumed and the step is never marked failed.
+- **Workaround:** None from inside the run. Detect externally (step in
+  `retrying` with no corresponding pod) and force-stop.
+- **Severity:** breaks (a run that can never finish, indistinguishable
+  from a slow run without inspecting per-step status vs. cluster
+  state).
+- **Core change:** The retry/relaunch path must be as robust as the
+  step it protects: wrap relaunch in its own retry with backoff, and
+  if it still fails, mark the step `failed` (terminal) rather than
+  leaving `retrying` dangling. A watchdog that reconciles server-side
+  step status against actual orchestrator work items would catch this
+  class generally.
+- **Hit:** Full training run, 2026-07-09.
+
+## 16. The reward channel cannot distinguish "model wrote bad code" from "infrastructure broke" — and it poisoned two training iterations
+
+- **Tried:** Full training run, iterations 3 and 4 (of 0–4): same task
+  mix, same scorer, same sandbox image that produced mean reward
+  ≈ 0.58 in iterations 0–2.
+- **What happened:** Iteration 3 came back **mean reward 0.0000 across
+  all 280 episodes** with `num_infra_errors: 0`. The completions were
+  fine — inspected artifacts show complete, valid programs (several
+  with correct `.load()` usage) that should have scored ≥ 0.75. Every
+  episode failed at the scorer's `check_import` gate: `import zenml`
+  crashing inside the sandbox session pod. One GPU node's kubelet
+  reported DiskPressure during that window (condition transitioned
+  back to False at 10:18), and iteration 4 stayed broken after it
+  cleared (284/289 import failures, a handful of 1.0s), so the sandbox
+  environment was degraded for ~2.5 hours. Two compounding gaps made
+  this worse than it needed to be: (a) the scorer records an
+  environment failure as an honest `reward=0.0` — a training-data
+  poisoning channel, not just a metrics blip; (b) `check_import`
+  captures the subprocess's stderr and then throws it away, so the
+  artifacts cannot say *why* import failed. The one genuinely good
+  number: `grpo_update` on the poisoned iteration logged
+  `grad_norm: 0.0` exactly — GRPO's group-relative advantage means a
+  uniformly-zero iteration is a mathematical no-op, so the optimizer
+  never trained on the garbage. A reward scheme without that property
+  (e.g. absolute REINFORCE) would have.
+- **Workaround (example-side, not yet implemented):** Scorer should
+  classify import/environment failures as `infra_error` (the episode
+  step already has that field and the trainer already drops
+  infra-error episodes), and preserve subprocess stderr in the reward
+  artifact.
+- **Severity:** hurts badly (silent — the run stays green, the
+  dashboards show a plausible-looking reward collapse, and only
+  artifact archaeology reveals the difference between "policy
+  collapsed" and "node ran out of disk").
+- **Core change:** Mostly an example/reward-design lesson, but there is
+  a platform angle: sandbox sessions ran on a node the kubelet had
+  under DiskPressure; a sandbox health probe (can the image actually
+  start and import its payload?) or surfacing node conditions on the
+  step/pod would have turned 2.5 hours of poisoned rewards into a
+  visible infrastructure failure.
+- **Hit:** Full training run, 2026-07-09.
