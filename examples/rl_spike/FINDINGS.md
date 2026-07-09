@@ -234,7 +234,7 @@ Theme 1's per-step overhead.
   what a relative remote path means at the base class, or reject
   relative paths uniformly.
 
-## Theme 5 — The sandbox travels: what the first ecosystem tests found (tasks C2, C1, B1, B3)
+## Theme 5 — The sandbox travels: what the first ecosystem tests found (tasks C2, C1, B1, B3, B2b)
 
 Everything above is about ZenML running the loop itself. Task C2 asked
 the opposite question: what happens when *someone else's* framework owns
@@ -456,6 +456,81 @@ is the gap between "lineage is expressible" and "lineage is natural to
 express"); fix `trial_identity` to hash canonical pin coordinates only,
 and surface `task_checksum` (#5029); record the resolved sandbox
 flavor + image into shard/trial results in the Harbor bridge.
+
+Task B2b was the flagship version of the travel test: not a foreign
+reward function or eval kernel borrowing the sandbox, but a foreign
+*trainer* — TRL's `GRPOTrainer(environment_factory=...)`, where TRL owns
+generation (so it holds the policy's tokens and logprobs), the
+multi-turn tool loop, reward collection, and the optimizer; Harbor owns
+task + verifier; and the question was whether ZenML Sandbox can be the
+thing the agent's tool calls execute in. Everything is on branch
+`spike/b2b-trl-harbor` (off B1's branch — merges nowhere;
+[`B2B_FINDINGS.md`](https://github.com/zenml-io/zenml/blob/spike/b2b-trl-harbor/examples/rl_spike_b2b/B2B_FINDINGS.md)
+is the deliverable). The spike task itself got its agentic upgrade
+here: *write a ZenML pipeline; you may execute it, read the traceback,
+and fix it; three turns max* — same scorer, verbatim, now as a Harbor
+verifier.
+
+The answer is yes, live, and the gap is one keyword argument. Harbor's
+trial config carries an `import_path` field its environment factory
+*prefers* over the built-in vendor enum, and it resolves the ZenML
+bridge unmodified; TRL's Harbor adapter simply never exposes it — it
+hardcodes the enum (20+ vendor backends: Docker, E2B, Daytona, Modal,
+LangSmith, W&B...), so no string can reach us. A ~25-line harness
+override later, the full nesting ran on staging: trainer pod on the GPU
+node, per-rollout `zenml-sandbox-k8s-*` pods opening and closing on the
+CPU pool (B1's `docker_image` translation booting the zenml-preloaded
+image), the policy writing and executing pipelines mid-rollout
+(`tools/call_frequency` 2.0), verifier rewards flowing back, and a real
+GRPO update landing — the green bounded run (`ca33e089`) finished with
+the trained adapter and metrics as S3 artifacts on the dashboard.
+
+Four findings matter beyond the mechanics:
+
+1. **This is C2's finding 2 again, one product tier up — and it lands
+   in TRL.** verifiers welded its sandbox lifecycle to Prime's cloud
+   with one hardcoded import; TRL welded its Harbor path to Harbor's
+   vendor enum with one hardcoded constructor call. In both cases the
+   contract underneath is satisfied by ZenML's session API today. The
+   difference is distribution: a one-parameter upstream PR to TRL
+   (accept an import path where `environment_type` goes) would put
+   ZenML Sandbox inside the RL library with the most traffic in the
+   ecosystem — the same slot LangSmith occupies in Harbor's eval story.
+   Time-sensitive for the same ossification reason as C2's.
+2. **The bridge is separable from the integration — it vendors in ~300
+   lines.** The remote pipeline image installs released zenml from
+   PyPI, which lacks the unmerged #5029 integration; but everything the
+   bridge needs (`Client`, `zenml.sandboxes`, the K8s flavor's `image`
+   setting) is in the release, so a vendored copy shipped with the
+   example just works. Corollary of Theme 5's headline: the sandbox is
+   a library, not a platform feature — it goes wherever a pip install
+   of zenml goes.
+3. **What ZenML sees when a framework swallows the whole loop: config
+   in, adapter + one metrics blob out.** Per-rollout episodes, tool
+   calls, verifier breakdowns — all invisible; the v0 spike had every
+   episode as an artifact, this has numbers inside one dict. That is
+   C3/D1's predicted "black-box step" residue, now measured on the TRL
+   path. And the sandbox pods a training run creates have no
+   ZenML-visible link to the run at all (B3's finding 3, from the other
+   side). A TRL callback could thicken the residue without fighting the
+   framework — no structural blocker, just unbuilt.
+4. **Crashed framework steps wedge and leak sessions — Theme 1 and
+   Theme 2 meet one layer down.** Both CUDA-OOM runs printed their
+   traceback and then hung indefinitely (the harness's daemon
+   event-loop threads keep Python alive), with that batch's four
+   sandbox pods Running until deleted by hand; green runs clean up
+   perfectly. Sessions opened by framework code inside a step have no
+   supervisor: no step-failure hook closes them, no TTL contract is
+   step-aware. Also logged: Harbor ≥0.9 deprecated `allow_internet`
+   for `network_mode` and the 0.8-era bridge check refused *every*
+   task on current Harbor (fixed in the spike copies) — the version
+   drift the ecosystem's pace makes routine.
+
+**Asks (B2b):** decide the TRL upstream move (finding 1 — one
+parameter, and who staffs it, same conversation as B1's plugin
+decision); a "sessions die with their step" contract for sandbox
+sessions opened inside steps (finding 4); fold the `network_mode`
+handling into the Harbor-bump work already tracked for the integration.
 
 ## What we deliberately did not run, and why the skips are findings
 
