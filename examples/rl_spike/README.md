@@ -88,6 +88,8 @@ Key properties:
 | `tests/test_reward.py` | Exact expected reward per canned completion |
 | `tests/test_snapshot.py` | Snapshot-on-failure helper behavior across flavors |
 | `SNAPSHOTS.md` | Snapshot support matrix, restore demo, and gap list (task F1) |
+| `measure_data_layer.py` | Read-only S3/timing measurement over past runs (task E3) |
+| `DATA_LAYER.md` | What the loop moves through the artifact store, measured (task E3) |
 
 ## Run the dry run (no GPU, ~2-3 min on an Apple Silicon laptop)
 
