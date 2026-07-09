@@ -14,6 +14,7 @@ zero code changes. The contract every generator must honor:
   contract requires them.
 """
 
+import os
 from typing import Any, Dict, List, Optional
 
 
@@ -158,6 +159,7 @@ class VLLMGenerator:
             model=model_name,
             enable_lora=adapter_path is not None,
             max_lora_rank=32,
+            max_model_len=8192,
         )
         self.adapter_path = adapter_path
         self.max_tokens = max_tokens
@@ -184,6 +186,7 @@ class VLLMGenerator:
             temperature=self.temperature,
             max_tokens=self.max_tokens,
             logprobs=0,  # sampled token's logprob only
+            seed=int.from_bytes(os.urandom(4), "little"),
         )
         lora_request = (
             LoRARequest("rl-spike-adapter", 1, self.adapter_path)
