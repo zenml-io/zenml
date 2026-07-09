@@ -58,6 +58,12 @@ def main() -> None:
         default=0.9,
         help="Sampling temperature for rollout generation",
     )
+    parser.add_argument(
+        "--snapshot-on-failure",
+        action="store_true",
+        help="Snapshot the sandbox filesystem of failing episodes before "
+        "teardown (Modal sandbox flavor only; restore_sandbox.py restores)",
+    )
     args = parser.parse_args()
 
     if args.task_ids_file:
@@ -131,6 +137,7 @@ def main() -> None:
         serving_mode=args.serving_mode,
         learning_rate=args.learning_rate,
         temperature=args.temperature,
+        snapshot_on_failure=args.snapshot_on_failure,
     )
     print(f"total wall clock: {time.time() - started:.0f}s")
 

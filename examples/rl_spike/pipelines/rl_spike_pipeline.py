@@ -38,6 +38,7 @@ def rl_spike(
     learning_rate: float = 5e-6,
     lora_rank: int = 16,
     temperature: float = 0.9,
+    snapshot_on_failure: bool = False,
 ) -> None:
     """GRPO post-training loop for writing ZenML dynamic pipelines.
 
@@ -64,6 +65,11 @@ def rl_spike(
             calibration run (CALIBRATION.md) showed several tasks where
             all group members fail identically at 0.9; >=1.0 is meant to
             split those groups so GRPO gets within-group variance.
+        snapshot_on_failure: If True, each failing episode snapshots its
+            sandbox filesystem before teardown and records the reference
+            on the episode (restore with restore_sandbox.py). Only the
+            Modal sandbox flavor supports snapshots today; on other
+            flavors the episode records snapshot_error instead.
     """
     if dry_run and serving_mode != "offline":
         raise ValueError("dry_run only supports serving_mode='offline'.")
@@ -163,7 +169,11 @@ def rl_spike(
                 dry_run=dry_run,
                 temperature=temperature,
             )
-        episodes = episode_step.map(seeds)
+        # snapshot_on_failure is a plain bool, so .map() broadcasts it to
+        # every mapped step (only step-output artifacts are fanned over).
+        episodes = episode_step.map(
+            seeds, snapshot_on_failure=snapshot_on_failure
+        )
         adapter = update_step(
             episodes=episodes,
             adapter=adapter,

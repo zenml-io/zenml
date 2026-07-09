@@ -287,3 +287,29 @@ build and ships code via the artifact-store archive (12s submission),
 and the idempotent `ensure_vllm_server` adopts a still-running server
 from a previous failed run — together they make crash-iterate loops on
 the warm stack pleasantly cheap.
+
+## Deviation 13: snapshot-on-failure (task F1, 2026-07-09)
+
+- `run_episode` gained `snapshot_on_failure: bool = False`, broadcast to
+  the whole fan-out via `episode_step.map(seeds, snapshot_on_failure=...)`
+  (plain non-artifact kwargs in `.map()` become static inputs shared by
+  every mapped step — no episode-dict pollution needed).
+- The snapshot must happen inside the `with create_session(...)` block:
+  `destroy_on_exit=True` erases the filesystem the moment the block
+  exits, so both failure hooks (exception path, scorer-error path) call
+  `_snapshot_failed_session` before the exit. The helper never raises;
+  unsupported flavors (kubernetes/local) land in `snapshot_error`.
+- `_put_file`/`_get_file` now fall back to the base64-over-exec
+  transport on *any* native upload/download failure, not just
+  `NotImplementedError`: Modal rejects relative remote paths outright
+  (BREAKAGE_LOG entry 18) while kubernetes accepts them, and exec cwd is
+  the only cross-flavor anchor for relative paths.
+- New client-side tool `restore_sandbox.py` rebuilds the sandbox
+  component from the UUID stored inside the episode's snapshot dict (via
+  `StackComponent.from_model`), so restore works regardless of the
+  active stack. Demo + support matrix in SNAPSHOTS.md.
+- Stacks on staging: `rl-spike-modal` = rl-spike-local with a Modal
+  sandbox. Michael's `modal` component runs in *his* Modal workspace
+  (secret credentials, app "michael"); `modal_zenml_io` was registered
+  with ambient auth (app "rl-spike", environment "dev") so sandboxes are
+  visible in the shared zenml-io Modal workspace.

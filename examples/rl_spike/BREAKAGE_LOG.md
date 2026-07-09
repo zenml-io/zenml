@@ -514,3 +514,60 @@ multi-GB build/push/pull cycle:
   step/pod would have turned 2.5 hours of poisoned rewards into a
   visible infrastructure failure.
 - **Hit:** Full training run, 2026-07-09.
+
+## 17. Failure forensics needs sandbox snapshots — and the flavor this workload runs on doesn't have them
+
+- **Tried:** Task F1: snapshot the sandbox filesystem of every failing
+  episode before teardown, so the next entry-16-style incident is one
+  restore away from diagnosis instead of hours of artifact archaeology.
+- **What happened:** The core API is already there and well-shaped
+  (`SandboxSession.create_snapshot()` / `BaseSandbox.restore()`), but
+  only the **Modal** flavor implements it. Kubernetes and local raise
+  `NotImplementedError` — documented as a known limitation in the
+  component docs, with no in-flight work for the plain K8s flavor (the
+  open GKE Agent Sandbox PR #4870 defers snapshots to a follow-up and
+  targets a different flavor anyway). So the one flavor we must use for
+  real training fan-outs (280 episode pods/iteration on EKS) is the one
+  where failure forensics is impossible.
+- **Workaround:** `run_episode(..., snapshot_on_failure=True)` snapshots
+  inside the session context (destroy-on-exit erases the filesystem at
+  block exit) and records `snapshot`/`snapshot_error` on the episode
+  record + step metadata; `restore_sandbox.py` rebuilds the component
+  from the snapshot's UUID and reopens a session. On K8s/local, every
+  failing episode records the honest `unsupported:` marker instead.
+  Verified end-to-end on Modal; details in SNAPSHOTS.md.
+- **Severity:** annoying today, structural tomorrow (the flavors most
+  likely to host big fan-outs are exactly the ones without snapshots).
+- **Core change:** implement snapshots for the Kubernetes flavor (even
+  "tar the workdir to the artifact store" answers the entry-16 question);
+  surface snapshot refs as first-class step metadata; state a lifetime
+  contract for snapshot refs; record resolved settings into
+  `snapshot.metadata` at capture time so restore-time drift is visible.
+- **Hit:** F1 snapshot task, 2026-07-09.
+
+## 18. The session filesystem API has no workdir contract — the same relative path works on one flavor and throws on another
+
+- **Tried:** Running the unmodified episode step (which uploads
+  `pipeline.py` / `spec.json` / the scorer by relative path, exactly as
+  it has done on the kubernetes flavor for every training run) against
+  the Modal sandbox flavor for the F1 snapshot demo.
+- **What happened:** Every episode died at upload with
+  `InvalidError: Sandbox.filesystem.copy_from_local() currently only
+  supports absolute remote_path values`. `upload_file(local, "pipeline.py")`
+  is fine on kubernetes, unimplemented on local (entry 4), and an error
+  on Modal — three flavors, three behaviors for the same call. Nothing
+  on `SandboxSession` defines what a relative remote path means, and
+  there is no "session workdir" concept to anchor it (exec has a `cwd`
+  override, the filesystem API has nothing).
+- **Workaround:** the example's `_put_file`/`_get_file` now fall back to
+  the base64-over-exec transport on *any* upload/download failure, not
+  just `NotImplementedError` — exec cwd is the only cross-flavor anchor
+  for relative paths.
+- **Severity:** annoying (silent portability trap; code validated on one
+  flavor breaks on another at runtime, and only at runtime).
+- **Core change:** define the contract on `SandboxSession` — either a
+  documented per-session workdir that `upload_file`/`download_file`
+  resolve relative paths against (normalizing to absolute internally per
+  flavor), or reject relative paths uniformly at the base class with a
+  clear error.
+- **Hit:** F1 snapshot task, Modal demo, 2026-07-09.

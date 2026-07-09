@@ -84,7 +84,10 @@ Key properties:
 | `steps/` | Pipeline steps for task loading, rollout generation, sandbox scoring, GRPO training, metrics, and warm-vLLM lifecycle control |
 | `pipelines/rl_spike_pipeline.py` | The dynamic pipeline (the diagram above) |
 | `run.py` | Entrypoint |
+| `restore_sandbox.py` | Reopen a failed episode's sandbox from its snapshot (see `SNAPSHOTS.md`) |
 | `tests/test_reward.py` | Exact expected reward per canned completion |
+| `tests/test_snapshot.py` | Snapshot-on-failure helper behavior across flavors |
+| `SNAPSHOTS.md` | Snapshot support matrix, restore demo, and gap list (task F1) |
 
 ## Run the dry run (no GPU, ~2-3 min on an Apple Silicon laptop)
 
@@ -129,6 +132,12 @@ Reward unit tests (asserts exact scores for every canned completion):
 ```bash
 pytest tests/test_reward.py -v
 ```
+
+Failure forensics: add `--snapshot-on-failure` to snapshot each failing
+episode's sandbox filesystem before teardown and restore it later with
+`restore_sandbox.py` — Modal sandbox flavor only; on kubernetes/local
+the episode records an honest `snapshot_error` instead. Details, support
+matrix, and a worked demo in `SNAPSHOTS.md`.
 
 ## Run for real (GPU)
 
