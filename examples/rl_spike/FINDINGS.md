@@ -395,3 +395,19 @@ integration across flavors wherever the abstraction holds (B1), and the
 alternatives are a single hardcoded vendor (verifiers) or a single
 validated flavor (Harbor-on-Modal). The findings above are the platform
 work that any of those consumers would hit first.
+
+**G1 supplied the third datapoint, from the other end of the ownership
+spectrum (see [`GEPA_G1.md`](GEPA_G1.md)):** the loop shape survived
+swapping the update rule from GRPO to GEPA prompt evolution with the
+sandbox verifier byte-identical — one-line seed prompt → +63% mean reward
+(0.515 → 0.839) on hosted API models, zero GPU, under $1. Two additions
+to the platform ask: when an external framework owns the *inner* loop,
+ZenML's visibility coarsens from per-episode steps to one optimization
+step (the same ownership axis as C2/B1, seen from inside); and GEPA's
+Pareto candidate *tree* has no native representation — linear artifact
+versioning carries a population only by stuffing the tree inside a dict
+artifact (escalated as a core artifact-model question; entries 22–24 for
+the new sharp edges). The honesty note matters for customer
+conversations: with the full cheatsheet, even gpt-5-nano saturates this
+task set at 1.0 — prompts exhausted the task before weights were needed,
+which is exactly the "cheapest durable intervention first" pitch.

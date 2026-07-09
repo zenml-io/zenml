@@ -642,3 +642,72 @@ on branch `spike/b1-harbor-k8s`.*
   report should refuse a mean when errors > 0), and the example receipts
   should demonstrate the errors-first idiom.
 - **Hit:** B1 Harbor-on-K8s task, 2026-07-09.
+
+## 22. A committed `.zen` silently resets project and stack when its IDs don't resolve — and the reset is destructive
+
+- **Tried:** Running the G1 GEPA experiment in a fresh worktree against
+  an isolated `ZENML_CONFIG_PATH` (fresh sqlite store), with
+  `examples/rl_spike/.zen` present because it is committed on the
+  branch.
+- **What happened:** The committed `.zen` holds the staging server's
+  active project/stack UUIDs. Against the isolated store those IDs
+  don't resolve, so the client printed two dim warnings ("The current
+  repo active project is no longer available. Setting the repo active
+  project to 'default'.") and **rewrote `.zen` in place** — the
+  previously configured stack was gone on the next invocation. The same
+  destructive reset fired in reverse later: running `zenml status`
+  against the real server from a dir whose `.zen` held isolated-store
+  IDs. Any tool that so much as instantiates `Client()` from the wrong
+  env rewrites the repo-local context.
+- **Workaround:** one `.zen` per experiment dir (`zenml init` inside
+  `gepa_g1/`), and treat project/stack set as something to re-verify
+  after ANY cross-config invocation.
+- **Severity:** annoying, and quietly dangerous in a multi-worktree /
+  multi-config setup — two sessions sharing a checkout can clobber each
+  other's active context without any error.
+- **Core change:** the availability check should not auto-rewrite
+  `.zen`. Fail loudly ("repo context points at unknown project X —
+  run `zenml project set`") or resolve in-memory for the session, but
+  don't persist a destructive fallback the user never asked for.
+- **Hit:** G1 GEPA task, isolated-config smoke test, 2026-07-09.
+
+## 23. The local sandbox flavor resolves `python` from PATH — an unactivated venv scores every episode as "import failed"
+
+- **Tried:** First smoke test of the G1 scoring path: upload the scorer
+  into a local-flavor sandbox session and `session.exec(["python",
+  "score_pipeline.py", ...])`, from a client process started as
+  `.venv/bin/python` (venv not activated, as any wrapper/CI would).
+- **What happened:** Reward 0.0, `error: "import failed"`. The local
+  sandbox is a bare subprocess that inherits the host env, so `python`
+  resolved to a system interpreter with no zenml installed. The
+  generated pipeline was fine; the harness silently judged it with the
+  wrong interpreter. Indistinguishable from a bad completion in the
+  reward JSON (entry 16's lesson in a new costume: this time the
+  infra failure doesn't even set `infra_error`, because the scorer ran
+  "successfully" and reported an honest-looking verdict).
+- **Workaround:** `run.py` prepends `sys.executable`'s bin dir to PATH
+  before any session is created.
+- **Severity:** annoying (hours-class trap for anyone driving the local
+  flavor from scripts; invisible unless you know to suspect it).
+- **Core change:** the local sandbox session could resolve bare
+  `python` against the creating process's `sys.executable` by default,
+  or at minimum document that exec inherits PATH-resolution from the
+  host process.
+- **Hit:** G1 GEPA task, first smoke test, 2026-07-09.
+
+## 24. gepa's `max_metric_calls` is advisory: the budget overran 150 → 159 by finishing the in-flight iteration
+
+- **Tried:** `gepa.optimize(..., max_metric_calls=150)` as the spend
+  cap for the first real G1 run (each metric call = one hosted-API
+  generation + one sandbox execution).
+- **What happened:** `total_metric_calls` came back 159. gepa checks
+  the budget between iterations, not between evaluations, so a full-
+  valset eval (12 calls here) started near the cap runs to completion.
+  Harmless at gpt-5-nano prices; not harmless if evaluate() is a K8s
+  sandbox fan-out (~6s and a pod per call — entry 12/15 territory) or
+  a paid frontier model.
+- **Workaround:** set the cap with one full-valset-eval of headroom.
+- **Severity:** cosmetic here, budget-relevant at scale. Filed as an
+  external-framework observation, not a ZenML issue — but it interacts
+  with ZenML the moment the metric call is a sandbox session.
+- **Hit:** G1 GEPA task, first real run, 2026-07-09.
