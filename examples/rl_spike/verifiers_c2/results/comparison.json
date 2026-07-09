@@ -1,0 +1,170 @@
+{
+  "cases": [
+    {
+      "task_id": "const_seven",
+      "tier": "perfect",
+      "baseline_reward": 1.0,
+      "rubric_reward": 1.0,
+      "match": true,
+      "infra_error": null,
+      "scorer_error": null
+    },
+    {
+      "task_id": "const_seven",
+      "tier": "runs_wrong",
+      "baseline_reward": 0.75,
+      "rubric_reward": 0.75,
+      "match": true,
+      "infra_error": null,
+      "scorer_error": null
+    },
+    {
+      "task_id": "const_seven",
+      "tier": "runtime_fail",
+      "baseline_reward": 0.2,
+      "rubric_reward": 0.2,
+      "match": true,
+      "infra_error": null,
+      "scorer_error": "pipeline exited nonzero"
+    },
+    {
+      "task_id": "const_seven",
+      "tier": "syntax_error",
+      "baseline_reward": 0.0,
+      "rubric_reward": 0.0,
+      "match": true,
+      "infra_error": null,
+      "scorer_error": "syntax error"
+    },
+    {
+      "task_id": "two_step_double",
+      "tier": "perfect",
+      "baseline_reward": 1.0,
+      "rubric_reward": 1.0,
+      "match": true,
+      "infra_error": null,
+      "scorer_error": null
+    },
+    {
+      "task_id": "two_step_double",
+      "tier": "runs_wrong",
+      "baseline_reward": 0.5,
+      "rubric_reward": 0.5,
+      "match": true,
+      "infra_error": null,
+      "scorer_error": null
+    },
+    {
+      "task_id": "two_step_double",
+      "tier": "runtime_fail",
+      "baseline_reward": 0.2,
+      "rubric_reward": 0.2,
+      "match": true,
+      "infra_error": null,
+      "scorer_error": "pipeline exited nonzero"
+    },
+    {
+      "task_id": "two_step_double",
+      "tier": "syntax_error",
+      "baseline_reward": 0.0,
+      "rubric_reward": 0.0,
+      "match": true,
+      "infra_error": null,
+      "scorer_error": "syntax error"
+    },
+    {
+      "task_id": "map_double_sum",
+      "tier": "perfect",
+      "baseline_reward": 1.0,
+      "rubric_reward": 1.0,
+      "match": true,
+      "infra_error": null,
+      "scorer_error": null
+    },
+    {
+      "task_id": "map_double_sum",
+      "tier": "runs_wrong",
+      "baseline_reward": 0.5,
+      "rubric_reward": 0.5,
+      "match": true,
+      "infra_error": null,
+      "scorer_error": null
+    },
+    {
+      "task_id": "map_double_sum",
+      "tier": "runtime_fail",
+      "baseline_reward": 0.2,
+      "rubric_reward": 0.2,
+      "match": true,
+      "infra_error": null,
+      "scorer_error": "pipeline exited nonzero"
+    },
+    {
+      "task_id": "map_double_sum",
+      "tier": "syntax_error",
+      "baseline_reward": 0.0,
+      "rubric_reward": 0.0,
+      "match": true,
+      "infra_error": null,
+      "scorer_error": "syntax error"
+    },
+    {
+      "task_id": "const_greeting",
+      "tier": "runs_wrong",
+      "baseline_reward": 0.75,
+      "rubric_reward": 0.75,
+      "match": true,
+      "infra_error": null,
+      "scorer_error": null
+    },
+    {
+      "task_id": "const_greeting",
+      "tier": "runtime_fail",
+      "baseline_reward": 0.2,
+      "rubric_reward": 0.2,
+      "match": true,
+      "infra_error": null,
+      "scorer_error": "pipeline exited nonzero"
+    },
+    {
+      "task_id": "const_greeting",
+      "tier": "syntax_error",
+      "baseline_reward": 0.0,
+      "rubric_reward": 0.0,
+      "match": true,
+      "infra_error": null,
+      "scorer_error": "syntax error"
+    },
+    {
+      "task_id": "const_list",
+      "tier": "runs_wrong",
+      "baseline_reward": 0.75,
+      "rubric_reward": 0.75,
+      "match": true,
+      "infra_error": null,
+      "scorer_error": null
+    },
+    {
+      "task_id": "const_list",
+      "tier": "runtime_fail",
+      "baseline_reward": 0.2,
+      "rubric_reward": 0.2,
+      "match": true,
+      "infra_error": null,
+      "scorer_error": "pipeline exited nonzero"
+    },
+    {
+      "task_id": "const_list",
+      "tier": "syntax_error",
+      "baseline_reward": 0.0,
+      "rubric_reward": 0.0,
+      "match": true,
+      "infra_error": null,
+      "scorer_error": "syntax error"
+    }
+  ],
+  "baseline_wall_s": 60.5,
+  "rubric_wall_s": 18.1,
+  "max_concurrent_sandboxes": "4",
+  "mismatches": 0
+}
