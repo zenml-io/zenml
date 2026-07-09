@@ -60,3 +60,25 @@ Before committing documentation changes with absolute URLs:
 - Run offline (local links only, fast): `lychee --offline --no-progress 'docs/book/**/*.md'`
 - Known false positives (bot-blocked sites, placeholder URLs) are excluded in `lychee.toml`
 - If you see 404 errors for `docs.zenml.io` URLs, the URL structure likely changed (common after docs reorganizations) and needs updating
+
+## Structure
+- Documentation files live in `docs/book/`
+- Multiple sections each have their own `toc.md` file for navigation
+- Assets (images, etc.) belong in a `.gitbook` folder at the same level as the relevant `toc.md`
+- When adding or removing pages, update the appropriate `toc.md` file
+
+## Format and Style
+- ZenML uses GitBook for documentation
+- Include metadata fields at the top of documentation pages (follow existing patterns)
+- Documentation should be readable and conversational
+- Use consistent formatting with existing documentation
+- Avoid overusing bullet points or other formatting elements
+- Prioritize readability and clarity over excessive structure
+- Include appropriate cross-references to related documentation
+
+## Content Standards
+- Clear, concise language
+- Code examples for APIs
+- Explanation of concepts
+- Usage patterns and best practices
+- Match tone and style with existing documentation

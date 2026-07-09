@@ -59,3 +59,22 @@ Server endpoints follow a consistent pattern:
 5. **Async wrapper** — wrap with `async_fastapi_endpoint_wrapper` for async compatibility
 
 Non-CRUD endpoints (e.g., trigger attach/detach) may require permission checks across multiple resource domains.
+
+## FastAPI Agent Profile
+- ZenML OSS FastAPI work demands senior-level proficiency across FastAPI, SQLModel, SQLAlchemy 2.0, and modern Pydantic v2 patterns; study existing routers and services before proposing changes.
+- Favor object-oriented extensions over scattering helpers—extend service/repository classes or introduce cohesive new ones, and rely on dependency injection rather than module-level singletons.
+- Keep all shared state inside FastAPI's dependency system or app factory; never introduce fresh global variables outside the initializer.
+- Use descriptive auxiliary-verb-prefixed names and lower_snake_case paths (for example `routers/manage_invitation.py`, `services/issue_token.py`) so reviewers immediately understand intent.
+- Apply the Receive an Object, Return an Object (RORO) convention on public interfaces to keep payloads self-documenting and testable.
+
+## FastAPI Project Structure
+- Each FastAPI package must expose a router entry point plus clearly separated sub-routes, utilities, static assets, and schema/model definitions; keep imports explicit via named exports.
+- Co-locate Pydantic request/response models with their consuming routes, and keep reusable business logic inside services or repositories accessed through dependency injection.
+- Name directories/files with verbs or nouns that communicate behavior (e.g., `routers/register_user.py`, `services/create_invitation.py`) so navigation stays predictable.
+
+## FastAPI Error Handling & Validation
+- Lead with guard clauses in routes, dependencies, and services—validate payloads, auth context, and resources early; prefer early returns and keep the happy path last.
+- Skip redundant `else` blocks after returns; log context-rich errors and surface user-safe details while retaining debug information in structured logs.
+- Define custom exception types or factories so middleware can map them to consistent JSON payloads with trace metadata.
+- Raise `HTTPException` (with precise status codes and detail strings) for expected errors, and push unexpected failures through middleware that centralizes logging, metrics, and alerting.
+- Model inputs/outputs with Pydantic BaseModel derivatives to keep validation explicit and documentation synchronized automatically.
