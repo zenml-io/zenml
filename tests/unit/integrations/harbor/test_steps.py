@@ -103,7 +103,8 @@ def _shard_result(n_errored: int = 0) -> HarborShardResult:
     Mirrors Harbor's counting semantics: ``n_completed`` counts every
     finished trial, errored ones included, so it stays at the trial
     count regardless of ``n_errored``. Errored trials carry exception
-    info instead of rewards.
+    info instead of rewards and replace the scored trials from the end,
+    so a partially-errored shard keeps its highest-scored survivor.
     """
     spec = HarborShardSpec(
         shard_id="abc123def456",
@@ -147,7 +148,7 @@ def _shard_result(n_errored: int = 0) -> HarborShardResult:
         n_errored=n_errored,
         n_cancelled=0,
         n_retries=0,
-        trials=errored[:n_errored] + scored[n_errored:],
+        trials=scored[: 2 - n_errored] + errored[2 - n_errored :],
         job_dir="local/jobs/shard-abc123def456",
     )
 
@@ -201,7 +202,7 @@ def _capture_shard_metadata(
         f"{STEPS_MODULE}.log_metadata",
         lambda metadata: captured.update(metadata),
     )
-    shard = _shard_result().spec.model_dump(mode="json")
+    shard = shard_result.spec.model_dump(mode="json")
     run_harbor_shard.entrypoint(shard=shard)
     return captured
 
@@ -229,19 +230,7 @@ def test_run_harbor_shard_partial_errors_keep_scored_mean(
     The 0.0 sentinel must NOT fire here — the surviving trial's real
     score stands, and gates catch the crashes via harbor.error_rate.
     """
-    result = _shard_result()
-    result.trials = [
-        result.trials[0],  # scored 1.0
-        HarborTrialResult(
-            trial_identity="identity-1",
-            trial_name="hello__bbbbbbb",
-            task_name="hello",
-            exception_type="RuntimeError",
-            exception_message="agent crashed",
-        ),
-    ]
-    result.n_errored = 1
-    captured = _capture_shard_metadata(monkeypatch, result)
+    captured = _capture_shard_metadata(monkeypatch, _shard_result(n_errored=1))
     assert captured["harbor.mean_reward"] == 1.0
     assert captured["harbor.error_rate"] == 0.5
     assert captured["harbor.n_succeeded"] == 1

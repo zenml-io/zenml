@@ -200,16 +200,9 @@ def run_harbor_shard(
         "harbor.task": spec.task.display_name,
         "harbor.agent": spec.agent_name,
         "harbor.n_trials": len(spec.trial_indices),
-        # Harbor's own n_completed counts errored trials too; the
-        # succeeded count is the one that reads correctly next to
-        # n_errored.
         "harbor.n_succeeded": result.n_succeeded,
         "harbor.n_errored": result.n_errored,
-        "harbor.error_rate": (
-            result.n_errored / result.n_total_trials
-            if result.n_total_trials
-            else 0.0
-        ),
+        "harbor.error_rate": result.error_rate,
     }
     if spec.model_name:
         metadata["harbor.model"] = spec.model_name
@@ -222,12 +215,8 @@ def run_harbor_shard(
     elif (
         result.n_total_trials > 0 and result.n_errored == result.n_total_trials
     ):
-        # Every trial errored, so there is no scored reward at all. Log
-        # an explicit 0.0 so reward-threshold regression gates
-        # (`harbor.mean_reward:lt:X`) fail safe instead of silently
-        # skipping the shard because the key is absent. A shard that is
-        # merely unscored (no errors, verifier returned no rewards)
-        # gets no sentinel — absence of signal is not a zero score.
+        # All trials errored: log an explicit 0.0 so reward-threshold
+        # gates fail safe (the docstring has the full sentinel rule).
         metadata["harbor.mean_reward"] = 0.0
     cost = result.total_cost_usd
     if cost is not None:
@@ -327,9 +316,6 @@ def build_harbor_report(
     total_succeeded = 0
     total_errored = 0
     for (task, agent, model), shards in sorted(cells.items()):
-        # n_succeeded, not Harbor's raw n_completed: Harbor counts
-        # errored trials as completed, which would render a fully
-        # crashed cell as "Completed=n, Errored=n".
         succeeded = sum(s.n_succeeded for s in shards)
         errored = sum(s.n_errored for s in shards)
         total_succeeded += succeeded

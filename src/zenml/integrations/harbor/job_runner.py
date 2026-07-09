@@ -35,10 +35,7 @@ from harbor.models.trial.config import (
 )
 
 from zenml.integrations.harbor import ZENML_HARBOR_ENV_IMPORT_PATH
-from zenml.integrations.harbor.environment import (
-    clear_session_provenance,
-    pop_session_provenance,
-)
+from zenml.integrations.harbor.environment import drain_session_provenance
 from zenml.integrations.harbor.models import (
     HarborShardResult,
     HarborShardSpec,
@@ -207,6 +204,10 @@ def run_shard_job(
     # today; revisit if step bodies grow an outer event loop.
     job_result = asyncio.run(_run())
 
+    # Take the sandbox facts the bridge recorded (keyed by session id ==
+    # trial name) before any result processing can raise.
+    provenance_by_session = drain_session_provenance()
+
     # The on-disk job-level result.json is always written without trial
     # results; the in-memory JobResult from `job.run()` is the only
     # complete per-trial source. Trials are paired with the shard's
@@ -226,19 +227,13 @@ def run_shard_job(
         for identity, result in zip(spec.trial_identities, trial_results)
     ]
     # Restore the dataset provenance that build_job_config strips from
-    # the Harbor-side task config, and stamp the sandbox facts the
-    # bridge recorded at session start (Harbor uses the trial name as
-    # the environment session id).
+    # the Harbor-side task config, and stamp the recorded sandbox facts.
     for trial in trials:
         trial.source = trial.source or spec.task.source
-        provenance = pop_session_provenance(trial.trial_name)
+        provenance = provenance_by_session.get(trial.trial_name)
         if provenance is not None:
             trial.sandbox_flavor = provenance.flavor
             trial.sandbox_docker_image = provenance.docker_image
-    # Anything left in the registry belongs to this finished job (e.g.
-    # separate verifier sessions the join above never pops); clear it so
-    # the module-level dict stays bounded across shards in one process.
-    clear_session_provenance()
     stats = job_result.stats
     return HarborShardResult(
         spec=spec,

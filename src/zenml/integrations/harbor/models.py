@@ -283,6 +283,17 @@ class HarborShardResult(BaseModel):
         return max(self.n_completed - self.n_errored, 0)
 
     @property
+    def error_rate(self) -> float:
+        """Fraction of the shard's trials that errored.
+
+        Returns:
+            ``n_errored / n_total_trials``, or 0.0 for an empty shard.
+        """
+        if not self.n_total_trials:
+            return 0.0
+        return self.n_errored / self.n_total_trials
+
+    @property
     def mean_reward(self) -> Optional[Dict[str, float]]:
         """Per-key mean reward across the shard's scored trials.
 

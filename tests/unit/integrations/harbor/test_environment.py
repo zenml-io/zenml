@@ -29,8 +29,16 @@ from harbor.models.task.config import (  # noqa: E402
 
 from zenml.integrations.harbor.environment import (  # noqa: E402
     ZenMLSandboxEnvironment,
-    pop_session_provenance,
+    drain_session_provenance,
 )
+
+
+@pytest.fixture(autouse=True)
+def _clean_provenance_registry():
+    """Isolate every test from the module-level provenance registry."""
+    drain_session_provenance()
+    yield
+    drain_session_provenance()
 
 
 class _FakeProcess:
@@ -79,6 +87,21 @@ def _bridge(
     env.session_id = "hello__test123"
     env.task_env_config = TaskEnvironmentConfig(**env_config)
     return env
+
+
+def _patch_active_sandbox(monkeypatch: pytest.MonkeyPatch, sandbox) -> None:
+    """Point the bridge's Client at a stack with the given sandbox."""
+    monkeypatch.setattr(
+        "zenml.integrations.harbor.environment.Client",
+        lambda: SimpleNamespace(active_stack=SimpleNamespace(sandbox=sandbox)),
+    )
+
+
+def _modal_sandbox(session: _FakeSession) -> SimpleNamespace:
+    """Fake Modal-flavored sandbox that hands out the given session."""
+    return SimpleNamespace(
+        flavor="modal", create_session=lambda settings=None: session
+    )
 
 
 def test_exec_wraps_command_in_bash() -> None:
@@ -133,14 +156,7 @@ def test_start_refuses_network_isolation(
 ) -> None:
     """allow_internet=false is refused rather than silently ignored."""
     env = _bridge(_FakeSession(), allow_internet=False)
-    monkeypatch.setattr(
-        "zenml.integrations.harbor.environment.Client",
-        lambda: SimpleNamespace(
-            active_stack=SimpleNamespace(
-                sandbox=SimpleNamespace(flavor="modal")
-            )
-        ),
-    )
+    _patch_active_sandbox(monkeypatch, SimpleNamespace(flavor="modal"))
     with pytest.raises(NotImplementedError, match="allow_internet"):
         asyncio.run(env.start(force_build=False))
 
@@ -150,10 +166,7 @@ def test_start_requires_sandbox_component(
 ) -> None:
     """A stack without a Sandbox component fails with guidance."""
     env = _bridge(_FakeSession())
-    monkeypatch.setattr(
-        "zenml.integrations.harbor.environment.Client",
-        lambda: SimpleNamespace(active_stack=SimpleNamespace(sandbox=None)),
-    )
+    _patch_active_sandbox(monkeypatch, None)
     with pytest.raises(RuntimeError, match="No Sandbox component"):
         asyncio.run(env.start(force_build=False))
 
@@ -164,25 +177,14 @@ def test_start_records_session_provenance(
     """A started session leaves the sandbox facts for the shard runner."""
     session = _FakeSession()
     env = _bridge(session=None)
-    monkeypatch.setattr(
-        "zenml.integrations.harbor.environment.Client",
-        lambda: SimpleNamespace(
-            active_stack=SimpleNamespace(
-                sandbox=SimpleNamespace(
-                    flavor="modal",
-                    create_session=lambda settings=None: session,
-                )
-            )
-        ),
-    )
+    _patch_active_sandbox(monkeypatch, _modal_sandbox(session))
     asyncio.run(env.start(force_build=False))
-    provenance = pop_session_provenance("hello__test123")
-    assert provenance is not None
+    provenance = drain_session_provenance()["hello__test123"]
     assert provenance.flavor == "modal"
     # No task docker_image override was pinned.
     assert provenance.docker_image is None
-    # Pop-on-read: a second lookup finds nothing.
-    assert pop_session_provenance("hello__test123") is None
+    # Draining resets the registry.
+    assert drain_session_provenance() == {}
 
 
 def test_exec_after_failed_start_carries_root_cause(
@@ -190,10 +192,7 @@ def test_exec_after_failed_start_carries_root_cause(
 ) -> None:
     """Harbor's post-failure cleanup errors point at the start failure."""
     env = _bridge(session=None)
-    monkeypatch.setattr(
-        "zenml.integrations.harbor.environment.Client",
-        lambda: SimpleNamespace(active_stack=SimpleNamespace(sandbox=None)),
-    )
+    _patch_active_sandbox(monkeypatch, None)
     with pytest.raises(RuntimeError, match="No Sandbox component"):
         asyncio.run(env.start(force_build=False))
     # Harbor's cleanup calls exec() on the never-started env; the error
@@ -212,29 +211,15 @@ def test_failed_start_discards_prior_attempt_provenance(
     recorded by the earlier attempt would misattribute an image to a
     trial that ran on no sandbox at all.
     """
-    session = _FakeSession()
     first_attempt = _bridge(session=None)
-    monkeypatch.setattr(
-        "zenml.integrations.harbor.environment.Client",
-        lambda: SimpleNamespace(
-            active_stack=SimpleNamespace(
-                sandbox=SimpleNamespace(
-                    flavor="modal",
-                    create_session=lambda settings=None: session,
-                )
-            )
-        ),
-    )
+    _patch_active_sandbox(monkeypatch, _modal_sandbox(_FakeSession()))
     asyncio.run(first_attempt.start(force_build=False))
 
     retry_attempt = _bridge(session=None)
-    monkeypatch.setattr(
-        "zenml.integrations.harbor.environment.Client",
-        lambda: SimpleNamespace(active_stack=SimpleNamespace(sandbox=None)),
-    )
+    _patch_active_sandbox(monkeypatch, None)
     with pytest.raises(RuntimeError, match="No Sandbox component"):
         asyncio.run(retry_attempt.start(force_build=False))
-    assert pop_session_provenance("hello__test123") is None
+    assert drain_session_provenance() == {}
 
 
 def test_cancelled_start_records_root_cause(
@@ -250,15 +235,10 @@ def test_cancelled_start_records_root_cause(
         raise asyncio.CancelledError()
 
     env = _bridge(session=None)
-    monkeypatch.setattr(
-        "zenml.integrations.harbor.environment.Client",
-        lambda: SimpleNamespace(
-            active_stack=SimpleNamespace(
-                sandbox=SimpleNamespace(
-                    flavor="modal",
-                    create_session=_cancelled_create_session,
-                )
-            )
+    _patch_active_sandbox(
+        monkeypatch,
+        SimpleNamespace(
+            flavor="modal", create_session=_cancelled_create_session
         ),
     )
     with pytest.raises(asyncio.CancelledError):
@@ -272,28 +252,13 @@ def test_successful_restart_clears_stale_start_failure(
 ) -> None:
     """A recovered start() must not blame errors on the old failure."""
     env = _bridge(session=None)
-    monkeypatch.setattr(
-        "zenml.integrations.harbor.environment.Client",
-        lambda: SimpleNamespace(active_stack=SimpleNamespace(sandbox=None)),
-    )
+    _patch_active_sandbox(monkeypatch, None)
     with pytest.raises(RuntimeError, match="No Sandbox component"):
         asyncio.run(env.start(force_build=False))
 
-    session = _FakeSession()
-    monkeypatch.setattr(
-        "zenml.integrations.harbor.environment.Client",
-        lambda: SimpleNamespace(
-            active_stack=SimpleNamespace(
-                sandbox=SimpleNamespace(
-                    flavor="modal",
-                    create_session=lambda settings=None: session,
-                )
-            )
-        ),
-    )
+    _patch_active_sandbox(monkeypatch, _modal_sandbox(_FakeSession()))
     asyncio.run(env.start(force_build=False))
     asyncio.run(env.stop(delete=False))
-    pop_session_provenance("hello__test123")
     # After a successful start and a clean stop, a late call is a plain
     # "used after stop()" — not fallout of the long-recovered failure.
     with pytest.raises(RuntimeError, match="before start"):
