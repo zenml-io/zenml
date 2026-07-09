@@ -1,84 +1,38 @@
-# Documentation Guidelines for AI Agents
+# Documentation Agent Guidelines
 
-This file provides guidance for AI agents working with ZenML documentation.
+This file applies when Codex starts in `docs/book/` or below. For detailed
+GitBook URL examples, link-checking notes, and docs workflow recipes, use
+`.agents/skills/zenml-repo-workflows/SKILL.md`.
 
 ## Source of Truth
 
-`docs/book/` is the source of truth for documentation content. Other docs directories (`docs/mkdocs/`, `docs/site/`) contain generated output — do not edit those directly. Changes to docs may also interact with the API docs buildability check in CI (fast CI).
-
-## GitBook URL Structure
-
-ZenML uses GitBook for documentation. The URL structure does **not** directly mirror the file system structure.
-
-### Key Rules
-
-1. **Pro docs live under `/pro/`**: Files in `docs/book/getting-started/zenml-pro/` are served at `https://docs.zenml.io/pro/...`
-
-2. **URLs follow TOC hierarchy, not file paths**: The `toc.md` file determines the URL structure. Child pages are nested under their parent's URL path.
-
-   Example from `zenml-pro/toc.md`:
-   ```text
-   ## Deployments
-   * Scenarios        -> scenarios.md
-     * SaaS           -> saas-deployment.md
-     * Self-hosted    -> self-hosted-deployment.md
-   ```
-
-   This creates:
-   - `scenarios.md` → `https://docs.zenml.io/pro/deployments/scenarios`
-   - `self-hosted-deployment.md` → `https://docs.zenml.io/pro/deployments/scenarios/self-hosted-deployment`
-
-   Note: `self-hosted-deployment.md` is nested under `scenarios/` in the URL because it's a child of Scenarios in the TOC.
-
-3. **Cross-section links require absolute URLs**: When linking from OSS docs to Pro docs (or vice versa), use absolute `https://docs.zenml.io/...` URLs. Relative links only work reliably within the same TOC section.
-
-### Common URL Patterns
-
-| File Location | URL |
-|--------------|-----|
-| `docs/book/getting-started/zenml-pro/README.md` | `https://docs.zenml.io/pro` |
-| `docs/book/getting-started/zenml-pro/workspaces.md` | `https://docs.zenml.io/pro/core-concepts/workspaces` |
-| `docs/book/getting-started/zenml-pro/roles.md` | `https://docs.zenml.io/pro/access-management/roles` |
-| `docs/book/how-to/secrets/secrets.md` | `https://docs.zenml.io/how-to/secrets/secrets` |
-
-### Verifying URLs
-
-Before committing documentation changes with absolute URLs:
-1. Check if the URL exists by fetching it (WebFetch tool or browser)
-2. Look at existing working links in the codebase for the same section
-3. Consult the relevant `toc.md` file to understand the hierarchy
-
-### Link Checking
-
-**CI checks** (`scripts/check_broken_links.py`, `scripts/check_relative_links.py`):
-- Check relative markdown links resolve to existing files
-- Do **not** check images, `.gitbook` paths, HTML `<a href>` links, or external URLs
-
-**Lychee** (`lychee.toml` config at repo root):
-- Comprehensive link checker that covers local files, images, HTML links, and external URLs
-- Run locally: `lychee --no-progress 'docs/book/**/*.md'`
-- Run offline (local links only, fast): `lychee --offline --no-progress 'docs/book/**/*.md'`
-- Known false positives (bot-blocked sites, placeholder URLs) are excluded in `lychee.toml`
-- If you see 404 errors for `docs.zenml.io` URLs, the URL structure likely changed (common after docs reorganizations) and needs updating
+- `docs/book/` is the source of truth for documentation content.
+- Other docs directories such as `docs/mkdocs/` and `docs/site/` contain
+  generated output; do not edit those directly.
+- Docs changes can affect the API docs buildability check in fast CI.
 
 ## Structure
-- Documentation files live in `docs/book/`
-- Multiple sections each have their own `toc.md` file for navigation
-- Assets (images, etc.) belong in a `.gitbook` folder at the same level as the relevant `toc.md`
-- When adding or removing pages, update the appropriate `toc.md` file
 
-## Format and Style
-- ZenML uses GitBook for documentation
-- Include metadata fields at the top of documentation pages (follow existing patterns)
-- Documentation should be readable and conversational
-- Use consistent formatting with existing documentation
-- Avoid overusing bullet points or other formatting elements
-- Prioritize readability and clarity over excessive structure
-- Include appropriate cross-references to related documentation
+- Multiple docs sections have their own `toc.md`; update the relevant `toc.md`
+  when adding, moving, or removing pages.
+- Assets belong in a `.gitbook` folder at the same level as the relevant
+  `toc.md`.
+- GitBook URLs follow TOC hierarchy, not filesystem paths.
+- Use absolute `https://docs.zenml.io/...` links when linking across major docs
+  sections such as OSS docs and Pro docs.
 
-## Content Standards
-- Clear, concise language
-- Code examples for APIs
-- Explanation of concepts
-- Usage patterns and best practices
-- Match tone and style with existing documentation
+## Style
+
+- Include metadata fields at the top of pages when existing nearby pages do so.
+- Match the tone and structure of nearby documentation.
+- Prioritize readable prose over dense bullet lists.
+- Include code examples, cross-references, and usage guidance where they help
+  users complete the task.
+
+## Verification
+
+- For changed relative markdown links, run the relevant local link checks.
+- For absolute docs URLs, check the current URL or inspect the relevant
+  `toc.md`.
+- Use Lychee when the change affects many links:
+  `lychee --offline --no-progress 'docs/book/**/*.md'`.
