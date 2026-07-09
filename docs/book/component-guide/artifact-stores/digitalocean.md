@@ -65,4 +65,3 @@ zenml artifact-store register do_spaces \
 
 All other configuration options of the [S3 Artifact Store](s3.md) (`client_kwargs`, `config_kwargs`, `s3_additional_kwargs`) are available on this flavor as well and are passed through to the underlying S3-compatible filesystem.
 
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
