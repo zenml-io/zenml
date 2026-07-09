@@ -281,7 +281,10 @@ class RemoteVLLMGenerator:
             # across transformers versions, and a str slipping through
             # becomes list-of-characters prompt_ids that crash TRL.
             prompt_text = self.tokenizer.apply_chat_template(
-                messages, add_generation_prompt=True, tokenize=False
+                messages,
+                add_generation_prompt=True,
+                tokenize=False,
+                enable_thinking=False,
             )
             prompt_ids = self.tokenizer(
                 prompt_text, add_special_tokens=False

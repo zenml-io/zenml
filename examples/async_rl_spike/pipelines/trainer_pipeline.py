@@ -3,7 +3,7 @@
 from typing import Any, Dict, Optional
 
 from async_shared import signal_stop, stop_requested
-from remote_settings import FULL_DOCKER
+from remote_settings import TRAINER_DOCKER
 from steps.disaggregated import (
     publish_initial_version,
     teardown_serving,
@@ -12,9 +12,19 @@ from steps.disaggregated import (
 from steps.init_lora import init_lora
 
 from zenml import pipeline
+from zenml.config.resource_settings import ResourceSettings
+from zenml.integrations.modal.flavors import ModalOrchestratorSettings
 
 
-@pipeline(dynamic=True, enable_cache=False, settings={"docker": FULL_DOCKER})
+@pipeline(
+    dynamic=True,
+    enable_cache=False,
+    settings={
+        "docker": TRAINER_DOCKER,
+        "orchestrator.modal": ModalOrchestratorSettings(gpu="A10G"),
+        "resources": ResourceSettings(gpu_count=1),
+    },
+)
 def trainer_pipeline(
     run_dir: str,
     model_name: str = "Qwen/Qwen3-0.6B",

@@ -53,17 +53,17 @@ SPEC_REWARD = 0.3
 RUN_TIMEOUT_SECONDS = 600
 
 
-def check_parse(source: str) -> bool:
-    """Whether the source is syntactically valid Python."""
+def check_parse(source: str) -> "str | None":
+    """Concrete parse error, or None if the source is valid Python."""
     try:
         ast.parse(source)
-        return True
-    except SyntaxError:
-        return False
+        return None
+    except SyntaxError as error:
+        return f"SyntaxError: {error.msg} (line {error.lineno})"
 
 
-def check_import(pipeline_file: str) -> bool:
-    """Whether the module imports cleanly (top-level code runs).
+def check_import(pipeline_file: str) -> "str | None":
+    """Concrete import error, or None if the module imports cleanly.
 
     Runs in a subprocess so a hostile or broken module can't take the
     scorer down with it. The __main__ guard means importing does NOT run
@@ -81,7 +81,9 @@ def check_import(pipeline_file: str) -> bool:
         text=True,
         timeout=RUN_TIMEOUT_SECONDS,
     )
-    return result.returncode == 0
+    if result.returncode == 0:
+        return None
+    return (result.stderr or result.stdout or "import failed").strip()[-800:]
 
 
 def run_pipeline_file(pipeline_file: str) -> "tuple[bool, str]":
@@ -211,12 +213,14 @@ def main() -> None:
     }
 
     started = time.time()
-    parsed = check_parse(source)
-    imported = parsed and check_import(pipeline_file)
+    parse_error = check_parse(source)
+    import_error = (
+        check_import(pipeline_file) if parse_error is None else None
+    )
     result["timings"]["parse_import_s"] = round(time.time() - started, 2)
 
-    if not (parsed and imported):
-        result["error"] = "syntax error" if not parsed else "import failed"
+    if parse_error is not None or import_error is not None:
+        result["error"] = parse_error or import_error
         _write(reward_file, result)
         return
     result["breakdown"]["parse_import"] = PARSE_IMPORT_REWARD

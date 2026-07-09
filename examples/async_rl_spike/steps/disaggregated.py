@@ -374,18 +374,14 @@ def generate_and_enqueue(
 
             if raw_episodes is not None:
                 episodes = score_group(raw_episodes)
-                infra_errors = [
-                    e["infra_error"] for e in episodes if e.get("infra_error")
-                ]
-                scoring_errors = [
-                    e["error"] for e in episodes if e.get("error")
-                ]
-                info["num_infra_errors"] = len(infra_errors)
-                info["num_scoring_errors"] = len(scoring_errors)
-                if infra_errors:
-                    info["sample_infra_error"] = str(infra_errors[0])[:800]
-                if scoring_errors:
-                    info["sample_scoring_error"] = str(scoring_errors[0])[:800]
+                for kind, key in (
+                    ("infra", "infra_error"),
+                    ("scoring", "error"),
+                ):
+                    errors = [e[key] for e in episodes if e.get(key)]
+                    info[f"num_{kind}_errors"] = len(errors)
+                    if errors:
+                        info[f"sample_{kind}_error"] = str(errors[0])[:800]
                 if not is_live(run_dir, version):
                     info["dropped_stale"] = True
                     info["version"] = version

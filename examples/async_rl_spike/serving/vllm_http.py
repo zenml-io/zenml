@@ -52,6 +52,7 @@ def post_chat_completions(
                 # vLLM extension: encode logprob tokens as "token_id:<n>" so
                 # completion IDs come from the same array as the logprobs.
                 "return_tokens_as_token_ids": True,
+                "chat_template_kwargs": {"enable_thinking": False},
             }
         ).encode(),
         headers={"Content-Type": "application/json"},

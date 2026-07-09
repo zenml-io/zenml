@@ -40,3 +40,15 @@ FULL_DOCKER = DockerSettings(
         "index-strategy": "unsafe-best-match",
     },
 )
+
+TRAINER_DOCKER = DockerSettings(
+    parent_image=f"zenmldocker/zenml:{zenml.__version__}-py3.12",
+    requirements=[
+        "torch==2.6.0",
+        "trl==1.7.1",
+        "transformers>=4.56,<5",
+        "peft>=0.17,<1",
+        "datasets>=3.0",
+        "modal>=0.64",
+    ],
+)

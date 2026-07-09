@@ -97,6 +97,8 @@ def strip_markdown_fences(completion: str) -> str:
         The completion with a single leading/trailing code fence removed.
     """
     text = completion.strip()
+    if "</think>" in text:
+        text = text.split("</think>")[-1].strip()
     if text.startswith("```"):
         first_newline = text.find("\n")
         if first_newline != -1:
