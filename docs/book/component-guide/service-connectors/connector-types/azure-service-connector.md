@@ -473,7 +473,7 @@ zenml service-connector login azure-service-principal --resource-type kubernetes
 ```
 ⠙ Attempting to configure local client using service connector 'azure-service-principal'...
 Updated local kubeconfig with the cluster details. The current kubectl context was set to 'demo-zenml-terraform-cluster'.
-The 'azure-service-principal' Kubernetes Service Connector connector was used to successfully configure the local Kubernetes cluster client/SDK.
+The 'azure-service-principal' Kubernetes Service Connector was used to successfully configure the local Kubernetes cluster client/SDK.
 ```
 {% endcode %}
 
@@ -520,7 +520,7 @@ WARNING! Your password will be stored unencrypted in /home/stefan/.docker/config
 Configure a credential helper to remove this warning. See
 https://docs.docker.com/engine/reference/commandline/login/#credentials-store
 
-The 'azure-service-principal' Docker Service Connector connector was used to successfully configure the local Docker/OCI container registry client/SDK.
+The 'azure-service-principal' Docker Service Connector was used to successfully configure the local Docker/OCI container registry client/SDK.
 ```
 {% endcode %}
 
@@ -560,7 +560,7 @@ zenml service-connector login azure-service-principal --resource-type azure-gene
 {% code title="Example Command Output" %}
 ```
 Updated the local Azure CLI configuration with the connector's service principal credentials.
-The 'azure-service-principal' Azure Service Connector connector was used to successfully configure the local Generic Azure resource client/SDK.
+The 'azure-service-principal' Azure Service Connector was used to successfully configure the local Generic Azure resource client/SDK.
 ```
 {% endcode %}
 
