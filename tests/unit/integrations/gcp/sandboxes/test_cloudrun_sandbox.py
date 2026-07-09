@@ -22,8 +22,9 @@ import base64
 import json
 import os
 import tempfile
+from datetime import datetime
 from typing import Any, Dict, List, Optional
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
 import httpx
@@ -37,6 +38,7 @@ from zenml.integrations.gcp.flavors import (
 )
 from zenml.integrations.gcp.sandboxes.cloudrun_sandbox import (
     _BRIDGE_FILE_MAX_BYTES,
+    CloudRunSandbox,
     CloudRunSandboxProcess,
     CloudRunSandboxSession,
     _BridgeEvent,
@@ -461,3 +463,64 @@ class TestSession:
         session.close()
         with pytest.raises(Exception, match="closed"):
             session.exec("echo hi")
+
+
+def _make_component(**config_kwargs: Any) -> CloudRunSandbox:
+    """Builds a CloudRunSandbox without going through Stack/Client."""
+    return CloudRunSandbox(
+        name="test-cloudrun",
+        id=uuid4(),
+        config=CloudRunSandboxConfig(service_url=SERVICE_URL, **config_kwargs),
+        flavor="cloudrun",
+        type=StackComponentType.SANDBOX,
+        user=None,
+        created=datetime.now(),
+        updated=datetime.now(),
+        environment={},
+        secrets=[],
+    )
+
+
+class TestIdTokenCredentials:
+    def test_unauthenticated_config_skips_credentials(self) -> None:
+        component = _make_component(allow_unauthenticated=True)
+        assert component._build_id_token_credentials() is None
+
+    def test_service_account_credentials_converted(self) -> None:
+        from google.oauth2 import service_account
+
+        credentials = MagicMock(spec=service_account.Credentials)
+        credentials.signer = MagicMock()
+        credentials.service_account_email = "sa@project.iam"
+
+        component = _make_component()
+        with (
+            patch.object(
+                component,
+                "_get_authentication",
+                return_value=(credentials, "project"),
+            ),
+            patch.object(
+                service_account, "IDTokenCredentials"
+            ) as id_token_cls,
+        ):
+            component._build_id_token_credentials()
+
+        assert id_token_cls.call_args.kwargs["target_audience"] == SERVICE_URL
+
+    def test_unconvertible_connector_credentials_fail_loudly(self) -> None:
+        """Connector creds that can't mint ID tokens must not silently
+        fall back to the ambient ADC identity."""
+        from google.oauth2.credentials import Credentials as UserCredentials
+
+        component = _make_component()
+        with (
+            patch.object(
+                component,
+                "_get_authentication",
+                return_value=(MagicMock(spec=UserCredentials), "project"),
+            ),
+            patch.object(component, "get_connector", return_value=MagicMock()),
+        ):
+            with pytest.raises(RuntimeError, match="service-account"):
+                component._build_id_token_credentials()

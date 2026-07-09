@@ -1067,6 +1067,11 @@ class CloudRunSandbox(BaseSandbox, GoogleCredentialsMixin):
         Returns:
             Credentials exposing ``valid``/``token``/``refresh``, or
             ``None`` when ``allow_unauthenticated`` is set.
+
+        Raises:
+            RuntimeError: If a linked service connector uses an auth method
+                whose credentials cannot mint ID tokens (user account,
+                OAuth2 token, external account).
         """
         if self.config.allow_unauthenticated:
             return None
@@ -1089,6 +1094,20 @@ class CloudRunSandbox(BaseSandbox, GoogleCredentialsMixin):
                 service_account_email=credentials.service_account_email,
                 token_uri=_GOOGLE_OAUTH2_TOKEN_ENDPOINT,
                 target_audience=audience,
+            )
+        if self.get_connector() is not None:
+            # The connector produced credentials we can't convert (user
+            # account, OAuth2 token, external account). Falling back to the
+            # ambient ADC below would silently authenticate to the bridge
+            # as a *different identity* than the connector the user
+            # configured — fail loudly instead.
+            raise RuntimeError(
+                "The linked GCP service connector uses an auth method "
+                f"({type(credentials).__name__}) that cannot mint the "
+                "Google ID tokens Cloud Run IAM requires. Reconfigure the "
+                "connector with the 'service-account' or 'impersonation' "
+                "auth method, or unlink it to use service_account_path / "
+                "service-account-based Application Default Credentials."
             )
         # Plain ADC (workstation or metadata server): fall back to the
         # generic fetch_id_token helper, which raises a clear error for
