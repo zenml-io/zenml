@@ -23,7 +23,7 @@ component configuration.
 import re
 from typing import TYPE_CHECKING, Optional, Type
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, model_validator
 
 from zenml.integrations.digitalocean import (
     DIGITALOCEAN_SPACES_ARTIFACT_STORE_FLAVOR,
@@ -44,18 +44,6 @@ if TYPE_CHECKING:
 # allowlist keeps the flavor usable when DigitalOcean adds regions, while
 # still rejecting values that would corrupt the derived endpoint URL.
 DIGITALOCEAN_SPACES_REGION_PATTERN = re.compile(r"^[a-z]{2,6}[0-9]{1,2}$")
-
-
-def spaces_endpoint_url(region: str) -> str:
-    """Build the DigitalOcean Spaces endpoint URL for a region.
-
-    Args:
-        region: The DigitalOcean Spaces region, e.g. 'fra1'.
-
-    Returns:
-        The Spaces endpoint URL for that region.
-    """
-    return f"https://{region}.digitaloceanspaces.com"
 
 
 class DigitalOceanSpacesArtifactStoreConfig(S3ArtifactStoreConfig):
@@ -81,51 +69,34 @@ class DigitalOceanSpacesArtifactStoreConfig(S3ArtifactStoreConfig):
         "client_kwargs['endpoint_url'] is provided explicitly.",
     )
 
-    @field_validator("region")
-    @classmethod
-    def _validate_region(cls, region: Optional[str]) -> Optional[str]:
-        """Validates that ``region`` looks like a Spaces region slug.
-
-        The format is validated instead of a hardcoded region allowlist so
-        that regions DigitalOcean adds in the future work without a ZenML
-        release.
-
-        Args:
-            region: The region to validate.
-
-        Returns:
-            The validated region.
-
-        Raises:
-            ValueError: If the region is not a valid Spaces region slug.
-        """
-        if region is not None and not DIGITALOCEAN_SPACES_REGION_PATTERN.match(
-            region
-        ):
-            raise ValueError(
-                f"Invalid DigitalOcean Spaces region '{region}'. Expected a "
-                f"lowercase datacenter slug such as 'nyc3', 'ams3', 'fra1' "
-                f"or 'lon1'."
-            )
-        return region
-
     @model_validator(mode="after")
-    def _require_region_or_endpoint(
+    def _validate_region_or_endpoint(
         self,
     ) -> "DigitalOceanSpacesArtifactStoreConfig":
-        """Requires either a ``region`` or an explicit endpoint URL.
+        """Validates the region slug, requiring one unless an endpoint is set.
+
+        The region format is validated instead of a hardcoded region allowlist
+        so that regions DigitalOcean adds in the future work without a ZenML
+        release.
 
         Returns:
             The validated config.
 
         Raises:
-            ValueError: If neither ``region`` nor an explicit endpoint URL is
-                set, since the Spaces endpoint cannot be determined otherwise.
+            ValueError: If the region is not a valid Spaces region slug, or if
+                neither ``region`` nor an explicit endpoint URL is set (the
+                Spaces endpoint cannot be determined otherwise).
         """
-        has_endpoint = bool(
+        if self.region:
+            if not DIGITALOCEAN_SPACES_REGION_PATTERN.match(self.region):
+                raise ValueError(
+                    f"Invalid DigitalOcean Spaces region '{self.region}'. "
+                    f"Expected a lowercase datacenter slug such as 'nyc3', "
+                    f"'ams3', 'fra1' or 'lon1'."
+                )
+        elif not (
             self.client_kwargs and self.client_kwargs.get("endpoint_url")
-        )
-        if not self.region and not has_endpoint:
+        ):
             raise ValueError(
                 "The DigitalOcean Spaces artifact store needs either a "
                 "`region` (for example 'fra1') or an explicit "

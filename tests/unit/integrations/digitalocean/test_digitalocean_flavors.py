@@ -16,8 +16,8 @@
 These tests exercise the config/flavor surface the DigitalOcean integration
 adds on top of the inherited S3 implementation: the Spaces region validation
 and runtime endpoint derivation on both the s3fs and boto3 code paths, and the
-DOCR URI validation. ``boto3.resource`` is mocked so no real S3/Spaces client
-is constructed during instantiation.
+DOCR URI validation. No real S3/Spaces client is constructed — client
+construction is lazy and the s3fs filesystem class is mocked where needed.
 """
 
 from datetime import datetime
@@ -43,7 +43,7 @@ FRA1_ENDPOINT = "https://fra1.digitaloceanspaces.com"
 def _build_store(
     config: DigitalOceanSpacesArtifactStoreConfig,
 ) -> DigitalOceanSpacesArtifactStore:
-    """Construct a Spaces artifact store with boto3.resource mocked.
+    """Construct a Spaces artifact store.
 
     Args:
         config: The config for the artifact store.
@@ -51,17 +51,16 @@ def _build_store(
     Returns:
         A DigitalOceanSpacesArtifactStore instance.
     """
-    with patch("boto3.resource", MagicMock()):
-        return DigitalOceanSpacesArtifactStore(
-            name="",
-            id=uuid4(),
-            config=config,
-            flavor="digitalocean_spaces",
-            type=StackComponentType.ARTIFACT_STORE,
-            user=uuid4(),
-            created=datetime.now(),
-            updated=datetime.now(),
-        )
+    return DigitalOceanSpacesArtifactStore(
+        name="",
+        id=uuid4(),
+        config=config,
+        flavor="digitalocean_spaces",
+        type=StackComponentType.ARTIFACT_STORE,
+        user=uuid4(),
+        created=datetime.now(),
+        updated=datetime.now(),
+    )
 
 
 # --- artifact store flavor ---------------------------------------------------
@@ -118,8 +117,8 @@ def test_filesystem_wires_derived_endpoint_into_s3fs():
     )
     fs_cls = MagicMock()
     with patch(
-        "zenml.integrations.digitalocean.artifact_stores"
-        ".digitalocean_artifact_store.ZenMLS3Filesystem",
+        "zenml.integrations.s3.artifact_stores"
+        ".s3_artifact_store.ZenMLS3Filesystem",
         fs_cls,
     ):
         _ = store.filesystem

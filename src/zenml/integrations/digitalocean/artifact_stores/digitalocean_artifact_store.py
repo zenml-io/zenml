@@ -17,18 +17,17 @@ DigitalOcean Spaces exposes an S3-compatible API that behaves identically to S3
 for the read/write operations ZenML needs, so this class subclasses
 :class:`S3ArtifactStore`. The only Spaces-specific behavior is the endpoint
 URL, which is derived from the configured ``region`` at runtime rather than
-persisted in the config model.
+persisted in the config model, so that a later region update is never shadowed
+by a stale persisted endpoint.
 """
 
 from typing import Any, Dict, cast
 
 from zenml.integrations.digitalocean.flavors.digitalocean_artifact_store_flavor import (
     DigitalOceanSpacesArtifactStoreConfig,
-    spaces_endpoint_url,
 )
 from zenml.integrations.s3.artifact_stores.s3_artifact_store import (
     S3ArtifactStore,
-    ZenMLS3Filesystem,
 )
 
 
@@ -58,45 +57,20 @@ class DigitalOceanSpacesArtifactStore(S3ArtifactStore):
             the configured ``region`` if it was not set explicitly.
         """
         if not kwargs.get("endpoint_url") and self.config.region:
-            kwargs["endpoint_url"] = spaces_endpoint_url(self.config.region)
+            kwargs["endpoint_url"] = (
+                f"https://{self.config.region}.digitaloceanspaces.com"
+            )
         return kwargs
 
-    @property
-    def filesystem(self) -> ZenMLS3Filesystem:
-        """The Spaces S3-compatible filesystem for this artifact store.
+    def _build_filesystem_kwargs(self) -> Dict[str, Any]:
+        """Build the s3fs constructor kwargs with the Spaces endpoint.
 
         Returns:
-            The filesystem object.
+            Keyword arguments for the S3-compatible filesystem.
         """
-        # Refresh the credentials also if the connector has expired
-        if self._filesystem and not self.connector_has_expired():
-            return self._filesystem
-
-        with self._filesystem_lock:
-            if self._filesystem and not self.connector_has_expired():
-                return self._filesystem
-
-            key, secret, token, region = self.get_credentials()
-
-            # Mirror the parent: a connector-provided region is injected as
-            # region_name, then explicit client kwargs take precedence, then
-            # the Spaces endpoint is derived from the configured region.
-            client_kwargs: Dict[str, Any] = {}
-            if region:
-                client_kwargs["region_name"] = region
-            if self.config.client_kwargs:
-                client_kwargs.update(self.config.client_kwargs)
-            client_kwargs = self._apply_spaces_endpoint(client_kwargs)
-
-            self._filesystem = ZenMLS3Filesystem(
-                key=key,
-                secret=secret,
-                token=token,
-                client_kwargs=client_kwargs,
-                config_kwargs=self.config.config_kwargs,
-                s3_additional_kwargs=self.config.s3_additional_kwargs,
-            )
-            return self._filesystem
+        kwargs = super()._build_filesystem_kwargs()
+        self._apply_spaces_endpoint(kwargs["client_kwargs"])
+        return kwargs
 
     def _build_boto3_kwargs(self) -> Dict[str, Any]:
         """Build Spaces-aware kwargs for the boto3.resource path.

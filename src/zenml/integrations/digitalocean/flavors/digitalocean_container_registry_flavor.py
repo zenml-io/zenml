@@ -47,9 +47,9 @@ class DigitalOceanContainerRegistryConfig(BaseContainerRegistryConfig):
         Raises:
             ValueError: If the URI is not a valid DOCR URI.
         """
-        uri = uri.rstrip("/")
-        # Require the exact DOCR host followed by a registry name: a bare
-        # `startswith` would accept lookalike hosts such as
+        # The inherited base validator has already stripped any trailing
+        # slash. Require the exact DOCR host followed by a registry name: a
+        # bare `startswith` would accept lookalike hosts such as
         # `registry.digitalocean.com.evil.example`, and a bare host without a
         # registry name is not a valid image push target.
         prefix = f"{DOCR_URI_PREFIX}/"
