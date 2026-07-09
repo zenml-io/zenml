@@ -571,3 +571,74 @@ multi-GB build/push/pull cycle:
   flavor), or reject relative paths uniformly at the base class with a
   clear error.
 - **Hit:** F1 snapshot task, Modal demo, 2026-07-09.
+
+## 19. Task-pinned images are Modal-only in the Harbor bridge — while the K8s flavor already ships the exact field needed
+
+*Entries 19–21 come from task B1 (Harbor campaigns on the Kubernetes
+sandbox flavor) and are findings against PR #5029's
+`zenml.integrations.harbor` — an open PR, not shipped core. Full detail:
+[`B1_K8S_FINDINGS.md`](https://github.com/zenml-io/zenml/blob/spike/b1-harbor-k8s/examples/harbor_agent_evals/B1_K8S_FINDINGS.md)
+on branch `spike/b1-harbor-k8s`.*
+
+- **Tried:** Task B1: run `dataset:terminal-bench-sample@2.0` on the
+  Kubernetes sandbox flavor — everything #5029 validated was Modal-only,
+  and registry tasks pin a prebuilt `docker_image`.
+- **What happened:** All three tasks errored with the bridge's designed
+  wall: `NotImplementedError: Task-level docker_image is currently only
+  supported with the Modal sandbox flavor`. Since *every* Terminal-Bench
+  task pins an image, the whole benchmark class is unusable on K8s. But
+  the wall is one function: `KubernetesSandboxSettings.image` already
+  exists, and the bridge's `_settings_override` docstring says to switch
+  "when another flavor ships an image field" — it has shipped.
+- **Workaround:** a five-line spike-branch patch translating
+  `docker_image` → `KubernetesSandboxSettings(image=image)`. Verified
+  live: all three Terminal-Bench sample tasks boot their real images on
+  EKS, 6/6 oracle trials at reward 1.000 (47s single-task including the
+  image pull). Reference implementation on `spike/b1-harbor-k8s`.
+- **Severity:** blocking for registry benchmarks on K8s; trivial fix.
+- **Core change:** add the kubernetes case to `_settings_override`
+  (decide: per-flavor dispatch in the bridge vs. an image-override
+  capability on `BaseSandbox`), and settle private-registry credentials,
+  image architecture, and node disk pressure at fan-out (entry 11's
+  failure mode) before the 89-task scale test.
+- **Hit:** B1 Harbor-on-K8s task, 2026-07-09.
+
+## 20. A failed Harbor trial start buries the real error under cleanup noise
+
+- **Tried:** The same B1 registry run — watching *how* the designed
+  `NotImplementedError` from entry 19 actually surfaces to a user.
+- **What happened:** When the bridge's `start()` raises, Harbor's trial
+  cleanup still tries to download logs from the environment, which calls
+  `exec()` on the never-started session and raises a *second* exception
+  (`RuntimeError: ZenMLSandboxEnvironment used before start()`) plus
+  repeated "Failed to download logs" lines per trial. The genuine cause
+  sits above a wall of secondary tracebacks — the same archaeology tax
+  as entry 16, in miniature, on the very first error a new Harbor-on-K8s
+  user will ever hit.
+- **Workaround:** read upward past the `RuntimeError` to the original
+  exception; none needed in code.
+- **Severity:** annoying (misleading first-contact failure).
+- **Core change:** make the bridge's unstarted-state error carry the
+  original `start()` failure, or no-op the log-download path when no
+  session was ever created.
+- **Hit:** B1 Harbor-on-K8s task, 2026-07-09.
+
+## 21. A campaign where every trial errored reports "0 shards below reward 1.0"
+
+- **Tried:** The B1 registry run's receipts: the example queries step
+  metadata for shards with `harbor.mean_reward < 1` to find losers.
+- **What happened:** All three shards errored (entry 19), yet the report
+  showed each trial as **Completed=1 AND Errored=1** with mean reward
+  `n/a`, and the receipt query answered **zero** — errored shards log no
+  `harbor.mean_reward` metadata at all, so a reward-threshold gate
+  simply never sees them. A user gating promotion on that query would
+  pass a campaign in which nothing ran. Theme 2 again: the failure state
+  reads as "no losers" instead of "all losses".
+- **Workaround:** gate on `harbor.n_errored:gt:0` first (the metadata
+  exists and filters server-side), then on mean reward.
+- **Severity:** annoying now, dangerous the first time someone wires a
+  regression gate to the mean-reward query.
+- **Core change:** errored shards should log a sentinel reward (or the
+  report should refuse a mean when errors > 0), and the example receipts
+  should demonstrate the errors-first idiom.
+- **Hit:** B1 Harbor-on-K8s task, 2026-07-09.

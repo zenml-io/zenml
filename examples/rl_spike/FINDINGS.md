@@ -31,16 +31,19 @@ inconclusive (three clean optimizer steps, statistically flat rewards —
 see [`TRAINING_RUN.md`](TRAINING_RUN.md)), but the training outcome was
 never the deliverable.
 
-Since the training run, three follow-up tasks widened the evidence
+Since the training run, four follow-up tasks widened the evidence
 without any new GPU time. We taught failing episodes to save their
 sandbox filesystem so a human can reopen it later and see what actually
 happened (F1, [`SNAPSHOTS.md`](SNAPSHOTS.md)); we measured what the loop
 really pushes through the artifact store instead of guessing (E3,
-[`DATA_LAYER.md`](DATA_LAYER.md)); and we rebuilt the same task and
+[`DATA_LAYER.md`](DATA_LAYER.md)); we rebuilt the same task and
 reward inside `verifiers`, an external RL library, to see whether ZenML
 sandboxes survive contact with someone else's framework (C2,
-[`verifiers_c2/`](verifiers_c2/README.md)). Their results live in
-themes 2, 3, and 5 below.
+[`verifiers_c2/`](verifiers_c2/README.md)); and we ran PR #5029's Harbor
+eval campaigns on the Kubernetes sandbox flavor, where everything had
+only ever been validated on Modal (B1, on branch `spike/b1-harbor-k8s`:
+[`B1_K8S_FINDINGS.md`](https://github.com/zenml-io/zenml/blob/spike/b1-harbor-k8s/examples/harbor_agent_evals/B1_K8S_FINDINGS.md)).
+Their results live in themes 2, 3, and 5 below.
 
 ## Theme 1 — Dynamic fan-out has no working concurrency or placement story (entries 11, 12, 14, 15)
 
@@ -222,7 +225,7 @@ Theme 1's per-step overhead.
   what a relative remote path means at the base class, or reject
   relative paths uniformly.
 
-## Theme 5 — The sandbox travels: what the first ecosystem test found (task C2)
+## Theme 5 — The sandbox travels: what the first ecosystem tests found (tasks C2, B1)
 
 Everything above is about ZenML running the loop itself. Task C2 asked
 the opposite question: what happens when *someone else's* framework owns
@@ -274,10 +277,47 @@ Three findings matter beyond the mechanics:
    one layer down. Nobody in this ecosystem has solved failure
    forensics. We have the beginnings of it, and it would differentiate.
 
-**Asks:** none for core plumbing — this theme is product direction, not
-bug fixes. The concrete decision it tees up: whether to pursue an
+**Asks (C2):** none for core plumbing — this slice is product direction,
+not bug fixes. The concrete decision it tees up: whether to pursue an
 upstream PR (or a published shim) making ZenML Sandbox a verifiers
 backend while the contract is still five methods wide.
+
+Task B1 ran the same travel test from the opposite side: instead of a
+foreign framework borrowing our sandbox, PR #5029's Harbor integration
+already *uses* the sandbox abstraction — B1 asked whether that campaign
+machinery, validated only on Modal, survives a flavor swap to
+Kubernetes. Findings, all detailed in
+[`B1_K8S_FINDINGS.md`](https://github.com/zenml-io/zenml/blob/spike/b1-harbor-k8s/examples/harbor_agent_evals/B1_K8S_FINDINGS.md)
+and
+[`B1_WRAP_VS_PLUGIN.md`](https://github.com/zenml-io/zenml/blob/spike/b1-harbor-k8s/examples/harbor_agent_evals/B1_WRAP_VS_PLUGIN.md)
+on branch `spike/b1-harbor-k8s` (which forks the open PR — it merges
+nowhere; the docs and reference patch are the deliverable):
+
+1. **Portability holds exactly as far as the abstraction reaches.** The
+   hermetic campaign (oracle-vs-nop, caching, resume, metadata, log
+   restore) reproduced on K8s untouched, because the bridge only speaks
+   the `BaseSandbox` session API. The single place the bridge peeks
+   behind the abstraction — translating a task-pinned `docker_image`
+   into flavor settings — is exactly where it broke (entry 19). And the
+   wall was already hollow: `KubernetesSandboxSettings.image` exists; a
+   five-line spike patch booted all three real Terminal-Bench images on
+   EKS at oracle reward 1.000. The fix is a decision, not a project.
+2. **Theme 2 recurs at the eval layer too.** A campaign in which every
+   trial errored reports "0 shards below reward 1.0" (entry 21), and the
+   first error a Harbor-on-K8s user hits arrives buried under cleanup
+   tracebacks (entry 20) — the reward channel ambiguity of entry 16 and
+   C2's finding 3, rebuilt a third time, one layer up.
+3. **Wrap vs. plugin is a live product decision** (the LangChain
+   three-slot precedent: `--env zenml` effectively exists already;
+   `--plugin zenml` would record Harbor runs into ZenML for the agent
+   teams who don't run ZenML pipelines — which, per the sales calls, is
+   who's actually asking). Assessment with recommendation is written for
+   Hamza in `B1_WRAP_VS_PLUGIN.md`.
+
+**Asks (B1):** ship the `docker_image` → `KubernetesSandboxSettings.image`
+translation in the Harbor bridge (entry 19 has the caveat list); fix the
+errored-trial visibility semantics (entry 21); decide plugin staffing
+(`B1_WRAP_VS_PLUGIN.md`).
 
 ## The verdict question, widened
 
@@ -306,9 +346,11 @@ is now wider than RL:
 the same loop (generate → sandbox-verify → update an artifact → iterate)
 underlies prompt evolution, eval campaigns, and trajectory export, and the
 follow-up spikes are chosen to test whether ZenML is the harness for that
-whole spectrum rather than for GRPO specifically. C2 supplied the first
-datapoint, and it cuts both ways: where a framework already owns the
-loop, ZenML's harness adds nothing they miss — but the sandbox slots
-into their machinery today, and their own sandbox story is a single
-vendor hardcoded. The findings above are the platform work that any of
-those consumers would hit first.
+whole spectrum rather than for GRPO specifically. C2 and B1 supplied the
+first two datapoints, and they cut both ways: where a framework already
+owns the loop, ZenML's harness adds nothing they miss — but the sandbox
+slots into their machinery today (C2), carries a whole eval-campaign
+integration across flavors wherever the abstraction holds (B1), and the
+alternatives are a single hardcoded vendor (verifiers) or a single
+validated flavor (Harbor-on-Modal). The findings above are the platform
+work that any of those consumers would hit first.
