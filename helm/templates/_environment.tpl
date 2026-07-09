@@ -294,6 +294,7 @@ root_url_path: {{ .ZenML.rootUrlPath | quote }}
 server_url: {{ .ZenML.serverURL | quote }}
 {{- end }}
 {{- with .ZenML.openTelemetry }}
+{{- if or .endpoint .tracesEndpoint .metricsEndpoint .logsEndpoint }}
 {{- if .endpoint }}
 otel_exporter_otlp_endpoint: {{ .endpoint | quote }}
 {{- end }}
@@ -317,6 +318,7 @@ otel_metrics_enabled: {{ .metricsEnabled | quote }}
 {{- end }}
 {{- if hasKey . "logsEnabled" }}
 otel_logs_enabled: {{ .logsEnabled | quote }}
+{{- end }}
 {{- end }}
 {{- end }}
 {{- range $key, $value := .ZenML.secure_headers }}
