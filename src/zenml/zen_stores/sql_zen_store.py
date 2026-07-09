@@ -11611,6 +11611,27 @@ class SqlZenStore(BaseZenStore):
             )
 
             session.add(step_schema)
+
+            if step_run.dynamic_config:
+                if not run.snapshot or not run.snapshot.is_dynamic:
+                    raise IllegalOperationError(
+                        "Dynamic step configurations are not allowed for "
+                        "static pipelines."
+                    )
+
+                step_configuration_schema = StepConfigurationSchema(
+                    index=0,
+                    name=step_run.name,
+                    # Don't include the merged config in the step
+                    # configurations, we reconstruct it in the `to_model` method
+                    # using the pipeline configuration.
+                    config=step_run.dynamic_config.model_dump_json(
+                        exclude={"config"}
+                    ),
+                    step_run_id=step_schema.id,
+                )
+                session.add(step_configuration_schema)
+
             try:
                 session.commit()
             except IntegrityError:
@@ -11815,26 +11836,6 @@ class SqlZenStore(BaseZenStore):
                 self._update_pipeline_run_status(
                     pipeline_run_id=step_run.pipeline_run_id, session=session
                 )
-
-            if step_run.dynamic_config:
-                if not run.snapshot or not run.snapshot.is_dynamic:
-                    raise IllegalOperationError(
-                        "Dynamic step configurations are not allowed for "
-                        "static pipelines."
-                    )
-
-                step_configuration_schema = StepConfigurationSchema(
-                    index=0,
-                    name=step_run.name,
-                    # Don't include the merged config in the step
-                    # configurations, we reconstruct it in the `to_model` method
-                    # using the pipeline configuration.
-                    config=step_run.dynamic_config.model_dump_json(
-                        exclude={"config"}
-                    ),
-                    step_run_id=step_schema.id,
-                )
-                session.add(step_configuration_schema)
 
             session.commit()
             session.refresh(
