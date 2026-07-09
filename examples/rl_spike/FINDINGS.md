@@ -58,26 +58,27 @@ failure family, so they are worth reading as a unit:
    in `retrying` forever with no pod, no thread, and no timeout. The final
    training run deadlocked on exactly two such zombie steps out of 280.
 
-**The cost of this theme is now measured** ([`DATA_LAYER.md`](DATA_LAYER.md)):
-across 1,398 episode steps, the useful work — create a sandbox, upload
-three small files, run the scorer — averages 31.6 seconds, while the
-step around it averages 117 seconds. **73% of every episode's wall-clock
-is harness fixed cost** (pod scheduling, image/code bootstrap, credential
-fetch, artifact write). The fan-out is ~90% of iteration time, so most of
-what a training iteration buys is overhead, not scoring. Each iteration
-also registers 280 separate ~10 KB artifacts against the control plane —
-one ingredient of the 429 storms above — and the trainer then re-reads
-them at a measured 293 ms apiece (~82 s per optimizer step, hidden inside
-what looks like "training time").
+This theme now has a price tag ([`DATA_LAYER.md`](DATA_LAYER.md)).
+Across 1,398 episode steps, the useful work — create a sandbox, upload
+three small files, run the scorer — averages 31.6 seconds. The step
+around it averages 117 seconds. **73% of every episode's wall-clock goes
+to getting a step running at all**: scheduling a pod, pulling the image,
+downloading the code archive, fetching credentials, writing the output
+artifact. Since the fan-out is ~90% of iteration time, most of what a
+training iteration pays for is this fixed cost, not scoring. Each
+iteration also registers 280 separate ~10 KB artifacts with the ZenML
+server (one ingredient of the 429 storms above), and the trainer then
+re-reads them at a measured 293 ms apiece — about 82 seconds hiding
+inside what looks like "training time" on every optimizer step.
 
 **Asks, in priority order:** (a) make `max_parallelism` govern dynamic
 pipelines or fail loudly when set on one; (b) make the retry/relaunch path
 at least as robust as the step it protects, and give `retrying` a terminal
 escape (relaunch-with-backoff, then `failed`); (c) default the orchestrator
 pod to a sane memory request; (d) answer the per-step-image question for
-dynamic pipelines; (e) treat 429 from the platform's own server as a
-first-class retryable condition (Retry-After, jitter, or an
-orchestrator-seeded credential cache so N pods don't each re-fetch
+dynamic pipelines; (e) treat a 429 from the platform's own server as something
+the client is built to retry (honor Retry-After, add jitter, or have the
+orchestrator seed a credential cache so N pods don't each re-fetch
 identical connector credentials).
 
 ## Theme 2 — Failure states lie (entries 6, 7, 8b, 14, 15, 16)
@@ -95,8 +96,8 @@ misreported itself:
   an all-NaN adapter once shipped as the final artifact of a green run
   (7 postscript).
 - The scoring variant (16): a DiskPressure-degraded node made `import
-  zenml` fail inside sandbox pods for ~2.5 hours, and the reward channel
-  recorded that as honest "model scored 0.0" across two full iterations.
+  zenml` fail inside sandbox pods for ~2.5 hours, and the scorer wrote
+  that down as an honest "model scored 0.0" across two full iterations.
   GRPO's group-relative advantage made the poisoned update a provable
   no-op (`grad_norm: 0.0` exactly), which is luck of the algorithm, not a
   property of the platform.
@@ -118,13 +119,13 @@ snapshotting is cheap. Full matrix and gap list in
 [`SNAPSHOTS.md`](SNAPSHOTS.md).
 
 **Asks:** a run-level heartbeat/reaper so orphaned runs eventually fail
-(6/8b/14); a terminal path out of `retrying` (15); a first-class
-"completed with degraded result" step state so containment steps don't
-have to choose between aborting the run and lying to the dashboard (7);
-snapshot support for the Kubernetes sandbox flavor — even "tar the
-workdir to the artifact store" answers the entry-16 question — plus
-snapshot refs as first-class step metadata rather than something user
-code smuggles into its outputs (17). Entry 16's remaining lesson is
+(6/8b/14); a terminal path out of `retrying` (15); a real "completed
+with degraded result" step state so containment steps don't have to
+choose between aborting the run and lying to the dashboard (7); snapshot
+support for the Kubernetes sandbox flavor — even "tar the workdir to the
+artifact store" answers the entry-16 question — plus snapshot refs
+recorded by the platform as step metadata, not smuggled through step
+outputs by user code the way our example has to (17). Entry 16's remaining lesson is
 mostly on us (classify environment failures as `infra_error`, keep
 scorer stderr), but the platform half — sandbox sessions scheduled onto
 a node the kubelet already had under DiskPressure, with nothing
@@ -144,39 +145,42 @@ as materialized `Path` step input (canonical, credentialed), streamed into
 the pod over the exec websocket — the serving pod needs no S3 and no
 zenml install.
 
-**Asks:** a serving-shaped lifetime concept ("start this service for the
-pipeline's duration, give steps its address, tear it down — and record
-what artifact it currently serves"); update or deprecate the vLLM
+**Asks:** a way to declare "start this service when the run starts, hand
+its address to steps, tear it down when the run ends — and record which
+artifact it is currently serving"; update or deprecate the vLLM
 integration; make `fileio`'s unregistered-scheme error say "you are not
-in a ZenML context" and offer the supported out-of-step path.
+in a ZenML context" and point at the supported out-of-step path.
 
-One sharpener from the final run: because teardown is a *step*, a failed
+One more lesson from the final run: because teardown is a *step*, a failed
 run leaks the GPU-holding vLLM Deployment (it survived both the OOM crash
 and the deadlock stop and had to be deleted by hand). A pipeline-level
 cleanup guarantee — `on_failure` hooks that provably run, or resources
 owned by the run rather than by a step — is part of the same serving
 story.
 
-**The data layer under this theme is now measured, and the answer is
-"weights, not episodes"** ([`DATA_LAYER.md`](DATA_LAYER.md)). Plainly:
-the scored episodes everyone worries about are 10 KB each — a full
-280-episode iteration writes 2.8 MB, and the whole training run's
-episode traffic (14 MB) is smaller than a single adapter artifact. The
-adapters are the real channel: ~110 MB written per iteration and read
-back twice (into the serving pod, into the next optimizer step), ≈
-330 MB of object-store round-trips per iteration — and that number only
-grows with model size, while episodes don't. (A trap inside it: the
-initial and trained adapters are the *same* 132 MB uncompressed; the
-initial one just gzips 4× smaller because untrained LoRA halves are all
-zeros. Size estimates made from iteration 0 are wrong by 4×.) So the
-mounted-volume idea from the 7/8 call gets a split verdict: for the
-weights channel it is a clear, measured win — and it would delete the
-exec-websocket adapter push (13) outright, since trainer, server, and
-the next iteration would simply see the same files; for episodes it buys
-little that batching wouldn't (the generation step already writes all
-280 episodes as one 2.6 MB artifact — the fan-out re-shards them purely
-for per-episode lineage); and it does not touch the dominant cost, which
-is Theme 1's per-step overhead.
+We also measured what actually moves through the artifact store, and
+the answer is **weights, not episodes**
+([`DATA_LAYER.md`](DATA_LAYER.md)). The scored episodes everyone worries
+about are 10 KB each. A full 280-episode iteration writes 2.8 MB of
+them, and the whole training run's episode traffic (14 MB) is smaller
+than a single adapter artifact. The adapters are where the bytes are:
+~110 MB written per iteration, then read back twice (once into the
+serving pod, once into the next optimizer step), about 330 MB of S3
+round-trips per iteration. That number grows with model size; the
+episode number doesn't. One trap inside it: the initial and trained
+adapters are the *same* 132 MB uncompressed. The initial one just gzips
+4× smaller because untrained LoRA halves are all zeros, so size
+estimates made from iteration 0 are wrong by 4×.
+
+The mounted-volume idea from the 7/8 call therefore gets a split
+verdict. For moving adapters it is a clear, measured win, and it would
+delete the exec-websocket adapter push (13) outright: trainer, serving
+pod, and the next iteration would simply open the same files. For
+episodes it buys little that batching wouldn't — the generation step
+already writes all 280 episodes as one 2.6 MB artifact; the fan-out
+re-shards them into 280 tiny artifacts purely so each episode gets its
+own lineage entry. And it does nothing about the dominant cost, which is
+Theme 1's per-step overhead.
 
 ## Theme 4 — Sharp edges that cost real time but have small fixes (entries 3, 4, 8, 9, 10)
 
@@ -208,23 +212,25 @@ is Theme 1's per-step overhead.
 
 ## The verdict question, widened
 
-The honest summary for "would we recommend ZenML for this workload today":
-the **shape** is right — visible phases, artifact lineage through the
-loop, sandboxes as first-class execution, `runs stop` and step retries
-that mostly work — but the **defaults assume short, small, deterministic
-pipelines**. Everything in themes 1–2 is what happens when a workload is
-long, wide, and stochastic. None of it looks architectural; all of it is
-defaults, caps, heartbeats, and honest failure states.
+The honest summary for "would we recommend ZenML for this workload
+today": the **shape** is right — the loop's phases are visible in the
+dashboard, artifacts thread the iterations, steps can create and destroy
+sandboxes, and `runs stop` and step retries mostly work — but the
+**defaults assume short, small, deterministic pipelines**. Everything in
+themes 1–2 is what happens when a workload is long, wide, and
+stochastic. None of it looks architectural. All of it is defaults, caps,
+heartbeats, and honest failure states.
 
-The two follow-up tasks (F1 snapshots, E3 data-layer measurement)
-sharpen that verdict rather than change it. The snapshot work shows the
-substrate story is *real* — a failed sandbox becoming a
-one-command-restorable object works today — but gated on flavor
-coverage, not on new architecture. The measurement work shows the same
-about transport: episodes need no redesign, weights have one genuinely
+The two follow-up tasks (F1 snapshots, E3 measurement) sharpen that
+verdict rather than change it. The snapshot work proves the thing Hamza
+described on the 7/8 call already works: a failed sandbox can become an
+object you reopen with one command and look around in. What blocks it is
+that only the Modal flavor implements the API — a coverage problem, not
+missing architecture. The measurement work says the same about data
+movement: episodes need no redesign, adapters have one genuinely
 motivated improvement (a shared volume), and the biggest measured cost —
-73% of episode wall-clock being per-step fixed overhead — points
-straight back at Theme 1's defaults rather than at the data layer.
+73% of episode wall-clock spent on per-step fixed overhead — points
+straight back at Theme 1's defaults, not at how bytes are stored.
 
 Per [`framework_breakout.md`](framework_breakout.md), the closing question
 is now wider than RL:
