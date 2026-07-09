@@ -1,6 +1,8 @@
-# RL spike — framework survey brief (planning, 2026-07-08, rev. 8)
+# RL spike — framework survey brief (planning, 2026-07-08, rev. 9)
 
 *Purpose: a menu of framework combinations and example variants to try next, so the spike keeps producing findings after v0. Nothing here is implementation — each entry is a spec for an example someone could build later. The deliverable of every entry is a BREAKAGE_LOG-style finding, not a working model.*
+
+*Rev. 9 (2026-07-09, later the same day): **F1 is done** (`SNAPSHOTS.md` — snapshot-on-failure + `restore_sandbox.py`; support matrix is Modal-only, entries 17–18; the flavor gap is the escalation) and **E3 is done** (`DATA_LAYER.md` — episodes 3% of bytes, weights 89%, 73% of episode wall-clock is harness overhead; volume-layer verdict: weights yes, episodes no). Findings count is now 18; `FINDINGS.md` updated with both. C2/G1/B1 in progress in separate worktrees.*
 
 *Rev. 8 (2026-07-09, after the Stage 3 smokes, calibration, and the full training run — see `TRAINING_RUN.md`, `CALIBRATION.md`, `FINDINGS.md`): **A1 is done** (warm vLLM verified end-to-end: 5 iterations, 4 adapter hot-reloads; its gates are open); **E1 and E4 are answered without being scheduled** — the training run's own failures supplied them (vLLM Deployment leaks on failure, confirmed twice; retries can die and leave steps in `retrying` forever, deadlocking the run — BREAKAGE_LOG 15/16); **E3 needs no new run** (5×280 episode artifacts sit on the staging server, measurement is a laptop script); findings count is now 16 entries, synthesized in `FINDINGS.md`. Sequencing in §4 updated accordingly.*
 
@@ -22,7 +24,7 @@
 
 ## 1 · Where we are (what the existing assets already prove)
 
-The current spike (`examples/rl_spike`) proves one complete shape end-to-end: **ZenML owns the whole RL loop as visible steps, TRL is demoted to a math library**. Concretely: ZenML steps generate rollouts (vLLM), score them in sandboxes, and hand pre-scored episodes to TRL's `rollout_func` so `GRPOTrainer` only computes advantages/loss/gradient. As of 7/9 this shape has run at full scale — a calibration pass over 64 tasks and a 5-iteration training run at 280 mapped episodes per iteration on the staging EKS cluster (`TRAINING_RUN.md`) — and has yielded 16 logged findings, synthesized by theme in `FINDINGS.md` (fan-out has no working concurrency/placement/retry story; failure states lie; the serving gap, now with warm-vs-cold numbers; plus the earlier caching/logging/image sharp edges — see `BREAKAGE_LOG.md`).
+The current spike (`examples/rl_spike`) proves one complete shape end-to-end: **ZenML owns the whole RL loop as visible steps, TRL is demoted to a math library**. Concretely: ZenML steps generate rollouts (vLLM), score them in sandboxes, and hand pre-scored episodes to TRL's `rollout_func` so `GRPOTrainer` only computes advantages/loss/gradient. As of 7/9 this shape has run at full scale — a calibration pass over 64 tasks and a 5-iteration training run at 280 mapped episodes per iteration on the staging EKS cluster (`TRAINING_RUN.md`) — and has yielded 18 logged findings, synthesized by theme in `FINDINGS.md` (fan-out has no working concurrency/placement/retry story; failure states lie; the serving gap, now with warm-vs-cold numbers; plus the earlier caching/logging/image sharp edges — see `BREAKAGE_LOG.md`).
 
 The Harbor worktree examples prove a second shape: **ZenML owns campaign fan-out, an external framework owns one trial**. `sandbox_harbor`'s `build_matrix → run_harbor_trial.map → build_report` runs one Harbor trial per mapped step, with Harbor's agent/verifier/reward running against a ZenML Sandbox session via the `ZenMLSandboxEnvironment` bridge. Smoke-tested on Modal only.
 
@@ -197,7 +199,21 @@ Stop conditions are uniform: each experiment is one run plus one BREAKAGE_LOG en
 
 ### Track F — Sandbox state as experiment state (added after the 7/8 Hamza call)
 
-#### F1 · Episode filesystem snapshots — "what did the sandbox look like when this rollout failed?"
+#### F1 · Episode filesystem snapshots — **DONE (7/9, see SNAPSHOTS.md; entries 17–18)**
+
+*Outcome: the mechanics work and the substrate story is real — failing
+episodes snapshot before teardown, the ref rides the episode record, and
+`restore_sandbox.py` reopened a failed sandbox and diagnosed an entry-16
+lookalike in one command. Answers to this section's questions: the
+support matrix is **Modal-only** (Kubernetes/local raise
+`NotImplementedError`, documented; the open GKE PR #4870 is a different
+flavor — that flavor gap is entry 17 and the headline escalation);
+snapshot latency on Modal measured ~1.3 s per failing episode, so
+failure-only is cheap and always-on is plausible; snapshots are invisible
+to lineage unless user code carries them (gap list item 2); bonus entry
+18 — the session filesystem API has no workdir contract across flavors.
+The agentic-demo upgrade below (snapshot a multi-turn trial's filesystem)
+remains open for B1/B2b to pick up.*
 
 1. **Combo/pins:** existing spike only, no new frameworks. Step zero is a fact-check: the Sandbox session API lists snapshots (#4986), but which *flavors* implement it is unknown — Modal probably, Kubernetes and local unclear. The support matrix is itself the first finding.
 2. **Smallest shape:** modify `run_episode` so that on scorer failure (or always, behind a flag) it snapshots the session *before* destroy and records the snapshot reference in the episode record and step metadata. Then the manual test that matters: starting from a failed episode in the dashboard, can a human actually get back to the filesystem — restore the snapshot into a fresh session and look around? The dry run is enough to prove the mechanics; no GPU. **But run the *demo* on an agentic trial (B1's Harbor tasks, or B2b's multi-turn task), not the single-turn baseline** — a single-turn episode's filesystem is just `pipeline.py` plus the scorer, whereas an agentic trial's filesystem has history (attempt, traceback, edit), which is the thing worth clicking into and the version Hamza was actually describing.
@@ -233,8 +249,8 @@ Context for whoever picks this up: GEPA (Genetic-Pareto, arXiv 2507.19457 — "R
 | Framework owns rollout+train, ZenML owns outer loop | C3, B2b |
 | Eval traces → training-data lineage (Kitaru-adjacent) | B3 |
 | Can ZenML Sandbox be the substrate under a framework-owned loop | B2b question (b) |
-| Sandbox filesystem state as inspectable/recoverable experiment state | F1 |
-| Data layer: object store vs mounted-volume for weights/episodes | E3 (measurement) → volume-layer escalation |
+| Sandbox filesystem state as inspectable/recoverable experiment state | **F1 — DONE** (SNAPSHOTS.md; real but Modal-only, flavor gap escalated as entry 17) |
+| Data layer: object store vs mounted-volume for weights/episodes | **E3 — DONE** (DATA_LAYER.md; volume layer motivated for weights, not episodes) |
 | Should the task be agentic / multi-turn | Baseline stays single-turn (control); agentic variant lives in B2b's task; Kitaru-as-policy-agent ruled out (installed-agent pattern, no tokens to train on) — see §1 note |
 | Cheaper interventions on the same harness (the RELAI "layer" spectrum) | G1 — GEPA prompt evolution reusing tasks + sandbox scorer |
 | Is the loop shape generic across intervention types (prompts vs weights) | G1 question (a) |
@@ -252,7 +268,7 @@ Context for whoever picks this up: GEPA (Genetic-Pareto, arXiv 2507.19457 — "R
 
 **Tomorrow's concrete output is a ranked matrix plus a small selected set of builds — not equal coverage of the whole menu.** A sensible P0 set is four-to-five sharply different ownership shapes: A1 (deepen the baseline), B1 (ZenML outside, framework inside), one of C1/C2 (verifier-first), one of B2b/C3/D1 (framework owns the loop), and **G1 (GEPA — same harness, cheaper intervention layer)**, which earns consideration despite being a late addition because it needs no GPU, reuses everything, and is the only entry that tests whether the spike's loop shape generalizes beyond RL at all. Everything else is P1/P2 or a skip-with-rationale.
 
-**Priority note after the 7/8 Hamza call and the RELAI case study:** strategic weight shifts toward the substrate/observability entries — **F1 (filesystem snapshots)** and **B2b question (b) (Sandbox under TRL)** are the two experiments most aligned with where Hamza is pointing (sandbox workload + training workload combined; state inspection/recovery; the volume/data layer), and framework *breadth* matters less than it did. G1 reinforces the same direction from the other side: it's the intervention where the sandbox/verification/lineage layer does all the work and the training runtime disappears — and RELAI's talk is market evidence that customers frame agent improvement as a spectrum of interventions (memory → prompts/harness → weights) and will ask for the cheaper layer first. The findings doc's closing question should widen accordingly: not "would we recommend ZenML for RL" but "would we recommend ZenML as the harness for the agent-improvement spectrum". E3's measurement now has a named consumer: it's the evidence for or against the volume layer. The Ray-adjacent skips (D2/D3) now have Hamza's explicit backing. One urgency signal from the Harbor research: LangChain's `--plugin langsmith` already ships reward-as-feedback + trace lineage for Harbor jobs — the eval-lineage ground B1/C1 target is being occupied now, which raises B1's priority and makes its question (d) (wrap vs plugin, and what ZenML records that LangSmith doesn't) a near-term product conversation rather than a someday one.
+**Priority note after the 7/8 Hamza call and the RELAI case study:** strategic weight shifts toward the substrate/observability entries — **F1 (filesystem snapshots)** and **B2b question (b) (Sandbox under TRL)** are the two experiments most aligned with where Hamza is pointing (sandbox workload + training workload combined; state inspection/recovery; the volume/data layer), and framework *breadth* matters less than it did. G1 reinforces the same direction from the other side: it's the intervention where the sandbox/verification/lineage layer does all the work and the training runtime disappears — and RELAI's talk is market evidence that customers frame agent improvement as a spectrum of interventions (memory → prompts/harness → weights) and will ask for the cheaper layer first. The findings doc's closing question should widen accordingly: not "would we recommend ZenML for RL" but "would we recommend ZenML as the harness for the agent-improvement spectrum". E3's measurement now has a named consumer: it's the evidence for or against the volume layer — *delivered 7/9: the numbers motivate the volume for the weights channel only (DATA_LAYER.md)*. The Ray-adjacent skips (D2/D3) now have Hamza's explicit backing. One urgency signal from the Harbor research: LangChain's `--plugin langsmith` already ships reward-as-feedback + trace lineage for Harbor jobs — the eval-lineage ground B1/C1 target is being occupied now, which raises B1's priority and makes its question (d) (wrap vs plugin, and what ZenML records that LangSmith doesn't) a near-term product conversation rather than a someday one.
 
 **Division of labour, given Michael is on the async work:** Michael's async track *is* the A1→A2 path (warm server, overlap, adapter-refresh race), so don't both converge on it. A workable split: Michael owns A1 verification and A2; Alex takes the CPU-parallel experiments — B1 (Harbor on K8s flavor), C2 (verifiers reward collision), F1 (snapshots) — none of which need a GPU or Michael's endpoint, so a blocked GPU morning costs nothing. Reconvene on evidence in the afternoon.
 
@@ -270,8 +286,8 @@ A candidate earns a build slot only if it's likely to produce at least one **new
 
 1. ~~**A1** first~~ **A1 done (7/8–7/9)** — its gates (E2, B2a, C1, C3) are open, and its failure modes delivered E1/E4's answers as a side effect.
 2. **B1** — CPU-only, oracle-agent, no GPU cost, and post-#5029 it's smaller than originally scoped: the Kubernetes-flavor pass plus the scale test, using the merged integration. B3 rises with it — now sanctioned follow-up work with its substrate already merged, not a speculative example.
-3. **E3** needs no run at all anymore — the training + calibration artifacts on the staging server are the dataset; it's a laptop measurement script.
-4. **F1 (snapshots)** any time — it needs only the dry run and no external framework; its flavor-support fact-check can literally be the first thing done tomorrow. It's also the best "GPU is blocked" filler.
+3. ~~**E3**~~ **E3 done (7/9)** — measured from the staging artifacts, no run needed; verdicts in `DATA_LAYER.md`.
+4. ~~**F1 (snapshots)**~~ **F1 done (7/9)** — support matrix, snapshot-on-failure, and the by-hand restore demo in `SNAPSHOTS.md`; the agentic-trial demo upgrade transfers to B1/B2b.
 5. **G1 (GEPA)** is similarly GPU-optional (API task model + API reflection model + the local sandbox scorer) and reuses the harness as-is — it can run in the same "CPU-parallel" lane as B1/C2/F1, budget-limited by API spend rather than node-hours. If A1's endpoint is up, point the task model there instead for a fully self-hosted variant.
 6. **C2** before C1 and C3 — the sandbox-reward collision is the highest-information single experiment in Track C, it's tiny, and both C1 (needs an environment) and C3 (needs an environment) reuse its artifact.
 7. **A2** after A1 is green (overlap needs the warm server), with **E2** as its free rider.

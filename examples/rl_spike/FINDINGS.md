@@ -1,11 +1,12 @@
 # RL spike — findings for core (2026-07-09)
 
 *Audience: Michael, Hamza. This synthesizes [`BREAKAGE_LOG.md`](BREAKAGE_LOG.md)
-(16 entries), [`CALIBRATION.md`](CALIBRATION.md), and
-[`TRAINING_RUN.md`](TRAINING_RUN.md) into themes and asks. The log stays
-the source of truth for reproduction detail; entry numbers below refer to it.
-Michael has been following the log as it grew, so this document orders and
-weighs rather than re-tells.*
+(18 entries), [`CALIBRATION.md`](CALIBRATION.md),
+[`TRAINING_RUN.md`](TRAINING_RUN.md), [`SNAPSHOTS.md`](SNAPSHOTS.md)
+(task F1), and [`DATA_LAYER.md`](DATA_LAYER.md) (task E3) into themes and
+asks. The log stays the source of truth for reproduction detail; entry
+numbers below refer to it. Michael has been following the log as it grew,
+so this document orders and weighs rather than re-tells.*
 
 ## What the spike was
 
@@ -57,6 +58,18 @@ failure family, so they are worth reading as a unit:
    in `retrying` forever with no pod, no thread, and no timeout. The final
    training run deadlocked on exactly two such zombie steps out of 280.
 
+**The cost of this theme is now measured** ([`DATA_LAYER.md`](DATA_LAYER.md)):
+across 1,398 episode steps, the useful work — create a sandbox, upload
+three small files, run the scorer — averages 31.6 seconds, while the
+step around it averages 117 seconds. **73% of every episode's wall-clock
+is harness fixed cost** (pod scheduling, image/code bootstrap, credential
+fetch, artifact write). The fan-out is ~90% of iteration time, so most of
+what a training iteration buys is overhead, not scoring. Each iteration
+also registers 280 separate ~10 KB artifacts against the control plane —
+one ingredient of the 429 storms above — and the trainer then re-reads
+them at a measured 293 ms apiece (~82 s per optimizer step, hidden inside
+what looks like "training time").
+
 **Asks, in priority order:** (a) make `max_parallelism` govern dynamic
 pipelines or fail loudly when set on one; (b) make the retry/relaunch path
 at least as robust as the step it protects, and give `retrying` a terminal
@@ -88,15 +101,35 @@ misreported itself:
   no-op (`grad_norm: 0.0` exactly), which is luck of the algorithm, not a
   property of the platform.
 
+**The forensics answer exists — on one flavor (F1, entries 17–18).**
+Entry 16 cost hours because the failed sandboxes were gone by the time
+anyone asked what happened inside them. Task F1 built the fix into the
+example: failing episodes now snapshot their sandbox filesystem before
+teardown, and `restore_sandbox.py` reopens one from the episode's
+artifact id. The demo compressed the entry-16 diagnosis to a single
+command — restore, `cat pipeline.py` (valid program), `import zenml`
+(ModuleNotFoundError) — environment's fault, proven in seconds. The
+catch: the core snapshot API is implemented **only by the Modal flavor**.
+Kubernetes and local — the flavors long-running fan-outs actually run
+on, where entry 16 happened — raise `NotImplementedError` (documented,
+no roadmap; the open GKE PR targets a different flavor). Snapshot cost
+on Modal measured at ~1.3 s per failing episode, so failure-only
+snapshotting is cheap. Full matrix and gap list in
+[`SNAPSHOTS.md`](SNAPSHOTS.md).
+
 **Asks:** a run-level heartbeat/reaper so orphaned runs eventually fail
-(6/8b/14); a terminal path out of `retrying` (15); and a first-class
+(6/8b/14); a terminal path out of `retrying` (15); a first-class
 "completed with degraded result" step state so containment steps don't
-have to choose between aborting the run and lying to the dashboard (7).
-Entry 16's lesson is mostly on us (classify environment failures as
-`infra_error`, keep scorer stderr), but the platform half — sandbox
-sessions scheduled onto a node the kubelet already had under DiskPressure,
-with nothing surfacing that on the step — is worth a thought about node
-conditions in step/pod metadata.
+have to choose between aborting the run and lying to the dashboard (7);
+snapshot support for the Kubernetes sandbox flavor — even "tar the
+workdir to the artifact store" answers the entry-16 question — plus
+snapshot refs as first-class step metadata rather than something user
+code smuggles into its outputs (17). Entry 16's remaining lesson is
+mostly on us (classify environment failures as `infra_error`, keep
+scorer stderr), but the platform half — sandbox sessions scheduled onto
+a node the kubelet already had under DiskPressure, with nothing
+surfacing that on the step — is worth a thought about node conditions
+in step/pod metadata.
 
 ## Theme 3 — The serving gap is real and now measured (entries 1, 2, 13)
 
@@ -124,6 +157,27 @@ cleanup guarantee — `on_failure` hooks that provably run, or resources
 owned by the run rather than by a step — is part of the same serving
 story.
 
+**The data layer under this theme is now measured, and the answer is
+"weights, not episodes"** ([`DATA_LAYER.md`](DATA_LAYER.md)). Plainly:
+the scored episodes everyone worries about are 10 KB each — a full
+280-episode iteration writes 2.8 MB, and the whole training run's
+episode traffic (14 MB) is smaller than a single adapter artifact. The
+adapters are the real channel: ~110 MB written per iteration and read
+back twice (into the serving pod, into the next optimizer step), ≈
+330 MB of object-store round-trips per iteration — and that number only
+grows with model size, while episodes don't. (A trap inside it: the
+initial and trained adapters are the *same* 132 MB uncompressed; the
+initial one just gzips 4× smaller because untrained LoRA halves are all
+zeros. Size estimates made from iteration 0 are wrong by 4×.) So the
+mounted-volume idea from the 7/8 call gets a split verdict: for the
+weights channel it is a clear, measured win — and it would delete the
+exec-websocket adapter push (13) outright, since trainer, server, and
+the next iteration would simply see the same files; for episodes it buys
+little that batching wouldn't (the generation step already writes all
+280 episodes as one 2.6 MB artifact — the fan-out re-shards them purely
+for per-episode lineage); and it does not touch the dominant cost, which
+is Theme 1's per-step overhead.
+
 ## Theme 4 — Sharp edges that cost real time but have small fixes (entries 3, 4, 8, 9, 10)
 
 - Step caching silently replays stale rollouts across runs — statistically
@@ -144,6 +198,13 @@ story.
   discovered at pod runtime after a multi-GB build/push/pull cycle (8b).
   A build-time `import zenml` check inside the image would have caught
   three of the five instantly.
+- The sandbox session filesystem API has no workdir contract:
+  `upload_file(local, "pipeline.py")` works on the kubernetes flavor, is
+  unimplemented on local (4), and throws `InvalidError` on Modal —
+  three flavors, three behaviors for the same call, discovered only at
+  runtime when code validated on one flavor ran on another (18). Define
+  what a relative remote path means at the base class, or reject
+  relative paths uniformly.
 
 ## The verdict question, widened
 
@@ -154,6 +215,16 @@ that mostly work — but the **defaults assume short, small, deterministic
 pipelines**. Everything in themes 1–2 is what happens when a workload is
 long, wide, and stochastic. None of it looks architectural; all of it is
 defaults, caps, heartbeats, and honest failure states.
+
+The two follow-up tasks (F1 snapshots, E3 data-layer measurement)
+sharpen that verdict rather than change it. The snapshot work shows the
+substrate story is *real* — a failed sandbox becoming a
+one-command-restorable object works today — but gated on flavor
+coverage, not on new architecture. The measurement work shows the same
+about transport: episodes need no redesign, weights have one genuinely
+motivated improvement (a shared volume), and the biggest measured cost —
+73% of episode wall-clock being per-step fixed overhead — points
+straight back at Theme 1's defaults rather than at the data layer.
 
 Per [`framework_breakout.md`](framework_breakout.md), the closing question
 is now wider than RL:
