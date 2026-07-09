@@ -34,6 +34,15 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--num-tasks", type=int, default=12)
     parser.add_argument(
+        "--seed",
+        choices=["full", "minimal"],
+        default="full",
+        help="Seed cheatsheet. 'full' = the GRPO baseline's CHEATSHEET "
+        "(measured 1.0 with gpt-5-nano on the 12-task subset — no "
+        "headroom). 'minimal' = a one-liner, so GEPA must rediscover the "
+        "post-cutoff API from sandbox feedback alone.",
+    )
+    parser.add_argument(
         "--max-metric-calls",
         type=int,
         default=60,
@@ -50,7 +59,13 @@ def main() -> None:
 
     from reuse import load_rl_spike_module
 
-    seed_cheatsheet = load_rl_spike_module("prompts.py").CHEATSHEET
+    if args.seed == "full":
+        seed_cheatsheet = load_rl_spike_module("prompts.py").CHEATSHEET
+    else:
+        seed_cheatsheet = (
+            "You write ZenML dynamic pipelines in Python. The zenml "
+            "package provides @step and @pipeline decorators.\n"
+        )
 
     from pipelines import gepa_pipeline
 

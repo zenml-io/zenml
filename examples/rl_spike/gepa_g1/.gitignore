@@ -2,3 +2,4 @@
 .zenml_local/
 .zen/
 __pycache__/
+runs/
