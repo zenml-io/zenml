@@ -33,7 +33,7 @@ A recurring benchmark is just the campaign pipeline on a trigger — CI cron is 
 
 ## Query results across runs
 
-Each shard step logs flat `harbor.*` metadata — task, agent, model, trial counts, mean reward, cost — which makes campaigns queryable without loading artifacts:
+Each shard step logs flat `harbor.*` metadata — task, agent, model, succeeded/errored trial counts, error rate, mean reward, cost — which makes campaigns queryable without loading artifacts:
 
 ```python
 from zenml.client import Client

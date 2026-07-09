@@ -51,7 +51,7 @@ How caching, error handling, and cross-run comparison compose into a recurring b
 ## What lands where
 
 * Each shard produces a `HarborShardResult` artifact: a flat summary (per-trial rewards, errors, tokens, cost) plus Harbor's full job directory — agent and verifier logs, trajectories — archived in the artifact store. `result.download_jobs_dir(target)` restores the tree on demand; loading the artifact never unpacks it eagerly.
-* Each shard step logs `harbor.*` metadata (task, agent, model, trial counts, mean reward, cost), making campaigns queryable: `client.list_run_steps(pipeline_run_id=..., run_metadata=["harbor.mean_reward:lt:1"])`.
+* Each shard step logs `harbor.*` metadata (task, agent, model, succeeded/errored trial counts, error rate, mean reward, cost), making campaigns queryable: `client.list_run_steps(pipeline_run_id=..., run_metadata=["harbor.mean_reward:lt:1"])`.
 * `build_harbor_report` renders a Markdown campaign report — one row per cell with mean rewards and cost totals — on the run page.
 
 ## Running real LLM agents
