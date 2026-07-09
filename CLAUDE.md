@@ -185,24 +185,8 @@ class MyOrchestrator(BaseOrchestrator):
         self.public_method()  # ✅ Safe
 ```
 
-### FastAPI Agent Profile
-- ZenML OSS FastAPI work demands senior-level proficiency across FastAPI, SQLModel, SQLAlchemy 2.0, and modern Pydantic v2 patterns; study existing routers and services before proposing changes.
-- Favor object-oriented extensions over scattering helpers—extend service/repository classes or introduce cohesive new ones, and rely on dependency injection rather than module-level singletons.
-- Keep all shared state inside FastAPI's dependency system or app factory; never introduce fresh global variables outside the initializer.
-- Use descriptive auxiliary-verb-prefixed names and lower_snake_case paths (for example `routers/manage_invitation.py`, `services/issue_token.py`) so reviewers immediately understand intent.
-- Apply the Receive an Object, Return an Object (RORO) convention on public interfaces to keep payloads self-documenting and testable.
-
-### FastAPI Project Structure
-- Each FastAPI package must expose a router entry point plus clearly separated sub-routes, utilities, static assets, and schema/model definitions; keep imports explicit via named exports.
-- Co-locate Pydantic request/response models with their consuming routes, and keep reusable business logic inside services or repositories accessed through dependency injection.
-- Name directories/files with verbs or nouns that communicate behavior (e.g., `routers/register_user.py`, `services/create_invitation.py`) so navigation stays predictable.
-
-### FastAPI Error Handling & Validation
-- Lead with guard clauses in routes, dependencies, and services—validate payloads, auth context, and resources early; prefer early returns and keep the happy path last.
-- Skip redundant `else` blocks after returns; log context-rich errors and surface user-safe details while retaining debug information in structured logs.
-- Define custom exception types or factories so middleware can map them to consistent JSON payloads with trace metadata.
-- Raise `HTTPException` (with precise status codes and detail strings) for expected errors, and push unexpected failures through middleware that centralizes logging, metrics, and alerting.
-- Model inputs/outputs with Pydantic BaseModel derivatives to keep validation explicit and documentation synchronized automatically.
+### FastAPI Conventions
+Router, service, error-handling, and validation conventions for the server live in `src/zenml/zen_server/AGENTS.md` and load automatically when you work in that directory.
 
 ### Testing Requirements
 - Most new code requires test coverage
@@ -304,56 +288,7 @@ class MyOrchestrator(BaseOrchestrator):
 - Document public APIs thoroughly
 
 ### Field Description Standards
-When adding or modifying Field descriptions in stack component configs:
-
-#### Template Structure
-```
-{Purpose statement}. {Valid values/format}. {Example(s)}. {Additional context if needed}.
-```
-
-#### Core Requirements
-1. **Purpose**: Clearly state what the field controls or does
-2. **Format**: Specify expected value format (URL, path, enum, etc.)
-3. **Examples**: Provide at least one concrete example
-4. **Constraints**: Include any limitations or requirements
-
-#### Quality Standards
-- Minimum 30 characters
-- Use action words (controls, configures, specifies, determines)
-- Include concrete examples with realistic values
-- Avoid vague language ("thing", "stuff", "value", "setting")
-- Don't start with "The" or end with periods
-- Be specific about valid formats and constraints
-
-#### Example Field Descriptions
-```python
-# Good examples:
-instance_type: Optional[str] = Field(
-    None,
-    description="AWS EC2 instance type for step execution. Must be a valid "
-    "SageMaker-supported instance type. Examples: 'ml.t3.medium' (2 vCPU, 4GB RAM), "
-    "'ml.m5.xlarge' (4 vCPU, 16GB RAM). Defaults to ml.m5.xlarge for training steps"
-)
-
-path: str = Field(
-    description="Root path for artifact storage. Must be a valid URI supported by the "
-    "artifact store implementation. Examples: 's3://my-bucket/artifacts', "
-    "'/local/storage/path', 'gs://bucket-name/zenml-artifacts'. Path must be accessible "
-    "with configured credentials"
-)
-
-synchronous: bool = Field(
-    True,
-    description="Controls whether pipeline execution blocks the client. If True, "
-    "the client waits until all steps complete. If False, returns immediately and "
-    "executes asynchronously. Useful for long-running production pipelines"
-)
-```
-
-#### Validation
-- Run `python scripts/validate_descriptions.py` to check description quality
-- All descriptions must pass validation before merging
-- Add validation to CI pipeline to prevent regressions
+Templates, the quality bar, and worked examples for Pydantic `Field(description=...)` text in stack component configs live in the `field-descriptions` skill. All descriptions must pass `python scripts/validate_descriptions.py` before merging.
 
 ### When Fixing Bugs
 - Add regression tests that would have caught the bug
@@ -461,28 +396,7 @@ Quick reference for common review concerns. Detailed explanations live in the ne
 - [ ] **Step operator changes:** Check `BaseStepOperator`, `StepLauncher`, and at least one concrete integration
 
 ## Documentation Guidelines
-
-### Structure
-- Documentation files live in `docs/book/`
-- Multiple sections each have their own `toc.md` file for navigation
-- Assets (images, etc.) belong in a `.gitbook` folder at the same level as the relevant `toc.md`
-- When adding or removing pages, update the appropriate `toc.md` file
-
-### Format and Style
-- ZenML uses GitBook for documentation
-- Include metadata fields at the top of documentation pages (follow existing patterns)
-- Documentation should be readable and conversational
-- Use consistent formatting with existing documentation
-- Avoid overusing bullet points or other formatting elements
-- Prioritize readability and clarity over excessive structure
-- Include appropriate cross-references to related documentation
-
-### Content Standards
-- Clear, concise language
-- Code examples for APIs
-- Explanation of concepts
-- Usage patterns and best practices
-- Match tone and style with existing documentation
+Structure, GitBook conventions, `toc.md` handling, and link checking live in `docs/book/AGENTS.md` and load automatically when you work with files under `docs/book/`.
 
 ---
 
