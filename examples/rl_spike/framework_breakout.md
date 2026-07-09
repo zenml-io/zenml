@@ -1,6 +1,8 @@
-# RL spike — framework survey brief (planning, 2026-07-08, rev. 9)
+# RL spike — framework survey brief (planning, 2026-07-08, rev. 10)
 
 *Purpose: a menu of framework combinations and example variants to try next, so the spike keeps producing findings after v0. Nothing here is implementation — each entry is a spec for an example someone could build later. The deliverable of every entry is a BREAKAGE_LOG-style finding, not a working model.*
+
+*Rev. 10 (2026-07-09, evening): **C2 is done** (`verifiers_c2/README.md`; FINDINGS.md gains Theme 5) — the sandbox-reward collision resolves to composes-and-parallelizes (18/18 reward parity on canned completions, concurrent sessions), the C2 environment now exists for C1/C3/D1 to reuse, and the native-sandbox question is answered: verifiers hardcodes `prime-sandboxes` behind a five-method duck-typed contract ZenML's session API satisfies — the pluggability escalation is with Hamza. G1/B1 still in progress in their worktrees.*
 
 *Rev. 9 (2026-07-09, later the same day): **F1 is done** (`SNAPSHOTS.md` — snapshot-on-failure + `restore_sandbox.py`; support matrix is Modal-only, entries 17–18; the flavor gap is the escalation) and **E3 is done** (`DATA_LAYER.md` — episodes 3% of bytes, weights 89%, 73% of episode wall-clock is harness overhead; volume-layer verdict: weights yes, episodes no). Findings count is now 18; `FINDINGS.md` updated with both. C2/G1/B1 in progress in separate worktrees.*
 
@@ -143,9 +145,11 @@ Context for whoever picks this up: `verifiers` (Prime Intellect / Will Brown) pa
 4. **ZenML question:** the verifier-first question from the planning guidance — when the framework already owns rollout+reward, does ZenML's artifact/lineage layer add enough (comparable eval artifacts across model versions, mapped-step retries, dashboard reports) to justify the wrapping? Also mechanical: verifiers is async-native — does `asyncio.run` inside a step behave (Harbor bridge says probably yes), and what do verifiers' rollout outputs look like as ZenML artifacts (they're HF datasets — is the materializer story clean)?
 5. **Stop condition:** *keep* if the wrapped version produces something the bare `vf-eval` CLI doesn't (versioned eval artifacts tied to adapter lineage). *Abandon* if it's a thin wrapper adding only overhead — and write that verdict down, because "ZenML adds nothing to X" is a legitimate survey finding.
 
-#### C2 · Port the pipeline-writing task as a verifiers environment (the sandbox-reward collision)
+#### C2 · Port the pipeline-writing task as a verifiers environment (the sandbox-reward collision) — **DONE (7/9, see verifiers_c2/README.md; FINDINGS.md Theme 5)**
 
-1. **Combo/pins:** as C1.
+*Outcome: the keep branch. The rubric-opens-a-ZenML-Sandbox path composes — 18/18 exact reward matches on canned completions across 5 tasks, scored concurrently (4 sessions at a time) through verifiers' real machinery. Costs: blocking session calls need a thread + concurrency cap, and verifiers swallows reward-func exceptions into 0.0 (entry-16 ambiguity rebuilt upstream; the rubric records `state["infra_error"]` as the workaround). The native-sandbox question is answered too: both their `SandboxEnv` and the new v1 lease API hardcode `prime-sandboxes`, but the v1 client contract is five duck-typed async methods ZenML's session API satisfies — one hardcoded import is the whole gap. Environment lives in `verifiers_c2/zenml_pipeline_env.py` (`load_environment()`), ready for C1/C3.*
+
+1. **Combo/pins:** as C1. *(Built against `verifiers==0.1.14`, re-checked 7/9.)*
 2. **Smallest shape:** a `SingleTurnEnv` with `tasks.jsonl` as the dataset and a rubric function that must produce the same 0–1 reward as `score_pipeline.py`. Evaluate 5 tasks against the warm endpoint; compare rewards against the existing scorer's output on identical completions.
 3. **Ownership:** verifiers owns everything per-example; ZenML is not in the loop yet — this is a *contract experiment*, one file plus an eval run.
 4. **ZenML question:** indirectly, the spike's founding decision. Our reward's defining property is that it runs *inside a sandbox where the generated code executes*. verifiers rubric functions run in the eval/trainer process. So the rubric must itself open a ZenML Sandbox session per completion (importing `zenml.client` inside a verifiers rubric — does that even compose?), or shell out, or the isolation property is silently lost. Whichever of those happens is the finding: it defines what "bring your own sandboxed reward" costs in a verifier-first framework, and it's the exact question a ZenML-Sandboxes-as-a-product pitch to that ecosystem depends on. (Worth knowing: verifiers v0.1.10 release notes mention "safer sandbox lifecycle behavior" — investigate what sandbox concept they now have natively and whether ZenML Sandbox could slot in behind it.)
@@ -245,7 +249,7 @@ Context for whoever picks this up: GEPA (Genetic-Pareto, arXiv 2507.19457 — "R
 | Data-layer verdict (episodes/weights transport) | E3, A3, D1 (checkpoint sizes) |
 | Warm serving + adapter lineage into raw infra | **A1 done, E1 answered** (leak + zombie catalogue in BREAKAGE_LOG 14/15); E2 still open (rides on A2) |
 | Does ZenML help eval/reward lineage without owning training | B1, B2a, C1 |
-| Can external task/verifier/agent loops replace our harness | B2b (TRL's `environment_factory` path), C2 |
+| Can external task/verifier/agent loops replace our harness | B2b (TRL's `environment_factory` path); **C2 — DONE** (verifiers can own the loop while a rubric drives ZenML Sandbox sessions: 18/18 reward parity; verifiers_c2/README.md) |
 | Framework owns rollout+train, ZenML owns outer loop | C3, B2b |
 | Eval traces → training-data lineage (Kitaru-adjacent) | B3 |
 | Can ZenML Sandbox be the substrate under a framework-owned loop | B2b question (b) |
@@ -289,16 +293,16 @@ A candidate earns a build slot only if it's likely to produce at least one **new
 3. ~~**E3**~~ **E3 done (7/9)** — measured from the staging artifacts, no run needed; verdicts in `DATA_LAYER.md`.
 4. ~~**F1 (snapshots)**~~ **F1 done (7/9)** — support matrix, snapshot-on-failure, and the by-hand restore demo in `SNAPSHOTS.md`; the agentic-trial demo upgrade transfers to B1/B2b.
 5. **G1 (GEPA)** is similarly GPU-optional (API task model + API reflection model + the local sandbox scorer) and reuses the harness as-is — it can run in the same "CPU-parallel" lane as B1/C2/F1, budget-limited by API spend rather than node-hours. If A1's endpoint is up, point the task model there instead for a fully self-hosted variant.
-6. **C2** before C1 and C3 — the sandbox-reward collision is the highest-information single experiment in Track C, it's tiny, and both C1 (needs an environment) and C3 (needs an environment) reuse its artifact.
+6. ~~**C2** before C1 and C3~~ **C2 done (7/9)** — composed cleanly; its environment (`verifiers_c2/zenml_pipeline_env.py`) is the reusable artifact C1 and C3 were waiting on.
 7. **A2** after A1 is green (overlap needs the warm server), with **E2** as its free rider.
-8. **C1**, then **C3**, once C2's environment exists and A1's endpoint is stable.
+8. **C1**, then **C3** — C2's environment now exists (7/9), so these are gated only on wanting A1's warm endpoint up.
 9. **B3** rides directly on B1's campaign outputs — it's a conversion step over artifacts that already exist, so it costs almost nothing once B1 has run.
 10. **B2a** once A1 is stable (needs the endpoint). **B2b** is independent of A1 (TRL colocates its own vLLM) but needs its Python 3.12 / transformers 5.x environment built first — sequence it alongside or after B1, since B1 builds that environment anyway.
 11. **D1** last among the builds — it needs the C2 environment, both GPUs exclusively, and its findings are about the boundary, so it benefits from everything already learned. If B2b already answered "framework owns the loop, what does ZenML see?", D1's remaining value is the multi-process supervision/cancellation angle specifically.
 12. **A3** only if A2 produced strain; ~~E1/E4 whenever a run is otherwise being abandoned~~ — both answered by the 7/9 training run's own failures (entries 14/15); no destructive tests needed.
 13. **D2 (OpenRLHF), D3 (verl), E5 (SGLang)** — write the skip/defer rationale paragraphs; build nothing.
 
-Hard dependency edges: A1 (done) → {A2, E2, B2a, C1, C3} — all now unblocked; B1 → {B3, B2b (shared 3.12 env)}; C2 → {C1, C3, D1}; A2 → A3 (evidence gate); G1 → nothing (fully parallel; optionally consumes A1's endpoint); everything → the findings doc (`FINDINGS.md`, first edition written 7/9 — future entries update it).
+Hard dependency edges: A1 (done) → {A2, E2, B2a, C1, C3} — all now unblocked; B1 → {B3, B2b (shared 3.12 env)}; C2 (done) → {C1, C3, D1} — environment delivered; A2 → A3 (evidence gate); G1 → nothing (fully parallel; optionally consumes A1's endpoint); everything → the findings doc (`FINDINGS.md`, first edition written 7/9 — future entries update it).
 
 ---
 
