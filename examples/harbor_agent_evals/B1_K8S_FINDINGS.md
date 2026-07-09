@@ -94,12 +94,36 @@ core follow-up alongside the `docker_image` translation.
 - The `exec(user=...)` ignored warning (documented limitation) fired on every
   trial — cosmetic at this scale, noisy at 89 tasks.
 
+## Experiment: the translation works (spike-only patch, verified live)
+
+To upgrade the escalation from "the field exists" to evidence, the spike
+branch patches `_settings_override` with a kubernetes case (marked
+do-not-ship in the code):
+
+```python
+if sandbox.flavor == "kubernetes":
+    from zenml.integrations.kubernetes.flavors import KubernetesSandboxSettings
+    return KubernetesSandboxSettings(image=image)
+```
+
+Result — `dataset:terminal-bench-sample@2.0:3 oracle 2` on the K8s flavor:
+**all three tasks (chess-best-move, polyglot-c-py, sqlite-with-gcov), 6/6
+trials completed, 0 errored, reward 1.000** — the same table PR #5029
+produced on Modal. Single-task run: 47s wall clock including pulling the
+Terminal-Bench image onto the node; full 3-task run 1m19s. EKS pulled the
+public benchmark images without any registry configuration.
+
+So the answer to the escalation question is *yes with caveats*:
+`KubernetesSandboxSettings.image` is a working translation target today for
+public images. What a real fix still has to decide: private-registry
+credentials (works here only because Terminal-Bench images are public),
+arch mismatches (amd64 images on mixed node groups), node disk pressure from
+large benchmark images at 89-task fan-out (BREAKAGE_LOG 16's failure mode),
+and whether the bridge grows a per-flavor dispatch or `BaseSandbox` grows a
+capability flag. The five-line patch is on this branch as the reference
+implementation.
+
 ## Still open in B1
 
-- Question (d) — wrap vs plug in (`harbor run --env zenml --plugin zenml`):
-  assessment page for Hamza, separate doc.
-- Optional: verify the docker_image translation experimentally by patching
-  `_settings_override` *in the spike branch only* (report-don't-patch applies
-  to shipping it, not to testing the hypothesis) — would confirm whether
-  `KubernetesSandboxSettings.image` + EKS pull access actually boots
-  Terminal-Bench task images.
+- Question (d) — wrap vs plug in: see `B1_WRAP_VS_PLUGIN.md` (assessment for
+  Hamza, informed by Alex's sales-call answers).

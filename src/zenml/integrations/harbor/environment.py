@@ -95,6 +95,15 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
         image = self.task_env_config.docker_image
         if image is None:
             return None
+        if sandbox.flavor == "kubernetes":
+            # B1 spike experiment (branch spike/b1-harbor-k8s only, do not
+            # ship): KubernetesSandboxSettings.image exists — test whether
+            # it is a viable translation target for task-pinned images.
+            from zenml.integrations.kubernetes.flavors import (
+                KubernetesSandboxSettings,
+            )
+
+            return KubernetesSandboxSettings(image=image)
         if sandbox.flavor != "modal":
             raise NotImplementedError(
                 "Task-level docker_image is currently only supported "
