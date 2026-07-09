@@ -1,6 +1,8 @@
-# RL spike — framework survey brief (planning, 2026-07-08, rev. 11)
+# RL spike — framework survey brief (planning, 2026-07-08, rev. 12)
 
 *Purpose: a menu of framework combinations and example variants to try next, so the spike keeps producing findings after v0. Nothing here is implementation — each entry is a spec for an example someone could build later. The deliverable of every entry is a BREAKAGE_LOG-style finding, not a working model.*
+
+*Rev. 12 (2026-07-09, evening): the D2/D3/E5 skip rationales are now written into `FINDINGS.md` ("What we deliberately did not run") — sequencing item 13 is done; the entries below remain the detailed source.*
 
 *Rev. 11 (2026-07-09, evening): **B1 is done** (branch `spike/b1-harbor-k8s` off PR #5029, pushed, merges nowhere — the docs are the deliverable: [`B1_K8S_FINDINGS.md`](https://github.com/zenml-io/zenml/blob/spike/b1-harbor-k8s/examples/harbor_agent_evals/B1_K8S_FINDINGS.md) + [`B1_WRAP_VS_PLUGIN.md`](https://github.com/zenml-io/zenml/blob/spike/b1-harbor-k8s/examples/harbor_agent_evals/B1_WRAP_VS_PLUGIN.md); FINDINGS.md Theme 5 extended; BREAKAGE_LOG entries 19–21). K8s-flavor verdict: the hermetic campaign passes untouched; the `docker_image` wall hit by design on all terminal-bench tasks and was then proven hollow — `KubernetesSandboxSettings.image` already exists, and a five-line spike patch booted the real Terminal-Bench images on EKS at oracle 1.000. The 89-task scale test is moot until that translation ships (every TB task pins an image). Question (d) answered with a recommendation: wrap (shipped in #5029) for existing platform customers, thin `--plugin zenml` as the acquisition shape for the agent teams actually asking — staffing decision escalated to Hamza. B2b's environment track is unblocked. G1 still in progress in its worktree.*
 
@@ -304,7 +306,7 @@ A candidate earns a build slot only if it's likely to produce at least one **new
 10. **B2a** once A1 is stable (needs the endpoint). **B2b** is independent of A1 (TRL colocates its own vLLM) but needs its Python 3.12 / transformers 5.x environment built first — sequence it alongside or after B1, since B1 builds that environment anyway.
 11. **D1** last among the builds — it needs the C2 environment, both GPUs exclusively, and its findings are about the boundary, so it benefits from everything already learned. If B2b already answered "framework owns the loop, what does ZenML see?", D1's remaining value is the multi-process supervision/cancellation angle specifically.
 12. **A3** only if A2 produced strain; ~~E1/E4 whenever a run is otherwise being abandoned~~ — both answered by the 7/9 training run's own failures (entries 14/15); no destructive tests needed.
-13. **D2 (OpenRLHF), D3 (verl), E5 (SGLang)** — write the skip/defer rationale paragraphs; build nothing.
+13. ~~**D2 (OpenRLHF), D3 (verl), E5 (SGLang)** — write the skip/defer rationale paragraphs; build nothing.~~ **Done (7/9)** — rationale paragraphs live in `FINDINGS.md` ("What we deliberately did not run").
 
 Hard dependency edges: A1 (done) → {A2, E2, B2a, C1, C3} — all now unblocked; B1 → {B3, B2b (shared 3.12 env)}; C2 (done) → {C1, C3, D1} — environment delivered; A2 → A3 (evidence gate); G1 → nothing (fully parallel; optionally consumes A1's endpoint); everything → the findings doc (`FINDINGS.md`, first edition written 7/9 — future entries update it).
 

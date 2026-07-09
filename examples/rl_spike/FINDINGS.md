@@ -319,6 +319,47 @@ translation in the Harbor bridge (entry 19 has the caveat list); fix the
 errored-trial visibility semantics (entry 21); decide plugin staffing
 (`B1_WRAP_VS_PLUGIN.md`).
 
+## What we deliberately did not run, and why the skips are findings
+
+Three survey candidates were assessed and skipped without a build. Each
+skip has a reason that says something about ZenML, so they belong in this
+document and not just in the planning notes
+([`framework_breakout.md`](framework_breakout.md) has the full entries).
+
+**OpenRLHF (skipped).** OpenRLHF is built on Ray: its trainer, inference
+workers, and coordination all assume a Ray cluster is already there.
+Running it under ZenML would mean a ZenML step whose first job is to
+stand up (or attach to) a Ray cluster — and that is the finding, without
+running anything: **ZenML has no story for "my step needs a Ray
+cluster".** There is no stack component, no settings key, no documented
+pattern for it. Whatever we learned past that point would be lessons
+about Ray, not about ZenML. Hamza's position from the 7/8 call backs the
+skip: distributed-training mechanics are territory ZenML should not
+compete in. Revisit only if a customer conversation makes Ray-based RL
+concrete.
+
+**verl (skipped).** Same Ray foundation, same rationale — plus verl's own
+install docs recommend building from source for anything custom, so a
+ZenML example would mostly stress image builds and source-install
+packaging, which entries 8/8b already cover (five multi-GB
+build/push/pull cycles to first green). One caveat worth recording: verl
+is becoming a default open-source post-training stack, so "a customer
+names it" is the most plausible of the three revisit triggers.
+
+**SGLang serving swap (deferred, not rejected).** The idea was to replace
+the warm vLLM Deployment with an SGLang server for one rollout step,
+because SGLang ships primitives aimed exactly at RL serving — putting the
+engine to sleep to free GPU memory between rollout phases, and refitting
+weights from disk or tensors without a restart — that vLLM's runtime-LoRA
+path lacks. It stays deferred for a methodological reason: we only just
+finished characterizing warm vLLM (Theme 3), and swapping in a second
+engine before the first is understood would produce a comparison where
+any difference could be either engine's quirk. The question it would
+answer remains live and is written into Theme 3's ask: if ZenML ever
+grows a "keep an engine warm across steps" abstraction, that abstraction
+should be checked against more than one engine before its interface
+freezes.
+
 ## The verdict question, widened
 
 The honest summary for "would we recommend ZenML for this workload
