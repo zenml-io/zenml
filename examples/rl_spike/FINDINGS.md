@@ -31,6 +31,17 @@ inconclusive (three clean optimizer steps, statistically flat rewards —
 see [`TRAINING_RUN.md`](TRAINING_RUN.md)), but the training outcome was
 never the deliverable.
 
+Since the training run, three follow-up tasks widened the evidence
+without any new GPU time. We taught failing episodes to save their
+sandbox filesystem so a human can reopen it later and see what actually
+happened (F1, [`SNAPSHOTS.md`](SNAPSHOTS.md)); we measured what the loop
+really pushes through the artifact store instead of guessing (E3,
+[`DATA_LAYER.md`](DATA_LAYER.md)); and we rebuilt the same task and
+reward inside `verifiers`, an external RL library, to see whether ZenML
+sandboxes survive contact with someone else's framework (C2,
+[`verifiers_c2/`](verifiers_c2/README.md)). Their results live in
+themes 2, 3, and 5 below.
+
 ## Theme 1 — Dynamic fan-out has no working concurrency or placement story (entries 11, 12, 14, 15)
 
 This is the strongest theme, and the four entries are one escalating
