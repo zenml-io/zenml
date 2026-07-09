@@ -54,6 +54,12 @@ class ZenMLCloudRBAC(RBACInterface):
             # No need to send a request if there are no resources
             return {}
 
+        if user.is_service_account and user.external_user_id is None:
+            # Workspace-local service account API keys are still accepted as a
+            # temporary compatibility measure and do not have Cloud RBAC
+            # identities to check against.
+            return {resource: True for resource in resources}
+
         # ZenML Pro RBAC is keyed by the external user ID, including for
         # organization-level service accounts mirrored into the workspace.
         assert user.external_user_id
@@ -91,6 +97,12 @@ class ZenMLCloudRBAC(RBACInterface):
             the action on.
         """
         assert not resource.id
+        if user.is_service_account and user.external_user_id is None:
+            # Workspace-local service account API keys are still accepted as a
+            # temporary compatibility measure and do not have Cloud RBAC
+            # identities to check against.
+            return True, []
+
         # ZenML Pro RBAC is keyed by the external user ID, including for
         # organization-level service accounts mirrored into the workspace.
         assert user.external_user_id

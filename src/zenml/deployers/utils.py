@@ -352,7 +352,7 @@ def deployment_snapshot_request_from_source_snapshot(
         }
 
         step_config = pydantic_utils.update_model(
-            step.step_config_overrides, step_update
+            step.step_config_overrides, step_update, recursive=False
         )
         merged_step_config = step_config.apply_pipeline_configuration(
             pipeline_configuration,
