@@ -77,6 +77,7 @@ from zenml.execution.pipeline.dynamic.future_registry import (
     StartupCancelled,
 )
 from zenml.execution.pipeline.dynamic.inputs import (
+    _await_input_future,
     await_step_inputs,
     collect_start_upstream_node_ids,
     collect_upstream_node_ids,
@@ -97,6 +98,7 @@ from zenml.execution.pipeline.dynamic.invocation_dependency_graph import (
 from zenml.execution.pipeline.dynamic.outputs import (
     AnyOutputFuture,
     MapResultsFuture,
+    OutputArtifact,
     PipelineFuture,
     PipelineRunOutputs,
     StepExecutionFuture,
@@ -343,6 +345,7 @@ class DynamicPipelineRunner:
         self._step_operator = stack.step_operator
         self._invocation_id_lock = threading.Lock()
         self._invocation_ids: Set[str] = set()
+        self._last_successful_sync_invocation_id: Optional[str] = None
 
         self._run, self._orchestrator_run_id = self._prepare_run(run)
         self._existing_step_runs = {}
@@ -1162,6 +1165,7 @@ class DynamicPipelineRunner:
         ] = None,
         group: Optional["GroupInfo"] = None,
         concurrent: Literal[False] = False,
+        implicit_upstream_steps: Optional[Set[str]] = None,
     ) -> StepRunOutputs: ...
 
     @overload
@@ -1179,6 +1183,7 @@ class DynamicPipelineRunner:
         ] = None,
         group: Optional["GroupInfo"] = None,
         concurrent: Literal[True] = True,
+        implicit_upstream_steps: Optional[Set[str]] = None,
     ) -> "StepFuture": ...
 
     def launch_step(
@@ -1195,6 +1200,7 @@ class DynamicPipelineRunner:
         ] = None,
         group: Optional["GroupInfo"] = None,
         concurrent: bool = False,
+        implicit_upstream_steps: Optional[Set[str]] = None,
     ) -> Union[StepRunOutputs, "StepFuture"]:
         """Launch a step.
 
@@ -1207,6 +1213,8 @@ class DynamicPipelineRunner:
             start_after: The step run output futures to wait for the start of.
             group: The group information for this step.
             concurrent: Whether to launch the step concurrently.
+            implicit_upstream_steps: Implicit upstream step invocation
+                IDs. If not given, defaults to the last successful sync step.
 
         Raises:
             BaseException: If the step failed.
@@ -1249,6 +1257,7 @@ class DynamicPipelineRunner:
                     self.mark_node_succeeded(node_id=invocation_id)
                     return future
                 else:
+                    self._last_successful_sync_invocation_id = invocation_id
                     return load_step_run_outputs(step_run.id)
 
             if (
@@ -1329,7 +1338,9 @@ class DynamicPipelineRunner:
                 if concurrent:
                     return monitoring_future
                 else:
-                    return monitoring_future.result()
+                    outputs = monitoring_future.result()
+                    self._last_successful_sync_invocation_id = invocation_id
+                    return outputs
 
         inputs = convert_to_keyword_arguments(step.entrypoint, args, kwargs)
 
@@ -1348,6 +1359,13 @@ class DynamicPipelineRunner:
                 group=group,
             )
 
+        if implicit_upstream_steps is None:
+            implicit_upstream_steps = (
+                {self._last_successful_sync_invocation_id}
+                if self._last_successful_sync_invocation_id
+                else set()
+            )
+
         if concurrent:
             future = StepFuture(
                 invocation_id=invocation_id,
@@ -1360,6 +1378,7 @@ class DynamicPipelineRunner:
                 after=after,
                 start_after=start_after,
                 config_overrides=config_overrides,
+                implicit_upstream_steps=implicit_upstream_steps,
             )
             return future
         else:
@@ -1387,11 +1406,13 @@ class DynamicPipelineRunner:
                 inputs=inputs,
                 after=after,
                 config=config_overrides,
+                implicit_upstream_steps=implicit_upstream_steps,
             )
 
             step_run = self._run_sync_step(
                 step=compiled_step, remaining_retries=remaining_retries
             )
+            self._last_successful_sync_invocation_id = invocation_id
             return load_step_run_outputs(step_run.id)
 
     def _wait_until_start_dependencies_satisfied(
@@ -1442,6 +1463,60 @@ class DynamicPipelineRunner:
             remaining_retries=remaining_retries,
         )
 
+    def _resolve_step_dependencies(
+        self,
+        inputs: Dict[str, Any],
+        after: Union["AnyOutputFuture", Sequence["AnyOutputFuture"], None],
+        implicit_upstream_steps: Set[str],
+    ) -> Tuple[Dict[str, Any], Set[str]]:
+        """Resolve the inputs and upstream steps of a step invocation.
+
+        Args:
+            inputs: The step inputs.
+            after: Optional upstream futures for the step.
+            implicit_upstream_steps: Implicit upstream step invocation IDs.
+
+        Returns:
+            The awaited inputs and the upstream step invocation IDs.
+        """
+        upstream_steps = set()
+
+        for future in collect_futures(after=after, expand_map_results=True):
+            _await_input_future(future, return_result=False)
+            if isinstance(future, PipelineFuture):
+                # A pipeline future means we're waiting for a child pipeline
+                # to finish. No such step exists in our pipeline, so we can't
+                # track it as an upstream step.
+                continue
+            upstream_steps.add(future.invocation_id)
+
+        inputs = await_step_inputs(inputs)
+
+        for value in inputs.values():
+            if isinstance(value, OutputArtifact):
+                upstream_steps.add(value.step_name)
+
+            if (
+                isinstance(value, Sequence)
+                and value
+                and all(isinstance(item, OutputArtifact) for item in value)
+            ):
+                upstream_steps.update(item.step_name for item in value)
+
+        if implicit_upstream_steps:
+            carried_upstream_steps: Set[str] = set()
+            for upstream_step in upstream_steps:
+                node = self._dependency_graph.get_node(upstream_step)
+                if isinstance(node, (StepNode, MapNode)):
+                    carried_upstream_steps |= node.implicit_upstream_steps
+
+            # Implicit upstream steps that an existing upstream step captured
+            # are already transitive ancestors, which makes the edges
+            # redundant.
+            upstream_steps |= implicit_upstream_steps - carried_upstream_steps
+
+        return inputs, upstream_steps
+
     def _compile_or_reuse(
         self,
         step: "BaseStep",
@@ -1451,6 +1526,7 @@ class DynamicPipelineRunner:
             "AnyOutputFuture", Sequence["AnyOutputFuture"], None
         ] = None,
         config: Optional["StepConfigurationUpdate"] = None,
+        implicit_upstream_steps: Optional[Set[str]] = None,
     ) -> "Step":
         """Compile a step invocation or reuse from existing step run.
 
@@ -1460,6 +1536,8 @@ class DynamicPipelineRunner:
             inputs: The step inputs.
             after: Optional upstream futures for the step.
             config: Optional config overrides for compilation.
+            implicit_upstream_steps: Implicit upstream step invocation
+                IDs.
 
         Returns:
             The compiled step.
@@ -1471,14 +1549,19 @@ class DynamicPipelineRunner:
                 step_config_overrides=existing_step_run.config,
             )
         else:
+            inputs, upstream_steps = self._resolve_step_dependencies(
+                inputs=inputs,
+                after=after,
+                implicit_upstream_steps=implicit_upstream_steps or set(),
+            )
             compiled_step = compile_dynamic_step_invocation(
                 snapshot=self._snapshot,
                 pipeline=self.pipeline,
                 step=step,
                 invocation_id=invocation_id,
                 inputs=inputs,
+                upstream_steps=upstream_steps,
                 pipeline_docker_settings=self._snapshot.pipeline_configuration.docker_settings,
-                after=after,
                 config=config,
             )
 
@@ -1518,6 +1601,11 @@ class DynamicPipelineRunner:
         invocation_id = self.allocate_invocation_id(
             base_name=step.name, allow_suffix=True
         )
+        implicit_upstream_steps = (
+            {self._last_successful_sync_invocation_id}
+            if self._last_successful_sync_invocation_id
+            else set()
+        )
         map_future = MapResultsFuture(invocation_id=invocation_id)
         self._register_map_invocation(
             future=map_future,
@@ -1526,6 +1614,7 @@ class DynamicPipelineRunner:
             after=after,
             start_after=start_after,
             product=product,
+            implicit_upstream_steps=implicit_upstream_steps,
         )
         return map_future
 
@@ -2037,6 +2126,7 @@ class DynamicPipelineRunner:
             AnyOutputFuture, Sequence[AnyOutputFuture], None
         ] = None,
         config_overrides: Optional["StepConfigurationUpdate"] = None,
+        implicit_upstream_steps: Optional[Set[str]] = None,
     ) -> None:
         """Register a concurrent step invocation.
 
@@ -2048,6 +2138,8 @@ class DynamicPipelineRunner:
             after: Optional upstream futures for startup.
             start_after: Optional upstream futures for start ordering.
             config_overrides: Optional config overrides for the step.
+            implicit_upstream_steps: Optional implicit upstream step
+                invocation IDs for startup.
         """
         if inputs is not None:
             upstream_node_ids = collect_upstream_node_ids(
@@ -2087,6 +2179,7 @@ class DynamicPipelineRunner:
                 inputs=inputs,
                 after=after,
                 config_overrides=config_overrides,
+                implicit_upstream_steps=implicit_upstream_steps,
             )
             if node.state == NodeState.PAUSED:
                 self._future_registry.set_startup_exception(
@@ -2124,6 +2217,7 @@ class DynamicPipelineRunner:
             inputs=node.inputs,
             after=node.after,
             config=node.config_overrides,
+            implicit_upstream_steps=node.implicit_upstream_steps,
         )
 
         runtime = get_step_runtime(
@@ -2315,6 +2409,7 @@ class DynamicPipelineRunner:
         start_after: Union[
             AnyOutputFuture, Sequence[AnyOutputFuture], None
         ] = None,
+        implicit_upstream_steps: Optional[Set[str]] = None,
     ) -> None:
         """Register a map invocation.
 
@@ -2325,6 +2420,8 @@ class DynamicPipelineRunner:
             after: Optional upstream futures for startup.
             start_after: Optional upstream futures for start ordering.
             product: The map expansion mode.
+            implicit_upstream_steps: Optional implicit upstream step
+                invocation IDs for startup.
         """
         node_id = future.invocation_id
         upstream_node_ids = collect_upstream_node_ids(
@@ -2352,6 +2449,7 @@ class DynamicPipelineRunner:
                 upstream_ids=upstream_node_ids,
                 start_upstream_ids=start_upstream_node_ids,
                 after=after,
+                implicit_upstream_steps=implicit_upstream_steps,
             )
             if node.state == NodeState.PAUSED:
                 self._future_registry.set_startup_exception(
@@ -2398,6 +2496,7 @@ class DynamicPipelineRunner:
                 after=node.after,
                 group=group_info,
                 concurrent=True,
+                implicit_upstream_steps=node.implicit_upstream_steps,
             )
             for index, inputs in enumerate(step_inputs)
         ]

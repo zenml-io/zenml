@@ -20,7 +20,7 @@ from typing import (
     Dict,
     List,
     Optional,
-    Sequence,
+    Set,
     Tuple,
     Union,
 )
@@ -40,16 +40,10 @@ from zenml.constants import (
 )
 from zenml.enums import StepRuntime
 from zenml.execution.pipeline.dynamic.inputs import (
-    _await_input_future,
     await_step_inputs,
     convert_to_keyword_arguments,
 )
-from zenml.execution.pipeline.dynamic.outputs import (
-    AnyOutputFuture,
-    OutputArtifact,
-    PipelineFuture,
-)
-from zenml.execution.pipeline.dynamic.utils import collect_futures
+from zenml.execution.pipeline.dynamic.outputs import OutputArtifact
 from zenml.logger import get_logger
 from zenml.models import (
     ArtifactVersionResponse,
@@ -108,8 +102,8 @@ def compile_dynamic_step_invocation(
     step: "BaseStep",
     invocation_id: str,
     inputs: Dict[str, Any],
+    upstream_steps: Set[str],
     pipeline_docker_settings: "DockerSettings",
-    after: Union["AnyOutputFuture", Sequence["AnyOutputFuture"], None] = None,
     config: Optional[StepConfigurationUpdate] = None,
 ) -> "Step":
     """Compile a dynamic step invocation.
@@ -119,38 +113,14 @@ def compile_dynamic_step_invocation(
         pipeline: The dynamic pipeline.
         step: The step to compile.
         invocation_id: The invocation ID of the step.
-        inputs: The inputs for the step function.
+        inputs: The awaited inputs for the step function.
+        upstream_steps: The upstream step invocation IDs.
         pipeline_docker_settings: The Docker settings of the parent pipeline.
-        after: The step run output futures to wait for.
         config: The configuration for the step.
 
     Returns:
         The compiled step.
     """
-    upstream_steps = set()
-
-    for future in collect_futures(after=after, expand_map_results=True):
-        _await_input_future(future, return_result=False)
-        if isinstance(future, PipelineFuture):
-            # A pipeline future means we're waiting for a child pipeline to
-            # finish. No such step exists in our pipeline, so we can't track
-            # it as an upstream step.
-            continue
-        upstream_steps.add(future.invocation_id)
-
-    inputs = await_step_inputs(inputs)
-
-    for value in inputs.values():
-        if isinstance(value, OutputArtifact):
-            upstream_steps.add(value.step_name)
-
-        if (
-            isinstance(value, Sequence)
-            and value
-            and all(isinstance(item, OutputArtifact) for item in value)
-        ):
-            upstream_steps.update(item.step_name for item in value)
-
     size_threshold = handle_int_env_var(
         ENV_ZENML_PARAMETER_SIZE_THRESHOLD, default=0
     )

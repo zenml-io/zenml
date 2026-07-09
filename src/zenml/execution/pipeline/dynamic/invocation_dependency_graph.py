@@ -110,6 +110,7 @@ class StepNode(BaseNode):
     inputs: Optional[Dict[str, Any]] = None
     after: Optional[Union[AnyOutputFuture, Sequence[AnyOutputFuture]]] = None
     config_overrides: Optional["StepConfigurationUpdate"] = None
+    implicit_upstream_steps: Set[str] = field(default_factory=set)
 
 
 @dataclass(kw_only=True)
@@ -121,6 +122,7 @@ class MapNode(BaseNode):
     inputs: Dict[str, Any]
     after: Union[AnyOutputFuture, Sequence[AnyOutputFuture], None]
     product: bool
+    implicit_upstream_steps: Set[str] = field(default_factory=set)
 
 
 @dataclass(kw_only=True)
@@ -155,6 +157,7 @@ class InvocationDependencyGraph:
             Union[AnyOutputFuture, Sequence[AnyOutputFuture]]
         ] = None,
         config_overrides: Optional["StepConfigurationUpdate"] = None,
+        implicit_upstream_steps: Optional[Set[str]] = None,
     ) -> Tuple[StepNode, bool]:
         """Register a step node.
 
@@ -167,6 +170,8 @@ class InvocationDependencyGraph:
             inputs: Optional input payload for startup.
             after: Optional `after` payload for startup.
             config_overrides: Optional config overrides for startup.
+            implicit_upstream_steps: Optional implicit upstream step
+                invocation IDs for startup.
 
         Returns:
             The registered step node and whether the registration caused
@@ -179,6 +184,7 @@ class InvocationDependencyGraph:
             inputs=inputs,
             after=after,
             config_overrides=config_overrides,
+            implicit_upstream_steps=implicit_upstream_steps or set(),
         )
         registered, newly_ready = self._register_node(
             node=node,
@@ -200,6 +206,7 @@ class InvocationDependencyGraph:
         after: Optional[
             Union[AnyOutputFuture, Sequence[AnyOutputFuture]]
         ] = None,
+        implicit_upstream_steps: Optional[Set[str]] = None,
     ) -> Tuple[MapNode, bool]:
         """Register a map aggregate node.
 
@@ -212,6 +219,8 @@ class InvocationDependencyGraph:
             inputs: The input payload for startup.
             after: Optional `after` payload for startup.
             product: The map expansion mode.
+            implicit_upstream_steps: Optional implicit upstream step
+                invocation IDs for startup.
 
         Returns:
             The registered map node and whether the registration caused
@@ -224,6 +233,7 @@ class InvocationDependencyGraph:
             inputs=inputs,
             after=after,
             product=product,
+            implicit_upstream_steps=implicit_upstream_steps or set(),
         )
         registered, newly_ready = self._register_node(
             node=node,
@@ -308,6 +318,18 @@ class InvocationDependencyGraph:
             if not isinstance(node, MapNode):
                 raise RuntimeError(f"Node `{node_id}` is not a map node.")
             return node
+
+    def get_node(self, node_id: str) -> Optional[AnyNode]:
+        """Get a node by ID.
+
+        Args:
+            node_id: The node ID.
+
+        Returns:
+            The node, or `None` if it does not exist.
+        """
+        with self._lock:
+            return self._nodes.get(node_id)
 
     def get_child_pipeline_node(self, node_id: str) -> ChildPipelineNode:
         """Get a child pipeline node by ID.
