@@ -1,0 +1,4 @@
+.venv/
+.zenml_config/
+.scratch/
+__pycache__/
