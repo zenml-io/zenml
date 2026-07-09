@@ -48,11 +48,16 @@ class DigitalOceanContainerRegistryConfig(BaseContainerRegistryConfig):
             ValueError: If the URI is not a valid DOCR URI.
         """
         uri = uri.rstrip("/")
-        if not uri.startswith(DOCR_URI_PREFIX):
+        # Require the exact DOCR host followed by a registry name: a bare
+        # `startswith` would accept lookalike hosts such as
+        # `registry.digitalocean.com.evil.example`, and a bare host without a
+        # registry name is not a valid image push target.
+        prefix = f"{DOCR_URI_PREFIX}/"
+        if not uri.startswith(prefix) or not uri[len(prefix) :]:
             raise ValueError(
                 f"Property `uri` for the DigitalOcean container registry must "
-                f"start with `{DOCR_URI_PREFIX}`. An example of a valid URI is "
-                f"`{DOCR_URI_PREFIX}/my-registry`."
+                f"be the DOCR host followed by your registry name. An example "
+                f"of a valid URI is `{DOCR_URI_PREFIX}/my-registry`."
             )
         return uri
 

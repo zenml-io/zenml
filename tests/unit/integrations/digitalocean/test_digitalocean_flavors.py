@@ -15,8 +15,9 @@
 
 These tests exercise the config/flavor surface the DigitalOcean integration
 adds on top of the inherited S3 implementation: the Spaces region validation
-and region-derived endpoint, and the DOCR URI validation. ``boto3.resource``
-is mocked so no real S3/Spaces client is constructed during instantiation.
+and runtime endpoint derivation on both the s3fs and boto3 code paths, and the
+DOCR URI validation. ``boto3.resource`` is mocked so no real S3/Spaces client
+is constructed during instantiation.
 """
 
 from datetime import datetime
@@ -35,6 +36,8 @@ from zenml.integrations.digitalocean.flavors import (
     DigitalOceanSpacesArtifactStoreConfig,
     DigitalOceanSpacesArtifactStoreFlavor,
 )
+
+FRA1_ENDPOINT = "https://fra1.digitaloceanspaces.com"
 
 
 def _build_store(
@@ -74,12 +77,17 @@ def test_artifact_store_flavor_identity():
     assert flavor.service_connector_requirements is None
 
 
-def test_region_validation():
-    """A known region is accepted and an unknown one is rejected."""
-    ok = DigitalOceanSpacesArtifactStoreConfig(path="s3://s", region="fra1")
-    assert ok.region == "fra1"
-    with pytest.raises(ValueError):
-        DigitalOceanSpacesArtifactStoreConfig(path="s3://s", region="mars1")
+def test_region_format_validation():
+    """Well-formed region slugs pass (including unknown ones); junk fails."""
+    for region in ["fra1", "nyc3", "lon1", "tor1", "atl1"]:
+        config = DigitalOceanSpacesArtifactStoreConfig(
+            path="s3://s", region=region
+        )
+        assert config.region == region
+
+    for region in ["FRA1", "fra1.evil.com", "not a region", "fra-1", ""]:
+        with pytest.raises(ValueError):
+            DigitalOceanSpacesArtifactStoreConfig(path="s3://s", region=region)
 
 
 def test_requires_region_or_endpoint():
@@ -103,20 +111,35 @@ def test_config_does_not_persist_derived_endpoint():
     assert config.region == "fra1"
 
 
-def test_endpoint_derived_from_region_at_runtime():
-    """The implementation injects the region-derived Spaces endpoint."""
+def test_filesystem_wires_derived_endpoint_into_s3fs():
+    """The filesystem property passes the derived endpoint to the s3fs client."""
     store = _build_store(
         DigitalOceanSpacesArtifactStoreConfig(path="s3://s", region="fra1")
     )
-    client_kwargs = store._with_spaces_endpoint(store.config.client_kwargs)
-    assert (
-        client_kwargs["endpoint_url"] == "https://fra1.digitaloceanspaces.com"
-    )
+    fs_cls = MagicMock()
+    with patch(
+        "zenml.integrations.digitalocean.artifact_stores"
+        ".digitalocean_artifact_store.ZenMLS3Filesystem",
+        fs_cls,
+    ):
+        _ = store.filesystem
 
-    boto3_kwargs = store._build_boto3_kwargs()
-    assert (
-        boto3_kwargs["endpoint_url"] == "https://fra1.digitaloceanspaces.com"
+    client_kwargs = fs_cls.call_args.kwargs["client_kwargs"]
+    assert client_kwargs["endpoint_url"] == FRA1_ENDPOINT
+
+
+def test_boto3_kwargs_carry_endpoint_and_config_kwargs():
+    """The boto3 path sees the derived endpoint and a botocore Config."""
+    store = _build_store(
+        DigitalOceanSpacesArtifactStoreConfig(
+            path="s3://s",
+            region="fra1",
+            config_kwargs={"signature_version": "s3v4"},
+        )
     )
+    kwargs = store._build_boto3_kwargs()
+    assert kwargs["endpoint_url"] == FRA1_ENDPOINT
+    assert kwargs["config"].signature_version == "s3v4"
 
 
 def test_explicit_endpoint_overrides_region():
@@ -128,8 +151,8 @@ def test_explicit_endpoint_overrides_region():
             client_kwargs={"endpoint_url": "https://custom.example.com"},
         )
     )
-    client_kwargs = store._with_spaces_endpoint(store.config.client_kwargs)
-    assert client_kwargs["endpoint_url"] == "https://custom.example.com"
+    kwargs = store._build_boto3_kwargs()
+    assert kwargs["endpoint_url"] == "https://custom.example.com"
 
 
 # --- container registry flavor -----------------------------------------------
@@ -156,8 +179,17 @@ def test_docr_uri_validation():
     )
     assert stripped.uri == "registry.digitalocean.com/my-registry"
 
-    with pytest.raises(ValueError):
-        DigitalOceanContainerRegistryConfig(uri="docker.io/my-registry")
+    for bad_uri in [
+        "docker.io/my-registry",
+        # lookalike hosts that merely start with the DOCR host string
+        "registry.digitalocean.community/my-registry",
+        "registry.digitalocean.com.evil.example/my-registry",
+        # bare host without a registry name
+        "registry.digitalocean.com",
+        "registry.digitalocean.com/",
+    ]:
+        with pytest.raises(ValueError):
+            DigitalOceanContainerRegistryConfig(uri=bad_uri)
 
 
 # --- integration registration ------------------------------------------------

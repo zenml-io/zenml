@@ -20,6 +20,7 @@ is applied in the artifact store implementation so it is not persisted as stack
 component configuration.
 """
 
+import re
 from typing import TYPE_CHECKING, Optional, Type
 
 from pydantic import Field, field_validator, model_validator
@@ -38,18 +39,11 @@ if TYPE_CHECKING:
         DigitalOceanSpacesArtifactStore,
     )
 
-# DigitalOcean Spaces regions. The endpoint URL is
-# ``https://<region>.digitaloceanspaces.com``.
-DIGITALOCEAN_SPACES_REGIONS = [
-    "nyc3",
-    "ams3",
-    "sfo2",
-    "sfo3",
-    "sgp1",
-    "fra1",
-    "syd1",
-    "blr1",
-]
+# Spaces region slugs are short lowercase datacenter codes ending in a digit
+# (nyc3, ams3, fra1, lon1, ...). Validating the format instead of a hardcoded
+# allowlist keeps the flavor usable when DigitalOcean adds regions, while
+# still rejecting values that would corrupt the derived endpoint URL.
+DIGITALOCEAN_SPACES_REGION_PATTERN = re.compile(r"^[a-z]{2,6}[0-9]{1,2}$")
 
 
 def spaces_endpoint_url(region: str) -> str:
@@ -81,16 +75,20 @@ class DigitalOceanSpacesArtifactStoreConfig(S3ArtifactStoreConfig):
 
     region: Optional[str] = Field(
         default=None,
-        description="DigitalOcean Spaces region, used to build the Spaces "
-        "endpoint URL. Must be one of DigitalOcean's Spaces regions, for "
-        "example 'nyc3', 'ams3', 'fra1', 'sgp1'. Not required if "
+        description="DigitalOcean Spaces region slug, used to build the "
+        "Spaces endpoint URL. Must be a lowercase datacenter code such as "
+        "'nyc3', 'ams3', 'fra1' or 'lon1'. Not required if "
         "client_kwargs['endpoint_url'] is provided explicitly.",
     )
 
     @field_validator("region")
     @classmethod
     def _validate_region(cls, region: Optional[str]) -> Optional[str]:
-        """Validates that ``region`` is a known Spaces region.
+        """Validates that ``region`` looks like a Spaces region slug.
+
+        The format is validated instead of a hardcoded region allowlist so
+        that regions DigitalOcean adds in the future work without a ZenML
+        release.
 
         Args:
             region: The region to validate.
@@ -99,12 +97,15 @@ class DigitalOceanSpacesArtifactStoreConfig(S3ArtifactStoreConfig):
             The validated region.
 
         Raises:
-            ValueError: If the region is not a known Spaces region.
+            ValueError: If the region is not a valid Spaces region slug.
         """
-        if region is not None and region not in DIGITALOCEAN_SPACES_REGIONS:
+        if region is not None and not DIGITALOCEAN_SPACES_REGION_PATTERN.match(
+            region
+        ):
             raise ValueError(
-                f"Unknown DigitalOcean Spaces region '{region}'. Known "
-                f"regions: {', '.join(DIGITALOCEAN_SPACES_REGIONS)}."
+                f"Invalid DigitalOcean Spaces region '{region}'. Expected a "
+                f"lowercase datacenter slug such as 'nyc3', 'ams3', 'fra1' "
+                f"or 'lon1'."
             )
         return region
 

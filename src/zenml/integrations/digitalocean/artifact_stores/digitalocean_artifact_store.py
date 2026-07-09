@@ -15,12 +15,12 @@
 
 DigitalOcean Spaces exposes an S3-compatible API that behaves identically to S3
 for the read/write operations ZenML needs, so this class subclasses
-:class:`S3ArtifactStore`. The only Spaces-specific behaviour is the endpoint
+:class:`S3ArtifactStore`. The only Spaces-specific behavior is the endpoint
 URL, which is derived from the configured ``region`` at runtime rather than
 persisted in the config model.
 """
 
-from typing import Any, Dict, Optional, cast
+from typing import Any, Dict, cast
 
 from zenml.integrations.digitalocean.flavors.digitalocean_artifact_store_flavor import (
     DigitalOceanSpacesArtifactStoreConfig,
@@ -44,21 +44,19 @@ class DigitalOceanSpacesArtifactStore(S3ArtifactStore):
         """
         return cast(DigitalOceanSpacesArtifactStoreConfig, self._config)
 
-    def _with_spaces_endpoint(
-        self, client_kwargs: Optional[Dict[str, Any]]
-    ) -> Dict[str, Any]:
-        """Build client kwargs with the region-derived Spaces endpoint.
+    def _apply_spaces_endpoint(self, kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        """Inject the region-derived Spaces endpoint unless one is set.
 
-        An explicit ``endpoint_url`` in ``client_kwargs`` always takes
+        An explicit ``endpoint_url`` (from ``client_kwargs``) always takes
         precedence over the region-derived one.
 
         Args:
-            client_kwargs: The client kwargs from the config, if any.
+            kwargs: Client kwargs to extend, mutated in place.
 
         Returns:
-            Client kwargs including the Spaces ``endpoint_url``.
+            The same kwargs, with the Spaces ``endpoint_url`` filled in from
+            the configured ``region`` if it was not set explicitly.
         """
-        kwargs = dict(client_kwargs) if client_kwargs else {}
         if not kwargs.get("endpoint_url") and self.config.region:
             kwargs["endpoint_url"] = spaces_endpoint_url(self.config.region)
         return kwargs
@@ -70,33 +68,50 @@ class DigitalOceanSpacesArtifactStore(S3ArtifactStore):
         Returns:
             The filesystem object.
         """
+        # Refresh the credentials also if the connector has expired
         if self._filesystem and not self.connector_has_expired():
             return self._filesystem
 
-        key, secret, token, region = self.get_credentials()
-        self._filesystem = ZenMLS3Filesystem(
-            key=key,
-            secret=secret,
-            token=token,
-            client_kwargs=self._with_spaces_endpoint(
-                self.config.client_kwargs
-            ),
-            config_kwargs=self.config.config_kwargs,
-            s3_additional_kwargs=self.config.s3_additional_kwargs,
-        )
-        return self._filesystem
+        with self._filesystem_lock:
+            if self._filesystem and not self.connector_has_expired():
+                return self._filesystem
+
+            key, secret, token, region = self.get_credentials()
+
+            # Mirror the parent: a connector-provided region is injected as
+            # region_name, then explicit client kwargs take precedence, then
+            # the Spaces endpoint is derived from the configured region.
+            client_kwargs: Dict[str, Any] = {}
+            if region:
+                client_kwargs["region_name"] = region
+            if self.config.client_kwargs:
+                client_kwargs.update(self.config.client_kwargs)
+            client_kwargs = self._apply_spaces_endpoint(client_kwargs)
+
+            self._filesystem = ZenMLS3Filesystem(
+                key=key,
+                secret=secret,
+                token=token,
+                client_kwargs=client_kwargs,
+                config_kwargs=self.config.config_kwargs,
+                s3_additional_kwargs=self.config.s3_additional_kwargs,
+            )
+            return self._filesystem
 
     def _build_boto3_kwargs(self) -> Dict[str, Any]:
         """Build Spaces-aware kwargs for the boto3.resource path.
 
-        The parent applies ``config_kwargs`` to the s3fs filesystem; this
-        override mirrors the Spaces endpoint on the ``boto3.resource('s3', ...)``
-        path so both code paths address the same endpoint.
+        The parent applies ``client_kwargs`` and credentials; this override
+        mirrors the Spaces endpoint and the ``config_kwargs`` (as a botocore
+        ``Config``) onto the ``boto3.resource('s3', ...)`` path so both code
+        paths address the same endpoint with the same client configuration.
 
         Returns:
             kwargs for ``boto3.resource('s3', ...)``.
         """
-        kwargs = super()._build_boto3_kwargs()
-        if not kwargs.get("endpoint_url") and self.config.region:
-            kwargs["endpoint_url"] = spaces_endpoint_url(self.config.region)
+        kwargs = self._apply_spaces_endpoint(super()._build_boto3_kwargs())
+        if self.config.config_kwargs and "config" not in kwargs:
+            from botocore.config import Config
+
+            kwargs["config"] = Config(**self.config.config_kwargs)
         return kwargs
