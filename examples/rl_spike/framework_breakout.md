@@ -1,6 +1,8 @@
-# RL spike — framework survey brief (planning, 2026-07-08, rev. 7)
+# RL spike — framework survey brief (planning, 2026-07-08, rev. 8)
 
 *Purpose: a menu of framework combinations and example variants to try next, so the spike keeps producing findings after v0. Nothing here is implementation — each entry is a spec for an example someone could build later. The deliverable of every entry is a BREAKAGE_LOG-style finding, not a working model.*
+
+*Rev. 8 (2026-07-09, after the Stage 3 smokes, calibration, and the full training run — see `TRAINING_RUN.md`, `CALIBRATION.md`, `FINDINGS.md`): **A1 is done** (warm vLLM verified end-to-end: 5 iterations, 4 adapter hot-reloads; its gates are open); **E1 and E4 are answered without being scheduled** — the training run's own failures supplied them (vLLM Deployment leaks on failure, confirmed twice; retries can die and leave steps in `retrying` forever, deadlocking the run — BREAKAGE_LOG 15/16); **E3 needs no new run** (5×280 episode artifacts sit on the staging server, measurement is a laptop script); findings count is now 16 entries, synthesized in `FINDINGS.md`. Sequencing in §4 updated accordingly.*
 
 *Rev. 2: B2b rewritten around TRL v1's shipped `trl.experimental.harbor` / `environment_factory` path (verified against TRL's docs — it resolves the token/logprob wall the first draft predicted, and it raises a new ZenML-Sandbox-as-substrate question); Harbor 0.18.x / Python ≥3.12 compat risk; B3 trajectory exporter; verl (D3) and SGLang (E5) as named deferrals; scorecard + pick-four framing in §4.*
 
@@ -20,7 +22,7 @@
 
 ## 1 · Where we are (what the existing assets already prove)
 
-The current spike (`examples/rl_spike`) proves one complete shape end-to-end: **ZenML owns the whole RL loop as visible steps, TRL is demoted to a math library**. Concretely: ZenML steps generate rollouts (vLLM), score them in sandboxes, and hand pre-scored episodes to TRL's `rollout_func` so `GRPOTrainer` only computes advantages/loss/gradient. That shape has already yielded 10+ logged findings (caching replays stale rollouts, no warm-serving concept, never-raise episode steps lie to the dashboard, fork-unsafe log handler, custom-parent-image gauntlet, etc. — see `BREAKAGE_LOG.md`).
+The current spike (`examples/rl_spike`) proves one complete shape end-to-end: **ZenML owns the whole RL loop as visible steps, TRL is demoted to a math library**. Concretely: ZenML steps generate rollouts (vLLM), score them in sandboxes, and hand pre-scored episodes to TRL's `rollout_func` so `GRPOTrainer` only computes advantages/loss/gradient. As of 7/9 this shape has run at full scale — a calibration pass over 64 tasks and a 5-iteration training run at 280 mapped episodes per iteration on the staging EKS cluster (`TRAINING_RUN.md`) — and has yielded 16 logged findings, synthesized by theme in `FINDINGS.md` (fan-out has no working concurrency/placement/retry story; failure states lie; the serving gap, now with warm-vs-cold numbers; plus the earlier caching/logging/image sharp edges — see `BREAKAGE_LOG.md`).
 
 The Harbor worktree examples prove a second shape: **ZenML owns campaign fan-out, an external framework owns one trial**. `sandbox_harbor`'s `build_matrix → run_harbor_trial.map → build_report` runs one Harbor trial per mapped step, with Harbor's agent/verifier/reward running against a ZenML Sandbox session via the `ZenMLSandboxEnvironment` bridge. Smoke-tested on Modal only.
 
@@ -28,7 +30,7 @@ What the survey should now find out is the shapes in between and beyond:
 
 | Shape | Status |
 |---|---|
-| ZenML owns everything, framework = library (TRL `rollout_func`) | **Built, findings flowing** |
+| ZenML owns everything, framework = library (TRL `rollout_func`) | **Built AND run at scale (calibration + 5-iteration training run, warm serving), findings flowing** |
 | ZenML owns fan-out, framework owns one trial (Harbor campaign) | **Built (worktree), Modal-only, eval not RL** |
 | ZenML owns the outer loop, framework owns rollout+train internals (verifiers `RLTrainer`, prime-rl) | Not tried |
 | Framework swallows the whole loop, ZenML = config-in/checkpoint-out wrapper (prime-rl full stack) | Not tried — PLAN.md *predicted* this is pointless; nobody has verified the prediction |
@@ -53,7 +55,21 @@ Ordering inside each track is by dependency, not preference. Priority across tra
 
 These extend the current loop. They're the cheapest new findings because everything is already wired.
 
-#### A1 · Verify warm-vLLM mode end-to-end (already coded, never run)
+#### A1 · Verify warm-vLLM mode end-to-end — **DONE (7/8 smoke, 7/9 full run)**
+
+**Status: complete; kept for the record.** Warm mode ran a full 5-iteration
+training run: 4 adapter hot-reloads into the live server, ~1 min each;
+iteration wall clock 209.6s vs 555–727s offline at smoke scale (the
+serving-gap number, entry 2). Answers to the questions below: the exec+tar
+transport works but had to be **inverted** (push from the step, which holds
+materialized artifacts with connector credentials, into the pod — the pod
+pulling from S3 is impossible outside step bootstrap, entry 13); HTTP
+logprobs align with token IDs via `return_tokens_as_token_ids` (one
+alignment bug found and fixed: the stop token appears in logprobs but not
+in returned text); `delete_vllm_server` fires on normal completion **and
+provably does not fire on failure** — the Deployment leaked a GPU twice
+(OOM crash, deadlock force-stop) and had to be deleted by hand. Gates for
+E2/B2a/C1/C3 are open; Michael's A2 work attaches here.
 
 1. **Combo/pins:** existing — `trl==1.7.1`, `zenml==0.96.1`, vLLM `0.24.0` via parent image, the `zenml-rl-spike-vllm-server:0.1` derivative image.
 2. **Smallest shape:** GPU_SETUP.md part 6 step 4 exactly: 1 iteration, 1 task, group 2, `--serving-mode warm_vllm`, node group at 2.
@@ -169,10 +185,10 @@ These are experiments, not examples — each is a deliberate abuse of an A-track
 
 | Experiment | What you do | Finding it targets |
 |---|---|---|
-| E1 · Kill mid-run | `kubectl delete pod` on the orchestrator during iteration 2 of a warm-vLLM run | Does the vLLM Deployment leak (it will — `delete_vllm_server` never runs); does the run zombie (extends entries 6/8b); what does recovery/cleanup actually take by hand |
+| E1 · Kill mid-run — **ANSWERED for free (7/9)** | The training run supplied both halves without scheduling the test: the OOM-killed orchestrator (entry 14) and the retry deadlock (entry 15) | vLLM Deployment leaks: **confirmed twice** (survived an orchestrator crash and a force-stop; deleted by hand). Zombie modes catalogued: headless `running` (14), unfinishable `running` with steps stuck `retrying` (15). Recovery by hand: `runs stop` + manual Deployment/Service delete + job cleanup |
 | E2 · Adapter refresh under load | Fire `load_adapter_into_vllm` for iter N+1 while N's generation requests are still in flight (natural side effect of A2) | The adapter-swap race every async RL system must handle; what raw vLLM's `load_inplace=true` semantics are under concurrent requests |
-| E3 · Transport volume at scale | Run offline mode at full scale (50 tasks × group 8 = 400 episodes) and measure: episode-list artifact size, per-episode sandbox upload/download time, total artifact-store writes per iteration | Hamza's `s3.getObject` worry with numbers attached; whether episode dicts (token IDs + logprobs for 1k-token completions × 400) are an artifact-store anti-pattern. **Named escalation path (from the 7/8 call): a mounted-volume data layer** — a shared volume visible to training, serving, and sandboxes, snapshot-able, instead of object-store round-trips per artifact. Don't build it during the survey; E3's numbers are the evidence that either motivates or kills it |
-| E4 · Retry semantics on mapped steps | Force one `run_episode` pod eviction mid-fan-out (or a transient sandbox failure) with never-raise containment temporarily removed | Whether ZenML step retries interact sanely with nondeterministic sampling upstream (retried episode ≠ original episode — is that visible anywhere?) |
+| E3 · Transport volume at scale — **no new run needed (7/9)** | The data already exists: run `7c7d72c7` (5 × 280 episodes) and four calibration runs sit on the staging server with full episode dicts (token IDs, logprobs, per-episode `timings`). Write a laptop measurement script; no GPU | Hamza's `s3.getObject` worry with numbers attached; whether episode dicts are an artifact-store anti-pattern. **Named escalation path (from the 7/8 call): a mounted-volume data layer** — a shared volume visible to training, serving, and sandboxes, snapshot-able, instead of object-store round-trips per artifact. Don't build it during the survey; E3's numbers are the evidence that either motivates or kills it |
+| E4 · Retry semantics on mapped steps — **ANSWERED for free (7/9), worse than feared** | The training run's 429 bursts exercised retries at scale without any forcing | Retries mostly work (429-killed pods came back across all runs), but the relaunch path itself can be killed by the same 429 burst, leaving the step in `retrying` forever with no pod and no timeout — the run deadlocks (entry 15). The original question (retried episode ≠ original sample — visible anywhere?) remains open but is now secondary to "retries need a terminal escape" |
 | E5 · SGLang serving swap — **deferred** | Replace the warm vLLM server with an SGLang server for one rollout step | Whether a future ZenML serving abstraction should be engine-agnostic; SGLang's RL-oriented primitives (sleep/wake memory management, weight refit from disk/tensor) vs vLLM's runtime-LoRA path. Deferred until warm-vLLM is fully characterized — comparing two uncharacterized serving paths teaches nothing |
 
 Stop conditions are uniform: each experiment is one run plus one BREAKAGE_LOG entry; none gets a second iteration (E5, if ever run, gets the A1 treatment instead).
@@ -211,7 +227,7 @@ Context for whoever picks this up: GEPA (Genetic-Pareto, arXiv 2507.19457 — "R
 |---|---|
 | One pipeline vs two, with evidence | A2 → A3 |
 | Data-layer verdict (episodes/weights transport) | E3, A3, D1 (checkpoint sizes) |
-| Warm serving + adapter lineage into raw infra | A1, E1, E2 |
+| Warm serving + adapter lineage into raw infra | **A1 done, E1 answered** (leak + zombie catalogue in BREAKAGE_LOG 14/15); E2 still open (rides on A2) |
 | Does ZenML help eval/reward lineage without owning training | B1, B2a, C1 |
 | Can external task/verifier/agent loops replace our harness | B2b (TRL's `environment_factory` path), C2 |
 | Framework owns rollout+train, ZenML owns outer loop | C3, B2b |
@@ -224,10 +240,10 @@ Context for whoever picks this up: GEPA (Genetic-Pareto, arXiv 2507.19457 — "R
 | Is the loop shape generic across intervention types (prompts vs weights) | G1 question (a) |
 | Population/Pareto lineage (candidate trees, not version threads) | G1 question (b) |
 | Which Harbor integration shape wins: wrap (ZenML entrypoint) vs plug in (`--env zenml --plugin zenml`) | B1 question (d) → product decision (untouched by #5029, which picks "wrap") |
-| Retry/cache semantics on the Harbor path | Answered by #5029's live validation (cache-hit reruns, hung-shard resume); E4 still open for the RL episode path |
+| Retry/cache semantics on the Harbor path | Answered by #5029's live validation (cache-hit reruns, hung-shard resume); **E4 answered for the RL episode path** (retries work until the relaunch itself dies — entry 15) |
 | Framework owns everything, ZenML = wrapper | D1 |
 | Sandbox flavor portability + fan-out at benchmark scale | B1 |
-| Cancellation/retry/cost behavior for long RL runs | E1, E4, plus the by-hand timers already in the loop |
+| Cancellation/retry/cost behavior for long RL runs | **Answered by the 7/9 training run** (E1/E4 outcomes above; ~47 min/iteration, ~$13.5/session — TRAINING_RUN.md) |
 | "Would we recommend ZenML for this workload, shortest path to yes" | Synthesis of all of the above — the findings doc, not one example |
 
 ---
@@ -252,9 +268,9 @@ A candidate earns a build slot only if it's likely to produce at least one **new
 
 ### Sequencing and dependencies (no calendar — order only)
 
-1. **A1** first. It's already coded, it gates E1/E2 and gives C1/C3/B2a their endpoint. Its failure modes are themselves priority findings.
-2. **B1** in parallel with A1 — CPU-only, oracle-agent, no GPU cost, and post-#5029 it's smaller than originally scoped: the Kubernetes-flavor pass plus the scale test, using the merged integration. B3 rises with it — now sanctioned follow-up work with its substrate already merged, not a speculative example.
-3. **E3** rides on the first full-scale A-track run (offline or warm, whichever happens first) — it's measurement, not new code.
+1. ~~**A1** first~~ **A1 done (7/8–7/9)** — its gates (E2, B2a, C1, C3) are open, and its failure modes delivered E1/E4's answers as a side effect.
+2. **B1** — CPU-only, oracle-agent, no GPU cost, and post-#5029 it's smaller than originally scoped: the Kubernetes-flavor pass plus the scale test, using the merged integration. B3 rises with it — now sanctioned follow-up work with its substrate already merged, not a speculative example.
+3. **E3** needs no run at all anymore — the training + calibration artifacts on the staging server are the dataset; it's a laptop measurement script.
 4. **F1 (snapshots)** any time — it needs only the dry run and no external framework; its flavor-support fact-check can literally be the first thing done tomorrow. It's also the best "GPU is blocked" filler.
 5. **G1 (GEPA)** is similarly GPU-optional (API task model + API reflection model + the local sandbox scorer) and reuses the harness as-is — it can run in the same "CPU-parallel" lane as B1/C2/F1, budget-limited by API spend rather than node-hours. If A1's endpoint is up, point the task model there instead for a fully self-hosted variant.
 6. **C2** before C1 and C3 — the sandbox-reward collision is the highest-information single experiment in Track C, it's tiny, and both C1 (needs an environment) and C3 (needs an environment) reuse its artifact.
@@ -263,10 +279,10 @@ A candidate earns a build slot only if it's likely to produce at least one **new
 9. **B3** rides directly on B1's campaign outputs — it's a conversion step over artifacts that already exist, so it costs almost nothing once B1 has run.
 10. **B2a** once A1 is stable (needs the endpoint). **B2b** is independent of A1 (TRL colocates its own vLLM) but needs its Python 3.12 / transformers 5.x environment built first — sequence it alongside or after B1, since B1 builds that environment anyway.
 11. **D1** last among the builds — it needs the C2 environment, both GPUs exclusively, and its findings are about the boundary, so it benefits from everything already learned. If B2b already answered "framework owns the loop, what does ZenML see?", D1's remaining value is the multi-process supervision/cancellation angle specifically.
-12. **A3** only if A2 produced strain; **E1/E4** whenever a run is otherwise being abandoned (destructive tests are free on runs you're killing anyway).
+12. **A3** only if A2 produced strain; ~~E1/E4 whenever a run is otherwise being abandoned~~ — both answered by the 7/9 training run's own failures (entries 14/15); no destructive tests needed.
 13. **D2 (OpenRLHF), D3 (verl), E5 (SGLang)** — write the skip/defer rationale paragraphs; build nothing.
 
-Hard dependency edges: A1 → {A2, E1, E2, B2a, C1, C3}; B1 → {B3, B2b (shared 3.12 env)}; C2 → {C1, C3, D1}; A2 → A3 (evidence gate); G1 → nothing (fully parallel; optionally consumes A1's endpoint); everything → the findings doc.
+Hard dependency edges: A1 (done) → {A2, E2, B2a, C1, C3} — all now unblocked; B1 → {B3, B2b (shared 3.12 env)}; C2 → {C1, C3, D1}; A2 → A3 (evidence gate); G1 → nothing (fully parallel; optionally consumes A1's endpoint); everything → the findings doc (`FINDINGS.md`, first edition written 7/9 — future entries update it).
 
 ---
 
