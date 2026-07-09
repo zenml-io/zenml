@@ -49,6 +49,7 @@ class NodeState(StrEnum):
     RUNNING = "running"
     SUCCEEDED = "succeeded"
     FAILED = "failed"
+    SKIPPED = "skipped"
     PAUSED = "paused"
 
     @property
@@ -61,6 +62,7 @@ class NodeState(StrEnum):
         return self in {
             NodeState.SUCCEEDED,
             NodeState.FAILED,
+            NodeState.SKIPPED,
             NodeState.PAUSED,
         }
 
@@ -448,16 +450,34 @@ class InvocationDependencyGraph:
         """
         return self._set_node_state(node_id=node_id, state=NodeState.SUCCEEDED)
 
-    def mark_node_failed(self, node_id: str) -> bool:
-        """Mark a node as failed.
+    def mark_node_failed(self, node_id: str) -> List[str]:
+        """Mark a node as failed and skip all non-terminal downstream nodes.
 
         Args:
             node_id: The node ID.
 
         Returns:
-            Whether the transition caused any newly ready nodes.
+            The IDs of all downstream nodes that transitioned to SKIPPED.
         """
-        return self._set_node_state(node_id=node_id, state=NodeState.FAILED)
+        with self._lock:
+            self._set_node_state(node_id=node_id, state=NodeState.FAILED)
+
+            cascaded: List[str] = []
+            stack: List[str] = list(
+                self._get_node(node_id=node_id).downstream_ids
+            )
+            while stack:
+                current_id = stack.pop()
+                node = self._get_node(node_id=current_id)
+                if node.state.is_terminal:
+                    continue
+
+                self._set_node_state(
+                    node_id=current_id, state=NodeState.SKIPPED
+                )
+                cascaded.append(current_id)
+                stack.extend(node.downstream_ids)
+            return cascaded
 
     def mark_node_paused(self, node_id: str) -> List[str]:
         """Mark a node as paused and cascade to all downstream nodes.
@@ -559,6 +579,18 @@ class InvocationDependencyGraph:
                 return node, self._handle_terminal_node_transition(
                     node_id=node.node_id
                 )
+
+            # If any upstream failed or was skipped, the node is skipped
+            # instead of waiting for an upstream that never succeeds.
+            if any(
+                self._get_node(node_id=upstream_id).state
+                in {NodeState.FAILED, NodeState.SKIPPED}
+                for upstream_id in node.upstream_ids
+            ):
+                self._set_node_state(
+                    node_id=node.node_id, state=NodeState.SKIPPED
+                )
+                return node, False
 
             # If any upstream is paused, we inherit the paused state.
             if any(
@@ -719,6 +751,10 @@ class InvocationDependencyGraph:
             child_node.state == NodeState.FAILED for child_node in child_nodes
         ):
             aggregate_state = NodeState.FAILED
+        elif any(
+            child_node.state == NodeState.SKIPPED for child_node in child_nodes
+        ):
+            aggregate_state = NodeState.SKIPPED
         elif any(
             child_node.state == NodeState.PAUSED for child_node in child_nodes
         ):

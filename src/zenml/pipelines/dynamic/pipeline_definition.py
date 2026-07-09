@@ -65,8 +65,8 @@ class DynamicPipeline(Pipeline):
             depends_on: The steps that the pipeline depends on.
             **kwargs: Pipeline constructor keyword arguments.
         """
-        # The default execution mode (CONTINUE_ON_FAILURE) is not supported
-        # for dynamic pipelines, so we default to STOP_ON_FAILURE.
+        # Dynamic pipelines default to STOP_ON_FAILURE so that a failing step
+        # surfaces as a failed run unless the user opts into another mode.
         if kwargs.get("execution_mode", None) is None:
             kwargs["execution_mode"] = ExecutionMode.STOP_ON_FAILURE
         super().__init__(**kwargs)
