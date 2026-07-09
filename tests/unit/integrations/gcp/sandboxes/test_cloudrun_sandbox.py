@@ -256,16 +256,17 @@ class TestBridgeClient:
         assert client.is_running("sb-0123456789ab") is False
 
     def test_snapshot_sandbox(self) -> None:
+        seen: Dict[str, Any] = {}
+
         def handler(request: httpx.Request) -> httpx.Response:
-            assert request.url.path == "/v1/sandbox/sb-0123456789ab/snapshot"
-            body = json.loads(request.content)
-            return httpx.Response(200, json={"uri": body["gcs_uri"]})
+            seen["path"] = request.url.path
+            seen["body"] = json.loads(request.content)
+            return httpx.Response(200, json={})
 
         client = _make_client(handler)
-        uri = client.snapshot_sandbox(
-            "sb-0123456789ab", "gs://bucket/snap.tar"
-        )
-        assert uri == "gs://bucket/snap.tar"
+        client.snapshot_sandbox("sb-0123456789ab", "gs://bucket/snap.tar")
+        assert seen["path"] == "/v1/sandbox/sb-0123456789ab/snapshot"
+        assert seen["body"] == {"gcs_uri": "gs://bucket/snap.tar"}
 
     def test_get_retries_transient_errors(self) -> None:
         calls: List[int] = []
@@ -292,14 +293,15 @@ class TestBridgeClient:
             client.create_sandbox()
         assert len(calls) == 1
 
-    def test_put_file_rejects_oversized_payload(self) -> None:
-        client = _make_client(lambda _: httpx.Response(200))
-        with pytest.raises(ValueError, match="32 MiB"):
-            client.put_file(
-                "sb-0123456789ab",
-                "big.bin",
-                b"\0" * (_BRIDGE_FILE_MAX_BYTES + 1),
-            )
+    def test_upload_rejects_oversized_file(self) -> None:
+        session = _make_session(_make_client(lambda _: httpx.Response(200)))
+        with tempfile.TemporaryDirectory() as tmp:
+            big = os.path.join(tmp, "big.bin")
+            # Sparse file: sets the size without writing 32 MiB of data.
+            with open(big, "wb") as f:
+                f.truncate(_BRIDGE_FILE_MAX_BYTES + 1)
+            with pytest.raises(ValueError, match="upload limit"):
+                session.upload_file(big, "/data/big.bin")
 
     def test_file_paths_reject_traversal(self) -> None:
         client = _make_client(lambda _: httpx.Response(200))
@@ -434,7 +436,7 @@ class TestSession:
             assert body["gcs_uri"].startswith(
                 "gs://bucket/prefix/sb-0123456789ab-"
             )
-            return httpx.Response(200, json={"uri": body["gcs_uri"]})
+            return httpx.Response(200, json={})
 
         session = _make_session(
             _make_client(handler),

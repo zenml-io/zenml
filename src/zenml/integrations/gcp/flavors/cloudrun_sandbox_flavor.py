@@ -23,6 +23,9 @@ from zenml.integrations.gcp import (
     GCP_CONNECTOR_TYPE,
     GCP_RESOURCE_TYPE,
 )
+from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
+    GCP_PATH_PREFIX,
+)
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
 )
@@ -148,10 +151,10 @@ class CloudRunSandboxConfig(
         """
         if value is None:
             return None
-        if not value.startswith("gs://"):
+        if not value.startswith(GCP_PATH_PREFIX):
             raise ValueError(
                 f"Invalid snapshot_uri_prefix '{value}': must be a Cloud "
-                "Storage URI starting with 'gs://'."
+                f"Storage URI starting with '{GCP_PATH_PREFIX}'."
             )
         return value.rstrip("/")
 

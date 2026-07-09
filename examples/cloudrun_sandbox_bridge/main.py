@@ -33,7 +33,7 @@ import threading
 import urllib.parse
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 SANDBOX_BIN = os.environ.get("SANDBOX_BIN", "/usr/local/gcp/bin/sandbox")
 SHARE_ROOT = os.environ.get("SHARE_ROOT", "/tmp/zenml-share")
@@ -43,13 +43,34 @@ SHARE_MOUNT = "/mnt/zenml"
 MAX_FILE_BYTES = 32 * 1024 * 1024
 DEFAULT_EXEC_TIMEOUT_MS = 120_000
 
-_SANDBOX_ID_RE = re.compile(r"^sb-[0-9a-f]{12}$")
-
 # Sandboxes created by this instance. Persistent sandboxes are
 # instance-local, so an id missing here is gone (or belongs to a recycled
 # instance) and reads as 404.
-_sandboxes: Dict[str, bool] = {}
+_sandboxes: Set[str] = set()
 _sandboxes_lock = threading.Lock()
+
+_gcs_client: Optional[Any] = None
+_gcs_client_lock = threading.Lock()
+
+
+def _get_gcs_client() -> Any:
+    """Return a lazily-built, shared Cloud Storage client."""
+    global _gcs_client
+    with _gcs_client_lock:
+        if _gcs_client is None:
+            from google.cloud import storage
+
+            _gcs_client = storage.Client()
+        return _gcs_client
+
+
+def _parse_gcs_uri(gcs_uri: str) -> Tuple[str, str]:
+    """Split a gs:// URI into bucket and blob names."""
+    match = re.match(r"^gs://([^/]+)/(.+)$", gcs_uri)
+    if not match:
+        raise ValueError(f"Invalid gs:// URI: {gcs_uri}")
+    bucket_name, blob_name = match.groups()
+    return bucket_name, blob_name
 
 
 def _run_cli(
@@ -92,7 +113,7 @@ def _create_sandbox(allow_egress: bool, import_tar: Optional[str]) -> str:
             f"{result.stderr.decode(errors='replace')[:500]}"
         )
     with _sandboxes_lock:
-        _sandboxes[sandbox_id] = True
+        _sandboxes.add(sandbox_id)
     return sandbox_id
 
 
@@ -104,7 +125,7 @@ def _delete_sandbox(sandbox_id: str) -> None:
             f"{result.stderr.decode(errors='replace')[:500]}"
         )
     with _sandboxes_lock:
-        _sandboxes.pop(sandbox_id, None)
+        _sandboxes.discard(sandbox_id)
     shutil.rmtree(_share_dir(sandbox_id), ignore_errors=True)
 
 
@@ -148,14 +169,9 @@ def _sandbox_shell(sandbox_id: str, script: str) -> None:
         )
 
 
-def _snapshot_to_gcs(sandbox_id: str, gcs_uri: str) -> str:
+def _snapshot_to_gcs(sandbox_id: str, gcs_uri: str) -> None:
     """Export the sandbox overlay with `sandbox tar` and upload it to GCS."""
-    from google.cloud import storage
-
-    match = re.match(r"^gs://([^/]+)/(.+)$", gcs_uri)
-    if not match:
-        raise ValueError(f"Invalid gs:// URI: {gcs_uri}")
-    bucket_name, blob_name = match.groups()
+    bucket_name, blob_name = _parse_gcs_uri(gcs_uri)
 
     with tempfile.NamedTemporaryFile(suffix=".tar", delete=False) as tmp:
         tar_path = tmp.name
@@ -166,27 +182,21 @@ def _snapshot_to_gcs(sandbox_id: str, gcs_uri: str) -> str:
                 f"sandbox tar failed ({result.returncode}): "
                 f"{result.stderr.decode(errors='replace')[:500]}"
             )
-        client = storage.Client()
+        client = _get_gcs_client()
         client.bucket(bucket_name).blob(blob_name).upload_from_filename(
             tar_path
         )
     finally:
         os.unlink(tar_path)
-    return gcs_uri
 
 
 def _download_import_tar(gcs_uri: str) -> str:
     """Fetch a snapshot tarball from GCS to a local temp path."""
-    from google.cloud import storage
-
-    match = re.match(r"^gs://([^/]+)/(.+)$", gcs_uri)
-    if not match:
-        raise ValueError(f"Invalid gs:// URI: {gcs_uri}")
-    bucket_name, blob_name = match.groups()
+    bucket_name, blob_name = _parse_gcs_uri(gcs_uri)
 
     with tempfile.NamedTemporaryFile(suffix=".tar", delete=False) as tmp:
         tar_path = tmp.name
-    client = storage.Client()
+    client = _get_gcs_client()
     client.bucket(bucket_name).blob(blob_name).download_to_filename(tar_path)
     return tar_path
 
@@ -238,8 +248,8 @@ class BridgeHandler(BaseHTTPRequestHandler):
         return sandbox_id, action, rest
 
     def _known_sandbox(self, sandbox_id: str) -> bool:
-        if not _SANDBOX_ID_RE.match(sandbox_id):
-            return False
+        # Membership fully decides: the registry only ever contains ids
+        # this process minted itself.
         with _sandboxes_lock:
             return sandbox_id in _sandboxes
 
@@ -409,11 +419,21 @@ class BridgeHandler(BaseHTTPRequestHandler):
 
     def _handle_put_file(self, sandbox_id: str, rest: str) -> None:
         dest = _safe_sandbox_path(rest)
-        data = self._read_body()
+        length = int(self.headers.get("Content-Length") or 0)
+        if length > MAX_FILE_BYTES:
+            raise ValueError("Request body exceeds 32 MiB limit")
         staging_name = f"put-{uuid.uuid4().hex}"
         staging_host = os.path.join(_share_dir(sandbox_id), staging_name)
+        # Stream straight to the staging file so concurrent uploads don't
+        # each hold a full 32 MiB body in memory.
         with open(staging_host, "wb") as f:
-            f.write(data)
+            remaining = length
+            while remaining > 0:
+                chunk = self.rfile.read(min(remaining, 1024 * 1024))
+                if not chunk:
+                    break
+                f.write(chunk)
+                remaining -= len(chunk)
         try:
             _sandbox_shell(
                 sandbox_id,
@@ -429,18 +449,19 @@ class BridgeHandler(BaseHTTPRequestHandler):
         src = _safe_sandbox_path(rest)
         staging_name = f"get-{uuid.uuid4().hex}"
         staging_host = os.path.join(_share_dir(sandbox_id), staging_name)
+        # Enforce the size limit inside the sandbox BEFORE copying, so a
+        # multi-GB file is rejected without paying the copy.
+        quoted_src = shlex.quote(src)
         _sandbox_shell(
             sandbox_id,
-            f"cp {shlex.quote(src)} "
+            f"size=$(wc -c < {quoted_src}) && "
+            f'[ "$size" -le {MAX_FILE_BYTES} ] || '
+            f"{{ echo 'file exceeds 32 MiB limit' >&2; exit 92; }} && "
+            f"cp {quoted_src} "
             f"{shlex.quote(f'{SHARE_MOUNT}/{staging_name}')}",
         )
         try:
             size = os.path.getsize(staging_host)
-            if size > MAX_FILE_BYTES:
-                self._send_error_json(
-                    413, f"File is {size} bytes; limit is 32 MiB"
-                )
-                return
             self.send_response(200)
             self.send_header("Content-Type", "application/octet-stream")
             self.send_header("Content-Length", str(size))
@@ -456,8 +477,8 @@ class BridgeHandler(BaseHTTPRequestHandler):
         if not gcs_uri:
             self._send_error_json(400, "Missing gcs_uri")
             return
-        uri = _snapshot_to_gcs(sandbox_id, gcs_uri)
-        self._send_json(200, {"uri": uri})
+        _snapshot_to_gcs(sandbox_id, gcs_uri)
+        self._send_json(200, {})
 
     def log_message(self, format: str, *args: Any) -> None:
         # Route access logs to stdout for Cloud Logging.

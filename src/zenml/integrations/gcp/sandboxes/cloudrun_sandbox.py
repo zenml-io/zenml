@@ -34,7 +34,6 @@ import urllib.parse
 from collections import deque
 from dataclasses import dataclass
 from typing import (
-    TYPE_CHECKING,
     Any,
     Deque,
     Dict,
@@ -42,6 +41,7 @@ from typing import (
     Iterator,
     List,
     Optional,
+    Protocol,
     Tuple,
     Type,
     Union,
@@ -68,9 +68,7 @@ from zenml.sandboxes import (
     SandboxSession,
     SandboxSnapshot,
 )
-
-if TYPE_CHECKING:
-    pass
+from zenml.utils.time_utils import exponential_backoff_delays, utc_now
 
 logger = get_logger(__name__)
 
@@ -92,6 +90,10 @@ _MAX_RETRIES = 3
 # wait()s on a noisy command would otherwise grow these deques without
 # bound; past the cap the oldest lines are dropped (logged once).
 _STREAM_BUFFER_MAX_LINES = 100_000
+# Newline-free output (progress bars, minified blobs) never hits the line
+# cap; past this many buffered bytes the partial line is flushed as a
+# synthetic line so memory and per-chunk copy costs stay bounded.
+_STREAM_REMAINDER_MAX_BYTES = 1_048_576
 
 # Standard Google OAuth2 token endpoint, used when deriving ID-token
 # credentials from plain service-account credentials.
@@ -100,6 +102,30 @@ _GOOGLE_OAUTH2_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token"
 # Refresh ID tokens this many seconds before they expire so an exec that
 # starts right at the boundary doesn't fail with a 401.
 _TOKEN_REFRESH_SLACK_SECONDS = 60
+
+
+class _IdTokenCredentials(Protocol):
+    """Contract the bridge client needs from ID-token credentials.
+
+    Satisfied structurally by ``google.oauth2.service_account
+    .IDTokenCredentials``, ``google.auth.impersonated_credentials
+    .IDTokenCredentials`` and ``_AdcIdTokenCredentials``.
+    """
+
+    token: Optional[str]
+
+    @property
+    def valid(self) -> bool:
+        """Whether the cached token can still be used."""
+        ...
+
+    def refresh(self, request: Any) -> None:
+        """Fetch a fresh token.
+
+        Args:
+            request: A ``google.auth.transport.Request`` instance.
+        """
+        ...
 
 
 @dataclass(frozen=True)
@@ -260,7 +286,7 @@ class _AdcIdTokenCredentials:
         """
         if self.token is None or self.expiry is None:
             return False
-        remaining = self.expiry - datetime.datetime.now(datetime.timezone.utc)
+        remaining = self.expiry - utc_now(tz_aware=True)
         return remaining.total_seconds() > _TOKEN_REFRESH_SLACK_SECONDS
 
     def refresh(self, request: Any) -> None:
@@ -302,7 +328,7 @@ class _CloudRunBridgeClient:
     def __init__(
         self,
         service_url: str,
-        credentials: Optional[Any],
+        credentials: Optional[_IdTokenCredentials],
         *,
         transport: Optional["httpx.BaseTransport"] = None,
     ) -> None:
@@ -311,15 +337,20 @@ class _CloudRunBridgeClient:
         Args:
             service_url: Base URL of the deployed bridge service.
             credentials: Google ID-token credentials used to authorize
-                requests (``None`` for unauthenticated bridges). Must
-                expose ``valid``, ``token`` and ``refresh(request)``.
+                requests (``None`` for unauthenticated bridges).
             transport: Optional httpx transport override, used by tests.
         """
         self._credentials = credentials
         self._credentials_lock = threading.Lock()
+        # Reused across token refreshes: each google transport Request
+        # wraps its own requests.Session, so rebuilding it per refresh
+        # would pay a fresh TLS handshake to the token endpoint.
+        self._auth_transport: Optional[Any] = None
+        # SSE exec streams disable the read timeout per-request; plain
+        # calls keep the default so a hung bridge can't block forever.
         self._client = httpx.Client(
             base_url=service_url.rstrip("/"),
-            timeout=httpx.Timeout(30.0, read=None),
+            timeout=httpx.Timeout(30.0),
             transport=transport,
         )
 
@@ -336,15 +367,20 @@ class _CloudRunBridgeClient:
         Returns:
             Headers to merge into the outgoing request.
         """
-        if self._credentials is None:
+        credentials = self._credentials
+        if credentials is None:
             return {}
-        with self._credentials_lock:
-            if not self._credentials.valid:
-                from google.auth.transport.requests import Request
+        # Optimistic fast path: only serialize the refresh itself, so
+        # concurrent requests holding a still-valid token don't contend.
+        if not credentials.valid:
+            with self._credentials_lock:
+                if not credentials.valid:
+                    if self._auth_transport is None:
+                        from google.auth.transport.requests import Request
 
-                self._credentials.refresh(Request())
-            token = self._credentials.token
-        return {"Authorization": f"Bearer {token}"}
+                        self._auth_transport = Request()
+                    credentials.refresh(self._auth_transport)
+        return {"Authorization": f"Bearer {credentials.token}"}
 
     def _request(
         self,
@@ -378,10 +414,14 @@ class _CloudRunBridgeClient:
                 are exhausted.
         """
         retryable_method = method in _RETRYABLE_METHODS
-        attempt = 0
+        delays = exponential_backoff_delays(
+            attempts=_MAX_RETRIES, initial_delay=0.25, max_delay=8.0
+        )
         while True:
             merged_headers = dict(headers or {})
             merged_headers.update(self._auth_headers())
+            cause: Optional[BaseException] = None
+            retryable = retryable_method
             try:
                 if stream:
                     req = self._client.build_request(
@@ -390,6 +430,7 @@ class _CloudRunBridgeClient:
                         json=json_body,
                         content=content,
                         headers=merged_headers,
+                        timeout=httpx.Timeout(30.0, read=None),
                     )
                     resp = self._client.send(req, stream=True)
                 else:
@@ -401,39 +442,36 @@ class _CloudRunBridgeClient:
                         headers=merged_headers,
                     )
             except httpx.HTTPError as e:
-                if not retryable_method or attempt >= _MAX_RETRIES:
-                    raise SandboxExecError(
-                        f"Bridge request {method} {path} failed: {e}"
-                    ) from e
-                time.sleep(0.25 * (2**attempt))
-                attempt += 1
-                continue
-
-            if resp.status_code in ok_statuses or resp.status_code < 400:
-                return resp
-
-            retryable = (
-                retryable_method and resp.status_code in _RETRYABLE_STATUSES
-            )
-            body_preview = ""
-            if not stream:
-                try:
-                    body_preview = resp.text[:500]
-                except Exception:
-                    body_preview = ""
+                cause = e
+                error_message = f"Bridge request {method} {path} failed: {e}"
             else:
-                try:
-                    resp.close()
-                except Exception:
-                    pass
+                if resp.status_code in ok_statuses or resp.status_code < 400:
+                    return resp
 
-            if not retryable or attempt >= _MAX_RETRIES:
-                raise SandboxExecError(
+                retryable = (
+                    retryable_method
+                    and resp.status_code in _RETRYABLE_STATUSES
+                )
+                body_preview = ""
+                if not stream:
+                    try:
+                        body_preview = resp.text[:500]
+                    except Exception:
+                        body_preview = ""
+                else:
+                    try:
+                        resp.close()
+                    except Exception:
+                        pass
+                error_message = (
                     f"Bridge {method} {path} returned "
                     f"{resp.status_code}: {body_preview}"
                 )
-            time.sleep(0.25 * (2**attempt))
-            attempt += 1
+
+            delay = next(delays, None) if retryable else None
+            if delay is None:
+                raise SandboxExecError(error_message) from cause
+            time.sleep(delay)
 
     def create_sandbox(
         self,
@@ -495,29 +533,21 @@ class _CloudRunBridgeClient:
             return False
         return bool(resp.json().get("running", False))
 
-    def snapshot_sandbox(self, sandbox_id: str, gcs_uri: str) -> str:
+    def snapshot_sandbox(self, sandbox_id: str, gcs_uri: str) -> None:
         """Export the sandbox filesystem overlay to Cloud Storage.
+
+        The bridge writes the tarball to exactly the URI it is given, so
+        a successful response needs no payload.
 
         Args:
             sandbox_id: The sandbox to snapshot.
             gcs_uri: Destination ``gs://`` URI for the tarball.
-
-        Returns:
-            The URI of the stored snapshot tarball, as confirmed by the
-            bridge.
-
-        Raises:
-            SandboxExecError: If the bridge response is missing the URI.
         """
-        resp = self._request(
+        self._request(
             "POST",
             f"/v1/sandbox/{sandbox_id}/snapshot",
             json_body={"gcs_uri": gcs_uri},
         )
-        uri = resp.json().get("uri")
-        if not uri:
-            raise SandboxExecError("Bridge snapshot response missing 'uri'")
-        return cast(str, uri)
 
     def exec_stream(
         self,
@@ -563,19 +593,14 @@ class _CloudRunBridgeClient:
     def put_file(self, sandbox_id: str, remote_path: str, data: bytes) -> None:
         """Upload raw bytes to a sandbox path.
 
+        Size enforcement lives in ``_upload_file`` (the only caller),
+        which checks before reading the payload into memory.
+
         Args:
             sandbox_id: The sandbox to write into.
             remote_path: Path inside the sandbox filesystem; `..` rejected.
             data: Raw file bytes; max 32 MiB.
-
-        Raises:
-            ValueError: If the file exceeds the bridge body limit.
         """
-        if len(data) > _BRIDGE_FILE_MAX_BYTES:
-            raise ValueError(
-                f"File of {len(data)} bytes exceeds the bridge limit of "
-                f"{_BRIDGE_FILE_MAX_BYTES} bytes (32 MiB)."
-            )
         safe_path = _sanitize_remote_path(remote_path)
         encoded = urllib.parse.quote(safe_path, safe="/")
         self._request(
@@ -630,11 +655,10 @@ class CloudRunSandboxProcess(SandboxProcess):
         # it once on a background thread and demux into two buffers so
         # `stdout()` and `stderr()` can be iterated independently from the
         # caller's thread.
-        self._lock = threading.Lock()
         self._stdout_buf: Deque[str] = deque()
         self._stderr_buf: Deque[str] = deque()
         self._buffer_truncated = False
-        self._data_available = threading.Condition(self._lock)
+        self._data_available = threading.Condition()
         self._done = threading.Event()
         self._exit_code: Optional[int] = None
         self._pump_error: Optional[BaseException] = None
@@ -674,6 +698,12 @@ class CloudRunSandboxProcess(SandboxProcess):
                         _STREAM_BUFFER_MAX_LINES,
                     )
             target.append(line + "\n")
+        # Newline-free output would otherwise grow the remainder (and the
+        # per-chunk `remainder + text` copy) without bound; flush it as a
+        # synthetic line past the cap.
+        if len(buf) > _STREAM_REMAINDER_MAX_BYTES:
+            target.append(buf)
+            return ""
         return buf
 
     def _flush_remainders(self) -> None:
@@ -690,21 +720,19 @@ class CloudRunSandboxProcess(SandboxProcess):
         try:
             for ev in self._event_iter:
                 with self._data_available:
-                    # Only ``exit`` frames carry an int payload (the exit
-                    # code); stdout/stderr frames carry decoded text.
-                    if isinstance(ev.data, int):
-                        self._exit_code = ev.data
+                    if ev.kind == "exit":
+                        self._exit_code = int(ev.data)
                     elif ev.kind == "stdout":
                         self._stdout_remainder = self._push_text(
                             self._stdout_buf,
                             self._stdout_remainder,
-                            ev.data,
+                            cast(str, ev.data),
                         )
                     elif ev.kind == "stderr":
                         self._stderr_remainder = self._push_text(
                             self._stderr_buf,
                             self._stderr_remainder,
-                            ev.data,
+                            cast(str, ev.data),
                         )
                     self._data_available.notify_all()
         except BaseException as e:  # noqa: BLE001
@@ -784,11 +812,12 @@ class CloudRunSandboxProcess(SandboxProcess):
             )
         pump_err = self._pump_error
         if pump_err is not None:
-            if isinstance(pump_err, SandboxExecError):
-                raise SandboxExecError(str(pump_err)) from pump_err
-            raise SandboxExecError(
-                f"Bridge SSE pump failed: {pump_err}"
-            ) from pump_err
+            message = (
+                str(pump_err)
+                if isinstance(pump_err, SandboxExecError)
+                else f"Bridge SSE pump failed: {pump_err}"
+            )
+            raise SandboxExecError(message) from pump_err
         if self._exit_code is None:
             if self._killed.is_set():
                 raise SandboxExecError(
@@ -865,8 +894,8 @@ class CloudRunSandboxSession(SandboxSession):
             destroy_on_exit: Whether the context manager destroys the
                 sandbox on exit instead of just closing the handle.
         """
-        # Subclass state must be set before super().__init__ so the
-        # dashboard hook (invoked during base __init__) has what it needs.
+        # Subclass state must be set before super().__init__, which
+        # publishes session metadata during construction.
         self._client = client
         self._sandbox_id = sandbox_id
         self._session_env = dict(session_env or {})
@@ -877,16 +906,6 @@ class CloudRunSandboxSession(SandboxSession):
         super().__init__(
             id=sandbox_id, parent=parent, destroy_on_exit=destroy_on_exit
         )
-
-    def _get_dashboard_url(self) -> Optional[str]:
-        """Bridge sandboxes have no per-sandbox dashboard URL.
-
-        Returns:
-            ``None``. Sandbox lifecycle events land in the bridge
-            service's Cloud Logging, but there is no stable per-sandbox
-            deep link.
-        """
-        return None
 
     def _exec(
         self,
@@ -915,6 +934,11 @@ class CloudRunSandboxSession(SandboxSession):
             else shlex.split(command)
         )
         self._log_command(argv)
+
+        # Prune exited processes: a long-lived session running thousands
+        # of execs would otherwise retain every finished process and its
+        # output buffers until close().
+        self._processes = [p for p in self._processes if p.exit_code is None]
 
         merged_env = {**self._session_env, **(env or {})}
         effective_cwd = cwd if cwd is not None else self._default_cwd
@@ -960,10 +984,10 @@ class CloudRunSandboxSession(SandboxSession):
             f"{self._snapshot_uri_prefix}/{self._sandbox_id}-"
             f"{int(time.time())}.tar"
         )
-        stored_uri = self._client.snapshot_sandbox(self._sandbox_id, gcs_uri)
+        self._client.snapshot_sandbox(self._sandbox_id, gcs_uri)
         return SandboxSnapshot(
             sandbox_id=self._parent.id,
-            ref=stored_uri,
+            ref=gcs_uri,
             metadata={"source_sandbox": self._sandbox_id},
         )
 
@@ -1055,7 +1079,9 @@ class CloudRunSandbox(BaseSandbox, GoogleCredentialsMixin):
         """
         return CloudRunSandboxSettings
 
-    def _build_id_token_credentials(self) -> Optional[Any]:
+    def _build_id_token_credentials(
+        self,
+    ) -> Optional[_IdTokenCredentials]:
         """Derive ID-token credentials for the bridge from the GCP auth.
 
         Cloud Run IAM authenticates callers with Google-signed ID tokens
@@ -1083,17 +1109,23 @@ class CloudRunSandbox(BaseSandbox, GoogleCredentialsMixin):
         credentials, _ = self._get_authentication()
 
         if isinstance(credentials, impersonated_credentials.Credentials):
-            return impersonated_credentials.IDTokenCredentials(
-                credentials,
-                target_audience=audience,
-                include_email=True,
+            return cast(
+                _IdTokenCredentials,
+                impersonated_credentials.IDTokenCredentials(
+                    credentials,
+                    target_audience=audience,
+                    include_email=True,
+                ),
             )
         if isinstance(credentials, service_account.Credentials):
-            return service_account.IDTokenCredentials(
-                signer=credentials.signer,
-                service_account_email=credentials.service_account_email,
-                token_uri=_GOOGLE_OAUTH2_TOKEN_ENDPOINT,
-                target_audience=audience,
+            return cast(
+                _IdTokenCredentials,
+                service_account.IDTokenCredentials(
+                    signer=credentials.signer,
+                    service_account_email=credentials.service_account_email,
+                    token_uri=_GOOGLE_OAUTH2_TOKEN_ENDPOINT,
+                    target_audience=audience,
+                ),
             )
         if self.get_connector() is not None:
             # The connector produced credentials we can't convert (user
