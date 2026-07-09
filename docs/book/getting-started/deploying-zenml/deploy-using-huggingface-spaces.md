@@ -71,5 +71,3 @@ If you have any other issues, please feel free to reach out to us on our [Slack 
 ## Upgrading your ZenML Server on HF Spaces
 
 The default space will use the latest version of ZenML automatically. If you want to update your version, you can simply select the 'Factory reboot' option within the 'Settings' tab of the space. Note that this will wipe any data contained within the space and so if you are not using a MySQL persistent database (as described above) you will lose any data contained within your ZenML deployment on the space. You can also configure the space to use an earlier version by updating the `Dockerfile`'s `FROM` import statement at the very top.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

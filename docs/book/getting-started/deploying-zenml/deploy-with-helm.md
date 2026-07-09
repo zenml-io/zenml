@@ -813,6 +813,3 @@ You can add additional exclusions using the `additionalNoProxy` list. The NO_PRO
 - IPv4 ranges in CIDR notation (e.g., "10.0.0.0/8")
 - IPv6 addresses (e.g., "::1")
 - IPv6 ranges in CIDR notation (e.g., "fe80::/10")
-
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

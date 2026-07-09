@@ -143,10 +143,7 @@ export STACK\_NAME=gcp\_stack zenml stack register ${STACK\_NAME} -o $
 to do so. And you're already done! Just like that, you now have a fully working GCP 
 stack ready to go. Feel free to take it for a spin by running a pipeline on it. 
 Cleanup If you do not want to use any of the created resources in the future, simply 
-delete the project you created. gcloud project delete <PROJECT\_ID\_OR\_NUMBER> <!-- 
-For scarf --> <figure><img alt="ZenML Scarf" 
-referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?
-x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure> PreviousScale compute to the 
+delete the project you created. gcloud project delete <PROJECT\_ID\_OR\_NUMBER>   PreviousScale compute to the 
 cloud NextConfiguring ZenML Last updated 2 days ago
 ```
 
@@ -341,5 +338,3 @@ To explore the full code, visit the [Complete
 Guide](https://github.com/zenml-io/zenml-projects/blob/main/llm-complete-guide/)
 repository and for this section, particularly [the `eval_retrieval.py`
 file](https://github.com/zenml-io/zenml-projects/blob/main/llm-complete-guide/steps/eval_retrieval.py).
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

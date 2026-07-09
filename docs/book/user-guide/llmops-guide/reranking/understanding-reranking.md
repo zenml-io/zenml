@@ -66,6 +66,3 @@ Reranking offers several benefits in the context of RAG:
 
 In the next section, we'll dive into how to implement reranking in ZenML and
 integrate it into your RAG inference pipeline.
-
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

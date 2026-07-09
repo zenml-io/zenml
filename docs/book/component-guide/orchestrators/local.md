@@ -37,5 +37,3 @@ python file_that_runs_a_zenml_pipeline.py
 ```
 
 For more information and a full list of configurable attributes of the local orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-orchestrators.html#zenml.orchestrators.local) .
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -288,5 +288,3 @@ If you would like to learn more about how to build a custom stack component flav
 | [Alerter](https://docs.zenml.io/stacks/alerters/custom)                        | Sending alerts through specified channels                         |
 | [Annotator](https://docs.zenml.io/stacks/annotators/custom)                    | Annotating and labeling data                                      |
 | [Data Validator](https://docs.zenml.io/stacks/data-validators/custom)          | Validating and monitoring your data                               |
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

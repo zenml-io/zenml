@@ -154,6 +154,3 @@ Client().delete_snapshot(name_id_or_prefix="<SNAPSHOT-NAME-OR-ID>")
 - [Trigger Pipelines from External Systems](../../user-guide/tutorial/trigger-pipelines-from-external-systems.md) - Tutorial for CI/CD integration
 - [Workspace Server Configuration](deploy-workspace-snapshots.md) - Configure the workload manager that powers snapshots
 - [Service Accounts](service-accounts.md) - Set up API authentication for automated triggers
-
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

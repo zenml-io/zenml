@@ -214,5 +214,3 @@ When you start working with ZenML, you'll start with a local ZenML setup, and wh
 #### VS Code Extension
 
 ZenML also provides a [VS Code extension](https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode) that allows you to interact with your ZenML stacks, runs, and server directly from your VS Code editor. If you're working on code in your editor, you can easily switch and inspect the stacks you're using, delete and inspect pipelines as well as even switch stacks.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

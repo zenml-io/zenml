@@ -202,5 +202,3 @@ causes are concrete:
 - ZenML can no longer find the snapshot or stack that the paused run needs in
   order to continue. In that case, the run cannot be resumed until the missing
   reference is restored or recreated.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

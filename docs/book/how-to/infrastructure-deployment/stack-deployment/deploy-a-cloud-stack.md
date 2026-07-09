@@ -359,5 +359,3 @@ The configured Azure service principal and its client secret will grant ZenML th
 {% endtabs %}
 
 There you have it! With a single click, you just deployed a cloud stack, and you can start running your pipelines in a remote setting.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

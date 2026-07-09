@@ -77,5 +77,3 @@ zenml stack register custom_stack -a minio_store ... --set
 Using the MinIO Artifact Store is no different from [using any other flavor of Artifact Store](./#how-to-use-it). ZenML handles the S3-compatible API translation automatically.
 
 For more details on the S3 Artifact Store configuration options, refer to the [S3 Artifact Store documentation](s3.md).
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

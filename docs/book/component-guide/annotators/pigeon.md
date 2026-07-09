@@ -108,6 +108,3 @@ released as a [Python package](https://pypi.org/project/pigeon-jupyter/) and
 the Apache License. It has been updated to work with more recent `ipywidgets`
 versions and some small UI improvements were added. We are grateful to Anastasis
 for creating this tool and making it available to the community.
-
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

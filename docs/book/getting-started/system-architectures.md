@@ -110,8 +110,6 @@ cloud. This is meant for customers who require completely air-gapped deployments
 
 Are you interested in ZenML Pro? [Sign up](https://zenml.io/pro/?utm_source=docs\&utm_medium=referral_link\&utm_campaign=cloud_promotion\&utm_content=signup_link) and get access with a free trial now!
 
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
-
 
 ## Data Implications Across Deployment Scenarios
 

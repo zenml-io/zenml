@@ -132,6 +132,3 @@ kept simple for illustrative purposes.
 The rest of this guide will showcase a more performant and scalable way of
 performing the same task using ZenML. If you ever are unsure why we're doing
 something, feel free to return to this example for the high-level overview.
-
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

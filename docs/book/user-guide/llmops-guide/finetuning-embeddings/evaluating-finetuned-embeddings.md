@@ -87,5 +87,3 @@ Now that we've finetuned our embeddings and evaluated them, when they were in a 
 The next section will cover [LLM finetuning and deployment](../finetuning-llms/) as the final part of our LLMops guide. (This section is currently still a work in progress, but if you're eager to try out LLM finetuning with ZenML, you can use[our LoRA project](https://github.com/zenml-io/zenml-projects/blob/main/gamesense/README.md) to get started. We also have [a blogpost](https://www.zenml.io/blog/how-to-finetune-llama-3-1-with-zenml) guide which takes you through[all the steps you need to finetune Llama 3.1](https://www.zenml.io/blog/how-to-finetune-llama-3-1-with-zenml) using GCP's Vertex AI with ZenML, including one-click stack creation!)
 
 To try out the two pipelines, please follow the instructions in [the project repository README](https://github.com/zenml-io/zenml-projects/blob/main/llm-complete-guide/README.md), and you can find the full code in that same directory.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

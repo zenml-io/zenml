@@ -574,5 +574,3 @@ If you're trying to run pipelines with multiple parallel steps, there are some c
 - Add a `backoff_limit_margin` to deal with unexpected Kubernetes evictions/preemptions
 - Limit the amount of maximum parallel steps using the `max_parallelism` setting
 - Disable streaming step logs using the `stream_step_logs` setting. All steps will have their logs tracked individually, so streaming them to the orchestrator pod is often unnecessary and can slow things down if your steps are logging a lot.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -630,5 +630,3 @@ This is particularly useful when:
 3.  **Required IAM Permissions for the `scheduler_role`**
 
     The `scheduler_role` requires the same permissions as the client role (that would run the pipeline in a non-scheduled case) to launch and manage SageMaker jobs. Use the same custom client permissions policy shown in the [Required IAM Permissions](#required-iam-permissions) section above instead of the broad `AmazonSageMakerFullAccess` managed policy.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

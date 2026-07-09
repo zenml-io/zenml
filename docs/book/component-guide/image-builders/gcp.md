@@ -206,5 +206,3 @@ RUN pip install keyrings.google-artifactregistry-auth
 {% hint style="warning" %}
 The above `Dockerfile` uses `zenmldocker/zenml:latest` as a base image, but is recommended to change the tag to specify the ZenML version and Python version like `0.33.0-py3.10`.
 {% endhint %}
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

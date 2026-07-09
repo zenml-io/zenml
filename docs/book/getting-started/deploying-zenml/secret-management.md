@@ -87,5 +87,3 @@ This migration strategy is not necessary if the actual location of the secrets v
 * switching to a different authentication method to authenticate with the same Secrets Store back-end (e.g. switching from an IAM account secret key to an IAM role in the AWS Secrets Manager)
 
 If you are a [ZenML Pro](https://zenml.io/pro) user, you can configure your cloud backend based on your [deployment scenario](../system-architectures.md).
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

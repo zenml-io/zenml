@@ -70,5 +70,3 @@ In subprocess mode, the build options passed via `DockerSettings` are handled in
 - All other values are converted to a string and passed as `--KEY VALUE`
 
 For more information and a full list of configurable attributes of the local image builder, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-image_builders.html#zenml.image_builders.local_image_builder) .
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -101,5 +101,3 @@ python run.py --training-pipeline
 ```
 
 You can read more about [the ZenML Git Integration here](https://docs.zenml.io/how-to/project-setup-and-management/setting-up-a-project-repository/connect-your-git-repository).
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

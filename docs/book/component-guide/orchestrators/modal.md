@@ -211,5 +211,3 @@ The first version of the Modal orchestrator has a few intentional limits:
 * Stop and status behavior depends on Modal sandbox IDs stored in ZenML metadata. If those IDs are missing, ZenML can only report the last known run or step status and may not be able to terminate already-started sandboxes.
 
 For more details on the available settings, see the [Modal integration SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-modal.html).
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

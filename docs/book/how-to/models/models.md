@@ -366,5 +366,3 @@ The Model Control Plane in ZenML provides a comprehensive solution for managing 
 {% endhint %}
 
 Whether you're working on a simple classification model, a complex production ML system, or a sophisticated multi-agent AI application, ZenML's unified model management capabilities help you organize your resources and maintain clarity across your entire AI development lifecycle.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

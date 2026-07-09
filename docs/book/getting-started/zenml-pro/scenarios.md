@@ -118,5 +118,3 @@ Not sure which option is right for you? [Book a call](https://www.zenml.io/book-
 - **Ready to start?** [Choose SaaS Deployment](saas-deployment.md)
 - **Need metadata control?** [Set up Hybrid Deployment](hybrid-deployment.md)
 - **Require complete isolation?** [Configure Self-hosted Deployment](self-hosted-deployment.md)
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

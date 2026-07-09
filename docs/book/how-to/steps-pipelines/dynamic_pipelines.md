@@ -582,5 +582,3 @@ Two other examples are useful when you want to see dynamic pipelines in more spe
 
 - [`examples/rlm_document_analysis`](https://github.com/zenml-io/zenml/tree/main/examples/rlm_document_analysis) shows a Recursive Language Model style document-analysis workflow. ZenML decides how many chunk-processing steps to create at runtime, while the LLM loop inside each chunk decides which typed search tools to use.
 - [`examples/optuna_hyperparameter_tuning`](https://github.com/zenml-io/zenml/tree/main/examples/optuna_hyperparameter_tuning) combines Optuna's ask API with ZenML dynamic pipelines. Optuna decides which hyperparameters to try next; ZenML runs the trials, tracks their artifacts and metadata, and can fan the work out in parallel.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

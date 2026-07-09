@@ -170,5 +170,3 @@ python run.py --training-pipeline
 Now you should notice the machine that gets provisioned on your cloud provider would have a different configuration as compared to last time. As easy as that!
 
 Bear in mind that not every orchestrator supports `ResourceSettings` directly. To learn more, you can read about [`ResourceSettings` here](https://docs.zenml.io/concepts/steps_and_pipelines/configuration), including the ability to [attach a GPU](https://docs.zenml.io/user-guides/tutorial/distributed-training#1-specify-a-cuda-enabled-parent-image-in-your-dockersettings).
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

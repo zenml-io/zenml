@@ -183,5 +183,3 @@ Some common strategies include:
 * Setting up automated backups with a good retention period (say 30 days).
 * Periodically exporting the data to an external storage (e.g. S3, GCS, etc.).
 * Manual backups before upgrading your server to avoid any problems.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

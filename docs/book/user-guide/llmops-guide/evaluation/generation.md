@@ -390,5 +390,3 @@ improves as we make changes to the retrieval and generation components.
 To explore the full code, visit the [Complete
 Guide](https://github.com/zenml-io/zenml-projects/blob/main/llm-complete-guide/)
 repository and for this section, particularly [the `eval_e2e.py` file](https://github.com/zenml-io/zenml-projects/blob/main/llm-complete-guide/steps/eval_e2e.py).
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

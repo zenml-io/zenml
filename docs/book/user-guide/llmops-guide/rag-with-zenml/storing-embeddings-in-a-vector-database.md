@@ -126,5 +126,3 @@ Now that we have our embeddings stored in a vector database, we can move on to t
 ## Code Example
 
 To explore the full code, visit the [Complete Guide](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide) repository. The logic for storing the embeddings in PostgreSQL can be found [here](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide/steps/populate\_index.py).
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

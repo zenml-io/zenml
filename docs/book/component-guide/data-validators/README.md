@@ -51,5 +51,3 @@ Every Data Validator has different data profiling and testing capabilities and u
 * you can access the data validation artifacts in subsequent pipeline steps, or [fetch them afterwards](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/load-artifacts-into-memory) to process them or visualize them as needed.
 
 Consult the documentation for the particular [Data Validator flavor](./#data-validator-flavors) that you plan on using or are using in your stack for detailed information about how to use it in your ZenML pipelines.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

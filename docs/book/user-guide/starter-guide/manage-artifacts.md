@@ -585,5 +585,3 @@ This would create the following pipeline run DAGs:
 <img src="../../.gitbook/assets/artifact_management_2.png" alt="Uses a second version of my_dataset" data-size="original">
 
 </details>
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

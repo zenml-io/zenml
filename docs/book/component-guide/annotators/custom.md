@@ -15,5 +15,3 @@ Annotators are a stack component that enables the use of data annotation as part
 
 We are actively working on the base abstraction for the annotators, which will be available soon. As a result, their extension is not possible at the moment. If you would like to use an annotator in your stack, please check the list of already available feature stores down below.
 {% endhint %}
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -478,5 +478,3 @@ This configuration keeps instances warm for 5 minutes after each job completes, 
 Regularly backup your critical data and configurations. For S3, enable versioning and consider using [cross-region replication](https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication.html) for disaster recovery.
 
 By following these best practices and implementing the provided examples, you can create a more secure, efficient, and cost-effective AWS stack for your ZenML projects. Remember to regularly review and update your practices as your projects evolve and as AWS introduces new features and services.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -68,5 +68,3 @@ orchestrator_url = pipeline_run.run_metadata["orchestrator_url"].value
 If your steps require the orchestrator to execute them on specific hardware, you can specify them on your steps as described [here](https://docs.zenml.io/concepts/steps_and_pipelines/configuration).
 
 If your orchestrator of choice or the underlying hardware doesn't support this, you can also take a look at [step operators](https://docs.zenml.io/stacks/step-operators/).
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

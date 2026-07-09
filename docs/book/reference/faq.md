@@ -100,5 +100,3 @@ For information on how to use a specific stack component, please refer to [the c
 #### How can I speak with the community?
 
 The first point of contact should be [our Slack group](https://zenml.io/slack/). Ask your questions about bugs or specific use cases, and someone from the core team will respond.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

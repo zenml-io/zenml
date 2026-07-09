@@ -1890,5 +1890,3 @@ Dashboard URL: https://34.148.132.191/default/pipelines/17cac6b5-3071-45fa-a2ef-
 {% endcode %}
 
 </details>
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

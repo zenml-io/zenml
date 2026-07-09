@@ -98,5 +98,3 @@ ZenML offers some standard steps (and their associated config objects) which wil
 #### Helper Functions
 
 Label Studio requires the use of what it calls 'label config' when you are creating/registering your dataset. These are strings containing HTML-like syntax that allow you to define a custom interface for your annotation. ZenML provides three helper functions that will construct these label config strings in the case of object detection, image classification, and OCR. See the[`integrations.label_studio.label_config_generators`](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/label_studio/label_config_generators/label_config_generators.py) module for those three functions.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

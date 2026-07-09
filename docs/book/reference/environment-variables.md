@@ -219,5 +219,3 @@ export ZENML_STORE_URL=https://...
 export ZENML_STORE_API_KEY=<API_KEY>
 export ZENML_ACTIVE_PROJECT_ID=<PROJECT_ID>
 ```
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

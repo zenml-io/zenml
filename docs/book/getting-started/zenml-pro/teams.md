@@ -120,5 +120,3 @@ For example, if you assign the "Editor" role to a team in a specific workspace, 
 4. **Document Team Purposes**: Maintain clear documentation about each team's purpose and associated projects or workspaces.
 
 By leveraging Teams in ZenML Pro, you can streamline user management, simplify access control, and better organize your MLOps workflows across your organization and workspaces.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

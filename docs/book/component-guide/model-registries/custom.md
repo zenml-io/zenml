@@ -188,5 +188,3 @@ The design behind this interaction lets us separate the configuration of the fla
 {% endhint %}
 
 For a full implementation example, please check out the [MLFlowModelRegistry](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-mlflow.html#zenml.integrations.mlflow)
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

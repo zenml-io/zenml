@@ -41,5 +41,3 @@ python run.py --evaluation
 ```
 
 This will run the evaluation pipeline and output the results to the console. You can then inspect the progress, logs and results in the dashboard!
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

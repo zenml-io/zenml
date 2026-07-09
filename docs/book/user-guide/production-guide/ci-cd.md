@@ -145,5 +145,3 @@ Finally you can configure your github action workflow to leave a report based on
 Check out the template for this [here](https://github.com/zenml-io/zenml-gitflow/blob/main/.github/workflows/pipeline_run.yaml#L87-L99).
 
 ![Comment left on Pull Request](../../.gitbook/assets/github-action-pr-comment.png)
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

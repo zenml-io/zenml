@@ -217,5 +217,3 @@ The guide above implements security best practices by:
 - **Review role assignments** periodically to ensure they remain necessary
 - **Use Azure Security Center** to monitor for security recommendations
 - **Enable Azure AD Conditional Access** for additional security layers when appropriate
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

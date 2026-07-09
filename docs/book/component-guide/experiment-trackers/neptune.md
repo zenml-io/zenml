@@ -314,5 +314,3 @@ if __name__ == "__main__":
 ## Further reading
 
 Check [Neptune's docs](https://web.archive.org/web/20250316084453/https://docs.neptune.ai/integrations/zenml/) for further information on how to use this integration and Neptune in general.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

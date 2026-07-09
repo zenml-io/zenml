@@ -283,5 +283,3 @@ if __name__ == "__main__":
 ![Whylogs Visualization Example 1](../../.gitbook/assets/whylogs-visualizer-01.png)
 
 ![Whylogs Visualization Example 2](../../.gitbook/assets/whylogs-visualizer-02.png)
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

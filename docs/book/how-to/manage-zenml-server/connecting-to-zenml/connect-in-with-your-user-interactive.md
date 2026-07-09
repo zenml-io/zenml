@@ -51,7 +51,3 @@ Calling the ZenML Pro management API (`cloudapi.zenml.io`)? Interactive CLI logi
 {% endhint %}
 
 Don't forget to manage your device trust levels regularly for optimal security. Should you feel a device trust needs to be revoked, lock the device immediately. Every token issued is a potential gateway to access your data, secrets and infrastructure.
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
-
-

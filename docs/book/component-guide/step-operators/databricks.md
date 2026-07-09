@@ -133,5 +133,3 @@ Submitted step runs are visible in Databricks. ZenML also stores Databricks run 
 If you plan to use GPU-enabled Databricks clusters, make sure your step environment and dependencies are configured accordingly. You can find general CUDA guidance in the [distributed training guide](https://docs.zenml.io/user-guides/tutorial/distributed-training/).
 
 Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-databricks.html#zenml.integrations.databricks) for the full Databricks integration API surface.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

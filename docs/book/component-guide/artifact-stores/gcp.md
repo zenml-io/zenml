@@ -204,5 +204,3 @@ For more, up-to-date information on the GCS Artifact Store implementation and it
 ### How do you use it?
 
 Aside from the fact that the artifacts are stored in GCP Cloud Storage, using the GCS Artifact Store is no different from [using any other flavor of Artifact Store](./#how-to-use-it).
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

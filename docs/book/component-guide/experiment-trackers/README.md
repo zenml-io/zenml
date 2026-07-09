@@ -73,5 +73,3 @@ Experiment trackers will automatically declare runs as failed if the correspondi
 {% endhint %}
 
 Consult the documentation for the particular [Experiment Tracker flavor](./#experiment-tracker-flavors) that you plan on using or are using in your stack for detailed information about how to use it in your ZenML pipelines.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

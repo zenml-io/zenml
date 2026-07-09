@@ -186,5 +186,3 @@ def huggingface_deployment_inference_pipeline(
 ```
 
 For more information and a full list of configurable attributes of the Hugging Face Model Deployer, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-huggingface.html#zenml.integrations.huggingface).
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

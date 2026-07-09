@@ -60,5 +60,3 @@ It is important to draw attention to when and how these base abstractions are co
 
 The design behind this interaction lets us separate the configuration of the flavor from its implementation. This way we can register flavors and components even when the major dependencies behind their implementation are not installed in our local setting (assuming the `CustomDataValidatorFlavor` and the `CustomDataValidatorConfig` are implemented in a different module/path than the actual `CustomDataValidator`).
 {% endhint %}
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

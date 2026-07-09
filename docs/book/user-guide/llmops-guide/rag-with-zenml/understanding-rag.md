@@ -47,5 +47,3 @@ A summary of some of the advantages that ZenML brings to the table here includes
 * **Collaboration** - You can share the pipeline with your team and collaborate on it together. You can also use the ZenML dashboard to share insights and findings with your team, making it easier to work together on the pipeline.
 
 In the next section, we'll showcase the components of a basic RAG pipeline. This will give you a taste of how you can leverage the power of LLMs in your MLOps workflows using ZenML. Subsequent sections will cover more advanced topics like reranking retrieved documents, finetuning embeddings, and finetuning the LLM itself.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

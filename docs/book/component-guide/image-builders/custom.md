@@ -112,5 +112,3 @@ The design behind this interaction lets us separate the configuration of the fla
 #### Using a custom-build context
 
 The `BaseImageBuilder` abstraction uses the `build_context_class` to provide a class that should be used as the build context. In case your custom image builder requires a different build context than the default Docker build context, you can subclass the `BuildContext` class to customize the structure of your build context. In your image builder implementation, you can then overwrite the `build_context_class` property to specify your build context subclass.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

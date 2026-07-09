@@ -164,5 +164,3 @@ run into some dependency issues, especially if you were previously using an
 integration which was not supporting Pydantic v2 before. In such cases, we 
 highly recommend setting up a fresh Python environment.
 {% endhint %}
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

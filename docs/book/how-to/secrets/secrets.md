@@ -321,5 +321,3 @@ def run_llm_agent(prompt: str, query: str) -> str:
     return response.choices[0].message.content
     return response.choices[0].message.content
 ```
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

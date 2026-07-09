@@ -218,8 +218,3 @@ We'll next move to actually finetuning the embeddings, assuming you've done some
 data exploration and annotation. The code will work even without the annotation,
 however, since we'll just use the full generated dataset and assume that the
 quality is good enough.
-
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
-
-

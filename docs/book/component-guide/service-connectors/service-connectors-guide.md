@@ -1737,5 +1737,3 @@ To get an idea of what a complete end-to-end journey looks like, from registerin
 * [the AWS Service Connector end-to-end examples](connector-types/aws-service-connector.md)
 * [the GCP Service Connector end-to-end examples](connector-types/gcp-service-connector.md)
 * [the Azure Service Connector end-to-end examples](connector-types/azure-service-connector.md)
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

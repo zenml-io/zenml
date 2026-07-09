@@ -125,5 +125,3 @@ zenml stack update <STACK_NAME> -o <ORCHESTRATOR_NAME>
 ```
 
 The main difference from HyperAI is that the SSH orchestrator uses the generic SSH integration and additionally supports dynamic pipelines.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

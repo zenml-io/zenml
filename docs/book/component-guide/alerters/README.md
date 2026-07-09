@@ -127,6 +127,3 @@ approved = slack_alerter_ask_step(
 - **Keywords**: Response keywords are case-sensitive (except Slack, which converts to lowercase)
 - **Timeout**: If no valid response is received within the timeout period, the step returns `False`
 - **Permissions**: Ensure your bot has permissions to read messages in the target channel
-
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

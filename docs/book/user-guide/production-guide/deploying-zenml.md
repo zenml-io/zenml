@@ -66,5 +66,3 @@ To learn more about deploying ZenML, check out the following resources:
 - [Full how-to guides](https://docs.zenml.io/getting-started/deploying-zenml): guides on how to
   deploy ZenML on Docker or Hugging Face Spaces or Kubernetes or some other cloud
   provider.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -274,5 +274,3 @@ The [ZenML Pro](https://zenml.io/pro) dashboard has additional capabilities, tha
 {% endtabs %}
 
 ZenML Model and versions are some of the most powerful features in ZenML. To understand them in a deeper way, read the [dedicated Model Management](https://docs.zenml.io/how-to/model-management-metrics/model-control-plane) guide.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

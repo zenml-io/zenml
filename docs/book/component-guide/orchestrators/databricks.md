@@ -198,6 +198,5 @@ With these settings, the orchestrator uses a GPU-enabled Spark version and node 
 
 If your steps need CUDA, follow the [distributed training guide](https://docs.zenml.io/user-guides/tutorial/distributed-training) to configure the required dependencies and runtime settings.
 
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
 
 Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-databricks.html#zenml.integrations.databricks) for all configurable attributes and [this docs page](https://docs.zenml.io/concepts/steps_and_pipelines/configuration) for more information on how to specify settings.

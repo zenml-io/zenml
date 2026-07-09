@@ -134,5 +134,3 @@ Continuous integration (CI) helps maintain the stability and reliability of shar
 By leveraging these methods for sharing code and libraries, teams can\
 collaborate more effectively, maintain consistency across projects, and\
 accelerate development processes within the ZenML framework.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

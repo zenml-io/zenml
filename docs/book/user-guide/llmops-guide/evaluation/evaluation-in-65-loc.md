@@ -84,5 +84,3 @@ We then loop through the evaluation data, which contains questions and expected 
 ![](../../../.gitbook/assets/evaluation-65-loc.png)
 
 As you can see, we get 100% accuracy for both retrieval and generation in this example. Not bad! The sections that follow will provide a more detailed and sophisticated implementation of RAG evaluation, but this example shows how you can think about it at a high level!
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

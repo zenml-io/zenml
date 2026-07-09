@@ -53,5 +53,3 @@ To use model registries, you first need to register a model registry in your sta
 * (1) using the built-in step in the pipeline.
 * (2) using the ZenML CLI to register the model from the command line.
 * (3) registering the model from the model registry UI. Finally, you can use the model registry to retrieve and load your models for deployment or further experimentation.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

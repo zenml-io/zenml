@@ -635,5 +635,3 @@ if __name__ == "__main__":
 ![Evidently metrics report visualization](../../.gitbook/assets/evidently-metrics-report.png)
 
 ![Evidently test results visualization](../../.gitbook/assets/evidently-test-results.png)
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

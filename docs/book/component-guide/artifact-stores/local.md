@@ -80,5 +80,3 @@ For more, up-to-date information on the local Artifact Store implementation and 
 ### How do you use it?
 
 Aside from the fact that the artifacts are stored locally, using the local Artifact Store is no different from [using any other flavor of Artifact Store](./#how-to-use-it).
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

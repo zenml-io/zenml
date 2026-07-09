@@ -34,5 +34,3 @@ We also have a [Podcast](https://podcast.zenml.io/) series that brings you inter
 ### Newsletter
 
 You can also subscribe to our [Newsletter](https://zenml.io/newsletter-signup), where we share what we learn as we develop open-source tooling for production machine learning. You will also get all the exciting news about ZenML in general.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

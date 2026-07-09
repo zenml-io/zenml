@@ -459,5 +459,3 @@ def my_step() -> Any:  # New: StepContext is no longer an argument of the step
 {% endtabs %}
 
 Check out [this page](https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-steps) for more information on how to fetch run information inside your steps using `get_step_context()`.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

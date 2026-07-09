@@ -180,5 +180,3 @@ In the API documentation and some error messages, you might still see references
 ![Image showing the workspace swagger docs](.gitbook/assets/swagger_docs_zenml.png)
 
 Read more about to access the API [here](https://docs.zenml.io/api-reference).
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
