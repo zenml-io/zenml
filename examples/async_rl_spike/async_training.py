@@ -115,6 +115,7 @@ def run_grpo_step(
         use_cpu=not (
             torch.cuda.is_available() or torch.backends.mps.is_available()
         ),
+        dataloader_pin_memory=False,
     )
     trainer = GRPOTrainer(
         model=model,

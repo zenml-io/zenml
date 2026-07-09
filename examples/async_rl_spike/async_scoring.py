@@ -18,10 +18,10 @@ SCORER_PATH = (
     Path(__file__).resolve().parent / "sandbox_scripts" / "score_pipeline.py"
 )
 SCORER_SRC = SCORER_PATH.read_text()
-PIPELINE_FILE = "pipeline.py"
-SPEC_FILE = "spec.json"
-SCORER_FILE = "score_pipeline.py"
-REWARD_FILE = "reward.json"
+PIPELINE_FILE = "/tmp/pipeline.py"
+SPEC_FILE = "/tmp/spec.json"
+SCORER_FILE = "/tmp/score_pipeline.py"
+REWARD_FILE = "/tmp/reward.json"
 
 
 def _put_file(session: Any, content: str, remote_path: str) -> None:

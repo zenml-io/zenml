@@ -31,11 +31,40 @@ def main() -> None:
     parser.add_argument("--poll-interval", type=float, default=5.0)
     parser.add_argument("--idle-timeout", type=float, default=120.0)
     parser.add_argument("--gc-grace", type=float, default=30.0)
+    parser.add_argument(
+        "--serving-mode", choices=["local", "remote"], default="local"
+    )
+    parser.add_argument("--backend", choices=["k8s", "modal"], default="k8s")
+    parser.add_argument("--vllm-image", default=None)
+    parser.add_argument("--vllm-namespace", default=None)
+    parser.add_argument("--modal-app", default="async-rl-spike-vllm")
     args = parser.parse_args()
+
+    deploy_config = None
+    if args.serving_mode == "remote" and args.backend == "modal":
+        from serving.modal_vllm import modal_deploy_config
+
+        deploy_config = modal_deploy_config(
+            app_name=args.modal_app,
+            max_lora_rank=max(32, args.lora_rank),
+        )
+    elif args.serving_mode == "remote":
+        from k8s_settings import (
+            VLLM_NAMESPACE,
+            VLLM_SERVER_IMAGE,
+            remote_deploy_config,
+        )
+
+        deploy_config = remote_deploy_config(
+            image=args.vllm_image or VLLM_SERVER_IMAGE,
+            namespace=args.vllm_namespace or VLLM_NAMESPACE,
+            max_lora_rank=max(32, args.lora_rank),
+        )
 
     run_dir = resolve_run_root(args.run_name)
     print(
         f"trainer: run_dir={run_dir} model={args.model} "
+        f"serving_mode={args.serving_mode} backend={args.backend} "
         f"max_train_steps={args.max_train_steps} "
         f"max_versions={args.max_versions}"
     )
@@ -52,6 +81,8 @@ def main() -> None:
         poll_interval_seconds=args.poll_interval,
         idle_timeout_seconds=args.idle_timeout,
         gc_grace_seconds=args.gc_grace,
+        serving_mode=args.serving_mode,
+        deploy_config=deploy_config,
     )
     print(f"trainer done in {time.time() - started:.0f}s")
 
