@@ -107,7 +107,9 @@ def test_non_empty_plain_serialized_secret_str_rejects_empty_values(
         Model(secret=value)
 
 
-def test_non_empty_plain_serialized_secret_str_serializes_plain_value() -> None:
+def test_non_empty_plain_serialized_secret_str_serializes_plain_value() -> (
+    None
+):
     """Tests that non-empty serialized secrets preserve plain JSON output."""
 
     class Model(BaseModel):

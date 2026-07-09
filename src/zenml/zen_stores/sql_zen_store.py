@@ -8343,7 +8343,7 @@ class SqlZenStore(BaseZenStore):
     def record_webhook_event(
         self, integration_id: UUID, update: WebhookEventStatsUpdate
     ) -> None:
-        """Atomically record a webhook intake outcome.
+        """Record a webhook intake outcome.
 
         Args:
             integration_id: The webhook integration ID.
@@ -8353,36 +8353,35 @@ class SqlZenStore(BaseZenStore):
             KeyError: If the webhook integration no longer exists.
         """
         now = utc_now()
-        values: dict[str, Any] = {
-            "received_count": WebhookIntegrationSchema.received_count + 1,
-            "last_received_at": now,
-        }
-        if update.accepted:
-            values["accepted_count"] = (
-                WebhookIntegrationSchema.accepted_count + 1
-            )
-            values["last_accepted_at"] = now
-        elif update.auth_failed:
-            values["auth_failed_count"] = (
-                WebhookIntegrationSchema.auth_failed_count + 1
-            )
-        elif update.invalid_payload:
-            values["invalid_payload_count"] = (
-                WebhookIntegrationSchema.invalid_payload_count + 1
-            )
-        if update.error_summary is not None:
-            values["last_error_at"] = now
-            values["last_error_summary"] = update.error_summary
         with Session(self.engine) as session:
-            result = session.exec(
-                sqlalchemy.update(WebhookIntegrationSchema)
+            schema = session.exec(
+                select(WebhookIntegrationSchema)
                 .where(col(WebhookIntegrationSchema.id) == integration_id)
-                .values(**values)
-            )
-            if result.rowcount == 0:
+                .with_for_update()
+            ).first()
+            if schema is None:
                 raise KeyError(
                     f"Webhook integration {integration_id} not found."
                 )
+
+            stats = schema.parsed_stats
+            stats.received_count += 1
+            stats.last_received_at = now
+
+            if update.accepted:
+                stats.accepted_count += 1
+                stats.last_accepted_at = now
+            elif update.auth_failed:
+                stats.auth_failed_count += 1
+            elif update.invalid_payload:
+                stats.invalid_payload_count += 1
+
+            if update.error_summary is not None:
+                stats.last_error_at = now
+                stats.last_error_summary = update.error_summary
+
+            schema.set_stats(stats)
+            session.add(schema)
             session.commit()
 
     # -------------------- Triggers ---------------------

@@ -12,6 +12,7 @@ from zenml.models import (
     WebhookEventStatsUpdate,
     WebhookIntegrationRequest,
     WebhookIntegrationSecretRequest,
+    WebhookIntegrationStats,
 )
 from zenml.zen_stores.schemas.webhook_integration_schemas import (
     WebhookIntegrationSchema,
@@ -27,14 +28,16 @@ def _webhook_integration_schema() -> WebhookIntegrationSchema:
         secret_id=uuid4(),
         webhook_type=WebhookType.GITHUB.value,
         active=True,
-        received_count=3,
-        accepted_count=1,
-        auth_failed_count=1,
-        invalid_payload_count=1,
-        last_received_at=datetime(2026, 7, 9, 8, 0, 0),
-        last_accepted_at=datetime(2026, 7, 9, 8, 1, 0),
-        last_error_at=datetime(2026, 7, 9, 8, 2, 0),
-        last_error_summary="Invalid webhook signature.",
+        stats=WebhookIntegrationStats(
+            received_count=3,
+            accepted_count=1,
+            auth_failed_count=1,
+            invalid_payload_count=1,
+            last_received_at=datetime(2026, 7, 9, 8, 0, 0),
+            last_accepted_at=datetime(2026, 7, 9, 8, 1, 0),
+            last_error_at=datetime(2026, 7, 9, 8, 2, 0),
+            last_error_summary="Invalid webhook signature.",
+        ).model_dump_json(),
     )
 
 
@@ -133,6 +136,31 @@ def test_webhook_integration_schema_to_model_includes_body_and_metadata() -> (
     assert response.stats.last_accepted_at == datetime(2026, 7, 9, 8, 1, 0)
     assert response.stats.last_error_at == datetime(2026, 7, 9, 8, 2, 0)
     assert response.stats.last_error_summary == "Invalid webhook signature."
+
+
+def test_webhook_integration_schema_to_model_defaults_missing_stats() -> None:
+    """Webhook integration schemas default missing stats fields."""
+    schema = _webhook_integration_schema()
+    schema.stats = '{"received_count": 3, "future_count": 7}'
+
+    response = schema.to_model(include_metadata=True)
+
+    assert response.stats.received_count == 3
+    assert response.stats.accepted_count == 0
+    assert response.stats.auth_failed_count == 0
+    assert response.stats.invalid_payload_count == 0
+    assert response.stats.last_received_at is None
+
+
+def test_webhook_integration_schema_can_update_serialized_stats() -> None:
+    """Webhook integration schemas serialize typed stats."""
+    schema = _webhook_integration_schema()
+    stats = WebhookIntegrationStats(received_count=5)
+
+    schema.set_stats(stats)
+
+    assert schema.parsed_stats.received_count == 5
+    assert schema.parsed_stats.accepted_count == 0
 
 
 def test_webhook_integration_schema_to_model_can_include_empty_resources() -> (

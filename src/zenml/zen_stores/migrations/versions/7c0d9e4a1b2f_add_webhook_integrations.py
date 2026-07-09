@@ -31,17 +31,10 @@ def upgrade() -> None:
             "webhook_type", sqlmodel.sql.sqltypes.AutoString(), nullable=False
         ),
         sa.Column("active", sa.Boolean(), nullable=False),
-        sa.Column("received_count", sa.Integer(), nullable=False),
-        sa.Column("accepted_count", sa.Integer(), nullable=False),
-        sa.Column("auth_failed_count", sa.Integer(), nullable=False),
-        sa.Column("invalid_payload_count", sa.Integer(), nullable=False),
-        sa.Column("last_received_at", sa.DateTime(), nullable=True),
-        sa.Column("last_accepted_at", sa.DateTime(), nullable=True),
-        sa.Column("last_error_at", sa.DateTime(), nullable=True),
         sa.Column(
-            "last_error_summary",
+            "stats",
             sa.TEXT(),
-            nullable=True,
+            nullable=False,
         ),
         sa.ForeignKeyConstraint(
             ["project_id"],

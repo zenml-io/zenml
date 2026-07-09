@@ -5,7 +5,6 @@
 # You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
 """SQL schema for webhook integrations."""
 
-from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -72,16 +71,27 @@ class WebhookIntegrationSchema(NamedSchema, table=True):
     )
     webhook_type: str = Field(index=True)
     active: bool = Field(default=True, index=True)
-    received_count: int = 0
-    accepted_count: int = 0
-    auth_failed_count: int = 0
-    invalid_payload_count: int = 0
-    last_received_at: datetime | None = None
-    last_accepted_at: datetime | None = None
-    last_error_at: datetime | None = None
-    last_error_summary: str | None = Field(
-        default=None, sa_column=Column(TEXT, nullable=True)
+    stats: str = Field(
+        default=WebhookIntegrationStats().model_dump_json(),
+        sa_column=Column(TEXT, nullable=False),
     )
+
+    @property
+    def parsed_stats(self) -> WebhookIntegrationStats:
+        """Parse persisted intake statistics.
+
+        Returns:
+            The typed intake statistics.
+        """
+        return WebhookIntegrationStats.model_validate_json(self.stats or "{}")
+
+    def set_stats(self, stats: WebhookIntegrationStats) -> None:
+        """Persist typed intake statistics.
+
+        Args:
+            stats: The typed intake statistics to persist.
+        """
+        self.stats = stats.model_dump_json()
 
     @classmethod
     def from_request(
@@ -124,16 +134,7 @@ class WebhookIntegrationSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = WebhookIntegrationResponseMetadata(
-                stats=WebhookIntegrationStats(
-                    received_count=self.received_count,
-                    accepted_count=self.accepted_count,
-                    auth_failed_count=self.auth_failed_count,
-                    invalid_payload_count=self.invalid_payload_count,
-                    last_received_at=self.last_received_at,
-                    last_accepted_at=self.last_accepted_at,
-                    last_error_at=self.last_error_at,
-                    last_error_summary=self.last_error_summary,
-                )
+                stats=self.parsed_stats
             )
 
         resources = None
