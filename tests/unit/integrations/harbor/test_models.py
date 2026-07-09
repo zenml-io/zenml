@@ -90,6 +90,14 @@ def test_task_ref_rejects_malformed_git_specs(bad_spec: str) -> None:
         TaskRef.parse(bad_spec)
 
 
+def test_task_ref_package_to_string_is_distinct() -> None:
+    """Package-dataset refs (name+ref, no path/git) render distinctly."""
+    a = TaskRef(name="laude/task-a", ref="sha256:aaa")
+    b = TaskRef(name="laude/task-b", ref="sha256:bbb")
+    assert a.to_string() == "laude/task-a@sha256:aaa"
+    assert a.to_string() != b.to_string()
+
+
 def test_task_ref_local_round_trip() -> None:
     """Local path refs survive parse -> to_string unchanged."""
     ref = TaskRef.parse("tasks/hello")

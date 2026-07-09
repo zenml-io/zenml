@@ -115,7 +115,9 @@ class HarborShardResultMaterializer(BaseMaterializer):
             "task": data.spec.task.display_name,
             "agent": data.spec.agent_name,
             "n_trials": len(data.spec.trial_indices),
-            "n_completed": data.n_completed,
+            # n_succeeded, not Harbor's raw n_completed, which counts
+            # errored trials too — mirrors the step metadata and report.
+            "n_succeeded": data.n_succeeded,
             "n_errored": data.n_errored,
             "n_retries": data.n_retries,
         }
@@ -151,7 +153,7 @@ class HarborShardResultMaterializer(BaseMaterializer):
                 else ""
             ),
             "",
-            f"{data.n_completed} completed, {data.n_errored} errored, "
+            f"{data.n_succeeded} succeeded, {data.n_errored} errored, "
             f"{data.n_retries} retried (Harbor job `{data.job_name}`).",
             "",
             "| Trial | Rewards | Error | Cost (USD) |",

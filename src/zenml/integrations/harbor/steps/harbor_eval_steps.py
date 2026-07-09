@@ -150,9 +150,16 @@ def run_harbor_shard(
     ``@step(retry=...)`` via ``with_options`` for flaky-infrastructure
     resilience.
 
-    A shard whose trials all errored logs ``harbor.mean_reward = 0.0``
-    (there is no scored reward to report), so reward-threshold
-    regression gates fail safe on an all-error campaign.
+    Every shard logs ``harbor.error_rate`` (errored / total trials).
+    ``harbor.mean_reward`` averages the scored trials only, so a
+    reward-threshold gate must be paired with an error-rate gate to
+    catch shards whose signal was destroyed by trial errors; a shard
+    whose trials *all* errored additionally logs
+    ``harbor.mean_reward = 0.0`` so pure reward gates fail safe on a
+    fully crashed campaign. A shard that finished without errors but
+    was never scored (the verifier returned no rewards) logs no
+    ``harbor.mean_reward`` at all — that is absence of signal, not a
+    zero score.
 
     Args:
         shard: A shard specification produced by ``build_harbor_matrix``.
@@ -198,6 +205,11 @@ def run_harbor_shard(
         # n_errored.
         "harbor.n_succeeded": result.n_succeeded,
         "harbor.n_errored": result.n_errored,
+        "harbor.error_rate": (
+            result.n_errored / result.n_total_trials
+            if result.n_total_trials
+            else 0.0
+        ),
     }
     if spec.model_name:
         metadata["harbor.model"] = spec.model_name
@@ -207,11 +219,15 @@ def run_harbor_shard(
             metadata["harbor.mean_reward"] = next(iter(mean_reward.values()))
         else:
             metadata["harbor.mean_rewards"] = mean_reward
-    elif result.n_total_trials > 0:
-        # A shard whose trials all errored has no scored reward. Log an
-        # explicit 0.0 so reward-threshold regression gates
+    elif (
+        result.n_total_trials > 0 and result.n_errored == result.n_total_trials
+    ):
+        # Every trial errored, so there is no scored reward at all. Log
+        # an explicit 0.0 so reward-threshold regression gates
         # (`harbor.mean_reward:lt:X`) fail safe instead of silently
-        # skipping the shard because the key is absent.
+        # skipping the shard because the key is absent. A shard that is
+        # merely unscored (no errors, verifier returned no rewards)
+        # gets no sentinel — absence of signal is not a zero score.
         metadata["harbor.mean_reward"] = 0.0
     cost = result.total_cost_usd
     if cost is not None:

@@ -35,7 +35,10 @@ from harbor.models.trial.config import (
 )
 
 from zenml.integrations.harbor import ZENML_HARBOR_ENV_IMPORT_PATH
-from zenml.integrations.harbor.environment import pop_session_provenance
+from zenml.integrations.harbor.environment import (
+    clear_session_provenance,
+    pop_session_provenance,
+)
 from zenml.integrations.harbor.models import (
     HarborShardResult,
     HarborShardSpec,
@@ -232,6 +235,10 @@ def run_shard_job(
         if provenance is not None:
             trial.sandbox_flavor = provenance.flavor
             trial.sandbox_docker_image = provenance.docker_image
+    # Anything left in the registry belongs to this finished job (e.g.
+    # separate verifier sessions the join above never pops); clear it so
+    # the module-level dict stays bounded across shards in one process.
+    clear_session_provenance()
     stats = job_result.stats
     return HarborShardResult(
         spec=spec,

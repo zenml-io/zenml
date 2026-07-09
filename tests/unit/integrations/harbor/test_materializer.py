@@ -139,7 +139,7 @@ def test_materializer_metadata() -> None:
     assert metadata["agent"] == "oracle"
     assert metadata["model"] == "claude-fable-5"
     assert metadata["n_trials"] == 1
-    assert metadata["n_completed"] == 1
+    assert metadata["n_succeeded"] == 1
     assert metadata["n_errored"] == 0
     assert metadata["mean_reward"] == {"reward": 1.0}
     assert metadata["cost_usd"] == 0.01

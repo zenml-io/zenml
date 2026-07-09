@@ -45,11 +45,13 @@ class SandboxProvenance(NamedTuple):
 
 
 # Resolved-sandbox facts per environment session, keyed by Harbor's
-# session_id (== the trial name for the main trial environment). The
-# shard runner pops entries after ``job.run()`` to stamp provenance onto
-# trial results — reconstructing the image from the run's stack config
-# gives wrong answers for tasks that pin a ``docker_image`` override.
-# Pop-on-read keeps the dict bounded within a step's process lifetime.
+# session_id (== the trial name for the main trial environment; separate
+# verifier environments get a derived id). The shard runner pops entries
+# after ``job.run()`` to stamp provenance onto trial results —
+# reconstructing the image from the run's stack config gives wrong
+# answers for tasks that pin a ``docker_image`` override — and then
+# clears the registry, so entries it never joins (e.g. verifier
+# sessions) don't accumulate across shards in a long-lived process.
 _session_provenance: dict[str, SandboxProvenance] = {}
 
 
@@ -64,6 +66,17 @@ def pop_session_provenance(session_id: str) -> SandboxProvenance | None:
         ever started in this process.
     """
     return _session_provenance.pop(session_id, None)
+
+
+def clear_session_provenance() -> None:
+    """Drop all recorded session provenance.
+
+    Called by the shard runner after it has stamped a job's trial
+    results: every remaining entry belongs to that finished job (Harbor
+    runs a job's trials inside the same call), so clearing keeps the
+    registry from growing across shards.
+    """
+    _session_provenance.clear()
 
 
 class ZenMLSandboxEnvironment(BaseEnvironment):
@@ -165,13 +178,35 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
             Exception: Re-raised from preparing the Harbor log dirs after
                 the session was torn down again.
         """
+        self._start_failure = None
         try:
             await self._start()
+        except asyncio.CancelledError:
+            # Harbor enforces its environment-build timeout by
+            # cancelling this coroutine (asyncio.wait_for), which does
+            # not derive from Exception — record it explicitly or the
+            # most common start-failure mode stays anonymous.
+            self._start_failure = (
+                "start() was cancelled, most likely by Harbor's "
+                "environment build/start timeout"
+            )
+            self._discard_provenance()
+            raise
         except Exception as e:
             # Remembered so that _live_session can point Harbor's
             # post-failure cleanup calls at the root cause.
             self._start_failure = f"{type(e).__name__}: {e}"
+            self._discard_provenance()
             raise
+
+    def _discard_provenance(self) -> None:
+        """Drop this session's provenance after a failed start.
+
+        A retried trial reuses the same session id; without this, the
+        retry's failed attempt would inherit (and misattribute) the
+        sandbox facts of an earlier attempt that did open a session.
+        """
+        _session_provenance.pop(self.session_id, None)
 
     async def _start(self) -> None:
         """Start implementation, separated for failure bookkeeping.

@@ -96,9 +96,16 @@ class TaskRef(BaseModel):
     def to_string(self) -> str:
         """Canonical string form of this task reference.
 
+        This string is the identity basis for ``trial_identity``, so
+        every task shape must render distinctly: ``git+URL@PIN:SUBPATH``
+        for git-pinned tasks, the plain path for local tasks, and
+        ``NAME@REF`` for registry package tasks (which carry neither a
+        path nor a git URL — an empty fallback would collapse all of
+        them into one identity).
+
         Returns:
-            ``git+URL@COMMIT:SUBPATH`` for git-pinned tasks, the plain
-            path for local tasks.
+            The canonical task coordinates, or an empty string for a
+            reference with no identifying fields at all.
         """
         if self.git_url:
             return (
@@ -106,7 +113,11 @@ class TaskRef(BaseModel):
                 f"@{self.git_commit_id or self.ref or ''}"
                 f":{self.path or ''}"
             )
-        return self.path or ""
+        if self.path:
+            return self.path
+        if self.name:
+            return f"{self.name}@{self.ref or ''}"
+        return ""
 
     @property
     def display_name(self) -> str:

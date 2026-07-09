@@ -202,6 +202,104 @@ def test_exec_after_failed_start_carries_root_cause(
         asyncio.run(env.exec("cat /agent/logs"))
 
 
+def test_failed_start_discards_prior_attempt_provenance(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A failed retry attempt must not inherit an earlier attempt's facts.
+
+    Harbor retries reuse the trial name (== session id) with a fresh
+    environment; if the retry fails before opening a sandbox, provenance
+    recorded by the earlier attempt would misattribute an image to a
+    trial that ran on no sandbox at all.
+    """
+    session = _FakeSession()
+    first_attempt = _bridge(session=None)
+    monkeypatch.setattr(
+        "zenml.integrations.harbor.environment.Client",
+        lambda: SimpleNamespace(
+            active_stack=SimpleNamespace(
+                sandbox=SimpleNamespace(
+                    flavor="modal",
+                    create_session=lambda settings=None: session,
+                )
+            )
+        ),
+    )
+    asyncio.run(first_attempt.start(force_build=False))
+
+    retry_attempt = _bridge(session=None)
+    monkeypatch.setattr(
+        "zenml.integrations.harbor.environment.Client",
+        lambda: SimpleNamespace(active_stack=SimpleNamespace(sandbox=None)),
+    )
+    with pytest.raises(RuntimeError, match="No Sandbox component"):
+        asyncio.run(retry_attempt.start(force_build=False))
+    assert pop_session_provenance("hello__test123") is None
+
+
+def test_cancelled_start_records_root_cause(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Harbor's build timeout cancels start(); the cause must be kept.
+
+    CancelledError is a BaseException, so a plain `except Exception`
+    would leave the most common start-failure mode anonymous.
+    """
+
+    def _cancelled_create_session(settings=None):
+        raise asyncio.CancelledError()
+
+    env = _bridge(session=None)
+    monkeypatch.setattr(
+        "zenml.integrations.harbor.environment.Client",
+        lambda: SimpleNamespace(
+            active_stack=SimpleNamespace(
+                sandbox=SimpleNamespace(
+                    flavor="modal",
+                    create_session=_cancelled_create_session,
+                )
+            )
+        ),
+    )
+    with pytest.raises(asyncio.CancelledError):
+        asyncio.run(env.start(force_build=False))
+    with pytest.raises(RuntimeError, match="cancelled"):
+        asyncio.run(env.exec("true"))
+
+
+def test_successful_restart_clears_stale_start_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A recovered start() must not blame errors on the old failure."""
+    env = _bridge(session=None)
+    monkeypatch.setattr(
+        "zenml.integrations.harbor.environment.Client",
+        lambda: SimpleNamespace(active_stack=SimpleNamespace(sandbox=None)),
+    )
+    with pytest.raises(RuntimeError, match="No Sandbox component"):
+        asyncio.run(env.start(force_build=False))
+
+    session = _FakeSession()
+    monkeypatch.setattr(
+        "zenml.integrations.harbor.environment.Client",
+        lambda: SimpleNamespace(
+            active_stack=SimpleNamespace(
+                sandbox=SimpleNamespace(
+                    flavor="modal",
+                    create_session=lambda settings=None: session,
+                )
+            )
+        ),
+    )
+    asyncio.run(env.start(force_build=False))
+    asyncio.run(env.stop(delete=False))
+    pop_session_provenance("hello__test123")
+    # After a successful start and a clean stop, a late call is a plain
+    # "used after stop()" — not fallout of the long-recovered failure.
+    with pytest.raises(RuntimeError, match="before start"):
+        asyncio.run(env.exec("true"))
+
+
 def test_stop_destroys_or_closes() -> None:
     """stop(delete=True) destroys; stop(delete=False) closes."""
     session = _FakeSession()

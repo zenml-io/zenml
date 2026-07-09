@@ -55,10 +55,22 @@ def trial_identity(
 
     Returns:
         A sha256 hex digest over the canonical trial coordinates.
+
+    Raises:
+        ValueError: If the task reference renders to no canonical
+            coordinates at all — hashing an empty task key would give
+            every such task the same identity.
     """
+    task_key = task.to_string()
+    if not task_key:
+        raise ValueError(
+            f"Task reference {task!r} has no identifying coordinates "
+            "(no path, git URL, or name); refusing to compute a trial "
+            "identity that would collide with other tasks."
+        )
     payload = json.dumps(
         {
-            "task": task.to_string(),
+            "task": task_key,
             "agent_name": agent_name,
             "model_name": model_name,
             "trial_index": trial_index,

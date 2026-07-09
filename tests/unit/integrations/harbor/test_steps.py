@@ -184,8 +184,26 @@ def test_run_harbor_shard_wires_job_and_metadata(
     assert metadata["harbor.n_trials"] == 2
     assert metadata["harbor.n_succeeded"] == 2
     assert metadata["harbor.n_errored"] == 0
+    assert metadata["harbor.error_rate"] == 0.0
     assert metadata["harbor.mean_reward"] == 0.5
     assert metadata["harbor.cost_usd"] == pytest.approx(0.03)
+
+
+def _capture_shard_metadata(
+    monkeypatch: pytest.MonkeyPatch, shard_result: HarborShardResult
+) -> dict:
+    """Run the shard step against a canned result, capturing metadata."""
+    captured: dict = {}
+    monkeypatch.setattr(
+        f"{STEPS_MODULE}.run_shard_job", lambda **kwargs: shard_result
+    )
+    monkeypatch.setattr(
+        f"{STEPS_MODULE}.log_metadata",
+        lambda metadata: captured.update(metadata),
+    )
+    shard = _shard_result().spec.model_dump(mode="json")
+    run_harbor_shard.entrypoint(shard=shard)
+    return captured
 
 
 def test_run_harbor_shard_all_errored_logs_gateable_metadata(
@@ -196,21 +214,56 @@ def test_run_harbor_shard_all_errored_logs_gateable_metadata(
     Without the 0.0 sentinel, `harbor.mean_reward:lt:1` would return
     zero shards for a campaign where every trial crashed.
     """
-    captured = {}
-    monkeypatch.setattr(
-        f"{STEPS_MODULE}.run_shard_job",
-        lambda **kwargs: _shard_result(n_errored=2),
-    )
-    monkeypatch.setattr(
-        f"{STEPS_MODULE}.log_metadata",
-        lambda metadata: captured.update(metadata),
-    )
-    shard = _shard_result().spec.model_dump(mode="json")
-    run_harbor_shard.entrypoint(shard=shard)
-
+    captured = _capture_shard_metadata(monkeypatch, _shard_result(n_errored=2))
     assert captured["harbor.n_succeeded"] == 0
     assert captured["harbor.n_errored"] == 2
+    assert captured["harbor.error_rate"] == 1.0
     assert captured["harbor.mean_reward"] == 0.0
+
+
+def test_run_harbor_shard_partial_errors_keep_scored_mean(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Partial errors keep the scored mean; error_rate carries the crash.
+
+    The 0.0 sentinel must NOT fire here — the surviving trial's real
+    score stands, and gates catch the crashes via harbor.error_rate.
+    """
+    result = _shard_result()
+    result.trials = [
+        result.trials[0],  # scored 1.0
+        HarborTrialResult(
+            trial_identity="identity-1",
+            trial_name="hello__bbbbbbb",
+            task_name="hello",
+            exception_type="RuntimeError",
+            exception_message="agent crashed",
+        ),
+    ]
+    result.n_errored = 1
+    captured = _capture_shard_metadata(monkeypatch, result)
+    assert captured["harbor.mean_reward"] == 1.0
+    assert captured["harbor.error_rate"] == 0.5
+    assert captured["harbor.n_succeeded"] == 1
+
+
+def test_run_harbor_shard_unscored_healthy_shard_logs_no_reward(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A clean shard the verifier never scored logs no mean_reward.
+
+    Harbor's VerifierResult.rewards is optional; absence of signal is
+    not a zero score, so the sentinel must not brand a healthy shard
+    as a fully crashed one.
+    """
+    result = _shard_result()
+    result.trials = [
+        trial.model_copy(update={"rewards": None}) for trial in result.trials
+    ]
+    captured = _capture_shard_metadata(monkeypatch, result)
+    assert "harbor.mean_reward" not in captured
+    assert "harbor.mean_rewards" not in captured
+    assert captured["harbor.error_rate"] == 0.0
 
 
 def test_run_harbor_shard_fail_on_trial_error(

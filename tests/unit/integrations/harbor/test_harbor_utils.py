@@ -70,6 +70,25 @@ def test_trial_identity_ignores_resolver_metadata() -> None:
     )
 
 
+def test_trial_identity_distinguishes_package_tasks() -> None:
+    """Registry package tasks (name/ref only) must not collide.
+
+    Their TaskRefs carry neither a path nor a git URL; an empty
+    canonical string would give every package task the same identity.
+    """
+    a = TaskRef(name="laude/task-a", ref="sha256:aaa")
+    b = TaskRef(name="laude/task-b", ref="sha256:bbb")
+    assert trial_identity(a, "oracle", None, 0) != trial_identity(
+        b, "oracle", None, 0
+    )
+
+
+def test_trial_identity_rejects_unidentifiable_task() -> None:
+    """A ref with no coordinates at all cannot get an identity."""
+    with pytest.raises(ValueError, match="no identifying coordinates"):
+        trial_identity(TaskRef(), "oracle", None, 0)
+
+
 def test_trial_identity_distinguishes_agent_config() -> None:
     """Same agent+model with different kwargs/env must not collide."""
     base = trial_identity(

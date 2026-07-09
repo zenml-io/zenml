@@ -347,13 +347,20 @@ def test_run_shard_job_assembles_result(
 
     # The bridge records sandbox facts at session start, keyed by the
     # trial name; the runner stamps them onto the matching trial only.
-    from zenml.integrations.harbor.environment import (
-        SandboxProvenance,
-        _session_provenance,
-    )
+    from zenml.integrations.harbor.environment import SandboxProvenance
 
-    _session_provenance["hello__aaaaaaa"] = SandboxProvenance(
-        flavor="modal", docker_image="python:3.11-slim"
+    provenance = {
+        "hello__aaaaaaa": SandboxProvenance(
+            flavor="modal", docker_image="python:3.11-slim"
+        )
+    }
+    monkeypatch.setattr(
+        "zenml.integrations.harbor.job_runner.pop_session_provenance",
+        lambda name: provenance.pop(name, None),
+    )
+    monkeypatch.setattr(
+        "zenml.integrations.harbor.job_runner.clear_session_provenance",
+        provenance.clear,
     )
 
     spec = _spec(
@@ -368,8 +375,8 @@ def test_run_shard_job_assembles_result(
     assert result.trials[0].sandbox_flavor == "modal"
     assert result.trials[0].sandbox_docker_image == "python:3.11-slim"
     assert result.trials[1].sandbox_flavor is None
-    # The runner drained the provenance registry.
-    assert "hello__aaaaaaa" not in _session_provenance
+    # The runner drained the provenance registry after stamping.
+    assert not provenance
 
     assert captured["config"].n_attempts == 2
     assert result.job_id == "00000000-0000-0000-0000-000000000001"
