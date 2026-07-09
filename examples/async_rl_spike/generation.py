@@ -16,26 +16,29 @@ zero code changes. The contract every generator must honor:
 
 from typing import Any, Dict, List, Optional
 
-# One episode dict per completion. These keys flow through the rollout
-# queue into the trainer's rollout_func hand-off.
-#
-# completion_text vs program_text: training uses the RAW sampled tokens
-# (completion_ids match completion_text exactly — required for correct
-# logprob alignment), while the sandbox runs and rewards program_text,
-# the markdown-fence-stripped version. Rewarding an extracted program
-# while training on raw tokens is standard RL practice; the two must not
-# be conflated.
-EPISODE_KEYS = (
-    "task_id",
-    "rollout_index",
-    "prompt_text",
-    "completion_text",
-    "program_text",
-    "prompt_ids",
-    "completion_ids",
-    "logprobs",
-    "spec",
-)
+
+def _make_episode(
+    task: Dict[str, Any],
+    rollout_index: int,
+    prompt_text: str,
+    completion_text: str,
+    prompt_ids: List[int],
+    completion_ids: List[int],
+    logprobs: List[float],
+) -> Dict[str, Any]:
+    from prompts import strip_markdown_fences
+
+    return {
+        "task_id": task["id"],
+        "rollout_index": rollout_index,
+        "prompt_text": prompt_text,
+        "completion_text": completion_text,
+        "program_text": strip_markdown_fences(completion_text),
+        "prompt_ids": list(prompt_ids),
+        "completion_ids": list(completion_ids),
+        "logprobs": logprobs,
+        "spec": task["spec"],
+    }
 
 
 class StubGenerator:
@@ -82,7 +85,7 @@ class StubGenerator:
             One episode dict per (task, rollout_index).
         """
         import torch
-        from prompts import build_prompt, strip_markdown_fences
+        from prompts import build_prompt
         from stub_completions import canned_completion
 
         episodes = []
@@ -112,17 +115,15 @@ class StubGenerator:
                 ]
 
                 episodes.append(
-                    {
-                        "task_id": task["id"],
-                        "rollout_index": rollout_index,
-                        "prompt_text": prompt_text,
-                        "completion_text": completion_text,
-                        "program_text": strip_markdown_fences(completion_text),
-                        "prompt_ids": list(prompt_ids),
-                        "completion_ids": list(completion_ids),
-                        "logprobs": logprobs,
-                        "spec": task["spec"],
-                    }
+                    _make_episode(
+                        task=task,
+                        rollout_index=rollout_index,
+                        prompt_text=prompt_text,
+                        completion_text=completion_text,
+                        prompt_ids=prompt_ids,
+                        completion_ids=completion_ids,
+                        logprobs=logprobs,
+                    )
                 )
         return episodes
 
@@ -174,7 +175,7 @@ class VLLMGenerator:
         Returns:
             One episode dict per (task, rollout_index).
         """
-        from prompts import build_prompt, strip_markdown_fences
+        from prompts import build_prompt
         from vllm import SamplingParams
         from vllm.lora.request import LoRARequest
 
@@ -205,17 +206,15 @@ class VLLMGenerator:
                     )
                 ]
                 episodes.append(
-                    {
-                        "task_id": task["id"],
-                        "rollout_index": rollout_index,
-                        "prompt_text": output.prompt,
-                        "completion_text": sample.text,
-                        "program_text": strip_markdown_fences(sample.text),
-                        "prompt_ids": list(output.prompt_token_ids),
-                        "completion_ids": completion_ids,
-                        "logprobs": logprobs,
-                        "spec": task["spec"],
-                    }
+                    _make_episode(
+                        task=task,
+                        rollout_index=rollout_index,
+                        prompt_text=output.prompt,
+                        completion_text=sample.text,
+                        prompt_ids=output.prompt_token_ids,
+                        completion_ids=completion_ids,
+                        logprobs=logprobs,
+                    )
                 )
         return episodes
 

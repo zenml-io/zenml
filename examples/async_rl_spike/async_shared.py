@@ -236,7 +236,9 @@ def stage_adapter_in(local_dir: str, root: str, version: int) -> None:
         root: The run directory.
         version: Version number to publish the adapter as.
     """
-    io_utils.copy_dir(str(local_dir), adapter_dir(root, version), overwrite=True)
+    io_utils.copy_dir(
+        str(local_dir), adapter_dir(root, version), overwrite=True
+    )
 
 
 def stage_adapter_out(root: str, version: int) -> str:
@@ -358,18 +360,6 @@ def discard_group(path: str) -> None:
     """
     if fileio.exists(path):
         fileio.remove(path)
-
-
-def queue_depth(root: str) -> int:
-    """Return the number of groups waiting in the queue.
-
-    Args:
-        root: The run directory.
-
-    Returns:
-        Count of pending group files.
-    """
-    return len(_pending_group_names(os.path.join(root, "rollouts", "pending")))
 
 
 def signal_stop(root: str) -> None:
