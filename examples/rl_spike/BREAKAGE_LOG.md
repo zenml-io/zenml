@@ -642,3 +642,158 @@ on branch `spike/b1-harbor-k8s`.*
   report should refuse a mean when errors > 0), and the example receipts
   should demonstrate the errors-first idiom.
 - **Hit:** B1 Harbor-on-K8s task, 2026-07-09.
+
+## 22. A committed `.zen` silently resets project and stack when its IDs don't resolve — and the reset is destructive
+
+- **Tried:** Running the G1 GEPA experiment in a fresh worktree against
+  an isolated `ZENML_CONFIG_PATH` (fresh sqlite store), with
+  `examples/rl_spike/.zen` present because it is committed on the
+  branch.
+- **What happened:** The committed `.zen` holds the staging server's
+  active project/stack UUIDs. Against the isolated store those IDs
+  don't resolve, so the client printed two dim warnings ("The current
+  repo active project is no longer available. Setting the repo active
+  project to 'default'.") and **rewrote `.zen` in place** — the
+  previously configured stack was gone on the next invocation. The same
+  destructive reset fired in reverse later: running `zenml status`
+  against the real server from a dir whose `.zen` held isolated-store
+  IDs. Any tool that so much as instantiates `Client()` from the wrong
+  env rewrites the repo-local context.
+- **Workaround:** one `.zen` per experiment dir (`zenml init` inside
+  `gepa_g1/`), and treat project/stack set as something to re-verify
+  after ANY cross-config invocation.
+- **Severity:** annoying, and quietly dangerous in a multi-worktree /
+  multi-config setup — two sessions sharing a checkout can clobber each
+  other's active context without any error.
+- **Core change:** the availability check should not auto-rewrite
+  `.zen`. Fail loudly ("repo context points at unknown project X —
+  run `zenml project set`") or resolve in-memory for the session, but
+  don't persist a destructive fallback the user never asked for.
+- **Hit:** G1 GEPA task, isolated-config smoke test, 2026-07-09.
+
+## 23. The local sandbox flavor resolves `python` from PATH — an unactivated venv scores every episode as "import failed"
+
+- **Tried:** First smoke test of the G1 scoring path: upload the scorer
+  into a local-flavor sandbox session and `session.exec(["python",
+  "score_pipeline.py", ...])`, from a client process started as
+  `.venv/bin/python` (venv not activated, as any wrapper/CI would).
+- **What happened:** Reward 0.0, `error: "import failed"`. The local
+  sandbox is a bare subprocess that inherits the host env, so `python`
+  resolved to a system interpreter with no zenml installed. The
+  generated pipeline was fine; the harness silently judged it with the
+  wrong interpreter. Indistinguishable from a bad completion in the
+  reward JSON (entry 16's lesson in a new costume: this time the
+  infra failure doesn't even set `infra_error`, because the scorer ran
+  "successfully" and reported an honest-looking verdict).
+- **Workaround:** `run.py` prepends `sys.executable`'s bin dir to PATH
+  before any session is created.
+- **Severity:** annoying (hours-class trap for anyone driving the local
+  flavor from scripts; invisible unless you know to suspect it).
+- **Core change:** the local sandbox session could resolve bare
+  `python` against the creating process's `sys.executable` by default,
+  or at minimum document that exec inherits PATH-resolution from the
+  host process.
+- **Hit:** G1 GEPA task, first smoke test, 2026-07-09.
+
+## 24. gepa's `max_metric_calls` is advisory: the budget overran 150 → 159 by finishing the in-flight iteration
+
+- **Tried:** `gepa.optimize(..., max_metric_calls=150)` as the spend
+  cap for the first real G1 run (each metric call = one hosted-API
+  generation + one sandbox execution).
+- **What happened:** `total_metric_calls` came back 159. gepa checks
+  the budget between iterations, not between evaluations, so a full-
+  valset eval (12 calls here) started near the cap runs to completion.
+  Harmless at gpt-5-nano prices; not harmless if evaluate() is a K8s
+  sandbox fan-out (~6s and a pod per call — entry 12/15 territory) or
+  a paid frontier model.
+- **Workaround:** set the cap with one full-valset-eval of headroom.
+- **Severity:** cosmetic here, budget-relevant at scale. Filed as an
+  external-framework observation, not a ZenML issue — but it interacts
+  with ZenML the moment the metric call is a sandbox session.
+- **Hit:** G1 GEPA task, first real run, 2026-07-09.
+
+## 25. The huggingface integration pins `datasets<4.0.0` — so HF Dataset artifacts from the current RL ecosystem silently fall back to cloudpickle
+
+- **Tried:** C1: a mapped eval step returns its verifiers rollout
+  results as an HF `datasets.Dataset` artifact (the natural interchange
+  format — verifiers is built on HF datasets end to end).
+- **What happened:** The artifact materialized fine but via
+  `CloudpickleMaterializer`, with a load-time warning that the pickle
+  was written "under Python version 'unknown'" and may not be
+  reproducible. The proper `HFDatasetMaterializer` never registered —
+  and can't: ZenML's huggingface integration requires
+  `datasets>=2.16.0,<4.0.0`, while verifiers 0.1.14 (and the current HF
+  RL stack generally) needs `datasets` 4.x (4.6.1 here). This is a
+  version-cap conflict, not a missing install — there is no venv in
+  which both the verifiers ecosystem and ZenML's HF materializer can
+  coexist. The pickle fallback also genuinely breaks the moment a
+  consumer on a different Python minor version loads the artifact.
+- **Workaround:** none needed at this scale (same venv loads its own
+  pickles), but the C1 pipeline flattens rollouts to Arrow-safe
+  scalar/JSON-string columns anyway, so a plain parquet/pandas path
+  would also work.
+- **Severity:** annoying now, structural soon — "return an HF Dataset
+  from a step" is the default shape of every eval/RL framework in this
+  survey.
+- **Core change:** lift the `<4.0.0` cap (4.x has been stable for a
+  while), or split the datasets materializer out of the heavyweight
+  huggingface integration (it drags transformers/accelerate/
+  bitsandbytes/peft — none of which a datasets-only user needs).
+- **Hit:** C1 verifiers eval campaign, first artifact inspection,
+  2026-07-09.
+
+## 26. verifiers installs signal handlers at environment construction — and dies in ZenML's worker threads
+
+- **Tried:** C1: `load_environment()` (the C2 verifiers environment)
+  inside a mapped dynamic step on the local orchestrator.
+- **What happened:** "signal only works in main thread of the main
+  interpreter". verifiers 0.1.14's `Environment.__post_init__`
+  unconditionally calls `signal.signal(...)` to register SIGINT/SIGTERM
+  teardown hooks (the "safer sandbox lifecycle" behavior C2
+  investigated); Python only permits that from the main thread; ZenML's
+  local dynamic runner executes mapped steps in worker threads. So any
+  verifiers environment constructed inside a mapped step crashes before
+  doing anything. Filed like entry 24 as an external-framework
+  observation — but the collision class is ZenML-relevant: any
+  framework that installs signal handlers at import/construction time
+  (trainers and eval harnesses love to) cannot be constructed inside a
+  ZenML step that isn't on the main thread, and the error message
+  points at neither party.
+- **Workaround:** `tolerate_non_main_thread()` in
+  `verifiers_c2/c1_eval_pipeline.py` — no-op `signal.signal` during
+  construction when off the main thread. Safe inside a step: sessions
+  are context-managed and ZenML owns process lifecycle, so the handlers
+  had nothing to do anyway.
+- **Severity:** annoying (instant crash with a misleading message; the
+  workaround is three lines once you know).
+- **Core change:** worth a documented pattern (or a step-level helper)
+  for "running signal-installing frameworks inside steps"; upstream, a
+  `install_signal_handlers=False` flag on verifiers environments.
+- **Hit:** C1 verifiers eval campaign, first pipeline smoke,
+  2026-07-09.
+
+## 27. Before a worktree has its own `.zen`, project/stack commands walk up and mutate the MAIN checkout's context
+
+- **Tried:** C1 setup in a fresh worktree under `.worktrees/`: ran
+  `zenml project set rl-spike` + `zenml stack set rl-spike-local` from
+  the worktree's example dir, *before* running `zenml init` there
+  (the init command in the setup recipe had failed unnoticed).
+- **What happened:** Repository-context discovery walks parent
+  directories for a `.zen` — and `.worktrees/c1-verifiers-eval/...`
+  is path-wise *inside* the main checkout, so the commands found the
+  main repo root's `.zen` and silently switched the main checkout's
+  active project and stack. Any concurrently running thread in the
+  main checkout would have started talking to the wrong project. The
+  companion failure mode is entry 22's destructive reset; together
+  they make repo-scoped context the least predictable state in a
+  multi-worktree setup.
+- **Workaround:** always `zenml init` inside the worktree's example
+  dir FIRST and verify with `zenml status` that the repository root is
+  the worktree, not the main checkout; re-verify after any
+  cross-config invocation (entry 22).
+- **Severity:** annoying, quietly dangerous with parallel threads
+  (this batch runs four).
+- **Core change:** `zenml project set`/`stack set` could refuse (or
+  loudly confirm) when the discovered `.zen` lies outside the current
+  git worktree — git itself knows the boundary.
+- **Hit:** C1 verifiers eval campaign, worktree setup, 2026-07-09.

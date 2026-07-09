@@ -1,7 +1,7 @@
 # RL spike — findings for core (2026-07-09)
 
 *Audience: Michael, Hamza. This synthesizes [`BREAKAGE_LOG.md`](BREAKAGE_LOG.md)
-(18 entries), [`CALIBRATION.md`](CALIBRATION.md),
+(27 entries), [`CALIBRATION.md`](CALIBRATION.md),
 [`TRAINING_RUN.md`](TRAINING_RUN.md), [`SNAPSHOTS.md`](SNAPSHOTS.md)
 (task F1), [`DATA_LAYER.md`](DATA_LAYER.md) (task E3), and
 [`verifiers_c2/README.md`](verifiers_c2/README.md) (task C2) into themes
@@ -31,7 +31,7 @@ inconclusive (three clean optimizer steps, statistically flat rewards —
 see [`TRAINING_RUN.md`](TRAINING_RUN.md)), but the training outcome was
 never the deliverable.
 
-Since the training run, four follow-up tasks widened the evidence
+Since the training run, six follow-up tasks widened the evidence
 without any new GPU time. We taught failing episodes to save their
 sandbox filesystem so a human can reopen it later and see what actually
 happened (F1, [`SNAPSHOTS.md`](SNAPSHOTS.md)); we measured what the loop
@@ -39,10 +39,19 @@ really pushes through the artifact store instead of guessing (E3,
 [`DATA_LAYER.md`](DATA_LAYER.md)); we rebuilt the same task and
 reward inside `verifiers`, an external RL library, to see whether ZenML
 sandboxes survive contact with someone else's framework (C2,
-[`verifiers_c2/`](verifiers_c2/README.md)); and we ran PR #5029's Harbor
+[`verifiers_c2/`](verifiers_c2/README.md)); we ran that verifiers
+environment as a live, sharded eval campaign against hosted models to
+test whether wrapping a verifier-first eval in a ZenML pipeline adds
+anything over the framework's own CLI (C1,
+[`verifiers_c2/C1_EVAL.md`](verifiers_c2/C1_EVAL.md)); and we ran PR #5029's Harbor
 eval campaigns on the Kubernetes sandbox flavor, where everything had
 only ever been validated on Modal (B1, on branch `spike/b1-harbor-k8s`:
-[`B1_K8S_FINDINGS.md`](https://github.com/zenml-io/zenml/blob/spike/b1-harbor-k8s/examples/harbor_agent_evals/B1_K8S_FINDINGS.md)).
+[`B1_K8S_FINDINGS.md`](https://github.com/zenml-io/zenml/blob/spike/b1-harbor-k8s/examples/harbor_agent_evals/B1_K8S_FINDINGS.md));
+and we built the exporter that turns those Harbor eval trials into an
+accumulating training-data artifact, to test whether the eval→training
+lineage edge — the thing the LangSmith plugin does not do — is
+expressible in ZenML today (B3, on branch `spike/b3-exporter`:
+[`B3_EXPORTER.md`](https://github.com/zenml-io/zenml/blob/spike/b3-exporter/examples/harbor_agent_evals/B3_EXPORTER.md)).
 Their results live in themes 2, 3, and 5 below.
 
 ## Theme 1 — Dynamic fan-out has no working concurrency or placement story (entries 11, 12, 14, 15)
@@ -225,7 +234,7 @@ Theme 1's per-step overhead.
   what a relative remote path means at the base class, or reject
   relative paths uniformly.
 
-## Theme 5 — The sandbox travels: what the first ecosystem tests found (tasks C2, B1)
+## Theme 5 — The sandbox travels: what the first ecosystem tests found (tasks C2, C1, B1, B3)
 
 Everything above is about ZenML running the loop itself. Task C2 asked
 the opposite question: what happens when *someone else's* framework owns
@@ -282,6 +291,62 @@ not bug fixes. The concrete decision it tees up: whether to pursue an
 upstream PR (or a published shim) making ZenML Sandbox a verifiers
 backend while the contract is still five methods wide.
 
+Task C1 took C2's environment live: instead of canned completions, a
+ZenML pipeline runs `env.evaluate(...)` against hosted models over
+mapped dataset shards, and the question is whether that wrapping adds
+anything over verifiers' own `vf-eval` CLI. The answer is scoped and
+written down in [`verifiers_c2/C1_EVAL.md`](verifiers_c2/C1_EVAL.md):
+for a one-off eval, nothing — the CLI is strictly less friction. For
+*campaigns*, the wrapping earns its keep: the two headline runs
+(gpt-5-mini and gpt-5-nano on the same 10-task mix, staging runs
+`d30d6da8` / `c04577b1`) sit on the server as structurally identical
+runs — per-shard rollout datasets, token/wall-clock metadata on every
+shard step, a rendered markdown report — so "nano drops to 0.94
+because `word_ladder` fails with `pipeline exited nonzero`" is
+answerable from the dashboard, across models, with lineage. The mapped
+shards genuinely overlapped on the local orchestrator, and each shard
+is independently retryable with its artifacts surviving.
+
+Three findings matter beyond the verdict:
+
+1. **The ecosystem's data format and ZenML's materializer story
+   currently can't meet.** verifiers is built on HF datasets — and
+   ZenML's huggingface integration pins `datasets<4.0.0` while the
+   verifiers world requires 4.x, so the proper materializer *cannot
+   activate* in any venv that runs these frameworks (entry 25). The
+   artifact silently falls back to cloudpickle with a Python-version
+   fragility warning. One layer down, Arrow's one-schema-per-column
+   rule rejects this workload's natural shapes twice over
+   (heterogeneous task specs; verifiers' own `make_dataset` crashes on
+   its own evaluate outputs) — nested structures had to ride as
+   JSON-string columns.
+2. **Frameworks that install signal handlers cannot be constructed
+   inside ZenML's worker threads.** verifiers registers SIGINT/SIGTERM
+   teardown at environment *construction* (the other half of its
+   "safer sandbox lifecycle"); ZenML's dynamic runner executes mapped
+   steps off the main thread; Python forbids the combination, and the
+   error blames neither party (entry 26). A three-line workaround
+   exists once you know — but "run framework X inside a step" is this
+   whole survey's recurring shape, and trainers love signal handlers.
+3. **The entry-16 ambiguity recurred in our own code, which is the
+   strongest version of the finding.** C2's rubric carefully recorded
+   `infra_error` — but one parsing call sat a line above the `try:`,
+   the live rollout path delivered a message shape the canned tests
+   never exercised, and verifiers silently turned the crash into ten
+   plausible completions "scoring" 0.0 with nothing flagged. In a
+   verifier-first framework, *any* uncaught line in a reward function
+   becomes "the model failed". Teams that know about the trap still
+   fall into it; only structural support (framework- or
+   platform-level) actually closes it. (Also filed: third sighting of
+   Prime Intellect as a hardcoded default — `ClientConfig` ships
+   pointing at `PRIME_API_KEY` and Prime's inference cloud, after C2
+   found the same in both sandbox layers.)
+
+**Asks (C1):** lift or work around the `datasets<4.0.0` cap (entry 25 —
+bump it, or split a standalone datasets materializer out of the
+heavyweight huggingface integration); a documented pattern for
+signal-installing frameworks inside steps (entry 26).
+
 Task B1 ran the same travel test from the opposite side: instead of a
 foreign framework borrowing our sandbox, PR #5029's Harbor integration
 already *uses* the sandbox abstraction — B1 asked whether that campaign
@@ -318,6 +383,79 @@ nowhere; the docs and reference patch are the deliverable):
 translation in the Harbor bridge (entry 19 has the caveat list); fix the
 errored-trial visibility semantics (entry 21); decide plugin staffing
 (`B1_WRAP_VS_PLUGIN.md`).
+
+Task B3 closed the triangle: C2 lent the sandbox to a foreign loop, B1
+swapped the sandbox underneath a foreign eval kernel — B3 asked whether
+the *output* of those evals can flow back into ZenML as training data
+with lineage a human can follow. It is #5029's own named follow-up
+("the archives already carry rollouts + rewards"), and the piece of the
+story the LangSmith plugin does not have. The build: an exporter
+pipeline
+([`export_episodes.py`](https://github.com/zenml-io/zenml/blob/spike/b3-exporter/examples/harbor_agent_evals/export_episodes.py)
++
+[`B3_EXPORTER.md`](https://github.com/zenml-io/zenml/blob/spike/b3-exporter/examples/harbor_agent_evals/B3_EXPORTER.md)
+on branch `spike/b3-exporter`, forked off B1's branch — merges nowhere)
+that converts finished campaign runs' shard artifacts into one
+accumulating "RL episode candidates" dataset artifact: one record per
+trial, keyed by #5029's sha256 trial identity, with the trajectory kept
+as a *reference* into the shard's job archive rather than a copy. Run
+against B1's real staging campaigns, the dataset grew through six
+versions demonstrating the regression-suite property: re-exports add
+nothing, a cache-hit campaign rerun adds nothing, and a genuine
+re-attempt of the same pinned task lands as a second record under the
+same identity, joinable across runs.
+
+Three findings matter beyond the mechanics:
+
+1. **The lineage edge is real, but the platform fights the natural way
+   to express it.** The verdict on B3's question is yes: the export
+   run consumes the campaign's original shard artifact versions as
+   step inputs (verified by ID), so the graph shows eval trial →
+   dataset version, and each dataset version chains to its
+   predecessor through the previous-version input. But both natural
+   shapes failed first. A step taking a *list* of artifact versions
+   receives raw response objects — ZenML resolves single
+   artifact-version inputs into loaded, lineage-recorded inputs, but a
+   list of them falls through to plain parameters
+   (`base_step.py:455-486`) — and `.map()` refuses to fan out over
+   anything that is not an output of the current run. The workaround
+   (a plain loop, one step call per shard artifact) works, but costs
+   one step run per shard — at 89-task scale that collides with E3's
+   per-step fixed-cost finding. "Consume a previous run's outputs, at
+   fan-out, with lineage" is a pattern the eval→training bridge needs
+   and the platform doesn't have as a first-class shape yet.
+2. **#5029's cross-run join key silently fragments.** Two campaigns
+   attempting the byte-identical pinned task get *different* trial
+   identities if one specified the task through the dataset resolver
+   (which stamps a `source:` field into the task ref) and the other
+   through a direct `git+` ref — hit live during the join demo. Local
+   directory tasks are worse: their absolute path is hashed, so
+   identities are machine- and checkout-specific. The regression-suite
+   story rests entirely on this key; it should hash the canonical pin
+   coordinates (URL + commit + subpath) and nothing else. Related
+   one-line lift: Harbor's own `task_checksum` — a content hash of the
+   task — sits in every archived trial result but isn't surfaced in
+   the integration's flat summary model.
+3. **Nobody records the sandbox image, and the best-effort fallback
+   lies.** The Harbor job archive records neither the sandbox flavor
+   nor the resolved image; the exporter falls back to the sandbox
+   component config of the producing run's stack, and that answer is
+   *provably wrong* for image-pinned tasks — B3's chess-best-move
+   records say `python:3.11-slim` while the trials actually ran in the
+   Terminal-Bench image via B1's translation patch. The one sentence
+   B3's product story wants to say — "this reward came from this task
+   in this sandbox image, and here is the training example" — is
+   exactly the sentence nothing in the stack can currently support.
+   The bridge is the only party that knows the resolved image; it
+   should write it into the trial/shard result at execution time (same
+   code neighborhood as B1's entry-19 translation fix).
+
+**Asks (B3):** decide whether list-of-artifact-version step inputs and
+mapping over historical artifacts become platform plumbing (finding 1
+is the gap between "lineage is expressible" and "lineage is natural to
+express"); fix `trial_identity` to hash canonical pin coordinates only,
+and surface `task_checksum` (#5029); record the resolved sandbox
+flavor + image into shard/trial results in the Harbor bridge.
 
 ## What we deliberately did not run, and why the skips are findings
 
@@ -395,3 +533,19 @@ integration across flavors wherever the abstraction holds (B1), and the
 alternatives are a single hardcoded vendor (verifiers) or a single
 validated flavor (Harbor-on-Modal). The findings above are the platform
 work that any of those consumers would hit first.
+
+**G1 supplied the third datapoint, from the other end of the ownership
+spectrum (see [`GEPA_G1.md`](GEPA_G1.md)):** the loop shape survived
+swapping the update rule from GRPO to GEPA prompt evolution with the
+sandbox verifier byte-identical — one-line seed prompt → +63% mean reward
+(0.515 → 0.839) on hosted API models, zero GPU, under $1. Two additions
+to the platform ask: when an external framework owns the *inner* loop,
+ZenML's visibility coarsens from per-episode steps to one optimization
+step (the same ownership axis as C2/B1, seen from inside); and GEPA's
+Pareto candidate *tree* has no native representation — linear artifact
+versioning carries a population only by stuffing the tree inside a dict
+artifact (escalated as a core artifact-model question; entries 22–24 for
+the new sharp edges). The honesty note matters for customer
+conversations: with the full cheatsheet, even gpt-5-nano saturates this
+task set at 1.0 — prompts exhausted the task before weights were needed,
+which is exactly the "cheapest durable intervention first" pitch.

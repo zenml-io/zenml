@@ -83,7 +83,7 @@ WARNING! Your password will be stored unencrypted in /home/stefan/.docker/config
 Configure a credential helper to remove this warning. See
 https://docs.docker.com/engine/reference/commandline/login/#credentials-store
 
-The 'dockerhub' Docker Service Connector connector was used to successfully configure the local Docker/OCI container registry client/SDK.
+The 'dockerhub' Docker Service Connector was used to successfully configure the local Docker/OCI container registry client/SDK.
 ```
 {% endcode %}
 

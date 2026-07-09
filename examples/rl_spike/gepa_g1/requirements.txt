@@ -1,0 +1,19 @@
+# G1 GEPA experiment — own venv, deliberately separate from the repo .venv
+# and from the rl_spike training venv (no trl/torch needed here).
+#
+# Setup (from this directory):
+#   uv venv .venv --python 3.11
+#   uv pip install -p .venv/bin/python -r requirements.txt -e ../../..
+#
+# The editable ../../.. install is required: the sandbox stack component and
+# dynamic pipelines only exist on this branch, not on PyPI zenml.
+
+# Pinned: the GEPAAdapter protocol changed between 0.0.x and 0.1.x; adapter.py
+# is written against exactly this version's evaluate/make_reflective_dataset
+# contract (verified 2026-07-09).
+gepa==0.1.1
+
+# Task + reflection LMs are called through the OpenAI client directly.
+# reflection_lm is passed to gepa as a callable, NOT a model string: the
+# string path requires litellm, which gepa does not install.
+openai>=1.50
