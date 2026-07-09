@@ -120,6 +120,7 @@ def train_grpo(
     max_steps: int,
     num_generations: int,
     max_turns: int,
+    max_completion_length: int,
 ) -> Tuple[
     Annotated[Path, "b2b_trained_adapter"],
     Annotated[Dict[str, Any], "b2b_train_metrics"],
@@ -138,6 +139,10 @@ def train_grpo(
         max_steps: Optimizer steps to run (bounded on purpose).
         num_generations: GRPO group size per task prompt.
         max_turns: Tool-calling iterations per rollout (the "3 attempts").
+        max_completion_length: Per-turn generation budget in tokens. The
+            TRL default (256) clipped 100% of completions on the first
+            bounded run — Qwen3's thinking prefix alone exceeds it, so
+            the policy never reached a tool call.
 
     Returns:
         The trained LoRA adapter directory and a metrics dict.
@@ -162,8 +167,21 @@ def train_grpo(
         gradient_accumulation_steps=1,
         learning_rate=1e-5,
         max_tool_calling_iterations=max_turns,
+        max_completion_length=max_completion_length,
         use_vllm=True,
         vllm_mode="colocate",
+        # 24GB L4 shared between vLLM and the training pass: without a
+        # cap, vLLM's default share left too little headroom and step 2's
+        # backward OOMed (run 068c4343, 2026-07-09). Checkpointing trades
+        # compute for the multi-turn sequences' activation memory.
+        vllm_gpu_memory_utilization=0.25,
+        # At 0.25 the default max seq len (40960 for Qwen3) no longer
+        # fits the KV cache (run 9f7bca1a); 8192 covers prompt + 3 turns
+        # of 2048-token completions. Sleep mode offloads vLLM weights
+        # during the training pass — the other half of the OOM fix.
+        vllm_max_model_length=8192,
+        vllm_enable_sleep_mode=True,
+        gradient_checkpointing=True,
         log_completions=True,
         logging_steps=1,
         save_strategy="no",
@@ -209,6 +227,7 @@ def b2b_trl_harbor_training(
     max_steps: int = 2,
     num_generations: int = 4,
     max_turns: int = 3,
+    max_completion_length: int = 2048,
 ) -> None:
     """One bounded TRL-drives-Harbor training run on ZenML."""
     train_grpo(
@@ -216,6 +235,7 @@ def b2b_trl_harbor_training(
         max_steps=max_steps,
         num_generations=num_generations,
         max_turns=max_turns,
+        max_completion_length=max_completion_length,
     )
 
 
@@ -225,10 +245,12 @@ if __name__ == "__main__":
     parser.add_argument("--max-steps", type=int, default=2)
     parser.add_argument("--num-generations", type=int, default=4)
     parser.add_argument("--max-turns", type=int, default=3)
+    parser.add_argument("--max-completion-length", type=int, default=2048)
     args = parser.parse_args()
     b2b_trl_harbor_training(
         model_id=args.model,
         max_steps=args.max_steps,
         num_generations=args.num_generations,
         max_turns=args.max_turns,
+        max_completion_length=args.max_completion_length,
     )

@@ -31,6 +31,9 @@ GRPOTrainer (TRL v1, vLLM colocate — holds policy tokens/logprobs)
 - `train_b2b.py` — phase 2: one ZenML step running a bounded
   `GRPOTrainer` session on the `kubernetes_aws` stack (S3 artifact
   store), GPU node group per `../rl_spike/GPU_SETUP.md`.
+- `snapshot_demo.py` + `tasks_modal/` — the F1 carry-over: fix loop on
+  the Modal flavor with a snapshot taken at failure time and restored
+  afterwards (stack `rl-spike-modal`).
 
 ## Running
 
