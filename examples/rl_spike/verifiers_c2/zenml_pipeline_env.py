@@ -43,6 +43,7 @@ from typing import Any
 
 import verifiers as vf
 from datasets import Dataset
+from pydantic import BaseModel
 
 EXAMPLE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(EXAMPLE_DIR))
@@ -93,6 +94,11 @@ def completion_text(completion: Any) -> str:
         return completion
     if isinstance(completion, list):
         for message in reversed(completion):
+            # Canned C2 states carry plain dicts; the live rollout path
+            # (env.evaluate) carries pydantic Message models — normalize
+            # to a dict and treat both the same.
+            if isinstance(message, BaseModel):
+                message = message.model_dump()
             if (
                 isinstance(message, dict)
                 and message.get("role") == "assistant"
@@ -204,9 +210,19 @@ class ZenMLSandboxRubric(vf.Rubric):
             failure (recorded in state, since verifiers would otherwise
             swallow the exception into an indistinguishable 0.0).
         """
-        program = strip_markdown_fences(completion_text(completion))
-        spec = info.get("spec", {})
+        # Everything sits inside the try: any exception that escapes a
+        # reward function gets swallowed by verifiers into a bare 0.0
+        # (entry-16 ambiguity), so even completion parsing must record
+        # infra_error before returning.
         try:
+            program = strip_markdown_fences(completion_text(completion))
+            # C2's direct-state path carries the spec as a dict;
+            # datasets built by load_environment carry it JSON-encoded
+            # (Arrow needs one schema per column, and spec values are
+            # heterogeneous — e.g. expected_output.value is int 7 in
+            # one task and str 'hello zenml' in another, which
+            # Dataset.from_list rejects).
+            spec = info.get("spec") or json.loads(info.get("spec_json", "{}"))
             async with self._semaphore():
                 reward_data = await asyncio.to_thread(
                     score_in_zenml_sandbox, program, spec
@@ -235,19 +251,32 @@ def load_tasks(tasks_path: Path = TASKS_PATH) -> list[dict]:
 
 
 def load_environment(
-    max_tasks: int | None = None, **kwargs: Any
+    max_tasks: int | None = None,
+    task_ids: list[str] | None = None,
+    **kwargs: Any,
 ) -> vf.SingleTurnEnv:
     """Build the pipeline-writing task as a verifiers SingleTurnEnv.
 
     Args:
         max_tasks: Optional cap on dataset size (evals are slow: every
             scored completion runs a real ZenML pipeline in a sandbox).
+        task_ids: Optional explicit task selection (C1 dataset shards);
+            order follows tasks.jsonl, unknown ids are an error.
         kwargs: Passed through to SingleTurnEnv.
 
     Returns:
         The environment, ready for env.evaluate(...) or training.
+
+    Raises:
+        KeyError: If task_ids contains an id not present in tasks.jsonl.
     """
     tasks = load_tasks()
+    if task_ids is not None:
+        known = {task["id"] for task in tasks}
+        missing = set(task_ids) - known
+        if missing:
+            raise KeyError(f"Unknown task ids: {sorted(missing)}")
+        tasks = [task for task in tasks if task["id"] in set(task_ids)]
     if max_tasks is not None:
         tasks = tasks[:max_tasks]
     dataset = Dataset.from_list(
@@ -255,8 +284,13 @@ def load_environment(
             {
                 "question": task["prompt"],
                 "answer": "",
-                "info": {"task_id": task["id"], "spec": task["spec"]},
-                "task": "rl-spike-pipeline-writing",
+                # No "task" column: 0.1.14's rollout path parses it as
+                # a JSON task payload and rejects plain string labels
+                # ("use info['env_id'] for routing").
+                "info": {
+                    "task_id": task["id"],
+                    "spec_json": json.dumps(task["spec"]),
+                },
             }
             for task in tasks
         ]
