@@ -10,7 +10,12 @@ findings.
 
 from typing import Any, Dict
 
-from steps import build_report, evolve_prompt, load_gepa_tasks
+from steps import (
+    build_html_report,
+    build_report,
+    evolve_prompt,
+    load_gepa_tasks,
+)
 
 from zenml import pipeline
 
@@ -45,4 +50,5 @@ def gepa_pipeline(
         dry_run=dry_run,
     )
     build_report(gepa_result=gepa_result, tasks=tasks)
+    build_html_report(gepa_result=gepa_result, tasks=tasks)
     return gepa_result
