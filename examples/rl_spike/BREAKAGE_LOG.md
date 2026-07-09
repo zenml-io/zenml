@@ -711,3 +711,89 @@ on branch `spike/b1-harbor-k8s`.*
   external-framework observation, not a ZenML issue — but it interacts
   with ZenML the moment the metric call is a sandbox session.
 - **Hit:** G1 GEPA task, first real run, 2026-07-09.
+
+## 25. The huggingface integration pins `datasets<4.0.0` — so HF Dataset artifacts from the current RL ecosystem silently fall back to cloudpickle
+
+- **Tried:** C1: a mapped eval step returns its verifiers rollout
+  results as an HF `datasets.Dataset` artifact (the natural interchange
+  format — verifiers is built on HF datasets end to end).
+- **What happened:** The artifact materialized fine but via
+  `CloudpickleMaterializer`, with a load-time warning that the pickle
+  was written "under Python version 'unknown'" and may not be
+  reproducible. The proper `HFDatasetMaterializer` never registered —
+  and can't: ZenML's huggingface integration requires
+  `datasets>=2.16.0,<4.0.0`, while verifiers 0.1.14 (and the current HF
+  RL stack generally) needs `datasets` 4.x (4.6.1 here). This is a
+  version-cap conflict, not a missing install — there is no venv in
+  which both the verifiers ecosystem and ZenML's HF materializer can
+  coexist. The pickle fallback also genuinely breaks the moment a
+  consumer on a different Python minor version loads the artifact.
+- **Workaround:** none needed at this scale (same venv loads its own
+  pickles), but the C1 pipeline flattens rollouts to Arrow-safe
+  scalar/JSON-string columns anyway, so a plain parquet/pandas path
+  would also work.
+- **Severity:** annoying now, structural soon — "return an HF Dataset
+  from a step" is the default shape of every eval/RL framework in this
+  survey.
+- **Core change:** lift the `<4.0.0` cap (4.x has been stable for a
+  while), or split the datasets materializer out of the heavyweight
+  huggingface integration (it drags transformers/accelerate/
+  bitsandbytes/peft — none of which a datasets-only user needs).
+- **Hit:** C1 verifiers eval campaign, first artifact inspection,
+  2026-07-09.
+
+## 26. verifiers installs signal handlers at environment construction — and dies in ZenML's worker threads
+
+- **Tried:** C1: `load_environment()` (the C2 verifiers environment)
+  inside a mapped dynamic step on the local orchestrator.
+- **What happened:** "signal only works in main thread of the main
+  interpreter". verifiers 0.1.14's `Environment.__post_init__`
+  unconditionally calls `signal.signal(...)` to register SIGINT/SIGTERM
+  teardown hooks (the "safer sandbox lifecycle" behavior C2
+  investigated); Python only permits that from the main thread; ZenML's
+  local dynamic runner executes mapped steps in worker threads. So any
+  verifiers environment constructed inside a mapped step crashes before
+  doing anything. Filed like entry 24 as an external-framework
+  observation — but the collision class is ZenML-relevant: any
+  framework that installs signal handlers at import/construction time
+  (trainers and eval harnesses love to) cannot be constructed inside a
+  ZenML step that isn't on the main thread, and the error message
+  points at neither party.
+- **Workaround:** `tolerate_non_main_thread()` in
+  `verifiers_c2/c1_eval_pipeline.py` — no-op `signal.signal` during
+  construction when off the main thread. Safe inside a step: sessions
+  are context-managed and ZenML owns process lifecycle, so the handlers
+  had nothing to do anyway.
+- **Severity:** annoying (instant crash with a misleading message; the
+  workaround is three lines once you know).
+- **Core change:** worth a documented pattern (or a step-level helper)
+  for "running signal-installing frameworks inside steps"; upstream, a
+  `install_signal_handlers=False` flag on verifiers environments.
+- **Hit:** C1 verifiers eval campaign, first pipeline smoke,
+  2026-07-09.
+
+## 27. Before a worktree has its own `.zen`, project/stack commands walk up and mutate the MAIN checkout's context
+
+- **Tried:** C1 setup in a fresh worktree under `.worktrees/`: ran
+  `zenml project set rl-spike` + `zenml stack set rl-spike-local` from
+  the worktree's example dir, *before* running `zenml init` there
+  (the init command in the setup recipe had failed unnoticed).
+- **What happened:** Repository-context discovery walks parent
+  directories for a `.zen` — and `.worktrees/c1-verifiers-eval/...`
+  is path-wise *inside* the main checkout, so the commands found the
+  main repo root's `.zen` and silently switched the main checkout's
+  active project and stack. Any concurrently running thread in the
+  main checkout would have started talking to the wrong project. The
+  companion failure mode is entry 22's destructive reset; together
+  they make repo-scoped context the least predictable state in a
+  multi-worktree setup.
+- **Workaround:** always `zenml init` inside the worktree's example
+  dir FIRST and verify with `zenml status` that the repository root is
+  the worktree, not the main checkout; re-verify after any
+  cross-config invocation (entry 22).
+- **Severity:** annoying, quietly dangerous with parallel threads
+  (this batch runs four).
+- **Core change:** `zenml project set`/`stack set` could refuse (or
+  loudly confirm) when the discovered `.zen` lies outside the current
+  git worktree — git itself knows the boundary.
+- **Hit:** C1 verifiers eval campaign, worktree setup, 2026-07-09.
