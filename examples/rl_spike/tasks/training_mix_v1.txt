@@ -1,0 +1,45 @@
+# Training mix v1 (2026-07-09), derived from CALIBRATION.md buckets.
+# 13 variance-now + 14 flat-imperfect (the .load() frontier) + 8
+# saturated regression guards spanning chain/map/OOD families.
+# Lines starting with # are ignored.
+
+# --- variance now (GRPO gets signal immediately) ---
+abs_route
+bigger_of_two
+grade_letter
+parity_branch
+vowel_any_flag
+string_grow_until
+alternating_sum_loop
+fib_loop
+word_ladder
+loop_sum_to_five
+find_first_big
+triangular_until
+double_until
+
+# --- flat-imperfect (should split at group 8 / temp 1.0) ---
+mean_of_list
+longest_word_flag
+even_count_branch
+threshold_flag
+comfort_range
+crossed_reports
+two_stage_map
+head_tail_balance
+sum_vs_product
+halve_then_flag
+gruntle_until
+range_then_flag
+zorp_fold
+halve_until
+
+# --- saturated regression guards (catch capability loss) ---
+const_seven
+two_step_double
+map_double_sum
+clip_map
+fake_triple
+blorb_chain
+florp_map
+qthird_replace

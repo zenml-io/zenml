@@ -37,6 +37,8 @@ def rl_spike(
     serving_mode: str = "offline",
     learning_rate: float = 5e-6,
     lora_rank: int = 16,
+    temperature: float = 0.9,
+    snapshot_on_failure: bool = False,
 ) -> None:
     """GRPO post-training loop for writing ZenML dynamic pipelines.
 
@@ -59,6 +61,15 @@ def rl_spike(
             hot-loads each ZenML LoRA adapter artifact into it.
         learning_rate: GRPO learning rate.
         lora_rank: Rank of the LoRA adapter.
+        temperature: Sampling temperature for rollout generation. The
+            calibration run (CALIBRATION.md) showed several tasks where
+            all group members fail identically at 0.9; >=1.0 is meant to
+            split those groups so GRPO gets within-group variance.
+        snapshot_on_failure: If True, each failing episode snapshots its
+            sandbox filesystem before teardown and records the reference
+            on the episode (restore with restore_sandbox.py). Only the
+            Modal sandbox flavor supports snapshots today; on other
+            flavors the episode records snapshot_error instead.
     """
     if dry_run and serving_mode != "offline":
         raise ValueError("dry_run only supports serving_mode='offline'.")
@@ -147,6 +158,7 @@ def rl_spike(
                 loaded_adapter=loaded_adapter,
                 group_size=group_size,
                 model_name=model_name,
+                temperature=temperature,
             )
         else:
             seeds = generate_step(
@@ -155,8 +167,13 @@ def rl_spike(
                 group_size=group_size,
                 model_name=model_name,
                 dry_run=dry_run,
+                temperature=temperature,
             )
-        episodes = episode_step.map(seeds)
+        # snapshot_on_failure is a plain bool, so .map() broadcasts it to
+        # every mapped step (only step-output artifacts are fanned over).
+        episodes = episode_step.map(
+            seeds, snapshot_on_failure=snapshot_on_failure
+        )
         adapter = update_step(
             episodes=episodes,
             adapter=adapter,

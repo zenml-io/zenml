@@ -43,8 +43,38 @@ def main() -> None:
     parser.add_argument(
         "--task-ids", nargs="*", default=None, help="Explicit task ids"
     )
+    parser.add_argument(
+        "--task-ids-file",
+        default=None,
+        help=(
+            "File with one task id per line (# comments allowed), e.g. "
+            "tasks/training_mix_v1.txt. Mutually exclusive with --task-ids"
+        ),
+    )
     parser.add_argument("--learning-rate", type=float, default=5e-6)
+    parser.add_argument(
+        "--temperature",
+        type=float,
+        default=0.9,
+        help="Sampling temperature for rollout generation",
+    )
+    parser.add_argument(
+        "--snapshot-on-failure",
+        action="store_true",
+        help="Snapshot the sandbox filesystem of failing episodes before "
+        "teardown (Modal sandbox flavor only; restore_sandbox.py restores)",
+    )
     args = parser.parse_args()
+
+    if args.task_ids_file:
+        if args.task_ids:
+            sys.exit("Use either --task-ids or --task-ids-file, not both")
+        with open(args.task_ids_file) as f:
+            args.task_ids = [
+                line.strip()
+                for line in f
+                if line.strip() and not line.startswith("#")
+            ]
 
     stack = Client().active_stack
     if stack.sandbox is None:
@@ -106,6 +136,8 @@ def main() -> None:
         dry_run=args.dry_run,
         serving_mode=args.serving_mode,
         learning_rate=args.learning_rate,
+        temperature=args.temperature,
+        snapshot_on_failure=args.snapshot_on_failure,
     )
     print(f"total wall clock: {time.time() - started:.0f}s")
 
