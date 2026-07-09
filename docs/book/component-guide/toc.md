@@ -53,6 +53,7 @@
   * [Develop a Custom Log Store](log-stores/custom.md)
 * [Sandboxes](sandboxes/README.md)
   * [Local](sandboxes/local.md)
+  * [Google Cloud Run](sandboxes/cloudrun.md)
   * [Kubernetes](sandboxes/kubernetes.md)
   * [Modal](sandboxes/modal.md)
 * [Step Operators](step-operators/README.md)
