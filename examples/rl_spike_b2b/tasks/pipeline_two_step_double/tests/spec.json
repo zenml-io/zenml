@@ -1,0 +1,6 @@
+{
+  "min_steps": 2,
+  "expected_output": {
+    "value": 42
+  }
+}

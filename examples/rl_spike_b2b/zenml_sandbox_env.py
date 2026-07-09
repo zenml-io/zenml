@@ -11,13 +11,26 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Harbor BaseEnvironment backed by ZenML's Sandbox stack component.
+"""VENDORED copy of the ZenML Harbor bridge for task B2b (spike only).
+
+Vendored from ``zenml.integrations.harbor.environment`` on branch
+``spike/b2b-trl-harbor`` because the remote pipeline image installs
+released ``zenml==0.96.1`` from PyPI, which does not contain the unmerged
+harbor integration (PR #5029) — while everything this file needs from
+zenml (``Client``, ``zenml.sandboxes``, the Kubernetes sandbox flavor's
+``image`` setting) IS in the release. That the bridge vendors cleanly in
+~300 lines with zero private-API imports is itself a B2b finding.
+
+Deliberate spike patches relative to the shipped bridge:
+- Harbor >=0.9 ``network_mode`` handled (``allow_internet`` deprecated).
+- ``docker_image`` -> ``KubernetesSandboxSettings(image=...)`` translation
+  (B1's experiment, required here so sandbox pods run an image with
+  zenml[local] preinstalled).
 
 Known limitations, preserved deliberately rather than papered over:
 Harbor resource requests (``cpus``/``memory_mb``/``gpus``) are not
-translated to sandbox settings; tasks requiring network isolation
-(``allow_internet=false``) are refused; ``exec(user=...)`` is ignored;
-task-level ``docker_image`` overrides are Modal-only.
+translated to sandbox settings; tasks requiring network isolation are
+refused; ``exec(user=...)`` is ignored.
 """
 
 import asyncio
@@ -34,6 +47,8 @@ from zenml.logger import get_logger
 from zenml.sandboxes import BaseSandbox, BaseSandboxSettings, SandboxSession
 
 logger = get_logger(__name__)
+
+ZENML_SANDBOX_ENV_IMPORT_PATH = "zenml_sandbox_env:ZenMLSandboxEnvironment"
 
 
 class ZenMLSandboxEnvironment(BaseEnvironment):

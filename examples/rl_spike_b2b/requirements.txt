@@ -1,0 +1,28 @@
+#  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+#
+# Laptop venv for B2b (Python >= 3.12 — Harbor's floor). Built as
+# .venv-b2b at the worktree root:
+#   uv venv .venv-b2b --python 3.12
+#   uv pip install -p .venv-b2b -e ".[local]" -r examples/rl_spike_b2b/requirements.txt
+#
+# vllm>=0.22 is deliberately ABSENT: it cannot install on macOS arm64
+# (transitive dep tokenspeed-mla ships Linux-only wheels), and it is only
+# needed at trainer.train() time — which happens inside the Linux
+# pipeline image (see train_b2b.py DOCKER_SETTINGS).
+trl[harbor]==1.7.1
+transformers>=5.2.0
+peft>=0.17,<1
+datasets>=3.0
+kubernetes>=21.7,<26
