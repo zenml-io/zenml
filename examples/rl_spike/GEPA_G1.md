@@ -34,6 +34,17 @@ deltas.
 1.0/1.0 on all 12 tasks immediately — no headroom, run aborted. That
 null result is itself a data point (see the honesty note).
 
+**Replication on staging (same day):** a second run against the Pro
+server (project `rl-spike`, stack `rl-spike-local`: local orchestrator +
+S3 artifact store + local sandbox) reproduced the shape with a stronger
+outcome — **0.385 → 0.946 (+146%)**, 8 candidates, 159 metric calls,
+31 min. Run `gepa_pipeline-2026_07_09-13_40_18` carries the full
+artifact set on the dashboard, including a `gepa_evolution_html`
+HTMLString artifact (score-progression chart, candidate tree, per-task
+Pareto table, best cheatsheet). The seed baseline differing between runs
+(0.515 vs 0.385, same seed prompt) is nano's sampling variance — worth
+remembering when reading any single GEPA score as "the" number.
+
 ## The three questions
 
 **(a) Loop-shape genericity — YES, with a visibility trade.** The
