@@ -624,3 +624,20 @@ the new sharp edges). The honesty note matters for customer
 conversations: with the full cheatsheet, even gpt-5-nano saturates this
 task set at 1.0 — prompts exhausted the task before weights were needed,
 which is exactly the "cheapest durable intervention first" pitch.
+
+## Addendum (2026-07-10) — what this means for Kitaru
+
+The Kitaru direction document (kitaru repo,
+`docs/strategy/kitaru-direction.md`, 2026-07-07) listed this spike as
+one of the things that could sharpen its answer. It did: the spike's
+verdict meets the "close to workable" trigger that document set for the
+weights path, and several findings feed Kitaru's committed build items
+directly — the score hook needs a "scorer crashed ≠ scored 0.0" state
+(we watched that ambiguity get rebuilt four times, once by ourselves);
+`kitaru optimize` is de-risked by G1 but needs population lineage first;
+the sandbox-as-a-library and snapshot findings upgrade the replay
+isolation guard and the forensics story; B3's identity/provenance
+lessons are spec requirements for the Harbor export; and Themes 1–2 are
+prerequisites for batch replay and the Proxima engagement, not just for
+RL. The full, self-contained, issue-ready version is
+[`KITARU_HANDOFF.md`](KITARU_HANDOFF.md).

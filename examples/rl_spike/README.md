@@ -90,6 +90,7 @@ Key properties:
 | `SNAPSHOTS.md` | Snapshot support matrix, restore demo, and gap list (task F1) |
 | `measure_data_layer.py` | Read-only S3/timing measurement over past runs (task E3) |
 | `DATA_LAYER.md` | What the loop moves through the artifact store, measured (task E3) |
+| `KITARU_HANDOFF.md` | Issue-ready translation of the spike's findings for the Kitaru roadmap |
 
 ## Run the dry run (no GPU, ~2-3 min on an Apple Silicon laptop)
 
