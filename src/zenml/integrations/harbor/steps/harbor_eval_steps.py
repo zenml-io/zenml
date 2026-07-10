@@ -154,12 +154,13 @@ def run_harbor_shard(
     ``harbor.mean_reward`` averages the scored trials only, so a
     reward-threshold gate must be paired with an error-rate gate to
     catch shards whose signal was destroyed by trial errors; a shard
-    whose trials *all* errored additionally logs
-    ``harbor.mean_reward = 0.0`` so pure reward gates fail safe on a
-    fully crashed campaign. A shard that finished without errors but
-    was never scored (the verifier returned no rewards) logs no
-    ``harbor.mean_reward`` at all — that is absence of signal, not a
-    zero score.
+    whose trials all errored *without producing any score* additionally
+    logs ``harbor.mean_reward = 0.0`` so pure reward gates fail safe on
+    a fully crashed campaign. Trials that scored before erroring keep
+    their real mean — the error-rate gate is what flags those. A shard
+    that finished without errors but was never scored (the verifier
+    returned no rewards) logs no ``harbor.mean_reward`` at all — that
+    is absence of signal, not a zero score.
 
     Args:
         shard: A shard specification produced by ``build_harbor_matrix``.
@@ -215,8 +216,9 @@ def run_harbor_shard(
     elif (
         result.n_total_trials > 0 and result.n_errored == result.n_total_trials
     ):
-        # All trials errored: log an explicit 0.0 so reward-threshold
-        # gates fail safe (the docstring has the full sentinel rule).
+        # All trials errored and none scored: log an explicit 0.0 so
+        # reward-threshold gates fail safe (the docstring has the full
+        # sentinel rule).
         metadata["harbor.mean_reward"] = 0.0
     cost = result.total_cost_usd
     if cost is not None:

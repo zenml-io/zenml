@@ -82,6 +82,10 @@ def test_task_ref_git_round_trip() -> None:
         "git+git@github.com:org/tasks.git",
         # Empty URL.
         "git+@deadbeef:tasks/chess",
+        # Branch pin: would move underneath caching and baselines.
+        "git+https://github.com/org/tasks@main:tasks/chess",
+        # Empty pin.
+        "git+https://github.com/org/tasks@:tasks/chess",
     ],
 )
 def test_task_ref_rejects_malformed_git_specs(bad_spec: str) -> None:

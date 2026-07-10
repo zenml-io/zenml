@@ -14,6 +14,7 @@
 """Tests for the Sandbox environment bridge (skipped without Harbor)."""
 
 import asyncio
+import threading
 from types import SimpleNamespace
 
 import pytest
@@ -28,17 +29,10 @@ from harbor.models.task.config import (  # noqa: E402
 )
 
 from zenml.integrations.harbor.environment import (  # noqa: E402
+    SandboxProvenance,
     ZenMLSandboxEnvironment,
-    drain_session_provenance,
+    session_provenance_scope,
 )
-
-
-@pytest.fixture(autouse=True)
-def _clean_provenance_registry():
-    """Isolate every test from the module-level provenance registry."""
-    drain_session_provenance()
-    yield
-    drain_session_provenance()
 
 
 class _FakeProcess:
@@ -174,17 +168,96 @@ def test_start_requires_sandbox_component(
 def test_start_records_session_provenance(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A started session leaves the sandbox facts for the shard runner."""
+    """A started session leaves the sandbox facts in the ambient scope."""
     session = _FakeSession()
     env = _bridge(session=None)
     _patch_active_sandbox(monkeypatch, _modal_sandbox(session))
-    asyncio.run(env.start(force_build=False))
-    provenance = drain_session_provenance()["hello__test123"]
+    with session_provenance_scope() as registry:
+        asyncio.run(env.start(force_build=False))
+    provenance = registry["hello__test123"]
     assert provenance.flavor == "modal"
     # No task docker_image override was pinned.
     assert provenance.docker_image is None
-    # Draining resets the registry.
-    assert drain_session_provenance() == {}
+
+
+def test_start_without_scope_records_nothing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Outside a scope (e.g. plain `harbor run`), nothing is recorded."""
+    env = _bridge(session=None)
+    _patch_active_sandbox(monkeypatch, _modal_sandbox(_FakeSession()))
+    asyncio.run(env.start(force_build=False))
+    with session_provenance_scope() as registry:
+        assert registry == {}
+
+
+def test_provenance_scopes_isolate_concurrent_threads() -> None:
+    """Concurrent shard threads never see each other's sessions.
+
+    Dynamic mapped steps run as threads in one process; a shared
+    registry would let one shard observe or reset another's entries.
+    """
+    results = {}
+    barrier = threading.Barrier(2)
+
+    def _shard(name: str) -> None:
+        with session_provenance_scope() as registry:
+            barrier.wait(timeout=5)
+            registry[name] = SandboxProvenance("modal", None)
+            barrier.wait(timeout=5)
+            results[name] = dict(registry)
+
+    threads = [
+        threading.Thread(target=_shard, args=(name,)) for name in ("a", "b")
+    ]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=10)
+    assert results["a"] == {"a": SandboxProvenance("modal", None)}
+    assert results["b"] == {"b": SandboxProvenance("modal", None)}
+
+
+def test_cancelled_creation_reaps_abandoned_session(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A session that finishes starting after cancellation is destroyed.
+
+    Harbor's build/start timeout cancels start() while create_session
+    keeps running in its worker thread; the resulting sandbox has no
+    owner and must be reaped instead of leaking until provider TTL.
+    """
+    session = _FakeSession()
+    creation_started = threading.Event()
+    release_creation = threading.Event()
+
+    def _slow_create(settings=None):
+        creation_started.set()
+        release_creation.wait(timeout=5)
+        return session
+
+    env = _bridge(session=None)
+    _patch_active_sandbox(
+        monkeypatch,
+        SimpleNamespace(flavor="modal", create_session=_slow_create),
+    )
+
+    async def _cancel_mid_creation() -> None:
+        task = asyncio.create_task(env.start(force_build=False))
+        await asyncio.to_thread(creation_started.wait, 5)
+        task.cancel()
+        release_creation.set()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        # Let the reap callback scheduled on the loop run.
+        for _ in range(10):
+            if session.destroyed:
+                break
+            await asyncio.sleep(0.05)
+
+    asyncio.run(_cancel_mid_creation())
+    assert session.destroyed
+    assert env._session is None
 
 
 def test_exec_after_failed_start_carries_root_cause(
@@ -211,15 +284,17 @@ def test_failed_start_discards_prior_attempt_provenance(
     recorded by the earlier attempt would misattribute an image to a
     trial that ran on no sandbox at all.
     """
-    first_attempt = _bridge(session=None)
-    _patch_active_sandbox(monkeypatch, _modal_sandbox(_FakeSession()))
-    asyncio.run(first_attempt.start(force_build=False))
+    with session_provenance_scope() as registry:
+        first_attempt = _bridge(session=None)
+        _patch_active_sandbox(monkeypatch, _modal_sandbox(_FakeSession()))
+        asyncio.run(first_attempt.start(force_build=False))
+        assert "hello__test123" in registry
 
-    retry_attempt = _bridge(session=None)
-    _patch_active_sandbox(monkeypatch, None)
-    with pytest.raises(RuntimeError, match="No Sandbox component"):
-        asyncio.run(retry_attempt.start(force_build=False))
-    assert drain_session_provenance() == {}
+        retry_attempt = _bridge(session=None)
+        _patch_active_sandbox(monkeypatch, None)
+        with pytest.raises(RuntimeError, match="No Sandbox component"):
+            asyncio.run(retry_attempt.start(force_build=False))
+        assert registry == {}
 
 
 def test_cancelled_start_records_root_cause(

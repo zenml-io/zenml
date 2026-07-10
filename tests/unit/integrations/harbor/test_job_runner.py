@@ -347,15 +347,21 @@ def test_run_shard_job_assembles_result(
 
     # The bridge records sandbox facts at session start, keyed by the
     # trial name; the runner stamps them onto the matching trial only.
+    from contextlib import contextmanager
+
     from zenml.integrations.harbor.environment import SandboxProvenance
 
-    monkeypatch.setattr(
-        "zenml.integrations.harbor.job_runner.drain_session_provenance",
-        lambda: {
+    @contextmanager
+    def _seeded_scope():
+        yield {
             "hello__aaaaaaa": SandboxProvenance(
                 flavor="modal", docker_image="python:3.11-slim"
             )
-        },
+        }
+
+    monkeypatch.setattr(
+        "zenml.integrations.harbor.job_runner.session_provenance_scope",
+        _seeded_scope,
     )
 
     spec = _spec(

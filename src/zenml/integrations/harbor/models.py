@@ -21,6 +21,7 @@ happens in ``from_harbor`` factories that receive them untyped.
 """
 
 import os
+import re
 import tarfile
 from datetime import datetime
 from pathlib import Path
@@ -66,10 +67,11 @@ class TaskRef(BaseModel):
 
         Raises:
             ValueError: If a ``git+`` spec is malformed — e.g. lacks the
-                ``@COMMIT`` pin, in which case the userinfo ``@`` of an
+                ``@COMMIT`` pin (in which case the userinfo ``@`` of an
                 ssh URL would otherwise be misparsed as the pin
-                separator and fail much later with a cryptic clone
-                error.
+                separator), or pins a branch/tag instead of a commit
+                SHA. Mutable pins would move underneath shard caching
+                and trial-identity baselines.
         """
         if task_spec.startswith(GIT_TASK_PREFIX):
             url, sep, pinned = task_spec[len(GIT_TASK_PREFIX) :].rpartition(
@@ -79,10 +81,18 @@ class TaskRef(BaseModel):
             # Dataset-resolved refs always carry scheme URLs; requiring
             # '://' catches ssh 'git@host:...' specs whose userinfo '@'
             # would otherwise be misparsed as the pin separator.
-            if not sep or "://" not in url or "/" in pin:
+            if not sep or "://" not in url:
                 raise ValueError(
                     f"Invalid git task ref {task_spec!r}: expected "
                     "'git+URL@COMMIT:SUBPATH'."
+                )
+            if not re.fullmatch(r"[0-9a-fA-F]{7,40}", pin):
+                raise ValueError(
+                    f"Invalid git task ref {task_spec!r}: the pin after "
+                    f"'@' must be a commit SHA, got {pin!r}. Branch and "
+                    "tag pins move underneath shard caching and "
+                    "trial-identity baselines; pin the exact commit "
+                    "instead."
                 )
             # For git-backed tasks, Harbor's TaskConfig carries the
             # task's subpath within the repository in `path`.

@@ -44,7 +44,7 @@ losing = Client().list_run_steps(
 )
 ```
 
-`harbor.mean_reward` averages only the trials that were scored, so pair a reward gate with an error gate — `harbor.error_rate:gt:0` (or `harbor.n_errored:gt:0`) — to also catch shards whose signal was destroyed by crashed trials. A shard whose trials *all* errored logs `harbor.mean_reward = 0.0`, so a pure reward gate still fails safe on a fully crashed campaign; a shard that ran clean but was never scored logs no `harbor.mean_reward` at all.
+`harbor.mean_reward` averages only the trials that were scored, so pair a reward gate with an error gate — `harbor.error_rate:gt:0` (or `harbor.n_errored:gt:0`) — to also catch shards whose signal was destroyed by crashed trials. A shard whose trials all errored without producing any score logs `harbor.mean_reward = 0.0`, so a pure reward gate still fails safe on a fully crashed campaign; trials that scored before erroring keep their real mean (the error gate flags those), and a shard that ran clean but was never scored logs no `harbor.mean_reward` at all.
 
 For anything deeper, load the `HarborShardResult` artifacts: per-trial rewards, exceptions, token counts, and the archived Harbor job trees.
 

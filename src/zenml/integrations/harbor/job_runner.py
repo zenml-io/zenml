@@ -35,7 +35,7 @@ from harbor.models.trial.config import (
 )
 
 from zenml.integrations.harbor import ZENML_HARBOR_ENV_IMPORT_PATH
-from zenml.integrations.harbor.environment import drain_session_provenance
+from zenml.integrations.harbor.environment import session_provenance_scope
 from zenml.integrations.harbor.models import (
     HarborShardResult,
     HarborShardSpec,
@@ -202,11 +202,11 @@ def run_shard_job(
 
     # ``asyncio.run`` is safe because ZenML steps run synchronously
     # today; revisit if step bodies grow an outer event loop.
-    job_result = asyncio.run(_run())
-
-    # Take the sandbox facts the bridge recorded (keyed by session id ==
-    # trial name) before any result processing can raise.
-    provenance_by_session = drain_session_provenance()
+    # The scope collects each session's resolved sandbox facts (keyed by
+    # session id == trial name) for this job only — shard steps run
+    # concurrently in one process, so the registry must not be shared.
+    with session_provenance_scope() as provenance_by_session:
+        job_result = asyncio.run(_run())
 
     # The on-disk job-level result.json is always written without trial
     # results; the in-memory JobResult from `job.run()` is the only

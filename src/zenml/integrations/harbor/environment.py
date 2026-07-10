@@ -21,12 +21,15 @@ task-level ``docker_image`` overrides are Modal-only.
 """
 
 import asyncio
+import concurrent.futures
 import shlex
 import tarfile
 import tempfile
 import uuid
+from contextlib import contextmanager
+from contextvars import ContextVar
 from pathlib import Path
-from typing import NamedTuple
+from typing import Iterator, NamedTuple, Optional
 
 from harbor.environments.base import BaseEnvironment, ExecResult
 
@@ -44,31 +47,74 @@ class SandboxProvenance(NamedTuple):
     docker_image: str | None
 
 
-# Resolved-sandbox facts per environment session, keyed by Harbor's
+# Sandbox facts recorded per environment session, keyed by Harbor's
 # session_id (== the trial name for the main trial environment; separate
 # verifier environments get a derived id). The bridge is the only party
 # that knows which flavor/image actually backed a trial — reconstructing
 # the image from the run's stack config gives wrong answers for tasks
-# that pin a ``docker_image`` override.
-_session_provenance: dict[str, SandboxProvenance] = {}
+# that pin a ``docker_image`` override. A ContextVar (not a module
+# global) carries the registry: dynamic mapped shard steps run
+# concurrently as threads in one process, and a process-global registry
+# would let one shard observe or reset another shard's sessions.
+_session_provenance: ContextVar[Optional[dict[str, SandboxProvenance]]] = (
+    ContextVar("zenml_harbor_session_provenance", default=None)
+)
 
 
-def drain_session_provenance() -> dict[str, SandboxProvenance]:
-    """Take and reset every recorded session provenance entry.
+@contextmanager
+def session_provenance_scope() -> Iterator[dict[str, SandboxProvenance]]:
+    """Open a registry for the sandbox provenance of one Harbor job.
 
-    The shard runner drains once right after ``job.run()`` and joins
-    entries to trial results by session id. Draining (rather than
-    per-key pops plus a separate clear) hands over the complete snapshot
-    and resets the registry in one step, so entries the join never
-    touches (e.g. separate verifier sessions) can't accumulate across
-    shards in a long-lived process — even if result processing raises.
+    The shard runner wraps ``job.run()`` in this scope and joins the
+    yielded registry to trial results by session id afterwards. The
+    scope rides the ambient context: asyncio tasks inherit it, so every
+    environment Harbor starts inside the wrapped ``asyncio.run`` records
+    here, while concurrently running shard steps (separate threads,
+    separate contexts) each see only their own sessions. Environments
+    started outside any scope (e.g. the bridge used directly via
+    ``harbor run``) record nothing.
 
-    Returns:
-        The recorded provenance entries, keyed by session id.
+    Yields:
+        The registry for this scope, keyed by session id.
     """
-    drained = dict(_session_provenance)
-    _session_provenance.clear()
-    return drained
+    registry: dict[str, SandboxProvenance] = {}
+    token = _session_provenance.set(registry)
+    try:
+        yield registry
+    finally:
+        _session_provenance.reset(token)
+
+
+def _reap_abandoned_session(
+    future: "concurrent.futures.Future[SandboxSession]",
+) -> None:
+    """Destroy a sandbox session whose awaiting trial was cancelled.
+
+    Runs as a done-callback on the abandoned ``create_session`` future —
+    i.e. in the worker thread that created the session, after the
+    awaiting coroutine is long gone. It must be the *concurrent* future:
+    asyncio's ``run_in_executor`` wrapper reports itself cancelled even
+    while the worker thread keeps running, which would hide the session.
+
+    Args:
+        future: The executor future of the abandoned creation call.
+    """
+    if future.cancelled() or future.exception() is not None:
+        return
+    session = future.result()
+    logger.warning(
+        "Destroying sandbox session %s that finished starting after its "
+        "Harbor trial was cancelled.",
+        session.id,
+    )
+    try:
+        session.destroy()
+    except Exception:
+        logger.exception(
+            "Failed to destroy abandoned sandbox session %s; it may "
+            "persist until the provider reclaims it.",
+            session.id,
+        )
 
 
 class ZenMLSandboxEnvironment(BaseEnvironment):
@@ -201,7 +247,9 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
             # Retried trials reuse the session id; drop any facts an
             # earlier attempt recorded, or a retry that never opened a
             # sandbox would inherit (and misattribute) them.
-            _session_provenance.pop(self.session_id, None)
+            registry = _session_provenance.get()
+            if registry is not None:
+                registry.pop(self.session_id, None)
             raise
 
     async def _start(self) -> None:
@@ -212,6 +260,9 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
                 active stack.
             NotImplementedError: If the task requires network isolation
                 (allow_internet=false), which the bridge can't enforce.
+            asyncio.CancelledError: Re-raised when the trial is cancelled
+                mid-creation, after arranging for the abandoned session
+                to be reaped.
             Exception: Re-raised from preparing the Harbor log dirs after
                 the session was torn down again.
         """
@@ -246,13 +297,38 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
                 ", ".join(ignored),
             )
         settings = self._settings_override(sandbox)
-        self._session = await asyncio.to_thread(
-            sandbox.create_session, settings=settings
+        # A dedicated single-use executor (instead of asyncio.to_thread)
+        # so the *concurrent* future stays accessible: on cancellation
+        # the worker thread keeps running, and only the concurrent
+        # future can hand over the session it eventually creates.
+        executor = concurrent.futures.ThreadPoolExecutor(
+            max_workers=1, thread_name_prefix="zenml-harbor-sandbox-start"
         )
-        _session_provenance[self.session_id] = SandboxProvenance(
-            flavor=sandbox.flavor,
-            docker_image=cfg.docker_image,
-        )
+        try:
+            session_future = executor.submit(
+                sandbox.create_session, settings=settings
+            )
+            try:
+                session: SandboxSession = await asyncio.wrap_future(
+                    session_future
+                )
+            except asyncio.CancelledError:
+                # Harbor's build/start timeout cancels this coroutine,
+                # but the provider call keeps running in its worker
+                # thread; any session it eventually returns has no
+                # owner. Reap it when it materializes instead of leaking
+                # a paid sandbox until the provider reclaims it.
+                session_future.add_done_callback(_reap_abandoned_session)
+                raise
+        finally:
+            executor.shutdown(wait=False)
+        self._session = session
+        registry = _session_provenance.get()
+        if registry is not None:
+            registry[self.session_id] = SandboxProvenance(
+                flavor=sandbox.flavor,
+                docker_image=cfg.docker_image,
+            )
         logger.info(
             "ZenML Sandbox session %s started for Harbor trial %s",
             self._session.id,
