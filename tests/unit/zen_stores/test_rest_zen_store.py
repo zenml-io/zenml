@@ -13,9 +13,15 @@
 #  permissions and limitations under the License.
 """Tests for the REST ZenML store."""
 
+from uuid import uuid4
+
 from pytest_mock import MockerFixture
 
-from zenml.zen_stores.rest_zen_store import RestZenStoreConfiguration
+from zenml.zen_stores.rest_zen_store import (
+    ARTIFACT_VERSIONS,
+    RestZenStore,
+    RestZenStoreConfiguration,
+)
 
 SERVER_URL = "https://server.example"
 SERVER_URL_WITH_SLASH = f"{SERVER_URL}/"
@@ -39,4 +45,51 @@ def test_rest_store_url_is_normalized_before_moving_credentials(
     assert config.url == SERVER_URL
     credentials_store.set_bare_token.assert_called_once_with(
         SERVER_URL, "test-api-token"
+    )
+
+
+def test_delete_artifact_version_can_request_server_side_data_deletion(
+    mocker: MockerFixture,
+) -> None:
+    """Tests forwarding artifact data deletion to the server."""
+    store = mocker.Mock()
+    artifact_version_id = uuid4()
+
+    RestZenStore.delete_artifact_version_server_side(
+        store,
+        artifact_version_id=artifact_version_id,
+        delete_from_artifact_store=True,
+    )
+
+    store._delete_resource.assert_called_once_with(
+        resource_id=artifact_version_id,
+        route=ARTIFACT_VERSIONS,
+        params={
+            "delete_metadata": True,
+            "delete_from_artifact_store": True,
+        },
+    )
+
+
+def test_delete_artifact_version_can_preserve_metadata(
+    mocker: MockerFixture,
+) -> None:
+    """Tests requesting data deletion without metadata deletion."""
+    store = mocker.Mock()
+    artifact_version_id = uuid4()
+
+    RestZenStore.delete_artifact_version_server_side(
+        store,
+        artifact_version_id=artifact_version_id,
+        delete_metadata=False,
+        delete_from_artifact_store=True,
+    )
+
+    store._delete_resource.assert_called_once_with(
+        resource_id=artifact_version_id,
+        route=ARTIFACT_VERSIONS,
+        params={
+            "delete_metadata": False,
+            "delete_from_artifact_store": True,
+        },
     )

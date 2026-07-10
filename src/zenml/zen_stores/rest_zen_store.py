@@ -1049,7 +1049,32 @@ class RestZenStore(BaseZenStore):
             artifact_version_id: The ID of the artifact version to delete.
         """
         self._delete_resource(
-            resource_id=artifact_version_id, route=ARTIFACT_VERSIONS
+            resource_id=artifact_version_id,
+            route=ARTIFACT_VERSIONS,
+        )
+
+    def delete_artifact_version_server_side(
+        self,
+        artifact_version_id: UUID,
+        delete_metadata: bool = True,
+        delete_from_artifact_store: bool = False,
+    ) -> None:
+        """Delete an artifact version through the server endpoint.
+
+        Args:
+            artifact_version_id: The ID of the artifact version to delete.
+            delete_metadata: Whether the server should delete the artifact
+                version metadata.
+            delete_from_artifact_store: Whether the server should also delete
+                the artifact data from the artifact store.
+        """
+        self._delete_resource(
+            resource_id=artifact_version_id,
+            route=ARTIFACT_VERSIONS,
+            params={
+                "delete_metadata": delete_metadata,
+                "delete_from_artifact_store": delete_from_artifact_store,
+            },
         )
 
     def prune_artifact_versions(
