@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zenml-firecrawl-web-monitor"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.110,<1.0.0",
+    "openai>=1.0.0,<3.0.0",
+    "requests>=2.27.11,<3.0.0",
+    "uvicorn>=0.30.0,<1.0.0",
+    "zenml>=0.93",
+]
+
+[project.optional-dependencies]
+dev = [
+    "mypy",
+    "pytest",
+    "ruff",
+]
+
+[tool.setuptools]
+py-modules = [
+    "analysis",
+    "constants",
+    "create_firecrawl_monitor",
+    "history",
+    "models",
+    "run",
+    "webhook_server",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pipelines*", "steps*"]
