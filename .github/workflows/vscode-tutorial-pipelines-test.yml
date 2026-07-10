@@ -19,13 +19,15 @@ on:
         options: [no, on-failure, always, before-tests]
         required: false
         default: 'no'
+
+env:
+  ZENML_ANALYTICS_OPT_IN: false
+
 jobs:
   test-tutorial-pipelines:
     name: test-tutorial-pipelines
     runs-on: ubuntu-latest
     env:
-      ZENML_DEBUG: true
-      ZENML_ANALYTICS_OPT_IN: false
       ZENML_LOGGING_VERBOSITY: INFO
       MLSTACKS_ANALYTICS_OPT_OUT: true
       AUTO_OPEN_DASHBOARD: false

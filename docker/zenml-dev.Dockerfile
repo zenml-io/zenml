@@ -88,8 +88,6 @@ ENV \
   VIRTUAL_ENV=$VIRTUAL_ENV \
   # Signal to ZenML that it is running in a container
   ZENML_CONTAINER=1 \
-  # Set ZenML debug mode to true
-  ZENML_DEBUG=true \
   # Set ZenML logging verbosity to INFO
   #
   # NOTE: debug logs can be very verbose and make it in fact more difficult to

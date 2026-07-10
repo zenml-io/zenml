@@ -25,13 +25,16 @@ on:
         options: ['3.10', '3.11', '3.12', '3.13', '3.14']
         required: false
         default: '3.11'
+
+env:
+  ZENML_LOGGING_VERBOSITY: debug
+  ZENML_ANALYTICS_OPT_IN: false
+
 jobs:
   update-e2e-batch-template-to-examples:
     name: update-e2e-batch-template-to-examples
     runs-on: ${{ inputs.os }}
     env:
-      ZENML_DEBUG: 1
-      ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
       OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
     if: github.event_name == 'pull_request' && ! startsWith(github.event.head_commit.message,
@@ -106,8 +109,6 @@ jobs:
     name: update-nlp-template-to-examples
     runs-on: ${{ inputs.os }}
     env:
-      ZENML_DEBUG: 1
-      ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
       OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
     if: github.event_name == 'pull_request' && ! startsWith(github.event.head_commit.message,
@@ -181,8 +182,6 @@ jobs:
     name: update-starter-template-to-examples
     runs-on: ${{ inputs.os }}
     env:
-      ZENML_DEBUG: 1
-      ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
       OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
     if: github.event_name == 'pull_request' && ! startsWith(github.event.head_commit.message,
@@ -258,8 +257,6 @@ jobs:
     name: update-llm-finetuning-template-to-examples
     runs-on: ${{ inputs.os }}
     env:
-      ZENML_DEBUG: 1
-      ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
       OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
     if: github.event_name == 'pull_request' && ! startsWith(github.event.head_commit.message,

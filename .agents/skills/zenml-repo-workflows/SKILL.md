@@ -63,8 +63,7 @@ Former root headings covered here:
 - ZenML recommends `uv` for Python package installation because it resolves
   dependencies more quickly and reliably than plain `pip`.
 - Useful development environment variables:
-  - `ZENML_DEBUG=true`
-  - `ZENML_LOGGING_VERBOSITY=INFO`
+  - `ZENML_LOGGING_VERBOSITY=DEBUG`
   - `ZENML_ANALYTICS_OPT_IN=false`
   - `MLSTACKS_ANALYTICS_OPT_OUT=true`
   - `AUTO_OPEN_DASHBOARD=false`

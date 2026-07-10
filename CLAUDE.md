@@ -236,8 +236,7 @@ Router, service, error-handling, and validation conventions for the server live 
 
 ### Environment Variables
 - Several environment variables are useful during ZenML development:
-  - `ZENML_DEBUG=true`: Enables verbose debug logging
-  - `ZENML_LOGGING_VERBOSITY=INFO`: Controls logging verbosity
+  - `ZENML_LOGGING_VERBOSITY=DEBUG`: Controls logging verbosity
   - `ZENML_ANALYTICS_OPT_IN=false`: Disables analytics during development
   - `MLSTACKS_ANALYTICS_OPT_OUT=true`: Disables MLStacks analytics
   - `AUTO_OPEN_DASHBOARD=false`: Prevents automatic dashboard opening

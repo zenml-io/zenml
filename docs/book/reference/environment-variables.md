@@ -63,14 +63,6 @@ Please see [our full page](global-settings.md#usage-analytics) on what analytics
 export ZENML_ANALYTICS_OPT_IN=false
 ```
 
-## Debug mode
-
-Setting to `true` switches to developer mode:
-
-```bash
-export ZENML_DEBUG=true
-```
-
 ## Active stack
 
 Setting the `ZENML_ACTIVE_STACK_ID` to a specific UUID will make the corresponding stack the active stack:

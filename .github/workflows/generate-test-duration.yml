@@ -4,6 +4,11 @@ on:
   workflow_call:
   schedule:
     - cron: 0 8 * * 1  # Run every Monday at 8 am
+
+env:
+  ZENML_LOGGING_VERBOSITY: debug
+  ZENML_ANALYTICS_OPT_IN: false
+
 jobs:
   generate-test-duration-file:
     name: Generate test duration file
@@ -11,8 +16,6 @@ jobs:
     strategy:
       fail-fast: false
     env:
-      ZENML_DEBUG: 1
-      ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
       UV_HTTP_TIMEOUT: 600
           # on MAC OS, we need to set this environment variable

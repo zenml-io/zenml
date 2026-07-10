@@ -3,14 +3,17 @@ name: Publish SDK Docs
 on:
   push:
     branches: [release/**]
+
+env:
+  ZENML_LOGGING_VERBOSITY: debug
+  ZENML_ANALYTICS_OPT_IN: false
+
 jobs:
   publish:
     name: Build 🔨 and publish 📰 the api docs 📁 to gh-pages
     if: github.repository == 'zenml-io/zenml'
     runs-on: ubuntu-latest
     env:
-      ZENML_DEBUG: 1
-      ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0

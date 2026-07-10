@@ -25,6 +25,11 @@ on:
         options: ['3.10', '3.11', '3.12', '3.13', '3.14']
         required: false
         default: '3.11'
+
+env:
+  ZENML_LOGGING_VERBOSITY: debug
+  ZENML_ANALYTICS_OPT_IN: false
+
 jobs:
   all-template-tests:
     name: all-template-tests
@@ -38,8 +43,6 @@ jobs:
           - {repo: zenml-io/template-nlp, path: .github/actions/nlp_template_test}
       fail-fast: false
     env:
-      ZENML_DEBUG: 1
-      ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
       OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') && github.repository == 'zenml-io/zenml' }}

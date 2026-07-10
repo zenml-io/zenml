@@ -82,6 +82,11 @@ on:
         type: number
         required: false
         default: 3
+
+env:
+  ZENML_LOGGING_VERBOSITY: debug
+  ZENML_ANALYTICS_OPT_IN: false
+
 jobs:
   integration-tests-fast:
     name: integration-tests-fast
@@ -91,8 +96,6 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4, 5, 6]
     env:
-      ZENML_DEBUG: 1
-      ZENML_ANALYTICS_OPT_IN: false
       ZENML_ENABLE_RICH_TRACEBACK: false
       WHYLOGS_NO_ANALYTICS: 'True'
       PYTHONIOENCODING: utf-8

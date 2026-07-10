@@ -8,13 +8,16 @@ name: pr-label
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  ZENML_LOGGING_VERBOSITY: debug
+  ZENML_ANALYTICS_OPT_IN: false
+
 jobs:
   pr-labeler:
     if: github.repository == 'zenml-io/zenml'
     runs-on: ubuntu-latest
     env:
-      ZENML_DEBUG: 1
-      ZENML_ANALYTICS_OPT_IN: false
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: JulienKode/team-labeler-action@e912b4b3a2e329a4dc6ad282cfecad79cab8fe81  # v3.0.0
