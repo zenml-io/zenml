@@ -1124,31 +1124,39 @@ server:
     permissions: enabled
 
 
+  # Logging settings for the ZenML server container.
+  logging:
+    # Log output format. Use "console", "json", or a custom Python logging
+    # format string in %-style format like "%(levelname)s:%(name)s:%(message)s".
+    format: console
+
+    # Disable ANSI colors in console logs.
+    colorsDisabled: false
+
+  # OpenTelemetry export settings for the ZenML server container.
+  openTelemetry:
+    # Base OTLP/HTTP collector endpoint. When set, traces, metrics, and logs
+    # use this endpoint with /v1/traces, /v1/metrics, and /v1/logs appended
+    # unless a per-signal endpoint below overrides it.
+    endpoint:
+
+    # Service name attached to exported telemetry. If not set, the server uses
+    # its default service name.
+    serviceName:
+
+    # Optional per-signal OTLP/HTTP endpoints. Without a base endpoint, only
+    # signals with a per-signal endpoint are exported.
+    tracesEndpoint:
+    metricsEndpoint:
+    logsEndpoint:
+
+    # Controls whether each telemetry signal is exported when an endpoint is
+    # configured.
+    tracesEnabled: true
+    metricsEnabled: true
+    logsEnabled: true
+
   # Extra environment variables to set in the ZenML server container.
-  #
-  # Examples:
-  #
-  #   # Controls the server stdout/stderr log format.
-  #   # Use "console" (default), "json", or a valid Python %-style format string.
-  #   ZENML_CONSOLE_LOGGING_FORMAT: "json"
-  #
-  #   # Disables ANSI color output in console logs. Default is "false".
-  #   ZENML_LOGGING_COLORS_DISABLED: "true"
-  #
-  #   # Enables server OpenTelemetry export for traces, metrics, and logs.
-  #   # The logs export to the OTel backend is independent of ZENML_CONSOLE_LOGGING_FORMAT
-  #   # Logs are exported as OTLP records with structured attributes derived from the
-  #   # underlying log record, not as console-formatted text or JSON.
-  #   ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
-  #   # Standard OTLP/HTTP endpoint env vars are also supported:
-  #   # OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
-  #   # OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "http://otel-collector:4318/v1/traces"
-  #   # OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "http://otel-collector:4318/v1/metrics"
-  #   # OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: "http://otel-collector:4318/v1/logs"
-  #   ZENML_SERVER_OTEL_SERVICE_NAME: "zenml-server"
-  #   ZENML_SERVER_OTEL_TRACES_ENABLED: "true"
-  #   ZENML_SERVER_OTEL_METRICS_ENABLED: "true"
-  #   ZENML_SERVER_OTEL_LOGS_ENABLED: "true"
   environment: {}
 
   # Extra environment variables to set in the ZenML server container that
