@@ -25,7 +25,7 @@ from uuid import UUID, uuid4
 import pytest
 
 from zenml.config.resource_settings import ResourceSettings
-from zenml.enums import StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.integrations.slurm.flavors import (
     SlurmOrchestratorConfig,
     SlurmOrchestratorFlavor,
@@ -34,6 +34,7 @@ from zenml.integrations.slurm.flavors import (
 from zenml.integrations.slurm.orchestrators import SlurmOrchestrator
 from zenml.integrations.slurm.orchestrators.slurm_orchestrator import (
     ENV_ZENML_SLURM_RUN_ID,
+    SLURM_JOB_IDS_METADATA_KEY,
 )
 from zenml.integrations.slurm.slurm_client import (
     CommandResult,
@@ -252,6 +253,25 @@ def _placeholder_run() -> SimpleNamespace:
     return SimpleNamespace(id=uuid4())
 
 
+def _stack(
+    credentials: Optional["tuple[str, str]"] = None,
+) -> SimpleNamespace:
+    """Build a stack stand-in with a remote container registry.
+
+    Args:
+        credentials: Optional registry username and password.
+
+    Returns:
+        A namespace usable where a stack is expected.
+    """
+    return SimpleNamespace(
+        container_registry=SimpleNamespace(
+            config=SimpleNamespace(uri="registry.example.com"),
+            credentials=credentials,
+        )
+    )
+
+
 def _submit_two_step_dag(monkeypatch) -> "tuple[FakeRunner, str]":
     """Submit a load -> train DAG and return the fake host and run id.
 
@@ -271,7 +291,7 @@ def _submit_two_step_dag(monkeypatch) -> "tuple[FakeRunner, str]":
     placeholder = _placeholder_run()
     op.submit_pipeline(
         snapshot=snapshot,
-        stack=None,
+        stack=_stack(),
         base_environment={},
         step_environments={
             "load": {"ZENML_STORE_API_KEY": SECRET_TOKEN},
@@ -286,11 +306,20 @@ def test_submit_wires_dependencies_in_topological_order(monkeypatch):
     """The dependent step's job waits on the parent's job id."""
     runner, _ = _submit_two_step_dag(monkeypatch)
     sbatch = [c for c in runner.commands if c.startswith("sbatch")]
-    assert len(sbatch) == 2
+    assert len(sbatch) == 3
     # load submitted first (job id 1000, no dependency), train second.
     assert "--dependency" not in sbatch[0]
     assert "--dependency=afterok:1000" in sbatch[1]
     assert "--kill-on-invalid-dep=yes" in sbatch[1]
+    assert "--dependency=afterany:1000:1001" in sbatch[2]
+    cleanup_scripts = [
+        content
+        for path, content in runner.files.items()
+        if path.endswith("/cleanup/job.sh")
+    ]
+    assert len(cleanup_scripts) == 1
+    assert "/env" in cleanup_scripts[0]
+    assert "cleanup_complete" in cleanup_scripts[0]
 
 
 def test_submit_injects_placeholder_run_id_into_step_env(monkeypatch):
@@ -320,7 +349,7 @@ def test_submit_requires_a_placeholder_run(monkeypatch):
     with pytest.raises(AssertionError):
         op.submit_pipeline(
             snapshot=_snapshot({"load": _step([])}),
-            stack=None,
+            stack=_stack(),
             base_environment={},
             step_environments={"load": {}},
             placeholder_run=None,
@@ -336,7 +365,7 @@ def test_submit_rejects_scheduled_pipelines(monkeypatch):
     with pytest.raises(RuntimeError, match="does not support scheduled"):
         op.submit_pipeline(
             snapshot=snapshot,
-            stack=None,
+            stack=_stack(),
             base_environment={},
             step_environments={"load": {}},
             placeholder_run=_placeholder_run(),
@@ -376,12 +405,52 @@ def test_submit_cancels_queued_jobs_on_failure(monkeypatch):
     with pytest.raises(RuntimeError):
         op.submit_pipeline(
             snapshot=snapshot,
-            stack=None,
+            stack=_stack(),
             base_environment={},
             step_environments={"load": {}, "train": {}},
             placeholder_run=_placeholder_run(),
         )
     assert any(c.startswith("scancel 1000") for c in runner.commands)
+    assert any(c.startswith("rm -rf -- ") for c in runner.commands)
+
+
+def test_fetch_status_reports_pre_entrypoint_failure(monkeypatch):
+    """A failed Slurm wrapper reconciles a detached run as failed."""
+    op = _build_orchestrator()
+    runner = FakeRunner()
+    _use_fake_client(monkeypatch, runner)
+    run_id = uuid4()
+    run_dir = op._run_dir(str(run_id), "load")
+    runner.files[f"{run_dir}/exit_code"] = "1\n"
+    run = SimpleNamespace(
+        id=run_id,
+        status=ExecutionStatus.PROVISIONING,
+        run_metadata={SLURM_JOB_IDS_METADATA_KEY: {"load": "1000"}},
+    )
+
+    pipeline_status, step_statuses = op.fetch_status(run, include_steps=True)
+
+    assert pipeline_status is ExecutionStatus.FAILED
+    assert step_statuses == {"load": ExecutionStatus.FAILED}
+
+
+def test_fetch_status_uses_cleanup_marker_for_never_started_job(monkeypatch):
+    """A dependency-cancelled job is terminal after cleanup completes."""
+    op = _build_orchestrator()
+    runner = FakeRunner()
+    _use_fake_client(monkeypatch, runner)
+    run_id = uuid4()
+    cleanup_marker = f"/runs/{run_id}/cleanup/cleanup_complete"
+    runner.files[cleanup_marker] = ""
+    run = SimpleNamespace(
+        id=run_id,
+        status=ExecutionStatus.PROVISIONING,
+        run_metadata={SLURM_JOB_IDS_METADATA_KEY: {"train": "1001"}},
+    )
+
+    pipeline_status, _ = op.fetch_status(run)
+
+    assert pipeline_status is ExecutionStatus.FAILED
 
 
 # --- validator ----------------------------------------------------------------

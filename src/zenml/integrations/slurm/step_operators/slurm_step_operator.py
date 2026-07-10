@@ -20,11 +20,10 @@ build - no code is shipped by the operator. Submission goes over SSH to a
 login node, or via a local ``sbatch`` when the client already runs on the
 cluster.
 
-Submission is stateless: the Slurm job is named after the step run id, so
-status lookups and cancellation work by job name without persisting job ids.
-While a job is in the queue, its state comes from ``squeue``; once it leaves
-the queue, a sentinel exit-code file written by the job script disambiguates
-success from failure, so Slurm accounting (``sacct``) is never required.
+The Slurm job ID is persisted as step-run metadata for exact status lookups and
+cancellation. Once a job leaves the queue, a sentinel exit-code file written by
+the job script disambiguates success from failure without requiring Slurm
+accounting (``sacct``).
 """
 
 import shlex
@@ -45,27 +44,35 @@ from zenml.integrations.slurm.slurm_client import (
     build_slurm_client,
 )
 from zenml.integrations.slurm.slurm_job import (
+    CANCELLED_FILE,
+    DOCKER_CONFIG_DIR,
+    ENROOT_CONFIG_DIR,
     ENV_FILE,
     EXIT_CODE_FILE,
     OUTPUT_FILE,
+    REGISTRY_AUTH_FILE,
     REQUIRED_COMPONENTS,
     build_container_command,
+    build_registry_auth,
     build_sbatch_script,
+    serialize_environment,
     stage_and_submit,
     validate_remote_stack,
 )
-from zenml.integrations.ssh.utils import serialize_env_for_docker_env_file
 from zenml.logger import get_logger
+from zenml.orchestrators.publish_utils import publish_step_run_metadata
 from zenml.stack import StackValidator
 from zenml.step_operators import BaseStepOperator
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
+    from zenml.metadata.metadata_types import MetadataType
     from zenml.models import PipelineSnapshotBase, StepRunResponse
 
 logger = get_logger(__name__)
 
 SLURM_STEP_OPERATOR_DOCKER_IMAGE_KEY = "slurm_step_operator"
+SLURM_JOB_ID_METADATA_KEY = "slurm_job_id"
 
 _JOB_NAME_PREFIX = "zenml"
 
@@ -175,7 +182,19 @@ class SlurmStepOperator(BaseStepOperator):
         settings = cast(SlurmStepOperatorSettings, self.get_settings(info))
         use_gpu = bool(info.config.resource_settings.gpu_count)
 
-        env_content = serialize_env_for_docker_env_file(environment)
+        env_content = serialize_environment(
+            environment, runtime=self.config.container_runtime
+        )
+        from zenml.client import Client
+
+        container_registry = Client().active_stack.container_registry
+        assert container_registry is not None
+        registry_auth = build_registry_auth(
+            runtime=self.config.container_runtime,
+            run_dir=run_dir,
+            registry_uri=container_registry.config.uri,
+            credentials=container_registry.credentials,
+        )
         container_command = build_container_command(
             runtime=self.config.container_runtime,
             image=image,
@@ -184,6 +203,7 @@ class SlurmStepOperator(BaseStepOperator):
             env_keys=sorted(environment),
             use_gpu=use_gpu,
             settings=settings,
+            registry_auth=registry_auth,
         )
         script = build_sbatch_script(
             job_name=self._job_name(info.step_run_id),
@@ -191,17 +211,45 @@ class SlurmStepOperator(BaseStepOperator):
             container_command=container_command,
             resources=info.config.resource_settings,
             settings=settings,
+            sensitive_paths=registry_auth.sensitive_paths,
         )
 
         client = build_slurm_client(self.config)
+        job_id: Optional[str] = None
         try:
-            job_id = stage_and_submit(client, run_dir, env_content, script)
+            job_id = stage_and_submit(
+                client,
+                run_dir,
+                env_content,
+                script,
+                extra_files=registry_auth.files,
+            )
+            metadata: Dict[str, "MetadataType"] = {
+                SLURM_JOB_ID_METADATA_KEY: job_id
+            }
+            publish_step_run_metadata(
+                step_run_id=info.step_run_id,
+                step_run_metadata={self.id: metadata},
+            )
+            info.step_run.run_metadata.update(metadata)
             logger.info(
                 "Submitted step `%s` as Slurm job `%s` (job name `%s`).",
                 info.pipeline_step_name,
                 job_id,
                 self._job_name(info.step_run_id),
             )
+        except Exception:
+            if job_id is not None:
+                try:
+                    client.cancel(job_id)
+                except Exception:
+                    logger.warning(
+                        "Failed to cancel Slurm job `%s` after step metadata "
+                        "publication failed.",
+                        job_id,
+                    )
+                self._cleanup_sensitive_files(client.runner, run_dir)
+            raise
         finally:
             client.runner.close()
 
@@ -214,16 +262,23 @@ class SlurmStepOperator(BaseStepOperator):
         Returns:
             The execution status of the step run.
         """
-        job_name = self._job_name(step_run.id)
+        job_id = step_run.run_metadata.get(SLURM_JOB_ID_METADATA_KEY)
+        if job_id is None:
+            logger.warning(
+                "No Slurm job ID recorded for step `%s`.", step_run.id
+            )
+            return ExecutionStatus.FAILED
         run_dir = self._run_dir(step_run.id)
         client = build_slurm_client(self.config)
         runner = client.runner
         try:
-            state = client.get_job_state(job_name)
+            state = client.get_job_state(str(job_id))
             if state in PENDING_STATES:
                 return ExecutionStatus.QUEUED
             if state in RUNNING_STATES:
                 return ExecutionStatus.RUNNING
+            if state == "COMPLETED":
+                return ExecutionStatus.COMPLETED
             if state is not None:
                 # Cancellation and failure states can linger in the queue
                 # output briefly before the job is purged from it.
@@ -234,13 +289,21 @@ class SlurmStepOperator(BaseStepOperator):
             # The job is no longer queued: the sentinel file written by the
             # job script's EXIT trap holds the outcome.
             try:
+                runner.read_text(f"{run_dir}/{CANCELLED_FILE}")
+            except Exception:
+                pass
+            else:
+                return ExecutionStatus.CANCELLED
+
+            try:
                 exit_code = runner.read_text(
                     f"{run_dir}/{EXIT_CODE_FILE}"
                 ).strip()
             except Exception:
-                # No queue entry and no sentinel: the job was cancelled
-                # before its trap could run, or never started.
-                return ExecutionStatus.CANCELLED
+                # Slurm queue updates and shared-filesystem writes are not
+                # atomic. Keep polling until either source proves a terminal
+                # outcome instead of misreporting a transient gap as cancelled.
+                return ExecutionStatus.QUEUED
 
             if exit_code == "0":
                 return ExecutionStatus.COMPLETED
@@ -258,7 +321,18 @@ class SlurmStepOperator(BaseStepOperator):
         """
         client = build_slurm_client(self.config)
         try:
-            client.cancel(self._job_name(step_run.id))
+            job_id = step_run.run_metadata.get(SLURM_JOB_ID_METADATA_KEY)
+            if job_id is None:
+                logger.warning(
+                    "No Slurm job ID recorded for step `%s`.", step_run.id
+                )
+                return
+            client.cancel(str(job_id))
+            run_dir = self._run_dir(step_run.id)
+            client.runner.put_text(
+                f"{run_dir}/{CANCELLED_FILE}", "1\n", mode=0o600
+            )
+            self._cleanup_sensitive_files(client.runner, run_dir)
         finally:
             client.runner.close()
 
@@ -296,3 +370,23 @@ class SlurmStepOperator(BaseStepOperator):
             logger.error(
                 "Tail of the failed Slurm job output:\n%s", result.stdout
             )
+
+    @staticmethod
+    def _cleanup_sensitive_files(
+        runner: SlurmCommandRunner, run_dir: str
+    ) -> None:
+        """Remove credential-bearing files for a submitted step.
+
+        Args:
+            runner: Command runner used to remove the files.
+            run_dir: Per-step staging directory.
+        """
+        paths = [
+            f"{run_dir}/{ENV_FILE}",
+            f"{run_dir}/{REGISTRY_AUTH_FILE}",
+            f"{run_dir}/{DOCKER_CONFIG_DIR}",
+            f"{run_dir}/{ENROOT_CONFIG_DIR}",
+        ]
+        runner.run(
+            "rm -rf -- " + " ".join(shlex.quote(path) for path in paths)
+        )

@@ -26,8 +26,14 @@ ends - even if the submitting process dies. All interpolated paths and values
 go through ``shlex.quote``.
 """
 
+import base64
+import json
+import math
+import posixpath
+import re
 import shlex
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Tuple
 
 from zenml.enums import StackComponentType
 from zenml.integrations.slurm.flavors.base import (
@@ -45,12 +51,138 @@ ENV_FILE = "env"
 EXIT_CODE_FILE = "exit_code"
 OUTPUT_FILE = "output.log"
 SCRIPT_FILE = "job.sh"
+CANCELLED_FILE = "cancelled"
+DOCKER_CONFIG_DIR = "docker_config"
+ENROOT_CONFIG_DIR = "enroot_config"
+REGISTRY_AUTH_FILE = "registry_auth.sh"
+
+_ENV_NAME_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 # The required stack components shared by both Slurm components.
 REQUIRED_COMPONENTS = {
     StackComponentType.CONTAINER_REGISTRY,
     StackComponentType.IMAGE_BUILDER,
 }
+
+
+@dataclass(frozen=True)
+class SlurmRegistryAuth:
+    """Files and shell setup required for a private registry pull."""
+
+    files: Dict[str, str] = field(default_factory=dict, repr=False)
+    shell_setup: str = ""
+    sensitive_paths: List[str] = field(default_factory=list)
+
+
+def serialize_environment(
+    environment: Mapping[str, str], runtime: SlurmContainerRuntime
+) -> str:
+    """Serialize a step environment safely for the selected runtime.
+
+    Args:
+        environment: Environment variables passed to the step.
+        runtime: Container runtime that consumes the environment file.
+
+    Returns:
+        Serialized environment file content.
+
+    Raises:
+        ValueError: If an environment variable name is invalid.
+    """
+    for key in environment:
+        if not _ENV_NAME_PATTERN.fullmatch(key):
+            raise ValueError(f"Invalid environment variable name: {key!r}.")
+
+    if runtime == SlurmContainerRuntime.PYXIS:
+        return "".join(
+            f"export {key}={shlex.quote(value)}\n"
+            for key, value in sorted(environment.items())
+        )
+
+    from zenml.integrations.ssh.utils import serialize_env_for_docker_env_file
+
+    return serialize_env_for_docker_env_file(environment)
+
+
+def build_registry_auth(
+    runtime: SlurmContainerRuntime,
+    run_dir: str,
+    registry_uri: Optional[str],
+    credentials: Optional[Tuple[str, str]],
+) -> SlurmRegistryAuth:
+    """Build owner-only registry authentication files for a Slurm job.
+
+    Args:
+        runtime: Container runtime that pulls the image.
+        run_dir: Per-job staging directory.
+        registry_uri: Registry URI from the active stack.
+        credentials: Registry username and password.
+
+    Returns:
+        Authentication files and shell setup for the selected runtime.
+    """
+    if not registry_uri or not credentials:
+        return SlurmRegistryAuth()
+
+    username, password = credentials
+    if runtime == SlurmContainerRuntime.DOCKER:
+        config_dir = f"{run_dir}/{DOCKER_CONFIG_DIR}"
+        config_path = f"{config_dir}/config.json"
+        encoded = base64.b64encode(
+            f"{username}:{password}".encode("utf-8")
+        ).decode("ascii")
+        content = json.dumps(
+            {"auths": {registry_uri: {"auth": encoded}}}, sort_keys=True
+        )
+        return SlurmRegistryAuth(
+            files={config_path: content},
+            shell_setup=f"export DOCKER_CONFIG={shlex.quote(config_dir)}\n",
+            sensitive_paths=[config_dir],
+        )
+
+    if runtime == SlurmContainerRuntime.PYXIS:
+        config_dir = f"{run_dir}/{ENROOT_CONFIG_DIR}"
+        credentials_path = f"{config_dir}/.credentials"
+        registry = registry_uri.removeprefix("https://").removeprefix(
+            "http://"
+        )
+        registry = registry.rstrip("/").split("/", 1)[0]
+        if any(character.isspace() for character in registry + username):
+            raise ValueError(
+                "Enroot registry hostnames and usernames cannot contain "
+                "whitespace."
+            )
+
+        def _netrc_quote(value: str) -> str:
+            return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+        # Enroot matches these fields textually to infer the registry user, so
+        # only the password can use netrc quoting here.
+        content = (
+            f"machine {registry} "
+            f"login {username} "
+            f"password {_netrc_quote(password)}\n"
+        )
+        return SlurmRegistryAuth(
+            files={credentials_path: content},
+            shell_setup=f"export ENROOT_CONFIG_PATH={shlex.quote(config_dir)}\n",
+            sensitive_paths=[config_dir],
+        )
+
+    auth_path = f"{run_dir}/{REGISTRY_AUTH_FILE}"
+    content = "".join(
+        [
+            f"export APPTAINER_DOCKER_USERNAME={shlex.quote(username)}\n",
+            f"export APPTAINER_DOCKER_PASSWORD={shlex.quote(password)}\n",
+            f"export SINGULARITY_DOCKER_USERNAME={shlex.quote(username)}\n",
+            f"export SINGULARITY_DOCKER_PASSWORD={shlex.quote(password)}\n",
+        ]
+    )
+    return SlurmRegistryAuth(
+        files={auth_path: content},
+        shell_setup=f"source {shlex.quote(auth_path)}\n",
+        sensitive_paths=[auth_path],
+    )
 
 
 def validate_remote_stack(stack: "Stack") -> Tuple[bool, str]:
@@ -93,6 +225,7 @@ def build_container_command(
     env_keys: List[str],
     use_gpu: bool,
     settings: SlurmJobSettings,
+    registry_auth: Optional[SlurmRegistryAuth] = None,
 ) -> str:
     """Build the shell snippet that runs the step image on the node.
 
@@ -108,19 +241,21 @@ def build_container_command(
         env_keys: Names of the environment variables (for pyxis).
         use_gpu: Whether the step requested GPUs.
         settings: The resolved step settings (mounts, extra run args).
+        registry_auth: Optional private-registry authentication setup.
 
     Returns:
         A shell snippet that runs the container in the foreground.
     """
     entrypoint = " ".join(shlex.quote(p) for p in entrypoint_command)
     extra = " ".join(shlex.quote(a) for a in settings.container_run_args)
+    shell_setup = registry_auth.shell_setup if registry_auth else ""
 
     if runtime in (
         SlurmContainerRuntime.APPTAINER,
         SlurmContainerRuntime.SINGULARITY,
     ):
         binary = runtime.value  # "apptainer" or "singularity"
-        parts = [binary, "exec"]
+        parts = [binary, "exec", "--no-eval"]
         if use_gpu:
             parts.append("--nv")
         parts += ["--env-file", shlex.quote(env_file)]
@@ -129,7 +264,7 @@ def build_container_command(
         if extra:
             parts.append(extra)
         parts.append(shlex.quote(f"docker://{image}"))
-        return f"{' '.join(parts)} {entrypoint}"
+        return f"{shell_setup}{' '.join(parts)} {entrypoint}"
 
     if runtime == SlurmContainerRuntime.DOCKER:
         parts = ["docker", "run", "--rm"]
@@ -141,7 +276,7 @@ def build_container_command(
         if extra:
             parts.append(extra)
         parts.append(shlex.quote(image))
-        return f"{' '.join(parts)} {entrypoint}"
+        return f"{shell_setup}{' '.join(parts)} {entrypoint}"
 
     # Pyxis / enroot via srun. `--container-env` takes variable *names*; the
     # values are sourced from the 0600 env file into the job shell, so they
@@ -158,7 +293,7 @@ def build_container_command(
     if extra:
         srun.append(extra)
     source_env = f"set -a\nsource {shlex.quote(env_file)}\nset +a\n"
-    return f"{source_env}{' '.join(srun)} {entrypoint}"
+    return f"{shell_setup}{source_env}{' '.join(srun)} {entrypoint}"
 
 
 def build_sbatch_script(
@@ -167,6 +302,7 @@ def build_sbatch_script(
     container_command: str,
     resources: "ResourceSettings",
     settings: SlurmJobSettings,
+    sensitive_paths: Optional[List[str]] = None,
 ) -> str:
     """Render the sbatch job script for a step.
 
@@ -176,6 +312,7 @@ def build_sbatch_script(
         container_command: The shell snippet that runs the step container.
         resources: The step's resource settings (cpu/mem/gpu).
         settings: The resolved Slurm job settings (partition, time, ...).
+        sensitive_paths: Credential-bearing paths removed when the job exits.
 
     Returns:
         The job script content.
@@ -194,10 +331,10 @@ def build_sbatch_script(
         directives.append(f"#SBATCH --qos={settings.qos}")
     if resources.cpu_count:
         directives.append(
-            f"#SBATCH --cpus-per-task={int(resources.cpu_count)}"
+            f"#SBATCH --cpus-per-task={math.ceil(resources.cpu_count)}"
         )
-    if memory_gb := resources.get_memory(unit="GB"):
-        directives.append(f"#SBATCH --mem={int(memory_gb)}G")
+    if memory_mb := resources.get_memory(unit="MB"):
+        directives.append(f"#SBATCH --mem={math.ceil(memory_mb)}M")
     if resources.gpu_count:
         directives.append(f"#SBATCH --gres=gpu:{resources.gpu_count}")
     for directive in settings.extra_sbatch_directives:
@@ -208,10 +345,23 @@ def build_sbatch_script(
     # accounting) and scrubs the credential-bearing env file, so secrets never
     # outlive the job even if the submitting process dies. `set -e` aborts the
     # job (with the failing code captured) if the container runtime fails.
+    cleanup_paths = [f"{run_dir}/{ENV_FILE}", *(sensitive_paths or [])]
+    cleanup_command = "rm -rf -- " + " ".join(
+        shlex.quote(path) for path in cleanup_paths
+    )
+    exit_code_path = shlex.quote(f"{run_dir}/{EXIT_CODE_FILE}")
+
     return f"""#!/bin/bash
 {chr(10).join(directives)}
 
-trap 'ec=$?; echo "$ec" > {run_dir}/{EXIT_CODE_FILE}; rm -f {run_dir}/{ENV_FILE}' EXIT
+cleanup() {{
+    ec=$?
+    trap - EXIT
+    echo "$ec" > {exit_code_path}
+    {cleanup_command}
+    exit "$ec"
+}}
+trap cleanup EXIT
 set -eo pipefail
 
 {container_command}
@@ -224,6 +374,7 @@ def stage_and_submit(
     env_content: str,
     script: str,
     dependencies: Optional[List[str]] = None,
+    extra_files: Optional[Dict[str, str]] = None,
 ) -> str:
     """Stage a job's files on the cluster and submit it.
 
@@ -238,6 +389,7 @@ def stage_and_submit(
         env_content: The serialized environment file content (holds secrets).
         script: The sbatch job script content.
         dependencies: Slurm job ids this job must wait for (for DAG edges).
+        extra_files: Additional owner-only files to stage for the job.
 
     Returns:
         The submitted Slurm job id.
@@ -246,15 +398,35 @@ def stage_and_submit(
         RuntimeError: If the run directory cannot be created on the cluster.
     """
     runner = client.runner
-    result = runner.run(f"mkdir -m 700 -p {shlex.quote(run_dir)}")
+    result = runner.run(
+        f"umask 077 && mkdir -p {shlex.quote(run_dir)} && "
+        f"chmod 700 {shlex.quote(run_dir)}"
+    )
     if result.exit_code != 0:
         raise RuntimeError(
             f"Failed to create run directory `{run_dir}` on the cluster: "
             f"{result.stderr.strip()}"
         )
 
-    runner.put_text(f"{run_dir}/{ENV_FILE}", env_content, mode=0o600)
-    script_path = f"{run_dir}/{SCRIPT_FILE}"
-    runner.put_text(script_path, script, mode=0o700)
+    try:
+        runner.put_text(f"{run_dir}/{ENV_FILE}", env_content, mode=0o600)
+        for path, content in (extra_files or {}).items():
+            parent = posixpath.dirname(path)
+            if parent != run_dir:
+                result = runner.run(
+                    f"umask 077 && mkdir -p {shlex.quote(parent)} && "
+                    f"chmod 700 {shlex.quote(parent)}"
+                )
+                if result.exit_code != 0:
+                    raise RuntimeError(
+                        f"Failed to create registry auth directory `{parent}`: "
+                        f"{result.stderr.strip()}"
+                    )
+            runner.put_text(path, content, mode=0o600)
 
-    return client.submit(script_path, dependencies=dependencies)
+        script_path = f"{run_dir}/{SCRIPT_FILE}"
+        runner.put_text(script_path, script, mode=0o700)
+        return client.submit(script_path, dependencies=dependencies)
+    except Exception:
+        runner.run(f"rm -rf -- {shlex.quote(run_dir)}")
+        raise

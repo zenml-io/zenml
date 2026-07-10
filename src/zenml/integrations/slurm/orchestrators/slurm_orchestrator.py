@@ -25,29 +25,38 @@ when the client already runs on the cluster.
 """
 
 import os
-from typing import TYPE_CHECKING, Dict, List, Optional, cast
+import shlex
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, cast
 
 from zenml.config.base_settings import BaseSettings
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
+from zenml.enums import ExecutionStatus
 from zenml.integrations.slurm.flavors.slurm_orchestrator_flavor import (
     SlurmOrchestratorConfig,
     SlurmOrchestratorSettings,
 )
 from zenml.integrations.slurm.slurm_client import (
+    PENDING_STATES,
+    RUNNING_STATES,
     SlurmClient,
     build_slurm_client,
 )
 from zenml.integrations.slurm.slurm_job import (
+    CANCELLED_FILE,
     ENV_FILE,
+    EXIT_CODE_FILE,
+    OUTPUT_FILE,
     REQUIRED_COMPONENTS,
+    SCRIPT_FILE,
     build_container_command,
+    build_registry_auth,
     build_sbatch_script,
+    serialize_environment,
     stage_and_submit,
     validate_remote_stack,
 )
-from zenml.integrations.ssh.utils import serialize_env_for_docker_env_file
 from zenml.logger import get_logger
 from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.orchestrators.topsort import topsorted_layers
@@ -61,6 +70,9 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 ENV_ZENML_SLURM_RUN_ID = "ZENML_SLURM_ORCHESTRATOR_RUN_ID"
+SLURM_JOB_IDS_METADATA_KEY = "slurm_job_ids"
+SLURM_CLEANUP_JOB_ID_METADATA_KEY = "slurm_cleanup_job_id"
+_CLEANUP_COMPLETE_FILE = "cleanup_complete"
 
 
 class SlurmOrchestrator(ContainerizedOrchestrator):
@@ -216,10 +228,17 @@ class SlurmOrchestrator(ContainerizedOrchestrator):
         steps = snapshot.step_configurations
         client = build_slurm_client(self.config)
         submitted: Dict[str, str] = {}
+        sensitive_paths: List[str] = []
+        cleanup_job_id: Optional[str] = None
+        cleanup_settings = cast(
+            SlurmOrchestratorSettings, self.get_settings(snapshot)
+        )
+        container_registry = stack.container_registry
+        assert container_registry is not None
         try:
             for step_name in self._sorted_step_names(steps):
                 step = steps[step_name]
-                job_id = self._submit_step(
+                job_id, step_sensitive_paths = self._submit_step(
                     client=client,
                     snapshot=snapshot,
                     run_id=run_id,
@@ -231,18 +250,43 @@ class SlurmOrchestrator(ContainerizedOrchestrator):
                         for up in step.spec.upstream_steps
                         if up in submitted
                     ],
+                    registry_uri=container_registry.config.uri,
+                    registry_credentials=container_registry.credentials,
                 )
                 submitted[step_name] = job_id
+                sensitive_paths.extend(step_sensitive_paths)
                 logger.info(
                     "Submitted step `%s` as Slurm job `%s`.",
                     step_name,
                     job_id,
                 )
+            cleanup_job_id = self._submit_cleanup_job(
+                client=client,
+                run_id=run_id,
+                submitted=submitted,
+                sensitive_paths=sensitive_paths,
+                settings=cleanup_settings,
+            )
         except Exception:
             # Best-effort cleanup: cancel the jobs already queued for this run
             # so a partially-submitted pipeline does not leave work running.
             if submitted:
-                client.runner.run(f"scancel {' '.join(submitted.values())}")
+                for job_id in submitted.values():
+                    try:
+                        client.cancel(job_id)
+                    except Exception:
+                        logger.warning(
+                            "Failed to cancel Slurm job `%s` after a submission "
+                            "failure.",
+                            job_id,
+                        )
+                if sensitive_paths:
+                    client.runner.run(
+                        "rm -rf -- "
+                        + " ".join(
+                            shlex.quote(path) for path in sensitive_paths
+                        )
+                    )
             raise
         finally:
             client.runner.close()
@@ -252,7 +296,13 @@ class SlurmOrchestrator(ContainerizedOrchestrator):
             snapshot.pipeline_configuration.name,
             len(submitted),
         )
-        return None
+        assert cleanup_job_id is not None
+        return SubmissionResult(
+            metadata={
+                SLURM_JOB_IDS_METADATA_KEY: submitted,
+                SLURM_CLEANUP_JOB_ID_METADATA_KEY: cleanup_job_id,
+            }
+        )
 
     def _submit_step(
         self,
@@ -263,7 +313,9 @@ class SlurmOrchestrator(ContainerizedOrchestrator):
         step: "Step",
         step_environment: Dict[str, str],
         upstream_job_ids: List[str],
-    ) -> str:
+        registry_uri: Optional[str],
+        registry_credentials: Optional[Tuple[str, str]],
+    ) -> Tuple[str, List[str]]:
         """Stage and submit a single step as a Slurm job.
 
         Args:
@@ -274,9 +326,11 @@ class SlurmOrchestrator(ContainerizedOrchestrator):
             step: The step configuration.
             step_environment: Environment variables for the step.
             upstream_job_ids: Slurm job ids this step depends on.
+            registry_uri: URI of the stack's container registry.
+            registry_credentials: Registry username and password.
 
         Returns:
-            The submitted Slurm job id.
+            The submitted Slurm job id and credential-bearing paths.
 
         Raises:
             RuntimeError: If the step directory cannot be created.
@@ -289,7 +343,15 @@ class SlurmOrchestrator(ContainerizedOrchestrator):
 
         environment = step_environment.copy()
         environment[ENV_ZENML_SLURM_RUN_ID] = run_id
-        env_content = serialize_env_for_docker_env_file(environment)
+        env_content = serialize_environment(
+            environment, runtime=self.config.container_runtime
+        )
+        registry_auth = build_registry_auth(
+            runtime=self.config.container_runtime,
+            run_dir=run_dir,
+            registry_uri=registry_uri,
+            credentials=registry_credentials,
+        )
 
         entrypoint_command = (
             StepEntrypointConfiguration.get_entrypoint_command()
@@ -305,6 +367,7 @@ class SlurmOrchestrator(ContainerizedOrchestrator):
             env_keys=sorted(environment),
             use_gpu=use_gpu,
             settings=settings,
+            registry_auth=registry_auth,
         )
         script = build_sbatch_script(
             job_name=self._job_name(run_id, step_name),
@@ -312,12 +375,200 @@ class SlurmOrchestrator(ContainerizedOrchestrator):
             container_command=container_command,
             resources=step.config.resource_settings,
             settings=settings,
+            sensitive_paths=registry_auth.sensitive_paths,
         )
 
-        return stage_and_submit(
+        job_id = stage_and_submit(
             client,
             run_dir=run_dir,
             env_content=env_content,
             script=script,
             dependencies=upstream_job_ids,
+            extra_files=registry_auth.files,
+        )
+        return job_id, [env_file, *registry_auth.sensitive_paths]
+
+    def _submit_cleanup_job(
+        self,
+        client: SlurmClient,
+        run_id: str,
+        submitted: Dict[str, str],
+        sensitive_paths: List[str],
+        settings: SlurmOrchestratorSettings,
+    ) -> str:
+        """Submit one credential cleanup job after all DAG jobs terminate.
+
+        Args:
+            client: Slurm client used for submission.
+            run_id: Orchestrator run ID.
+            submitted: Mapping of step names to Slurm job IDs.
+            sensitive_paths: Credential-bearing files and directories.
+            settings: Pipeline-level Slurm settings for the cleanup job.
+
+        Returns:
+            The cleanup Slurm job ID.
+
+        Raises:
+            RuntimeError: If the cleanup job cannot be staged.
+        """
+        job_ids = list(submitted.values())
+        cleanup_dir = f"{self.config.workdir.rstrip('/')}/{run_id}/cleanup"
+        cleanup_marker = f"{cleanup_dir}/{_CLEANUP_COMPLETE_FILE}"
+        cleanup_command = "rm -rf -- " + " ".join(
+            shlex.quote(path) for path in sensitive_paths
+        )
+        directives = [
+            f"#SBATCH --job-name=zenml-{run_id}-cleanup",
+            f"#SBATCH --output={cleanup_dir}/{OUTPUT_FILE}",
+        ]
+        if settings.partition:
+            directives.append(f"#SBATCH --partition={settings.partition}")
+        if settings.account:
+            directives.append(f"#SBATCH --account={settings.account}")
+        if settings.qos:
+            directives.append(f"#SBATCH --qos={settings.qos}")
+
+        script = f"""#!/bin/bash
+{chr(10).join(directives)}
+
+set -eo pipefail
+{cleanup_command}
+touch {shlex.quote(cleanup_marker)}
+"""
+        result = client.runner.run(
+            f"umask 077 && mkdir -p {shlex.quote(cleanup_dir)} && "
+            f"chmod 700 {shlex.quote(cleanup_dir)}"
+        )
+        if result.exit_code != 0:
+            raise RuntimeError(
+                f"Failed to create cleanup directory `{cleanup_dir}`: "
+                f"{result.stderr.strip()}"
+            )
+        script_path = f"{cleanup_dir}/{SCRIPT_FILE}"
+        client.runner.put_text(script_path, script, mode=0o700)
+        return client.submit(
+            script_path,
+            dependencies=job_ids,
+            dependency_type="afterany",
+        )
+
+    def fetch_status(
+        self, run: "PipelineRunResponse", include_steps: bool = False
+    ) -> Tuple[
+        Optional[ExecutionStatus], Optional[Dict[str, ExecutionStatus]]
+    ]:
+        """Reconcile a detached pipeline run with its Slurm jobs.
+
+        Args:
+            run: Pipeline run submitted by this orchestrator.
+            include_steps: Whether to return individual step statuses.
+
+        Returns:
+            The pipeline status and optional step statuses.
+        """
+        raw_job_ids = run.run_metadata.get(SLURM_JOB_IDS_METADATA_KEY)
+        if not isinstance(raw_job_ids, dict):
+            logger.warning("No Slurm job metadata found for run `%s`.", run.id)
+            return None, None
+
+        job_ids = {
+            str(name): str(job_id) for name, job_id in raw_job_ids.items()
+        }
+        cleanup_marker = (
+            f"{self.config.workdir.rstrip('/')}/{run.id}/cleanup/"
+            f"{_CLEANUP_COMPLETE_FILE}"
+        )
+        client = build_slurm_client(self.config)
+        try:
+            try:
+                client.runner.read_text(cleanup_marker)
+            except Exception:
+                cleanup_complete = False
+            else:
+                cleanup_complete = True
+
+            statuses = {
+                step_name: self._get_job_status(
+                    client=client,
+                    job_id=job_id,
+                    run_dir=self._run_dir(str(run.id), step_name),
+                    cleanup_complete=cleanup_complete,
+                )
+                for step_name, job_id in job_ids.items()
+            }
+        finally:
+            client.runner.close()
+
+        known_statuses = [status for status in statuses.values() if status]
+        pipeline_status: Optional[ExecutionStatus] = None
+        if not run.status.is_finished:
+            if any(
+                status in {ExecutionStatus.FAILED, ExecutionStatus.CANCELLED}
+                for status in known_statuses
+            ):
+                pipeline_status = ExecutionStatus.FAILED
+            elif len(known_statuses) == len(statuses) and all(
+                status == ExecutionStatus.COMPLETED
+                for status in known_statuses
+            ):
+                pipeline_status = ExecutionStatus.COMPLETED
+            elif ExecutionStatus.RUNNING in known_statuses:
+                pipeline_status = ExecutionStatus.RUNNING
+            elif known_statuses:
+                pipeline_status = ExecutionStatus.PROVISIONING
+
+        step_statuses = None
+        if include_steps:
+            step_statuses = {
+                name: status for name, status in statuses.items() if status
+            }
+        return pipeline_status, step_statuses
+
+    @staticmethod
+    def _get_job_status(
+        client: SlurmClient,
+        job_id: str,
+        run_dir: str,
+        cleanup_complete: bool,
+    ) -> Optional[ExecutionStatus]:
+        """Map one Slurm job and its sentinel to a ZenML status.
+
+        Args:
+            client: Slurm client used to inspect the job.
+            job_id: Slurm job ID.
+            run_dir: Per-step staging directory.
+            cleanup_complete: Whether the final cleanup job has run.
+
+        Returns:
+            The reconciled status, or None while the outcome is unknown.
+        """
+        state = client.get_job_state(job_id)
+        if state in PENDING_STATES:
+            return ExecutionStatus.QUEUED
+        if state in RUNNING_STATES:
+            return ExecutionStatus.RUNNING
+        if state == "COMPLETED":
+            return ExecutionStatus.COMPLETED
+        if state is not None:
+            if state.startswith("CANCEL"):
+                return ExecutionStatus.CANCELLED
+            return ExecutionStatus.FAILED
+
+        try:
+            client.runner.read_text(f"{run_dir}/{CANCELLED_FILE}")
+        except Exception:
+            pass
+        else:
+            return ExecutionStatus.CANCELLED
+
+        try:
+            exit_code = client.runner.read_text(
+                f"{run_dir}/{EXIT_CODE_FILE}"
+            ).strip()
+        except Exception:
+            return ExecutionStatus.FAILED if cleanup_complete else None
+        return (
+            ExecutionStatus.COMPLETED
+            if exit_code == "0"
+            else ExecutionStatus.FAILED
         )

@@ -25,11 +25,12 @@ file written by the job script after it leaves the queue, so the client does
 not depend on Slurm accounting (``sacct``) being configured.
 """
 
+import re
 import shlex
 import subprocess
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Literal, Optional
 
 if TYPE_CHECKING:
     from zenml.integrations.slurm.flavors.base import SlurmConnectionConfig
@@ -138,9 +139,12 @@ class LocalSlurmCommandRunner(SlurmCommandRunner):
         """
         import os
 
-        with open(remote_path, "w") as f:
+        flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+        flags |= getattr(os, "O_NOFOLLOW", 0)
+        file_descriptor = os.open(remote_path, flags, mode)
+        os.fchmod(file_descriptor, mode)
+        with os.fdopen(file_descriptor, "w") as f:
             f.write(content)
-        os.chmod(remote_path, mode)
 
     def read_text(self, remote_path: str) -> str:
         """Read a text file.
@@ -231,7 +235,10 @@ class SlurmClient:
         self.runner = runner
 
     def submit(
-        self, script_path: str, dependencies: Optional[List[str]] = None
+        self,
+        script_path: str,
+        dependencies: Optional[List[str]] = None,
+        dependency_type: Literal["afterok", "afterany"] = "afterok",
     ) -> str:
         """Submit a batch script and return the Slurm job id.
 
@@ -242,6 +249,7 @@ class SlurmClient:
                 cannot be satisfied, the job is cancelled rather than left
                 pending forever (``--kill-on-invalid-dep``), which propagates a
                 failure through the DAG.
+            dependency_type: Slurm dependency type to use.
 
         Returns:
             The Slurm job id.
@@ -251,10 +259,15 @@ class SlurmClient:
         """
         command = "sbatch --parsable"
         if dependencies:
+            if not all(
+                re.fullmatch(r"[0-9]+", job_id) for job_id in dependencies
+            ):
+                raise ValueError("Slurm dependency job IDs must be numeric.")
             command += (
-                f" --dependency=afterok:{':'.join(dependencies)}"
-                " --kill-on-invalid-dep=yes"
+                f" --dependency={dependency_type}:{':'.join(dependencies)}"
             )
+            if dependency_type == "afterok":
+                command += " --kill-on-invalid-dep=yes"
         result = self.runner.run(f"{command} {shlex.quote(script_path)}")
         if result.exit_code != 0:
             raise RuntimeError(
@@ -262,13 +275,18 @@ class SlurmClient:
                 f"{result.stderr.strip() or result.stdout.strip()}"
             )
         # --parsable prints `jobid[;cluster]`
-        return result.stdout.strip().split(";")[0]
+        job_id = result.stdout.strip().split(";")[0]
+        if not re.fullmatch(r"[0-9]+", job_id):
+            raise RuntimeError(
+                f"`sbatch` returned an invalid job ID: {job_id!r}"
+            )
+        return job_id
 
-    def get_job_state(self, job_name: str) -> Optional[str]:
-        """Get the queue state of a job by its name.
+    def get_job_state(self, job_id: str) -> Optional[str]:
+        """Get the queue state of a job by its ID.
 
         Args:
-            job_name: The Slurm job name to look up.
+            job_id: The Slurm job ID to look up.
 
         Returns:
             The Slurm job state (e.g. ``PENDING``, ``RUNNING``) or ``None``
@@ -280,27 +298,50 @@ class SlurmClient:
         Raises:
             RuntimeError: If ``squeue`` fails.
         """
+        if not re.fullmatch(r"[0-9]+", job_id):
+            raise ValueError("Slurm job IDs must be numeric.")
         result = self.runner.run(
-            f"squeue --noheader --format=%T --name {shlex.quote(job_name)}"
+            f"squeue --noheader --format=%T --jobs {shlex.quote(job_id)}"
         )
         if result.exit_code != 0:
+            if "invalid job id" in result.stderr.lower():
+                return None
             raise RuntimeError(
                 f"`squeue` failed with exit code {result.exit_code}: "
                 f"{result.stderr.strip()}"
             )
         state = result.stdout.strip().splitlines()
-        return state[0].strip() if state else None
+        if state:
+            return state[0].strip()
 
-    def cancel(self, job_name: str) -> None:
-        """Cancel a job by its name.
+        # Completed jobs can disappear from squeue before a shared-filesystem
+        # sentinel becomes visible. Slurm keeps them in controller memory for
+        # MinJobAge, so scontrol closes that race without requiring sacct.
+        result = self.runner.run(
+            f"scontrol show job --oneliner {shlex.quote(job_id)}"
+        )
+        if result.exit_code != 0:
+            if "invalid job id" in result.stderr.lower():
+                return None
+            raise RuntimeError(
+                f"`scontrol show job` failed with exit code "
+                f"{result.exit_code}: {result.stderr.strip()}"
+            )
+        match = re.search(r"(?:^|\s)JobState=([^\s]+)", result.stdout)
+        return match.group(1) if match else None
+
+    def cancel(self, job_id: str) -> None:
+        """Cancel a job by its ID.
 
         Args:
-            job_name: The Slurm job name to cancel.
+            job_id: The Slurm job ID to cancel.
 
         Raises:
             RuntimeError: If ``scancel`` fails.
         """
-        result = self.runner.run(f"scancel --name {shlex.quote(job_name)}")
+        if not re.fullmatch(r"[0-9]+", job_id):
+            raise ValueError("Slurm job IDs must be numeric.")
+        result = self.runner.run(f"scancel {shlex.quote(job_id)}")
         if result.exit_code != 0:
             raise RuntimeError(
                 f"`scancel` failed with exit code {result.exit_code}: "

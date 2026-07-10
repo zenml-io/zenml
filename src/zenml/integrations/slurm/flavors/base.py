@@ -117,7 +117,8 @@ class SlurmConnectionConfig(SSHConnectionConfigMixin):
         default=SlurmContainerRuntime.APPTAINER,
         description="Runtime used to run the step's Docker image on the "
         "compute node: 'apptainer' or 'singularity' (rootless, pulls "
-        "`docker://` images; the safe HPC default), 'pyxis' (NVIDIA "
+        "`docker://` images; requires Apptainer 1.1+ or SingularityCE 3.10+ "
+        "for `--no-eval` support), 'pyxis' (NVIDIA "
         "enroot/pyxis via `srun --container-image`), or 'docker' (only where "
         "a Docker daemon is available). Example: 'apptainer'",
     )

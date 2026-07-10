@@ -39,9 +39,14 @@ from zenml.integrations.slurm.slurm_client import (
 )
 from zenml.integrations.slurm.slurm_job import (
     build_container_command,
+    build_registry_auth,
     build_sbatch_script,
+    serialize_environment,
 )
 from zenml.integrations.slurm.step_operators import SlurmStepOperator
+from zenml.integrations.slurm.step_operators.slurm_step_operator import (
+    SLURM_JOB_ID_METADATA_KEY,
+)
 
 SECRET_TOKEN = "super-secret-zenml-token"
 IMAGE = "registry.example.com/zenml:abc123"
@@ -159,7 +164,7 @@ def _fake_info(
                 cpu_count=4, gpu_count=gpu or None, memory="16GB"
             )
         ),
-        step_run=None,
+        step_run=SimpleNamespace(run_metadata={}),
         get_image=lambda key: IMAGE,
     )
 
@@ -239,13 +244,13 @@ def test_client_submit_parses_job_id():
     assert runner.commands == ["sbatch --parsable /s/job.sh"]
 
 
-def test_client_state_and_cancel_use_job_name():
-    """Status lookup and cancellation address the job by name."""
+def test_client_state_and_cancel_use_job_id():
+    """Status lookup and cancellation address the exact job ID."""
     runner = FakeRunner(queue_state="RUNNING")
     client = SlurmClient(runner)
-    assert client.get_job_state("zenml-abc") == "RUNNING"
-    client.cancel("zenml-abc")
-    assert runner.commands[-1] == "scancel --name zenml-abc"
+    assert client.get_job_state("12345") == "RUNNING"
+    client.cancel("12345")
+    assert runner.commands[-1] == "scancel 12345"
 
 
 # --- container command rendering (per runtime) --------------------------------
@@ -271,7 +276,7 @@ def _container_cmd(runtime: str, gpu: bool = False) -> str:
 def test_apptainer_command():
     """Apptainer exec pulls the docker image and passes the env file."""
     cmd = _container_cmd("apptainer", gpu=True)
-    assert cmd.startswith("apptainer exec")
+    assert cmd.startswith("apptainer exec --no-eval")
     assert "--nv" in cmd
     assert "--env-file" in cmd and "/s/zenml-x/env" in cmd
     assert "docker://registry.example.com/zenml:abc123" in cmd
@@ -297,6 +302,41 @@ def test_pyxis_command_passes_env_names_not_values():
     assert "--container-mounts=/scratch:/scratch" in cmd
 
 
+def test_pyxis_environment_is_shell_escaped():
+    """Pyxis can source values without executing shell substitutions."""
+    content = serialize_environment(
+        {"TOKEN": "value with spaces $(touch /tmp/unsafe)"},
+        runtime=SlurmStepOperatorConfig(
+            transport="local", workdir="/s", container_runtime="pyxis"
+        ).container_runtime,
+    )
+    assert content == "export TOKEN='value with spaces $(touch /tmp/unsafe)'\n"
+
+
+@pytest.mark.parametrize(
+    "runtime", ["apptainer", "singularity", "pyxis", "docker"]
+)
+def test_registry_auth_keeps_password_out_of_shell_command(runtime):
+    """Runtime-specific registry auth is staged instead of passed in argv."""
+    config = SlurmStepOperatorConfig(
+        transport="local", workdir="/s", container_runtime=runtime
+    )
+    auth = build_registry_auth(
+        runtime=config.container_runtime,
+        run_dir="/s/run",
+        registry_uri="registry.example.com",
+        credentials=("user", SECRET_TOKEN),
+    )
+    assert auth.files
+    assert SECRET_TOKEN not in auth.shell_setup
+    if runtime == "docker":
+        assert all(
+            SECRET_TOKEN not in content for content in auth.files.values()
+        )
+    else:
+        assert any(SECRET_TOKEN in content for content in auth.files.values())
+
+
 # --- sbatch script ------------------------------------------------------------
 
 
@@ -315,12 +355,25 @@ def test_sbatch_script_directives_and_scrub():
     assert f"#SBATCH --job-name=zenml-{sid}" in script
     assert "#SBATCH --partition=gpu" in script
     assert "#SBATCH --gres=gpu:2" in script
-    assert "#SBATCH --mem=16G" in script
+    assert "#SBATCH --mem=16000M" in script
     assert "set -eo pipefail" in script
     assert "RUN_THE_CONTAINER" in script
     # the EXIT trap records the outcome AND scrubs the credential env file
     assert 'echo "$ec" > /s/zenml-x/exit_code' in script
-    assert "rm -f /s/zenml-x/env" in script
+    assert "rm -rf -- /s/zenml-x/env" in script
+
+
+def test_sbatch_resources_round_up():
+    """Fractional CPUs and sub-GB memory never become zero requests."""
+    script = build_sbatch_script(
+        job_name="zenml-small",
+        run_dir="/s/small",
+        container_command="true",
+        resources=ResourceSettings(cpu_count=0.5, memory="500MB"),
+        settings=SlurmStepOperatorSettings(),
+    )
+    assert "#SBATCH --cpus-per-task=1" in script
+    assert "#SBATCH --mem=500M" in script
 
 
 # --- submit: security-sensitive handling --------------------------------------
@@ -336,10 +389,26 @@ def test_submit_writes_secret_env_file_owner_only(monkeypatch):
         ".build_slurm_client",
         lambda config: SlurmClient(runner),
     )
+    monkeypatch.setattr(
+        "zenml.integrations.slurm.step_operators.slurm_step_operator"
+        ".publish_step_run_metadata",
+        lambda **kwargs: None,
+    )
+    fake_registry = SimpleNamespace(
+        config=SimpleNamespace(uri="registry.example.com"),
+        credentials=("registry-user", "registry-password"),
+    )
+    monkeypatch.setattr(
+        "zenml.client.Client",
+        lambda: SimpleNamespace(
+            active_stack=SimpleNamespace(container_registry=fake_registry)
+        ),
+    )
 
     sid = uuid4()
+    info = _fake_info(sid)
     op.submit(
-        info=_fake_info(sid),
+        info=info,
         entrypoint_command=["python", "-m", "zenml.entrypoint"],
         environment={
             "ZENML_STORE_API_KEY": SECRET_TOKEN,
@@ -351,16 +420,22 @@ def test_submit_writes_secret_env_file_owner_only(monkeypatch):
     # env file present, contains the secret, and is owner-only
     assert runner.modes[f"{run_dir}/env"] == 0o600
     assert SECRET_TOKEN in runner.files[f"{run_dir}/env"]
+    auth_path = f"{run_dir}/registry_auth.sh"
+    assert runner.modes[auth_path] == 0o600
+    assert "registry-password" in runner.files[auth_path]
 
-    # the run directory is created owner-only, atomically
-    assert any("mkdir -m 700" in c for c in runner.commands)
+    # the run directory is created owner-only
+    assert any("chmod 700" in c for c in runner.commands)
     # the job script is written owner-only
     assert runner.modes[f"{run_dir}/job.sh"] == 0o700
 
     # the secret value is NOT baked into the job script (only the env-file ref)
     assert SECRET_TOKEN not in runner.files[f"{run_dir}/job.sh"]
+    assert "registry-password" not in runner.files[f"{run_dir}/job.sh"]
     # the secret value is NOT on any command line issued to the host
     assert all(SECRET_TOKEN not in c for c in runner.commands)
+    assert all("registry-password" not in c for c in runner.commands)
+    assert info.step_run.run_metadata[SLURM_JOB_ID_METADATA_KEY] == "12345"
 
 
 # --- status mapping -----------------------------------------------------------
@@ -392,13 +467,23 @@ def test_get_status_maps_queue_states(op_and_runner, queue_state, expected):
     """Queue states map onto ZenML execution statuses."""
     op, runner = op_and_runner
     runner.queue_state = queue_state
-    assert op.get_status(SimpleNamespace(id=uuid4())) is expected
+    assert (
+        op.get_status(
+            SimpleNamespace(
+                id=uuid4(),
+                run_metadata={SLURM_JOB_ID_METADATA_KEY: "12345"},
+            )
+        )
+        is expected
+    )
 
 
 def test_get_status_reads_sentinel_after_queue(op_and_runner):
     """After the job leaves the queue, the sentinel file decides the status."""
     op, runner = op_and_runner
-    step_run = SimpleNamespace(id=uuid4())
+    step_run = SimpleNamespace(
+        id=uuid4(), run_metadata={SLURM_JOB_ID_METADATA_KEY: "12345"}
+    )
     run_dir = op._run_dir(step_run.id)
     runner.files[f"{run_dir}/exit_code"] = "0\n"
     assert op.get_status(step_run) is ExecutionStatus.COMPLETED
@@ -406,12 +491,30 @@ def test_get_status_reads_sentinel_after_queue(op_and_runner):
     assert op.get_status(step_run) is ExecutionStatus.FAILED
 
 
-def test_get_status_without_queue_or_sentinel_is_cancelled(op_and_runner):
-    """No queue entry and no sentinel means the job was torn down early."""
+def test_get_status_without_queue_or_sentinel_is_non_terminal(op_and_runner):
+    """A queue/filesystem visibility gap remains non-terminal."""
     op, runner = op_and_runner
     assert (
-        op.get_status(SimpleNamespace(id=uuid4())) is ExecutionStatus.CANCELLED
+        op.get_status(
+            SimpleNamespace(
+                id=uuid4(),
+                run_metadata={SLURM_JOB_ID_METADATA_KEY: "12345"},
+            )
+        )
+        is ExecutionStatus.QUEUED
     )
+
+
+def test_get_status_reads_cancelled_marker(op_and_runner):
+    """A cancelled-before-start marker produces a terminal status."""
+    op, runner = op_and_runner
+    step_run = SimpleNamespace(
+        id=uuid4(), run_metadata={SLURM_JOB_ID_METADATA_KEY: "12345"}
+    )
+    run_dir = op._run_dir(step_run.id)
+    runner.files[f"{run_dir}/cancelled"] = "1\n"
+
+    assert op.get_status(step_run) is ExecutionStatus.CANCELLED
 
 
 def test_cleanup_removes_run_dir(op_and_runner):
