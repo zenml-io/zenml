@@ -3,11 +3,9 @@ name: Release Package & Docker Image
 on:
   push:
     tags: ['*']
-
 env:
   ZENML_LOGGING_VERBOSITY: debug
   ZENML_ANALYTICS_OPT_IN: false
-
 jobs:
   setup-and-test:
     uses: ./.github/workflows/unit-test.yml

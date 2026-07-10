@@ -8,11 +8,9 @@ on:
         required: false
         default: false
         type: boolean
-
 env:
   ZENML_LOGGING_VERBOSITY: debug
   ZENML_ANALYTICS_OPT_IN: false
-
 jobs:
   build_nightly_python_package:
     name: Build Nightly Python 🐍 package 📦

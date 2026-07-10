@@ -51,11 +51,9 @@ on:
         type: string
         required: false
         default: ''
-
 env:
   ZENML_LOGGING_VERBOSITY: debug
   ZENML_ANALYTICS_OPT_IN: false
-
 jobs:
   linting:
     name: linting

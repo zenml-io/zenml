@@ -3,11 +3,9 @@ name: Publish SDK Docs
 on:
   push:
     branches: [release/**]
-
 env:
   ZENML_LOGGING_VERBOSITY: debug
   ZENML_ANALYTICS_OPT_IN: false
-
 jobs:
   publish:
     name: Build 🔨 and publish 📰 the api docs 📁 to gh-pages

@@ -25,11 +25,9 @@ on:
         options: ['3.10', '3.11', '3.12', '3.13', '3.14']
         required: false
         default: '3.11'
-
 env:
   ZENML_LOGGING_VERBOSITY: debug
   ZENML_ANALYTICS_OPT_IN: false
-
 jobs:
   update-e2e-batch-template-to-examples:
     name: update-e2e-batch-template-to-examples

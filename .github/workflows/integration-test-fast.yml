@@ -82,11 +82,9 @@ on:
         type: number
         required: false
         default: 3
-
 env:
   ZENML_LOGGING_VERBOSITY: debug
   ZENML_ANALYTICS_OPT_IN: false
-
 jobs:
   integration-tests-fast:
     name: integration-tests-fast

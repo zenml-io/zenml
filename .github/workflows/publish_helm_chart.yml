@@ -4,11 +4,9 @@ name: Publish Helm Chart
 on:
   workflow_call:
   workflow_dispatch:
-
 env:
   ZENML_LOGGING_VERBOSITY: debug
   ZENML_ANALYTICS_OPT_IN: false
-
 jobs:
   publish_to_ecr:
     name: Publish Helm Chart 🛞 to ECR ☁️

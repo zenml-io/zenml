@@ -8,11 +8,9 @@ name: pr-label
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
 env:
   ZENML_LOGGING_VERBOSITY: debug
   ZENML_ANALYTICS_OPT_IN: false
-
 jobs:
   pr-labeler:
     if: github.repository == 'zenml-io/zenml'

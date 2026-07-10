@@ -8,10 +8,8 @@ on:
   push:
     branches: [main, develop]
   workflow_dispatch:
-
 env:
   ZENML_ANALYTICS_OPT_IN: false
-
 jobs:
   test-agent-examples:
     runs-on: ubuntu-latest

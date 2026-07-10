@@ -61,11 +61,9 @@ on:
         type: number
         required: false
         default: 3
-
 env:
   ZENML_LOGGING_VERBOSITY: debug
   ZENML_ANALYTICS_OPT_IN: false
-
 jobs:
   unit-test:
     name: unit-test

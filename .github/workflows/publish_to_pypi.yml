@@ -2,11 +2,9 @@
 name: Publish Pypi package
 on:
   workflow_call:
-
 env:
   ZENML_LOGGING_VERBOSITY: debug
   ZENML_ANALYTICS_OPT_IN: false
-
 jobs:
   publish_to_pypi:
     name: Publish Python 🐍 package 📦 to PyPI

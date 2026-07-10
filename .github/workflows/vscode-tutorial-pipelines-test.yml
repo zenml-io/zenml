@@ -19,10 +19,8 @@ on:
         options: [no, on-failure, always, before-tests]
         required: false
         default: 'no'
-
 env:
   ZENML_ANALYTICS_OPT_IN: false
-
 jobs:
   test-tutorial-pipelines:
     name: test-tutorial-pipelines
