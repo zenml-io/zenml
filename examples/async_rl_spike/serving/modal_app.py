@@ -21,7 +21,7 @@ import time
 
 import modal
 
-MODEL = os.environ.get("ASYNC_RL_MODEL", "Qwen/Qwen3-0.6B")
+MODEL = os.environ.get("ASYNC_RL_MODEL", "Qwen/Qwen3-4B-Instruct-2507")
 GPU = os.environ.get("ASYNC_RL_GPU", "L4")
 MAX_LORA_RANK = int(os.environ.get("ASYNC_RL_MAX_LORA_RANK", "32"))
 GPU_MEMORY_UTILIZATION = os.environ.get("ASYNC_RL_GPU_MEM_UTIL", "0.80")

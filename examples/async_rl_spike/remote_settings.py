@@ -17,7 +17,7 @@ from zenml.integrations.modal.flavors.modal_sandbox_flavor import (
 # default image is a bare python without zenml. Boot it from the zenml image.
 SANDBOX_SETTINGS = {
     "sandbox.modal": ModalSandboxSettings(
-        image=f"zenmldocker/zenml:{zenml.__version__}-py3.12"
+        image=f"michaelzenml/zenml-async-rl-sandbox:{zenml.__version__}"
     )
 }
 

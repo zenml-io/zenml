@@ -62,8 +62,7 @@ def run_grpo_step(
         group.sort(key=lambda e: e["rollout_index"])
         if len(group) != group_size:
             raise ValueError(
-                f"Task group has {len(group)} episodes, expected "
-                f"{group_size}."
+                f"Task group has {len(group)} episodes, expected {group_size}."
             )
     unique_prompts = list(by_prompt.keys())
 

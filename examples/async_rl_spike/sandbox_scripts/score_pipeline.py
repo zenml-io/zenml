@@ -53,7 +53,12 @@ import tempfile
 import time
 
 # Isolate BEFORE any zenml import anywhere in this process: zenml reads
-# ZENML_CONFIG_PATH at import/client-init time.
+# ZENML_CONFIG_PATH at import/client-init time. Store/active-context env
+# vars inherited from the sandbox's parent override ZENML_CONFIG_PATH and
+# point the generated pipeline at the remote server, so drop them too.
+for _key in list(os.environ):
+    if _key.startswith("ZENML_STORE") or _key.startswith("ZENML_ACTIVE"):
+        del os.environ[_key]
 os.environ["ZENML_CONFIG_PATH"] = tempfile.mkdtemp(prefix="rl-spike-store-")
 os.environ["ZENML_ANALYTICS_OPT_IN"] = "false"
 os.environ["AUTO_OPEN_DASHBOARD"] = "false"
@@ -280,9 +285,7 @@ def main() -> None:
 
     started = time.time()
     parse_error = check_parse(source)
-    import_error = (
-        check_import(pipeline_file) if parse_error is None else None
-    )
+    import_error = check_import(pipeline_file) if parse_error is None else None
     result["timings"]["parse_import_s"] = round(time.time() - started, 2)
 
     if parse_error is not None or import_error is not None:
