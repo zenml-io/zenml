@@ -17,7 +17,7 @@ from tempfile import TemporaryDirectory
 from typing import Any, Callable, Optional, Type
 
 from zenml.client import Client
-from zenml.constants import ENV_ZENML_ANALYTICS_OPT_IN, ENV_ZENML_DEBUG
+from zenml.constants import ENV_ZENML_DEBUG
 from zenml.enums import VisualizationType
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.materializer_registry import materializer_registry
@@ -25,11 +25,8 @@ from zenml.metadata.metadata_types import MetadataTypeTuple
 
 
 def test_debug_mode_enabled_for_tests():
-    """Checks that the ZENML_DEBUG is set in the tests or ZENML_ANALYTICS_OPT_IN is set to false."""
-    assert (
-        os.environ[ENV_ZENML_DEBUG] == "true"
-        or os.environ[ENV_ZENML_ANALYTICS_OPT_IN] == "false"
-    )
+    """Checks that the ZENML_DEBUG is set in the tests."""
+    assert os.environ[ENV_ZENML_DEBUG] == "true"
 
 
 def _test_materializer(
