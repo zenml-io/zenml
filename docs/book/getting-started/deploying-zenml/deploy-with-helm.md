@@ -1,10 +1,12 @@
 ---
-description: Deploying ZenML in a Kubernetes cluster with Helm.
+description: Deploying ZenML on any Kubernetes distribution with Helm.
 ---
 
 # Deploy with Helm
 
 If you wish to manually deploy and manage ZenML in a Kubernetes cluster of your choice, ZenML also includes a Helm chart among its available deployment options.
+
+The chart uses standard Kubernetes APIs and works on any CNCF-conformant distribution. That includes managed cloud offerings (Amazon EKS, Google GKE, Azure AKS), enterprise platforms (Red Hat OpenShift, Rancher, VMware Tanzu), and self-managed upstream clusters running on-premises or in your own cloud. You may need to adapt exposure and ingress settings to your platform's conventions—for example, using OpenShift Routes instead of a standard Ingress controller.
 
 You can find the chart on this [ArtifactHub repository](https://artifacthub.io/packages/helm/zenml/zenml), along with the templates, default values and instructions on how to install it. Read on to find detailed explanations on prerequisites, configuration, and deployment scenarios.
 
@@ -12,7 +14,7 @@ You can find the chart on this [ArtifactHub repository](https://artifacthub.io/p
 
 You'll need the following:
 
-* A Kubernetes cluster
+* A Kubernetes cluster (version 1.21 or higher recommended) that supports standard resources such as Deployments, Services, Ingresses, and Secrets. Managed cloud clusters, OpenShift, Rancher, and other upstream or vendor distributions are all supported.
 * Optional, but recommended: a MySQL-compatible database reachable from the Kubernetes cluster (e.g. one of the managed databases offered by Google Cloud, AWS, or Azure). A MySQL server version of 8.0 or higher is required
 * the [Kubernetes client](https://kubernetes.io/docs/tasks/tools/#kubectl) already installed on your machine and configured to access your cluster
 * [Helm](https://helm.sh/docs/intro/install/) installed on your machine
