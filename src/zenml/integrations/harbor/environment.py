@@ -180,12 +180,13 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
                 an image needs building based on its own settings.
 
         Raises:
-            RuntimeError: If no Sandbox component is registered on the
-                active stack.
-            NotImplementedError: If the task requires network isolation
-                (allow_internet=false), which the bridge can't enforce.
-            Exception: Re-raised from preparing the Harbor log dirs after
-                the session was torn down again.
+            asyncio.CancelledError: Re-raised (after failure bookkeeping)
+                when Harbor cancels startup, e.g. on its environment
+                build/start timeout.
+            Exception: Re-raised from the start implementation — e.g.
+                RuntimeError if no Sandbox component is registered on the
+                active stack, or NotImplementedError if the task requires
+                network isolation (allow_internet=false).
         """
         self._start_failure = None
         try:
@@ -211,6 +212,8 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
                 active stack.
             NotImplementedError: If the task requires network isolation
                 (allow_internet=false), which the bridge can't enforce.
+            Exception: Re-raised from preparing the Harbor log dirs after
+                the session was torn down again.
         """
         sandbox = Client().active_stack.sandbox
         if sandbox is None:
