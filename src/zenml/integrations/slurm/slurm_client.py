@@ -72,21 +72,17 @@ class SlurmCommandRunner(ABC):
         """
 
     @abstractmethod
-    def put_file(self, local_path: str, remote_path: str) -> None:
-        """Copy a local file to the submission host.
-
-        Args:
-            local_path: Path of the file on the local machine.
-            remote_path: Destination path on the submission host.
-        """
-
-    @abstractmethod
-    def put_text(self, content: str, remote_path: str) -> None:
+    def put_text(
+        self, remote_path: str, content: str, mode: int = 0o600
+    ) -> None:
         """Write text content to a file on the submission host.
 
         Args:
-            content: The text content to write.
             remote_path: Destination path on the submission host.
+            content: The text content to write.
+            mode: File permissions. Defaults to owner read/write only, since
+                the job script and environment file may hold credentials on a
+                shared cluster filesystem.
         """
 
     @abstractmethod
@@ -132,26 +128,21 @@ class LocalSlurmCommandRunner(SlurmCommandRunner):
             stderr=completed.stderr,
         )
 
-    def put_file(self, local_path: str, remote_path: str) -> None:
-        """Copy a local file to the destination path.
-
-        Args:
-            local_path: Path of the source file.
-            remote_path: Destination path.
-        """
-        import shutil
-
-        shutil.copyfile(local_path, remote_path)
-
-    def put_text(self, content: str, remote_path: str) -> None:
+    def put_text(
+        self, remote_path: str, content: str, mode: int = 0o600
+    ) -> None:
         """Write text content to the destination path.
 
         Args:
-            content: The text content to write.
             remote_path: Destination path.
+            content: The text content to write.
+            mode: File permissions to apply.
         """
+        import os
+
         with open(remote_path, "w") as f:
             f.write(content)
+        os.chmod(remote_path, mode)
 
     def read_text(self, remote_path: str) -> str:
         """Read a text file.
@@ -202,24 +193,17 @@ class SSHSlurmCommandRunner(SlurmCommandRunner):
             stderr=result.stderr,
         )
 
-    def put_file(self, local_path: str, remote_path: str) -> None:
-        """Copy a local file to the remote host via SFTP.
-
-        Args:
-            local_path: Path of the file on the local machine.
-            remote_path: Destination path on the remote host.
-        """
-        with self._ssh.sftp() as sftp:
-            sftp.put(local_path, remote_path)
-
-    def put_text(self, content: str, remote_path: str) -> None:
+    def put_text(
+        self, remote_path: str, content: str, mode: int = 0o600
+    ) -> None:
         """Write text content to a file on the remote host.
 
         Args:
-            content: The text content to write.
             remote_path: Destination path on the remote host.
+            content: The text content to write.
+            mode: File permissions to apply.
         """
-        self._ssh.put_text(content, remote_path)
+        self._ssh.put_text(remote_path, content, mode=mode)
 
     def read_text(self, remote_path: str) -> str:
         """Read a text file from the remote host.

@@ -14,7 +14,7 @@
 """Slurm step operator flavor."""
 
 from enum import Enum
-from typing import TYPE_CHECKING, List, Optional, Type
+from typing import TYPE_CHECKING, Dict, List, Optional, Type
 
 from pydantic import Field, model_validator
 
@@ -37,10 +37,24 @@ class SlurmTransport(str, Enum):
     LOCAL = "local"
 
 
+class SlurmContainerRuntime(str, Enum):
+    """Container runtime used to run the step image on the compute node.
+
+    Slurm compute nodes rarely have a Docker daemon (no root), so the ZenML
+    step image is run with a rootless HPC container runtime by default.
+    """
+
+    APPTAINER = "apptainer"
+    SINGULARITY = "singularity"
+    PYXIS = "pyxis"
+    DOCKER = "docker"
+
+
 class SlurmStepOperatorSettings(BaseSettings):
     """Settings for the Slurm step operator.
 
-    These map onto ``sbatch`` directives and can be overridden per step.
+    These map onto ``sbatch`` directives / container-run flags and can be
+    overridden per step.
     """
 
     partition: Optional[str] = Field(
@@ -73,6 +87,18 @@ class SlurmStepOperatorSettings(BaseSettings):
         "the generated job script, as an escape hatch for cluster-specific "
         "options. Example: ['--constraint=a100', '--exclusive']",
     )
+    container_mounts: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Host-path to container-path bind mounts applied to the "
+        "step container, e.g. to expose a shared scratch filesystem. "
+        "Example: {'/scratch/user': '/scratch'}",
+    )
+    container_run_args: List[str] = Field(
+        default_factory=list,
+        description="Additional arguments passed to the container runtime "
+        "command (apptainer/singularity/docker/srun), as an escape hatch. "
+        "Example: ['--writable-tmpfs']",
+    )
 
 
 class SlurmStepOperatorConfig(
@@ -94,17 +120,20 @@ class SlurmStepOperatorConfig(
         "to a remote login/controller node, 'local' runs sbatch directly and "
         "requires the client to already run on the cluster. Example: 'ssh'",
     )
-    workdir: str = Field(
-        description="Directory on the cluster used to stage job scripts, "
-        "code archives and job output, ideally on a filesystem shared "
-        "between the submission host and the compute nodes. Example: "
-        "'/shared/zenml-runs'",
+    container_runtime: SlurmContainerRuntime = Field(
+        default=SlurmContainerRuntime.APPTAINER,
+        description="Runtime used to run the step's Docker image on the "
+        "compute node: 'apptainer' or 'singularity' (rootless, pulls "
+        "`docker://` images; the safe HPC default), 'pyxis' (NVIDIA "
+        "enroot/pyxis via `srun --container-image`), or 'docker' (only where "
+        "a Docker daemon is available). Example: 'apptainer'",
     )
-    env_setup_command: str = Field(
-        description="Shell command executed at the start of every job to "
-        "activate a Python environment that has zenml and the pipeline "
-        "requirements installed. Examples: 'source /shared/venvs/zenml/bin/"
-        "activate', 'module load python && conda activate zenml'",
+    workdir: str = Field(
+        description="Directory on the cluster used to stage the job script, "
+        "the environment file and the job output/exit-code sentinel, ideally "
+        "on a filesystem shared between the submission host and the compute "
+        "nodes. The step's code is not staged here; it lives in the container "
+        "image. Example: '/shared/zenml-runs'",
     )
     # The connection mixin requires hostname/username, but the `local`
     # transport does not use SSH, so these are relaxed to optional (the

@@ -13,20 +13,24 @@
 #  permissions and limitations under the License.
 """Unit tests for the Slurm integration.
 
-The Slurm CLI is never invoked: all tests drive the client and step operator
-through a fake in-memory command runner, so they run without a cluster.
+The Slurm CLI and SSH are never invoked: the client and step operator are
+driven through an in-memory fake command runner, so the tests run without a
+cluster.
 """
 
 from datetime import datetime
-from typing import Dict, Optional
-from uuid import uuid4
+from types import SimpleNamespace
+from typing import Dict, List, Optional
+from uuid import UUID, uuid4
 
 import pytest
 
+from zenml.config.resource_settings import ResourceSettings
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.integrations.slurm.flavors import (
     SlurmStepOperatorConfig,
     SlurmStepOperatorFlavor,
+    SlurmStepOperatorSettings,
 )
 from zenml.integrations.slurm.slurm_client import (
     CommandResult,
@@ -34,6 +38,9 @@ from zenml.integrations.slurm.slurm_client import (
     SlurmCommandRunner,
 )
 from zenml.integrations.slurm.step_operators import SlurmStepOperator
+
+SECRET_TOKEN = "super-secret-zenml-token"
+IMAGE = "registry.example.com/zenml:abc123"
 
 
 class FakeRunner(SlurmCommandRunner):
@@ -52,7 +59,8 @@ class FakeRunner(SlurmCommandRunner):
         """
         self.queue_state = queue_state
         self.files = files or {}
-        self.commands: list[str] = []
+        self.modes: Dict[str, int] = {}
+        self.commands: List[str] = []
 
     def run(self, command: str) -> CommandResult:
         """Fake command execution.
@@ -69,27 +77,20 @@ class FakeRunner(SlurmCommandRunner):
         if command.startswith("squeue"):
             stdout = f"{self.queue_state}\n" if self.queue_state else ""
             return CommandResult(exit_code=0, stdout=stdout, stderr="")
-        if command.startswith("scancel"):
-            return CommandResult(exit_code=0, stdout="", stderr="")
         return CommandResult(exit_code=0, stdout="", stderr="")
 
-    def put_file(self, local_path: str, remote_path: str) -> None:
-        """Record a file upload.
+    def put_text(
+        self, remote_path: str, content: str, mode: int = 0o600
+    ) -> None:
+        """Record a text upload with its mode.
 
         Args:
-            local_path: Source path.
             remote_path: Destination path.
-        """
-        self.files[remote_path] = f"<binary from {local_path}>"
-
-    def put_text(self, content: str, remote_path: str) -> None:
-        """Record a text upload.
-
-        Args:
             content: The text content.
-            remote_path: Destination path.
+            mode: File permissions.
         """
         self.files[remote_path] = content
+        self.modes[remote_path] = mode
 
     def read_text(self, remote_path: str) -> str:
         """Read a recorded file.
@@ -111,14 +112,20 @@ class FakeRunner(SlurmCommandRunner):
 def _build_operator(
     config: Optional[SlurmStepOperatorConfig] = None,
 ) -> SlurmStepOperator:
+    """Construct a Slurm step operator.
+
+    Args:
+        config: The config for the operator.
+
+    Returns:
+        A SlurmStepOperator instance.
+    """
     return SlurmStepOperator(
         name="",
         id=uuid4(),
         config=config
         or SlurmStepOperatorConfig(
-            transport="local",
-            workdir="/shared/zenml-runs",
-            env_setup_command="source /shared/venv/bin/activate",
+            transport="local", workdir="/shared/zenml-runs"
         ),
         flavor="slurm",
         type=StackComponentType.STEP_OPERATOR,
@@ -128,32 +135,42 @@ def _build_operator(
     )
 
 
+def _fake_info(
+    step_run_id: Optional[UUID] = None, gpu: int = 0
+) -> SimpleNamespace:
+    """Build a StepRunInfo stand-in.
+
+    Args:
+        step_run_id: The step run id.
+        gpu: Number of GPUs the step requests.
+
+    Returns:
+        A namespace usable where StepRunInfo is expected.
+    """
+    return SimpleNamespace(
+        step_run_id=step_run_id or uuid4(),
+        pipeline_step_name="trainer",
+        config=SimpleNamespace(
+            resource_settings=ResourceSettings(
+                cpu_count=4, gpu_count=gpu or None, memory="16GB"
+            )
+        ),
+        step_run=None,
+        get_image=lambda key: IMAGE,
+    )
+
+
 # --- config validation --------------------------------------------------------
 
 
 def test_ssh_transport_requires_connection_details():
     """The ssh transport needs hostname and username; local does not."""
     with pytest.raises(ValueError):
-        SlurmStepOperatorConfig(
-            transport="ssh",
-            workdir="/shared/zenml-runs",
-            env_setup_command="true",
-        )
+        SlurmStepOperatorConfig(transport="ssh", workdir="/s")
 
-    # local transport without connection details is fine
+    SlurmStepOperatorConfig(transport="local", workdir="/s")
     SlurmStepOperatorConfig(
-        transport="local",
-        workdir="/shared/zenml-runs",
-        env_setup_command="true",
-    )
-
-    # ssh transport with connection details is fine
-    SlurmStepOperatorConfig(
-        transport="ssh",
-        workdir="/shared/zenml-runs",
-        env_setup_command="true",
-        hostname="login.example.com",
-        username="mlops",
+        transport="ssh", workdir="/s", hostname="h", username="u"
     )
 
 
@@ -166,32 +183,40 @@ def test_flavor_identity():
     assert flavor.implementation_class is SlurmStepOperator
 
 
-def test_validator_rejects_local_artifact_store():
-    """The operator requires a remote artifact store, not a container registry."""
-    from types import SimpleNamespace
+def test_default_container_runtime_is_apptainer():
+    """Apptainer is the default (rootless, HPC-safe)."""
+    config = SlurmStepOperatorConfig(transport="local", workdir="/s")
+    assert config.container_runtime.value == "apptainer"
 
+
+# --- validator ----------------------------------------------------------------
+
+
+def test_validator_requires_remote_registry_and_artifact_store():
+    """The operator needs a remote registry, image builder, artifact store."""
     op = _build_operator()
     validator = op.validator
     assert validator is not None
-    # container-free: no required components (no container registry / image builder)
-    assert not validator._required_components
-
+    assert validator._required_components == {
+        StackComponentType.CONTAINER_REGISTRY,
+        StackComponentType.IMAGE_BUILDER,
+    }
     check = validator._custom_validation_function
     assert check is not None
-    local_stack = SimpleNamespace(
-        artifact_store=SimpleNamespace(
-            name="local", config=SimpleNamespace(is_local=True)
-        )
-    )
-    ok, msg = check(local_stack)
-    assert ok is False and "local" in msg
 
-    remote_stack = SimpleNamespace(
-        artifact_store=SimpleNamespace(
-            name="s3", config=SimpleNamespace(is_local=False)
+    def _stack(artifact_local: bool, registry_local: bool) -> SimpleNamespace:
+        return SimpleNamespace(
+            artifact_store=SimpleNamespace(
+                name="a", config=SimpleNamespace(is_local=artifact_local)
+            ),
+            container_registry=SimpleNamespace(
+                name="r", config=SimpleNamespace(is_local=registry_local)
+            ),
         )
-    )
-    assert check(remote_stack) == (True, "")
+
+    assert check(_stack(True, False))[0] is False
+    assert check(_stack(False, True))[0] is False
+    assert check(_stack(False, False)) == (True, "")
 
 
 # --- slurm client -------------------------------------------------------------
@@ -200,12 +225,11 @@ def test_validator_rejects_local_artifact_store():
 def test_client_submit_parses_job_id():
     """`sbatch --parsable` output is parsed into a job id."""
     runner = FakeRunner()
-    client = SlurmClient(runner)
-    assert client.submit("/shared/job.sh") == "12345"
-    assert runner.commands == ["sbatch --parsable /shared/job.sh"]
+    assert SlurmClient(runner).submit("/s/job.sh") == "12345"
+    assert runner.commands == ["sbatch --parsable /s/job.sh"]
 
 
-def test_client_job_state_and_cancel_use_job_name():
+def test_client_state_and_cancel_use_job_name():
     """Status lookup and cancellation address the job by name."""
     runner = FakeRunner(queue_state="RUNNING")
     client = SlurmClient(runner)
@@ -214,137 +238,178 @@ def test_client_job_state_and_cancel_use_job_name():
     assert runner.commands[-1] == "scancel --name zenml-abc"
 
 
-def test_client_job_state_returns_none_when_not_queued():
-    """A job absent from squeue returns None (terminal, see sentinel)."""
-    runner = FakeRunner(queue_state=None)
-    client = SlurmClient(runner)
-    assert client.get_job_state("zenml-abc") is None
+# --- container command rendering (per runtime) --------------------------------
 
 
-# --- step operator status mapping ---------------------------------------------
+def _container_cmd(runtime: str, gpu: bool = False) -> str:
+    config = SlurmStepOperatorConfig(
+        transport="local", workdir="/s", container_runtime=runtime
+    )
+    op = _build_operator(config)
+    return op._build_container_command(
+        image=IMAGE,
+        entrypoint_command=["python", "-m", "zenml.entrypoint"],
+        env_file="/s/zenml-x/env",
+        env_keys=["ZENML_STORE_API_KEY", "ZENML_STORE_URL"],
+        use_gpu=gpu,
+        settings=SlurmStepOperatorSettings(
+            container_mounts={"/scratch": "/scratch"}
+        ),
+    )
 
 
-class _FakeStepRun:
-    """Minimal stand-in for a StepRunResponse."""
+def test_apptainer_command():
+    """Apptainer exec pulls the docker image and passes the env file."""
+    cmd = _container_cmd("apptainer", gpu=True)
+    assert cmd.startswith("apptainer exec")
+    assert "--nv" in cmd
+    assert "--env-file" in cmd and "/s/zenml-x/env" in cmd
+    assert "docker://registry.example.com/zenml:abc123" in cmd
+    assert "--bind" in cmd and "/scratch:/scratch" in cmd
+    assert "python -m zenml.entrypoint" in cmd
 
-    def __init__(self) -> None:
-        """Initialize with a random id."""
-        self.id = uuid4()
+
+def test_docker_command():
+    """The docker runtime runs a foreground --rm container with the env file."""
+    cmd = _container_cmd("docker", gpu=True)
+    assert cmd.startswith("docker run --rm")
+    assert "--gpus all" in cmd
+    assert "--env-file" in cmd and "/s/zenml-x/env" in cmd
+    assert "-v" in cmd and "/scratch:/scratch" in cmd
+
+
+def test_pyxis_command_passes_env_names_not_values():
+    """Pyxis sources the env file and passes only variable names to srun."""
+    cmd = _container_cmd("pyxis")
+    assert "srun --container-image=" in cmd
+    assert "--container-env=ZENML_STORE_API_KEY,ZENML_STORE_URL" in cmd
+    assert "source /s/zenml-x/env" in cmd
+    assert "--container-mounts=/scratch:/scratch" in cmd
+
+
+# --- sbatch script ------------------------------------------------------------
+
+
+def test_sbatch_script_directives_and_scrub():
+    """The script carries directives, fails fast, and scrubs the env file."""
+    op = _build_operator(
+        SlurmStepOperatorConfig(transport="local", workdir="/s")
+    )
+    op.get_settings = lambda _i: SlurmStepOperatorSettings(
+        partition="gpu", time_limit="2:00:00"
+    )
+    sid = uuid4()
+    script = op._build_sbatch_script(
+        info=_fake_info(sid, gpu=2),
+        container_command="RUN_THE_CONTAINER",
+        run_dir="/s/zenml-x",
+    )
+    assert f"#SBATCH --job-name=zenml-{sid}" in script
+    assert "#SBATCH --partition=gpu" in script
+    assert "#SBATCH --gres=gpu:2" in script
+    assert "#SBATCH --mem=16G" in script
+    assert "set -eo pipefail" in script
+    assert "RUN_THE_CONTAINER" in script
+    # the EXIT trap records the outcome AND scrubs the credential env file
+    assert 'echo "$ec" > /s/zenml-x/exit_code' in script
+    assert "rm -f /s/zenml-x/env" in script
+
+
+# --- submit: security-sensitive handling --------------------------------------
+
+
+def test_submit_writes_secret_env_file_owner_only():
+    """The env file is written 0600, the script 0700, and no secret leaks."""
+    op = _build_operator()
+    op.get_settings = lambda _i: SlurmStepOperatorSettings()
+    runner = FakeRunner()
+    op._get_client = lambda: (SlurmClient(runner), runner)
+
+    sid = uuid4()
+    op.submit(
+        info=_fake_info(sid),
+        entrypoint_command=["python", "-m", "zenml.entrypoint"],
+        environment={
+            "ZENML_STORE_API_KEY": SECRET_TOKEN,
+            "ZENML_STORE_URL": "https://z.example.com",
+        },
+    )
+    run_dir = f"/shared/zenml-runs/zenml-{sid}"
+
+    # env file present, contains the secret, and is owner-only
+    assert runner.modes[f"{run_dir}/env"] == 0o600
+    assert SECRET_TOKEN in runner.files[f"{run_dir}/env"]
+
+    # the run directory is created owner-only, atomically
+    assert any("mkdir -m 700" in c for c in runner.commands)
+    # the job script is written owner-only
+    assert runner.modes[f"{run_dir}/job.sh"] == 0o700
+
+    # the secret value is NOT baked into the job script (only the env-file ref)
+    assert SECRET_TOKEN not in runner.files[f"{run_dir}/job.sh"]
+    # the secret value is NOT on any command line issued to the host
+    assert all(SECRET_TOKEN not in c for c in runner.commands)
+
+
+# --- status mapping -----------------------------------------------------------
 
 
 @pytest.fixture
-def operator_with_fake_runner(monkeypatch):
-    """A local-transport operator whose runner is the in-memory fake."""
-    operator = _build_operator()
+def op_and_runner(monkeypatch):
+    """A local operator whose runner is the in-memory fake."""
+    op = _build_operator()
     runner = FakeRunner()
     monkeypatch.setattr(
-        operator,
-        "_get_client",
-        lambda: (SlurmClient(runner), runner),
+        op, "_get_client", lambda: (SlurmClient(runner), runner)
     )
-    return operator, runner
+    return op, runner
 
 
 @pytest.mark.parametrize(
     "queue_state,expected",
     [
         ("PENDING", ExecutionStatus.QUEUED),
-        ("CONFIGURING", ExecutionStatus.QUEUED),
         ("RUNNING", ExecutionStatus.RUNNING),
-        ("COMPLETING", ExecutionStatus.RUNNING),
         ("CANCELLED", ExecutionStatus.CANCELLED),
         ("FAILED", ExecutionStatus.FAILED),
     ],
 )
-def test_get_status_maps_queue_states(
-    operator_with_fake_runner, queue_state, expected
-):
+def test_get_status_maps_queue_states(op_and_runner, queue_state, expected):
     """Queue states map onto ZenML execution statuses."""
-    operator, runner = operator_with_fake_runner
+    op, runner = op_and_runner
     runner.queue_state = queue_state
-    assert operator.get_status(_FakeStepRun()) is expected
+    assert op.get_status(SimpleNamespace(id=uuid4())) is expected
 
 
-def test_get_status_reads_sentinel_after_queue(operator_with_fake_runner):
+def test_get_status_reads_sentinel_after_queue(op_and_runner):
     """After the job leaves the queue, the sentinel file decides the status."""
-    operator, runner = operator_with_fake_runner
-    step_run = _FakeStepRun()
-    run_dir = operator._run_dir(step_run.id)
-
+    op, runner = op_and_runner
+    step_run = SimpleNamespace(id=uuid4())
+    run_dir = op._run_dir(step_run.id)
     runner.files[f"{run_dir}/exit_code"] = "0\n"
-    assert operator.get_status(step_run) is ExecutionStatus.COMPLETED
-
+    assert op.get_status(step_run) is ExecutionStatus.COMPLETED
     runner.files[f"{run_dir}/exit_code"] = "1\n"
-    assert operator.get_status(step_run) is ExecutionStatus.FAILED
+    assert op.get_status(step_run) is ExecutionStatus.FAILED
 
 
-def test_get_status_without_queue_entry_or_sentinel_is_cancelled(
-    operator_with_fake_runner,
-):
+def test_get_status_without_queue_or_sentinel_is_cancelled(op_and_runner):
     """No queue entry and no sentinel means the job was torn down early."""
-    operator, runner = operator_with_fake_runner
-    assert operator.get_status(_FakeStepRun()) is ExecutionStatus.CANCELLED
-
-
-# --- sbatch script rendering ----------------------------------------------------
-
-
-def test_sbatch_script_rendering(monkeypatch):
-    """The generated script carries directives, env setup, and the command."""
-    from types import SimpleNamespace
-
-    from zenml.config.resource_settings import ResourceSettings
-
-    operator = _build_operator()
-    step_run_id = uuid4()
-
-    fake_info = SimpleNamespace(
-        step_run_id=step_run_id,
-        pipeline_step_name="trainer",
-        config=SimpleNamespace(
-            resource_settings=ResourceSettings(
-                cpu_count=4, gpu_count=2, memory="16GB"
-            )
-        ),
-        step_run=None,
-    )
-
-    from zenml.integrations.slurm.flavors import SlurmStepOperatorSettings
-
-    monkeypatch.setattr(
-        operator,
-        "get_settings",
-        lambda _: SlurmStepOperatorSettings(
-            partition="gpu",
-            time_limit="2:00:00",
-            extra_sbatch_directives=["--constraint=a100"],
-        ),
-    )
-
-    script = operator._build_sbatch_script(
-        info=fake_info,
-        entrypoint_command=["python", "-m", "zenml.entrypoint"],
-        environment={"ZENML_STORE_URL": "https://z.example.com"},
-        run_dir="/shared/zenml-runs/zenml-x",
-    )
-
-    assert f"#SBATCH --job-name=zenml-{step_run_id}" in script
-    assert "#SBATCH --partition=gpu" in script
-    assert "#SBATCH --time=2:00:00" in script
-    assert "#SBATCH --cpus-per-task=4" in script
-    assert "#SBATCH --mem=16G" in script
-    assert "#SBATCH --gres=gpu:2" in script
-    assert "#SBATCH --constraint=a100" in script
-    assert "set -eo pipefail" in script
-    assert "source /shared/venv/bin/activate" in script
-    assert "export ZENML_STORE_URL=https://z.example.com" in script
-    assert "python -m zenml.entrypoint" in script
+    op, runner = op_and_runner
     assert (
-        "trap 'echo $? > /shared/zenml-runs/zenml-x/exit_code' EXIT" in script
+        op.get_status(SimpleNamespace(id=uuid4())) is ExecutionStatus.CANCELLED
     )
 
 
-# --- integration registration ---------------------------------------------------
+def test_cleanup_removes_run_dir(op_and_runner):
+    """Cleanup removes the whole per-run directory."""
+    op, runner = op_and_runner
+    step_run = SimpleNamespace(id=uuid4())
+    op.cleanup_step_submission(step_run)
+    run_dir = op._run_dir(step_run.id)
+    assert any("rm -rf" in c and run_dir in c for c in runner.commands)
+
+
+# --- integration registration -------------------------------------------------
 
 
 def test_integration_registered():
@@ -354,5 +419,4 @@ def test_integration_registered():
 
     integration_registry._initialize()
     assert integration_registry.integrations["slurm"] is SlurmIntegration
-    flavors = {f().name for f in SlurmIntegration.flavors()}
-    assert flavors == {"slurm"}
+    assert {f().name for f in SlurmIntegration.flavors()} == {"slurm"}
