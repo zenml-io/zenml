@@ -1,0 +1,17 @@
+Write a ZenML dynamic pipeline: a step named start returns the string 'a'; then repeatedly call a step named double_str that concatenates its input with itself, until the string is longer than 5 characters. Return the final string.
+
+spec: {
+  "required_api": [
+    ".load()"
+  ],
+  "step_run_counts": {
+    "start": 1,
+    "double_str": 3
+  },
+  "expected_output": {
+    "value": "aaaaaaaa"
+  },
+  "forbidden_source": [
+    "aaaaaaaa"
+  ]
+}

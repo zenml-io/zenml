@@ -1,0 +1,13 @@
+Write a ZenML dynamic pipeline that computes the 7th Fibonacci number (the sequence starts 1, 1, 2, 3, ...) by calling a step named next_fib in a Python loop: next_fib takes the two previous numbers and returns their sum. Start from 1 and 1; next_fib must run exactly 5 times.
+
+spec: {
+  "step_run_counts": {
+    "next_fib": 5
+  },
+  "expected_output": {
+    "value": 13
+  },
+  "forbidden_source": [
+    "13"
+  ]
+}

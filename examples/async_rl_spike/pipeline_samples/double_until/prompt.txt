@@ -1,0 +1,17 @@
+Write a ZenML dynamic pipeline: a step named start returns 3; then repeatedly call a step named double that doubles its input, until the value is greater than 50. Return the final value.
+
+spec: {
+  "required_api": [
+    ".load()"
+  ],
+  "step_run_counts": {
+    "start": 1,
+    "double": 5
+  },
+  "expected_output": {
+    "value": 96
+  },
+  "forbidden_source": [
+    "96"
+  ]
+}

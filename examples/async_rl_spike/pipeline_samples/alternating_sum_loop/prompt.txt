@@ -1,0 +1,13 @@
+Write a ZenML dynamic pipeline that computes 10 - 1 + 2 - 3 + 4 by starting from 10 and calling a step named apply_term once per term in a Python loop: apply_term takes the running value, the term (1, 2, 3, 4), and a boolean subtract flag, and returns the new value. Terms alternate starting with subtract.
+
+spec: {
+  "step_run_counts": {
+    "apply_term": 4
+  },
+  "expected_output": {
+    "value": 12
+  },
+  "forbidden_source": [
+    "12"
+  ]
+}

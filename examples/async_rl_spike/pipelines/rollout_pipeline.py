@@ -8,9 +8,17 @@ from remote_settings import FULL_DOCKER
 from steps.disaggregated import generate_and_enqueue
 
 from zenml import pipeline
+from zenml.integrations.modal.flavors import ModalOrchestratorSettings
 
 
-@pipeline(dynamic=True, enable_cache=False, settings={"docker": FULL_DOCKER})
+@pipeline(
+    dynamic=True,
+    enable_cache=False,
+    settings={
+        "docker": FULL_DOCKER,
+        "orchestrator.modal": ModalOrchestratorSettings(synchronous=False),
+    },
+)
 def rollout_pipeline(
     run_dir: str,
     tasks: List[Dict[str, Any]],

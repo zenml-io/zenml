@@ -1,0 +1,16 @@
+Write a ZenML dynamic pipeline that keeps adding the next integer (1, then 2, then 3, ...) to a running total that starts at 0, by calling a step named add_next once per addition, until the total exceeds 20. Return the final total.
+
+spec: {
+  "required_api": [
+    ".load()"
+  ],
+  "step_run_counts": {
+    "add_next": 6
+  },
+  "expected_output": {
+    "value": 21
+  },
+  "forbidden_source": [
+    "21"
+  ]
+}

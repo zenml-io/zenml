@@ -1,0 +1,14 @@
+Write a ZenML dynamic pipeline: a step named get_value returns -8. If the value is negative, pass it to a step named negate that returns its negation; if it is not negative, do not call negate. The final result must be 8.
+
+spec: {
+  "required_api": [
+    ".load()"
+  ],
+  "step_run_counts": {
+    "get_value": 1,
+    "negate": 1
+  },
+  "expected_output": {
+    "value": 8
+  }
+}

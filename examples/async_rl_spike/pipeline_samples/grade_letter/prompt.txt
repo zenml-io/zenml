@@ -1,0 +1,16 @@
+Write a ZenML dynamic pipeline: a step named get_grade returns 78. If the grade is at least 90 call a step named report_a returning 'A'; if it is at least 70 (but below 90) call report_b returning 'B'; otherwise call report_c returning 'C'. Exactly one report step may run.
+
+spec: {
+  "required_api": [
+    ".load()"
+  ],
+  "step_run_counts": {
+    "get_grade": 1,
+    "report_a": 0,
+    "report_b": 1,
+    "report_c": 0
+  },
+  "expected_output": {
+    "value": "B"
+  }
+}

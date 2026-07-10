@@ -1,0 +1,15 @@
+Write a ZenML dynamic pipeline: a step returns the list [3, 5, 7]; a step named total sums it. If the total is odd, call a step named report_odd that returns the string 'odd'; otherwise call a step named report_even that returns 'even'. Only the taken branch's step may run. Use .load() to read the total for the if.
+
+spec: {
+  "required_api": [
+    ".load()"
+  ],
+  "step_run_counts": {
+    "total": 1,
+    "report_odd": 1,
+    "report_even": 0
+  },
+  "expected_output": {
+    "value": "odd"
+  }
+}

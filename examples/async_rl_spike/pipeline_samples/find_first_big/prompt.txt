@@ -1,0 +1,14 @@
+Write a ZenML dynamic pipeline: a step returns the list [3, 8, 2, 9]; walk the list in order with a Python loop, calling a step named is_big for each element (is_big returns True if its input is greater than 5) and stopping at the first True; then call a step named report_value that returns that element. is_big must not run for elements after the first match.
+
+spec: {
+  "required_api": [
+    ".load()"
+  ],
+  "step_run_counts": {
+    "is_big": 2,
+    "report_value": 1
+  },
+  "expected_output": {
+    "value": 8
+  }
+}

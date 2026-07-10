@@ -1,0 +1,16 @@
+Write a ZenML dynamic pipeline: a step named make_a returns 7 and a step named make_b returns 11. If a is greater than b, call a step named report_a returning 'a wins'; otherwise call report_b returning 'b wins'. Only the winning branch's step may run.
+
+spec: {
+  "required_api": [
+    ".load()"
+  ],
+  "step_run_counts": {
+    "make_a": 1,
+    "make_b": 1,
+    "report_a": 0,
+    "report_b": 1
+  },
+  "expected_output": {
+    "value": "b wins"
+  }
+}

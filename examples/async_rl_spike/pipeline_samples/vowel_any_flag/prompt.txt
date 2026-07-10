@@ -1,0 +1,17 @@
+Write a ZenML dynamic pipeline: a step returns the list ['sky', 'try', 'zen']; a step named has_vowel (mapped with .map()) returns True if the word contains any of a, e, i, o, u; a step named any_true returns True if at least one result is True. If any_true's result is True, call a step named report_found returning 'found'.
+
+spec: {
+  "required_api": [
+    ".map(",
+    ".load()"
+  ],
+  "step_run_counts": {
+    "has_vowel": 3,
+    "any_true": 1,
+    "report_found": 1
+  },
+  "expected_outputs": [
+    true,
+    "found"
+  ]
+}

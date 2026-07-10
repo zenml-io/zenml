@@ -21,7 +21,9 @@ from zenml.integrations.modal.flavors import ModalOrchestratorSettings
     enable_cache=False,
     settings={
         "docker": TRAINER_DOCKER,
-        "orchestrator.modal": ModalOrchestratorSettings(gpu="A100"),
+        "orchestrator.modal": ModalOrchestratorSettings(
+            gpu="A100", synchronous=False
+        ),
         "resources": ResourceSettings(gpu_count=1),
     },
 )

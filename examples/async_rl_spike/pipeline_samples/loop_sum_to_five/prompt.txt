@@ -1,0 +1,13 @@
+Write a ZenML dynamic pipeline that computes 1+2+3+4+5 by calling a step named add exactly once per number in a Python loop: add takes the running total and the next number and returns their sum. Start the total at 0. The final total must come out of the last add call.
+
+spec: {
+  "step_run_counts": {
+    "add": 5
+  },
+  "expected_output": {
+    "value": 15
+  },
+  "forbidden_source": [
+    "15"
+  ]
+}

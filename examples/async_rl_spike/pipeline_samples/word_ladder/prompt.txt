@@ -1,0 +1,17 @@
+Write a ZenML dynamic pipeline: a step named start returns the string 'z'; then repeatedly call a step named append_z that appends one 'z' to its input, until the string has exactly 4 characters. Return the final string.
+
+spec: {
+  "required_api": [
+    ".load()"
+  ],
+  "step_run_counts": {
+    "start": 1,
+    "append_z": 3
+  },
+  "expected_output": {
+    "value": "zzzz"
+  },
+  "forbidden_source": [
+    "zzzz"
+  ]
+}
