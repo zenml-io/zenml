@@ -1,12 +1,12 @@
 ---
-description: Orchestrating your pipelines on any Kubernetes distribution.
+description: Orchestrating your pipelines to run on Kubernetes clusters.
 ---
 
 # Kubernetes Orchestrator
 
 Using the ZenML `kubernetes` integration, you can orchestrate and scale your ML pipelines on a [Kubernetes](https://kubernetes.io/) cluster without writing a single line of Kubernetes code.
 
-The orchestrator uses standard Kubernetes APIs and works on any CNCF-conformant distribution. That includes managed cloud offerings (Amazon EKS, Google GKE, Azure AKS), enterprise platforms (Red Hat OpenShift, Rancher, VMware Tanzu), and self-managed upstream clusters running on-premises or in your own cloud.
+The orchestrator uses standard Kubernetes APIs and works on managed cloud clusters (EKS, GKE, AKS), enterprise platforms like Red Hat OpenShift and SUSE Rancher, and self-managed clusters on-premises or in your own cloud.
 
 This Kubernetes-native orchestrator is a minimalist, lightweight alternative to other distributed orchestrators like Airflow or Kubeflow.
 
@@ -22,14 +22,14 @@ This component is only meant to be used within the context of a [remote ZenML de
 
 You should use the Kubernetes orchestrator if:
 
-* you already have a Kubernetes cluster—managed cloud, OpenShift, Rancher, or self-managed on-premises.
+* you already have a Kubernetes cluster—managed cloud, Red Hat OpenShift, SUSE Rancher, or self-managed on-premises.
 * you're looking for a lightweight way of running your pipelines on Kubernetes.
 * you're not willing to maintain [Kubeflow Pipelines](kubeflow.md) on your Kubernetes cluster.
 * you're not interested in paying for managed solutions like [Vertex](vertex.md).
 
 ## How to deploy it
 
-The Kubernetes orchestrator requires a Kubernetes cluster (version 1.21 or higher recommended) that supports standard resources such as Pods, Services, and Secrets. Managed cloud clusters, OpenShift, Rancher, and other upstream or vendor distributions are all supported.
+The Kubernetes orchestrator requires a Kubernetes cluster (version 1.21 or higher recommended).
 
 There are many ways to deploy a Kubernetes cluster using different cloud providers or on your custom infrastructure, and we can't possibly cover all of them, but you can check out our [production guide](https://docs.zenml.io/user-guides/production-guide).
 
@@ -47,7 +47,7 @@ To use the Kubernetes orchestrator, we need:
 * [Docker](https://www.docker.com) installed and running.
 * A [remote artifact store](../artifact-stores/README.md) as part of your stack.
 * A [remote container registry](../container-registries/README.md) as part of your stack.
-* A Kubernetes cluster [deployed](kubernetes.md#how-to-deploy-it) (version 1.21 or higher recommended) that supports standard Pod resources. Managed cloud clusters, OpenShift, Rancher, and other upstream or vendor distributions are all supported.
+* A Kubernetes cluster [deployed](kubernetes.md#how-to-deploy-it) (version 1.21 or higher recommended)
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed and the name of the Kubernetes configuration context which points to the target cluster (i.e. run`kubectl config get-contexts` to see a list of available contexts) . This is optional (see below).
 
 {% hint style="info" %}
