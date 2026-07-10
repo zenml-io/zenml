@@ -20,11 +20,11 @@ from pydantic import Field, model_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.slurm import SLURM_STEP_OPERATOR_FLAVOR
+from zenml.integrations.ssh.flavors.base import SSHConnectionConfigMixin
 from zenml.step_operators.base_step_operator import (
     BaseStepOperatorConfig,
     BaseStepOperatorFlavor,
 )
-from zenml.utils.secret_utils import SecretField
 
 if TYPE_CHECKING:
     from zenml.integrations.slurm.step_operators import SlurmStepOperator
@@ -76,9 +76,17 @@ class SlurmStepOperatorSettings(BaseSettings):
 
 
 class SlurmStepOperatorConfig(
-    BaseStepOperatorConfig, SlurmStepOperatorSettings
+    BaseStepOperatorConfig,
+    SSHConnectionConfigMixin,
+    SlurmStepOperatorSettings,
 ):
-    """Configuration for the Slurm step operator."""
+    """Configuration for the Slurm step operator.
+
+    Inherits the SSH connection fields (``ssh_key_path``, ``ssh_private_key``,
+    ``port``, ``connection_timeout``, ...) from the ssh integration's
+    connection mixin, so the same ``SSHClient`` consumes this config directly
+    and the fields never drift out of sync.
+    """
 
     transport: SlurmTransport = Field(
         default=SlurmTransport.SSH,
@@ -98,50 +106,19 @@ class SlurmStepOperatorConfig(
         "requirements installed. Examples: 'source /shared/venvs/zenml/bin/"
         "activate', 'module load python && conda activate zenml'",
     )
-    # SSH connection settings, required for the `ssh` transport. Field names
-    # deliberately match the ssh integration's connection mixin so its
-    # SSHClient can consume this config directly.
-    hostname: Optional[str] = Field(
+    # The connection mixin requires hostname/username, but the `local`
+    # transport does not use SSH, so these are relaxed to optional (the
+    # ignore below) and enforced for the `ssh` transport in the validator.
+    hostname: Optional[str] = Field(  # type: ignore[assignment]
         default=None,
         description="Hostname or IP address of the Slurm login/controller "
         "node, required for the 'ssh' transport. Example: "
         "'login.cluster.example.com'",
     )
-    username: Optional[str] = Field(
+    username: Optional[str] = Field(  # type: ignore[assignment]
         default=None,
         description="SSH username on the login node, required for the 'ssh' "
         "transport. Example: 'mlops'",
-    )
-    port: int = Field(
-        default=22,
-        description="SSH port on the login node. Standard SSH port is 22",
-    )
-    ssh_key_path: Optional[str] = Field(
-        default=None,
-        description="Path to the SSH private key file on the submitting "
-        "machine. Supports RSA, Ed25519, and ECDSA keys",
-    )
-    ssh_private_key: Optional[str] = SecretField(
-        default=None,
-        description="SSH private key content, used instead of ssh_key_path "
-        "when the key is stored in a ZenML secret. Supports {{secret.key}} "
-        "references",
-    )
-    ssh_key_passphrase: Optional[str] = SecretField(
-        default=None,
-        description="Passphrase for an encrypted SSH private key. Leave "
-        "unset if the key is not encrypted",
-    )
-    verify_host_key: bool = Field(
-        default=True,
-        description="Require the remote host key to be present in "
-        "known_hosts. Set to False to auto-accept unknown host keys (less "
-        "secure, convenient for ephemeral clusters)",
-    )
-    known_hosts_path: Optional[str] = Field(
-        default=None,
-        description="Path to a custom known_hosts file used for host key "
-        "verification. Uses ~/.ssh/known_hosts if unset",
     )
 
     @model_validator(mode="after")

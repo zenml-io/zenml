@@ -179,16 +179,11 @@ class SSHSlurmCommandRunner(SlurmCommandRunner):
         Args:
             config: The step operator config holding SSH connection settings.
         """
-        from typing import cast
-
-        from zenml.integrations.ssh.flavors.base import (
-            SSHConnectionConfigMixin,
-        )
         from zenml.integrations.ssh.ssh_client import SSHClient
 
-        # The Slurm config deliberately mirrors the SSH connection mixin's
-        # field names, so the SSH client can consume it directly.
-        self._ssh = SSHClient(cast(SSHConnectionConfigMixin, config))
+        # SlurmStepOperatorConfig inherits SSHConnectionConfigMixin, so the SSH
+        # client consumes it directly.
+        self._ssh = SSHClient(config)
         self._ssh.__enter__()
 
     def run(self, command: str) -> CommandResult:
