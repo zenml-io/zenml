@@ -27,13 +27,14 @@ import posixpath
 import re
 import shlex
 import shutil
+import stat
 import subprocess
 import tempfile
 import threading
 import urllib.parse
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, BinaryIO, Dict, List, Optional, Set, Tuple
 
 SANDBOX_BIN = os.environ.get("SANDBOX_BIN", "/usr/local/gcp/bin/sandbox")
 # /tmp on Cloud Run gen2 is a per-instance in-memory filesystem, not a
@@ -45,14 +46,54 @@ SHARE_MOUNT = "/mnt/zenml"
 MAX_FILE_BYTES = 32 * 1024 * 1024
 DEFAULT_EXEC_TIMEOUT_MS = 120_000
 
+# Sandbox ids are caller-generated; validate before they reach the shell,
+# a directory name, or a `sandbox run <id>` argument.
+_SANDBOX_ID_RE = re.compile(r"^sb-[0-9a-f]{12}$")
+
 # Sandboxes created by this instance. Persistent sandboxes are
 # instance-local, so an id missing here is gone (or belongs to a recycled
 # instance) and reads as 404.
 _sandboxes: Set[str] = set()
 _sandboxes_lock = threading.Lock()
 
+# Running exec commands keyed by caller-supplied exec id, so a kill
+# request can terminate the underlying process.
+_execs: Dict[str, "subprocess.Popen[bytes]"] = {}
+_execs_lock = threading.Lock()
+
 _gcs_client: Optional[Any] = None
 _gcs_client_lock = threading.Lock()
+
+
+def _open_new_file(path: str) -> BinaryIO:
+    """Create a staging file for writing, refusing symlinks and clobbering.
+
+    The staging directory is a bind mount the untrusted sandbox can write
+    to, so O_NOFOLLOW|O_EXCL stops it from pre-planting a symlink that
+    would redirect the write to a host path.
+    """
+    fd = os.open(
+        path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600
+    )
+    return os.fdopen(fd, "wb")
+
+
+def _open_regular_file(path: str) -> Tuple[BinaryIO, int]:
+    """Open a staging file for reading, refusing symlinks; verify regular.
+
+    Opening with O_NOFOLLOW and validating via fstat on the resulting
+    descriptor closes the symlink-swap race: the sandbox cannot make the
+    bridge read a host file by replacing the staged path with a symlink.
+    """
+    fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+    try:
+        st = os.fstat(fd)
+        if not stat.S_ISREG(st.st_mode):
+            raise ValueError("staged path is not a regular file")
+        return os.fdopen(fd, "rb"), st.st_size
+    except BaseException:
+        os.close(fd)
+        raise
 
 
 def _get_gcs_client() -> Any:
@@ -88,9 +129,17 @@ def _share_dir(sandbox_id: str) -> str:
     return os.path.join(SHARE_ROOT, sandbox_id)
 
 
-def _create_sandbox(allow_egress: bool, import_tar: Optional[str]) -> str:
-    """Create a detached persistent sandbox with a bind-mounted share dir."""
-    sandbox_id = f"sb-{uuid.uuid4().hex[:12]}"
+def _create_sandbox(
+    sandbox_id: str, allow_egress: bool, import_tar: Optional[str]
+) -> str:
+    """Create a detached persistent sandbox with a bind-mounted share dir.
+
+    Idempotent: a caller retrying after a lost response gets the existing
+    sandbox back instead of a duplicate.
+    """
+    with _sandboxes_lock:
+        if sandbox_id in _sandboxes:
+            return sandbox_id
     share = _share_dir(sandbox_id)
     os.makedirs(share, exist_ok=True)
 
@@ -148,15 +197,32 @@ def _exec_in_sandbox(
     """Launch a command in the sandbox, pipes attached."""
     args = ["exec", sandbox_id]
     for key, value in env.items():
-        args += ["-e", f"{key}={value}"]
+        args += ["--env", f"{key}={value}"]
     if cwd:
-        args += ["-w", cwd]
+        args += ["--workdir", cwd]
     args += ["--", *argv]
     return subprocess.Popen(
         [SANDBOX_BIN, *args],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
+
+
+def _kill_exec(exec_id: str) -> bool:
+    """Terminate a registered exec by id.
+
+    Args:
+        exec_id: The caller-supplied exec id.
+
+    Returns:
+        True if a matching running command was found and killed.
+    """
+    with _execs_lock:
+        proc = _execs.get(exec_id)
+    if proc is None:
+        return False
+    proc.kill()
+    return True
 
 
 def _sandbox_shell(sandbox_id: str, script: str) -> None:
@@ -316,9 +382,16 @@ class BridgeHandler(BaseHTTPRequestHandler):
         if route is None:
             self._send_error_json(404, "Not found")
             return
-        sandbox_id, action, _ = route
+        sandbox_id, action, rest = route
         try:
-            if not sandbox_id or action:
+            if action == "exec" and rest:
+                if not self._known_sandbox(sandbox_id):
+                    self._send_error_json(404, "Unknown sandbox")
+                elif _kill_exec(rest):
+                    self._send_json(200, {"killed": rest})
+                else:
+                    self._send_error_json(404, "Unknown exec")
+            elif not sandbox_id or action:
                 self._send_error_json(404, "Not found")
             elif not self._known_sandbox(sandbox_id):
                 self._send_error_json(404, "Unknown sandbox")
@@ -330,12 +403,19 @@ class BridgeHandler(BaseHTTPRequestHandler):
 
     def _handle_create(self) -> None:
         payload = self._read_json()
+        sandbox_id = payload.get("id")
+        if not isinstance(sandbox_id, str) or not _SANDBOX_ID_RE.match(
+            sandbox_id
+        ):
+            self._send_error_json(400, "Missing or invalid sandbox id")
+            return
         import_tar_uri = payload.get("import_tar_uri")
         import_tar = (
             _download_import_tar(import_tar_uri) if import_tar_uri else None
         )
         try:
-            sandbox_id = _create_sandbox(
+            _create_sandbox(
+                sandbox_id,
                 allow_egress=bool(payload.get("allow_egress")),
                 import_tar=import_tar,
             )
@@ -351,12 +431,16 @@ class BridgeHandler(BaseHTTPRequestHandler):
             self._send_error_json(400, "Missing argv")
             return
         timeout_ms = int(payload.get("timeout_ms", DEFAULT_EXEC_TIMEOUT_MS))
+        exec_id = payload.get("exec_id")
         proc = _exec_in_sandbox(
             sandbox_id,
             [str(a) for a in argv],
             payload.get("cwd"),
             dict(payload.get("env") or {}),
         )
+        if exec_id:
+            with _execs_lock:
+                _execs[exec_id] = proc
 
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream")
@@ -398,6 +482,10 @@ class BridgeHandler(BaseHTTPRequestHandler):
             timed_out = True
             proc.kill()
             proc.wait()
+        finally:
+            if exec_id:
+                with _execs_lock:
+                    _execs.pop(exec_id, None)
         for t in threads:
             t.join()
 
@@ -427,8 +515,9 @@ class BridgeHandler(BaseHTTPRequestHandler):
         staging_name = f"put-{uuid.uuid4().hex}"
         staging_host = os.path.join(_share_dir(sandbox_id), staging_name)
         # Stream straight to the staging file so concurrent uploads don't
-        # each hold a full 32 MiB body in memory.
-        with open(staging_host, "wb") as f:
+        # each hold a full 32 MiB body in memory. _open_new_file refuses a
+        # symlink the sandbox may have pre-planted at this path.
+        with _open_new_file(staging_host) as f:
             remaining = length
             while remaining > 0:
                 chunk = self.rfile.read(min(remaining, 1024 * 1024))
@@ -463,12 +552,15 @@ class BridgeHandler(BaseHTTPRequestHandler):
             f"{shlex.quote(f'{SHARE_MOUNT}/{staging_name}')}",
         )
         try:
-            size = os.path.getsize(staging_host)
-            self.send_response(200)
-            self.send_header("Content-Type", "application/octet-stream")
-            self.send_header("Content-Length", str(size))
-            self.end_headers()
-            with open(staging_host, "rb") as f:
+            # Open with O_NOFOLLOW and size from fstat on the fd: the
+            # sandbox cannot redirect this read to a host file by swapping
+            # the staged path for a symlink after the cp.
+            f, size = _open_regular_file(staging_host)
+            with f:
+                self.send_response(200)
+                self.send_header("Content-Type", "application/octet-stream")
+                self.send_header("Content-Length", str(size))
+                self.end_headers()
                 shutil.copyfileobj(f, self.wfile)
         finally:
             os.unlink(staging_host)

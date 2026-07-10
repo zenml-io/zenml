@@ -12,12 +12,25 @@ The bridge translates the ZenML sandbox bridge protocol (v1) into
 
 | Endpoint | CLI |
 |---|---|
-| `POST /v1/sandbox` | `sandbox run <id> --detach … -- sleep infinity` |
-| `POST /v1/sandbox/<id>/exec` | `sandbox exec <id> [-e K=V] [-w DIR] -- argv…` (streamed as SSE) |
+| `POST /v1/sandbox` (caller supplies the id) | `sandbox run <id> --detach … -- sleep infinity` |
+| `POST /v1/sandbox/<id>/exec` | `sandbox exec <id> [--env K=V] [--workdir DIR] -- argv…` (streamed as SSE) |
+| `DELETE /v1/sandbox/<id>/exec/<exec-id>` | terminates the running command |
 | `PUT/GET /v1/sandbox/<id>/file/<path>` | staged through a bind-mounted share directory |
 | `POST /v1/sandbox/<id>/snapshot` | `sandbox tar <id>` + upload to Cloud Storage |
 | `GET /v1/sandbox/<id>/running` | `sandbox exec <id> /bin/true` |
 | `DELETE /v1/sandbox/<id>` | `sandbox delete <id> --force` |
+
+The client generates sandbox ids, so a create whose response is lost can
+still be cleaned up. Exec commands carry a client-generated exec id so
+`process.kill()` can terminate them. File staging opens host-side
+descriptors with `O_NOFOLLOW`, so untrusted sandbox code can't redirect a
+transfer to a host path via a symlink.
+
+> **Verify before release:** the exec CLI flags (`--env`, `--workdir`) and
+> the mount/`--import-tar` syntax are taken from the public
+> [code-execution docs](https://docs.cloud.google.com/run/docs/code-execution);
+> confirm them with `sandbox exec -h` on a deployed instance, since the CLI
+> is still in preview.
 
 Authentication is delegated to Cloud Run IAM — the bridge itself contains no
 auth code. Deploy with `--no-allow-unauthenticated` and Cloud Run verifies

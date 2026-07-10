@@ -31,6 +31,7 @@ import shlex
 import threading
 import time
 import urllib.parse
+import uuid
 from collections import deque
 from dataclasses import dataclass
 from typing import (
@@ -86,13 +87,14 @@ _RETRYABLE_STATUSES: FrozenSet[int] = frozenset({429, 502, 503, 504})
 _RETRYABLE_METHODS: FrozenSet[str] = frozenset({"GET", "PUT", "DELETE"})
 _MAX_RETRIES = 3
 
-# Per-stream line cap for the SSE pump buffers. A caller that only
+# Per-stream byte cap for the SSE pump buffers. A caller that only
 # wait()s on a noisy command would otherwise grow these deques without
-# bound; past the cap the oldest lines are dropped (logged once).
-_STREAM_BUFFER_MAX_LINES = 100_000
-# Newline-free output (progress bars, minified blobs) never hits the line
-# cap; past this many buffered bytes the partial line is flushed as a
-# synthetic line so memory and per-chunk copy costs stay bounded.
+# bound; past the cap the oldest lines are dropped (logged once). The cap
+# is on bytes, not line count, because the command is untrusted and can
+# emit arbitrarily long (or newline-free) output to exhaust caller memory.
+_STREAM_BUFFER_MAX_BYTES = 64 * 1024 * 1024
+# A single newline-free run is flushed as a synthetic line past this size
+# so the carried-over remainder (and its per-chunk copy) stays bounded.
 _STREAM_REMAINDER_MAX_BYTES = 1_048_576
 
 # Standard Google OAuth2 token endpoint, used when deriving ID-token
@@ -475,34 +477,30 @@ class _CloudRunBridgeClient:
 
     def create_sandbox(
         self,
+        sandbox_id: str,
         *,
         allow_egress: bool = False,
         import_tar_uri: Optional[str] = None,
-    ) -> str:
-        """Create a fresh sandbox on the bridge instance.
+    ) -> None:
+        """Create a sandbox on the bridge instance under a caller-chosen id.
+
+        The caller generates the id and the bridge creation is idempotent,
+        so a create whose response is lost cannot orphan the sandbox: the
+        caller still knows the id and can delete it.
 
         Args:
+            sandbox_id: The caller-generated sandbox id.
             allow_egress: Whether the sandbox gets outbound network access.
             import_tar_uri: Optional ``gs://`` URI of a filesystem snapshot
                 tarball to initialize the sandbox from.
-
-        Returns:
-            The bridge-assigned sandbox id.
-
-        Raises:
-            SandboxExecError: If the bridge response is missing an id.
         """
-        body: Dict[str, Any] = {"allow_egress": allow_egress}
+        body: Dict[str, Any] = {
+            "id": sandbox_id,
+            "allow_egress": allow_egress,
+        }
         if import_tar_uri is not None:
             body["import_tar_uri"] = import_tar_uri
-        resp = self._request("POST", "/v1/sandbox", json_body=body)
-        payload = resp.json()
-        sandbox_id = payload.get("id")
-        if not sandbox_id:
-            raise SandboxExecError(
-                f"Bridge create-sandbox response missing 'id': {payload!r}"
-            )
-        return cast(str, sandbox_id)
+        self._request("POST", "/v1/sandbox", json_body=body)
 
     def delete_sandbox(self, sandbox_id: str) -> None:
         """Delete a sandbox.
@@ -557,6 +555,7 @@ class _CloudRunBridgeClient:
         cwd: Optional[str] = None,
         env: Optional[Dict[str, str]] = None,
         timeout_ms: int = DEFAULT_BRIDGE_TIMEOUT_MS,
+        exec_id: Optional[str] = None,
     ) -> Tuple["httpx.Response", Iterator[_BridgeEvent]]:
         """Run a command and stream decoded SSE events.
 
@@ -565,9 +564,11 @@ class _CloudRunBridgeClient:
             argv: Command argv list.
             cwd: Optional working directory.
             env: Environment variables for this command (passed to the
-                ``sandbox`` CLI via ``-e``; sandboxes inherit nothing from
-                the host).
+                ``sandbox`` CLI via ``--env``; sandboxes inherit nothing
+                from the host).
             timeout_ms: Per-exec timeout in milliseconds.
+            exec_id: Caller-generated id under which the bridge registers
+                the running command, so ``kill_exec`` can terminate it.
 
         Returns:
             The open streaming response (closing it aborts the stream and
@@ -579,6 +580,8 @@ class _CloudRunBridgeClient:
             body["cwd"] = cwd
         if env:
             body["env"] = env
+        if exec_id is not None:
+            body["exec_id"] = exec_id
 
         # POST eagerly so 4xx/auth errors raise at the call site; only SSE
         # decoding is deferred.
@@ -589,6 +592,19 @@ class _CloudRunBridgeClient:
             stream=True,
         )
         return resp, _drain_sse_response(resp)
+
+    def kill_exec(self, sandbox_id: str, exec_id: str) -> None:
+        """Ask the bridge to terminate a running command.
+
+        Args:
+            sandbox_id: The sandbox the command runs in.
+            exec_id: The id passed to ``exec_stream`` for the command.
+        """
+        self._request(
+            "DELETE",
+            f"/v1/sandbox/{sandbox_id}/exec/{exec_id}",
+            ok_statuses=(404, 410),
+        )
 
     def put_file(self, sandbox_id: str, remote_path: str, data: bytes) -> None:
         """Upload raw bytes to a sandbox path.
@@ -636,6 +652,9 @@ class CloudRunSandboxProcess(SandboxProcess):
         session: "CloudRunSandboxSession",
         started_at: float,
         response: Optional["httpx.Response"] = None,
+        client: Optional["_CloudRunBridgeClient"] = None,
+        sandbox_id: Optional[str] = None,
+        exec_id: Optional[str] = None,
     ) -> None:
         """Initialize the process wrapper.
 
@@ -645,10 +664,17 @@ class CloudRunSandboxProcess(SandboxProcess):
             started_at: Wall-clock launch time.
             response: The underlying streaming SSE response; ``kill()``
                 closes it to unblock the pump thread mid-read.
+            client: Bridge client used by ``kill()`` to terminate the
+                remote command.
+            sandbox_id: The sandbox the command runs in.
+            exec_id: The bridge exec id used by ``kill()``.
         """
         super().__init__(session=session, started_at=started_at)
         self._event_iter = event_iter
         self._response = response
+        self._client = client
+        self._sandbox_id = sandbox_id
+        self._exec_id = exec_id
         self._killed = threading.Event()
 
         # The bridge multiplexes stdout/stderr on one SSE stream. We pump
@@ -657,6 +683,7 @@ class CloudRunSandboxProcess(SandboxProcess):
         # caller's thread.
         self._stdout_buf: Deque[str] = deque()
         self._stderr_buf: Deque[str] = deque()
+        self._buffered_bytes: Dict[str, int] = {"stdout": 0, "stderr": 0}
         self._buffer_truncated = False
         self._data_available = threading.Condition()
         self._done = threading.Event()
@@ -672,10 +699,41 @@ class CloudRunSandboxProcess(SandboxProcess):
         )
         self._pump.start()
 
-    def _push_text(self, target: Deque[str], remainder: str, text: str) -> str:
+    def _enqueue(self, stream: str, target: Deque[str], chunk: str) -> None:
+        """Append a chunk, dropping oldest data once the byte cap is hit.
+
+        Callers hold ``self._data_available``.
+
+        Args:
+            stream: ``"stdout"`` or ``"stderr"`` — selects the byte counter.
+            target: Buffer to append to.
+            chunk: The text to append.
+        """
+        target.append(chunk)
+        self._buffered_bytes[stream] += len(chunk)
+        while (
+            self._buffered_bytes[stream] > _STREAM_BUFFER_MAX_BYTES
+            and len(target) > 1
+        ):
+            dropped = target.popleft()
+            self._buffered_bytes[stream] -= len(dropped)
+            if not self._buffer_truncated:
+                self._buffer_truncated = True
+                logger.warning(
+                    "Cloud Run exec output exceeded the %d-byte per-stream "
+                    "buffer; oldest undrained output is being dropped. "
+                    "Drain process.stdout()/stderr() (or use collect()) to "
+                    "keep full output.",
+                    _STREAM_BUFFER_MAX_BYTES,
+                )
+
+    def _push_text(
+        self, stream: str, target: Deque[str], remainder: str, text: str
+    ) -> str:
         """Line-buffer arbitrary text into the target deque.
 
         Args:
+            stream: ``"stdout"`` or ``"stderr"``.
             target: Buffer to append lines to.
             remainder: Partial line carried over from the previous chunk.
             text: New text chunk.
@@ -686,33 +744,22 @@ class CloudRunSandboxProcess(SandboxProcess):
         buf = remainder + text
         while "\n" in buf:
             line, buf = buf.split("\n", 1)
-            if len(target) >= _STREAM_BUFFER_MAX_LINES:
-                target.popleft()
-                if not self._buffer_truncated:
-                    self._buffer_truncated = True
-                    logger.warning(
-                        "Cloud Run exec output exceeded the %d-line "
-                        "buffer; oldest undrained lines are being "
-                        "dropped. Drain process.stdout()/stderr() (or "
-                        "use collect()) to keep full output.",
-                        _STREAM_BUFFER_MAX_LINES,
-                    )
-            target.append(line + "\n")
+            self._enqueue(stream, target, line + "\n")
         # Newline-free output would otherwise grow the remainder (and the
         # per-chunk `remainder + text` copy) without bound; flush it as a
         # synthetic line past the cap.
         if len(buf) > _STREAM_REMAINDER_MAX_BYTES:
-            target.append(buf)
+            self._enqueue(stream, target, buf)
             return ""
         return buf
 
     def _flush_remainders(self) -> None:
         """Push trailing partial lines (no terminating newline) on stream end."""
         if self._stdout_remainder:
-            self._stdout_buf.append(self._stdout_remainder)
+            self._enqueue("stdout", self._stdout_buf, self._stdout_remainder)
             self._stdout_remainder = ""
         if self._stderr_remainder:
-            self._stderr_buf.append(self._stderr_remainder)
+            self._enqueue("stderr", self._stderr_buf, self._stderr_remainder)
             self._stderr_remainder = ""
 
     def _pump_events(self) -> None:
@@ -724,12 +771,14 @@ class CloudRunSandboxProcess(SandboxProcess):
                         self._exit_code = int(ev.data)
                     elif ev.kind == "stdout":
                         self._stdout_remainder = self._push_text(
+                            "stdout",
                             self._stdout_buf,
                             self._stdout_remainder,
                             cast(str, ev.data),
                         )
                     elif ev.kind == "stderr":
                         self._stderr_remainder = self._push_text(
+                            "stderr",
                             self._stderr_buf,
                             self._stderr_remainder,
                             cast(str, ev.data),
@@ -746,10 +795,11 @@ class CloudRunSandboxProcess(SandboxProcess):
                 self._done.set()
                 self._data_available.notify_all()
 
-    def _iter_buffer(self, buf: Deque[str]) -> Iterator[str]:
+    def _iter_buffer(self, stream: str, buf: Deque[str]) -> Iterator[str]:
         """Block-pop lines from a buffer until the pump signals done.
 
         Args:
+            stream: ``"stdout"`` or ``"stderr"`` — selects the byte counter.
             buf: The buffer to drain.
 
         Yields:
@@ -761,6 +811,7 @@ class CloudRunSandboxProcess(SandboxProcess):
                     self._data_available.wait()
                 if buf:
                     line = buf.popleft()
+                    self._buffered_bytes[stream] -= len(line)
                 else:
                     return
             yield line
@@ -773,7 +824,8 @@ class CloudRunSandboxProcess(SandboxProcess):
             also lands in the per-session ``sandbox:<id>`` log.
         """
         return self._session._wrap_stream(
-            self._iter_buffer(self._stdout_buf), log_level=logging.INFO
+            self._iter_buffer("stdout", self._stdout_buf),
+            log_level=logging.INFO,
         )
 
     def stderr(self) -> Iterator[str]:
@@ -784,7 +836,8 @@ class CloudRunSandboxProcess(SandboxProcess):
             also lands in the per-session ``sandbox:<id>`` log.
         """
         return self._session._wrap_stream(
-            self._iter_buffer(self._stderr_buf), log_level=logging.ERROR
+            self._iter_buffer("stderr", self._stderr_buf),
+            log_level=logging.ERROR,
         )
 
     def wait(self, timeout: Optional[float] = None) -> int:
@@ -822,8 +875,8 @@ class CloudRunSandboxProcess(SandboxProcess):
             if self._killed.is_set():
                 raise SandboxExecError(
                     "exec stream was killed via kill() or session close(); "
-                    "the command may keep running in the sandbox until "
-                    "timeout_ms"
+                    "the bridge was asked to terminate the command, but its "
+                    "exit status was not observed"
                 )
             # Stream ended cleanly but no exit frame arrived (truncated
             # SSE, bridge stalled out, Cloud Run request timeout hit).
@@ -836,10 +889,25 @@ class CloudRunSandboxProcess(SandboxProcess):
         return self._exit_code
 
     def kill(self) -> None:
-        """Stop reading the SSE stream and unblock consumers."""
+        """Terminate the remote command and stop reading its stream."""
         # Set the flag before closing so the pump treats the resulting
         # httpx error as a clean shutdown.
         self._killed.set()
+        # Terminate the command on the bridge first; closing the local
+        # response alone would leave it running until timeout_ms.
+        if (
+            self._client is not None
+            and self._sandbox_id is not None
+            and self._exec_id is not None
+        ):
+            try:
+                self._client.kill_exec(self._sandbox_id, self._exec_id)
+            except Exception:
+                logger.debug(
+                    "Bridge kill request for exec %s failed",
+                    self._exec_id,
+                    exc_info=True,
+                )
         if self._response is not None:
             try:
                 self._response.close()
@@ -942,6 +1010,7 @@ class CloudRunSandboxSession(SandboxSession):
 
         merged_env = {**self._session_env, **(env or {})}
         effective_cwd = cwd if cwd is not None else self._default_cwd
+        exec_id = uuid.uuid4().hex
         started_at = time.time()
         # exec_stream surfaces every failure mode as SandboxExecError, so
         # launch errors propagate to the caller as-is.
@@ -951,12 +1020,16 @@ class CloudRunSandboxSession(SandboxSession):
             cwd=effective_cwd,
             env=merged_env or None,
             timeout_ms=self._default_timeout_ms,
+            exec_id=exec_id,
         )
         process = CloudRunSandboxProcess(
             event_iter,
             session=self,
             started_at=started_at,
             response=response,
+            client=self._client,
+            sandbox_id=self._sandbox_id,
+            exec_id=exec_id,
         )
         self._processes.append(process)
         return process
@@ -980,9 +1053,12 @@ class CloudRunSandboxSession(SandboxSession):
                 "attribute on the Cloud Run sandbox component (a gs:// "
                 "location the bridge service account can write to)."
             )
+        # Include a uuid so two snapshots of one sandbox within the same
+        # second get distinct object names instead of overwriting each
+        # other (which would silently change what the first restores).
         gcs_uri = (
             f"{self._snapshot_uri_prefix}/{self._sandbox_id}-"
-            f"{int(time.time())}.tar"
+            f"{int(time.time())}-{uuid.uuid4().hex[:8]}.tar"
         )
         self._client.snapshot_sandbox(self._sandbox_id, gcs_uri)
         return SandboxSnapshot(
@@ -1127,18 +1203,21 @@ class CloudRunSandbox(BaseSandbox, GoogleCredentialsMixin):
                     target_audience=audience,
                 ),
             )
-        if self.get_connector() is not None:
-            # The connector produced credentials we can't convert (user
-            # account, OAuth2 token, external account). Falling back to the
-            # ambient ADC below would silently authenticate to the bridge
-            # as a *different identity* than the connector the user
-            # configured — fail loudly instead.
+        if (
+            self.get_connector() is not None
+            or self.config.service_account_path
+        ):
+            # An explicitly-chosen credential source (connector or
+            # service_account_path) produced credentials we can't convert
+            # (user account, OAuth2 token, external account). Falling back
+            # to the ambient-ADC helper below would ignore that choice and
+            # silently authenticate to the bridge as a *different identity*
+            # (e.g. the metadata server) — fail loudly instead.
             raise RuntimeError(
-                "The linked GCP service connector uses an auth method "
-                f"({type(credentials).__name__}) that cannot mint the "
-                "Google ID tokens Cloud Run IAM requires. Reconfigure the "
-                "connector with the 'service-account' or 'impersonation' "
-                "auth method, or unlink it to use service_account_path / "
+                f"The configured GCP credentials ({type(credentials).__name__}) "
+                "cannot mint the Google ID tokens Cloud Run IAM requires. "
+                "Use a service-account or impersonation service connector, a "
+                "service-account JSON key at service_account_path, or "
                 "service-account-based Application Default Credentials."
             )
         # Plain ADC (workstation or metadata server): fall back to the
@@ -1149,10 +1228,21 @@ class CloudRunSandbox(BaseSandbox, GoogleCredentialsMixin):
     def _get_bridge_client(self) -> _CloudRunBridgeClient:
         """Return the lazily-built bridge HTTP client.
 
+        Rebuilds the client (and its baked-in ID-token credentials) once
+        the linked service connector has expired, so a component does not
+        keep signing tokens with credentials the connector no longer
+        vouches for.
+
         Returns:
             A cached ``_CloudRunBridgeClient`` bound to this component.
         """
         with self._bridge_client_lock:
+            if (
+                self._bridge_client is not None
+                and self.connector_has_expired()
+            ):
+                self._bridge_client.close()
+                self._bridge_client = None
             if self._bridge_client is None:
                 self._bridge_client = _CloudRunBridgeClient(
                     self.config.service_url,
@@ -1204,8 +1294,10 @@ class CloudRunSandbox(BaseSandbox, GoogleCredentialsMixin):
             A ``CloudRunSandboxSession`` bound to the new sandbox.
         """
         eff = cast(CloudRunSandboxSettings, self.resolve_settings(settings))
-        sandbox_id = self._get_bridge_client().create_sandbox(
-            allow_egress=eff.allow_egress
+        sandbox_id = self._new_sandbox_id()
+        client = self._get_bridge_client()
+        self._create_sandbox_or_cleanup(
+            client, sandbox_id, allow_egress=eff.allow_egress
         )
         return self._build_session(
             sandbox_id, eff, destroy_on_exit=destroy_on_exit
@@ -1250,8 +1342,63 @@ class CloudRunSandbox(BaseSandbox, GoogleCredentialsMixin):
         """
         self._validate_snapshot(snapshot)
         eff = cast(CloudRunSandboxSettings, self.resolve_settings(None))
-        sandbox_id = self._get_bridge_client().create_sandbox(
+        sandbox_id = self._new_sandbox_id()
+        client = self._get_bridge_client()
+        self._create_sandbox_or_cleanup(
+            client,
+            sandbox_id,
             allow_egress=eff.allow_egress,
             import_tar_uri=snapshot.ref,
         )
         return self._build_session(sandbox_id, eff)
+
+    @staticmethod
+    def _new_sandbox_id() -> str:
+        """Generate a fresh sandbox id.
+
+        Returns:
+            An id of the form ``sb-<12 hex chars>``.
+        """
+        return f"sb-{uuid.uuid4().hex[:12]}"
+
+    @staticmethod
+    def _create_sandbox_or_cleanup(
+        client: "_CloudRunBridgeClient",
+        sandbox_id: str,
+        *,
+        allow_egress: bool = False,
+        import_tar_uri: Optional[str] = None,
+    ) -> None:
+        """Create a sandbox, deleting it if the create fails mid-flight.
+
+        Because the id is caller-generated, a create whose response is lost
+        (the bridge may have created the sandbox before the connection
+        dropped) can still be cleaned up here instead of orphaning a
+        ``sleep infinity`` process on the bridge instance.
+
+        Args:
+            client: Bridge client.
+            sandbox_id: The caller-generated sandbox id.
+            allow_egress: Whether the sandbox gets outbound network access.
+            import_tar_uri: Optional ``gs://`` snapshot tarball to boot from.
+
+        Raises:
+            Exception: Re-raises whatever the create call raised, after a
+                best-effort delete of the possibly-created sandbox.
+        """
+        try:
+            client.create_sandbox(
+                sandbox_id,
+                allow_egress=allow_egress,
+                import_tar_uri=import_tar_uri,
+            )
+        except Exception:
+            try:
+                client.delete_sandbox(sandbox_id)
+            except Exception:
+                logger.warning(
+                    "Failed to clean up sandbox %s after a failed create; "
+                    "it may linger until the bridge instance is recycled.",
+                    sandbox_id,
+                )
+            raise

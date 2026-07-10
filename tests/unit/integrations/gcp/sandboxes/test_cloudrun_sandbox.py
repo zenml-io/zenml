@@ -212,27 +212,27 @@ class TestBridgeClient:
 
         credentials = _StaticCredentials()
         client = _make_client(handler, credentials)
-        sandbox_id = client.create_sandbox(allow_egress=True)
+        client.create_sandbox("sb-0123456789ab", allow_egress=True)
 
-        assert sandbox_id == "sb-0123456789ab"
         assert seen["path"] == "/v1/sandbox"
         assert seen["auth"] == "Bearer test-id-token"
-        assert seen["body"] == {"allow_egress": True}
+        assert seen["body"] == {
+            "id": "sb-0123456789ab",
+            "allow_egress": True,
+        }
         assert credentials.refresh_count == 1
 
     def test_create_sandbox_with_import_tar(self) -> None:
         def handler(request: httpx.Request) -> httpx.Response:
             body = json.loads(request.content)
+            assert body["id"] == "sb-0123456789ab"
             assert body["import_tar_uri"] == "gs://bucket/snap.tar"
             return httpx.Response(200, json={"id": "sb-0123456789ab"})
 
         client = _make_client(handler)
-        client.create_sandbox(import_tar_uri="gs://bucket/snap.tar")
-
-    def test_create_sandbox_missing_id_raises(self) -> None:
-        client = _make_client(lambda _: httpx.Response(200, json={}))
-        with pytest.raises(SandboxExecError, match="missing 'id'"):
-            client.create_sandbox()
+        client.create_sandbox(
+            "sb-0123456789ab", import_tar_uri="gs://bucket/snap.tar"
+        )
 
     def test_no_auth_header_when_unauthenticated(self) -> None:
         def handler(request: httpx.Request) -> httpx.Response:
@@ -240,7 +240,11 @@ class TestBridgeClient:
             return httpx.Response(200, json={"id": "sb-0123456789ab"})
 
         client = _make_client(handler, credentials=None)
-        client.create_sandbox()
+        client.create_sandbox("sb-0123456789ab")
+
+    def test_kill_exec_tolerates_404(self) -> None:
+        client = _make_client(lambda _: httpx.Response(404))
+        client.kill_exec("sb-0123456789ab", "exec-123")
 
     def test_delete_tolerates_404(self) -> None:
         client = _make_client(lambda _: httpx.Response(404))
@@ -290,7 +294,7 @@ class TestBridgeClient:
 
         client = _make_client(handler)
         with pytest.raises(SandboxExecError, match="503"):
-            client.create_sandbox()
+            client.create_sandbox("sb-0123456789ab")
         assert len(calls) == 1
 
     def test_upload_rejects_oversized_file(self) -> None:
@@ -334,12 +338,21 @@ class TestBridgeClient:
 
 class TestProcess:
     def _make_process(
-        self, events: List[_BridgeEvent]
+        self,
+        events: List[_BridgeEvent],
+        *,
+        client: Any = None,
+        exec_id: Optional[str] = None,
     ) -> CloudRunSandboxProcess:
         session = MagicMock()
         session._wrap_stream.side_effect = lambda lines, **_: lines
         return CloudRunSandboxProcess(
-            iter(events), session=session, started_at=0.0
+            iter(events),
+            session=session,
+            started_at=0.0,
+            client=client,
+            sandbox_id="sb-0123456789ab",
+            exec_id=exec_id,
         )
 
     def test_demux_and_wait(self) -> None:
@@ -374,6 +387,34 @@ class TestProcess:
         process.kill()
         with pytest.raises(SandboxExecError, match="killed"):
             process.wait(timeout=5)
+
+    def test_kill_terminates_remote_command(self) -> None:
+        client = MagicMock()
+        process = self._make_process(
+            [_BridgeEvent(kind="stdout", data="x\n")],
+            client=client,
+            exec_id="exec-123",
+        )
+        process.kill()
+        client.kill_exec.assert_called_once_with("sb-0123456789ab", "exec-123")
+
+    def test_buffer_byte_cap_drops_oldest(self) -> None:
+        # Two ~1 MiB newline-free chunks each flush as a synthetic line;
+        # with a smaller cap the oldest is dropped rather than retained.
+        import zenml.integrations.gcp.sandboxes.cloudrun_sandbox as mod
+
+        chunk = "a" * (mod._STREAM_REMAINDER_MAX_BYTES + 1)
+        with patch.object(mod, "_STREAM_BUFFER_MAX_BYTES", len(chunk) + 10):
+            process = self._make_process(
+                [
+                    _BridgeEvent(kind="stdout", data=chunk),
+                    _BridgeEvent(kind="stdout", data=chunk),
+                    _BridgeEvent(kind="exit", data=0),
+                ]
+            )
+            process.wait(timeout=5)
+            # Only the most recent chunk survives the byte cap.
+            assert len(list(process.stdout())) == 1
 
 
 class TestSession:
@@ -524,5 +565,67 @@ class TestIdTokenCredentials:
             ),
             patch.object(component, "get_connector", return_value=MagicMock()),
         ):
-            with pytest.raises(RuntimeError, match="service-account"):
+            with pytest.raises(RuntimeError, match="cannot mint"):
                 component._build_id_token_credentials()
+
+    def test_unconvertible_service_account_path_fails_loudly(self) -> None:
+        """An explicit service_account_path whose creds can't mint ID
+        tokens must fail rather than fall back to ambient ADC."""
+        from google.oauth2.credentials import Credentials as UserCredentials
+
+        component = _make_component(
+            service_account_path="/keys/service-account.json"
+        )
+        with (
+            patch.object(
+                component,
+                "_get_authentication",
+                return_value=(MagicMock(spec=UserCredentials), "project"),
+            ),
+            patch.object(component, "get_connector", return_value=None),
+        ):
+            with pytest.raises(RuntimeError, match="cannot mint"):
+                component._build_id_token_credentials()
+
+
+class TestComponentLifecycle:
+    def test_create_session_cleans_up_on_failed_create(self) -> None:
+        """A create that fails mid-flight must delete the sandbox by its
+        caller-generated id so it can't orphan."""
+        client = MagicMock()
+        client.create_sandbox.side_effect = SandboxExecError("boom")
+        component = _make_component()
+        with patch.object(
+            component, "_get_bridge_client", return_value=client
+        ):
+            with pytest.raises(SandboxExecError, match="boom"):
+                component.create_session()
+        created_id = client.create_sandbox.call_args.args[0]
+        client.delete_sandbox.assert_called_once_with(created_id)
+
+    def test_bridge_client_rebuilt_after_connector_expiry(self) -> None:
+        component = _make_component()
+        with (
+            patch.object(
+                component,
+                "_build_id_token_credentials",
+                return_value=None,
+            ),
+            patch.object(
+                component, "connector_has_expired", return_value=False
+            ),
+        ):
+            first = component._get_bridge_client()
+            assert component._get_bridge_client() is first
+
+        with (
+            patch.object(
+                component,
+                "_build_id_token_credentials",
+                return_value=None,
+            ),
+            patch.object(
+                component, "connector_has_expired", return_value=True
+            ),
+        ):
+            assert component._get_bridge_client() is not first
