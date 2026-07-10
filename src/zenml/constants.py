@@ -312,6 +312,14 @@ ENV_ZENML_STREAM_PUBLISHER_BATCH_SIZE = "ZENML_STREAM_PUBLISHER_BATCH_SIZE"
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
 
+ZENML_LOGGING_VERBOSITY = os.getenv(
+    ENV_ZENML_LOGGING_VERBOSITY, default="INFO"
+).upper()
+
+ZENML_STORAGE_LOGGING_VERBOSITY = os.getenv(
+    ENV_ZENML_STORAGE_LOGGING_VERBOSITY, default=None
+)
+
 INSIDE_ZENML_CONTAINER = handle_bool_env_var(ENV_ZENML_CONTAINER, False)
 
 # Analytics constants
