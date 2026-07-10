@@ -67,7 +67,12 @@ router = APIRouter(
 
 
 def _ensure_workspace_service_account_mutation_allowed() -> None:
-    """Block deprecated workspace-level service account mutations in Pro."""
+    """Block deprecated workspace-level service account mutations in Pro.
+
+    Raises:
+        IllegalOperationError: If workspace-level service account mutations
+            are disabled for the current deployment.
+    """
     if server_config().auth_scheme == AuthScheme.EXTERNAL:
         raise IllegalOperationError(
             "Workspace-level service accounts and API keys are deprecated in "

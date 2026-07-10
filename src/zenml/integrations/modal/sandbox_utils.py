@@ -76,7 +76,14 @@ class ModalSandboxSettings(Protocol):
 
 
 def normalize_optional_config_value(value: Optional[str]) -> Optional[str]:
-    """Normalize optional string config values."""
+    """Normalize an optional string configuration value.
+
+    Args:
+        value: The optional value to normalize.
+
+    Returns:
+        The stripped value, or `None` if it is empty or absent.
+    """
     if value is None:
         return None
 
@@ -87,7 +94,14 @@ def normalize_optional_config_value(value: Optional[str]) -> Optional[str]:
 def split_modal_runtime_environment(
     environment: Dict[str, str],
 ) -> Tuple[Dict[str, str], Dict[str, Optional[str]]]:
-    """Split runtime environment variables into plain and secret values."""
+    """Split runtime environment variables into plain and secret values.
+
+    Args:
+        environment: Runtime environment variables to split.
+
+    Returns:
+        The plain environment variables and sensitive environment variables.
+    """
     sandbox_environment: Dict[str, str] = {}
     sensitive_environment: Dict[str, Optional[str]] = {}
 
@@ -110,6 +124,17 @@ def create_modal_client_from_credentials(
     If no component credentials are configured, this returns ``None`` so the
     Modal SDK can use its ambient authentication configuration. If only one
     credential value is configured, the component configuration is invalid.
+
+    Args:
+        token_id: Explicitly configured Modal token ID, if any.
+        token_secret: Explicitly configured Modal token secret, if any.
+
+    Returns:
+        An authenticated Modal client, or `None` to use ambient credentials.
+
+    Raises:
+        StackComponentInterfaceError: If only one credential value is
+            configured.
     """
     normalized_token_id = normalize_optional_config_value(token_id)
     normalized_token_secret = normalize_optional_config_value(token_secret)
@@ -180,7 +205,15 @@ def get_modal_image_from_registry(
     image_name: str,
     registry_credentials: Optional[Tuple[str, str]] = None,
 ) -> "modal.Image":
-    """Create a Modal image from a registry image name."""
+    """Create a Modal image from a registry image name.
+
+    Args:
+        image_name: Registry image name.
+        registry_credentials: Optional registry username and password.
+
+    Returns:
+        A Modal image backed by the registry image.
+    """
     if registry_credentials:
         docker_username, docker_password = registry_credentials
         registry_secret = modal.Secret.from_dict(
@@ -200,7 +233,16 @@ def lookup_modal_app(
     modal_environment: Optional[str],
     modal_client: Optional["modal.Client"],
 ) -> "modal.App":
-    """Look up or create a Modal app for Sandbox execution."""
+    """Look up or create a Modal app for sandbox execution.
+
+    Args:
+        app_name: Name of the Modal app.
+        modal_environment: Optional Modal environment name.
+        modal_client: Optional explicit Modal client.
+
+    Returns:
+        The existing or newly created Modal app.
+    """
     return modal.App.lookup(
         app_name,
         create_if_missing=True,
@@ -268,7 +310,14 @@ def get_gpu_values(
 
 
 def get_memory_mb(resource_settings: ResourceSettings) -> Optional[int]:
-    """Convert ZenML memory resource settings to Modal MiB."""
+    """Convert ZenML memory resource settings to Modal MiB.
+
+    Args:
+        resource_settings: ZenML resource constraints.
+
+    Returns:
+        The requested memory rounded up to MiB, or `None`.
+    """
     memory_mb = resource_settings.get_memory(ByteUnit.MB)
     return math.ceil(memory_mb) if memory_mb is not None else None
 
@@ -276,7 +325,14 @@ def get_memory_mb(resource_settings: ResourceSettings) -> Optional[int]:
 def create_runtime_secrets(
     sensitive_environment: Dict[str, Optional[str]],
 ) -> List["modal.Secret"]:
-    """Create Modal secrets for sensitive runtime environment values."""
+    """Create Modal secrets for sensitive runtime environment values.
+
+    Args:
+        sensitive_environment: Sensitive environment values to store.
+
+    Returns:
+        Modal secrets containing the sensitive values.
+    """
     if not sensitive_environment:
         return []
 
@@ -294,7 +350,21 @@ def build_sandbox_create_kwargs(
     gpu_settings_field: str = DEFAULT_GPU_SETTINGS_FIELD,
     gpu_settings_example: str = DEFAULT_GPU_SETTINGS_EXAMPLE,
 ) -> Dict[str, Any]:
-    """Build keyword arguments for ``modal.Sandbox.create``."""
+    """Build keyword arguments for ``modal.Sandbox.create``.
+
+    Args:
+        app: Modal app that owns the sandbox.
+        image: Modal image used by the sandbox.
+        settings: Modal component sandbox settings.
+        resource_settings: ZenML resource constraints.
+        environment: Runtime environment variables.
+        modal_client: Optional explicit Modal client.
+        gpu_settings_field: Settings field name used in GPU errors.
+        gpu_settings_example: Example configuration used in GPU errors.
+
+    Returns:
+        Keyword arguments for creating the Modal sandbox.
+    """
     sandbox_environment, sensitive_environment = (
         split_modal_runtime_environment(environment)
     )
@@ -335,7 +405,22 @@ def create_modal_sandbox(
     gpu_settings_field: str = DEFAULT_GPU_SETTINGS_FIELD,
     gpu_settings_example: str = DEFAULT_GPU_SETTINGS_EXAMPLE,
 ) -> "modal.Sandbox":
-    """Create a Modal sandbox for a ZenML entrypoint command."""
+    """Create a Modal sandbox for a ZenML entrypoint command.
+
+    Args:
+        entrypoint_command: Command to run inside the sandbox.
+        app: Modal app that owns the sandbox.
+        image: Modal image used by the sandbox.
+        settings: Modal component sandbox settings.
+        resource_settings: ZenML resource constraints.
+        environment: Runtime environment variables.
+        modal_client: Optional explicit Modal client.
+        gpu_settings_field: Settings field name used in GPU errors.
+        gpu_settings_example: Example configuration used in GPU errors.
+
+    Returns:
+        The created Modal sandbox.
+    """
     sandbox_create_kwargs = build_sandbox_create_kwargs(
         app=app,
         image=image,
@@ -352,7 +437,15 @@ def create_modal_sandbox(
 def wait_for_sandbox(
     sandbox: "modal.Sandbox", poll_interval: float = 1.0
 ) -> int:
-    """Wait for a Modal sandbox by polling its return code."""
+    """Wait for a Modal sandbox by polling its return code.
+
+    Args:
+        sandbox: Modal sandbox to wait for.
+        poll_interval: Delay between status polls in seconds.
+
+    Returns:
+        The sandbox return code.
+    """
     while True:
         return_code = sandbox.poll()
         if return_code is not None:
@@ -363,7 +456,14 @@ def wait_for_sandbox(
 def sandbox_status_from_return_code(
     return_code: Optional[int],
 ) -> ExecutionStatus:
-    """Map a Modal sandbox return code to a ZenML execution status."""
+    """Map a Modal sandbox return code to a ZenML execution status.
+
+    Args:
+        return_code: Modal sandbox return code, if the sandbox has finished.
+
+    Returns:
+        The corresponding ZenML execution status.
+    """
     if return_code is None:
         return ExecutionStatus.RUNNING
     if return_code == 0:
@@ -376,7 +476,15 @@ def get_sandbox_by_id(
     *,
     modal_client: Optional["modal.Client"],
 ) -> "modal.Sandbox":
-    """Reconstruct a Modal sandbox handle by ID."""
+    """Reconstruct a Modal sandbox handle by ID.
+
+    Args:
+        sandbox_id: ID of the Modal sandbox.
+        modal_client: Optional explicit Modal client.
+
+    Returns:
+        The reconstructed Modal sandbox handle.
+    """
     return modal.Sandbox.from_id(sandbox_id, client=modal_client)
 
 
@@ -385,7 +493,15 @@ def get_sandbox_status(
     *,
     modal_client: Optional["modal.Client"],
 ) -> ExecutionStatus:
-    """Get the ZenML execution status for a Modal sandbox."""
+    """Get the ZenML execution status for a Modal sandbox.
+
+    Args:
+        sandbox_id: ID of the Modal sandbox.
+        modal_client: Optional explicit Modal client.
+
+    Returns:
+        The current ZenML execution status.
+    """
     sandbox = get_sandbox_by_id(sandbox_id, modal_client=modal_client)
     return sandbox_status_from_return_code(sandbox.poll())
 
@@ -395,6 +511,11 @@ def terminate_sandbox(
     *,
     modal_client: Optional["modal.Client"],
 ) -> None:
-    """Terminate a Modal sandbox by ID."""
+    """Terminate a Modal sandbox by ID.
+
+    Args:
+        sandbox_id: ID of the Modal sandbox.
+        modal_client: Optional explicit Modal client.
+    """
     sandbox = get_sandbox_by_id(sandbox_id, modal_client=modal_client)
     sandbox.terminate()
