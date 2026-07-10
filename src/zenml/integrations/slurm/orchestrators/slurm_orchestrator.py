@@ -25,7 +25,7 @@ when the client already runs on the cluster.
 """
 
 import os
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Dict, List, Optional, cast
 
 from zenml.config.base_settings import BaseSettings
 from zenml.entrypoints.step_entrypoint_configuration import (
@@ -49,8 +49,7 @@ from zenml.integrations.slurm.slurm_job import (
 )
 from zenml.integrations.ssh.utils import serialize_env_for_docker_env_file
 from zenml.logger import get_logger
-from zenml.orchestrators import ContainerizedOrchestrator
-from zenml.orchestrators.base_orchestrator import SubmissionResult
+from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
 from zenml.orchestrators.topsort import topsorted_layers
 from zenml.stack import StackValidator
 
@@ -187,21 +186,32 @@ class SlurmOrchestrator(ContainerizedOrchestrator):
         Args:
             snapshot: The pipeline snapshot to submit.
             stack: The stack the pipeline will run on.
-            base_environment: Base environment shared by all steps.
+            base_environment: Base environment shared by all steps. Unused: the
+                per-step environments already include it.
             step_environments: Environment variables per step.
-            placeholder_run: An optional placeholder run for the snapshot.
+            placeholder_run: The placeholder run for the pipeline.
 
         Returns:
             None, since the pipeline is submitted detached.
 
         Raises:
-            RuntimeError: If a step directory cannot be created on the cluster.
+            RuntimeError: If the pipeline has a schedule (not supported), or if
+                a step directory cannot be created on the cluster.
         """
-        run_id = str(snapshot.id)
-        # Set locally too, so get_orchestrator_run_id works if the framework
-        # queries it on the submitting machine; the authoritative value is
-        # injected into each step's job environment below.
-        os.environ[ENV_ZENML_SLURM_RUN_ID] = run_id
+        if snapshot.schedule:
+            raise RuntimeError(
+                "The Slurm orchestrator does not support scheduled pipelines. "
+                "Remove the schedule and trigger the pipeline directly (e.g. "
+                "from your own cron job or CI), or use an orchestrator that "
+                "supports scheduling."
+            )
+        # The run id must be unique per run and identical for every step of the
+        # run; the placeholder run id satisfies both (the snapshot id does not -
+        # a snapshot can be executed many times). It is injected into each
+        # step's job environment below and read back by
+        # `get_orchestrator_run_id` inside the step's job.
+        assert placeholder_run is not None
+        run_id = str(placeholder_run.id)
 
         steps = snapshot.step_configurations
         client = build_slurm_client(self.config)

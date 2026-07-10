@@ -28,7 +28,7 @@ success from failure, so Slurm accounting (``sacct``) is never required.
 """
 
 import shlex
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Dict, List, Optional, cast
 from uuid import UUID
 
 from zenml.config.base_settings import BaseSettings

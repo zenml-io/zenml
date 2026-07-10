@@ -243,14 +243,24 @@ def _use_fake_client(monkeypatch, runner: FakeRunner) -> None:
     )
 
 
-def _submit_two_step_dag(monkeypatch) -> FakeRunner:
-    """Submit a load -> train DAG and return the fake host.
+def _placeholder_run() -> SimpleNamespace:
+    """Build a PipelineRunResponse stand-in with a unique id.
+
+    Returns:
+        A namespace usable where a placeholder run is expected.
+    """
+    return SimpleNamespace(id=uuid4())
+
+
+def _submit_two_step_dag(monkeypatch) -> "tuple[FakeRunner, str]":
+    """Submit a load -> train DAG and return the fake host and run id.
 
     Args:
         monkeypatch: The pytest monkeypatch fixture.
 
     Returns:
-        The fake runner recording everything the submission did.
+        The fake runner recording everything the submission did, and the
+        orchestrator run id (the placeholder run id).
     """
     op = _build_orchestrator()
     op.get_settings = lambda _step: SlurmOrchestratorSettings()
@@ -258,6 +268,7 @@ def _submit_two_step_dag(monkeypatch) -> FakeRunner:
     _use_fake_client(monkeypatch, runner)
 
     snapshot = _snapshot({"load": _step([]), "train": _step(["load"], gpu=1)})
+    placeholder = _placeholder_run()
     op.submit_pipeline(
         snapshot=snapshot,
         stack=None,
@@ -266,13 +277,14 @@ def _submit_two_step_dag(monkeypatch) -> FakeRunner:
             "load": {"ZENML_STORE_API_KEY": SECRET_TOKEN},
             "train": {"ZENML_STORE_API_KEY": SECRET_TOKEN},
         },
+        placeholder_run=placeholder,
     )
-    return runner
+    return runner, str(placeholder.id)
 
 
 def test_submit_wires_dependencies_in_topological_order(monkeypatch):
     """The dependent step's job waits on the parent's job id."""
-    runner = _submit_two_step_dag(monkeypatch)
+    runner, _ = _submit_two_step_dag(monkeypatch)
     sbatch = [c for c in runner.commands if c.startswith("sbatch")]
     assert len(sbatch) == 2
     # load submitted first (job id 1000, no dependency), train second.
@@ -281,17 +293,59 @@ def test_submit_wires_dependencies_in_topological_order(monkeypatch):
     assert "--kill-on-invalid-dep=yes" in sbatch[1]
 
 
-def test_submit_injects_run_id_into_step_env(monkeypatch):
-    """Each step's env file carries the orchestrator run id."""
-    runner = _submit_two_step_dag(monkeypatch)
+def test_submit_injects_placeholder_run_id_into_step_env(monkeypatch):
+    """Each step's env file carries the placeholder run id as the run id."""
+    runner, run_id = _submit_two_step_dag(monkeypatch)
     env_files = [c for p, c in runner.files.items() if p.endswith("/env")]
     assert env_files
-    assert all(ENV_ZENML_SLURM_RUN_ID in content for content in env_files)
+    # The run id is the placeholder run id (unique per run), not the snapshot
+    # id (which repeats across runs of the same snapshot).
+    assert all(
+        f"{ENV_ZENML_SLURM_RUN_ID}={run_id}" in content
+        for content in env_files
+    )
+
+
+def test_submit_uses_placeholder_run_id_for_paths(monkeypatch):
+    """Staging paths are namespaced by the placeholder run id."""
+    runner, run_id = _submit_two_step_dag(monkeypatch)
+    assert all(f"/{run_id}/" in path for path in runner.files)
+
+
+def test_submit_requires_a_placeholder_run(monkeypatch):
+    """Submission without a placeholder run is rejected (no run id)."""
+    op = _build_orchestrator()
+    op.get_settings = lambda _step: SlurmOrchestratorSettings()
+    _use_fake_client(monkeypatch, FakeRunner())
+    with pytest.raises(AssertionError):
+        op.submit_pipeline(
+            snapshot=_snapshot({"load": _step([])}),
+            stack=None,
+            base_environment={},
+            step_environments={"load": {}},
+            placeholder_run=None,
+        )
+
+
+def test_submit_rejects_scheduled_pipelines(monkeypatch):
+    """The orchestrator refuses scheduled pipelines with a clear error."""
+    op = _build_orchestrator()
+    _use_fake_client(monkeypatch, FakeRunner())
+    snapshot = _snapshot({"load": _step([])})
+    snapshot.schedule = SimpleNamespace(name="daily")
+    with pytest.raises(RuntimeError, match="does not support scheduled"):
+        op.submit_pipeline(
+            snapshot=snapshot,
+            stack=None,
+            base_environment={},
+            step_environments={"load": {}},
+            placeholder_run=_placeholder_run(),
+        )
 
 
 def test_submit_keeps_secrets_off_the_command_line(monkeypatch):
     """Secrets live only in the 0600 env file, never on a command line."""
-    runner = _submit_two_step_dag(monkeypatch)
+    runner, _ = _submit_two_step_dag(monkeypatch)
     assert all(SECRET_TOKEN not in c for c in runner.commands)
 
     env_files = {p: c for p, c in runner.files.items() if p.endswith("/env")}
@@ -325,6 +379,7 @@ def test_submit_cancels_queued_jobs_on_failure(monkeypatch):
             stack=None,
             base_environment={},
             step_environments={"load": {}, "train": {}},
+            placeholder_run=_placeholder_run(),
         )
     assert any(c.startswith("scancel 1000") for c in runner.commands)
 
