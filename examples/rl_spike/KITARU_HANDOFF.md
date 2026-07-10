@@ -6,36 +6,58 @@ a suggested issue, and every claim links to the evidence that backs it.*
 
 ## Why this document exists
 
-The Kitaru direction document (`docs/strategy/kitaru-direction.md` in the
-kitaru repo, dated 2026-07-07) committed to a product direction — score
-hook, replay isolation guard, Harbor export, Proxima PoC — and explicitly
-listed the ZenML-side RL spike as one of the things that could change or
-sharpen the answer ("§7: The toy RL spike surprises us"). The spike is now
-done: a full GRPO training run on EKS plus seven follow-up experiments
-(snapshots, data-layer measurement, verifiers, Harbor-on-K8s, trajectory
-export, TRL-owns-the-loop, GEPA), producing 27 logged platform findings.
-The synthesis lives in
+Two workstreams ran in parallel and this document connects them.
+
+**The Kitaru strategy side.** On 2026-07-07 the Kitaru direction document
+(`docs/strategy/kitaru-direction.md` in the kitaru repo — read it if you
+can, but this document doesn't assume you have) committed to a product
+direction built on four things: a **score hook** (a user-written
+`score(execution) -> float` function evaluated over batch replays, so
+"replay 200 production runs with a different model" comes back with a
+quality number, not just cost/token diffs); a **replay isolation guard**
+(so batch-replaying 50 production runs can't re-send 50 Slack messages);
+a **Harbor export** (turn a recorded production run into a packaged eval
+task for Harbor, the containerized-eval framework the ecosystem is
+standardizing on); and a **Proxima Fusion PoC** as the first revenue
+target (their agents drive expensive physics simulations — days-long
+jobs, massive fan-out). The same document deliberately rejected building
+an RL/environments platform, and listed the things that could change its
+answer — one of them being the ZenML-side RL spike, which at the time
+had not yet run.
+
+**The ZenML spike side.** That spike is now done: a full GRPO
+post-training run on EKS (a small model learns to write better ZenML
+pipelines; each attempt is executed and scored inside a ZenML Sandbox)
+plus seven follow-up experiments — sandbox snapshots, data-layer
+measurement, and integrations with verifiers, Harbor, TRL, and GEPA —
+producing 27 logged platform findings. The spike's stated goal was never
+the model; it was to find where the platform breaks under this kind of
+workload. The synthesis lives in
 [`FINDINGS.md`](https://github.com/zenml-io/zenml/blob/misc/rl-spike/examples/rl_spike/FINDINGS.md)
 with
 [`BREAKAGE_LOG.md`](https://github.com/zenml-io/zenml/blob/misc/rl-spike/examples/rl_spike/BREAKAGE_LOG.md)
 as the entry-by-entry source of truth.
 
-The headline back to the direction doc: **its open trigger fired.** The
-spike's verdict is that ZenML's loop shape is right and nothing found is
+**The headline connecting them:** the direction document said, roughly,
+"if the spike finds ZenML close to workable for training-shaped
+workloads, the weights path earns a ZenML-side roadmap — Kitaru's
+direction stays the same either way." That condition fired. The spike's
+verdict is that ZenML's loop shape is right and nothing found is
 architectural — the failures are defaults, caps, heartbeats, and honest
-failure states. That is the "close to workable" condition the direction
-doc set for the weights path earning a ZenML-side roadmap. None of that
-changes Kitaru's direction; what it does is hand the Kitaru build items
-concrete evidence, one design constraint, and two warnings. That's what
-the rest of this document is.
+failure states. So nothing below argues for changing Kitaru's direction;
+what the spike hands the Kitaru build items is concrete evidence, one
+design constraint, and two warnings. That's what the rest of this
+document is.
 
-The direction doc also predicted the spike's pain points ("data transport
-and the one-pipeline-vs-two question") — both predictions landed, both
-were measured, and both verdicts support the direction doc's Fork 4
-stance: one pipeline held at full scale
+Two of the direction document's specific predictions are also now
+measured facts, and both came out supporting its choices: it predicted
+the spike would hurt on "data transport" and "one pipeline vs. two" —
+one pipeline held at full training scale
 ([`TRAINING_RUN.md`](https://github.com/zenml-io/zenml/blob/misc/rl-spike/examples/rl_spike/TRAINING_RUN.md)),
-and data transport got a split verdict — episode records need nothing,
-model weights want a shared volume, and the dominant cost is neither
+which supports its decision to build no cross-pipeline communication
+machinery, and data transport got a split verdict — episode records need
+nothing, model weights want a shared volume, and the dominant cost is
+neither
 ([`DATA_LAYER.md`](https://github.com/zenml-io/zenml/blob/misc/rl-spike/examples/rl_spike/DATA_LAYER.md)).
 
 ---
@@ -90,10 +112,15 @@ crashed' in the stored result and every surface that renders it."*
 
 ## 2. `kitaru optimize` (GEPA-style prompt evolution) is de-risked — and its design blocker is known
 
-**What Kitaru plans:** item 7 of the direction doc — a native "evolve
-this prompt against your last 100 production runs" loop, treated as an
-exploratory spike after score + isolation, justified with secondhand
-numbers from the GEPA paper.
+**What Kitaru plans:** the direction document's most exploratory item —
+a native `kitaru optimize` loop: "evolve this prompt against your last
+100 production runs, show me the score curve." The method behind it is
+GEPA (Genetic-Pareto prompt evolution): instead of training weights, an
+LLM *reads* the failure traces from scored attempts, diagnoses what went
+wrong, proposes prompt mutations, and keeps the best candidates — no
+trainer, no GPUs, works on frozen API models. The direction document
+sequenced this after the score hook and isolation guard, justified only
+by secondhand numbers from the GEPA paper.
 
 **What the spike found:** we ran the loop firsthand (task G1). Same
 tasks, same sandbox scorer as the GRPO baseline, GEPA as the update rule:
@@ -157,9 +184,10 @@ not "warn when flow-body code opens a socket" — it's "re-execute the
 overridden checkpoint *inside a sandbox session*, where it physically
 cannot send the Slack message." That was infeasible when the direction
 doc was written; the library finding makes it a candidate v2. It is also
-the answer to the direction doc's own best customer quote for this
-feature — Adeo's "an agent with 40 tools that would all need mocking,
-this becomes very complex": don't mock 40 tools, run the replay
+the answer to the best customer quote in the sales record for this
+feature — from Adeo (an enterprise prospect wanting offline evals of a
+production agent): "an agent with 40 tools that would all need mocking,
+this becomes very complex." Don't mock 40 tools; run the replay
 somewhere the tools' side effects can't escape.
 
 **Suggested issue:** *"Isolation guard v2 exploration: sandbox-backed
@@ -207,8 +235,10 @@ coverage, entry 17)."*
 ## 5. If the Harbor export ships, adopt B3's identity and provenance lessons
 
 **What Kitaru plans:** `kitaru executions export --format harbor` — a
-recorded production run becomes a Harbor task directory (item 4 of the
-direction doc).
+recorded production run becomes a Harbor task directory (instruction +
+environment + a test stub pre-filled from the recorded outcome), so a
+real production incident can be replayed forever as a regression test or
+used as RL training material by anyone with a Harbor setup.
 
 **What the spike found:** we built and ran the *reverse* edge — Harbor
 eval trials exported into an accumulating training-data artifact
@@ -323,16 +353,27 @@ one staffing conversation, not three engineering projects.
 
 ## What this document deliberately does not do
 
-It does not reopen the direction doc's forks. The spike's evidence
-*strengthens* the recommendation already made there: Option B stays
-rejected (we measured what remains when a framework swallows the loop —
-config in, adapter + one metrics dict out; B2b finding 3), the trainer
-stays documented-not-owned (the Ray-based frameworks were skipped
-precisely because their findings would be about Ray), and Fork 4's
-single-pipeline stance survived a full training run. The items above are
-additive to the committed direction: one correctness requirement
-(item 1), one confidence upgrade with a known design constraint
-(item 2), two feature upgrades unlocked by new evidence (items 3–4), one
-set of spec requirements for an already-planned feature (item 5), one
-prioritization argument (item 6), and one staffing conversation
-(item 7).
+It does not reopen the strategy decisions the direction document already
+made. The spike's evidence *strengthens* them:
+
+- **"Don't build an RL/environments platform" stays right.** We measured
+  what a pipeline actually sees when a training framework (TRL) swallows
+  the whole loop into one step: config in, a trained adapter and one
+  metrics dict out — everything else (per-rollout episodes, tool calls,
+  reward breakdowns) is invisible
+  ([`B2B_FINDINGS.md`](https://github.com/zenml-io/zenml/blob/spike/b2b-trl-harbor/examples/rl_spike_b2b/B2B_FINDINGS.md),
+  finding 3). Owning that layer would mean fighting frameworks for
+  visibility they don't want to give up.
+- **"Document the trainer path, don't own it" stays right.** The
+  Ray-based training frameworks (OpenRLHF, verl) were skipped precisely
+  because running them teaches you about Ray, not about our platform.
+- **"One pipeline suffices; build no cross-pipeline machinery" stays
+  right.** A full multi-hour training run held inside a single dynamic
+  pipeline.
+
+The items above are additive to the committed direction: one correctness
+requirement (item 1), one confidence upgrade with a known design
+constraint (item 2), two feature upgrades unlocked by new evidence
+(items 3–4), one set of spec requirements for an already-planned feature
+(item 5), one prioritization argument (item 6), and one staffing
+conversation (item 7).
