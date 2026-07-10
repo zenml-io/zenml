@@ -47,12 +47,14 @@ from zenml.integrations.slurm.slurm_client import (
     SSHSlurmCommandRunner,
 )
 from zenml.logger import get_logger
+from zenml.stack import StackValidator
 from zenml.step_operators import BaseStepOperator
 from zenml.utils import code_utils, source_utils
 
 if TYPE_CHECKING:
     from zenml.config.step_run_info import StepRunInfo
     from zenml.models import StepRunResponse
+    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 
@@ -81,6 +83,36 @@ class SlurmStepOperator(BaseStepOperator):
             The settings class.
         """
         return SlurmStepOperatorSettings
+
+    @property
+    def validator(self) -> Optional[StackValidator]:
+        """Validate that the stack meets the operator's requirements.
+
+        Unlike Docker-based step operators, the Slurm operator is
+        container-free, so it needs no container registry or image builder. It
+        does require a remote artifact store, since the cluster reads inputs
+        and writes outputs there.
+
+        Returns:
+            A stack validator.
+        """
+
+        def _validate_remote_artifact_store(
+            stack: "Stack",
+        ) -> Tuple[bool, str]:
+            if stack.artifact_store.config.is_local:
+                return False, (
+                    "The Slurm step operator runs steps on a remote cluster "
+                    "that must read inputs and write outputs to a shared "
+                    "artifact store, but the artifact store "
+                    f"'{stack.artifact_store.name}' is local. Please use a "
+                    "remote artifact store (S3, GCS, Azure Blob, etc.)."
+                )
+            return True, ""
+
+        return StackValidator(
+            custom_validation_function=_validate_remote_artifact_store,
+        )
 
     def _get_client(self) -> Tuple[SlurmClient, SlurmCommandRunner]:
         """Build a Slurm client for the configured transport.
@@ -139,9 +171,7 @@ class SlurmStepOperator(BaseStepOperator):
         Returns:
             The job script content.
         """
-        settings = cast(
-            SlurmStepOperatorSettings, self.get_settings(info.step_run)
-        )
+        settings = cast(SlurmStepOperatorSettings, self.get_settings(info))
         resources = info.config.resource_settings
 
         directives = [

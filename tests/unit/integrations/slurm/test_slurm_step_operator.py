@@ -166,6 +166,34 @@ def test_flavor_identity():
     assert flavor.implementation_class is SlurmStepOperator
 
 
+def test_validator_rejects_local_artifact_store():
+    """The operator requires a remote artifact store, not a container registry."""
+    from types import SimpleNamespace
+
+    op = _build_operator()
+    validator = op.validator
+    assert validator is not None
+    # container-free: no required components (no container registry / image builder)
+    assert not validator._required_components
+
+    check = validator._custom_validation_function
+    assert check is not None
+    local_stack = SimpleNamespace(
+        artifact_store=SimpleNamespace(
+            name="local", config=SimpleNamespace(is_local=True)
+        )
+    )
+    ok, msg = check(local_stack)
+    assert ok is False and "local" in msg
+
+    remote_stack = SimpleNamespace(
+        artifact_store=SimpleNamespace(
+            name="s3", config=SimpleNamespace(is_local=False)
+        )
+    )
+    assert check(remote_stack) == (True, "")
+
+
 # --- slurm client -------------------------------------------------------------
 
 
