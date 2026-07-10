@@ -119,6 +119,7 @@ You can configure server log output and OpenTelemetry export with dedicated Helm
 ```yaml
 server:
   logging:
+    verbosity: "info" # debug, info, warning, error, or critical
     format: "console" # console, json, or a custom %-style format
     colorsDisabled: false
   openTelemetry:
@@ -131,6 +132,8 @@ server:
     metricsEnabled: true
     logsEnabled: true
 ```
+
+`server.logging.verbosity` sets the ZenML server log level. The legacy `server.debug` option is still supported for compatibility and forces the server log level to `debug` when set to `true`, but new deployments should use `server.logging.verbosity` instead.
 
 `server.logging.format` controls the server container stdout/stderr output. It can be set to `console`, `json`, or a valid Python `%`-style logging format string. The older `ZENML_LOGGING_FORMAT` environment variable is still supported through `server.environment` as a deprecated alias but will be removed in a future version.
 
