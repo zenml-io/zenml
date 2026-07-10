@@ -121,11 +121,11 @@ install_integrations() {
         ignore_integrations="$ignore_integrations tensorflow deepchecks"
     fi
 
-    # harbor requires Python >= 3.12; on newer interpreters it installs so
-    # its gated tests (incl. the Harbor API canary) actually run in CI.
-    if [ "$python_version" = "3.10" ] || [ "$python_version" = "3.11" ]; then
-        ignore_integrations="$ignore_integrations harbor"
-    fi
+    # harbor is unresolvable next to the huggingface integration in one
+    # environment: harbor 0.8 needs datasets>=4.4.1, huggingface pins
+    # datasets<4.0.0. Its unit tests are importorskip-gated and run in
+    # environments with Harbor installed; revisit when either pin moves.
+    ignore_integrations="$ignore_integrations harbor"
 
     # TODO: Revisit once pytorch Windows support stabilizes.
     # torch DLL loading on Windows CI is unreliable (OSError / FileNotFoundError
