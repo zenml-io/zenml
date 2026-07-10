@@ -11,24 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Slurm integration flavors."""
+"""Initialization of the Slurm orchestrator."""
 
-from zenml.integrations.slurm.flavors.slurm_orchestrator_flavor import (  # noqa
-    SlurmOrchestratorConfig,
-    SlurmOrchestratorFlavor,
-    SlurmOrchestratorSettings,
-)
-from zenml.integrations.slurm.flavors.slurm_step_operator_flavor import (  # noqa
-    SlurmStepOperatorConfig,
-    SlurmStepOperatorFlavor,
-    SlurmStepOperatorSettings,
+from zenml.integrations.slurm.orchestrators.slurm_orchestrator import (  # noqa
+    SlurmOrchestrator,
 )
 
-__all__ = [
-    "SlurmOrchestratorConfig",
-    "SlurmOrchestratorFlavor",
-    "SlurmOrchestratorSettings",
-    "SlurmStepOperatorConfig",
-    "SlurmStepOperatorFlavor",
-    "SlurmStepOperatorSettings",
-]
+__all__ = ["SlurmOrchestrator"]

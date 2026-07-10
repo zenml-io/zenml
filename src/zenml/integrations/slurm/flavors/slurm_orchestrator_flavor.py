@@ -11,47 +11,47 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Slurm step operator flavor."""
+"""Slurm orchestrator flavor."""
 
 from typing import TYPE_CHECKING, Optional, Type
 
-from zenml.integrations.slurm import SLURM_STEP_OPERATOR_FLAVOR
+from zenml.integrations.slurm import SLURM_ORCHESTRATOR_FLAVOR
 from zenml.integrations.slurm.flavors.base import (
     SlurmConnectionConfig,
     SlurmJobSettings,
 )
-from zenml.step_operators.base_step_operator import (
-    BaseStepOperatorConfig,
-    BaseStepOperatorFlavor,
+from zenml.orchestrators import (
+    BaseOrchestratorConfig,
+    BaseOrchestratorFlavor,
 )
 
 if TYPE_CHECKING:
-    from zenml.integrations.slurm.step_operators import SlurmStepOperator
+    from zenml.integrations.slurm.orchestrators import SlurmOrchestrator
 
 
-class SlurmStepOperatorSettings(SlurmJobSettings):
-    """Settings for the Slurm step operator."""
+class SlurmOrchestratorSettings(SlurmJobSettings):
+    """Settings for the Slurm orchestrator."""
 
 
-class SlurmStepOperatorConfig(
-    BaseStepOperatorConfig,
+class SlurmOrchestratorConfig(
+    BaseOrchestratorConfig,
     SlurmConnectionConfig,
-    SlurmStepOperatorSettings,
+    SlurmOrchestratorSettings,
 ):
-    """Configuration for the Slurm step operator."""
+    """Configuration for the Slurm orchestrator."""
 
     @property
     def is_remote(self) -> bool:
         """Whether this component runs remotely.
 
         Returns:
-            True, since steps execute on the Slurm cluster.
+            True, since jobs execute on the Slurm cluster.
         """
         return True
 
 
-class SlurmStepOperatorFlavor(BaseStepOperatorFlavor):
-    """Flavor of the Slurm step operator."""
+class SlurmOrchestratorFlavor(BaseOrchestratorFlavor):
+    """Flavor of the Slurm orchestrator."""
 
     @property
     def name(self) -> str:
@@ -60,16 +60,7 @@ class SlurmStepOperatorFlavor(BaseStepOperatorFlavor):
         Returns:
             The name of the flavor.
         """
-        return SLURM_STEP_OPERATOR_FLAVOR
-
-    @property
-    def display_name(self) -> str:
-        """Display name of the flavor.
-
-        Returns:
-            The display name of the flavor.
-        """
-        return "Slurm"
+        return SLURM_ORCHESTRATOR_FLAVOR
 
     @property
     def docs_url(self) -> Optional[str]:
@@ -96,24 +87,24 @@ class SlurmStepOperatorFlavor(BaseStepOperatorFlavor):
         Returns:
             The flavor logo.
         """
-        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/step_operator/slurm.png"
+        return "https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/slurm.png"
 
     @property
-    def config_class(self) -> Type[SlurmStepOperatorConfig]:
+    def config_class(self) -> Type[SlurmOrchestratorConfig]:
         """Config class for this flavor.
 
         Returns:
             The config class.
         """
-        return SlurmStepOperatorConfig
+        return SlurmOrchestratorConfig
 
     @property
-    def implementation_class(self) -> Type["SlurmStepOperator"]:
+    def implementation_class(self) -> Type["SlurmOrchestrator"]:
         """Implementation class for this flavor.
 
         Returns:
             The implementation class.
         """
-        from zenml.integrations.slurm.step_operators import SlurmStepOperator
+        from zenml.integrations.slurm.orchestrators import SlurmOrchestrator
 
-        return SlurmStepOperator
+        return SlurmOrchestrator

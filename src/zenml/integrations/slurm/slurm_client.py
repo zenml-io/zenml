@@ -29,12 +29,10 @@ import shlex
 import subprocess
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 if TYPE_CHECKING:
-    from zenml.integrations.slurm.flavors.slurm_step_operator_flavor import (
-        SlurmStepOperatorConfig,
-    )
+    from zenml.integrations.slurm.flavors.base import SlurmConnectionConfig
 
 # Slurm job states that mean the job is still on its way to running.
 PENDING_STATES = {
@@ -164,15 +162,15 @@ class SSHSlurmCommandRunner(SlurmCommandRunner):
     provide the same connection fields (``hostname``, ``username``, ...).
     """
 
-    def __init__(self, config: "SlurmStepOperatorConfig") -> None:
+    def __init__(self, config: "SlurmConnectionConfig") -> None:
         """Initialize the runner with an open SSH connection.
 
         Args:
-            config: The step operator config holding SSH connection settings.
+            config: The Slurm component config holding SSH connection settings.
         """
         from zenml.integrations.ssh.ssh_client import SSHClient
 
-        # SlurmStepOperatorConfig inherits SSHConnectionConfigMixin, so the SSH
+        # SlurmConnectionConfig inherits SSHConnectionConfigMixin, so the SSH
         # client consumes it directly.
         self._ssh = SSHClient(config)
         self._ssh.__enter__()
@@ -232,11 +230,18 @@ class SlurmClient:
         """
         self.runner = runner
 
-    def submit(self, script_path: str) -> str:
+    def submit(
+        self, script_path: str, dependencies: Optional[List[str]] = None
+    ) -> str:
         """Submit a batch script and return the Slurm job id.
 
         Args:
             script_path: Path of the sbatch script on the submission host.
+            dependencies: Job ids this job must wait for. The job runs only
+                after all of them complete successfully (``afterok``); if any
+                cannot be satisfied, the job is cancelled rather than left
+                pending forever (``--kill-on-invalid-dep``), which propagates a
+                failure through the DAG.
 
         Returns:
             The Slurm job id.
@@ -244,9 +249,13 @@ class SlurmClient:
         Raises:
             RuntimeError: If the submission fails.
         """
-        result = self.runner.run(
-            f"sbatch --parsable {shlex.quote(script_path)}"
-        )
+        command = "sbatch --parsable"
+        if dependencies:
+            command += (
+                f" --dependency=afterok:{':'.join(dependencies)}"
+                " --kill-on-invalid-dep=yes"
+            )
+        result = self.runner.run(f"{command} {shlex.quote(script_path)}")
         if result.exit_code != 0:
             raise RuntimeError(
                 f"`sbatch` failed with exit code {result.exit_code}: "
@@ -297,3 +306,27 @@ class SlurmClient:
                 f"`scancel` failed with exit code {result.exit_code}: "
                 f"{result.stderr.strip()}"
             )
+
+
+def build_slurm_client(config: "SlurmConnectionConfig") -> SlurmClient:
+    """Build a Slurm client for the transport configured on a component.
+
+    Both the step operator and the orchestrator reach the cluster the same
+    way, so they share this factory. The caller owns the returned client and
+    must close its ``runner`` when done (``client.runner.close()``).
+
+    Args:
+        config: The component config holding the transport and, for the ssh
+            transport, the SSH connection settings.
+
+    Returns:
+        A Slurm client wrapping a runner for the configured transport.
+    """
+    from zenml.integrations.slurm.flavors.base import SlurmTransport
+
+    runner: SlurmCommandRunner
+    if config.transport == SlurmTransport.LOCAL:
+        runner = LocalSlurmCommandRunner()
+    else:
+        runner = SSHSlurmCommandRunner(config)
+    return SlurmClient(runner)

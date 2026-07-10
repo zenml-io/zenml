@@ -37,6 +37,10 @@ from zenml.integrations.slurm.slurm_client import (
     SlurmClient,
     SlurmCommandRunner,
 )
+from zenml.integrations.slurm.slurm_job import (
+    build_container_command,
+    build_sbatch_script,
+)
 from zenml.integrations.slurm.step_operators import SlurmStepOperator
 
 SECRET_TOKEN = "super-secret-zenml-token"
@@ -189,6 +193,12 @@ def test_default_container_runtime_is_apptainer():
     assert config.container_runtime.value == "apptainer"
 
 
+def test_operator_config_is_remote():
+    """Steps execute on the cluster, so the config is remote."""
+    config = SlurmStepOperatorConfig(transport="local", workdir="/s")
+    assert config.is_remote is True
+
+
 # --- validator ----------------------------------------------------------------
 
 
@@ -245,8 +255,8 @@ def _container_cmd(runtime: str, gpu: bool = False) -> str:
     config = SlurmStepOperatorConfig(
         transport="local", workdir="/s", container_runtime=runtime
     )
-    op = _build_operator(config)
-    return op._build_container_command(
+    return build_container_command(
+        runtime=config.container_runtime,
         image=IMAGE,
         entrypoint_command=["python", "-m", "zenml.entrypoint"],
         env_file="/s/zenml-x/env",
@@ -292,17 +302,15 @@ def test_pyxis_command_passes_env_names_not_values():
 
 def test_sbatch_script_directives_and_scrub():
     """The script carries directives, fails fast, and scrubs the env file."""
-    op = _build_operator(
-        SlurmStepOperatorConfig(transport="local", workdir="/s")
-    )
-    op.get_settings = lambda _i: SlurmStepOperatorSettings(
-        partition="gpu", time_limit="2:00:00"
-    )
     sid = uuid4()
-    script = op._build_sbatch_script(
-        info=_fake_info(sid, gpu=2),
-        container_command="RUN_THE_CONTAINER",
+    script = build_sbatch_script(
+        job_name=f"zenml-{sid}",
         run_dir="/s/zenml-x",
+        container_command="RUN_THE_CONTAINER",
+        resources=ResourceSettings(cpu_count=4, gpu_count=2, memory="16GB"),
+        settings=SlurmStepOperatorSettings(
+            partition="gpu", time_limit="2:00:00"
+        ),
     )
     assert f"#SBATCH --job-name=zenml-{sid}" in script
     assert "#SBATCH --partition=gpu" in script
@@ -318,12 +326,16 @@ def test_sbatch_script_directives_and_scrub():
 # --- submit: security-sensitive handling --------------------------------------
 
 
-def test_submit_writes_secret_env_file_owner_only():
+def test_submit_writes_secret_env_file_owner_only(monkeypatch):
     """The env file is written 0600, the script 0700, and no secret leaks."""
     op = _build_operator()
     op.get_settings = lambda _i: SlurmStepOperatorSettings()
     runner = FakeRunner()
-    op._get_client = lambda: (SlurmClient(runner), runner)
+    monkeypatch.setattr(
+        "zenml.integrations.slurm.step_operators.slurm_step_operator"
+        ".build_slurm_client",
+        lambda config: SlurmClient(runner),
+    )
 
     sid = uuid4()
     op.submit(
@@ -360,7 +372,9 @@ def op_and_runner(monkeypatch):
     op = _build_operator()
     runner = FakeRunner()
     monkeypatch.setattr(
-        op, "_get_client", lambda: (SlurmClient(runner), runner)
+        "zenml.integrations.slurm.step_operators.slurm_step_operator"
+        ".build_slurm_client",
+        lambda config: SlurmClient(runner),
     )
     return op, runner
 

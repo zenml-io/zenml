@@ -13,15 +13,19 @@
 #  permissions and limitations under the License.
 """Initialization of the Slurm integration.
 
-The Slurm integration provides a step operator that runs individual pipeline
-steps as Slurm jobs on an HPC cluster, either over SSH to a login/controller
-node or via local ``sbatch`` when the client already runs on the cluster.
+The Slurm integration runs ZenML pipelines on an HPC cluster managed by the
+Slurm scheduler. It provides two stack components:
 
-Unlike container-based step operators, the Slurm step operator is
-container-free: Slurm compute nodes generally cannot run Docker, so steps
-execute inside a user-provided Python environment on the cluster (typically on
-a shared filesystem), and the pipeline code is shipped to the cluster as an
-archive at submission time.
+- a step operator that runs a single step as a Slurm job (delegating the rest
+  of the pipeline to another orchestrator), and
+- an orchestrator that submits the whole pipeline as a graph of Slurm jobs
+  wired together with ``sbatch`` dependencies.
+
+Both run the step's standard ZenML Docker image on the compute node with a
+rootless HPC container runtime (Apptainer/Singularity by default, or NVIDIA
+Pyxis, or the Docker daemon where available), so code delivery uses ZenML's
+standard image build. Submission goes over SSH to a login/controller node, or
+via local ``sbatch`` when the client already runs on the cluster.
 """
 
 from typing import List, Type
@@ -31,6 +35,7 @@ from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
 SLURM_STEP_OPERATOR_FLAVOR = "slurm"
+SLURM_ORCHESTRATOR_FLAVOR = "slurm"
 
 
 class SlurmIntegration(Integration):
@@ -48,6 +53,9 @@ class SlurmIntegration(Integration):
         Returns:
             List of stack component flavors for this integration.
         """
-        from zenml.integrations.slurm.flavors import SlurmStepOperatorFlavor
+        from zenml.integrations.slurm.flavors import (
+            SlurmOrchestratorFlavor,
+            SlurmStepOperatorFlavor,
+        )
 
-        return [SlurmStepOperatorFlavor]
+        return [SlurmStepOperatorFlavor, SlurmOrchestratorFlavor]
