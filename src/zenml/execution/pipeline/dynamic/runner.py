@@ -89,6 +89,7 @@ from zenml.execution.pipeline.dynamic.interactive_input_utils import (
     poll_interactive_wait_condition_input,
 )
 from zenml.execution.pipeline.dynamic.invocation_dependency_graph import (
+    AnyNode,
     ChildPipelineNode,
     InvocationDependencyGraph,
     MapNode,
@@ -1360,11 +1361,7 @@ class DynamicPipelineRunner:
             )
 
         if implicit_upstream_steps is None:
-            implicit_upstream_steps = (
-                {self._last_successful_sync_invocation_id}
-                if self._last_successful_sync_invocation_id
-                else set()
-            )
+            implicit_upstream_steps = self._get_implicit_upstream_steps()
 
         if concurrent:
             future = StepFuture(
@@ -1462,6 +1459,17 @@ class DynamicPipelineRunner:
             retry=True,
             remaining_retries=remaining_retries,
         )
+
+    def _get_implicit_upstream_steps(self) -> Set[str]:
+        """Get the implicit upstream steps for a new invocation.
+
+        Returns:
+            The implicit upstream steps.
+        """
+        if self._last_successful_sync_invocation_id:
+            return {self._last_successful_sync_invocation_id}
+
+        return set()
 
     def _resolve_step_dependencies(
         self,
@@ -1601,11 +1609,7 @@ class DynamicPipelineRunner:
         invocation_id = self.allocate_invocation_id(
             base_name=step.name, allow_suffix=True
         )
-        implicit_upstream_steps = (
-            {self._last_successful_sync_invocation_id}
-            if self._last_successful_sync_invocation_id
-            else set()
-        )
+        implicit_upstream_steps = self._get_implicit_upstream_steps()
         map_future = MapResultsFuture(invocation_id=invocation_id)
         self._register_map_invocation(
             future=map_future,
@@ -2115,6 +2119,25 @@ class DynamicPipelineRunner:
 
     # Concurrent step lifecycle
 
+    def _maybe_settle_startup_future(self, node: "AnyNode") -> None:
+        """Settle the startup future of a node registered in an inherited state.
+
+        Args:
+            node: The registered node.
+        """
+        if node.state == NodeState.PAUSED:
+            self._future_registry.set_startup_exception(
+                invocation_id=node.node_id, exception=RunPaused()
+            )
+        elif node.state == NodeState.SKIPPED:
+            self._future_registry.set_startup_exception(
+                invocation_id=node.node_id,
+                exception=StartupCancelled(
+                    f"Skipped because an upstream dependency of "
+                    f"`{node.node_id}` failed."
+                ),
+            )
+
     def _register_concurrent_step_invocation(
         self,
         future: StepFuture,
@@ -2181,18 +2204,7 @@ class DynamicPipelineRunner:
                 config_overrides=config_overrides,
                 implicit_upstream_steps=implicit_upstream_steps,
             )
-            if node.state == NodeState.PAUSED:
-                self._future_registry.set_startup_exception(
-                    invocation_id=node.node_id, exception=RunPaused()
-                )
-            elif node.state == NodeState.SKIPPED:
-                self._future_registry.set_startup_exception(
-                    invocation_id=node.node_id,
-                    exception=StartupCancelled(
-                        f"Skipped because an upstream dependency of "
-                        f"`{node.node_id}` failed."
-                    ),
-                )
+            self._maybe_settle_startup_future(node=node)
         self.notify_graph_changed(nodes_ready)
 
     def _handle_step_ready(self, node: StepNode) -> None:
@@ -2451,18 +2463,7 @@ class DynamicPipelineRunner:
                 after=after,
                 implicit_upstream_steps=implicit_upstream_steps,
             )
-            if node.state == NodeState.PAUSED:
-                self._future_registry.set_startup_exception(
-                    invocation_id=node.node_id, exception=RunPaused()
-                )
-            elif node.state == NodeState.SKIPPED:
-                self._future_registry.set_startup_exception(
-                    invocation_id=node.node_id,
-                    exception=StartupCancelled(
-                        f"Skipped because an upstream dependency of "
-                        f"`{node.node_id}` failed."
-                    ),
-                )
+            self._maybe_settle_startup_future(node=node)
         self.notify_graph_changed(nodes_ready)
 
     def _handle_map_ready(self, node: MapNode) -> None:
@@ -2715,18 +2716,7 @@ class DynamicPipelineRunner:
                     start_upstream_ids=start_upstream_node_ids,
                 )
             )
-            if node.state == NodeState.PAUSED:
-                self._future_registry.set_startup_exception(
-                    invocation_id=node.node_id, exception=RunPaused()
-                )
-            elif node.state == NodeState.SKIPPED:
-                self._future_registry.set_startup_exception(
-                    invocation_id=node.node_id,
-                    exception=StartupCancelled(
-                        f"Skipped because an upstream dependency of "
-                        f"`{node.node_id}` failed."
-                    ),
-                )
+            self._maybe_settle_startup_future(node=node)
         self.notify_graph_changed(nodes_ready=nodes_ready)
 
     def _handle_child_pipeline_ready(self, node: ChildPipelineNode) -> None:

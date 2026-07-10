@@ -484,22 +484,10 @@ class InvocationDependencyGraph:
         with self._lock:
             self._set_node_state(node_id=node_id, state=NodeState.FAILED)
 
-            cascaded: List[str] = []
-            stack: List[str] = list(
-                self._get_node(node_id=node_id).downstream_ids
+            return self._cascade_node_state(
+                node_ids=self._get_node(node_id=node_id).downstream_ids,
+                state=NodeState.SKIPPED,
             )
-            while stack:
-                current_id = stack.pop()
-                node = self._get_node(node_id=current_id)
-                if node.state.is_terminal:
-                    continue
-
-                self._set_node_state(
-                    node_id=current_id, state=NodeState.SKIPPED
-                )
-                cascaded.append(current_id)
-                stack.extend(node.downstream_ids)
-            return cascaded
 
     def mark_node_paused(self, node_id: str) -> List[str]:
         """Mark a node as paused and cascade to all downstream nodes.
@@ -511,20 +499,34 @@ class InvocationDependencyGraph:
             The IDs of all nodes whose state transitioned to PAUSED.
         """
         with self._lock:
-            cascaded: List[str] = []
-            stack: List[str] = [node_id]
-            while stack:
-                current_id = stack.pop()
-                node = self._get_node(node_id=current_id)
-                if node.state.is_terminal:
-                    continue
+            return self._cascade_node_state(
+                node_ids=[node_id], state=NodeState.PAUSED
+            )
 
-                self._set_node_state(
-                    node_id=current_id, state=NodeState.PAUSED
-                )
-                cascaded.append(current_id)
-                stack.extend(node.downstream_ids)
-            return cascaded
+    def _cascade_node_state(
+        self, node_ids: Collection[str], state: NodeState
+    ) -> List[str]:
+        """Apply a state to nodes and their non-terminal downstream nodes.
+
+        Args:
+            node_ids: The node IDs at which to start the cascade.
+            state: The target state.
+
+        Returns:
+            The IDs of all nodes whose state transitioned to the target state.
+        """
+        cascaded: List[str] = []
+        stack: List[str] = list(node_ids)
+        while stack:
+            current_id = stack.pop()
+            node = self._get_node(node_id=current_id)
+            if node.state.is_terminal:
+                continue
+
+            self._set_node_state(node_id=current_id, state=state)
+            cascaded.append(current_id)
+            stack.extend(node.downstream_ids)
+        return cascaded
 
     def get_node_state(self, node_id: str) -> NodeState:
         """Get the current state of a node.
@@ -602,23 +604,21 @@ class InvocationDependencyGraph:
                     node_id=node.node_id
                 )
 
+            upstream_states = {
+                self._get_node(node_id=upstream_id).state
+                for upstream_id in node.upstream_ids
+            }
+
             # If any upstream failed or was skipped, the node is skipped
             # instead of waiting for an upstream that never succeeds.
-            if any(
-                self._get_node(node_id=upstream_id).state
-                in {NodeState.FAILED, NodeState.SKIPPED}
-                for upstream_id in node.upstream_ids
-            ):
+            if upstream_states & {NodeState.FAILED, NodeState.SKIPPED}:
                 self._set_node_state(
                     node_id=node.node_id, state=NodeState.SKIPPED
                 )
                 return node, False
 
             # If any upstream is paused, we inherit the paused state.
-            if any(
-                self._get_node(node_id=upstream_id).state == NodeState.PAUSED
-                for upstream_id in node.upstream_ids
-            ):
+            if NodeState.PAUSED in upstream_states:
                 self._set_node_state(
                     node_id=node.node_id, state=NodeState.PAUSED
                 )
@@ -762,24 +762,18 @@ class InvocationDependencyGraph:
         if not map_node.child_node_ids:
             return False
 
-        child_nodes = [
-            self._get_node(node_id=child_node_id)
+        child_states = {
+            self._get_node(node_id=child_node_id).state
             for child_node_id in map_node.child_node_ids
-        ]
-        if not all(child_node.is_terminal for child_node in child_nodes):
+        }
+        if not all(state.is_terminal for state in child_states):
             return False
 
-        if any(
-            child_node.state == NodeState.FAILED for child_node in child_nodes
-        ):
+        if NodeState.FAILED in child_states:
             aggregate_state = NodeState.FAILED
-        elif any(
-            child_node.state == NodeState.SKIPPED for child_node in child_nodes
-        ):
+        elif NodeState.SKIPPED in child_states:
             aggregate_state = NodeState.SKIPPED
-        elif any(
-            child_node.state == NodeState.PAUSED for child_node in child_nodes
-        ):
+        elif NodeState.PAUSED in child_states:
             aggregate_state = NodeState.PAUSED
         else:
             aggregate_state = NodeState.SUCCEEDED
