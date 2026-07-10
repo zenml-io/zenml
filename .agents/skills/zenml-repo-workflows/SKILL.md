@@ -133,7 +133,9 @@ Avoid:
 ### Python
 
 - Use Python 3.10+ compatible code.
-- Follow Google Python style for docstrings.
+- Follow Google Python style for docstrings. Include `Args`, `Returns`,
+  `Yields`, and `Raises` sections whenever the function contract requires them;
+  do not use a summary-only docstring to omit applicable sections.
 - Type hint function parameters and return values.
 - Use descriptive names.
 - Keep functions manageable. A 50-line target is useful, though not absolute.

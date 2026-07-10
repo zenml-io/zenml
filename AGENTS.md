@@ -18,7 +18,9 @@ subsystem recipes, use `.agents/skills/zenml-repo-workflows/SKILL.md`.
 - Use US English spelling in code, comments, docstrings, and documentation.
 - Use Python 3.10+ compatible code.
 - Type hint function parameters and return values.
-- Follow Google Python style for docstrings.
+- Follow Google Python style for docstrings. Include `Args`, `Returns`,
+  `Yields`, and `Raises` sections whenever the function contract requires them;
+  do not use a summary-only docstring to omit applicable sections.
 - Prefer clear names and small functions over explanatory comments.
 - Comments should explain intent, trade-offs, constraints, invariants, and
   tricky edge cases. Avoid comments that restate obvious code.

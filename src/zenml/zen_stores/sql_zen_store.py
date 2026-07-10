@@ -2427,7 +2427,14 @@ class SqlZenStore(BaseZenStore):
         self,
         batch_size: int,
     ) -> int:
-        """Delete a bounded batch of completed API transactions that expired."""
+        """Delete a bounded batch of completed API transactions that expired.
+
+        Args:
+            batch_size: Maximum number of expired transactions to delete.
+
+        Returns:
+            The number of deleted API transactions.
+        """
         with Session(self.engine) as session:
             expired_transaction_ids = (
                 select(ApiTransactionSchema.id)

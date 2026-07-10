@@ -73,7 +73,9 @@ Note: The MCP server indexes the latest released docs, not the develop branch. F
 
 ### Python Standards
 - Use Python 3.10+ compatible code
-- Follow Google Python style for docstrings
+- Follow Google Python style for docstrings. Include `Args`, `Returns`,
+  `Yields`, and `Raises` sections whenever the function contract requires them;
+  do not use a summary-only docstring to omit applicable sections.
 - Type hint all function parameters and return values
 - Use descriptive variable names and documentation
 - Keep function size manageable (aim for < 50 lines) though there are exceptions
@@ -117,7 +119,15 @@ When deciding whether to place a helper function in a utils file or on a class, 
 # This is a @staticmethod on BaseOrchestrator, not a standalone util
 @staticmethod
 def requires_resources_in_orchestration_environment(step: "Step") -> bool:
-    """Checks if the orchestrator should run this step on special resources."""
+    """Check whether a step needs special orchestration resources.
+
+    Args:
+        step: The step to check.
+
+    Returns:
+        Whether the step needs special resources in the orchestration
+        environment.
+    """
     if step.config.step_operator:
         return False
     return not step.config.resource_settings.empty
