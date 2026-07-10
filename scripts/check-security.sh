@@ -5,6 +5,7 @@ set -o pipefail
 
 SRC=${1:-"src/zenml tests examples"}
 
+export ZENML_DEBUG=1
 export ZENML_LOGGING_VERBOSITY=debug
 export ZENML_ANALYTICS_OPT_IN=false
 

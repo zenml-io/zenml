@@ -26,6 +26,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 env:
+  ZENML_DEBUG: true
   ZENML_LOGGING_VERBOSITY: debug
   ZENML_ANALYTICS_OPT_IN: false
 jobs:

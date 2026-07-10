@@ -159,7 +159,7 @@ ENV \
   ZENML_CONTAINER=1 \
   # Set the ZenML global configuration path
   ZENML_CONFIG_PATH=/zenml/.zenconfig \
-  # Set ZenML debug mode to false
+  # Send ZenML analytics events to the official ZenML analytics server
   ZENML_DEBUG=false \
   # Enable ZenML server-side analytics
   ZENML_ANALYTICS_OPT_IN=true

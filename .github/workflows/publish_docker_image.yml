@@ -14,6 +14,7 @@ on:
         type: boolean
         default: false
 env:
+  ZENML_DEBUG: 1
   ZENML_LOGGING_VERBOSITY: debug
   ZENML_ANALYTICS_OPT_IN: false
 jobs:

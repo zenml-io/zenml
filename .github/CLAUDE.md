@@ -120,6 +120,7 @@ Standard settings used across workflows:
 env:
   ZENML_LOGGING_VERBOSITY: debug
   ZENML_ANALYTICS_OPT_IN: false
+  ZENML_DEBUG: true
   PYTHONIOENCODING: utf-8
   UV_HTTP_TIMEOUT: 600
 ```

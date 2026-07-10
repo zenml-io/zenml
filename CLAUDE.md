@@ -242,6 +242,13 @@ Router, service, error-handling, and validation conventions for the server live 
   - `AUTO_OPEN_DASHBOARD=false`: Prevents automatic dashboard opening
   - `ZENML_ENABLE_RICH_TRACEBACK=false`: Disables rich traceback formatting
   - `TOKENIZERS_PARALLELISM=false`: Avoids tokenizers parallelism warnings
+- Always set the following environment variables:
+  - `ZENML_ANALYTICS_OPT_IN=false`: Disables analytics during development
+  - `ZENML_DEBUG=true`: Uses the development ZenML analytics server to avoid
+    sending analytics to the official ZenML analytics server (IMPORTANT!). This
+    must be set even if `ZENML_ANALYTICS_OPT_IN=true` because in a client-server
+    setup, the server controls the client-side analytics opt-in status.
+
 
 ### Branch Management
 - **IMPORTANT**: `develop` is our primary working branch, NOT `main`

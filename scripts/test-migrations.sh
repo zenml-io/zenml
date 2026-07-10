@@ -4,6 +4,7 @@ DB="sqlite"
 DB_STARTUP_DELAY=30 # Time in seconds to wait for the database container to start
 
 export ZENML_ANALYTICS_OPT_IN=false
+export ZENML_DEBUG=true
 export ZENML_LOGGING_VERBOSITY=debug
 
 # Use a temporary directory for the config path

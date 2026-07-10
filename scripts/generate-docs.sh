@@ -41,6 +41,7 @@ done
 [ -z "${VERSION-}" ] && die "Missing required parameter: VERSION. Please supply a doc version"
 
 ##################################################### Setup ############################################################
+export ZENML_DEBUG=1
 export ZENML_LOGGING_VERBOSITY=debug
 export ZENML_ANALYTICS_OPT_IN=false
 export DISABLE_DATABASE_MIGRATION=1

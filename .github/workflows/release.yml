@@ -4,6 +4,7 @@ on:
   push:
     tags: ['*']
 env:
+  ZENML_DEBUG: true
   ZENML_LOGGING_VERBOSITY: debug
   ZENML_ANALYTICS_OPT_IN: false
 jobs:
