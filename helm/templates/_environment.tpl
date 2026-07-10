@@ -643,6 +643,8 @@ SSL_CERT_FILE: "/updated-certs/ca-certificates.crt"
 {{- end }}
 {{- if $server.debug }}
 ZENML_LOGGING_VERBOSITY: "DEBUG"
+{{- else }}
+ZENML_LOGGING_VERBOSITY: "INFO"
 {{- end }}
 {{- with $server.logging }}
 {{- if .format }}
