@@ -307,6 +307,7 @@ def test_sbatch_script_rendering(monkeypatch):
     assert "#SBATCH --mem=16G" in script
     assert "#SBATCH --gres=gpu:2" in script
     assert "#SBATCH --constraint=a100" in script
+    assert "set -eo pipefail" in script
     assert "source /shared/venv/bin/activate" in script
     assert "export ZENML_STORE_URL=https://z.example.com" in script
     assert "python -m zenml.entrypoint" in script

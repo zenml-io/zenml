@@ -176,10 +176,14 @@ class SlurmStepOperator(BaseStepOperator):
         # The EXIT trap records the job outcome in a sentinel file that
         # `get_status` reads after the job leaves the squeue output, so the
         # operator never depends on Slurm accounting being configured.
+        # `set -e` makes environment setup or code extraction failures abort
+        # the job (with the failing code captured by the trap) rather than
+        # falling through to run the step in a broken environment.
         return f"""#!/bin/bash
 {chr(10).join(directives)}
 
 trap 'echo $? > {run_dir}/{_EXIT_CODE_FILE}' EXIT
+set -eo pipefail
 
 {self.config.env_setup_command}
 
