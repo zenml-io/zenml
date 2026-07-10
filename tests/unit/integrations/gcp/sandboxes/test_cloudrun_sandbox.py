@@ -313,7 +313,7 @@ class TestBridgeClient:
             body = json.loads(request.content)
             assert body["argv"] == ["echo", "hi"]
             assert body["env"] == {"FOO": "bar"}
-            assert body["cwd"] == "/tmp"
+            assert body["cwd"] == "/workspace"
             assert body["timeout_ms"] == 5000
             return httpx.Response(
                 200,
@@ -325,7 +325,7 @@ class TestBridgeClient:
         _, events = client.exec_stream(
             "sb-0123456789ab",
             ["echo", "hi"],
-            cwd="/tmp",
+            cwd="/workspace",
             env={"FOO": "bar"},
             timeout_ms=5000,
         )

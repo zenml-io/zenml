@@ -36,7 +36,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 SANDBOX_BIN = os.environ.get("SANDBOX_BIN", "/usr/local/gcp/bin/sandbox")
-SHARE_ROOT = os.environ.get("SHARE_ROOT", "/tmp/zenml-share")
+# /tmp on Cloud Run gen2 is a per-instance in-memory filesystem, not a
+# shared multi-user tmp, so a fixed path is safe here.
+SHARE_ROOT = os.environ.get("SHARE_ROOT", "/tmp/zenml-share")  # nosec B108
 # Mount point of the per-sandbox shared directory inside each sandbox,
 # used to move file payloads across the isolation boundary.
 SHARE_MOUNT = "/mnt/zenml"
@@ -488,7 +490,9 @@ class BridgeHandler(BaseHTTPRequestHandler):
 def main() -> None:
     port = int(os.environ.get("PORT", "8080"))
     os.makedirs(SHARE_ROOT, exist_ok=True)
-    server = ThreadingHTTPServer(("0.0.0.0", port), BridgeHandler)
+    # Cloud Run containers must listen on all interfaces; IAM/ingress
+    # controls sit in front of the service.
+    server = ThreadingHTTPServer(("0.0.0.0", port), BridgeHandler)  # nosec B104
     print(f"ZenML sandbox bridge listening on :{port}")
     server.serve_forever()
 
