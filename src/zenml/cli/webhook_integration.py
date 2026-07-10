@@ -11,7 +11,7 @@ from zenml.cli.utils import OutputFormat, list_options
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, WebhookType
-from zenml.models import WebhookIntegrationFilter
+from zenml.models import WebhookIntegrationFilter, WebhookIntegrationResponse
 
 
 @cli.group(
@@ -77,6 +77,22 @@ def describe_webhook_integration(name_or_id: str) -> None:
     cli_utils.declare(f"Endpoint path: {integration.endpoint_path}")
 
 
+def _format_webhook_integration_row(
+    integration: WebhookIntegrationResponse,
+    _output_format: OutputFormat,
+) -> dict[str, Any]:
+    """Add the project name to a webhook integration list row.
+
+    Args:
+        integration: The webhook integration to format.
+        _output_format: The requested output format.
+
+    Returns:
+        Additional row values for the webhook integration.
+    """
+    return {"project": integration.project.name}
+
+
 @webhook_integration.command("list")
 @list_options(
     WebhookIntegrationFilter,
@@ -98,6 +114,7 @@ def list_webhook_integrations(
         integrations,
         columns,
         output_format,
+        row_formatter=_format_webhook_integration_row,
         empty_message="No webhook integrations found for this filter.",
     )
 

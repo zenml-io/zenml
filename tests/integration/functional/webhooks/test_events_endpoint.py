@@ -10,8 +10,8 @@ from zenml.enums import WebhookType
 from zenml.zen_stores.rest_zen_store import RestZenStore
 
 
-def _require_rest_store(clean_client) -> RestZenStore:
-    store = clean_client.zen_store
+def _require_rest_store(clean_project) -> RestZenStore:
+    store = clean_project.zen_store
     if not isinstance(store, RestZenStore):
         pytest.skip("Webhook intake endpoint tests require a REST store.")
     return store
@@ -37,9 +37,9 @@ def _post_webhook(
     )
 
 
-def test_webhook_intake_accepts_valid_custom_delivery(clean_client):
-    store = _require_rest_store(clean_client)
-    result = clean_client.create_webhook_integration(
+def test_webhook_intake_accepts_valid_custom_delivery(clean_project):
+    store = _require_rest_store(clean_project)
+    result = clean_project.create_webhook_integration(
         name=sample_name("webhook-intake-valid"),
         webhook_type=WebhookType.CUSTOM,
     )
@@ -63,7 +63,7 @@ def test_webhook_intake_accepts_valid_custom_delivery(clean_client):
         assert response.status_code == 202
         assert response.content == b""
 
-        updated = clean_client.get_webhook_integration(integration.id)
+        updated = clean_project.get_webhook_integration(integration.id)
         assert updated.stats.received_count == 1
         assert updated.stats.accepted_count == 1
         assert updated.stats.auth_failed_count == 0
@@ -71,14 +71,14 @@ def test_webhook_intake_accepts_valid_custom_delivery(clean_client):
         assert updated.stats.last_received_at is not None
         assert updated.stats.last_accepted_at is not None
     finally:
-        clean_client.delete_webhook_integration(integration.id)
+        clean_project.delete_webhook_integration(integration.id)
 
 
 def test_webhook_intake_records_auth_failures_for_active_integrations(
-    clean_client,
+    clean_project,
 ):
-    store = _require_rest_store(clean_client)
-    result = clean_client.create_webhook_integration(
+    store = _require_rest_store(clean_project)
+    result = clean_project.create_webhook_integration(
         name=sample_name("webhook-intake-auth"),
         webhook_type=WebhookType.CUSTOM,
     )
@@ -98,7 +98,7 @@ def test_webhook_intake_records_auth_failures_for_active_integrations(
 
         assert response.status_code == 401
 
-        updated = clean_client.get_webhook_integration(integration.id)
+        updated = clean_project.get_webhook_integration(integration.id)
         assert updated.stats.received_count == 1
         assert updated.stats.accepted_count == 0
         assert updated.stats.auth_failed_count == 1
@@ -106,12 +106,12 @@ def test_webhook_intake_records_auth_failures_for_active_integrations(
         assert updated.stats.last_error_at is not None
         assert updated.stats.last_error_summary == "Invalid webhook signature."
     finally:
-        clean_client.delete_webhook_integration(integration.id)
+        clean_project.delete_webhook_integration(integration.id)
 
 
-def test_webhook_intake_records_invalid_payload_after_auth(clean_client):
-    store = _require_rest_store(clean_client)
-    result = clean_client.create_webhook_integration(
+def test_webhook_intake_records_invalid_payload_after_auth(clean_project):
+    store = _require_rest_store(clean_project)
+    result = clean_project.create_webhook_integration(
         name=sample_name("webhook-intake-payload"),
         webhook_type=WebhookType.CUSTOM,
     )
@@ -133,7 +133,7 @@ def test_webhook_intake_records_invalid_payload_after_auth(clean_client):
 
         assert response.status_code == 400
 
-        updated = clean_client.get_webhook_integration(integration.id)
+        updated = clean_project.get_webhook_integration(integration.id)
         assert updated.stats.received_count == 1
         assert updated.stats.accepted_count == 0
         assert updated.stats.auth_failed_count == 0
@@ -144,14 +144,14 @@ def test_webhook_intake_records_invalid_payload_after_auth(clean_client):
             == "Request body must be valid JSON."
         )
     finally:
-        clean_client.delete_webhook_integration(integration.id)
+        clean_project.delete_webhook_integration(integration.id)
 
 
 def test_webhook_intake_rejects_inactive_integration_without_stats(
-    clean_client,
+    clean_project,
 ):
-    store = _require_rest_store(clean_client)
-    result = clean_client.create_webhook_integration(
+    store = _require_rest_store(clean_project)
+    result = clean_project.create_webhook_integration(
         name=sample_name("webhook-intake-inactive"),
         webhook_type=WebhookType.CUSTOM,
         active=False,
@@ -174,18 +174,18 @@ def test_webhook_intake_rejects_inactive_integration_without_stats(
 
         assert response.status_code == 409
 
-        updated = clean_client.get_webhook_integration(integration.id)
+        updated = clean_project.get_webhook_integration(integration.id)
         assert updated.stats.received_count == 0
         assert updated.stats.accepted_count == 0
         assert updated.stats.auth_failed_count == 0
         assert updated.stats.invalid_payload_count == 0
     finally:
-        clean_client.delete_webhook_integration(integration.id)
+        clean_project.delete_webhook_integration(integration.id)
 
 
-def test_webhook_intake_does_not_record_type_mismatch(clean_client):
-    store = _require_rest_store(clean_client)
-    result = clean_client.create_webhook_integration(
+def test_webhook_intake_does_not_record_type_mismatch(clean_project):
+    store = _require_rest_store(clean_project)
+    result = clean_project.create_webhook_integration(
         name=sample_name("webhook-intake-mismatch"),
         webhook_type=WebhookType.CUSTOM,
     )
@@ -202,19 +202,19 @@ def test_webhook_intake_does_not_record_type_mismatch(clean_client):
 
         assert response.status_code == 404
 
-        updated = clean_client.get_webhook_integration(integration.id)
+        updated = clean_project.get_webhook_integration(integration.id)
         assert updated.stats.received_count == 0
         assert updated.stats.accepted_count == 0
         assert updated.stats.auth_failed_count == 0
         assert updated.stats.invalid_payload_count == 0
     finally:
-        clean_client.delete_webhook_integration(integration.id)
+        clean_project.delete_webhook_integration(integration.id)
 
 
 def test_webhook_intake_returns_not_found_for_unknown_integration(
-    clean_client,
+    clean_project,
 ):
-    store = _require_rest_store(clean_client)
+    store = _require_rest_store(clean_project)
     response = _post_webhook(
         store=store,
         endpoint_path=f"/api/v1/webhooks/custom/{uuid4()}/events",

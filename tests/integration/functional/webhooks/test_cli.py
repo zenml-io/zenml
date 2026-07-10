@@ -1,5 +1,9 @@
+import io
+from unittest.mock import patch
+
 import pytest
 
+import zenml_cli
 from tests.cli_runner_utils import cli_runner
 from tests.integration.functional.utils import sample_name
 from zenml.cli.cli import cli
@@ -41,10 +45,16 @@ def test_webhook_integration_cli_lifecycle(clean_client):
         assert integration.webhook_type == WebhookType.CUSTOM
         assert integration.active is True
 
-        result = runner.invoke(list_command)
+        list_output_buffer = io.StringIO()
+        with patch.object(
+            zenml_cli, "_original_stdout", list_output_buffer
+        ):
+            result = runner.invoke(list_command)
+        list_output = list_output_buffer.getvalue() + result.output
 
         assert result.exit_code == 0, result.output
-        assert name in result.output
+        assert name in list_output
+        assert "Unknown column(s) ignored" not in list_output
 
         result = runner.invoke(describe_command, [name])
 
