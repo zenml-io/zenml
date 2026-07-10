@@ -120,6 +120,10 @@ def build_registry_auth(
 
     Returns:
         Authentication files and shell setup for the selected runtime.
+
+    Raises:
+        ValueError: If an enroot registry hostname or username contains
+            whitespace.
     """
     if not registry_uri or not credentials:
         return SlurmRegistryAuth()
@@ -396,6 +400,8 @@ def stage_and_submit(
 
     Raises:
         RuntimeError: If the run directory cannot be created on the cluster.
+        Exception: Re-raised after cleaning up staged files if staging or
+            submission fails.
     """
     runner = client.runner
     result = runner.run(

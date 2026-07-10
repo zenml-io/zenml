@@ -255,6 +255,7 @@ class SlurmClient:
             The Slurm job id.
 
         Raises:
+            ValueError: If any dependency job id is not numeric.
             RuntimeError: If the submission fails.
         """
         command = "sbatch --parsable"
@@ -296,6 +297,7 @@ class SlurmClient:
             via the exit-code sentinel file.
 
         Raises:
+            ValueError: If the job id is not numeric.
             RuntimeError: If ``squeue`` fails.
         """
         if not re.fullmatch(r"[0-9]+", job_id):
@@ -337,6 +339,7 @@ class SlurmClient:
             job_id: The Slurm job ID to cancel.
 
         Raises:
+            ValueError: If the job id is not numeric.
             RuntimeError: If ``scancel`` fails.
         """
         if not re.fullmatch(r"[0-9]+", job_id):

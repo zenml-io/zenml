@@ -173,8 +173,8 @@ class SlurmStepOperator(BaseStepOperator):
                 environment.
 
         Raises:
-            RuntimeError: If the run directory cannot be created on the
-                cluster.
+            Exception: Re-raised after cancelling the job and cleaning up
+                staged credentials if submission or metadata publication fails.
         """
         image = info.get_image(key=SLURM_STEP_OPERATOR_DOCKER_IMAGE_KEY)
         run_dir = self._run_dir(info.step_run_id)

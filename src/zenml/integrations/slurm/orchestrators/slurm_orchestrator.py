@@ -207,8 +207,10 @@ class SlurmOrchestrator(ContainerizedOrchestrator):
             None, since the pipeline is submitted detached.
 
         Raises:
-            RuntimeError: If the pipeline has a schedule (not supported), or if
-                a step directory cannot be created on the cluster.
+            RuntimeError: If the pipeline has a schedule, which is not
+                supported.
+            Exception: Re-raised after cancelling already-queued jobs if a
+                step fails to submit.
         """
         if snapshot.schedule:
             raise RuntimeError(
@@ -331,9 +333,6 @@ class SlurmOrchestrator(ContainerizedOrchestrator):
 
         Returns:
             The submitted Slurm job id and credential-bearing paths.
-
-        Raises:
-            RuntimeError: If the step directory cannot be created.
         """
         image = self.get_image(snapshot=snapshot, step_name=step_name)
         settings = cast(SlurmOrchestratorSettings, self.get_settings(step))
