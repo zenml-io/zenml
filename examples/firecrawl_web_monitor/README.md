@@ -100,7 +100,7 @@ Tip for Apple Silicon: images build for `linux/amd64` under emulation, where `uv
 
 ## Optional Slack alerts
 
-Attach a Slack alerter to the active ZenML stack, then enable notifications for CLI runs:
+ZenML's [Slack alerter](https://docs.zenml.io/stacks/stack-components/alerters/slack) is a stack component registered once with a Slack bot token and channel; any pipeline on the stack can then post to Slack without handling Slack credentials in code. Attach one to the active stack, then enable notifications for CLI runs:
 
 ```bash
 python run.py --notify-slack
