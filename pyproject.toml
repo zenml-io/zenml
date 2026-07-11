@@ -316,12 +316,11 @@ arg-type-hints-in-docstring = false
 arg-type-hints-in-signature = true
 check-return-types = false
 check-yield-types = false
+skip-checking-short-docstrings = false
 allow-init-docstring = true
 check-class-attributes = false
 check-arg-order = false
 omit-stars-when-documenting-varargs = true
-baseline = "pydoclint-baseline.txt"
-auto-regenerate-baseline = true
 
 [tool.bandit]
 skips = ["B615"]

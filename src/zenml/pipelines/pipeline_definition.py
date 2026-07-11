@@ -1359,7 +1359,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     if not source.is_internal:
                         custom_materializer = True
 
-        stack_creator = Client().get_stack(stack.id).user_id
+        stack_creator = stack.model.user_id
         active_user = Client().active_user
         own_stack = stack_creator and stack_creator == active_user.id
 

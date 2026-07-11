@@ -16,6 +16,8 @@
 import os
 from typing import Any, Callable, Iterable, List, Optional, Tuple, Type
 
+from zenml.constants import FILEIO_COPY_CHUNK_SIZE
+
 # this import required for CI to get local filesystem
 from zenml.io import local_filesystem  # noqa
 from zenml.io.filesystem import BaseFilesystem, PathType
@@ -68,6 +70,12 @@ def open(path: "PathType", mode: str = "r") -> Any:  # noqa
 def copy(src: "PathType", dst: "PathType", overwrite: bool = False) -> None:
     """Copy a file from the source to the destination.
 
+    If the source and destination are on different filesystems, the file is
+    streamed in chunks of `FILEIO_COPY_CHUNK_SIZE` bytes (configurable via
+    the `ZENML_FILEIO_COPY_CHUNK_SIZE` environment variable) so that memory
+    usage stays bounded regardless of the file size. If such a copy fails
+    midway, a partial file may be left at the destination.
+
     Args:
         src: The path of the file to copy.
         dst: The path to copy the source file to.
@@ -87,11 +95,12 @@ def copy(src: "PathType", dst: "PathType", overwrite: bool = False) -> None:
                 f"Destination file '{convert_to_str(dst)}' already exists "
                 f"and `overwrite` is false."
             )
-        with open(src, mode="rb") as f:
-            contents = f.read()
-
-        with open(dst, mode="wb") as f:
-            f.write(contents)
+        with (
+            open(src, mode="rb") as src_file,
+            open(dst, mode="wb") as dst_file,
+        ):
+            while chunk := src_file.read(FILEIO_COPY_CHUNK_SIZE):
+                dst_file.write(chunk)
 
 
 def exists(path: "PathType") -> bool:

@@ -327,7 +327,6 @@ from zenml.models import (
     SecretUpdate,
     ServerActivationRequest,
     ServerDatabaseType,
-    ServerDeploymentType,
     ServerModel,
     ServerSettingsResponse,
     ServerSettingsUpdate,
@@ -1190,7 +1189,7 @@ class SqlZenStore(BaseZenStore):
 
         server_config = ServerConfiguration.get_server_config()
 
-        if server_config.deployment_type == ServerDeploymentType.CLOUD:
+        if server_config.is_pro_server:
             # Do not send events for Pro workspaces where the event comes from
             # the Pro API
             return
@@ -1748,8 +1747,11 @@ class SqlZenStore(BaseZenStore):
         """Purge all in-built and integration flavors from the DB and sync."""
         FlavorRegistry().register_flavors(store=self)
 
-    def get_store_info(self) -> ServerModel:
+    def get_store_info(self, force_refresh: bool = False) -> ServerModel:
         """Get information about the store.
+
+        Args:
+            force_refresh: Ignored, the information is always fresh.
 
         Returns:
             Information about the store.
@@ -2425,7 +2427,14 @@ class SqlZenStore(BaseZenStore):
         self,
         batch_size: int,
     ) -> int:
-        """Delete a bounded batch of completed API transactions that expired."""
+        """Delete a bounded batch of completed API transactions that expired.
+
+        Args:
+            batch_size: Maximum number of expired transactions to delete.
+
+        Returns:
+            The number of deleted API transactions.
+        """
         with Session(self.engine) as session:
             expired_transaction_ids = (
                 select(ApiTransactionSchema.id)
@@ -11609,6 +11618,27 @@ class SqlZenStore(BaseZenStore):
             )
 
             session.add(step_schema)
+
+            if step_run.dynamic_config:
+                if not run.snapshot or not run.snapshot.is_dynamic:
+                    raise IllegalOperationError(
+                        "Dynamic step configurations are not allowed for "
+                        "static pipelines."
+                    )
+
+                step_configuration_schema = StepConfigurationSchema(
+                    index=0,
+                    name=step_run.name,
+                    # Don't include the merged config in the step
+                    # configurations, we reconstruct it in the `to_model` method
+                    # using the pipeline configuration.
+                    config=step_run.dynamic_config.model_dump_json(
+                        exclude={"config"}
+                    ),
+                    step_run_id=step_schema.id,
+                )
+                session.add(step_configuration_schema)
+
             try:
                 session.commit()
             except IntegrityError:
@@ -11813,26 +11843,6 @@ class SqlZenStore(BaseZenStore):
                 self._update_pipeline_run_status(
                     pipeline_run_id=step_run.pipeline_run_id, session=session
                 )
-
-            if step_run.dynamic_config:
-                if not run.snapshot or not run.snapshot.is_dynamic:
-                    raise IllegalOperationError(
-                        "Dynamic step configurations are not allowed for "
-                        "static pipelines."
-                    )
-
-                step_configuration_schema = StepConfigurationSchema(
-                    index=0,
-                    name=step_run.name,
-                    # Don't include the merged config in the step
-                    # configurations, we reconstruct it in the `to_model` method
-                    # using the pipeline configuration.
-                    config=step_run.dynamic_config.model_dump_json(
-                        exclude={"config"}
-                    ),
-                    step_run_id=step_schema.id,
-                )
-                session.add(step_configuration_schema)
 
             session.commit()
             session.refresh(
@@ -13538,10 +13548,7 @@ class SqlZenStore(BaseZenStore):
         if ENV_ZENML_SERVER in os.environ:
             from zenml.config.server_config import ServerConfiguration
 
-            if (
-                ServerConfiguration.get_server_config().deployment_type
-                == ServerDeploymentType.CLOUD
-            ):
+            if ServerConfiguration.get_server_config().is_pro_server:
                 default_project_enabled = False
 
         return default_project_enabled

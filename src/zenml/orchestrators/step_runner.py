@@ -737,6 +737,9 @@ class StepRunner:
         Returns:
             The IDs of the published output artifacts.
         """
+        if not output_data:
+            return {}
+
         from zenml.deployers.server import runtime
 
         step_context = get_step_context()

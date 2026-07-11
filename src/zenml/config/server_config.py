@@ -447,7 +447,15 @@ class ServerConfiguration(BaseModel):
     def _validate_api_transaction_cleanup_settings(
         self,
     ) -> "ServerConfiguration":
-        """Validate API transaction cleanup settings."""
+        """Validate API transaction cleanup settings.
+
+        Returns:
+            The validated server configuration.
+
+        Raises:
+            ValueError: If the cleanup time budget exceeds the cleanup
+                interval.
+        """
         if (
             self.api_transaction_cleanup_time_budget
             > self.api_transaction_cleanup_interval
@@ -461,7 +469,11 @@ class ServerConfiguration(BaseModel):
 
     @model_validator(mode="after")
     def _resolve_otel_endpoints(self) -> "ServerConfiguration":
-        """Resolve effective OTLP/HTTP endpoints for all telemetry signals."""
+        """Resolve effective OTLP/HTTP endpoints for all telemetry signals.
+
+        Returns:
+            The server configuration with resolved telemetry endpoints.
+        """
         # Resolve OTLP/HTTP endpoints for all telemetry signals
         self.otel_exporter_otlp_traces_endpoint = (
             self._get_otel_signal_endpoint(
@@ -491,7 +503,18 @@ class ServerConfiguration(BaseModel):
         endpoint: Optional[str],
         signal_path: str,
     ) -> Optional[str]:
-        """Get a configured or derived OTLP/HTTP signal endpoint."""
+        """Get a configured or derived OTLP/HTTP signal endpoint.
+
+        Args:
+            enabled: Whether exporting the telemetry signal is enabled.
+            endpoint: The explicitly configured endpoint, if any.
+            signal_path: The signal-specific path appended to the base
+                endpoint.
+
+        Returns:
+            The resolved signal endpoint, or `None` if the signal is disabled
+            or no endpoint is configured.
+        """
         # If the signal is disabled, return None.
         if not enabled:
             return None
@@ -768,6 +791,15 @@ class ServerConfiguration(BaseModel):
 
         return self.external_server_id
 
+    @property
+    def is_pro_server(self) -> bool:
+        """Return whether the server is a ZenML Pro server.
+
+        Returns:
+            True if the server is a ZenML Pro server, False otherwise.
+        """
+        return self.deployment_type == ServerDeploymentType.CLOUD
+
     @classmethod
     def get_server_config(cls) -> "ServerConfiguration":
         """Get the server configuration.
@@ -791,7 +823,7 @@ class ServerConfiguration(BaseModel):
 
         server_config = ServerConfiguration(**env_server_config)
 
-        if server_config.deployment_type == ServerDeploymentType.CLOUD:
+        if server_config.is_pro_server:
             # If the zenml server is a Pro server, we will apply the Pro
             # configuration overrides to the server config automatically.
             # TODO: these should be retrieved dynamically from the ZenML Pro

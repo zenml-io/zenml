@@ -37,6 +37,16 @@ If you want to configure whether logged output from steps is stored or not, set 
 export ZENML_DISABLE_STEP_LOGS_STORAGE=true
 ```
 
+## File copy chunk size
+
+When copying files between different filesystems (e.g. uploading or downloading artifacts, models or code archives to/from a remote artifact store), ZenML streams the file in chunks to keep memory usage bounded. The default chunk size is 8 MiB and can be adjusted:
+
+```bash
+export ZENML_FILEIO_COPY_CHUNK_SIZE=16777216  # 16 MiB
+```
+
+Non-positive values are ignored and the default is used instead.
+
 ## ZenML repository path
 
 To configure where ZenML will install and look for its repository, set the environment variable `ZENML_REPOSITORY_PATH`.
