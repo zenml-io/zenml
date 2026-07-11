@@ -28,9 +28,13 @@ zenml init
 python run.py
 ```
 
-Run `zenml init` and all commands from this directory: it sets the ZenML source root, and the pipeline's Docker settings reference the `pyproject.toml` here, so remote image builds pick up the example's dependencies.
+Run `zenml init` and all commands from this directory: it sets the ZenML source root, and the pipeline's Docker settings reference the `pyproject.toml` here, so remote image builds pick up the example's dependencies. Note that `zenml init` also scopes the active stack to this directory and resets it to `default`, so select your stack afterwards:
 
-If the active stack uses an S3 artifact store, install its client integration in the same environment once:
+```bash
+zenml stack set <your-stack-name>
+```
+
+If that stack uses an S3 artifact store, install its client integration in the same environment once, before running the pipeline:
 
 ```bash
 zenml integration install s3 --uv
@@ -58,8 +62,8 @@ Create an hourly Firecrawl `scrape` monitor for the page you care about — no w
 ```bash
 export FIRECRAWL_API_KEY=<your-firecrawl-key>
 python create_firecrawl_monitor.py \
-  --target-url https://example.com/pricing \
-  --goal "Alert when a competitor changes price or packaging"
+  --target-url https://news.ycombinator.com \
+  --goal "Alert when new AI or developer-tooling stories reach the front page"
 ```
 
 Change the cadence with `--schedule`, for example `--schedule daily`. Once at least one check has completed, pull it straight from the Firecrawl API and analyze it — one pipeline run per monitored page:

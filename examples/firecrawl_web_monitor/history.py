@@ -15,7 +15,14 @@ def main() -> None:
         return
 
     for version in versions:
-        report: MonitoringReport = version.load()
+        try:
+            report: MonitoringReport = version.load()
+        except RuntimeError as error:
+            print(
+                f"v{version.version}: not loadable from this environment "
+                f"({error})"
+            )
+            continue
         print(
             f"v{version.version}: {report.status} | "
             f"meaningful={report.analysis.meaningful} | {report.url}"
