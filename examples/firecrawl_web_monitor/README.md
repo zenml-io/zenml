@@ -23,7 +23,7 @@ The stable artifact names make every run easy to compare in the ZenML dashboard:
 This example assumes that a [ZenML stack](https://docs.zenml.io/stacks) is already configured. From this directory, install the small set of example dependencies and run the bundled realistic event:
 
 ```bash
-uv pip install -e ".[dev]"
+uv pip install -e .
 zenml init
 python run.py
 ```
@@ -62,11 +62,12 @@ Create an hourly Firecrawl `scrape` monitor for the page you care about — no w
 ```bash
 export FIRECRAWL_API_KEY=<your-firecrawl-key>
 python create_firecrawl_monitor.py \
-  --target-url https://news.ycombinator.com \
-  --goal "Alert when new AI or developer-tooling stories reach the front page"
+  --target-url https://news.ycombinator.com/newest \
+  --goal "Alert when new AI or developer-tooling stories are posted" \
+  --schedule "every 5 minutes"
 ```
 
-Change the cadence with `--schedule`, for example `--schedule daily`. Once at least one check has completed, pull it straight from the Firecrawl API and analyze it — one pipeline run per monitored page:
+A fast-changing page with a short cadence produces meaningful diffs within minutes — ideal for a first demo; dial it back with `--schedule hourly` or `--schedule daily` for real monitoring. Once at least one check has completed, pull it straight from the Firecrawl API and analyze it — one pipeline run per monitored page:
 
 ```bash
 python run.py --monitor-id <monitor-id>
@@ -76,7 +77,29 @@ This fetches the latest completed check (or a specific one with `--check-id`) an
 
 ## Production: trigger a pipeline snapshot
 
-For an event-driven setup, ZenML supports this natively — no custom receiver required. Publish the pipeline as a [snapshot](https://docs.zenml.io/concepts/snapshots) on a remote stack (for example a [Kubernetes orchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/kubernetes)); the pipeline's Docker settings are already sourced from this `pyproject.toml`, so the code and artifact contracts do not change. Snapshots can then be [triggered from external systems](https://docs.zenml.io/user-guides/tutorial/trigger-pipelines-from-external-systems) with a single authenticated REST call, which is where Firecrawl's webhook plugs in.
+For an event-driven setup, ZenML supports this natively — no custom receiver required. Publish the pipeline as a [snapshot](https://docs.zenml.io/concepts/snapshots) on a remote stack with a remote orchestrator, a container registry, and a remote artifact store (for example a [Kubernetes orchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/kubernetes)); the pipeline's Docker settings are already sourced from this `pyproject.toml`, so the code and artifact contracts do not change:
+
+```bash
+zenml stack set <your-remote-stack>
+zenml pipeline snapshot create pipelines.monitoring.firecrawl_web_monitor_pipeline \
+  --name firecrawl-web-monitor \
+  --config configs/snapshot.yaml
+```
+
+`configs/snapshot.yaml` provides the default parameters baked into the snapshot (the bundled sample payload); every trigger can override them. Trigger a run from Python:
+
+```python
+from zenml.client import Client
+
+Client().trigger_pipeline(
+    snapshot_name_or_id="firecrawl-web-monitor",
+    run_configuration={"parameters": {"payload": <monitor-page-event>}},
+)
+```
+
+Snapshots can also be [triggered from external systems](https://docs.zenml.io/user-guides/tutorial/trigger-pipelines-from-external-systems) with a single authenticated REST call, which is where Firecrawl's webhook plugs in.
+
+Tip for Apple Silicon: images build for `linux/amd64` under emulation, where `uv` can crash. If the build fails with exit code 139, override the installer with `settings: {docker: {python_package_installer: pip}}` in the snapshot config.
 
 ## Optional Slack alerts
 
@@ -99,9 +122,3 @@ python run.py \
 ```
 
 Firecrawl can emit both unified markdown diffs and structured JSON field diffs. This example preserves both, so a monitor configured for JSON change tracking can compare fields such as prices or availability without parsing prose.
-
-## Tests
-
-```bash
-pytest tests/test_analysis.py
-```

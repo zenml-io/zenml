@@ -11,14 +11,6 @@ dependencies = [
     "requests>=2.27.11,<3.0.0",
     "zenml>=0.93",
 ]
-
-[project.optional-dependencies]
-dev = [
-    "mypy",
-    "pytest",
-    "ruff",
-]
-
 # Nothing is installed into site-packages: this project exists only to
 # declare dependencies (also exported into Docker images via the pipeline's
 # DockerSettings). All code runs from this directory, and installing
