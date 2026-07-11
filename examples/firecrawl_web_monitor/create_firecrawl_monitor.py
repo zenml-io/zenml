@@ -1,4 +1,4 @@
-"""Create a Firecrawl page monitor that sends diffs to the local receiver."""
+"""Create a Firecrawl page monitor whose checks the pipeline can pull."""
 
 import argparse
 import os
@@ -10,27 +10,25 @@ from constants import DEFAULT_GOAL
 
 def build_monitor_request(
     target_url: str,
-    webhook_url: str,
     goal: str,
     schedule: str,
-    webhook_token: Optional[str],
+    webhook_url: Optional[str] = None,
+    webhook_token: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Build a Firecrawl v2 monitor request.
 
     Args:
         target_url: Page that Firecrawl should monitor and scrape.
-        webhook_url: Public receiver URL.
         goal: Meaningful-change goal.
         schedule: Firecrawl natural-language schedule.
-        webhook_token: Optional shared receiver token.
+        webhook_url: Optional delivery endpoint. Without it, checks are
+            pulled via the API (``run.py --monitor-id``).
+        webhook_token: Optional bearer token for the webhook endpoint.
 
     Returns:
         Firecrawl monitor request body.
     """
-    headers = (
-        {"Authorization": f"Bearer {webhook_token}"} if webhook_token else {}
-    )
-    return {
+    request: Dict[str, Any] = {
         "name": f"ZenML monitor: {target_url}",
         "schedule": {"text": schedule, "timezone": "UTC"},
         "goal": goal,
@@ -44,22 +42,35 @@ def build_monitor_request(
                 },
             }
         ],
-        "webhook": {
+    }
+    if webhook_url:
+        headers = (
+            {"Authorization": f"Bearer {webhook_token}"}
+            if webhook_token
+            else {}
+        )
+        request["webhook"] = {
             "url": webhook_url,
             "headers": headers,
             "metadata": {"source": "zenml-firecrawl-example"},
-            "events": ["monitor.page", "monitor.check.completed"],
-        },
-    }
+            "events": ["monitor.page"],
+        }
+    return request
 
 
 def main() -> None:
     """Create a monitor using credentials from the environment."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--target-url", required=True)
-    parser.add_argument("--webhook-url", required=True)
     parser.add_argument("--goal", default=DEFAULT_GOAL)
     parser.add_argument("--schedule", default="hourly")
+    parser.add_argument(
+        "--webhook-url",
+        default=None,
+        help="Optional endpoint Firecrawl should POST monitor.page events "
+        "to, e.g. a relay that triggers a ZenML pipeline snapshot. Omit it "
+        "to pull checks with `run.py --monitor-id` instead.",
+    )
     args = parser.parse_args()
 
     api_key = os.getenv("FIRECRAWL_API_KEY")
@@ -74,9 +85,9 @@ def main() -> None:
         },
         json=build_monitor_request(
             target_url=args.target_url,
-            webhook_url=args.webhook_url,
             goal=args.goal,
             schedule=args.schedule,
+            webhook_url=args.webhook_url,
             webhook_token=os.getenv("FIRECRAWL_WEBHOOK_TOKEN"),
         ),
         timeout=30,

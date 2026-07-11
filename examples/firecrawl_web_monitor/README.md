@@ -1,9 +1,9 @@
 # Firecrawl Web Monitoring with ZenML
 
-This example turns each Firecrawl `monitor.page` webhook into a ZenML pipeline run. Firecrawl monitors and scrapes the page; ZenML preserves the event, diff, analysis, and report as independently versioned artifacts. An LLM interprets the change when an OpenAI key is stored in a ZenML secret and passed via `--llm-secret` (or `LLM_SECRET_NAME` for the webhook receiver), and a configured ZenML alerter can optionally post meaningful changes to Slack.
+This example turns each Firecrawl `monitor.page` event into a ZenML pipeline run. Firecrawl monitors and scrapes the page; ZenML preserves the event, diff, analysis, and report as independently versioned artifacts. An LLM interprets the change when an OpenAI key is stored in a ZenML secret and passed via `--llm-secret`, and a configured ZenML alerter can optionally post meaningful changes to Slack.
 
 ```text
-Firecrawl webhook
+Firecrawl monitor.page event (pulled via API or delivered by webhook)
        |
        v
 raw event -> normalized diff -> LLM analysis -> report -> optional Slack
@@ -51,47 +51,28 @@ Run the example twice, optionally editing `sample_payload.json`, then inspect th
 python history.py
 ```
 
-## Receive Firecrawl webhooks locally
+## Monitor a real page
 
-Start the synchronous FastAPI receiver:
-
-```bash
-export FIRECRAWL_WEBHOOK_TOKEN=<shared-secret>
-uvicorn webhook_server:app --host 0.0.0.0 --port 8000
-```
-
-Expose port 8000 through your preferred development tunnel, then add the public endpoint to a Firecrawl monitor. The authorization header is optional locally but recommended for every public endpoint:
+Create an hourly Firecrawl `scrape` monitor for the page you care about — no webhook infrastructure needed:
 
 ```bash
 export FIRECRAWL_API_KEY=<your-firecrawl-key>
 python create_firecrawl_monitor.py \
   --target-url https://example.com/pricing \
-  --webhook-url https://your-public-host/webhooks/firecrawl \
   --goal "Alert when a competitor changes price or packaging"
 ```
 
-The script creates an hourly Firecrawl `scrape` monitor. Change the cadence with `--schedule`, for example `--schedule daily`. It uses `FIRECRAWL_WEBHOOK_TOKEN` for the receiver authorization header when that environment variable is set.
+Change the cadence with `--schedule`, for example `--schedule daily`. Once at least one check has completed, pull it straight from the Firecrawl API and analyze it — one pipeline run per monitored page:
 
-The equivalent webhook portion of the monitor request is:
-
-```json
-{
-  "webhook": {
-    "url": "https://your-public-host/webhooks/firecrawl",
-    "headers": {
-      "Authorization": "Bearer <shared-secret>"
-    },
-    "metadata": {
-      "environment": "trial"
-    },
-    "events": ["monitor.page", "monitor.check.completed"]
-  }
-}
+```bash
+python run.py --monitor-id <monitor-id>
 ```
 
-The receiver ignores `monitor.check.completed` because that event contains only aggregate counts. Each `monitor.page` event starts one pipeline run and carries the page-level diff needed by the analysis.
+This fetches the latest completed check (or a specific one with `--check-id`) and feeds each page result through the same pipeline as the bundled sample, so the artifact history mixes local experiments and real checks seamlessly.
 
-For production, deploy the receiver behind an authenticated HTTPS endpoint and run ZenML with a [Kubernetes orchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/kubernetes). The pipeline includes Docker settings sourced from `pyproject.toml`, so the code and artifact contracts do not change when moving from the local orchestrator.
+## Production: trigger a pipeline snapshot
+
+For an event-driven setup, ZenML supports this natively — no custom receiver required. Publish the pipeline as a [snapshot](https://docs.zenml.io/concepts/snapshots) on a remote stack (for example a [Kubernetes orchestrator](https://docs.zenml.io/stacks/stack-components/orchestrators/kubernetes)); the pipeline's Docker settings are already sourced from this `pyproject.toml`, so the code and artifact contracts do not change. Snapshots can then be [triggered from external systems](https://docs.zenml.io/user-guides/tutorial/trigger-pipelines-from-external-systems) with a single authenticated REST call, which is where Firecrawl's webhook plugs in.
 
 ## Optional Slack alerts
 
@@ -101,7 +82,7 @@ Attach a Slack alerter to the active ZenML stack, then enable notifications for 
 python run.py --notify-slack
 ```
 
-For the webhook receiver, set `NOTIFY_SLACK=true` and optionally `LLM_SECRET_NAME=firecrawl-monitoring`. Only reports marked meaningful are sent. If notification is enabled but the active stack has no alerter, the step logs a warning and the run still succeeds.
+Only reports marked meaningful are sent. If notification is enabled but the active stack has no alerter, the step logs a warning and the run still succeeds.
 
 ## Use a real payload directly
 

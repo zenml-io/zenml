@@ -7,8 +7,10 @@ sys.path.insert(0, str(Path(__file__).parents[1]))
 
 from analysis import analyze_change  # noqa: E402
 from create_firecrawl_monitor import build_monitor_request  # noqa: E402
+from fetch_firecrawl_check import build_page_payloads  # noqa: E402
 from models import (  # noqa: E402
     FirecrawlJudgment,
+    FirecrawlWebhook,
     MeaningfulChange,
     PageChange,
 )
@@ -62,22 +64,58 @@ def test_analysis_counts_changed_lines_without_judgment() -> None:
     assert result.analyzer == "deterministic-fallback"
 
 
-def test_monitor_request_configures_scraping_and_webhooks() -> None:
-    """Provisioning should request page scrapes and both monitor events."""
+def test_monitor_request_defaults_to_pull_without_webhook() -> None:
+    """Provisioning should request page scrapes and omit webhook config."""
     request = build_monitor_request(
         target_url="https://example.com/pricing",
-        webhook_url="https://hooks.example.com/webhooks/firecrawl",
         goal="Track prices",
         schedule="hourly",
-        webhook_token="shared-secret",
     )
 
     assert request["targets"][0]["type"] == "scrape"
     assert request["targets"][0]["scrapeOptions"]["formats"] == ["markdown"]
-    assert request["webhook"]["events"] == [
-        "monitor.page",
-        "monitor.check.completed",
-    ]
+    assert "webhook" not in request
+
+
+def test_monitor_request_supports_optional_webhook() -> None:
+    """An explicit webhook endpoint should be configured with its token."""
+    request = build_monitor_request(
+        target_url="https://example.com/pricing",
+        goal="Track prices",
+        schedule="hourly",
+        webhook_url="https://hooks.example.com/webhooks/firecrawl",
+        webhook_token="shared-secret",
+    )
+
+    assert request["webhook"]["events"] == ["monitor.page"]
     assert request["webhook"]["headers"]["Authorization"] == (
         "Bearer shared-secret"
     )
+
+
+def test_check_pages_become_webhook_style_payloads() -> None:
+    """Pulled check pages should validate as monitor.page payloads."""
+    check = {
+        "id": "check-1",
+        "monitorId": "monitor-1",
+        "status": "completed",
+        "pages": [
+            {
+                "url": "https://example.com/pricing",
+                "status": "changed",
+                "diff": {"text": "-old\n+new"},
+            },
+            {
+                "url": "https://example.com/blog",
+                "status": "same",
+            },
+        ],
+    }
+
+    payloads = build_page_payloads(check)
+
+    assert len(payloads) == 2
+    events = [FirecrawlWebhook.model_validate(p) for p in payloads]
+    assert all(e.type == "monitor.page" for e in events)
+    assert events[0].data[0]["monitorId"] == "monitor-1"
+    assert events[0].data[0]["checkId"] == "check-1"
