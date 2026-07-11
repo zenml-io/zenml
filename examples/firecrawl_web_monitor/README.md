@@ -86,14 +86,20 @@ zenml pipeline snapshot create pipelines.monitoring.firecrawl_web_monitor_pipeli
   --config configs/snapshot.yaml
 ```
 
-`configs/snapshot.yaml` provides the default parameters baked into the snapshot (the bundled sample payload); every trigger can override them. Trigger a run from Python:
+`configs/snapshot.yaml` provides the default parameters baked into the snapshot (the bundled sample payload); triggers can override them per step. Note that server-triggered runs of static pipelines take step-level parameters, not pipeline-level ones. Trigger a run from Python:
 
 ```python
 from zenml.client import Client
 
 Client().trigger_pipeline(
     snapshot_name_or_id="firecrawl-web-monitor",
-    run_configuration={"parameters": {"payload": <monitor-page-event>}},
+    run_configuration={
+        "steps": {
+            "ingest_firecrawl_event": {
+                "parameters": {"payload": <monitor-page-event>}
+            }
+        }
+    },
 )
 ```
 
