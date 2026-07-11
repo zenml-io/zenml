@@ -20,25 +20,16 @@ The stable artifact names make every run easy to compare in the ZenML dashboard:
 
 ## Quick start
 
-This example assumes that a [ZenML stack](https://docs.zenml.io/stacks) is already configured. From this directory, install the small set of example dependencies and run the bundled realistic event:
+This example assumes that a [ZenML stack](https://docs.zenml.io/stacks) is already configured. From this directory, install the example dependencies and run the bundled realistic event:
 
 ```bash
 uv pip install -e .
 zenml init
+zenml stack set <your-stack-name>
 python run.py
 ```
 
-Run `zenml init` and all commands from this directory: it sets the ZenML source root, and the pipeline's Docker settings reference the `pyproject.toml` here, so remote image builds pick up the example's dependencies. Note that `zenml init` also scopes the active stack to this directory and resets it to `default`, so select your stack afterwards:
-
-```bash
-zenml stack set <your-stack-name>
-```
-
-If that stack uses an S3 artifact store, install its client integration in the same environment once, before running the pipeline:
-
-```bash
-zenml integration install s3 --uv
-```
+Run everything from this directory: `zenml init` sets the ZenML source root here (and the pipeline's Docker settings reference this `pyproject.toml`, so remote image builds pick up the right dependencies). Set the stack *after* `zenml init` — init scopes the active stack to this directory and resets it to `default`. If your stack uses an S3 artifact store, also run `zenml integration install s3 --uv` once before the first run.
 
 No Firecrawl, OpenAI, or Slack credentials are required for that first run. Without an LLM secret, the analysis uses Firecrawl's meaningful-change judgment and clearly labels itself as a fallback. Store the OpenAI key in ZenML to run the same pipeline with an LLM on both local and remote orchestrators:
 
@@ -57,7 +48,7 @@ python history.py
 
 ## Monitor a real page
 
-Create an hourly Firecrawl `scrape` monitor for the page you care about — no webhook infrastructure needed:
+Create a Firecrawl `scrape` monitor for the page you care about — no webhook infrastructure needed:
 
 ```bash
 export FIRECRAWL_API_KEY=<your-firecrawl-key>
@@ -73,7 +64,7 @@ A fast-changing page with a short cadence produces meaningful diffs within minut
 python run.py --monitor-id <monitor-id>
 ```
 
-This fetches the latest completed check (or a specific one with `--check-id`) and feeds each page result through the same pipeline as the bundled sample, so the artifact history mixes local experiments and real checks seamlessly.
+This fetches the latest completed check (or a specific one with `--check-id`) and feeds each page result through the same pipeline as the bundled sample, so the artifact history mixes local experiments and real checks seamlessly. Firecrawl emits both unified markdown diffs and structured JSON field diffs; the pipeline preserves both, so a monitor configured for JSON change tracking can compare fields such as prices or availability without parsing prose.
 
 ## Production: trigger a pipeline snapshot
 
@@ -117,14 +108,3 @@ python run.py --notify-slack
 
 Only reports marked meaningful are sent. If notification is enabled but the active stack has no alerter, the step logs a warning and the run still succeeds.
 
-## Use a real payload directly
-
-Save any Firecrawl `monitor.page` body and pass it to the runner:
-
-```bash
-python run.py \
-  --payload payload.json \
-  --goal "Alert when a competitor changes price or packaging"
-```
-
-Firecrawl can emit both unified markdown diffs and structured JSON field diffs. This example preserves both, so a monitor configured for JSON change tracking can compare fields such as prices or availability without parsing prose.
