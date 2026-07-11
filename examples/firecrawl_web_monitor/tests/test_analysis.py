@@ -10,6 +10,7 @@ from create_firecrawl_monitor import build_monitor_request  # noqa: E402
 from fetch_firecrawl_check import build_page_payloads  # noqa: E402
 from models import (  # noqa: E402
     FirecrawlJudgment,
+    FirecrawlPageData,
     FirecrawlWebhook,
     MeaningfulChange,
     PageChange,
@@ -91,6 +92,23 @@ def test_monitor_request_supports_optional_webhook() -> None:
     assert request["webhook"]["headers"]["Authorization"] == (
         "Bearer shared-secret"
     )
+
+
+def test_baseline_page_with_null_diff_validates() -> None:
+    """Baseline 'new' checks deliver an explicit null diff over the API."""
+    page = FirecrawlPageData.model_validate(
+        {
+            "monitorId": "monitor-1",
+            "checkId": "check-1",
+            "url": "https://news.ycombinator.com/newest",
+            "status": "new",
+            "diff": None,
+            "judgment": None,
+        }
+    )
+
+    assert page.diff.text == ""
+    assert page.diff.structured == {}
 
 
 def test_check_pages_become_webhook_style_payloads() -> None:

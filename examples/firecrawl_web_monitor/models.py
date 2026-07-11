@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 ChangeStatus = Literal["same", "changed", "new", "removed", "error"]
 
@@ -57,6 +57,19 @@ class FirecrawlPageData(BaseModel):
     diff: FirecrawlDiff = Field(default_factory=FirecrawlDiff)
 
     model_config = ConfigDict(populate_by_name=True)
+
+    @field_validator("diff", mode="before")
+    @classmethod
+    def _default_null_diff(cls, value: object) -> object:
+        """Firecrawl sends an explicit null diff for baseline 'new' pages.
+
+        Args:
+            value: Raw ``diff`` value from the payload.
+
+        Returns:
+            An empty diff object when the payload contains null.
+        """
+        return value if value is not None else {}
 
 
 class FirecrawlWebhook(BaseModel):
