@@ -20,7 +20,7 @@ in-memory fake command runner, so the tests run without a cluster.
 from datetime import datetime
 from types import SimpleNamespace
 from typing import Dict, List, Optional
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 
