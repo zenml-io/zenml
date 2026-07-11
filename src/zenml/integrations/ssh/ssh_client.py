@@ -67,7 +67,11 @@ class SSHClient:
         return self
 
     def __exit__(self, *exc: object) -> None:
-        """Close the SSH connection."""
+        """Close the SSH connection.
+
+        Args:
+            *exc: Unused context manager exception details.
+        """
         self._disconnect()
 
     def _connect(self) -> None:
