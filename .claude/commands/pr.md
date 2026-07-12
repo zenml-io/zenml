@@ -2,7 +2,7 @@
 description: Format code, stage changes, and create a pull request
 allowed-tools:
   - Bash
-argument-hint: [base-branch]
+argument-hint: "[base-branch]"
 ---
 
 # Prepare and create pull request
