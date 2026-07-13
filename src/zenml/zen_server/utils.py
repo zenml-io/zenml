@@ -58,6 +58,9 @@ from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_server.feature_gate.feature_gate_interface import (
     FeatureGateInterface,
 )
+from zenml.zen_server.pipeline_execution.snapshot_run_dispatcher import (
+    SnapshotRunDispatcher,
+)
 from zenml.zen_server.pipeline_execution.workload_manager_interface import (
     WorkloadManagerInterface,
 )
@@ -73,6 +76,7 @@ from zenml.zen_stores.sql_zen_store import SqlZenStore
 if TYPE_CHECKING:
     from fastapi import Request
 
+    from zenml.zen_server.artifact_store_cache import ArtifactStoreCache
     from zenml.zen_server.auth import AuthContext
     from zenml.zen_server.pipeline_execution.utils import (
         BoundedThreadPoolExecutor,
@@ -94,10 +98,12 @@ _feature_gate: Optional[FeatureGateInterface] = None
 _workload_manager: Optional[WorkloadManagerInterface] = None
 _resource_pool_store: Optional[ResourcePoolsSQLStoreInterface] = None
 _snapshot_executor: Optional["BoundedThreadPoolExecutor"] = None
+_snapshot_run_dispatcher: Optional[SnapshotRunDispatcher] = None
 _request_manager: Optional[RequestManager] = None
 _stream_broker: Optional[StreamBroker] = None
 _stream_broadcaster: Optional[StreamBroadcaster] = None
 _stream_end_handler: Optional["StreamEndEventHandler"] = None
+_artifact_store_cache: Optional["ArtifactStoreCache"] = None
 _auth_context: ContextVar[Optional["AuthContext"]] = ContextVar(
     "auth_context", default=None
 )
@@ -411,6 +417,65 @@ def initialize_snapshot_executor() -> None:
     )
 
 
+def snapshot_run_dispatcher() -> SnapshotRunDispatcher:
+    """Return the initialized snapshot run dispatcher.
+
+    Returns:
+        The snapshot run dispatcher.
+
+    Raises:
+        RuntimeError: If the dispatcher is not initialized.
+    """
+    if _snapshot_run_dispatcher is None:
+        raise RuntimeError("Snapshot run dispatcher not initialized")
+    return _snapshot_run_dispatcher
+
+
+async def initialize_snapshot_run_dispatcher() -> None:
+    """Initialize and start the configured snapshot run dispatcher.
+
+    Raises:
+        RuntimeError: If the configured implementation cannot be initialized.
+    """
+    global _snapshot_run_dispatcher
+
+    from zenml.zen_server.pipeline_execution.snapshot_run_dispatcher import (
+        LocalSnapshotRunDispatcher,
+    )
+
+    source = server_config().snapshot_run_dispatcher_implementation_source
+    try:
+        if source:
+            from zenml.utils import source_utils
+
+            dispatcher_class: Type[SnapshotRunDispatcher] = (
+                source_utils.load_and_validate_class(
+                    source=source, expected_class=SnapshotRunDispatcher
+                )
+            )
+            dispatcher = dispatcher_class()
+        else:
+            dispatcher = LocalSnapshotRunDispatcher()
+        await dispatcher.start()
+    except Exception as exc:
+        _snapshot_run_dispatcher = None
+        raise RuntimeError(
+            f"Could not initialize snapshot run dispatcher {source or 'local'}: {exc}"
+        ) from exc
+
+    _snapshot_run_dispatcher = dispatcher
+
+
+async def shutdown_snapshot_run_dispatcher() -> None:
+    """Close the initialized snapshot run dispatcher."""
+    global _snapshot_run_dispatcher
+    if _snapshot_run_dispatcher is None:
+        return
+    dispatcher = _snapshot_run_dispatcher
+    _snapshot_run_dispatcher = None
+    await dispatcher.close()
+
+
 def initialize_zen_store() -> None:
     """Initialize the ZenML Store.
 
@@ -479,6 +544,37 @@ async def cleanup_request_manager() -> None:
     if _request_manager is not None:
         await _request_manager.shutdown()
         _request_manager = None
+
+
+def artifact_store_cache() -> "ArtifactStoreCache":
+    """Return the artifact store cache.
+
+    Returns:
+        The artifact store cache.
+
+    Raises:
+        RuntimeError: If the artifact store cache is not initialized.
+    """
+    global _artifact_store_cache
+    if _artifact_store_cache is None:
+        raise RuntimeError("Artifact store cache not initialized")
+    return _artifact_store_cache
+
+
+def initialize_artifact_store_cache() -> None:
+    """Initialize the artifact store cache."""
+    global _artifact_store_cache
+    from zenml.zen_server.artifact_store_cache import ArtifactStoreCache
+
+    _artifact_store_cache = ArtifactStoreCache()
+
+
+def cleanup_artifact_store_cache() -> None:
+    """Cleanup the artifact store cache."""
+    global _artifact_store_cache
+    if _artifact_store_cache is not None:
+        _artifact_store_cache.clear()
+        _artifact_store_cache = None
 
 
 def handle_endpoint_errors(

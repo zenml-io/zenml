@@ -2592,11 +2592,11 @@ def pretty_print_deployment(
 
         declare(
             f"\n[bold]Endpoint URL:[/bold] [link]{deployment.url}[/link]",
-            no_wrap=True,
+            soft_wrap=True,
         )
         declare(
             f"[bold]Swagger URL:[/bold] [link]{deployment.url.rstrip('/')}/docs[/link]",
-            no_wrap=True,
+            soft_wrap=True,
         )
 
         # Auth key handling with proper security

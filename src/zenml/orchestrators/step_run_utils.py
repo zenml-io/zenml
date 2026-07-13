@@ -100,11 +100,12 @@ class StepRunRequestFactory:
         self._original_step_run_cache[invocation_id] = original_step_run
         return original_step_run
 
-    def should_skip_step(self, invocation_id: str) -> bool:
+    def should_skip_step(self, invocation_id: str, step: "Step") -> bool:
         """Check whether a step should be skipped.
 
         Args:
             invocation_id: The invocation ID to check.
+            step: The step configuration.
 
         Returns:
             Whether the step should be skipped.
@@ -115,7 +116,12 @@ class StepRunRequestFactory:
         if not self.snapshot.pipeline_configuration.skip_successful_steps:
             return False
 
-        if self._get_input_overrides(invocation_id):
+        if self._get_input_overrides(
+            invocation_id,
+            step=step,
+            warn_on_invalid_keys=False,
+            include_step_defaults=False,
+        ):
             logger.warning(
                 "Step `%s` should be skipped, but there are input overrides "
                 "configured. The step will be executed.",
@@ -193,14 +199,15 @@ class StepRunRequestFactory:
                 input resolution. This will be updated in-place with newly
                 fetched step runs.
         """
-        if self.should_skip_step(request.name):
-            self._populate_skipped_step(request)
-            return
-
         step = (
             request.dynamic_config
             or self.snapshot.step_configurations[request.name]
         )
+
+        if self.should_skip_step(request.name, step=step):
+            self._populate_skipped_step(request)
+            return
+
         input_overrides = self._get_input_overrides(request.name, step=step)
 
         input_artifacts = input_utils.resolve_step_inputs(
@@ -425,41 +432,45 @@ class StepRunRequestFactory:
         return None, None
 
     def _get_input_overrides(
-        self, invocation_id: str, step: Optional["Step"] = None
+        self,
+        invocation_id: str,
+        step: "Step",
+        warn_on_invalid_keys: bool = True,
+        include_step_defaults: bool = True,
     ) -> Dict[str, "UUID"]:
         """Get input overrides for a step.
 
         Args:
             invocation_id: The invocation ID to look up.
-            step: The step configuration. If not provided, no input key
-                validation is performed.
+            step: The step configuration.
+            warn_on_invalid_keys: Whether to log a warning for overrides that
+                reference inputs not available on the step.
+            include_step_defaults: Whether to include the step-wide default
+                overrides.
 
         Returns:
             The input overrides for the step.
         """
-        overrides = (
-            self.snapshot.pipeline_configuration.step_input_overrides.get(
-                invocation_id, {}
-            )
+        overrides = self.snapshot.pipeline_configuration.get_invocation_input_overrides(
+            invocation_id=invocation_id,
+            step_name=step.config.name,
+            include_step_defaults=include_step_defaults,
         )
 
-        if step:
-            available_input_keys = step.available_input_keys
-            invalid_keys = overrides.keys() - available_input_keys
-            if invalid_keys:
-                logger.warning(
-                    "Ignoring invalid input overrides for step `%s`: %s",
-                    invocation_id,
-                    invalid_keys,
-                )
+        available_input_keys = step.available_input_keys
+        invalid_keys = overrides.keys() - available_input_keys
+        if invalid_keys and warn_on_invalid_keys:
+            logger.warning(
+                "Ignoring invalid input overrides for step `%s`: %s",
+                invocation_id,
+                invalid_keys,
+            )
 
-            overrides = {
-                key: value
-                for key, value in overrides.items()
-                if key in available_input_keys
-            }
-
-        return overrides
+        return {
+            key: value
+            for key, value in overrides.items()
+            if key in available_input_keys
+        }
 
 
 def find_cacheable_invocation_candidates(

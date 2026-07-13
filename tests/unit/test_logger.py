@@ -843,8 +843,8 @@ def test_logging_context_step_name_prefix_uses_legacy_env_semantics(
         monkeypatch.setenv(ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, env_value)
     monkeypatch.setenv(ENV_ZENML_LOGGING_COLORS_DISABLED, "true")
 
-    # CI may run tests with ZENML_DEBUG=1. Pin INFO formatting so this test
-    # verifies step-prefix semantics, not the DEBUG structured-log layout.
+    # Pin INFO formatting so this test verifies step-prefix semantics,
+    # not the DEBUG structured-log layout.
     monkeypatch.setattr(
         zenml_logger_module,
         "get_logging_level",

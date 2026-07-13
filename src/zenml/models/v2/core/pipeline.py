@@ -397,7 +397,7 @@ class PipelineFilter(ProjectScopedFilter, TaggableFilter):
         Returns:
             The query with sorting applied.
         """
-        from sqlmodel import asc, case, col, desc, func, select
+        from sqlmodel import asc, col, desc, func, select
 
         from zenml.enums import SorterOps
         from zenml.zen_stores.schemas import PipelineRunSchema, PipelineSchema
@@ -405,38 +405,41 @@ class PipelineFilter(ProjectScopedFilter, TaggableFilter):
         sort_by, operand = self.sorting_params
 
         if sort_by == SORT_PIPELINES_BY_LATEST_RUN_KEY:
-            # Subquery to find the latest run per pipeline
+            # First aggregate pipeline run creation date by pipeline id. This
+            # is done separately so the DB can use a loose index scan on the
+            # `(pipeline_id, created)` index instead of scanning every run.
             latest_run_subquery = (
                 select(
-                    PipelineSchema.id,
-                    case(
-                        (
-                            func.max(PipelineRunSchema.created).is_(None),
-                            PipelineSchema.created,
-                        ),
-                        else_=func.max(PipelineRunSchema.created),
-                    ).label("latest_run"),
+                    col(PipelineRunSchema.pipeline_id).label("pipeline_id"),
+                    func.max(PipelineRunSchema.created).label(
+                        "latest_run_created"
+                    ),
                 )
-                .outerjoin(
-                    PipelineRunSchema,
-                    PipelineSchema.id == PipelineRunSchema.pipeline_id,  # type: ignore[arg-type]
-                )
-                .group_by(col(PipelineSchema.id))
+                .group_by(col(PipelineRunSchema.pipeline_id))
                 .subquery()
             )
 
+            # Add fallback to pipeline creation time if no runs are found
+            latest_run_created = func.coalesce(
+                latest_run_subquery.c.latest_run_created,
+                PipelineSchema.created,
+            )
+
             query = query.add_columns(
-                latest_run_subquery.c.latest_run,
-            ).where(PipelineSchema.id == latest_run_subquery.c.id)
+                latest_run_created.label("latest_run_created"),
+            ).outerjoin(
+                latest_run_subquery,
+                PipelineSchema.id == latest_run_subquery.c.pipeline_id,
+            )
 
             if operand == SorterOps.ASCENDING:
                 query = query.order_by(
-                    asc(latest_run_subquery.c.latest_run),
+                    asc(latest_run_created),
                     asc(PipelineSchema.id),
                 )
             else:
                 query = query.order_by(
-                    desc(latest_run_subquery.c.latest_run),
+                    desc(latest_run_created),
                     desc(PipelineSchema.id),
                 )
             return query

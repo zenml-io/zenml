@@ -83,7 +83,17 @@ class _StaticModalPipelineController:
         shared_env: Dict[str, str],
         step_run_request_factory: StepRunRequestFactory,
     ) -> None:
-        """Initialize the controller with explicit runtime state."""
+        """Initialize the controller with explicit runtime state.
+
+        Args:
+            snapshot: Static pipeline snapshot to execute.
+            pipeline_run: Pipeline run controlled by Modal.
+            active_stack: Active ZenML stack.
+            orchestrator: Modal orchestrator from the active stack.
+            client: ZenML client used for run operations.
+            shared_env: Environment shared by all step sandboxes.
+            step_run_request_factory: Factory for step run requests.
+        """
         self.snapshot = snapshot
         self.pipeline_run = pipeline_run
         self.active_stack = active_stack
@@ -94,14 +104,25 @@ class _StaticModalPipelineController:
         self.step_runs: Dict[str, StepRunResponse] = {}
 
     def build_nodes(self) -> List[Node]:
-        """Build DAG runner nodes from the static pipeline snapshot."""
+        """Build DAG runner nodes from the static pipeline snapshot.
+
+        Returns:
+            DAG nodes for the snapshot's steps.
+        """
         return [
             Node(id=step_name, upstream_nodes=step.spec.upstream_steps)
             for step_name, step in self.snapshot.step_configurations.items()
         ]
 
     def start_step_sandbox(self, node: Node) -> NodeStatus:
-        """Start a Modal sandbox for one step unless it can be cached."""
+        """Start a Modal sandbox for one step unless it can be cached.
+
+        Args:
+            node: DAG node for the step.
+
+        Returns:
+            The initial node status after cache lookup or sandbox creation.
+        """
         step_name = node.id
         if self._cache_step_run_if_possible(step_name):
             return NodeStatus.COMPLETED
@@ -140,7 +161,14 @@ class _StaticModalPipelineController:
         return NodeStatus.RUNNING
 
     def check_step_sandbox(self, node: Node) -> NodeStatus:
-        """Return the current DAG status for one Modal step sandbox."""
+        """Return the current DAG status for one Modal step sandbox.
+
+        Args:
+            node: DAG node whose sandbox should be checked.
+
+        Returns:
+            The current node status.
+        """
         sandbox_id = node.metadata.get(MODAL_SANDBOX_ID_METADATA_KEY)
         if not sandbox_id:
             logger.error("Missing Modal sandbox ID for step `%s`.", node.id)
@@ -159,7 +187,11 @@ class _StaticModalPipelineController:
         return NodeStatus.RUNNING
 
     def stop_step_sandbox(self, node: Node) -> None:
-        """Terminate a step sandbox when the DAG runner stops the node."""
+        """Terminate a step sandbox when the DAG runner stops the node.
+
+        Args:
+            node: DAG node whose sandbox should be terminated.
+        """
         sandbox_id = node.metadata.get(MODAL_SANDBOX_ID_METADATA_KEY)
         if not sandbox_id:
             return
@@ -169,7 +201,11 @@ class _StaticModalPipelineController:
         )
 
     def should_interrupt_execution(self) -> Optional[InterruptMode]:
-        """Tell the DAG runner whether the ZenML run has requested a stop."""
+        """Tell the DAG runner whether the ZenML run has requested a stop.
+
+        Returns:
+            The requested interruption mode, or `None` to continue execution.
+        """
         try:
             run = self.client.get_pipeline_run(
                 name_id_or_prefix=self.pipeline_run.id,
@@ -264,6 +300,9 @@ class _StaticModalPipelineController:
         publish failure must not mark a healthy sandbox as failed, and
         retries are throttled to avoid polling the server on every
         monitoring tick.
+
+        Args:
+            node: DAG node containing the sandbox metadata.
         """
         if node.metadata.get(NODE_METADATA_PUBLISHED_KEY):
             return
@@ -374,19 +413,35 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
 
     @classmethod
     def get_entrypoint_options(cls) -> Dict[str, bool]:
-        """Get options required by the static Modal controller."""
+        """Get options required by the static Modal controller.
+
+        Returns:
+            Entrypoint option names and whether they are required.
+        """
         return super().get_entrypoint_options() | {RUN_ID_OPTION: False}
 
     @classmethod
     def get_entrypoint_arguments(cls, **kwargs: Any) -> List[str]:
-        """Get command arguments for the static Modal controller."""
+        """Get command arguments for the static Modal controller.
+
+        Args:
+            **kwargs: Entrypoint option values.
+
+        Returns:
+            Command-line arguments for the controller entrypoint.
+        """
         args = super().get_entrypoint_arguments(**kwargs)
         if run_id := kwargs.get(RUN_ID_OPTION):
             args.extend([f"--{RUN_ID_OPTION}", str(run_id)])
         return args
 
     def run(self) -> None:
-        """Start child Modal sandboxes for all steps in a static pipeline."""
+        """Start child Modal sandboxes for all steps in a static pipeline.
+
+        Raises:
+            RuntimeError: If the active orchestrator is not a Modal
+                orchestrator or a child step sandbox fails.
+        """
         snapshot = self.snapshot
 
         client = Client()
@@ -438,7 +493,18 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
     def _get_or_create_pipeline_run(
         self, *, snapshot_id: UUID, modal_run_id: str
     ) -> Any:
-        """Create or update the ZenML pipeline run controlled by Modal."""
+        """Create or update the ZenML pipeline run controlled by Modal.
+
+        Args:
+            snapshot_id: ID of the pipeline snapshot being executed.
+            modal_run_id: ID of the Modal orchestration run.
+
+        Returns:
+            The existing, updated, or newly created pipeline run.
+
+        Raises:
+            RuntimeError: If an existing run belongs to another Modal run.
+        """
         snapshot = self.snapshot
         client = Client()
         run_id = self.entrypoint_args.get(RUN_ID_OPTION)
@@ -470,7 +536,15 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
         pipeline_run_id: UUID,
         node_statuses: Dict[str, NodeStatus],
     ) -> None:
-        """Publish a final pipeline status when the run is still active."""
+        """Publish a final pipeline status when the run is still active.
+
+        Args:
+            pipeline_run_id: ID of the pipeline run to finalize.
+            node_statuses: Final status of each DAG node.
+
+        Raises:
+            RuntimeError: If one or more Modal steps failed.
+        """
         failed_step_names = [
             step_name
             for step_name, node_status in node_statuses.items()

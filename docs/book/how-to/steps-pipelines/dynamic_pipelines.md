@@ -321,6 +321,28 @@ The `StepFuture` object provides several methods:
 When using `step.submit()`, steps with `runtime="isolated"` will execute in separate containers/processes, while steps with `runtime="inline"` will execute in separate threads within the orchestration environment.
 {% endhint %}
 
+### Ordering submitted steps
+
+A submitted step starts as soon as its inputs are available. To impose an order between steps that have no data dependency, use `after` or `start_after`:
+
+- `after=` waits for the upstream step to **finish** before starting.
+- `start_after=` waits for the upstream step to **start** before starting.
+
+`start_after` is useful when an upstream step is long-running and you want a dependent to run alongside it rather than after it. A common case is a step that brings up a service and a second step that uses it:
+
+```python
+@pipeline(dynamic=True)
+def serve_and_query():
+    server = serve_model.submit()  # long-running
+    # Starts once the server step is running, not when it finishes.
+    query = run_inference.submit(start_after=server)
+    query.wait()
+```
+
+Using `after=server` here would deadlock, since the dependent would wait for the long-running server step to finish. Both parameters accept a single future or a list, and you can combine them: `run_inference.submit(after=preprocess, start_after=server)`. `start_after` is available on `step.submit(...)`, `step.map(...)`, `step.product(...)`, and on a direct synchronous `step(...)` call, where the entrypoint blocks until the upstream has started. The upstream can be another step or a submitted child pipeline, for example `run_inference(start_after=serve_pipeline.submit())`.
+
+`start_after` orders execution, it does not probe readiness. The dependent starts once the upstream step has launched (for isolated steps, once it is submitted to the infrastructure), which does not guarantee that whatever the upstream sets up is ready to serve. Add your own connection retries if the dependent needs to reach a service the upstream starts. A failed upstream counts as started, so a `start_after` dependent is released rather than blocked when the upstream fails. Circular `start_after` dependencies are not detected and will stall the involved steps.
+
 ### Child pipelines inside dynamic pipelines
 
 Dynamic pipelines can call other dynamic pipelines from their `@pipeline`

@@ -13,12 +13,18 @@
 #  permissions and limitations under the License.
 """Unit tests for ZenML server authentication helpers."""
 
+from datetime import datetime, timedelta
 from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
 
+from zenml.constants import ZENML_API_KEY_PREFIX, ZENML_PRO_API_KEY_PREFIX
+from zenml.enums import AuthScheme
 from zenml.exceptions import CredentialsNotValid
+from zenml.models import APIKeyInternalResponse, UserResponse
+from zenml.models.v2.core.api_key import APIKeyResponseMetadata
+from zenml.models.v2.core.user import UserResponseMetadata
 from zenml.zen_server import auth
 
 
@@ -36,6 +42,9 @@ class _ApiKey:
         self.verified_keys.append(key)
         return key == "valid"
 
+    def is_token_generation_valid(self, token_generation):
+        return True
+
 
 class _ZenStore:
     def __init__(self, api_key: _ApiKey):
@@ -48,6 +57,48 @@ class _ZenStore:
 
     def update_internal_api_key(self, api_key_id, _):
         self.updated_api_key_ids.append(api_key_id)
+
+
+def _api_key_model(
+    *,
+    key_generation: int,
+    last_rotated: datetime,
+    retain_period_minutes: int,
+    service_account=None,
+) -> APIKeyInternalResponse:
+    return APIKeyInternalResponse.model_construct(
+        id=uuid4(),
+        name="test-key",
+        key_generation=key_generation,
+        body=SimpleNamespace(active=True, service_account=service_account),
+        metadata=APIKeyResponseMetadata(
+            description="",
+            retain_period_minutes=retain_period_minutes,
+            last_login=None,
+            last_rotated=last_rotated,
+        ),
+    )
+
+
+def _user_model(
+    *,
+    password_changed_at=None,
+    is_service_account: bool = False,
+    external_user_id=None,
+) -> UserResponse:
+    return UserResponse.model_construct(
+        id=uuid4(),
+        name="test-user",
+        body=SimpleNamespace(
+            active=True, is_service_account=is_service_account
+        ),
+        metadata=UserResponseMetadata(
+            password_changed_at=password_changed_at,
+            email=None,
+            external_user_id=external_user_id,
+            user_metadata={},
+        ),
+    )
 
 
 def test_fetch_and_verify_api_key_rejects_empty_key(monkeypatch):
@@ -71,3 +122,241 @@ def test_fetch_and_verify_api_key_allows_internal_skip(monkeypatch):
 
     assert api_key.verified_keys == []
     assert store.updated_api_key_ids == [api_key.id]
+
+
+def test_authenticate_api_key_keeps_pro_api_key_flow(monkeypatch):
+    """Ensure ZenML Pro API keys continue through external authentication."""
+    user = _user_model()
+    auth_context = auth.AuthContext(user=user)
+    authenticated_tokens = []
+
+    def authenticate_external_user(external_access_token):
+        authenticated_tokens.append(external_access_token)
+        return auth_context
+
+    monkeypatch.setattr(
+        auth, "authenticate_external_user", authenticate_external_user
+    )
+
+    token = f"{ZENML_PRO_API_KEY_PREFIX}test-token"
+
+    assert auth.authenticate_api_key(api_key=token) is auth_context
+    assert authenticated_tokens == [token]
+
+
+def test_authenticate_api_key_allows_local_keys_for_external_auth(
+    monkeypatch,
+):
+    """Ensure existing local service account API keys remain usable."""
+    user = _user_model(is_service_account=True)
+    service_account = SimpleNamespace(to_user_model=lambda: user)
+    api_key = _api_key_model(
+        key_generation=1,
+        last_rotated=datetime.utcnow(),
+        retain_period_minutes=0,
+        service_account=service_account,
+    )
+    fetch_calls = []
+
+    monkeypatch.setattr(
+        auth,
+        "server_config",
+        lambda: SimpleNamespace(auth_scheme=AuthScheme.EXTERNAL),
+    )
+    monkeypatch.setattr(
+        auth.APIKey,
+        "decode_api_key",
+        lambda _: SimpleNamespace(id=api_key.id, key="valid"),
+    )
+    monkeypatch.setattr(
+        auth,
+        "_fetch_and_verify_api_key",
+        lambda **kwargs: fetch_calls.append(kwargs) or api_key,
+    )
+
+    auth_context = auth.authenticate_api_key(
+        api_key=f"{ZENML_API_KEY_PREFIX}test-token"
+    )
+
+    assert auth_context.user is user
+    assert auth_context.api_key is api_key
+    assert fetch_calls == [
+        {"api_key_id": api_key.id, "key_to_verify": "valid"}
+    ]
+
+
+def test_authenticate_credentials_rejects_local_service_account_token_for_external_auth(
+    monkeypatch,
+):
+    """Ensure external auth rejects JWTs for local service accounts."""
+    user = _user_model(is_service_account=True)
+    decoded_token = SimpleNamespace(
+        session_id=None,
+        user_id=user.id,
+        issued_at=datetime.utcnow(),
+        api_key_id=None,
+        api_key_generation=None,
+        device_id=None,
+        schedule_id=None,
+        pipeline_run_id=None,
+    )
+
+    class Store:
+        def get_user(self, user_name_or_id, include_private):
+            assert user_name_or_id == user.id
+            assert include_private
+            return user
+
+    monkeypatch.setattr(auth, "zen_store", lambda: Store())
+    monkeypatch.setattr(
+        auth,
+        "server_config",
+        lambda: SimpleNamespace(auth_scheme=AuthScheme.EXTERNAL),
+    )
+    monkeypatch.setattr(
+        auth.JWTToken, "decode_token", lambda token: decoded_token
+    )
+
+    with pytest.raises(CredentialsNotValid):
+        auth.authenticate_credentials(access_token="access-token")
+
+
+def test_authenticate_credentials_allows_local_service_account_api_key_token_for_external_auth(
+    monkeypatch,
+):
+    """Ensure API key-issued JWTs remain usable for local service accounts."""
+    user = _user_model(is_service_account=True)
+    api_key = _api_key_model(
+        key_generation=1,
+        last_rotated=datetime.utcnow(),
+        retain_period_minutes=0,
+    )
+    decoded_token = auth.JWTToken(
+        user_id=user.id,
+        issued_at=datetime.utcnow(),
+        api_key_id=api_key.id,
+    )
+    fetch_calls = []
+
+    class Store:
+        def get_user(self, user_name_or_id, include_private):
+            assert user_name_or_id == user.id
+            assert include_private
+            return user
+
+    monkeypatch.setattr(auth, "zen_store", lambda: Store())
+    monkeypatch.setattr(
+        auth,
+        "server_config",
+        lambda: SimpleNamespace(auth_scheme=AuthScheme.EXTERNAL),
+    )
+    monkeypatch.setattr(
+        auth.JWTToken, "decode_token", lambda token: decoded_token
+    )
+    monkeypatch.setattr(
+        auth,
+        "_fetch_and_verify_api_key",
+        lambda *args, **kwargs: fetch_calls.append((args, kwargs)) or api_key,
+    )
+
+    auth_context = auth.authenticate_credentials(access_token="access-token")
+
+    assert auth_context.user is user
+    assert auth_context.api_key is api_key
+    assert fetch_calls == [
+        ((api_key.id,), {"token_generation": None}),
+    ]
+
+
+def test_api_key_token_generation_allows_legacy_tokens():
+    """Ensure JWTs without a generation claim remain valid."""
+    api_key = _api_key_model(
+        key_generation=2,
+        last_rotated=datetime.utcnow(),
+        retain_period_minutes=5,
+    )
+
+    assert api_key.is_token_generation_valid(token_generation=None)
+
+
+def test_api_key_token_generation_allows_current_generation():
+    """Ensure JWTs issued for the current API key generation are valid."""
+    api_key = _api_key_model(
+        key_generation=2,
+        last_rotated=datetime.utcnow(),
+        retain_period_minutes=5,
+    )
+
+    assert api_key.is_token_generation_valid(token_generation=2)
+
+
+def test_api_key_token_generation_allows_retained_previous_generation():
+    """Ensure the previous API key generation follows the retain period."""
+    api_key = _api_key_model(
+        key_generation=2,
+        last_rotated=datetime.utcnow(),
+        retain_period_minutes=5,
+    )
+
+    assert api_key.is_token_generation_valid(token_generation=1)
+
+
+def test_api_key_token_generation_rejects_expired_previous_generation():
+    """Ensure previous-generation JWTs expire with the retain period."""
+    api_key = _api_key_model(
+        key_generation=2,
+        last_rotated=datetime.utcnow() - timedelta(minutes=6),
+        retain_period_minutes=5,
+    )
+
+    assert not api_key.is_token_generation_valid(token_generation=1)
+
+
+def test_api_key_token_generation_rejects_older_generation():
+    """Ensure only the immediately previous API key generation is retained."""
+    api_key = _api_key_model(
+        key_generation=3,
+        last_rotated=datetime.utcnow(),
+        retain_period_minutes=5,
+    )
+
+    assert not api_key.is_token_generation_valid(token_generation=1)
+
+
+def test_password_change_check_allows_legacy_tokens():
+    """Ensure JWTs without an issued-at claim remain valid."""
+    user = _user_model(password_changed_at=datetime.utcnow())
+
+    assert user.is_token_issued_after_password_change(issued_at=None)
+
+
+def test_password_change_check_rejects_stale_user_tokens():
+    """Ensure user JWTs issued before a password change are rejected."""
+    password_changed_at = datetime.utcnow()
+    user = _user_model(password_changed_at=password_changed_at)
+
+    assert not user.is_token_issued_after_password_change(
+        issued_at=password_changed_at - timedelta(seconds=1)
+    )
+
+
+def test_password_change_check_allows_fresh_user_tokens():
+    """Ensure user JWTs issued after a password change are valid."""
+    password_changed_at = datetime.utcnow()
+    user = _user_model(password_changed_at=password_changed_at)
+
+    assert user.is_token_issued_after_password_change(
+        issued_at=password_changed_at + timedelta(seconds=1)
+    )
+
+
+def test_password_change_check_skips_service_accounts():
+    """Ensure service accounts are governed by API key generation checks."""
+    password_changed_at = datetime.utcnow()
+    user = _user_model(
+        password_changed_at=password_changed_at, is_service_account=True
+    )
+
+    assert user.is_token_issued_after_password_change(
+        issued_at=password_changed_at - timedelta(seconds=1)
+    )

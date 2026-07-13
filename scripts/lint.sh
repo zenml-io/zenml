@@ -9,6 +9,7 @@ SRC_NO_TESTS=${1:-"src/zenml tests/harness"}
 TESTS_EXAMPLES=${1:-"tests examples"}
 
 export ZENML_DEBUG=1
+export ZENML_LOGGING_VERBOSITY=debug
 export ZENML_ANALYTICS_OPT_IN=false
 ruff check $SRC_NO_TESTS
 # TODO: Fix docstrings in tests and examples and remove the `--extend-ignore D` flag

@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
-from pydantic import Field, PositiveInt
+from pydantic import Field, NonNegativeInt, PositiveInt
 
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.kubernetes import KUBERNETES_SANDBOX_FLAVOR
@@ -63,6 +63,11 @@ class KubernetesSandboxSettings(BaseSandboxSettings):
     api_request_timeout: Optional[PositiveInt] = Field(
         default=None,
         description="Timeout for Kubernetes API requests in seconds.",
+    )
+    max_api_retries: NonNegativeInt = Field(
+        default=3,
+        description="Maximum number of retries for failed Kubernetes API "
+        "requests. Set to 0 to disable retries.",
     )
 
 

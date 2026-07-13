@@ -111,7 +111,13 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
         Returns:
             The adlfs filesystem to access this artifact store.
         """
-        if not self._filesystem:
+        if self._filesystem:
+            return self._filesystem
+
+        with self._filesystem_lock:
+            if self._filesystem:
+                return self._filesystem
+
             secret = self.get_credentials()
             credentials = secret.get_values() if secret else {}
 
@@ -120,7 +126,7 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
                 anon=False,
                 use_listings_cache=False,
             )
-        return self._filesystem
+            return self._filesystem
 
     def _split_path(self, path: PathType) -> Tuple[str, str]:
         """Splits a path into the filesystem prefix and remainder.

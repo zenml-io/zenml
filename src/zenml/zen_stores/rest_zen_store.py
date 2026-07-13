@@ -578,18 +578,20 @@ class RestZenStore(BaseZenStore):
         Returns:
             Cached information about the server.
         """
-        if self._server_info is None:
-            return self.get_store_info()
-        return self._server_info
+        return self.get_store_info()
 
-    def get_store_info(self) -> ServerModel:
+    def get_store_info(self, force_refresh: bool = False) -> ServerModel:
         """Get information about the server.
+
+        Args:
+            force_refresh: Fetch the server information even if it is cached.
 
         Returns:
             Information about the server.
         """
-        body = self.get(INFO)
-        self._server_info = ServerModel.model_validate(body)
+        if self._server_info is None or force_refresh:
+            body = self.get(INFO)
+            self._server_info = ServerModel.model_validate(body)
         return self._server_info
 
     def get_deployment_id(self) -> UUID:
@@ -1047,7 +1049,32 @@ class RestZenStore(BaseZenStore):
             artifact_version_id: The ID of the artifact version to delete.
         """
         self._delete_resource(
-            resource_id=artifact_version_id, route=ARTIFACT_VERSIONS
+            resource_id=artifact_version_id,
+            route=ARTIFACT_VERSIONS,
+        )
+
+    def delete_artifact_version_server_side(
+        self,
+        artifact_version_id: UUID,
+        delete_metadata: bool = True,
+        delete_from_artifact_store: bool = False,
+    ) -> None:
+        """Delete an artifact version through the server endpoint.
+
+        Args:
+            artifact_version_id: The ID of the artifact version to delete.
+            delete_metadata: Whether the server should delete the artifact
+                version metadata.
+            delete_from_artifact_store: Whether the server should also delete
+                the artifact data from the artifact store.
+        """
+        self._delete_resource(
+            resource_id=artifact_version_id,
+            route=ARTIFACT_VERSIONS,
+            params={
+                "delete_metadata": delete_metadata,
+                "delete_from_artifact_store": delete_from_artifact_store,
+            },
         )
 
     def prune_artifact_versions(
@@ -4788,6 +4815,24 @@ class RestZenStore(BaseZenStore):
             if api_key is not None:
                 # An API key is configured. Use it as a password to
                 # authenticate.
+                if self.server_info.is_pro_server() and not api_key.startswith(
+                    ZENML_PRO_API_KEY_PREFIX
+                ):
+                    logger.warning(
+                        "\n"
+                        "===============================================================\n"
+                        "DEPRECATED ZENML PRO AUTHENTICATION METHOD\n\n"
+                        "This client is authenticating to a ZenML Pro workspace with a "
+                        "workspace-level service account API key. Existing "
+                        "keys still work temporarily for compatibility, but "
+                        "workspace-level service accounts are deprecated and "
+                        "can no longer be managed in ZenML Pro workspaces.\n\n"
+                        "Migrate this automation to a ZenML Pro organization "
+                        "service account and API key as soon as possible:\n"
+                        "https://docs.zenml.io/pro/access-management/"
+                        "service-accounts#migration-of-workspace-level-service-accounts\n"
+                        "==============================================================="
+                    )
                 data = {
                     "grant_type": OAuthGrantTypes.ZENML_API_KEY.value,
                     "password": api_key,
@@ -4880,7 +4925,7 @@ class RestZenStore(BaseZenStore):
             # NOTE: this is the best place to do this because we know that
             # the token is valid and the server is reachable.
             try:
-                server_info = self.get_store_info()
+                server_info = self.get_store_info(force_refresh=True)
             except Exception as e:
                 logger.warning(f"Failed to get server info: {e}.")
             else:

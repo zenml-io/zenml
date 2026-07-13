@@ -61,13 +61,15 @@ on:
         type: number
         required: false
         default: 3
+env:
+  ZENML_DEBUG: 1
+  ZENML_LOGGING_VERBOSITY: debug
+  ZENML_ANALYTICS_OPT_IN: false
 jobs:
   unit-test:
     name: unit-test
     runs-on: ${{ inputs.os }}
     env:
-      ZENML_DEBUG: 1
-      ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
       UV_HTTP_TIMEOUT: 600
       OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
@@ -100,13 +102,13 @@ jobs:
           echo "TMP=/opt/tmp" >> "$GITHUB_ENV"
           echo "TEMP=/opt/tmp" >> "$GITHUB_ENV"
       - name: Checkout code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
           repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
           ref: ${{ inputs.git-ref || github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0  # Fetch all history for all branches and tags
       - name: Restore uv cache
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: ${{ inputs.os == 'ubuntu-latest' && '/opt/uv-cache' || '~/.cache/uv' }}
           key: |
@@ -129,9 +131,6 @@ jobs:
       - name: Run unit tests
         run: |
           bash scripts/test-coverage-xml.sh unit
-        env:
-          ZENML_ANALYTICS_OPT_IN: false
-          ZENML_DEBUG: true
       - name: Setup tmate session after tests
         if: ${{ inputs.enable_tmate == 'always' || (inputs.enable_tmate == 'on-failure' && failure()) }}
         uses: mxschmitt/action-tmate@35b54afac29c97fb54faba5b513f8fbd1882f113  # v3.24

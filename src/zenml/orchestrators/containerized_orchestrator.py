@@ -120,13 +120,18 @@ class ContainerizedOrchestrator(BaseOrchestrator, ABC):
                 builds.append(pipeline_build)
                 included_pipeline_build = True
 
-        if not included_pipeline_build and self.should_build_pipeline_image(
-            snapshot
-        ):
-            pipeline_build = BuildConfiguration(
-                key=ORCHESTRATOR_DOCKER_IMAGE_KEY,
-                settings=pipeline_settings,
-            )
-            builds.append(pipeline_build)
+        if not included_pipeline_build:
+            # If the pipeline settings specify to skip the build, we can always
+            # include them in the builds because there is no cost associated
+            # with building the image.
+            if (
+                pipeline_settings.skip_build
+                or self.should_build_pipeline_image(snapshot)
+            ):
+                pipeline_build = BuildConfiguration(
+                    key=ORCHESTRATOR_DOCKER_IMAGE_KEY,
+                    settings=pipeline_settings,
+                )
+                builds.append(pipeline_build)
 
         return builds

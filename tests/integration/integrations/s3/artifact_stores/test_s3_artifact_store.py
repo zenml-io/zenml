@@ -94,7 +94,7 @@ def test_boto3_resource_receives_client_kwargs():
         bucket.Versioning.return_value.status = "Enabled"
         mock_resource.return_value.Bucket.return_value = bucket
 
-        S3ArtifactStore(
+        artifact_store = S3ArtifactStore(
             name="",
             id=uuid4(),
             config=S3ArtifactStoreConfig(
@@ -110,6 +110,8 @@ def test_boto3_resource_receives_client_kwargs():
             created=datetime.now(),
             updated=datetime.now(),
         )
+
+        _ = artifact_store._boto3_bucket
 
     assert (
         mock_resource.call_args.kwargs["endpoint_url"] == "http://minio:9000"
@@ -139,12 +141,12 @@ def test_remove_previous_versions_uses_client_kwargs():
             updated=datetime.now(),
         )
 
-        artifact_store.is_versioned = True
+        artifact_store._is_versioned = True
         artifact_store._boto3_bucket_holder = None
 
         artifact_store._remove_previous_file_versions("s3://mybucket/path")
 
-    assert len(mock_resource.call_args_list) == 2
+    assert len(mock_resource.call_args_list) == 1
     for call in mock_resource.call_args_list:
         assert call.kwargs["endpoint_url"] == "http://minio:9000"
 
