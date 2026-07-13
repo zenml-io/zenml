@@ -720,6 +720,11 @@ touch {shlex.quote(cleanup_marker)}
                 step_run_id=step_run_info.step_run_id,
                 step_run_metadata={self.id: metadata},
             )
+            self._publish_isolated_job_run_metadata(
+                run_id=step_run_info.run_id,
+                step_run_id=step_run_info.step_run_id,
+                job_id=job_id,
+            )
             step_run_info.step_run.run_metadata.update(metadata)
         except Exception:
             if job_id is not None:
@@ -743,11 +748,6 @@ touch {shlex.quote(cleanup_marker)}
             client.runner.close()
 
         assert job_id is not None
-        self._publish_isolated_job_run_metadata(
-            run_id=step_run_info.run_id,
-            step_run_id=step_run_info.step_run_id,
-            job_id=job_id,
-        )
         logger.info(
             "Submitted dynamic step `%s` as Slurm job `%s`.",
             step_run_info.pipeline_step_name,
@@ -868,6 +868,9 @@ touch {shlex.quote(cleanup_marker)}
             run_id: Pipeline run ID.
             step_run_id: Step run ID.
             job_id: Slurm job ID.
+
+        Raises:
+            RuntimeError: If the metadata could not be published.
         """
         from zenml.client import Client
 
@@ -887,12 +890,10 @@ touch {shlex.quote(cleanup_marker)}
                 stack_component_id=self.id,
             )
         except Exception as e:
-            logger.warning(
-                "Failed to publish Slurm run metadata for isolated step `%s`: "
-                "%s",
-                step_run_id,
-                e,
-            )
+            raise RuntimeError(
+                "Failed to publish Slurm run metadata for isolated step "
+                f"`{step_run_id}`."
+            ) from e
 
     def fetch_status(
         self, run: "PipelineRunResponse", include_steps: bool = False

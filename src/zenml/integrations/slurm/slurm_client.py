@@ -334,25 +334,25 @@ class SlurmClient:
         # Completed jobs can disappear from squeue before a shared-filesystem
         # sentinel becomes visible. Slurm keeps them in controller memory for
         # MinJobAge, so scontrol closes that race without requiring sacct.
-        missing_jobs_arg = ",".join(missing_job_ids)
-        result = self.runner.run(
-            "scontrol show job --oneliner "
-            f"{shlex.quote(missing_jobs_arg)}"
-        )
-        if result.exit_code != 0:
-            if "invalid job id" in result.stderr.lower():
-                return states
-            raise RuntimeError(
-                f"`scontrol show job` failed with exit code "
-                f"{result.exit_code}: {result.stderr.strip()}"
+        for missing_job_id in missing_job_ids:
+            result = self.runner.run(
+                "scontrol show job --oneliner "
+                f"{shlex.quote(missing_job_id)}"
             )
-        for line in result.stdout.strip().splitlines():
-            job_id_match = re.search(r"(?:^|\s)JobId=([0-9]+)", line)
-            state_match = re.search(r"(?:^|\s)JobState=([^\s]+)", line)
-            if job_id_match and state_match:
-                job_id = job_id_match.group(1)
-                if job_id in states:
-                    states[job_id] = state_match.group(1)
+            if result.exit_code != 0:
+                if "invalid job id" in result.stderr.lower():
+                    continue
+                raise RuntimeError(
+                    f"`scontrol show job` failed with exit code "
+                    f"{result.exit_code}: {result.stderr.strip()}"
+                )
+            for line in result.stdout.strip().splitlines():
+                job_id_match = re.search(r"(?:^|\s)JobId=([0-9]+)", line)
+                state_match = re.search(r"(?:^|\s)JobState=([^\s]+)", line)
+                if job_id_match and state_match:
+                    job_id = job_id_match.group(1)
+                    if job_id in states:
+                        states[job_id] = state_match.group(1)
 
         return states
 

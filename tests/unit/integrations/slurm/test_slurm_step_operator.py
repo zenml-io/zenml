@@ -267,7 +267,7 @@ def test_client_batches_job_state_lookup():
                     stdout="12345|RUNNING\n23456|PENDING\n",
                     stderr="",
                 )
-            if command.startswith("scontrol"):
+            if command == "scontrol show job --oneliner 34567":
                 return CommandResult(
                     exit_code=0,
                     stdout=(
@@ -276,21 +276,29 @@ def test_client_batches_job_state_lookup():
                     ),
                     stderr="",
                 )
+            if command == "scontrol show job --oneliner 45678":
+                return CommandResult(
+                    exit_code=0,
+                    stdout="JobId=45678 JobState=FAILED Command=/s/job.sh\n",
+                    stderr="",
+                )
             return CommandResult(exit_code=0, stdout="", stderr="")
 
     runner = BatchRunner()
     states = SlurmClient(runner).get_job_states(
-        ["12345", "23456", "34567"]
+        ["12345", "23456", "34567", "45678"]
     )
 
     assert states == {
         "12345": "RUNNING",
         "23456": "PENDING",
         "34567": "COMPLETED",
+        "45678": "FAILED",
     }
     assert runner.commands == [
-        "squeue --noheader --format='%i|%T' --jobs=12345,23456,34567",
+        "squeue --noheader --format='%i|%T' --jobs=12345,23456,34567,45678",
         "scontrol show job --oneliner 34567",
+        "scontrol show job --oneliner 45678",
     ]
 
 

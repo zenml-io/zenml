@@ -825,6 +825,50 @@ def test_submit_isolated_step_publishes_job_metadata(monkeypatch):
     }
 
 
+def test_submit_isolated_step_cancels_on_run_metadata_failure(monkeypatch):
+    """Run-level metadata publication is part of the submission transaction."""
+    op = _build_orchestrator()
+    op.get_settings = lambda _info: SlurmOrchestratorSettings()
+    runner = FakeRunner()
+    _use_fake_client(monkeypatch, runner)
+    monkeypatch.setattr(
+        "zenml.integrations.slurm.orchestrators.slurm_orchestrator"
+        ".orchestrator_utils.get_step_entrypoint_command",
+        lambda **kwargs: (["python"], ["-m", "zenml.entrypoint"]),
+    )
+    monkeypatch.setattr(
+        "zenml.integrations.slurm.orchestrators.slurm_orchestrator"
+        ".Stack.from_model",
+        lambda stack: _stack(),
+    )
+    monkeypatch.setattr(
+        "zenml.integrations.slurm.orchestrators.slurm_orchestrator"
+        ".publish_step_run_metadata",
+        lambda **kwargs: None,
+    )
+
+    class FailingClient:
+        def create_run_metadata(self, **kwargs):
+            raise RuntimeError("metadata store unavailable")
+
+    monkeypatch.setattr("zenml.client.Client", lambda: FailingClient())
+    info = _isolated_step_info()
+
+    with pytest.raises(RuntimeError, match="Failed to publish Slurm run"):
+        op.submit_isolated_step(
+            step_run_info=info,
+            environment={"ZENML_STORE_API_KEY": SECRET_TOKEN},
+        )
+
+    run_dir = f"/runs/{info.run_id}/isolated/{info.step_run_id}"
+    assert "scancel 1000" in runner.commands
+    assert any(
+        command.startswith("rm -rf --")
+        and f"{run_dir}/env" in command
+        for command in runner.commands
+    )
+
+
 def test_get_isolated_step_status_reads_sentinel(monkeypatch):
     """Isolated step status uses the same Slurm sentinel mapping."""
     op = _build_orchestrator()
