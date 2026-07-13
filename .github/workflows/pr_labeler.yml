@@ -8,6 +8,7 @@ name: pr-label
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+permissions: {}
 env:
   ZENML_DEBUG: 1
   ZENML_LOGGING_VERBOSITY: debug
@@ -16,6 +17,9 @@ jobs:
   pr-labeler:
     if: github.repository == 'zenml-io/zenml'
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:

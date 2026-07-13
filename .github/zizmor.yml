@@ -12,10 +12,10 @@ rules:
   # These are ZenML's own templates and are intentionally unpinned
   unpinned-uses:
     ignore:
-      - update-templates-to-examples.yml:44  # zenml-io/template-e2e-batch
+      - update-templates-to-examples.yml:46  # zenml-io/template-e2e-batch
       - update-templates-to-examples.yml:120  # zenml-io/template-nlp
-      - update-templates-to-examples.yml:195  # zenml-io/template-starter
-      - update-templates-to-examples.yml:272  # zenml-io/template-llm-finetuning
+      - update-templates-to-examples.yml:193  # zenml-io/template-starter
+      - update-templates-to-examples.yml:268  # zenml-io/template-llm-finetuning
       - weekly-agent-pipelines-test.yml:101  # Ilshidur/action-discord uses @master, can't be SHA-pinned
 
   # excessive-permissions: These workflows use default permissions.
