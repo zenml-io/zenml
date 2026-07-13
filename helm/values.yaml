@@ -133,7 +133,6 @@ server:
   # This value is overridden if the `zenml.pro.enabled` value is set.
   dashboardURL:
 
-  debug: true
 
   # Flag to enable/disable the tracking process of the analytics
   analyticsOptIn: true
@@ -1126,6 +1125,10 @@ server:
 
   # Logging settings for the ZenML server container.
   logging:
+    # Set the logging verbosity.
+    # Supported values are: debug, info, warning, error, critical
+    verbosity: info
+
     # Log output format. Use "console", "json", or a custom Python logging
     # format string in %-style format like "%(levelname)s:%(name)s:%(message)s".
     format: console

@@ -635,6 +635,7 @@ Returns a dictionary with common configuration env vars.
 */}}
 {{- define "zenml.baseEnvVariables" -}}
 {{- $server := include "zenml.serverValues" . | fromYaml -}}
+{{- $logging := $server.logging | default dict -}}
 ZENML_SERVER: "True"
 NODE_OPTIONS: "--use-openssl-ca"
 {{- if or $server.certificates.customCAs $server.certificates.secretRefs }}
@@ -643,8 +644,10 @@ SSL_CERT_FILE: "/updated-certs/ca-certificates.crt"
 {{- end }}
 {{- if $server.debug }}
 ZENML_LOGGING_VERBOSITY: "DEBUG"
+{{- else }}
+ZENML_LOGGING_VERBOSITY: {{ default "info" $logging.verbosity | upper | quote }}
 {{- end }}
-{{- with $server.logging }}
+{{- with $logging }}
 {{- if .format }}
 ZENML_CONSOLE_LOGGING_FORMAT: {{ .format | quote }}
 {{- end }}

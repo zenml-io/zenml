@@ -5,6 +5,7 @@ DB_STARTUP_DELAY=30 # Time in seconds to wait for the database container to star
 
 export ZENML_ANALYTICS_OPT_IN=false
 export ZENML_DEBUG=true
+export ZENML_LOGGING_VERBOSITY=debug
 
 # Use a temporary directory for the config path
 export ZENML_CONFIG_PATH=/tmp/upgrade-tests
