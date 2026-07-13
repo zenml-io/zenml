@@ -26,7 +26,16 @@ when the client already runs on the cluster.
 
 import os
 import shlex
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    cast,
+)
 from uuid import UUID
 
 from zenml.config.base_settings import BaseSettings
@@ -38,7 +47,7 @@ from zenml.constants import (
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
-from zenml.enums import ExecutionStatus, MetadataResourceTypes
+from zenml.enums import ExecutionMode, ExecutionStatus, MetadataResourceTypes
 from zenml.integrations.slurm.flavors.slurm_orchestrator_flavor import (
     SlurmOrchestratorConfig,
     SlurmOrchestratorSettings,
@@ -51,9 +60,12 @@ from zenml.integrations.slurm.slurm_client import (
 )
 from zenml.integrations.slurm.slurm_job import (
     CANCELLED_FILE,
+    DOCKER_CONFIG_DIR,
+    ENROOT_CONFIG_DIR,
     ENV_FILE,
     EXIT_CODE_FILE,
     OUTPUT_FILE,
+    REGISTRY_AUTH_FILE,
     REQUIRED_COMPONENTS,
     SCRIPT_FILE,
     build_container_command,
@@ -92,10 +104,21 @@ SLURM_ORCHESTRATION_JOB_ID_METADATA_KEY = "slurm_orchestration_job_id"
 SLURM_ISOLATED_JOB_IDS_METADATA_KEY = "slurm_isolated_job_ids"
 SLURM_ISOLATED_JOB_ID_METADATA_KEY = "slurm_job_id"
 _CLEANUP_COMPLETE_FILE = "cleanup_complete"
+_ISOLATED_MISSING_SENTINEL_FAILURE_THRESHOLD = 3
 
 
 class SlurmOrchestrator(ContainerizedOrchestrator):
     """Orchestrator that submits a pipeline as a graph of Slurm jobs."""
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Initialize the Slurm orchestrator.
+
+        Args:
+            *args: Forwarded to the base orchestrator.
+            **kwargs: Forwarded to the base orchestrator.
+        """
+        super().__init__(*args, **kwargs)
+        self._missing_isolated_sentinel_counts: Dict[str, int] = {}
 
     @property
     def config(self) -> SlurmOrchestratorConfig:
@@ -105,6 +128,19 @@ class SlurmOrchestrator(ContainerizedOrchestrator):
             The config.
         """
         return cast(SlurmOrchestratorConfig, self._config)
+
+    @property
+    def supported_execution_modes(self) -> List[ExecutionMode]:
+        """Execution modes supported by this orchestrator.
+
+        Returns:
+            The supported execution modes.
+        """
+        return [
+            ExecutionMode.FAIL_FAST,
+            ExecutionMode.STOP_ON_FAILURE,
+            ExecutionMode.CONTINUE_ON_FAILURE,
+        ]
 
     @property
     def settings_class(self) -> Optional[type[BaseSettings]]:
@@ -747,12 +783,33 @@ touch {shlex.quote(cleanup_marker)}
                 client=client,
                 state=state,
                 run_dir=run_dir,
-                cleanup_complete=True,
+                cleanup_complete=False,
             )
         finally:
             client.runner.close()
 
-        return status or ExecutionStatus.FAILED
+        if status:
+            self._missing_isolated_sentinel_counts.pop(str(step_run.id), None)
+            return status
+
+        missing_count = self._missing_isolated_sentinel_counts.get(
+            str(step_run.id), 0
+        )
+        missing_count += 1
+        self._missing_isolated_sentinel_counts[str(step_run.id)] = (
+            missing_count
+        )
+        if missing_count >= _ISOLATED_MISSING_SENTINEL_FAILURE_THRESHOLD:
+            logger.warning(
+                "Slurm job `%s` for isolated step `%s` is no longer known to "
+                "Slurm and did not write an exit-code sentinel after %d "
+                "status checks.",
+                job_id,
+                step_run.id,
+                missing_count,
+            )
+            return ExecutionStatus.FAILED
+        return ExecutionStatus.QUEUED
 
     def stop_isolated_step(self, step_run: "StepRunResponse") -> None:
         """Cancel a dynamic isolated Slurm step.
@@ -777,6 +834,7 @@ touch {shlex.quote(cleanup_marker)}
             client.runner.put_text(
                 f"{run_dir}/{CANCELLED_FILE}", "1\n", mode=0o600
             )
+            self._cleanup_sensitive_files(client, run_dir)
         finally:
             client.runner.close()
 
@@ -886,18 +944,29 @@ touch {shlex.quote(cleanup_marker)}
             ]
             pipeline_status: Optional[ExecutionStatus] = None
             if not run.status.is_finished:
-                if any(
+                failed_or_cancelled = any(
                     status
                     in {ExecutionStatus.FAILED, ExecutionStatus.CANCELLED}
                     for status in known_statuses
-                ):
-                    pipeline_status = ExecutionStatus.FAILED
-                    self._cancel_unfinished_jobs(
-                        client=client,
-                        run_id=str(run.id),
-                        job_ids=job_ids,
-                        statuses=statuses,
-                    )
+                )
+                all_terminal = len(known_statuses) == len(statuses) and all(
+                    status.is_finished for status in known_statuses
+                )
+                if failed_or_cancelled:
+                    if self._should_cancel_unfinished_jobs(run):
+                        pipeline_status = ExecutionStatus.FAILED
+                        self._cancel_unfinished_jobs(
+                            client=client,
+                            run_id=str(run.id),
+                            job_ids=job_ids,
+                            statuses=statuses,
+                        )
+                    elif all_terminal:
+                        pipeline_status = ExecutionStatus.FAILED
+                    elif ExecutionStatus.RUNNING in known_statuses:
+                        pipeline_status = ExecutionStatus.RUNNING
+                    else:
+                        pipeline_status = ExecutionStatus.PROVISIONING
                 elif len(known_statuses) == len(statuses) and all(
                     status == ExecutionStatus.COMPLETED
                     for status in known_statuses
@@ -916,6 +985,21 @@ touch {shlex.quote(cleanup_marker)}
                 name: status for name, status in statuses.items() if status
             }
         return pipeline_status, step_statuses
+
+    @staticmethod
+    def _should_cancel_unfinished_jobs(run: "PipelineRunResponse") -> bool:
+        """Check whether failure reconciliation should cancel sibling jobs.
+
+        Args:
+            run: Pipeline run submitted by this orchestrator.
+
+        Returns:
+            Whether unfinished jobs should be cancelled.
+        """
+        return run.config.execution_mode in {
+            ExecutionMode.FAIL_FAST,
+            ExecutionMode.STOP_ON_FAILURE,
+        }
 
     def _fetch_dynamic_status(
         self, run: "PipelineRunResponse"
@@ -1142,13 +1226,31 @@ touch {shlex.quote(cleanup_marker)}
 
         for job_key in cancelled_steps:
             try:
+                run_dir = run_dir_for_key(job_key)
                 client.runner.put_text(
-                    f"{run_dir_for_key(job_key)}/{CANCELLED_FILE}",
-                    "1\n",
-                    mode=0o600,
+                    f"{run_dir}/{CANCELLED_FILE}", "1\n", mode=0o600
                 )
+                self._cleanup_sensitive_files(client, run_dir)
             except Exception:
                 logger.warning(
                     "Failed to write Slurm cancellation marker for job `%s`.",
                     job_key,
                 )
+
+    @staticmethod
+    def _cleanup_sensitive_files(client: SlurmClient, run_dir: str) -> None:
+        """Remove credential-bearing files for a submitted Slurm job.
+
+        Args:
+            client: Slurm client used to remove the files.
+            run_dir: Per-job staging directory.
+        """
+        paths = [
+            f"{run_dir}/{ENV_FILE}",
+            f"{run_dir}/{REGISTRY_AUTH_FILE}",
+            f"{run_dir}/{DOCKER_CONFIG_DIR}",
+            f"{run_dir}/{ENROOT_CONFIG_DIR}",
+        ]
+        client.runner.run(
+            "rm -rf -- " + " ".join(shlex.quote(path) for path in paths)
+        )

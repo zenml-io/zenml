@@ -351,7 +351,7 @@ class SlurmStepOperator(BaseStepOperator):
         run_dir = self._run_dir(step_run.id)
         client = build_slurm_client(self.config)
         try:
-            client.runner.run(f"rm -rf {shlex.quote(run_dir)}")
+            client.runner.run(f"rm -rf -- {shlex.quote(run_dir)}")
         except Exception as e:
             logger.warning(
                 "Failed to clean up Slurm run directory `%s`: %s", run_dir, e

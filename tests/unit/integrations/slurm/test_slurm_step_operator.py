@@ -564,7 +564,7 @@ def test_cleanup_removes_run_dir(op_and_runner):
     step_run = SimpleNamespace(id=uuid4())
     op.cleanup_step_submission(step_run)
     run_dir = op._run_dir(step_run.id)
-    assert any("rm -rf" in c and run_dir in c for c in runner.commands)
+    assert any(f"rm -rf -- {run_dir}" in c for c in runner.commands)
 
 
 # --- integration registration -------------------------------------------------

@@ -26,7 +26,7 @@ import pytest
 
 from zenml.config.resource_settings import ResourceSettings
 from zenml.constants import METADATA_ORCHESTRATOR_RUN_ID
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import ExecutionMode, ExecutionStatus, StackComponentType
 from zenml.integrations.slurm.flavors import (
     SlurmOrchestratorConfig,
     SlurmOrchestratorFlavor,
@@ -199,6 +199,16 @@ def test_orchestrator_is_remote_and_detached():
     assert config.is_synchronous is False
 
 
+def test_orchestrator_supports_failure_modes():
+    """The orchestrator advertises the failure modes it implements."""
+    op = _build_orchestrator()
+    assert op.supported_execution_modes == [
+        ExecutionMode.FAIL_FAST,
+        ExecutionMode.STOP_ON_FAILURE,
+        ExecutionMode.CONTINUE_ON_FAILURE,
+    ]
+
+
 # --- run id -------------------------------------------------------------------
 
 
@@ -297,6 +307,29 @@ def _isolated_step_info(
         snapshot=snapshot or _snapshot({}),
         step_run=SimpleNamespace(run_metadata={}),
         get_image=lambda key: IMAGE,
+    )
+
+
+def _run(
+    run_id,
+    run_metadata: Dict[str, object],
+    execution_mode: ExecutionMode = ExecutionMode.CONTINUE_ON_FAILURE,
+) -> SimpleNamespace:
+    """Build a PipelineRunResponse stand-in.
+
+    Args:
+        run_id: The run ID.
+        run_metadata: Run metadata to attach.
+        execution_mode: Pipeline execution mode.
+
+    Returns:
+        A namespace usable where a PipelineRunResponse is expected.
+    """
+    return SimpleNamespace(
+        id=run_id,
+        status=ExecutionStatus.PROVISIONING,
+        config=SimpleNamespace(execution_mode=execution_mode),
+        run_metadata=run_metadata,
     )
 
 
@@ -549,9 +582,8 @@ def test_fetch_status_reports_pre_entrypoint_failure(monkeypatch):
     run_id = uuid4()
     run_dir = op._run_dir(str(run_id), "load")
     runner.files[f"{run_dir}/exit_code"] = "1\n"
-    run = SimpleNamespace(
-        id=run_id,
-        status=ExecutionStatus.PROVISIONING,
+    run = _run(
+        run_id=run_id,
         run_metadata={SLURM_JOB_IDS_METADATA_KEY: {"load": "1000"}},
     )
 
@@ -569,9 +601,8 @@ def test_fetch_status_uses_cleanup_marker_for_never_started_job(monkeypatch):
     run_id = uuid4()
     cleanup_marker = f"/runs/{run_id}/cleanup/cleanup_complete"
     runner.files[cleanup_marker] = ""
-    run = SimpleNamespace(
-        id=run_id,
-        status=ExecutionStatus.PROVISIONING,
+    run = _run(
+        run_id=run_id,
         run_metadata={SLURM_JOB_IDS_METADATA_KEY: {"train": "1001"}},
     )
 
@@ -580,8 +611,8 @@ def test_fetch_status_uses_cleanup_marker_for_never_started_job(monkeypatch):
     assert pipeline_status is ExecutionStatus.FAILED
 
 
-def test_fetch_status_batches_and_cancels_siblings(monkeypatch):
-    """A failed job cancels still-active sibling jobs in one refresh."""
+def test_fetch_status_continue_on_failure_keeps_siblings(monkeypatch):
+    """Continue-on-failure does not cancel independent sibling jobs."""
     op = _build_orchestrator()
 
     class StatusRunner(FakeRunner):
@@ -602,9 +633,8 @@ def test_fetch_status_batches_and_cancels_siblings(monkeypatch):
     runner = StatusRunner()
     _use_fake_client(monkeypatch, runner)
     run_id = uuid4()
-    run = SimpleNamespace(
-        id=run_id,
-        status=ExecutionStatus.PROVISIONING,
+    run = _run(
+        run_id=run_id,
         run_metadata={
             SLURM_JOB_IDS_METADATA_KEY: {
                 "load": "1000",
@@ -616,7 +646,7 @@ def test_fetch_status_batches_and_cancels_siblings(monkeypatch):
 
     pipeline_status, step_statuses = op.fetch_status(run, include_steps=True)
 
-    assert pipeline_status is ExecutionStatus.FAILED
+    assert pipeline_status is ExecutionStatus.RUNNING
     assert step_statuses == {
         "load": ExecutionStatus.FAILED,
         "train": ExecutionStatus.RUNNING,
@@ -625,6 +655,48 @@ def test_fetch_status_batches_and_cancels_siblings(monkeypatch):
     assert [
         command for command in runner.commands if command.startswith("squeue")
     ] == ["squeue --noheader --format='%i|%T' --jobs=1000,1001,1002"]
+    assert not any(
+        command.startswith("scancel") for command in runner.commands
+    )
+
+
+def test_fetch_status_stop_on_failure_cancels_siblings(monkeypatch):
+    """Stop-on-failure cancels unfinished sibling jobs."""
+    op = _build_orchestrator()
+
+    class StatusRunner(FakeRunner):
+        def run(self, command: str) -> CommandResult:
+            self.commands.append(command)
+            if command.startswith("squeue"):
+                return CommandResult(
+                    exit_code=0,
+                    stdout=(
+                        "1000|FAILED\n"
+                        "1001|RUNNING\n"
+                        "1002|PENDING\n"
+                    ),
+                    stderr="",
+                )
+            return CommandResult(exit_code=0, stdout="", stderr="")
+
+    runner = StatusRunner()
+    _use_fake_client(monkeypatch, runner)
+    run_id = uuid4()
+    run = _run(
+        run_id=run_id,
+        run_metadata={
+            SLURM_JOB_IDS_METADATA_KEY: {
+                "load": "1000",
+                "train": "1001",
+                "evaluate": "1002",
+            }
+        },
+        execution_mode=ExecutionMode.STOP_ON_FAILURE,
+    )
+
+    pipeline_status, _ = op.fetch_status(run)
+
+    assert pipeline_status is ExecutionStatus.FAILED
     assert any(
         command == "scancel 1001 1002" for command in runner.commands
     )
@@ -635,6 +707,11 @@ def test_fetch_status_batches_and_cancels_siblings(monkeypatch):
     assert (
         runner.files[f"{op._run_dir(str(run_id), 'evaluate')}/cancelled"]
         == "1\n"
+    )
+    assert any(
+        command.startswith("rm -rf --")
+        and f"{op._run_dir(str(run_id), 'train')}/env" in command
+        for command in runner.commands
     )
 
 
@@ -668,6 +745,11 @@ def test_stop_run_cancels_submitted_jobs(monkeypatch):
     assert runner.files[f"{op._run_dir(str(run_id), 'train')}/cancelled"] == (
         "1\n"
     )
+    assert any(
+        command.startswith("rm -rf --")
+        and f"{op._run_dir(str(run_id), 'load')}/env" in command
+        for command in runner.commands
+    )
 
 
 def test_fetch_status_reconciles_dynamic_orchestration_job(monkeypatch):
@@ -678,9 +760,8 @@ def test_fetch_status_reconciles_dynamic_orchestration_job(monkeypatch):
     run_id = uuid4()
     run_dir = op._orchestration_run_dir(str(run_id))
     runner.files[f"{run_dir}/exit_code"] = "1\n"
-    run = SimpleNamespace(
-        id=run_id,
-        status=ExecutionStatus.PROVISIONING,
+    run = _run(
+        run_id=run_id,
         run_metadata={SLURM_ORCHESTRATION_JOB_ID_METADATA_KEY: "1000"},
     )
 
@@ -762,6 +843,24 @@ def test_get_isolated_step_status_reads_sentinel(monkeypatch):
     assert op.get_isolated_step_status(step_run) is ExecutionStatus.COMPLETED
 
 
+def test_get_isolated_step_status_waits_for_missing_sentinel(monkeypatch):
+    """A missing isolated sentinel gets a bounded retry window."""
+    op = _build_orchestrator()
+    runner = FakeRunner()
+    _use_fake_client(monkeypatch, runner)
+    run_id = uuid4()
+    step_run_id = uuid4()
+    step_run = SimpleNamespace(
+        id=step_run_id,
+        pipeline_run_id=run_id,
+        run_metadata={SLURM_ISOLATED_JOB_ID_METADATA_KEY: "1000"},
+    )
+
+    assert op.get_isolated_step_status(step_run) is ExecutionStatus.QUEUED
+    assert op.get_isolated_step_status(step_run) is ExecutionStatus.QUEUED
+    assert op.get_isolated_step_status(step_run) is ExecutionStatus.FAILED
+
+
 def test_stop_and_cleanup_isolated_step(monkeypatch):
     """Isolated step stop and cleanup address the step staging directory."""
     op = _build_orchestrator()
@@ -781,6 +880,11 @@ def test_stop_and_cleanup_isolated_step(monkeypatch):
     run_dir = op._isolated_run_dir(str(run_id), str(step_run_id))
     assert "scancel 1000" in runner.commands
     assert runner.files[f"{run_dir}/cancelled"] == "1\n"
+    assert any(
+        command.startswith("rm -rf --")
+        and f"{run_dir}/env" in command
+        for command in runner.commands
+    )
     assert any(
         command == f"rm -rf -- {run_dir}" for command in runner.commands
     )
@@ -820,6 +924,11 @@ def test_stop_run_cancels_dynamic_jobs(monkeypatch):
     assert (
         runner.files[f"{op._orchestration_run_dir(str(run_id))}/cancelled"]
         == "1\n"
+    )
+    assert any(
+        command.startswith("rm -rf --")
+        and f"{op._orchestration_run_dir(str(run_id))}/env" in command
+        for command in runner.commands
     )
 
 
