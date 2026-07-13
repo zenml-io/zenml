@@ -25,6 +25,7 @@ from uuid import uuid4
 import pytest
 
 from zenml.config.resource_settings import ResourceSettings
+from zenml.constants import METADATA_ORCHESTRATOR_RUN_ID
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.integrations.slurm.flavors import (
     SlurmOrchestratorConfig,
@@ -34,6 +35,7 @@ from zenml.integrations.slurm.flavors import (
 from zenml.integrations.slurm.orchestrators import SlurmOrchestrator
 from zenml.integrations.slurm.orchestrators.slurm_orchestrator import (
     ENV_ZENML_SLURM_RUN_ID,
+    SLURM_CLEANUP_JOB_ID_METADATA_KEY,
     SLURM_JOB_IDS_METADATA_KEY,
 )
 from zenml.integrations.slurm.slurm_client import (
@@ -302,6 +304,31 @@ def _submit_two_step_dag(monkeypatch) -> "tuple[FakeRunner, str]":
     return runner, str(placeholder.id)
 
 
+def test_submit_returns_slurm_metadata(monkeypatch):
+    """Submitted job ids and the run id are attached to the run metadata."""
+    op = _build_orchestrator()
+    op.get_settings = lambda _step: SlurmOrchestratorSettings()
+    runner = FakeRunner()
+    _use_fake_client(monkeypatch, runner)
+    snapshot = _snapshot({"load": _step([]), "train": _step(["load"])})
+    placeholder = _placeholder_run()
+
+    result = op.submit_pipeline(
+        snapshot=snapshot,
+        stack=_stack(),
+        base_environment={},
+        step_environments={"load": {}, "train": {}},
+        placeholder_run=placeholder,
+    )
+
+    assert result is not None
+    assert result.metadata == {
+        METADATA_ORCHESTRATOR_RUN_ID: str(placeholder.id),
+        SLURM_JOB_IDS_METADATA_KEY: {"load": "1000", "train": "1001"},
+        SLURM_CLEANUP_JOB_ID_METADATA_KEY: "1002",
+    }
+
+
 def test_submit_wires_dependencies_in_topological_order(monkeypatch):
     """The dependent step's job waits on the parent's job id."""
     runner, _ = _submit_two_step_dag(monkeypatch)
@@ -320,6 +347,36 @@ def test_submit_wires_dependencies_in_topological_order(monkeypatch):
     assert len(cleanup_scripts) == 1
     assert "/env" in cleanup_scripts[0]
     assert "cleanup_complete" in cleanup_scripts[0]
+
+
+def test_cleanup_job_inherits_extra_sbatch_directives(monkeypatch):
+    """Cleanup jobs preserve cluster-specific sbatch directives."""
+    op = _build_orchestrator()
+
+    def _settings(obj):
+        if hasattr(obj, "pipeline_configuration"):
+            return SlurmOrchestratorSettings(
+                extra_sbatch_directives=["--constraint=a100"]
+            )
+        return SlurmOrchestratorSettings()
+
+    op.get_settings = _settings
+    runner = FakeRunner()
+    _use_fake_client(monkeypatch, runner)
+    op.submit_pipeline(
+        snapshot=_snapshot({"load": _step([])}),
+        stack=_stack(),
+        base_environment={},
+        step_environments={"load": {}},
+        placeholder_run=_placeholder_run(),
+    )
+
+    cleanup_script = next(
+        content
+        for path, content in runner.files.items()
+        if path.endswith("/cleanup/job.sh")
+    )
+    assert "#SBATCH --constraint=a100" in cleanup_script
 
 
 def test_submit_injects_placeholder_run_id_into_step_env(monkeypatch):
@@ -368,6 +425,20 @@ def test_submit_rejects_scheduled_pipelines(monkeypatch):
             stack=_stack(),
             base_environment={},
             step_environments={"load": {}},
+            placeholder_run=_placeholder_run(),
+        )
+
+
+def test_submit_dynamic_pipeline_raises(monkeypatch):
+    """Dynamic pipelines fail loudly instead of being silently ignored."""
+    op = _build_orchestrator()
+    _use_fake_client(monkeypatch, FakeRunner())
+
+    with pytest.raises(RuntimeError, match="dynamic pipelines"):
+        op.submit_dynamic_pipeline(
+            snapshot=_snapshot({"load": _step([])}),
+            stack=_stack(),
+            environment={},
             placeholder_run=_placeholder_run(),
         )
 
@@ -451,6 +522,96 @@ def test_fetch_status_uses_cleanup_marker_for_never_started_job(monkeypatch):
     pipeline_status, _ = op.fetch_status(run)
 
     assert pipeline_status is ExecutionStatus.FAILED
+
+
+def test_fetch_status_batches_and_cancels_siblings(monkeypatch):
+    """A failed job cancels still-active sibling jobs in one refresh."""
+    op = _build_orchestrator()
+
+    class StatusRunner(FakeRunner):
+        def run(self, command: str) -> CommandResult:
+            self.commands.append(command)
+            if command.startswith("squeue"):
+                return CommandResult(
+                    exit_code=0,
+                    stdout=(
+                        "1000|FAILED\n"
+                        "1001|RUNNING\n"
+                        "1002|PENDING\n"
+                    ),
+                    stderr="",
+                )
+            return CommandResult(exit_code=0, stdout="", stderr="")
+
+    runner = StatusRunner()
+    _use_fake_client(monkeypatch, runner)
+    run_id = uuid4()
+    run = SimpleNamespace(
+        id=run_id,
+        status=ExecutionStatus.PROVISIONING,
+        run_metadata={
+            SLURM_JOB_IDS_METADATA_KEY: {
+                "load": "1000",
+                "train": "1001",
+                "evaluate": "1002",
+            }
+        },
+    )
+
+    pipeline_status, step_statuses = op.fetch_status(run, include_steps=True)
+
+    assert pipeline_status is ExecutionStatus.FAILED
+    assert step_statuses == {
+        "load": ExecutionStatus.FAILED,
+        "train": ExecutionStatus.RUNNING,
+        "evaluate": ExecutionStatus.QUEUED,
+    }
+    assert [
+        command for command in runner.commands if command.startswith("squeue")
+    ] == ["squeue --noheader --format='%i|%T' --jobs=1000,1001,1002"]
+    assert any(
+        command == "scancel 1001 1002" for command in runner.commands
+    )
+    assert (
+        runner.files[f"{op._run_dir(str(run_id), 'train')}/cancelled"]
+        == "1\n"
+    )
+    assert (
+        runner.files[f"{op._run_dir(str(run_id), 'evaluate')}/cancelled"]
+        == "1\n"
+    )
+
+
+def test_stop_run_cancels_submitted_jobs(monkeypatch):
+    """Stopping a detached Slurm run scancels all submitted step jobs."""
+    op = _build_orchestrator()
+    runner = FakeRunner()
+    _use_fake_client(monkeypatch, runner)
+    monkeypatch.setattr(
+        "zenml.orchestrators.base_orchestrator"
+        ".publish_pipeline_run_status_update",
+        lambda **kwargs: None,
+    )
+    run_id = uuid4()
+    run = SimpleNamespace(
+        id=run_id,
+        orchestrator_run_id=str(run_id),
+        run_metadata={
+            SLURM_JOB_IDS_METADATA_KEY: {"load": "1000", "train": "1001"}
+        },
+    )
+
+    op.stop_run(run)
+
+    assert any(
+        command == "scancel 1000 1001" for command in runner.commands
+    )
+    assert runner.files[f"{op._run_dir(str(run_id), 'load')}/cancelled"] == (
+        "1\n"
+    )
+    assert runner.files[f"{op._run_dir(str(run_id), 'train')}/cancelled"] == (
+        "1\n"
+    )
 
 
 # --- validator ----------------------------------------------------------------

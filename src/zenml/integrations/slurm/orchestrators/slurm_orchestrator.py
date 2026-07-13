@@ -29,6 +29,7 @@ import shlex
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, cast
 
 from zenml.config.base_settings import BaseSettings
+from zenml.constants import METADATA_ORCHESTRATOR_RUN_ID
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
@@ -301,9 +302,39 @@ class SlurmOrchestrator(ContainerizedOrchestrator):
         assert cleanup_job_id is not None
         return SubmissionResult(
             metadata={
+                METADATA_ORCHESTRATOR_RUN_ID: run_id,
                 SLURM_JOB_IDS_METADATA_KEY: submitted,
                 SLURM_CLEANUP_JOB_ID_METADATA_KEY: cleanup_job_id,
             }
+        )
+
+    def submit_dynamic_pipeline(
+        self,
+        snapshot: "PipelineSnapshotResponse",
+        stack: "Stack",
+        environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
+    ) -> Optional[SubmissionResult]:
+        """Reject dynamic pipelines explicitly.
+
+        Args:
+            snapshot: The pipeline snapshot to submit.
+            stack: The stack the pipeline will run on.
+            environment: Environment variables for the orchestration
+                environment.
+            placeholder_run: The placeholder run for the pipeline.
+
+        Returns:
+            Never returns successfully.
+
+        Raises:
+            RuntimeError: Always, since dynamic pipelines need an
+                orchestration-container mode that the Slurm orchestrator does
+                not implement yet.
+        """
+        _ = (snapshot, stack, environment, placeholder_run)
+        raise RuntimeError(
+            "The Slurm orchestrator does not support dynamic pipelines yet."
         )
 
     def _submit_step(
@@ -426,6 +457,8 @@ class SlurmOrchestrator(ContainerizedOrchestrator):
             directives.append(f"#SBATCH --account={settings.account}")
         if settings.qos:
             directives.append(f"#SBATCH --qos={settings.qos}")
+        for directive in settings.extra_sbatch_directives:
+            directives.append(f"#SBATCH {directive}")
 
         script = f"""#!/bin/bash
 {chr(10).join(directives)}
@@ -486,35 +519,45 @@ touch {shlex.quote(cleanup_marker)}
             else:
                 cleanup_complete = True
 
+            job_states = client.get_job_states(list(job_ids.values()))
             statuses = {
                 step_name: self._get_job_status(
                     client=client,
-                    job_id=job_id,
+                    state=job_states[job_id],
                     run_dir=self._run_dir(str(run.id), step_name),
                     cleanup_complete=cleanup_complete,
                 )
                 for step_name, job_id in job_ids.items()
             }
+
+            known_statuses = [
+                status for status in statuses.values() if status
+            ]
+            pipeline_status: Optional[ExecutionStatus] = None
+            if not run.status.is_finished:
+                if any(
+                    status
+                    in {ExecutionStatus.FAILED, ExecutionStatus.CANCELLED}
+                    for status in known_statuses
+                ):
+                    pipeline_status = ExecutionStatus.FAILED
+                    self._cancel_unfinished_jobs(
+                        client=client,
+                        run_id=str(run.id),
+                        job_ids=job_ids,
+                        statuses=statuses,
+                    )
+                elif len(known_statuses) == len(statuses) and all(
+                    status == ExecutionStatus.COMPLETED
+                    for status in known_statuses
+                ):
+                    pipeline_status = ExecutionStatus.COMPLETED
+                elif ExecutionStatus.RUNNING in known_statuses:
+                    pipeline_status = ExecutionStatus.RUNNING
+                elif known_statuses:
+                    pipeline_status = ExecutionStatus.PROVISIONING
         finally:
             client.runner.close()
-
-        known_statuses = [status for status in statuses.values() if status]
-        pipeline_status: Optional[ExecutionStatus] = None
-        if not run.status.is_finished:
-            if any(
-                status in {ExecutionStatus.FAILED, ExecutionStatus.CANCELLED}
-                for status in known_statuses
-            ):
-                pipeline_status = ExecutionStatus.FAILED
-            elif len(known_statuses) == len(statuses) and all(
-                status == ExecutionStatus.COMPLETED
-                for status in known_statuses
-            ):
-                pipeline_status = ExecutionStatus.COMPLETED
-            elif ExecutionStatus.RUNNING in known_statuses:
-                pipeline_status = ExecutionStatus.RUNNING
-            elif known_statuses:
-                pipeline_status = ExecutionStatus.PROVISIONING
 
         step_statuses = None
         if include_steps:
@@ -526,7 +569,7 @@ touch {shlex.quote(cleanup_marker)}
     @staticmethod
     def _get_job_status(
         client: SlurmClient,
-        job_id: str,
+        state: Optional[str],
         run_dir: str,
         cleanup_complete: bool,
     ) -> Optional[ExecutionStatus]:
@@ -534,14 +577,13 @@ touch {shlex.quote(cleanup_marker)}
 
         Args:
             client: Slurm client used to inspect the job.
-            job_id: Slurm job ID.
+            state: Slurm job state fetched for the job.
             run_dir: Per-step staging directory.
             cleanup_complete: Whether the final cleanup job has run.
 
         Returns:
             The reconciled status, or None while the outcome is unknown.
         """
-        state = client.get_job_state(job_id)
         if state in PENDING_STATES:
             return ExecutionStatus.QUEUED
         if state in RUNNING_STATES:
@@ -571,3 +613,108 @@ touch {shlex.quote(cleanup_marker)}
             if exit_code == "0"
             else ExecutionStatus.FAILED
         )
+
+    def _stop_run(
+        self, run: "PipelineRunResponse", graceful: bool = False
+    ) -> None:
+        """Cancel all Slurm jobs submitted for a pipeline run.
+
+        Args:
+            run: Pipeline run submitted by this orchestrator.
+            graceful: Unused. Slurm does not expose a DAG-level graceful stop,
+                so both graceful and forceful stops cancel submitted jobs.
+        """
+        _ = graceful
+        raw_job_ids = run.run_metadata.get(SLURM_JOB_IDS_METADATA_KEY)
+        if not isinstance(raw_job_ids, dict):
+            logger.warning("No Slurm job metadata found for run `%s`.", run.id)
+            return
+
+        job_ids = {
+            str(name): str(job_id) for name, job_id in raw_job_ids.items()
+        }
+        client = build_slurm_client(self.config)
+        try:
+            self._cancel_jobs(
+                client=client,
+                run_id=str(run.id),
+                job_ids=job_ids,
+            )
+        finally:
+            client.runner.close()
+
+    def _cancel_unfinished_jobs(
+        self,
+        client: SlurmClient,
+        run_id: str,
+        job_ids: Dict[str, str],
+        statuses: Dict[str, Optional[ExecutionStatus]],
+    ) -> None:
+        """Cancel jobs that are not yet terminal.
+
+        Args:
+            client: Slurm client used to cancel jobs.
+            run_id: Orchestrator run ID.
+            job_ids: Mapping of step names to Slurm job IDs.
+            statuses: Reconciled step statuses keyed by step name.
+        """
+        jobs_to_cancel: Dict[str, str] = {}
+        for step_name, job_id in job_ids.items():
+            status = statuses.get(step_name)
+            if not (status and status.is_finished):
+                jobs_to_cancel[step_name] = job_id
+        self._cancel_jobs(
+            client=client,
+            run_id=run_id,
+            job_ids=jobs_to_cancel,
+        )
+
+    def _cancel_jobs(
+        self,
+        client: SlurmClient,
+        run_id: str,
+        job_ids: Dict[str, str],
+    ) -> None:
+        """Cancel Slurm jobs and persist cancellation sentinels.
+
+        Args:
+            client: Slurm client used to cancel jobs.
+            run_id: Orchestrator run ID.
+            job_ids: Mapping of step names to Slurm job IDs.
+        """
+        if not job_ids:
+            return
+
+        cancelled_steps = set(job_ids)
+        try:
+            client.cancel_jobs(list(job_ids.values()))
+        except Exception:
+            logger.warning(
+                "Failed to cancel Slurm jobs in one request; retrying "
+                "individually."
+            )
+            cancelled_steps = set()
+            for step_name, job_id in job_ids.items():
+                try:
+                    client.cancel(job_id)
+                except Exception:
+                    logger.warning(
+                        "Failed to cancel Slurm job `%s` for step `%s`.",
+                        job_id,
+                        step_name,
+                    )
+                else:
+                    cancelled_steps.add(step_name)
+
+        for step_name in cancelled_steps:
+            try:
+                client.runner.put_text(
+                    f"{self._run_dir(run_id, step_name)}/{CANCELLED_FILE}",
+                    "1\n",
+                    mode=0o600,
+                )
+            except Exception:
+                logger.warning(
+                    "Failed to write Slurm cancellation marker for step `%s`.",
+                    step_name,
+                )

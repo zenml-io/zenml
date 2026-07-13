@@ -84,7 +84,9 @@ class FakeRunner(SlurmCommandRunner):
         if command.startswith("sbatch"):
             return CommandResult(exit_code=0, stdout="12345\n", stderr="")
         if command.startswith("squeue"):
-            stdout = f"{self.queue_state}\n" if self.queue_state else ""
+            stdout = (
+                f"12345|{self.queue_state}\n" if self.queue_state else ""
+            )
             return CommandResult(exit_code=0, stdout=stdout, stderr="")
         return CommandResult(exit_code=0, stdout="", stderr="")
 
@@ -251,6 +253,45 @@ def test_client_state_and_cancel_use_job_id():
     assert client.get_job_state("12345") == "RUNNING"
     client.cancel("12345")
     assert runner.commands[-1] == "scancel 12345"
+
+
+def test_client_batches_job_state_lookup():
+    """Multiple job states are fetched with one squeue call."""
+
+    class BatchRunner(FakeRunner):
+        def run(self, command: str) -> CommandResult:
+            self.commands.append(command)
+            if command.startswith("squeue"):
+                return CommandResult(
+                    exit_code=0,
+                    stdout="12345|RUNNING\n23456|PENDING\n",
+                    stderr="",
+                )
+            if command.startswith("scontrol"):
+                return CommandResult(
+                    exit_code=0,
+                    stdout=(
+                        "JobId=34567 JobState=COMPLETED "
+                        "Command=/s/job.sh\n"
+                    ),
+                    stderr="",
+                )
+            return CommandResult(exit_code=0, stdout="", stderr="")
+
+    runner = BatchRunner()
+    states = SlurmClient(runner).get_job_states(
+        ["12345", "23456", "34567"]
+    )
+
+    assert states == {
+        "12345": "RUNNING",
+        "23456": "PENDING",
+        "34567": "COMPLETED",
+    }
+    assert runner.commands == [
+        "squeue --noheader --format='%i|%T' --jobs=12345,23456,34567",
+        "scontrol show job --oneliner 34567",
+    ]
 
 
 # --- container command rendering (per runtime) --------------------------------
@@ -491,8 +532,8 @@ def test_get_status_reads_sentinel_after_queue(op_and_runner):
     assert op.get_status(step_run) is ExecutionStatus.FAILED
 
 
-def test_get_status_without_queue_or_sentinel_is_non_terminal(op_and_runner):
-    """A queue/filesystem visibility gap remains non-terminal."""
+def test_get_status_without_queue_or_sentinel_fails(op_and_runner):
+    """A vanished job without a sentinel is treated as failed."""
     op, runner = op_and_runner
     assert (
         op.get_status(
@@ -501,7 +542,7 @@ def test_get_status_without_queue_or_sentinel_is_non_terminal(op_and_runner):
                 run_metadata={SLURM_JOB_ID_METADATA_KEY: "12345"},
             )
         )
-        is ExecutionStatus.QUEUED
+        is ExecutionStatus.FAILED
     )
 
 

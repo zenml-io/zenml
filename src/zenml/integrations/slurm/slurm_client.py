@@ -30,7 +30,7 @@ import shlex
 import subprocess
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, List, Literal, Optional
+from typing import TYPE_CHECKING, Dict, List, Literal, Optional, Sequence
 
 if TYPE_CHECKING:
     from zenml.integrations.slurm.flavors.base import SlurmConnectionConfig
@@ -283,6 +283,79 @@ class SlurmClient:
             )
         return job_id
 
+    def get_job_states(self, job_ids: Sequence[str]) -> Dict[str, Optional[str]]:
+        """Get the queue states of multiple jobs by their IDs.
+
+        Args:
+            job_ids: The Slurm job IDs to look up.
+
+        Returns:
+            A mapping from job ID to the Slurm job state (e.g. ``PENDING``,
+            ``RUNNING``) or ``None`` if the job is no longer known to Slurm.
+            Jobs leave the ``squeue`` output once they reach a terminal state,
+            so ``None`` means the job finished, failed, or never existed - the
+            caller disambiguates via the exit-code sentinel file.
+
+        Raises:
+            ValueError: If any job id is not numeric.
+            RuntimeError: If ``squeue`` fails.
+        """
+        job_ids = list(dict.fromkeys(job_ids))
+        if not all(re.fullmatch(r"[0-9]+", job_id) for job_id in job_ids):
+            raise ValueError("Slurm job IDs must be numeric.")
+        states: Dict[str, Optional[str]] = {job_id: None for job_id in job_ids}
+        if not job_ids:
+            return states
+
+        jobs_arg = ",".join(job_ids)
+        result = self.runner.run(
+            f"squeue --noheader --format={shlex.quote('%i|%T')} "
+            f"--jobs={shlex.quote(jobs_arg)}"
+        )
+        if result.exit_code != 0:
+            if "invalid job id" in result.stderr.lower():
+                return states
+            raise RuntimeError(
+                f"`squeue` failed with exit code {result.exit_code}: "
+                f"{result.stderr.strip()}"
+            )
+
+        for line in result.stdout.strip().splitlines():
+            job_id, separator, state = line.strip().partition("|")
+            if separator and job_id in states:
+                states[job_id] = state.strip()
+
+        missing_job_ids = [
+            job_id for job_id, state in states.items() if state is None
+        ]
+        if not missing_job_ids:
+            return states
+
+        # Completed jobs can disappear from squeue before a shared-filesystem
+        # sentinel becomes visible. Slurm keeps them in controller memory for
+        # MinJobAge, so scontrol closes that race without requiring sacct.
+        missing_jobs_arg = ",".join(missing_job_ids)
+        result = self.runner.run(
+            "scontrol show job --oneliner "
+            f"{shlex.quote(missing_jobs_arg)}"
+        )
+        if result.exit_code != 0:
+            if "invalid job id" in result.stderr.lower():
+                return states
+            raise RuntimeError(
+                f"`scontrol show job` failed with exit code "
+                f"{result.exit_code}: {result.stderr.strip()}"
+            )
+        for line in result.stdout.strip().splitlines():
+            job_id_match = re.search(r"(?:^|\s)JobId=([0-9]+)", line)
+            state_match = re.search(r"(?:^|\s)JobState=([^\s]+)", line)
+            if job_id_match and state_match:
+                job_id = job_id_match.group(1)
+                if job_id in states:
+                    states[job_id] = state_match.group(1)
+
+        return states
+
     def get_job_state(self, job_id: str) -> Optional[str]:
         """Get the queue state of a job by its ID.
 
@@ -291,60 +364,37 @@ class SlurmClient:
 
         Returns:
             The Slurm job state (e.g. ``PENDING``, ``RUNNING``) or ``None``
-            if the job is no longer in the queue. Jobs leave the ``squeue``
-            output once they reach a terminal state, so ``None`` means the
-            job finished, failed, or never existed - the caller disambiguates
-            via the exit-code sentinel file.
-
-        Raises:
-            ValueError: If the job id is not numeric.
-            RuntimeError: If ``squeue`` fails.
+            if the job is no longer known to Slurm.
         """
-        if not re.fullmatch(r"[0-9]+", job_id):
-            raise ValueError("Slurm job IDs must be numeric.")
-        result = self.runner.run(
-            f"squeue --noheader --format=%T --jobs {shlex.quote(job_id)}"
-        )
-        if result.exit_code != 0:
-            if "invalid job id" in result.stderr.lower():
-                return None
-            raise RuntimeError(
-                f"`squeue` failed with exit code {result.exit_code}: "
-                f"{result.stderr.strip()}"
-            )
-        state = result.stdout.strip().splitlines()
-        if state:
-            return state[0].strip()
-
-        # Completed jobs can disappear from squeue before a shared-filesystem
-        # sentinel becomes visible. Slurm keeps them in controller memory for
-        # MinJobAge, so scontrol closes that race without requiring sacct.
-        result = self.runner.run(
-            f"scontrol show job --oneliner {shlex.quote(job_id)}"
-        )
-        if result.exit_code != 0:
-            if "invalid job id" in result.stderr.lower():
-                return None
-            raise RuntimeError(
-                f"`scontrol show job` failed with exit code "
-                f"{result.exit_code}: {result.stderr.strip()}"
-            )
-        match = re.search(r"(?:^|\s)JobState=([^\s]+)", result.stdout)
-        return match.group(1) if match else None
+        return self.get_job_states([job_id])[job_id]
 
     def cancel(self, job_id: str) -> None:
         """Cancel a job by its ID.
 
         Args:
             job_id: The Slurm job ID to cancel.
+        """
+        self.cancel_jobs([job_id])
+
+    def cancel_jobs(self, job_ids: Sequence[str]) -> None:
+        """Cancel multiple jobs by their IDs.
+
+        Args:
+            job_ids: Slurm job IDs to cancel.
 
         Raises:
-            ValueError: If the job id is not numeric.
+            ValueError: If any job id is not numeric.
             RuntimeError: If ``scancel`` fails.
         """
-        if not re.fullmatch(r"[0-9]+", job_id):
+        job_ids = list(dict.fromkeys(job_ids))
+        if not all(re.fullmatch(r"[0-9]+", job_id) for job_id in job_ids):
             raise ValueError("Slurm job IDs must be numeric.")
-        result = self.runner.run(f"scancel {shlex.quote(job_id)}")
+        if not job_ids:
+            return
+
+        result = self.runner.run(
+            "scancel " + " ".join(shlex.quote(job_id) for job_id in job_ids)
+        )
         if result.exit_code != 0:
             raise RuntimeError(
                 f"`scancel` failed with exit code {result.exit_code}: "

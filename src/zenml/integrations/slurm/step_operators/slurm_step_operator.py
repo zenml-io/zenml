@@ -300,10 +300,13 @@ class SlurmStepOperator(BaseStepOperator):
                     f"{run_dir}/{EXIT_CODE_FILE}"
                 ).strip()
             except Exception:
-                # Slurm queue updates and shared-filesystem writes are not
-                # atomic. Keep polling until either source proves a terminal
-                # outcome instead of misreporting a transient gap as cancelled.
-                return ExecutionStatus.QUEUED
+                logger.warning(
+                    "Slurm job `%s` for step `%s` is no longer known to "
+                    "Slurm and did not write an exit-code sentinel.",
+                    job_id,
+                    step_run.id,
+                )
+                return ExecutionStatus.FAILED
 
             if exit_code == "0":
                 return ExecutionStatus.COMPLETED
