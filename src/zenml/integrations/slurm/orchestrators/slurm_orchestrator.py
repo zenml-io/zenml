@@ -26,14 +26,19 @@ when the client already runs on the cluster.
 
 import os
 import shlex
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Tuple, cast
+from uuid import UUID
 
 from zenml.config.base_settings import BaseSettings
-from zenml.constants import METADATA_ORCHESTRATOR_RUN_ID
+from zenml.config.resource_settings import ResourceSettings
+from zenml.constants import (
+    METADATA_ORCHESTRATOR_RUN_ID,
+    ORCHESTRATOR_DOCKER_IMAGE_KEY,
+)
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionStatus, MetadataResourceTypes
 from zenml.integrations.slurm.flavors.slurm_orchestrator_flavor import (
     SlurmOrchestratorConfig,
     SlurmOrchestratorSettings,
@@ -59,20 +64,33 @@ from zenml.integrations.slurm.slurm_job import (
     validate_remote_stack,
 )
 from zenml.logger import get_logger
+from zenml.models.v2.misc.run_metadata import RunMetadataResource
 from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
+from zenml.orchestrators import utils as orchestrator_utils
+from zenml.orchestrators.publish_utils import publish_step_run_metadata
 from zenml.orchestrators.topsort import topsorted_layers
-from zenml.stack import StackValidator
+from zenml.stack import Stack, StackValidator
+from zenml.step_operators.step_operator_entrypoint_configuration import (
+    StepOperatorEntrypointConfiguration,
+)
 
 if TYPE_CHECKING:
     from zenml.config.step_configurations import Step
-    from zenml.models import PipelineRunResponse, PipelineSnapshotResponse
-    from zenml.stack import Stack
+    from zenml.config.step_run_info import StepRunInfo
+    from zenml.models import (
+        PipelineRunResponse,
+        PipelineSnapshotResponse,
+        StepRunResponse,
+    )
 
 logger = get_logger(__name__)
 
 ENV_ZENML_SLURM_RUN_ID = "ZENML_SLURM_ORCHESTRATOR_RUN_ID"
 SLURM_JOB_IDS_METADATA_KEY = "slurm_job_ids"
 SLURM_CLEANUP_JOB_ID_METADATA_KEY = "slurm_cleanup_job_id"
+SLURM_ORCHESTRATION_JOB_ID_METADATA_KEY = "slurm_orchestration_job_id"
+SLURM_ISOLATED_JOB_IDS_METADATA_KEY = "slurm_isolated_job_ids"
+SLURM_ISOLATED_JOB_ID_METADATA_KEY = "slurm_job_id"
 _CLEANUP_COMPLETE_FILE = "cleanup_complete"
 
 
@@ -185,6 +203,31 @@ class SlurmOrchestrator(ContainerizedOrchestrator):
         """
         workdir = self.config.workdir.rstrip("/")
         return f"{workdir}/{run_id}/{step_name}"
+
+    def _orchestration_run_dir(self, run_id: str) -> str:
+        """Staging directory for a dynamic orchestration job.
+
+        Args:
+            run_id: The orchestrator run id.
+
+        Returns:
+            The absolute path of the orchestration job's run directory.
+        """
+        workdir = self.config.workdir.rstrip("/")
+        return f"{workdir}/{run_id}/orchestration"
+
+    def _isolated_run_dir(self, run_id: str, step_run_id: str) -> str:
+        """Staging directory for a dynamic isolated step job.
+
+        Args:
+            run_id: The pipeline run id.
+            step_run_id: The isolated step run id.
+
+        Returns:
+            The absolute path of the isolated step's run directory.
+        """
+        workdir = self.config.workdir.rstrip("/")
+        return f"{workdir}/{run_id}/isolated/{step_run_id}"
 
     def submit_pipeline(
         self,
@@ -315,7 +358,7 @@ class SlurmOrchestrator(ContainerizedOrchestrator):
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Optional[SubmissionResult]:
-        """Reject dynamic pipelines explicitly.
+        """Submit a dynamic pipeline as a Slurm orchestration job.
 
         Args:
             snapshot: The pipeline snapshot to submit.
@@ -325,17 +368,143 @@ class SlurmOrchestrator(ContainerizedOrchestrator):
             placeholder_run: The placeholder run for the pipeline.
 
         Returns:
-            Never returns successfully.
+            Submission metadata containing the orchestration job id.
 
         Raises:
-            RuntimeError: Always, since dynamic pipelines need an
-                orchestration-container mode that the Slurm orchestrator does
-                not implement yet.
+            RuntimeError: If the pipeline has a schedule, which is not
+                supported.
         """
-        _ = (snapshot, stack, environment, placeholder_run)
-        raise RuntimeError(
-            "The Slurm orchestrator does not support dynamic pipelines yet."
+        from zenml.pipelines.dynamic.entrypoint_configuration import (
+            DynamicPipelineEntrypointConfiguration,
         )
+
+        if snapshot.schedule:
+            raise RuntimeError(
+                "The Slurm orchestrator does not support scheduled pipelines. "
+                "Remove the schedule and trigger the pipeline directly (e.g. "
+                "from your own cron job or CI), or use an orchestrator that "
+                "supports scheduling."
+            )
+
+        assert placeholder_run is not None
+        run_id = str(placeholder_run.id)
+        settings = cast(
+            SlurmOrchestratorSettings, self.get_settings(snapshot)
+        )
+        container_registry = stack.container_registry
+        assert container_registry is not None
+        command = (
+            DynamicPipelineEntrypointConfiguration.get_entrypoint_command()
+            + DynamicPipelineEntrypointConfiguration.get_entrypoint_arguments(
+                snapshot_id=snapshot.id,
+                run_id=run_id,
+            )
+        )
+
+        client = build_slurm_client(self.config)
+        try:
+            job_id, _ = self._submit_container_job(
+                client=client,
+                run_id=run_id,
+                run_dir=self._orchestration_run_dir(run_id),
+                job_name=f"zenml-{run_id}-orchestration",
+                image=self.get_image(snapshot=snapshot),
+                entrypoint_command=command,
+                environment=environment,
+                resources=ResourceSettings(),
+                settings=settings,
+                registry_uri=container_registry.config.uri,
+                registry_credentials=container_registry.credentials,
+            )
+        finally:
+            client.runner.close()
+
+        logger.info(
+            "Submitted dynamic pipeline `%s` as Slurm orchestration job `%s`.",
+            snapshot.pipeline_configuration.name,
+            job_id,
+        )
+        return SubmissionResult(
+            metadata={
+                METADATA_ORCHESTRATOR_RUN_ID: run_id,
+                SLURM_ORCHESTRATION_JOB_ID_METADATA_KEY: job_id,
+            }
+        )
+
+    def _submit_container_job(
+        self,
+        client: SlurmClient,
+        run_id: str,
+        run_dir: str,
+        job_name: str,
+        image: str,
+        entrypoint_command: List[str],
+        environment: Dict[str, str],
+        resources: ResourceSettings,
+        settings: SlurmOrchestratorSettings,
+        registry_uri: Optional[str],
+        registry_credentials: Optional[Tuple[str, str]],
+        dependencies: Optional[List[str]] = None,
+    ) -> Tuple[str, List[str]]:
+        """Stage and submit one containerized Slurm job.
+
+        Args:
+            client: The Slurm client used to stage files and submit the job.
+            run_id: The orchestrator run id to inject into the job
+                environment.
+            run_dir: Per-job staging directory.
+            job_name: Slurm job name.
+            image: Container image to execute.
+            entrypoint_command: Full command executed inside the container.
+            environment: Runtime environment for the job.
+            resources: Resource requests for the Slurm job.
+            settings: Slurm settings for the job.
+            registry_uri: URI of the stack's container registry.
+            registry_credentials: Registry username and password.
+            dependencies: Optional Slurm job ids this job depends on.
+
+        Returns:
+            The submitted Slurm job id and credential-bearing paths.
+        """
+        env_file = f"{run_dir}/{ENV_FILE}"
+        runtime_environment = environment.copy()
+        runtime_environment[ENV_ZENML_SLURM_RUN_ID] = run_id
+        env_content = serialize_environment(
+            runtime_environment, runtime=self.config.container_runtime
+        )
+        registry_auth = build_registry_auth(
+            runtime=self.config.container_runtime,
+            run_dir=run_dir,
+            registry_uri=registry_uri,
+            credentials=registry_credentials,
+        )
+        container_command = build_container_command(
+            runtime=self.config.container_runtime,
+            image=image,
+            entrypoint_command=entrypoint_command,
+            env_file=env_file,
+            env_keys=sorted(runtime_environment),
+            use_gpu=bool(resources.gpu_count),
+            settings=settings,
+            registry_auth=registry_auth,
+        )
+        script = build_sbatch_script(
+            job_name=job_name,
+            run_dir=run_dir,
+            container_command=container_command,
+            resources=resources,
+            settings=settings,
+            sensitive_paths=registry_auth.sensitive_paths,
+        )
+        job_id = stage_and_submit(
+            client,
+            run_dir=run_dir,
+            env_content=env_content,
+            script=script,
+            dependencies=dependencies,
+            extra_files=registry_auth.files,
+        )
+        return job_id, [env_file, *registry_auth.sensitive_paths]
 
     def _submit_step(
         self,
@@ -365,58 +534,27 @@ class SlurmOrchestrator(ContainerizedOrchestrator):
         Returns:
             The submitted Slurm job id and credential-bearing paths.
         """
-        image = self.get_image(snapshot=snapshot, step_name=step_name)
         settings = cast(SlurmOrchestratorSettings, self.get_settings(step))
-        run_dir = self._run_dir(run_id, step_name)
-        env_file = f"{run_dir}/{ENV_FILE}"
-        use_gpu = bool(step.config.resource_settings.gpu_count)
-
-        environment = step_environment.copy()
-        environment[ENV_ZENML_SLURM_RUN_ID] = run_id
-        env_content = serialize_environment(
-            environment, runtime=self.config.container_runtime
-        )
-        registry_auth = build_registry_auth(
-            runtime=self.config.container_runtime,
-            run_dir=run_dir,
-            registry_uri=registry_uri,
-            credentials=registry_credentials,
-        )
-
         entrypoint_command = (
             StepEntrypointConfiguration.get_entrypoint_command()
             + StepEntrypointConfiguration.get_entrypoint_arguments(
                 step_name=step_name, snapshot_id=snapshot.id
             )
         )
-        container_command = build_container_command(
-            runtime=self.config.container_runtime,
-            image=image,
-            entrypoint_command=entrypoint_command,
-            env_file=env_file,
-            env_keys=sorted(environment),
-            use_gpu=use_gpu,
-            settings=settings,
-            registry_auth=registry_auth,
-        )
-        script = build_sbatch_script(
+        return self._submit_container_job(
+            client=client,
+            run_id=run_id,
+            run_dir=self._run_dir(run_id, step_name),
             job_name=self._job_name(run_id, step_name),
-            run_dir=run_dir,
-            container_command=container_command,
+            image=self.get_image(snapshot=snapshot, step_name=step_name),
+            entrypoint_command=entrypoint_command,
+            environment=step_environment,
             resources=step.config.resource_settings,
             settings=settings,
-            sensitive_paths=registry_auth.sensitive_paths,
-        )
-
-        job_id = stage_and_submit(
-            client,
-            run_dir=run_dir,
-            env_content=env_content,
-            script=script,
+            registry_uri=registry_uri,
+            registry_credentials=registry_credentials,
             dependencies=upstream_job_ids,
-            extra_files=registry_auth.files,
         )
-        return job_id, [env_file, *registry_auth.sensitive_paths]
 
     def _submit_cleanup_job(
         self,
@@ -484,6 +622,220 @@ touch {shlex.quote(cleanup_marker)}
             dependency_type="afterany",
         )
 
+    def submit_isolated_step(
+        self, step_run_info: "StepRunInfo", environment: Dict[str, str]
+    ) -> None:
+        """Submit a dynamic isolated step as its own Slurm job.
+
+        Args:
+            step_run_info: Information about the isolated step run.
+            environment: Environment variables for the step job.
+
+        Raises:
+            RuntimeError: If the snapshot has no associated stack.
+            Exception: Re-raised after cancelling the job if submission or
+                metadata publication fails.
+        """
+        settings = cast(
+            SlurmOrchestratorSettings, self.get_settings(step_run_info)
+        )
+        command, args = orchestrator_utils.get_step_entrypoint_command(
+            invocation_id=step_run_info.pipeline_step_name,
+            config=step_run_info.config,
+            entrypoint_config_class=StepOperatorEntrypointConfiguration,
+            snapshot_id=step_run_info.snapshot.id,
+            step_run_id=str(step_run_info.step_run_id),
+        )
+        if not step_run_info.snapshot.stack:
+            raise RuntimeError(
+                f"Missing stack for snapshot {step_run_info.snapshot.id}."
+            )
+        stack = Stack.from_model(step_run_info.snapshot.stack)
+        container_registry = stack.container_registry
+        assert container_registry is not None
+
+        run_id = str(step_run_info.run_id)
+        run_dir = self._isolated_run_dir(
+            run_id=run_id, step_run_id=str(step_run_info.step_run_id)
+        )
+        client = build_slurm_client(self.config)
+        job_id: Optional[str] = None
+        sensitive_paths: List[str] = []
+        try:
+            job_id, sensitive_paths = self._submit_container_job(
+                client=client,
+                run_id=run_id,
+                run_dir=run_dir,
+                job_name=self._job_name(
+                    run_id, str(step_run_info.step_run_id)
+                ),
+                image=step_run_info.get_image(
+                    key=ORCHESTRATOR_DOCKER_IMAGE_KEY
+                ),
+                entrypoint_command=command + args,
+                environment=environment,
+                resources=step_run_info.config.resource_settings,
+                settings=settings,
+                registry_uri=container_registry.config.uri,
+                registry_credentials=container_registry.credentials,
+            )
+            metadata = {SLURM_ISOLATED_JOB_ID_METADATA_KEY: job_id}
+            publish_step_run_metadata(
+                step_run_id=step_run_info.step_run_id,
+                step_run_metadata={self.id: metadata},
+            )
+            step_run_info.step_run.run_metadata.update(metadata)
+        except Exception:
+            if job_id is not None:
+                try:
+                    client.cancel(job_id)
+                except Exception:
+                    logger.warning(
+                        "Failed to cancel Slurm job `%s` after isolated step "
+                        "metadata publication failed.",
+                        job_id,
+                    )
+                if sensitive_paths:
+                    client.runner.run(
+                        "rm -rf -- "
+                        + " ".join(
+                            shlex.quote(path) for path in sensitive_paths
+                        )
+                    )
+            raise
+        finally:
+            client.runner.close()
+
+        assert job_id is not None
+        self._publish_isolated_job_run_metadata(
+            run_id=step_run_info.run_id,
+            step_run_id=step_run_info.step_run_id,
+            job_id=job_id,
+        )
+        logger.info(
+            "Submitted dynamic step `%s` as Slurm job `%s`.",
+            step_run_info.pipeline_step_name,
+            job_id,
+        )
+
+    def get_isolated_step_status(
+        self, step_run: "StepRunResponse"
+    ) -> ExecutionStatus:
+        """Get the status of a dynamic isolated Slurm step.
+
+        Args:
+            step_run: The step run to inspect.
+
+        Returns:
+            The execution status.
+        """
+        job_id = step_run.run_metadata.get(SLURM_ISOLATED_JOB_ID_METADATA_KEY)
+        if job_id is None:
+            logger.warning(
+                "No Slurm job ID recorded for isolated step `%s`.",
+                step_run.id,
+            )
+            return ExecutionStatus.FAILED
+
+        run_dir = self._isolated_run_dir(
+            run_id=str(step_run.pipeline_run_id), step_run_id=str(step_run.id)
+        )
+        client = build_slurm_client(self.config)
+        try:
+            state = client.get_job_state(str(job_id))
+            status = self._get_job_status(
+                client=client,
+                state=state,
+                run_dir=run_dir,
+                cleanup_complete=True,
+            )
+        finally:
+            client.runner.close()
+
+        return status or ExecutionStatus.FAILED
+
+    def stop_isolated_step(self, step_run: "StepRunResponse") -> None:
+        """Cancel a dynamic isolated Slurm step.
+
+        Args:
+            step_run: The step run to cancel.
+        """
+        job_id = step_run.run_metadata.get(SLURM_ISOLATED_JOB_ID_METADATA_KEY)
+        if job_id is None:
+            logger.warning(
+                "No Slurm job ID recorded for isolated step `%s`.",
+                step_run.id,
+            )
+            return
+
+        run_dir = self._isolated_run_dir(
+            run_id=str(step_run.pipeline_run_id), step_run_id=str(step_run.id)
+        )
+        client = build_slurm_client(self.config)
+        try:
+            client.cancel(str(job_id))
+            client.runner.put_text(
+                f"{run_dir}/{CANCELLED_FILE}", "1\n", mode=0o600
+            )
+        finally:
+            client.runner.close()
+
+    def cleanup_isolated_step(self, step_run: "StepRunResponse") -> None:
+        """Remove the staging directory for a dynamic isolated step.
+
+        Args:
+            step_run: The finished step run.
+        """
+        run_dir = self._isolated_run_dir(
+            run_id=str(step_run.pipeline_run_id), step_run_id=str(step_run.id)
+        )
+        client = build_slurm_client(self.config)
+        try:
+            client.runner.run(f"rm -rf -- {shlex.quote(run_dir)}")
+        except Exception as e:
+            logger.warning(
+                "Failed to clean up Slurm isolated step directory `%s`: %s",
+                run_dir,
+                e,
+            )
+        finally:
+            client.runner.close()
+
+    def _publish_isolated_job_run_metadata(
+        self, run_id: UUID, step_run_id: UUID, job_id: str
+    ) -> None:
+        """Publish run-level metadata for isolated Slurm jobs.
+
+        Args:
+            run_id: Pipeline run ID.
+            step_run_id: Step run ID.
+            job_id: Slurm job ID.
+        """
+        from zenml.client import Client
+
+        try:
+            Client().create_run_metadata(
+                metadata={
+                    SLURM_ISOLATED_JOB_IDS_METADATA_KEY: {
+                        str(step_run_id): job_id
+                    }
+                },
+                resources=[
+                    RunMetadataResource(
+                        id=run_id,
+                        type=MetadataResourceTypes.PIPELINE_RUN,
+                    )
+                ],
+                stack_component_id=self.id,
+            )
+        except Exception as e:
+            logger.warning(
+                "Failed to publish Slurm run metadata for isolated step `%s`: "
+                "%s",
+                step_run_id,
+                e,
+            )
+
     def fetch_status(
         self, run: "PipelineRunResponse", include_steps: bool = False
     ) -> Tuple[
@@ -500,8 +852,7 @@ touch {shlex.quote(cleanup_marker)}
         """
         raw_job_ids = run.run_metadata.get(SLURM_JOB_IDS_METADATA_KEY)
         if not isinstance(raw_job_ids, dict):
-            logger.warning("No Slurm job metadata found for run `%s`.", run.id)
-            return None, None
+            return self._fetch_dynamic_status(run)
 
         job_ids = {
             str(name): str(job_id) for name, job_id in raw_job_ids.items()
@@ -566,6 +917,47 @@ touch {shlex.quote(cleanup_marker)}
             }
         return pipeline_status, step_statuses
 
+    def _fetch_dynamic_status(
+        self, run: "PipelineRunResponse"
+    ) -> Tuple[Optional[ExecutionStatus], None]:
+        """Reconcile a dynamic pipeline run with its orchestration job.
+
+        Args:
+            run: Pipeline run submitted by this orchestrator.
+
+        Returns:
+            The pipeline status and no step statuses.
+        """
+        job_id = run.run_metadata.get(SLURM_ORCHESTRATION_JOB_ID_METADATA_KEY)
+        if job_id is None:
+            logger.warning("No Slurm job metadata found for run `%s`.", run.id)
+            return None, None
+
+        client = build_slurm_client(self.config)
+        try:
+            state = client.get_job_state(str(job_id))
+            status = self._get_job_status(
+                client=client,
+                state=state,
+                run_dir=self._orchestration_run_dir(str(run.id)),
+                cleanup_complete=True,
+            )
+        finally:
+            client.runner.close()
+
+        pipeline_status: Optional[ExecutionStatus] = None
+        if not run.status.is_finished and status:
+            if status in {ExecutionStatus.FAILED, ExecutionStatus.CANCELLED}:
+                pipeline_status = ExecutionStatus.FAILED
+            elif status == ExecutionStatus.COMPLETED:
+                pipeline_status = ExecutionStatus.COMPLETED
+            elif status == ExecutionStatus.RUNNING:
+                pipeline_status = ExecutionStatus.RUNNING
+            elif status == ExecutionStatus.QUEUED:
+                pipeline_status = ExecutionStatus.PROVISIONING
+
+        return pipeline_status, None
+
     @staticmethod
     def _get_job_status(
         client: SlurmClient,
@@ -626,19 +1018,58 @@ touch {shlex.quote(cleanup_marker)}
         """
         _ = graceful
         raw_job_ids = run.run_metadata.get(SLURM_JOB_IDS_METADATA_KEY)
-        if not isinstance(raw_job_ids, dict):
+        static_job_ids = (
+            {
+                str(name): str(job_id)
+                for name, job_id in raw_job_ids.items()
+            }
+            if isinstance(raw_job_ids, dict)
+            else {}
+        )
+        raw_isolated_job_ids = run.run_metadata.get(
+            SLURM_ISOLATED_JOB_IDS_METADATA_KEY
+        )
+        isolated_job_ids = (
+            {
+                str(step_run_id): str(job_id)
+                for step_run_id, job_id in raw_isolated_job_ids.items()
+            }
+            if isinstance(raw_isolated_job_ids, dict)
+            else {}
+        )
+        orchestration_job_id = run.run_metadata.get(
+            SLURM_ORCHESTRATION_JOB_ID_METADATA_KEY
+        )
+        orchestration_job_ids = (
+            {"orchestration": str(orchestration_job_id)}
+            if orchestration_job_id
+            else {}
+        )
+        if not (static_job_ids or isolated_job_ids or orchestration_job_ids):
             logger.warning("No Slurm job metadata found for run `%s`.", run.id)
             return
 
-        job_ids = {
-            str(name): str(job_id) for name, job_id in raw_job_ids.items()
-        }
+        run_id = str(run.id)
         client = build_slurm_client(self.config)
         try:
             self._cancel_jobs(
                 client=client,
-                run_id=str(run.id),
-                job_ids=job_ids,
+                job_ids=static_job_ids,
+                run_dir_for_key=lambda step_name: self._run_dir(
+                    run_id, step_name
+                ),
+            )
+            self._cancel_jobs(
+                client=client,
+                job_ids=isolated_job_ids,
+                run_dir_for_key=lambda step_run_id: self._isolated_run_dir(
+                    run_id, step_run_id
+                ),
+            )
+            self._cancel_jobs(
+                client=client,
+                job_ids=orchestration_job_ids,
+                run_dir_for_key=lambda _: self._orchestration_run_dir(run_id),
             )
         finally:
             client.runner.close()
@@ -665,22 +1096,25 @@ touch {shlex.quote(cleanup_marker)}
                 jobs_to_cancel[step_name] = job_id
         self._cancel_jobs(
             client=client,
-            run_id=run_id,
             job_ids=jobs_to_cancel,
+            run_dir_for_key=lambda step_name: self._run_dir(
+                run_id, step_name
+            ),
         )
 
     def _cancel_jobs(
         self,
         client: SlurmClient,
-        run_id: str,
         job_ids: Dict[str, str],
+        run_dir_for_key: Callable[[str], str],
     ) -> None:
         """Cancel Slurm jobs and persist cancellation sentinels.
 
         Args:
             client: Slurm client used to cancel jobs.
-            run_id: Orchestrator run ID.
-            job_ids: Mapping of step names to Slurm job IDs.
+            job_ids: Mapping of stable job keys to Slurm job IDs.
+            run_dir_for_key: Function returning the staging directory for a
+                job key.
         """
         if not job_ids:
             return
@@ -706,15 +1140,15 @@ touch {shlex.quote(cleanup_marker)}
                 else:
                     cancelled_steps.add(step_name)
 
-        for step_name in cancelled_steps:
+        for job_key in cancelled_steps:
             try:
                 client.runner.put_text(
-                    f"{self._run_dir(run_id, step_name)}/{CANCELLED_FILE}",
+                    f"{run_dir_for_key(job_key)}/{CANCELLED_FILE}",
                     "1\n",
                     mode=0o600,
                 )
             except Exception:
                 logger.warning(
-                    "Failed to write Slurm cancellation marker for step `%s`.",
-                    step_name,
+                    "Failed to write Slurm cancellation marker for job `%s`.",
+                    job_key,
                 )

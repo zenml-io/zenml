@@ -36,7 +36,10 @@ from zenml.integrations.slurm.orchestrators import SlurmOrchestrator
 from zenml.integrations.slurm.orchestrators.slurm_orchestrator import (
     ENV_ZENML_SLURM_RUN_ID,
     SLURM_CLEANUP_JOB_ID_METADATA_KEY,
+    SLURM_ISOLATED_JOB_ID_METADATA_KEY,
+    SLURM_ISOLATED_JOB_IDS_METADATA_KEY,
     SLURM_JOB_IDS_METADATA_KEY,
+    SLURM_ORCHESTRATION_JOB_ID_METADATA_KEY,
 )
 from zenml.integrations.slurm.slurm_client import (
     CommandResult,
@@ -163,6 +166,7 @@ def _snapshot(steps: Dict[str, SimpleNamespace]) -> SimpleNamespace:
         step_configurations=steps,
         pipeline_configuration=SimpleNamespace(name="p"),
         schedule=None,
+        stack=SimpleNamespace(id=uuid4()),
     )
 
 
@@ -271,6 +275,28 @@ def _stack(
             config=SimpleNamespace(uri="registry.example.com"),
             credentials=credentials,
         )
+    )
+
+
+def _isolated_step_info(
+    snapshot: Optional[SimpleNamespace] = None,
+) -> SimpleNamespace:
+    """Build a dynamic isolated StepRunInfo stand-in.
+
+    Args:
+        snapshot: Optional snapshot to attach to the step run info.
+
+    Returns:
+        A namespace usable where StepRunInfo is expected.
+    """
+    return SimpleNamespace(
+        step_run_id=uuid4(),
+        run_id=uuid4(),
+        pipeline_step_name="dynamic_train",
+        config=SimpleNamespace(resource_settings=ResourceSettings(cpu_count=2)),
+        snapshot=snapshot or _snapshot({}),
+        step_run=SimpleNamespace(run_metadata={}),
+        get_image=lambda key: IMAGE,
     )
 
 
@@ -429,14 +455,44 @@ def test_submit_rejects_scheduled_pipelines(monkeypatch):
         )
 
 
-def test_submit_dynamic_pipeline_raises(monkeypatch):
-    """Dynamic pipelines fail loudly instead of being silently ignored."""
+def test_submit_dynamic_pipeline_submits_orchestration_job(monkeypatch):
+    """Dynamic pipelines launch a Slurm orchestration job."""
+    op = _build_orchestrator()
+    op.get_settings = lambda _snapshot: SlurmOrchestratorSettings()
+    runner = FakeRunner()
+    _use_fake_client(monkeypatch, runner)
+    placeholder = _placeholder_run()
+
+    result = op.submit_dynamic_pipeline(
+        snapshot=_snapshot({}),
+        stack=_stack(),
+        environment={"ZENML_STORE_API_KEY": SECRET_TOKEN},
+        placeholder_run=placeholder,
+    )
+
+    assert result is not None
+    assert result.metadata == {
+        METADATA_ORCHESTRATOR_RUN_ID: str(placeholder.id),
+        SLURM_ORCHESTRATION_JOB_ID_METADATA_KEY: "1000",
+    }
+    sbatch = [c for c in runner.commands if c.startswith("sbatch")]
+    assert len(sbatch) == 1
+    assert "orchestration/job.sh" in sbatch[0]
+    env_file = runner.files[f"/runs/{placeholder.id}/orchestration/env"]
+    assert f"{ENV_ZENML_SLURM_RUN_ID}={placeholder.id}" in env_file
+    assert SECRET_TOKEN in env_file
+
+
+def test_submit_dynamic_pipeline_rejects_schedules(monkeypatch):
+    """Scheduled dynamic pipelines are rejected consistently."""
     op = _build_orchestrator()
     _use_fake_client(monkeypatch, FakeRunner())
+    snapshot = _snapshot({})
+    snapshot.schedule = SimpleNamespace(name="daily")
 
-    with pytest.raises(RuntimeError, match="dynamic pipelines"):
+    with pytest.raises(RuntimeError, match="does not support scheduled"):
         op.submit_dynamic_pipeline(
-            snapshot=_snapshot({"load": _step([])}),
+            snapshot=snapshot,
             stack=_stack(),
             environment={},
             placeholder_run=_placeholder_run(),
@@ -611,6 +667,159 @@ def test_stop_run_cancels_submitted_jobs(monkeypatch):
     )
     assert runner.files[f"{op._run_dir(str(run_id), 'train')}/cancelled"] == (
         "1\n"
+    )
+
+
+def test_fetch_status_reconciles_dynamic_orchestration_job(monkeypatch):
+    """Dynamic runs reconcile through the orchestration job metadata."""
+    op = _build_orchestrator()
+    runner = FakeRunner()
+    _use_fake_client(monkeypatch, runner)
+    run_id = uuid4()
+    run_dir = op._orchestration_run_dir(str(run_id))
+    runner.files[f"{run_dir}/exit_code"] = "1\n"
+    run = SimpleNamespace(
+        id=run_id,
+        status=ExecutionStatus.PROVISIONING,
+        run_metadata={SLURM_ORCHESTRATION_JOB_ID_METADATA_KEY: "1000"},
+    )
+
+    pipeline_status, step_statuses = op.fetch_status(run, include_steps=True)
+
+    assert pipeline_status is ExecutionStatus.FAILED
+    assert step_statuses is None
+
+
+def test_submit_isolated_step_publishes_job_metadata(monkeypatch):
+    """Dynamic isolated steps are submitted as separate Slurm jobs."""
+    op = _build_orchestrator()
+    op.get_settings = lambda _info: SlurmOrchestratorSettings()
+    runner = FakeRunner()
+    _use_fake_client(monkeypatch, runner)
+    monkeypatch.setattr(
+        "zenml.integrations.slurm.orchestrators.slurm_orchestrator"
+        ".orchestrator_utils.get_step_entrypoint_command",
+        lambda **kwargs: (["python"], ["-m", "zenml.entrypoint"]),
+    )
+    monkeypatch.setattr(
+        "zenml.integrations.slurm.orchestrators.slurm_orchestrator"
+        ".Stack.from_model",
+        lambda stack: _stack(),
+    )
+    published_step_metadata = {}
+    monkeypatch.setattr(
+        "zenml.integrations.slurm.orchestrators.slurm_orchestrator"
+        ".publish_step_run_metadata",
+        lambda **kwargs: published_step_metadata.update(kwargs),
+    )
+    published_run_metadata = {}
+
+    class FakeClient:
+        def create_run_metadata(self, **kwargs):
+            published_run_metadata.update(kwargs)
+
+    monkeypatch.setattr("zenml.client.Client", lambda: FakeClient())
+    info = _isolated_step_info()
+
+    op.submit_isolated_step(
+        step_run_info=info,
+        environment={"ZENML_STORE_API_KEY": SECRET_TOKEN},
+    )
+
+    run_dir = f"/runs/{info.run_id}/isolated/{info.step_run_id}"
+    assert any(command.startswith("sbatch") for command in runner.commands)
+    assert runner.modes[f"{run_dir}/env"] == 0o600
+    assert SECRET_TOKEN in runner.files[f"{run_dir}/env"]
+    assert info.step_run.run_metadata[SLURM_ISOLATED_JOB_ID_METADATA_KEY] == (
+        "1000"
+    )
+    assert published_step_metadata == {
+        "step_run_id": info.step_run_id,
+        "step_run_metadata": {
+            op.id: {SLURM_ISOLATED_JOB_ID_METADATA_KEY: "1000"}
+        },
+    }
+    assert published_run_metadata["metadata"] == {
+        SLURM_ISOLATED_JOB_IDS_METADATA_KEY: {str(info.step_run_id): "1000"}
+    }
+
+
+def test_get_isolated_step_status_reads_sentinel(monkeypatch):
+    """Isolated step status uses the same Slurm sentinel mapping."""
+    op = _build_orchestrator()
+    runner = FakeRunner()
+    _use_fake_client(monkeypatch, runner)
+    run_id = uuid4()
+    step_run_id = uuid4()
+    run_dir = op._isolated_run_dir(str(run_id), str(step_run_id))
+    runner.files[f"{run_dir}/exit_code"] = "0\n"
+    step_run = SimpleNamespace(
+        id=step_run_id,
+        pipeline_run_id=run_id,
+        run_metadata={SLURM_ISOLATED_JOB_ID_METADATA_KEY: "1000"},
+    )
+
+    assert op.get_isolated_step_status(step_run) is ExecutionStatus.COMPLETED
+
+
+def test_stop_and_cleanup_isolated_step(monkeypatch):
+    """Isolated step stop and cleanup address the step staging directory."""
+    op = _build_orchestrator()
+    runner = FakeRunner()
+    _use_fake_client(monkeypatch, runner)
+    run_id = uuid4()
+    step_run_id = uuid4()
+    step_run = SimpleNamespace(
+        id=step_run_id,
+        pipeline_run_id=run_id,
+        run_metadata={SLURM_ISOLATED_JOB_ID_METADATA_KEY: "1000"},
+    )
+
+    op.stop_isolated_step(step_run)
+    op.cleanup_isolated_step(step_run)
+
+    run_dir = op._isolated_run_dir(str(run_id), str(step_run_id))
+    assert "scancel 1000" in runner.commands
+    assert runner.files[f"{run_dir}/cancelled"] == "1\n"
+    assert any(
+        command == f"rm -rf -- {run_dir}" for command in runner.commands
+    )
+
+
+def test_stop_run_cancels_dynamic_jobs(monkeypatch):
+    """Stopping a dynamic run cancels orchestration and isolated jobs."""
+    op = _build_orchestrator()
+    runner = FakeRunner()
+    _use_fake_client(monkeypatch, runner)
+    monkeypatch.setattr(
+        "zenml.orchestrators.base_orchestrator"
+        ".publish_pipeline_run_status_update",
+        lambda **kwargs: None,
+    )
+    run_id = uuid4()
+    step_run_id = uuid4()
+    run = SimpleNamespace(
+        id=run_id,
+        orchestrator_run_id=str(run_id),
+        run_metadata={
+            SLURM_ORCHESTRATION_JOB_ID_METADATA_KEY: "1000",
+            SLURM_ISOLATED_JOB_IDS_METADATA_KEY: {str(step_run_id): "1001"},
+        },
+    )
+
+    op.stop_run(run)
+
+    assert "scancel 1001" in runner.commands
+    assert "scancel 1000" in runner.commands
+    assert (
+        runner.files[
+            f"{op._isolated_run_dir(str(run_id), str(step_run_id))}/cancelled"
+        ]
+        == "1\n"
+    )
+    assert (
+        runner.files[f"{op._orchestration_run_dir(str(run_id))}/cancelled"]
+        == "1\n"
     )
 
 
