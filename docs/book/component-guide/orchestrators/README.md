@@ -35,6 +35,7 @@ Out of the box, ZenML comes with a `local` orchestrator already part of the defa
 | [SkypilotGCPOrchestrator](skypilot-vm.md)   | `vm_gcp`       | `skypilot[gcp]`   | Runs your pipelines in GCP VMs using SkyPilot                           |
 | [SkypilotAzureOrchestrator](skypilot-vm.md) | `vm_azure`     | `skypilot[azure]` | Runs your pipelines in Azure VMs using SkyPilot                         |
 | [SSHOrchestrator](ssh.md)                   | `ssh`          | `ssh`             | Runs your pipelines on a remote host via SSH and Docker Compose.        |
+| [SlurmOrchestrator](slurm.md)               | `slurm`        | `slurm`           | Runs your pipelines as Slurm jobs on an HPC cluster.                    |
 | [HyperAIOrchestrator](hyperai.md)           | `hyperai`      | `hyperai`         | _Deprecated_ — use the SSH orchestrator. Runs your pipeline in HyperAI.ai instances. |
 | [Custom Implementation](custom.md)          | _custom_       |                   | Extend the orchestrator abstraction and provide your own implementation |
 
