@@ -303,7 +303,7 @@ def _receive_webhook_event(
             )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid webhook signature.",
+            detail="Invalid webhook authentication.",
         ) from error
 
     if not integration.active:

@@ -6,12 +6,37 @@ import pytest
 
 from zenml.enums import WebhookType
 from zenml.webhooks.adapters import (
+    BaseWebhookAdapter,
     CustomWebhookAdapter,
     GitHubWebhookAdapter,
     WebhookAuthenticationError,
     WebhookPayloadError,
     get_webhook_adapter,
 )
+
+
+class _BodyMetadataBearerAdapter(BaseWebhookAdapter):
+    """Test adapter with bearer auth and body-derived event metadata."""
+
+    webhook_type = WebhookType.CUSTOM
+
+    def authenticate(
+        self, body: bytes, headers: Mapping[str, str], secret: str
+    ) -> None:
+        if headers.get("authorization") != f"Bearer {secret}":
+            raise WebhookAuthenticationError("Invalid bearer token.")
+
+    def get_event_type(self, payload: dict, headers: Mapping[str, str]) -> str:
+        event_type = payload.get("type")
+        if not isinstance(event_type, str) or not event_type:
+            raise WebhookPayloadError("Missing event type in request body.")
+        return event_type
+
+    def get_delivery_id(
+        self, payload: dict, headers: Mapping[str, str]
+    ) -> str | None:
+        delivery_id = payload.get("webhookId")
+        return delivery_id if isinstance(delivery_id, str) else None
 
 
 def _signature(secret: str, body: bytes) -> str:
@@ -37,7 +62,7 @@ def test_get_webhook_adapter_returns_registered_adapter(
 
 
 @pytest.mark.parametrize(
-    "adapter, headers",
+    "adapter, headers, expected_event_type, expected_delivery_id",
     [
         (
             GitHubWebhookAdapter(),
@@ -45,6 +70,8 @@ def test_get_webhook_adapter_returns_registered_adapter(
                 "x-github-event": "push",
                 "x-github-delivery": "github-delivery-id",
             },
+            "push",
+            "github-delivery-id",
         ),
         (
             CustomWebhookAdapter(),
@@ -52,12 +79,16 @@ def test_get_webhook_adapter_returns_registered_adapter(
                 "x-zenml-event": "pipeline.ready",
                 "x-zenml-delivery": "custom-delivery-id",
             },
+            "pipeline.ready",
+            "custom-delivery-id",
         ),
     ],
 )
 def test_validate_returns_provider_event_for_signed_request(
     adapter: GitHubWebhookAdapter | CustomWebhookAdapter,
     headers: dict[str, str],
+    expected_event_type: str,
+    expected_delivery_id: str,
 ) -> None:
     secret = "webhook-secret"
     body = b'{"repository":"zenml","run_id":42}'
@@ -66,9 +97,32 @@ def test_validate_returns_provider_event_for_signed_request(
     event = adapter.validate(body=body, headers=headers, secret=secret)
 
     assert event.webhook_type == adapter.webhook_type
-    assert event.event_type == headers[adapter.event_header]
-    assert event.delivery_id == headers[adapter.delivery_header]
+    assert event.event_type == expected_event_type
+    assert event.delivery_id == expected_delivery_id
     assert event.payload == {"repository": "zenml", "run_id": 42}
+
+
+def test_validate_supports_bearer_auth_and_body_event_metadata() -> None:
+    adapter = _BodyMetadataBearerAdapter()
+    body = b'{"type":"monitor.page","webhookId":"delivery-id"}'
+
+    event = adapter.validate(
+        body=body,
+        headers={"authorization": "Bearer webhook-secret"},
+        secret="webhook-secret",
+    )
+
+    assert event.event_type == "monitor.page"
+    assert event.delivery_id == "delivery-id"
+
+
+def test_parse_rejects_missing_body_event_type() -> None:
+    adapter = _BodyMetadataBearerAdapter()
+
+    with pytest.raises(
+        WebhookPayloadError, match="Missing event type in request body"
+    ):
+        adapter.parse(body=b'{"webhookId":"delivery-id"}', headers={})
 
 
 def test_authentication_uses_exact_raw_body_bytes() -> None:

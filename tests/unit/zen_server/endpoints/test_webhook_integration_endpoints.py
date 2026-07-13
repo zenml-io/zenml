@@ -200,6 +200,7 @@ def test_receive_webhook_event_records_auth_failure_for_active_integration(
         _receive(integration_id)
 
     assert error.value.status_code == status.HTTP_401_UNAUTHORIZED
+    assert error.value.detail == "Invalid webhook authentication."
     assert store.secret_requests == 1
     assert len(store.records) == 1
     recorded_id, update = store.records[0]

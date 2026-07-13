@@ -14,7 +14,7 @@ from zenml.enums import WebhookType
 
 
 class WebhookAuthenticationError(ValueError):
-    """Raised when a webhook signature cannot be authenticated."""
+    """Raised when a webhook request cannot be authenticated."""
 
 
 class WebhookPayloadError(ValueError):
@@ -34,9 +34,6 @@ class BaseWebhookAdapter(ABC):
     """Base class for provider-specific webhook adapters."""
 
     webhook_type: WebhookType
-    signature_header: str
-    event_header: str
-    delivery_header: str
 
     def validate(
         self, body: bytes, headers: Mapping[str, str], secret: str
@@ -46,13 +43,13 @@ class BaseWebhookAdapter(ABC):
         Args:
             body: The exact raw request body.
             headers: The request headers.
-            secret: The integration signing secret.
+            secret: The integration authentication secret.
 
         Returns:
             The authenticated webhook event.
 
         Raises:
-            WebhookAuthenticationError: If the signature is invalid.
+            WebhookAuthenticationError: If authentication fails.
             WebhookPayloadError: If the event metadata or payload is invalid.
         """  # noqa: DOC502
         self.authenticate(body=body, headers=headers, secret=secret)
@@ -71,11 +68,6 @@ class BaseWebhookAdapter(ABC):
         Raises:
             WebhookPayloadError: If the event metadata or payload is invalid.
         """
-        event_type = headers.get(self.event_header)
-        if not event_type:
-            raise WebhookPayloadError(
-                f"Missing required {self.event_header} header."
-            )
         try:
             payload = json.loads(body)
         except (UnicodeDecodeError, json.JSONDecodeError) as error:
@@ -86,12 +78,44 @@ class BaseWebhookAdapter(ABC):
             raise WebhookPayloadError(
                 "Request body must contain a top-level JSON object."
             )
+        event_type = self.get_event_type(payload=payload, headers=headers)
         return WebhookEvent(
             webhook_type=self.webhook_type,
             event_type=event_type,
-            delivery_id=headers.get(self.delivery_header),
+            delivery_id=self.get_delivery_id(payload=payload, headers=headers),
             payload=payload,
         )
+
+    @abstractmethod
+    def get_event_type(
+        self, payload: dict[str, Any], headers: Mapping[str, str]
+    ) -> str:
+        """Extract the provider event type.
+
+        Args:
+            payload: The parsed JSON object.
+            headers: The request headers.
+
+        Returns:
+            The provider event type.
+
+        Raises:
+            WebhookPayloadError: If the event type is missing or invalid.
+        """
+
+    def get_delivery_id(
+        self, payload: dict[str, Any], headers: Mapping[str, str]
+    ) -> str | None:
+        """Extract the optional provider delivery ID.
+
+        Args:
+            payload: The parsed JSON object.
+            headers: The request headers.
+
+        Returns:
+            The provider delivery ID, if available.
+        """
+        return None
 
     @abstractmethod
     def authenticate(
@@ -102,12 +126,14 @@ class BaseWebhookAdapter(ABC):
         Args:
             body: The exact raw request body.
             headers: The request headers.
-            secret: The integration signing secret.
+            secret: The integration authentication secret.
         """
 
 
 class HMACSHA256WebhookAdapter(BaseWebhookAdapter):
     """Webhook adapter using a sha256-prefixed HMAC signature."""
+
+    signature_header: str
 
     def authenticate(
         self, body: bytes, headers: Mapping[str, str], secret: str
@@ -144,6 +170,23 @@ class GitHubWebhookAdapter(HMACSHA256WebhookAdapter):
     event_header = "x-github-event"
     delivery_header = "x-github-delivery"
 
+    def get_event_type(
+        self, payload: dict[str, Any], headers: Mapping[str, str]
+    ) -> str:
+        """Extract the GitHub event type from its request header."""
+        event_type = headers.get(self.event_header)
+        if not event_type:
+            raise WebhookPayloadError(
+                f"Missing required {self.event_header} header."
+            )
+        return event_type
+
+    def get_delivery_id(
+        self, payload: dict[str, Any], headers: Mapping[str, str]
+    ) -> str | None:
+        """Extract the optional GitHub delivery ID."""
+        return headers.get(self.delivery_header)
+
 
 class CustomWebhookAdapter(HMACSHA256WebhookAdapter):
     """ZenML custom webhook adapter."""
@@ -152,6 +195,23 @@ class CustomWebhookAdapter(HMACSHA256WebhookAdapter):
     signature_header = "x-zenml-signature-256"
     event_header = "x-zenml-event"
     delivery_header = "x-zenml-delivery"
+
+    def get_event_type(
+        self, payload: dict[str, Any], headers: Mapping[str, str]
+    ) -> str:
+        """Extract the custom event type from its request header."""
+        event_type = headers.get(self.event_header)
+        if not event_type:
+            raise WebhookPayloadError(
+                f"Missing required {self.event_header} header."
+            )
+        return event_type
+
+    def get_delivery_id(
+        self, payload: dict[str, Any], headers: Mapping[str, str]
+    ) -> str | None:
+        """Extract the optional custom delivery ID."""
+        return headers.get(self.delivery_header)
 
 
 _ADAPTERS: dict[WebhookType, BaseWebhookAdapter] = {
