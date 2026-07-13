@@ -195,6 +195,11 @@ class DynamicPipeline(Pipeline):
             Sequence["AnyOutputFuture"],
             None,
         ] = None,
+        start_after: Union[
+            "AnyOutputFuture",
+            Sequence["AnyOutputFuture"],
+            None,
+        ] = None,
         **kwargs: Any,
     ) -> "PipelineFuture":
         """Submit the pipeline to run concurrently as a child pipeline.
@@ -202,6 +207,7 @@ class DynamicPipeline(Pipeline):
         Args:
             *args: Entrypoint function arguments.
             after: Optional dependency futures.
+            start_after: Optional start-ordering futures.
             **kwargs: Entrypoint function keyword arguments.
 
         Raises:
@@ -232,6 +238,7 @@ class DynamicPipeline(Pipeline):
             args=args,
             kwargs=kwargs,
             after=after,
+            start_after=start_after,
             concurrent=True,
         )
 
