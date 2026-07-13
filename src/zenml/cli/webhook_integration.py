@@ -11,6 +11,7 @@ from zenml.cli.utils import OutputFormat, list_options
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, WebhookType
+from zenml.exceptions import IllegalOperationError
 from zenml.models import WebhookIntegrationFilter, WebhookIntegrationResponse
 
 
@@ -29,7 +30,12 @@ def webhook_integration() -> None:
     type=click.Choice([value.value for value in WebhookType]),
     required=True,
 )
-@click.option("--secret", type=str, default=None)
+@click.option(
+    "--secret",
+    type=str,
+    default=None,
+    help="Set a direct signing secret or ZenML secret reference.",
+)
 @click.option("--inactive", is_flag=True, default=False)
 def create_webhook_integration(
     name: str,
@@ -125,8 +131,17 @@ def list_webhook_integrations(
 @click.option(
     "--active/--inactive", "active", default=None, help="Set active state."
 )
+@click.option(
+    "--secret",
+    type=str,
+    default=None,
+    help="Set a direct signing secret or ZenML secret reference.",
+)
 def update_webhook_integration(
-    name_or_id: str, new_name: str | None, active: bool | None
+    name_or_id: str,
+    new_name: str | None,
+    active: bool | None,
+    secret: str | None,
 ) -> None:
     """Update a webhook integration.
 
@@ -134,9 +149,13 @@ def update_webhook_integration(
         name_or_id: The integration name or ID.
         new_name: The new integration name.
         active: The new active state.
+        secret: A direct signing secret or ZenML secret reference.
     """
     integration = Client().update_webhook_integration(
-        name_id_or_prefix=name_or_id, name=new_name, active=active
+        name_id_or_prefix=name_or_id,
+        name=new_name,
+        active=active,
+        secret=secret,
     )
     cli_utils.print_pydantic_model(
         title=f"Webhook integration '{integration.name}'",
@@ -146,7 +165,12 @@ def update_webhook_integration(
 
 @webhook_integration.command("rotate-secret")
 @click.argument("name_or_id", type=str)
-@click.option("--secret", type=str, default=None)
+@click.option(
+    "--secret",
+    type=str,
+    default=None,
+    help="Set an optional direct replacement secret.",
+)
 def rotate_webhook_integration_secret(
     name_or_id: str, secret: str | None
 ) -> None:
@@ -154,11 +178,14 @@ def rotate_webhook_integration_secret(
 
     Args:
         name_or_id: The integration name or ID.
-        secret: An optional user-supplied replacement secret.
+        secret: An optional direct replacement secret.
     """
-    result = Client().rotate_webhook_integration_secret(
-        name_id_or_prefix=name_or_id, secret=secret
-    )
+    try:
+        result = Client().rotate_webhook_integration_secret(
+            name_id_or_prefix=name_or_id, secret=secret
+        )
+    except IllegalOperationError as error:
+        cli_utils.exception(error)
     cli_utils.declare(f"Signing secret: {result.secret.get_secret_value()}")
 
 

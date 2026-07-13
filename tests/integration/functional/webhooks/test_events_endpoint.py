@@ -74,6 +74,50 @@ def test_webhook_intake_accepts_valid_custom_delivery(clean_project):
         clean_project.delete_webhook_integration(integration.id)
 
 
+def test_webhook_intake_resolves_updated_secret_reference(clean_project):
+    """Webhook intake resolves the current referenced secret value."""
+    store = _require_rest_store(clean_project)
+    secret_name = sample_name("webhook-intake-reference")
+    clean_project.create_secret(secret_name, values={"key": "initial-secret"})
+    result = clean_project.create_webhook_integration(
+        name=sample_name("webhook-intake-reference-integration"),
+        webhook_type=WebhookType.CUSTOM,
+        secret=f"{{{{{secret_name}.key}}}}",
+    )
+    integration = result.integration
+    body = b'{"pipeline":"training"}'
+
+    try:
+        response = _post_webhook(
+            store=store,
+            endpoint_path=integration.endpoint_path,
+            body=body,
+            headers={
+                "X-ZenML-Event": "pipeline.ready",
+                "X-ZenML-Signature-256": _signature("initial-secret", body),
+            },
+        )
+        assert response.status_code == 202
+
+        clean_project.update_secret(
+            secret_name, add_or_update_values={"key": "updated-secret"}
+        )
+        response = _post_webhook(
+            store=store,
+            endpoint_path=integration.endpoint_path,
+            body=body,
+            headers={
+                "X-ZenML-Event": "pipeline.ready",
+                "X-ZenML-Signature-256": _signature("updated-secret", body),
+            },
+        )
+
+        assert response.status_code == 202
+    finally:
+        clean_project.delete_webhook_integration(integration.id)
+        clean_project.delete_secret(secret_name)
+
+
 def test_webhook_intake_records_auth_failures_for_active_integrations(
     clean_project,
 ):

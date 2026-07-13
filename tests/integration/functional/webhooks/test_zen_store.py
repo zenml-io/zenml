@@ -8,6 +8,7 @@ from zenml.models import (
     WebhookIntegrationSecretRequest,
     WebhookIntegrationUpdate,
 )
+from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
 def test_zen_store_webhook_integration_lifecycle(clean_client):
@@ -101,3 +102,39 @@ def test_zen_store_does_not_echo_user_supplied_webhook_secret(clean_client):
         assert integration.webhook_type == WebhookType.GITHUB
     finally:
         store.delete_webhook_integration(result.integration.id)
+
+
+def test_sql_store_resolves_webhook_secret_references_lazily(clean_client):
+    """Webhook secret references resolve their current value at intake time."""
+    store = clean_client.zen_store
+    if not isinstance(store, SqlZenStore):
+        pytest.skip("Webhook secret resolution is server-local behavior.")
+
+    secret_name = sample_name("webhook-reference")
+    clean_client.create_secret(secret_name, values={"key": "initial-secret"})
+    result = store.create_webhook_integration(
+        WebhookIntegrationRequest(
+            project=clean_client.active_project.id,
+            name=sample_name("webhook-store-reference"),
+            webhook_type=WebhookType.CUSTOM,
+            secret=f"{{{{{secret_name}.key}}}}",
+        )
+    )
+
+    try:
+        assert (
+            store.get_webhook_integration_secret(result.integration.id)
+            == "initial-secret"
+        )
+
+        clean_client.update_secret(
+            secret_name, add_or_update_values={"key": "rotated-secret"}
+        )
+
+        assert (
+            store.get_webhook_integration_secret(result.integration.id)
+            == "rotated-secret"
+        )
+    finally:
+        store.delete_webhook_integration(result.integration.id)
+        clean_client.delete_secret(secret_name)

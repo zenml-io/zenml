@@ -6855,7 +6855,8 @@ class Client(metaclass=ClientMetaClass):
             name: The integration name.
             webhook_type: The webhook provider type.
             active: Whether the integration accepts events immediately.
-            secret: An optional user-supplied signing secret.
+            secret: An optional direct signing secret or ZenML secret
+                reference.
 
         Returns:
             The created integration and any generated signing secret.
@@ -6956,6 +6957,7 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: str | UUID,
         name: str | None = None,
         active: bool | None = None,
+        secret: str | None = None,
         project: str | UUID | None = None,
     ) -> WebhookIntegrationResponse:
         """Update a webhook integration.
@@ -6964,6 +6966,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: The integration name, ID, or ID prefix.
             name: The new integration name.
             active: The new active state.
+            secret: A new direct signing secret or ZenML secret reference.
             project: The project name or ID.
 
         Returns:
@@ -6976,7 +6979,9 @@ class Client(metaclass=ClientMetaClass):
         )
         return self.zen_store.update_webhook_integration(
             integration_id=integration.id,
-            update=WebhookIntegrationUpdate(name=name, active=active),
+            update=WebhookIntegrationUpdate(
+                name=name, active=active, secret=secret
+            ),
         )
 
     def delete_webhook_integration(
@@ -7007,7 +7012,7 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             name_id_or_prefix: The integration name, ID, or ID prefix.
-            secret: An optional user-supplied replacement secret.
+            secret: An optional direct replacement secret.
             project: The project name or ID.
 
         Returns:

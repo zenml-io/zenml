@@ -12,6 +12,7 @@ from fastapi import (
     status,
 )
 from fastapi.responses import Response
+from pydantic import SecretStr
 from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import Headers
 
@@ -33,6 +34,10 @@ from zenml.models import (
     WebhookIntegrationSecretResponse,
     WebhookIntegrationUpdate,
 )
+from zenml.utils.secret_utils import (
+    is_secret_reference,
+    parse_secret_reference,
+)
 from zenml.webhooks import (
     WebhookAuthenticationError,
     WebhookPayloadError,
@@ -44,10 +49,12 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
-    verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
-from zenml.zen_server.rbac.utils import verify_permission_for_model
+from zenml.zen_server.rbac.utils import (
+    dehydrate_response_model,
+    verify_permission_for_model,
+)
 from zenml.zen_server.utils import (
     async_fastapi_endpoint_wrapper,
     async_handle_endpoint_errors,
@@ -67,6 +74,24 @@ intake_router = APIRouter(
 )
 
 
+def _verify_webhook_secret_reference_access(
+    secret: SecretStr | None,
+) -> None:
+    """Verify access to a referenced ZenML secret value.
+
+    Args:
+        secret: A direct signing secret or ZenML secret reference.
+    """
+    if secret is None or not is_secret_reference(secret):
+        return
+
+    reference = parse_secret_reference(secret)
+    referenced_secret = zen_store().get_secret_by_name_or_id(reference.name)
+    verify_permission_for_model(
+        model=referenced_secret, action=Action.READ_SECRET_VALUE
+    )
+
+
 @management_router.post("")
 @async_fastapi_endpoint_wrapper
 def create_webhook_integration(
@@ -82,6 +107,7 @@ def create_webhook_integration(
         The created integration and any generated signing secret.
     """
     verify_permission_for_model(model=integration, action=Action.CREATE)
+    _verify_webhook_secret_reference_access(integration.secret)
     return zen_store().create_webhook_integration(integration)
 
 
@@ -150,12 +176,16 @@ def update_webhook_integration(
     Returns:
         The updated webhook integration.
     """
-    return verify_permissions_and_update_entity(
-        id=integration_id,
-        update_model=update,
-        get_method=zen_store().get_webhook_integration,
-        update_method=zen_store().update_webhook_integration,
+    integration = zen_store().get_webhook_integration(
+        integration_id, hydrate=False
     )
+    verify_permission_for_model(model=integration, action=Action.UPDATE)
+    _verify_webhook_secret_reference_access(update.secret)
+    updated_integration = zen_store().update_webhook_integration(
+        integration_id=integration.id,
+        update=update,
+    )
+    return dehydrate_response_model(updated_integration)
 
 
 @management_router.delete("/{integration_id}")

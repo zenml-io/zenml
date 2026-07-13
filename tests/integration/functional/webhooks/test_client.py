@@ -2,6 +2,7 @@ import pytest
 
 from tests.integration.functional.utils import sample_name
 from zenml.enums import WebhookType
+from zenml.exceptions import IllegalOperationError
 
 
 def test_client_webhook_integration_lifecycle(clean_client):
@@ -90,3 +91,45 @@ def test_client_does_not_echo_user_supplied_webhook_secret(clean_client):
         assert integration.webhook_type == WebhookType.GITHUB
     finally:
         clean_client.delete_webhook_integration(result.integration.id)
+
+
+def test_client_rejects_rotation_for_referenced_webhook_secret(clean_client):
+    """Referenced webhook secrets can be updated but not rotated."""
+    integration_name = sample_name("webhook-client-reference")
+    secret_name = sample_name("webhook-signing-secret")
+    clean_client.create_secret(secret_name, values={"key": "initial-secret"})
+    result = clean_client.create_webhook_integration(
+        name=integration_name,
+        webhook_type=WebhookType.CUSTOM,
+        secret="managed-secret",
+    )
+
+    try:
+        clean_client.update_webhook_integration(
+            integration_name,
+            secret=f"{{{{{secret_name}.key}}}}",
+        )
+
+        with pytest.raises(IllegalOperationError, match="zenml secret update"):
+            clean_client.rotate_webhook_integration_secret(integration_name)
+
+        clean_client.update_webhook_integration(
+            integration_name,
+            secret="managed-secret-again",
+        )
+        with pytest.raises(
+            IllegalOperationError, match="webhook-integration update"
+        ):
+            clean_client.rotate_webhook_integration_secret(
+                integration_name,
+                secret=f"{{{{{secret_name}.key}}}}",
+            )
+
+        rotated = clean_client.rotate_webhook_integration_secret(
+            integration_name
+        )
+
+        assert rotated.secret.get_secret_value()
+    finally:
+        clean_client.delete_webhook_integration(result.integration.id)
+        clean_client.delete_secret(secret_name)

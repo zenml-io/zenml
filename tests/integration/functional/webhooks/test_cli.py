@@ -46,9 +46,7 @@ def test_webhook_integration_cli_lifecycle(clean_client):
         assert integration.active is True
 
         list_output_buffer = io.StringIO()
-        with patch.object(
-            zenml_cli, "_original_stdout", list_output_buffer
-        ):
+        with patch.object(zenml_cli, "_original_stdout", list_output_buffer):
             result = runner.invoke(list_command)
         list_output = list_output_buffer.getvalue() + result.output
 
@@ -117,3 +115,46 @@ def test_webhook_integration_cli_does_not_echo_user_supplied_secret(
         assert "secret" not in integration.model_dump()
     finally:
         _delete_if_exists(name)
+
+
+def test_webhook_integration_cli_rejects_rotation_for_secret_reference(
+    clean_client,
+):
+    """The CLI guides referenced credentials to the secret update command."""
+    runner = cli_runner()
+    integration_name = sample_name("webhook-cli-reference")
+    secret_name = sample_name("webhook-cli-secret")
+    clean_client.create_secret(secret_name, values={"key": "secret-value"})
+
+    try:
+        create_result = runner.invoke(
+            create_command,
+            [
+                integration_name,
+                "--type",
+                WebhookType.CUSTOM.value,
+                "--secret",
+                "managed-secret",
+            ],
+        )
+        assert create_result.exit_code == 0, create_result.output
+
+        update_result = runner.invoke(
+            update_command,
+            [
+                integration_name,
+                "--secret",
+                f"{{{{{secret_name}.key}}}}",
+            ],
+        )
+        assert update_result.exit_code == 0, update_result.output
+
+        rotate_result = runner.invoke(
+            rotate_secret_command, [integration_name]
+        )
+
+        assert rotate_result.exit_code != 0
+        assert "zenml secret update" in rotate_result.output
+    finally:
+        _delete_if_exists(integration_name)
+        clean_client.delete_secret(secret_name)

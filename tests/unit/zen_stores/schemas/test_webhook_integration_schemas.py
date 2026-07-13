@@ -13,6 +13,7 @@ from zenml.models import (
     WebhookIntegrationRequest,
     WebhookIntegrationSecretRequest,
     WebhookIntegrationStats,
+    WebhookIntegrationUpdate,
 )
 from zenml.zen_stores.schemas.webhook_integration_schemas import (
     WebhookIntegrationSchema,
@@ -99,6 +100,13 @@ def test_webhook_integration_secret_request_rejects_empty_secret(
         WebhookIntegrationSecretRequest(secret=secret)
 
 
+@pytest.mark.parametrize("secret", ["", "   "])
+def test_webhook_integration_update_rejects_empty_secret(secret: str) -> None:
+    """Webhook integration updates reject empty signing secrets."""
+    with pytest.raises(ValidationError):
+        WebhookIntegrationUpdate(secret=secret)
+
+
 def test_webhook_integration_requests_allow_missing_secret() -> None:
     """Webhook integration requests allow missing secrets for generation."""
     integration_request = WebhookIntegrationRequest(
@@ -110,6 +118,14 @@ def test_webhook_integration_requests_allow_missing_secret() -> None:
 
     assert integration_request.secret is None
     assert secret_request.secret is None
+
+
+def test_webhook_integration_update_accepts_secret_reference() -> None:
+    """Webhook integration updates accept a secret reference."""
+    update = WebhookIntegrationUpdate(secret="{{webhook.secret}}")
+
+    assert update.secret is not None
+    assert update.secret.get_secret_value() == "{{webhook.secret}}"
 
 
 def test_webhook_integration_schema_to_model_includes_body_and_metadata() -> (
