@@ -405,6 +405,7 @@ from zenml.zen_stores.dag.models import (
 from zenml.zen_stores.dag.utils import (
     load_input_artifact_rows,
     load_output_artifact_rows,
+    load_step_run_metadata,
 )
 from zenml.zen_stores.migrations.alembic import (
     Alembic,
@@ -6227,11 +6228,17 @@ class SqlZenStore(BaseZenStore):
 
     # ----------------------------- Pipeline runs -----------------------------
 
-    def get_pipeline_run_dag(self, pipeline_run_id: UUID) -> PipelineRunDAG:
+    def get_pipeline_run_dag(
+        self,
+        pipeline_run_id: UUID,
+        include_step_metadata: Optional[List[str]] = None,
+    ) -> PipelineRunDAG:
         """Get the DAG of a pipeline run.
 
         Args:
             pipeline_run_id: The ID of the pipeline run.
+            include_step_metadata: Run metadata keys for which to include the
+                values in the step nodes.
 
         Returns:
             The DAG of the pipeline run.
@@ -6344,6 +6351,9 @@ class SqlZenStore(BaseZenStore):
                     for config_table in snapshot.step_configurations
                 }
 
+            input_artifact_rows = {}
+            output_artifact_rows = {}
+            step_metadata: Dict[UUID, Dict[str, "MetadataType"]] = {}
             if step_runs:
                 input_artifact_rows = load_input_artifact_rows(
                     session=session, pipeline_run_id=pipeline_run_id
@@ -6351,9 +6361,12 @@ class SqlZenStore(BaseZenStore):
                 output_artifact_rows = load_output_artifact_rows(
                     session=session, pipeline_run_id=pipeline_run_id
                 )
-            else:
-                input_artifact_rows = {}
-                output_artifact_rows = {}
+                if include_step_metadata:
+                    step_metadata = load_step_run_metadata(
+                        session=session,
+                        pipeline_run_id=pipeline_run_id,
+                        metadata_keys=include_step_metadata,
+                    )
 
             regular_output_artifact_nodes: Dict[
                 str, Dict[str, PipelineRunDAG.Node]
@@ -6399,6 +6412,9 @@ class SqlZenStore(BaseZenStore):
                             metadata["duration"] = (
                                 step_run.end_time - step_run.start_time
                             ).total_seconds()
+
+                    if extra_metadata := step_metadata.get(step_run.id):
+                        metadata["run_metadata"] = extra_metadata
 
                 step_node = helper.add_step_node(
                     node_id=helper.get_step_node_id(name=step_name),
