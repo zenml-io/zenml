@@ -26,6 +26,7 @@ when the client already runs on the cluster.
 
 import os
 import shlex
+import time
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -105,6 +106,7 @@ SLURM_ISOLATED_JOB_IDS_METADATA_KEY = "slurm_isolated_job_ids"
 SLURM_ISOLATED_JOB_ID_METADATA_KEY = "slurm_job_id"
 _CLEANUP_COMPLETE_FILE = "cleanup_complete"
 _ISOLATED_MISSING_SENTINEL_FAILURE_THRESHOLD = 3
+_ISOLATED_STATUS_CACHE_TTL_SECONDS = 1.0
 
 
 class SlurmOrchestrator(ContainerizedOrchestrator):
@@ -119,6 +121,9 @@ class SlurmOrchestrator(ContainerizedOrchestrator):
         """
         super().__init__(*args, **kwargs)
         self._missing_isolated_sentinel_counts: Dict[str, int] = {}
+        self._isolated_status_cache: Dict[
+            str, Tuple[float, Dict[str, Optional[str]]]
+        ] = {}
 
     @property
     def config(self) -> SlurmOrchestratorConfig:
@@ -776,21 +781,32 @@ touch {shlex.quote(cleanup_marker)}
         run_dir = self._isolated_run_dir(
             run_id=str(step_run.pipeline_run_id), step_run_id=str(step_run.id)
         )
-        client = build_slurm_client(self.config)
-        try:
-            state = client.get_job_state(str(job_id))
-            status = self._get_job_status(
-                client=client,
-                state=state,
-                run_dir=run_dir,
-                cleanup_complete=False,
-            )
-        finally:
-            client.runner.close()
+        cache_hit, state = self._get_cached_isolated_job_state(
+            run_id=str(step_run.pipeline_run_id),
+            job_id=str(job_id),
+        )
+        status = self._status_from_slurm_state(state) if cache_hit else None
+        if status is None:
+            client = build_slurm_client(self.config)
+            try:
+                if not cache_hit:
+                    state = self._refresh_isolated_job_state_cache(
+                        client=client,
+                        run_id=str(step_run.pipeline_run_id),
+                        job_id=str(job_id),
+                    )
+                status = self._get_job_status(
+                    client=client,
+                    state=state,
+                    run_dir=run_dir,
+                    cleanup_complete=False,
+                )
+            finally:
+                client.runner.close()
 
         if status:
             self._missing_isolated_sentinel_counts.pop(str(step_run.id), None)
-            return status
+            return self._normalize_isolated_step_status(status)
 
         missing_count = self._missing_isolated_sentinel_counts.get(
             str(step_run.id), 0
@@ -809,7 +825,112 @@ touch {shlex.quote(cleanup_marker)}
                 missing_count,
             )
             return ExecutionStatus.FAILED
-        return ExecutionStatus.QUEUED
+        return ExecutionStatus.PROVISIONING
+
+    def _get_cached_isolated_job_state(
+        self, run_id: str, job_id: str
+    ) -> Tuple[bool, Optional[str]]:
+        """Get a cached isolated job state if it is still fresh.
+
+        Args:
+            run_id: Pipeline run ID.
+            job_id: Slurm job ID to inspect.
+
+        Returns:
+            A tuple with whether the cache contained the job and the cached
+            Slurm state.
+        """
+        cached = self._isolated_status_cache.get(run_id)
+        if not cached:
+            return False, None
+
+        cached_at, states = cached
+        if (
+            time.monotonic() - cached_at <= _ISOLATED_STATUS_CACHE_TTL_SECONDS
+            and job_id in states
+        ):
+            return True, states[job_id]
+        return False, None
+
+    def _refresh_isolated_job_state_cache(
+        self, client: SlurmClient, run_id: str, job_id: str
+    ) -> Optional[str]:
+        """Refresh the isolated job state cache for a pipeline run.
+
+        Args:
+            client: Slurm client used to query job states.
+            run_id: Pipeline run ID.
+            job_id: Slurm job ID to inspect.
+
+        Returns:
+            The refreshed Slurm job state for the requested job, or None if the
+            job is not known to Slurm.
+        """
+        job_ids = [job_id]
+        try:
+            from zenml.client import Client
+
+            run = Client().get_pipeline_run(run_id, hydrate=False)
+            raw_job_ids = run.run_metadata.get(
+                SLURM_ISOLATED_JOB_IDS_METADATA_KEY
+            )
+            if isinstance(raw_job_ids, dict):
+                job_ids = [str(value) for value in raw_job_ids.values()]
+                if job_id not in job_ids:
+                    job_ids.append(job_id)
+        except Exception:
+            logger.debug(
+                "Failed to load Slurm isolated job metadata for run `%s`; "
+                "falling back to a single-job status lookup.",
+                run_id,
+                exc_info=True,
+            )
+
+        states = client.get_job_states(job_ids)
+        self._isolated_status_cache[run_id] = (time.monotonic(), states)
+        return states.get(job_id)
+
+    @staticmethod
+    def _normalize_isolated_step_status(
+        status: ExecutionStatus,
+    ) -> ExecutionStatus:
+        """Map Slurm statuses to the dynamic runner's isolated-step contract.
+
+        Args:
+            status: Status produced by Slurm reconciliation.
+
+        Returns:
+            Status understood by the dynamic pipeline monitor.
+        """
+        if status == ExecutionStatus.QUEUED:
+            return ExecutionStatus.PROVISIONING
+        if status == ExecutionStatus.CANCELLED:
+            return ExecutionStatus.STOPPED
+        return status
+
+    @staticmethod
+    def _status_from_slurm_state(
+        state: Optional[str],
+    ) -> Optional[ExecutionStatus]:
+        """Map a known Slurm state to ZenML without reading sentinels.
+
+        Args:
+            state: Slurm job state.
+
+        Returns:
+            The mapped status, or None if sentinels are needed.
+        """
+        if state in PENDING_STATES:
+            return ExecutionStatus.QUEUED
+        if state in RUNNING_STATES:
+            return ExecutionStatus.RUNNING
+        if state == "COMPLETED":
+            return ExecutionStatus.COMPLETED
+        if state is not None:
+            if state.startswith("CANCEL"):
+                return ExecutionStatus.CANCELLED
+            return ExecutionStatus.FAILED
+        return None
 
     def stop_isolated_step(self, step_run: "StepRunResponse") -> None:
         """Cancel a dynamic isolated Slurm step.

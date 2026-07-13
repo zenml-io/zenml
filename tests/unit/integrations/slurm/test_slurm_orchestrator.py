@@ -27,6 +27,7 @@ import pytest
 from zenml.config.resource_settings import ResourceSettings
 from zenml.constants import METADATA_ORCHESTRATOR_RUN_ID
 from zenml.enums import ExecutionMode, ExecutionStatus, StackComponentType
+from zenml.execution.pipeline.dynamic.runner import DynamicPipelineRunner
 from zenml.integrations.slurm.flavors import (
     SlurmOrchestratorConfig,
     SlurmOrchestratorFlavor,
@@ -900,9 +901,188 @@ def test_get_isolated_step_status_waits_for_missing_sentinel(monkeypatch):
         run_metadata={SLURM_ISOLATED_JOB_ID_METADATA_KEY: "1000"},
     )
 
-    assert op.get_isolated_step_status(step_run) is ExecutionStatus.QUEUED
-    assert op.get_isolated_step_status(step_run) is ExecutionStatus.QUEUED
+    assert (
+        op.get_isolated_step_status(step_run)
+        is ExecutionStatus.PROVISIONING
+    )
+    assert (
+        op.get_isolated_step_status(step_run)
+        is ExecutionStatus.PROVISIONING
+    )
     assert op.get_isolated_step_status(step_run) is ExecutionStatus.FAILED
+
+
+def test_get_isolated_step_status_normalizes_dynamic_runner_statuses(
+    monkeypatch,
+):
+    """Isolated Slurm statuses use values supported by the dynamic monitor."""
+    op = _build_orchestrator()
+
+    class StatusRunner(FakeRunner):
+        def __init__(self, state: str) -> None:
+            """Initialize the fake.
+
+            Args:
+                state: Slurm state to return for the isolated job.
+            """
+            super().__init__()
+            self.state = state
+
+        def run(self, command: str) -> CommandResult:
+            self.commands.append(command)
+            if command.startswith("squeue"):
+                return CommandResult(
+                    exit_code=0,
+                    stdout=f"1000|{self.state}\n",
+                    stderr="",
+                )
+            return CommandResult(exit_code=0, stdout="", stderr="")
+
+    run_id = uuid4()
+    step_run_id = uuid4()
+    step_run = SimpleNamespace(
+        id=step_run_id,
+        pipeline_run_id=run_id,
+        run_metadata={SLURM_ISOLATED_JOB_ID_METADATA_KEY: "1000"},
+    )
+
+    runner = StatusRunner("PENDING")
+    _use_fake_client(monkeypatch, runner)
+    assert (
+        op.get_isolated_step_status(step_run)
+        is ExecutionStatus.PROVISIONING
+    )
+
+    op._isolated_status_cache.clear()
+    runner = StatusRunner("CANCELLED")
+    _use_fake_client(monkeypatch, runner)
+    assert op.get_isolated_step_status(step_run) is ExecutionStatus.STOPPED
+
+
+def test_dynamic_monitor_keeps_pending_slurm_step(monkeypatch):
+    """Pending Slurm jobs stay monitored and are not cleaned up early."""
+    op = _build_orchestrator()
+
+    class StatusRunner(FakeRunner):
+        def run(self, command: str) -> CommandResult:
+            self.commands.append(command)
+            if command.startswith("squeue"):
+                return CommandResult(
+                    exit_code=0, stdout="1000|PENDING\n", stderr=""
+                )
+            return CommandResult(exit_code=0, stdout="", stderr="")
+
+    runner = StatusRunner()
+    _use_fake_client(monkeypatch, runner)
+    step_run = SimpleNamespace(
+        id=uuid4(),
+        name="dynamic_train",
+        pipeline_run_id=uuid4(),
+        config=SimpleNamespace(step_operator=False),
+        run_metadata={SLURM_ISOLATED_JOB_ID_METADATA_KEY: "1000"},
+    )
+
+    dynamic_runner = DynamicPipelineRunner.__new__(DynamicPipelineRunner)
+    dynamic_runner._shutdown_requested = False
+    dynamic_runner._steps_to_monitor = {"dynamic_train": step_run}
+    dynamic_runner._orchestrator = op
+    dynamic_runner._step_operator = None
+    cleaned_steps: List[object] = []
+    dynamic_runner._cleanup_isolated_step = cleaned_steps.append
+
+    class StopEvent:
+        def wait(self, timeout: Optional[float] = None) -> None:
+            """Stop the monitor after one pass.
+
+            Args:
+                timeout: Unused wait timeout.
+            """
+            _ = timeout
+            dynamic_runner._shutdown_requested = True
+
+        def clear(self) -> None:
+            """No-op event clear."""
+
+    dynamic_runner._monitoring_event = StopEvent()
+
+    dynamic_runner._monitoring_loop()
+
+    assert dynamic_runner._steps_to_monitor == {"dynamic_train": step_run}
+    assert cleaned_steps == []
+
+
+def test_get_isolated_step_status_batches_cached_run_jobs(monkeypatch):
+    """Isolated step polling shares one Slurm state query per cache window."""
+    op = _build_orchestrator()
+
+    class StatusRunner(FakeRunner):
+        def run(self, command: str) -> CommandResult:
+            self.commands.append(command)
+            if command.startswith("squeue"):
+                return CommandResult(
+                    exit_code=0,
+                    stdout="1000|PENDING\n1001|RUNNING\n",
+                    stderr="",
+                )
+            return CommandResult(exit_code=0, stdout="", stderr="")
+
+    runner = StatusRunner()
+    client_builds: List[SlurmClient] = []
+
+    def build_client(config: SlurmOrchestratorConfig) -> SlurmClient:
+        """Build a fake Slurm client and track connection churn.
+
+        Args:
+            config: Unused Slurm orchestrator config.
+
+        Returns:
+            A Slurm client backed by the fake runner.
+        """
+        _ = config
+        client = SlurmClient(runner)
+        client_builds.append(client)
+        return client
+
+    monkeypatch.setattr(
+        "zenml.integrations.slurm.orchestrators.slurm_orchestrator"
+        ".build_slurm_client",
+        build_client,
+    )
+    run_id = uuid4()
+    first_step = SimpleNamespace(
+        id=uuid4(),
+        pipeline_run_id=run_id,
+        run_metadata={SLURM_ISOLATED_JOB_ID_METADATA_KEY: "1000"},
+    )
+    second_step = SimpleNamespace(
+        id=uuid4(),
+        pipeline_run_id=run_id,
+        run_metadata={SLURM_ISOLATED_JOB_ID_METADATA_KEY: "1001"},
+    )
+
+    class FakeClient:
+        def get_pipeline_run(self, *args, **kwargs):
+            return _run(
+                run_id=run_id,
+                run_metadata={
+                    SLURM_ISOLATED_JOB_IDS_METADATA_KEY: {
+                        str(first_step.id): "1000",
+                        str(second_step.id): "1001",
+                    }
+                },
+            )
+
+    monkeypatch.setattr("zenml.client.Client", lambda: FakeClient())
+
+    assert (
+        op.get_isolated_step_status(first_step)
+        is ExecutionStatus.PROVISIONING
+    )
+    assert op.get_isolated_step_status(second_step) is ExecutionStatus.RUNNING
+    assert [
+        command for command in runner.commands if command.startswith("squeue")
+    ] == ["squeue --noheader --format='%i|%T' --jobs=1000,1001"]
+    assert len(client_builds) == 1
 
 
 def test_stop_and_cleanup_isolated_step(monkeypatch):

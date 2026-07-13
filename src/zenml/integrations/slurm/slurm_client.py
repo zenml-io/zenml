@@ -331,28 +331,25 @@ class SlurmClient:
         if not missing_job_ids:
             return states
 
-        # Completed jobs can disappear from squeue before a shared-filesystem
-        # sentinel becomes visible. Slurm keeps them in controller memory for
-        # MinJobAge, so scontrol closes that race without requiring sacct.
-        for missing_job_id in missing_job_ids:
-            result = self.runner.run(
-                "scontrol show job --oneliner "
-                f"{shlex.quote(missing_job_id)}"
+        # Completed jobs can disappear from the default squeue result before
+        # a shared-filesystem sentinel becomes visible. Ask for all states in
+        # one supported batched lookup to close that race without sacct.
+        missing_jobs_arg = ",".join(missing_job_ids)
+        result = self.runner.run(
+            f"squeue --noheader --format={shlex.quote('%i|%T')} "
+            f"--states=all --jobs={shlex.quote(missing_jobs_arg)}"
+        )
+        if result.exit_code != 0:
+            if "invalid job id" in result.stderr.lower():
+                return states
+            raise RuntimeError(
+                f"`squeue --states=all` failed with exit code "
+                f"{result.exit_code}: {result.stderr.strip()}"
             )
-            if result.exit_code != 0:
-                if "invalid job id" in result.stderr.lower():
-                    continue
-                raise RuntimeError(
-                    f"`scontrol show job` failed with exit code "
-                    f"{result.exit_code}: {result.stderr.strip()}"
-                )
-            for line in result.stdout.strip().splitlines():
-                job_id_match = re.search(r"(?:^|\s)JobId=([0-9]+)", line)
-                state_match = re.search(r"(?:^|\s)JobState=([^\s]+)", line)
-                if job_id_match and state_match:
-                    job_id = job_id_match.group(1)
-                    if job_id in states:
-                        states[job_id] = state_match.group(1)
+        for line in result.stdout.strip().splitlines():
+            job_id, separator, state = line.strip().partition("|")
+            if separator and job_id in states:
+                states[job_id] = state.strip()
 
         return states
 

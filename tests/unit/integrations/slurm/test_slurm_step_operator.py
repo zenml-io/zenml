@@ -261,25 +261,19 @@ def test_client_batches_job_state_lookup():
     class BatchRunner(FakeRunner):
         def run(self, command: str) -> CommandResult:
             self.commands.append(command)
+            if (
+                command.startswith("squeue --noheader")
+                and "--states=all" in command
+            ):
+                return CommandResult(
+                    exit_code=0,
+                    stdout="34567|COMPLETED\n45678|FAILED\n",
+                    stderr="",
+                )
             if command.startswith("squeue"):
                 return CommandResult(
                     exit_code=0,
                     stdout="12345|RUNNING\n23456|PENDING\n",
-                    stderr="",
-                )
-            if command == "scontrol show job --oneliner 34567":
-                return CommandResult(
-                    exit_code=0,
-                    stdout=(
-                        "JobId=34567 JobState=COMPLETED "
-                        "Command=/s/job.sh\n"
-                    ),
-                    stderr="",
-                )
-            if command == "scontrol show job --oneliner 45678":
-                return CommandResult(
-                    exit_code=0,
-                    stdout="JobId=45678 JobState=FAILED Command=/s/job.sh\n",
                     stderr="",
                 )
             return CommandResult(exit_code=0, stdout="", stderr="")
@@ -297,8 +291,7 @@ def test_client_batches_job_state_lookup():
     }
     assert runner.commands == [
         "squeue --noheader --format='%i|%T' --jobs=12345,23456,34567,45678",
-        "scontrol show job --oneliner 34567",
-        "scontrol show job --oneliner 45678",
+        "squeue --noheader --format='%i|%T' --states=all --jobs=34567,45678",
     ]
 
 
