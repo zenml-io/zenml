@@ -25,12 +25,13 @@ concurrency:
   # New commit on branch cancels running workflows of the same branch
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+env:
+  ZENML_DEBUG: true
+  ZENML_LOGGING_VERBOSITY: debug
+  ZENML_ANALYTICS_OPT_IN: false
 jobs:
   sqlite-db-migration-testing-random:
     runs-on: ubuntu-latest
-    env:
-      ZENML_ANALYTICS_OPT_IN: false
-      ZENML_DEBUG: true
     # if team member commented, not a draft, on a PR, using /fulltest
     if: github.event.pull_request.draft == false || github.event_name == 'workflow_dispatch'
     steps:

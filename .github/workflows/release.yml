@@ -3,6 +3,10 @@ name: Release Package & Docker Image
 on:
   push:
     tags: ['*']
+env:
+  ZENML_DEBUG: true
+  ZENML_LOGGING_VERBOSITY: debug
+  ZENML_ANALYTICS_OPT_IN: false
 jobs:
   setup-and-test:
     uses: ./.github/workflows/unit-test.yml
@@ -14,9 +18,6 @@ jobs:
   # test full migrations.
   mysql-db-migration-testing:
     runs-on: ubuntu-latest
-    env:
-      ZENML_ANALYTICS_OPT_IN: false
-      ZENML_DEBUG: true
     steps:
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
@@ -35,9 +36,6 @@ jobs:
         run: bash scripts/test-migrations.sh mysql latest
   sqlite-db-migration-testing:
     runs-on: ubuntu-latest
-    env:
-      ZENML_ANALYTICS_OPT_IN: false
-      ZENML_DEBUG: true
     steps:
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
@@ -51,9 +49,6 @@ jobs:
         run: bash scripts/test-migrations.sh sqlite latest
   mariadb-db-migration-testing:
     runs-on: ubuntu-latest
-    env:
-      ZENML_ANALYTICS_OPT_IN: false
-      ZENML_DEBUG: true
     steps:
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
@@ -88,8 +83,6 @@ jobs:
       id-token: write
       contents: read
     env:
-      ZENML_DEBUG: 1
-      ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
