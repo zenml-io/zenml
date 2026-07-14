@@ -105,8 +105,8 @@ def test_start_after_released_by_failed_upstream() -> None:
     graph.register_step_node(node_id="b", start_upstream_ids=["a"])
 
     graph.mark_node_starting("a")
-    became_ready = graph.mark_node_failed("a")
-    assert became_ready is True
+    skipped = graph.mark_node_failed("a")
+    assert skipped == []
     assert graph.get_node_state("b") == NodeState.READY
 
 
