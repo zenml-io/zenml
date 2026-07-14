@@ -43,6 +43,7 @@ from uuid import uuid4
 from pydantic import TypeAdapter
 
 from zenml.artifacts.in_memory_cache import InMemoryArtifactCache
+from zenml.artifacts.staging import StagedArtifactUploader
 from zenml.client import Client
 from zenml.config.step_configurations import (
     GroupInfo,
@@ -349,6 +350,8 @@ class DynamicPipelineRunner:
             self._orchestrator = stack.orchestrator
 
         self._step_operator = stack.step_operator
+        self._artifact_store = stack.artifact_store
+        self._artifact_uploader: Optional[StagedArtifactUploader] = None
         self._invocation_id_lock = threading.Lock()
         self._invocation_ids: Set[str] = set()
 
@@ -883,8 +886,16 @@ class DynamicPipelineRunner:
                 self._publish_run_status(exception=e)
                 raise
 
+            staging_context: ContextManager[Any] = nullcontext()
+            if self._artifact_staging_enabled():
+                self._artifact_uploader = StagedArtifactUploader(
+                    artifact_store=self._artifact_store
+                )
+                staging_context = self._artifact_uploader.staging_context
+
             with (
                 InMemoryArtifactCache(),
+                staging_context,
                 env_utils.temporary_runtime_environment(
                     self._snapshot.pipeline_configuration, self._snapshot.stack
                 ),
@@ -938,6 +949,8 @@ class DynamicPipelineRunner:
                         )
 
                     self._executor.shutdown(wait=True, cancel_futures=True)
+                    if self._artifact_uploader:
+                        self._artifact_uploader.shutdown()
 
                     self._shutdown_requested = True
                     self._startup_event.set()
@@ -1840,8 +1853,21 @@ class DynamicPipelineRunner:
             if self._exception:
                 raise self._exception
             if not self._future_registry.has_in_progress_work():
-                return
+                break
             time.sleep(1)
+
+        if self._artifact_uploader:
+            self._artifact_uploader.wait()
+
+    def _artifact_staging_enabled(self) -> bool:
+        """Whether artifact staging is enabled for this run.
+
+        Returns:
+            Whether artifact staging is enabled.
+        """
+        # For a local artifact store, staging the data on local disk first
+        # does not speed anything up.
+        return not self._artifact_store.config.is_local
 
     def _on_failure_detected(self, exception: BaseException) -> None:
         """Handle any failure that happens during pipeline execution.

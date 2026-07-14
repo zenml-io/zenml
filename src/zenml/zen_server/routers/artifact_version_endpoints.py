@@ -35,7 +35,7 @@ from zenml.constants import (
     VERSION_1,
     VISUALIZE,
 )
-from zenml.enums import DownloadType
+from zenml.enums import ArtifactVersionAvailability, DownloadType
 from zenml.models import (
     ArtifactVersionFilter,
     ArtifactVersionRequest,
@@ -310,6 +310,13 @@ def delete_artifact_version(
     if delete_metadata:
         zen_store().delete_artifact_version(artifact_version.id)
         delete_model_resource(artifact_version)
+    elif delete_from_artifact_store:
+        zen_store().update_artifact_version(
+            artifact_version_id=artifact_version.id,
+            artifact_version_update=ArtifactVersionUpdate(
+                availability=ArtifactVersionAvailability.DELETED
+            ),
+        )
 
 
 @artifact_version_router.delete(

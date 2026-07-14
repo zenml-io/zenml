@@ -159,6 +159,7 @@ from zenml.constants import (
 )
 from zenml.enums import (
     ArtifactSaveType,
+    ArtifactVersionAvailability,
     AuthScheme,
     DatabaseBackupStrategy,
     DeploymentStatus,
@@ -3293,6 +3294,9 @@ class SqlZenStore(BaseZenStore):
             artifact_version_update: The update to be applied to the artifact
                 version.
 
+        Raises:
+            IllegalOperationError: If the availability update is not allowed.
+
         Returns:
             The updated artifact version.
         """
@@ -3302,6 +3306,32 @@ class SqlZenStore(BaseZenStore):
                 schema_class=ArtifactVersionSchema,
                 session=session,
             )
+
+            if artifact_version_update.availability is not None:
+                current_availability = ArtifactVersionAvailability(
+                    existing_artifact_version.availability
+                )
+                if (
+                    artifact_version_update.availability
+                    == ArtifactVersionAvailability.DELETED
+                ):
+                    allowed = (
+                        current_availability
+                        != ArtifactVersionAvailability.UNMATERIALIZED
+                    )
+                else:
+                    allowed = (
+                        current_availability
+                        == ArtifactVersionAvailability.PENDING
+                    )
+
+                if not allowed:
+                    raise IllegalOperationError(
+                        "Updating the availability of the artifact version "
+                        f"from {current_availability} to "
+                        f"{artifact_version_update.availability} is not "
+                        "allowed."
+                    )
 
             # Update the schema itself.
             existing_artifact_version.update(

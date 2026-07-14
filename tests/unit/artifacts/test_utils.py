@@ -30,9 +30,11 @@ from zenml.artifacts.utils import (
     load_model_from_metadata,
     save_model_metadata,
     should_use_artifact_store_cache,
+    verify_artifact_data_availability,
 )
 from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
+from zenml.enums import ArtifactVersionAvailability
 from zenml.materializers.pydantic_materializer import DEFAULT_FILENAME
 from zenml.models import ArtifactVersionResponse
 
@@ -51,6 +53,7 @@ def model_artifact(mocker, clean_client: "Client"):
         data_type="path/to/model/class",
         materializer="path/to/materializer/class",
         artifact_store_id=clean_client.active_stack.artifact_store.id,
+        availability=ArtifactVersionAvailability.AVAILABLE,
     )
 
 
@@ -283,3 +286,79 @@ def test_instantiate_artifact_store_builds_when_disabled(monkeypatch):
     )
 
     assert au.instantiate_artifact_store(_artifact_store_model()) is store
+
+
+def _with_availability(artifact_version, availability):
+    body = artifact_version.get_body().model_copy(
+        update={"availability": availability}
+    )
+    return artifact_version.model_copy(update={"body": body})
+
+
+def test_verify_artifact_data_availability_for_available_artifact(
+    sample_artifact_version_model,
+):
+    """An available artifact passes without any server calls."""
+    verify_artifact_data_availability(
+        artifact=sample_artifact_version_model, wait=False
+    )
+
+
+def test_verify_artifact_data_availability_for_unmaterialized_artifact(
+    sample_artifact_version_model,
+):
+    """An unmaterialized artifact fails immediately."""
+    artifact = _with_availability(
+        sample_artifact_version_model,
+        ArtifactVersionAvailability.UNMATERIALIZED,
+    )
+    with pytest.raises(RuntimeError, match="materialization disabled"):
+        verify_artifact_data_availability(artifact=artifact, wait=False)
+
+
+def test_verify_artifact_data_availability_refreshes_pending_artifact(
+    mocker, sample_artifact_version_model
+):
+    """A stale pending artifact is refreshed before failing."""
+    pending = _with_availability(
+        sample_artifact_version_model, ArtifactVersionAvailability.PENDING
+    )
+    mock_client = MagicMock()
+    mock_client.zen_store.get_artifact_version.return_value = (
+        sample_artifact_version_model
+    )
+    mocker.patch("zenml.artifacts.utils.Client", return_value=mock_client)
+
+    verify_artifact_data_availability(artifact=pending, wait=False)
+    mock_client.zen_store.get_artifact_version.assert_called_once()
+
+
+def test_verify_artifact_data_availability_for_failed_upload(
+    mocker, sample_artifact_version_model
+):
+    """An artifact with a failed data upload fails."""
+    failed = _with_availability(
+        sample_artifact_version_model,
+        ArtifactVersionAvailability.UPLOAD_FAILED,
+    )
+    mock_client = MagicMock()
+    mock_client.zen_store.get_artifact_version.return_value = failed
+    mocker.patch("zenml.artifacts.utils.Client", return_value=mock_client)
+
+    with pytest.raises(RuntimeError, match="upload failed"):
+        verify_artifact_data_availability(artifact=failed, wait=False)
+
+
+def test_verify_artifact_data_availability_for_pending_artifact_without_wait(
+    mocker, sample_artifact_version_model
+):
+    """A pending artifact fails without waiting when wait is disabled."""
+    pending = _with_availability(
+        sample_artifact_version_model, ArtifactVersionAvailability.PENDING
+    )
+    mock_client = MagicMock()
+    mock_client.zen_store.get_artifact_version.return_value = pending
+    mocker.patch("zenml.artifacts.utils.Client", return_value=mock_client)
+
+    with pytest.raises(RuntimeError, match="still in progress"):
+        verify_artifact_data_availability(artifact=pending, wait=False)

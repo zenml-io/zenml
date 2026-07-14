@@ -242,6 +242,14 @@ class StepConfigurationUpdate(FrozenBaseModel):
         "run inline unless a step operator or docker/resource settings "
         "are configured. This is only applicable for dynamic pipelines.",
     )
+    defer_output_upload: Optional[bool] = Field(
+        default=None,
+        description="Whether to defer the upload of output artifacts. If "
+        "enabled, output artifacts are stored on local disk and the step "
+        "finishes without waiting for the upload to the artifact store, "
+        "which happens in the background. This is only applicable for "
+        "inline steps in dynamic pipelines.",
+    )
     heartbeat_healthy_threshold: int = Field(
         default=30,
         description="The amount of time (in minutes) that a running step "

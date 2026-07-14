@@ -54,6 +54,19 @@ class ArtifactSaveType(StrEnum):
     )
 
 
+class ArtifactVersionAvailability(StrEnum):
+    """All possible availability states of artifact version data."""
+
+    AVAILABLE = "available"
+    # The artifact version was registered without storing any data
+    UNMATERIALIZED = "unmaterialized"
+    # The data upload to the artifact store is still in progress
+    PENDING = "pending"
+    UPLOAD_FAILED = "upload_failed"
+    # The data was deleted from the artifact store
+    DELETED = "deleted"
+
+
 class DownloadType(StrEnum):
     """All possible types of downloadable content."""
 

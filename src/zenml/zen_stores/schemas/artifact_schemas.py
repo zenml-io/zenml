@@ -26,6 +26,7 @@ from zenml.config.source import Source
 from zenml.enums import (
     ArtifactSaveType,
     ArtifactType,
+    ArtifactVersionAvailability,
     ExecutionStatus,
     MetadataResourceTypes,
     TaggableResourceTypes,
@@ -309,6 +310,10 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         ),
     )
     save_type: str = Field(sa_column=Column(TEXT, nullable=False))
+    availability: str = Field(
+        default=ArtifactVersionAvailability.AVAILABLE.value,
+        sa_column=Column(TEXT, nullable=False),
+    )
     content_hash: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     item_count: Optional[int] = None
 
@@ -497,6 +502,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
             materializer=artifact_version_request.materializer.model_dump_json(),
             data_type=artifact_version_request.data_type.model_dump_json(),
             save_type=artifact_version_request.save_type.value,
+            availability=artifact_version_request.availability.value,
             content_hash=artifact_version_request.content_hash,
             item_count=artifact_version_request.item_count,
         )
@@ -545,6 +551,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
             created=self.created,
             updated=self.updated,
             save_type=ArtifactSaveType(self.save_type),
+            availability=ArtifactVersionAvailability(self.availability),
             artifact_store_id=self.artifact_store_id,
             content_hash=self.content_hash,
             item_count=self.item_count,
@@ -593,5 +600,8 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         Returns:
             The updated `ArtifactVersionSchema`.
         """
+        if artifact_version_update.availability is not None:
+            self.availability = artifact_version_update.availability.value
+
         self.updated = utc_now()
         return self

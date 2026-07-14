@@ -14,8 +14,18 @@
 import inspect
 from contextlib import ExitStack as does_not_raise
 from typing import Optional
+from unittest.mock import MagicMock
 
-from zenml.steps.entrypoint_function_utils import EntrypointFunctionDefinition
+import pytest
+
+from zenml.artifacts.artifact_config import ArtifactConfig
+from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
+from zenml.exceptions import StepInterfaceError
+from zenml.steps.entrypoint_function_utils import (
+    EntrypointFunctionDefinition,
+    StepArtifact,
+)
+from zenml.steps.utils import OutputSignature
 
 
 class CustomType:
@@ -36,3 +46,56 @@ def test_passing_none_for_optional_artifact() -> None:
 
     with does_not_raise():
         entrypoint_function_definition.validate_input(key="key", value=None)
+
+
+def _unmaterialized_step_artifact() -> StepArtifact:
+    return StepArtifact(
+        invocation_id="producer",
+        output_name="output",
+        annotation=OutputSignature(
+            resolved_annotation=int,
+            artifact_config=ArtifactConfig(materialize=False),
+        ),
+        pipeline=MagicMock(),
+    )
+
+
+def _definition_with_annotation(annotation) -> EntrypointFunctionDefinition:
+    return EntrypointFunctionDefinition(
+        inputs={
+            "key": inspect.Parameter(
+                name="key",
+                kind=inspect.Parameter.KEYWORD_ONLY,
+                annotation=annotation,
+            )
+        },
+        outputs={},
+    )
+
+
+def test_passing_unmaterialized_output_as_input() -> None:
+    """Test that unmaterialized step outputs are rejected as step inputs."""
+    entrypoint_function_definition = _definition_with_annotation(int)
+
+    with pytest.raises(StepInterfaceError):
+        entrypoint_function_definition.validate_input(
+            key="key", value=_unmaterialized_step_artifact()
+        )
+
+    with pytest.raises(StepInterfaceError):
+        entrypoint_function_definition.validate_input(
+            key="key", value=[_unmaterialized_step_artifact()]
+        )
+
+
+def test_passing_unmaterialized_output_as_unmaterialized_input() -> None:
+    """Test that unmaterialized step outputs are allowed as inputs that are
+    annotated as `UnmaterializedArtifact`."""
+    entrypoint_function_definition = _definition_with_annotation(
+        UnmaterializedArtifact
+    )
+
+    with does_not_raise():
+        entrypoint_function_definition.validate_input(
+            key="key", value=_unmaterialized_step_artifact()
+        )

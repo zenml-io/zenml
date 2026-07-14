@@ -177,6 +177,9 @@ class EntrypointFunctionDefinition(NamedTuple):
                 LazyRunMetadataResponse,
             ),
         ):
+            if parameter.annotation is not UnmaterializedArtifact:
+                self._validate_input_data_availability(key=key, value=value)
+
             # If we were to do any type validation for artifacts here, we
             # would not be able to leverage pydantics type coercion (e.g.
             # providing an `int` artifact for a `float` input)
@@ -184,6 +187,9 @@ class EntrypointFunctionDefinition(NamedTuple):
         elif isinstance(value, list) and all(
             isinstance(item, StepArtifact) for item in value
         ):
+            for item in value:
+                self._validate_input_data_availability(key=key, value=item)
+
             # Same as above, we don't do any type validation for a list of
             # artifacts here.
             return
@@ -212,6 +218,51 @@ class EntrypointFunctionDefinition(NamedTuple):
                 f"Expected type `{parameter.annotation}` but received type "
                 f"`{type(value)}`."
             ) from e
+
+    def _validate_input_data_availability(self, key: str, value: Any) -> None:
+        """Validates that an artifact input will have data available.
+
+        Args:
+            key: The key for which the input was passed.
+            value: The input value.
+
+        Raises:
+            StepInterfaceError: If the input refers to an artifact that is
+                not materialized.
+        """
+        from zenml.enums import ArtifactVersionAvailability
+        from zenml.models import ArtifactVersionResponse
+        from zenml.models.v2.core.artifact_version import (
+            LazyArtifactVersionResponse,
+        )
+
+        if isinstance(value, StepArtifact):
+            artifact_config = value.annotation.artifact_config
+            if artifact_config is not None and not artifact_config.materialize:
+                raise StepInterfaceError(
+                    f"The input `{key}` refers to output "
+                    f"`{value.output_name}` of step `{value.invocation_id}` "
+                    "which is configured to not be materialized and can "
+                    "therefore not be used as a step input."
+                )
+        elif isinstance(value, ArtifactVersionResponse) and not isinstance(
+            value, LazyArtifactVersionResponse
+        ):
+            if (
+                value.availability
+                == ArtifactVersionAvailability.UNMATERIALIZED
+            ):
+                raise StepInterfaceError(
+                    f"The input `{key}` refers to artifact version "
+                    f"{value.id} which was saved without materialization "
+                    "and can therefore not be used as a step input."
+                )
+            elif value.availability == ArtifactVersionAvailability.DELETED:
+                raise StepInterfaceError(
+                    f"The input `{key}` refers to artifact version "
+                    f"{value.id} whose data was deleted and can therefore "
+                    "not be used as a step input."
+                )
 
     def _validate_input_value(
         self, parameter: inspect.Parameter, value: Any

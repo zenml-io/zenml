@@ -86,6 +86,7 @@ def step(
     substitutions: Optional[Dict[str, str]] = None,
     cache_policy: Optional["CachePolicyOrString"] = None,
     runtime: Optional[StepRuntime] = None,
+    defer_output_upload: Optional[bool] = None,
     heartbeat_healthy_threshold: Optional[int] = None,
     group: Optional[Union["GroupInfo", str]] = None,
 ) -> Callable[["F"], "BaseStep"]: ...
@@ -116,6 +117,7 @@ def step(
     substitutions: Optional[Dict[str, str]] = None,
     cache_policy: Optional["CachePolicyOrString"] = None,
     runtime: Optional[StepRuntime] = None,
+    defer_output_upload: Optional[bool] = None,
     heartbeat_healthy_threshold: Optional[int] = None,
     group: Optional[Union["GroupInfo", str]] = None,
 ) -> Union["BaseStep", Callable[["F"], "BaseStep"]]:
@@ -161,6 +163,8 @@ def step(
             run inline unless a step operator or docker/resource settings
             are configured. This is only applicable for dynamic
             pipelines.
+        defer_output_upload: Whether to defer the upload of output artifacts.
+            This is only applicable for inline steps in dynamic pipelines.
         heartbeat_healthy_threshold: The amount of time (in minutes) that a
             running step has not received heartbeat and is considered healthy.
             By default, set to 30 minutes.
@@ -206,6 +210,7 @@ def step(
             substitutions=substitutions,
             cache_policy=cache_policy,
             runtime=runtime,
+            defer_output_upload=defer_output_upload,
             heartbeat_healthy_threshold=heartbeat_healthy_threshold,
             group=group,
         )

@@ -18,6 +18,7 @@ import contextlib
 import os
 import re
 import tempfile
+import time
 import zipfile
 from pathlib import Path
 from typing import (
@@ -38,13 +39,16 @@ from zenml.artifacts.preexisting_data_materializer import (
 )
 from zenml.client import Client
 from zenml.constants import (
+    ENV_ZENML_ARTIFACT_UPLOAD_WAIT_TIMEOUT,
     ENV_ZENML_SERVER,
     IN_MEMORY_ARTIFACT_URI_PREFIX,
     MODEL_METADATA_YAML_FILE_NAME,
+    handle_int_env_var,
 )
 from zenml.enums import (
     ArtifactSaveType,
     ArtifactType,
+    ArtifactVersionAvailability,
     ExecutionStatus,
     StackComponentType,
     VisualizationType,
@@ -134,6 +138,8 @@ def _store_artifact_data_and_prepare_request(
     store_visualizations: bool = True,
     has_custom_name: bool = True,
     metadata: Optional[Dict[str, "MetadataType"]] = None,
+    staging_artifact_store: Optional["BaseArtifactStore"] = None,
+    staging_uri: Optional[str] = None,
 ) -> ArtifactVersionRequest:
     """Store artifact data and prepare a request to the server.
 
@@ -155,6 +161,9 @@ def _store_artifact_data_and_prepare_request(
         has_custom_name: Whether the artifact has a custom name.
         metadata: Metadata to store for the artifact version. This will be
             ignored if `store_metadata` is set to `False`.
+        staging_artifact_store: The artifact store in which to stage the
+            artifact data instead of storing it at its final URI.
+        staging_uri: The URI at which to stage the artifact data.
 
     Returns:
         Artifact version request for the artifact data that was stored.
@@ -162,13 +171,28 @@ def _store_artifact_data_and_prepare_request(
     uses_in_memory_materializer = issubclass(
         materializer_class, InMemoryMaterializer
     )
+    is_staged = (
+        staging_artifact_store is not None
+        and staging_uri is not None
+        and not uses_in_memory_materializer
+    )
+
+    if is_staged:
+        assert staging_artifact_store and staging_uri
+        save_artifact_store = staging_artifact_store
+        save_uri = staging_uri
+    else:
+        save_artifact_store = artifact_store
+        save_uri = uri
 
     if not uses_in_memory_materializer:
-        artifact_store.makedirs(uri)
-    elif not uri.startswith(IN_MEMORY_ARTIFACT_URI_PREFIX):
-        uri = f"{IN_MEMORY_ARTIFACT_URI_PREFIX}{name}/{uuid4()}"
+        save_artifact_store.makedirs(save_uri)
+    elif not save_uri.startswith(IN_MEMORY_ARTIFACT_URI_PREFIX):
+        save_uri = f"{IN_MEMORY_ARTIFACT_URI_PREFIX}{name}/{uuid4()}"
 
-    materializer = materializer_class(uri=uri, artifact_store=artifact_store)
+    materializer = materializer_class(
+        uri=save_uri, artifact_store=save_artifact_store
+    )
     materializer.uri = materializer.uri.replace("\\", "/")
 
     data_type = type(data)
@@ -194,12 +218,24 @@ def _store_artifact_data_and_prepare_request(
 
     content_hash = materializer.compute_content_hash(data)
 
+    if is_staged:
+        final_uri = uri.replace("\\", "/")
+        if visualizations:
+            # The visualizations were saved in the staging directory and will
+            # be uploaded to the final URI later.
+            for visualization in visualizations:
+                visualization.uri = visualization.uri.replace(
+                    materializer.uri, final_uri, 1
+                )
+    else:
+        final_uri = materializer.uri
+
     artifact_version_request = ArtifactVersionRequest(
         artifact_name=name,
         version=version,
         tags=tags,
         type=artifact_type or materializer.ASSOCIATED_ARTIFACT_TYPE,
-        uri=materializer.uri,
+        uri=final_uri,
         materializer=source_utils.resolve(materializer.__class__),
         data_type=source_utils.resolve(data_type),
         content_hash=content_hash,
@@ -210,6 +246,9 @@ def _store_artifact_data_and_prepare_request(
         visualizations=visualizations,
         has_custom_name=has_custom_name,
         save_type=save_type,
+        availability=ArtifactVersionAvailability.PENDING
+        if is_staged
+        else ArtifactVersionAvailability.AVAILABLE,
         item_count=materializer.get_item_count(data),
         metadata=validate_metadata(combined_metadata)
         if combined_metadata
@@ -217,6 +256,117 @@ def _store_artifact_data_and_prepare_request(
     )
 
     return artifact_version_request
+
+
+def _prepare_unmaterialized_artifact_request(
+    name: str,
+    uri: str,
+    materializer_class: Type["BaseMaterializer"],
+    data_type: Type[Any],
+    save_type: ArtifactSaveType,
+    version: Optional[Union[int, str]] = None,
+    artifact_type: Optional[ArtifactType] = None,
+    tags: Optional[List[str]] = None,
+    has_custom_name: bool = True,
+    metadata: Optional[Dict[str, "MetadataType"]] = None,
+) -> ArtifactVersionRequest:
+    """Prepare a request for an artifact version without data.
+
+    Args:
+        name: The artifact name.
+        uri: The artifact URI.
+        materializer_class: The materializer class that would have been used
+            to store the artifact data.
+        data_type: The data type of the artifact.
+        save_type: Save type of the artifact version.
+        version: The artifact version.
+        artifact_type: The artifact type. If not given, the type will be
+            defined by the materializer class.
+        tags: Tags for the artifact version.
+        has_custom_name: Whether the artifact has a custom name.
+        metadata: Metadata to store for the artifact version.
+
+    Returns:
+        Artifact version request.
+    """
+    return ArtifactVersionRequest(
+        artifact_name=name,
+        version=version,
+        tags=tags,
+        type=artifact_type or materializer_class.ASSOCIATED_ARTIFACT_TYPE,
+        uri=uri,
+        materializer=source_utils.resolve(materializer_class),
+        data_type=source_utils.resolve(data_type),
+        project=Client().active_project.id,
+        artifact_store_id=None,
+        has_custom_name=has_custom_name,
+        save_type=save_type,
+        availability=ArtifactVersionAvailability.UNMATERIALIZED,
+        metadata=validate_metadata(metadata) if metadata else None,
+    )
+
+
+def verify_artifact_data_availability(
+    artifact: "ArtifactVersionResponse", wait: bool
+) -> None:
+    """Verify that the data of an artifact version is available.
+
+    Args:
+        artifact: The artifact version.
+        wait: Whether to wait for pending data uploads.
+
+    Raises:
+        RuntimeError: If the artifact version has no data or the data upload
+            failed or is still in progress.
+    """
+    availability = artifact.availability
+
+    if availability == ArtifactVersionAvailability.AVAILABLE:
+        return
+
+    if availability == ArtifactVersionAvailability.UNMATERIALIZED:
+        raise RuntimeError(
+            f"Unable to load artifact version {artifact.id} because it was "
+            "saved with materialization disabled and has no data."
+        )
+
+    if availability == ArtifactVersionAvailability.DELETED:
+        raise RuntimeError(
+            f"Unable to load artifact version {artifact.id} because its "
+            "data was deleted."
+        )
+
+    timeout = handle_int_env_var(
+        ENV_ZENML_ARTIFACT_UPLOAD_WAIT_TIMEOUT, default=600
+    )
+    deadline = time.monotonic() + (timeout if wait else 0)
+
+    while True:
+        availability = (
+            Client()
+            .zen_store.get_artifact_version(artifact.id, hydrate=False)
+            .availability
+        )
+
+        if availability == ArtifactVersionAvailability.AVAILABLE:
+            return
+        elif availability == ArtifactVersionAvailability.UPLOAD_FAILED:
+            raise RuntimeError(
+                f"Unable to load artifact version {artifact.id} because its "
+                "data upload failed."
+            )
+        elif availability == ArtifactVersionAvailability.DELETED:
+            raise RuntimeError(
+                f"Unable to load artifact version {artifact.id} because its "
+                "data was deleted."
+            )
+        elif time.monotonic() >= deadline:
+            raise RuntimeError(
+                f"Unable to load artifact version {artifact.id} because its "
+                "data upload is still in progress."
+            )
+
+        time.sleep(5)
 
 
 def save_artifact(
@@ -571,6 +721,8 @@ def load_artifact_visualization(
             visualization or if the visualization was not found in the artifact
             store.
     """
+    verify_artifact_data_availability(artifact=artifact, wait=False)
+
     # Get the visualization to load
     if not artifact.visualizations:
         raise DoesNotExistException(
@@ -615,6 +767,28 @@ def load_artifact_from_response(artifact: "ArtifactVersionResponse") -> Any:
     Returns:
         The artifact loaded into memory.
     """
+    from zenml.artifacts.staging import ArtifactStagingContext
+
+    if staging_context := ArtifactStagingContext.get():
+        if staged_uri := staging_context.get_staged_uri(artifact.id):
+            try:
+                return _load_artifact_from_uri(
+                    materializer=artifact.materializer,
+                    data_type=artifact.data_type,
+                    uri=staged_uri,
+                    artifact_store=staging_context.artifact_store,
+                )
+            except Exception:
+                # The staged data might have been discarded after the upload
+                # finished, in which case we load the data from the artifact
+                # store instead.
+                logger.debug(
+                    "Failed to load staged data for artifact version %s.",
+                    artifact.id,
+                )
+
+    verify_artifact_data_availability(artifact=artifact, wait=False)
+
     artifact_store = _get_artifact_store_from_response_or_from_active_stack(
         artifact=artifact
     )
@@ -647,6 +821,8 @@ def download_artifact_files_from_response(
         raise FileExistsError(
             f"File '{path}' already exists and `overwrite` is set to `False`."
         )
+
+    verify_artifact_data_availability(artifact=artifact, wait=False)
 
     artifact_store = _get_artifact_store_from_response_or_from_active_stack(
         artifact=artifact

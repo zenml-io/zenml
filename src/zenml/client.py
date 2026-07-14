@@ -62,6 +62,7 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.enums import (
+    ArtifactVersionAvailability,
     ColorVariants,
     CuratedVisualizationSize,
     LogicalOperators,
@@ -6028,6 +6029,13 @@ class Client(metaclass=ClientMetaClass):
             self._delete_artifact_from_artifact_store(
                 artifact_version=artifact_version
             )
+            if not delete_metadata and artifact_version.artifact_store_id:
+                self.zen_store.update_artifact_version(
+                    artifact_version_id=artifact_version.id,
+                    artifact_version_update=ArtifactVersionUpdate(
+                        availability=ArtifactVersionAvailability.DELETED
+                    ),
+                )
         if delete_metadata or (server_side and delete_from_artifact_store):
             self._delete_artifact_version(
                 artifact_version=artifact_version,

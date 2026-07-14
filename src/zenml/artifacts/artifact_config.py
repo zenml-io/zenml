@@ -58,6 +58,9 @@ class ArtifactConfig(BaseModel):
         artifact_type: Optional type of the artifact. If not given, the type
             specified by the materializer that is used to save this artifact
             is used.
+        materialize: Whether to materialize the artifact. If disabled, the
+            artifact version is still tracked but no data is stored for it,
+            and it can not be used as input for other steps.
     """
 
     name: Optional[str] = None
@@ -68,6 +71,7 @@ class ArtifactConfig(BaseModel):
     run_metadata: Optional[Dict[str, MetadataType]] = None
 
     artifact_type: Optional[ArtifactType] = None
+    materialize: bool = True
 
     @model_validator(mode="before")
     @classmethod

@@ -18,7 +18,10 @@ from typing import TYPE_CHECKING, Dict, Sequence
 from uuid import uuid4
 
 from zenml.client import Client
-from zenml.constants import IN_MEMORY_ARTIFACT_URI_PREFIX
+from zenml.constants import (
+    IN_MEMORY_ARTIFACT_URI_PREFIX,
+    UNMATERIALIZED_ARTIFACT_URI_PREFIX,
+)
 from zenml.logger import get_logger
 from zenml.utils import string_utils
 
@@ -81,22 +84,28 @@ def prepare_output_artifact_uris(
     artifact_store = stack.artifact_store
     output_artifact_uris: Dict[str, str] = {}
 
-    for output_name in step.config.outputs.keys():
+    for output_name, output in step.config.outputs.items():
         substituted_output_name = string_utils.format_name_template(
             output_name, substitutions=step_run.config.substitutions
         )
-        artifact_store_path = (
-            IN_MEMORY_ARTIFACT_URI_PREFIX
-            if skip_artifact_materialization
-            else artifact_store.path
+        materialize_output = (
+            output.artifact_config is None
+            or output.artifact_config.materialize
         )
+        if not materialize_output:
+            artifact_store_path = UNMATERIALIZED_ARTIFACT_URI_PREFIX
+        elif skip_artifact_materialization:
+            artifact_store_path = IN_MEMORY_ARTIFACT_URI_PREFIX
+        else:
+            artifact_store_path = artifact_store.path
+
         artifact_uri = generate_artifact_uri(
             artifact_store_path=artifact_store_path,
             step_run=step_run,
             output_name=substituted_output_name,
         )
 
-        if not skip_artifact_materialization:
+        if materialize_output and not skip_artifact_materialization:
             if artifact_store.exists(artifact_uri):
                 raise RuntimeError("Artifact already exists")
             artifact_store.makedirs(artifact_uri)
@@ -114,5 +123,9 @@ def remove_artifact_dirs(artifact_uris: Sequence[str]) -> None:
     # checkpoints?
     artifact_store = Client().active_stack.artifact_store
     for artifact_uri in artifact_uris:
+        if artifact_uri.startswith(
+            (IN_MEMORY_ARTIFACT_URI_PREFIX, UNMATERIALIZED_ARTIFACT_URI_PREFIX)
+        ):
+            continue
         if artifact_store.isdir(artifact_uri):
             artifact_store.rmtree(artifact_uri)

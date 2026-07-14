@@ -122,6 +122,32 @@ def test_generate_cache_key_considers_artifact_store_path(
     assert key_1 != key_2
 
 
+def test_generate_cache_key_considers_output_materialization(
+    generate_cache_key_kwargs,
+):
+    """Check that the cache key changes if an output is not materialized."""
+    from zenml.artifacts.artifact_config import ArtifactConfig
+
+    key_1 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
+
+    compiled_step = generate_cache_key_kwargs["step"]
+    outputs = {
+        name: output.model_copy(
+            update={"artifact_config": ArtifactConfig(materialize=False)}
+        )
+        for name, output in compiled_step.config.outputs.items()
+    }
+    config = compiled_step.config.model_copy(update={"outputs": outputs})
+    generate_cache_key_kwargs["step"] = Step(
+        spec=compiled_step.spec,
+        config=config,
+        step_config_overrides=compiled_step.step_config_overrides,
+    )
+
+    key_2 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
+    assert key_1 != key_2
+
+
 def test_generate_cache_key_considers_step_source(generate_cache_key_kwargs):
     """Check that the cache key changes if the step source changes."""
     key_1 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)

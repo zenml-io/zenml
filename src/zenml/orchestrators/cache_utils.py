@@ -20,7 +20,11 @@ from uuid import UUID
 
 from zenml.client import Client
 from zenml.constants import CODE_HASH_PARAMETER_NAME
-from zenml.enums import ExecutionStatus, SorterOps
+from zenml.enums import (
+    ArtifactVersionAvailability,
+    ExecutionStatus,
+    SorterOps,
+)
 from zenml.logger import get_logger
 from zenml.orchestrators import step_run_utils
 from zenml.utils import source_code_utils, source_utils
@@ -130,6 +134,8 @@ def generate_cache_key(
         hash_.update(name.encode())
         for source in output.materializer_source:
             hash_.update(source.import_path.encode())
+        if output.artifact_config and not output.artifact_config.materialize:
+            hash_.update(b"unmaterialized")
 
     # Custom caching parameters
     for key, value in sorted(step.config.caching_parameters.items()):
@@ -247,7 +253,19 @@ def get_cached_step_run(cache_key: str) -> Optional["StepRunResponse"]:
     ).items
 
     if cache_candidates:
-        return cache_candidates[0]
+        candidate = cache_candidates[0]
+        for output_artifacts in candidate.outputs.values():
+            for artifact_version in output_artifacts:
+                if artifact_version.availability in {
+                    ArtifactVersionAvailability.PENDING,
+                    ArtifactVersionAvailability.UPLOAD_FAILED,
+                    ArtifactVersionAvailability.DELETED,
+                }:
+                    # The artifact has no loadable data, in which case the
+                    # downstream consumers of the cached step run would fail
+                    # to load it.
+                    return None
+        return candidate
     return None
 
 

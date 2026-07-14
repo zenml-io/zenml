@@ -36,7 +36,11 @@ from pydantic import (
 
 from zenml.config.source import Source, SourceWithValidator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.enums import ArtifactSaveType, ArtifactType
+from zenml.enums import (
+    ArtifactSaveType,
+    ArtifactType,
+    ArtifactVersionAvailability,
+)
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
@@ -128,6 +132,10 @@ class ArtifactVersionRequest(ProjectScopedRequest):
     save_type: ArtifactSaveType = Field(
         title="The save type of the artifact version.",
     )
+    availability: ArtifactVersionAvailability = Field(
+        title="The availability of the artifact version data.",
+        default=ArtifactVersionAvailability.AVAILABLE,
+    )
     metadata: Optional[Dict[str, MetadataType]] = Field(
         default=None, title="Metadata of the artifact version."
     )
@@ -191,6 +199,7 @@ class ArtifactVersionUpdate(BaseUpdate):
     name: Optional[str] = None
     add_tags: Optional[List[str]] = None
     remove_tags: Optional[List[str]] = None
+    availability: Optional[ArtifactVersionAvailability] = None
 
 
 # ------------------ Response Model ------------------
@@ -215,6 +224,10 @@ class ArtifactVersionResponseBody(ProjectScopedResponseBody):
     )
     save_type: ArtifactSaveType = Field(
         title="The save type of the artifact version.",
+    )
+    availability: ArtifactVersionAvailability = Field(
+        title="The availability of the artifact version data.",
+        default=ArtifactVersionAvailability.AVAILABLE,
     )
     artifact_store_id: Optional[UUID] = Field(
         title="ID of the artifact store in which this artifact is stored.",
@@ -371,6 +384,15 @@ class ArtifactVersionResponse(
             the value of the property.
         """
         return self.get_body().save_type
+
+    @property
+    def availability(self) -> ArtifactVersionAvailability:
+        """The `availability` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().availability
 
     @property
     def artifact_store_id(self) -> Optional[UUID]:

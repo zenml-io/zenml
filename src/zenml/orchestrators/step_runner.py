@@ -28,8 +28,13 @@ from typing import (
     Type,
 )
 
+from zenml.artifacts.staging import ArtifactStagingContext
 from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
-from zenml.artifacts.utils import _store_artifact_data_and_prepare_request
+from zenml.artifacts.utils import (
+    _prepare_unmaterialized_artifact_request,
+    _store_artifact_data_and_prepare_request,
+    verify_artifact_data_availability,
+)
 from zenml.client import Client
 from zenml.config.step_configurations import StepConfiguration
 from zenml.config.step_run_info import StepRunInfo
@@ -605,9 +610,11 @@ class StepRunner:
             )
         )
 
-        def _load_artifact(artifact_store: "BaseArtifactStore") -> Any:
+        def _load_artifact(
+            artifact_store: "BaseArtifactStore", uri: str
+        ) -> Any:
             materializer: BaseMaterializer = materializer_class(
-                uri=artifact.uri, artifact_store=artifact_store
+                uri=uri, artifact_store=artifact_store
             )
 
             if artifact.chunk_index is not None:
@@ -622,17 +629,39 @@ class StepRunner:
                 materializer.validate_load_type_compatibility(data_type)
                 return materializer.load(data_type=data_type)
 
+        if staging_context := ArtifactStagingContext.get():
+            if staged_uri := staging_context.get_staged_uri(artifact.id):
+                try:
+                    return _load_artifact(
+                        artifact_store=staging_context.artifact_store,
+                        uri=staged_uri,
+                    )
+                except Exception:
+                    # The staged data might have been discarded after the
+                    # upload finished, in which case we load the data from
+                    # the artifact store instead.
+                    logger.debug(
+                        "Failed to load staged data for artifact version %s.",
+                        artifact.id,
+                    )
+
+        verify_artifact_data_availability(artifact=artifact, wait=True)
+
         if artifact.artifact_store_id == self._stack.artifact_store.id:
             # Register the artifact store of the active stack here to avoid
             # unnecessary component/flavor calls when using
             # `register_artifact_store_filesystem(...)`
             self._stack.artifact_store._register()
-            return _load_artifact(artifact_store=self._stack.artifact_store)
+            return _load_artifact(
+                artifact_store=self._stack.artifact_store, uri=artifact.uri
+            )
         else:
             with register_artifact_store_filesystem(
                 artifact.artifact_store_id
             ) as target_artifact_store:
-                return _load_artifact(artifact_store=target_artifact_store)
+                return _load_artifact(
+                    artifact_store=target_artifact_store, uri=artifact.uri
+                )
 
     def _validate_outputs(
         self,
@@ -745,6 +774,16 @@ class StepRunner:
         step_context = get_step_context()
         artifact_requests = []
 
+        staging_context = None
+        if self.configuration.defer_output_upload:
+            staging_context = ArtifactStagingContext.get()
+            if staging_context is None:
+                logger.debug(
+                    "Deferred output upload is not supported in this "
+                    "environment. Uploading output artifacts synchronously."
+                )
+        staged_outputs: Dict[str, str] = {}
+
         for output_name, return_value in output_data.items():
             data_type = type(return_value)
             materializer_classes = output_materializers[output_name]
@@ -789,7 +828,14 @@ class StepRunner:
             else:
                 has_custom_name, version = False, None
 
-            if runtime.should_skip_artifact_materialization():
+            materialize_output = (
+                artifact_config is None or artifact_config.materialize
+            )
+
+            if (
+                materialize_output
+                and runtime.should_skip_artifact_materialization()
+            ):
                 # Use the artifact type of the original materializer...
                 artifact_type = (
                     artifact_type
@@ -819,24 +865,67 @@ class StepRunner:
                     if isinstance(tag, tag_utils.Tag) and tag.cascade is True:
                         tags.append(tag.name)
 
-            artifact_request = _store_artifact_data_and_prepare_request(
-                name=artifact_name,
-                data=return_value,
-                materializer_class=materializer_class,
-                uri=uri,
-                artifact_store=self._stack.artifact_store,
-                artifact_type=artifact_type,
-                store_metadata=artifact_metadata_enabled,
-                store_visualizations=artifact_visualization_enabled,
-                has_custom_name=has_custom_name,
-                version=version,
-                tags=tags,
-                save_type=ArtifactSaveType.STEP_OUTPUT,
-                metadata=user_metadata,
-            )
+            if not materialize_output:
+                artifact_request = _prepare_unmaterialized_artifact_request(
+                    name=artifact_name,
+                    uri=uri,
+                    materializer_class=materializer_class,
+                    data_type=data_type,
+                    save_type=ArtifactSaveType.STEP_OUTPUT,
+                    version=version,
+                    artifact_type=artifact_type,
+                    tags=tags,
+                    has_custom_name=has_custom_name,
+                    metadata=user_metadata,
+                )
+            else:
+                staging_artifact_store = None
+                staging_uri = None
+                if staging_context and not issubclass(
+                    materializer_class, InMemoryMaterializer
+                ):
+                    if staging_context.has_capacity:
+                        staging_artifact_store = staging_context.artifact_store
+                        staging_uri = staging_context.allocate_staging_uri()
+                        staged_outputs[output_name] = staging_uri
+                    else:
+                        logger.debug(
+                            "The artifact staging directory is full. "
+                            "Uploading output `%s` synchronously.",
+                            output_name,
+                        )
+
+                artifact_request = _store_artifact_data_and_prepare_request(
+                    name=artifact_name,
+                    data=return_value,
+                    materializer_class=materializer_class,
+                    uri=uri,
+                    artifact_store=self._stack.artifact_store,
+                    artifact_type=artifact_type,
+                    store_metadata=artifact_metadata_enabled,
+                    store_visualizations=artifact_visualization_enabled,
+                    has_custom_name=has_custom_name,
+                    version=version,
+                    tags=tags,
+                    save_type=ArtifactSaveType.STEP_OUTPUT,
+                    metadata=user_metadata,
+                    staging_artifact_store=staging_artifact_store,
+                    staging_uri=staging_uri,
+                )
             artifact_requests.append(artifact_request)
 
         responses = Client().zen_store.batch_create_artifact_versions(
             artifact_requests
         )
-        return dict(zip(output_data.keys(), responses))
+        output_artifacts = dict(zip(output_data.keys(), responses))
+
+        if staging_context:
+            for output_name, staging_uri in staged_outputs.items():
+                artifact_version = output_artifacts[output_name]
+                staging_context.submit_upload(
+                    artifact_version_id=artifact_version.id,
+                    staging_uri=staging_uri,
+                    target_uri=artifact_version.uri,
+                )
+
+        return output_artifacts
