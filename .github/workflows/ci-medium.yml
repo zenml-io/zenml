@@ -18,14 +18,14 @@ jobs:
       RANDOM_MIGRATION_SEED: ${{ github.run_id }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Set up Python 3.13
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+      - name: Set up Python 3.10
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
         with:
-          python-version: '3.13'
+          python-version: '3.10'
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh sqlite random
   mysql-db-migration-testing-random:
@@ -37,14 +37,14 @@ jobs:
       RANDOM_MIGRATION_SEED: ${{ github.run_id }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Set up Python 3.13
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+      - name: Set up Python 3.10
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
         with:
-          python-version: '3.13'
+          python-version: '3.10'
       - name: Login to Docker Hub
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee  # v4.2.0
         with:
@@ -61,14 +61,14 @@ jobs:
       RANDOM_MIGRATION_SEED: ${{ github.run_id }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Set up Python 3.13
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+      - name: Set up Python 3.10
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
         with:
-          python-version: '3.13'
+          python-version: '3.10'
       - name: Login to Docker Hub
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee  # v4.2.0
         with:
@@ -80,8 +80,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
-            python-version: '3.13'
           - os: macos-latest
             python-version: '3.13'
           - os: windows-latest
@@ -93,30 +91,62 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   docker-orchestrator-mysql-integration-test:
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ['3.13']
-        test_environment: [docker-server-docker-orchestrator-mysql]
-      fail-fast: false
     uses: ./.github/workflows/integration-test-fast.yml
     with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
-      test_environment: ${{ matrix.test_environment }}
-      ci_tier: medium
+      os: ubuntu-latest
+      python-version: '3.13'
+      test_environment: docker-server-docker-orchestrator-mysql
     secrets: inherit
   base-package-functionality:
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ['3.13']
-      fail-fast: false
     uses: ./.github/workflows/base-package-functionality.yml
     with:
-      os: ${{ matrix.os }}
-      python-version: ${{ matrix.python-version }}
+      os: ubuntu-latest
+      python-version: '3.13'
     secrets: inherit
+  small-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          persist-credentials: false
+      - name: Set up Python 3.13
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: '3.13'
+      - name: Install uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39  # v8.2.0
+        with:
+          version: 0.8.14
+      - name: Create virtual environment
+        run: uv venv
+      - name: Check for broken dependencies
+        run: |
+          source .venv/bin/activate
+          uv pip check
+      - name: Markdown link check
+        uses: gaurav-nelson/github-action-markdown-link-check@3c3b66f1f7d0900e37b71eca45b63ea9eedfce31  # 1.0.17
+        with:
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'no'
+          folder-path: ./examples, ./docs/book, ./src
+          file-path: ./README.md, ./LICENSE, ./RELEASE_NOTES.md, CODE-OF-CONDUCT.md,
+            CONTRIBUTING.md, CLA.md, RELEASE_NOTES.md, ROADMAP.md
+          config-file: .github/workflows/markdown_check_config.json
+        continue-on-error: true
+      - name: Security check
+        run: |
+          source .venv/bin/activate
+          uv pip install "bandit==1.9.4"
+          bash scripts/check-security.sh
+      - name: Check for alembic branch divergence
+        env:
+          ZENML_LOGGING_VERBOSITY: info
+        run: |
+          source .venv/bin/activate
+          uv pip install "alembic==1.15.2"
+          bash scripts/check-alembic-branches.sh
+      - name: Install latest dashboard (test gitignore)
+        run: bash scripts/install-dashboard.sh
   ci-medium-required:
     runs-on: ubuntu-latest
     needs:
@@ -126,6 +156,7 @@ jobs:
       - unit-test
       - docker-orchestrator-mysql-integration-test
       - base-package-functionality
+      - small-checks
     if: always()
     steps:
       - name: Check all required medium-CI jobs passed

@@ -29,14 +29,19 @@ All reusable workflows use `secrets: inherit` for centralized secret management.
 
 ### ci-fast.yml (Every PR)
 
-Runs automatically on all non-draft PRs and merge queue entries:
-- SQLite migration testing (random, sqlite only)
+Runs automatically on all non-draft PRs and merge queue entries. Code-changing
+PRs and merge queue entries run:
+- SQLite migration testing (random, sqlite only, Python 3.10 compatibility baseline)
 - Spellcheck
 - Full linting (ubuntu, Python 3.13) via `linting.yml`
 - Unit tests (ubuntu, Python 3.13) via `unit-test.yml`
 - Default integration tests (ubuntu, Python 3.13) via `integration-test-fast.yml`
 - API docs buildability test
 - Template example updates (same-repo, non-draft PRs only)
+
+Documentation-only PRs run spellcheck and the `ci-fast-required` rollup while
+the code-focused jobs skip. The rollup still reports a required status and
+fails if classification or spellcheck fails.
 
 Contributor-actionable checks such as formatting, Ruff, pydoclint, yamlfix,
 zizmor, unused import checks, and mypy intentionally run in `ci-fast`. The
@@ -46,26 +51,32 @@ deterministic local failures.
 ### ci-medium.yml (Merge Queue)
 
 Runs merge-queue validation beyond fast PR checks:
-- Random database migration coverage (MySQL, MariaDB, SQLite) with random seed per run
-- Full linting (ubuntu, Python 3.13) via `linting.yml`
-- Python 3.13 unit tests on Ubuntu, macOS, and Windows via `unit-test.yml`
+- Random database migration coverage (MySQL, MariaDB, SQLite) on Python 3.10,
+  with a reproducible random seed per run
+- Python 3.13 unit tests on macOS and Windows via `unit-test.yml` (Ubuntu is
+  already covered by `ci-fast` on the same merge-group ref)
 - Docker-orchestrator MySQL integration tests (via `integration-test-fast.yml`)
 - Base package functionality tests (via `base-package-functionality.yml`)
+- Dependency, security, Markdown-link, Alembic-branch, and dashboard gitignore
+  checks
 
-`ci-medium` repeats full linting on the merge-queue ref even though `ci-fast`
-already runs it on PR refs. This catches deterministic failures introduced only
-by the combined merge-queue commit.
+`ci-fast` also runs on the merge-queue ref, so `ci-medium` does not repeat its
+linting job.
+
+After these workflows exist on `develop`, merge-queue protection must require
+both `ci-fast-required` and `ci-medium-required`. Requiring only one rollup can
+allow a merge group to bypass either contributor-facing or queue-only coverage.
 
 ### ci-slow.yml (Develop Qualification And Advisory PR Slow CI)
 
-`ci-slow.yml` runs scheduled/manual develop qualification and can be called by other workflows. It also triggers the same slow matrix for a PR when maintainers add the `run-slow-ci` label. Once the label is present, pushing a new commit, reopening the PR, or marking it ready for review reruns slow CI automatically.
+`ci-slow.yml` runs scheduled/manual develop qualification and can be called by other workflows. It also triggers the same slow matrix for a non-docs-only PR when maintainers add the `run-slow-ci` label. Once the label is present, pushing a new commit, reopening the PR, or marking it ready for review reruns slow CI automatically.
 
 The slow matrix includes:
 - Multi-OS: Ubuntu, Windows, macOS
 - Python 3.10, 3.11, 3.12, 3.13, and 3.14 coverage where supported by the lane
 - Full database migration tests (MySQL, MariaDB, SQLite)
 - VSCode tutorial pipeline tests
-- Base package functionality tests
+- Base package functionality tests on Python 3.11
 
 PR-triggered slow CI is advisory and must not publish develop-red incidents; only scheduled/manual develop qualification should do that.
 
@@ -74,7 +85,7 @@ PR-triggered slow CI is advisory and must not publish develop-red incidents; onl
 Triggered by tag push. Sequence:
 
 1. Unit tests (ubuntu, Python 3.13)
-2. Database migration tests (MySQL, SQLite, MariaDB) - parallel
+2. Database migration tests (MySQL, SQLite, MariaDB on Python 3.10) - parallel
 3. Publish to PyPI (trusted publishing with OIDC)
 4. Wait 4 minutes (PyPI CDN propagation)
 5. Publish Docker image (Google Cloud Build)
@@ -171,7 +182,10 @@ This cancels previous runs when new commits are pushed to the same branch. Quali
 
 Path filtering is workflow-specific. Do not assume required aggregate workflows can skip docs-only changes; required rollup jobs may still need to report a status even when expensive test jobs are skipped. Check each workflow's `paths`, `paths-ignore`, and job-level conditions before changing branch protection behavior.
 
-`ci-fast.yml` does not use `paths-ignore` — docs-only PRs run the full ci-fast suite. This is intentional: the ci-fast rollup is a required check on PRs and merge-queue entries, so it must always report a status regardless of changed files. The extra runner minutes for docs-only PRs are the price of reliable required-status reporting.
+`ci-fast.yml` does not use `paths-ignore` because its required rollup must always
+report a status. Instead, a change-classification job identifies documentation-only
+PRs, skips code-focused jobs, and lets the rollup accept only those intentional
+skips. Merge-queue and non-PR invocations always run the complete fast suite.
 
 ### Caching
 

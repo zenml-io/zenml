@@ -43,7 +43,7 @@ on:
         type: choice
         options: ['3.10', '3.11', '3.12', '3.13', '3.14']
         required: false
-        default: '3.11'
+        default: '3.13'
       test_environment:
         description: The test environment
         type: choice
@@ -158,7 +158,7 @@ jobs:
           python-version: ${{ inputs.python-version }}
           os: ${{ inputs.os }}
       - name: Verify Docker Compose for non-default environments
-        if: inputs.test_environment != 'default'
+        if: inputs.os == 'ubuntu-latest' && inputs.test_environment != 'default'
         run: docker compose version
       - name: Install Linux System Dependencies
         if: (inputs.os == 'ubuntu-latest' || inputs.os == 'arc-runner-set')

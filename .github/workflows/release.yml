@@ -28,7 +28,7 @@ jobs:
       - name: Set up Python 3.10
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
         with:
-          python-version: '3.13'
+          python-version: '3.10'
       - name: Login to Docker Hub
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee  # v4.2.0
         with:
@@ -46,7 +46,7 @@ jobs:
       - name: Set up Python 3.10
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
         with:
-          python-version: '3.13'
+          python-version: '3.10'
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh sqlite latest
   mariadb-db-migration-testing:
@@ -59,7 +59,7 @@ jobs:
       - name: Set up Python 3.10
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
         with:
-          python-version: '3.13'
+          python-version: '3.10'
       - name: Login to Docker Hub
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee  # v4.2.0
         with:

@@ -30,11 +30,6 @@ on:
         type: number
         required: false
         default: 3
-      ci_tier:
-        description: CI tier name
-        type: string
-        required: false
-        default: fast
   workflow_dispatch:
     inputs:
       os:
@@ -117,7 +112,6 @@ jobs:
       GCP_US_EAST4_SERVER_USERNAME: ${{ secrets.GCP_US_EAST4_SERVER_USERNAME }}
       GCP_US_EAST4_SERVER_PASSWORD: ${{ secrets.GCP_US_EAST4_SERVER_PASSWORD }}
       PYTEST_RERUNS: ${{ inputs.reruns }}
-      ZENML_CI_TIER: ${{ inputs.ci_tier }}
     if: ${{ ! startsWith(github.event.head_commit.message, 'GitBook:') }}
     defaults:
       run:
@@ -217,7 +211,7 @@ jobs:
           python-version: ${{ inputs.python-version }}
           os: ${{ inputs.os }}
       - name: Verify Docker Compose for non-default environments
-        if: inputs.test_environment != 'default'
+        if: inputs.os == 'ubuntu-latest' && inputs.test_environment != 'default'
         run: docker compose version
       - name: Install Linux System Dependencies
         if: (inputs.os == 'ubuntu-latest' || inputs.os == 'arc-runner-set')

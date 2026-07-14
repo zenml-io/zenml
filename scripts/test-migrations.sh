@@ -4,7 +4,6 @@ DB="sqlite"
 DB_STARTUP_DELAY=30 # Time in seconds to wait for the database container to start
 RANDOM_MIGRATION_COUNT="${RANDOM_MIGRATION_COUNT:-3}"
 RANDOM_MIGRATION_SEED="${RANDOM_MIGRATION_SEED:-${GITHUB_RUN_ID:-}}"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 export ZENML_ANALYTICS_OPT_IN=false
 export ZENML_DEBUG=true
@@ -113,9 +112,6 @@ function version_compare() {
 function run_tests_for_version() {
     set -e  # Exit immediately if a command exits with a non-zero status
     local VERSION=$1
-    local PYTHON_VERSION
-
-    PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
 
     echo "===== Testing version $VERSION ====="
 
@@ -138,32 +134,6 @@ function run_tests_for_version() {
         zenml integration export-requirements sklearn pandas --output-file integration-requirements.txt
     fi
 
-    # Historical starter templates define custom sklearn transformers that
-    # predate the stricter __sklearn_tags__ checks introduced in newer
-    # scikit-learn releases. Python 3.13 also cannot build the older exact
-    # pins emitted by some historical ZenML releases, so use the newest
-    # compatible sklearn line that has CPython 3.13 wheels.
-    if [ "$PYTHON_VERSION" == "3.13" ]; then
-        awk '
-            BEGIN { replaced = 0 }
-            /^scikit-learn([<>=!~ ].*)?$/ {
-                if (!replaced) {
-                    print "scikit-learn==1.5.2"
-                    replaced = 1
-                }
-                next
-            }
-            { print }
-            END {
-                if (!replaced) {
-                    print "scikit-learn==1.5.2"
-                }
-            }
-        ' integration-requirements.txt > integration-requirements.txt.tmp
-        mv integration-requirements.txt.tmp integration-requirements.txt
-    else
-        printf "\nscikit-learn<1.6\n" >> integration-requirements.txt
-    fi
     uv pip install -r integration-requirements.txt
     rm integration-requirements.txt
 
@@ -251,12 +221,6 @@ function test_upgrade_to_version() {
     set -e  # Exit immediately if a command exits with a non-zero status
     local VERSION=$1
     local PYTHON_VERSION
-    local ZENML_INSTALL_ENV=()
-    local ZENML_INSTALL_OVERRIDES_FILE=""
-    local ZENML_INSTALL_ARGS=(
-        --exclude-newer-package
-        zenml=2100-01-01
-    )
 
     echo "===== Testing upgrade to version $VERSION ====="
 
@@ -265,8 +229,6 @@ function test_upgrade_to_version() {
     uv venv ".venv-upgrade"
     source ".venv-upgrade/bin/activate"
 
-    PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
-
     # Install the specific version
     if [ "$VERSION" == "current" ]; then
         uv pip install -U setuptools wheel pip
@@ -274,46 +236,15 @@ function test_upgrade_to_version() {
     else
         # Old ZenML versions use pkg_resources, removed in setuptools 82+
         uv pip install -U "setuptools<82" wheel pip
-        # The repo-level uv exclude-newer window can filter out the exact
-        # latest ZenML version selected above immediately after a release.
-        # Keep dependency resolution capped, but allow the requested ZenML
-        # release itself through.
-        if [ "$PYTHON_VERSION" == "3.13" ]; then
-            # Historical pydantic-core releases were built before CPython 3.13
-            # and carry older PyO3 version metadata. Keep the fixture on
-            # Python 3.13 while allowing those source builds to use PyO3's
-            # forward-compatibility path.
-            ZENML_INSTALL_ENV=(
-                PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1
-            )
-            # Old ZenML releases pin transitive deps to versions that have no
-            # CPython 3.13 wheels and fail to build from source. Override only
-            # those pins to the nearest 3.13-compatible releases so the upgrade
-            # path stays testable. orjson applies to every old release; pydantic
-            # only to the v2-migration window (>= 0.60.0), whose
-            # pydantic-core/jiter stack predates 3.13 wheels and PyO3 ABI3.
-            local OVERRIDES=("orjson==3.10.18")
-            if [ "$(version_compare "$VERSION" "0.60.0")" != "<" ]; then
-                OVERRIDES+=("pydantic==2.10.6")
-            fi
-            ZENML_INSTALL_OVERRIDES_FILE="$(mktemp)"
-            printf '%s\n' "${OVERRIDES[@]}" > "$ZENML_INSTALL_OVERRIDES_FILE"
-            ZENML_INSTALL_ARGS+=(
-                --overrides
-                "$ZENML_INSTALL_OVERRIDES_FILE"
-            )
-        fi
-        env "${ZENML_INSTALL_ENV[@]}" uv pip install \
-            "${ZENML_INSTALL_ARGS[@]}" \
-            "zenml[templates,server]==$VERSION"
-        if [ -n "$ZENML_INSTALL_OVERRIDES_FILE" ]; then
-            rm -f "$ZENML_INSTALL_OVERRIDES_FILE"
-        fi
+        uv pip install "zenml[templates,server]==$VERSION"
         if [ "$(version_compare "$VERSION" "0.60.0")" == "<" ]; then
             # handles unpinned sqlmodel dependency in older versions
             uv pip install "sqlmodel==0.0.8" "bcrypt==4.0.1" "pyyaml-include<2.0" "numpy<2.0.0" "tenacity!=8.4.0"
         fi
     fi
+
+    # Get the major and minor version of Python
+    PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
 
     if [ "$DB" == "mysql" ] || [ "$DB" == "mariadb" ]; then
 

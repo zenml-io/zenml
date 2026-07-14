@@ -1,13 +1,16 @@
 ---
 # Scheduled develop qualification and label-triggered advisory PR slow CI.
-# Qualification publishing (Check Runs, incident issues) is deferred to PR 3;
-# a red scheduled run is only visible in the Actions tab until that ships.
 name: ci-slow
 on:
   schedule:
     - cron: 0 0 * * *
   pull_request:
     types: [labeled, synchronize, reopened, ready_for_review]
+    paths-ignore:
+      - docs/**
+      - '**.md'
+      - .github/workflows/claude.yml
+      - .claude/**
   workflow_call:
     inputs:
       git-ref:
@@ -44,7 +47,7 @@ jobs:
     steps:
       - name: Resolve git ref
         id: ref
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd  # v8.0.0
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         env:
           GIT_REF: ${{ inputs.git-ref || 'develop' }}
         with:
@@ -83,7 +86,7 @@ jobs:
         with:
           python-version: '3.10'
       - name: Login to Docker Hub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee  # v4.2.0
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork
           == false
         with:
@@ -122,7 +125,7 @@ jobs:
         with:
           python-version: '3.10'
       - name: Login to Docker Hub
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121  # v4.1.0
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee  # v4.2.0
         if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork
           == false
         with:
@@ -130,60 +133,13 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Test full migrations
         run: bash scripts/test-migrations.sh mariadb full
-  small-checks:
-    needs: resolve-ref
-    if: needs.resolve-ref.outputs.should-run == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
-        with:
-          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
-          ref: ${{ needs.resolve-ref.outputs.git-ref }}
-      - name: Set up Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
-        with:
-          python-version: '3.13'
-      - name: Install uv
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          source $HOME/.cargo/env
-      - name: Create virtual environment
-        run: uv venv
-      - name: Check for broken dependencies
-        run: |
-          source .venv/bin/activate
-          uv pip check
-      - name: Markdown link check
-        uses: gaurav-nelson/github-action-markdown-link-check@3c3b66f1f7d0900e37b71eca45b63ea9eedfce31  # 1.0.17
-        with:
-          use-quiet-mode: 'yes'
-          use-verbose-mode: 'no'
-          folder-path: ./examples, ./docs/book, ./src
-          file-path: ./README.md, ./LICENSE, ./RELEASE_NOTES.md, CODE-OF-CONDUCT.md,
-            CONTRIBUTING.md, CLA.md, RELEASE_NOTES.md, ROADMAP.md
-          config-file: .github/workflows/markdown_check_config.json
-        continue-on-error: true
-      - name: Security check
-        run: |
-          source .venv/bin/activate
-          uv pip install bandit
-          bash scripts/check-security.sh
-      - name: Check for alembic branch divergence
-        env:
-          ZENML_LOGGING_VERBOSITY: info
-        run: |
-          source .venv/bin/activate
-          uv pip install alembic
-          bash scripts/check-alembic-branches.sh
-      - name: Install latest dashboard (test gitignore)
-        run: bash scripts/install-dashboard.sh
   ubuntu-linting:
     needs: resolve-ref
     if: needs.resolve-ref.outputs.should-run == 'true'
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.10', '3.12', '3.13', '3.14']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
       fail-fast: false
     uses: ./.github/workflows/linting.yml
     with:
@@ -197,7 +153,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.10', '3.12', '3.13', '3.14']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
@@ -314,6 +270,9 @@ jobs:
             python-version: '3.13'
             test_environment: default
           - os: ubuntu-latest
+            python-version: '3.14'
+            test_environment: default
+          - os: ubuntu-latest
             python-version: '3.13'
             test_environment: docker-server-docker-orchestrator-mysql
           - os: ubuntu-latest
@@ -340,7 +299,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.11', '3.13']
+        python-version: ['3.11']
       fail-fast: false
     uses: ./.github/workflows/base-package-functionality.yml
     with:

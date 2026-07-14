@@ -2,7 +2,6 @@
 name: ci-fast
 on:
   workflow_dispatch:
-  workflow_call:
   merge_group:
   pull_request:
     types: [opened, synchronize, ready_for_review]
@@ -11,25 +10,59 @@ concurrency:
   cancel-in-progress: true
 permissions:
   contents: read
+  pull-requests: read
 env:
   ZENML_DEBUG: true
   ZENML_LOGGING_VERBOSITY: debug
   ZENML_ANALYTICS_OPT_IN: false
 jobs:
-  sqlite-db-migration-testing-random:
+  classify-changes:
     runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
-      false
+    outputs:
+      docs_only: ${{ steps.changes.outputs.docs_only }}
+    steps:
+      - name: Classify changed files
+        id: changes
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        with:
+          script: |
+            if (context.eventName !== 'pull_request') {
+              core.setOutput('docs_only', 'false');
+              return;
+            }
+
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              per_page: 100,
+            });
+            const docsOnly = files.length > 0 && files.every(({ filename }) =>
+              filename.startsWith('docs/')
+              || filename.endsWith('.md')
+              || filename.startsWith('.claude/')
+              || filename === '.github/workflows/claude.yml'
+            );
+
+            core.setOutput('docs_only', docsOnly ? 'true' : 'false');
+            core.notice(docsOnly
+              ? 'Skipping code-focused fast CI for this documentation-only PR.'
+              : 'Running the complete fast CI suite.');
+  sqlite-db-migration-testing-random:
+    needs: classify-changes
+    runs-on: ubuntu-latest
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft ==
+      false) && needs.classify-changes.outputs.docs_only != 'true'
     steps:
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Set up Python 3.13
+      - name: Set up Python 3.10
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
         with:
-          python-version: '3.13'
+          python-version: '3.10'
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh sqlite random
   spellcheck:
@@ -47,8 +80,9 @@ jobs:
           files: .
           config: ./.typos.toml
   api-docs-test:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
-      false
+    needs: classify-changes
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft ==
+      false) && needs.classify-changes.outputs.docs_only != 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -62,8 +96,9 @@ jobs:
       - name: Test API docs buildable
         run: bash scripts/generate-docs.sh -v DUMMY -c
   linting:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
-      false
+    needs: classify-changes
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft ==
+      false) && needs.classify-changes.outputs.docs_only != 'true'
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -75,8 +110,9 @@ jobs:
       os: ${{ matrix.os }}
     secrets: inherit
   unit-test:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
-      false
+    needs: classify-changes
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft ==
+      false) && needs.classify-changes.outputs.docs_only != 'true'
     uses: ./.github/workflows/unit-test.yml
     with:
       python-version: '3.13'
@@ -84,20 +120,22 @@ jobs:
       install_integrations: 'yes'
     secrets: inherit
   default-integration-test:
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
-      false
+    needs: classify-changes
+    if: (github.event_name != 'pull_request' || github.event.pull_request.draft ==
+      false) && needs.classify-changes.outputs.docs_only != 'true'
     uses: ./.github/workflows/integration-test-fast.yml
     with:
       python-version: '3.13'
       os: ubuntu-latest
       test_environment: default
-      ci_tier: fast
     secrets: inherit
   update-templates-to-examples:
+    needs: classify-changes
     # This job is allowed to skip because it cannot push template sync commits
     # for fork PRs, drafts, or merge-queue events.
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name
-      == 'zenml-io/zenml' && github.event.pull_request.draft == false
+      == 'zenml-io/zenml' && github.event.pull_request.draft == false && needs.classify-changes.outputs.docs_only
+      != 'true'
     permissions:
       contents: write
       pull-requests: write
@@ -109,6 +147,7 @@ jobs:
   ci-fast-required:
     runs-on: ubuntu-latest
     needs:
+      - classify-changes
       - sqlite-db-migration-testing-random
       - spellcheck
       - api-docs-test
@@ -119,7 +158,17 @@ jobs:
     if: always() && (github.event_name != 'pull_request' || github.event.pull_request.draft
       == false)
     steps:
+      - name: Check documentation-only fast-CI jobs passed
+        if: needs.classify-changes.outputs.docs_only == 'true'
+        uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe  # v1.2.2
+        with:
+          allowed-skips: >-
+            ["sqlite-db-migration-testing-random", "api-docs-test", "linting",
+            "unit-test", "default-integration-test",
+            "update-templates-to-examples"]
+          jobs: ${{ toJSON(needs) }}
       - name: Check all required fast-CI jobs passed
+        if: needs.classify-changes.outputs.docs_only != 'true'
         uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe  # v1.2.2
         with:
           allowed-skips: update-templates-to-examples
