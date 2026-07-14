@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """DAG generation utilities."""
 
+import json
 from collections import defaultdict
 from typing import Dict, List
 from uuid import UUID
@@ -20,14 +21,19 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlmodel import Session, col
 
-from zenml.enums import ExecutionStatus
+from zenml.enums import ExecutionStatus, MetadataResourceTypes
+from zenml.metadata.metadata_types import MetadataType
+from zenml.models import RunMetadataEntry
 from zenml.zen_stores.dag.models import InputArtifactRow, OutputArtifactRow
 from zenml.zen_stores.schemas import (
     ArtifactVersionSchema,
+    RunMetadataResourceSchema,
+    RunMetadataSchema,
     StepRunInputArtifactSchema,
     StepRunOutputArtifactSchema,
     StepRunSchema,
 )
+from zenml.zen_stores.schemas.utils import resolve_metadata_collection
 
 
 def load_input_artifact_rows(
@@ -114,3 +120,56 @@ def load_output_artifact_rows(
         rows[row.step_id].append(row)
 
     return rows
+
+
+def load_step_run_metadata(
+    session: Session,
+    pipeline_run_id: UUID,
+    metadata_keys: List[str],
+) -> Dict[UUID, Dict[str, MetadataType]]:
+    """Load run metadata values for the step runs of a pipeline run.
+
+    Args:
+        session: The database session.
+        pipeline_run_id: The ID of the pipeline run.
+        metadata_keys: The run metadata keys to load.
+
+    Returns:
+        The resolved metadata values, grouped by step run ID.
+    """
+    query = (
+        select(
+            col(RunMetadataResourceSchema.resource_id),
+            col(RunMetadataSchema.key),
+            col(RunMetadataSchema.value),
+            col(RunMetadataSchema.created),
+        )
+        .join(
+            RunMetadataSchema,
+            col(RunMetadataSchema.id)
+            == RunMetadataResourceSchema.run_metadata_id,
+        )
+        .join(
+            StepRunSchema,
+            col(StepRunSchema.id) == RunMetadataResourceSchema.resource_id,
+        )
+        .where(
+            col(RunMetadataResourceSchema.resource_type)
+            == MetadataResourceTypes.STEP_RUN
+        )
+        .where(col(StepRunSchema.pipeline_run_id) == pipeline_run_id)
+        .where(col(StepRunSchema.status) != ExecutionStatus.RETRIED.value)
+        .where(col(RunMetadataSchema.key).in_(metadata_keys))
+    )
+    metadata_collections: Dict[UUID, Dict[str, List[RunMetadataEntry]]] = (
+        defaultdict(dict)
+    )
+    for step_id, key, value, created in session.execute(query):
+        metadata_collections[step_id].setdefault(key, []).append(
+            RunMetadataEntry(value=json.loads(value), created=created)
+        )
+
+    return {
+        step_id: resolve_metadata_collection(collection)
+        for step_id, collection in metadata_collections.items()
+    }
