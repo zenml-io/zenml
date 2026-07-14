@@ -91,6 +91,7 @@ from zenml.execution.pipeline.dynamic.interactive_input_utils import (
 from zenml.execution.pipeline.dynamic.invocation_dependency_graph import (
     AnyNode,
     ChildPipelineNode,
+    GraphUpdate,
     InvocationDependencyGraph,
     MapNode,
     NodeState,
@@ -745,8 +746,6 @@ class DynamicPipelineRunner:
                         # In FAIL_FAST and STOP_ON_FAILURE modes we do not allow
                         # starting any new work after a failure.
                         return
-                    # In CONTINUE_ON_FAILURE mode we keep starting independent
-                    # nodes.
 
     def _start_startup_loop(self) -> threading.Thread:
         """Start the startup loop.
@@ -1050,13 +1049,29 @@ class DynamicPipelineRunner:
         if nodes_ready:
             self._startup_event.set()
 
+    def apply_graph_update(
+        self,
+        update: GraphUpdate,
+        exception: Optional[BaseException] = None,
+    ) -> None:
+        """Settle the futures of cascaded nodes and propagate readiness changes.
+
+        Args:
+            update: The graph update to apply.
+            exception: The exception that caused the cascade, if any.
+        """
+        for node in update.cascaded:
+            self._maybe_settle_startup_future(node=node, cause=exception)
+
+        self.notify_graph_changed(update.nodes_ready)
+
     def mark_node_starting(self, node_id: str) -> None:
         """Mark a graph node as starting and propagate readiness changes.
 
         Args:
             node_id: The node ID.
         """
-        self.notify_graph_changed(
+        self.apply_graph_update(
             self._dependency_graph.mark_node_starting(node_id=node_id)
         )
 
@@ -1066,7 +1081,7 @@ class DynamicPipelineRunner:
         Args:
             node_id: The node ID.
         """
-        self.notify_graph_changed(
+        self.apply_graph_update(
             self._dependency_graph.mark_node_running(node_id=node_id)
         )
 
@@ -1076,7 +1091,7 @@ class DynamicPipelineRunner:
         Args:
             node_id: The node ID.
         """
-        self.notify_graph_changed(
+        self.apply_graph_update(
             self._dependency_graph.mark_node_succeeded(node_id=node_id)
         )
 
@@ -1109,19 +1124,10 @@ class DynamicPipelineRunner:
             invocation_id: The invocation ID of the failed node.
             exception: The failure exception.
         """
-        cascaded_ids = self._dependency_graph.mark_node_failed(
-            node_id=invocation_id
+        self.apply_graph_update(
+            self._dependency_graph.mark_node_failed(node_id=invocation_id),
+            exception=exception,
         )
-        for cascaded_id in cascaded_ids:
-            cancellation = StartupCancelled(
-                f"Skipped because upstream dependency `{invocation_id}` "
-                "failed."
-            )
-            cancellation.__cause__ = exception
-            self._future_registry.set_startup_exception(
-                invocation_id=cascaded_id,
-                exception=cancellation,
-            )
 
         if not self._continue_on_failure:
             self.record_failure(exception=exception)
@@ -1514,8 +1520,7 @@ class DynamicPipelineRunner:
         if implicit_upstream_steps:
             carried_upstream_steps: Set[str] = set()
             for upstream_step in upstream_steps:
-                node = self._dependency_graph.get_node(upstream_step)
-                if isinstance(node, (StepNode, MapNode)):
+                if node := self._dependency_graph.get_node(upstream_step):
                     carried_upstream_steps |= node.implicit_upstream_steps
 
             # Implicit upstream steps that an existing upstream step captured
@@ -2119,24 +2124,30 @@ class DynamicPipelineRunner:
 
     # Concurrent step lifecycle
 
-    def _maybe_settle_startup_future(self, node: "AnyNode") -> None:
-        """Settle the startup future of a node registered in an inherited state.
+    def _maybe_settle_startup_future(
+        self, node: "AnyNode", cause: Optional[BaseException] = None
+    ) -> None:
+        """Settle the startup future of a node in an inherited state.
 
         Args:
-            node: The registered node.
+            node: The node.
+            cause: The exception that caused the state, if any.
         """
+        exception: BaseException
         if node.state == NodeState.PAUSED:
-            self._future_registry.set_startup_exception(
-                invocation_id=node.node_id, exception=RunPaused()
-            )
+            exception = RunPaused()
         elif node.state == NodeState.SKIPPED:
-            self._future_registry.set_startup_exception(
-                invocation_id=node.node_id,
-                exception=StartupCancelled(
-                    f"Skipped because an upstream dependency of "
-                    f"`{node.node_id}` failed."
-                ),
+            exception = StartupCancelled(
+                f"Skipped because an upstream dependency of "
+                f"`{node.node_id}` failed."
             )
+        else:
+            return
+
+        exception.__cause__ = cause
+        self._future_registry.set_startup_exception(
+            invocation_id=node.node_id, exception=exception
+        )
 
     def _register_concurrent_step_invocation(
         self,
@@ -2527,10 +2538,11 @@ class DynamicPipelineRunner:
         self._future_registry.bind_map_child_futures(
             map_id=map_id, child_futures=child_futures
         )
-        nodes_ready = self._dependency_graph.attach_map_children(
-            map_node_id=map_id, child_node_ids=child_node_ids
+        self.apply_graph_update(
+            self._dependency_graph.attach_map_children(
+                map_node_id=map_id, child_node_ids=child_node_ids
+            )
         )
-        self.notify_graph_changed(nodes_ready)
 
     # Child pipeline lifecycle
 
@@ -2760,13 +2772,13 @@ class DynamicPipelineRunner:
                 # Cascade the pause through the dependency graph and
                 # settle each cascaded future. Don't record a failure:
                 # the parent should keep running.
-                for paused_node_id in self._dependency_graph.mark_node_paused(
-                    node_id=node_id
-                ):
-                    self._future_registry.set_startup_exception(
-                        invocation_id=paused_node_id,
-                        exception=paused_exception,
-                    )
+                self._future_registry.set_startup_exception(
+                    invocation_id=node_id, exception=paused_exception
+                )
+                self.apply_graph_update(
+                    self._dependency_graph.mark_node_paused(node_id=node_id),
+                    exception=paused_exception,
+                )
                 raise
             except BaseException as exception:
                 self._fail_concurrent_node(

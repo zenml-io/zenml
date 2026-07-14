@@ -72,8 +72,8 @@ def test_start_after_releases_when_upstream_runs() -> None:
     assert graph.get_node_state("b") == NodeState.PENDING
 
     graph.mark_node_starting("a")
-    became_ready = graph.mark_node_running("a")
-    assert became_ready is True
+    update = graph.mark_node_running("a")
+    assert update.nodes_ready is True
     assert graph.get_node_state("b") == NodeState.READY
 
 
@@ -105,8 +105,8 @@ def test_start_after_released_by_failed_upstream() -> None:
     graph.register_step_node(node_id="b", start_upstream_ids=["a"])
 
     graph.mark_node_starting("a")
-    skipped = graph.mark_node_failed("a")
-    assert skipped == []
+    update = graph.mark_node_failed("a")
+    assert update.cascaded == []
     assert graph.get_node_state("b") == NodeState.READY
 
 
@@ -138,9 +138,106 @@ def test_start_after_map_node_releases_when_running() -> None:
     assert graph.get_node_state("b") == NodeState.PENDING
 
     graph.mark_node_starting("m")
-    became_ready = graph.mark_node_running("m")
-    assert became_ready is True
+    update = graph.mark_node_running("m")
+    assert update.nodes_ready is True
     assert graph.get_node_state("b") == NodeState.READY
+
+
+def _expand_map(
+    graph: InvocationDependencyGraph, map_node_id: str, child_node_ids: list
+) -> None:
+    """Drive a map node from ready to running with expanded children."""
+    graph.mark_node_starting(map_node_id)
+    for child_node_id in child_node_ids:
+        graph.register_step_node(node_id=child_node_id)
+    graph.attach_map_children(
+        map_node_id=map_node_id, child_node_ids=child_node_ids
+    )
+
+
+def test_partially_failed_map_skips_downstream_when_child_fails_last() -> None:
+    """A map that fails on its last child skips its downstream nodes."""
+    graph = InvocationDependencyGraph()
+    graph.register_map_node(
+        node_id="m", step=_noop_step, inputs={}, product=False
+    )
+    graph.register_step_node(node_id="b", upstream_ids=["m"])
+    _expand_map(graph, "m", ["m:0", "m:1"])
+
+    graph.mark_node_succeeded("m:0")
+    assert graph.get_node_state("m") == NodeState.RUNNING
+
+    update = graph.mark_node_failed("m:1")
+    assert graph.get_node_state("m") == NodeState.FAILED
+    assert graph.get_node_state("b") == NodeState.SKIPPED
+    assert {node.node_id for node in update.cascaded} == {"b"}
+
+
+def test_partially_failed_map_skips_downstream_when_child_succeeds_last() -> (
+    None
+):
+    """A map that fails on an earlier child skips its downstream nodes."""
+    graph = InvocationDependencyGraph()
+    graph.register_map_node(
+        node_id="m", step=_noop_step, inputs={}, product=False
+    )
+    graph.register_step_node(node_id="b", upstream_ids=["m"])
+    _expand_map(graph, "m", ["m:0", "m:1"])
+
+    graph.mark_node_failed("m:0")
+    assert graph.get_node_state("m") == NodeState.RUNNING
+    assert graph.get_node_state("b") == NodeState.PENDING
+
+    update = graph.mark_node_succeeded("m:1")
+    assert graph.get_node_state("m") == NodeState.FAILED
+    assert graph.get_node_state("b") == NodeState.SKIPPED
+    assert {node.node_id for node in update.cascaded} == {"b"}
+
+
+def test_failed_map_skips_transitive_downstream() -> None:
+    """A failed map skips downstream nodes across multiple hops."""
+    graph = InvocationDependencyGraph()
+    graph.register_map_node(
+        node_id="m", step=_noop_step, inputs={}, product=False
+    )
+    graph.register_step_node(node_id="b", upstream_ids=["m"])
+    graph.register_step_node(node_id="c", upstream_ids=["b"])
+    _expand_map(graph, "m", ["m:0"])
+
+    update = graph.mark_node_failed("m:0")
+    assert graph.get_node_state("b") == NodeState.SKIPPED
+    assert graph.get_node_state("c") == NodeState.SKIPPED
+    assert {node.node_id for node in update.cascaded} == {"b", "c"}
+
+
+def test_fully_succeeded_map_releases_downstream() -> None:
+    """A map whose children all succeed releases its downstream nodes."""
+    graph = InvocationDependencyGraph()
+    graph.register_map_node(
+        node_id="m", step=_noop_step, inputs={}, product=False
+    )
+    graph.register_step_node(node_id="b", upstream_ids=["m"])
+    _expand_map(graph, "m", ["m:0", "m:1"])
+
+    graph.mark_node_succeeded("m:0")
+    update = graph.mark_node_succeeded("m:1")
+    assert graph.get_node_state("m") == NodeState.SUCCEEDED
+    assert graph.get_node_state("b") == NodeState.READY
+    assert update.cascaded == []
+
+
+def test_failed_node_skips_transitive_downstream() -> None:
+    """A failed node skips downstream nodes across multiple hops."""
+    graph = InvocationDependencyGraph()
+    graph.register_step_node(node_id="a")
+    graph.register_step_node(node_id="b", upstream_ids=["a"])
+    graph.register_step_node(node_id="c", upstream_ids=["b"])
+
+    _start_step(graph, "a")
+    update = graph.mark_node_failed("a")
+    assert graph.get_node_state("b") == NodeState.SKIPPED
+    assert graph.get_node_state("c") == NodeState.SKIPPED
+    assert {node.node_id for node in update.cascaded} == {"b", "c"}
 
 
 def test_start_after_child_pipeline_releases_when_running() -> None:
@@ -152,7 +249,7 @@ def test_start_after_child_pipeline_releases_when_running() -> None:
     assert graph.node_has_started("c") is False
 
     graph.mark_node_starting("c")
-    became_ready = graph.mark_node_running("c")
-    assert became_ready is True
+    update = graph.mark_node_running("c")
+    assert update.nodes_ready is True
     assert graph.node_has_started("c") is True
     assert graph.get_node_state("b") == NodeState.READY

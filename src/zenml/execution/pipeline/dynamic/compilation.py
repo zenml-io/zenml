@@ -20,6 +20,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Sequence,
     Set,
     Tuple,
     Union,
@@ -139,7 +140,7 @@ def compile_dynamic_step_invocation(
                 chunk_size=value.chunk_size,
             )
         elif (
-            isinstance(value, list)
+            isinstance(value, Sequence)
             and value
             and all(isinstance(item, OutputArtifact) for item in value)
         ):
