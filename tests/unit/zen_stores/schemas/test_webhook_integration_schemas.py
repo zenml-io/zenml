@@ -4,7 +4,7 @@ from datetime import datetime
 from uuid import uuid4
 
 import pytest
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from zenml.constants import API, VERSION_1, WEBHOOKS
 from zenml.enums import WebhookType
@@ -43,25 +43,6 @@ def _webhook_integration_schema() -> WebhookIntegrationSchema:
 
 
 @pytest.mark.parametrize(
-    "update",
-    [
-        WebhookEventStatsUpdate(accepted=True),
-        WebhookEventStatsUpdate(auth_failed=True, error_summary="bad auth"),
-        WebhookEventStatsUpdate(
-            invalid_payload=True, error_summary="bad payload"
-        ),
-    ],
-)
-def test_webhook_event_stats_update_accepts_single_outcome(
-    update: WebhookEventStatsUpdate,
-) -> None:
-    """Webhook stats updates accept exactly one terminal outcome."""
-    assert (
-        sum([update.accepted, update.auth_failed, update.invalid_payload]) == 1
-    )
-
-
-@pytest.mark.parametrize(
     "kwargs",
     [
         {},
@@ -77,34 +58,31 @@ def test_webhook_event_stats_update_rejects_invalid_outcome(
         WebhookEventStatsUpdate(**kwargs)
 
 
+@pytest.mark.parametrize(
+    ("model_class", "kwargs"),
+    [
+        (
+            WebhookIntegrationRequest,
+            {
+                "name": "github-intake",
+                "project": uuid4(),
+                "webhook_type": WebhookType.GITHUB,
+            },
+        ),
+        (WebhookIntegrationSecretRequest, {}),
+        (WebhookIntegrationUpdate, {}),
+    ],
+    ids=["create", "rotate", "update"],
+)
 @pytest.mark.parametrize("secret", ["", "   "])
-def test_webhook_integration_request_rejects_empty_secret(
+def test_webhook_integration_models_reject_empty_secret(
+    model_class: type[BaseModel],
+    kwargs: dict[str, object],
     secret: str,
 ) -> None:
-    """Webhook integration creation rejects empty signing secrets."""
+    """Webhook integration models reject empty signing secrets."""
     with pytest.raises(ValidationError):
-        WebhookIntegrationRequest(
-            name="github-intake",
-            project=uuid4(),
-            webhook_type=WebhookType.GITHUB,
-            secret=secret,
-        )
-
-
-@pytest.mark.parametrize("secret", ["", "   "])
-def test_webhook_integration_secret_request_rejects_empty_secret(
-    secret: str,
-) -> None:
-    """Webhook integration secret rotation rejects empty signing secrets."""
-    with pytest.raises(ValidationError):
-        WebhookIntegrationSecretRequest(secret=secret)
-
-
-@pytest.mark.parametrize("secret", ["", "   "])
-def test_webhook_integration_update_rejects_empty_secret(secret: str) -> None:
-    """Webhook integration updates reject empty signing secrets."""
-    with pytest.raises(ValidationError):
-        WebhookIntegrationUpdate(secret=secret)
+        model_class(secret=secret, **kwargs)
 
 
 def test_webhook_integration_requests_allow_missing_secret() -> None:

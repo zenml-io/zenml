@@ -173,7 +173,18 @@ class GitHubWebhookAdapter(HMACSHA256WebhookAdapter):
     def get_event_type(
         self, payload: dict[str, Any], headers: Mapping[str, str]
     ) -> str:
-        """Extract the GitHub event type from its request header."""
+        """Extract the GitHub event type from its request header.
+
+        Args:
+            payload: The parsed JSON object.
+            headers: The request headers.
+
+        Returns:
+            The GitHub event type.
+
+        Raises:
+            WebhookPayloadError: If the event type header is missing.
+        """
         event_type = headers.get(self.event_header)
         if not event_type:
             raise WebhookPayloadError(
@@ -184,7 +195,15 @@ class GitHubWebhookAdapter(HMACSHA256WebhookAdapter):
     def get_delivery_id(
         self, payload: dict[str, Any], headers: Mapping[str, str]
     ) -> str | None:
-        """Extract the optional GitHub delivery ID."""
+        """Extract the optional GitHub delivery ID.
+
+        Args:
+            payload: The parsed JSON object.
+            headers: The request headers.
+
+        Returns:
+            The GitHub delivery ID, if available.
+        """
         return headers.get(self.delivery_header)
 
 
@@ -199,7 +218,18 @@ class CustomWebhookAdapter(HMACSHA256WebhookAdapter):
     def get_event_type(
         self, payload: dict[str, Any], headers: Mapping[str, str]
     ) -> str:
-        """Extract the custom event type from its request header."""
+        """Extract the custom event type from its request header.
+
+        Args:
+            payload: The parsed JSON object.
+            headers: The request headers.
+
+        Returns:
+            The custom event type.
+
+        Raises:
+            WebhookPayloadError: If the event type header is missing.
+        """
         event_type = headers.get(self.event_header)
         if not event_type:
             raise WebhookPayloadError(
@@ -210,7 +240,15 @@ class CustomWebhookAdapter(HMACSHA256WebhookAdapter):
     def get_delivery_id(
         self, payload: dict[str, Any], headers: Mapping[str, str]
     ) -> str | None:
-        """Extract the optional custom delivery ID."""
+        """Extract the optional custom delivery ID.
+
+        Args:
+            payload: The parsed JSON object.
+            headers: The request headers.
+
+        Returns:
+            The custom delivery ID, if available.
+        """
         return headers.get(self.delivery_header)
 
 

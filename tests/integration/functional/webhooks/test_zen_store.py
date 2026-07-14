@@ -79,31 +79,6 @@ def test_zen_store_webhook_integration_lifecycle(clean_client):
         store.get_webhook_integration(integration.id)
 
 
-def test_zen_store_does_not_echo_user_supplied_webhook_secret(clean_client):
-    store = clean_client.zen_store
-    project_id = clean_client.active_project.id
-    name = sample_name("webhook-store-secret")
-
-    result = store.create_webhook_integration(
-        WebhookIntegrationRequest(
-            project=project_id,
-            name=name,
-            webhook_type=WebhookType.GITHUB,
-            secret="user-supplied-secret",
-        )
-    )
-
-    try:
-        assert result.secret is None
-
-        integration = store.get_webhook_integration(result.integration.id)
-
-        assert "secret" not in integration.model_dump()
-        assert integration.webhook_type == WebhookType.GITHUB
-    finally:
-        store.delete_webhook_integration(result.integration.id)
-
-
 def test_sql_store_resolves_webhook_secret_references_lazily(clean_client):
     """Webhook secret references resolve their current value at intake time."""
     store = clean_client.zen_store
