@@ -43,7 +43,7 @@ jobs:
         shell: bash
     steps:
       - name: Run template tests for zenml-io/template-e2e-batch
-        uses: zenml-io/template-e2e-batch/.github/actions/e2e_template_test@main
+        uses: zenml-io/template-e2e-batch/.github/actions/e2e_template_test@main  # main
         with:
           python-version: ${{ inputs.python-version }}
           stack-name: local
@@ -190,7 +190,7 @@ jobs:
         shell: bash
     steps:
       - name: Run template tests for zenml-io/template-starter
-        uses: zenml-io/template-starter/.github/actions/starter_template_test@main
+        uses: zenml-io/template-starter/.github/actions/starter_template_test@main  # main
         with:
           python-version: ${{ inputs.python-version }}
           stack-name: local
@@ -265,7 +265,7 @@ jobs:
         shell: bash
     steps:
       - name: Run template tests for zenml-io/template-llm-finetuning
-        uses: zenml-io/template-llm-finetuning/.github/actions/llm_finetuning_template_test@main
+        uses: zenml-io/template-llm-finetuning/.github/actions/llm_finetuning_template_test@main  # main
         with:
           python-version: ${{ inputs.python-version }}
           ref-zenml: ${{ github.ref }}

@@ -30,7 +30,6 @@ jobs:
               core.setOutput('docs_only', 'false');
               return;
             }
-
             const files = await github.paginate(github.rest.pulls.listFiles, {
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -43,7 +42,6 @@ jobs:
               || filename.startsWith('.claude/')
               || filename === '.github/workflows/claude.yml'
             );
-
             core.setOutput('docs_only', docsOnly ? 'true' : 'false');
             core.notice(docsOnly
               ? 'Skipping code-focused fast CI for this documentation-only PR.'

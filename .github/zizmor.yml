@@ -7,16 +7,13 @@ rules:
     ignore:
       - require-release-label.yml
 
-  # Require SHA pinning for all actions (security best practice)
-  # Ignores: First-party template repos that need to stay on main branch
-  # These are ZenML's own templates and are intentionally unpinned
+  # These first-party template actions intentionally follow their current main branches.
   unpinned-uses:
     ignore:
-      - update-templates-to-examples.yml:44  # zenml-io/template-e2e-batch
+      - update-templates-to-examples.yml:46  # zenml-io/template-e2e-batch
       - update-templates-to-examples.yml:120  # zenml-io/template-nlp
-      - update-templates-to-examples.yml:195  # zenml-io/template-starter
-      - update-templates-to-examples.yml:272  # zenml-io/template-llm-finetuning
-      - weekly-agent-pipelines-test.yml:101  # Ilshidur/action-discord uses @master, can't be SHA-pinned
+      - update-templates-to-examples.yml:193  # zenml-io/template-starter
+      - update-templates-to-examples.yml:268  # zenml-io/template-llm-finetuning
 
   # excessive-permissions: These workflows use default permissions.
   # While explicit permissions are recommended, these are internal workflows
