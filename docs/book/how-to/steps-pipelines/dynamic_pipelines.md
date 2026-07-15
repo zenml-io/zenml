@@ -93,6 +93,29 @@ One caveat: when you use `child_pipeline.embed(...)`, the child pipeline's own
 configuration is not applied. That includes child-level `substitutions`; the
 parent run's configuration controls the steps that execute inline.
 
+### Step inputs as parameters
+
+Any value you pass to a step that is not the output of another step is uploaded
+to the artifact store as an external artifact, even a small `int`. Each upload
+costs a write to the artifact store and a request to the server, which adds up
+when a pipeline calls steps in a loop.
+
+Set the `ZENML_PARAMETER_SIZE_THRESHOLD` environment variable to pass
+JSON-serializable inputs as step parameters instead, which skips the upload.
+The variable must be set in the environment in which the pipeline executes,
+not on the client that starts the run. See
+[this page](../environment-variables/environment-variables.md) for how to
+configure environment variables for pipeline execution.
+
+| Value | Behavior |
+| --- | --- |
+| unset or `0` | Every raw input is uploaded. This is the default. |
+| a positive number | JSON-serializable inputs up to that many bytes become step parameters. Larger inputs are uploaded. |
+| `-1` | Every JSON-serializable input becomes a step parameter. |
+
+Inputs that cannot be parameters are still uploaded, so raising the threshold is
+safe. Wrap an input with `ExternalArtifact` to keep uploading it.
+
 ### Step Runtime Configuration
 
 You can control where a step executes by specifying its runtime:

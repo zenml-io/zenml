@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Compilation helpers for dynamic pipelines."""
 
+import json
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -32,6 +33,10 @@ from zenml.config.step_configurations import (
     Step,
     StepConfiguration,
     StepConfigurationUpdate,
+)
+from zenml.constants import (
+    ENV_ZENML_PARAMETER_SIZE_THRESHOLD,
+    handle_int_env_var,
 )
 from zenml.enums import StepRuntime
 from zenml.execution.pipeline.dynamic.inputs import (
@@ -57,6 +62,7 @@ from zenml.steps import BaseStep
 from zenml.steps.entrypoint_function_utils import StepArtifact
 from zenml.steps.step_invocation import StepInvocation
 from zenml.steps.utils import OutputSignature
+from zenml.utils.json_utils import pydantic_encoder
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings
@@ -64,6 +70,36 @@ if TYPE_CHECKING:
 
 
 logger = get_logger(__name__)
+
+
+def is_valid_parameter(
+    step: "BaseStep", name: str, value: Any, size_threshold: int
+) -> bool:
+    """Check whether a raw step input can be passed as a parameter.
+
+    Args:
+        step: The step that the input belongs to.
+        name: The name of the input.
+        value: The input value.
+        size_threshold: The maximum serialized parameter size in bytes. Zero
+            disables step parameters, a negative value disables the size check.
+
+    Returns:
+        Whether the input can be passed as a parameter.
+    """
+    if size_threshold == 0:
+        return False
+
+    try:
+        step.entrypoint_definition.validate_input(key=name, value=value)
+    except Exception:
+        return False
+
+    if size_threshold < 0:
+        return True
+
+    size = len(json.dumps(value, default=pydantic_encoder).encode())
+    return size <= size_threshold
 
 
 def compile_dynamic_step_invocation(
@@ -115,8 +151,13 @@ def compile_dynamic_step_invocation(
         ):
             upstream_steps.update(item.step_name for item in value)
 
+    size_threshold = handle_int_env_var(
+        ENV_ZENML_PARAMETER_SIZE_THRESHOLD, default=0
+    )
+
     input_artifacts: Dict[str, Union[StepArtifact, List[StepArtifact]]] = {}
     external_artifacts = {}
+    parameters: Dict[str, Any] = {}
     for name, value in inputs.items():
         if isinstance(value, OutputArtifact):
             input_artifacts[name] = StepArtifact(
@@ -145,8 +186,11 @@ def compile_dynamic_step_invocation(
             ]
         elif isinstance(value, (ArtifactVersionResponse, ExternalArtifact)):
             external_artifacts[name] = value
+        elif is_valid_parameter(
+            step=step, name=name, value=value, size_threshold=size_threshold
+        ):
+            parameters[name] = value
         else:
-            # TODO: should some of these be parameters?
             external_artifacts[name] = ExternalArtifact(value=value)
 
     if template := get_config_template(snapshot, step, pipeline):
@@ -177,7 +221,7 @@ def compile_dynamic_step_invocation(
         pipeline=pipeline,
         model_artifacts_or_metadata={},
         client_lazy_loaders={},
-        parameters={},
+        parameters=parameters,
     )
 
     compiled_step = Compiler()._compile_step_invocation(
