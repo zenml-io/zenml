@@ -2,6 +2,8 @@
 
 DB="sqlite"
 DB_STARTUP_DELAY=30 # Time in seconds to wait for the database container to start
+RANDOM_MIGRATION_COUNT="${RANDOM_MIGRATION_COUNT:-3}"
+RANDOM_MIGRATION_SEED="${RANDOM_MIGRATION_SEED:-${GITHUB_RUN_ID:-}}"
 
 export ZENML_ANALYTICS_OPT_IN=false
 export ZENML_DEBUG=true
@@ -126,10 +128,7 @@ function run_tests_for_version() {
     cd test_starter
 
     echo "===== Installing required integrations ====="
-    # TODO: REMOVE BEFORE MERGE
-    if [ "$VERSION" == "current" ]; then
-        zenml integration export-requirements sklearn pandas --output-file integration-requirements.txt
-    elif [ "$(version_compare "$VERSION" "0.66.0")" == "<" ]; then
+    if [ "$(version_compare "$VERSION" "0.66.0")" == "<" ]; then
         zenml integration export-requirements sklearn --output-file integration-requirements.txt
     else
         zenml integration export-requirements sklearn pandas --output-file integration-requirements.txt
@@ -221,6 +220,7 @@ function run_tests_for_version() {
 function test_upgrade_to_version() {
     set -e  # Exit immediately if a command exits with a non-zero status
     local VERSION=$1
+    local PYTHON_VERSION
 
     echo "===== Testing upgrade to version $VERSION ====="
 
@@ -324,6 +324,18 @@ echo "Testing database: $DB"
 echo "Testing versions: ${VERSIONS[@]}"
 echo "Migration type: $MIGRATION_TYPE"
 
+if [ "$MIGRATION_TYPE" == "random" ]; then
+    if ! [[ "$RANDOM_MIGRATION_COUNT" =~ ^[0-9]+$ ]] || [ "$RANDOM_MIGRATION_COUNT" -lt 1 ]; then
+        echo "RANDOM_MIGRATION_COUNT must be a positive integer" >&2
+        exit 1
+    fi
+    if [ -n "$RANDOM_MIGRATION_SEED" ]; then
+        RANDOM="$RANDOM_MIGRATION_SEED"
+        echo "Random migration seed: $RANDOM_MIGRATION_SEED"
+    fi
+    echo "Random migration count: $RANDOM_MIGRATION_COUNT"
+fi
+
 # Start completely fresh
 rm -rf "$ZENML_CONFIG_PATH"
 
@@ -365,7 +377,7 @@ else
 
         # Randomly select versions for random migrations
         MIGRATION_VERSIONS=()
-        while [ ${#MIGRATION_VERSIONS[@]} -lt 3 ]; do
+        while [ ${#MIGRATION_VERSIONS[@]} -lt "$RANDOM_MIGRATION_COUNT" ]; do
             VERSION=${VERSIONS[$RANDOM % ${#VERSIONS[@]}]}
             if [[ ! " ${MIGRATION_VERSIONS[@]} " =~ " $VERSION " ]]; then
                 MIGRATION_VERSIONS+=("$VERSION")

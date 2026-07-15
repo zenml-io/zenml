@@ -29,7 +29,7 @@ on:
         type: choice
         options: ['3.10', '3.11', '3.12', '3.13', '3.14']
         required: false
-        default: '3.11'
+        default: '3.13'
       git-ref:
         description: Git branch or ref
         type: string
@@ -54,8 +54,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
-          repository: ${{ github.repository }}
-          ref: ${{ inputs.git-ref || github.event.pull_request.head.sha }}
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ inputs.git-ref || github.event.pull_request.head.sha || github.sha }}
       - name: Set up Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
         with:
@@ -65,8 +65,14 @@ jobs:
         with:
           version: 0.8.14
       - name: Build server image
+        env:
+          PYTHON_VERSION: ${{ inputs.python-version }}
         run: |
-          docker build -t zenml-server-dev -f docker/zenml-server-dev.Dockerfile .
+          docker build \
+            --build-arg PYTHON_VERSION="${PYTHON_VERSION}" \
+            -t zenml-server-dev \
+            -f docker/zenml-server-dev.Dockerfile \
+            .
       - name: Install base package
         run: |
           uv pip install --system .

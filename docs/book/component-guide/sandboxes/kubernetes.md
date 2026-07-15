@@ -91,4 +91,3 @@ An attached session shares the pod with the original session handle. Calling `de
 - `close()` closes only the local session handle. It does not delete the pod.
 - `destroy()` deletes the backing pod and then closes the handle.
 - `kill()` only stops streaming output. Kubernetes exec does not propagate signals on disconnect, so the command keeps running inside the pod until the pod is deleted.
-

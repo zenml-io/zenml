@@ -5,14 +5,20 @@
 name: VSCode Tutorial Pipelines Test
 on:
   workflow_call:
+    inputs:
+      git-ref:
+        description: Git branch or ref
+        type: string
+        required: false
+        default: ''
   workflow_dispatch:
     inputs:
       python-version:
         description: Python version
         type: choice
-        options: ['3.12']
+        options: ['3.13']
         required: false
-        default: '3.12'
+        default: '3.13'
       enable_tmate:
         description: Enable tmate session for debugging
         type: choice
@@ -38,11 +44,13 @@ jobs:
       - name: Checkout ZenML code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ inputs.git-ref || github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
-      - name: Set up Python 3.12
+      - name: Set up Python 3.13
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
         with:
-          python-version: '3.12'
+          python-version: '3.13'
       - name: Install uv
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -52,9 +60,9 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: ~/.cache/uv
-          key: uv-tutorial-${{ runner.os }}-3.12-${{ github.run_id }}
+          key: uv-tutorial-${{ runner.os }}-3.13-${{ github.run_id }}
           restore-keys: |
-            uv-tutorial-${{ runner.os }}-3.12-
+            uv-tutorial-${{ runner.os }}-3.13-
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}
         uses: mxschmitt/action-tmate@35b54afac29c97fb54faba5b513f8fbd1882f113  # v3.24
@@ -76,9 +84,12 @@ jobs:
         run: |
           uv venv
       - name: Install ZenML from current branch
+        env:
+          ZENML_TEST_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ZENML_TEST_REF: ${{ inputs.git-ref || github.event.pull_request.head.sha || github.sha }}
         run: |
           source .venv/bin/activate
-          uv pip install "git+https://github.com/${{ github.repository }}@${{ github.sha }}[server,templates,dev]"
+          uv pip install "git+https://github.com/${ZENML_TEST_REPOSITORY}@${ZENML_TEST_REF}[server,templates,dev]"
       - name: Install tutorial requirements
         run: |
           source .venv/bin/activate

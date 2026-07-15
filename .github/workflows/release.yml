@@ -3,6 +3,8 @@ name: Release Package & Docker Image
 on:
   push:
     tags: ['*']
+permissions:
+  contents: read
 env:
   ZENML_DEBUG: true
   ZENML_LOGGING_VERBOSITY: debug
@@ -12,7 +14,7 @@ jobs:
     uses: ./.github/workflows/unit-test.yml
     with:
       os: ubuntu-latest
-      python-version: '3.11'
+      python-version: '3.13'
     secrets: inherit
   # We only run the `latest` DB migration test here, as the other previous steps in the release flow already
   # test full migrations.
@@ -89,10 +91,10 @@ jobs:
       - name: Get the version from the github tag ref
         id: get_version
         run: echo "VERSION=${GITHUB_REF/refs\/tags\//}" >> "$GITHUB_OUTPUT"
-      - name: Set up Python 3.11
+      - name: Set up Python 3.13
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
         with:
-          python-version: '3.11'
+          python-version: '3.13'
       - name: Install uv
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39  # v8.2.0
         with:
@@ -152,6 +154,9 @@ jobs:
         id: get_version
         run: echo "VERSION=${GITHUB_REF/refs\/tags\//}" >> "$GITHUB_OUTPUT"
       - name: Create a tag on ZenML Cloud plugins repo
+        env:
+          RELEASE_VERSION: ${{ steps.get_version.outputs.VERSION }}
+          CLOUD_PLUGINS_SHA: ${{ steps.get_sha.outputs.sha }}
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
         with:
           github-token: ${{ secrets.CLOUD_PLUGINS_REPO_PAT }}
@@ -159,6 +164,6 @@ jobs:
             await github.rest.git.createRef({
               owner: 'zenml-io',
               repo: 'zenml-cloud-plugins',
-              ref: 'refs/tags/${{ steps.get_version.outputs.VERSION }}',
-              sha: '${{ steps.get_sha.outputs.sha }}'
+              ref: `refs/tags/${process.env.RELEASE_VERSION}`,
+              sha: process.env.CLOUD_PLUGINS_SHA
             })

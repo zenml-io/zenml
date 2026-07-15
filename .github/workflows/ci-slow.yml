@@ -1,67 +1,85 @@
 ---
+# Scheduled develop qualification and label-triggered advisory PR slow CI.
 name: ci-slow
 on:
-  workflow_dispatch:
-  workflow_call:
-  push:
-    branches: [main]
-    paths-ignore:
-      - docs/**
-      - '*'
-      - '!pyproject.toml'
-      - '**.md'
-      - .github/workflows/claude.yml
-      - .claude/**
+  schedule:
+    - cron: 0 0 * * *
   pull_request:
-    types: [opened, synchronize, ready_for_review]
+    types: [labeled, synchronize, reopened, ready_for_review]
     paths-ignore:
       - docs/**
-      - '*'
-      - '!pyproject.toml'
       - '**.md'
       - .github/workflows/claude.yml
       - .claude/**
+  workflow_call:
+    inputs:
+      git-ref:
+        description: Git branch or ref to test
+        type: string
+        required: false
+        default: develop
+  workflow_dispatch:
+    inputs:
+      git-ref:
+        description: Git branch or ref to test
+        type: string
+        required: false
+        default: develop
+permissions:
+  contents: read
 concurrency:
-  # New commit on branch cancels running workflows of the same branch
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Use ref so manual dispatches on different refs don't cancel each other.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || inputs.git-ref
+    || 'develop' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 env:
   ZENML_DEBUG: true
   ZENML_LOGGING_VERBOSITY: debug
   ZENML_ANALYTICS_OPT_IN: false
 jobs:
-  run-slow-ci-label-is-set:
+  resolve-ref:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft ==
+      false
+    outputs:
+      git-ref: ${{ steps.ref.outputs.git-ref }}
+      should-run: ${{ steps.ref.outputs.should-run }}
     steps:
-      # using this instead of contains(github.event.pull_request.labels.*.name, 'run-slow-ci')
-      # to make it dynamic, otherwise github context is fixed at the moment of trigger event.
-      # With dynamic approach dev can set label and rerun this flow to make it running.
-      - name: Get PR labels
-        id: pr-labels
+      - name: Resolve git ref
+        id: ref
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3  # v9.0.0
+        env:
+          GIT_REF: ${{ inputs.git-ref || 'develop' }}
         with:
           script: |
-            const prNumber = ${{ github.event.pull_request.number }};
-            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber,
-            });
-            const labelNames = labels.map(label => label.name);
-            core.setOutput('all-labels', labelNames.join(','));
-      - name: Slow CI label not set
-        if: ${{ !contains(steps.pr-labels.outputs.all-labels, 'run-slow-ci') }}
-        run: |
-          echo "Please add the 'run-slow-ci' label to this PR before merging."
-          exit 1
+            if (context.eventName !== 'pull_request') {
+              core.setOutput('git-ref', process.env.GIT_REF || 'develop');
+              core.setOutput('should-run', 'true');
+              return;
+            }
+            const pullRequest = context.payload.pull_request;
+            const labels = pullRequest.labels ?? [];
+            const hasSlowCiLabel = labels.some((label) => label.name === 'run-slow-ci');
+            const wasSlowCiLabelAdded = context.payload.action === 'labeled'
+              && context.payload.label?.name === 'run-slow-ci';
+            const shouldRun = wasSlowCiLabelAdded || (
+              hasSlowCiLabel
+              && ['synchronize', 'reopened', 'ready_for_review'].includes(context.payload.action)
+            );
+            core.setOutput('git-ref', pullRequest.head.sha);
+            core.setOutput('should-run', shouldRun ? 'true' : 'false');
+            if (!shouldRun) {
+              core.notice('Skipping advisory slow CI because run-slow-ci is not active for this PR event.');
+            }
   mysql-db-migration-testing-full:
-    if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    needs: resolve-ref
+    if: needs.resolve-ref.outputs.should-run == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ needs.resolve-ref.outputs.git-ref }}
           fetch-depth: 0
       - name: Set up Python 3.10
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
@@ -69,54 +87,38 @@ jobs:
           python-version: '3.10'
       - name: Login to Docker Hub
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee  # v4.2.0
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork
+          == false
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-        if: github.event.pull_request.head.repo.fork == false
-      - name: Test migrations across versions
+      - name: Test full migrations
         run: bash scripts/test-migrations.sh mysql full
-  mysql-db-migration-testing-random:
-    if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
-        with:
-          fetch-depth: 0
-      - name: Set up Python 3.10
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
-        with:
-          python-version: '3.10'
-      - name: Login to Docker Hub
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee  # v4.2.0
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-        if: github.event.pull_request.head.repo.fork == false
-      - name: Test migrations across versions
-        run: bash scripts/test-migrations.sh mysql random
   sqlite-db-migration-testing-full:
-    needs: run-slow-ci-label-is-set
+    needs: resolve-ref
+    if: needs.resolve-ref.outputs.should-run == 'true'
     runs-on: ubuntu-latest
-    if: github.event.pull_request.draft == false
     steps:
-      - name: Checkout code
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ needs.resolve-ref.outputs.git-ref }}
           fetch-depth: 0
       - name: Set up Python 3.10
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
         with:
           python-version: '3.10'
-      - name: Test migrations across versions
+      - name: Test full migrations
         run: bash scripts/test-migrations.sh sqlite full
-  mariadb-db-migration-testing:
-    if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+  mariadb-db-migration-testing-full:
+    needs: resolve-ref
+    if: needs.resolve-ref.outputs.should-run == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ needs.resolve-ref.outputs.git-ref }}
           fetch-depth: 0
       - name: Set up Python 3.10
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
@@ -124,86 +126,44 @@ jobs:
           python-version: '3.10'
       - name: Login to Docker Hub
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee  # v4.2.0
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork
+          == false
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-        if: github.event.pull_request.head.repo.fork == false
-      - name: Test migrations across versions
+      - name: Test full migrations
         run: bash scripts/test-migrations.sh mariadb full
-  small-checks:
-    if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
-      - name: Set up Python
-        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
-        with:
-          python-version: '3.11'
-      - name: Install uv
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          source $HOME/.cargo/env
-      - name: Create virtual environment
-        run: |
-          uv venv
-      - name: Check for broken dependencies
-        run: |
-          source .venv/bin/activate
-          uv pip check
-      - name: Markdown link check
-        uses: gaurav-nelson/github-action-markdown-link-check@3c3b66f1f7d0900e37b71eca45b63ea9eedfce31  # 1.0.17
-        with:
-          use-quiet-mode: 'yes'
-          use-verbose-mode: 'no'
-          folder-path: ./examples, ./docs/book, ./src
-          file-path: ./README.md, ./LICENSE, ./RELEASE_NOTES.md, CODE-OF-CONDUCT.md,
-            CONTRIBUTING.md, CLA.md, RELEASE_NOTES.md, ROADMAP.md
-          config-file: .github/workflows/markdown_check_config.json
-        continue-on-error: true
-      - name: Security check
-        run: |
-          source .venv/bin/activate
-          uv pip install bandit
-          bash scripts/check-security.sh
-      - name: Check for alembic branch divergence
-        env:
-          ZENML_LOGGING_VERBOSITY: info
-        run: |
-          source .venv/bin/activate
-          uv pip install alembic
-          bash scripts/check-alembic-branches.sh
-      - name: Install latest dashboard (test gitignore)
-        run: bash scripts/install-dashboard.sh
   ubuntu-linting:
-    needs: run-slow-ci-label-is-set
-    if: github.event.pull_request.draft == false
+    needs: resolve-ref
+    if: needs.resolve-ref.outputs.should-run == 'true'
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.10', '3.12', '3.13', '3.14']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
       fail-fast: false
     uses: ./.github/workflows/linting.yml
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
+      git-ref: ${{ needs.resolve-ref.outputs.git-ref }}
     secrets: inherit
   ubuntu-unit-test:
-    if: github.event.pull_request.draft == false
-    needs: [run-slow-ci-label-is-set, ubuntu-linting]
+    needs: [resolve-ref, ubuntu-linting]
+    if: needs.resolve-ref.outputs.should-run == 'true'
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: ['3.10', '3.12', '3.13', '3.14']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
       fail-fast: false
     uses: ./.github/workflows/unit-test.yml
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
+      git-ref: ${{ needs.resolve-ref.outputs.git-ref }}
     secrets: inherit
   windows-linting:
-    needs: run-slow-ci-label-is-set
-    if: github.event.pull_request.draft == false
+    needs: resolve-ref
+    if: needs.resolve-ref.outputs.should-run == 'true'
     strategy:
       matrix:
         os: [windows-latest]
@@ -213,10 +173,11 @@ jobs:
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
+      git-ref: ${{ needs.resolve-ref.outputs.git-ref }}
     secrets: inherit
   windows-unit-test:
-    if: github.event.pull_request.draft == false
-    needs: [run-slow-ci-label-is-set, windows-linting]
+    needs: [resolve-ref, windows-linting]
+    if: needs.resolve-ref.outputs.should-run == 'true'
     strategy:
       matrix:
         os: [windows-latest]
@@ -226,10 +187,11 @@ jobs:
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
+      git-ref: ${{ needs.resolve-ref.outputs.git-ref }}
     secrets: inherit
   macos-linting:
-    needs: run-slow-ci-label-is-set
-    if: github.event.pull_request.draft == false
+    needs: resolve-ref
+    if: needs.resolve-ref.outputs.should-run == 'true'
     strategy:
       matrix:
         os: [macos-latest]
@@ -239,10 +201,11 @@ jobs:
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
+      git-ref: ${{ needs.resolve-ref.outputs.git-ref }}
     secrets: inherit
   macos-unit-test:
-    if: github.event.pull_request.draft == false
-    needs: [run-slow-ci-label-is-set, macos-linting]
+    needs: [resolve-ref, macos-linting]
+    if: needs.resolve-ref.outputs.should-run == 'true'
     strategy:
       matrix:
         os: [macos-latest]
@@ -254,10 +217,11 @@ jobs:
       os: ${{ matrix.os }}
       install_integrations: 'yes'
       reruns: 1
+      git-ref: ${{ needs.resolve-ref.outputs.git-ref }}
     secrets: inherit
   windows-integration-test:
-    if: github.event.pull_request.draft == false
-    needs: [run-slow-ci-label-is-set, windows-unit-test]
+    needs: [resolve-ref, windows-unit-test]
+    if: needs.resolve-ref.outputs.should-run == 'true'
     strategy:
       matrix:
         os: [windows-latest]
@@ -269,10 +233,11 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
+      git-ref: ${{ needs.resolve-ref.outputs.git-ref }}
     secrets: inherit
   macos-integration-test:
-    if: github.event.pull_request.draft == false
-    needs: [run-slow-ci-label-is-set, macos-unit-test]
+    needs: [resolve-ref, macos-unit-test]
+    if: needs.resolve-ref.outputs.should-run == 'true'
     strategy:
       matrix:
         os: [macos-latest]
@@ -284,51 +249,53 @@ jobs:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
+      git-ref: ${{ needs.resolve-ref.outputs.git-ref }}
     secrets: inherit
   ubuntu-latest-integration-test:
-    if: github.event.pull_request.draft == false
-    needs: [run-slow-ci-label-is-set, ubuntu-unit-test]
+    needs: [resolve-ref, ubuntu-unit-test]
+    if: needs.resolve-ref.outputs.should-run == 'true'
     strategy:
       matrix:
-        os: [ubuntu-latest]
-        python-version: ['3.10', '3.12', '3.13', '3.14']
-        test_environment:
-          - default
-          - docker-server-docker-orchestrator-mysql
-          - docker-server-docker-orchestrator-mariadb
-        exclude:
-          # docker is time-consuming to run, so we only run it on 3.11
-          - test_environment: docker-server-docker-orchestrator-mysql
+        include:
+          - os: ubuntu-latest
             python-version: '3.10'
-          - test_environment: docker-server-docker-orchestrator-mysql
+            test_environment: default
+          - os: ubuntu-latest
+            python-version: '3.11'
+            test_environment: default
+          - os: ubuntu-latest
             python-version: '3.12'
-          - test_environment: docker-server-docker-orchestrator-mysql
+            test_environment: default
+          - os: ubuntu-latest
             python-version: '3.13'
-          - test_environment: docker-server-docker-orchestrator-mysql
+            test_environment: default
+          - os: ubuntu-latest
             python-version: '3.14'
-          - test_environment: docker-server-docker-orchestrator-mariadb
-            python-version: '3.10'
-          - test_environment: docker-server-docker-orchestrator-mariadb
-            python-version: '3.12'
-          - test_environment: docker-server-docker-orchestrator-mariadb
+            test_environment: default
+          - os: ubuntu-latest
             python-version: '3.13'
-          - test_environment: docker-server-docker-orchestrator-mariadb
-            python-version: '3.14'
+            test_environment: docker-server-docker-orchestrator-mysql
+          - os: ubuntu-latest
+            python-version: '3.13'
+            test_environment: docker-server-docker-orchestrator-mariadb
       fail-fast: false
     uses: ./.github/workflows/integration-test-slow.yml
     with:
       os: ${{ matrix.os }}
       python-version: ${{ matrix.python-version }}
       test_environment: ${{ matrix.test_environment }}
+      git-ref: ${{ needs.resolve-ref.outputs.git-ref }}
     secrets: inherit
   vscode-tutorial-pipelines-test:
-    if: github.event.pull_request.draft == false
-    needs: run-slow-ci-label-is-set
+    needs: resolve-ref
+    if: needs.resolve-ref.outputs.should-run == 'true'
     uses: ./.github/workflows/vscode-tutorial-pipelines-test.yml
+    with:
+      git-ref: ${{ needs.resolve-ref.outputs.git-ref }}
     secrets: inherit
   ubuntu-base-package-functionality:
-    needs: run-slow-ci-label-is-set
-    if: github.event.pull_request.draft == false
+    needs: resolve-ref
+    if: needs.resolve-ref.outputs.should-run == 'true'
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -338,4 +305,5 @@ jobs:
     with:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
+      git-ref: ${{ needs.resolve-ref.outputs.git-ref }}
     secrets: inherit

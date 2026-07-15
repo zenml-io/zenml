@@ -15,6 +15,7 @@
 
 import logging
 import os
+import subprocess
 import sys
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
@@ -303,6 +304,30 @@ class BaseTestDeployment(ABC):
             The runtime path for the deployment.
         """
         return self.get_root_path() / self.config.name
+
+    def run_docker_compose(self, *arguments: str) -> None:
+        """Runs Docker Compose v2 for this deployment.
+
+        Args:
+            *arguments: Docker Compose arguments to run after project setup.
+        """
+        runtime_path = self.get_runtime_path()
+        manifest_path = runtime_path / "docker-compose.yml"
+        # The harness still looks up Compose v1-style underscore container
+        # names, so keep v2 in compatibility mode.
+        command = [
+            "docker",
+            "compose",
+            "--compatibility",
+            "--project-name",
+            self.config.name,
+            "--file",
+            str(manifest_path),
+            *arguments,
+        ]
+
+        logging.debug("Running Docker Compose command: %s", command)
+        subprocess.run(command, cwd=runtime_path, check=True)
 
     def global_config_path(self) -> Path:
         """Returns the global config path used for the deployment.
