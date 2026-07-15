@@ -19,7 +19,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from zenml.enums import ResourceRequestStatus
+from zenml.enums import ResourceRequestRuntimeState, ResourceRequestStatus
 from zenml.models import (
     ResourcePoolAllocation,
     ResourcePoolQueueItem,
@@ -549,6 +549,7 @@ class RMResourceRequestRenewalRequest(BaseModel):
     """Runtime resource request renewal payload for the Resource Manager API."""
 
     lease_expires_at: datetime
+    runtime_state: Optional[ResourceRequestRuntimeState] = None
 
 
 class RMResourceRequestResponse(BaseModel):
@@ -568,6 +569,7 @@ class RMResourceRequestResponse(BaseModel):
     pool_selector: Optional[dict[str, Any]] = None
     preemption_group: Optional[RMSubjectSelectorNode] = None
     status: str
+    runtime_state: str = ResourceRequestRuntimeState.UNKNOWN.value
     reclaim_tolerance: str
     lease_expires_at: Optional[datetime] = None
     allocation_deadline: Optional[datetime] = None
@@ -640,6 +642,7 @@ class RMResourceRequestResponse(BaseModel):
                 ),
                 demands=[demand.to_model() for demand in self.demands],
                 status=ResourceRequestStatus(self.status),
+                runtime_state=ResourceRequestRuntimeState(self.runtime_state),
                 reclaim_tolerance=ResourceRequestReclaimTolerance(
                     self.reclaim_tolerance
                 ),

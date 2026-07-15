@@ -35,6 +35,7 @@ from zenml.constants import (
 )
 from zenml.enums import (
     ExecutionStatus,
+    ResourceRequestRuntimeState,
     ResourceRequestStatus,
     StepRuntime,
 )
@@ -879,6 +880,7 @@ class StepLauncher:
                                 StepHeartbeatWorker.resource_request_lease_expires_at()
                                 + timedelta(seconds=delay)
                             ),
+                            runtime_state=ResourceRequestRuntimeState.PENDING,
                         ),
                     )
                 except KeyError as e:
@@ -893,6 +895,7 @@ class StepLauncher:
                     resource_request_id,
                     ResourceRequestRenewalRequest(
                         lease_expires_at=utc_now() + initialization_lease,
+                        runtime_state=ResourceRequestRuntimeState.SUBMITTED,
                     ),
                 )
                 logger.info(

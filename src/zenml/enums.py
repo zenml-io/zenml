@@ -673,6 +673,16 @@ class ResourceRequestStatus(StrEnum):
     NO_MATCHING_POLICY = "no_matching_policy"
 
 
+class ResourceRequestRuntimeState(StrEnum):
+    """Owner-reported runtime states for resource requests."""
+
+    UNKNOWN = "unknown"
+    PENDING = "pending"
+    SUBMITTED = "submitted"
+    RUNNING = "running"
+    IDLE = "idle"
+
+
 class ResourceRequestReclaimTolerance(StrEnum):
     """Caller tolerance for reclaiming lower-priority work on a request."""
 
