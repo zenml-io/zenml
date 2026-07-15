@@ -738,7 +738,9 @@ class DynamicPipelineRunner:
                     elif isinstance(node, MapNode):
                         self._handle_map_ready(node=node)
                 except Exception as e:
-                    self._record_node_failure(node_id=node_id, exception=e)
+                    self._record_node_startup_failure(
+                        node_id=node_id, exception=e
+                    )
                     logger.exception(
                         "Failed to start concurrent node `%s`.", node_id
                     )
@@ -1110,7 +1112,10 @@ class DynamicPipelineRunner:
         self._on_failure_detected(exception=exception)
 
     def _fail_concurrent_node(
-        self, invocation_id: str, exception: BaseException
+        self,
+        invocation_id: str,
+        exception: BaseException,
+        force_record: bool = False,
     ) -> None:
         """Handle the failure of a concurrently launched node.
 
@@ -1123,13 +1128,14 @@ class DynamicPipelineRunner:
         Args:
             invocation_id: The invocation ID of the failed node.
             exception: The failure exception.
+            force_record: Whether to force record the failure.
         """
         self.apply_graph_update(
             self._dependency_graph.mark_node_failed(node_id=invocation_id),
             exception=exception,
         )
 
-        if not self._continue_on_failure:
+        if force_record or not self._continue_on_failure:
             self.record_failure(exception=exception)
 
     def allocate_invocation_id(
@@ -2373,7 +2379,7 @@ class DynamicPipelineRunner:
             invocation_id=invocation_id, future=execution_future
         )
 
-    def _record_node_failure(
+    def _record_node_startup_failure(
         self, node_id: str, exception: BaseException
     ) -> None:
         """Record a failure for a registered concurrent node.
@@ -2418,6 +2424,7 @@ class DynamicPipelineRunner:
                 exception=wrap_step_failure(
                     exception, invocation_id=step_run.name
                 ),
+                force_record=step_run.status == ExecutionStatus.STOPPED,
             )
 
     # Concurrent map lifecycle
