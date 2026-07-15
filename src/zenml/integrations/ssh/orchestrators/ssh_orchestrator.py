@@ -333,10 +333,6 @@ class SSHOrchestrator(ContainerizedOrchestrator):
 
         service: Dict[str, Any] = {
             "image": self.get_image(snapshot=snapshot, step_name=step_name),
-            # Container names must be unique per run, not per snapshot: the same
-            # snapshot can be launched multiple times (re-runs, run templates,
-            # concurrent triggers). Keying on snapshot.id would collide on the
-            # remote host with "container name already in use".
             "container_name": f"{run_id}-{step_name}",
             "network_mode": "host",
             "entrypoint": StepEntrypointConfiguration.get_entrypoint_command(),
