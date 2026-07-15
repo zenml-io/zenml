@@ -23,9 +23,10 @@ from typing import Any
 from pydantic import BaseModel
 
 from zenml.enums import WebhookType
+from zenml.exceptions import CredentialsNotValid
 
 
-class WebhookAuthenticationError(ValueError):
+class WebhookAuthenticationError(CredentialsNotValid):
     """Raised when a webhook request cannot be authenticated."""
 
 
