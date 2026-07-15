@@ -33,6 +33,7 @@ from zenml.models.v2.base.filter import (
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import (
     ResourceRequestReclaimTolerance,
+    ResourceRequestRuntimeState,
     ResourceRequestStatus,
     StackComponentType,
 )
@@ -341,6 +342,10 @@ class ResourceRequestRenewalRequest(BaseZenModel):
     lease_expires_at: datetime = Field(
         title="The renewed lease expiration timestamp.",
     )
+    runtime_state: Optional[ResourceRequestRuntimeState] = Field(
+        default=None,
+        title="The optional owner-reported runtime state.",
+    )
 
 
 class ResourceRequestResponseBody(UserScopedResponseBody):
@@ -392,6 +397,10 @@ class ResourceRequestResponseBody(UserScopedResponseBody):
     )
     status: ResourceRequestStatus = Field(
         title="The status of the resource request."
+    )
+    runtime_state: ResourceRequestRuntimeState = Field(
+        default=ResourceRequestRuntimeState.UNKNOWN,
+        title="The owner-reported runtime state of the request.",
     )
     reclaim_tolerance: ResourceRequestReclaimTolerance = Field(
         title="The capacity reclaim behavior tolerated by this request.",
@@ -566,6 +575,15 @@ class ResourceRequestResponse(
             The lifecycle status of the resource request.
         """
         return self.get_body().status
+
+    @property
+    def runtime_state(self) -> ResourceRequestRuntimeState:
+        """Resource request runtime state.
+
+        Returns:
+            The owner-reported runtime state of the resource request.
+        """
+        return self.get_body().runtime_state
 
     @property
     def status_reason(self) -> Optional[str]:

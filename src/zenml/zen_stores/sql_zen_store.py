@@ -169,6 +169,7 @@ from zenml.enums import (
     ModelStages,
     OnboardingStep,
     ResourceRequestReclaimTolerance,
+    ResourceRequestRuntimeState,
     ResourceRequestStatus,
     RunWaitConditionLeaseMode,
     RunWaitConditionResolution,
@@ -11439,6 +11440,7 @@ class SqlZenStore(BaseZenStore):
                     lease_expires_at=(
                         self._resource_request_lease_expires_at()
                     ),
+                    runtime_state=ResourceRequestRuntimeState.RUNNING,
                 ),
             )
         except KeyError:
