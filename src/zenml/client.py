@@ -220,7 +220,7 @@ from zenml.models import (
     WebhookIntegrationFilter,
     WebhookIntegrationRequest,
     WebhookIntegrationResponse,
-    WebhookIntegrationSecretRequest,
+    WebhookIntegrationRotateSecretRequest,
     WebhookIntegrationSecretResponse,
     WebhookIntegrationUpdate,
 )
@@ -6842,6 +6842,7 @@ class Client(metaclass=ClientMetaClass):
 
     # ------------------------- Webhook integrations -------------------------
 
+    @_fail_for_sql_zen_store
     def create_webhook_integration(
         self,
         name: str,
@@ -6871,6 +6872,7 @@ class Client(metaclass=ClientMetaClass):
             )
         )
 
+    @_fail_for_sql_zen_store
     def get_webhook_integration(
         self,
         name_id_or_prefix: str | UUID,
@@ -6898,6 +6900,7 @@ class Client(metaclass=ClientMetaClass):
             project=project,
         )
 
+    @_fail_for_sql_zen_store
     def list_webhook_integrations(
         self,
         sort_by: str = "created",
@@ -6952,6 +6955,7 @@ class Client(metaclass=ClientMetaClass):
             filter_model=filter_model, hydrate=hydrate
         )
 
+    @_fail_for_sql_zen_store
     def update_webhook_integration(
         self,
         name_id_or_prefix: str | UUID,
@@ -6972,18 +6976,26 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The updated webhook integration.
         """
-        integration = self.get_webhook_integration(
-            name_id_or_prefix=name_id_or_prefix,
-            allow_name_prefix_match=False,
-            project=project,
-        )
+        if is_valid_uuid(name_id_or_prefix):
+            integration_id = (
+                UUID(name_id_or_prefix)
+                if isinstance(name_id_or_prefix, str)
+                else name_id_or_prefix
+            )
+        else:
+            integration_id = self.get_webhook_integration(
+                name_id_or_prefix=name_id_or_prefix,
+                allow_name_prefix_match=False,
+                project=project,
+            ).id
         return self.zen_store.update_webhook_integration(
-            integration_id=integration.id,
+            integration_id=integration_id,
             update=WebhookIntegrationUpdate(
                 name=name, active=active, secret=secret
             ),
         )
 
+    @_fail_for_sql_zen_store
     def delete_webhook_integration(
         self,
         name_id_or_prefix: str | UUID,
@@ -7002,6 +7014,7 @@ class Client(metaclass=ClientMetaClass):
         )
         self.zen_store.delete_webhook_integration(integration.id)
 
+    @_fail_for_sql_zen_store
     def rotate_webhook_integration_secret(
         self,
         name_id_or_prefix: str | UUID,
@@ -7025,7 +7038,7 @@ class Client(metaclass=ClientMetaClass):
         )
         return self.zen_store.rotate_webhook_integration_secret(
             integration_id=integration.id,
-            request=WebhookIntegrationSecretRequest(secret=secret),
+            request=WebhookIntegrationRotateSecretRequest(secret=secret),
         )
 
     # --------------------------- Service Connectors ---------------------------

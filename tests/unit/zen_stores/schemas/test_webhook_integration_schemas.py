@@ -1,3 +1,16 @@
+#  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
 """Unit tests for webhook integration schemas and request models."""
 
 from datetime import datetime
@@ -11,7 +24,7 @@ from zenml.enums import WebhookType
 from zenml.models import (
     WebhookEventStatsUpdate,
     WebhookIntegrationRequest,
-    WebhookIntegrationSecretRequest,
+    WebhookIntegrationRotateSecretRequest,
     WebhookIntegrationStats,
     WebhookIntegrationUpdate,
 )
@@ -69,7 +82,7 @@ def test_webhook_event_stats_update_rejects_invalid_outcome(
                 "webhook_type": WebhookType.GITHUB,
             },
         ),
-        (WebhookIntegrationSecretRequest, {}),
+        (WebhookIntegrationRotateSecretRequest, {}),
         (WebhookIntegrationUpdate, {}),
     ],
     ids=["create", "rotate", "update"],
@@ -92,7 +105,7 @@ def test_webhook_integration_requests_allow_missing_secret() -> None:
         project=uuid4(),
         webhook_type=WebhookType.GITHUB,
     )
-    secret_request = WebhookIntegrationSecretRequest()
+    secret_request = WebhookIntegrationRotateSecretRequest()
 
     assert integration_request.secret is None
     assert secret_request.secret is None

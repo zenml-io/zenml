@@ -1,8 +1,16 @@
-# Copyright (c) ZenML GmbH 2026. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
 """SQL schema for webhook integrations."""
 
 from typing import Any
@@ -24,7 +32,10 @@ from zenml.models import (
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.project_schemas import ProjectSchema
-from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.schema_utils import (
+    build_foreign_key_field,
+    build_index,
+)
 from zenml.zen_stores.schemas.secret_schemas import SecretSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 
@@ -35,9 +46,13 @@ class WebhookIntegrationSchema(NamedSchema, table=True):
     __tablename__ = "webhook_integration"
     __table_args__ = (
         UniqueConstraint(
-            "name",
             "project_id",
+            "name",
             name="unique_webhook_integration_name_in_project",
+        ),
+        build_index(
+            table_name=__tablename__,
+            column_names=["webhook_type"],
         ),
     )
 
@@ -69,8 +84,8 @@ class WebhookIntegrationSchema(NamedSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    webhook_type: str = Field(index=True)
-    active: bool = Field(default=True, index=True)
+    webhook_type: str
+    active: bool = Field(default=True)
     stats: str = Field(
         default=WebhookIntegrationStats().model_dump_json(),
         sa_column=Column(TEXT, nullable=False),

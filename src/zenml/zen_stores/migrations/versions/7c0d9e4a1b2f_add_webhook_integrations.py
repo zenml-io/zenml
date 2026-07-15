@@ -1,3 +1,16 @@
+#  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
 """Add webhook integrations [7c0d9e4a1b2f].
 
 Revision ID: 7c0d9e4a1b2f
@@ -56,19 +69,13 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint(
-            "name",
             "project_id",
+            "name",
             name="unique_webhook_integration_name_in_project",
         ),
     )
     op.create_index(
-        op.f("ix_webhook_integration_active"),
-        "webhook_integration",
-        ["active"],
-        unique=False,
-    )
-    op.create_index(
-        op.f("ix_webhook_integration_webhook_type"),
+        "ix_webhook_integration_webhook_type",
         "webhook_integration",
         ["webhook_type"],
         unique=False,
@@ -78,11 +85,7 @@ def upgrade() -> None:
 def downgrade() -> None:
     """Drop the webhook integration table."""
     op.drop_index(
-        op.f("ix_webhook_integration_webhook_type"),
-        table_name="webhook_integration",
-    )
-    op.drop_index(
-        op.f("ix_webhook_integration_active"),
+        "ix_webhook_integration_webhook_type",
         table_name="webhook_integration",
     )
     op.drop_table("webhook_integration")

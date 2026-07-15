@@ -312,7 +312,7 @@ from zenml.models import (
     WebhookIntegrationFilter,
     WebhookIntegrationRequest,
     WebhookIntegrationResponse,
-    WebhookIntegrationSecretRequest,
+    WebhookIntegrationRotateSecretRequest,
     WebhookIntegrationSecretResponse,
     WebhookIntegrationUpdate,
 )
@@ -2672,7 +2672,7 @@ class RestZenStore(BaseZenStore):
     def rotate_webhook_integration_secret(
         self,
         integration_id: UUID,
-        request: WebhookIntegrationSecretRequest,
+        request: WebhookIntegrationRotateSecretRequest,
     ) -> WebhookIntegrationSecretResponse:
         """Rotate a webhook integration signing secret.
 

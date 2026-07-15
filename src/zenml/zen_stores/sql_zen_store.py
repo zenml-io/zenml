@@ -380,7 +380,7 @@ from zenml.models import (
     WebhookIntegrationFilter,
     WebhookIntegrationRequest,
     WebhookIntegrationResponse,
-    WebhookIntegrationSecretRequest,
+    WebhookIntegrationRotateSecretRequest,
     WebhookIntegrationSecretResponse,
     WebhookIntegrationUpdate,
 )
@@ -8238,7 +8238,9 @@ class SqlZenStore(BaseZenStore):
                 )
                 raise
             return WebhookIntegrationCreateResponse(
-                integration=schema.to_model(include_metadata=True),
+                integration=schema.to_model(
+                    include_metadata=True, include_resources=True
+                ),
                 secret=(
                     PlainSerializedSecretStr(secret)
                     if generated_secret
@@ -8264,7 +8266,9 @@ class SqlZenStore(BaseZenStore):
                 schema_class=WebhookIntegrationSchema,
                 session=session,
             )
-            return schema.to_model(include_metadata=hydrate)
+            return schema.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
 
     def list_webhook_integrations(
         self,
@@ -8327,7 +8331,9 @@ class SqlZenStore(BaseZenStore):
             schema.update(update)
             session.add(schema)
             session.commit()
-            return schema.to_model(include_metadata=True)
+            return schema.to_model(
+                include_metadata=True, include_resources=True
+            )
 
     def delete_webhook_integration(self, integration_id: UUID) -> None:
         """Delete a webhook integration and its internal secret.
@@ -8348,7 +8354,7 @@ class SqlZenStore(BaseZenStore):
     def rotate_webhook_integration_secret(
         self,
         integration_id: UUID,
-        request: WebhookIntegrationSecretRequest,
+        request: WebhookIntegrationRotateSecretRequest,
     ) -> WebhookIntegrationSecretResponse:
         """Replace the active webhook signing secret.
 

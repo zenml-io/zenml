@@ -718,6 +718,7 @@ def _get_resource_type_schema_mapping() -> Dict[
         TagSchema,
         TriggerSchema,
         UserSchema,
+        WebhookIntegrationSchema,
     )
 
     return {
@@ -746,6 +747,7 @@ def _get_resource_type_schema_mapping() -> Dict[
         ResourceType.SCHEDULE: ScheduleSchema,
         # ResourceType.USER: UserSchema,
         ResourceType.TRIGGER: TriggerSchema,
+        ResourceType.WEBHOOK_INTEGRATION: WebhookIntegrationSchema,
         ResourceType.RESOURCE_POOL_SUBJECT_POLICY: ResourcePoolSubjectPolicySchema,
     }
 
