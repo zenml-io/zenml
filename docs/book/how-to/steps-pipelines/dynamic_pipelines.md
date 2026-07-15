@@ -102,6 +102,10 @@ when a pipeline calls steps in a loop.
 
 Set the `ZENML_PARAMETER_SIZE_THRESHOLD` environment variable to pass
 JSON-serializable inputs as step parameters instead, which skips the upload.
+The variable must be set in the environment in which the pipeline executes,
+not on the client that starts the run. See
+[this page](../environment-variables/environment-variables.md) for how to
+configure environment variables for pipeline execution.
 
 | Value | Behavior |
 | --- | --- |
