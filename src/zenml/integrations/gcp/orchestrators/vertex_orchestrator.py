@@ -33,6 +33,7 @@ import os
 import re
 import types
 import urllib
+import hashlib
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -126,6 +127,24 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 ENV_ZENML_VERTEX_RUN_ID = "ZENML_VERTEX_RUN_ID"
 STEP_JOB_NAME_METADATA_KEY = "job_name"
+
+
+def sanitize_vertex_job_name(pipeline_name: str, max_length: int = 64) -> str:
+    """
+    Truncates a pipeline name to fit Vertex AI limits while ensuring uniqueness.
+    """
+    if len(pipeline_name) <= max_length:
+        return pipeline_name
+
+    full_hash = hashlib.md5(pipeline_name.encode('utf-8')).hexdigest()
+    
+    short_hash = full_hash[:8]
+    keep_length = max_length - len(short_hash) - 1 
+
+    truncated_name = pipeline_name[:keep_length]
+    final_name = f"{truncated_name}-{short_hash}"
+
+    return final_name
 
 
 def _clean_pipeline_name(pipeline_name: str) -> str:
@@ -529,7 +548,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 step_name_to_dynamic_component[step_name] = component
 
             @dsl.pipeline(  # type: ignore[misc]
-                display_name=orchestrator_run_name,
+                display_name=sanitize_vertex_job_name(orchestrator_run_name),
             )
             def dynamic_pipeline() -> None:
                 """Dynamic pipeline."""
@@ -880,7 +899,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
         # Instantiate the Vertex AI Pipelines job
         run = aiplatform.PipelineJob(
-            display_name=pipeline_name,
+            display_name=sanitize_vertex_job_name(pipeline_name),
             template_path=pipeline_file_path,
             job_id=job_id,
             pipeline_root=self._pipeline_root,
