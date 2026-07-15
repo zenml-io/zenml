@@ -338,6 +338,29 @@ class TestDynamicSubmit:
             for call in ssh.put_text.call_args_list
         )
 
+    def test_dynamic_env_file_rejects_corrupting_value(self) -> None:
+        """A newline in an env value must fail loudly, not silently corrupt.
+
+        The dynamic env-file carries the orchestrator's store token; a raw
+        newline would spill it onto (or drop it from) an adjacent line, so the
+        shared serializer rejects it instead of writing a broken file.
+        """
+        orch = _make_orchestrator()
+        snap = _fake_snapshot({"a": _fake_step()})
+        run = MagicMock()
+        run.id = uuid4()
+        with (
+            _patched_ssh(),
+            patch.object(orch, "get_image", return_value="orch-img"),
+            pytest.raises(ValueError, match="newline"),
+        ):
+            orch.submit_dynamic_pipeline(
+                snapshot=snap,
+                stack=MagicMock(),
+                environment={"ZENML_STORE_URL": "x", "BAD": "line1\nline2"},
+                placeholder_run=run,
+            )
+
     def test_supports_dynamic_and_isolated_flags(self) -> None:
         orch = _make_orchestrator()
         # Overriding these methods flips the capability flags ZenML checks

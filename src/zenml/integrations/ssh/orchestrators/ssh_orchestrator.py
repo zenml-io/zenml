@@ -47,6 +47,7 @@ from zenml.integrations.ssh.utils import (
     build_docker_run_command,
     build_mount_mappings,
     prepare_remote_workdir,
+    serialize_env_for_docker_env_file,
 )
 from zenml.logger import get_logger
 from zenml.orchestrators import ContainerizedOrchestrator, SubmissionResult
@@ -284,10 +285,11 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         with SSHClient(self.config) as ssh:
             self._prepare_remote_dir(ssh, remote_dir, stack)
             # docker --env-file reads literal KEY=VALUE lines; keep the file
-            # private since it carries the ZenML store credentials.
-            env_lines = "".join(
-                f"{key}={value}\n" for key, value in environment.items()
-            )
+            # private since it carries the ZenML store credentials. Use the
+            # shared serializer so a NUL/newline in a value fails loudly
+            # instead of silently corrupting the file (which would spill or
+            # drop the orchestrator's store token).
+            env_lines = serialize_env_for_docker_env_file(environment)
             ssh.put_text(env_file, env_lines, mode=0o600)
             run = ssh.exec(run_command)
             if run.exit_code != 0:
