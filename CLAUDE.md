@@ -218,6 +218,7 @@ Router, service, error-handling, and validation conventions for the server live 
 
 ## Dependencies & Runtime Constraints
 - Align contributions with the FastAPI + Pydantic v2 + SQLAlchemy 2.0 + SQLModel stack defined for ZenML OSS; confirm any new dependency in `pyproject.toml` before adoption.
+- When changing server framework (e.g., `fastapi`) or database library versions, check whether related OpenTelemetry SDK, exporter, and instrumentation dependencies also need updates. Breaking changes in instrumented libraries can require coordinated OTel updates. Keep OTel SDK/exporter versions aligned with the matching OpenTelemetry instrumentation beta line.
 - The OSS runtime forbids async I/O in Claude-authored code even though FastAPI supports it—implement synchronous `def` handlers and delegate background/long-running work to workers or dependency-injected services; this supersedes generic async advice found elsewhere.
 - Prefer dependency injection over module-level singletons for clients, caches, and repositories so state management stays testable.
 - Cache static or frequently accessed data (e.g., dependency-scoped in-memory caches) and lazy-load heavyweight resources to control cold-start latency.
