@@ -61,19 +61,19 @@ def webhook_integration_factory(clean_project):
         active: bool = True,
         secret: str | None = None,
     ) -> WebhookIntegrationCreateResponse:
-        result = clean_project.create_webhook_integration(
+        result = clean_project.create_webhook(
             name=sample_name(name_prefix),
             webhook_type=WebhookType.CUSTOM,
             active=active,
             secret=secret,
         )
-        integration_ids.append(result.integration.id)
+        integration_ids.append(result.webhook.id)
         return result
 
     yield create
 
     for integration_id in integration_ids:
-        clean_project.delete_webhook_integration(integration_id)
+        clean_project.delete_webhook(integration_id)
 
 
 def test_webhook_intake_accepts_valid_custom_delivery(
@@ -81,7 +81,7 @@ def test_webhook_intake_accepts_valid_custom_delivery(
 ):
     store = _require_rest_store(clean_project)
     result = webhook_integration_factory("webhook-intake-valid")
-    integration = result.integration
+    integration = result.webhook
     assert result.secret is not None
     secret = result.secret.get_secret_value()
     body = b'{"pipeline":"training"}'
@@ -100,7 +100,7 @@ def test_webhook_intake_accepts_valid_custom_delivery(
     assert response.status_code == 202
     assert response.content == b""
 
-    updated = clean_project.get_webhook_integration(integration.id)
+    updated = clean_project.get_webhook(integration.id)
     assert updated.stats.received_count == 1
     assert updated.stats.accepted_count == 1
     assert updated.stats.auth_failed_count == 0
@@ -116,12 +116,12 @@ def test_webhook_intake_resolves_updated_secret_reference(
     store = _require_rest_store(clean_project)
     secret_name = sample_name("webhook-intake-reference")
     clean_project.create_secret(secret_name, values={"key": "initial-secret"})
-    result = clean_project.create_webhook_integration(
+    result = clean_project.create_webhook(
         name=sample_name("webhook-intake-reference-integration"),
         webhook_type=WebhookType.CUSTOM,
         secret=f"{{{{{secret_name}.key}}}}",
     )
-    integration = result.integration
+    integration = result.webhook
     body = b'{"pipeline":"training"}'
 
     try:
@@ -151,7 +151,7 @@ def test_webhook_intake_resolves_updated_secret_reference(
 
         assert response.status_code == 202
     finally:
-        clean_project.delete_webhook_integration(integration.id)
+        clean_project.delete_webhook(integration.id)
         clean_project.delete_secret(secret_name)
 
 
@@ -187,7 +187,7 @@ def test_webhook_intake_failure_scenarios(
         f"webhook-intake-{scenario}",
         active=scenario != "inactive",
     )
-    integration = result.integration
+    integration = result.webhook
     assert result.secret is not None
     secret = result.secret.get_secret_value()
     body = b"not-json" if scenario == "invalid-payload" else b'{"ok":true}'
@@ -210,7 +210,7 @@ def test_webhook_intake_failure_scenarios(
     )
 
     assert response.status_code == expected_status
-    updated = clean_project.get_webhook_integration(integration.id)
+    updated = clean_project.get_webhook(integration.id)
     assert (
         updated.stats.received_count,
         updated.stats.accepted_count,

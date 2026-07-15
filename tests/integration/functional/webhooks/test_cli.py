@@ -29,28 +29,28 @@ from zenml.zen_stores.sql_zen_store import SqlZenStore
 def clean_client(clean_project: Client) -> Client:
     """Return the active client when it is connected to a server."""
     if isinstance(clean_project.zen_store, SqlZenStore):
-        pytest.skip("Webhook integrations require a REST store.")
+        pytest.skip("Webhooks require a REST store.")
     return clean_project
 
 
-webhook_integration_command = cli.commands["webhook-integration"]
-create_command = webhook_integration_command.commands["create"]
-describe_command = webhook_integration_command.commands["describe"]
-list_command = webhook_integration_command.commands["list"]
-update_command = webhook_integration_command.commands["update"]
-rotate_secret_command = webhook_integration_command.commands["rotate-secret"]
-delete_command = webhook_integration_command.commands["delete"]
+webhook_command = cli.commands["webhook"]
+create_command = webhook_command.commands["create"]
+describe_command = webhook_command.commands["describe"]
+list_command = webhook_command.commands["list"]
+update_command = webhook_command.commands["update"]
+rotate_secret_command = webhook_command.commands["rotate-secret"]
+delete_command = webhook_command.commands["delete"]
 
 
 def _delete_if_exists(name_or_id: str) -> None:
     client = Client()
     try:
-        client.delete_webhook_integration(name_or_id)
+        client.delete_webhook(name_or_id)
     except KeyError:
         pass
 
 
-def test_webhook_integration_cli_lifecycle(clean_client):
+def test_webhook_cli_lifecycle(clean_client):
     runner = cli_runner()
     name = sample_name("webhook-cli")
     updated_name = sample_name("webhook-cli-updated")
@@ -64,7 +64,7 @@ def test_webhook_integration_cli_lifecycle(clean_client):
         assert result.exit_code == 0, result.output
         assert "Signing secret:" in result.output
 
-        integration = clean_client.get_webhook_integration(name)
+        integration = clean_client.get_webhook(name)
         assert integration.webhook_type == WebhookType.CUSTOM
         assert integration.active is True
 
@@ -89,7 +89,7 @@ def test_webhook_integration_cli_lifecycle(clean_client):
         )
 
         assert result.exit_code == 0, result.output
-        updated = clean_client.get_webhook_integration(updated_name)
+        updated = clean_client.get_webhook(updated_name)
         assert updated.id == integration.id
         assert updated.active is False
 
@@ -105,13 +105,13 @@ def test_webhook_integration_cli_lifecycle(clean_client):
 
         assert result.exit_code == 0, result.output
         with pytest.raises(KeyError):
-            clean_client.get_webhook_integration(updated.id)
+            clean_client.get_webhook(updated.id)
     finally:
         _delete_if_exists(updated_name)
         _delete_if_exists(name)
 
 
-def test_webhook_integration_cli_does_not_echo_user_supplied_secret(
+def test_webhook_cli_does_not_echo_user_supplied_secret(
     clean_client,
 ):
     runner = cli_runner()
@@ -133,14 +133,14 @@ def test_webhook_integration_cli_does_not_echo_user_supplied_secret(
         assert "user-supplied-secret" not in result.output
         assert "Signing secret:" not in result.output
 
-        integration = clean_client.get_webhook_integration(name)
+        integration = clean_client.get_webhook(name)
         assert integration.webhook_type == WebhookType.GITHUB
         assert "secret" not in integration.model_dump()
     finally:
         _delete_if_exists(name)
 
 
-def test_webhook_integration_cli_rejects_rotation_for_secret_reference(
+def test_webhook_cli_rejects_rotation_for_secret_reference(
     clean_client,
 ):
     """The CLI guides referenced credentials to the secret update command."""

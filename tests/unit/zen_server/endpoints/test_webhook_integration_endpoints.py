@@ -18,10 +18,19 @@ import pytest
 from fastapi import HTTPException, status
 from pydantic import SecretStr
 
+from zenml.constants import API, VERSION_1, WEBHOOKS
 from zenml.enums import WebhookType
 from zenml.models import WebhookIntegrationUpdate
 from zenml.webhooks import WebhookAuthenticationError, WebhookPayloadError
 from zenml.zen_server.routers import webhook_integration_endpoints as endpoints
+
+
+def test_webhook_routers_use_public_webhook_prefix() -> None:
+    """Management and intake endpoints share the public webhook prefix."""
+    expected_prefix = API + VERSION_1 + WEBHOOKS
+
+    assert endpoints.management_router.prefix == expected_prefix
+    assert endpoints.intake_router.prefix == expected_prefix
 
 
 class _Store:
@@ -142,8 +151,8 @@ def test_update_checks_integration_permission_before_secret_access(
         lambda model: model,
     )
 
-    result = endpoints.update_webhook_integration.__wrapped__(
-        integration_id=integration_id,
+    result = endpoints.update_webhook.__wrapped__(
+        webhook_id=integration_id,
         update=WebhookIntegrationUpdate(secret="{{webhook.key}}"),
         _=SimpleNamespace(),
     )

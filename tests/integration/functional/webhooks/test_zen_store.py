@@ -24,29 +24,29 @@ from zenml.models import (
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 
-def test_client_webhook_integration_methods_require_rest_store(
+def test_client_webhook_methods_require_rest_store(
     clean_client,
 ) -> None:
-    """Public webhook integration client methods reject local SQL stores."""
+    """Public webhook client methods reject local SQL stores."""
     if not isinstance(clean_client.zen_store, SqlZenStore):
         pytest.skip("Local SQL store behavior is required for this test.")
 
     error = "This method is not allowed when not connected"
     with pytest.raises(TypeError, match=error):
-        clean_client.create_webhook_integration(
+        clean_client.create_webhook(
             name="webhook",
             webhook_type=WebhookType.CUSTOM,
         )
     with pytest.raises(TypeError, match=error):
-        clean_client.get_webhook_integration("webhook")
+        clean_client.get_webhook("webhook")
     with pytest.raises(TypeError, match=error):
-        clean_client.list_webhook_integrations()
+        clean_client.list_webhooks()
     with pytest.raises(TypeError, match=error):
-        clean_client.update_webhook_integration("webhook", active=False)
+        clean_client.update_webhook("webhook", active=False)
     with pytest.raises(TypeError, match=error):
-        clean_client.delete_webhook_integration("webhook")
+        clean_client.delete_webhook("webhook")
     with pytest.raises(TypeError, match=error):
-        clean_client.rotate_webhook_integration_secret("webhook")
+        clean_client.rotate_webhook_secret("webhook")
 
 
 def test_zen_store_webhook_integration_lifecycle(clean_client):
@@ -62,7 +62,7 @@ def test_zen_store_webhook_integration_lifecycle(clean_client):
         )
     )
 
-    integration = result.integration
+    integration = result.webhook
 
     assert result.secret is not None
     assert integration.name == name
@@ -144,7 +144,7 @@ def test_sql_store_resolves_webhook_secret_references_lazily(clean_client):
 
     try:
         assert (
-            store.get_webhook_integration_secret(result.integration.id)
+            store.get_webhook_integration_secret(result.webhook.id)
             == "initial-secret"
         )
 
@@ -153,9 +153,9 @@ def test_sql_store_resolves_webhook_secret_references_lazily(clean_client):
         )
 
         assert (
-            store.get_webhook_integration_secret(result.integration.id)
+            store.get_webhook_integration_secret(result.webhook.id)
             == "rotated-secret"
         )
     finally:
-        store.delete_webhook_integration(result.integration.id)
+        store.delete_webhook_integration(result.webhook.id)
         clean_client.delete_secret(secret_name)

@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""CLI commands for webhook integrations."""
+"""CLI commands for webhooks."""
 
 from typing import Any
 
@@ -27,14 +27,12 @@ from zenml.exceptions import IllegalOperationError
 from zenml.models import WebhookIntegrationFilter, WebhookIntegrationResponse
 
 
-@cli.group(
-    "webhook-integration", cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS
-)
-def webhook_integration() -> None:
+@cli.group("webhook", cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
+def webhook() -> None:
     """Manage external webhook intake endpoints."""
 
 
-@webhook_integration.command("create")
+@webhook.command("create")
 @click.argument("name", type=str)
 @click.option(
     "--type",
@@ -49,29 +47,29 @@ def webhook_integration() -> None:
     help="Set a direct signing secret or ZenML secret reference.",
 )
 @click.option("--inactive", is_flag=True, default=False)
-def create_webhook_integration(
+def create_webhook(
     name: str,
     webhook_type: str,
     secret: str | None,
     inactive: bool,
 ) -> None:
-    """Create a webhook integration.
+    """Create a webhook.
 
     Args:
-        name: The integration name.
+        name: The webhook name.
         webhook_type: The webhook provider type.
         secret: An optional user-supplied signing secret.
-        inactive: Whether to create the integration inactive.
+        inactive: Whether to create the webhook inactive.
     """
-    result = Client().create_webhook_integration(
+    result = Client().create_webhook(
         name=name,
         webhook_type=WebhookType(webhook_type),
         active=not inactive,
         secret=secret,
     )
     cli_utils.print_pydantic_model(
-        title=f"Webhook integration '{name}'",
-        model=result.integration,
+        title=f"Webhook '{name}'",
+        model=result.webhook,
     )
     if result.secret is not None:
         cli_utils.declare(
@@ -79,17 +77,17 @@ def create_webhook_integration(
         )
 
 
-@webhook_integration.command("describe")
+@webhook.command("describe")
 @click.argument("name_or_id", type=str)
-def describe_webhook_integration(name_or_id: str) -> None:
-    """Describe a webhook integration.
+def describe_webhook(name_or_id: str) -> None:
+    """Describe a webhook.
 
     Args:
-        name_or_id: The integration name or ID.
+        name_or_id: The webhook name or ID.
     """
-    integration = Client().get_webhook_integration(name_or_id)
+    integration = Client().get_webhook(name_or_id)
     cli_utils.print_pydantic_model(
-        title=f"Webhook integration '{integration.name}'",
+        title=f"Webhook '{integration.name}'",
         model=integration,
     )
     cli_utils.declare(f"Endpoint path: {integration.endpoint_path}")
@@ -111,33 +109,33 @@ def _format_webhook_integration_row(
     return {"project": integration.project.name}
 
 
-@webhook_integration.command("list")
+@webhook.command("list")
 @list_options(
     WebhookIntegrationFilter,
     default_columns=["id", "name", "webhook_type", "active", "project"],
 )
-def list_webhook_integrations(
+def list_webhooks(
     columns: str, output_format: OutputFormat, **kwargs: Any
 ) -> None:
-    """List webhook integrations.
+    """List webhooks.
 
     Args:
         columns: The columns to display.
         output_format: The output format.
-        **kwargs: The webhook integration filters.
+        **kwargs: The webhook filters.
     """
-    with console.status("Listing webhook integrations...\n"):
-        integrations = Client().list_webhook_integrations(**kwargs)
+    with console.status("Listing webhooks...\n"):
+        integrations = Client().list_webhooks(**kwargs)
     cli_utils.print_page(
         integrations,
         columns,
         output_format,
         row_formatter=_format_webhook_integration_row,
-        empty_message="No webhook integrations found for this filter.",
+        empty_message="No webhooks found for this filter.",
     )
 
 
-@webhook_integration.command("update")
+@webhook.command("update")
 @click.argument("name_or_id", type=str)
 @click.option("--name", "new_name", type=str, default=None)
 @click.option(
@@ -149,33 +147,33 @@ def list_webhook_integrations(
     default=None,
     help="Set a direct signing secret or ZenML secret reference.",
 )
-def update_webhook_integration(
+def update_webhook(
     name_or_id: str,
     new_name: str | None,
     active: bool | None,
     secret: str | None,
 ) -> None:
-    """Update a webhook integration.
+    """Update a webhook.
 
     Args:
-        name_or_id: The integration name or ID.
-        new_name: The new integration name.
+        name_or_id: The webhook name or ID.
+        new_name: The new webhook name.
         active: The new active state.
         secret: A direct signing secret or ZenML secret reference.
     """
-    integration = Client().update_webhook_integration(
+    integration = Client().update_webhook(
         name_id_or_prefix=name_or_id,
         name=new_name,
         active=active,
         secret=secret,
     )
     cli_utils.print_pydantic_model(
-        title=f"Webhook integration '{integration.name}'",
+        title=f"Webhook '{integration.name}'",
         model=integration,
     )
 
 
-@webhook_integration.command("rotate-secret")
+@webhook.command("rotate-secret")
 @click.argument("name_or_id", type=str)
 @click.option(
     "--secret",
@@ -183,17 +181,15 @@ def update_webhook_integration(
     default=None,
     help="Set an optional direct replacement secret.",
 )
-def rotate_webhook_integration_secret(
-    name_or_id: str, secret: str | None
-) -> None:
-    """Rotate a webhook integration signing secret.
+def rotate_webhook_secret(name_or_id: str, secret: str | None) -> None:
+    """Rotate a webhook signing secret.
 
     Args:
-        name_or_id: The integration name or ID.
+        name_or_id: The webhook name or ID.
         secret: An optional direct replacement secret.
     """
     try:
-        result = Client().rotate_webhook_integration_secret(
+        result = Client().rotate_webhook_secret(
             name_id_or_prefix=name_or_id, secret=secret
         )
     except IllegalOperationError as error:
@@ -201,19 +197,19 @@ def rotate_webhook_integration_secret(
     cli_utils.declare(f"Signing secret: {result.secret.get_secret_value()}")
 
 
-@webhook_integration.command("delete")
+@webhook.command("delete")
 @click.argument("name_or_id", type=str)
 @click.option("--yes", "confirmed", is_flag=True)
-def delete_webhook_integration(name_or_id: str, confirmed: bool) -> None:
-    """Delete a webhook integration.
+def delete_webhook(name_or_id: str, confirmed: bool) -> None:
+    """Delete a webhook.
 
     Args:
-        name_or_id: The integration name or ID.
+        name_or_id: The webhook name or ID.
         confirmed: Whether to skip the confirmation prompt.
     """
     if not confirmed and not cli_utils.confirmation(
-        f"Delete webhook integration `{name_or_id}`?"
+        f"Delete webhook `{name_or_id}`?"
     ):
         return
-    Client().delete_webhook_integration(name_or_id)
-    cli_utils.declare(f"Deleted webhook integration `{name_or_id}`.")
+    Client().delete_webhook(name_or_id)
+    cli_utils.declare(f"Deleted webhook `{name_or_id}`.")

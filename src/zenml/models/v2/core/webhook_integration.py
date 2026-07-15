@@ -167,7 +167,7 @@ class WebhookIntegrationFilter(ProjectScopedFilter):
 class WebhookIntegrationCreateResponse(BaseZenModel):
     """Creation result with a generated secret when applicable."""
 
-    integration: WebhookIntegrationResponse
+    webhook: WebhookIntegrationResponse
     secret: PlainSerializedSecretStr | None = None
 
 

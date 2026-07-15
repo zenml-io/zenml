@@ -126,7 +126,7 @@ from zenml.constants import (
     TRIGGERS,
     USERS,
     VERSION_1,
-    WEBHOOK_INTEGRATIONS,
+    WEBHOOKS,
     ZENML_PRO_API_KEY_PREFIX,
 )
 from zenml.enums import (
@@ -2598,7 +2598,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The created integration and any generated signing secret.
         """
-        response = self.post(WEBHOOK_INTEGRATIONS, body=integration)
+        response = self.post(WEBHOOKS, body=integration)
         return WebhookIntegrationCreateResponse.model_validate(response)
 
     def get_webhook_integration(
@@ -2614,7 +2614,7 @@ class RestZenStore(BaseZenStore):
             The webhook integration.
         """
         response = self.get(
-            f"{WEBHOOK_INTEGRATIONS}/{integration_id}",
+            f"{WEBHOOKS}/{integration_id}",
             params={"hydrate": hydrate},
         )
         return WebhookIntegrationResponse.model_validate(response)
@@ -2634,7 +2634,7 @@ class RestZenStore(BaseZenStore):
             A page of webhook integrations.
         """
         response = self.get(
-            WEBHOOK_INTEGRATIONS,
+            WEBHOOKS,
             params={
                 "hydrate": hydrate,
                 **filter_model.model_dump(exclude_none=True),
@@ -2656,9 +2656,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The updated webhook integration.
         """
-        response = self.put(
-            f"{WEBHOOK_INTEGRATIONS}/{integration_id}", body=update
-        )
+        response = self.put(f"{WEBHOOKS}/{integration_id}", body=update)
         return WebhookIntegrationResponse.model_validate(response)
 
     def delete_webhook_integration(self, integration_id: UUID) -> None:
@@ -2667,7 +2665,7 @@ class RestZenStore(BaseZenStore):
         Args:
             integration_id: The webhook integration ID.
         """
-        self.delete(f"{WEBHOOK_INTEGRATIONS}/{integration_id}")
+        self.delete(f"{WEBHOOKS}/{integration_id}")
 
     def rotate_webhook_integration_secret(
         self,
@@ -2684,7 +2682,7 @@ class RestZenStore(BaseZenStore):
             The newly active signing secret.
         """
         response = self.put(
-            f"{WEBHOOK_INTEGRATIONS}/{integration_id}/secret", body=request
+            f"{WEBHOOKS}/{integration_id}/secret", body=request
         )
         return WebhookIntegrationSecretResponse.model_validate(response)
 

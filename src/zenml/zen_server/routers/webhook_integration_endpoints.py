@@ -31,7 +31,6 @@ from starlette.datastructures import Headers
 from zenml.constants import (
     API,
     VERSION_1,
-    WEBHOOK_INTEGRATIONS,
     WEBHOOKS,
 )
 from zenml.enums import WebhookType
@@ -75,8 +74,8 @@ from zenml.zen_server.utils import (
 )
 
 management_router = APIRouter(
-    prefix=API + VERSION_1 + WEBHOOK_INTEGRATIONS,
-    tags=["webhook_integrations"],
+    prefix=API + VERSION_1 + WEBHOOKS,
+    tags=["webhooks"],
     responses={401: error_response, 403: error_response},
 )
 
@@ -106,14 +105,14 @@ def _verify_webhook_secret_reference_access(
 
 @management_router.post("")
 @async_fastapi_endpoint_wrapper
-def create_webhook_integration(
+def create_webhook(
     integration: WebhookIntegrationRequest,
     _: AuthContext = Security(authorize),
 ) -> WebhookIntegrationCreateResponse:
-    """Create a project-scoped webhook integration.
+    """Create a project-scoped webhook.
 
     Args:
-        integration: The webhook integration creation request.
+        integration: The webhook creation request.
 
     Returns:
         The created integration and any generated signing secret.
@@ -125,21 +124,21 @@ def create_webhook_integration(
 
 @management_router.get("")
 @async_fastapi_endpoint_wrapper
-def list_webhook_integrations(
+def list_webhooks(
     filter_model: WebhookIntegrationFilter = Depends(
         make_dependable(WebhookIntegrationFilter)
     ),
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[WebhookIntegrationResponse]:
-    """List webhook integrations.
+    """List webhooks.
 
     Args:
-        filter_model: The webhook integration filters.
+        filter_model: The webhook filters.
         hydrate: Whether to include intake statistics.
 
     Returns:
-        A page of webhook integrations.
+        A page of webhooks.
     """
     return verify_permissions_and_list_entities(
         filter_model=filter_model,
@@ -149,47 +148,47 @@ def list_webhook_integrations(
     )
 
 
-@management_router.get("/{integration_id}")
+@management_router.get("/{webhook_id}")
 @async_fastapi_endpoint_wrapper
-def get_webhook_integration(
-    integration_id: UUID,
+def get_webhook(
+    webhook_id: UUID,
     hydrate: bool = True,
     _: AuthContext = Security(authorize),
 ) -> WebhookIntegrationResponse:
-    """Get a webhook integration.
+    """Get a webhook.
 
     Args:
-        integration_id: The webhook integration ID.
+        webhook_id: The webhook ID.
         hydrate: Whether to include intake statistics.
 
     Returns:
-        The webhook integration.
+        The webhook.
     """
     return verify_permissions_and_get_entity(
-        id=integration_id,
+        id=webhook_id,
         get_method=zen_store().get_webhook_integration,
         hydrate=hydrate,
     )
 
 
-@management_router.put("/{integration_id}")
+@management_router.put("/{webhook_id}")
 @async_fastapi_endpoint_wrapper
-def update_webhook_integration(
-    integration_id: UUID,
+def update_webhook(
+    webhook_id: UUID,
     update: WebhookIntegrationUpdate,
     _: AuthContext = Security(authorize),
 ) -> WebhookIntegrationResponse:
-    """Update a webhook integration.
+    """Update a webhook.
 
     Args:
-        integration_id: The webhook integration ID.
-        update: The webhook integration update.
+        webhook_id: The webhook ID.
+        update: The webhook update.
 
     Returns:
-        The updated webhook integration.
+        The updated webhook.
     """
     integration = zen_store().get_webhook_integration(
-        integration_id, hydrate=False
+        webhook_id, hydrate=False
     )
     verify_permission_for_model(model=integration, action=Action.UPDATE)
     _verify_webhook_secret_reference_access(update.secret)
@@ -200,62 +199,62 @@ def update_webhook_integration(
     return dehydrate_response_model(updated_integration)
 
 
-@management_router.delete("/{integration_id}")
+@management_router.delete("/{webhook_id}")
 @async_fastapi_endpoint_wrapper
-def delete_webhook_integration(
-    integration_id: UUID,
+def delete_webhook(
+    webhook_id: UUID,
     _: AuthContext = Security(authorize),
 ) -> None:
-    """Delete a webhook integration and its signing secret.
+    """Delete a webhook and its signing secret.
 
     Args:
-        integration_id: The webhook integration ID.
+        webhook_id: The webhook ID.
     """
     verify_permissions_and_delete_entity(
-        id=integration_id,
+        id=webhook_id,
         get_method=zen_store().get_webhook_integration,
         delete_method=zen_store().delete_webhook_integration,
     )
 
 
-@management_router.put("/{integration_id}/secret")
+@management_router.put("/{webhook_id}/secret")
 @async_fastapi_endpoint_wrapper
-def rotate_webhook_integration_secret(
-    integration_id: UUID,
+def rotate_webhook_secret(
+    webhook_id: UUID,
     request: WebhookIntegrationRotateSecretRequest,
     _: AuthContext = Security(authorize),
 ) -> WebhookIntegrationSecretResponse:
-    """Rotate a webhook integration signing secret.
+    """Rotate a webhook signing secret.
 
     Args:
-        integration_id: The webhook integration ID.
+        webhook_id: The webhook ID.
         request: The secret rotation request.
 
     Returns:
         The newly active signing secret.
     """
-    integration = zen_store().get_webhook_integration(integration_id)
+    integration = zen_store().get_webhook_integration(webhook_id)
     verify_permission_for_model(model=integration, action=Action.UPDATE)
     return zen_store().rotate_webhook_integration_secret(
-        integration_id=integration_id, request=request
+        integration_id=webhook_id, request=request
     )
 
 
 @intake_router.post(
-    "/{webhook_type}/{integration_id}/events",
+    "/{webhook_type}/{webhook_id}/events",
     status_code=status.HTTP_202_ACCEPTED,
 )
 @async_handle_endpoint_errors
 async def receive_webhook_event(
     webhook_type: WebhookType,
-    integration_id: UUID,
+    webhook_id: UUID,
     request: Request,
 ) -> Response:
     """Authenticate and accept a provider webhook event.
 
     Args:
         webhook_type: The provider type from the public endpoint path.
-        integration_id: The webhook integration ID.
+        webhook_id: The webhook ID.
         request: The raw HTTP request.
 
     Returns:
@@ -265,7 +264,7 @@ async def receive_webhook_event(
     return await run_in_threadpool(
         _receive_webhook_event,
         webhook_type=webhook_type,
-        integration_id=integration_id,
+        integration_id=webhook_id,
         body=body,
         headers=request.headers,
     )
@@ -281,7 +280,7 @@ def _receive_webhook_event(
 
     Args:
         webhook_type: The provider type from the public endpoint path.
-        integration_id: The webhook integration ID.
+        integration_id: The webhook ID.
         body: The raw request body.
         headers: The request headers.
 

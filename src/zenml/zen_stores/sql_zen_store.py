@@ -8238,7 +8238,7 @@ class SqlZenStore(BaseZenStore):
                 )
                 raise
             return WebhookIntegrationCreateResponse(
-                integration=schema.to_model(
+                webhook=schema.to_model(
                     include_metadata=True, include_resources=True
                 ),
                 secret=(
@@ -8393,7 +8393,7 @@ class SqlZenStore(BaseZenStore):
             ):
                 raise IllegalOperationError(
                     "Secret references cannot be configured through secret "
-                    "rotation. Use `zenml webhook-integration update "
+                    "rotation. Use `zenml webhook update "
                     f"{schema.name} --secret='"
                     f"{request.secret.get_secret_value()}'` instead."
                 )
