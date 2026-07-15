@@ -331,7 +331,11 @@ class SSHOrchestrator(ContainerizedOrchestrator):
 
         service: Dict[str, Any] = {
             "image": self.get_image(snapshot=snapshot, step_name=step_name),
-            "container_name": f"{snapshot.id}-{step_name}",
+            # Container names must be unique per run, not per snapshot: the same
+            # snapshot can be launched multiple times (re-runs, run templates,
+            # concurrent triggers). Keying on snapshot.id would collide on the
+            # remote host with "container name already in use".
+            "container_name": f"{run_id}-{step_name}",
             "network_mode": "host",
             "entrypoint": StepEntrypointConfiguration.get_entrypoint_command(),
             "command": StepEntrypointConfiguration.get_entrypoint_arguments(
@@ -347,7 +351,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
             service["deploy"] = build_compose_gpu_deploy(settings.gpu_indices)
         if step.spec.upstream_steps:
             service["depends_on"] = {
-                f"{snapshot.id}-{upstream}": {
+                f"{run_id}-{upstream}": {
                     "condition": "service_completed_successfully"
                 }
                 for upstream in step.spec.upstream_steps
@@ -389,7 +393,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         assert placeholder_run is not None
         run_id = str(placeholder_run.id)
         services = {
-            f"{snapshot.id}-{step_name}": self._step_service(
+            f"{run_id}-{step_name}": self._step_service(
                 snapshot=snapshot,
                 step_name=step_name,
                 step=step,
