@@ -362,6 +362,17 @@ class ModalSandbox(BaseSandbox):
         """
         return ModalSandboxSettings
 
+    def image_settings(self, image: str) -> Optional[BaseSandboxSettings]:
+        """Build a settings override that pins the sandbox image.
+
+        Args:
+            image: The container image reference to pin.
+
+        Returns:
+            Modal sandbox settings carrying the image.
+        """
+        return ModalSandboxSettings(image=image)
+
     def _registry_credentials(self, image: str) -> Optional[Tuple[str, str]]:
         """Return (username, password) for pulling the given image.
 

@@ -36,7 +36,7 @@ Secrets in the parent environment stay isolated from the session unless `forward
 |---|---|---|
 | `snapshot()` / `restore()` | ❌ | No state-capture primitive locally. |
 | `attach(session_id)` | ❌ | Sessions are bound to the parent process; not re-attachable. |
-| `upload_file` / `download_file` | ❌ | Files live in the session workdir already; use plain Python file I/O. |
+| `upload_file` / `download_file` | ✅ | Relative paths resolve against the session workdir. Absolute paths are only accepted inside the workdir — the local flavor has no filesystem namespace, so a container-style `/app/...` path would otherwise hit the host root and is refused. |
 | Streaming output | ✅ | `subprocess.PIPE` line-buffered. |
 | Sandbox log forwarding | ✅ | Each `exec` emits a `$ <command>` marker plus stdout/stderr lines + an `OK`/`FAIL exit code <code>` trailer into the step's `sandbox:<id>` log source. |
 | `destroy()` | ✅ | Delegates to `close()`; removes the session workdir. |

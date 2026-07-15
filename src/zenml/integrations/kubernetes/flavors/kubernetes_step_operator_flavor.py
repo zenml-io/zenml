@@ -41,6 +41,16 @@ class KubernetesStepOperatorSettings(BaseSettings):
         default=None,
         description="Pod configuration for step execution containers.",
     )
+    node_count: PositiveInt = Field(
+        default=1,
+        description="Number of pods the step runs on. Values above 1 are "
+        "only allowed for command steps, which own their distributed "
+        "launch: the step becomes an indexed Kubernetes job plus a "
+        "headless service for pod-to-pod discovery, and every pod runs "
+        "the same command with ZENML_NODE_COUNT, ZENML_MASTER_ADDR, "
+        "ZENML_MASTER_PORT injected and the pod's rank available as "
+        "JOB_COMPLETION_INDEX.",
+    )
     service_account_name: Optional[str] = Field(
         default=None,
         description="Kubernetes service account for step pods. Uses default account if not specified.",

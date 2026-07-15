@@ -444,11 +444,37 @@ class TestOptionalMethods:
         with pytest.raises(NotImplementedError):
             _make_local_sandbox().attach("local-xyz")
 
-    def test_upload_file_default_raises(self) -> None:
+    def test_file_transfer_roundtrip_in_workdir(self, tmp_path) -> None:
+        """Relative paths resolve against the session workdir."""
+        source = tmp_path / "in.txt"
+        source.write_text("payload")
+        target = tmp_path / "out.txt"
         session = _make_local_sandbox().create_session()
         try:
-            with pytest.raises(NotImplementedError):
-                session.upload_file("/local", "/remote")
+            session.upload_file(str(source), "nested/dir/file.txt")
+            session.download_file("nested/dir/file.txt", str(target))
+            assert target.read_text() == "payload"
+        finally:
+            session.close()
+
+    def test_file_transfer_refuses_paths_outside_workdir(
+        self, tmp_path
+    ) -> None:
+        """Absolute paths outside the workdir are refused, not written.
+
+        The local flavor has no filesystem namespace, so a Harbor-style
+        `/app/...` path would otherwise hit the host root.
+        """
+        source = tmp_path / "in.txt"
+        source.write_text("payload")
+        session = _make_local_sandbox().create_session()
+        try:
+            with pytest.raises(ValueError, match="no filesystem namespace"):
+                session.upload_file(str(source), "/app/pipeline.py")
+            with pytest.raises(ValueError, match="no filesystem namespace"):
+                session.download_file("/etc/hostname", str(tmp_path / "x"))
+            with pytest.raises(ValueError, match="no filesystem namespace"):
+                session.upload_file(str(source), "../escape.txt")
         finally:
             session.close()
 

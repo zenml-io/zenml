@@ -28,7 +28,9 @@ timeout_sec = 120.0
 [environment]
 build_timeout_sec = 120.0
 os = "linux"
-allow_internet = true
+# network_mode defaults to "public"; the bridge cannot enforce
+# isolation, and harbor's capability validation rejects tasks that
+# require it (no-network / allowlist).
 mcp_servers = []
 # No `docker_image` — the bridge falls through to the active Sandbox
 # flavor's default image (Modal: python:3.11-slim). Set

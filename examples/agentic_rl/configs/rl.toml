@@ -1,0 +1,52 @@
+# prime-rl config for the ZenML pipeline-writing taskset.
+#
+# Run via the trainer command step (see pipelines/train_pipeline.py) or
+# directly from a prime-rl checkout:
+#
+#   ZENML_VERIFIERS_RUNTIME=1 uv run rl @ configs/rl.toml \
+#       --output-dir prime-rl-output --ckpt
+#
+# Requires the taskset package installed into prime-rl's environment:
+#   uv pip install -e <this example>/verifiers_env
+#
+# GPU note: prime-rl defaults to 2 GPUs (GPU 0 inference, GPU 1
+# trainer). Single-GPU operation is not a documented prime-rl path.
+
+max_steps = 20
+seq_len = 4096
+
+[model]
+name = "Qwen/Qwen3-0.6B"
+
+[orchestrator]
+batch_size = 32
+group_size = 8
+
+[orchestrator.train.sampling]
+max_completion_tokens = 1024
+
+[[orchestrator.train.env]]
+id = "zenml-pipeline-writing"
+
+# Rollout programs execute on the ZenML sandbox: `docker` here is the
+# discriminator the config layer accepts; with ZENML_VERIFIERS_RUNTIME=1
+# the taskset package's import patch routes it to ZenMLSandboxRuntime
+# (see verifiers_env/src/zenml_pipeline_writing/patch.py for why).
+# The image must be the scorer image every task pins.
+[orchestrator.train.env.harness.runtime]
+type = "docker"
+image = "zenml-rl-scorer:0.1"
+workdir = "/app"
+
+[orchestrator.train.env.harness.env]
+ZENML_VERIFIERS_RUNTIME = "1"
+
+[trainer.optim]
+lr = 5e-6
+
+[ckpt] # HF-format weights land in <output-dir>/weights/step_N
+
+[inference]
+
+# Qwen3 is in prime-rl's renderer map; drop to the default renderer if
+# a custom model is substituted.

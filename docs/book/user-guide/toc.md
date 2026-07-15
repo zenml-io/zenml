@@ -58,6 +58,7 @@
   * [Run an eval campaign](agent-evals-guide/run-a-campaign.md)
   * [Benchmark operations](agent-evals-guide/benchmark-ops.md)
   * [From evals to training](agent-evals-guide/evals-to-training.md)
+  * [Run prime-rl on your own Kubernetes](agent-evals-guide/prime-rl-on-kubernetes.md)
 
 ## Tutorials <a href="#tutorial" id="tutorial"></a>
 
