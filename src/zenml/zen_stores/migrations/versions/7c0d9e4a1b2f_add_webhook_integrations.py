@@ -65,7 +65,7 @@ def upgrade() -> None:
             ["secret_id"],
             ["secret.id"],
             name="fk_webhook_integration_secret_id_secret",
-            ondelete="CASCADE",
+            ondelete="RESTRICT",
         ),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint(

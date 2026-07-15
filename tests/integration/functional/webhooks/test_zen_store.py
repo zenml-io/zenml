@@ -12,14 +12,21 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import pytest
+from sqlalchemy.exc import IntegrityError
+from sqlmodel import Session, select
 
 from tests.integration.functional.utils import sample_name
 from zenml.enums import WebhookType
+from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     WebhookIntegrationFilter,
     WebhookIntegrationRequest,
     WebhookIntegrationRotateSecretRequest,
     WebhookIntegrationUpdate,
+)
+from zenml.zen_stores.schemas.secret_schemas import SecretSchema
+from zenml.zen_stores.schemas.webhook_integration_schemas import (
+    WebhookIntegrationSchema,
 )
 from zenml.zen_stores.sql_zen_store import SqlZenStore
 
@@ -123,6 +130,60 @@ def test_zen_store_webhook_integration_lifecycle(clean_client):
 
     with pytest.raises(KeyError):
         store.get_webhook_integration(integration.id)
+
+
+def test_sql_store_protects_webhook_owned_secret(clean_client) -> None:
+    """Webhook-owned secrets require explicit webhook deletion."""
+    store = clean_client.zen_store
+    if not isinstance(store, SqlZenStore):
+        pytest.skip("Local SQL store behavior is required for this test.")
+
+    result = store.create_webhook_integration(
+        WebhookIntegrationRequest(
+            project=clean_client.active_project.id,
+            name=sample_name("webhook-owned-secret"),
+            webhook_type=WebhookType.CUSTOM,
+            secret="owned-secret",
+        )
+    )
+    webhook_id = result.webhook.id
+
+    try:
+        with Session(store.engine) as session:
+            schema = session.exec(
+                select(WebhookIntegrationSchema).where(
+                    WebhookIntegrationSchema.id == webhook_id
+                )
+            ).one()
+            secret_id = schema.secret_id
+
+            secret = session.get(SecretSchema, secret_id)
+            assert secret is not None
+            session.delete(secret)
+            with pytest.raises(IntegrityError):
+                session.commit()
+            session.rollback()
+
+            with pytest.raises(IllegalOperationError):
+                store._delete_secret_schema(
+                    secret_id=secret_id, session=session
+                )
+
+        assert store.get_webhook_integration_secret(webhook_id) == (
+            "owned-secret"
+        )
+        assert store.get_webhook_integration(webhook_id).id == webhook_id
+
+        store.delete_webhook_integration(webhook_id)
+
+        with Session(store.engine) as session:
+            assert session.get(WebhookIntegrationSchema, webhook_id) is None
+            assert session.get(SecretSchema, secret_id) is None
+    finally:
+        try:
+            store.delete_webhook_integration(webhook_id)
+        except KeyError:
+            pass
 
 
 def test_sql_store_resolves_webhook_secret_references_lazily(clean_client):

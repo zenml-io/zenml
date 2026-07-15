@@ -24,7 +24,7 @@ from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, WebhookType
 from zenml.exceptions import IllegalOperationError
-from zenml.models import WebhookIntegrationFilter, WebhookIntegrationResponse
+from zenml.models import WebhookIntegrationFilter
 
 
 @cli.group("webhook", cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
@@ -93,26 +93,10 @@ def describe_webhook(name_or_id: str) -> None:
     cli_utils.declare(f"Endpoint path: {integration.endpoint_path}")
 
 
-def _format_webhook_integration_row(
-    integration: WebhookIntegrationResponse,
-    _output_format: OutputFormat,
-) -> dict[str, Any]:
-    """Add the project name to a webhook integration list row.
-
-    Args:
-        integration: The webhook integration to format.
-        _output_format: The requested output format.
-
-    Returns:
-        Additional row values for the webhook integration.
-    """
-    return {"project": integration.project.name}
-
-
 @webhook.command("list")
 @list_options(
     WebhookIntegrationFilter,
-    default_columns=["id", "name", "webhook_type", "active", "project"],
+    default_columns=["id", "name", "webhook_type", "active"],
 )
 def list_webhooks(
     columns: str, output_format: OutputFormat, **kwargs: Any
@@ -130,7 +114,6 @@ def list_webhooks(
         integrations,
         columns,
         output_format,
-        row_formatter=_format_webhook_integration_row,
         empty_message="No webhooks found for this filter.",
     )
 

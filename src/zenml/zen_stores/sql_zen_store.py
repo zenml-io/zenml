@@ -8347,9 +8347,10 @@ class SqlZenStore(BaseZenStore):
                 schema_class=WebhookIntegrationSchema,
                 session=session,
             )
-            self._delete_secret_schema(
-                secret_id=schema.secret_id, session=session
-            )
+            secret_id = schema.secret_id
+            session.delete(schema)
+            session.commit()
+            self._delete_secret_schema(secret_id=secret_id, session=session)
 
     def rotate_webhook_integration_secret(
         self,
@@ -10002,7 +10003,21 @@ class SqlZenStore(BaseZenStore):
         Args:
             secret_id: The ID of the secret to delete.
             session: The session to use.
+
+        Raises:
+            IllegalOperationError: If the secret is owned by a webhook.
         """
+        webhook_id = session.exec(
+            select(WebhookIntegrationSchema.id).where(
+                WebhookIntegrationSchema.secret_id == secret_id
+            )
+        ).first()
+        if webhook_id is not None:
+            raise IllegalOperationError(
+                f"Cannot delete secret {secret_id}: it is owned by webhook "
+                f"{webhook_id}. Delete the webhook instead."
+            )
+
         # Delete the secret values in the configured secrets store
         try:
             self._delete_secret_values(secret_id=secret_id)

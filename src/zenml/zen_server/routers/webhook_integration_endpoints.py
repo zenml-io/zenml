@@ -119,7 +119,8 @@ def create_webhook(
     """
     verify_permission_for_model(model=integration, action=Action.CREATE)
     _verify_webhook_secret_reference_access(integration.secret)
-    return zen_store().create_webhook_integration(integration)
+    result = zen_store().create_webhook_integration(integration)
+    return dehydrate_response_model(result)
 
 
 @management_router.get("")

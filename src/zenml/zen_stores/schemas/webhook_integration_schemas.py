@@ -81,7 +81,7 @@ class WebhookIntegrationSchema(NamedSchema, table=True):
         target=SecretSchema.__tablename__,
         source_column="secret_id",
         target_column="id",
-        ondelete="CASCADE",
+        ondelete="RESTRICT",
         nullable=False,
     )
     webhook_type: str
