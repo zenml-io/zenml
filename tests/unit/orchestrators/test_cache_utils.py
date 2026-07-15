@@ -77,6 +77,7 @@ def generate_cache_key_kwargs(
     return {
         "step": _compile_step(_cache_test_step),
         "input_artifacts": {"input_1": [sample_step_run_input_response]},
+        "input_values": {},
         "artifact_store": local_artifact_store,
         "project_id": uuid4(),
     }
@@ -138,8 +139,7 @@ def test_generate_cache_key_considers_step_parameters(
 ):
     """Check that the cache key changes if the step parameters change."""
     key_1 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
-    generate_cache_key_kwargs["step"].config.model_config["frozen"] = False
-    generate_cache_key_kwargs["step"].config.parameters = {"new_param": 42}
+    generate_cache_key_kwargs["input_values"] = {"new_param": 42}
     key_2 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
     assert key_1 != key_2
 

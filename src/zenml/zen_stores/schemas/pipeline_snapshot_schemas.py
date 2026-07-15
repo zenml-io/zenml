@@ -14,7 +14,7 @@
 """Pipeline snapshot schemas."""
 
 import json
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
 from uuid import UUID
 
 from sqlalchemy import TEXT, CheckConstraint, Column, String, UniqueConstraint
@@ -23,9 +23,13 @@ from sqlalchemy.orm import defer, object_session, selectinload
 from sqlalchemy.sql.base import ExecutableOption
 from sqlmodel import Field, Relationship, asc, col, desc, select
 
+from zenml.config.execution_overrides import ExecutionOverrides
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
-from zenml.config.step_configurations import Step
+from zenml.config.step_configurations import (
+    InputSourceOverride,
+    Step,
+)
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import TaggableResourceTypes, VisualizationResourceTypes
 from zenml.logger import get_logger
@@ -127,6 +131,14 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
     )
     source_code: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     code_path: Optional[str] = Field(nullable=True)
+    execution_overrides: Optional[str] = Field(
+        sa_column=Column(
+            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+                MEDIUMTEXT, "mysql"
+            ),
+            nullable=True,
+        )
+    )
 
     # Foreign keys
     user_id: Optional[UUID] = build_foreign_key_field(
@@ -460,6 +472,34 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
             if request.pipeline_spec
             else None,
             code_path=request.code_path,
+            execution_overrides=request.execution_overrides.model_dump_json()
+            if request.execution_overrides
+            else None,
+        )
+
+    def get_input_overrides(
+        self,
+        invocation_id: str,
+        step_name: str,
+    ) -> Dict[str, InputSourceOverride]:
+        """Input source overrides for an invocation.
+
+        Args:
+            invocation_id: The invocation ID of the step.
+            step_name: The name of the step.
+
+        Returns:
+            The input source overrides for the invocation.
+        """
+        if not self.execution_overrides:
+            return {}
+
+        execution_overrides = ExecutionOverrides.model_validate_json(
+            self.execution_overrides
+        )
+        return execution_overrides.get_input_overrides(
+            invocation_id=invocation_id,
+            step_name=step_name,
         )
 
     def update(
@@ -606,6 +646,11 @@ class PipelineSnapshotSchema(BaseSchema, table=True):
                 source_snapshot_id=self.source_snapshot_id,
                 config_schema=config_schema,
                 config_template=config_template,
+                execution_overrides=ExecutionOverrides.model_validate_json(
+                    self.execution_overrides
+                )
+                if self.execution_overrides
+                else None,
             )
 
         resources = None

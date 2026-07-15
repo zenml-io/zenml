@@ -38,8 +38,49 @@ from uuid import UUID
 
 from pydantic import NameEmail, SecretBytes, SecretStr
 from pydantic.color import Color
+from pydantic.json_schema import GenerateJsonSchema, JsonSchemaValue
 
-__all__ = ["parse_value_for_schema", "pydantic_encoder"]
+__all__ = [
+    "InputSchemaGenerator",
+    "parse_value_for_schema",
+    "pydantic_encoder",
+]
+
+
+class InputSchemaGenerator(GenerateJsonSchema):
+    """JSON schema generator that tolerates unrepresentable annotations."""
+
+    def handle_invalid_for_json_schema(
+        self, schema: Any, error_info: str
+    ) -> JsonSchemaValue:
+        """Generate a placeholder schema for an unrepresentable annotation.
+
+        Args:
+            schema: The core schema that can not be represented.
+            error_info: Details about the schema generation failure.
+
+        Returns:
+            The placeholder schema.
+        """
+        from zenml.utils import source_utils
+
+        if cls := schema.get("cls"):
+            try:
+                annotation_type = source_utils.resolve(cls).import_path
+            except Exception:
+                annotation_type = str(cls)
+
+            return {"x-zenml-type": annotation_type}
+
+        return {}
+
+    def emit_warning(self, kind: Any, detail: str) -> None:
+        """Suppress schema generation warnings.
+
+        Args:
+            kind: The warning kind.
+            detail: The warning details.
+        """
 
 
 def isoformat(obj: Union[datetime.date, datetime.time]) -> str:

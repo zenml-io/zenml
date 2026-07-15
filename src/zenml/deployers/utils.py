@@ -335,24 +335,22 @@ def deployment_snapshot_request_from_source_snapshot(
 
     steps = {}
     for invocation_id, step in source_snapshot.step_configurations.items():
-        updated_step_parameters = step.config.parameters.copy()
-
-        for param_name in step.config.parameters:
-            if param_name in deployment_parameters:
-                updated_step_parameters[param_name] = deployment_parameters[
-                    param_name
-                ]
-
         # Deployment-specific step overrides
         step_update = {
             "enable_cache": False,  # Disable caching for all steps
             "step_operator": None,  # Remove step operators for deployments
-            "parameters": updated_step_parameters,
             "runtime": StepRuntime.INLINE,
         }
 
         step_config = pydantic_utils.update_model(
             step.step_config_overrides, step_update, recursive=False
+        )
+        step_config = step_config.with_literal_inputs(
+            {
+                input_name: deployment_parameters[input_name]
+                for input_name in step.config.literal_input_values
+                if input_name in deployment_parameters
+            }
         )
         merged_step_config = step_config.apply_pipeline_configuration(
             pipeline_configuration,

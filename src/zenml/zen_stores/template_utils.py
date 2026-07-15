@@ -243,11 +243,12 @@ def generate_config_schema(
     all_steps_required = False
     for step_name, step in step_configurations.items():
         step_fields: Dict[str, Any] = {}
+        step_parameters = step.config.literal_input_values
 
-        if step.config.parameters:
+        if step_parameters:
             parameter_fields: Dict[str, Any] = {}
 
-            for parameter_name in step.config.parameters:
+            for parameter_name in step_parameters:
                 # Pydantic doesn't allow field names to start with an underscore
                 sanitized_parameter_name = parameter_name.lstrip("_")
                 while sanitized_parameter_name in parameter_fields:
@@ -274,7 +275,7 @@ def generate_config_schema(
         while sanitized_step_name in all_steps:
             sanitized_step_name = sanitized_step_name + "_"
 
-        if step.config.parameters:
+        if step_parameters:
             # This step has parameters -> we make this attribute
             # required and also the parent attribute so these parameters must
             # always be included

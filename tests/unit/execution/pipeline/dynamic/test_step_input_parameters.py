@@ -18,6 +18,7 @@ from typing import Any, Dict, Set, Tuple
 import pytest
 
 from zenml import ExternalArtifact, pipeline, step
+from zenml.config.step_configurations import ArtifactVersionInputSource
 from zenml.constants import ENV_ZENML_PARAMETER_SIZE_THRESHOLD
 from zenml.models import PipelineRunResponse
 
@@ -61,7 +62,11 @@ def _classified_inputs(
 
     return (
         dict(step_run.config.parameters),
-        set(step_run.config.external_input_artifacts),
+        {
+            name
+            for name, source in step_run.config.inputs.items()
+            if isinstance(source, ArtifactVersionInputSource)
+        },
     )
 
 

@@ -45,6 +45,7 @@ from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
 from zenml.client import Client
 from zenml.config.compiler import Compiler
+from zenml.config.execution_overrides import ExecutionOverrides
 from zenml.config.pipeline_configurations import (
     PipelineConfiguration,
     PipelineConfigurationUpdate,
@@ -52,7 +53,11 @@ from zenml.config.pipeline_configurations import (
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.schedule import Schedule
-from zenml.config.step_configurations import StepConfigurationUpdate
+from zenml.config.step_configurations import (
+    InputSourceOverride,
+    StepConfigurationUpdate,
+    get_artifact_version_input_sources,
+)
 from zenml.enums import StackComponentType
 from zenml.exceptions import EntityExistsError
 from zenml.execution.pipeline.utils import (
@@ -258,6 +263,8 @@ class Pipeline:
         self._output_artifacts: List[StepArtifact] = []
         # The original run in case this pipeline gets replayed.
         self._original_run: Optional["PipelineRunResponse"] = None
+        # Execution overrides in case this pipeline gets replayed.
+        self._execution_overrides: Optional[ExecutionOverrides] = None
 
         self.__suppress_warnings_flag__ = False
 
@@ -1960,7 +1967,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Returns:
             The replayed pipeline run.
         """
-        from zenml.artifacts.utils import upload_input_artifact_overrides
         from zenml.client import Client
         from zenml.execution.utils import DebugModeContext
 
@@ -1980,31 +1986,17 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         pipeline_instance = self.copy()
         pipeline_instance._original_run = original_run
 
-        configuration_update: Dict[str, Any] = {}
+        step_inputs = _upload_input_overrides(step_input_overrides)
+        step_default_inputs = _upload_input_overrides(
+            step_default_input_overrides
+        )
 
-        if skip or skip_successful_steps:
-            configuration_update.update(
-                {
-                    "skip_successful_steps": skip_successful_steps,
-                    "steps_to_skip": set(skip) if skip else set(),
-                }
-            )
-
-        if step_input_overrides:
-            configuration_update["step_input_overrides"] = (
-                upload_input_artifact_overrides(step_input_overrides)
-            )
-
-        if step_default_input_overrides:
-            configuration_update["step_default_input_overrides"] = (
-                upload_input_artifact_overrides(step_default_input_overrides)
-            )
-
-        if configuration_update:
-            pipeline_instance._configuration = (
-                pipeline_instance._configuration.model_copy(
-                    update=configuration_update
-                )
+        if skip or skip_successful_steps or step_inputs or step_default_inputs:
+            pipeline_instance._execution_overrides = ExecutionOverrides(
+                steps_to_skip=set(skip) if skip else set(),
+                skip_successful_steps=skip_successful_steps,
+                input_overrides=step_inputs,
+                default_input_overrides=step_default_inputs,
             )
 
         original_parameters = original_run.config.parameters or {}
@@ -2029,3 +2021,22 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         # when replaying pipelines.
         assert run
         return run
+
+
+def _upload_input_overrides(
+    overrides: Optional[Mapping[str, Mapping[str, Any]]],
+) -> Dict[str, Dict[str, InputSourceOverride]]:
+    """Upload input override values and convert them to input sources.
+
+    Args:
+        overrides: The input overrides, keyed by invocation ID or step name.
+
+    Returns:
+        The converted input source overrides.
+    """
+    from zenml.artifacts.utils import upload_input_artifact_overrides
+
+    return {
+        key: get_artifact_version_input_sources(value)
+        for key, value in upload_input_artifact_overrides(overrides).items()
+    }

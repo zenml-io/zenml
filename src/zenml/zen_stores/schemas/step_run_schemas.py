@@ -18,7 +18,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence
 from uuid import UUID
 
-from pydantic import ConfigDict
+from pydantic import ConfigDict, TypeAdapter
 from sqlalchemy import TEXT, Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlalchemy.orm import joinedload, selectinload
@@ -45,6 +45,7 @@ from zenml.models import (
 from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 from zenml.models.v2.core.step_run import (
     StepRunInputResponse,
+    StepRunInputValue,
     StepRunResponseResources,
 )
 from zenml.utils.time_utils import utc_now
@@ -74,6 +75,10 @@ if TYPE_CHECKING:
         ResourceRequestSchema,
     )
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
+
+_input_values_adapter: TypeAdapter[Dict[str, StepRunInputValue]] = TypeAdapter(
+    Dict[str, StepRunInputValue]
+)
 
 
 class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
@@ -125,6 +130,14 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     is_retriable: bool = Field(nullable=False)
 
     exception_info: Optional[str] = Field(
+        sa_column=Column(
+            String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
+                MEDIUMTEXT, "mysql"
+            ),
+            nullable=True,
+        )
+    )
+    input_values: Optional[str] = Field(
         sa_column=Column(
             String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
                 MEDIUMTEXT, "mysql"
@@ -380,10 +393,33 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             exception_info=request.exception_info.model_dump_json()
             if request.exception_info
             else None,
+            input_values=_input_values_adapter.dump_json(
+                request.input_values
+            ).decode()
+            if request.input_values
+            else None,
         )
 
-    def get_step_configuration(self) -> Step:
+    def get_input_values(self) -> Dict[str, StepRunInputValue]:
+        """Get the resolved input values for the step run.
+
+        Returns:
+            The resolved input values.
+        """
+        if not self.input_values:
+            return {}
+
+        return _input_values_adapter.validate_json(self.input_values)
+
+    def get_step_configuration(
+        self,
+        input_values: Optional[Dict[str, StepRunInputValue]] = None,
+    ) -> Step:
         """Get the step configuration for the step run.
+
+        Args:
+            input_values: The resolved input values of the step run. If given,
+                they are merged into the step config parameters.
 
         Raises:
             ValueError: If the step run has no step configuration.
@@ -410,26 +446,22 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     exclude_hook_sources=self.snapshot.is_dynamic,
                 )
 
-                if input_overrides := (
-                    pipeline_configuration.get_invocation_input_overrides(
-                        invocation_id=self.name,
-                        step_name=step.config.name,
-                    )
-                ):
+                if input_values is not None:
                     # Remove all parameters that are shadowed by replay input
-                    # overrides.
-                    step = step.model_copy(
-                        update={
-                            "config": step.config.model_copy(
-                                update={
-                                    "parameters": {
-                                        key: value
-                                        for key, value in step.config.parameters.items()
-                                        if key not in input_overrides
-                                    }
-                                }
+                    # overrides, then include the resolved input values, so
+                    # the config reflects the values the step was actually
+                    # called with.
+                    step = step.with_input_values(
+                        input_values={
+                            name: value.value
+                            for name, value in input_values.items()
+                        },
+                        overridden_keys=set(
+                            self.snapshot.get_input_overrides(
+                                invocation_id=self.name,
+                                step_name=step.config.name,
                             )
-                        }
+                        ),
                     )
 
         if not step and self.step_configuration:
@@ -437,7 +469,9 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             # config stored in the DB, which means we can instantiate the
             # `Step` object directly without passing the pipeline
             # configuration.
-            step = Step.model_validate_json(self.step_configuration)
+            step = Step.model_validate_json(
+                self.step_configuration
+            ).with_display_parameters()
         elif not step:
             raise ValueError(
                 f"Unable to load the configuration for step `{self.name}` from "
@@ -465,7 +499,11 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         Returns:
             The created StepRunResponse.
         """
-        step = self.get_step_configuration()
+        input_values: Optional[Dict[str, StepRunInputValue]] = None
+        if include_metadata:
+            input_values = self.get_input_values()
+
+        step = self.get_step_configuration(input_values=input_values)
 
         body = StepRunResponseBody(
             user_id=self.user_id,
@@ -503,6 +541,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 original_step_run_id=self.original_step_run_id,
                 parent_step_ids=[p.parent_id for p in self.parents],
                 run_metadata=self.fetch_metadata(),
+                input_values=input_values or {},
             )
 
         resources = None

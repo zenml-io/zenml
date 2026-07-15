@@ -15,9 +15,11 @@
 
 from typing import (
     TYPE_CHECKING,
+    Annotated,
     Any,
     Dict,
     List,
+    Literal,
     Mapping,
     Optional,
     Set,
@@ -27,17 +29,16 @@ from typing import (
 from uuid import UUID
 
 from pydantic import (
+    AliasChoices,
     ConfigDict,
     Field,
     SerializeAsAny,
     field_validator,
     model_validator,
 )
+from typing_extensions import Self
 
 from zenml.artifacts.artifact_config import ArtifactConfig
-from zenml.artifacts.external_artifact_config import (
-    ExternalArtifactConfiguration,
-)
 from zenml.client_lazy_loader import ClientLazyLoader
 from zenml.config.base_settings import BaseSettings, SettingsOrDict
 from zenml.config.cache_policy import CachePolicy, CachePolicyWithValidator
@@ -153,6 +154,205 @@ class ArtifactConfiguration(PartialArtifactConfiguration):
             value = (value,)
 
         return value
+
+
+class LiteralInputSource(FrozenBaseModel):
+    """Literal value step input source."""
+
+    type: Literal["literal"] = "literal"
+    value: Any
+
+
+class ArtifactVersionInputSource(FrozenBaseModel):
+    """Artifact version step input source."""
+
+    type: Literal["artifact_version"] = "artifact_version"
+    id: UUID = Field(
+        validation_alias=AliasChoices("id", "artifact_version_id")
+    )
+
+
+class ModelDataInputSource(FrozenBaseModel):
+    """Model version data step input source."""
+
+    type: Literal["model_data"] = "model_data"
+    lazy_loader: ModelVersionDataLazyLoader
+
+
+class ClientCallInputSource(FrozenBaseModel):
+    """Client method call step input source."""
+
+    type: Literal["client_call"] = "client_call"
+    lazy_loader: ClientLazyLoader
+
+
+InputSource = Annotated[
+    Union[
+        LiteralInputSource,
+        ArtifactVersionInputSource,
+        ModelDataInputSource,
+        ClientCallInputSource,
+    ],
+    Field(discriminator="type"),
+]
+
+InputSourceType = Literal[
+    "literal", "artifact_version", "model_data", "client_call"
+]
+
+InputSourceOverride = Union[ArtifactVersionInputSource, LiteralInputSource]
+
+
+def get_artifact_version_input_sources(
+    artifact_version_ids: Mapping[str, UUID],
+) -> Dict[str, InputSourceOverride]:
+    """Convert artifact version IDs to input sources.
+
+    Args:
+        artifact_version_ids: The artifact version IDs, keyed by input name.
+
+    Returns:
+        The input sources.
+    """
+    return {
+        name: ArtifactVersionInputSource(id=artifact_version_id)
+        for name, artifact_version_id in artifact_version_ids.items()
+    }
+
+
+def get_nested_artifact_version_input_sources(
+    artifact_version_ids: Mapping[str, Mapping[str, UUID]],
+) -> Dict[str, Dict[str, InputSourceOverride]]:
+    """Convert nested artifact version IDs to input sources.
+
+    Args:
+        artifact_version_ids: The artifact version IDs, keyed by invocation ID
+            or step name and input name.
+
+    Returns:
+        The input sources.
+    """
+    return {
+        key: get_artifact_version_input_sources(value)
+        for key, value in artifact_version_ids.items()
+    }
+
+
+_LEGACY_INPUT_CHANNEL_FIELDS = (
+    "external_input_artifacts",
+    "model_artifacts_or_metadata",
+    "client_lazy_loaders",
+)
+
+
+def _is_typed_input_source(value: Any) -> bool:
+    """Check whether an inputs dict entry is a typed input source.
+
+    Very old configs stored a deprecated `inputs` field containing artifact
+    configurations. Those entries have no `type` key.
+
+    Args:
+        value: The inputs dict entry to check.
+
+    Returns:
+        Whether the entry is a typed input source.
+    """
+    return not isinstance(value, dict) or "type" in value
+
+
+def _convert_legacy_input_channels(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Convert legacy step input config fields to input sources.
+
+    Args:
+        data: The values dict used to instantiate the model.
+
+    Returns:
+        The values dict with legacy input fields converted to entries in
+        the `inputs` field.
+    """
+    inputs = data.get("inputs") or {}
+    if not isinstance(inputs, dict):
+        return data
+
+    if not any(
+        field in data for field in _LEGACY_INPUT_CHANNEL_FIELDS
+    ) and all(_is_typed_input_source(value) for value in inputs.values()):
+        return data
+
+    inputs = {
+        key: value
+        for key, value in inputs.items()
+        if _is_typed_input_source(value)
+    }
+
+    for key, value in (
+        data.pop("external_input_artifacts", None) or {}
+    ).items():
+        if key in inputs:
+            continue
+
+        if artifact_version_id := value.get("id"):
+            inputs[key] = {
+                "type": "artifact_version",
+                "id": artifact_version_id,
+            }
+
+    for key, value in (
+        data.pop("model_artifacts_or_metadata", None) or {}
+    ).items():
+        if key not in inputs:
+            inputs[key] = {"type": "model_data", "lazy_loader": value}
+
+    for key, value in (data.pop("client_lazy_loaders", None) or {}).items():
+        if key not in inputs:
+            inputs[key] = {"type": "client_call", "lazy_loader": value}
+
+    data["inputs"] = inputs
+    return data
+
+
+def _convert_legacy_parameters(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Convert legacy step config parameters to literal input sources.
+
+    Args:
+        data: The step config values dict.
+
+    Returns:
+        The values dict with parameters converted to literal input sources.
+    """
+    parameters = data.get("parameters") or {}
+    if not isinstance(parameters, dict):
+        return data
+
+    inputs = data.get("inputs") or {}
+    if isinstance(inputs, dict):
+        has_input_sources = any(
+            _is_typed_input_source(value) for value in inputs.values()
+        )
+    else:
+        has_input_sources = bool(inputs)
+
+    if has_input_sources:
+        # The config already stores input sources, which means the
+        # parameters only mirror the literal input values for display
+        # purposes.
+        data["parameters"] = {}
+        return data
+
+    # Some legacy dynamic step configs stored lazily resolved values in the
+    # parameters. Those inputs are already covered by their lazy loader
+    # config and are not converted.
+    lazy_keys: Set[str] = set()
+    for legacy_field in _LEGACY_INPUT_CHANNEL_FIELDS:
+        lazy_keys.update((data.get(legacy_field) or {}).keys())
+
+    data["inputs"] = {
+        key: {"type": "literal", "value": value}
+        for key, value in parameters.items()
+        if key not in lazy_keys
+    }
+    data["parameters"] = {}
+    return data
 
 
 class StepConfigurationUpdate(FrozenBaseModel):
@@ -303,9 +503,7 @@ class PartialStepConfiguration(StepConfigurationUpdate):
     extra: Dict[str, Any] = {}
     substitutions: Dict[str, str] = {}
     caching_parameters: Mapping[str, Any] = {}
-    external_input_artifacts: Mapping[str, ExternalArtifactConfiguration] = {}
-    model_artifacts_or_metadata: Mapping[str, ModelVersionDataLazyLoader] = {}
-    client_lazy_loaders: Mapping[str, ClientLazyLoader] = {}
+    inputs: Mapping[str, InputSource] = {}
     outputs: Mapping[str, PartialArtifactConfiguration] = {}
     cache_policy: CachePolicyWithValidator = CachePolicy.default()
     command: Optional[List[str]] = None
@@ -334,13 +532,51 @@ class PartialStepConfiguration(StepConfigurationUpdate):
         Returns:
             The values dict without deprecated attributes.
         """
-        deprecated_attributes = ["docstring", "inputs"]
+        deprecated_attributes = ["docstring"]
 
         for deprecated_attribute in deprecated_attributes:
             if deprecated_attribute in data:
                 data.pop(deprecated_attribute)
 
-        return data
+        return _convert_legacy_input_channels(data)
+
+    @property
+    def literal_input_values(self) -> Dict[str, Any]:
+        """Literal input values of this step configuration.
+
+        Returns:
+            The literal input values of this step configuration.
+        """
+        return {
+            name: source.value
+            for name, source in self.inputs.items()
+            if isinstance(source, LiteralInputSource)
+        }
+
+    def with_literal_inputs(self, values: Mapping[str, Any]) -> Self:
+        """Copy of the step configuration with updated literal inputs.
+
+        The parameters are reset as they only mirror the literal input values
+        for display purposes.
+
+        Args:
+            values: The literal input values to set, keyed by input name.
+
+        Returns:
+            The updated step configuration.
+        """
+        return self.model_copy(
+            update={
+                "inputs": {
+                    **self.inputs,
+                    **{
+                        name: LiteralInputSource(value=value)
+                        for name, value in values.items()
+                    },
+                },
+                "parameters": {},
+            }
+        )
 
 
 class StepConfiguration(PartialStepConfiguration):
@@ -424,6 +660,9 @@ class StepSpec(FrozenBaseModel):
     invocation_id: str
     enable_heartbeat: bool = False
     parameter_spec: Optional[Dict[str, Any]] = None
+    # JSON schema for all step function inputs. Superset of the
+    # `parameter_spec`, which is the JSON schema only for step parameters.
+    input_schema: Optional[Dict[str, Any]] = None
 
     @model_validator(mode="before")
     @classmethod
@@ -482,6 +721,9 @@ class StepSpec(FrozenBaseModel):
             if self.parameter_spec != other.parameter_spec:
                 return False
 
+            if self.input_schema != other.input_schema:
+                return False
+
             if self.invocation_id != other.invocation_id:
                 return False
 
@@ -518,6 +760,11 @@ class Step(FrozenBaseModel):
         """
         if "step_config_overrides" not in data:
             data["step_config_overrides"] = data["config"]
+
+        for key in ("config", "step_config_overrides"):
+            config_dict = data.get(key)
+            if isinstance(config_dict, dict):
+                data[key] = _convert_legacy_parameters(config_dict)
 
         return data
 
@@ -563,7 +810,64 @@ class Step(FrozenBaseModel):
             )
             data["config"] = merged_config_dict
 
-        return cls.model_validate(data)
+        return cls.model_validate(data).with_display_parameters()
+
+    def with_display_parameters(self) -> "Step":
+        """Copy of the step with parameters mirroring the literal inputs.
+
+        Returns:
+            The step with populated parameters.
+        """
+        config_parameters = self.config.literal_input_values
+        override_parameters = self.step_config_overrides.literal_input_values
+
+        if not config_parameters and not override_parameters:
+            return self
+
+        return self.model_copy(
+            update={
+                "config": self.config.model_copy(
+                    update={"parameters": config_parameters}
+                ),
+                "step_config_overrides": self.step_config_overrides.model_copy(
+                    update={"parameters": override_parameters}
+                ),
+            }
+        )
+
+    def with_input_values(
+        self,
+        input_values: Mapping[str, Any],
+        overridden_keys: Set[str],
+    ) -> "Step":
+        """Copy of the step with parameters reflecting the resolved values.
+
+        Args:
+            input_values: The resolved input values of the step run, keyed by
+                input name.
+            overridden_keys: Names of inputs that were replaced by input
+                overrides.
+
+        Returns:
+            The step with updated parameters.
+        """
+        parameters = {
+            key: value
+            for key, value in self.config.parameters.items()
+            if key not in overridden_keys
+        }
+        parameters.update(input_values)
+
+        if parameters == self.config.parameters:
+            return self
+
+        return self.model_copy(
+            update={
+                "config": self.config.model_copy(
+                    update={"parameters": parameters}
+                )
+            }
+        )
 
     @property
     def available_input_keys(self) -> Set[str]:
@@ -572,13 +876,7 @@ class Step(FrozenBaseModel):
         Returns:
             The available input keys for the step.
         """
-        return (
-            set(self.spec.normalized_inputs)
-            | set(self.config.parameters)
-            | set(self.config.model_artifacts_or_metadata)
-            | set(self.config.external_input_artifacts)
-            | set(self.config.client_lazy_loaders)
-        )
+        return set(self.spec.normalized_inputs) | set(self.config.inputs)
 
 
 def _apply_pipeline_configuration(

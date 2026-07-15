@@ -186,7 +186,7 @@ def skip_steps_and_prune_snapshot(
         stack=client.active_stack,
     )
 
-    explicitly_skipped_steps = set(pipeline_run.config.steps_to_skip)
+    explicitly_skipped_steps = snapshot.steps_to_skip
     skipped_invocations: Set[str] = set()
 
     for invocation_id, step in snapshot.step_configurations.items():

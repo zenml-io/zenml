@@ -25,7 +25,7 @@ from zenml.entrypoints.step_entrypoint_configuration import (
 )
 from zenml.enums import ExecutionStatus
 from zenml.models import StepRunUpdate
-from zenml.orchestrators import input_utils, output_utils
+from zenml.orchestrators import output_utils
 from zenml.orchestrators.step_runner import StepRunner
 
 if TYPE_CHECKING:
@@ -140,9 +140,6 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
         )
 
         stack = Client().active_stack
-        # We need to call this here to include parameters from lazy
-        # loaders in the step configuration.
-        input_utils.resolve_step_inputs(step=step, pipeline_run=pipeline_run)
         output_artifact_uris = output_utils.prepare_output_artifact_uris(
             step_run=step_run, stack=stack, step=step
         )

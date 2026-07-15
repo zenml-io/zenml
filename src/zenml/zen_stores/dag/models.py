@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """DAG helper models."""
 
-from typing import Any, Dict, NamedTuple, Optional
+from typing import Any, Dict, NamedTuple, Optional, Set
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -31,9 +31,50 @@ class DAGStepConfigView(BaseModel):
     group: Optional[GroupInfo] = None
     substitutions: Dict[str, str] = {}
     outputs: Dict[str, Any] = {}
+    inputs: Dict[str, Any] = {}
+    # Legacy input fields of step configs stored before input sources.
     client_lazy_loaders: Dict[str, Any] = {}
     model_artifacts_or_metadata: Dict[str, Any] = {}
     external_input_artifacts: Dict[str, Any] = {}
+
+    def _input_names_for_source_types(self, *types: str) -> Set[str]:
+        """Names of inputs with a source of one of the given types.
+
+        Args:
+            *types: The input source types.
+
+        Returns:
+            The input names.
+        """
+        return {
+            name
+            for name, source in self.inputs.items()
+            if isinstance(source, dict) and source.get("type") in types
+        }
+
+    @property
+    def lazy_loaded_input_names(self) -> Set[str]:
+        """Names of lazy loaded inputs.
+
+        Returns:
+            The names of lazy loaded inputs.
+        """
+        return (
+            set(self.client_lazy_loaders)
+            | set(self.model_artifacts_or_metadata)
+            | self._input_names_for_source_types("model_data", "client_call")
+        )
+
+    @property
+    def external_input_names(self) -> Set[str]:
+        """Names of external artifact inputs.
+
+        Returns:
+            The names of external artifact inputs.
+        """
+        return set(
+            self.external_input_artifacts
+        ) | self._input_names_for_source_types("artifact_version")
 
 
 class DAGStepView(BaseModel):

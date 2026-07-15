@@ -37,6 +37,7 @@ from typing import (
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, ValidationError
+from pydantic.json_schema import GenerateJsonSchema
 
 from zenml.client_lazy_loader import ClientLazyLoader
 from zenml.config.cache_policy import CachePolicyOrString
@@ -63,6 +64,7 @@ from zenml.steps.utils import (
 from zenml.utils import (
     async_utils,
     dict_utils,
+    json_utils,
     materializer_utils,
     notebook_utils,
     pydantic_utils,
@@ -1547,6 +1549,10 @@ To avoid this consider setting step parameters only in one place (config or code
             The finalized step configuration.
         """
         from zenml.config.step_configurations import (
+            ArtifactVersionInputSource,
+            ClientCallInputSource,
+            LiteralInputSource,
+            ModelDataInputSource,
             PartialArtifactConfiguration,
             StepConfiguration,
             StepConfigurationUpdate,
@@ -1638,17 +1644,31 @@ To avoid this consider setting step parameters only in one place (config or code
         config = StepConfigurationUpdate(**values)
         self._apply_configuration(config)
 
+        inputs: Dict[str, Any] = {}
+        for key, external_artifact in external_artifacts.items():
+            if external_artifact.id is None:
+                raise StepInterfaceError(
+                    f"Missing artifact version ID for external artifact "
+                    f"input `{key}` of step `{self.name}`."
+                )
+
+            inputs[key] = ArtifactVersionInputSource(id=external_artifact.id)
+        for key, model_lazy_loader in model_artifacts_or_metadata.items():
+            inputs[key] = ModelDataInputSource(lazy_loader=model_lazy_loader)
+        for key, client_lazy_loader in client_lazy_loaders.items():
+            inputs[key] = ClientCallInputSource(lazy_loader=client_lazy_loader)
+        for key, value in parameters.items():
+            inputs[key] = LiteralInputSource(value=value)
+
         self._configuration = self._configuration.model_copy(
             update={
                 "caching_parameters": self.caching_parameters,
-                "external_input_artifacts": external_artifacts,
-                "model_artifacts_or_metadata": model_artifacts_or_metadata,
-                "client_lazy_loaders": client_lazy_loaders,
+                "inputs": inputs,
             }
         )
 
         return StepConfiguration.model_validate(
-            self._configuration.model_dump()
+            {**self._configuration.model_dump(), "parameters": {}}
         )
 
     def _finalize_parameters(self) -> Dict[str, Any]:
@@ -1676,6 +1696,42 @@ To avoid this consider setting step parameters only in one place (config or code
 
         return params
 
+    def _compute_schema(
+        self,
+        kind: str,
+        parameters: Mapping[str, inspect.Parameter],
+        config: Optional[ConfigDict] = None,
+        schema_generator: Type[GenerateJsonSchema] = GenerateJsonSchema,
+    ) -> Optional[Dict[str, Any]]:
+        """Computes a JSON schema for a set of step entrypoint inputs.
+
+        Args:
+            kind: The kind of schema, used in the model name and error log.
+            parameters: The entrypoint parameters to include in the schema.
+            config: The config for the generated model.
+            schema_generator: The JSON schema generator to use.
+
+        Returns:
+            The JSON schema.
+        """
+        try:
+            model = pydantic_utils.create_parameter_model(
+                model_name=f"{self.name.title().replace('_', '')}"
+                f"{kind.title()}s",
+                parameters=parameters,
+                default_values=self.configuration.parameters,
+                config=config,
+            )
+            return model.model_json_schema(schema_generator=schema_generator)
+        except Exception as e:
+            logger.debug(
+                "Failed to generate the %s schema for step `%s`: %s.",
+                kind,
+                self.name,
+                e,
+            )
+            return None
+
     def _compute_parameter_schema(self) -> Optional[Dict[str, Any]]:
         """Computes a JSON schema for the configured step parameters.
 
@@ -1692,20 +1748,30 @@ To avoid this consider setting step parameters only in one place (config or code
             if name in parameter_names
         }
 
-        try:
-            parameter_model = pydantic_utils.create_parameter_model(
-                model_name=f"{self.name.title().replace('_', '')}Parameters",
-                parameters=parameter_inputs,
-                default_values=self.configuration.parameters,
-            )
-            return parameter_model.model_json_schema()
-        except Exception as e:
-            logger.debug(
-                "Failed to generate the parameter schema for step `%s`: %s.",
-                self.name,
-                e,
-            )
-            return None
+        return self._compute_schema(
+            kind="parameter", parameters=parameter_inputs
+        )
+
+    def _compute_input_schema(self) -> Optional[Dict[str, Any]]:
+        """Computes a JSON schema for the step entrypoint inputs.
+
+        Inputs with annotations that can not be represented as a JSON schema
+        are included as properties with an `x-zenml-type` keyword referencing
+        the annotation type.
+
+        Returns:
+            The JSON schema for the step entrypoint inputs.
+        """
+        inputs = self.entrypoint_definition.inputs
+        if not inputs:
+            return {}
+
+        return self._compute_schema(
+            kind="input",
+            parameters=inputs,
+            config=ConfigDict(arbitrary_types_allowed=True),
+            schema_generator=json_utils.InputSchemaGenerator,
+        )
 
     def replay(
         self,

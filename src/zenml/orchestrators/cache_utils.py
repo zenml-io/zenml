@@ -15,7 +15,7 @@
 
 import hashlib
 import os
-from typing import TYPE_CHECKING, List, Mapping, Optional
+from typing import TYPE_CHECKING, Any, List, Mapping, Optional
 from uuid import UUID
 
 from zenml.client import Client
@@ -45,6 +45,7 @@ logger = get_logger(__name__)
 def generate_cache_key(
     step: "Step",
     input_artifacts: Mapping[str, List["StepRunInputResponse"]],
+    input_values: Mapping[str, Any],
     artifact_store: "BaseArtifactStore",
     project_id: "UUID",
 ) -> str:
@@ -57,7 +58,7 @@ def generate_cache_key(
     - the project ID,
     - the artifact store ID and path,
     - the source code that defines the step,
-    - the parameters of the step,
+    - the resolved non-artifact input values of the step,
     - the names and IDs of the input artifacts of the step,
     - the names and source codes of the output artifacts of the step,
     - the source codes of the output materializers of the step.
@@ -69,6 +70,7 @@ def generate_cache_key(
     Args:
         step: The step to generate the cache key for.
         input_artifacts: The input artifacts for the step.
+        input_values: The resolved non-artifact input values for the step.
         artifact_store: The artifact store of the active stack.
         project_id: The ID of the active project.
 
@@ -100,7 +102,7 @@ def generate_cache_key(
     hash_.update(step.spec.source.import_path.encode())
 
     if cache_policy.include_step_parameters:
-        for key, value in sorted(step.config.parameters.items()):
+        for key, value in sorted(input_values.items()):
             hash_.update(key.encode())
             hash_.update(str(value).encode())
 

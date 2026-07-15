@@ -850,10 +850,16 @@ def prune_snapshot_before_build(
         # steps.
         return snapshot
 
+    steps_to_skip = (
+        snapshot.execution_overrides.steps_to_skip
+        if snapshot.execution_overrides
+        else set()
+    )
+
     pruned_snapshot = snapshot.model_copy()
     pruned_snapshot.step_configurations = {
         k: v
         for k, v in pruned_snapshot.step_configurations.items()
-        if k not in snapshot.pipeline_configuration.steps_to_skip
+        if k not in steps_to_skip
     }
     return pruned_snapshot

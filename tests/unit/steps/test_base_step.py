@@ -940,9 +940,9 @@ def test_step_parameter_from_file_and_code_fails_on_conflict():
         run_configuration=run_config,
     )
     assert (
-        snapshot.step_configurations["step_with_int_input"].config.parameters[
-            "input_"
-        ]
+        snapshot.step_configurations["step_with_int_input"]
+        .config.inputs["input_"]
+        .value
         == 1
     )
 
@@ -1161,3 +1161,27 @@ def test_step_with_keyword_only_arguments_works():
 
     with does_not_raise():
         test_pipeline()
+
+
+class _UnrepresentableInput:
+    pass
+
+
+def test_compute_input_schema():
+    """Tests the computation of the input schema for a step."""
+
+    @step
+    def some_step(
+        a: int, c: _UnrepresentableInput, b: str = "b_default"
+    ) -> None:
+        pass
+
+    schema = some_step._compute_input_schema()
+
+    assert schema is not None
+    properties = schema["properties"]
+    assert properties["a"]["type"] == "integer"
+    assert properties["b"]["default"] == "b_default"
+    assert properties["c"]["x-zenml-type"].endswith("_UnrepresentableInput")
+    assert "a" in schema["required"]
+    assert "c" in schema["required"]
