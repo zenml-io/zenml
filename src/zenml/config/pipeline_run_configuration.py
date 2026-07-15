@@ -24,7 +24,10 @@ from zenml.config.frozen_base_model import FrozenBaseModel
 from zenml.config.retry_config import StepRetryConfig
 from zenml.config.schedule import Schedule
 from zenml.config.source import StringSerializableSource
-from zenml.config.step_configurations import StepConfigurationUpdate
+from zenml.config.step_configurations import (
+    InputSourceOverride,
+    StepConfigurationUpdate,
+)
 from zenml.enums import ExecutionMode
 from zenml.model.model import Model
 from zenml.models import PipelineBuildBase
@@ -176,9 +179,25 @@ class ReplayRunConfiguration(PipelineRunConfiguration):
         default=None,
         description="The steps to skip when replaying the pipeline.",
     )
+    step_inputs: Optional[Mapping[str, Mapping[str, InputSourceOverride]]] = (
+        Field(
+            default=None,
+            description="Input source overrides for the pipeline run, keyed by "
+            "invocation ID.",
+        )
+    )
+    step_default_inputs: Optional[
+        Mapping[str, Mapping[str, InputSourceOverride]]
+    ] = Field(
+        default=None,
+        description="Input source overrides applied to every invocation of "
+        "a step, keyed by the step's name. Per-invocation overrides in "
+        "`step_inputs` take precedence.",
+    )
     step_input_overrides: Optional[Mapping[str, Mapping[str, Any]]] = Field(
         default=None,
         description="The step input overrides for the pipeline run.",
+        deprecated="Use `step_inputs` instead.",
     )
     step_default_input_overrides: Optional[Mapping[str, Mapping[str, Any]]] = (
         Field(
@@ -186,5 +205,6 @@ class ReplayRunConfiguration(PipelineRunConfiguration):
             description="Input overrides applied to every invocation of a step, "
             "keyed by the step's name. Per-invocation overrides in "
             "`step_input_overrides` take precedence.",
+            deprecated="Use `step_default_inputs` instead.",
         )
     )

@@ -16,12 +16,12 @@
 import json
 from datetime import timedelta
 from typing import Dict, List, Optional, Set, Tuple
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import requests
 
 from zenml.client import Client
-from zenml.config.step_configurations import Step
+from zenml.config.step_configurations import InputSource, Step
 from zenml.constants import (
     CODE_HASH_PARAMETER_NAME,
     ENV_ZENML_STEP_RUNS_FETCH_MAX_CHUNK_LENGTH,
@@ -110,10 +110,10 @@ class StepRunRequestFactory:
         Returns:
             Whether the step should be skipped.
         """
-        if invocation_id in self.snapshot.pipeline_configuration.steps_to_skip:
+        if invocation_id in self.snapshot.steps_to_skip:
             return True
 
-        if not self.snapshot.pipeline_configuration.skip_successful_steps:
+        if not self.snapshot.skip_successful_steps:
             return False
 
         if self._get_input_overrides(
@@ -122,9 +122,9 @@ class StepRunRequestFactory:
             warn_on_invalid_keys=False,
             include_step_defaults=False,
         ):
-            logger.warning(
-                "Step `%s` should be skipped, but there are input overrides "
-                "configured. The step will be executed.",
+            logger.debug(
+                "Not skipping successful step `%s` because it has input "
+                "overrides configured.",
                 invocation_id,
             )
             return False
@@ -210,7 +210,7 @@ class StepRunRequestFactory:
 
         input_overrides = self._get_input_overrides(request.name, step=step)
 
-        input_artifacts = input_utils.resolve_step_inputs(
+        input_artifacts, input_values = input_utils.resolve_step_inputs(
             step=step,
             pipeline_run=self.pipeline_run,
             step_runs=step_runs,
@@ -221,10 +221,14 @@ class StepRunRequestFactory:
             name: [artifact.id for artifact in artifacts]
             for name, artifacts in input_artifacts.items()
         }
+        request.input_values = input_values
 
         cache_key = cache_utils.generate_cache_key(
             step=step,
             input_artifacts=input_artifacts,
+            input_values={
+                name: value.value for name, value in input_values.items()
+            },
             artifact_store=self.stack.artifact_store,
             project_id=Client().active_project.id,
         )
@@ -259,6 +263,7 @@ class StepRunRequestFactory:
                     input_name: [artifact.id for artifact in artifacts]
                     for input_name, artifacts in cached_step_run.inputs.items()
                 }
+                request.input_values = cached_step_run.input_values
 
                 request.original_step_run_id = cached_step_run.id
                 request.outputs = {
@@ -333,6 +338,7 @@ class StepRunRequestFactory:
             input_name: [artifact.id for artifact in artifacts]
             for input_name, artifacts in original_step_run.inputs.items()
         }
+        request.input_values = original_step_run.input_values
         request.outputs = {
             output_name: [artifact.id for artifact in artifacts]
             for output_name, artifacts in original_step_run.outputs.items()
@@ -437,8 +443,8 @@ class StepRunRequestFactory:
         step: "Step",
         warn_on_invalid_keys: bool = True,
         include_step_defaults: bool = True,
-    ) -> Dict[str, "UUID"]:
-        """Get input overrides for a step.
+    ) -> Dict[str, "InputSource"]:
+        """Get input source overrides for a step.
 
         Args:
             invocation_id: The invocation ID to look up.
@@ -449,9 +455,9 @@ class StepRunRequestFactory:
                 overrides.
 
         Returns:
-            The input overrides for the step.
+            The input source overrides for the step.
         """
-        overrides = self.snapshot.pipeline_configuration.get_invocation_input_overrides(
+        overrides = self.snapshot.get_input_overrides(
             invocation_id=invocation_id,
             step_name=step.config.name,
             include_step_defaults=include_step_defaults,

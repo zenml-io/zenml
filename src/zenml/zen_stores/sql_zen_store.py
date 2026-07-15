@@ -139,7 +139,13 @@ from zenml.config.pipeline_run_configuration import (
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.server_config import ServerConfiguration
 from zenml.config.source import Source
-from zenml.config.step_configurations import StepConfiguration, StepSpec
+from zenml.config.step_configurations import (
+    ArtifactVersionInputSource,
+    ClientCallInputSource,
+    ModelDataInputSource,
+    StepConfiguration,
+    StepSpec,
+)
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_PASSWORD,
@@ -6638,7 +6644,7 @@ class SqlZenStore(BaseZenStore):
                             except KeyError:
                                 pass
 
-                    for input_name in step.config.client_lazy_loaders.keys():
+                    for input_name in step.config.lazy_loaded_input_names:
                         artifact_node = helper.add_artifact_node(
                             node_id=helper.get_artifact_node_id(
                                 name=input_name,
@@ -6655,28 +6661,7 @@ class SqlZenStore(BaseZenStore):
                             type=StepRunInputArtifactType.LAZY_LOADED.value,
                         )
 
-                    for (
-                        input_name
-                    ) in step.config.model_artifacts_or_metadata.keys():
-                        artifact_node = helper.add_artifact_node(
-                            node_id=helper.get_artifact_node_id(
-                                name=input_name,
-                                step_name=step_name,
-                                io_type=StepRunInputArtifactType.LAZY_LOADED.value,
-                                is_input=True,
-                            ),
-                            name=input_name,
-                        )
-                        helper.add_edge(
-                            source=artifact_node.node_id,
-                            target=step_node.node_id,
-                            input_name=input_name,
-                            type=StepRunInputArtifactType.LAZY_LOADED.value,
-                        )
-
-                    for (
-                        input_name
-                    ) in step.config.external_input_artifacts.keys():
+                    for input_name in step.config.external_input_names:
                         artifact_node = helper.add_artifact_node(
                             node_id=helper.get_artifact_node_id(
                                 name=input_name,
@@ -11779,6 +11764,16 @@ class SqlZenStore(BaseZenStore):
                     session=session,
                 )
 
+            input_overrides: Set[str] = set()
+            if not step_run.original_step_run_id and step_run.inputs:
+                assert run.snapshot
+                input_overrides = set(
+                    run.snapshot.get_input_overrides(
+                        invocation_id=step_run.name,
+                        step_name=step_config.config.name,
+                    )
+                )
+
             # Save input artifact IDs into the database.
             for input_name, artifact_version_ids in step_run.inputs.items():
                 for i, artifact_version_id in enumerate(artifact_version_ids):
@@ -11808,12 +11803,6 @@ class SqlZenStore(BaseZenStore):
                         # This is a non-cached step run, which means all input
                         # artifacts we receive at creation time are inputs that
                         # are defined in the step config.
-                        input_overrides = set(
-                            run.get_pipeline_configuration().get_invocation_input_overrides(
-                                invocation_id=step_run.name,
-                                step_name=step_config.config.name,
-                            )
-                        )
                         input_type = self._get_step_run_input_type_from_config(
                             input_name=input_name,
                             step_config=step_config.config,
@@ -12442,12 +12431,11 @@ class SqlZenStore(BaseZenStore):
             return StepRunInputArtifactType.OVERRIDE
         elif input_name in step_spec.normalized_inputs:
             return StepRunInputArtifactType.STEP_OUTPUT
-        elif input_name in step_config.external_input_artifacts:
+
+        source = step_config.inputs.get(input_name)
+        if isinstance(source, ArtifactVersionInputSource):
             return StepRunInputArtifactType.EXTERNAL
-        elif (
-            input_name in step_config.model_artifacts_or_metadata
-            or input_name in step_config.client_lazy_loaders
-        ):
+        elif isinstance(source, (ModelDataInputSource, ClientCallInputSource)):
             return StepRunInputArtifactType.LAZY_LOADED
         else:
             return StepRunInputArtifactType.MANUAL
