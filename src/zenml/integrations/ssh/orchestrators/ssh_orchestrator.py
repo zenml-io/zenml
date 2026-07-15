@@ -167,6 +167,19 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         """
         return f"{self.config.remote_workdir}/pipeline-runs/{run_id}"
 
+    @staticmethod
+    def _get_container_name(run_id: str, step_name: str) -> str:
+        """Get the container and Compose service name for a step.
+
+        Args:
+            run_id: The orchestrator run id.
+            step_name: The step (invocation) name.
+
+        Returns:
+            The container name.
+        """
+        return f"{run_id}-{step_name}"
+
     def _prepare_remote_dir(
         self, ssh: SSHClient, remote_dir: str, stack: "Stack"
     ) -> None:
@@ -333,7 +346,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
 
         service: Dict[str, Any] = {
             "image": self.get_image(snapshot=snapshot, step_name=step_name),
-            "container_name": f"{run_id}-{step_name}",
+            "container_name": self._get_container_name(run_id, step_name),
             "network_mode": "host",
             "entrypoint": StepEntrypointConfiguration.get_entrypoint_command(),
             "command": StepEntrypointConfiguration.get_entrypoint_arguments(
@@ -349,7 +362,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
             service["deploy"] = build_compose_gpu_deploy(settings.gpu_indices)
         if step.spec.upstream_steps:
             service["depends_on"] = {
-                f"{run_id}-{upstream}": {
+                self._get_container_name(run_id, upstream): {
                     "condition": "service_completed_successfully"
                 }
                 for upstream in step.spec.upstream_steps
@@ -391,7 +404,7 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         assert placeholder_run is not None
         run_id = str(placeholder_run.id)
         services = {
-            f"{run_id}-{step_name}": self._step_service(
+            self._get_container_name(run_id, step_name): self._step_service(
                 snapshot=snapshot,
                 step_name=step_name,
                 step=step,
