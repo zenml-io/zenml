@@ -215,6 +215,7 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         response = self._client.renew_request(
             resource_request_id,
             lease_expires_at=renewal_request.lease_expires_at,
+            runtime_state=renewal_request.runtime_state,
         )
         logger.info(
             f"Resource request response: {response.model_dump_json(indent=2)}"

@@ -22,6 +22,7 @@ import requests
 from pydantic import BaseModel
 from requests.adapters import HTTPAdapter, Retry
 
+from zenml.enums import ResourceRequestRuntimeState
 from zenml.exceptions import (
     CredentialsNotValid,
     EntityExistsError,
@@ -278,12 +279,14 @@ class ResourceManagerClient:
         request_id: UUID,
         *,
         lease_expires_at: datetime,
+        runtime_state: Optional[ResourceRequestRuntimeState] = None,
     ) -> RMResourceRequestResponse:
         """Renew a runtime Resource Manager request lease.
 
         Args:
             request_id: Runtime request ID.
             lease_expires_at: Renewed lease expiration timestamp.
+            runtime_state: Optional owner-reported runtime state.
 
         Returns:
             The renewed runtime request.
@@ -294,6 +297,7 @@ class ResourceManagerClient:
             RMResourceRequestResponse,
             json=RMResourceRequestRenewalRequest(
                 lease_expires_at=lease_expires_at,
+                runtime_state=runtime_state,
             ),
         )
 
