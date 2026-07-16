@@ -9937,11 +9937,14 @@ class SqlZenStore(BaseZenStore):
         Raises:
             IllegalOperationError: If the secret is owned by a webhook.
         """
-        webhook_id = session.exec(
-            select(WebhookIntegrationSchema.id).where(
-                WebhookIntegrationSchema.secret_id == secret_id
-            )
-        ).first()
+        # Avoid flushing pending resource deletions before the secrets store,
+        # which may use a separate connection to the same SQLite database.
+        with session.no_autoflush:
+            webhook_id = session.exec(
+                select(WebhookIntegrationSchema.id).where(
+                    WebhookIntegrationSchema.secret_id == secret_id
+                )
+            ).first()
         if webhook_id is not None:
             raise IllegalOperationError(
                 f"Cannot delete secret {secret_id}: it is owned by webhook "
