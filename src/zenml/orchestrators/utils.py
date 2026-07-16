@@ -19,6 +19,8 @@ import shlex
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, cast
 from uuid import UUID
 
+import yaml
+
 from zenml.client import Client
 from zenml.config.global_config import (
     GlobalConfiguration,
@@ -282,6 +284,31 @@ def shell_join(command: List[str]) -> str:
         The command tokens joined into a single shell-escaped string.
     """
     return shlex.join(command)
+
+
+def dump_compose_yaml(compose: Dict[str, Any]) -> str:
+    """Serialize a Docker Compose definition to YAML safe for ``compose up``.
+
+    Docker Compose interpolates variables (``$VAR``, ``${VAR}``) across the
+    whole file before creating containers, using ``$$`` as the literal-``$``
+    escape. ZenML generates Compose files from already-resolved values (step
+    environments, secrets, bind-mount paths), none of which are meant to be
+    interpolated. Left unescaped, a ``$`` in such a value is silently mangled
+    (``pa$$word`` -> ``pa$word``) or, for forms like ``${X:?}``, aborts
+    ``compose up`` entirely. Escaping every ``$`` in the serialized document
+    makes each value round-trip verbatim, mirroring what Compose's own
+    serializer emits.
+
+    Args:
+        compose: The Docker Compose definition.
+
+    Returns:
+        YAML text ready to write to a ``docker-compose.yml``.
+    """
+    yaml_text: str = yaml.dump(
+        compose, default_flow_style=False, sort_keys=False
+    )
+    return yaml_text.replace("$", "$$")
 
 
 class register_artifact_store_filesystem:

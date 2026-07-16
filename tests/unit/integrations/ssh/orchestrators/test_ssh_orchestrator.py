@@ -223,6 +223,51 @@ class TestStaticSubmit:
         }
         assert names1.isdisjoint(names2)
 
+    def test_env_values_with_dollar_are_escaped_for_compose(self) -> None:
+        """A step env value containing ``$`` must not be interpolated.
+
+        Compose interpolates ``$VAR``/``${VAR}`` across the whole file before
+        creating containers. Since ZenML writes already-resolved values
+        (secrets included), a raw ``$`` would be silently mangled or, for
+        forms like ``${X:?}``, abort ``docker compose up``. The uploaded file
+        must escape ``$`` so every value round-trips verbatim.
+        """
+        orch = _make_orchestrator()
+        snap = _fake_snapshot({"only": _fake_step()})
+        run = MagicMock()
+        run.id = uuid4()
+        hostile = {
+            "DB_PASSWORD": "pa$$word",
+            "API_KEY": "abc$UNSET",
+            "HARDFAIL": "x${MISSING:?boom}y",
+        }
+        with (
+            _patched_ssh() as ssh,
+            patch.object(orch, "get_image", return_value="img"),
+            patch.object(
+                orch, "get_settings", return_value=SSHOrchestratorSettings()
+            ),
+        ):
+            orch.submit_pipeline(
+                snapshot=snap,
+                stack=MagicMock(),
+                base_environment={},
+                step_environments={"only": dict(hostile)},
+                placeholder_run=run,
+            )
+        raw_yaml = next(
+            call.args[1]
+            for call in ssh.put_text.call_args_list
+            if call.args[0].endswith("docker-compose.yml")
+        )
+        # No lone "$" survives in the uploaded file.
+        assert "$" not in raw_yaml.replace("$$", "")
+        # After Compose collapses "$$" -> "$", the values are byte-identical.
+        services = yaml.safe_load(raw_yaml.replace("$$", "$"))["services"]
+        env = next(iter(services.values()))["environment"]
+        for key, value in hostile.items():
+            assert env[key] == value
+
     def test_compose_up_invoked(self) -> None:
         orch = _make_orchestrator()
         snap = _fake_snapshot({"only": _fake_step()})
