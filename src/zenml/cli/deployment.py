@@ -273,7 +273,7 @@ def provision_deployment(
             if dashboard_url:
                 cli_utils.declare(
                     f"\nView in ZenML Cloud: [link]{dashboard_url}[/link]",
-                    no_wrap=True,
+                    soft_wrap=True,
                 )
 
 

@@ -67,7 +67,14 @@ _PENDING_STATUSES = frozenset({RunAIWorkloadStatus.PENDING})
 
 
 def _parse_runai_status(status: str) -> Optional[RunAIWorkloadStatus]:
-    """Parse a Run:AI status string into a known workload status."""
+    """Parse a Run:AI status string into a known workload status.
+
+    Args:
+        status: The Run:AI workload status string.
+
+    Returns:
+        The parsed workload status, or `None` if the status is unknown.
+    """
     if not status:
         return None
 

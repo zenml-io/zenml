@@ -65,7 +65,7 @@ export ZENML_ANALYTICS_OPT_IN=false
 
 ## Debug mode
 
-Setting to `true` switches to developer mode:
+Setting to `true` switches to developer mode. This redirects all ZenML analytics events to the development ZenML analytics server instead of the official ZenML analytics server. Should not be used in production environments.
 
 ```bash
 export ZENML_DEBUG=true

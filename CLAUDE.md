@@ -73,7 +73,9 @@ Note: The MCP server indexes the latest released docs, not the develop branch. F
 
 ### Python Standards
 - Use Python 3.10+ compatible code
-- Follow Google Python style for docstrings
+- Follow Google Python style for docstrings. Include `Args`, `Returns`,
+  `Yields`, and `Raises` sections whenever the function contract requires them;
+  do not use a summary-only docstring to omit applicable sections.
 - Type hint all function parameters and return values
 - Use descriptive variable names and documentation
 - Keep function size manageable (aim for < 50 lines) though there are exceptions
@@ -117,7 +119,15 @@ When deciding whether to place a helper function in a utils file or on a class, 
 # This is a @staticmethod on BaseOrchestrator, not a standalone util
 @staticmethod
 def requires_resources_in_orchestration_environment(step: "Step") -> bool:
-    """Checks if the orchestrator should run this step on special resources."""
+    """Check whether a step needs special orchestration resources.
+
+    Args:
+        step: The step to check.
+
+    Returns:
+        Whether the step needs special resources in the orchestration
+        environment.
+    """
     if step.config.step_operator:
         return False
     return not step.config.resource_settings.empty
@@ -208,6 +218,7 @@ Router, service, error-handling, and validation conventions for the server live 
 
 ## Dependencies & Runtime Constraints
 - Align contributions with the FastAPI + Pydantic v2 + SQLAlchemy 2.0 + SQLModel stack defined for ZenML OSS; confirm any new dependency in `pyproject.toml` before adoption.
+- When changing server framework (e.g., `fastapi`) or database library versions, check whether related OpenTelemetry SDK, exporter, and instrumentation dependencies also need updates. Breaking changes in instrumented libraries can require coordinated OTel updates. Keep OTel SDK/exporter versions aligned with the matching OpenTelemetry instrumentation beta line.
 - The OSS runtime forbids async I/O in Claude-authored code even though FastAPI supports it—implement synchronous `def` handlers and delegate background/long-running work to workers or dependency-injected services; this supersedes generic async advice found elsewhere.
 - Prefer dependency injection over module-level singletons for clients, caches, and repositories so state management stays testable.
 - Cache static or frequently accessed data (e.g., dependency-scoped in-memory caches) and lazy-load heavyweight resources to control cold-start latency.
@@ -226,13 +237,19 @@ Router, service, error-handling, and validation conventions for the server live 
 
 ### Environment Variables
 - Several environment variables are useful during ZenML development:
-  - `ZENML_DEBUG=true`: Enables verbose debug logging
-  - `ZENML_LOGGING_VERBOSITY=INFO`: Controls logging verbosity
+  - `ZENML_LOGGING_VERBOSITY=DEBUG`: Controls logging verbosity
   - `ZENML_ANALYTICS_OPT_IN=false`: Disables analytics during development
   - `MLSTACKS_ANALYTICS_OPT_OUT=true`: Disables MLStacks analytics
   - `AUTO_OPEN_DASHBOARD=false`: Prevents automatic dashboard opening
   - `ZENML_ENABLE_RICH_TRACEBACK=false`: Disables rich traceback formatting
   - `TOKENIZERS_PARALLELISM=false`: Avoids tokenizers parallelism warnings
+- Always set the following environment variables:
+  - `ZENML_ANALYTICS_OPT_IN=false`: Disables analytics during development
+  - `ZENML_DEBUG=true`: Uses the development ZenML analytics server to avoid
+    sending analytics to the official ZenML analytics server (IMPORTANT!). This
+    must be set even if `ZENML_ANALYTICS_OPT_IN=true` because in a client-server
+    setup, the server controls the client-side analytics opt-in status.
+
 
 ### Branch Management
 - **IMPORTANT**: `develop` is our primary working branch, NOT `main`

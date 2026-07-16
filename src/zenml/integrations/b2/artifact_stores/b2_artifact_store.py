@@ -69,7 +69,15 @@ class B2ArtifactStore(S3ArtifactStore):
     def _with_b2_user_agent(
         config_kwargs: Optional[Dict[str, Any]],
     ) -> Dict[str, Any]:
-        """Build botocore config kwargs with the B2 user agent suffix."""
+        """Build botocore config kwargs with the B2 user agent suffix.
+
+        Args:
+            config_kwargs: Existing botocore configuration keyword arguments.
+
+        Returns:
+            Botocore configuration keyword arguments containing the B2 user
+            agent suffix.
+        """
         kwargs = config_kwargs.copy() if config_kwargs else {}
         existing_ua = (kwargs.get("user_agent_extra") or "").strip()
         if B2_USER_AGENT not in existing_ua:

@@ -126,24 +126,40 @@ class RunMetadataInterface:
             A dictionary, where the key is the key of the metadata entry
                 and the values represent the latest entry with this key.
         """
-        metadata_collection = self.fetch_metadata_collection(**kwargs)
-        metadata: Dict[str, MetadataType] = {}
+        return resolve_metadata_collection(
+            self.fetch_metadata_collection(**kwargs)
+        )
 
-        for key, values in metadata_collection.items():
-            values = sorted(values, key=lambda x: x.created, reverse=False)
 
-            if all(isinstance(item.value, dict) for item in values):
-                # All metadata values for this key are dictionaries, so we can
-                # merge them into a single dictionary
-                metadata[key] = {
-                    k: v
-                    for item in values
-                    for k, v in item.value.items()  # type: ignore[union-attr]
-                }
-            else:
-                metadata[key] = values[-1].value
+def resolve_metadata_collection(
+    metadata_collection: Dict[str, List[RunMetadataEntry]],
+) -> Dict[str, MetadataType]:
+    """Resolves a metadata collection to the latest entry per key.
 
-        return metadata
+    Args:
+        metadata_collection: The metadata collection to resolve.
+
+    Returns:
+        A dictionary, where the key is the key of the metadata entry
+            and the values represent the latest entry with this key.
+    """
+    metadata: Dict[str, MetadataType] = {}
+
+    for key, values in metadata_collection.items():
+        values = sorted(values, key=lambda x: x.created, reverse=False)
+
+        if all(isinstance(item.value, dict) for item in values):
+            # All metadata values for this key are dictionaries, so we can
+            # merge them into a single dictionary
+            metadata[key] = {
+                k: v
+                for item in values
+                for k, v in item.value.items()  # type: ignore[union-attr]
+            }
+        else:
+            metadata[key] = values[-1].value
+
+    return metadata
 
 
 def get_resource_type_name(schema_class: Type[BaseSchema]) -> str:

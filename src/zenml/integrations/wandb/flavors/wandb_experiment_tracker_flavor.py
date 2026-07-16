@@ -152,7 +152,15 @@ class WandbExperimentTrackerSettings(BaseSettings):
     def _validate_wandb_init_settings(
         self,
     ) -> "WandbExperimentTrackerSettings":
-        """Validate Wandb identity and config settings."""
+        """Validate Wandb identity and config settings.
+
+        Returns:
+            The validated Wandb settings.
+
+        Raises:
+            ValueError: If identity, resume, run config, or initialization
+                settings conflict.
+        """
         if self.run_id and self.run_id_strategy != "wandb_generated":
             raise ValueError(
                 "The 'run_id' setting cannot be combined with a "
