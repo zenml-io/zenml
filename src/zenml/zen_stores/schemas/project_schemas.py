@@ -13,10 +13,12 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for projects."""
 
+import json
 from typing import TYPE_CHECKING, Any, List
 
-from sqlalchemy import UniqueConstraint
-from sqlmodel import Relationship
+from sqlalchemy import Column, Text, UniqueConstraint, text
+from sqlalchemy.dialects.mysql import MEDIUMTEXT
+from sqlmodel import Field, Relationship
 
 from zenml.enums import VisualizationResourceTypes
 from zenml.models import (
@@ -62,6 +64,14 @@ class ProjectSchema(NamedSchema, table=True):
 
     display_name: str
     description: str
+    project_metadata: str = Field(
+        default="{}",
+        sa_column=Column(
+            Text().with_variant(MEDIUMTEXT, "mysql"),
+            nullable=False,
+            server_default=text("('{}')"),
+        ),
+    )
 
     pipelines: List["PipelineSchema"] = Relationship(
         back_populates="project",
@@ -147,6 +157,7 @@ class ProjectSchema(NamedSchema, table=True):
             name=project.name,
             description=project.description,
             display_name=project.display_name,
+            project_metadata=json.dumps(project.project_metadata or {}),
         )
 
     def update(self, project_update: ProjectUpdate) -> "ProjectSchema":
@@ -162,7 +173,11 @@ class ProjectSchema(NamedSchema, table=True):
         for field, value in project_update.model_dump(
             exclude_unset=True
         ).items():
-            setattr(self, field, value)
+            if field == "project_metadata":
+                if value is not None:
+                    self.project_metadata = json.dumps(value)
+            else:
+                setattr(self, field, value)
 
         self.updated = utc_now()
         return self
@@ -188,6 +203,7 @@ class ProjectSchema(NamedSchema, table=True):
         if include_metadata:
             metadata = ProjectResponseMetadata(
                 description=self.description,
+                project_metadata=json.loads(self.project_metadata),
             )
         return ProjectResponse(
             id=self.id,
