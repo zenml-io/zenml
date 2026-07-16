@@ -15,8 +15,9 @@ down_revision = "b6f2a8d9c3e1"
 branch_labels = None
 depends_on = None
 
-PROJECT_METADATA_TYPE = sa.Text().with_variant(mysql.MEDIUMTEXT, "mysql")
-PROJECT_METADATA_DEFAULT = sa.text("('{}')")
+PROJECT_METADATA_TYPE = sa.String(length=16777215).with_variant(
+    mysql.MEDIUMTEXT, "mysql"
+)
 
 
 def upgrade() -> None:
@@ -26,8 +27,7 @@ def upgrade() -> None:
             sa.Column(
                 "project_metadata",
                 PROJECT_METADATA_TYPE,
-                nullable=False,
-                server_default=PROJECT_METADATA_DEFAULT,
+                nullable=True,
             )
         )
 
