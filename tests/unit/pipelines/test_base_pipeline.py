@@ -112,6 +112,7 @@ def test_spec_compilation(local_stack):
                     "upstream_steps": [],
                     "invocation_id": "s1",
                     "parameter_spec": {},
+                    "input_schema": {},
                 },
                 {
                     "source": "tests.unit.pipelines.test_base_pipeline.s2",
@@ -124,6 +125,15 @@ def test_spec_compilation(local_stack):
                     },
                     "invocation_id": "s2",
                     "parameter_spec": {},
+                    "input_schema": {
+                        "additionalProperties": False,
+                        "properties": {
+                            "input": {"title": "Input", "type": "integer"}
+                        },
+                        "required": ["input"],
+                        "title": "S2Inputs",
+                        "type": "object",
+                    },
                 },
             ],
         }

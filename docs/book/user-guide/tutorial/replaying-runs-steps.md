@@ -146,30 +146,36 @@ training_pipeline.replay(
 ```
 {% endtab %}
 {% tab title="From the server" %}
-For server-side replay, `step_input_overrides` values can be either:
+For server-side replay, use `step_inputs`. Each override is either:
 
-- **UUIDs** of existing artifact versions (no new upload), or
-- **inline values** (server uploads them to the active artifact store before
-  replay starts).
+- an **artifact version reference** (`{"artifact_version_id": ...}`), which
+  feeds the referenced artifact to the step, or
+- a **literal value** (`{"value": ...}`), which is passed to the step function
+  directly.
 
 ```python
 from zenml import Client
-from uuid import UUID
 
 Client().replay_pipeline_run(
     name_id_or_prefix="run_name_or_id",
     run_configuration={
-        "step_input_overrides": {
+        "step_inputs": {
             "trainer": {
-                # Existing artifact version UUID: no upload
-                "training_data": UUID("34e8ef74-32b9-4e58-ab8b-99ee133f4f89"),
-                # Inline value: uploaded by the server
-                "learning_rate": 0.01,
+                # Existing artifact version: no upload
+                "training_data": {
+                    "artifact_version_id": "34e8ef74-32b9-4e58-ab8b-99ee133f4f89"
+                },
+                # Literal value: passed to the step function directly
+                "learning_rate": {"value": 0.01},
             }
         }
     },
 )
 ```
+
+The deprecated `step_input_overrides` field is still supported. Its values
+are either UUIDs of existing artifact versions or inline values that the
+server uploads to the active artifact store before replay starts.
 {% endtab %}
 {% endtabs %}
 
@@ -208,9 +214,9 @@ from zenml import Client
 Client().replay_pipeline_run(
     name_id_or_prefix="run_name_or_id",
     run_configuration={
-        "step_default_input_overrides": {
+        "step_default_inputs": {
             "llm_call": {
-                "model": "claude-fable-5"
+                "model": {"value": "claude-fable-5"}
             }
         }
     },

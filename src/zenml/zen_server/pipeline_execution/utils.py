@@ -18,7 +18,7 @@ import os
 import sys
 import threading
 from concurrent.futures import Future, ThreadPoolExecutor
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 from uuid import UUID
 
 from packaging import version
@@ -27,12 +27,18 @@ from zenml import LogsRequest, TriggerExecutionInfo
 from zenml.analytics.enums import AnalyticsEvent
 from zenml.analytics.utils import track_handler
 from zenml.config.base_settings import BaseSettings
+from zenml.config.execution_overrides import ExecutionOverrides
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import (
     PipelineRunConfiguration,
     ReplayRunConfiguration,
 )
-from zenml.config.step_configurations import Step, StepConfigurationUpdate
+from zenml.config.step_configurations import (
+    InputSourceOverride,
+    Step,
+    StepConfigurationUpdate,
+    get_artifact_version_input_sources,
+)
 from zenml.constants import (
     ENV_ZENML_ACTIVE_PROJECT_ID,
     ENV_ZENML_ACTIVE_STACK_ID,
@@ -795,6 +801,118 @@ def generate_dockerfile(
     return "\n".join(lines)
 
 
+def _get_execution_overrides(
+    config: PipelineRunConfiguration,
+) -> Optional[ExecutionOverrides]:
+    """Get the execution overrides for a snapshot request.
+
+    Args:
+        config: The run configuration.
+
+    Returns:
+        The execution overrides.
+    """
+    if not isinstance(config, ReplayRunConfiguration):
+        return None
+
+    input_overrides: Dict[str, Dict[str, InputSourceOverride]] = {}
+    default_input_overrides: Dict[str, Dict[str, InputSourceOverride]] = {}
+
+    # Legacy override fields only contain artifact version IDs. Raw values
+    # have been uploaded as artifact versions at this point.
+    for legacy_overrides, overrides in (
+        (config.step_input_overrides, input_overrides),
+        (config.step_default_input_overrides, default_input_overrides),
+    ):
+        for key, sources in (legacy_overrides or {}).items():
+            overrides[key] = get_artifact_version_input_sources(sources)
+
+    for new_overrides, overrides in (
+        (config.step_inputs, input_overrides),
+        (config.step_default_inputs, default_input_overrides),
+    ):
+        for key, sources in (new_overrides or {}).items():
+            overrides.setdefault(key, {}).update(sources)
+
+    if not (
+        config.steps_to_skip
+        or config.skip_successful_steps
+        or input_overrides
+        or default_input_overrides
+    ):
+        return None
+
+    return ExecutionOverrides(
+        steps_to_skip=config.steps_to_skip or set(),
+        skip_successful_steps=config.skip_successful_steps or False,
+        input_overrides=input_overrides,
+        default_input_overrides=default_input_overrides,
+    )
+
+
+def _validate_execution_overrides(
+    steps: Dict[str, Step],
+    execution_overrides: ExecutionOverrides,
+) -> None:
+    """Validate execution overrides against the compiled step configs.
+
+    Args:
+        steps: The compiled step configs, keyed by invocation ID.
+        execution_overrides: The execution overrides to validate.
+
+    Raises:
+        ValueError: If an input override references an unknown invocation,
+            step name or input, or targets an explicitly skipped invocation.
+    """
+    for (
+        invocation_id,
+        overrides,
+    ) in execution_overrides.input_overrides.items():
+        step = steps.get(invocation_id)
+        if not step:
+            raise ValueError(
+                "Input overrides reference unknown step invocation "
+                f"`{invocation_id}`."
+            )
+
+        if invocation_id in execution_overrides.steps_to_skip:
+            raise ValueError(
+                "Input overrides reference explicitly skipped step "
+                f"invocation `{invocation_id}`."
+            )
+
+        if invalid_keys := overrides.keys() - step.available_input_keys:
+            raise ValueError(
+                "Input overrides reference unknown inputs "
+                f"{invalid_keys} for step invocation `{invocation_id}`."
+            )
+
+    default_input_overrides = execution_overrides.default_input_overrides
+    if not default_input_overrides:
+        return
+
+    available_keys_by_step_name: Dict[str, Set[str]] = {}
+    for step in steps.values():
+        available_keys_by_step_name.setdefault(step.config.name, set()).update(
+            step.available_input_keys
+        )
+
+    for step_name, overrides in default_input_overrides.items():
+        if step_name not in available_keys_by_step_name:
+            raise ValueError(
+                "Default input overrides reference unknown step "
+                f"`{step_name}`."
+            )
+
+        if invalid_keys := (
+            overrides.keys() - available_keys_by_step_name[step_name]
+        ):
+            raise ValueError(
+                "Default input overrides reference unknown inputs "
+                f"{invalid_keys} for step `{step_name}`."
+            )
+
+
 def snapshot_request_from_source_snapshot(
     source_snapshot: PipelineSnapshotResponse,
     config: PipelineRunConfiguration,
@@ -819,9 +937,19 @@ def snapshot_request_from_source_snapshot(
     assert source_snapshot.stack
     assert source_snapshot.build
 
-    pipeline_update_exclude = {"name"}
+    # Execution overrides are stored on the snapshot itself instead of the
+    # pipeline configuration.
+    pipeline_update_exclude = {
+        "name",
+        "steps_to_skip",
+        "skip_successful_steps",
+        "step_input_overrides",
+        "step_default_input_overrides",
+    }
     if not source_snapshot.is_dynamic:
         pipeline_update_exclude.add("parameters")
+
+    execution_overrides = _get_execution_overrides(config=config)
 
     if config.settings:
         settings_utils.normalize_stack_component_setting_keys(
@@ -872,6 +1000,10 @@ def snapshot_request_from_source_snapshot(
             exclude_unset=True,
             exclude_none=True,
         )
+        # Parameter updates are applied to the literal input sources of the
+        # step config instead of the parameters, which only mirror the
+        # literal input values for display purposes.
+        parameter_update = step_update.pop("parameters", None)
         if step_secrets := step_update.get("secrets", []):
             step_update["secrets"] = [
                 zen_store().get_secret_by_name_or_id(secret).id
@@ -880,32 +1012,32 @@ def snapshot_request_from_source_snapshot(
         step_config = pydantic_utils.update_model(
             step.step_config_overrides, step_update
         )
+
+        if parameter_update:
+            required_parameters = set(step.config.literal_input_values)
+            unknown_parameters = set(parameter_update) - required_parameters
+            if unknown_parameters:
+                raise ValueError(
+                    "Run configuration contains the following unknown "
+                    f"parameters for step {invocation_id}: "
+                    f"{unknown_parameters}."
+                )
+
+        step_config = step_config.with_literal_inputs(parameter_update or {})
         merged_step_config = step_config.apply_pipeline_configuration(
             pipeline_configuration,
             exclude_hook_sources=source_snapshot.is_dynamic,
         )
 
-        required_parameters = set(step.config.parameters)
-        configured_parameters = set(step_config.parameters)
-
-        unknown_parameters = configured_parameters - required_parameters
-        if unknown_parameters:
-            raise ValueError(
-                "Run configuration contains the following unknown "
-                f"parameters for step {invocation_id}: {unknown_parameters}."
-            )
-
-        missing_parameters = required_parameters - configured_parameters
-        if missing_parameters:
-            raise ValueError(
-                "Run configuration is missing the following required "
-                f"parameters for step {invocation_id}: {missing_parameters}."
-            )
-
         steps[invocation_id] = Step(
             spec=step.spec,
             config=merged_step_config,
             step_config_overrides=step_config,
+        )
+
+    if not source_snapshot.is_dynamic and execution_overrides:
+        _validate_execution_overrides(
+            steps=steps, execution_overrides=execution_overrides
         )
 
     code_reference_request = None
@@ -940,6 +1072,7 @@ def snapshot_request_from_source_snapshot(
         run_name_template=config.run_name or source_snapshot.run_name_template,
         pipeline_configuration=pipeline_configuration,
         step_configurations=steps,
+        execution_overrides=execution_overrides,
         client_environment={},
         client_version=zenml_version,
         server_version=zenml_version,

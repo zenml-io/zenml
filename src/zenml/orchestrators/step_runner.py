@@ -41,6 +41,7 @@ from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.in_memory_materializer import InMemoryMaterializer
 from zenml.models.v2.core.step_run import (
     StepRunInputResponse,
+    StepRunInputValue,
     StepRunUpdate,
 )
 from zenml.orchestrators.publish_utils import (
@@ -191,6 +192,7 @@ class StepRunner:
                 function_params = self._parse_inputs(
                     signature=resolved_signature,
                     input_artifacts=input_artifacts,
+                    input_values=step_run.input_values,
                 )
 
                 # Get all step environment variables. For most orchestrators, the
@@ -483,12 +485,14 @@ class StepRunner:
         self,
         signature: inspect.Signature,
         input_artifacts: Dict[str, List["StepRunInputResponse"]],
+        input_values: Dict[str, "StepRunInputValue"],
     ) -> Dict[str, Any]:
         """Parses the inputs for a step entrypoint function.
 
         Args:
             signature: The resolved signature of the step entrypoint function.
             input_artifacts: The input artifact versions of the step.
+            input_values: The resolved non-artifact input values of the step.
 
         Raises:
             RuntimeError: If a function argument value is missing.
@@ -563,8 +567,8 @@ class StepRunner:
                         self._load_input_artifact(artifact, item_arg_type)
                         for artifact in artifact_list
                     )
-            elif arg in self.configuration.parameters:
-                function_params[arg] = self.configuration.parameters[arg]
+            elif arg in input_values:
+                function_params[arg] = input_values[arg].value
             else:
                 raise RuntimeError(
                     f"Unable to find value for step function argument `{arg}`."

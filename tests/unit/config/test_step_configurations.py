@@ -197,3 +197,25 @@ def test_from_dict_excludes_hook_sources():
 
     for field in _HOOK_SOURCES:
         assert getattr(step.config, field) is None
+
+
+def test_step_spec_input_schema_equality():
+    """Tests the step spec equality operator regarding the input schema."""
+    assert StepSpec(
+        source="src",
+        upstream_steps=[],
+        input_schema={"type": "object"},
+    ) == StepSpec(
+        source="src",
+        upstream_steps=[],
+        input_schema={"type": "object"},
+    )
+    assert StepSpec(
+        source="src",
+        upstream_steps=[],
+        input_schema={"type": "object"},
+    ) != StepSpec(
+        source="src",
+        upstream_steps=[],
+        input_schema={},
+    )

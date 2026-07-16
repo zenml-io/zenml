@@ -175,6 +175,7 @@ class Compiler:
                 pipeline_spec=pipeline_spec
             ),
             pipeline_spec=pipeline_spec,
+            execution_overrides=pipeline._execution_overrides,
         )
 
         logger.debug("Compiled pipeline snapshot: %s", snapshot)
@@ -484,6 +485,7 @@ class Compiler:
             invocation_id=invocation.id,
             enable_heartbeat=enable_heartbeat,
             parameter_spec=invocation.step._compute_parameter_schema(),
+            input_schema=invocation.step._compute_input_schema(),
         )
 
     @staticmethod

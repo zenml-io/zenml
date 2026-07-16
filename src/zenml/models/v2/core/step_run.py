@@ -16,6 +16,7 @@
 from datetime import datetime, timedelta
 from typing import (
     TYPE_CHECKING,
+    Any,
     ClassVar,
     Dict,
     List,
@@ -102,6 +103,19 @@ class StepRunInputResponse(ArtifactVersionResponse):
         )
 
 
+class StepRunInputValue(BaseModel):
+    """Resolved value of a non-artifact step run input."""
+
+    value: Any = Field(title="The resolved input value.")
+    source_type: str = Field(
+        title="The type of the input source that produced the value.",
+    )
+    overridden: bool = Field(
+        title="Whether the value comes from a user-provided input override.",
+        default=False,
+    )
+
+
 # ------------------ Request Model ------------------
 
 
@@ -159,6 +173,11 @@ class StepRunRequest(ProjectScopedRequest):
     )
     inputs: Dict[str, List[UUID]] = Field(
         title="The IDs of the input artifact versions of the step run.",
+        default_factory=dict,
+    )
+    input_values: Dict[str, StepRunInputValue] = Field(
+        title="The resolved values of the non-artifact inputs of the step "
+        "run.",
         default_factory=dict,
     )
     outputs: Dict[str, List[UUID]] = Field(
@@ -328,6 +347,11 @@ class StepRunResponseMetadata(ProjectScopedResponseMetadata):
     run_metadata: Dict[str, MetadataType] = Field(
         title="Metadata associated with this step run.",
         default={},
+    )
+    input_values: Dict[str, StepRunInputValue] = Field(
+        title="The resolved values of the non-artifact inputs of the step "
+        "run.",
+        default_factory=dict,
     )
 
 
@@ -721,6 +745,15 @@ class StepRunResponse(
             the value of the property.
         """
         return self.get_metadata().run_metadata
+
+    @property
+    def input_values(self) -> Dict[str, StepRunInputValue]:
+        """The `input_values` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().input_values
 
     @property
     def log_collection(self) -> Optional[List["LogsResponse"]]:

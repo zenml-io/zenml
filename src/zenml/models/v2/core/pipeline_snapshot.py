@@ -20,18 +20,24 @@ from typing import (
     Dict,
     List,
     Optional,
+    Set,
     Type,
     TypeVar,
     Union,
 )
 from uuid import UUID
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
+from zenml.config.execution_overrides import ExecutionOverrides
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
-from zenml.config.step_configurations import Step
+from zenml.config.step_configurations import (
+    InputSourceOverride,
+    Step,
+    get_artifact_version_input_sources,
+)
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.models.v2.base.base import BaseUpdate, BaseZenModel
@@ -112,6 +118,70 @@ class PipelineSnapshotBase(BaseZenModel):
         default=False,
         title="Whether this is a snapshot of a dynamic pipeline.",
     )
+    execution_overrides: Optional[ExecutionOverrides] = Field(
+        default=None,
+        title="Execution overrides for runs of the snapshot.",
+    )
+
+    @model_validator(mode="after")
+    def _migrate_legacy_execution_overrides(self) -> "PipelineSnapshotBase":
+        """Move legacy pipeline configuration fields to execution overrides.
+
+        Old clients store the execution overrides in the pipeline
+        configuration of the snapshot.
+
+        Returns:
+            The model with migrated execution overrides.
+        """
+        config = self.pipeline_configuration
+        if not (
+            config.steps_to_skip
+            or config.skip_successful_steps
+            or config.step_input_overrides
+            or config.step_default_input_overrides
+        ):
+            return self
+
+        legacy_overrides = ExecutionOverrides(
+            steps_to_skip=config.steps_to_skip,
+            skip_successful_steps=config.skip_successful_steps,
+            input_overrides={
+                invocation_id: get_artifact_version_input_sources(overrides)
+                for invocation_id, overrides in config.step_input_overrides.items()
+            },
+            default_input_overrides={
+                step_name: get_artifact_version_input_sources(overrides)
+                for step_name, overrides in config.step_default_input_overrides.items()
+            },
+        )
+
+        if self.execution_overrides:
+            self.execution_overrides = ExecutionOverrides(
+                steps_to_skip=legacy_overrides.steps_to_skip
+                | self.execution_overrides.steps_to_skip,
+                skip_successful_steps=legacy_overrides.skip_successful_steps
+                or self.execution_overrides.skip_successful_steps,
+                input_overrides={
+                    **legacy_overrides.input_overrides,
+                    **self.execution_overrides.input_overrides,
+                },
+                default_input_overrides={
+                    **legacy_overrides.default_input_overrides,
+                    **self.execution_overrides.default_input_overrides,
+                },
+            )
+        else:
+            self.execution_overrides = legacy_overrides
+
+        self.pipeline_configuration = config.model_copy(
+            update={
+                "steps_to_skip": set(),
+                "skip_successful_steps": False,
+                "step_input_overrides": {},
+                "step_default_input_overrides": {},
+            }
+        )
+        return self
 
 
 class PipelineSnapshotRequest(PipelineSnapshotBase, ProjectScopedRequest):
@@ -308,6 +378,10 @@ class PipelineSnapshotResponseMetadata(ProjectScopedResponseMetadata):
     )
     config_schema: Optional[Dict[str, Any]] = Field(
         default=None, title="Run configuration schema."
+    )
+    execution_overrides: Optional[ExecutionOverrides] = Field(
+        default=None,
+        title="Execution overrides for runs of the snapshot.",
     )
 
 
@@ -545,6 +619,65 @@ class PipelineSnapshotResponse(
             the value of the property.
         """
         return self.get_metadata().config_template
+
+    @property
+    def execution_overrides(self) -> Optional[ExecutionOverrides]:
+        """The `execution_overrides` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().execution_overrides
+
+    @property
+    def steps_to_skip(self) -> Set[str]:
+        """Invocation IDs of steps to skip for runs of the snapshot.
+
+        Returns:
+            The invocation IDs of steps to skip.
+        """
+        if self.execution_overrides:
+            return self.execution_overrides.steps_to_skip
+
+        return set()
+
+    @property
+    def skip_successful_steps(self) -> bool:
+        """Whether to skip successful steps of the original run.
+
+        Returns:
+            Whether to skip successful steps of the original run.
+        """
+        if self.execution_overrides:
+            return self.execution_overrides.skip_successful_steps
+
+        return False
+
+    def get_input_overrides(
+        self,
+        invocation_id: str,
+        step_name: str,
+        include_step_defaults: bool = True,
+    ) -> Dict[str, InputSourceOverride]:
+        """Input source overrides for an invocation.
+
+        Args:
+            invocation_id: The invocation ID of the step.
+            step_name: The name of the step.
+            include_step_defaults: Whether to include the step-wide default
+                overrides.
+
+        Returns:
+            The input source overrides for the invocation.
+        """
+        if self.execution_overrides:
+            return self.execution_overrides.get_input_overrides(
+                invocation_id=invocation_id,
+                step_name=step_name,
+                include_step_defaults=include_step_defaults,
+            )
+
+        return {}
 
     @property
     def pipeline(self) -> PipelineResponse:
