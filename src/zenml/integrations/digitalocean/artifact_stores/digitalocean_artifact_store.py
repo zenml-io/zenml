@@ -15,10 +15,10 @@
 
 DigitalOcean Spaces exposes an S3-compatible API that behaves identically to S3
 for the read/write operations ZenML needs, so this class subclasses
-:class:`S3ArtifactStore`. The only Spaces-specific behavior is the endpoint
-URL, which is derived from the configured ``region`` at runtime rather than
-persisted in the config model, so that a later region update is never shadowed
-by a stale persisted endpoint.
+:class:`S3ArtifactStore`. The Spaces endpoint URL is derived from the
+configured ``region`` at runtime unless an explicit ``endpoint_url`` is
+provided through ``client_kwargs``. Keeping the derived endpoint out of the
+persisted config avoids stale endpoint values when the region changes.
 """
 
 from typing import Any, Dict, cast
