@@ -23,7 +23,7 @@ zenml integration install digitalocean -y
 You will also need a Space (bucket) and a set of Spaces access keys:
 
 1. **Create a Space.** In the [DigitalOcean control panel](https://cloud.digitalocean.com/), go to **Spaces Object Storage** and create a bucket. Note the bucket name (this becomes the `s3://<bucket-name>` path used by ZenML) and the region slug shown in the bucket's endpoint (e.g. `nyc3`, `ams3`, `fra1`).
-2. **Generate Spaces access keys.** Go to **API > Spaces Keys** and generate a new key pair. Spaces keys are separate credentials from your DigitalOcean API token; copy both the access key and the secret when they are displayed.
+2. **Generate Spaces access keys.** Go to **Storage > Spaces Object Storage > Access Keys** and generate a new key pair. Spaces keys are separate credentials from your DigitalOcean API token; copy both the access key and the secret when they are displayed.
 
 ### How do you use it?
 
