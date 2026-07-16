@@ -52,6 +52,11 @@ from zenml.orchestrators.publish_utils import (
 from zenml.orchestrators.utils import (
     is_setting_enabled,
 )
+from zenml.status_sources import (
+    STEP_RUNNER_REMOTE_STOP,
+    STEP_RUNNER_SUCCESS,
+    STEP_RUNNER_USER_CODE_FAILED,
+)
 from zenml.steps.heartbeat import (
     StepHeartBeatTerminationException,
     StepHeartbeatWorker,
@@ -265,6 +270,7 @@ class StepRunner:
                                 step_run_id=step_run_info.step_run_id,
                                 step_run_update=StepRunUpdate(
                                     status=ExecutionStatus.STOPPING,
+                                    status_source=STEP_RUNNER_REMOTE_STOP,
                                 ),
                             )
 
@@ -290,7 +296,8 @@ class StepRunner:
                         )
                         step_exception_info.set(exception_info)
                         step_run = publish_failed_step_run(
-                            step_run_id=step_run_info.step_run_id
+                            step_run_id=step_run_info.step_run_id,
+                            status_source=STEP_RUNNER_USER_CODE_FAILED,
                         )
 
                         # The per-attempt end hook fires before the retry
@@ -394,6 +401,7 @@ class StepRunner:
             publish_successful_step_run(
                 step_run_id=step_run_info.step_run_id,
                 output_artifact_ids=output_artifact_ids,
+                status_source=STEP_RUNNER_SUCCESS,
             )
 
     def _fire_step_hook(

@@ -52,6 +52,16 @@ from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.signal_handler import SignalHandler
 from zenml.orchestrators.step_runner import StepRunner
 from zenml.stack import Stack
+from zenml.status_sources import (
+    STEP_LAUNCHER_CANCELLED_BEFORE_START,
+    STEP_LAUNCHER_INITIAL_STATUS,
+    STEP_LAUNCHER_REMOTE_STEP_FINISHED,
+    STEP_LAUNCHER_REQUEST_POPULATION_FAILED,
+    STEP_LAUNCHER_RESOURCES_ACQUIRED,
+    STEP_LAUNCHER_RUN_CREATED,
+    STEP_LAUNCHER_RUNNER_DIED_FALLBACK,
+    STEP_LAUNCHER_STOPPED_ON_TERMINATION,
+)
 from zenml.steps import StepHeartBeatTerminationException
 from zenml.utils import env_utils, exception_utils, string_utils
 from zenml.utils.logging_utils import (
@@ -203,6 +213,7 @@ class StepLauncher:
                 dynamic_config=dynamic_config,
             )
             step_run_request.status = self._get_initial_step_run_status()
+            step_run_request.status_source = STEP_LAUNCHER_INITIAL_STATUS
             if isinstance(logs_context, LoggingContext):
                 step_run_request.logs = logs_context.log_model.id
 
@@ -213,6 +224,9 @@ class StepLauncher:
                     f"Failed preparing step `{self._invocation_id}`."
                 )
                 step_run_request.status = ExecutionStatus.FAILED
+                step_run_request.status_source = (
+                    STEP_LAUNCHER_REQUEST_POPULATION_FAILED
+                )
                 step_run_request.end_time = utc_now()
                 step_run_request.exception_info = (
                     exception_utils.collect_exception_information(e)
@@ -257,14 +271,18 @@ class StepLauncher:
 
                         if step_run.status == ExecutionStatus.CANCELLING:
                             publish_utils.publish_cancelled_step_run(
-                                step_run_id=step_run.id
+                                step_run_id=step_run.id,
+                                status_source=STEP_LAUNCHER_CANCELLED_BEFORE_START,
                             )
                         elif (
                             isinstance(e, StepHeartBeatTerminationException)
                             or step_run.status == ExecutionStatus.STOPPING
                         ):
                             # Handle as a non-failure as exception is a propagation of graceful termination.
-                            publish_utils.publish_stopped_step_run(step_run.id)
+                            publish_utils.publish_stopped_step_run(
+                                step_run.id,
+                                status_source=STEP_LAUNCHER_STOPPED_ON_TERMINATION,
+                            )
 
                         else:
                             logger.error(
@@ -280,7 +298,8 @@ class StepLauncher:
                                 # Only update the status if the step runner
                                 # somehow failed to do so.
                                 publish_utils.publish_failed_step_run(
-                                    step_run.id
+                                    step_run.id,
+                                    status_source=STEP_LAUNCHER_RUNNER_DIED_FALLBACK,
                                 )
                         raise
                     finally:
@@ -352,6 +371,7 @@ class StepLauncher:
             project=client.active_project.id,
             snapshot=self._snapshot.id,
             status=ExecutionStatus.RUNNING,
+            status_source=STEP_LAUNCHER_RUN_CREATED,
             orchestrator_environment=get_run_environment_dict(),
             start_time=start_time,
             tags=self._snapshot.pipeline_configuration.tags,
@@ -637,6 +657,7 @@ class StepLauncher:
             publish_utils.publish_successful_step_run(
                 step_run_id=step_run_info.step_run_id,
                 output_artifact_ids={},
+                status_source=STEP_LAUNCHER_REMOTE_STEP_FINISHED,
             )
 
     def _cleanup_remote_step(self, step_run: StepRunResponse) -> None:
@@ -790,6 +811,7 @@ class StepLauncher:
                 publish_utils.publish_step_run_status_update(
                     step_run_id=step_run_info.step_run_id,
                     status=ExecutionStatus.RUNNING,
+                    status_source=STEP_LAUNCHER_RESOURCES_ACQUIRED,
                 )
                 return
             elif resource_request.status == ResourceRequestStatus.REJECTED:

@@ -22,6 +22,7 @@ from typing import Any, Set
 from anyio import CapacityLimiter, to_thread
 from fastapi import FastAPI, Request
 from fastapi.responses import PlainTextResponse
+from packaging import version
 from starlette.middleware.base import (
     BaseHTTPMiddleware,
     RequestResponseEndpoint,
@@ -47,6 +48,7 @@ from zenml.logger import (
     get_logging_context,
     logging_context,
 )
+from zenml.status_sources import request_source_info
 from zenml.utils.time_utils import utc_now
 from zenml.zen_server.request_management import RequestContext
 from zenml.zen_server.secure_headers import (
@@ -304,6 +306,23 @@ async def infer_source_context(request: Request, call_next: Any) -> Any:
             f"context: {e}"
         )
         source_context.set(SourceContextTypes.API)
+
+    try:
+        client_version = None
+        user_agent = request.headers.get("User-Agent", "")
+        if user_agent.startswith("zenml/"):
+            try:
+                client_version = str(
+                    version.parse(user_agent.removeprefix("zenml/"))
+                )
+            except version.InvalidVersion:
+                client_version = None
+        request_source_info.set((source_context.get().value, client_version))
+    except Exception as e:
+        logger.warning(
+            f"An unexpected error occurred while setting the request "
+            f"source info: {e}"
+        )
 
     try:
         return await call_next(request)

@@ -40,13 +40,16 @@ step_exception_info: ContextVar[Optional[ExceptionInfo]] = ContextVar(
 
 
 def publish_successful_step_run(
-    step_run_id: "UUID", output_artifact_ids: Dict[str, List["UUID"]]
+    step_run_id: "UUID",
+    output_artifact_ids: Dict[str, List["UUID"]],
+    status_source: str,
 ) -> "StepRunResponse":
     """Publishes a successful step run.
 
     Args:
         step_run_id: The ID of the step run to update.
         output_artifact_ids: The output artifact IDs for the step run.
+        status_source: The source that set the status of the step run.
 
     Returns:
         The updated step run.
@@ -57,6 +60,7 @@ def publish_successful_step_run(
             status=ExecutionStatus.COMPLETED,
             end_time=utc_now(),
             outputs=output_artifact_ids,
+            status_source=status_source,
         ),
     )
 
@@ -64,6 +68,7 @@ def publish_successful_step_run(
 def publish_step_run_status_update(
     step_run_id: "UUID",
     status: "ExecutionStatus",
+    status_source: str,
     end_time: Optional[datetime] = None,
     exception_info: Optional[ExceptionInfo] = None,
 ) -> "StepRunResponse":
@@ -72,6 +77,7 @@ def publish_step_run_status_update(
     Args:
         step_run_id: ID of the step run.
         status: New status of the step run.
+        status_source: The source that set the status of the step run.
         end_time: New end time of the step run.
         exception_info: Exception information of the step run.
 
@@ -95,17 +101,21 @@ def publish_step_run_status_update(
             status=status,
             end_time=end_time,
             exception_info=exception_info,
+            status_source=status_source,
         ),
     )
 
     return step_run
 
 
-def publish_failed_step_run(step_run_id: "UUID") -> "StepRunResponse":
+def publish_failed_step_run(
+    step_run_id: "UUID", status_source: str
+) -> "StepRunResponse":
     """Publishes a failed step run.
 
     Args:
         step_run_id: The ID of the step run to update.
+        status_source: The source that set the status of the step run.
 
     Returns:
         The updated step run.
@@ -113,16 +123,20 @@ def publish_failed_step_run(step_run_id: "UUID") -> "StepRunResponse":
     return publish_step_run_status_update(
         step_run_id=step_run_id,
         status=ExecutionStatus.FAILED,
+        status_source=status_source,
         end_time=utc_now(),
         exception_info=step_exception_info.get(),
     )
 
 
-def publish_stopped_step_run(step_run_id: "UUID") -> "StepRunResponse":
+def publish_stopped_step_run(
+    step_run_id: "UUID", status_source: str
+) -> "StepRunResponse":
     """Publishes a stopped step run.
 
     Args:
         step_run_id: The ID of the step run to update.
+        status_source: The source that set the status of the step run.
 
     Returns:
         The updated step run.
@@ -130,16 +144,20 @@ def publish_stopped_step_run(step_run_id: "UUID") -> "StepRunResponse":
     return publish_step_run_status_update(
         step_run_id=step_run_id,
         status=ExecutionStatus.STOPPED,
+        status_source=status_source,
         end_time=utc_now(),
         exception_info=step_exception_info.get(),
     )
 
 
-def publish_cancelled_step_run(step_run_id: "UUID") -> "StepRunResponse":
+def publish_cancelled_step_run(
+    step_run_id: "UUID", status_source: str
+) -> "StepRunResponse":
     """Publishes a cancelled step run.
 
     Args:
         step_run_id: The ID of the step run to update.
+        status_source: The source that set the status of the step run.
 
     Returns:
         The updated step run.
@@ -147,6 +165,7 @@ def publish_cancelled_step_run(step_run_id: "UUID") -> "StepRunResponse":
     return publish_step_run_status_update(
         step_run_id=step_run_id,
         status=ExecutionStatus.CANCELLED,
+        status_source=status_source,
         end_time=utc_now(),
         exception_info=step_exception_info.get(),
     )
@@ -154,11 +173,13 @@ def publish_cancelled_step_run(step_run_id: "UUID") -> "StepRunResponse":
 
 def publish_successful_pipeline_run(
     pipeline_run_id: "UUID",
+    status_source: str,
 ) -> "PipelineRunResponse":
     """Publishes a successful pipeline run.
 
     Args:
         pipeline_run_id: The ID of the pipeline run to update.
+        status_source: The source that set the status of the pipeline run.
 
     Returns:
         The updated pipeline run.
@@ -167,18 +188,21 @@ def publish_successful_pipeline_run(
         run_id=pipeline_run_id,
         run_update=PipelineRunUpdate(
             status=ExecutionStatus.COMPLETED,
+            status_source=status_source,
         ),
     )
 
 
 def publish_failed_pipeline_run(
     pipeline_run_id: "UUID",
+    status_source: str,
     exception_info: Optional[ExceptionInfo] = None,
 ) -> "PipelineRunResponse":
     """Publishes a failed pipeline run.
 
     Args:
         pipeline_run_id: The ID of the pipeline run to update.
+        status_source: The source that set the status of the pipeline run.
         exception_info: The exception information of the pipeline run.
 
     Returns:
@@ -189,6 +213,7 @@ def publish_failed_pipeline_run(
         run_update=PipelineRunUpdate(
             status=ExecutionStatus.FAILED,
             exception_info=exception_info,
+            status_source=status_source,
         ),
     )
 
@@ -196,6 +221,7 @@ def publish_failed_pipeline_run(
 def publish_pipeline_run_status_update(
     pipeline_run_id: "UUID",
     status: ExecutionStatus,
+    status_source: str,
     status_reason: Optional[str] = None,
     end_time: Optional[datetime] = None,
 ) -> "PipelineRunResponse":
@@ -204,6 +230,7 @@ def publish_pipeline_run_status_update(
     Args:
         pipeline_run_id: The ID of the pipeline run to update.
         status: The new status for the pipeline run.
+        status_source: The source that set the status of the pipeline run.
         status_reason: The reason for the status of the pipeline run.
         end_time: The end time for the pipeline run. If None, will be set to current time
             for finished statuses.
@@ -225,6 +252,7 @@ def publish_pipeline_run_status_update(
         run_update=PipelineRunUpdate(
             status=status,
             status_reason=status_reason,
+            status_source=status_source,
         ),
     )
 

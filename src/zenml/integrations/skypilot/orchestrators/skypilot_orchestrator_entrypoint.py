@@ -51,6 +51,7 @@ from zenml.orchestrators.publish_utils import (
     publish_failed_pipeline_run,
 )
 from zenml.orchestrators.utils import get_config_environment_vars
+from zenml.status_sources import SKYPILOT_ORCHESTRATOR_RUN_FAILED
 from zenml.utils import env_utils
 
 logger = get_logger(__name__)
@@ -432,7 +433,9 @@ def main() -> None:
 
         # Try to mark the pipeline run as failed
         if run:
-            publish_failed_pipeline_run(run.id)
+            publish_failed_pipeline_run(
+                run.id, status_source=SKYPILOT_ORCHESTRATOR_RUN_FAILED
+            )
             logger.info("Marked pipeline run as failed in ZenML.")
         raise
 

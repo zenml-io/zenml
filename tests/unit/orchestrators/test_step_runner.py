@@ -35,6 +35,7 @@ from zenml.models import (
 from zenml.models.v2.core.step_run import StepRunInputResponse
 from zenml.orchestrators.step_launcher import StepRunner
 from zenml.stack import Stack
+from zenml.status_sources import STEP_RUNNER_USER_CODE_FAILED
 from zenml.steps import step
 
 HOOK_MODULE = "tests.unit.orchestrators.test_step_runner"
@@ -271,7 +272,8 @@ def test_running_a_failing_step(
         info=step_run_info, step_failed=True
     )
     mock_publish_failed_step_run.assert_called_with(
-        step_run_id=step_run_info.step_run_id
+        step_run_id=step_run_info.step_run_id,
+        status_source=STEP_RUNNER_USER_CODE_FAILED,
     )
     mock_publish_successful_step_run.assert_not_called()
 

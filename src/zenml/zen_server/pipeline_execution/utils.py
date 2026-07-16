@@ -66,6 +66,7 @@ from zenml.pipelines.run_utils import (
     validate_stack_is_runnable_from_server,
 )
 from zenml.stack.flavor import Flavor
+from zenml.status_sources import SERVER_QUEUE_FAILED, SERVER_START_FAILED
 from zenml.utils import pydantic_utils, requirements_utils, settings_utils
 from zenml.zen_server.auth import AuthContext, generate_access_token
 from zenml.zen_server.feature_gate.endpoint_utils import (
@@ -375,6 +376,7 @@ def run_snapshot(
                 run_update=PipelineRunUpdate(
                     status=ExecutionStatus.FAILED,
                     status_reason="Failed to queue run.",
+                    status_source=SERVER_QUEUE_FAILED,
                 ),
             )
             raise SnapshotRunDispatchError(
@@ -585,6 +587,7 @@ def execute_snapshot_run(
                 run_update=PipelineRunUpdate(
                     status=ExecutionStatus.FAILED,
                     status_reason="Failed to start run.",
+                    status_source=SERVER_START_FAILED,
                 ),
             )
             raise RuntimeError("Failed to start pipeline run.") from exc
