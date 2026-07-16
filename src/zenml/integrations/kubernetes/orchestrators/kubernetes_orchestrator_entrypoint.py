@@ -19,7 +19,7 @@ import socket
 import threading
 import time
 from contextlib import nullcontext
-from typing import Any, ContextManager, Dict, List, Optional, Tuple, cast
+from typing import Any, ContextManager, List, Optional, Tuple, cast
 from uuid import UUID
 
 from kubernetes import client as k8s_client
@@ -56,7 +56,6 @@ from zenml.models import (
     PipelineRunUpdate,
     PipelineSnapshotResponse,
     RunMetadataResource,
-    StepRunResponse,
 )
 from zenml.orchestrators import publish_utils
 from zenml.orchestrators.dag_runner import (
@@ -358,7 +357,6 @@ def main() -> None:
             pipeline_run=pipeline_run,
             stack=active_stack,
         )
-        step_runs: Dict[str, StepRunResponse] = {}
 
         base_labels = {
             "project_id": kube_utils.sanitize_label_value(
@@ -383,9 +381,7 @@ def main() -> None:
                 step_name
             )
             try:
-                step_run_request_factory.populate_request(
-                    step_run_request, step_runs=step_runs
-                )
+                step_run_request_factory.populate_request(step_run_request)
             except Exception as e:
                 logger.error(
                     f"Failed to populate step run request for step {step_name}: {e}"
@@ -396,7 +392,7 @@ def main() -> None:
                 step_run = publish_cached_step_run(
                     step_run_request, pipeline_run
                 )
-                step_runs[step_name] = step_run
+                step_run_request_factory.record_step_run(step_run)
                 logger.info("Using cached version of step `%s`.", step_name)
                 return True
 
@@ -425,9 +421,7 @@ def main() -> None:
                 step_name
             )
             try:
-                step_run_request_factory.populate_request(
-                    step_run_request, step_runs=step_runs
-                )
+                step_run_request_factory.populate_request(step_run_request)
             except Exception as e:
                 logger.error(
                     "Failed to populate step run request for step `%s`: %s",
