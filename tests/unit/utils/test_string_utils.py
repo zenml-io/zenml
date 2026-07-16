@@ -116,3 +116,29 @@ def test_string_substitution() -> None:
         {3: "value_suffix", "key_suffix": model_sub},
         set(["set_value_suffix", 4]),
     ]
+
+
+def test_format_name_template_does_not_mutate_substitutions() -> None:
+    """The caller's substitutions dict must not be modified.
+
+    `substitutions or {}` only builds a new dict for a falsy argument, so a
+    non-empty dict was aliased and had date/time injected into it.
+    """
+    substitutions = {"custom": "value"}
+
+    formatted = string_utils.format_name_template(
+        "run-{custom}-{date}-{time}", substitutions=substitutions
+    )
+
+    assert substitutions == {"custom": "value"}
+    assert formatted.startswith("run-value-")
+
+
+def test_format_name_template_uses_given_substitutions() -> None:
+    """Explicit date/time substitutions are still honored."""
+    formatted = string_utils.format_name_template(
+        "run-{date}-{time}",
+        substitutions={"date": "2020_01_01", "time": "00_00_00"},
+    )
+
+    assert formatted == "run-2020_01_01-00_00_00"
