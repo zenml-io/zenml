@@ -31,7 +31,13 @@ class BoundedDict(Dict[K, V]):
 
         Args:
             max_size: The maximum number of entries to retain.
+
+        Raises:
+            ValueError: If `max_size` is not greater than 0.
         """
+        if max_size <= 0:
+            raise ValueError("max_size must be greater than 0")
+
         super().__init__()
         self._max_size = max_size
 

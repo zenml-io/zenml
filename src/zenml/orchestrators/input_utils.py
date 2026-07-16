@@ -60,7 +60,8 @@ def resolve_step_inputs(
     from zenml.models.v2.core.step_run import StepRunInputResponse
     from zenml.orchestrators.step_run_utils import fetch_step_runs_by_names
 
-    step_runs = step_runs or {}
+    if step_runs is None:
+        step_runs = {}
 
     steps_to_fetch = set(
         input_.step_name
