@@ -1,105 +1,44 @@
-# ZenML CLI — Agent Guidelines
+# ZenML CLI Agent Guidelines
 
-Guidance for agents working with ZenML CLI code.
+This file applies when Codex starts in `src/zenml/cli/` or below. For detailed
+CLI examples and command-family notes, use
+`.agents/skills/zenml-repo-workflows/SKILL.md`.
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `utils.py` | CLI utilities including `list_options` decorator |
-| `pipeline.py` | Pipeline, run, legacy schedule, and replay/resume management commands |
-| `trigger.py` | Native trigger commands, including schedule triggers and platform event triggers |
-| `resource_pool.py` | Resource pool commands and resource pool subject policies |
-| `resource_request.py` | Resource request / queue inspection commands |
-| `stack.py` | Stack management commands |
-| `base.py` | Core CLI setup and common decorators |
+- `utils.py` - CLI helpers, including `list_options`.
+- `pipeline.py` - pipeline, run, legacy schedule, and replay/resume commands.
+- `trigger.py` - native schedule and platform-event trigger commands.
+- `resource_pool.py` and `resource_request.py` - resource pool management and
+  queue/request inspection commands.
+- `stack.py` - stack management.
+- `base.py` - core CLI setup and common decorators.
 
-## Adding or Modifying List Commands
+## Filter and Client Coupling
 
-List commands (e.g., `zenml pipeline runs list`) use the `@list_options(FilterModel)` decorator to auto-generate CLI options from filter model fields.
+List commands often use `@list_options(FilterModel)` to generate CLI options
+from filter fields, then pass those options to explicit `Client` method
+parameters.
 
-**Critical:** When adding new filter fields, you must update multiple locations or the CLI will break. See the detailed checklist in:
+When adding a filter field, update all matching client method signatures and
+filter model construction sites. If the field should not be a CLI option, add
+it to `CLI_EXCLUDE_FIELDS` on the filter model.
 
-→ `src/zenml/models/AGENTS.md` § "Adding New Filter Fields — CLI-Client Coupling"
+Failure story: the CLI exposes `--new-field`, passes `new_field` to
+`Client.list_pipeline_runs`, and the client method does not accept it. The user
+gets `TypeError: list_pipeline_runs() got an unexpected keyword argument`.
 
-### Quick Summary
+## Import Rules
 
-The `@list_options` decorator auto-generates CLI options from filter model fields, but passes them to client methods that have explicit parameter lists. If a filter model field isn't also a client method parameter, users get:
-```
-TypeError: list_pipeline_runs() got an unexpected keyword argument 'new_field'
-```
+- Never import integration libraries at module level in CLI files.
+- Do not import from `zen_server/` in CLI code.
+- Do not import SQL schemas directly from `zen_stores/`; use `Client`.
+- Keep heavy optional imports inside the command that needs them.
 
-## CLI Patterns
+## Command Families
 
-### List Command Structure
-```python
-@entity.command("list")
-@list_options(EntityFilter)  # Auto-generates --field options
-def list_entities(**kwargs: Any) -> None:
-    client = Client()
-    entities = client.list_entities(**kwargs)  # kwargs passed to client
-```
-
-### Excluding Fields from CLI
-Add to `CLI_EXCLUDE_FIELDS` in the filter model (not here in CLI code):
-```python
-# In src/zenml/models/v2/core/<entity>.py
-class EntityFilter(...):
-    CLI_EXCLUDE_FIELDS = [..., "internal_field"]
-```
-
-## Scheduling Command Families
-
-There are now separate scheduling/trigger command families in the CLI:
-
-- `zenml pipeline schedule ...` — Legacy schedule records (CRUD on `ScheduleResponse`)
-- `zenml trigger schedule ...` — Native schedule triggers in the trigger architecture
-- `zenml trigger platform-event ...` — Platform event triggers and their supported events
-
-When modifying scheduling or trigger CLI code, be explicit about which stack you are changing. The trigger CLI lives in `cli/trigger.py`, while legacy schedule commands live in `cli/pipeline.py`. Trigger changes usually span CLI, client, server endpoints, models, schemas, and docs.
-
-## Resource Pool Command Family
-
-Resource pools have their own CLI surfaces in `cli/resource_pool.py` and `cli/resource_request.py`. When changing resource pool behavior, check both the management commands (create/update/list/delete, policy attach/detach/list) and request/queue inspection commands. These commands are coupled to `ResourcePool*`, `ResourcePoolSubjectPolicy*`, and `ResourceRequest*` models.
-
-## Import Considerations
-
-### Core ZenML Imports
-
-The CLI does import most of ZenML core when used, because it needs to import models which import many other modules. This is acceptable because:
-- ZenML itself is not that large
-- Core imports are fast and always available
-- The real problem is integration libraries (see below)
-
-### Integration Imports — NEVER at Module Level
-
-Never import integration libraries at module level in CLI files. Integrations may not be installed, and module-level imports would break the entire CLI.
-
-```python
-# Bad - breaks CLI if sklearn not installed
-from sklearn import metrics
-
-# Good - import inside function when needed
-def some_command():
-    from sklearn import metrics
-```
-
-**Why this matters especially for CLI:**
-- Integration libraries can be massive (Evidently, Great Expectations = millions of lines of code)
-- Users expect `zenml --help` to work instantly, not after loading heavy dependencies
-- A single bad import can break the entire CLI for all users
-
-### Server and SQL Imports
-
-The CLI should also avoid importing from:
-- `zen_server/` — Server dependencies are optional
-- `zen_stores/` schemas directly — Use the Client abstraction instead
-
-```python
-# Bad
-from zenml.zen_stores.schemas import PipelineSchema
-
-# Good
-from zenml.client import Client
-client = Client()
-```
+- Legacy schedules: `zenml pipeline schedule ...` in `pipeline.py`.
+- Native schedule triggers: `zenml trigger schedule ...` in `trigger.py`.
+- Platform event triggers: `zenml trigger platform-event ...` in `trigger.py`.
+- Resource pool behavior often spans CLI commands, models, store methods, and
+  Pro/backend scheduling behavior.

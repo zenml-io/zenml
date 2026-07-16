@@ -34,13 +34,15 @@ on:
         description: Git branch or ref
         type: string
         required: true
+env:
+  ZENML_DEBUG: 1
+  ZENML_LOGGING_VERBOSITY: debug
+  ZENML_ANALYTICS_OPT_IN: false
 jobs:
   test-base-package-functionality:
     name: test-base-package-functionality
     runs-on: ${{ inputs.os }}
     env:
-      ZENML_DEBUG: 1
-      ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
       UV_HTTP_TIMEOUT: 600
       OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
