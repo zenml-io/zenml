@@ -59,8 +59,7 @@ zenml artifact-store register do_spaces \
     --flavor=digitalocean_spaces \
     --path=s3://my-space \
     --region=fra1 \
-    --key='{{spaces_secret.access_key_id}}' \
-    --secret='{{spaces_secret.secret_access_key}}'
+    --authentication_secret=spaces_secret
 ```
 
 All other configuration options of the [S3 Artifact Store](s3.md) (`client_kwargs`, `config_kwargs`, `s3_additional_kwargs`) are available on this flavor as well and are passed through to the underlying S3-compatible filesystem.
