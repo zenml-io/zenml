@@ -30,11 +30,12 @@ from zenml.models import (
 )
 from zenml.zen_stores.schemas.webhook_integration_schemas import (
     WebhookIntegrationSchema,
+    WebhookIntegrationStatsSchema,
 )
 
 
 def _webhook_integration_schema() -> WebhookIntegrationSchema:
-    return WebhookIntegrationSchema(
+    schema = WebhookIntegrationSchema(
         id=uuid4(),
         name="github-intake",
         project_id=uuid4(),
@@ -42,7 +43,10 @@ def _webhook_integration_schema() -> WebhookIntegrationSchema:
         secret_id=uuid4(),
         webhook_type=WebhookType.GITHUB.value,
         active=True,
-        stats=WebhookIntegrationStats(
+    )
+    schema.stats = WebhookIntegrationStatsSchema(
+        webhook_id=schema.id,
+        **WebhookIntegrationStats(
             received_count=3,
             accepted_count=1,
             auth_failed_count=1,
@@ -51,8 +55,9 @@ def _webhook_integration_schema() -> WebhookIntegrationSchema:
             last_accepted_at=datetime(2026, 7, 9, 8, 1, 0),
             last_error_at=datetime(2026, 7, 9, 8, 2, 0),
             last_error_summary="Invalid webhook signature.",
-        ).model_dump_json(),
+        ).model_dump(),
     )
+    return schema
 
 
 @pytest.mark.parametrize(
@@ -111,12 +116,12 @@ def test_webhook_integration_requests_allow_missing_secret() -> None:
     assert secret_request.secret is None
 
 
-def test_webhook_integration_update_accepts_secret_reference() -> None:
-    """Webhook integration updates accept a secret reference."""
-    update = WebhookIntegrationUpdate(secret="{{webhook.secret}}")
+def test_webhook_integration_update_accepts_direct_secret() -> None:
+    """Webhook integration updates accept a direct signing secret."""
+    update = WebhookIntegrationUpdate(secret="webhook-secret")
 
     assert update.secret is not None
-    assert update.secret.get_secret_value() == "{{webhook.secret}}"
+    assert update.secret.get_secret_value() == "webhook-secret"
 
 
 def test_webhook_integration_schema_to_model_includes_body_and_metadata() -> (
@@ -145,10 +150,12 @@ def test_webhook_integration_schema_to_model_includes_body_and_metadata() -> (
     assert response.stats.last_error_summary == "Invalid webhook signature."
 
 
-def test_webhook_integration_schema_to_model_defaults_missing_stats() -> None:
-    """Webhook integration schemas default missing stats fields."""
+def test_webhook_integration_stats_schema_defaults_missing_stats() -> None:
+    """Webhook integration stats schemas default missing fields."""
     schema = _webhook_integration_schema()
-    schema.stats = '{"received_count": 3, "future_count": 7}'
+    schema.stats = WebhookIntegrationStatsSchema(
+        webhook_id=schema.id, received_count=3
+    )
 
     response = schema.to_model(include_metadata=True)
 
@@ -157,17 +164,6 @@ def test_webhook_integration_schema_to_model_defaults_missing_stats() -> None:
     assert response.stats.auth_failed_count == 0
     assert response.stats.invalid_payload_count == 0
     assert response.stats.last_received_at is None
-
-
-def test_webhook_integration_schema_can_update_serialized_stats() -> None:
-    """Webhook integration schemas serialize typed stats."""
-    schema = _webhook_integration_schema()
-    stats = WebhookIntegrationStats(received_count=5)
-
-    schema.set_stats(stats)
-
-    assert schema.parsed_stats.received_count == 5
-    assert schema.parsed_stats.accepted_count == 0
 
 
 def test_webhook_integration_schema_to_model_can_include_empty_resources() -> (

@@ -23,7 +23,6 @@ from zenml.cli.utils import OutputFormat, list_options
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories, WebhookType
-from zenml.exceptions import IllegalOperationError
 from zenml.models import WebhookIntegrationFilter
 
 
@@ -44,7 +43,7 @@ def webhook() -> None:
     "--secret",
     type=str,
     default=None,
-    help="Set a direct signing secret or ZenML secret reference.",
+    help="Set a signing secret.",
 )
 @click.option("--inactive", is_flag=True, default=False)
 def create_webhook(
@@ -128,7 +127,7 @@ def list_webhooks(
     "--secret",
     type=str,
     default=None,
-    help="Set a direct signing secret or ZenML secret reference.",
+    help="Set a replacement signing secret.",
 )
 def update_webhook(
     name_or_id: str,
@@ -142,7 +141,7 @@ def update_webhook(
         name_or_id: The webhook name or ID.
         new_name: The new webhook name.
         active: The new active state.
-        secret: A direct signing secret or ZenML secret reference.
+        secret: A replacement signing secret.
     """
     integration = Client().update_webhook(
         name_id_or_prefix=name_or_id,
@@ -171,12 +170,9 @@ def rotate_webhook_secret(name_or_id: str, secret: str | None) -> None:
         name_or_id: The webhook name or ID.
         secret: An optional direct replacement secret.
     """
-    try:
-        result = Client().rotate_webhook_secret(
-            name_id_or_prefix=name_or_id, secret=secret
-        )
-    except IllegalOperationError as error:
-        cli_utils.exception(error)
+    result = Client().rotate_webhook_secret(
+        name_id_or_prefix=name_or_id, secret=secret
+    )
     cli_utils.declare(f"Signing secret: {result.secret.get_secret_value()}")
 
 

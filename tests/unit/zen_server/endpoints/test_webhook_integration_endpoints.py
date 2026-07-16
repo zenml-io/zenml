@@ -16,11 +16,9 @@ from uuid import uuid4
 
 import pytest
 from fastapi import HTTPException, status
-from pydantic import SecretStr
 
 from zenml.constants import API, VERSION_1, WEBHOOKS
 from zenml.enums import WebhookType
-from zenml.models import WebhookIntegrationUpdate
 from zenml.webhooks import WebhookAuthenticationError, WebhookPayloadError
 from zenml.zen_server.routers import webhook_integration_endpoints as endpoints
 
@@ -38,13 +36,19 @@ class _Store:
         self.integration = integration
         self.secret_requests = 0
         self.records = []
+        self.secret_id = uuid4()
 
-    def get_webhook_integration(self, integration_id):
+    def get_webhook_intake_config(self, integration_id):
         if self.integration is None:
             raise KeyError(integration_id)
-        return self.integration
+        return (
+            self.integration.webhook_type,
+            self.integration.active,
+            self.secret_id,
+        )
 
-    def get_webhook_integration_secret(self, integration_id):
+    def get_webhook_secret(self, secret_id):
+        assert secret_id == self.secret_id
         self.secret_requests += 1
         return "webhook-secret"
 
@@ -86,84 +90,6 @@ def _receive(integration_id):
         body=b'{"event":"ready"}',
         headers={},
     )
-
-
-def test_verify_webhook_secret_reference_access_checks_value_permission(
-    monkeypatch,
-) -> None:
-    """Referenced credentials require permission to read the secret value."""
-    referenced_secret = SimpleNamespace(name="webhook-secret")
-    store = SimpleNamespace(
-        get_secret_by_name_or_id=lambda name: referenced_secret
-    )
-    verified = []
-    monkeypatch.setattr(endpoints, "zen_store", lambda: store)
-    monkeypatch.setattr(
-        endpoints,
-        "verify_permission_for_model",
-        lambda **kwargs: verified.append(kwargs),
-    )
-
-    endpoints._verify_webhook_secret_reference_access(
-        SecretStr("{{webhook-secret.key}}")
-    )
-
-    assert verified == [
-        {
-            "model": referenced_secret,
-            "action": endpoints.Action.READ_SECRET_VALUE,
-        }
-    ]
-
-
-def test_update_checks_integration_permission_before_secret_access(
-    monkeypatch,
-) -> None:
-    """Integration update access is checked before referenced secret access."""
-    integration_id = uuid4()
-    integration = SimpleNamespace(id=integration_id)
-    updated_integration = SimpleNamespace(id=integration_id)
-    calls = []
-
-    class _UpdateStore:
-        def get_webhook_integration(self, integration_id, hydrate):
-            calls.append("get_integration")
-            return integration
-
-        def update_webhook_integration(self, integration_id, update):
-            calls.append("update_integration")
-            return updated_integration
-
-    monkeypatch.setattr(endpoints, "zen_store", _UpdateStore)
-    monkeypatch.setattr(
-        endpoints,
-        "verify_permission_for_model",
-        lambda **kwargs: calls.append(f"verify_{kwargs['action'].value}"),
-    )
-    monkeypatch.setattr(
-        endpoints,
-        "_verify_webhook_secret_reference_access",
-        lambda secret: calls.append("verify_secret_access"),
-    )
-    monkeypatch.setattr(
-        endpoints,
-        "dehydrate_response_model",
-        lambda model: model,
-    )
-
-    result = endpoints.update_webhook.__wrapped__(
-        webhook_id=integration_id,
-        update=WebhookIntegrationUpdate(secret="{{webhook.key}}"),
-        _=SimpleNamespace(),
-    )
-
-    assert result is updated_integration
-    assert calls == [
-        "get_integration",
-        "verify_update",
-        "verify_secret_access",
-        "update_integration",
-    ]
 
 
 @pytest.mark.parametrize(

@@ -24,7 +24,6 @@ from fastapi import (
     status,
 )
 from fastapi.responses import Response
-from pydantic import SecretStr
 from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import Headers
 
@@ -44,10 +43,6 @@ from zenml.models import (
     WebhookIntegrationRotateSecretRequest,
     WebhookIntegrationSecretResponse,
     WebhookIntegrationUpdate,
-)
-from zenml.utils.secret_utils import (
-    is_secret_reference,
-    parse_secret_reference,
 )
 from zenml.webhooks import (
     WebhookAuthenticationError,
@@ -85,24 +80,6 @@ intake_router = APIRouter(
 )
 
 
-def _verify_webhook_secret_reference_access(
-    secret: SecretStr | None,
-) -> None:
-    """Verify access to a referenced ZenML secret value.
-
-    Args:
-        secret: A direct signing secret or ZenML secret reference.
-    """
-    if secret is None or not is_secret_reference(secret):
-        return
-
-    reference = parse_secret_reference(secret)
-    referenced_secret = zen_store().get_secret_by_name_or_id(reference.name)
-    verify_permission_for_model(
-        model=referenced_secret, action=Action.READ_SECRET_VALUE
-    )
-
-
 @management_router.post("")
 @async_fastapi_endpoint_wrapper
 def create_webhook(
@@ -118,7 +95,6 @@ def create_webhook(
         The created integration and any generated signing secret.
     """
     verify_permission_for_model(model=integration, action=Action.CREATE)
-    _verify_webhook_secret_reference_access(integration.secret)
     result = zen_store().create_webhook_integration(integration)
     return dehydrate_response_model(result)
 
@@ -192,7 +168,6 @@ def update_webhook(
         webhook_id, hydrate=False
     )
     verify_permission_for_model(model=integration, action=Action.UPDATE)
-    _verify_webhook_secret_reference_access(update.secret)
     updated_integration = zen_store().update_webhook_integration(
         integration_id=integration.id,
         update=update,
@@ -293,20 +268,22 @@ def _receive_webhook_event(
             request fails authentication or payload validation.
     """
     try:
-        integration = zen_store().get_webhook_integration(integration_id)
+        stored_type, active, secret_id = zen_store().get_webhook_intake_config(
+            integration_id
+        )
     except KeyError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from error
 
-    if integration.webhook_type != webhook_type:
+    if stored_type != webhook_type:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
-    secret = zen_store().get_webhook_integration_secret(integration_id)
+    secret = zen_store().get_webhook_secret(secret_id)
     adapter = get_webhook_adapter(webhook_type)
 
     try:
         adapter.authenticate(body=body, headers=headers, secret=secret)
     except WebhookAuthenticationError as error:
-        if integration.active:
+        if active:
             zen_store().record_webhook_event(
                 integration_id,
                 WebhookEventStatsUpdate(
@@ -318,7 +295,7 @@ def _receive_webhook_event(
             detail="Invalid webhook authentication.",
         ) from error
 
-    if not integration.active:
+    if not active:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Webhook integration is inactive.",

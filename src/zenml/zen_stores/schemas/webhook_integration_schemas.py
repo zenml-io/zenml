@@ -11,13 +11,16 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""SQL schema for webhook integrations."""
+"""SQL schemas for webhook integrations."""
 
-from typing import Any
+from datetime import datetime
+from typing import Any, Sequence
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint
-from sqlmodel import Field, Relationship
+from sqlalchemy.orm import joinedload, selectinload
+from sqlalchemy.sql.base import ExecutableOption
+from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.constants import API, VERSION_1, WEBHOOKS
 from zenml.models import (
@@ -38,6 +41,7 @@ from zenml.zen_stores.schemas.schema_utils import (
 )
 from zenml.zen_stores.schemas.secret_schemas import SecretSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.utils import jl_arg
 
 
 class WebhookIntegrationSchema(NamedSchema, table=True):
@@ -86,27 +90,38 @@ class WebhookIntegrationSchema(NamedSchema, table=True):
     )
     webhook_type: str
     active: bool = Field(default=True)
-    stats: str = Field(
-        default=WebhookIntegrationStats().model_dump_json(),
-        sa_column=Column(TEXT, nullable=False),
+    stats: "WebhookIntegrationStatsSchema" = Relationship(
+        back_populates="webhook",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan",
+            "single_parent": True,
+            "uselist": False,
+        },
     )
 
-    @property
-    def parsed_stats(self) -> WebhookIntegrationStats:
-        """Parse persisted intake statistics.
-
-        Returns:
-            The typed intake statistics.
-        """
-        return WebhookIntegrationStats.model_validate_json(self.stats or "{}")
-
-    def set_stats(self, stats: WebhookIntegrationStats) -> None:
-        """Persist typed intake statistics.
+    @classmethod
+    def get_query_options(
+        cls,
+        include_metadata: bool = False,
+        include_resources: bool = False,
+        **kwargs: Any,
+    ) -> Sequence[ExecutableOption]:
+        """Get query options for webhook integrations.
 
         Args:
-            stats: The typed intake statistics to persist.
+            include_metadata: Whether statistics will be included.
+            include_resources: Whether related resources will be included.
+            **kwargs: Additional query option arguments.
+
+        Returns:
+            Query options for the requested response shape.
         """
-        self.stats = stats.model_dump_json()
+        options: list[ExecutableOption] = []
+        if include_metadata:
+            options.append(selectinload(jl_arg(cls.stats)))
+        if include_resources:
+            options.append(joinedload(jl_arg(cls.user)))
+        return options
 
     @classmethod
     def from_request(
@@ -149,7 +164,7 @@ class WebhookIntegrationSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = WebhookIntegrationResponseMetadata(
-                stats=self.parsed_stats
+                stats=self.stats.to_model()
             )
 
         resources = None
@@ -194,3 +209,41 @@ class WebhookIntegrationSchema(NamedSchema, table=True):
             self.active = update.active
         self.updated = utc_now()
         return self
+
+
+class WebhookIntegrationStatsSchema(SQLModel, table=True):
+    """SQL schema for webhook intake statistics."""
+
+    __tablename__ = "webhook_integration_stats"
+
+    webhook_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=WebhookIntegrationSchema.__tablename__,
+        source_column="webhook_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+        primary_key=True,
+    )
+    received_count: int = 0
+    accepted_count: int = 0
+    auth_failed_count: int = 0
+    invalid_payload_count: int = 0
+    last_received_at: datetime | None = None
+    last_accepted_at: datetime | None = None
+    last_error_at: datetime | None = None
+    last_error_summary: str | None = Field(
+        default=None, sa_column=Column(TEXT, nullable=True)
+    )
+
+    webhook: WebhookIntegrationSchema = Relationship(back_populates="stats")
+
+    def to_model(self) -> WebhookIntegrationStats:
+        """Convert persisted statistics to their domain model.
+
+        Returns:
+            The webhook intake statistics.
+        """
+        return WebhookIntegrationStats.model_validate(
+            self, from_attributes=True
+        )

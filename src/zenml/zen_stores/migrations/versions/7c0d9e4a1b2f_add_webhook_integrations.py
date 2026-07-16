@@ -44,11 +44,6 @@ def upgrade() -> None:
             "webhook_type", sqlmodel.sql.sqltypes.AutoString(), nullable=False
         ),
         sa.Column("active", sa.Boolean(), nullable=False),
-        sa.Column(
-            "stats",
-            sa.TEXT(),
-            nullable=False,
-        ),
         sa.ForeignKeyConstraint(
             ["project_id"],
             ["project.id"],
@@ -80,10 +75,46 @@ def upgrade() -> None:
         ["webhook_type"],
         unique=False,
     )
+    op.create_table(
+        "webhook_integration_stats",
+        sa.Column("webhook_id", sa.Uuid(), nullable=False),
+        sa.Column(
+            "received_count", sa.Integer(), nullable=False, server_default="0"
+        ),
+        sa.Column(
+            "accepted_count", sa.Integer(), nullable=False, server_default="0"
+        ),
+        sa.Column(
+            "auth_failed_count",
+            sa.Integer(),
+            nullable=False,
+            server_default="0",
+        ),
+        sa.Column(
+            "invalid_payload_count",
+            sa.Integer(),
+            nullable=False,
+            server_default="0",
+        ),
+        sa.Column("last_received_at", sa.DateTime(), nullable=True),
+        sa.Column("last_accepted_at", sa.DateTime(), nullable=True),
+        sa.Column("last_error_at", sa.DateTime(), nullable=True),
+        sa.Column("last_error_summary", sa.TEXT(), nullable=True),
+        sa.ForeignKeyConstraint(
+            ["webhook_id"],
+            ["webhook_integration.id"],
+            name=(
+                "fk_webhook_integration_stats_webhook_id_webhook_integration"
+            ),
+            ondelete="CASCADE",
+        ),
+        sa.PrimaryKeyConstraint("webhook_id"),
+    )
 
 
 def downgrade() -> None:
     """Drop the webhook integration table."""
+    op.drop_table("webhook_integration_stats")
     op.drop_index(
         "ix_webhook_integration_webhook_type",
         table_name="webhook_integration",

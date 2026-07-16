@@ -44,8 +44,8 @@ class WebhookIntegrationRequest(ProjectScopedRequest):
     active: bool = True
     secret: NonEmptyPlainSerializedSecretStr | None = Field(
         default=None,
-        description="Optional direct signing secret or ZenML secret "
-        "reference. A direct secret is generated when omitted.",
+        description="Optional signing secret. A secret is generated when "
+        "omitted.",
     )
 
 
@@ -56,7 +56,7 @@ class WebhookIntegrationUpdate(BaseUpdate):
     active: bool | None = None
     secret: NonEmptyPlainSerializedSecretStr | None = Field(
         default=None,
-        description="A direct signing secret or ZenML secret reference.",
+        description="A replacement signing secret.",
     )
 
 
@@ -176,8 +176,7 @@ class WebhookIntegrationRotateSecretRequest(BaseZenModel):
 
     secret: NonEmptyPlainSerializedSecretStr | None = Field(
         default=None,
-        description="Optional direct replacement secret. Secret references "
-        "must be configured through an integration update.",
+        description="Optional direct replacement secret.",
     )
 
 

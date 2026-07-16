@@ -181,6 +181,7 @@ from zenml.enums import (
     StoreType,
     TaggableResourceTypes,
     VisualizationResourceTypes,
+    WebhookType,
 )
 from zenml.exceptions import (
     AuthorizationException,
@@ -394,11 +395,7 @@ from zenml.utils.enum_utils import StrEnum
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
 )
-from zenml.utils.secret_utils import (
-    PlainSerializedSecretStr,
-    is_secret_reference,
-    parse_secret_reference,
-)
+from zenml.utils.secret_utils import PlainSerializedSecretStr
 from zenml.utils.string_utils import (
     format_name_template,
     random_str,
@@ -471,6 +468,7 @@ from zenml.zen_stores.schemas import (
     TriggerSnapshotSchema,
     UserSchema,
     WebhookIntegrationSchema,
+    WebhookIntegrationStatsSchema,
 )
 from zenml.zen_stores.schemas.artifact_visualization_schemas import (
     ArtifactVisualizationSchema,
@@ -513,9 +511,6 @@ Select.inherit_cache = True
 logger = get_logger(__name__)
 
 _WEBHOOK_SECRET_VALUE_KEY = "secret"
-_WEBHOOK_SECRET_REFERENCE_KEY = "secret_reference"
-_WEBHOOK_SECRET_REFERENCE_ID_KEY = "secret_reference_id"
-_WEBHOOK_SECRET_REFERENCE_VALUE_KEY = "secret_reference_key"
 
 ZENML_SQLITE_DB_FILENAME = "zenml.db"
 
@@ -8144,57 +8139,16 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The internal secret ID.
         """
-        values = self._get_webhook_integration_secret_storage_values(
-            secret=secret, session=session
-        )
         return self._create_secret_schema(
             SecretRequest(
                 user=self._get_active_user(session=session).id,
                 name=f"webhook-{uuid.uuid4().hex}",
                 private=False,
-                values=values,
+                values={_WEBHOOK_SECRET_VALUE_KEY: secret},
             ),
             session=session,
             internal=True,
         ).id
-
-    def _get_webhook_integration_secret_storage_values(
-        self, secret: str, session: Session
-    ) -> Dict[str, Optional[str]]:
-        """Build internal storage values for a webhook signing credential.
-
-        Args:
-            secret: A direct signing secret or ZenML secret reference.
-            session: The active database session.
-
-        Returns:
-            Values to persist in the internal webhook secret.
-
-        Raises:
-            KeyError: If the referenced secret or key does not exist.
-            ValueError: If the referenced value is empty.
-        """
-        if not is_secret_reference(secret):
-            return {_WEBHOOK_SECRET_VALUE_KEY: secret}
-
-        reference = parse_secret_reference(secret)
-        referenced_secret = self._get_visible_secret_schema(
-            reference.name, session=session
-        )
-        referenced_values = self._get_secret_values(referenced_secret.id)
-        if reference.key not in referenced_values:
-            raise KeyError(
-                f"Secret {reference.name} does not contain key "
-                f"{reference.key}."
-            )
-        if not referenced_values[reference.key].strip():
-            raise ValueError("Webhook signing secret must not be empty.")
-
-        return {
-            _WEBHOOK_SECRET_REFERENCE_KEY: secret,
-            _WEBHOOK_SECRET_REFERENCE_ID_KEY: str(referenced_secret.id),
-            _WEBHOOK_SECRET_REFERENCE_VALUE_KEY: reference.key,
-        }
 
     def create_webhook_integration(
         self, integration: WebhookIntegrationRequest
@@ -8229,7 +8183,11 @@ class SqlZenStore(BaseZenStore):
                 schema = WebhookIntegrationSchema.from_request(
                     request=integration, secret_id=secret_id
                 )
+                stats_schema = WebhookIntegrationStatsSchema(
+                    webhook_id=schema.id
+                )
                 session.add(schema)
+                session.add(stats_schema)
                 session.commit()
             except Exception:
                 session.rollback()
@@ -8261,10 +8219,14 @@ class SqlZenStore(BaseZenStore):
             The webhook integration.
         """
         with Session(self.engine) as session:
+            query_options = WebhookIntegrationSchema.get_query_options(
+                include_metadata=hydrate, include_resources=True
+            )
             schema = self._get_schema_by_id(
                 resource_id=integration_id,
                 schema_class=WebhookIntegrationSchema,
                 session=session,
+                query_options=query_options,
             )
             return schema.to_model(
                 include_metadata=hydrate, include_resources=True
@@ -8294,6 +8256,7 @@ class SqlZenStore(BaseZenStore):
                 table=WebhookIntegrationSchema,
                 filter_model=filter_model,
                 hydrate=hydrate,
+                apply_query_options_from_schema=True,
             )
 
     def update_webhook_integration(
@@ -8320,12 +8283,13 @@ class SqlZenStore(BaseZenStore):
                 resource=update, schema=schema, session=session
             )
             if update.secret is not None:
-                values = self._get_webhook_integration_secret_storage_values(
-                    secret=update.secret.get_secret_value(), session=session
-                )
                 self._update_secret_values(
                     secret_id=schema.secret_id,
-                    values=values,
+                    values={
+                        _WEBHOOK_SECRET_VALUE_KEY: (
+                            update.secret.get_secret_value()
+                        )
+                    },
                     overwrite=True,
                 )
             schema.update(update)
@@ -8366,9 +8330,6 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The newly active signing secret.
 
-        Raises:
-            IllegalOperationError: If the integration uses a secret reference
-                or the replacement secret is a secret reference.
         """
         with Session(self.engine) as session:
             schema = self._get_schema_by_id(
@@ -8376,29 +8337,6 @@ class SqlZenStore(BaseZenStore):
                 schema_class=WebhookIntegrationSchema,
                 session=session,
             )
-            current_values = self._get_secret_values(schema.secret_id)
-            if _WEBHOOK_SECRET_REFERENCE_KEY in current_values:
-                reference = current_values[_WEBHOOK_SECRET_REFERENCE_KEY]
-                parsed_reference = parse_secret_reference(reference)
-                raise IllegalOperationError(
-                    "Cannot rotate this webhook integration signing secret "
-                    f"because it uses the secret reference `{reference}`. "
-                    "Update the referenced value instead with "
-                    f"`zenml secret update {parsed_reference.name} "
-                    f"--{parsed_reference.key}=<new-value>`, or update the "
-                    "webhook integration to use a managed secret."
-                )
-
-            if request.secret is not None and is_secret_reference(
-                request.secret
-            ):
-                raise IllegalOperationError(
-                    "Secret references cannot be configured through secret "
-                    "rotation. Use `zenml webhook update "
-                    f"{schema.name} --secret='"
-                    f"{request.secret.get_secret_value()}'` instead."
-                )
-
             secret = (
                 request.secret.get_secret_value()
                 if request.secret is not None
@@ -8416,47 +8354,43 @@ class SqlZenStore(BaseZenStore):
             secret=PlainSerializedSecretStr(secret)
         )
 
-    def get_webhook_integration_secret(self, integration_id: UUID) -> str:
-        """Get the signing secret used to validate webhook requests.
+    def get_webhook_intake_config(
+        self, integration_id: UUID
+    ) -> Tuple[WebhookType, bool, UUID]:
+        """Get the minimal configuration required for webhook intake.
 
         Args:
             integration_id: The webhook integration ID.
 
         Returns:
-            The signing secret.
+            The webhook type, active state, and internal secret ID.
 
         Raises:
-            RuntimeError: If the referenced secret value cannot be resolved or
-                is empty.
+            KeyError: If the webhook integration does not exist.
         """
         with Session(self.engine) as session:
-            schema = self._get_schema_by_id(
-                resource_id=integration_id,
-                schema_class=WebhookIntegrationSchema,
-                session=session,
-            )
-            values = self._get_secret_values(schema.secret_id)
+            config = session.exec(
+                select(
+                    WebhookIntegrationSchema.webhook_type,
+                    WebhookIntegrationSchema.active,
+                    WebhookIntegrationSchema.secret_id,
+                ).where(col(WebhookIntegrationSchema.id) == integration_id)
+            ).first()
+        if config is None:
+            raise KeyError(f"Webhook integration {integration_id} not found.")
+        webhook_type, active, secret_id = config
+        return WebhookType(webhook_type), active, secret_id
 
-        if _WEBHOOK_SECRET_VALUE_KEY in values:
-            return values[_WEBHOOK_SECRET_VALUE_KEY]
+    def get_webhook_secret(self, secret_id: UUID) -> str:
+        """Get a webhook signing secret from the configured secrets store.
 
-        try:
-            reference_id = UUID(values[_WEBHOOK_SECRET_REFERENCE_ID_KEY])
-            reference_key = values[_WEBHOOK_SECRET_REFERENCE_VALUE_KEY]
-            referenced_values = self._get_secret_values(reference_id)
-            secret = referenced_values[reference_key]
-        except (KeyError, ValueError) as error:
-            raise RuntimeError(
-                "The webhook integration signing secret reference can no "
-                "longer be resolved."
-            ) from error
+        Args:
+            secret_id: The internal webhook secret ID.
 
-        if not secret.strip():
-            raise RuntimeError(
-                "The webhook integration signing secret reference resolves "
-                "to an empty value."
-            )
-        return secret
+        Returns:
+            The signing secret.
+        """
+        return self._get_secret_values(secret_id)[_WEBHOOK_SECRET_VALUE_KEY]
 
     def record_webhook_event(
         self, integration_id: UUID, update: WebhookEventStatsUpdate
@@ -8471,35 +8405,42 @@ class SqlZenStore(BaseZenStore):
             KeyError: If the webhook integration no longer exists.
         """
         now = utc_now()
+        values: Dict[str, Any] = {
+            "received_count": (
+                WebhookIntegrationStatsSchema.received_count + 1
+            ),
+            "last_received_at": now,
+        }
+        if update.accepted:
+            values["accepted_count"] = (
+                WebhookIntegrationStatsSchema.accepted_count + 1
+            )
+            values["last_accepted_at"] = now
+        elif update.auth_failed:
+            values["auth_failed_count"] = (
+                WebhookIntegrationStatsSchema.auth_failed_count + 1
+            )
+        elif update.invalid_payload:
+            values["invalid_payload_count"] = (
+                WebhookIntegrationStatsSchema.invalid_payload_count + 1
+            )
+        if update.error_summary is not None:
+            values["last_error_at"] = now
+            values["last_error_summary"] = update.error_summary
+
         with Session(self.engine) as session:
-            schema = session.exec(
-                select(WebhookIntegrationSchema)
-                .where(col(WebhookIntegrationSchema.id) == integration_id)
-                .with_for_update()
-            ).first()
-            if schema is None:
+            result = session.exec(
+                sqlalchemy.update(WebhookIntegrationStatsSchema)
+                .where(
+                    col(WebhookIntegrationStatsSchema.webhook_id)
+                    == integration_id
+                )
+                .values(**values)
+            )
+            if result.rowcount == 0:
                 raise KeyError(
                     f"Webhook integration {integration_id} not found."
                 )
-
-            stats = schema.parsed_stats
-            stats.received_count += 1
-            stats.last_received_at = now
-
-            if update.accepted:
-                stats.accepted_count += 1
-                stats.last_accepted_at = now
-            elif update.auth_failed:
-                stats.auth_failed_count += 1
-            elif update.invalid_payload:
-                stats.invalid_payload_count += 1
-
-            if update.error_summary is not None:
-                stats.last_error_at = now
-                stats.last_error_summary = update.error_summary
-
-            schema.set_stats(stats)
-            session.add(schema)
             session.commit()
 
     # -------------------- Triggers ---------------------

@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 import pytest
+from sqlalchemy import event
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
@@ -19,6 +20,7 @@ from tests.integration.functional.utils import sample_name
 from zenml.enums import WebhookType
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
+    WebhookEventStatsUpdate,
     WebhookIntegrationFilter,
     WebhookIntegrationRequest,
     WebhookIntegrationRotateSecretRequest,
@@ -80,10 +82,18 @@ def test_zen_store_webhook_integration_lifecycle(clean_client):
     assert integration.get_resources().user is not None
     assert integration.get_resources().user.id == clean_client.active_user.id
 
+    store.record_webhook_event(
+        integration.id, WebhookEventStatsUpdate(accepted=True)
+    )
+    integration = store.get_webhook_integration(integration.id)
+
+    assert integration.stats.received_count == 1
+    assert integration.stats.accepted_count == 1
+
     by_id = store.get_webhook_integration(integration.id)
 
     assert by_id.id == integration.id
-    assert by_id.stats.received_count == 0
+    assert by_id.stats.received_count == 1
     assert by_id.get_resources().user is not None
     assert by_id.get_resources().user.id == clean_client.active_user.id
 
@@ -97,7 +107,10 @@ def test_zen_store_webhook_integration_lifecycle(clean_client):
     )
 
     assert integration.id in {item.id for item in filtered.items}
-    assert all(item.stats.received_count == 0 for item in filtered.items)
+    filtered_integration = next(
+        item for item in filtered.items if item.id == integration.id
+    )
+    assert filtered_integration.stats.received_count == 1
 
     updated_name = sample_name("webhook-store-updated")
     updated = store.update_webhook_integration(
@@ -130,6 +143,51 @@ def test_zen_store_webhook_integration_lifecycle(clean_client):
 
     with pytest.raises(KeyError):
         store.get_webhook_integration(integration.id)
+
+
+def test_sql_store_webhook_intake_uses_one_config_read_and_stats_update(
+    clean_client,
+) -> None:
+    """Webhook intake uses one SQL statement per database operation."""
+    store = clean_client.zen_store
+    if not isinstance(store, SqlZenStore):
+        pytest.skip("Local SQL store behavior is required for this test.")
+
+    result = store.create_webhook_integration(
+        WebhookIntegrationRequest(
+            project=clean_client.active_project.id,
+            name=sample_name("webhook-intake-query-count"),
+            webhook_type=WebhookType.CUSTOM,
+        )
+    )
+    statements = []
+
+    def capture_statement(
+        connection, cursor, statement, parameters, context, executemany
+    ):
+        statements.append(statement)
+
+    event.listen(store.engine, "before_cursor_execute", capture_statement)
+    try:
+        webhook_type, active, _ = store.get_webhook_intake_config(
+            result.webhook.id
+        )
+
+        assert webhook_type == WebhookType.CUSTOM
+        assert active is True
+        assert len(statements) == 1
+        assert statements[0].lstrip().upper().startswith("SELECT")
+
+        statements.clear()
+        store.record_webhook_event(
+            result.webhook.id, WebhookEventStatsUpdate(accepted=True)
+        )
+
+        assert len(statements) == 1
+        assert statements[0].lstrip().upper().startswith("UPDATE")
+    finally:
+        event.remove(store.engine, "before_cursor_execute", capture_statement)
+        store.delete_webhook_integration(result.webhook.id)
 
 
 def test_sql_store_protects_webhook_owned_secret(clean_client) -> None:
@@ -169,9 +227,7 @@ def test_sql_store_protects_webhook_owned_secret(clean_client) -> None:
                     secret_id=secret_id, session=session
                 )
 
-        assert store.get_webhook_integration_secret(webhook_id) == (
-            "owned-secret"
-        )
+        assert store.get_webhook_secret(secret_id) == "owned-secret"
         assert store.get_webhook_integration(webhook_id).id == webhook_id
 
         store.delete_webhook_integration(webhook_id)
@@ -184,39 +240,3 @@ def test_sql_store_protects_webhook_owned_secret(clean_client) -> None:
             store.delete_webhook_integration(webhook_id)
         except KeyError:
             pass
-
-
-def test_sql_store_resolves_webhook_secret_references_lazily(clean_client):
-    """Webhook secret references resolve their current value at intake time."""
-    store = clean_client.zen_store
-    if not isinstance(store, SqlZenStore):
-        pytest.skip("Webhook secret resolution is server-local behavior.")
-
-    secret_name = sample_name("webhook-reference")
-    clean_client.create_secret(secret_name, values={"key": "initial-secret"})
-    result = store.create_webhook_integration(
-        WebhookIntegrationRequest(
-            project=clean_client.active_project.id,
-            name=sample_name("webhook-store-reference"),
-            webhook_type=WebhookType.CUSTOM,
-            secret=f"{{{{{secret_name}.key}}}}",
-        )
-    )
-
-    try:
-        assert (
-            store.get_webhook_integration_secret(result.webhook.id)
-            == "initial-secret"
-        )
-
-        clean_client.update_secret(
-            secret_name, add_or_update_values={"key": "rotated-secret"}
-        )
-
-        assert (
-            store.get_webhook_integration_secret(result.webhook.id)
-            == "rotated-secret"
-        )
-    finally:
-        store.delete_webhook_integration(result.webhook.id)
-        clean_client.delete_secret(secret_name)

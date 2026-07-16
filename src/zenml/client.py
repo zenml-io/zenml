@@ -6856,8 +6856,7 @@ class Client(metaclass=ClientMetaClass):
             name: The webhook name.
             webhook_type: The webhook provider type.
             active: Whether the integration accepts events immediately.
-            secret: An optional direct signing secret or ZenML secret
-                reference.
+            secret: An optional signing secret.
 
         Returns:
             The created webhook and any generated signing secret.
@@ -6970,7 +6969,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: The webhook name, ID, or ID prefix.
             name: The new webhook name.
             active: The new active state.
-            secret: A new direct signing secret or ZenML secret reference.
+            secret: A new signing secret.
             project: The project name or ID.
 
         Returns:
