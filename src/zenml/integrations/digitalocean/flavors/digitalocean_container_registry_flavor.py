@@ -91,8 +91,7 @@ class DigitalOceanContainerRegistryFlavor(BaseContainerRegistryFlavor):
 
         Specifies resource requirements that are used to filter the available
         service connector types that are compatible with this flavor. Any
-        connector that provides a Docker registry resource can be used; a
-        dedicated DigitalOcean service connector is a planned follow-up.
+        connector that provides a Docker registry resource can be used.
 
         Returns:
             Requirements for compatible service connectors.
