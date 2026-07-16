@@ -55,7 +55,7 @@ def _build_store(
         name="",
         id=uuid4(),
         config=config,
-        flavor="digitalocean_spaces",
+        flavor="digitalocean",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
         created=datetime.now(),
@@ -69,7 +69,7 @@ def _build_store(
 def test_artifact_store_flavor_identity():
     """The Spaces flavor identifier, display name and config class are DO's."""
     flavor = DigitalOceanSpacesArtifactStoreFlavor()
-    assert flavor.name == "digitalocean_spaces"
+    assert flavor.name == "digitalocean"
     assert flavor.display_name == "DigitalOcean Spaces"
     assert flavor.config_class is DigitalOceanSpacesArtifactStoreConfig
     assert flavor.implementation_class is DigitalOceanSpacesArtifactStore
@@ -204,5 +204,12 @@ def test_integration_registered():
         integration_registry.integrations["digitalocean"]
         is DigitalOceanIntegration
     )
-    flavors = {f().name for f in DigitalOceanIntegration.flavors()}
-    assert flavors == {"digitalocean_spaces", "digitalocean"}
+    flavors = DigitalOceanIntegration.flavors()
+    assert flavors == [
+        DigitalOceanSpacesArtifactStoreFlavor,
+        DigitalOceanContainerRegistryFlavor,
+    ]
+    assert [flavor().name for flavor in flavors] == [
+        "digitalocean",
+        "digitalocean",
+    ]

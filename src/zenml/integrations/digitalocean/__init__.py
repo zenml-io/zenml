@@ -29,7 +29,7 @@ from zenml.integrations.constants import DIGITALOCEAN
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
-DIGITALOCEAN_SPACES_ARTIFACT_STORE_FLAVOR = "digitalocean_spaces"
+DIGITALOCEAN_SPACES_ARTIFACT_STORE_FLAVOR = "digitalocean"
 DIGITALOCEAN_CONTAINER_REGISTRY_FLAVOR = "digitalocean"
 
 

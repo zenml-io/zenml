@@ -57,7 +57,7 @@ class DigitalOceanSpacesArtifactStoreConfig(S3ArtifactStoreConfig):
     Example:
         ```
         zenml artifact-store register do_spaces \
-          --flavor=digitalocean_spaces --path=s3://my-space --region=fra1
+          --flavor=digitalocean --path=s3://my-space --region=fra1
         ```
     """
 

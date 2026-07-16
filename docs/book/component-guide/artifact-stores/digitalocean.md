@@ -31,7 +31,7 @@ Register the artifact store with the bucket path (using the `s3://` scheme, sinc
 
 ```shell
 zenml artifact-store register do_spaces \
-    --flavor=digitalocean_spaces \
+    --flavor=digitalocean \
     --path=s3://my-space \
     --region=fra1
 
@@ -43,7 +43,7 @@ The Spaces endpoint URL (`https://<region>.digitaloceanspaces.com`) is derived f
 
 ```shell
 zenml artifact-store register do_spaces \
-    --flavor=digitalocean_spaces \
+    --flavor=digitalocean \
     --path=s3://my-space \
     --client_kwargs='{"endpoint_url": "https://fra1.digitaloceanspaces.com"}'
 ```
@@ -56,7 +56,7 @@ zenml secret create spaces_secret \
     --secret_access_key='<YOUR_SPACES_SECRET_KEY>'
 
 zenml artifact-store register do_spaces \
-    --flavor=digitalocean_spaces \
+    --flavor=digitalocean \
     --path=s3://my-space \
     --region=fra1 \
     --authentication_secret=spaces_secret
