@@ -208,6 +208,28 @@ If steps 2, 3, and 4 execute in parallel and step 2 fails:
 All three execution modes are currently only supported by the `local`, `local_docker`, `kubernetes`, and `modal` orchestrator flavors. For any other orchestrator flavor, the default (and only available) behavior is `CONTINUE_ON_FAILURE`. If you would like to see any of the other orchestrators extended to support the other execution modes, reach out to us in [Slack](https://zenml.io/slack-invite).
 {% endhint %}
 
+#### Execution modes in dynamic pipelines
+
+In [dynamic pipelines](dynamic_pipelines.md), execution modes control what happens when a step launched asynchronously with `step.submit(...)` or `step.map(...)` fails. Dynamic pipelines default to `STOP_ON_FAILURE`, so a failing step surfaces as a failed run unless you opt into another mode.
+
+With `CONTINUE_ON_FAILURE`, the failure of an asynchronous step no longer fails the run:
+
+```python
+from zenml import pipeline, step
+from zenml.enums import ExecutionMode
+
+@pipeline(dynamic=True, execution_mode=ExecutionMode.CONTINUE_ON_FAILURE)
+def my_pipeline() -> None:
+    risky_step.submit()          # if this fails, the run still completes
+    independent_step.submit()    # keeps running regardless
+```
+
+The following rules apply:
+
+- A failed asynchronous step does not fail the run. Independent asynchronous steps keep running and the run completes.
+- Steps that depend on a failed asynchronous step (through its output or `after=...`) are skipped.
+- Awaiting a failed step through `future.result()` or `future.wait()` still raises the step's exception, and a failure in a step that you call synchronously still fails the run.
+
 ### Step Heartbeat
 
 Step heartbeat is a background mechanism that runs alongside step executions and performs two core functions:

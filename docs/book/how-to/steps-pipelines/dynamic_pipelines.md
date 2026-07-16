@@ -560,10 +560,9 @@ Client().trigger_pipeline(snapshot_id=<ID>, run_configuration={"parameters": {"m
 
 ## Limitations and Known Issues
 
-### Execution modes and error handling
+### Execution modes
 
-- The `CONTINUE_ON_FAILURE` execution mode is currently not supported in dynamic pipelines. Instead, you can use `try...except` to catch step exceptions and continue the pipeline. When you await a step explicitly (a synchronous call, or `future.result()` / `future.wait()`), the exception raised inside the step propagates as-is. When a failure surfaces implicitly (a failed future passed as a step input or to `after=`, or a submitted step still running when the pipeline function returns), ZenML raises a `StepExecutionException` whose `original_exception` holds the underlying error.
-- When using the `FAIL_FAST` execution mode, failure of a step does not immediately cancel other other **inline** steps. Instead, they continue executing until finished. **Isolated** steps on the other hand will be shut down immediately.
+When using the `FAIL_FAST` execution mode, failure of a step does not immediately cancel other **inline** steps. Instead, they continue executing until finished. **Isolated** steps on the other hand will be shut down immediately.
 
 ### Orchestrator Support
 
