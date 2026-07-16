@@ -116,3 +116,14 @@ def test_string_substitution() -> None:
         {3: "value_suffix", "key_suffix": model_sub},
         set(["set_value_suffix", 4]),
     ]
+
+
+def test_format_name_template_does_not_mutate_substitutions() -> None:
+    """Check that format_name_template leaves the caller's dict untouched."""
+    substitutions = {"env": "prod"}
+
+    string_utils.format_name_template(
+        "run_{env}_{date}_{time}", substitutions=substitutions
+    )
+
+    assert substitutions == {"env": "prod"}
