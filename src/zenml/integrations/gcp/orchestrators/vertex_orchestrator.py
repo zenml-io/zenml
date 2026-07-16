@@ -32,6 +32,7 @@
 import os
 import re
 import types
+import re
 import urllib
 import hashlib
 from typing import (
@@ -112,6 +113,7 @@ from zenml.step_operators.step_operator_entrypoint_configuration import (
     StepOperatorEntrypointConfiguration,
 )
 from zenml.utils.io_utils import get_global_config_directory
+from zenml.utils.string_utils import append_random_suffix
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
@@ -129,22 +131,22 @@ ENV_ZENML_VERTEX_RUN_ID = "ZENML_VERTEX_RUN_ID"
 STEP_JOB_NAME_METADATA_KEY = "job_name"
 
 
-def sanitize_vertex_job_name(pipeline_name: str, max_length: int = 64) -> str:
-    """
-    Truncates a pipeline name to fit Vertex AI limits while ensuring uniqueness.
-    """
-    if len(pipeline_name) <= max_length:
-        return pipeline_name
-
-    full_hash = hashlib.md5(pipeline_name.encode('utf-8')).hexdigest()
+def sanitize_vertex_job_name(job_name: str) -> str:
+    """Sanitizes the Vertex AI job name to comply with GCP requirements."""
     
-    short_hash = full_hash[:8]
-    keep_length = max_length - len(short_hash) - 1 
+    job_name = job_name.lower()
+    job_name = job_name.replace("_", "-").replace(" ", "-")
+    job_name = re.sub(r'[^a-z0-9\-]', '', job_name)
+    
+    if not job_name or not job_name[0].isalpha():
+        job_name = f"j-{job_name}"
 
-    truncated_name = pipeline_name[:keep_length]
-    final_name = f"{truncated_name}-{short_hash}"
-
-    return final_name
+    return append_random_suffix(
+        original_string=job_name,
+        suffix_length=5,
+        max_length=64,
+        separator="-"
+    )
 
 
 def _clean_pipeline_name(pipeline_name: str) -> str:
