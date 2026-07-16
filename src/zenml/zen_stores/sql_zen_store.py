@@ -8282,16 +8282,6 @@ class SqlZenStore(BaseZenStore):
             self._verify_name_uniqueness(
                 resource=update, schema=schema, session=session
             )
-            if update.secret is not None:
-                self._update_secret_values(
-                    secret_id=schema.secret_id,
-                    values={
-                        _WEBHOOK_SECRET_VALUE_KEY: (
-                            update.secret.get_secret_value()
-                        )
-                    },
-                    overwrite=True,
-                )
             schema.update(update)
             session.add(schema)
             session.commit()
@@ -8329,7 +8319,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The newly active signing secret.
-
         """
         with Session(self.engine) as session:
             schema = self._get_schema_by_id(

@@ -54,10 +54,6 @@ class WebhookIntegrationUpdate(BaseUpdate):
 
     name: str | None = Field(default=None, max_length=STR_FIELD_MAX_LENGTH)
     active: bool | None = None
-    secret: NonEmptyPlainSerializedSecretStr | None = Field(
-        default=None,
-        description="A replacement signing secret.",
-    )
 
 
 class WebhookIntegrationResponseBody(ProjectScopedResponseBody):

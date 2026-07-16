@@ -90,6 +90,13 @@ def test_zen_store_webhook_integration_lifecycle(clean_client):
     assert integration.stats.received_count == 1
     assert integration.stats.accepted_count == 1
 
+    with Session(store.engine) as session:
+        initial_secret_id = session.exec(
+            select(WebhookIntegrationSchema.secret_id).where(
+                WebhookIntegrationSchema.id == integration.id
+            )
+        ).one()
+
     by_id = store.get_webhook_integration(integration.id)
 
     assert by_id.id == integration.id
@@ -115,7 +122,10 @@ def test_zen_store_webhook_integration_lifecycle(clean_client):
     updated_name = sample_name("webhook-store-updated")
     updated = store.update_webhook_integration(
         integration_id=integration.id,
-        update=WebhookIntegrationUpdate(name=updated_name, active=False),
+        update=WebhookIntegrationUpdate(
+            name=updated_name,
+            active=False,
+        ),
     )
 
     assert updated.id == integration.id
@@ -123,6 +133,14 @@ def test_zen_store_webhook_integration_lifecycle(clean_client):
     assert updated.active is False
     assert updated.get_resources().user is not None
     assert updated.get_resources().user.id == clean_client.active_user.id
+
+    with Session(store.engine) as session:
+        updated_secret_id = session.exec(
+            select(WebhookIntegrationSchema.secret_id).where(
+                WebhookIntegrationSchema.id == integration.id
+            )
+        ).one()
+    assert updated_secret_id == initial_secret_id
 
     inactive_integrations = store.list_webhook_integrations(
         WebhookIntegrationFilter(project=project_id, active=False)
@@ -138,6 +156,15 @@ def test_zen_store_webhook_integration_lifecycle(clean_client):
     )
 
     assert rotated.secret.get_secret_value() == "replacement-secret"
+
+    with Session(store.engine) as session:
+        rotated_secret_id = session.exec(
+            select(WebhookIntegrationSchema.secret_id).where(
+                WebhookIntegrationSchema.id == integration.id
+            )
+        ).one()
+        assert rotated_secret_id == initial_secret_id
+    assert store.get_webhook_secret(rotated_secret_id) == "replacement-secret"
 
     store.delete_webhook_integration(integration.id)
 

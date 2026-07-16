@@ -88,9 +88,8 @@ def test_webhook_event_stats_update_rejects_invalid_outcome(
             },
         ),
         (WebhookIntegrationRotateSecretRequest, {}),
-        (WebhookIntegrationUpdate, {}),
     ],
-    ids=["create", "rotate", "update"],
+    ids=["create", "rotate"],
 )
 @pytest.mark.parametrize("secret", ["", "   "])
 def test_webhook_integration_models_reject_empty_secret(
@@ -116,12 +115,9 @@ def test_webhook_integration_requests_allow_missing_secret() -> None:
     assert secret_request.secret is None
 
 
-def test_webhook_integration_update_accepts_direct_secret() -> None:
-    """Webhook integration updates accept a direct signing secret."""
-    update = WebhookIntegrationUpdate(secret="webhook-secret")
-
-    assert update.secret is not None
-    assert update.secret.get_secret_value() == "webhook-secret"
+def test_webhook_integration_update_excludes_secret() -> None:
+    """Webhook integration updates are limited to database fields."""
+    assert "secret" not in WebhookIntegrationUpdate.model_fields
 
 
 def test_webhook_integration_schema_to_model_includes_body_and_metadata() -> (

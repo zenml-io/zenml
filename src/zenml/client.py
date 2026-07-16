@@ -6960,7 +6960,6 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: str | UUID,
         name: str | None = None,
         active: bool | None = None,
-        secret: str | None = None,
         project: str | UUID | None = None,
     ) -> WebhookIntegrationResponse:
         """Update a webhook.
@@ -6969,7 +6968,6 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: The webhook name, ID, or ID prefix.
             name: The new webhook name.
             active: The new active state.
-            secret: A new signing secret.
             project: The project name or ID.
 
         Returns:
@@ -6989,9 +6987,7 @@ class Client(metaclass=ClientMetaClass):
             ).id
         return self.zen_store.update_webhook_integration(
             integration_id=integration_id,
-            update=WebhookIntegrationUpdate(
-                name=name, active=active, secret=secret
-            ),
+            update=WebhookIntegrationUpdate(name=name, active=active),
         )
 
     @_fail_for_sql_zen_store

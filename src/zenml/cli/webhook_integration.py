@@ -123,17 +123,10 @@ def list_webhooks(
 @click.option(
     "--active/--inactive", "active", default=None, help="Set active state."
 )
-@click.option(
-    "--secret",
-    type=str,
-    default=None,
-    help="Set a replacement signing secret.",
-)
 def update_webhook(
     name_or_id: str,
     new_name: str | None,
     active: bool | None,
-    secret: str | None,
 ) -> None:
     """Update a webhook.
 
@@ -141,13 +134,11 @@ def update_webhook(
         name_or_id: The webhook name or ID.
         new_name: The new webhook name.
         active: The new active state.
-        secret: A replacement signing secret.
     """
     integration = Client().update_webhook(
         name_id_or_prefix=name_or_id,
         name=new_name,
         active=active,
-        secret=secret,
     )
     cli_utils.print_pydantic_model(
         title=f"Webhook '{integration.name}'",
