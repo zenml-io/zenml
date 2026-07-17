@@ -2,6 +2,11 @@
 description: Add more resources to your pipeline configuration.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Configure your pipeline to add compute
 
 Now that we have our pipeline up and running in the cloud, you might be wondering how ZenML figured out what sort of dependencies to install in the Docker image that we just ran on the VM. The answer lies in the [runner script we executed (i.e. run.py)](https://github.com/zenml-io/zenml/blob/main/examples/quickstart/run.py#L215), in particular, these lines:

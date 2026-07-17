@@ -3,6 +3,11 @@ description: A separate proxy container holds the service credentials and inject
 icon: key
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Stage 4 — Your agents need credentials they can't see
 
 Your agent needs to call an authenticated service, but the worker that runs model-chosen commands is the last place a credential should live. Stage 4 splits those two jobs: a separate proxy container holds the token and attaches the auth header, so the worker can make the call without ever being able to read what makes it succeed.

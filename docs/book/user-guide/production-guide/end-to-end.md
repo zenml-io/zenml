@@ -2,6 +2,11 @@
 description: Put your new knowledge in action with an end-to-end project
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # An end-to-end project
 
 That was awesome! We learned so many advanced MLOps production concepts:
