@@ -283,7 +283,9 @@ class SlurmClient:
             )
         return job_id
 
-    def get_job_states(self, job_ids: Sequence[str]) -> Dict[str, Optional[str]]:
+    def get_job_states(
+        self, job_ids: Sequence[str]
+    ) -> Dict[str, Optional[str]]:
         """Get the queue states of multiple jobs by their IDs.
 
         Args:
