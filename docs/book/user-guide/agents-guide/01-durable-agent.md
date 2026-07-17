@@ -5,7 +5,7 @@ icon: bolt
 
 # Record a durable agent
 
-Wrap your agent in a Kitaru flow and every model call and tool call is recorded as a durable, replayable execution. That recording is the reason to do this: a run that actually happened becomes something you can replay against your real code with one thing changed — a cheaper model, a different prompt — and diff against the original. Your production runs turn into the test bed you improve against, and this page is where that test bed gets minted.
+Wrap your agent in a Kitaru flow and every model call and tool call is recorded as a durable, replayable execution. That recording is the reason to do this: a run that actually happened becomes something you can replay against your real code with one thing changed — a cheaper model, a different prompt — and diff against the original. This page is where that recording gets made.
 
 The same recording buys you crash recovery for free. If the process dies at step N, the retry resumes from step N and you don't re-pay for the calls that already finished. But the durable checkpoint is doing double duty: it's both the recovery mechanism and the recording that [replay](replay-and-improve.md) reads back.
 

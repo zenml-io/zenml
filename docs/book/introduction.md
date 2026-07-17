@@ -21,7 +21,7 @@ ZenML is an open-source framework for developing, evaluating, and deploying your
 That story has two open-source projects behind it:
 
 * **ZenML** is the MLOps framework: portable, production-ready **pipelines** for ML and LLM workloads, with versioned artifacts, caching, and infrastructure abstracted behind [stacks](https://docs.zenml.io/stacks).
-* **[Kitaru](https://docs.zenml.io/kitaru)** is for **AI agents**: the runs that actually happen in production become the test bed you improve against. Kitaru replays a real run against your real code with one thing changed — a cheaper model, a different prompt — then diffs the two and rolls the winning change across a filtered set of runs. Every model call and tool call is recorded as a durable checkpoint along the way, which is what makes a faithful replay possible.
+* **[Kitaru](https://docs.zenml.io/kitaru)** is for **AI agents**: traces you can run, not just read. Replay a real run against your real code with one thing changed — a cheaper model, a different prompt — diff the two, and roll the winner across recent runs. Durable checkpoints are what make the replay faithful.
 
 Each works on its own. You can run ZenML and never touch Kitaru, or pick up Kitaru purely to make one agent durable. If you do use both, they compose rather than coexist: a Kitaru flow is a dynamic ZenML pipeline under the hood, so your agents and pipelines run on the same stacks, persist artifacts to the same stores, and show up in the same server and dashboard.
 
