@@ -86,6 +86,11 @@ subsystem recipes, use `.agents/skills/zenml-repo-workflows/SKILL.md`.
 - Start routes, dependencies, and services with guard clauses.
 - Raise `HTTPException` with precise status codes for expected errors.
 - Use Pydantic models for route inputs and outputs.
+- When changing server framework (e.g., `fastapi`) or database library versions,
+  check whether related OpenTelemetry SDK, exporter, and instrumentation
+  dependencies also need updates. Breaking changes in instrumented libraries can
+  require coordinated OTel updates. Keep OTel SDK/exporter versions aligned with
+  the matching OpenTelemetry instrumentation beta line.
 - Code outside `src/zenml/zen_server/` should NEVER import from `zen_server/`.
 
 ## Database and Storage Rules

@@ -93,6 +93,29 @@ One caveat: when you use `child_pipeline.embed(...)`, the child pipeline's own
 configuration is not applied. That includes child-level `substitutions`; the
 parent run's configuration controls the steps that execute inline.
 
+### Step inputs as parameters
+
+Any value you pass to a step that is not the output of another step is uploaded
+to the artifact store as an external artifact, even a small `int`. Each upload
+costs a write to the artifact store and a request to the server, which adds up
+when a pipeline calls steps in a loop.
+
+Set the `ZENML_PARAMETER_SIZE_THRESHOLD` environment variable to pass
+JSON-serializable inputs as step parameters instead, which skips the upload.
+The variable must be set in the environment in which the pipeline executes,
+not on the client that starts the run. See
+[this page](../environment-variables/environment-variables.md) for how to
+configure environment variables for pipeline execution.
+
+| Value | Behavior |
+| --- | --- |
+| unset or `0` | Every raw input is uploaded. This is the default. |
+| a positive number | JSON-serializable inputs up to that many bytes become step parameters. Larger inputs are uploaded. |
+| `-1` | Every JSON-serializable input becomes a step parameter. |
+
+Inputs that cannot be parameters are still uploaded, so raising the threshold is
+safe. Wrap an input with `ExternalArtifact` to keep uploading it.
+
 ### Step Runtime Configuration
 
 You can control where a step executes by specifying its runtime:
@@ -321,6 +344,28 @@ The `StepFuture` object provides several methods:
 When using `step.submit()`, steps with `runtime="isolated"` will execute in separate containers/processes, while steps with `runtime="inline"` will execute in separate threads within the orchestration environment.
 {% endhint %}
 
+### Ordering submitted steps
+
+A submitted step starts as soon as its inputs are available. To impose an order between steps that have no data dependency, use `after` or `start_after`:
+
+- `after=` waits for the upstream step to **finish** before starting.
+- `start_after=` waits for the upstream step to **start** before starting.
+
+`start_after` is useful when an upstream step is long-running and you want a dependent to run alongside it rather than after it. A common case is a step that brings up a service and a second step that uses it:
+
+```python
+@pipeline(dynamic=True)
+def serve_and_query():
+    server = serve_model.submit()  # long-running
+    # Starts once the server step is running, not when it finishes.
+    query = run_inference.submit(start_after=server)
+    query.wait()
+```
+
+Using `after=server` here would deadlock, since the dependent would wait for the long-running server step to finish. Both parameters accept a single future or a list, and you can combine them: `run_inference.submit(after=preprocess, start_after=server)`. `start_after` is available on `step.submit(...)`, `step.map(...)`, `step.product(...)`, and on a direct synchronous `step(...)` call, where the entrypoint blocks until the upstream has started. The upstream can be another step or a submitted child pipeline, for example `run_inference(start_after=serve_pipeline.submit())`.
+
+`start_after` orders execution, it does not probe readiness. The dependent starts once the upstream step has launched (for isolated steps, once it is submitted to the infrastructure), which does not guarantee that whatever the upstream sets up is ready to serve. Add your own connection retries if the dependent needs to reach a service the upstream starts. A failed upstream counts as started, so a `start_after` dependent is released rather than blocked when the upstream fails. Circular `start_after` dependencies are not detected and will stall the involved steps.
+
 ### Child pipelines inside dynamic pipelines
 
 Dynamic pipelines can call other dynamic pipelines from their `@pipeline`
@@ -515,10 +560,9 @@ Client().trigger_pipeline(snapshot_id=<ID>, run_configuration={"parameters": {"m
 
 ## Limitations and Known Issues
 
-### Execution modes and error handling
+### Execution modes
 
-- The `CONTINUE_ON_FAILURE` execution mode is currently not supported in dynamic pipelines. Instead, you can use `try...except` to catch step exceptions and continue the pipeline. When you await a step explicitly (a synchronous call, or `future.result()` / `future.wait()`), the exception raised inside the step propagates as-is. When a failure surfaces implicitly (a failed future passed as a step input or to `after=`, or a submitted step still running when the pipeline function returns), ZenML raises a `StepExecutionException` whose `original_exception` holds the underlying error.
-- When using the `FAIL_FAST` execution mode, failure of a step does not immediately cancel other other **inline** steps. Instead, they continue executing until finished. **Isolated** steps on the other hand will be shut down immediately.
+When using the `FAIL_FAST` execution mode, failure of a step does not immediately cancel other **inline** steps. Instead, they continue executing until finished. **Isolated** steps on the other hand will be shut down immediately.
 
 ### Orchestrator Support
 

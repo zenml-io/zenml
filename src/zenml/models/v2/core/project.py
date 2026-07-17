@@ -54,6 +54,10 @@ class ProjectRequest(BaseRequest):
         title="The description of the project.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    project_metadata: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="The metadata associated with the project.",
+    )
 
     @model_validator(mode="before")
     @classmethod
@@ -113,6 +117,10 @@ class ProjectUpdate(BaseUpdate):
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
+    project_metadata: Optional[Dict[str, Any]] = Field(
+        default=None,
+        title="The metadata associated with the project.",
+    )
 
 
 # ------------------ Response Model ------------------
@@ -134,6 +142,10 @@ class ProjectResponseMetadata(BaseResponseMetadata):
         default="",
         title="The description of the project.",
         max_length=STR_FIELD_MAX_LENGTH,
+    )
+    project_metadata: Dict[str, Any] = Field(
+        default={},
+        title="The metadata associated with the project.",
     )
 
 
@@ -184,6 +196,15 @@ class ProjectResponse(
             the value of the property.
         """
         return self.get_metadata().description
+
+    @property
+    def project_metadata(self) -> Dict[str, Any]:
+        """The `project_metadata` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().project_metadata
 
 
 # ------------------ Filter Model ------------------

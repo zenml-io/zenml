@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Compilation helpers for dynamic pipelines."""
 
+import json
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -20,6 +21,7 @@ from typing import (
     List,
     Optional,
     Sequence,
+    Set,
     Tuple,
     Union,
 )
@@ -33,18 +35,16 @@ from zenml.config.step_configurations import (
     StepConfiguration,
     StepConfigurationUpdate,
 )
+from zenml.constants import (
+    ENV_ZENML_PARAMETER_SIZE_THRESHOLD,
+    handle_int_env_var,
+)
 from zenml.enums import StepRuntime
 from zenml.execution.pipeline.dynamic.inputs import (
-    _await_input_future,
     await_step_inputs,
     convert_to_keyword_arguments,
 )
-from zenml.execution.pipeline.dynamic.outputs import (
-    AnyOutputFuture,
-    OutputArtifact,
-    PipelineFuture,
-)
-from zenml.execution.pipeline.dynamic.utils import collect_futures
+from zenml.execution.pipeline.dynamic.outputs import OutputArtifact
 from zenml.logger import get_logger
 from zenml.models import (
     ArtifactVersionResponse,
@@ -57,6 +57,7 @@ from zenml.steps import BaseStep
 from zenml.steps.entrypoint_function_utils import StepArtifact
 from zenml.steps.step_invocation import StepInvocation
 from zenml.steps.utils import OutputSignature
+from zenml.utils.json_utils import pydantic_encoder
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings
@@ -66,14 +67,44 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
+def is_valid_parameter(
+    step: "BaseStep", name: str, value: Any, size_threshold: int
+) -> bool:
+    """Check whether a raw step input can be passed as a parameter.
+
+    Args:
+        step: The step that the input belongs to.
+        name: The name of the input.
+        value: The input value.
+        size_threshold: The maximum serialized parameter size in bytes. Zero
+            disables step parameters, a negative value disables the size check.
+
+    Returns:
+        Whether the input can be passed as a parameter.
+    """
+    if size_threshold == 0:
+        return False
+
+    try:
+        step.entrypoint_definition.validate_input(key=name, value=value)
+    except Exception:
+        return False
+
+    if size_threshold < 0:
+        return True
+
+    size = len(json.dumps(value, default=pydantic_encoder).encode())
+    return size <= size_threshold
+
+
 def compile_dynamic_step_invocation(
     snapshot: "PipelineSnapshotResponse",
     pipeline: "DynamicPipeline",
     step: "BaseStep",
     invocation_id: str,
     inputs: Dict[str, Any],
+    upstream_steps: Set[str],
     pipeline_docker_settings: "DockerSettings",
-    after: Union["AnyOutputFuture", Sequence["AnyOutputFuture"], None] = None,
     config: Optional[StepConfigurationUpdate] = None,
 ) -> "Step":
     """Compile a dynamic step invocation.
@@ -83,40 +114,21 @@ def compile_dynamic_step_invocation(
         pipeline: The dynamic pipeline.
         step: The step to compile.
         invocation_id: The invocation ID of the step.
-        inputs: The inputs for the step function.
+        inputs: The awaited inputs for the step function.
+        upstream_steps: The upstream step invocation IDs.
         pipeline_docker_settings: The Docker settings of the parent pipeline.
-        after: The step run output futures to wait for.
         config: The configuration for the step.
 
     Returns:
         The compiled step.
     """
-    upstream_steps = set()
-
-    for future in collect_futures(after=after, expand_map_results=True):
-        _await_input_future(future, return_result=False)
-        if isinstance(future, PipelineFuture):
-            # A pipeline future means we're waiting for a child pipeline to
-            # finish. No such step exists in our pipeline, so we can't track
-            # it as an upstream step.
-            continue
-        upstream_steps.add(future.invocation_id)
-
-    inputs = await_step_inputs(inputs)
-
-    for value in inputs.values():
-        if isinstance(value, OutputArtifact):
-            upstream_steps.add(value.step_name)
-
-        if (
-            isinstance(value, Sequence)
-            and value
-            and all(isinstance(item, OutputArtifact) for item in value)
-        ):
-            upstream_steps.update(item.step_name for item in value)
+    size_threshold = handle_int_env_var(
+        ENV_ZENML_PARAMETER_SIZE_THRESHOLD, default=0
+    )
 
     input_artifacts: Dict[str, Union[StepArtifact, List[StepArtifact]]] = {}
     external_artifacts = {}
+    parameters: Dict[str, Any] = {}
     for name, value in inputs.items():
         if isinstance(value, OutputArtifact):
             input_artifacts[name] = StepArtifact(
@@ -128,7 +140,7 @@ def compile_dynamic_step_invocation(
                 chunk_size=value.chunk_size,
             )
         elif (
-            isinstance(value, list)
+            isinstance(value, Sequence)
             and value
             and all(isinstance(item, OutputArtifact) for item in value)
         ):
@@ -145,8 +157,11 @@ def compile_dynamic_step_invocation(
             ]
         elif isinstance(value, (ArtifactVersionResponse, ExternalArtifact)):
             external_artifacts[name] = value
+        elif is_valid_parameter(
+            step=step, name=name, value=value, size_threshold=size_threshold
+        ):
+            parameters[name] = value
         else:
-            # TODO: should some of these be parameters?
             external_artifacts[name] = ExternalArtifact(value=value)
 
     if template := get_config_template(snapshot, step, pipeline):
@@ -177,7 +192,7 @@ def compile_dynamic_step_invocation(
         pipeline=pipeline,
         model_artifacts_or_metadata={},
         client_lazy_loaders={},
-        parameters={},
+        parameters=parameters,
     )
 
     compiled_step = Compiler()._compile_step_invocation(
