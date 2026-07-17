@@ -37,6 +37,16 @@ If you want to configure whether logged output from steps is stored or not, set 
 export ZENML_DISABLE_STEP_LOGS_STORAGE=true
 ```
 
+## File copy chunk size
+
+When copying files between different filesystems (e.g. uploading or downloading artifacts, models or code archives to/from a remote artifact store), ZenML streams the file in chunks to keep memory usage bounded. The default chunk size is 8 MiB and can be adjusted:
+
+```bash
+export ZENML_FILEIO_COPY_CHUNK_SIZE=16777216  # 16 MiB
+```
+
+Non-positive values are ignored and the default is used instead.
+
 ## ZenML repository path
 
 To configure where ZenML will install and look for its repository, set the environment variable `ZENML_REPOSITORY_PATH`.
@@ -55,7 +65,7 @@ export ZENML_ANALYTICS_OPT_IN=false
 
 ## Debug mode
 
-Setting to `true` switches to developer mode:
+Setting to `true` switches to developer mode. This redirects all ZenML analytics events to the development ZenML analytics server instead of the official ZenML analytics server. Should not be used in production environments.
 
 ```bash
 export ZENML_DEBUG=true
@@ -140,7 +150,7 @@ export ZENML_SERVER_OTEL_METRICS_ENABLED=false
 export ZENML_SERVER_OTEL_LOGS_ENABLED=false
 ```
 
-You can also customize the service name reported in OpenTelemetry resource attributes. The standard `OTEL_SERVICE_NAME` environment variable is supported as well as a fallback:
+You can also customize the service name reported in OpenTelemetry resource attributes. The standard `OTEL_SERVICE_NAME` environment variable is supported as well as a fallback. If unset, it defaults to `zenml-server` for self-hosted deployments, or to the ZenML Pro workspace name for cloud deployments.
 
 ```bash
 export ZENML_SERVER_OTEL_SERVICE_NAME=zenml-server

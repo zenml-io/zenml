@@ -166,20 +166,10 @@ class StepContext(context_utils.BaseContext):
             StepContextError: If the keys of the output materializers and
                 output artifacts do not match.
         """
-        from zenml.client import Client
-
         super().__init__()
-
-        try:
-            pipeline_run = Client().get_pipeline_run(pipeline_run.id)
-        except KeyError:
-            pass
         self.pipeline_run = pipeline_run
-        try:
-            step_run = Client().get_run_step(step_run.id)
-        except KeyError:
-            pass
         self.step_run = step_run
+
         self.model_version = (
             step_run.model_version or pipeline_run.model_version
         )

@@ -15,7 +15,7 @@ import json
 from contextlib import ExitStack as does_not_raise
 
 import pytest
-from pydantic import field_validator
+from pydantic import SecretStr, field_validator
 
 from zenml.client import Client
 from zenml.config.secret_reference_mixin import SecretReferenceMixin
@@ -26,6 +26,12 @@ class MixinSubclass(SecretReferenceMixin):
     """Secret reference mixin subclass."""
 
     value: str
+
+
+class SecretStrMixinSubclass(SecretReferenceMixin):
+    """Secret reference mixin subclass with a `SecretStr` field."""
+
+    value: SecretStr
 
 
 def test_secret_references_are_not_allowed_for_clear_text_fields():
@@ -99,3 +105,27 @@ def test_secret_reference_resolving(clean_client: Client):
 
     with does_not_raise():
         _ = obj.value
+
+
+def test_secret_str_field_detects_required_secrets():
+    """Tests that secret references in a `SecretStr` field are detected."""
+    assert SecretStrMixinSubclass(value="plain text").required_secrets == set()
+
+    secrets = SecretStrMixinSubclass(value="{{name.key}}").required_secrets
+    assert len(secrets) == 1
+    secret_ref = secrets.pop()
+    assert secret_ref.name == "name"
+    assert secret_ref.key == "key"
+
+
+def test_secret_str_field_reference_resolving(clean_client: Client):
+    """Tests secret resolving for a `SecretStr` field."""
+    obj = SecretStrMixinSubclass(value="{{secret.key}}")
+
+    with pytest.raises(KeyError):
+        _ = obj.value
+
+    clean_client.create_secret("secret", values=dict(key="resolved_value"))
+
+    with does_not_raise():
+        assert obj.value == "resolved_value"

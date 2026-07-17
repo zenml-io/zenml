@@ -203,7 +203,17 @@ class StreamBroadcaster:
         queue: "asyncio.Queue[StreamItem]",
         from_id: Optional[str],
     ) -> AsyncGenerator[StreamItem, None]:
-        """Iterate catch-up history, then live events from the queue."""
+        """Iterate catch-up history, then live events from the queue.
+
+        Args:
+            session: Stream session shared by the subscribers.
+            subscriber_id: Identifier of the current subscriber.
+            queue: Queue containing live stream items for the subscriber.
+            from_id: Optional event ID from which to replay history.
+
+        Yields:
+            Historical and live stream items.
+        """
         catchup_ids: "OrderedDict[str, None]" = OrderedDict()
         try:
             try:

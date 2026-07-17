@@ -116,7 +116,7 @@ ENV \
   ZENML_CONFIG_PATH=/zenml/.zenconfig \
   # Signal to ZenML that it is running in a container
   ZENML_CONTAINER=1 \
-  # Set ZenML debug mode to true
+  # Send ZenML analytics events to the development ZenML analytics server
   ZENML_DEBUG=true \
   # Set ZenML logging verbosity to DEBUG
   ZENML_LOGGING_VERBOSITY=DEBUG \

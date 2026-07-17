@@ -671,6 +671,13 @@ class BaseOrchestrator(StackComponent, ABC):
             f"the {self.__class__.__name__} orchestrator."
         )
 
+    def cleanup_isolated_step(self, step_run: "StepRunResponse") -> None:
+        """Clean up after an isolated step run has finished.
+
+        Args:
+            step_run: The finished step run.
+        """
+
     @staticmethod
     def requires_resources_in_orchestration_environment(
         step: "Step",

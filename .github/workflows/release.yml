@@ -3,6 +3,10 @@ name: Release Package & Docker Image
 on:
   push:
     tags: ['*']
+env:
+  ZENML_DEBUG: true
+  ZENML_LOGGING_VERBOSITY: debug
+  ZENML_ANALYTICS_OPT_IN: false
 jobs:
   setup-and-test:
     uses: ./.github/workflows/unit-test.yml
@@ -14,16 +18,13 @@ jobs:
   # test full migrations.
   mysql-db-migration-testing:
     runs-on: ubuntu-latest
-    env:
-      ZENML_ANALYTICS_OPT_IN: false
-      ZENML_DEBUG: true
     steps:
       - name: Checkout code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
           fetch-depth: 0
       - name: Set up Python 3.10
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
         with:
           python-version: '3.10'
       - name: Login to Docker Hub
@@ -35,32 +36,26 @@ jobs:
         run: bash scripts/test-migrations.sh mysql latest
   sqlite-db-migration-testing:
     runs-on: ubuntu-latest
-    env:
-      ZENML_ANALYTICS_OPT_IN: false
-      ZENML_DEBUG: true
     steps:
       - name: Checkout code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
           fetch-depth: 0
       - name: Set up Python 3.10
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
         with:
           python-version: '3.10'
       - name: Test migrations across versions
         run: bash scripts/test-migrations.sh sqlite latest
   mariadb-db-migration-testing:
     runs-on: ubuntu-latest
-    env:
-      ZENML_ANALYTICS_OPT_IN: false
-      ZENML_DEBUG: true
     steps:
       - name: Checkout code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
           fetch-depth: 0
       - name: Set up Python 3.10
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
         with:
           python-version: '3.10'
       - name: Login to Docker Hub
@@ -88,16 +83,14 @@ jobs:
       id-token: write
       contents: read
     env:
-      ZENML_DEBUG: 1
-      ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
       - name: Get the version from the github tag ref
         id: get_version
         run: echo "VERSION=${GITHUB_REF/refs\/tags\//}" >> "$GITHUB_OUTPUT"
       - name: Set up Python 3.11
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
         with:
           python-version: '3.11'
       - name: Install uv

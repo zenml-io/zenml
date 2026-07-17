@@ -25,13 +25,15 @@ on:
         options: ['3.10', '3.11', '3.12', '3.13', '3.14']
         required: false
         default: '3.11'
+env:
+  ZENML_DEBUG: 1
+  ZENML_LOGGING_VERBOSITY: debug
+  ZENML_ANALYTICS_OPT_IN: false
 jobs:
   update-e2e-batch-template-to-examples:
     name: update-e2e-batch-template-to-examples
     runs-on: ${{ inputs.os }}
     env:
-      ZENML_DEBUG: 1
-      ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
       OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
     if: github.event_name == 'pull_request' && ! startsWith(github.event.head_commit.message,
@@ -57,7 +59,7 @@ jobs:
             Breaking changes affecting templates have been introduced. To mitigate this issue,\
             please make the code in zenml-io/template-e2e-batch compatible with new version of\
             ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
           ref: ${{ github.event.pull_request.head.ref }}
       - name: Check-out fresh E2E template
@@ -106,8 +108,6 @@ jobs:
     name: update-nlp-template-to-examples
     runs-on: ${{ inputs.os }}
     env:
-      ZENML_DEBUG: 1
-      ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
       OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
     if: github.event_name == 'pull_request' && ! startsWith(github.event.head_commit.message,
@@ -133,7 +133,7 @@ jobs:
             Breaking changes affecting templates have been introduced. To mitigate this issue,\
             please make the code in zenml-io/template-nlp compatible with new version of\
             ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
           ref: ${{ github.event.pull_request.head.ref }}
       - name: Check-out fresh NLP template
@@ -181,8 +181,6 @@ jobs:
     name: update-starter-template-to-examples
     runs-on: ${{ inputs.os }}
     env:
-      ZENML_DEBUG: 1
-      ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
       OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
     if: github.event_name == 'pull_request' && ! startsWith(github.event.head_commit.message,
@@ -209,7 +207,7 @@ jobs:
             Breaking changes affecting templates have been introduced. To mitigate this issue,\
             please make the code in zenml-io/template-starter compatible with new version of\
             ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
           ref: ${{ github.event.pull_request.head.ref }}
       - name: Check-out fresh Starter template
@@ -258,8 +256,6 @@ jobs:
     name: update-llm-finetuning-template-to-examples
     runs-on: ${{ inputs.os }}
     env:
-      ZENML_DEBUG: 1
-      ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
       OBJC_DISABLE_INITIALIZE_FORK_SAFETY: 'YES'
     if: github.event_name == 'pull_request' && ! startsWith(github.event.head_commit.message,
@@ -284,7 +280,7 @@ jobs:
             Breaking changes affecting templates have been introduced. To mitigate this issue,\
             please make the code in zenml-io/template-llm-finetuning compatible with new version of\
             ZenML core, release it and update release tag in zenml.cli.base.ZENML_PROJECT_TEMPLATES"
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
           ref: ${{ github.event.pull_request.head.ref }}
       - name: Check-out fresh LLM Finetuning template

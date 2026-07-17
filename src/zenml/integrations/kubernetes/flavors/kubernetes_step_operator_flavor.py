@@ -79,6 +79,11 @@ class KubernetesStepOperatorSettings(BaseSettings):
         default=None,
         description="Timeout for API requests in seconds. If not specified, no explicit timeout will be set. ",
     )
+    max_api_retries: NonNegativeInt = Field(
+        default=3,
+        description="Maximum number of retries for failed Kubernetes API "
+        "requests. Set to 0 to disable retries.",
+    )
 
     # Deprecated fields
     pod_startup_timeout: Optional[int] = Field(

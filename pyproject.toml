@@ -18,7 +18,7 @@ module-name = ["zenml", "zenml_cli"]
 
 [project]
 name = "zenml"
-version = "0.95.1"
+version = "0.96.1"
 description = "ZenML: MLOps for Reliable AI: from Classical AI to Agents."
 authors = [{name = "ZenML GmbH", email = "info@zenml.io"}]
 readme = "README.md"
@@ -50,8 +50,8 @@ dependencies = [
     "docker~=7.1.0",
     "gitpython>=3.1.18,<4.0.0",
     "jsonref",
-    "opentelemetry-instrumentation-logging==0.61b0",
-    "opentelemetry-sdk==1.40.0",
+    "opentelemetry-instrumentation-logging==0.64b0",
+    "opentelemetry-sdk==1.43.0",
     "packaging>=24.1",
     "psutil>=5.0.0",
     "pydantic>=2.0,<=2.12.5",
@@ -84,12 +84,10 @@ local = [
 ]
 server = [
     "zenml[local,native-schedules]",  # Includes all the DB dependencies
-    "fastapi>=0.120.1,<0.121.0",
+    "fastapi>=0.138.0,<0.139.0",
     "uvicorn[standard]>=0.17.5",
     "python-multipart~=0.0.9",
     "pyjwt[crypto]>=2.13.0,<2.14.0",
-    "fastapi-utils",
-    "orjson>=3.11.6,<3.12.0",
     "Jinja2",
     "ipinfo>=4.4.3",
     "secure~=1.0.1",
@@ -100,10 +98,10 @@ server = [
 ]
 otel = [
     # Install otel dependencies to enable OpenTelemetry instrumentation in the server
-    "opentelemetry-exporter-otlp-proto-http>=1.40.0,<1.41.0",
-    "opentelemetry-instrumentation-fastapi>=0.61b0,<0.62b0",
-    "opentelemetry-instrumentation-requests>=0.61b0,<0.62b0",
-    "opentelemetry-instrumentation-sqlalchemy>=0.61b0,<0.62b0",
+    "opentelemetry-exporter-otlp-proto-http>=1.43.0,<1.44.0",
+    "opentelemetry-instrumentation-fastapi>=0.64b0,<0.65b0",
+    "opentelemetry-instrumentation-requests>=0.64b0,<0.65b0",
+    "opentelemetry-instrumentation-sqlalchemy>=0.64b0,<0.65b0",
 ]
 server-streaming = ["redis>=7.1.0,<8.0.0"]
 jupyter = ["rich[jupyter]>=12.0.0"]
@@ -129,7 +127,7 @@ connectors-azure = [
     "azure-mgmt-containerservice>=20.0.0",
     "azure-mgmt-containerregistry>=10.0.0",
     "azure-mgmt-storage>=20.0.0",
-    "azure-storage-blob>=12.0.0",
+    "azure-storage-blob>=12.17.0,<13.0.0",
     "azure-mgmt-resource>=21.0.0,<25.0.0",
     "kubernetes>=18.20.0",
     "requests>=2.27.11,<3.0.0",
@@ -145,7 +143,7 @@ vertex = [
     "google-cloud-pipeline-components>=2.19.0",
 ]
 azureml = [
-    "azure-ai-ml==1.23.1",
+    "azure-ai-ml>=1.23.1,<2.0.0",
 ]
 dev = [
     "bandit>=1.7.5,<2.0.0",
@@ -154,6 +152,11 @@ dev = [
     "zizmor>=1.0.0",
     "coverage[toml]>=7.6.1,<8.0.0",
     "pytest>=9.0.3,<10.0.0",
+    # starlette's TestClient imports httpx on 0.46.0 through 1.1.x and httpx2
+    # on 1.2.0 and newer.
+    "httpx>=0.23.0,<1.0.0",
+    "httpx2>=2.5.0,<3.0.0",
+    "beautifulsoup4>=4.12.0,<5.0.0",
     "mypy==1.18.1",
     "pre-commit",
     "pyment>=0.3.3,<0.4.0",
@@ -313,12 +316,11 @@ arg-type-hints-in-docstring = false
 arg-type-hints-in-signature = true
 check-return-types = false
 check-yield-types = false
+skip-checking-short-docstrings = false
 allow-init-docstring = true
 check-class-attributes = false
 check-arg-order = false
 omit-stars-when-documenting-varargs = true
-baseline = "pydoclint-baseline.txt"
-auto-regenerate-baseline = true
 
 [tool.bandit]
 skips = ["B615"]
@@ -377,6 +379,7 @@ module = [
     "azureml.*",
     "google.*",
     "google_cloud_pipeline_components.*",
+    "great_expectations.*",
     "neuralprophet.*",
     "lightgbm.*",
     "scipy.*",
@@ -423,11 +426,18 @@ module = [
     "mlx.*",
     "runai",
     "runai.*",
+    "truss.*",
+    "truss_train.*",
     "jsonref",
     "k8s_agent_sandbox",
     "k8s_agent_sandbox.*",
 ]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["zenml.integrations.great_expectations.*"]
+warn_unused_ignores = false
+disallow_subclassing_any = false
 
 [[tool.mypy.overrides]]
 module = ["mlx.core.*"]  # workaround for failing mypy stub parsing (mlx==0.29.4 version)

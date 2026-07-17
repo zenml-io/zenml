@@ -40,6 +40,8 @@ def test_encode_decode_works():
     user_id = uuid.uuid4()
     device_id = uuid.uuid4()
     api_key_id = uuid.uuid4()
+    api_key_generation = 3
+    issued_at = datetime.utcnow()
     schedule_id = uuid.uuid4()
     pipeline_run_id = uuid.uuid4()
     claims = {
@@ -51,19 +53,33 @@ def test_encode_decode_works():
         user_id=user_id,
         device_id=device_id,
         api_key_id=api_key_id,
+        api_key_generation=api_key_generation,
+        issued_at=issued_at,
         schedule_id=schedule_id,
         pipeline_run_id=pipeline_run_id,
         claims=claims,
     )
 
     encoded_token = token.encode()
+    raw_claims = jwt.decode(
+        encoded_token,
+        server_config().jwt_secret_key,
+        algorithms=[server_config().jwt_token_algorithm],
+        audience=server_config().get_jwt_token_audience(),
+        issuer=server_config().get_jwt_token_issuer(),
+    )
     decoded_token = JWTToken.decode_token(encoded_token)
 
+    assert raw_claims["key_gen"] == api_key_generation
+    assert "api_key_generation" not in raw_claims
+    assert isinstance(raw_claims["iat"], float)
     assert decoded_token.user_id == user_id
     assert decoded_token.device_id == device_id
     assert decoded_token.api_key_id == api_key_id
+    assert decoded_token.api_key_generation == api_key_generation
     assert decoded_token.schedule_id == schedule_id
     assert decoded_token.pipeline_run_id == pipeline_run_id
+    assert decoded_token.issued_at == issued_at
     # Check that the configured custom claims are included in the decoded claims
     assert decoded_token.claims["foo"] == "bar"
     assert decoded_token.claims["baz"] == "qux"

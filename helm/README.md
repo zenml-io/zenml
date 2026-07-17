@@ -20,8 +20,8 @@ ZenML is an open-source MLOps framework designed to help you create robust, main
 To install the ZenML chart directly from Amazon ECR, use the following command:
 
 ```bash
-# example command for version 0.95.1
-helm install my-zenml oci://public.ecr.aws/zenml/zenml --version 0.95.1
+# example command for version 0.96.1
+helm install my-zenml oci://public.ecr.aws/zenml/zenml --version 0.96.1
 ```
 
 Note: Ensure you have OCI support enabled in your Helm client and that you are authenticated with Amazon ECR.
@@ -114,28 +114,40 @@ If you override `podSecurityContext`, ensure that `fsGroup: 1000` is set when us
 
 ### Server Observability
 
-You can configure server log output and OpenTelemetry export through
-`server.environment`:
+You can configure server log output and OpenTelemetry export with dedicated Helm values:
 
 ```yaml
 server:
-  environment:
-    ZENML_CONSOLE_LOGGING_FORMAT: "<console|json>" # default is console
-    ZENML_LOGGING_COLORS_DISABLED: "<true|false>" # default is false
-    ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4318"
-    ZENML_SERVER_OTEL_SERVICE_NAME: "zenml-server" # default is zenml-server
-    ZENML_SERVER_OTEL_TRACES_ENABLED: "<true|false>" # default is true
-    ZENML_SERVER_OTEL_METRICS_ENABLED: "<true|false>" # default is true
-    ZENML_SERVER_OTEL_LOGS_ENABLED: "<true|false>" # default is true
+  logging:
+    verbosity: "info" # debug, info, warning, error, or critical
+    format: "console" # console, json, or a custom %-style format
+    colorsDisabled: false
+  openTelemetry:
+    endpoint: "http://otel-collector:4318"
+    serviceName: "zenml-server"
+    tracesEndpoint:
+    metricsEndpoint:
+    logsEndpoint:
+    tracesEnabled: true
+    metricsEnabled: true
+    logsEnabled: true
 ```
 
-`ZENML_CONSOLE_LOGGING_FORMAT` controls the server container stdout/stderr output. It can be set to `console`, `json`, or a valid Python `%`-style logging format string. The older `ZENML_LOGGING_FORMAT` environment variable is still supported as a deprecated alias but will be removed in a future version.
+`server.logging.verbosity` sets the ZenML server log level. The legacy `server.debug` option is still supported for compatibility and forces the server log level to `debug` when set to `true`, but new deployments should use `server.logging.verbosity` instead.
 
-OpenTelemetry export is configured separately with `ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT` and exports traces, metrics, and logs using OTLP/HTTP transport. Each signal is enabled by default and can be disabled individually with `ZENML_SERVER_OTEL_TRACES_ENABLED`, `ZENML_SERVER_OTEL_METRICS_ENABLED`, and `ZENML_SERVER_OTEL_LOGS_ENABLED`.
+`server.logging.format` controls the server container stdout/stderr output. It can be set to `console`, `json`, or a valid Python `%`-style logging format string. The older `ZENML_LOGGING_FORMAT` environment variable is still supported through `server.environment` as a deprecated alias but will be removed in a future version.
 
-The standard `OTEL_EXPORTER_OTLP_ENDPOINT` environment variable is also supported as a fallback.
+OpenTelemetry export behavior:
 
-Standard per-signal OTLP/HTTP endpoint variables such as `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`, `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`, and `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT` are supported too, along with matching `ZENML_SERVER_OTEL_EXPORTER_OTLP_<SIGNAL>_ENDPOINT` names.
+- Export is enabled when either `server.openTelemetry.endpoint` or at least one per-signal endpoint is configured.
+- Per-signal endpoints can be configured with `server.openTelemetry.tracesEndpoint`, `metricsEndpoint`, or `logsEndpoint`.
+- If `server.openTelemetry.endpoint` is not configured, only signals with a per-signal endpoint are exported.
+- If `server.openTelemetry.endpoint` is configured, the server uses it for any signal without a per-signal endpoint by appending paths like `/v1/traces`, `/v1/metrics`, and `/v1/logs`.
+- Each signal is enabled by default and can be disabled individually with `server.openTelemetry.tracesEnabled`, `metricsEnabled`, and `logsEnabled`. OR you can set individual per-signal endpoints to enable export only for that signal type.
+
+The service name can be configured with `server.openTelemetry.serviceName`. If not set, the server uses its default service name.
+
+You can use `server.environment` for advanced exporter settings and standard OpenTelemetry variables that are not modeled as chart values, such as `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_EXPORTER_OTLP_TIMEOUT`, and `OTEL_EXPORTER_OTLP_COMPRESSION`.
 
 Standard OTLP headers, timeout, and compression variables are handled by the OpenTelemetry Python exporters. OTLP/gRPC protocol variables are not supported because the server configures OTLP/HTTP exporters directly. You can read more about the OpenTelemetry environment variables and SDK configuration [here](https://opentelemetry.io/docs/languages/sdk-configuration/).
 
