@@ -11,6 +11,10 @@ icon: gauge-high
 zenml integration install harbor -y   # requires Python 3.12+
 ```
 
+{% hint style="info" %}
+The `harbor` and `huggingface` integrations cannot be installed in the same environment: Harbor requires `datasets>=4.4.1` while `huggingface` pins `datasets<4`, and the two cannot co-resolve. Run Harbor campaigns in an environment without the `huggingface` integration.
+{% endhint %}
+
 ## A campaign in ~10 lines
 
 ```python
@@ -66,6 +70,10 @@ agent_evals(
 ```
 
 Token usage and cost flow into the trial results, the `harbor.cost_usd` step metadata, and the report's cost column. The hermetic `oracle` agent (runs each task's reference solution) and `nop` agent (does nothing) need no keys — useful for validating a campaign setup before spending tokens. As with any sandbox environment value, the key is readable by code running inside the sandbox.
+
+{% hint style="warning" %}
+**Never put provider credentials in an agent's `env`.** An agent spec's `env` (`{"name": ..., "env": {...}}`) becomes the shard's `agent_env`, which ZenML persists **verbatim** — into the `harbor_shards` artifact and into every shard result's `result.json` in the artifact store, in cleartext, plus the shard's step metadata. A raw `ANTHROPIC_API_KEY` (or any secret) placed there leaks into the artifact store, backups, and shared stacks. Supply provider credentials through the **ambient sandbox environment** (Harbor's agents already read their key from the host environment and inject it into the sandbox) or through **ZenML secrets**, and keep `agent_env` for non-secret configuration only. `build_harbor_matrix` logs a warning when an `agent_env` key looks credential-shaped, but it does not scrub the value — the safe channel is your responsibility.
+{% endhint %}
 
 ## The environment bridge
 

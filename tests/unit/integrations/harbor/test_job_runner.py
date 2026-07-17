@@ -97,6 +97,12 @@ def test_harbor_api_canary() -> None:
     assert "max_retries" in RetryConfig.model_fields
     for method in ("start", "stop", "exec", "upload_file", "download_file"):
         assert method in BaseEnvironment.__abstractmethods__
+    # Protected hooks the Sandbox bridge overrides (_validate_definition)
+    # and calls (_merge_env). They are not part of Harbor's public
+    # surface, so this canary plus the harbor>=0.8,<0.9 pin are what
+    # catch a rename before it fails at user runtime.
+    assert callable(BaseEnvironment._merge_env)
+    assert callable(BaseEnvironment._validate_definition)
     assert "return_code" in ExecResult.model_fields
     # Result-side surface consumed by HarborTrialResult.from_harbor and
     # run_shard_job — the shapes the SimpleNamespace mocks fabricate.
@@ -391,3 +397,70 @@ def test_run_shard_job_assembles_result(
     assert result.trials[0].rewards == {"reward": 1.0}
     assert result.trials[1].rewards == {"reward": 0.0}
     assert result.mean_reward == {"reward": 0.5}
+
+
+def test_run_shard_job_records_missing_trials_as_errored(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A dropped trial is recorded as errored, not silently lost.
+
+    When Harbor returns fewer results than the shard has identities, the
+    missing trials must count toward ``n_errored`` so a
+    ``fail_on_trial_error`` gate trips on them.
+    """
+    task_dir = tmp_path / "hello"
+    task_dir.mkdir()
+    monkeypatch.setattr(
+        "zenml.integrations.harbor.job_runner.Task",
+        lambda _: SimpleNamespace(has_steps=False),
+    )
+
+    # Shard of 2 trials, but Harbor hands back only one result.
+    only_trial = SimpleNamespace(
+        trial_name="hello__aaaaaaa",
+        task_name="hello",
+        source=None,
+        task_checksum="sha256-of-task",
+        step_results=None,
+        agent_info=SimpleNamespace(name="oracle", model_info=None),
+        verifier_result=SimpleNamespace(rewards={"reward": 1.0}),
+        exception_info=None,
+        compute_token_cost_totals=lambda: (None, None, None, None),
+        started_at=datetime(2026, 7, 1, tzinfo=timezone.utc),
+        finished_at=None,
+    )
+    job_result = SimpleNamespace(
+        id="00000000-0000-0000-0000-000000000002",
+        n_total_trials=1,
+        stats=SimpleNamespace(
+            n_completed_trials=1,
+            n_errored_trials=0,
+            n_cancelled_trials=0,
+            n_retries=0,
+        ),
+        trial_results=[only_trial],
+    )
+
+    class _FakeJob:
+        @classmethod
+        async def create(cls, config):
+            return cls()
+
+        async def run(self):
+            return job_result
+
+    monkeypatch.setattr("zenml.integrations.harbor.job_runner.Job", _FakeJob)
+
+    spec = _spec(task=TaskRef(path=str(task_dir)), n_trials=2)
+    result = run_shard_job(spec=spec, jobs_dir=tmp_path / "jobs")
+
+    assert len(result.trials) == 2
+    missing = result.trials[1]
+    assert missing.trial_identity == "identity-1"
+    assert missing.exception_type == "MissingTrialResult"
+    assert missing.rewards is None
+    # The missing trial folds into the counts so gates can see it.
+    assert result.n_errored == 1
+    assert result.n_total_trials == 2
+    assert result.error_rate == 0.5
+    assert result.n_succeeded == 1

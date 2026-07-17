@@ -97,6 +97,48 @@ def test_build_harbor_matrix_requires_tasks() -> None:
         build_harbor_matrix.entrypoint(agents=[{"name": "oracle"}])
 
 
+def test_build_harbor_matrix_warns_on_credential_env(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """A credential-shaped agent_env key warns but is not scrubbed.
+
+    agent_env is persisted verbatim into artifacts and step metadata, so
+    a secret placed there leaks — the step warns loudly rather than
+    silently dropping (or keeping) it.
+    """
+    task_dir = tmp_path / "hello"
+    task_dir.mkdir()
+    with caplog.at_level("WARNING"):
+        shards = build_harbor_matrix.entrypoint(
+            tasks=[str(task_dir)],
+            agents=[
+                {
+                    "name": "claude-code",
+                    "env": {"ANTHROPIC_API_KEY": "sk-secret"},
+                }
+            ],
+        )
+    assert "look like credentials" in caplog.text
+    assert "ANTHROPIC_API_KEY" in caplog.text
+    # The value is kept, not scrubbed — the warning is the whole fix.
+    spec = HarborShardSpec.model_validate(shards[0])
+    assert spec.agent_env == {"ANTHROPIC_API_KEY": "sk-secret"}
+
+
+def test_build_harbor_matrix_no_warn_on_benign_env(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    """A benign agent_env key does not trip the credential warning."""
+    task_dir = tmp_path / "hello"
+    task_dir.mkdir()
+    with caplog.at_level("WARNING"):
+        build_harbor_matrix.entrypoint(
+            tasks=[str(task_dir)],
+            agents=[{"name": "oracle", "env": {"HTTP_PROXY": "http://x"}}],
+        )
+    assert "look like credentials" not in caplog.text
+
+
 def _shard_result(n_errored: int = 0) -> HarborShardResult:
     """Build a shard result for step tests.
 

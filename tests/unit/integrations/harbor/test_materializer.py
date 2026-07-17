@@ -15,6 +15,7 @@
 
 import os
 import shutil
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -126,6 +127,60 @@ def test_materializer_warns_on_dangling_job_dir(
         assert "does not exist" in caplog.text
         assert not os.path.exists(os.path.join(artifact_uri, "job_dir.tar.gz"))
         assert os.path.exists(os.path.join(artifact_uri, "result.json"))
+    finally:
+        shutil.rmtree(artifact_uri, ignore_errors=True)
+
+
+def test_materializer_prunes_temp_job_dir_after_archive(
+    tmp_path: Path,
+) -> None:
+    """A successful archive removes a zenml-harbor- temp source tree."""
+    from zenml.client import Client
+
+    temp_root = Path(tempfile.mkdtemp(prefix="zenml-harbor-"))
+    job_dir = temp_root / "shard-abc123def456"
+    (job_dir / "trial-1").mkdir(parents=True)
+    (job_dir / "trial-1" / "result.json").write_text('{"ok": true}')
+
+    artifact_uri = os.path.join(
+        Client().active_stack.artifact_store.path,
+        f"harbor-prune-test-{os.path.basename(tmp_path)}",
+    )
+    os.makedirs(artifact_uri, exist_ok=True)
+    try:
+        materializer = HarborShardResultMaterializer(uri=artifact_uri)
+        materializer.save(_shard_result(job_dir=str(job_dir)))
+        assert os.path.exists(os.path.join(artifact_uri, "job_dir.tar.gz"))
+        # The whole zenml-harbor- temp dir is pruned, not just its child.
+        assert not temp_root.exists()
+    finally:
+        shutil.rmtree(artifact_uri, ignore_errors=True)
+        shutil.rmtree(temp_root, ignore_errors=True)
+
+
+def test_materializer_leaves_non_temp_job_dir(tmp_path: Path) -> None:
+    """A job dir outside the zenml-harbor- temp convention is untouched.
+
+    The prune step must never delete an arbitrary user path — only the
+    integration's own temp trees.
+    """
+    from zenml.client import Client
+
+    job_dir = tmp_path / "user-owned" / "shard-abc123def456"
+    (job_dir / "trial-1").mkdir(parents=True)
+    (job_dir / "trial-1" / "result.json").write_text('{"ok": true}')
+
+    artifact_uri = os.path.join(
+        Client().active_stack.artifact_store.path,
+        f"harbor-noprune-test-{os.path.basename(tmp_path)}",
+    )
+    os.makedirs(artifact_uri, exist_ok=True)
+    try:
+        materializer = HarborShardResultMaterializer(uri=artifact_uri)
+        materializer.save(_shard_result(job_dir=str(job_dir)))
+        assert os.path.exists(os.path.join(artifact_uri, "job_dir.tar.gz"))
+        # The user-owned tree is archived but left in place.
+        assert job_dir.exists()
     finally:
         shutil.rmtree(artifact_uri, ignore_errors=True)
 

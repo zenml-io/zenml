@@ -213,19 +213,49 @@ def run_shard_job(
     # complete per-trial source. Trials are paired with the shard's
     # precomputed identities by encounter order — Harbor trial names
     # carry random suffixes, so order is the stable join.
+    #
+    # The trials in a shard are exchangeable replicas of one
+    # (task, agent, model) cell: ``trial_index`` (and the identity
+    # derived from it) is a positional label for a replica, NOT a stable
+    # per-attempt identity. This order-based pairing therefore does not
+    # claim that replica i of one run is "the same attempt" as replica i
+    # of another — aggregate reward/cost are order-invariant, so the
+    # label only becomes load-bearing if a future task type ever makes
+    # attempts non-exchangeable.
     trial_results = job_result.trial_results
-    if len(trial_results) != len(spec.trial_identities):
-        logger.warning(
-            "Harbor job returned %d trial result(s) for a shard of %d "
-            "trial(s); pairing trial identities by order as far as "
-            "possible.",
-            len(trial_results),
-            len(spec.trial_identities),
-        )
     trials = [
         HarborTrialResult.from_harbor(result, identity)
         for identity, result in zip(spec.trial_identities, trial_results)
     ]
+    # Fewer results than identities means Harbor dropped trials from the
+    # shard's output. Record each missing trial as an errored trial
+    # instead of letting it silently vanish, so it counts toward
+    # ``n_errored`` and a ``fail_on_trial_error`` gate trips on it. (A
+    # longer-than-expected result list is truncated by the ``zip`` above;
+    # this slice is then empty.)
+    missing_identities = spec.trial_identities[len(trial_results) :]
+    if len(trial_results) != len(spec.trial_identities):
+        logger.warning(
+            "Harbor job returned %d trial result(s) for a shard of %d "
+            "trial(s); pairing trial identities by order and recording "
+            "%d missing trial(s) as errored.",
+            len(trial_results),
+            len(spec.trial_identities),
+            len(missing_identities),
+        )
+    for identity in missing_identities:
+        trials.append(
+            HarborTrialResult(
+                trial_identity=identity,
+                trial_name=f"missing-{identity[:12]}",
+                task_name=spec.task.display_name,
+                exception_type="MissingTrialResult",
+                exception_message=(
+                    "Harbor returned no result for this trial in the "
+                    "shard's job output; recorded as an errored trial."
+                ),
+            )
+        )
     # Restore the dataset provenance that build_job_config strips from
     # the Harbor-side task config, and stamp the recorded sandbox facts.
     for trial in trials:
@@ -239,9 +269,17 @@ def run_shard_job(
         spec=spec,
         job_id=str(job_result.id),
         job_name=config.job_name,
-        n_total_trials=job_result.n_total_trials,
-        n_completed=stats.n_completed_trials,
-        n_errored=stats.n_errored_trials,
+        # A dropped trial is missing from Harbor's own totals too, so
+        # fold the count back in to keep error_rate over the shard's
+        # intended trial count rather than only the returned ones. It
+        # counts as both completed and errored, matching Harbor's own
+        # convention that an errored trial is a finished (completed) one
+        # — n_succeeded (n_completed - n_errored) then stays correct.
+        n_total_trials=max(
+            job_result.n_total_trials, len(spec.trial_identities)
+        ),
+        n_completed=stats.n_completed_trials + len(missing_identities),
+        n_errored=stats.n_errored_trials + len(missing_identities),
         n_cancelled=stats.n_cancelled_trials,
         n_retries=stats.n_retries,
         trials=trials,

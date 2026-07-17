@@ -48,6 +48,7 @@ from zenml.integrations.harbor.materializers import (
     HarborShardResultMaterializer,
 )
 from zenml.integrations.harbor.models import (
+    HARBOR_JOBS_DIR_PREFIX,
     HarborShardResult,
     HarborShardSpec,
     TaskRef,
@@ -57,6 +58,52 @@ from zenml.logger import get_logger
 from zenml.types import MarkdownString
 
 logger = get_logger(__name__)
+
+# Substrings that mark an ``agent_env`` key as credential-shaped. A match
+# only warns — values are never scrubbed or mutated, since silently
+# dropping a var the agent may depend on is worse than persisting it
+# loudly.
+_CREDENTIAL_KEY_MARKERS = (
+    "api_key",
+    "apikey",
+    "token",
+    "secret",
+    "password",
+    "credential",
+)
+
+
+def _warn_on_credential_shaped_env(agents: List[Dict[str, Any]]) -> None:
+    """Warn when an agent's ``env`` carries a credential-shaped key.
+
+    ``agent_env`` is persisted verbatim into the ``harbor_shards``
+    artifact and every shard result, so a raw provider key placed there
+    lands in the artifact store in cleartext. The values are deliberately
+    left untouched — a loud warning is safer than silently dropping a var
+    the agent may need.
+
+    Args:
+        agents: The agent specifications from the campaign matrix.
+    """
+    for agent in agents:
+        env = agent.get("env") or {}
+        flagged = sorted(
+            key
+            for key in env
+            if any(marker in key.lower() for marker in _CREDENTIAL_KEY_MARKERS)
+        )
+        if flagged:
+            logger.warning(
+                "Agent %r has agent_env key(s) %s that look like "
+                "credentials. agent_env is persisted verbatim into the "
+                "campaign's artifacts and step metadata (cleartext in the "
+                "artifact store), so provide provider credentials via the "
+                "ambient sandbox environment or ZenML secrets rather than "
+                "raw values here. The value(s) are kept as given, not "
+                "scrubbed.",
+                agent.get("name", "<unnamed>"),
+                ", ".join(flagged),
+            )
 
 
 @step
@@ -114,6 +161,8 @@ def build_harbor_matrix(
             "The campaign contains no tasks. Provide `tasks` and/or a "
             "`dataset`."
         )
+
+    _warn_on_credential_shaped_env(agents or [])
 
     shards = pack_shards(
         tasks=task_refs,
@@ -184,10 +233,14 @@ def run_harbor_shard(
             trial errored.
     """
     spec = HarborShardSpec.model_validate(shard)
-    # Not a context manager: the materializer archives the job dir
-    # after the step function returns. The directory is left behind on
-    # local orchestrators (it lives under the system temp dir).
-    jobs_dir = Path(tempfile.mkdtemp(prefix="zenml-harbor-"))
+    # Not a context manager: the materializer archives the job dir after
+    # the step function returns (output materialization runs after the
+    # step body, so the step's own `finally` cannot clean this up). Once
+    # archived, the materializer prunes this ``zenml-harbor-`` temp dir;
+    # it is only left behind if the archive step never runs (e.g. the
+    # PydanticMaterializer fallback), and then only under the system
+    # temp dir.
+    jobs_dir = Path(tempfile.mkdtemp(prefix=HARBOR_JOBS_DIR_PREFIX))
     result = run_shard_job(
         spec=spec,
         jobs_dir=jobs_dir,
