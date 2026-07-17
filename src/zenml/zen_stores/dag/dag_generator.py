@@ -1,4 +1,4 @@
-#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
+#  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -275,9 +275,9 @@ class DAGGeneratorHelper:
         Returns:
             The step node.
         """
-        for node in self.step_nodes.values():
-            if node.name == name:
-                return node
+        if node := self.step_nodes.get(self.get_step_node_id(name)):
+            return node
+
         raise KeyError(f"Step node with name {name} not found")
 
     def finalize_dag(

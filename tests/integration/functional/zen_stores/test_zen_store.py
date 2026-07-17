@@ -119,6 +119,7 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineSnapshotRequest,
     ProjectFilter,
+    ProjectRequest,
     ProjectUpdate,
     RunMetadataRequest,
     RunMetadataResource,
@@ -284,6 +285,60 @@ def test_basic_crud_for_entity(crud_test_config: CrudTestConfig):
 
     # Cleanup
     crud_test_config.cleanup()
+
+
+def test_project_metadata_crud():
+    """Tests project metadata persistence and update semantics."""
+    zen_store = Client().zen_store
+    project_metadata = {
+        "kitaru": {
+            "version": 1,
+            "catalog": {
+                "models": [
+                    {"name": "classifier", "tags": ["production", "v1"]}
+                ]
+            },
+        },
+        "other": {"enabled": True},
+    }
+    project = zen_store.create_project(
+        ProjectRequest(
+            name=sample_name("project_metadata"),
+            project_metadata=project_metadata,
+        )
+    )
+
+    try:
+        assert project.metadata is not None
+        assert project.project_metadata == project_metadata
+
+        unhydrated_project = zen_store.get_project(project.id, hydrate=False)
+        assert unhydrated_project.metadata is None
+        assert unhydrated_project.project_metadata == project_metadata
+        assert unhydrated_project.metadata is not None
+
+        updated_project = zen_store.update_project(
+            project.id, ProjectUpdate(description="Updated description")
+        )
+        assert updated_project.project_metadata == project_metadata
+
+        replacement = {
+            "kitaru": {
+                "version": 2,
+                "catalog": {"models": [{"name": "regressor"}]},
+            }
+        }
+        updated_project = zen_store.update_project(
+            project.id, ProjectUpdate(project_metadata=replacement)
+        )
+        assert updated_project.project_metadata == replacement
+
+        updated_project = zen_store.update_project(
+            project.id, ProjectUpdate(project_metadata={})
+        )
+        assert updated_project.project_metadata == {}
+    finally:
+        zen_store.delete_project(project.id)
 
 
 @pytest.mark.parametrize(

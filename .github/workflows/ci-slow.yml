@@ -25,6 +25,10 @@ concurrency:
   # New commit on branch cancels running workflows of the same branch
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+env:
+  ZENML_DEBUG: true
+  ZENML_LOGGING_VERBOSITY: debug
+  ZENML_ANALYTICS_OPT_IN: false
 jobs:
   run-slow-ci-label-is-set:
     runs-on: ubuntu-latest
@@ -54,9 +58,6 @@ jobs:
   mysql-db-migration-testing-full:
     if: github.event.pull_request.draft == false
     needs: run-slow-ci-label-is-set
-    env:
-      ZENML_ANALYTICS_OPT_IN: false
-      ZENML_DEBUG: true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
@@ -77,9 +78,6 @@ jobs:
   mysql-db-migration-testing-random:
     if: github.event.pull_request.draft == false
     needs: run-slow-ci-label-is-set
-    env:
-      ZENML_ANALYTICS_OPT_IN: false
-      ZENML_DEBUG: true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
@@ -100,9 +98,6 @@ jobs:
   sqlite-db-migration-testing-full:
     needs: run-slow-ci-label-is-set
     runs-on: ubuntu-latest
-    env:
-      ZENML_ANALYTICS_OPT_IN: false
-      ZENML_DEBUG: true
     if: github.event.pull_request.draft == false
     steps:
       - name: Checkout code
@@ -118,9 +113,6 @@ jobs:
   mariadb-db-migration-testing:
     if: github.event.pull_request.draft == false
     needs: run-slow-ci-label-is-set
-    env:
-      ZENML_ANALYTICS_OPT_IN: false
-      ZENML_DEBUG: true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
@@ -176,7 +168,7 @@ jobs:
           bash scripts/check-security.sh
       - name: Check for alembic branch divergence
         env:
-          ZENML_DEBUG: 0
+          ZENML_LOGGING_VERBOSITY: info
         run: |
           source .venv/bin/activate
           uv pip install alembic
