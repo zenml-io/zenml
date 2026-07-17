@@ -739,7 +739,7 @@ def test_fetch_status_keeps_dynamic_run_unknown_without_sentinel(monkeypatch):
     Between a job leaving `squeue --states=all` and its exit-code
     sentinel flushing to the shared filesystem, the run's outcome is
     not knowable; declaring FAILED in that window would terminally
-    mis-mark runs that actually completed.
+    mislabel runs that actually completed.
     """
     op = _build_orchestrator()
     runner = FakeRunner()

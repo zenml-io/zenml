@@ -46,10 +46,7 @@ from typing import (
 
 from zenml.config.base_settings import BaseSettings
 from zenml.config.resource_settings import ResourceSettings
-from zenml.constants import (
-    METADATA_ORCHESTRATOR_RUN_ID,
-    ORCHESTRATOR_DOCKER_IMAGE_KEY,
-)
+from zenml.constants import METADATA_ORCHESTRATOR_RUN_ID
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
@@ -731,7 +728,7 @@ touch {shlex.quote(cleanup_marker)}
                 # shared filesystem, a job that has vanished from the queue
                 # is unknown, not failed - mirroring the static DAG
                 # reconciliation. Declaring FAILED on first sight would
-                # terminally mis-mark a run whose sentinel merely lags the
+                # terminally mislabel a run whose sentinel merely lags the
                 # queue purge (NFS/Lustre flush).
                 cleanup_complete=False,
             )
