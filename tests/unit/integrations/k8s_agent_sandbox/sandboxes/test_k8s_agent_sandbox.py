@@ -209,6 +209,22 @@ class TestCreateSession:
             sandbox_ready_timeout=180,
         )
 
+    def test_destroy_on_exit_threaded_to_session(self) -> None:
+        # The base contract lets callers request teardown when the
+        # session context manager exits; the flag must reach the session.
+        sb = _make_sandbox(namespace="prod")
+        _wire_client(sb)
+
+        session = sb.create_session(destroy_on_exit=True)
+        assert session._destroy_on_exit is True
+
+    def test_destroy_on_exit_defaults_to_false(self) -> None:
+        sb = _make_sandbox(namespace="prod")
+        _wire_client(sb)
+
+        session = sb.create_session()
+        assert session._destroy_on_exit is False
+
     def test_per_call_namespace_overrides_default(self) -> None:
         sb = _make_sandbox(namespace="prod")
         fake_client = _wire_client(sb)

@@ -173,6 +173,7 @@ class K8sAgentSandboxSession(SandboxSession):
         parent: "K8sAgentSandbox",
         inline_template_name: Optional[str] = None,
         inline_template_namespace: Optional[str] = None,
+        destroy_on_exit: bool = False,
     ) -> None:
         """Initializes the session wrapper.
 
@@ -185,10 +186,13 @@ class K8sAgentSandboxSession(SandboxSession):
                 the session was created from a pre-existing template.
             inline_template_namespace: Namespace of the inline template
                 (paired with ``inline_template_name``).
+            destroy_on_exit: Whether to destroy the sandbox session when
+                the session context manager exits.
         """
         super().__init__(
             id=str(sandbox.name),
             parent=parent,
+            destroy_on_exit=destroy_on_exit,
         )
         self._sandbox = sandbox
         self._inline_template_name = inline_template_name
@@ -621,12 +625,16 @@ class K8sAgentSandbox(BaseSandbox):
         return name
 
     def create_session(
-        self, settings: Optional[BaseSandboxSettings] = None
+        self,
+        settings: Optional[BaseSandboxSettings] = None,
+        destroy_on_exit: bool = False,
     ) -> SandboxSession:
         """Creates a new Agent Sandbox Session.
 
         Args:
             settings: Per-call overrides on top of the component config.
+            destroy_on_exit: Whether to destroy the sandbox session when
+                the session context manager exits.
 
         Returns:
             A live ``K8sAgentSandboxSession`` ready for ``exec`` calls.
@@ -690,4 +698,5 @@ class K8sAgentSandbox(BaseSandbox):
             inline_template_namespace=(
                 namespace if synthesized_name else None
             ),
+            destroy_on_exit=destroy_on_exit,
         )
