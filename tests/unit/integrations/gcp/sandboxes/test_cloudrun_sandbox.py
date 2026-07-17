@@ -92,6 +92,7 @@ def _make_session(
     *,
     session_env: Optional[Dict[str, str]] = None,
     snapshot_uri_prefix: Optional[str] = None,
+    default_cwd: Optional[str] = None,
 ) -> CloudRunSandboxSession:
     parent = MagicMock(spec=BaseSandbox)
     parent.flavor = "cloudrun"
@@ -102,6 +103,7 @@ def _make_session(
         parent=parent,
         session_env=session_env,
         snapshot_uri_prefix=snapshot_uri_prefix,
+        default_cwd=default_cwd,
     )
 
 
@@ -466,6 +468,71 @@ class TestSession:
             with open(dst) as f:
                 assert f.read() == "payload"
 
+    def test_relative_paths_resolve_against_default_cwd(self) -> None:
+        # A relative remote_path must land under the session's default cwd
+        # (the same directory exec() uses), not at the sandbox root, so
+        # exec and file transfer agree on where a relative path lives.
+        stored: Dict[str, bytes] = {}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            if request.method == "PUT":
+                stored[request.url.path] = request.content
+                return httpx.Response(200, json={"written": "x"})
+            return httpx.Response(200, content=stored[request.url.path])
+
+        session = _make_session(
+            _make_client(handler), default_cwd="/tmp/workspace"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            src = os.path.join(tmp, "in.txt")
+            with open(src, "w") as f:
+                f.write("payload")
+            session.upload_file(src, "foo.txt")
+
+            assert (
+                "/v1/sandbox/sb-0123456789ab/file/tmp/workspace/foo.txt"
+                in (stored)
+            )
+
+            dst = os.path.join(tmp, "out.txt")
+            session.download_file("foo.txt", dst)
+            with open(dst) as f:
+                assert f.read() == "payload"
+
+    def test_absolute_paths_ignore_default_cwd(self) -> None:
+        stored: Dict[str, bytes] = {}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            if request.method == "PUT":
+                stored[request.url.path] = request.content
+                return httpx.Response(200, json={"written": "x"})
+            return httpx.Response(200, content=stored[request.url.path])
+
+        session = _make_session(
+            _make_client(handler), default_cwd="/tmp/workspace"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            src = os.path.join(tmp, "in.txt")
+            with open(src, "w") as f:
+                f.write("payload")
+            session.upload_file(src, "/data/in.txt")
+
+            # Leading slash is stripped for URL composition, but the path is
+            # anchored at the sandbox root — not joined onto default_cwd.
+            assert "/v1/sandbox/sb-0123456789ab/file/data/in.txt" in stored
+
+    def test_relative_escape_above_default_cwd_refused(self) -> None:
+        session = _make_session(
+            _make_client(lambda _: httpx.Response(200)),
+            default_cwd="/tmp/workspace",
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            src = os.path.join(tmp, "in.txt")
+            with open(src, "w") as f:
+                f.write("payload")
+            with pytest.raises(ValueError, match="outside"):
+                session.upload_file(src, "../../etc/passwd")
+
     def test_snapshot_requires_prefix(self) -> None:
         session = _make_session(_make_client(lambda _: httpx.Response(200)))
         with pytest.raises(NotImplementedError, match="snapshot_uri_prefix"):
@@ -553,7 +620,8 @@ class TestIdTokenCredentials:
 
     def test_unconvertible_connector_credentials_fail_loudly(self) -> None:
         """Connector creds that can't mint ID tokens must not silently
-        fall back to the ambient ADC identity."""
+        fall back to the ambient ADC identity.
+        """
         from google.oauth2.credentials import Credentials as UserCredentials
 
         component = _make_component()
@@ -570,7 +638,8 @@ class TestIdTokenCredentials:
 
     def test_unconvertible_service_account_path_fails_loudly(self) -> None:
         """An explicit service_account_path whose creds can't mint ID
-        tokens must fail rather than fall back to ambient ADC."""
+        tokens must fail rather than fall back to ambient ADC.
+        """
         from google.oauth2.credentials import Credentials as UserCredentials
 
         component = _make_component(
@@ -591,7 +660,8 @@ class TestIdTokenCredentials:
 class TestComponentLifecycle:
     def test_create_session_cleans_up_on_failed_create(self) -> None:
         """A create that fails mid-flight must delete the sandbox by its
-        caller-generated id so it can't orphan."""
+        caller-generated id so it can't orphan.
+        """
         client = MagicMock()
         client.create_sandbox.side_effect = SandboxExecError("boom")
         component = _make_component()

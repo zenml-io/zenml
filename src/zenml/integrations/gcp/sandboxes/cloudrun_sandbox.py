@@ -989,9 +989,11 @@ class CloudRunSandboxSession(SandboxSession):
                 ``shlex.split``).
             cwd: Working directory inside the sandbox.
             env: Per-exec environment variables, merged over the
-                session-level ``sandbox_environment``. The ``sandbox`` CLI
-                applies them via ``-e``, so values never appear on the
-                command line.
+                session-level ``sandbox_environment``. The bridge passes
+                them to the ``sandbox`` CLI as ``--env`` flags, so they do
+                not appear on the sandboxed process's own command line
+                (they are still visible in the trusted bridge host's
+                process list).
 
         Returns:
             A ``CloudRunSandboxProcess``.
@@ -1067,12 +1069,40 @@ class CloudRunSandboxSession(SandboxSession):
             metadata={"source_sandbox": self._sandbox_id},
         )
 
+    def _resolve_remote_path(self, remote_path: str) -> str:
+        """Resolve a relative remote path against the session's default cwd.
+
+        The base contract documented on ``SandboxSession.upload_file`` /
+        ``download_file`` specifies that a relative ``remote_path``
+        resolves against the session's working directory — the same
+        directory ``exec()`` uses as its default cwd. Without this,
+        ``exec`` and file transfer disagree about where a relative path
+        lives: ``exec`` honors ``default_cwd`` while the bridge anchors
+        relative file paths at the sandbox root.
+
+        Absolute paths and the no-configured-cwd case are returned
+        unchanged; the client's ``_sanitize_remote_path`` still rejects
+        any result that escapes the sandbox root (e.g. a relative
+        ``../`` that climbs above ``default_cwd``).
+
+        Args:
+            remote_path: The caller-supplied destination/source path.
+
+        Returns:
+            The joined absolute path when a default cwd is configured and
+            the input is relative; otherwise the path unchanged.
+        """
+        if self._default_cwd and not posixpath.isabs(remote_path):
+            return posixpath.join(self._default_cwd, remote_path)
+        return remote_path
+
     def _upload_file(self, local_path: str, remote_path: str) -> None:
         """Upload a local file into the sandbox.
 
         Args:
             local_path: Source path on the caller's machine.
             remote_path: Destination path inside the sandbox filesystem.
+                Relative paths resolve against the session's default cwd.
 
         Raises:
             ValueError: If the file exceeds the bridge's body limit.
@@ -1087,16 +1117,21 @@ class CloudRunSandboxSession(SandboxSession):
             )
         with open(local_path, "rb") as f:
             data = f.read()
-        self._client.put_file(self._sandbox_id, remote_path, data)
+        self._client.put_file(
+            self._sandbox_id, self._resolve_remote_path(remote_path), data
+        )
 
     def _download_file(self, remote_path: str, local_path: str) -> None:
         """Download a file from the sandbox.
 
         Args:
             remote_path: Source path inside the sandbox filesystem.
+                Relative paths resolve against the session's default cwd.
             local_path: Destination path on the caller's machine.
         """
-        data = self._client.get_file(self._sandbox_id, remote_path)
+        data = self._client.get_file(
+            self._sandbox_id, self._resolve_remote_path(remote_path)
+        )
         with open(local_path, "wb") as f:
             f.write(data)
 

@@ -108,6 +108,7 @@ Config-only fields on the component: `service_url`, `audience`, `allow_unauthent
 - Persistent sandboxes are **instance-local**: if Cloud Run recycles the bridge instance, running sandboxes are lost (`attach()` reports this cleanly). Snapshot anything you need to keep.
 - File transfer through the bridge is capped at 32 MiB per request; move larger data through Cloud Storage.
 - A single exec is bounded by the Cloud Run request timeout (max 60 minutes).
+- No per-task image pinning: unlike the Modal, Kubernetes, and Docker sandbox flavors, this flavor does not implement `image_settings()`, so a per-task image requested by a caller is ignored — the sandbox always runs the rootfs provided by the bridge's launcher.
 - Cloud Run sandboxes are in public preview; the underlying CLI may change.
 
 For the full config surface, see the [SDK docs](https://sdkdocs.zenml.io).
