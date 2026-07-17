@@ -73,6 +73,7 @@ logger = get_logger(__name__)
 
 SLURM_STEP_OPERATOR_DOCKER_IMAGE_KEY = "slurm_step_operator"
 SLURM_JOB_ID_METADATA_KEY = "slurm_job_id"
+SLURM_STATE_METADATA_KEY = "slurm_state"
 
 _JOB_NAME_PREFIX = "zenml"
 
@@ -282,6 +283,7 @@ class SlurmStepOperator(BaseStepOperator):
             if state is not None:
                 # Cancellation and failure states can linger in the queue
                 # output briefly before the job is purged from it.
+                self._publish_terminal_state(step_run, state)
                 if state.startswith("CANCEL"):
                     return ExecutionStatus.CANCELLED
                 return ExecutionStatus.FAILED
@@ -315,6 +317,37 @@ class SlurmStepOperator(BaseStepOperator):
             return ExecutionStatus.FAILED
         finally:
             runner.close()
+
+    def _publish_terminal_state(
+        self, step_run: "StepRunResponse", state: str
+    ) -> None:
+        """Record the raw Slurm terminal state as step metadata.
+
+        A scheduler-level kill (``TIMEOUT``, ``NODE_FAIL``,
+        ``OUT_OF_MEMORY``, ``PREEMPTED``) never runs the job's EXIT trap,
+        so the sentinel-based status collapses it into a plain failure.
+        The raw state is the only signal that distinguishes an
+        infrastructure kill from a step that ran and exited non-zero.
+
+        Args:
+            step_run: The step run the state belongs to.
+            state: The Slurm terminal state as reported by the queue.
+        """
+        if SLURM_STATE_METADATA_KEY in step_run.run_metadata:
+            return
+        try:
+            publish_step_run_metadata(
+                step_run_id=step_run.id,
+                step_run_metadata={self.id: {SLURM_STATE_METADATA_KEY: state}},
+            )
+        except Exception as e:
+            logger.warning(
+                "Failed to publish Slurm terminal state `%s` for step "
+                "`%s`: %s",
+                state,
+                step_run.id,
+                e,
+            )
 
     def cancel(self, step_run: "StepRunResponse") -> None:
         """Cancel the Slurm job of a step run.

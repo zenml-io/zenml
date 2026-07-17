@@ -46,6 +46,7 @@ from zenml.integrations.slurm.slurm_job import (
 from zenml.integrations.slurm.step_operators import SlurmStepOperator
 from zenml.integrations.slurm.step_operators.slurm_step_operator import (
     SLURM_JOB_ID_METADATA_KEY,
+    SLURM_STATE_METADATA_KEY,
 )
 
 SECRET_TOKEN = "super-secret-zenml-token"
@@ -84,9 +85,7 @@ class FakeRunner(SlurmCommandRunner):
         if command.startswith("sbatch"):
             return CommandResult(exit_code=0, stdout="12345\n", stderr="")
         if command.startswith("squeue"):
-            stdout = (
-                f"12345|{self.queue_state}\n" if self.queue_state else ""
-            )
+            stdout = f"12345|{self.queue_state}\n" if self.queue_state else ""
             return CommandResult(exit_code=0, stdout=stdout, stderr="")
         return CommandResult(exit_code=0, stdout="", stderr="")
 
@@ -493,6 +492,11 @@ def op_and_runner(monkeypatch):
         ".build_slurm_client",
         lambda config: SlurmClient(runner),
     )
+    monkeypatch.setattr(
+        "zenml.integrations.slurm.step_operators.slurm_step_operator"
+        ".publish_step_run_metadata",
+        lambda **kwargs: None,
+    )
     return op, runner
 
 
@@ -545,6 +549,40 @@ def test_get_status_without_queue_or_sentinel_fails(op_and_runner):
         )
         is ExecutionStatus.FAILED
     )
+
+
+def test_get_status_publishes_raw_terminal_state(op_and_runner, monkeypatch):
+    """Scheduler-observed terminal states land in step metadata exactly once.
+
+    A scheduler kill (TIMEOUT, NODE_FAIL, OOM, PREEMPTED) leaves no exit-code
+    sentinel; the raw state is the only record of why the step failed.
+    """
+    op, runner = op_and_runner
+    published = []
+    monkeypatch.setattr(
+        "zenml.integrations.slurm.step_operators.slurm_step_operator"
+        ".publish_step_run_metadata",
+        lambda **kwargs: published.append(kwargs),
+    )
+    step_run = SimpleNamespace(
+        id=uuid4(), run_metadata={SLURM_JOB_ID_METADATA_KEY: "12345"}
+    )
+    runner.queue_state = "TIMEOUT"
+
+    assert op.get_status(step_run) is ExecutionStatus.FAILED
+    assert published == [
+        {
+            "step_run_id": step_run.id,
+            "step_run_metadata": {
+                op.id: {SLURM_STATE_METADATA_KEY: "TIMEOUT"}
+            },
+        }
+    ]
+
+    # A state already recorded on the step run is not re-published.
+    step_run.run_metadata[SLURM_STATE_METADATA_KEY] = "TIMEOUT"
+    assert op.get_status(step_run) is ExecutionStatus.FAILED
+    assert len(published) == 1
 
 
 def test_get_status_reads_cancelled_marker(op_and_runner):

@@ -237,6 +237,12 @@ def build_container_command(
     ``--container-env`` variable names whose values are sourced from the 0600
     env file), never on the command line.
 
+    Contract: the returned snippet is one self-contained foreground command
+    that must stay wrappable with ``srun --nodes=N --ntasks-per-node=1`` (the
+    planned multi-node mode for command steps), so it must not assume it runs
+    exactly once on the batch node. The pyxis runtime already executes
+    through ``srun``.
+
     Args:
         runtime: The container runtime to use.
         image: Fully-qualified image reference to run.

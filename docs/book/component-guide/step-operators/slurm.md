@@ -168,6 +168,38 @@ ZenML maps standard step resource settings to Slurm directives:
 * memory becomes `--mem`.
 * `gpu_count` becomes `--gres=gpu:<count>`.
 
+### Running tools from shared storage
+
+`container_mounts` is the supported bridge to software that lives on the
+cluster's shared filesystem instead of inside the ZenML image. This is the
+standard pattern for frameworks that manage their own environment (for
+example, a [prime-rl](https://github.com/PrimeIntellect-ai/prime-rl) checkout
+with its `uv`-managed virtual environment, which its docs require to be on a
+shared filesystem visible from every node): bind-mount the checkout into the
+container and have the step invoke it there.
+
+```python
+slurm_settings = SlurmStepOperatorSettings(
+    partition="gpu",
+    time_limit="24:00:00",
+    # The checkout and its venv live on the shared filesystem; the step
+    # command runs them in place, e.g. `uv run --project /shared/prime-rl ...`
+    container_mounts={"/shared/prime-rl": "/shared/prime-rl"},
+)
+```
+
+The invoked binaries (`uv` in this example) must be on the `PATH` inside the
+ZenML image, or referenced by absolute path under the mount.
+
+### Honest failure states
+
+When a job ends because the scheduler killed it (`TIMEOUT`, `NODE_FAIL`,
+`OUT_OF_MEMORY`, `PREEMPTED`), the job's EXIT trap never runs, so no exit-code
+sentinel exists. The step operator records the raw Slurm terminal state as
+step-run metadata under the `slurm_state` key whenever it observes one, so
+downstream consumers can distinguish an infrastructure kill from a step that
+ran to completion and exited non-zero.
+
 ### Container runtimes
 
 The selected `container_runtime` controls how the ZenML image is executed on the

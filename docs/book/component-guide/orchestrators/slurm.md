@@ -73,19 +73,15 @@ together with `afterok` dependencies. Slurm handles the dependency graph, and
 ZenML reconciles job state through batched `squeue` lookups plus sentinel files
 written by the job scripts.
 
-For dynamic pipelines, ZenML first submits an orchestration job. That job runs
-ZenML's dynamic runner inside the orchestrator image. The runner then submits
-newly generated isolated steps as separate Slurm jobs, stores their Slurm job
-IDs in run metadata, monitors them, and cancels them when the run is stopped.
-
-{% hint style="warning" %}
-Dynamic pipelines require the orchestration job to be able to submit child
-Slurm jobs. With `transport=ssh`, the orchestration container must be able to
-SSH back to the login node, so configure `ssh_private_key` rather than a local
-`ssh_key_path`. With `transport=local`, the container running on the compute
-node must have working Slurm CLI access. Many clusters restrict one or both of
-these patterns, so validate this with your HPC administrators.
-{% endhint %}
+For dynamic pipelines, ZenML submits a single orchestration job that runs
+ZenML's dynamic runner inside the orchestrator image. Every step of the
+pipeline executes inline within that job's allocation, so size the job with
+pipeline-level resource settings. The orchestrator deliberately does not
+submit per-step child jobs from the orchestration job: an active Slurm job
+that queues and waits on new jobs deadlocks under per-user job limits and
+blocks its own allocation while the children sit in the queue. If individual
+steps need their own Slurm allocation, run them through the Slurm step
+operator instead.
 
 The orchestrator supports `CONTINUE_ON_FAILURE`, `STOP_ON_FAILURE`, and
 `FAIL_FAST` execution modes. In continue-on-failure mode, independent sibling
@@ -152,7 +148,7 @@ Key registration-time options:
 | `transport` | `ssh` to connect to a remote login node, or `local` to run Slurm commands on the current machine. |
 | `hostname`, `username`, `port` | SSH connection details. Required for `transport=ssh`. |
 | `ssh_key_path` | Path to a private key on the submitting machine. Use for normal local submissions. |
-| `ssh_private_key`, `ssh_key_passphrase` | Private key content and optional passphrase. Use ZenML secrets for these values, especially for dynamic pipelines. |
+| `ssh_private_key`, `ssh_key_passphrase` | Private key content and optional passphrase. Use ZenML secrets for these values. |
 | `verify_host_key`, `known_hosts_path` | Host-key verification settings inherited from the SSH integration. Verification is enabled by default. |
 | `workdir` | Shared directory used to stage per-run Slurm files. Must be visible from the submission host and compute nodes. |
 | `container_runtime` | One of `apptainer`, `singularity`, `pyxis`, or `docker`. |
@@ -191,20 +187,17 @@ ZenML maps standard step resource settings to Slurm directives:
 
 ### Dynamic pipeline notes
 
-Dynamic pipelines use a long-running orchestration job plus child Slurm jobs for
-the generated isolated steps. Keep these operational details in mind:
+Dynamic pipelines run entirely inside one long-running orchestration job. Keep
+these operational details in mind:
 
+* Size the orchestration job for the whole run: set resource settings at the
+  pipeline level (CPU, memory, GPUs) — every step executes inside this one
+  allocation.
 * Configure `time_limit`, `partition`, `account`, `qos`, and any site-required
-  `extra_sbatch_directives` so the orchestration job itself is allowed to run
-  for the expected duration.
-* With SSH transport, prefer `ssh_private_key` stored as a ZenML secret. A local
-  `ssh_key_path` on your laptop is not available inside the orchestration
-  container.
-* The orchestration container must be able to reach the ZenML server, artifact
-  store, container registry, and Slurm submission path.
-* Some clusters block outbound SSH from compute nodes or disallow nested
-  `sbatch` calls from jobs. In that case, use static pipelines, the Slurm step
-  operator, or a cluster-approved submission pattern.
+  `extra_sbatch_directives` so the orchestration job is allowed to run for the
+  full duration of the pipeline, not just one step.
+* The orchestration container must be able to reach the ZenML server and the
+  artifact store. It never talks to the Slurm scheduler itself.
 
 ### Security and cleanup
 
@@ -214,8 +207,8 @@ permissions and are not passed as command-line arguments. Job scripts install an
 `EXIT` trap that records the exit code and removes credential-bearing files.
 
 Static pipeline runs also submit an `afterany` cleanup job for staged sensitive
-files. Dynamic and isolated job cancellation paths explicitly scrub the known
-sensitive files when a pending job is cancelled before its job script starts.
+files. Cancellation paths explicitly scrub the known sensitive files when a
+pending job is cancelled before its job script starts.
 
 ### Limitations
 

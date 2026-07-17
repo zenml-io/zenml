@@ -27,7 +27,6 @@ import pytest
 from zenml.config.resource_settings import ResourceSettings
 from zenml.constants import METADATA_ORCHESTRATOR_RUN_ID
 from zenml.enums import ExecutionMode, ExecutionStatus, StackComponentType
-from zenml.execution.pipeline.dynamic.runner import DynamicPipelineRunner
 from zenml.integrations.slurm.flavors import (
     SlurmOrchestratorConfig,
     SlurmOrchestratorFlavor,
@@ -37,8 +36,6 @@ from zenml.integrations.slurm.orchestrators import SlurmOrchestrator
 from zenml.integrations.slurm.orchestrators.slurm_orchestrator import (
     ENV_ZENML_SLURM_RUN_ID,
     SLURM_CLEANUP_JOB_ID_METADATA_KEY,
-    SLURM_ISOLATED_JOB_ID_METADATA_KEY,
-    SLURM_ISOLATED_JOB_IDS_METADATA_KEY,
     SLURM_JOB_IDS_METADATA_KEY,
     SLURM_ORCHESTRATION_JOB_ID_METADATA_KEY,
 )
@@ -150,11 +147,15 @@ def _step(upstream: List[str], gpu: int = 0) -> SimpleNamespace:
     )
 
 
-def _snapshot(steps: Dict[str, SimpleNamespace]) -> SimpleNamespace:
+def _snapshot(
+    steps: Dict[str, SimpleNamespace],
+    pipeline_resources: Optional[ResourceSettings] = None,
+) -> SimpleNamespace:
     """Build a PipelineSnapshotResponse stand-in.
 
     Args:
         steps: The step configurations keyed by invocation id.
+        pipeline_resources: Pipeline-level resource settings.
 
     Returns:
         A namespace usable where a snapshot is expected.
@@ -165,7 +166,10 @@ def _snapshot(steps: Dict[str, SimpleNamespace]) -> SimpleNamespace:
             get_image=lambda component_key, step: IMAGE,
         ),
         step_configurations=steps,
-        pipeline_configuration=SimpleNamespace(name="p"),
+        pipeline_configuration=SimpleNamespace(
+            name="p",
+            resource_settings=pipeline_resources or ResourceSettings(),
+        ),
         schedule=None,
         stack=SimpleNamespace(id=uuid4()),
     )
@@ -228,22 +232,6 @@ def test_get_orchestrator_run_id_raises_when_unset(monkeypatch):
         op.get_orchestrator_run_id()
 
 
-# --- topological ordering -----------------------------------------------------
-
-
-def test_sorted_steps_is_topological():
-    """Upstream steps are submitted before their dependents."""
-    # Declared out of order: a dependent appears before its parent.
-    steps = {
-        "evaluate": _step(["train"]),
-        "train": _step(["load"]),
-        "load": _step([]),
-    }
-    order = SlurmOrchestrator._sorted_step_names(steps)
-    assert order.index("load") < order.index("train")
-    assert order.index("train") < order.index("evaluate")
-
-
 # --- submit -------------------------------------------------------------------
 
 
@@ -286,28 +274,6 @@ def _stack(
             config=SimpleNamespace(uri="registry.example.com"),
             credentials=credentials,
         )
-    )
-
-
-def _isolated_step_info(
-    snapshot: Optional[SimpleNamespace] = None,
-) -> SimpleNamespace:
-    """Build a dynamic isolated StepRunInfo stand-in.
-
-    Args:
-        snapshot: Optional snapshot to attach to the step run info.
-
-    Returns:
-        A namespace usable where StepRunInfo is expected.
-    """
-    return SimpleNamespace(
-        step_run_id=uuid4(),
-        run_id=uuid4(),
-        pipeline_step_name="dynamic_train",
-        config=SimpleNamespace(resource_settings=ResourceSettings(cpu_count=2)),
-        snapshot=snapshot or _snapshot({}),
-        step_run=SimpleNamespace(run_metadata={}),
-        get_image=lambda key: IMAGE,
     )
 
 
@@ -490,7 +456,11 @@ def test_submit_rejects_scheduled_pipelines(monkeypatch):
 
 
 def test_submit_dynamic_pipeline_submits_orchestration_job(monkeypatch):
-    """Dynamic pipelines launch a Slurm orchestration job."""
+    """Dynamic pipelines launch a Slurm orchestration job.
+
+    All steps of a dynamic pipeline run inline inside that job, so its
+    allocation must carry the pipeline-level resource settings.
+    """
     op = _build_orchestrator()
     op.get_settings = lambda _snapshot: SlurmOrchestratorSettings()
     runner = FakeRunner()
@@ -498,7 +468,9 @@ def test_submit_dynamic_pipeline_submits_orchestration_job(monkeypatch):
     placeholder = _placeholder_run()
 
     result = op.submit_dynamic_pipeline(
-        snapshot=_snapshot({}),
+        snapshot=_snapshot(
+            {}, pipeline_resources=ResourceSettings(gpu_count=2)
+        ),
         stack=_stack(),
         environment={"ZENML_STORE_API_KEY": SECRET_TOKEN},
         placeholder_run=placeholder,
@@ -512,6 +484,8 @@ def test_submit_dynamic_pipeline_submits_orchestration_job(monkeypatch):
     sbatch = [c for c in runner.commands if c.startswith("sbatch")]
     assert len(sbatch) == 1
     assert "orchestration/job.sh" in sbatch[0]
+    job_script = runner.files[f"/runs/{placeholder.id}/orchestration/job.sh"]
+    assert "#SBATCH --gres=gpu:2" in job_script
     env_file = runner.files[f"/runs/{placeholder.id}/orchestration/env"]
     assert f"{ENV_ZENML_SLURM_RUN_ID}={placeholder.id}" in env_file
     assert SECRET_TOKEN in env_file
@@ -622,11 +596,7 @@ def test_fetch_status_continue_on_failure_keeps_siblings(monkeypatch):
             if command.startswith("squeue"):
                 return CommandResult(
                     exit_code=0,
-                    stdout=(
-                        "1000|FAILED\n"
-                        "1001|RUNNING\n"
-                        "1002|PENDING\n"
-                    ),
+                    stdout=("1000|FAILED\n1001|RUNNING\n1002|PENDING\n"),
                     stderr="",
                 )
             return CommandResult(exit_code=0, stdout="", stderr="")
@@ -671,11 +641,7 @@ def test_fetch_status_stop_on_failure_cancels_siblings(monkeypatch):
             if command.startswith("squeue"):
                 return CommandResult(
                     exit_code=0,
-                    stdout=(
-                        "1000|FAILED\n"
-                        "1001|RUNNING\n"
-                        "1002|PENDING\n"
-                    ),
+                    stdout=("1000|FAILED\n1001|RUNNING\n1002|PENDING\n"),
                     stderr="",
                 )
             return CommandResult(exit_code=0, stdout="", stderr="")
@@ -698,12 +664,9 @@ def test_fetch_status_stop_on_failure_cancels_siblings(monkeypatch):
     pipeline_status, _ = op.fetch_status(run)
 
     assert pipeline_status is ExecutionStatus.FAILED
-    assert any(
-        command == "scancel 1001 1002" for command in runner.commands
-    )
+    assert any(command == "scancel 1001 1002" for command in runner.commands)
     assert (
-        runner.files[f"{op._run_dir(str(run_id), 'train')}/cancelled"]
-        == "1\n"
+        runner.files[f"{op._run_dir(str(run_id), 'train')}/cancelled"] == "1\n"
     )
     assert (
         runner.files[f"{op._run_dir(str(run_id), 'evaluate')}/cancelled"]
@@ -737,9 +700,7 @@ def test_stop_run_cancels_submitted_jobs(monkeypatch):
 
     op.stop_run(run)
 
-    assert any(
-        command == "scancel 1000 1001" for command in runner.commands
-    )
+    assert any(command == "scancel 1000 1001" for command in runner.commands)
     assert runner.files[f"{op._run_dir(str(run_id), 'load')}/cancelled"] == (
         "1\n"
     )
@@ -772,350 +733,20 @@ def test_fetch_status_reconciles_dynamic_orchestration_job(monkeypatch):
     assert step_statuses is None
 
 
-def test_submit_isolated_step_publishes_job_metadata(monkeypatch):
-    """Dynamic isolated steps are submitted as separate Slurm jobs."""
+def test_does_not_support_isolated_steps():
+    """Dynamic steps run inline in the orchestration job's allocation.
+
+    Submitting per-step jobs from within an active Slurm job deadlocks
+    under per-user job limits, so the orchestrator must not advertise
+    isolated-step support.
+    """
     op = _build_orchestrator()
-    op.get_settings = lambda _info: SlurmOrchestratorSettings()
-    runner = FakeRunner()
-    _use_fake_client(monkeypatch, runner)
-    monkeypatch.setattr(
-        "zenml.integrations.slurm.orchestrators.slurm_orchestrator"
-        ".orchestrator_utils.get_step_entrypoint_command",
-        lambda **kwargs: (["python"], ["-m", "zenml.entrypoint"]),
-    )
-    monkeypatch.setattr(
-        "zenml.integrations.slurm.orchestrators.slurm_orchestrator"
-        ".Stack.from_model",
-        lambda stack: _stack(),
-    )
-    published_step_metadata = {}
-    monkeypatch.setattr(
-        "zenml.integrations.slurm.orchestrators.slurm_orchestrator"
-        ".publish_step_run_metadata",
-        lambda **kwargs: published_step_metadata.update(kwargs),
-    )
-    published_run_metadata = {}
-
-    class FakeClient:
-        def create_run_metadata(self, **kwargs):
-            published_run_metadata.update(kwargs)
-
-    monkeypatch.setattr("zenml.client.Client", lambda: FakeClient())
-    info = _isolated_step_info()
-
-    op.submit_isolated_step(
-        step_run_info=info,
-        environment={"ZENML_STORE_API_KEY": SECRET_TOKEN},
-    )
-
-    run_dir = f"/runs/{info.run_id}/isolated/{info.step_run_id}"
-    assert any(command.startswith("sbatch") for command in runner.commands)
-    assert runner.modes[f"{run_dir}/env"] == 0o600
-    assert SECRET_TOKEN in runner.files[f"{run_dir}/env"]
-    assert info.step_run.run_metadata[SLURM_ISOLATED_JOB_ID_METADATA_KEY] == (
-        "1000"
-    )
-    assert published_step_metadata == {
-        "step_run_id": info.step_run_id,
-        "step_run_metadata": {
-            op.id: {SLURM_ISOLATED_JOB_ID_METADATA_KEY: "1000"}
-        },
-    }
-    assert published_run_metadata["metadata"] == {
-        SLURM_ISOLATED_JOB_IDS_METADATA_KEY: {str(info.step_run_id): "1000"}
-    }
+    assert op.can_run_isolated_steps is False
+    assert op.can_stop_isolated_steps is False
 
 
-def test_submit_isolated_step_cancels_on_run_metadata_failure(monkeypatch):
-    """Run-level metadata publication is part of the submission transaction."""
-    op = _build_orchestrator()
-    op.get_settings = lambda _info: SlurmOrchestratorSettings()
-    runner = FakeRunner()
-    _use_fake_client(monkeypatch, runner)
-    monkeypatch.setattr(
-        "zenml.integrations.slurm.orchestrators.slurm_orchestrator"
-        ".orchestrator_utils.get_step_entrypoint_command",
-        lambda **kwargs: (["python"], ["-m", "zenml.entrypoint"]),
-    )
-    monkeypatch.setattr(
-        "zenml.integrations.slurm.orchestrators.slurm_orchestrator"
-        ".Stack.from_model",
-        lambda stack: _stack(),
-    )
-    monkeypatch.setattr(
-        "zenml.integrations.slurm.orchestrators.slurm_orchestrator"
-        ".publish_step_run_metadata",
-        lambda **kwargs: None,
-    )
-
-    class FailingClient:
-        def create_run_metadata(self, **kwargs):
-            raise RuntimeError("metadata store unavailable")
-
-    monkeypatch.setattr("zenml.client.Client", lambda: FailingClient())
-    info = _isolated_step_info()
-
-    with pytest.raises(RuntimeError, match="Failed to publish Slurm run"):
-        op.submit_isolated_step(
-            step_run_info=info,
-            environment={"ZENML_STORE_API_KEY": SECRET_TOKEN},
-        )
-
-    run_dir = f"/runs/{info.run_id}/isolated/{info.step_run_id}"
-    assert "scancel 1000" in runner.commands
-    assert any(
-        command.startswith("rm -rf --")
-        and f"{run_dir}/env" in command
-        for command in runner.commands
-    )
-
-
-def test_get_isolated_step_status_reads_sentinel(monkeypatch):
-    """Isolated step status uses the same Slurm sentinel mapping."""
-    op = _build_orchestrator()
-    runner = FakeRunner()
-    _use_fake_client(monkeypatch, runner)
-    run_id = uuid4()
-    step_run_id = uuid4()
-    run_dir = op._isolated_run_dir(str(run_id), str(step_run_id))
-    runner.files[f"{run_dir}/exit_code"] = "0\n"
-    step_run = SimpleNamespace(
-        id=step_run_id,
-        pipeline_run_id=run_id,
-        run_metadata={SLURM_ISOLATED_JOB_ID_METADATA_KEY: "1000"},
-    )
-
-    assert op.get_isolated_step_status(step_run) is ExecutionStatus.COMPLETED
-
-
-def test_get_isolated_step_status_waits_for_missing_sentinel(monkeypatch):
-    """A missing isolated sentinel gets a bounded retry window."""
-    op = _build_orchestrator()
-    runner = FakeRunner()
-    _use_fake_client(monkeypatch, runner)
-    run_id = uuid4()
-    step_run_id = uuid4()
-    step_run = SimpleNamespace(
-        id=step_run_id,
-        pipeline_run_id=run_id,
-        run_metadata={SLURM_ISOLATED_JOB_ID_METADATA_KEY: "1000"},
-    )
-
-    assert (
-        op.get_isolated_step_status(step_run)
-        is ExecutionStatus.PROVISIONING
-    )
-    assert (
-        op.get_isolated_step_status(step_run)
-        is ExecutionStatus.PROVISIONING
-    )
-    assert op.get_isolated_step_status(step_run) is ExecutionStatus.FAILED
-
-
-def test_get_isolated_step_status_normalizes_dynamic_runner_statuses(
-    monkeypatch,
-):
-    """Isolated Slurm statuses use values supported by the dynamic monitor."""
-    op = _build_orchestrator()
-
-    class StatusRunner(FakeRunner):
-        def __init__(self, state: str) -> None:
-            """Initialize the fake.
-
-            Args:
-                state: Slurm state to return for the isolated job.
-            """
-            super().__init__()
-            self.state = state
-
-        def run(self, command: str) -> CommandResult:
-            self.commands.append(command)
-            if command.startswith("squeue"):
-                return CommandResult(
-                    exit_code=0,
-                    stdout=f"1000|{self.state}\n",
-                    stderr="",
-                )
-            return CommandResult(exit_code=0, stdout="", stderr="")
-
-    run_id = uuid4()
-    step_run_id = uuid4()
-    step_run = SimpleNamespace(
-        id=step_run_id,
-        pipeline_run_id=run_id,
-        run_metadata={SLURM_ISOLATED_JOB_ID_METADATA_KEY: "1000"},
-    )
-
-    runner = StatusRunner("PENDING")
-    _use_fake_client(monkeypatch, runner)
-    assert (
-        op.get_isolated_step_status(step_run)
-        is ExecutionStatus.PROVISIONING
-    )
-
-    op._isolated_status_cache.clear()
-    runner = StatusRunner("CANCELLED")
-    _use_fake_client(monkeypatch, runner)
-    assert op.get_isolated_step_status(step_run) is ExecutionStatus.STOPPED
-
-
-def test_dynamic_monitor_keeps_pending_slurm_step(monkeypatch):
-    """Pending Slurm jobs stay monitored and are not cleaned up early."""
-    op = _build_orchestrator()
-
-    class StatusRunner(FakeRunner):
-        def run(self, command: str) -> CommandResult:
-            self.commands.append(command)
-            if command.startswith("squeue"):
-                return CommandResult(
-                    exit_code=0, stdout="1000|PENDING\n", stderr=""
-                )
-            return CommandResult(exit_code=0, stdout="", stderr="")
-
-    runner = StatusRunner()
-    _use_fake_client(monkeypatch, runner)
-    step_run = SimpleNamespace(
-        id=uuid4(),
-        name="dynamic_train",
-        pipeline_run_id=uuid4(),
-        config=SimpleNamespace(step_operator=False),
-        run_metadata={SLURM_ISOLATED_JOB_ID_METADATA_KEY: "1000"},
-    )
-
-    dynamic_runner = DynamicPipelineRunner.__new__(DynamicPipelineRunner)
-    dynamic_runner._shutdown_requested = False
-    dynamic_runner._steps_to_monitor = {"dynamic_train": step_run}
-    dynamic_runner._orchestrator = op
-    dynamic_runner._step_operator = None
-    cleaned_steps: List[object] = []
-    dynamic_runner._cleanup_isolated_step = cleaned_steps.append
-
-    class StopEvent:
-        def wait(self, timeout: Optional[float] = None) -> None:
-            """Stop the monitor after one pass.
-
-            Args:
-                timeout: Unused wait timeout.
-            """
-            _ = timeout
-            dynamic_runner._shutdown_requested = True
-
-        def clear(self) -> None:
-            """No-op event clear."""
-
-    dynamic_runner._monitoring_event = StopEvent()
-
-    dynamic_runner._monitoring_loop()
-
-    assert dynamic_runner._steps_to_monitor == {"dynamic_train": step_run}
-    assert cleaned_steps == []
-
-
-def test_get_isolated_step_status_batches_cached_run_jobs(monkeypatch):
-    """Isolated step polling shares one Slurm state query per cache window."""
-    op = _build_orchestrator()
-
-    class StatusRunner(FakeRunner):
-        def run(self, command: str) -> CommandResult:
-            self.commands.append(command)
-            if command.startswith("squeue"):
-                return CommandResult(
-                    exit_code=0,
-                    stdout="1000|PENDING\n1001|RUNNING\n",
-                    stderr="",
-                )
-            return CommandResult(exit_code=0, stdout="", stderr="")
-
-    runner = StatusRunner()
-    client_builds: List[SlurmClient] = []
-
-    def build_client(config: SlurmOrchestratorConfig) -> SlurmClient:
-        """Build a fake Slurm client and track connection churn.
-
-        Args:
-            config: Unused Slurm orchestrator config.
-
-        Returns:
-            A Slurm client backed by the fake runner.
-        """
-        _ = config
-        client = SlurmClient(runner)
-        client_builds.append(client)
-        return client
-
-    monkeypatch.setattr(
-        "zenml.integrations.slurm.orchestrators.slurm_orchestrator"
-        ".build_slurm_client",
-        build_client,
-    )
-    run_id = uuid4()
-    first_step = SimpleNamespace(
-        id=uuid4(),
-        pipeline_run_id=run_id,
-        run_metadata={SLURM_ISOLATED_JOB_ID_METADATA_KEY: "1000"},
-    )
-    second_step = SimpleNamespace(
-        id=uuid4(),
-        pipeline_run_id=run_id,
-        run_metadata={SLURM_ISOLATED_JOB_ID_METADATA_KEY: "1001"},
-    )
-
-    class FakeClient:
-        def get_pipeline_run(self, *args, **kwargs):
-            return _run(
-                run_id=run_id,
-                run_metadata={
-                    SLURM_ISOLATED_JOB_IDS_METADATA_KEY: {
-                        str(first_step.id): "1000",
-                        str(second_step.id): "1001",
-                    }
-                },
-            )
-
-    monkeypatch.setattr("zenml.client.Client", lambda: FakeClient())
-
-    assert (
-        op.get_isolated_step_status(first_step)
-        is ExecutionStatus.PROVISIONING
-    )
-    assert op.get_isolated_step_status(second_step) is ExecutionStatus.RUNNING
-    assert [
-        command for command in runner.commands if command.startswith("squeue")
-    ] == ["squeue --noheader --format='%i|%T' --jobs=1000,1001"]
-    assert len(client_builds) == 1
-
-
-def test_stop_and_cleanup_isolated_step(monkeypatch):
-    """Isolated step stop and cleanup address the step staging directory."""
-    op = _build_orchestrator()
-    runner = FakeRunner()
-    _use_fake_client(monkeypatch, runner)
-    run_id = uuid4()
-    step_run_id = uuid4()
-    step_run = SimpleNamespace(
-        id=step_run_id,
-        pipeline_run_id=run_id,
-        run_metadata={SLURM_ISOLATED_JOB_ID_METADATA_KEY: "1000"},
-    )
-
-    op.stop_isolated_step(step_run)
-    op.cleanup_isolated_step(step_run)
-
-    run_dir = op._isolated_run_dir(str(run_id), str(step_run_id))
-    assert "scancel 1000" in runner.commands
-    assert runner.files[f"{run_dir}/cancelled"] == "1\n"
-    assert any(
-        command.startswith("rm -rf --")
-        and f"{run_dir}/env" in command
-        for command in runner.commands
-    )
-    assert any(
-        command == f"rm -rf -- {run_dir}" for command in runner.commands
-    )
-
-
-def test_stop_run_cancels_dynamic_jobs(monkeypatch):
-    """Stopping a dynamic run cancels orchestration and isolated jobs."""
+def test_stop_run_cancels_dynamic_orchestration_job(monkeypatch):
+    """Stopping a dynamic run cancels the orchestration job."""
     op = _build_orchestrator()
     runner = FakeRunner()
     _use_fake_client(monkeypatch, runner)
@@ -1125,26 +756,15 @@ def test_stop_run_cancels_dynamic_jobs(monkeypatch):
         lambda **kwargs: None,
     )
     run_id = uuid4()
-    step_run_id = uuid4()
     run = SimpleNamespace(
         id=run_id,
         orchestrator_run_id=str(run_id),
-        run_metadata={
-            SLURM_ORCHESTRATION_JOB_ID_METADATA_KEY: "1000",
-            SLURM_ISOLATED_JOB_IDS_METADATA_KEY: {str(step_run_id): "1001"},
-        },
+        run_metadata={SLURM_ORCHESTRATION_JOB_ID_METADATA_KEY: "1000"},
     )
 
     op.stop_run(run)
 
-    assert "scancel 1001" in runner.commands
     assert "scancel 1000" in runner.commands
-    assert (
-        runner.files[
-            f"{op._isolated_run_dir(str(run_id), str(step_run_id))}/cancelled"
-        ]
-        == "1\n"
-    )
     assert (
         runner.files[f"{op._orchestration_run_dir(str(run_id))}/cancelled"]
         == "1\n"
