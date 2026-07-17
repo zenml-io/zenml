@@ -1,5 +1,5 @@
 ---
-description: Run agents durably, replay a real run with one thing changed, and improve them across a cohort with Kitaru.
+description: Replay real agent runs against your real code with one thing changed, diff the results, and keep the wins — with Kitaru.
 icon: robot
 ---
 
