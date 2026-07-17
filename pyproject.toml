@@ -18,7 +18,7 @@ module-name = ["zenml", "zenml_cli"]
 
 [project]
 name = "zenml"
-version = "0.96.1"
+version = "0.96.2"
 description = "ZenML: MLOps for Reliable AI: from Classical AI to Agents."
 authors = [{name = "ZenML GmbH", email = "info@zenml.io"}]
 readme = "README.md"
@@ -50,8 +50,8 @@ dependencies = [
     "docker~=7.1.0",
     "gitpython>=3.1.18,<4.0.0",
     "jsonref",
-    "opentelemetry-instrumentation-logging==0.61b0",
-    "opentelemetry-sdk==1.40.0",
+    "opentelemetry-instrumentation-logging==0.64b0",
+    "opentelemetry-sdk==1.43.0",
     "packaging>=24.1",
     "psutil>=5.0.0",
     "pydantic>=2.0,<=2.12.5",
@@ -98,10 +98,10 @@ server = [
 ]
 otel = [
     # Install otel dependencies to enable OpenTelemetry instrumentation in the server
-    "opentelemetry-exporter-otlp-proto-http>=1.40.0,<1.41.0",
-    "opentelemetry-instrumentation-fastapi>=0.61b0,<0.62b0",
-    "opentelemetry-instrumentation-requests>=0.61b0,<0.62b0",
-    "opentelemetry-instrumentation-sqlalchemy>=0.61b0,<0.62b0",
+    "opentelemetry-exporter-otlp-proto-http>=1.43.0,<1.44.0",
+    "opentelemetry-instrumentation-fastapi>=0.64b0,<0.65b0",
+    "opentelemetry-instrumentation-requests>=0.64b0,<0.65b0",
+    "opentelemetry-instrumentation-sqlalchemy>=0.64b0,<0.65b0",
 ]
 server-streaming = ["redis>=7.1.0,<8.0.0"]
 jupyter = ["rich[jupyter]>=12.0.0"]

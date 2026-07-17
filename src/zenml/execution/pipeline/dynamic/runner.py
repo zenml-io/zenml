@@ -67,6 +67,10 @@ from zenml.enums import (
     RunWaitConditionType,
     StepRuntime,
 )
+from zenml.execution.context import (
+    record_step_run,
+    setup_execution_context,
+)
 from zenml.execution.pipeline.dynamic.compilation import (
     compile_child_pipeline,
     compile_dynamic_step_invocation,
@@ -77,7 +81,9 @@ from zenml.execution.pipeline.dynamic.future_registry import (
     StartupCancelled,
 )
 from zenml.execution.pipeline.dynamic.inputs import (
+    _await_input_future,
     await_step_inputs,
+    collect_start_upstream_node_ids,
     collect_upstream_node_ids,
     convert_to_keyword_arguments,
     get_running_upstream_dependencies,
@@ -87,7 +93,9 @@ from zenml.execution.pipeline.dynamic.interactive_input_utils import (
     poll_interactive_wait_condition_input,
 )
 from zenml.execution.pipeline.dynamic.invocation_dependency_graph import (
+    AnyNode,
     ChildPipelineNode,
+    GraphUpdate,
     InvocationDependencyGraph,
     MapNode,
     NodeState,
@@ -96,6 +104,7 @@ from zenml.execution.pipeline.dynamic.invocation_dependency_graph import (
 from zenml.execution.pipeline.dynamic.outputs import (
     AnyOutputFuture,
     MapResultsFuture,
+    OutputArtifact,
     PipelineFuture,
     PipelineRunOutputs,
     StepExecutionFuture,
@@ -316,18 +325,6 @@ class DynamicPipelineRunner:
         if not snapshot.stack:
             raise RuntimeError("Missing stack for snapshot.")
 
-        if (
-            snapshot.pipeline_configuration.execution_mode
-            == ExecutionMode.CONTINUE_ON_FAILURE
-        ):
-            logger.warning(
-                "The `%s` execution mode is not supported for "
-                "dynamic pipelines right now. "
-                "The `%s` execution mode will be used instead.",
-                snapshot.pipeline_configuration.execution_mode,
-                ExecutionMode.STOP_ON_FAILURE,
-            )
-
         self._parent_runner = parent_runner
         self._snapshot = snapshot
         self._pipeline: Optional["DynamicPipeline"] = None
@@ -335,21 +332,26 @@ class DynamicPipelineRunner:
             snapshot.pipeline_configuration.execution_mode
             == ExecutionMode.FAIL_FAST
         )
+        self._continue_on_failure = (
+            snapshot.pipeline_configuration.execution_mode
+            == ExecutionMode.CONTINUE_ON_FAILURE
+        )
 
         worker_count = handle_int_env_var(
             ENV_ZENML_DYNAMIC_PIPELINE_WORKER_COUNT, default=10
         )
         self._executor = ThreadPoolExecutor(max_workers=worker_count)
 
-        stack = Stack.from_model(snapshot.stack)
+        self._stack = Stack.from_model(snapshot.stack)
         if orchestrator:
             self._orchestrator = orchestrator
         else:
-            self._orchestrator = stack.orchestrator
+            self._orchestrator = self._stack.orchestrator
 
-        self._step_operator = stack.step_operator
+        self._step_operator = self._stack.step_operator
         self._invocation_id_lock = threading.Lock()
         self._invocation_ids: Set[str] = set()
+        self._last_successful_sync_invocation_id: Optional[str] = None
 
         self._run, self._orchestrator_run_id = self._prepare_run(run)
         self._existing_step_runs = {}
@@ -740,14 +742,16 @@ class DynamicPipelineRunner:
                     elif isinstance(node, MapNode):
                         self._handle_map_ready(node=node)
                 except Exception as e:
-                    self._record_node_failure(node_id=node_id, exception=e)
+                    self._record_node_startup_failure(
+                        node_id=node_id, exception=e
+                    )
                     logger.exception(
                         "Failed to start concurrent node `%s`.", node_id
                     )
-                    # ONLY FAIL_FAST and STOP_ON_FAILURE execution modes are
-                    # supported for dynamic pipelines. In both cases, we do not
-                    # allow starting any new steps after any failure.
-                    return
+                    if not self._continue_on_failure:
+                        # In FAIL_FAST and STOP_ON_FAILURE modes we do not allow
+                        # starting any new work after a failure.
+                        return
 
     def _start_startup_loop(self) -> threading.Thread:
         """Start the startup loop.
@@ -884,8 +888,9 @@ class DynamicPipelineRunner:
 
             with (
                 InMemoryArtifactCache(),
+                setup_execution_context(pipeline_run=self._run),
                 env_utils.temporary_runtime_environment(
-                    self._snapshot.pipeline_configuration, self._snapshot.stack
+                    self._snapshot.pipeline_configuration, self._stack
                 ),
                 DynamicPipelineRunContext(
                     pipeline=pipeline,
@@ -1051,13 +1056,29 @@ class DynamicPipelineRunner:
         if nodes_ready:
             self._startup_event.set()
 
+    def apply_graph_update(
+        self,
+        update: GraphUpdate,
+        exception: Optional[BaseException] = None,
+    ) -> None:
+        """Settle the futures of cascaded nodes and propagate readiness changes.
+
+        Args:
+            update: The graph update to apply.
+            exception: The exception that caused the cascade, if any.
+        """
+        for node in update.cascaded:
+            self._maybe_settle_startup_future(node=node, cause=exception)
+
+        self.notify_graph_changed(update.nodes_ready)
+
     def mark_node_starting(self, node_id: str) -> None:
         """Mark a graph node as starting and propagate readiness changes.
 
         Args:
             node_id: The node ID.
         """
-        self.notify_graph_changed(
+        self.apply_graph_update(
             self._dependency_graph.mark_node_starting(node_id=node_id)
         )
 
@@ -1067,7 +1088,7 @@ class DynamicPipelineRunner:
         Args:
             node_id: The node ID.
         """
-        self.notify_graph_changed(
+        self.apply_graph_update(
             self._dependency_graph.mark_node_running(node_id=node_id)
         )
 
@@ -1077,21 +1098,8 @@ class DynamicPipelineRunner:
         Args:
             node_id: The node ID.
         """
-        self.notify_graph_changed(
+        self.apply_graph_update(
             self._dependency_graph.mark_node_succeeded(node_id=node_id)
-        )
-
-    def mark_node_failed(self, node_id: str) -> None:
-        """Mark a graph node as failed and propagate readiness changes.
-
-        This only updates the graph state. Use `record_failure(exception)` to
-        also trigger the pipeline-level failure cascade.
-
-        Args:
-            node_id: The node ID.
-        """
-        self.notify_graph_changed(
-            self._dependency_graph.mark_node_failed(node_id=node_id)
         )
 
     def record_failure(self, exception: BaseException) -> None:
@@ -1107,6 +1115,33 @@ class DynamicPipelineRunner:
         # RunPaused must be handled separately and not recorded as a failure.
         assert not isinstance(exception, RunPaused)
         self._on_failure_detected(exception=exception)
+
+    def _fail_concurrent_node(
+        self,
+        invocation_id: str,
+        exception: BaseException,
+        force_record: bool = False,
+    ) -> None:
+        """Handle the failure of a concurrently launched node.
+
+        The failure always cascades to the downstream dependents of the node,
+        which are cancelled so they don't block the run. In
+        `CONTINUE_ON_FAILURE` mode any other node keeps running and the run
+        can still complete. In all other modes the failure additionally
+        triggers the pipeline-level failure cascade.
+
+        Args:
+            invocation_id: The invocation ID of the failed node.
+            exception: The failure exception.
+            force_record: Whether to force record the failure.
+        """
+        self.apply_graph_update(
+            self._dependency_graph.mark_node_failed(node_id=invocation_id),
+            exception=exception,
+        )
+
+        if force_record or not self._continue_on_failure:
+            self.record_failure(exception=exception)
 
     def allocate_invocation_id(
         self,
@@ -1143,8 +1178,12 @@ class DynamicPipelineRunner:
         after: Union[
             "AnyOutputFuture", Sequence["AnyOutputFuture"], None
         ] = None,
+        start_after: Union[
+            "AnyOutputFuture", Sequence["AnyOutputFuture"], None
+        ] = None,
         group: Optional["GroupInfo"] = None,
         concurrent: Literal[False] = False,
+        implicit_upstream_steps: Optional[Set[str]] = None,
     ) -> StepRunOutputs: ...
 
     @overload
@@ -1157,8 +1196,12 @@ class DynamicPipelineRunner:
         after: Union[
             "AnyOutputFuture", Sequence["AnyOutputFuture"], None
         ] = None,
+        start_after: Union[
+            "AnyOutputFuture", Sequence["AnyOutputFuture"], None
+        ] = None,
         group: Optional["GroupInfo"] = None,
         concurrent: Literal[True] = True,
+        implicit_upstream_steps: Optional[Set[str]] = None,
     ) -> "StepFuture": ...
 
     def launch_step(
@@ -1170,8 +1213,12 @@ class DynamicPipelineRunner:
         after: Union[
             "AnyOutputFuture", Sequence["AnyOutputFuture"], None
         ] = None,
+        start_after: Union[
+            "AnyOutputFuture", Sequence["AnyOutputFuture"], None
+        ] = None,
         group: Optional["GroupInfo"] = None,
         concurrent: bool = False,
+        implicit_upstream_steps: Optional[Set[str]] = None,
     ) -> Union[StepRunOutputs, "StepFuture"]:
         """Launch a step.
 
@@ -1181,8 +1228,11 @@ class DynamicPipelineRunner:
             args: The arguments for the step function.
             kwargs: The keyword arguments for the step function.
             after: The step run output futures to wait for.
+            start_after: The step run output futures to wait for the start of.
             group: The group information for this step.
             concurrent: Whether to launch the step concurrently.
+            implicit_upstream_steps: Implicit upstream step invocation
+                IDs. If not given, defaults to the last successful sync step.
 
         Raises:
             BaseException: If the step failed.
@@ -1225,7 +1275,8 @@ class DynamicPipelineRunner:
                     self.mark_node_succeeded(node_id=invocation_id)
                     return future
                 else:
-                    return load_step_run_outputs(step_run.id)
+                    self._last_successful_sync_invocation_id = invocation_id
+                    return load_step_run_outputs(step_run)
 
             if (
                 runtime == StepRuntime.INLINE
@@ -1261,11 +1312,11 @@ class DynamicPipelineRunner:
                         future=future,
                         initial_state=NodeState.FAILED,
                     )
-                    self.mark_node_failed(node_id=invocation_id)
-                    self.record_failure(
+                    self._fail_concurrent_node(
+                        invocation_id=invocation_id,
                         exception=wrap_step_failure(
                             exception, invocation_id=invocation_id
-                        )
+                        ),
                     )
                     return future
                 else:
@@ -1305,7 +1356,9 @@ class DynamicPipelineRunner:
                 if concurrent:
                     return monitoring_future
                 else:
-                    return monitoring_future.result()
+                    outputs = monitoring_future.result()
+                    self._last_successful_sync_invocation_id = invocation_id
+                    return outputs
 
         inputs = convert_to_keyword_arguments(step.entrypoint, args, kwargs)
 
@@ -1324,6 +1377,9 @@ class DynamicPipelineRunner:
                 group=group,
             )
 
+        if implicit_upstream_steps is None:
+            implicit_upstream_steps = self._get_implicit_upstream_steps()
+
         if concurrent:
             future = StepFuture(
                 invocation_id=invocation_id,
@@ -1334,10 +1390,19 @@ class DynamicPipelineRunner:
                 step=step,
                 inputs=inputs,
                 after=after,
+                start_after=start_after,
                 config_overrides=config_overrides,
+                implicit_upstream_steps=implicit_upstream_steps,
             )
             return future
         else:
+            # We need to explicitly wait until the start dependencies are
+            # satisfied, as we do not rely on the dependency graph for the
+            # sync execution path.
+            self._wait_until_start_dependencies_satisfied(
+                start_after=start_after
+            )
+
             if (
                 running_upstream_dependencies
                 := get_running_upstream_dependencies(inputs, after)
@@ -1355,12 +1420,39 @@ class DynamicPipelineRunner:
                 inputs=inputs,
                 after=after,
                 config=config_overrides,
+                implicit_upstream_steps=implicit_upstream_steps,
             )
 
             step_run = self._run_sync_step(
                 step=compiled_step, remaining_retries=remaining_retries
             )
-            return load_step_run_outputs(step_run.id)
+            self._last_successful_sync_invocation_id = invocation_id
+            return load_step_run_outputs(step_run)
+
+    def _wait_until_start_dependencies_satisfied(
+        self,
+        start_after: Union[AnyOutputFuture, Sequence[AnyOutputFuture], None],
+    ) -> None:
+        """Block until all start-ordering dependencies are satisfied.
+
+        Args:
+            start_after: The dependencies to wait for the start of.
+
+        Raises:
+            BaseException: If a failure was detected while waiting.
+        """  # noqa: DOC503
+        node_ids = collect_start_upstream_node_ids(start_after)
+        while node_ids:
+            if self._exception:
+                raise self._exception
+
+            node_ids = [
+                node_id
+                for node_id in node_ids
+                if not self._dependency_graph.node_has_started(node_id=node_id)
+            ]
+            if node_ids:
+                time.sleep(0.5)
 
     def _run_sync_step(
         self,
@@ -1385,6 +1477,70 @@ class DynamicPipelineRunner:
             remaining_retries=remaining_retries,
         )
 
+    def _get_implicit_upstream_steps(self) -> Set[str]:
+        """Get the implicit upstream steps for a new invocation.
+
+        Returns:
+            The implicit upstream steps.
+        """
+        if self._last_successful_sync_invocation_id:
+            return {self._last_successful_sync_invocation_id}
+
+        return set()
+
+    def _resolve_step_dependencies(
+        self,
+        inputs: Dict[str, Any],
+        after: Union["AnyOutputFuture", Sequence["AnyOutputFuture"], None],
+        implicit_upstream_steps: Set[str],
+    ) -> Tuple[Dict[str, Any], Set[str]]:
+        """Resolve the inputs and upstream steps of a step invocation.
+
+        Args:
+            inputs: The step inputs.
+            after: Optional upstream futures for the step.
+            implicit_upstream_steps: Implicit upstream step invocation IDs.
+
+        Returns:
+            The awaited inputs and the upstream step invocation IDs.
+        """
+        upstream_steps = set()
+
+        for future in collect_futures(after=after, expand_map_results=True):
+            _await_input_future(future, return_result=False)
+            if isinstance(future, PipelineFuture):
+                # A pipeline future means we're waiting for a child pipeline
+                # to finish. No such step exists in our pipeline, so we can't
+                # track it as an upstream step.
+                continue
+            upstream_steps.add(future.invocation_id)
+
+        inputs = await_step_inputs(inputs)
+
+        for value in inputs.values():
+            if isinstance(value, OutputArtifact):
+                upstream_steps.add(value.step_name)
+
+            if (
+                isinstance(value, Sequence)
+                and value
+                and all(isinstance(item, OutputArtifact) for item in value)
+            ):
+                upstream_steps.update(item.step_name for item in value)
+
+        if implicit_upstream_steps:
+            carried_upstream_steps: Set[str] = set()
+            for upstream_step in upstream_steps:
+                if node := self._dependency_graph.get_node(upstream_step):
+                    carried_upstream_steps |= node.implicit_upstream_steps
+
+            # Implicit upstream steps that an existing upstream step captured
+            # are already transitive ancestors, which makes the edges
+            # redundant.
+            upstream_steps |= implicit_upstream_steps - carried_upstream_steps
+
+        return inputs, upstream_steps
+
     def _compile_or_reuse(
         self,
         step: "BaseStep",
@@ -1394,6 +1550,7 @@ class DynamicPipelineRunner:
             "AnyOutputFuture", Sequence["AnyOutputFuture"], None
         ] = None,
         config: Optional["StepConfigurationUpdate"] = None,
+        implicit_upstream_steps: Optional[Set[str]] = None,
     ) -> "Step":
         """Compile a step invocation or reuse from existing step run.
 
@@ -1403,6 +1560,8 @@ class DynamicPipelineRunner:
             inputs: The step inputs.
             after: Optional upstream futures for the step.
             config: Optional config overrides for compilation.
+            implicit_upstream_steps: Implicit upstream step invocation
+                IDs.
 
         Returns:
             The compiled step.
@@ -1414,14 +1573,19 @@ class DynamicPipelineRunner:
                 step_config_overrides=existing_step_run.config,
             )
         else:
+            inputs, upstream_steps = self._resolve_step_dependencies(
+                inputs=inputs,
+                after=after,
+                implicit_upstream_steps=implicit_upstream_steps or set(),
+            )
             compiled_step = compile_dynamic_step_invocation(
                 snapshot=self._snapshot,
                 pipeline=self.pipeline,
                 step=step,
                 invocation_id=invocation_id,
                 inputs=inputs,
+                upstream_steps=upstream_steps,
                 pipeline_docker_settings=self._snapshot.pipeline_configuration.docker_settings,
-                after=after,
                 config=config,
             )
 
@@ -1435,6 +1599,9 @@ class DynamicPipelineRunner:
         after: Union[
             "AnyOutputFuture", Sequence["AnyOutputFuture"], None
         ] = None,
+        start_after: Union[
+            "AnyOutputFuture", Sequence["AnyOutputFuture"], None
+        ] = None,
         product: bool = False,
     ) -> "MapResultsFuture":
         """Map over step inputs.
@@ -1445,6 +1612,8 @@ class DynamicPipelineRunner:
             kwargs: The keyword arguments for the step function.
             after: The step run output futures to wait for before executing the
                 steps.
+            start_after: The step run output futures to wait for the start of
+                before executing the steps.
             product: Whether to produce a cartesian product of the mapped
                 inputs.
 
@@ -1456,13 +1625,16 @@ class DynamicPipelineRunner:
         invocation_id = self.allocate_invocation_id(
             base_name=step.name, allow_suffix=True
         )
+        implicit_upstream_steps = self._get_implicit_upstream_steps()
         map_future = MapResultsFuture(invocation_id=invocation_id)
         self._register_map_invocation(
             future=map_future,
             step=step,
             inputs=inputs,
             after=after,
+            start_after=start_after,
             product=product,
+            implicit_upstream_steps=implicit_upstream_steps,
         )
         return map_future
 
@@ -1963,6 +2135,31 @@ class DynamicPipelineRunner:
 
     # Concurrent step lifecycle
 
+    def _maybe_settle_startup_future(
+        self, node: "AnyNode", cause: Optional[BaseException] = None
+    ) -> None:
+        """Settle the startup future of a node in an inherited state.
+
+        Args:
+            node: The node.
+            cause: The exception that caused the state, if any.
+        """
+        exception: BaseException
+        if node.state == NodeState.PAUSED:
+            exception = RunPaused()
+        elif node.state == NodeState.SKIPPED:
+            exception = StartupCancelled(
+                f"Skipped because an upstream dependency of "
+                f"`{node.node_id}` failed."
+            )
+        else:
+            return
+
+        exception.__cause__ = cause
+        self._future_registry.set_startup_exception(
+            invocation_id=node.node_id, exception=exception
+        )
+
     def _register_concurrent_step_invocation(
         self,
         future: StepFuture,
@@ -1970,7 +2167,11 @@ class DynamicPipelineRunner:
         step: Optional[BaseStep] = None,
         inputs: Optional[Dict[str, Any]] = None,
         after: Union[AnyOutputFuture, Sequence[AnyOutputFuture], None] = None,
+        start_after: Union[
+            AnyOutputFuture, Sequence[AnyOutputFuture], None
+        ] = None,
         config_overrides: Optional["StepConfigurationUpdate"] = None,
+        implicit_upstream_steps: Optional[Set[str]] = None,
     ) -> None:
         """Register a concurrent step invocation.
 
@@ -1980,7 +2181,10 @@ class DynamicPipelineRunner:
             step: Optional step payload for startup.
             inputs: Optional input payload for startup.
             after: Optional upstream futures for startup.
+            start_after: Optional upstream futures for start ordering.
             config_overrides: Optional config overrides for the step.
+            implicit_upstream_steps: Optional implicit upstream step
+                invocation IDs for startup.
         """
         if inputs is not None:
             upstream_node_ids = collect_upstream_node_ids(
@@ -1988,6 +2192,8 @@ class DynamicPipelineRunner:
             )
         else:
             upstream_node_ids = None
+
+        start_upstream_node_ids = collect_start_upstream_node_ids(start_after)
 
         with self._lifecycle_lock:
             if self._failure_detected and initial_state in {
@@ -2012,16 +2218,15 @@ class DynamicPipelineRunner:
             node, nodes_ready = self._dependency_graph.register_step_node(
                 node_id=future.invocation_id,
                 upstream_ids=upstream_node_ids,
+                start_upstream_ids=start_upstream_node_ids,
                 state=initial_state,
                 step=step,
                 inputs=inputs,
                 after=after,
                 config_overrides=config_overrides,
+                implicit_upstream_steps=implicit_upstream_steps,
             )
-            if node.state == NodeState.PAUSED:
-                self._future_registry.set_startup_exception(
-                    invocation_id=node.node_id, exception=RunPaused()
-                )
+            self._maybe_settle_startup_future(node=node)
         self.notify_graph_changed(nodes_ready)
 
     def _handle_step_ready(self, node: StepNode) -> None:
@@ -2046,6 +2251,7 @@ class DynamicPipelineRunner:
             inputs=node.inputs,
             after=node.after,
             config=node.config_overrides,
+            implicit_upstream_steps=node.implicit_upstream_steps,
         )
 
         runtime = get_step_runtime(
@@ -2104,14 +2310,15 @@ class DynamicPipelineRunner:
                     retry=False,
                 )
             except BaseException as e:
-                self.mark_node_failed(node_id=step.spec.invocation_id)
-                self.record_failure(
+                self._fail_concurrent_node(
+                    invocation_id=step.spec.invocation_id,
                     exception=wrap_step_failure(
                         e, invocation_id=step.spec.invocation_id
-                    )
+                    ),
                 )
                 raise e
 
+            self.mark_node_running(node_id=step.spec.invocation_id)
             self._register_isolated_step_for_monitoring(
                 invocation_id=step.spec.invocation_id,
                 step_run=step_run,
@@ -2140,16 +2347,17 @@ class DynamicPipelineRunner:
         """
 
         def _launch_and_wait() -> StepRunResponse:
+            self.mark_node_running(node_id=step.spec.invocation_id)
             try:
                 step_run = self._run_sync_step(
                     step=step, remaining_retries=remaining_retries
                 )
             except BaseException as e:
-                self.mark_node_failed(node_id=step.spec.invocation_id)
-                self.record_failure(
+                self._fail_concurrent_node(
+                    invocation_id=step.spec.invocation_id,
                     exception=wrap_step_failure(
                         e, invocation_id=step.spec.invocation_id
-                    )
+                    ),
                 )
                 raise e
 
@@ -2166,7 +2374,7 @@ class DynamicPipelineRunner:
     def _handle_step_startup_succeeded(
         self, invocation_id: str, execution_future: StepExecutionFuture
     ) -> None:
-        """Store a successful step startup in the registry and graph.
+        """Store a successful step startup in the registry.
 
         Args:
             invocation_id: The step invocation ID.
@@ -2175,9 +2383,8 @@ class DynamicPipelineRunner:
         self._future_registry.bind_step_execution_future(
             invocation_id=invocation_id, future=execution_future
         )
-        self.mark_node_running(node_id=invocation_id)
 
-    def _record_node_failure(
+    def _record_node_startup_failure(
         self, node_id: str, exception: BaseException
     ) -> None:
         """Record a failure for a registered concurrent node.
@@ -2190,8 +2397,7 @@ class DynamicPipelineRunner:
         self._future_registry.set_startup_exception(
             invocation_id=node_id, exception=exception
         )
-        self.mark_node_failed(node_id=node_id)
-        self.record_failure(exception=exception)
+        self._fail_concurrent_node(invocation_id=node_id, exception=exception)
 
     def _on_step_finished(self, step_run: "StepRunResponse") -> None:
         """Handle a terminal step run.
@@ -2204,6 +2410,8 @@ class DynamicPipelineRunner:
             # might not be refreshed yet and therefore not have the correct
             # status.
             step_run = Client().get_run_step(step_run.id, hydrate=False)
+
+        record_step_run(step_run)
 
         logger.debug(
             "Processing terminal step `%s` with status `%s`.",
@@ -2218,11 +2426,12 @@ class DynamicPipelineRunner:
             or step_run.status == ExecutionStatus.STOPPED
         ):
             exception = self._get_step_exception(step_run=step_run)
-            self.mark_node_failed(node_id=step_run.name)
-            self.record_failure(
+            self._fail_concurrent_node(
+                invocation_id=step_run.name,
                 exception=wrap_step_failure(
                     exception, invocation_id=step_run.name
-                )
+                ),
+                force_record=step_run.status == ExecutionStatus.STOPPED,
             )
 
     # Concurrent map lifecycle
@@ -2234,6 +2443,10 @@ class DynamicPipelineRunner:
         inputs: Dict[str, Any],
         product: bool,
         after: Union[AnyOutputFuture, Sequence[AnyOutputFuture], None] = None,
+        start_after: Union[
+            AnyOutputFuture, Sequence[AnyOutputFuture], None
+        ] = None,
+        implicit_upstream_steps: Optional[Set[str]] = None,
     ) -> None:
         """Register a map invocation.
 
@@ -2242,12 +2455,16 @@ class DynamicPipelineRunner:
             step: The mapped step payload for startup.
             inputs: The input payload for startup.
             after: Optional upstream futures for startup.
+            start_after: Optional upstream futures for start ordering.
             product: The map expansion mode.
+            implicit_upstream_steps: Optional implicit upstream step
+                invocation IDs for startup.
         """
         node_id = future.invocation_id
         upstream_node_ids = collect_upstream_node_ids(
             inputs=inputs, after=after
         )
+        start_upstream_node_ids = collect_start_upstream_node_ids(start_after)
 
         with self._lifecycle_lock:
             if self._failure_detected:
@@ -2267,12 +2484,11 @@ class DynamicPipelineRunner:
                 inputs=inputs,
                 product=product,
                 upstream_ids=upstream_node_ids,
+                start_upstream_ids=start_upstream_node_ids,
                 after=after,
+                implicit_upstream_steps=implicit_upstream_steps,
             )
-            if node.state == NodeState.PAUSED:
-                self._future_registry.set_startup_exception(
-                    invocation_id=node.node_id, exception=RunPaused()
-                )
+            self._maybe_settle_startup_future(node=node)
         self.notify_graph_changed(nodes_ready)
 
     def _handle_map_ready(self, node: MapNode) -> None:
@@ -2306,6 +2522,7 @@ class DynamicPipelineRunner:
                 after=node.after,
                 group=group_info,
                 concurrent=True,
+                implicit_upstream_steps=node.implicit_upstream_steps,
             )
             for index, inputs in enumerate(step_inputs)
         ]
@@ -2335,10 +2552,11 @@ class DynamicPipelineRunner:
         self._future_registry.bind_map_child_futures(
             map_id=map_id, child_futures=child_futures
         )
-        nodes_ready = self._dependency_graph.attach_map_children(
-            map_node_id=map_id, child_node_ids=child_node_ids
+        self.apply_graph_update(
+            self._dependency_graph.attach_map_children(
+                map_node_id=map_id, child_node_ids=child_node_ids
+            )
         )
-        self.notify_graph_changed(nodes_ready)
 
     # Child pipeline lifecycle
 
@@ -2349,6 +2567,9 @@ class DynamicPipelineRunner:
         args: Sequence[Any],
         kwargs: Dict[str, Any],
         after: Union[
+            "AnyOutputFuture", Sequence["AnyOutputFuture"], None
+        ] = None,
+        start_after: Union[
             "AnyOutputFuture", Sequence["AnyOutputFuture"], None
         ] = None,
         *,
@@ -2364,6 +2585,9 @@ class DynamicPipelineRunner:
         after: Union[
             "AnyOutputFuture", Sequence["AnyOutputFuture"], None
         ] = None,
+        start_after: Union[
+            "AnyOutputFuture", Sequence["AnyOutputFuture"], None
+        ] = None,
         *,
         concurrent: Literal[False] = False,
     ) -> PipelineRunOutputs: ...
@@ -2376,6 +2600,9 @@ class DynamicPipelineRunner:
         after: Union[
             "AnyOutputFuture", Sequence["AnyOutputFuture"], None
         ] = None,
+        start_after: Union[
+            "AnyOutputFuture", Sequence["AnyOutputFuture"], None
+        ] = None,
         *,
         concurrent: bool = False,
     ) -> Union[PipelineFuture, PipelineRunOutputs]:
@@ -2386,6 +2613,7 @@ class DynamicPipelineRunner:
             args: Positional pipeline arguments.
             kwargs: Keyword pipeline arguments.
             after: Optional dependency futures.
+            start_after: Optional start-ordering futures.
             concurrent: Whether to run the child pipeline concurrently.
 
         Returns:
@@ -2412,6 +2640,7 @@ class DynamicPipelineRunner:
                 args=tuple(args),
                 kwargs=kwargs,
                 after=after,
+                start_after=start_after,
                 future=pipeline_future,
             )
             return pipeline_future
@@ -2463,6 +2692,9 @@ class DynamicPipelineRunner:
         args: Tuple[Any, ...],
         kwargs: Dict[str, Any],
         after: Union["AnyOutputFuture", Sequence["AnyOutputFuture"], None],
+        start_after: Union[
+            "AnyOutputFuture", Sequence["AnyOutputFuture"], None
+        ],
         future: PipelineFuture,
     ) -> None:
         """Register a concurrent child pipeline invocation.
@@ -2473,6 +2705,7 @@ class DynamicPipelineRunner:
             args: Positional arguments passed to the child pipeline.
             kwargs: Keyword arguments passed to the child pipeline.
             after: Optional upstream futures for startup ordering.
+            start_after: Optional upstream futures for start ordering.
             future: The child pipeline future.
         """
         inputs = convert_to_keyword_arguments(
@@ -2480,6 +2713,11 @@ class DynamicPipelineRunner:
         )
         upstream_node_ids = collect_upstream_node_ids(
             inputs=inputs, after=after
+        )
+        start_upstream_node_ids = (
+            collect_start_upstream_node_ids(start_after)
+            if start_after is not None
+            else None
         )
 
         with self._lifecycle_lock:
@@ -2501,12 +2739,10 @@ class DynamicPipelineRunner:
                     args=args,
                     kwargs=kwargs,
                     upstream_ids=upstream_node_ids,
+                    start_upstream_ids=start_upstream_node_ids,
                 )
             )
-            if node.state == NodeState.PAUSED:
-                self._future_registry.set_startup_exception(
-                    invocation_id=node.node_id, exception=RunPaused()
-                )
+            self._maybe_settle_startup_future(node=node)
         self.notify_graph_changed(nodes_ready=nodes_ready)
 
     def _handle_child_pipeline_ready(self, node: ChildPipelineNode) -> None:
@@ -2532,6 +2768,7 @@ class DynamicPipelineRunner:
         node_id = node.node_id
 
         def _launch_and_wait() -> "PipelineRunResponse":
+            self.mark_node_running(node_id=node_id)
             try:
                 child_runner.run_pipeline()
                 terminal_run = self._validate_successful_child_run(
@@ -2549,17 +2786,18 @@ class DynamicPipelineRunner:
                 # Cascade the pause through the dependency graph and
                 # settle each cascaded future. Don't record a failure:
                 # the parent should keep running.
-                for paused_node_id in self._dependency_graph.mark_node_paused(
-                    node_id=node_id
-                ):
-                    self._future_registry.set_startup_exception(
-                        invocation_id=paused_node_id,
-                        exception=paused_exception,
-                    )
+                self._future_registry.set_startup_exception(
+                    invocation_id=node_id, exception=paused_exception
+                )
+                self.apply_graph_update(
+                    self._dependency_graph.mark_node_paused(node_id=node_id),
+                    exception=paused_exception,
+                )
                 raise
             except BaseException as exception:
-                self.mark_node_failed(node_id=node_id)
-                self.record_failure(exception=exception)
+                self._fail_concurrent_node(
+                    invocation_id=node_id, exception=exception
+                )
                 raise
             finally:
                 self._unregister_child_runner(node_id=node_id)
@@ -2619,7 +2857,6 @@ class DynamicPipelineRunner:
             node_id=node_id
         )
         pipeline_future._set_startup_result(execution_future)
-        self.mark_node_running(node_id=node_id)
 
     def _prepare_child_run(
         self,

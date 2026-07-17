@@ -733,20 +733,24 @@ podSecurityContext:
 
 ### Observability and OpenTelemetry
 
-You can configure server log output and OpenTelemetry export through the `server.environment` Helm value. For example:
+You can configure server log output and OpenTelemetry export through dedicated Helm values. For example:
 
 ```yaml
 server:
-  environment:
-    ZENML_CONSOLE_LOGGING_FORMAT: <console|json|custom_format>  # default is console
-    ZENML_LOGGING_COLORS_DISABLED: <true|false>  # default is false
-    ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
-    ZENML_SERVER_OTEL_SERVICE_NAME: zenml-server
+  logging:
+    verbosity: <debug|info|warning|error|critical>  # default is info
+    format: <console|json|custom_format>  # default is console
+    colorsDisabled: <true|false>  # default is false
+  openTelemetry:
+    endpoint: http://otel-collector:4318
+    serviceName: zenml-server
 ```
 
-`ZENML_CONSOLE_LOGGING_FORMAT` can be set to `console` (default), `json`, or a valid Python `%`-style logging format string. This controls the server container stdout/stderr output, i.e. the logs that Kubernetes pod log collectors scrape. The older `ZENML_LOGGING_FORMAT` environment variable is still supported as a deprecated alias but will be removed in a future version.
+`server.logging.verbosity` sets the ZenML server log level. The legacy `server.debug` option is still supported for compatibility and forces the server log level to `debug` when set to `true`, but new deployments should use `server.logging.verbosity` instead.
 
-Setting `ZENML_SERVER_OTEL_EXPORTER_OTLP_ENDPOINT` enables server OpenTelemetry instrumentation and exports traces, metrics, and logs using OTLP/HTTP. The standard `OTEL_EXPORTER_OTLP_ENDPOINT` environment variable is also supported as a fallback. Configure the base collector endpoint and ZenML appends `/v1/traces`, `/v1/metrics`, and `/v1/logs` for each signal.
+`server.logging.format` can be set to `console` (default), `json`, or a valid Python `%`-style logging format string. This controls the server container stdout/stderr output, i.e. the logs that Kubernetes pod log collectors scrape. The older `ZENML_LOGGING_FORMAT` environment variable is still supported through `server.environment` as a deprecated alias but will be removed in a future version.
+
+Setting `server.openTelemetry.endpoint` enables server OpenTelemetry instrumentation and exports traces, metrics, and logs using OTLP/HTTP. The standard `OTEL_EXPORTER_OTLP_ENDPOINT` environment variable is also supported as a fallback through `server.environment`. Configure the base collector endpoint and ZenML appends `/v1/traces`, `/v1/metrics`, and `/v1/logs` for each signal.
 
 You can override individual signal endpoints with the standard `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`, `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`, and `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT` variables, or with the matching `ZENML_SERVER_OTEL_EXPORTER_OTLP_<SIGNAL>_ENDPOINT` names.
 

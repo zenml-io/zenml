@@ -466,12 +466,15 @@ def get_run_status(
 @async_fastapi_endpoint_wrapper
 def get_run_dag(
     run_id: UUID,
+    include_step_metadata: Optional[List[str]] = Query(default=None),
     _: AuthContext = Security(authorize),
 ) -> PipelineRunDAG:
     """Get the DAG of a specific pipeline run.
 
     Args:
         run_id: ID of the pipeline run for which to get the DAG.
+        include_step_metadata: Run metadata keys for which to include the
+            values in the step nodes.
 
     Returns:
         The DAG of the pipeline run.
@@ -482,7 +485,9 @@ def get_run_dag(
         get_method=zen_store().get_run,
         hydrate=False,
     )
-    return zen_store().get_pipeline_run_dag(run_id)
+    return zen_store().get_pipeline_run_dag(
+        pipeline_run_id=run_id, include_step_metadata=include_step_metadata
+    )
 
 
 @router.post(

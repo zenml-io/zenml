@@ -92,17 +92,39 @@ jobs:
       - name: Compare results and create report
         id: create-report
         run: |
-          if diff -U0 --label "${GITHUB_BASE_REF}" --label "${GITHUB_HEAD_REF}" $BASE_RESULTS_FILE $CURRENT_RESULTS_FILE > requests_diff.txt; then
+          if diff -q $BASE_RESULTS_FILE $CURRENT_RESULTS_FILE > /dev/null; then
             echo "has_difference=false" >> "$GITHUB_OUTPUT"
           else
             echo "has_difference=true" >> "$GITHUB_OUTPUT"
+            pipelines=$(jq -r 'keys_unsorted[]' $CURRENT_RESULTS_FILE)
             {
               echo "<!-- REQUEST_COUNT_REPORT -->"
               echo "## Server requests changed"
               echo ""
-              echo '```diff'
-              cat requests_diff.txt
-              echo '```'
+              echo "| Pipeline | ${GITHUB_BASE_REF} | ${GITHUB_HEAD_REF} | Δ |"
+              echo "| --- | --- | --- | --- |"
+              base_total=0
+              current_total=0
+              for pipeline in $pipelines; do
+                base=$(jq ".\"${pipeline}\".total" $BASE_RESULTS_FILE)
+                current=$(jq ".\"${pipeline}\".total" $CURRENT_RESULTS_FILE)
+                base_total=$((base_total + base))
+                current_total=$((current_total + current))
+                printf '| %s | %s | %s | %+d |\n' "$pipeline" "$base" "$current" "$((current - base))"
+              done
+              printf '| **total** | **%s** | **%s** | **%+d** |\n' "$base_total" "$current_total" "$((current_total - base_total))"
+              echo ""
+              echo "<details><summary>Per-endpoint changes</summary>"
+              echo ""
+              for pipeline in $pipelines; do
+                endpoint_diff=$(diff -U0 --label "${GITHUB_BASE_REF}" --label "${GITHUB_HEAD_REF}" \
+                  <(jq ".\"${pipeline}\".requests" $BASE_RESULTS_FILE) \
+                  <(jq ".\"${pipeline}\".requests" $CURRENT_RESULTS_FILE) || true)
+                if [ -n "$endpoint_diff" ]; then
+                  printf '#### %s\n```diff\n%s\n```\n\n' "$pipeline" "$endpoint_diff"
+                fi
+              done
+              echo "</details>"
               echo ""
               echo "cc @schustmi"
             } > request_count_report.md

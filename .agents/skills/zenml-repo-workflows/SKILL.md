@@ -63,13 +63,17 @@ Former root headings covered here:
 - ZenML recommends `uv` for Python package installation because it resolves
   dependencies more quickly and reliably than plain `pip`.
 - Useful development environment variables:
-  - `ZENML_DEBUG=true`
-  - `ZENML_LOGGING_VERBOSITY=INFO`
-  - `ZENML_ANALYTICS_OPT_IN=false`
+  - `ZENML_LOGGING_VERBOSITY=DEBUG`
   - `MLSTACKS_ANALYTICS_OPT_OUT=true`
   - `AUTO_OPEN_DASHBOARD=false`
   - `ZENML_ENABLE_RICH_TRACEBACK=false`
   - `TOKENIZERS_PARALLELISM=false`
+- Always set the following environment variables when developing:
+  - `ZENML_ANALYTICS_OPT_IN=false`: Disables analytics during development
+  - `ZENML_DEBUG=true`: Uses the development ZenML analytics server to avoid
+    sending analytics to the official ZenML analytics server (IMPORTANT!). This
+    must be set even if `ZENML_ANALYTICS_OPT_IN=true` because in a client-server
+    setup, the server controls the client-side analytics opt-in status.
 
 ### Formatting, Linting, and Tests
 
