@@ -8,7 +8,7 @@ Common patterns with the Kitaru Python SDK. For the complete reference, see [sdk
 
 ## Define and run a durable flow
 
-A flow is the outer durable boundary; checkpoints inside it are the persisted replay boundaries.
+A flow is the recording boundary for one execution; the checkpoints inside it are the persisted points that replay later reads back.
 
 ```python
 import kitaru
