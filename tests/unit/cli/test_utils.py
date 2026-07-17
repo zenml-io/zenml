@@ -1,4 +1,5 @@
 import io
+from types import SimpleNamespace
 
 import pytest
 from rich.console import Console
@@ -29,3 +30,40 @@ def test_print_page_info_does_not_render_backticks(
     )
     assert "`" not in rendered_output
     assert "[cyan]" not in rendered_output
+
+
+def test_pretty_print_deployment_does_not_truncate_endpoint_url(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    output = io.StringIO()
+    test_console = Console(
+        file=output,
+        force_terminal=False,
+        theme=zenml_custom_theme,
+        width=80,
+    )
+    monkeypatch.setattr(cli_utils, "console", test_console)
+    monkeypatch.setattr(
+        cli_utils, "get_deployment_invocation_example", lambda deployment: {}
+    )
+
+    # The endpoint URL is deliberately wider than the console. It must be
+    # printed in full on its own line rather than cropped to the terminal
+    # width, which is what no_wrap=True would do.
+    url = "https://example.com/deployments/" + "d" * 64
+    deployment = SimpleNamespace(
+        name="my-deployment",
+        status="running",
+        snapshot=None,
+        url=url,
+        auth_key=None,
+    )
+
+    cli_utils.pretty_print_deployment(deployment)
+
+    endpoint_line = next(
+        line
+        for line in output.getvalue().splitlines()
+        if "Endpoint URL" in line
+    )
+    assert url in endpoint_line
