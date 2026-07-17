@@ -733,6 +733,28 @@ def test_fetch_status_reconciles_dynamic_orchestration_job(monkeypatch):
     assert step_statuses is None
 
 
+def test_fetch_status_keeps_dynamic_run_unknown_without_sentinel(monkeypatch):
+    """A vanished job with no sentinel yet is unknown, never FAILED.
+
+    Between a job leaving `squeue --states=all` and its exit-code
+    sentinel flushing to the shared filesystem, the run's outcome is
+    not knowable; declaring FAILED in that window would terminally
+    mis-mark runs that actually completed.
+    """
+    op = _build_orchestrator()
+    runner = FakeRunner()
+    _use_fake_client(monkeypatch, runner)
+    run = _run(
+        run_id=uuid4(),
+        run_metadata={SLURM_ORCHESTRATION_JOB_ID_METADATA_KEY: "1000"},
+    )
+
+    pipeline_status, step_statuses = op.fetch_status(run, include_steps=True)
+
+    assert pipeline_status is None
+    assert step_statuses is None
+
+
 def test_does_not_support_isolated_steps():
     """Dynamic steps run inline in the orchestration job's allocation.
 

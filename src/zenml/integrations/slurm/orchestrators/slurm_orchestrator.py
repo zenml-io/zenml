@@ -726,8 +726,26 @@ touch {shlex.quote(cleanup_marker)}
                 client=client,
                 state=state,
                 run_dir=self._orchestration_run_dir(str(run.id)),
-                cleanup_complete=True,
+                # The orchestration job writes its own exit-code sentinel
+                # via its EXIT trap. Until that sentinel is visible on the
+                # shared filesystem, a job that has vanished from the queue
+                # is unknown, not failed - mirroring the static DAG
+                # reconciliation. Declaring FAILED on first sight would
+                # terminally mis-mark a run whose sentinel merely lags the
+                # queue purge (NFS/Lustre flush).
+                cleanup_complete=False,
             )
+            if status is None and state is None:
+                logger.warning(
+                    "Slurm orchestration job `%s` for run `%s` is no longer "
+                    "known to Slurm and has not written an exit-code "
+                    "sentinel yet; keeping the run status unchanged. If "
+                    "this persists, the job was likely killed before its "
+                    "EXIT trap ran (e.g. NODE_FAIL) - stop the run "
+                    "manually.",
+                    job_id,
+                    run.id,
+                )
         finally:
             client.runner.close()
 
