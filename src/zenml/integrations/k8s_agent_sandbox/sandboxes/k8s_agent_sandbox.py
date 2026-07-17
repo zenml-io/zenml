@@ -439,6 +439,15 @@ class K8sAgentSandbox(BaseSandbox):
                     # loaders for the scope; it resolves them off the shared
                     # kubernetes.config module at call time, so patching the
                     # module intercepts them.
+                    #
+                    # This patch is process-global, not component-scoped:
+                    # while held, ANY other code in the process (a kubernetes
+                    # orchestrator, a step operator, user code) that calls
+                    # kubernetes.config.load_kube_config() gets a silent no-op.
+                    # Acceptable because the window is small and network-free
+                    # (inline-template synthesis + SandboxClient construction)
+                    # and serialized by _kube_default_config_lock, so at most
+                    # one such window is open at a time.
                     def _keep_connector_default(*_: Any, **__: Any) -> None:
                         return None
 
