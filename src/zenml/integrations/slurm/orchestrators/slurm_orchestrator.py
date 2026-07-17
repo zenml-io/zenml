@@ -345,6 +345,8 @@ class SlurmOrchestrator(ContainerizedOrchestrator):
         Raises:
             RuntimeError: If the pipeline has a schedule, which is not
                 supported.
+            Exception: Re-raised after cancelling the orchestration job if
+                its credential-cleanup job cannot be submitted.
         """
         from zenml.pipelines.dynamic.entrypoint_configuration import (
             DynamicPipelineEntrypointConfiguration,
