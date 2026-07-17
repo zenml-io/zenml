@@ -26,6 +26,7 @@ CLOUDFLARE_CONTAINER_REGISTRY_FLAVOR = "cloudflare"
 CLOUDFLARE_SANDBOX_FLAVOR = "cloudflare"
 CLOUDFLARE_ORCHESTRATOR_FLAVOR = "cloudflare"
 
+
 class CloudflareIntegration(Integration):
     """Definition of the Cloudflare integration for ZenML."""
 

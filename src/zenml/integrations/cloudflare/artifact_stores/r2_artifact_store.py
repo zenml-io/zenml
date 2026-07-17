@@ -26,7 +26,6 @@ from typing import (
     cast,
 )
 
-from zenml.artifact_stores import BaseArtifactStore
 from zenml.exceptions import AuthorizationException
 from zenml.integrations.cloudflare.flavors.cloudflare_r2_artifact_store_flavor import (
     R2ArtifactStoreConfig,
@@ -50,10 +49,9 @@ class R2ArtifactStore(S3ArtifactStore):
             *args: Additional positional arguments.
             **kwargs: Additional keyword arguments.
         """
-        # Skip S3ArtifactStore.__init__, which probes S3 bucket versioning;
-        # R2 does not support that API. R2 buckets are never versioned.
-        BaseArtifactStore.__init__(self, *args, **kwargs)
-        self._boto3_bucket_holder = None
+        super().__init__(*args, **kwargs)
+        # R2 has no S3 GetBucketVersioning API. Pin `_is_versioned` so the
+        # lazily-probed `is_versioned` property never issues that call.
         self._is_versioned = False
 
     @property
