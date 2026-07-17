@@ -79,12 +79,27 @@ MODAL_ORCHESTRATOR_GPU_SETTINGS_EXAMPLE = (
 
 
 def get_modal_app_name(modal_run_id: str) -> str:
-    """Build the deterministic Modal app name for a ZenML run."""
+    """Build the deterministic Modal app name for a ZenML run.
+
+    Args:
+        modal_run_id: Stable ID of the Modal orchestration run.
+
+    Returns:
+        The length-limited Modal app name.
+    """
     return f"zenml-{modal_run_id}"[:64]
 
 
 def _metadata_value(metadata: Dict[str, Any], key: str) -> Optional[str]:
-    """Read a metadata value as a string."""
+    """Read a metadata value as a string.
+
+    Args:
+        metadata: Run metadata containing the value.
+        key: Metadata key to read.
+
+    Returns:
+        The metadata value converted to a string, or `None` if absent.
+    """
     value = metadata.get(key)
     if value is None:
         return None
@@ -98,7 +113,15 @@ def _metadata_value(metadata: Dict[str, Any], key: str) -> Optional[str]:
 def _metadata_values_with_prefix(
     metadata: Dict[str, Any], prefix: str
 ) -> Dict[str, str]:
-    """Read string metadata values for keys with a shared prefix."""
+    """Read string metadata values for keys with a shared prefix.
+
+    Args:
+        metadata: Run metadata to inspect.
+        prefix: Prefix identifying relevant metadata keys.
+
+    Returns:
+        Matching values keyed by the suffix after the prefix.
+    """
     values: Dict[str, str] = {}
     for key in metadata:
         if not key.startswith(prefix):
@@ -109,7 +132,14 @@ def _metadata_values_with_prefix(
 
 
 def get_static_step_sandbox_metadata_key(step_name: str) -> str:
-    """Build an append-safe run metadata key for a static child sandbox."""
+    """Build an append-safe run metadata key for a static child sandbox.
+
+    Args:
+        step_name: Name of the static pipeline step.
+
+    Returns:
+        The run metadata key for the step's sandbox ID.
+    """
     return f"{MODAL_STATIC_STEP_SANDBOX_ID_METADATA_KEY_PREFIX}{step_name}"
 
 
@@ -117,7 +147,12 @@ class ModalOrchestrator(ContainerizedOrchestrator):
     """Orchestrator that runs ZenML pipelines in Modal Sandboxes."""
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Initialize the Modal orchestrator."""
+        """Initialize the Modal orchestrator.
+
+        Args:
+            *args: Positional arguments forwarded to the base orchestrator.
+            **kwargs: Keyword arguments forwarded to the base orchestrator.
+        """
         super().__init__(*args, **kwargs)
         self._modal_client: Optional["modal.Client"] = None
         self._modal_client_lock = Lock()
@@ -191,7 +226,12 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         )
 
     def get_modal_client(self) -> Optional["modal.Client"]:
-        """Get the Modal client used by orchestrator entrypoints."""
+        """Get the Modal client used by orchestrator entrypoints.
+
+        Returns:
+            A reusable Modal client, or `None` when explicit credentials are
+            not configured.
+        """
         if (
             self._modal_client is not None
             and not self._modal_client.is_closed()
@@ -223,6 +263,9 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         same source the step operator relies on. The keys are marked sensitive
         in ``sandbox_utils``, so they are injected as a Modal Secret rather than
         a plain environment variable.
+
+        Args:
+            environment: Controller environment to update with credentials.
         """
         token_pair = sandbox_utils.resolve_modal_token_pair(
             token_id=self.config.token_id,
@@ -243,7 +286,14 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         environment[sandbox_utils.MODAL_TOKEN_SECRET_ENV_KEY] = token_secret
 
     def get_orchestrator_run_id(self) -> str:
-        """Return the stable Modal run ID from the sandbox environment."""
+        """Return the stable Modal run ID from the sandbox environment.
+
+        Returns:
+            The stable Modal orchestration run ID.
+
+        Raises:
+            RuntimeError: If the Modal run ID environment variable is absent.
+        """
         try:
             return os.environ[ENV_ZENML_MODAL_RUN_ID]
         except KeyError as e:
@@ -260,7 +310,22 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         step_environments: Dict[str, Dict[str, str]],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Optional[SubmissionResult]:
-        """Submit a static pipeline controller sandbox to Modal."""
+        """Submit a static pipeline controller sandbox to Modal.
+
+        Args:
+            snapshot: Static pipeline snapshot to submit.
+            stack: Stack used to execute the pipeline.
+            base_environment: Environment shared by the controller sandbox.
+            step_environments: Per-step environments, recomputed by the
+                controller inside Modal.
+            placeholder_run: Optional pre-created pipeline run.
+
+        Returns:
+            Submission metadata and an optional completion callback.
+
+        Raises:
+            RuntimeError: If the snapshot contains a schedule.
+        """
         if snapshot.schedule:
             raise RuntimeError(
                 "Scheduling static pipelines is not supported for the Modal "
@@ -300,7 +365,20 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Optional[SubmissionResult]:
-        """Submit a dynamic pipeline orchestration sandbox to Modal."""
+        """Submit a dynamic pipeline orchestration sandbox to Modal.
+
+        Args:
+            snapshot: Dynamic pipeline snapshot to submit.
+            stack: Stack used to execute the pipeline.
+            environment: Runtime environment for the orchestration sandbox.
+            placeholder_run: Optional pre-created pipeline run.
+
+        Returns:
+            Submission metadata and an optional completion callback.
+
+        Raises:
+            RuntimeError: If the snapshot contains a schedule.
+        """
         if snapshot.schedule:
             raise RuntimeError(
                 "Scheduling dynamic pipelines is not supported for the Modal "
@@ -332,7 +410,21 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         environment: Dict[str, str],
         placeholder_run: Optional["PipelineRunResponse"],
     ) -> SubmissionResult:
-        """Submit the Modal sandbox that controls a ZenML run."""
+        """Submit the Modal sandbox that controls a ZenML run.
+
+        Args:
+            snapshot: Pipeline snapshot to execute.
+            stack: Stack used to execute the pipeline.
+            entrypoint_command: Command run by the orchestration sandbox.
+            environment: Runtime environment for the sandbox.
+            placeholder_run: Optional pre-created pipeline run.
+
+        Returns:
+            Submission metadata and an optional completion callback.
+
+        Raises:
+            ValueError: If the stack has no container registry.
+        """
         settings = cast(ModalOrchestratorSettings, self.get_settings(snapshot))
         modal_environment = sandbox_utils.normalize_optional_config_value(
             settings.modal_environment
@@ -428,7 +520,16 @@ class ModalOrchestrator(ContainerizedOrchestrator):
     def submit_isolated_step(
         self, step_run_info: "StepRunInfo", environment: Dict[str, str]
     ) -> None:
-        """Submit a dynamic isolated step sandbox to Modal."""
+        """Submit a dynamic isolated step sandbox to Modal.
+
+        Args:
+            step_run_info: Information about the isolated step run.
+            environment: Runtime environment for the step sandbox.
+
+        Raises:
+            Exception: If sandbox metadata cannot be published after the
+                sandbox is created.
+        """
         command, args = orchestrator_utils.get_step_entrypoint_command(
             invocation_id=step_run_info.pipeline_step_name,
             config=step_run_info.config,
@@ -478,7 +579,16 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         step_name: str,
         environment: Dict[str, str],
     ) -> "modal.Sandbox":
-        """Create a child sandbox for a static pipeline step."""
+        """Create a child sandbox for a static pipeline step.
+
+        Args:
+            snapshot: Static pipeline snapshot containing the step.
+            step_name: Name of the step to execute.
+            environment: Runtime environment for the step sandbox.
+
+        Returns:
+            The created Modal step sandbox.
+        """
         settings = cast(
             ModalOrchestratorSettings,
             self.get_settings(snapshot.step_configurations[step_name]),
@@ -513,7 +623,22 @@ class ModalOrchestrator(ContainerizedOrchestrator):
         environment: Dict[str, str],
         entrypoint_command: list[str],
     ) -> "modal.Sandbox":
-        """Create a Modal sandbox for one ZenML step."""
+        """Create a Modal sandbox for one ZenML step.
+
+        Args:
+            app_name: Name of the Modal app that owns the sandbox.
+            image_name: Registry image used by the sandbox.
+            settings: Modal orchestrator settings for the step.
+            resource_settings: ZenML resource constraints for the step.
+            environment: Runtime environment for the sandbox.
+            entrypoint_command: Command run by the sandbox.
+
+        Returns:
+            The created Modal step sandbox.
+
+        Raises:
+            ValueError: If the active stack has no container registry.
+        """
         stack = Client().active_stack
         if not stack.container_registry:
             raise ValueError(
@@ -549,7 +674,15 @@ class ModalOrchestrator(ContainerizedOrchestrator):
     def get_step_sandbox_metadata(
         settings: ModalOrchestratorSettings, sandbox_id: str
     ) -> Dict[str, MetadataType]:
-        """Build step sandbox metadata for orchestrator entrypoints."""
+        """Build step sandbox metadata for orchestrator entrypoints.
+
+        Args:
+            settings: Modal settings used to create the sandbox.
+            sandbox_id: ID of the Modal step sandbox.
+
+        Returns:
+            Run metadata describing the step sandbox.
+        """
         metadata: Dict[str, MetadataType] = {
             MODAL_SANDBOX_ID_METADATA_KEY: sandbox_id
         }
@@ -563,7 +696,14 @@ class ModalOrchestrator(ContainerizedOrchestrator):
     def get_isolated_step_status(
         self, step_run: "StepRunResponse"
     ) -> ExecutionStatus:
-        """Get the status of a dynamic isolated step sandbox."""
+        """Get the status of a dynamic isolated step sandbox.
+
+        Args:
+            step_run: Isolated step run backed by the sandbox.
+
+        Returns:
+            The current sandbox execution status.
+        """
         sandbox_id = _metadata_value(
             step_run.run_metadata, MODAL_SANDBOX_ID_METADATA_KEY
         )
@@ -588,7 +728,11 @@ class ModalOrchestrator(ContainerizedOrchestrator):
             return ExecutionStatus.FAILED
 
     def stop_isolated_step(self, step_run: "StepRunResponse") -> None:
-        """Stop a dynamic isolated step sandbox if it is still running."""
+        """Stop a dynamic isolated step sandbox if it is still running.
+
+        Args:
+            step_run: Isolated step run backed by the sandbox.
+        """
         sandbox_id = _metadata_value(
             step_run.run_metadata, MODAL_SANDBOX_ID_METADATA_KEY
         )
@@ -609,7 +753,15 @@ class ModalOrchestrator(ContainerizedOrchestrator):
     ) -> Tuple[
         Optional[ExecutionStatus], Optional[Dict[str, ExecutionStatus]]
     ]:
-        """Fetch Modal sandbox status for a pipeline run and its steps."""
+        """Fetch Modal sandbox status for a pipeline run and its steps.
+
+        Args:
+            run: Pipeline run backed by Modal sandboxes.
+            include_steps: Whether to fetch statuses for child step sandboxes.
+
+        Returns:
+            The pipeline sandbox status and optional step sandbox statuses.
+        """
         pipeline_status = None
         sandbox_id = _metadata_value(
             run.run_metadata, MODAL_ORCHESTRATION_SANDBOX_ID_METADATA_KEY
@@ -683,7 +835,15 @@ class ModalOrchestrator(ContainerizedOrchestrator):
     def _stop_run(
         self, run: "PipelineRunResponse", graceful: bool = False
     ) -> None:
-        """Stop a Modal run, honoring graceful stops where possible."""
+        """Stop a Modal run, honoring graceful stops where possible.
+
+        Args:
+            run: Pipeline run whose sandboxes should be stopped.
+            graceful: Whether to allow running static steps to finish.
+
+        Raises:
+            RuntimeError: If one or more Modal sandboxes cannot be stopped.
+        """
         refreshed_run: Optional["PipelineRunResponse"] = None
         if graceful:
             snapshot = run.snapshot
@@ -771,7 +931,14 @@ class ModalOrchestrator(ContainerizedOrchestrator):
     def _get_fresh_pipeline_run(
         run: "PipelineRunResponse",
     ) -> "PipelineRunResponse":
-        """Fetch the latest hydrated run, falling back to the given one."""
+        """Fetch the latest hydrated run, falling back to the given one.
+
+        Args:
+            run: Pipeline run to refresh.
+
+        Returns:
+            The refreshed pipeline run, or the supplied run if refresh fails.
+        """
         try:
             return Client().get_pipeline_run(run.id)
         except Exception:
@@ -783,7 +950,14 @@ class ModalOrchestrator(ContainerizedOrchestrator):
 
     @staticmethod
     def _get_child_sandbox_ids(run: "PipelineRunResponse") -> set[str]:
-        """Read child sandbox IDs from step and static fallback metadata."""
+        """Read child sandbox IDs from step and static fallback metadata.
+
+        Args:
+            run: Hydrated pipeline run containing sandbox metadata.
+
+        Returns:
+            IDs of all known child step sandboxes.
+        """
         child_sandbox_ids: set[str] = set()
         try:
             steps = run.steps
@@ -812,7 +986,12 @@ class ModalOrchestrator(ContainerizedOrchestrator):
     def terminate_sandbox_if_running(
         self, *, sandbox_id: str, description: str
     ) -> None:
-        """Terminate a running Modal sandbox for an orchestrator entrypoint."""
+        """Terminate a running Modal sandbox for an orchestrator entrypoint.
+
+        Args:
+            sandbox_id: ID of the Modal sandbox.
+            description: Human-readable sandbox description for logs.
+        """
         sandbox = sandbox_utils.get_sandbox_by_id(
             sandbox_id, modal_client=self.get_modal_client()
         )
@@ -829,7 +1008,11 @@ class ModalOrchestrator(ContainerizedOrchestrator):
     def _terminate_created_sandbox_after_metadata_error(
         sandbox: "modal.Sandbox",
     ) -> None:
-        """Terminate a newly-created sandbox after metadata publication fails."""
+        """Terminate a newly-created sandbox after metadata publication fails.
+
+        Args:
+            sandbox: Newly created sandbox to terminate.
+        """
         try:
             sandbox.terminate()
         except Exception:
@@ -842,7 +1025,14 @@ class ModalOrchestrator(ContainerizedOrchestrator):
     def get_pipeline_run_metadata(
         self, run_id: UUID
     ) -> Dict[str, MetadataType]:
-        """Get run metadata from the Modal sandbox environment."""
+        """Get run metadata from the Modal sandbox environment.
+
+        Args:
+            run_id: ID of the pipeline run being described.
+
+        Returns:
+            Run metadata containing Modal orchestration identifiers.
+        """
         metadata: Dict[str, MetadataType] = {
             METADATA_ORCHESTRATOR_RUN_ID: self.get_orchestrator_run_id()
         }

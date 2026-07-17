@@ -1933,7 +1933,7 @@ def login_service_connector(
         assert resource_type is not None
         resource_name = spec.resource_type_dict[resource_type].name
         cli_utils.declare(
-            f"The '{name_id_or_prefix}' {spec.name} connector was used to "
+            f"The '{name_id_or_prefix}' {spec.name} was used to "
             f"successfully configure the local {resource_name} client/SDK."
         )
 

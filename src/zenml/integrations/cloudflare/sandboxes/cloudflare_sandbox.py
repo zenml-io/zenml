@@ -759,6 +759,7 @@ class CloudflareSandboxSession(SandboxSession):
         bridge_session_id: Optional[str] = None,
         default_cwd: Optional[str] = None,
         default_timeout_ms: int = DEFAULT_BRIDGE_TIMEOUT_MS,
+        destroy_on_exit: bool = False,
     ) -> None:
         """Initialize the session.
 
@@ -769,6 +770,8 @@ class CloudflareSandboxSession(SandboxSession):
             bridge_session_id: Optional bridge-side session id for env scoping.
             default_cwd: Default working directory for execs.
             default_timeout_ms: Default per-exec timeout in milliseconds.
+            destroy_on_exit: Whether to destroy the sandbox session when the
+                session context manager exits.
         """
         # Subclass state must be set before super().__init__ so the
         # dashboard hook (invoked during base __init__) has what it needs.
@@ -779,7 +782,9 @@ class CloudflareSandboxSession(SandboxSession):
         self._default_timeout_ms = default_timeout_ms
         self._owns_bridge_session = bridge_session_id is not None
         self._processes: List[CloudflareSandboxProcess] = []
-        super().__init__(id=sandbox_id, parent=parent)
+        super().__init__(
+            id=sandbox_id, parent=parent, destroy_on_exit=destroy_on_exit
+        )
 
     def _get_dashboard_url(self) -> Optional[str]:
         """Bridge sandboxes have no public dashboard URL.
@@ -974,12 +979,16 @@ class CloudflareSandbox(BaseSandbox):
             return self._client
 
     def create_session(
-        self, settings: Optional[BaseSandboxSettings] = None
+        self,
+        settings: Optional[BaseSandboxSettings] = None,
+        destroy_on_exit: bool = False,
     ) -> SandboxSession:
         """Boot a fresh Cloudflare sandbox via the bridge.
 
         Args:
             settings: Optional per-step overrides.
+            destroy_on_exit: Whether to destroy the sandbox session when the
+                session context manager exits.
 
         Returns:
             A ``CloudflareSandboxSession`` bound to the new sandbox.
@@ -1022,6 +1031,7 @@ class CloudflareSandbox(BaseSandbox):
             bridge_session_id=bridge_session_id,
             default_cwd=eff.cwd,
             default_timeout_ms=eff.timeout_ms,
+            destroy_on_exit=destroy_on_exit,
         )
 
     def attach(self, session_id: str) -> SandboxSession:

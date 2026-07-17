@@ -82,6 +82,10 @@ on:
         type: number
         required: false
         default: 3
+env:
+  ZENML_DEBUG: 1
+  ZENML_LOGGING_VERBOSITY: debug
+  ZENML_ANALYTICS_OPT_IN: false
 jobs:
   integration-tests-fast:
     name: integration-tests-fast
@@ -91,8 +95,6 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4, 5, 6]
     env:
-      ZENML_DEBUG: 1
-      ZENML_ANALYTICS_OPT_IN: false
       ZENML_ENABLE_RICH_TRACEBACK: false
       WHYLOGS_NO_ANALYTICS: 'True'
       PYTHONIOENCODING: utf-8
@@ -167,9 +169,9 @@ jobs:
           # Free up space previously used by Docker's default root on the OS disk.
           sudo rm -rf /var/lib/docker/* || true
           sudo systemctl start docker
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10  # v6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
       - name: Restore uv cache
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae  # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
           path: ${{ inputs.os == 'ubuntu-latest' && '/opt/uv-cache' || '~/.cache/uv' }}
           key: |

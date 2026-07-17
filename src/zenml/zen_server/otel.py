@@ -42,6 +42,7 @@ if TYPE_CHECKING:
     from fastapi import FastAPI
     from opentelemetry.sdk.resources import Resource
 
+    from zenml.config.server_config import ServerConfiguration
     from zenml.zen_stores.sql_zen_store import SqlZenStore
 
 logger = get_logger(__name__)
@@ -56,7 +57,7 @@ _otel_providers: list[Any] = []
 _otel_uninstrument_callbacks: list[Callable[[], None]] = []
 
 
-def configure_otel(app: "FastAPI") -> None:
+def configure_otel(app: Optional["FastAPI"] = None) -> None:
     """Set up OpenTelemetry tracing, metrics, and log export.
 
     Reads OTel settings from ``ServerConfiguration`` (which in turn reads
@@ -65,7 +66,7 @@ def configure_otel(app: "FastAPI") -> None:
     immediately so the server runs without OTel overhead.
 
     Args:
-        app: The FastAPI application instance to instrument.
+        app: Optional FastAPI application instance to instrument.
     """
     global _otel_configured
 
@@ -73,7 +74,6 @@ def configure_otel(app: "FastAPI") -> None:
         logger.debug("OpenTelemetry instrumentation already configured.")
         return
 
-    from zenml import __version__
     from zenml.zen_server.utils import server_config
 
     config = server_config()
@@ -91,13 +91,9 @@ def configure_otel(app: "FastAPI") -> None:
     try:
         from opentelemetry.sdk.resources import Resource
 
-        resource_attributes = {
-            "service.name": config.otel_service_name,
-            "service.version": __version__,
-            "deployment.environment.name": str(config.deployment_type),
-        }
-
-        resource = Resource.create(attributes=resource_attributes)
+        resource = Resource.create(
+            attributes=_get_otel_resource_attributes(config)
+        )
     except ImportError:
         logger.debug(
             "OpenTelemetry SDK packages not installed — skipping "
@@ -126,7 +122,9 @@ def configure_otel(app: "FastAPI") -> None:
         )
         return
 
-    _instrument_libraries(app=app)
+    if app is not None:
+        _instrument_fastapi_app(app=app)
+    _instrument_requests()
     _otel_configured = True
 
     logger.info(
@@ -134,6 +132,38 @@ def configure_otel(app: "FastAPI") -> None:
         config.otel_exporter_otlp_endpoint
         or "configured per-signal OTLP endpoints",
     )
+
+
+def _get_otel_resource_attributes(
+    config: "ServerConfiguration",
+) -> dict[str, str]:
+    """Build OpenTelemetry resource attributes for the ZenML server.
+
+    Args:
+        config: The ZenML server configuration.
+
+    Returns:
+        Resource attributes shared by all exported telemetry signals.
+    """
+    from zenml import __version__
+
+    attributes: dict[str, str] = {
+        "service.name": config.otel_service_name,
+        "service.version": __version__,
+        "deployment.environment.name": str(config.deployment_type),
+    }
+
+    metadata = config.metadata
+    if organization_name := metadata.get("organization_name"):
+        attributes["zenml.organization.name"] = organization_name
+    if organization_id := metadata.get("organization_id"):
+        attributes["zenml.organization.id"] = organization_id
+    if workspace_name := metadata.get("workspace_name"):
+        attributes["zenml.workspace.name"] = workspace_name
+    if workspace_id := metadata.get("workspace_id"):
+        attributes["zenml.workspace.id"] = workspace_id
+
+    return attributes
 
 
 def shutdown_otel() -> None:
@@ -343,11 +373,11 @@ def instrument_sqlalchemy_store(store: "SqlZenStore") -> None:
         logger.exception("Failed to instrument SQLAlchemy with OpenTelemetry.")
 
 
-def _instrument_libraries(app: "FastAPI") -> None:
-    """Instrument supported libraries when their OTel packages are present.
+def _instrument_fastapi_app(app: "FastAPI") -> None:
+    """Instrument a FastAPI application when OTel packages are present.
 
     Args:
-        app: The FastAPI application instance to instrument.
+        app: FastAPI application instance to instrument.
     """
     try:
         from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
@@ -368,6 +398,9 @@ def _instrument_libraries(app: "FastAPI") -> None:
             "Install `opentelemetry-instrumentation-fastapi`."
         )
 
+
+def _instrument_requests() -> None:
+    """Instrument requests when OTel packages are present."""
     try:
         from opentelemetry.instrumentation.requests import RequestsInstrumentor
 

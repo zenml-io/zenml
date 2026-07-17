@@ -278,7 +278,15 @@ class FutureRegistry:
         for future in futures:
             try:
                 future.wait()
-            except Exception:
+            except Exception as e:
+                # This is needed to handle the following exception context
+                # cycle:
+                # - Concurrent step fails with original exception `e`
+                # - We wrap it in a `StepExecutionException`
+                # - The pipeline function exits with the wrapped exception
+                # - This function here catches the original exception, and
+                #   sets the active exception (the wrapped one) as the context
+                e.__suppress_context__ = True
                 pass
 
     def has_in_progress_work(self) -> bool:

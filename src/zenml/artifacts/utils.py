@@ -25,6 +25,7 @@ from typing import (
     Any,
     Dict,
     List,
+    Mapping,
     Optional,
     Type,
     Union,
@@ -317,6 +318,50 @@ def save_artifact(
         )
 
     return artifact_version
+
+
+def upload_input_artifact_overrides(
+    overrides: Optional[Mapping[str, Mapping[str, Any]]],
+    artifact_store: Optional["BaseArtifactStore"] = None,
+) -> Dict[str, Dict[str, UUID]]:
+    """Upload input artifact override values to the artifact store.
+
+    Args:
+        overrides: The input artifact overrides to upload.
+        artifact_store: The artifact store to upload to. If not provided, the
+            active stack's artifact store is used.
+
+    Returns:
+        The overrides with values replaced by artifact version IDs.
+    """
+    from zenml.artifacts.external_artifact import ExternalArtifact
+
+    if not overrides:
+        return {}
+
+    processed_overrides: Dict[str, Dict[str, UUID]] = {}
+
+    for outer_key, input_overrides in overrides.items():
+        processed_overrides[outer_key] = {}
+        for input_name, value in input_overrides.items():
+            # UUIDs and existing artifact versions are already uploaded. We
+            # upload everything else to the artifact store.
+            if isinstance(value, UUID):
+                artifact_version_id = value
+            elif isinstance(value, ArtifactVersionResponse):
+                artifact_version_id = value.id
+            elif isinstance(value, ExternalArtifact):
+                artifact_version_id = value.id or value.upload_by_value(
+                    artifact_store=artifact_store
+                )
+            else:
+                artifact_version_id = ExternalArtifact(
+                    value=value
+                ).upload_by_value(artifact_store=artifact_store)
+
+            processed_overrides[outer_key][input_name] = artifact_version_id
+
+    return processed_overrides
 
 
 def register_artifact(

@@ -1012,6 +1012,7 @@ class Client(metaclass=ClientMetaClass):
         name: str,
         description: str,
         display_name: Optional[str] = None,
+        project_metadata: Optional[Dict[str, Any]] = None,
     ) -> ProjectResponse:
         """Create a new project.
 
@@ -1019,6 +1020,7 @@ class Client(metaclass=ClientMetaClass):
             name: Name of the project.
             description: Description of the project.
             display_name: Display name of the project.
+            project_metadata: Metadata associated with the project.
 
         Returns:
             The created project.
@@ -1028,6 +1030,7 @@ class Client(metaclass=ClientMetaClass):
                 name=name,
                 description=description,
                 display_name=display_name or "",
+                project_metadata=project_metadata,
             )
         )
 
@@ -1110,6 +1113,7 @@ class Client(metaclass=ClientMetaClass):
         new_name: Optional[str] = None,
         new_display_name: Optional[str] = None,
         new_description: Optional[str] = None,
+        project_metadata: Optional[Dict[str, Any]] = None,
     ) -> ProjectResponse:
         """Update a project.
 
@@ -1118,6 +1122,7 @@ class Client(metaclass=ClientMetaClass):
             new_name: New name of the project.
             new_display_name: New display name of the project.
             new_description: New description of the project.
+            project_metadata: New metadata for the project.
 
         Returns:
             The updated project.
@@ -1131,6 +1136,8 @@ class Client(metaclass=ClientMetaClass):
         )
         if new_description:
             project_update.description = new_description
+        if project_metadata is not None:
+            project_update.project_metadata = project_metadata
         return self.zen_store.update_project(
             project_id=project.id,
             project_update=project_update,
@@ -2568,9 +2575,9 @@ class Client(metaclass=ClientMetaClass):
         """
         from zenml.stack.flavor import validate_flavor_source
 
-        flavor = validate_flavor_source(
+        _, flavor = validate_flavor_source(
             source=source, component_type=component_type
-        )()
+        )
 
         if len(flavor.config_schema) > TEXT_FIELD_MAX_LENGTH:
             raise ValueError(
@@ -6000,6 +6007,7 @@ class Client(metaclass=ClientMetaClass):
         delete_metadata: bool = True,
         delete_from_artifact_store: bool = False,
         project: Optional[Union[str, UUID]] = None,
+        server_side: bool = False,
     ) -> None:
         """Delete an artifact version.
 
@@ -6013,46 +6021,78 @@ class Client(metaclass=ClientMetaClass):
             delete_metadata: If True, delete the metadata of the artifact
                 version from the database.
             delete_from_artifact_store: If True, delete the artifact object
-                    itself from the artifact store.
+                itself from the artifact store.
             project: The project name/ID to filter by.
+            server_side: If True, let the server delete the artifact data
+                instead of using the local stack.
         """
         artifact_version = self.get_artifact_version(
             name_id_or_prefix=name_id_or_prefix,
             version=version,
             project=project,
         )
-        if delete_from_artifact_store:
+        if delete_from_artifact_store and not server_side:
             self._delete_artifact_from_artifact_store(
                 artifact_version=artifact_version
             )
-        if delete_metadata:
-            self._delete_artifact_version(artifact_version=artifact_version)
+        if delete_metadata or (server_side and delete_from_artifact_store):
+            self._delete_artifact_version(
+                artifact_version=artifact_version,
+                delete_metadata=delete_metadata,
+                delete_from_artifact_store=(
+                    delete_from_artifact_store and server_side
+                ),
+            )
 
     def _delete_artifact_version(
-        self, artifact_version: ArtifactVersionResponse
+        self,
+        artifact_version: ArtifactVersionResponse,
+        delete_metadata: bool = True,
+        delete_from_artifact_store: bool = False,
     ) -> None:
-        """Delete the metadata of an artifact version from the database.
+        """Delete artifact version metadata and/or server-side data.
 
         Args:
             artifact_version: The artifact version to delete.
+            delete_metadata: Whether to delete the artifact version metadata.
+            delete_from_artifact_store: Whether the server should also delete
+                the artifact data from the artifact store.
 
         Raises:
             ValueError: If the artifact version is still used in any runs.
+            TypeError: If server-side artifact data deletion is requested
+                without a REST store.
         """
-        unused_versions = self.list_artifact_versions(
-            id=artifact_version.id, only_unused=True, size=1
-        )
-        if not unused_versions.items:
-            raise ValueError(
-                "The metadata of artifact versions that are used in runs "
-                "cannot be deleted. Please delete all runs that use this "
-                "artifact first."
+        if delete_metadata:
+            unused_versions = self.list_artifact_versions(
+                id=artifact_version.id, only_unused=True, size=1
             )
-        self.zen_store.delete_artifact_version(artifact_version.id)
-        logger.info(
-            f"Deleted version '{artifact_version.version}' of artifact "
-            f"'{artifact_version.artifact.name}'."
-        )
+            if not unused_versions.items:
+                raise ValueError(
+                    "The metadata of artifact versions that are used in runs "
+                    "cannot be deleted. Please delete all runs that use this "
+                    "artifact first."
+                )
+        if delete_from_artifact_store:
+            from zenml.zen_stores.rest_zen_store import RestZenStore
+
+            if not isinstance(self.zen_store, RestZenStore):
+                raise TypeError(
+                    "Server-side artifact data deletion is only supported "
+                    "when connected to a ZenML server through the REST API."
+                )
+            self.zen_store.delete_artifact_version_server_side(
+                artifact_version.id,
+                delete_metadata=delete_metadata,
+                delete_from_artifact_store=delete_from_artifact_store,
+            )
+        elif delete_metadata:
+            self.zen_store.delete_artifact_version(artifact_version.id)
+        if delete_metadata:
+            logger.info(
+                f"Deleted version '{artifact_version.version}' of artifact "
+                f"'{artifact_version.artifact.name}'."
+            )
 
     def _delete_artifact_from_artifact_store(
         self, artifact_version: ArtifactVersionResponse

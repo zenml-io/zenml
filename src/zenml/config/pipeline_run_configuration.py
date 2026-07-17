@@ -180,3 +180,11 @@ class ReplayRunConfiguration(PipelineRunConfiguration):
         default=None,
         description="The step input overrides for the pipeline run.",
     )
+    step_default_input_overrides: Optional[Mapping[str, Mapping[str, Any]]] = (
+        Field(
+            default=None,
+            description="Input overrides applied to every invocation of a step, "
+            "keyed by the step's name. Per-invocation overrides in "
+            "`step_input_overrides` take precedence.",
+        )
+    )

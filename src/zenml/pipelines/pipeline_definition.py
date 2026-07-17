@@ -1146,7 +1146,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                             "not run the same steps as the original run."
                         )
 
-                self.log_pipeline_snapshot_metadata(snapshot)
+                self.log_pipeline_snapshot_metadata(snapshot, stack)
 
                 run = (
                     create_placeholder_run(
@@ -1195,11 +1195,13 @@ To avoid this consider setting pipeline parameters only in one place (config or 
     @staticmethod
     def log_pipeline_snapshot_metadata(
         snapshot: PipelineSnapshotResponse,
+        stack: "Stack",
     ) -> None:
         """Displays logs based on the snapshot model upon running a pipeline.
 
         Args:
             snapshot: The model for the pipeline snapshot
+            stack: The stack the pipeline runs on
         """
         try:
             # Log about the caching status
@@ -1241,14 +1243,10 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             if snapshot.stack is not None:
                 logger.info(f"Using stack: `{snapshot.stack.name}`")
 
-                for (
-                    component_type,
-                    components,
-                ) in snapshot.stack.components.items():
-                    for component in components:
-                        logger.info(
-                            f"  {component_type.value}: `{component.name}`"
-                        )
+                for component in stack.all_components:
+                    logger.info(
+                        f"  {component.type.value}: `{component.name}`"
+                    )
         except Exception as e:
             logger.debug(f"Logging pipeline snapshot metadata failed: {e}")
 
@@ -1359,7 +1357,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     if not source.is_internal:
                         custom_materializer = True
 
-        stack_creator = Client().get_stack(stack.id).user_id
+        stack_creator = stack.model.user_id
         active_user = Client().active_user
         own_stack = stack_creator and stack_creator == active_user.id
 
@@ -1913,48 +1911,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         self._parameters = {}
         self._output_artifacts = []
 
-    def _prepare_step_input_overrides(
-        self,
-        step_input_overrides: Optional[Mapping[str, Mapping[str, Any]]],
-    ) -> Dict[str, Dict[str, "UUID"]]:
-        """Prepares replay step input overrides.
-
-        Args:
-            step_input_overrides: User-provided step input overrides.
-
-        Returns:
-            Artifact version IDs for step input overrides.
-        """
-        from zenml import ExternalArtifact
-        from zenml.models import ArtifactVersionResponse
-
-        if not step_input_overrides:
-            return {}
-
-        processed_overrides: Dict[str, Dict[str, UUID]] = {}
-
-        for invocation_id, overrides in step_input_overrides.items():
-            invocation_overrides: Dict[str, UUID] = {}
-
-            for input_name, value in overrides.items():
-                if isinstance(value, ArtifactVersionResponse):
-                    artifact_version_id = value.id
-                elif isinstance(value, ExternalArtifact):
-                    if value.id:
-                        artifact_version_id = value.id
-                    else:
-                        artifact_version_id = value.upload_by_value()
-                else:
-                    artifact_version_id = ExternalArtifact(
-                        value=value
-                    ).upload_by_value()
-
-                invocation_overrides[input_name] = artifact_version_id
-
-            processed_overrides[invocation_id] = invocation_overrides
-
-        return processed_overrides
-
     def replay(
         self,
         pipeline: Union[UUID, str, None] = None,
@@ -1963,6 +1919,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         skip_successful_steps: bool = False,
         input_overrides: Optional[Mapping[str, Any]] = None,
         step_input_overrides: Optional[Mapping[str, Mapping[str, Any]]] = None,
+        step_default_input_overrides: Optional[
+            Mapping[str, Mapping[str, Any]]
+        ] = None,
         debug: bool = False,
     ) -> PipelineRunResponse:
         """Replay the pipeline.
@@ -1985,6 +1944,10 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 Keys must be step invocation IDs and values must map input names
                 to either plain Python values, `ExternalArtifact` instances, or
                 `ArtifactVersionResponse` objects.
+            step_default_input_overrides: Input overrides applied to every
+                invocation of a step, keyed by the step's name. Values follow
+                the same shape as `step_input_overrides`. Per-invocation
+                overrides in `step_input_overrides` take precedence.
             debug: Whether to run the pipeline in debug mode. In debug mode, the
                 pipeline is executed using a local orchestrator, while
                 keeping the remaining components of your active stack.
@@ -1995,6 +1958,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         Returns:
             The replayed pipeline run.
         """
+        from zenml.artifacts.utils import upload_input_artifact_overrides
         from zenml.client import Client
         from zenml.execution.utils import DebugModeContext
 
@@ -2026,7 +1990,12 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         if step_input_overrides:
             configuration_update["step_input_overrides"] = (
-                self._prepare_step_input_overrides(step_input_overrides)
+                upload_input_artifact_overrides(step_input_overrides)
+            )
+
+        if step_default_input_overrides:
+            configuration_update["step_default_input_overrides"] = (
+                upload_input_artifact_overrides(step_default_input_overrides)
             )
 
         if configuration_update:

@@ -30,6 +30,8 @@ class _ServerConfig:
     request_cache_timeout: int = 300
     request_timeout: float = 0.001
     api_transaction_cleanup_interval: float = 1.0
+    api_transaction_cleanup_batch_size: int = 1000
+    api_transaction_cleanup_time_budget: float = 1.0
 
 
 class _RequestContext:
@@ -52,11 +54,15 @@ class _RequestContext:
 
 
 class _ZenStore:
-    """Minimal transaction store used by deduplicated request tests."""
+    """Minimal transaction store used by request manager tests."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self, cleanup_deleted_counts: list[int] | None = None
+    ) -> None:
         self.finalized_transaction_id: UUID | None = None
         self.finalized_result: str | None = None
+        self.cleanup_batch_sizes: list[int] = []
+        self.cleanup_deleted_counts = list(cleanup_deleted_counts or [])
 
     def get_or_create_api_transaction(
         self, api_transaction: object
@@ -79,10 +85,60 @@ class _ZenStore:
     def delete_api_transaction(self, _api_transaction_id: UUID) -> None:
         """No-op delete for failed transaction paths."""
 
+    def cleanup_expired_api_transactions(self, batch_size: int) -> int:
+        """Record batch sizes and return configured delete counts."""
+        self.cleanup_batch_sizes.append(batch_size)
+        if self.cleanup_deleted_counts:
+            return self.cleanup_deleted_counts.pop(0)
+        return 0
 
-def _configure_request_manager(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(server_utils, "_server_config", _ServerConfig())
+
+def _configure_request_manager(
+    monkeypatch: pytest.MonkeyPatch,
+    config: _ServerConfig | None = None,
+) -> None:
+    monkeypatch.setattr(
+        server_utils, "_server_config", config or _ServerConfig()
+    )
     monkeypatch.setattr(server_utils, "get_system_metrics", lambda: {})
+
+
+def test_cleanup_expired_transactions_drains_full_batches(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """One cleanup pass drains multiple full batches before sleeping."""
+    _configure_request_manager(monkeypatch)
+    zen_store = _ZenStore(cleanup_deleted_counts=[1000, 1000, 250])
+    monkeypatch.setattr(server_utils, "_zen_store", zen_store)
+
+    manager = RequestManager()
+    manager._cleanup_expired_transactions()
+
+    assert zen_store.cleanup_batch_sizes == [1000, 1000, 1000]
+
+
+def test_cleanup_expired_transactions_stops_at_time_budget(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Catch-up cleanup stops after the configured time budget."""
+    _configure_request_manager(
+        monkeypatch,
+        _ServerConfig(
+            api_transaction_cleanup_batch_size=1000,
+            api_transaction_cleanup_time_budget=1.0,
+        ),
+    )
+    zen_store = _ZenStore(cleanup_deleted_counts=[1000, 1000, 1000])
+    monkeypatch.setattr(server_utils, "_zen_store", zen_store)
+    perf_counter_values = iter([0.0, 0.2, 1.1, 1.2])
+    monkeypatch.setattr(
+        time, "perf_counter", lambda: next(perf_counter_values)
+    )
+
+    manager = RequestManager()
+    manager._cleanup_expired_transactions()
+
+    assert zen_store.cleanup_batch_sizes == [1000, 1000]
 
 
 async def test_non_deduplicated_requests_do_not_timeout(
