@@ -27,7 +27,8 @@ parameters:
           \ $19/mo\n+Starter \u2014 $24/mo\n"
     metadata:
       environment: demo
-  goal: Alert when new AI or developer-tooling stories reach the front page
+  goal: Identify product, pricing, positioning, or release changes that require
+    a response from our product or go-to-market teams.
   notify_slack: false
   llm_secret_name: null
 enable_cache: false

@@ -5,6 +5,9 @@ from typing import Annotated
 from models import FirecrawlPageData, FirecrawlWebhook, PageChange
 
 from zenml import ArtifactConfig, step
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 @step
@@ -22,6 +25,16 @@ def normalize_page_change(
     Returns:
         A normalized page change.
     """
+    # Firecrawl delivers one monitor.page event per page, and the API-pull
+    # path emits one single-page payload per page. A multi-page event would
+    # therefore be a misconfiguration; warn so the dropped pages are visible.
+    if len(event.data) > 1:
+        logger.warning(
+            "Firecrawl event %s carries %d pages; only the first is "
+            "normalized.",
+            event.id,
+            len(event.data),
+        )
     page = FirecrawlPageData.model_validate(event.data[0])
     return PageChange(
         event_id=event.id,

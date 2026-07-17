@@ -6,6 +6,26 @@ import requests
 
 FIRECRAWL_API_URL = "https://api.firecrawl.dev/v2"
 
+# Firecrawl timestamps a completed check under one of these keys; used to pick
+# the newest check without relying on the API's response ordering.
+_CHECK_TIMESTAMP_KEYS = ("completedAt", "updatedAt", "createdAt", "startedAt")
+
+
+def _latest_check(checks: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Return the most recent check by timestamp, ignoring response order.
+
+    Args:
+        checks: Completed checks as returned by the checks API.
+
+    Returns:
+        The check with the newest timestamp, or the first entry if none of
+        the checks carry a recognized timestamp field.
+    """
+    for key in _CHECK_TIMESTAMP_KEYS:
+        if all(key in check for check in checks):
+            return max(checks, key=lambda check: check[key])
+    return checks[0]
+
 
 def build_page_payloads(check: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Convert a check-details response into per-page pipeline payloads.
@@ -73,7 +93,7 @@ def fetch_check(
             raise RuntimeError(
                 f"Monitor {monitor_id} has no completed checks yet."
             )
-        check_id = checks[0]["id"]
+        check_id = _latest_check(checks)["id"]
 
     response = requests.get(
         f"{FIRECRAWL_API_URL}/monitor/{monitor_id}/checks/{check_id}",

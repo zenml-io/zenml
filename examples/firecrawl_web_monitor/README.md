@@ -23,7 +23,7 @@ The stable artifact names make every run easy to compare in the ZenML dashboard:
 This example assumes that a [ZenML stack](https://docs.zenml.io/stacks) is already configured. From this directory, install the example dependencies and run the bundled realistic event:
 
 ```bash
-uv pip install -e .
+uv pip install -e .  # or: pip install -e .
 zenml init
 zenml stack set <your-stack-name>
 python run.py
@@ -58,13 +58,20 @@ python create_firecrawl_monitor.py \
   --schedule "every 5 minutes"
 ```
 
-A fast-changing page with a short cadence produces meaningful diffs within minutes — ideal for a first demo; dial it back with `--schedule hourly` or `--schedule daily` for real monitoring. Once at least one check has completed, pull it straight from the Firecrawl API and analyze it — one pipeline run per monitored page:
+A fast-changing page with a short cadence produces meaningful diffs within minutes — ideal for a first demo; dial it back with `--schedule hourly` or `--schedule daily` for real monitoring. A live monitor keeps running and consuming Firecrawl credits on every scheduled check until you delete it, and `--llm-secret` runs spend OpenAI tokens per analyzed change — so remember to clean up after a demo (see below). Once at least one check has completed, pull it straight from the Firecrawl API and analyze it — one pipeline run per monitored page:
 
 ```bash
 python run.py --monitor-id <monitor-id>
 ```
 
 This fetches the latest completed check (or a specific one with `--check-id`) and feeds each page result through the same pipeline as the bundled sample, so the artifact history mixes local experiments and real checks seamlessly. Firecrawl emits both unified markdown diffs and structured JSON field diffs; the pipeline preserves both, so a monitor configured for JSON change tracking can compare fields such as prices or availability without parsing prose.
+
+When you are done, delete the monitor so it stops running checks and billing:
+
+```bash
+curl -X DELETE https://api.firecrawl.dev/v2/monitor/<monitor-id> \
+  -H "Authorization: Bearer $FIRECRAWL_API_KEY"
+```
 
 ## Production: trigger a pipeline snapshot
 
