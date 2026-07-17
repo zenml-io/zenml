@@ -7,7 +7,7 @@ icon: robot
 
 This guide teaches production AI agents with [Kitaru](https://docs.zenml.io/kitaru), ZenML's sibling project for recording, replaying, and improving agents.
 
-**Replay is the part other tooling can't do.** An eval re-scores outputs after the fact. Kitaru re-executes the actual run from a durable checkpoint with one input swapped — a different model, a different prompt — so you find out what *would have happened* if you'd shipped the change, against your real code rather than a rescored transcript. The runs that already happened in production are your test bed.
+**Replay is the part other tooling can't do.** An eval re-scores outputs after the fact. Kitaru re-executes the actual run from a durable checkpoint with one input swapped — a different model, a different prompt — so you find out what *would have happened* if you'd shipped the change, against your real code rather than a rescored transcript. What arrives as a failing run leaves as a regression check on the next change.
 
 By the end you'll be able to do three things:
 

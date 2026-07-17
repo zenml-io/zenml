@@ -6,7 +6,7 @@ description: Guides, examples and projects
 
 Discover how to build production-ready ML pipelines and production-grade AI agents with ZenML and Kitaru through our curated learning resources. Whether you're looking for step-by-step instructions, complete project implementations, or specific examples, you'll find resources to accelerate your workflow.
 
-[Kitaru](https://docs.zenml.io/kitaru) is ZenML's sibling project for production AI agents: **record or import real executions, replay them against your real code, and keep the wins as regression checks**. Replay a run that actually happened with one thing changed (a different model or prompt), diff the two, then roll the winning change across a filtered set of recent runs. Every model call and tool call is recorded as a durable checkpoint, which is what makes the replay faithful. A Kitaru flow is a dynamic ZenML pipeline under the hood, so agents and pipelines share the same stacks, server, and dashboard. It has its own learning track below.
+[Kitaru](https://docs.zenml.io/kitaru) is ZenML's sibling project for production AI agents: **record or import real executions, replay them against your real code, and what arrives as a failure leaves as a regression check**. Replay a run that actually happened with one thing changed (a different model or prompt), diff the two, then roll the winning change across a filtered set of recent runs. Every model call and tool call is recorded as a durable checkpoint, which is what makes the replay faithful. A Kitaru flow is a dynamic ZenML pipeline under the hood, so agents and pipelines share the same stacks, server, and dashboard. It has its own learning track below.
 
 ## Guides
 
