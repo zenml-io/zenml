@@ -303,3 +303,28 @@ def test_tags_with_special_characters():
     for tag in tags:
         client.get_tag(tag)
         client.delete_tag(tag)
+
+
+@pipeline(enable_cache=False)
+def pipeline_for_infer_artifact_false():
+    """Minimal pipeline used to obtain a run to tag."""
+    step_no_output()
+
+
+def test_add_and_remove_tags_with_infer_artifact_false(clean_client):
+    """`infer_artifact=False` must dispatch like the default, not raise.
+
+    The public overloads type ``infer_artifact`` as ``bool = False``, so
+    passing ``False`` explicitly is documented and valid. It means "do not
+    infer" and must dispatch on the other identifiers exactly like omitting
+    the argument, instead of raising an "unsupported call" ``ValueError``.
+    """
+    run = pipeline_for_infer_artifact_false()
+
+    add_tags(tags=["infer_false_tag"], run=run.id, infer_artifact=False)
+    tags = [t.name for t in clean_client.get_pipeline_run(run.id).tags]
+    assert "infer_false_tag" in tags
+
+    remove_tags(tags=["infer_false_tag"], run=run.id, infer_artifact=False)
+    tags = [t.name for t in clean_client.get_pipeline_run(run.id).tags]
+    assert "infer_false_tag" not in tags
