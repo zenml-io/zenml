@@ -35,7 +35,6 @@ import os
 import shlex
 from typing import (
     TYPE_CHECKING,
-    Any,
     Callable,
     Dict,
     List,
@@ -374,7 +373,7 @@ class SlurmOrchestrator(ContainerizedOrchestrator):
 
         client = build_slurm_client(self.config)
         try:
-            job_id, _ = self._submit_container_job(
+            job_id, sensitive_paths = self._submit_container_job(
                 client=client,
                 run_id=run_id,
                 run_dir=self._orchestration_run_dir(run_id),
@@ -389,6 +388,39 @@ class SlurmOrchestrator(ContainerizedOrchestrator):
                 registry_uri=container_registry.config.uri,
                 registry_credentials=container_registry.credentials,
             )
+            try:
+                # The job's own EXIT trap scrubs credentials on clean exits,
+                # but a hard kill (NODE_FAIL, OOM) never runs it - the
+                # `afterany` cleanup job is the reaper of last resort, same
+                # as for static runs. Its completion marker also makes a
+                # missing exit sentinel conclusive during reconciliation.
+                cleanup_job_id = self._submit_cleanup_job(
+                    client=client,
+                    run_id=run_id,
+                    submitted={"orchestration": job_id},
+                    sensitive_paths=sensitive_paths,
+                    settings=settings,
+                )
+            except Exception:
+                # Without the reaper, a hard-killed job would strand
+                # credentials on the shared filesystem indefinitely - refuse
+                # to run in that state.
+                try:
+                    client.cancel(job_id)
+                except Exception:
+                    logger.warning(
+                        "Failed to cancel Slurm orchestration job `%s` "
+                        "after its cleanup job could not be submitted.",
+                        job_id,
+                    )
+                if sensitive_paths:
+                    client.runner.run(
+                        "rm -rf -- "
+                        + " ".join(
+                            shlex.quote(path) for path in sensitive_paths
+                        )
+                    )
+                raise
         finally:
             client.runner.close()
 
@@ -401,6 +433,7 @@ class SlurmOrchestrator(ContainerizedOrchestrator):
             metadata={
                 METADATA_ORCHESTRATOR_RUN_ID: run_id,
                 SLURM_ORCHESTRATION_JOB_ID_METADATA_KEY: job_id,
+                SLURM_CLEANUP_JOB_ID_METADATA_KEY: cleanup_job_id,
             }
         )
 
@@ -716,30 +749,40 @@ touch {shlex.quote(cleanup_marker)}
             logger.warning("No Slurm job metadata found for run `%s`.", run.id)
             return None, None
 
+        cleanup_marker = (
+            f"{self.config.workdir.rstrip('/')}/{run.id}/cleanup/"
+            f"{_CLEANUP_COMPLETE_FILE}"
+        )
         client = build_slurm_client(self.config)
         try:
+            try:
+                client.runner.read_text(cleanup_marker)
+            except Exception:
+                cleanup_complete = False
+            else:
+                cleanup_complete = True
+
             state = client.get_job_state(str(job_id))
             status = self._get_job_status(
                 client=client,
                 state=state,
                 run_dir=self._orchestration_run_dir(str(run.id)),
                 # The orchestration job writes its own exit-code sentinel
-                # via its EXIT trap. Until that sentinel is visible on the
-                # shared filesystem, a job that has vanished from the queue
-                # is unknown, not failed - mirroring the static DAG
-                # reconciliation. Declaring FAILED on first sight would
+                # via its EXIT trap; the `afterany` cleanup job's marker
+                # tells us when there is nothing left to wait for. Until
+                # then, a job that has vanished from the queue with no
+                # sentinel is unknown, not failed - mirroring the static
+                # DAG reconciliation. Declaring FAILED on first sight would
                 # terminally mislabel a run whose sentinel merely lags the
                 # queue purge (NFS/Lustre flush).
-                cleanup_complete=False,
+                cleanup_complete=cleanup_complete,
             )
             if status is None and state is None:
                 logger.warning(
                     "Slurm orchestration job `%s` for run `%s` is no longer "
                     "known to Slurm and has not written an exit-code "
-                    "sentinel yet; keeping the run status unchanged. If "
-                    "this persists, the job was likely killed before its "
-                    "EXIT trap ran (e.g. NODE_FAIL) - stop the run "
-                    "manually.",
+                    "sentinel yet; keeping the run status unchanged until "
+                    "the cleanup job resolves it.",
                     job_id,
                     run.id,
                 )

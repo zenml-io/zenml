@@ -480,15 +480,22 @@ def test_submit_dynamic_pipeline_submits_orchestration_job(monkeypatch):
     assert result.metadata == {
         METADATA_ORCHESTRATOR_RUN_ID: str(placeholder.id),
         SLURM_ORCHESTRATION_JOB_ID_METADATA_KEY: "1000",
+        SLURM_CLEANUP_JOB_ID_METADATA_KEY: "1001",
     }
     sbatch = [c for c in runner.commands if c.startswith("sbatch")]
-    assert len(sbatch) == 1
+    assert len(sbatch) == 2
     assert "orchestration/job.sh" in sbatch[0]
     job_script = runner.files[f"/runs/{placeholder.id}/orchestration/job.sh"]
     assert "#SBATCH --gres=gpu:2" in job_script
     env_file = runner.files[f"/runs/{placeholder.id}/orchestration/env"]
     assert f"{ENV_ZENML_SLURM_RUN_ID}={placeholder.id}" in env_file
     assert SECRET_TOKEN in env_file
+    # The credential reaper: an `afterany` cleanup job scrubs the staged
+    # sensitive files even if the orchestration job is killed before its
+    # own EXIT trap can run.
+    assert "--dependency=afterany:1000" in sbatch[1]
+    cleanup_script = runner.files[f"/runs/{placeholder.id}/cleanup/job.sh"]
+    assert f"/runs/{placeholder.id}/orchestration/env" in cleanup_script
 
 
 def test_submit_dynamic_pipeline_rejects_schedules(monkeypatch):
@@ -753,6 +760,25 @@ def test_fetch_status_keeps_dynamic_run_unknown_without_sentinel(monkeypatch):
 
     assert pipeline_status is None
     assert step_statuses is None
+
+
+def test_fetch_status_fails_dynamic_run_after_cleanup_without_sentinel(
+    monkeypatch,
+):
+    """Once the cleanup job has run, a missing sentinel is conclusive."""
+    op = _build_orchestrator()
+    runner = FakeRunner()
+    _use_fake_client(monkeypatch, runner)
+    run_id = uuid4()
+    runner.files[f"/runs/{run_id}/cleanup/cleanup_complete"] = "1\n"
+    run = _run(
+        run_id=run_id,
+        run_metadata={SLURM_ORCHESTRATION_JOB_ID_METADATA_KEY: "1000"},
+    )
+
+    pipeline_status, _ = op.fetch_status(run, include_steps=True)
+
+    assert pipeline_status is ExecutionStatus.FAILED
 
 
 def test_does_not_support_isolated_steps():
