@@ -481,7 +481,7 @@ class TestSession:
             return httpx.Response(200, content=stored[request.url.path])
 
         session = _make_session(
-            _make_client(handler), default_cwd="/tmp/workspace"
+            _make_client(handler), default_cwd="/srv/workspace"
         )
         with tempfile.TemporaryDirectory() as tmp:
             src = os.path.join(tmp, "in.txt")
@@ -490,7 +490,7 @@ class TestSession:
             session.upload_file(src, "foo.txt")
 
             assert (
-                "/v1/sandbox/sb-0123456789ab/file/tmp/workspace/foo.txt"
+                "/v1/sandbox/sb-0123456789ab/file/srv/workspace/foo.txt"
                 in (stored)
             )
 
@@ -509,7 +509,7 @@ class TestSession:
             return httpx.Response(200, content=stored[request.url.path])
 
         session = _make_session(
-            _make_client(handler), default_cwd="/tmp/workspace"
+            _make_client(handler), default_cwd="/srv/workspace"
         )
         with tempfile.TemporaryDirectory() as tmp:
             src = os.path.join(tmp, "in.txt")
@@ -524,7 +524,7 @@ class TestSession:
     def test_relative_escape_above_default_cwd_refused(self) -> None:
         session = _make_session(
             _make_client(lambda _: httpx.Response(200)),
-            default_cwd="/tmp/workspace",
+            default_cwd="/srv/workspace",
         )
         with tempfile.TemporaryDirectory() as tmp:
             src = os.path.join(tmp, "in.txt")
