@@ -684,7 +684,11 @@ def _get_subresources_for_value(value: Any) -> Set[Resource]:
 def _get_resource_type_schema_mapping() -> Dict[
     ResourceType, Type["BaseSchema"]
 ]:
-    """Get the mapping between RBAC resource types and database schemas."""
+    """Get the mapping between RBAC resource types and database schemas.
+
+    Returns:
+        The database schema class for each supported RBAC resource type.
+    """
     from zenml.zen_stores.schemas import (
         ArtifactSchema,
         ArtifactVersionSchema,

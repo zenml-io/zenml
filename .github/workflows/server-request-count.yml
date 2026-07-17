@@ -1,0 +1,164 @@
+---
+name: ZenML Server Request Count
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+    paths: [src/zenml/**]
+  workflow_dispatch:
+concurrency:
+  # New commit on branch cancels running workflows of the same branch
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  count-server-requests:
+    name: Count ZenML Server Requests
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    env:
+      ZENML_ANALYTICS_OPT_IN: false
+      PYTHONIOENCODING: utf-8
+      UV_HTTP_TIMEOUT: 600
+      AUTO_OPEN_DASHBOARD: false
+      BASE_RESULTS_FILE: base_request_counts.json
+      CURRENT_RESULTS_FILE: current_request_counts.json
+      BASE_VENV: .venv-base
+      CURRENT_VENV: .venv-current
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          fetch-depth: 0  # Fetch all history for all branches and tags
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          python-version: '3.11'
+      - name: Install system dependencies
+        run: |
+          python -m pip install --upgrade wheel pip uv
+
+      # The measurement script is copied out of the repository so both
+      # branches run the exact same pipeline and counting logic.
+      - name: Save merge commit and measurement script
+        run: |
+          echo "MERGE_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          cp scripts/pipeline_request_count.py $RUNNER_TEMP/pipeline_request_count.py
+
+      # Count requests on the base branch with an isolated environment
+      - name: Checkout base branch
+        run: |
+          git checkout ${GITHUB_BASE_REF}
+      - name: Setup base virtual environment
+        run: |
+          python -m venv ${{ env.BASE_VENV }}
+          source ${{ env.BASE_VENV }}/bin/activate
+          pip install --upgrade pip uv
+      - name: Install ZenML in base environment
+        run: |
+          source ${{ env.BASE_VENV }}/bin/activate
+          ./scripts/install-zenml-dev.sh
+          zenml --version
+      - name: Count requests on base branch
+        run: |
+          source ${{ env.BASE_VENV }}/bin/activate
+          zenml login --local
+          python $RUNNER_TEMP/pipeline_request_count.py --output $BASE_RESULTS_FILE
+          zenml logout --local
+
+      # Delete local files so the second measurement starts with a fresh DB
+      - name: Cleanup
+        run: |
+          rm -rf ~/.config/zenml
+
+      # Count requests on the PR merge commit with an isolated environment
+      - name: Checkout merged branch
+        run: |
+          git checkout ${MERGE_SHA}
+      - name: Setup current virtual environment
+        run: |
+          python -m venv ${{ env.CURRENT_VENV }}
+          source ${{ env.CURRENT_VENV }}/bin/activate
+          pip install --upgrade pip uv
+      - name: Install ZenML in current environment
+        run: |
+          source ${{ env.CURRENT_VENV }}/bin/activate
+          ./scripts/install-zenml-dev.sh
+          zenml --version
+      - name: Count requests on merged branch
+        run: |
+          source ${{ env.CURRENT_VENV }}/bin/activate
+          zenml login --local
+          python $RUNNER_TEMP/pipeline_request_count.py --output $CURRENT_RESULTS_FILE
+          zenml logout --local
+      - name: Compare results and create report
+        id: create-report
+        run: |
+          if diff -q $BASE_RESULTS_FILE $CURRENT_RESULTS_FILE > /dev/null; then
+            echo "has_difference=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_difference=true" >> "$GITHUB_OUTPUT"
+            pipelines=$(jq -r 'keys_unsorted[]' $CURRENT_RESULTS_FILE)
+            {
+              echo "<!-- REQUEST_COUNT_REPORT -->"
+              echo "## Server requests changed"
+              echo ""
+              echo "| Pipeline | ${GITHUB_BASE_REF} | ${GITHUB_HEAD_REF} | Δ |"
+              echo "| --- | --- | --- | --- |"
+              base_total=0
+              current_total=0
+              for pipeline in $pipelines; do
+                base=$(jq ".\"${pipeline}\".total" $BASE_RESULTS_FILE)
+                current=$(jq ".\"${pipeline}\".total" $CURRENT_RESULTS_FILE)
+                base_total=$((base_total + base))
+                current_total=$((current_total + current))
+                printf '| %s | %s | %s | %+d |\n' "$pipeline" "$base" "$current" "$((current - base))"
+              done
+              printf '| **total** | **%s** | **%s** | **%+d** |\n' "$base_total" "$current_total" "$((current_total - base_total))"
+              echo ""
+              echo "<details><summary>Per-endpoint changes</summary>"
+              echo ""
+              for pipeline in $pipelines; do
+                endpoint_diff=$(diff -U0 --label "${GITHUB_BASE_REF}" --label "${GITHUB_HEAD_REF}" \
+                  <(jq ".\"${pipeline}\".requests" $BASE_RESULTS_FILE) \
+                  <(jq ".\"${pipeline}\".requests" $CURRENT_RESULTS_FILE) || true)
+                if [ -n "$endpoint_diff" ]; then
+                  printf '#### %s\n```diff\n%s\n```\n\n' "$pipeline" "$endpoint_diff"
+                fi
+              done
+              echo "</details>"
+              echo ""
+              echo "cc @schustmi"
+            } > request_count_report.md
+
+            # Save the report to an environment variable for later steps
+            echo "REQUEST_COUNT_REPORT<<EOF" >> $GITHUB_ENV
+            cat request_count_report.md >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+          fi
+      - name: Find existing comment
+        uses: peter-evans/find-comment@b30e6a3c0ed37e7c023ccd3f1db5c6c0b0c23aad  # v4.0.0
+        if: github.event_name == 'pull_request' && steps.create-report.outputs.has_difference
+          == 'true'
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: github-actions[bot]
+          body-includes: <!-- REQUEST_COUNT_REPORT -->
+      - name: Create or update comment
+        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9  # v5.0.0
+        if: github.event_name == 'pull_request' && steps.create-report.outputs.has_difference
+          == 'true'
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: ${{ env.REQUEST_COUNT_REPORT }}
+          edit-mode: replace
+
+      # Upload results as artifacts
+      - name: Upload request count results
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: request-count-results
+          path: |-
+            ${{ env.BASE_RESULTS_FILE }}
+            ${{ env.CURRENT_RESULTS_FILE }}
+            request_count_report.md

@@ -221,18 +221,19 @@ def get_latest_step_run(
     return step_runs.items[0]
 
 
-def load_step_run_outputs(step_run_id: UUID) -> "StepRunOutputs":
+def load_step_run_outputs(step_run: "StepRunResponse") -> "StepRunOutputs":
     """Load the outputs of a step run.
 
     Args:
-        step_run_id: The ID of the step run.
+        step_run: The step run.
 
     Returns:
         The outputs of the step run.
     """
     from zenml.execution.pipeline.dynamic.outputs import OutputArtifact
 
-    step_run = Client().zen_store.get_run_step(step_run_id)
+    if not step_run.status.is_finished:
+        step_run = Client().zen_store.get_run_step(step_run.id)
 
     def _convert_output_artifact(
         output_name: str, artifact: "ArtifactVersionResponse"

@@ -2,6 +2,10 @@
 name: Publish Pypi package
 on:
   workflow_call:
+env:
+  ZENML_DEBUG: 1
+  ZENML_LOGGING_VERBOSITY: debug
+  ZENML_ANALYTICS_OPT_IN: false
 jobs:
   publish_to_pypi:
     name: Publish Python 🐍 package 📦 to PyPI
@@ -12,8 +16,6 @@ jobs:
       id-token: write
       contents: read
     env:
-      ZENML_DEBUG: 1
-      ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0

@@ -57,7 +57,7 @@ _otel_providers: list[Any] = []
 _otel_uninstrument_callbacks: list[Callable[[], None]] = []
 
 
-def configure_otel(app: "FastAPI") -> None:
+def configure_otel(app: Optional["FastAPI"] = None) -> None:
     """Set up OpenTelemetry tracing, metrics, and log export.
 
     Reads OTel settings from ``ServerConfiguration`` (which in turn reads
@@ -66,7 +66,7 @@ def configure_otel(app: "FastAPI") -> None:
     immediately so the server runs without OTel overhead.
 
     Args:
-        app: The FastAPI application instance to instrument.
+        app: Optional FastAPI application instance to instrument.
     """
     global _otel_configured
 
@@ -122,7 +122,9 @@ def configure_otel(app: "FastAPI") -> None:
         )
         return
 
-    _instrument_libraries(app=app)
+    if app is not None:
+        _instrument_fastapi_app(app=app)
+    _instrument_requests()
     _otel_configured = True
 
     logger.info(
@@ -371,11 +373,11 @@ def instrument_sqlalchemy_store(store: "SqlZenStore") -> None:
         logger.exception("Failed to instrument SQLAlchemy with OpenTelemetry.")
 
 
-def _instrument_libraries(app: "FastAPI") -> None:
-    """Instrument supported libraries when their OTel packages are present.
+def _instrument_fastapi_app(app: "FastAPI") -> None:
+    """Instrument a FastAPI application when OTel packages are present.
 
     Args:
-        app: The FastAPI application instance to instrument.
+        app: FastAPI application instance to instrument.
     """
     try:
         from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
@@ -396,6 +398,9 @@ def _instrument_libraries(app: "FastAPI") -> None:
             "Install `opentelemetry-instrumentation-fastapi`."
         )
 
+
+def _instrument_requests() -> None:
+    """Instrument requests when OTel packages are present."""
     try:
         from opentelemetry.instrumentation.requests import RequestsInstrumentor
 

@@ -471,7 +471,11 @@ class SandboxSession(ABC):
         return self
 
     def __exit__(self, *_: Any) -> None:
-        """Destroy or close the session, depending on `destroy_on_exit`."""
+        """Destroy or close the session, depending on `destroy_on_exit`.
+
+        Args:
+            *_: Unused context manager exception details.
+        """
         if self._destroy_on_exit:
             self.destroy()
         else:

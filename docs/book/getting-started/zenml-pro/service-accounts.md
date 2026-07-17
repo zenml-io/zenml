@@ -7,12 +7,6 @@ icon: key
 
 Service accounts in ZenML Pro provide a secure way to authenticate automated systems, CI/CD pipelines, and other non-interactive applications with your ZenML Pro organization. Unlike user accounts, service accounts are designed specifically for programmatic access and can be managed centrally through the Organization Settings interface.
 
-{% hint style="info" %}
-**Organization-Level Management**
-
-Service accounts in ZenML Pro are managed at the organization level, not at the workspace level. This provides centralized control and consistent access patterns across all workspaces within your organization.
-{% endhint %}
-
 ## Accessing Service Account Management
 
 To manage service accounts in your ZenML Pro organization, navigate to your ZenML Pro dashboard, click on **"Settings"** in the organization navigation menu and select **"Service Accounts"** from the settings sidebar. This is the main interface where you can perform all service account and API key operations.
@@ -283,7 +277,7 @@ Deactivating a service account has immediate effect on all ZenML Pro API calls u
 {% endhint %}
 
 {% hint style="warning" %}
-**Delayed workspace-level effect**
+**Delayed workspace token effect**
 
 Short-lived API tokens associated with the deactivated service account issued for workspaces in your organization may still be valid for up to one hour after the service account is deactivated.
 {% endhint %}
@@ -293,7 +287,7 @@ Short-lived API tokens associated with the deactivated service account issued fo
 Deleting a service account permanently removes it and all associated API keys from your organization.
 
 {% hint style="warning" %}
-**Delayed workspace-level effect**
+**Delayed workspace token effect**
 
 Short-lived API tokens associated with the deleted service account issued for workspaces in your organization may still be valid for up to one hour after the service account is deleted.
 {% endhint %}
@@ -315,7 +309,7 @@ The API key value is only shown once during creation and cannot be retrieved lat
 Individual API keys can be activated or deactivated independently of the service account status.
 
 {% hint style="warning" %}
-**Delayed workspace-level effect**
+**Delayed workspace token effect**
 
 Short-lived API tokens associated with the deactivated API key issued for workspaces in your organization may still be valid for up to one hour after the API key is deactivated.
 {% endhint %}
@@ -333,7 +327,7 @@ By setting a retention period, you can update your applications to use the new A
 ### Deleting API Keys
 
 {% hint style="warning" %}
-**Delayed workspace-level effect**
+**Delayed workspace token effect**
 
 Short-lived API tokens associated with the deleted API key issued for workspaces in your organization may still be valid for up to one hour after the API key is deleted.
 {% endhint %}
@@ -359,13 +353,37 @@ Short-lived API tokens associated with the deleted API key issued for workspaces
 * **Incident Response**: Have procedures in place to quickly rotate or deactivate compromised keys
 * **Team Coordination**: Coordinate with your team before making changes to production service accounts
 
+
 ## Migration of workspace level service accounts
 
-Service accounts and API keys at the workspace level are deprecated and will be removed in the future. You can migrate them to the organization level by following these steps:
+Workspace-level service accounts and API keys in ZenML Pro are deprecated. Existing workspace-level API keys may continue to authenticate temporarily for compatibility, but workloads that keep using workspace-level service account API keys will lose access during a future workspace upgrade. Please migrate them to organization-level service accounts as soon as possible.
 
-1. Create a new service account in the organization. Make sure to use the exact same username as the old service account, if you want to preserve the assigned resources, but be aware that all workspaces will share this service account.
-2. [Assign Organization and Workspace roles](roles.md) to the new service account. At a minimum, you should assign the Organization Member role and the Workspace Admin role to the service account for it to be equivalent to the old service account. It is, however, recommended to assign only the roles and permissions that are actually needed.
-3. (Optional) Delete all API keys for the old service account.
+The reason for this deprecation is that workspace-level service accounts and API keys cannot be subjected to RBAC rules and therefore always have full access to the workspace.
+
+Use ZenML Pro organization service accounts instead. They are managed centrally in the ZenML Pro control plane and can be used to authenticate both to the ZenML Pro API and to the Workspace API for the workspaces in your organization.
+
+To migrate automation that still uses a workspace-level service account API key, follow these steps:
+
+1. Create a ZenML Pro organization service account in **Organization** > **Settings** > **Service Accounts**. Use the exact same username as the old workspace-level service account. This allows ZenML Pro to adopt resources owned by the old workspace-level service account and preserve lineage/history under the migrated organization-level service account. Be aware that the organization-level service account is shared across all workspaces in the organization.
+2. [Assign Organization and Workspace roles](roles.md) to the new service account. To preserve the same unrestricted permissions that the workspace-level service account currently has but limited to the affected workspace, grant the **Organization Member** role at the organization level and the **Workspace Admin** role in the affected workspace. For better security, we strongly recommend making full use of ZenML Pro RBAC and granting only the specific roles and permissions that the service account actually needs.
+3. Create an API key for the new organization-level service account and update your automation, CI/CD jobs, and pipeline workloads to use that key instead of the old workspace-level API key.
+
+You can keep using the workspace URL as the ZenML store URL:
+
+   ```bash
+   export ZENML_STORE_URL=https://your-workspace-url
+   export ZENML_STORE_API_KEY=<your-zenml-pro-organization-api-key>
+   ```
+
+For self-hosted ZenML Pro API servers, also set the ZenML Pro API URL:
+
+   ```bash
+   export ZENML_PRO_API_URL=https://your-pro-api-url
+   ```
+
+4. Run the affected workloads once to verify that they authenticate successfully with the organization-level service account.
+5. If the migration is successful and the correct username is used at step 1, the old workspace-level service account is automatically "adopted" by the new organization-level service account and will no longer be listed in the workspace settings.
+6. For workspace-level service accounts that are no longer used, deactivate them or delete them. Deactivation immediately prevents their API keys from being used. Deletion can fail if the service account already owns resources such as pipeline runs; in that case, deactivate the service account instead.
 
 ## Troubleshooting
 

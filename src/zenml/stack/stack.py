@@ -156,6 +156,7 @@ class Stack:
         self._name = name
         self._environment = environment or {}
         self._secrets = secrets or []
+        self._model: Optional["StackResponse"] = None
 
         self._components: Dict[StackComponentType, List["StackComponent"]] = (
             defaultdict(list)
@@ -187,6 +188,17 @@ class Stack:
 
                 for component in components:
                     self._components[component.type].append(component)
+
+    @property
+    def model(self) -> "StackResponse":
+        """The stack response model.
+
+        Returns:
+            The model of the stack.
+        """
+        if self._model is None:
+            self._model = Client().get_stack(self._id)
+        return self._model
 
     @classmethod
     def from_model(cls, stack_model: "StackResponse") -> "Stack":
@@ -242,6 +254,7 @@ class Stack:
             secrets=stack_model.secrets,
             components=stack_components,
         )
+        stack._model = stack_model
         _STACK_CACHE[key] = stack
 
         client = Client()

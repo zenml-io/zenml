@@ -32,7 +32,6 @@ from zenml.integrations.b2.flavors.b2_artifact_store_flavor import (
 )
 from zenml.integrations.s3.artifact_stores.s3_artifact_store import (
     S3ArtifactStore,
-    ZenMLS3Filesystem,
 )
 
 
@@ -70,7 +69,15 @@ class B2ArtifactStore(S3ArtifactStore):
     def _with_b2_user_agent(
         config_kwargs: Optional[Dict[str, Any]],
     ) -> Dict[str, Any]:
-        """Build botocore config kwargs with the B2 user agent suffix."""
+        """Build botocore config kwargs with the B2 user agent suffix.
+
+        Args:
+            config_kwargs: Existing botocore configuration keyword arguments.
+
+        Returns:
+            Botocore configuration keyword arguments containing the B2 user
+            agent suffix.
+        """
         kwargs = config_kwargs.copy() if config_kwargs else {}
         existing_ua = (kwargs.get("user_agent_extra") or "").strip()
         if B2_USER_AGENT not in existing_ua:
@@ -79,44 +86,20 @@ class B2ArtifactStore(S3ArtifactStore):
             )
         return kwargs
 
-    @staticmethod
-    def _with_b2_endpoint(
-        client_kwargs: Optional[Dict[str, Any]],
-        region: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """Build client kwargs with the B2 endpoint fallback."""
-        kwargs: Dict[str, Any] = {}
-        if region:
-            kwargs["region_name"] = region
-        if client_kwargs:
-            kwargs.update(client_kwargs)
-        if not kwargs.get("endpoint_url"):
-            kwargs["endpoint_url"] = DEFAULT_B2_ENDPOINT_URL
-        return kwargs
-
-    @property
-    def filesystem(self) -> ZenMLS3Filesystem:
-        """The B2 S3-compatible filesystem for this artifact store.
+    def _build_filesystem_kwargs(self) -> Dict[str, Any]:
+        """Build the s3fs constructor kwargs with the B2 runtime fallbacks.
 
         Returns:
-            The filesystem object.
+            Keyword arguments for the S3-compatible filesystem, with the B2
+            endpoint fallback and user agent suffix applied.
         """
-        if self._filesystem and not self.connector_has_expired():
-            return self._filesystem
-
-        key, secret, token, region = self.get_credentials()
-        self._filesystem = ZenMLS3Filesystem(
-            key=key,
-            secret=secret,
-            token=token,
-            client_kwargs=self._with_b2_endpoint(
-                self.config.client_kwargs,
-                region=region,
-            ),
-            config_kwargs=self._with_b2_user_agent(self.config.config_kwargs),
-            s3_additional_kwargs=self.config.s3_additional_kwargs,
+        kwargs = super()._build_filesystem_kwargs()
+        if not kwargs["client_kwargs"].get("endpoint_url"):
+            kwargs["client_kwargs"]["endpoint_url"] = DEFAULT_B2_ENDPOINT_URL
+        kwargs["config_kwargs"] = self._with_b2_user_agent(
+            self.config.config_kwargs
         )
-        return self._filesystem
+        return kwargs
 
     def _build_boto3_kwargs(self) -> Dict[str, Any]:
         """Build B2-aware kwargs for the boto3.resource path.

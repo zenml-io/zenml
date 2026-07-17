@@ -163,6 +163,21 @@ def handle_int_env_var(var: str, default: int = 0) -> int:
         return default
 
 
+def handle_positive_int_env_var(var: str, default: int) -> int:
+    """Converts normal env var to a positive int.
+
+    Args:
+        var: The environment variable to convert.
+        default: The default value to return if the env var is not set,
+            invalid or non-positive.
+
+    Returns:
+        The converted value.
+    """
+    value = handle_int_env_var(var, default=default)
+    return value if value > 0 else default
+
+
 def handle_float_env_var(var: str, default: float = 0.0) -> float:
     """Converts normal env var to float.
 
@@ -269,7 +284,14 @@ ENV_DAEMON_ZENML_SERVER_DEFAULT_TIMEOUT = "ZENML_DAEMON_SERVER_TIMEOUT"
 ENV_ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK = (
     "ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK"
 )
+ENV_ZENML_PARAMETER_SIZE_THRESHOLD = "ZENML_PARAMETER_SIZE_THRESHOLD"
 ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING = "ZENML_PREVENT_CLIENT_SIDE_CACHING"
+ENV_ZENML_PREVENT_EXECUTION_CONTEXT_CACHING = (
+    "ZENML_PREVENT_EXECUTION_CONTEXT_CACHING"
+)
+ENV_ZENML_EXECUTION_CONTEXT_STEP_RUN_CACHE_SIZE = (
+    "ZENML_EXECUTION_CONTEXT_STEP_RUN_CACHE_SIZE"
+)
 ENV_ZENML_DISABLE_CREDENTIALS_DISK_CACHING = "DISABLE_CREDENTIALS_DISK_CACHING"
 ENV_ZENML_RUNNER_PARENT_IMAGE = "ZENML_RUNNER_PARENT_IMAGE"
 ENV_ZENML_RUNNER_IMAGE_DISABLE_UV = "ZENML_RUNNER_IMAGE_DISABLE_UV"
@@ -297,20 +319,13 @@ ENV_ZENML_STREAM_PUBLISHER_BATCH_SIZE = "ZENML_STREAM_PUBLISHER_BATCH_SIZE"
 # Logging variables
 IS_DEBUG_ENV: bool = handle_bool_env_var(ENV_ZENML_DEBUG, default=False)
 
-if IS_DEBUG_ENV:
-    ZENML_LOGGING_VERBOSITY = os.getenv(
-        ENV_ZENML_LOGGING_VERBOSITY, default="DEBUG"
-    ).upper()
-    ZENML_STORAGE_LOGGING_VERBOSITY = os.getenv(
-        ENV_ZENML_STORAGE_LOGGING_VERBOSITY, default=None
-    )
-else:
-    ZENML_LOGGING_VERBOSITY = os.getenv(
-        ENV_ZENML_LOGGING_VERBOSITY, default="INFO"
-    ).upper()
-    ZENML_STORAGE_LOGGING_VERBOSITY = os.getenv(
-        ENV_ZENML_STORAGE_LOGGING_VERBOSITY, default=None
-    )
+ZENML_LOGGING_VERBOSITY = os.getenv(
+    ENV_ZENML_LOGGING_VERBOSITY, default="INFO"
+).upper()
+
+ZENML_STORAGE_LOGGING_VERBOSITY = os.getenv(
+    ENV_ZENML_STORAGE_LOGGING_VERBOSITY, default=None
+)
 
 INSIDE_ZENML_CONTAINER = handle_bool_env_var(ENV_ZENML_CONTAINER, False)
 
@@ -667,6 +682,18 @@ LOGS_OTEL_MAX_EXPORT_BATCH_SIZE = handle_int_env_var(
 )
 LOGS_OTEL_EXPORT_TIMEOUT_MILLIS = handle_int_env_var(
     ENV_ZENML_LOGS_OTEL_EXPORT_TIMEOUT_MILLIS, default=15000
+)
+
+# File IO constants
+# Chunk size in bytes for cross-filesystem copies in `zenml.io.fileio.copy`.
+# Bounds the client memory usage when copying files to or from remote
+# artifact stores. Non-positive values fall back to the default, as they
+# would silently break the copy loop: `read(0)` ends it immediately and
+# `read(-1)` buffers the entire file in memory.
+ENV_ZENML_FILEIO_COPY_CHUNK_SIZE = "ZENML_FILEIO_COPY_CHUNK_SIZE"
+DEFAULT_FILEIO_COPY_CHUNK_SIZE = 8 * 1024 * 1024
+FILEIO_COPY_CHUNK_SIZE = handle_positive_int_env_var(
+    ENV_ZENML_FILEIO_COPY_CHUNK_SIZE, default=DEFAULT_FILEIO_COPY_CHUNK_SIZE
 )
 
 # Subscription-based features

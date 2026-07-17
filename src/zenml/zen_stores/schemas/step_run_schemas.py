@@ -409,6 +409,29 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                     pipeline_configuration=pipeline_configuration,
                     exclude_hook_sources=self.snapshot.is_dynamic,
                 )
+
+                if input_overrides := (
+                    pipeline_configuration.get_invocation_input_overrides(
+                        invocation_id=self.name,
+                        step_name=step.config.name,
+                    )
+                ):
+                    # Remove all parameters that are shadowed by replay input
+                    # overrides.
+                    step = step.model_copy(
+                        update={
+                            "config": step.config.model_copy(
+                                update={
+                                    "parameters": {
+                                        key: value
+                                        for key, value in step.config.parameters.items()
+                                        if key not in input_overrides
+                                    }
+                                }
+                            )
+                        }
+                    )
+
         if not step and self.step_configuration:
             # In this legacy case, we're guaranteed to have the merged
             # config stored in the DB, which means we can instantiate the

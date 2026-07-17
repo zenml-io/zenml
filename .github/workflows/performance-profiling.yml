@@ -9,14 +9,16 @@ concurrency:
   # New commit on branch cancels running workflows of the same branch
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+env:
+  ZENML_DEBUG: 1
+  ZENML_LOGGING_VERBOSITY: debug
+  ZENML_ANALYTICS_OPT_IN: false
 jobs:
   profile-cli-performance:
     name: Profile ZenML CLI Performance
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
     env:
-      ZENML_DEBUG: 1
-      ZENML_ANALYTICS_OPT_IN: false
       PYTHONIOENCODING: utf-8
       UV_HTTP_TIMEOUT: 600
       TARGET_RESULTS_FILE: target_profile_results.json

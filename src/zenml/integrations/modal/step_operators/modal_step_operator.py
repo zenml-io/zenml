@@ -51,13 +51,23 @@ class ModalStepOperator(BaseStepOperator):
     """
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Initialize the Modal step operator."""
+        """Initialize the Modal step operator.
+
+        Args:
+            *args: Positional arguments forwarded to the base step operator.
+            **kwargs: Keyword arguments forwarded to the base step operator.
+        """
         super().__init__(*args, **kwargs)
         self._modal_client: Optional["modal.Client"] = None
         self._modal_client_lock = Lock()
 
     def _get_modal_client(self) -> Optional["modal.Client"]:
-        """Get an explicit Modal client when credentials are configured."""
+        """Get an explicit Modal client when credentials are configured.
+
+        Returns:
+            A reusable Modal client, or `None` when explicit credentials are
+            not configured.
+        """
         if (
             self._modal_client is not None
             and not self._modal_client.is_closed()

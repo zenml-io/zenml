@@ -139,7 +139,7 @@ from zenml.config.pipeline_run_configuration import (
 from zenml.config.secrets_store_config import SecretsStoreConfiguration
 from zenml.config.server_config import ServerConfiguration
 from zenml.config.source import Source
-from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
+from zenml.config.step_configurations import StepConfiguration, StepSpec
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
     DEFAULT_PASSWORD,
@@ -327,7 +327,6 @@ from zenml.models import (
     SecretUpdate,
     ServerActivationRequest,
     ServerDatabaseType,
-    ServerDeploymentType,
     ServerModel,
     ServerSettingsResponse,
     ServerSettingsUpdate,
@@ -397,7 +396,17 @@ from zenml.zen_stores import template_utils
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
 )
-from zenml.zen_stores.dag_generator import DAGGeneratorHelper
+from zenml.zen_stores.dag.dag_generator import (
+    DAGGeneratorHelper,
+)
+from zenml.zen_stores.dag.models import (
+    DAGStepView,
+)
+from zenml.zen_stores.dag.utils import (
+    load_input_artifact_rows,
+    load_output_artifact_rows,
+    load_step_run_metadata,
+)
 from zenml.zen_stores.migrations.alembic import (
     Alembic,
 )
@@ -1190,7 +1199,7 @@ class SqlZenStore(BaseZenStore):
 
         server_config = ServerConfiguration.get_server_config()
 
-        if server_config.deployment_type == ServerDeploymentType.CLOUD:
+        if server_config.is_pro_server:
             # Do not send events for Pro workspaces where the event comes from
             # the Pro API
             return
@@ -1748,8 +1757,11 @@ class SqlZenStore(BaseZenStore):
         """Purge all in-built and integration flavors from the DB and sync."""
         FlavorRegistry().register_flavors(store=self)
 
-    def get_store_info(self) -> ServerModel:
+    def get_store_info(self, force_refresh: bool = False) -> ServerModel:
         """Get information about the store.
+
+        Args:
+            force_refresh: Ignored, the information is always fresh.
 
         Returns:
             Information about the store.
@@ -2425,7 +2437,14 @@ class SqlZenStore(BaseZenStore):
         self,
         batch_size: int,
     ) -> int:
-        """Delete a bounded batch of completed API transactions that expired."""
+        """Delete a bounded batch of completed API transactions that expired.
+
+        Args:
+            batch_size: Maximum number of expired transactions to delete.
+
+        Returns:
+            The number of deleted API transactions.
+        """
         with Session(self.engine) as session:
             expired_transaction_ids = (
                 select(ApiTransactionSchema.id)
@@ -6209,11 +6228,17 @@ class SqlZenStore(BaseZenStore):
 
     # ----------------------------- Pipeline runs -----------------------------
 
-    def get_pipeline_run_dag(self, pipeline_run_id: UUID) -> PipelineRunDAG:
+    def get_pipeline_run_dag(
+        self,
+        pipeline_run_id: UUID,
+        include_step_metadata: Optional[List[str]] = None,
+    ) -> PipelineRunDAG:
         """Get the DAG of a pipeline run.
 
         Args:
             pipeline_run_id: The ID of the pipeline run.
+            include_step_metadata: Run metadata keys for which to include the
+                values in the step nodes.
 
         Returns:
             The DAG of the pipeline run.
@@ -6245,28 +6270,6 @@ class SqlZenStore(BaseZenStore):
                         jl_arg(StepRunSchema.status),
                         jl_arg(StepRunSchema.start_time),
                         jl_arg(StepRunSchema.end_time),
-                    ),
-                    selectinload(jl_arg(PipelineRunSchema.step_runs))
-                    .selectinload(jl_arg(StepRunSchema.input_artifacts))
-                    .joinedload(
-                        jl_arg(StepRunInputArtifactSchema.artifact_version),
-                        innerjoin=True,
-                    )
-                    .load_only(
-                        jl_arg(ArtifactVersionSchema.type),
-                        jl_arg(ArtifactVersionSchema.data_type),
-                        jl_arg(ArtifactVersionSchema.save_type),
-                    ),
-                    selectinload(jl_arg(PipelineRunSchema.step_runs))
-                    .selectinload(jl_arg(StepRunSchema.output_artifacts))
-                    .joinedload(
-                        jl_arg(StepRunOutputArtifactSchema.artifact_version),
-                        innerjoin=True,
-                    )
-                    .load_only(
-                        jl_arg(ArtifactVersionSchema.type),
-                        jl_arg(ArtifactVersionSchema.data_type),
-                        jl_arg(ArtifactVersionSchema.save_type),
                     ),
                     selectinload(
                         jl_arg(PipelineRunSchema.step_runs)
@@ -6333,22 +6336,38 @@ class SqlZenStore(BaseZenStore):
             if snapshot.is_dynamic:
                 # Ignore static config templates for dynamic pipeline DAGs
                 steps = {
-                    name: Step.from_dict(
+                    name: DAGStepView.from_dict(
                         json.loads(step_run.dynamic_config.config),  # type: ignore[union-attr]
-                        pipeline_configuration=pipeline_configuration,
-                        exclude_hook_sources=True,
+                        substitutions=pipeline_configuration.substitutions,
                     )
                     for name, step_run in step_runs.items()
                 }
             else:
                 steps = {
-                    config_table.name: Step.from_dict(
+                    config_table.name: DAGStepView.from_dict(
                         json.loads(config_table.config),
-                        pipeline_configuration=pipeline_configuration,
-                        exclude_hook_sources=False,
+                        substitutions=pipeline_configuration.substitutions,
                     )
                     for config_table in snapshot.step_configurations
                 }
+
+            input_artifact_rows = {}
+            output_artifact_rows = {}
+            step_metadata: Dict[UUID, Dict[str, "MetadataType"]] = {}
+            if step_runs:
+                input_artifact_rows = load_input_artifact_rows(
+                    session=session, pipeline_run_id=pipeline_run_id
+                )
+                output_artifact_rows = load_output_artifact_rows(
+                    session=session, pipeline_run_id=pipeline_run_id
+                )
+                if include_step_metadata:
+                    step_metadata = load_step_run_metadata(
+                        session=session,
+                        pipeline_run_id=pipeline_run_id,
+                        metadata_keys=include_step_metadata,
+                    )
+
             regular_output_artifact_nodes: Dict[
                 str, Dict[str, PipelineRunDAG.Node]
             ] = defaultdict(dict)
@@ -6394,6 +6413,9 @@ class SqlZenStore(BaseZenStore):
                                 step_run.end_time - step_run.start_time
                             ).total_seconds()
 
+                    if extra_metadata := step_metadata.get(step_run.id):
+                        metadata["run_metadata"] = extra_metadata
+
                 step_node = helper.add_step_node(
                     node_id=helper.get_step_node_id(name=step_name),
                     id=step_id,
@@ -6402,7 +6424,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
                 if step_run:
-                    for input in step_run.input_artifacts:
+                    for input in input_artifact_rows.get(step_run.id, []):
                         input_type = StepRunInputArtifactType(input.type)
 
                         if input_type == StepRunInputArtifactType.STEP_OUTPUT:
@@ -6451,11 +6473,11 @@ class SqlZenStore(BaseZenStore):
                                 ),
                                 id=input.artifact_id,
                                 name=input.name,
-                                type=input.artifact_version.type,
+                                type=input.artifact_type,
                                 data_type=Source.model_validate_json(
-                                    input.artifact_version.data_type
+                                    input.artifact_data_type
                                 ).import_path,
-                                save_type=input.artifact_version.save_type,
+                                save_type=input.artifact_save_type,
                             )
 
                         helper.add_edge(
@@ -6471,7 +6493,7 @@ class SqlZenStore(BaseZenStore):
                             artifact_node.node_id
                         )
 
-                    for output in step_run.output_artifacts:
+                    for output in output_artifact_rows.get(step_run.id, []):
                         # There is a very rare case where a node in the DAG
                         # already exists for an output artifact. This can happen
                         # when there are two steps that have no direct
@@ -6482,7 +6504,7 @@ class SqlZenStore(BaseZenStore):
                         # separately in the DAG, but if that should ever change
                         # this would be the place to merge them.
                         is_manual_save = (
-                            output.artifact_version.save_type
+                            output.artifact_save_type
                             == ArtifactSaveType.MANUAL
                         )
                         artifact_node = helper.add_artifact_node(
@@ -6496,26 +6518,26 @@ class SqlZenStore(BaseZenStore):
                                 if is_manual_save
                                 else output.name,
                                 step_name=step_name,
-                                io_type=output.artifact_version.save_type,
+                                io_type=output.artifact_save_type,
                                 is_input=False,
                             ),
                             id=output.artifact_id,
                             name=output.name,
-                            type=output.artifact_version.type,
+                            type=output.artifact_type,
                             data_type=Source.model_validate_json(
-                                output.artifact_version.data_type
+                                output.artifact_data_type
                             ).import_path,
-                            save_type=output.artifact_version.save_type,
+                            save_type=output.artifact_save_type,
                         )
 
                         helper.add_edge(
                             source=step_node.node_id,
                             target=artifact_node.node_id,
                             output_name=output.name,
-                            type=output.artifact_version.save_type,
+                            type=output.artifact_save_type,
                         )
                         if (
-                            output.artifact_version.save_type
+                            output.artifact_save_type
                             == ArtifactSaveType.STEP_OUTPUT
                         ):
                             regular_output_artifact_nodes[step_name][
@@ -11609,6 +11631,27 @@ class SqlZenStore(BaseZenStore):
             )
 
             session.add(step_schema)
+
+            if step_run.dynamic_config:
+                if not run.snapshot or not run.snapshot.is_dynamic:
+                    raise IllegalOperationError(
+                        "Dynamic step configurations are not allowed for "
+                        "static pipelines."
+                    )
+
+                step_configuration_schema = StepConfigurationSchema(
+                    index=0,
+                    name=step_run.name,
+                    # Don't include the merged config in the step
+                    # configurations, we reconstruct it in the `to_model` method
+                    # using the pipeline configuration.
+                    config=step_run.dynamic_config.model_dump_json(
+                        exclude={"config"}
+                    ),
+                    step_run_id=step_schema.id,
+                )
+                session.add(step_configuration_schema)
+
             try:
                 session.commit()
             except IntegrityError:
@@ -11813,26 +11856,6 @@ class SqlZenStore(BaseZenStore):
                 self._update_pipeline_run_status(
                     pipeline_run_id=step_run.pipeline_run_id, session=session
                 )
-
-            if step_run.dynamic_config:
-                if not run.snapshot or not run.snapshot.is_dynamic:
-                    raise IllegalOperationError(
-                        "Dynamic step configurations are not allowed for "
-                        "static pipelines."
-                    )
-
-                step_configuration_schema = StepConfigurationSchema(
-                    index=0,
-                    name=step_run.name,
-                    # Don't include the merged config in the step
-                    # configurations, we reconstruct it in the `to_model` method
-                    # using the pipeline configuration.
-                    config=step_run.dynamic_config.model_dump_json(
-                        exclude={"config"}
-                    ),
-                    step_run_id=step_schema.id,
-                )
-                session.add(step_configuration_schema)
 
             session.commit()
             session.refresh(
@@ -13538,10 +13561,7 @@ class SqlZenStore(BaseZenStore):
         if ENV_ZENML_SERVER in os.environ:
             from zenml.config.server_config import ServerConfiguration
 
-            if (
-                ServerConfiguration.get_server_config().deployment_type
-                == ServerDeploymentType.CLOUD
-            ):
+            if ServerConfiguration.get_server_config().is_pro_server:
                 default_project_enabled = False
 
         return default_project_enabled
