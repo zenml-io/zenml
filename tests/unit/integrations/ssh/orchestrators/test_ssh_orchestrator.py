@@ -133,8 +133,8 @@ class TestStaticSubmit:
         orch: SSHOrchestrator,
         snapshot: MagicMock,
         settings: SSHOrchestratorSettings | None = None,
-    ) -> dict:
-        """Run submit_pipeline and return the parsed Compose dict."""
+    ) -> tuple[dict, str]:
+        """Run submit_pipeline; return the Compose dict and the run id."""
         run = MagicMock()
         run.id = uuid4()
         with (
@@ -162,7 +162,7 @@ class TestStaticSubmit:
             for call in ssh.put_text.call_args_list
             if call.args[0].endswith("docker-compose.yml")
         )
-        return yaml.safe_load(compose_yaml)
+        return yaml.safe_load(compose_yaml), str(run.id)
 
     def test_one_service_per_step_with_edges(self) -> None:
         orch = _make_orchestrator()
@@ -172,16 +172,19 @@ class TestStaticSubmit:
         settings = SSHOrchestratorSettings(
             gpu_indices=[1, 0], mounts={"/data": "/models"}
         )
-        compose = self._submit(orch, snap, settings)
+        compose, run_id = self._submit(orch, snap, settings)
         services = compose["services"]
         assert len(services) == 2
-        train = services[f"{snap.id}-train"]
+        # Services and container names are keyed on the run id, not the
+        # snapshot id, so re-runs of the same snapshot don't collide.
+        train = services[f"{run_id}-train"]
+        assert train["container_name"] == f"{run_id}-train"
         # depends_on edge from train -> load with completion condition
         assert train["depends_on"] == {
-            f"{snap.id}-load": {"condition": "service_completed_successfully"}
+            f"{run_id}-load": {"condition": "service_completed_successfully"}
         }
         # run-id env injected + step env carried through
-        assert train["environment"][ENV_ZENML_SSH_RUN_ID]
+        assert train["environment"][ENV_ZENML_SSH_RUN_ID] == run_id
         assert train["environment"]["FOO"] == "bar"
         # GPU reservation reflects the requested (normalized) indices
         device = train["deploy"]["resources"]["reservations"]["devices"][0]
@@ -192,10 +195,33 @@ class TestStaticSubmit:
     def test_cpu_only_step_has_no_gpu_reservation(self) -> None:
         orch = _make_orchestrator()
         snap = _fake_snapshot({"only": _fake_step()})
-        compose = self._submit(orch, snap)
-        only = compose["services"][f"{snap.id}-only"]
+        compose, run_id = self._submit(orch, snap)
+        only = compose["services"][f"{run_id}-only"]
         assert "deploy" not in only
         assert "volumes" not in only
+
+    def test_container_names_unique_across_runs_of_same_snapshot(self) -> None:
+        """Re-running the same snapshot must not reuse container names.
+
+        The same snapshot can be launched more than once (manual re-runs, run
+        templates, concurrent triggers). If two runs shared container names,
+        the second ``docker compose up`` on the host would fail with
+        "container name already in use".
+        """
+        orch = _make_orchestrator()
+        snap = _fake_snapshot(
+            {"load": _fake_step(), "train": _fake_step(upstream=["load"])}
+        )
+        compose1, _ = self._submit(orch, snap)
+        compose2, _ = self._submit(orch, snap)
+
+        names1 = {
+            svc["container_name"] for svc in compose1["services"].values()
+        }
+        names2 = {
+            svc["container_name"] for svc in compose2["services"].values()
+        }
+        assert names1.isdisjoint(names2)
 
     def test_compose_up_invoked(self) -> None:
         orch = _make_orchestrator()
@@ -311,6 +337,29 @@ class TestDynamicSubmit:
             call.args[0].endswith("docker-compose.yml")
             for call in ssh.put_text.call_args_list
         )
+
+    def test_dynamic_env_file_rejects_corrupting_value(self) -> None:
+        """A newline in an env value must fail loudly, not silently corrupt.
+
+        The dynamic env-file carries the orchestrator's store token; a raw
+        newline would spill it onto (or drop it from) an adjacent line, so the
+        shared serializer rejects it instead of writing a broken file.
+        """
+        orch = _make_orchestrator()
+        snap = _fake_snapshot({"a": _fake_step()})
+        run = MagicMock()
+        run.id = uuid4()
+        with (
+            _patched_ssh(),
+            patch.object(orch, "get_image", return_value="orch-img"),
+            pytest.raises(ValueError, match="newline"),
+        ):
+            orch.submit_dynamic_pipeline(
+                snapshot=snap,
+                stack=MagicMock(),
+                environment={"ZENML_STORE_URL": "x", "BAD": "line1\nline2"},
+                placeholder_run=run,
+            )
 
     def test_supports_dynamic_and_isolated_flags(self) -> None:
         orch = _make_orchestrator()

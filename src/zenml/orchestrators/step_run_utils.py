@@ -64,12 +64,17 @@ class StepRunRequestFactory:
                 requests.
             stack: The stack on which the pipeline run is happening.
         """
+        from zenml.execution.context import ExecutionContext
+
         self.snapshot = snapshot
         self.pipeline_run = pipeline_run
         self.stack = stack
         self._original_step_run_cache: Dict[
             str, Optional["StepRunResponse"]
         ] = {}
+        self._step_runs: Dict[str, "StepRunResponse"] = {}
+        if execution_context := ExecutionContext.get():
+            self._step_runs = execution_context.step_runs
 
     def _get_original_step_run(
         self, invocation_id: str
@@ -186,18 +191,22 @@ class StepRunRequestFactory:
             dynamic_config=dynamic_config,
         )
 
-    def populate_request(
-        self,
-        request: StepRunRequest,
-        step_runs: Optional[Dict[str, "StepRunResponse"]] = None,
-    ) -> None:
+    def record_step_run(self, step_run: "StepRunResponse") -> None:
+        """Record a finished step run for reuse during input resolution.
+
+        Args:
+            step_run: The step run to record.
+        """
+        if not step_run.status.is_successful:
+            return
+
+        self._step_runs[step_run.name] = step_run
+
+    def populate_request(self, request: StepRunRequest) -> None:
         """Populate a step run request with additional information.
 
         Args:
             request: The request to populate.
-            step_runs: A dictionary of already fetched step runs to use for
-                input resolution. This will be updated in-place with newly
-                fetched step runs.
         """
         step = (
             request.dynamic_config
@@ -213,7 +222,7 @@ class StepRunRequestFactory:
         input_artifacts = input_utils.resolve_step_inputs(
             step=step,
             pipeline_run=self.pipeline_run,
-            step_runs=step_runs,
+            step_runs=self._step_runs,
             input_overrides=input_overrides,
         )
 
@@ -527,9 +536,6 @@ def create_cached_step_runs(
     request_factory = StepRunRequestFactory(
         snapshot=snapshot, pipeline_run=pipeline_run, stack=stack
     )
-    # This is used to cache the step runs that we created to avoid unnecessary
-    # server requests.
-    step_runs: Dict[str, "StepRunResponse"] = {}
 
     while (
         cache_candidates := find_cacheable_invocation_candidates(
@@ -547,9 +553,7 @@ def create_cached_step_runs(
                 step_run_request = request_factory.create_request(
                     invocation_id
                 )
-                request_factory.populate_request(
-                    step_run_request, step_runs=step_runs
-                )
+                request_factory.populate_request(step_run_request)
             except Exception as e:
                 # We failed to create/populate the step run. This might be due
                 # to some input resolution error, or an error importing the step
@@ -571,10 +575,9 @@ def create_cached_step_runs(
                 step_run_request, pipeline_run=pipeline_run
             )
 
-            # Include the newly created step run in the step runs dictionary to
-            # avoid fetching it again later when downstream steps need it for
-            # input resolution.
-            step_runs[invocation_id] = step_run
+            # Record the newly created step run to avoid fetching it again later
+            # when downstream steps need it for input resolution.
+            request_factory.record_step_run(step_run)
 
             logger.info("Using cached version of step `%s`.", invocation_id)
             cached_invocations.add(invocation_id)

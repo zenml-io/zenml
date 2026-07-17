@@ -267,6 +267,36 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
         else:
             return self.config.key, self.config.secret, self.config.token, None
 
+    def _build_filesystem_kwargs(self) -> Dict[str, Any]:
+        """Build the constructor kwargs for the s3fs filesystem.
+
+        Subclasses for S3-compatible providers can override this to adjust
+        the client configuration (e.g. inject a provider endpoint URL)
+        without duplicating the caching and locking in `filesystem`.
+
+        Returns:
+            Keyword arguments for `ZenMLS3Filesystem`.
+        """
+        key, secret, token, region = self.get_credentials()
+
+        # Use the region from the connector if available, otherwise some
+        # remote workloads (e.g. Sagemaker) might not work correctly because
+        # they look for the bucket in the wrong region
+        client_kwargs: Dict[str, Any] = {}
+        if region:
+            client_kwargs["region_name"] = region
+        if self.config.client_kwargs:
+            client_kwargs.update(self.config.client_kwargs)
+
+        return dict(
+            key=key,
+            secret=secret,
+            token=token,
+            client_kwargs=client_kwargs,
+            config_kwargs=self.config.config_kwargs,
+            s3_additional_kwargs=self.config.s3_additional_kwargs,
+        )
+
     @property
     def filesystem(self) -> ZenMLS3Filesystem:
         """The s3 filesystem to access this artifact store.
@@ -282,24 +312,8 @@ class S3ArtifactStore(BaseArtifactStore, AuthenticationMixin):
             if self._filesystem and not self.connector_has_expired():
                 return self._filesystem
 
-            key, secret, token, region = self.get_credentials()
-
-            # Use the region from the connector if available, otherwise some
-            # remote workloads (e.g. Sagemaker) might not work correctly because
-            # they look for the bucket in the wrong region
-            client_kwargs = {}
-            if region:
-                client_kwargs["region_name"] = region
-            if self.config.client_kwargs:
-                client_kwargs.update(self.config.client_kwargs)
-
             self._filesystem = ZenMLS3Filesystem(
-                key=key,
-                secret=secret,
-                token=token,
-                client_kwargs=client_kwargs,
-                config_kwargs=self.config.config_kwargs,
-                s3_additional_kwargs=self.config.s3_additional_kwargs,
+                **self._build_filesystem_kwargs()
             )
             return self._filesystem
 

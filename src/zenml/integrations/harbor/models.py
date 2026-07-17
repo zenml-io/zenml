@@ -37,6 +37,12 @@ from zenml.utils.io_utils import is_path_within_directory
 # resolve to).
 GIT_TASK_PREFIX = "git+"
 
+# Prefix of the per-shard temp directory a campaign step creates for
+# Harbor's job tree. Shared with the materializer, which prunes such a
+# directory after it has archived the tree into the artifact store — the
+# prefix bounds that deletion to the integration's own temp dirs.
+HARBOR_JOBS_DIR_PREFIX = "zenml-harbor-"
+
 
 class TaskRef(BaseModel):
     """Reference to one Harbor task, local or git-pinned.

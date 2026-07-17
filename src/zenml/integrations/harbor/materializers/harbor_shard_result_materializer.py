@@ -16,10 +16,15 @@
 import hashlib
 import os
 import shutil
+import tempfile
+from pathlib import Path
 from typing import Any, ClassVar, Dict, Optional, Tuple, Type
 
 from zenml.enums import ArtifactType, VisualizationType
-from zenml.integrations.harbor.models import HarborShardResult
+from zenml.integrations.harbor.models import (
+    HARBOR_JOBS_DIR_PREFIX,
+    HarborShardResult,
+)
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -30,6 +35,32 @@ logger = get_logger(__name__)
 RESULT_FILENAME = "result.json"
 ARCHIVE_FILENAME = "job_dir.tar.gz"
 VISUALIZATION_FILENAME = "shard_report.md"
+
+
+def _prunable_temp_job_root(job_dir: str) -> Optional[str]:
+    """The ``zenml-harbor-`` temp directory safe to prune, or None.
+
+    Bounds job-tree deletion to the integration's own temp dirs: the
+    returned path must be a direct child of the system temp directory
+    whose name carries the ``zenml-harbor-`` prefix (the campaign step's
+    ``mkdtemp`` convention). Any job dir outside that convention — a
+    user-supplied path, a non-temp location, a nested match — yields
+    None, so deletion never touches an arbitrary path.
+
+    Args:
+        job_dir: The local Harbor job directory recorded on the result.
+
+    Returns:
+        The prunable temp directory, or None if deletion would be unsafe.
+    """
+    resolved = Path(job_dir).resolve()
+    temp_root = Path(tempfile.gettempdir()).resolve()
+    for candidate in (resolved, *resolved.parents):
+        if candidate.parent == temp_root:
+            if candidate.name.startswith(HARBOR_JOBS_DIR_PREFIX):
+                return str(candidate)
+            return None
+    return None
 
 
 class HarborShardResultMaterializer(BaseMaterializer):
@@ -78,6 +109,36 @@ class HarborShardResultMaterializer(BaseMaterializer):
                     f"{archive_base}.tar.gz",
                     os.path.join(self.uri, ARCHIVE_FILENAME),
                 )
+            # The artifact-store archive is now the durable copy, so the
+            # transient local job tree can go. This runs here, not in the
+            # step, because output materialization happens after the step
+            # function returns — a `finally` in the step body would delete
+            # the tree before this save() ever archived it.
+            self._prune_temp_job_dir(data.job_dir)
+
+    def _prune_temp_job_dir(self, job_dir: str) -> None:
+        """Delete the local Harbor job tree once it is safely archived.
+
+        Deletion is restricted to the integration's own
+        ``zenml-harbor-`` temp directories (see
+        :func:`_prunable_temp_job_root`), so a user-supplied ``job_dir``
+        is never removed.
+
+        Args:
+            job_dir: The local Harbor job directory that was archived.
+        """
+        prunable = _prunable_temp_job_root(job_dir)
+        if prunable is None:
+            return
+        try:
+            shutil.rmtree(prunable)
+        except OSError:
+            logger.warning(
+                "Failed to prune archived Harbor job dir %s; it may "
+                "persist under the system temp dir until the OS reaps it.",
+                prunable,
+                exc_info=True,
+            )
 
     def load(self, data_type: Type[Any]) -> HarborShardResult:
         """Load the shard summary without unpacking the job archive.
