@@ -97,7 +97,7 @@ TEST_SH = """#!/bin/bash
 # /opt/zenml-scorer/score_pipeline.py, byte-identical to
 # examples/rl_spike/sandbox_scripts/score_pipeline.py) against the
 # agent's /app/pipeline.py, then adapt its rich reward JSON to Harbor's
-# bare-float contract.
+# contract.
 #
 # Failure forensics contract: if the SCORER ITSELF crashes, this script
 # exits non-zero WITHOUT writing reward.txt, so Harbor records an
@@ -107,24 +107,37 @@ set -u
 mkdir -p /logs/verifier
 SPEC="$(cd "$(dirname "$0")" && pwd)/spec.json"
 
+# No submission is the AGENT'S failure, not the scorer's: a genuine
+# reward of 0.0, never an errored trial. (The scorer itself cannot
+# score a file that does not exist.)
+if [ ! -f /app/pipeline.py ]; then
+    echo "0.0" > /logs/verifier/reward.txt
+    echo "verifier: no /app/pipeline.py submitted — reward 0.0"
+    exit 0
+fi
+
+# Harbor gives verifier/reward.json precedence over reward.txt and
+# requires it to be a flat numeric map, so the scorer's rich JSON goes
+# to details.json (still downloaded with the verifier dir — that is the
+# forensics channel) and only the bare float lands in reward.txt.
 python /opt/zenml-scorer/score_pipeline.py \\
-    /app/pipeline.py "$SPEC" /logs/verifier/reward.json
+    /app/pipeline.py "$SPEC" /logs/verifier/details.json
 scorer_exit=$?
 
-if [ "$scorer_exit" -ne 0 ] || [ ! -f /logs/verifier/reward.json ]; then
+if [ "$scorer_exit" -ne 0 ] || [ ! -f /logs/verifier/details.json ]; then
     echo "verifier: scorer crashed (exit $scorer_exit) — recording an" \\
          "errored trial, not a 0.0 reward" >&2
     exit 1
 fi
 
-reward=$(python -c "import json; print(json.load(open('/logs/verifier/reward.json'))['reward'])")
+reward=$(python -c "import json; print(json.load(open('/logs/verifier/details.json'))['reward'])")
 if [ $? -ne 0 ]; then
-    echo "verifier: reward.json unreadable — errored trial" >&2
+    echo "verifier: details.json unreadable — errored trial" >&2
     exit 1
 fi
 
 echo "$reward" > /logs/verifier/reward.txt
-echo "verifier: reward = $reward (full breakdown in reward.json)"
+echo "verifier: reward = $reward (full breakdown in details.json)"
 """
 
 SOLUTION_TEMPLATE = """#!/bin/bash
