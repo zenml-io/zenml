@@ -3,6 +3,11 @@ description: Pause a dynamic pipeline for external input and resume it after the
 icon: hourglass-half
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Wait for external input and resume a run
 
 Use `zenml.wait(...)` when a dynamic pipeline needs a human or external system to provide input before it can continue.

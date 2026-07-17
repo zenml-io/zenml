@@ -13,6 +13,11 @@ layout:
     visible: true
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Enroll a Workspace in the ZenML Pro Control Plane
 
 Before deploying a self-hosted workspace, or when migrating an existing ZenML OSS server to ZenML Pro, you need to enroll the workspace in a ZenML Pro organization. The enrollment procedure creates a workspace placeholder in the organization and generate the necessary enrollment credentials. You will use these credentials (e.g. workspace ID, enrollment key) to configure the workspace server deployment.
