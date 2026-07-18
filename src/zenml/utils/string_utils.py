@@ -34,11 +34,19 @@ def append_random_suffix(
     separator: str = "-",
     charset: str = string.ascii_lowercase + string.digits
 ) -> str:
+    """Appends a random suffix to a string, truncating the original if necessary.
+
+    Args:
+        original_string: The base string to modify.
+        suffix_length: The length of the random suffix to generate.
+        max_length: Maximum allowed length of the final merged string.
+        separator: The string used to join the original string and suffix.
+        charset: The pool of characters to use for generating the random suffix.
+
+    Returns:
+        The merged string with the random suffix appended.
     """
-    Appends a random suffix to a string, truncating the original if necessary.
-    """
-    # Use the provided charset instead of hardcoding alphanumeric
-    suffix = ''.join(random.choices(charset, k=suffix_length))
+    suffix = "".join(random.choices(charset, k=suffix_length))
     
     if max_length is not None:
         allowed_original_length = max_length - len(separator) - suffix_length

@@ -79,8 +79,8 @@ def get_orchestrator_run_name(
         original_string=pipeline_name,
         suffix_length=suffix_length,
         max_length=max_length,
-        separator="_",
-        charset="0123456789abcdef" # <--- Ensures 100% backward compatibility
+        separator="",
+        charset="0123456789abcdef"
     )
 
 def is_setting_enabled(

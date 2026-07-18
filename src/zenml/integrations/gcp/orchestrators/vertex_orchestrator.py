@@ -29,12 +29,11 @@
 #  permissions and limitations under the License.
 """Implementation of the VertexAI orchestrator."""
 
+import hashlib
 import os
 import re
 import types
-import re
 import urllib
-import hashlib
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -133,10 +132,9 @@ STEP_JOB_NAME_METADATA_KEY = "job_name"
 
 def sanitize_vertex_job_name(job_name: str) -> str:
     """Sanitizes the Vertex AI job name to comply with GCP requirements."""
-    
     job_name = job_name.lower()
     job_name = job_name.replace("_", "-").replace(" ", "-")
-    job_name = re.sub(r'[^a-z0-9\-]', '', job_name)
+    job_name = re.sub(r"[^a-z0-9\-]", "", job_name)
     
     if not job_name or not job_name[0].isalpha():
         job_name = f"j-{job_name}"
