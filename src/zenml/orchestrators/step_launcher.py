@@ -193,6 +193,11 @@ class StepLauncher:
 
             try:
                 request_factory.populate_request(request=step_run_request)
+                if (
+                    step_run_request.status == ExecutionStatus.RUNNING
+                    and self._runs_with_dynamic_orchestrator()
+                ):
+                    step_run_request.status = ExecutionStatus.PROVISIONING
             except BaseException as e:
                 logger.exception(
                     f"Failed preparing step `{self._invocation_id}`."
@@ -216,7 +221,16 @@ class StepLauncher:
                     )
 
                 if not step_run.status.is_finished:
-                    logger.info(f"Step `{self._invocation_id}` has started.")
+                    if step_run.status == ExecutionStatus.PROVISIONING:
+                        logger.info(
+                            "Step `%s` is provisioning.",
+                            self._invocation_id,
+                        )
+                    else:
+                        logger.info(
+                            "Step `%s` has started.",
+                            self._invocation_id,
+                        )
 
                     signal_handler: Optional[SignalHandler] = None
                     start_time = time.time()
@@ -315,6 +329,26 @@ class StepLauncher:
         record_step_run(step_run)
 
         return step_run
+
+    def _runs_with_dynamic_orchestrator(self) -> bool:
+        """Whether this launcher will submit a dynamic isolated step."""
+        if not self._snapshot.is_dynamic or self._step.config.step_operator:
+            return False
+
+        from zenml.execution.pipeline.dynamic.compilation import (
+            get_step_runtime,
+        )
+
+        return (
+            get_step_runtime(
+                step_config=self._step.config,
+                pipeline_docker_settings=(
+                    self._snapshot.pipeline_configuration.docker_settings
+                ),
+                orchestrator=self._stack.orchestrator,
+            )
+            == StepRuntime.ISOLATED
+        )
 
     def _create_or_reuse_run(self) -> Tuple[PipelineRunResponse, bool]:
         """Creates a pipeline run or reuses an existing one.
@@ -868,7 +902,11 @@ class StepLauncher:
                 )
                 publish_utils.publish_step_run_status_update(
                     step_run_id=step_run_info.step_run_id,
-                    status=ExecutionStatus.RUNNING,
+                    status=(
+                        ExecutionStatus.PROVISIONING
+                        if self._runs_with_dynamic_orchestrator()
+                        else ExecutionStatus.RUNNING
+                    ),
                 )
                 return resource_request
             if resource_request.status == ResourceRequestStatus.REJECTED:

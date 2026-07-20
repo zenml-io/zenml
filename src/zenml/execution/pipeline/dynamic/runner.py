@@ -148,6 +148,7 @@ from zenml.orchestrators.publish_utils import (
     publish_failed_pipeline_run,
     publish_failed_step_run,
     publish_pipeline_run_status_update,
+    publish_step_run_status_update,
     publish_stopped_step_run,
     publish_successful_step_run,
 )
@@ -532,6 +533,23 @@ class DynamicPipelineRunner:
                     ExecutionStatus.PROVISIONING,
                     ExecutionStatus.RUNNING,
                 ]:
+                    if (
+                        infra_status == ExecutionStatus.RUNNING
+                        and step_run.status == ExecutionStatus.PROVISIONING
+                    ):
+                        latest_step_run = Client().get_run_step(
+                            step_run.id, hydrate=False
+                        )
+                        if (
+                            latest_step_run.status
+                            == ExecutionStatus.PROVISIONING
+                        ):
+                            step_run = publish_step_run_status_update(
+                                step_run_id=step_run.id,
+                                status=ExecutionStatus.RUNNING,
+                            )
+                            self._steps_to_monitor[invocation_id] = step_run
+
                     # Step still running on the infra side, no need to
                     # do anything here.
                     continue
