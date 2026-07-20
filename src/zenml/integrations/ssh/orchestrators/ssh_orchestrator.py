@@ -63,6 +63,7 @@ if TYPE_CHECKING:
     from zenml.models import (
         PipelineRunResponse,
         PipelineSnapshotResponse,
+        ResourceRequestResponse,
         StepRunResponse,
     )
     from zenml.stack import Stack
@@ -480,13 +481,18 @@ class SSHOrchestrator(ContainerizedOrchestrator):
         return None
 
     def submit_isolated_step(
-        self, step_run_info: "StepRunInfo", environment: Dict[str, str]
+        self,
+        step_run_info: "StepRunInfo",
+        environment: Dict[str, str],
+        allocated_resource_request: Optional["ResourceRequestResponse"] = None,
     ) -> None:
         """Launch one isolated step as a subprocess.
 
         Args:
             step_run_info: The step run information.
             environment: Environment variables for the step process.
+            allocated_resource_request: The allocated resource request for the
+                step, if any.
         """
         command, args = orchestrator_utils.get_step_entrypoint_command(
             invocation_id=step_run_info.pipeline_step_name,
