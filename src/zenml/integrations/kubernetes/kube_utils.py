@@ -1602,24 +1602,11 @@ def apply_resource_request_allocations_to_pod_settings(
     cpu_millicores = 0
     memory_bytes = 0
     gpu_count = 0
-    demands = allocated_resource_request.demands
 
     for allocation in allocated_resource_request.get_resources().allocations:
-        if allocation.demand_index >= len(demands):
-            logger.warning(
-                "Ignoring resource allocation `%s` with invalid demand index "
-                "`%s`.",
-                allocation.id,
-                allocation.demand_index,
-            )
-            continue
+        kind = allocation.resource_kind
+        unit = allocation.unit
 
-        demand = demands[allocation.demand_index]
-        if not demand.kind:
-            continue
-
-        kind = demand.kind.lower()
-        unit = allocation.unit or demand.unit
         if kind == "cpu":
             cpu_millicores += _cpu_allocation_to_millicores(
                 quantity=allocation.quantity,

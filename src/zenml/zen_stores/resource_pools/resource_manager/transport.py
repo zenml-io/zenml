@@ -19,7 +19,10 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from zenml.enums import ResourceRequestRuntimeState, ResourceRequestStatus
+from zenml.enums import (
+    ResourceRequestRuntimeState,
+    ResourceRequestStatus,
+)
 from zenml.models import (
     ResourcePoolAllocation,
     ResourcePoolQueueItem,
@@ -898,11 +901,14 @@ class RMAllocationResponse(BaseModel):
     id: UUID
     organization_id: UUID
     request_id: UUID
-    demand_index: int = Field(ge=0)
+    demand_index: Optional[int] = Field(default=None, ge=0)
     pool_id: UUID
     pool_name: str
+    capacity_entry_id: Optional[UUID] = None
+    capacity_entry_name: Optional[str] = None
     resource_id: UUID
     resource_name: str
+    resource_kind: str
     class_name: str = Field(alias="class", serialization_alias="class")
     quantity: int
     unit: Optional[str] = None
@@ -969,8 +975,11 @@ class RMAllocationResponse(BaseModel):
             demand_index=self.demand_index,
             pool_id=self.pool_id,
             pool_name=self.pool_name,
+            capacity_entry_id=self.capacity_entry_id,
+            capacity_entry_name=self.capacity_entry_name,
             resource_id=self.resource_id,
             resource=self.resource_name,
+            resource_kind=self.resource_kind,
             class_name=self.class_name,
             quantity=self.quantity,
             unit=self.unit,

@@ -27,9 +27,11 @@ from zenml.models import (
 def _allocation(
     *,
     request_id: UUID,
-    demand_index: int,
+    demand_index: int | None,
     quantity: int,
     unit: str | None = None,
+    resource: str = "resource",
+    resource_kind: str = "cpu",
     component_id: UUID | None = None,
     component_settings: (
         list[ResourcePoolCapacityComponentSettings] | None
@@ -41,8 +43,11 @@ def _allocation(
         demand_index=demand_index,
         pool_id=uuid4(),
         pool_name="pool",
+        capacity_entry_id=uuid4(),
+        capacity_entry_name="pool-capacity-entry",
         resource_id=uuid4(),
-        resource="resource",
+        resource=resource,
+        resource_kind=resource_kind,
         class_name="default",
         quantity=quantity,
         unit=unit,
@@ -152,11 +157,13 @@ def test_cpu_memory_and_gpu_allocations_override_requests_and_limits() -> None:
                 demand_index=1,
                 quantity=1,
                 unit="GiB",
+                resource_kind="memory",
             ),
             _allocation(
                 request_id=request_id,
                 demand_index=2,
                 quantity=1,
+                resource_kind="gpu",
             ),
         ],
     )
@@ -213,11 +220,13 @@ def test_multiple_allocations_for_same_kind_are_summed() -> None:
                 request_id=request_id,
                 demand_index=1,
                 quantity=1,
+                resource_kind="gpu",
             ),
             _allocation(
                 request_id=request_id,
                 demand_index=1,
                 quantity=2,
+                resource_kind="gpu",
             ),
         ],
     )
@@ -230,6 +239,50 @@ def test_multiple_allocations_for_same_kind_are_summed() -> None:
     assert result.resources["limits"]["cpu"] == "500m"
     assert result.resources["requests"]["nvidia.com/gpu"] == "3"
     assert result.resources["limits"]["nvidia.com/gpu"] == "3"
+
+
+def test_default_allocations_use_resource_kind_without_demand() -> None:
+    """Grant-default allocations use descriptor kind without demand lookup."""
+    request_id = uuid4()
+    request = _resource_request(
+        demands=[ResourceRequestDemand(kind="gpu", quantity=1)],
+        allocations=[
+            _allocation(
+                request_id=request_id,
+                demand_index=None,
+                resource="NVIDIA H200",
+                resource_kind="gpu",
+                quantity=1,
+            ),
+            _allocation(
+                request_id=request_id,
+                demand_index=None,
+                resource="small-cpu-default",
+                resource_kind="cpu",
+                quantity=500,
+                unit="mCPU",
+            ),
+            _allocation(
+                request_id=request_id,
+                demand_index=None,
+                resource="small-memory-default",
+                resource_kind="memory",
+                quantity=512,
+                unit="MiB",
+            ),
+        ],
+    )
+
+    result = kube_utils.apply_resource_request_allocations_to_pod_settings(
+        request
+    )
+
+    assert result.resources["requests"]["nvidia.com/gpu"] == "1"
+    assert result.resources["limits"]["nvidia.com/gpu"] == "1"
+    assert result.resources["requests"]["cpu"] == "500m"
+    assert result.resources["limits"]["cpu"] == "500m"
+    assert result.resources["requests"]["memory"] == "512Mi"
+    assert result.resources["limits"]["memory"] == "512Mi"
 
 
 def test_matching_component_settings_override_existing_settings() -> None:
