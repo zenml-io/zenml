@@ -49,7 +49,11 @@ if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.step_run_info import StepRunInfo
     from zenml.integrations.baseten.baseten_api import BasetenApiClient
-    from zenml.models import PipelineSnapshotBase, StepRunResponse
+    from zenml.models import (
+        PipelineSnapshotBase,
+        ResourceRequestResponse,
+        StepRunResponse,
+    )
 
 logger = get_logger(__name__)
 
@@ -318,6 +322,7 @@ class BasetenStepOperator(BaseStepOperator):
         info: "StepRunInfo",
         entrypoint_command: List[str],
         environment: Dict[str, str],
+        allocated_resource_request: Optional["ResourceRequestResponse"] = None,
     ) -> None:
         """Submit a step run as a Baseten training job.
 
@@ -325,6 +330,8 @@ class BasetenStepOperator(BaseStepOperator):
             info: The step run information.
             entrypoint_command: The entrypoint command for the step.
             environment: The environment variables for the step.
+            allocated_resource_request: The allocated resource request for the
+                step, if any.
 
         Raises:
             RuntimeError: If multi-node execution is requested for a regular

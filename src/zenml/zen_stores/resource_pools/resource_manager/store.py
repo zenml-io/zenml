@@ -139,7 +139,11 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         if filter_model.component_id is not None:
             list_kwargs["subject_id"] = UUID(str(filter_model.component_id))
         elif filter_model.user is not None:
-            owner = self.store.get_user(filter_model.user, hydrate=False)
+            if isinstance(filter_model.user, list):
+                user_name_or_id = filter_model.user[0]
+            else:
+                user_name_or_id = filter_model.user
+            owner = self.store.get_user(user_name_or_id, hydrate=False)
             if owner.external_user_id is not None:
                 list_kwargs["subject_id"] = owner.external_user_id
         if filter_model.status is not None:

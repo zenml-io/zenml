@@ -37,7 +37,11 @@ if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
     from zenml.config.step_run_info import StepRunInfo
     from zenml.metadata.metadata_types import MetadataType
-    from zenml.models import PipelineSnapshotBase, StepRunResponse
+    from zenml.models import (
+        PipelineSnapshotBase,
+        ResourceRequestResponse,
+        StepRunResponse,
+    )
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -137,6 +141,7 @@ class SSHStepOperator(BaseStepOperator):
         info: "StepRunInfo",
         entrypoint_command: List[str],
         environment: Dict[str, str],
+        allocated_resource_request: Optional["ResourceRequestResponse"] = None,
     ) -> None:
         """Submit a step for asynchronous execution on the remote host.
 
@@ -144,6 +149,8 @@ class SSHStepOperator(BaseStepOperator):
             info: The step run information.
             entrypoint_command: The entrypoint command for the step.
             environment: Environment variables for the step container.
+            allocated_resource_request: The allocated resource request for the
+                step, if any.
 
         Raises:
             RuntimeError: If the image pull or container start fails.
