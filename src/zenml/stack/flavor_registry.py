@@ -77,7 +77,7 @@ class FlavorRegistry:
             LocalDockerOrchestratorFlavor,
             LocalOrchestratorFlavor,
         )
-        from zenml.sandboxes import LocalSandboxFlavor
+        from zenml.sandboxes import DockerSandboxFlavor, LocalSandboxFlavor
 
         flavors = [
             LocalArtifactStoreFlavor,
@@ -92,6 +92,7 @@ class FlavorRegistry:
             DockerDeployerFlavor,
             DatadogLogStoreFlavor,
             LocalDeployerFlavor,
+            DockerSandboxFlavor,
             LocalSandboxFlavor,
             OtelLogStoreFlavor,
         ]
