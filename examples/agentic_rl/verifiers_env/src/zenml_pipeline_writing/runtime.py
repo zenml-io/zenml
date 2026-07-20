@@ -102,11 +102,9 @@ class ZenMLSandboxRuntime(Runtime):
         self.config = config
         self._session: Optional[Any] = None
         self._workdir: str = getattr(config, "workdir", "/workspace")
-        self.info = type(
-            "ZenMLRuntimeInfo",
-            (),
-            {"id": None, "type": "zenml"},
-        )()
+        from verifiers.v1.runtimes.docker import DockerRuntimeInfo
+
+        self.info = DockerRuntimeInfo(**config.model_dump())
 
     async def start(self) -> None:
         """Open a SandboxSession on the active stack's Sandbox component.
@@ -117,18 +115,32 @@ class ZenMLSandboxRuntime(Runtime):
 
         def _start() -> Any:
             from zenml.client import Client
+            from zenml.stack import StackComponent
 
-            sandbox = Client().active_stack.sandbox
+            client = Client()
+            sandbox = client.active_stack.sandbox
             if sandbox is None:
                 raise RuntimeError(
                     "ZenMLSandboxRuntime requires a Sandbox component "
                     "on the active ZenML stack (zenml sandbox register "
                     "...)."
                 )
+            sandbox = StackComponent.from_model(
+                client.get_stack_component(
+                    component_type=sandbox.type,
+                    name_id_or_prefix=sandbox.id,
+                )
+            )
             image = getattr(self.config, "image", None)
             settings = sandbox.image_settings(image) if image else None
             with _create_semaphore:
-                return sandbox.create_session(settings=settings)
+                session = sandbox.create_session(settings=settings)
+            # Docker's -w flag creates a missing workdir, sandbox exec
+            # only cds into it. Create it to match docker semantics.
+            session.exec(
+                ["mkdir", "-p", self._workdir], cwd="/", env={}
+            ).collect()
+            return session
 
         self._session = await asyncio.to_thread(_start)
         self.info.id = self._session.id
