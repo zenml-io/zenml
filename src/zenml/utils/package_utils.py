@@ -78,7 +78,7 @@ def requirement_installed(requirement: Union[str, Requirement]) -> bool:
     except PackageNotFoundError:
         return False
 
-    return requirement.specifier.contains(dist.version)
+    return requirement.specifier.contains(dist.version, prereleases=True)
 
 
 def get_dependencies(

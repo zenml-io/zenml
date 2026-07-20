@@ -17,6 +17,7 @@ from zenml import __version__ as current_zenml_version
 from zenml.utils.package_utils import (
     clean_requirements,
     get_package_information,
+    requirement_installed,
 )
 
 
@@ -82,3 +83,23 @@ def test_clean_requirements_mixed_types():
 def test_get_package_information_works():
     """Test that the package information is returned."""
     assert get_package_information()["zenml"] == current_zenml_version
+
+
+@pytest.mark.parametrize(
+    "requirement, installed_version",
+    [
+        ("package", "1.0.0rc1"),
+        ("package", "2.0.0b2"),
+        ("package>=1.0", "1.5.0rc1"),
+    ],
+)
+def test_requirement_installed_accepts_prereleases(
+    requirement: str, installed_version: str, mocker
+) -> None:
+    """Check that an installed prerelease counts as installed."""
+    mocker.patch(
+        "zenml.utils.package_utils.distribution",
+        return_value=mocker.Mock(version=installed_version),
+    )
+
+    assert requirement_installed(requirement) is True
