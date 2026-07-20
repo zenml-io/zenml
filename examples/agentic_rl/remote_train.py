@@ -7,16 +7,18 @@ EXAMPLE_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(EXAMPLE_DIR))
 
 from typing import Annotated  # noqa: E402
-from uuid import uuid4  # noqa: E402
 
-from steps.checkpoint import find_checkpoint  # noqa: E402
-from steps.ingest_rollout_traces import ingest_rollout_traces  # noqa: E402
+from steps.collect_rollout_steps import collect_rollout_steps  # noqa: E402
 from steps.lineage_report import build_lineage_report  # noqa: E402
 from steps.preflight import preflight_sandbox  # noqa: E402
 from steps.serve import stop_policy_service  # noqa: E402
 
 from zenml import pipeline, step  # noqa: E402
 from zenml.config import DockerSettings  # noqa: E402
+from zenml.enums import StepRuntime  # noqa: E402
+from zenml.execution.pipeline.dynamic.run_context import (  # noqa: E402
+    DynamicPipelineRunContext,
+)
 from zenml.integrations.kubernetes.flavors import (  # noqa: E402
     KubernetesOrchestratorSettings,
 )
@@ -39,6 +41,27 @@ SCORER_IMAGE = f"{ECR}/zenml-rl-scorer:0.1"
 # deployments do.
 TRAIN_COMMAND = """
 set -e
+# Isolated command steps run the raw command in a fresh pod without the
+# code checkout the runner pod gets, so pull the snapshot's code archive
+# the way the step entrypoint does before touching any repo files.
+python - <<'CODEEOF'
+import os
+from uuid import UUID
+
+from zenml.client import Client
+from zenml.utils import code_utils
+
+client = Client()
+run = client.get_pipeline_run(UUID(os.environ["ZENML_PIPELINE_RUN_ID"]))
+snapshot = run.snapshot
+if snapshot is None or snapshot.code_path is None:
+    raise RuntimeError("The run's snapshot has no code archive to download.")
+code_utils.download_code_from_artifact_store(
+    code_path=snapshot.code_path,
+    artifact_store=client.active_stack.artifact_store,
+)
+CODEEOF
+cd code
 uv pip install --python /app/.venv/bin/python ./verifiers_env
 export ZENML_VERIFIERS_RUNTIME=1
 export TRAINER_HOST="$(hostname -i)"
@@ -163,25 +186,38 @@ def start_inference_service(
 
 @pipeline(dynamic=True, enable_cache=False)
 def agentic_rl_train_split() -> None:
-    """Split-shape train: external inference, 1 GPU trainer, bookends."""
+    """Split-shape train: external inference, isolated 1 GPU trainer, bookends."""
+    run_context = DynamicPipelineRunContext.get()
+    assert run_context
+
     verdict = preflight_sandbox(image=SCORER_IMAGE)
     service = start_inference_service(image=TRAINER_IMAGE)
     try:
         train_prime_rl = CommandStep(
             command=["bash", "-lc", TRAIN_COMMAND],
             name="train_prime_rl",
+            runtime=StepRuntime.ISOLATED,
+            environment={
+                "WANDB_MODE": "disabled",
+                # Consumed by the code download in the train command and
+                # by the rollout step tracking in the verifiers env
+                # package.
+                "ZENML_PIPELINE_RUN_ID": str(run_context.run.id),
+                "ZENML_ROLLOUT_UPSTREAM_STEP": "train_prime_rl",
+            },
+            settings={"orchestrator.kubernetes": trainer_k8s_settings},
         )
         train_prime_rl()
 
-        rollout_table = ingest_rollout_traces(
-            output_dir="prime-rl-output",
-            expected_min_rollouts=1,
-        )
-        checkpoint_dir = find_checkpoint(output_dir="prime-rl-output")
+        # The trainer pod's filesystem is gone once the isolated step
+        # finishes, so the rollout record is read back from the tracked
+        # rollout step runs instead of traces.jsonl, and no checkpoint
+        # directory is registered.
+        rollout_table = collect_rollout_steps(expected_min_rollouts=1)
         build_lineage_report(
             rollout_table=rollout_table,
             gate_verdict=verdict,
-            checkpoint_dir=checkpoint_dir,
+            lineage_tier="step (rollout step runs and metadata)",
         )
     finally:
         stop_policy_service(service=service)
@@ -192,12 +228,21 @@ docker_settings = DockerSettings(
     skip_build=True,
 )
 
+# The trainer runs as an isolated step in its own GPU pod, so the
+# orchestrator pod only hosts the runner and the bookend steps.
 k8s_settings = KubernetesOrchestratorSettings(
     orchestrator_pod_settings=KubernetesPodSettings(
+        resources={
+            "requests": {"cpu": "2", "memory": "6Gi"},
+            "limits": {"memory": "8Gi"},
+        },
+    ),
+)
+
+trainer_k8s_settings = KubernetesOrchestratorSettings(
+    pod_settings=KubernetesPodSettings(
         node_selectors={"pool": "gpu"},
-        tolerations=[
-            {"key": "pool", "value": "gpu", "effect": "NoSchedule"}
-        ],
+        tolerations=[{"key": "pool", "value": "gpu", "effect": "NoSchedule"}],
         resources={
             "requests": {
                 "cpu": "6",
@@ -206,7 +251,6 @@ k8s_settings = KubernetesOrchestratorSettings(
             },
             "limits": {"memory": "26Gi", "nvidia.com/gpu": "1"},
         },
-        env=[{"name": "WANDB_MODE", "value": "disabled"}],
     ),
 )
 

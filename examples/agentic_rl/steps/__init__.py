@@ -14,6 +14,7 @@
 """Steps of the agentic RL example."""
 
 from steps.checkpoint import find_checkpoint
+from steps.collect_rollout_steps import collect_rollout_steps
 from steps.gate import gate_train_readiness
 from steps.ingest_rollout_traces import ingest_rollout_traces
 from steps.lineage_report import build_lineage_report
@@ -26,6 +27,7 @@ from steps.serve import (
 
 __all__ = [
     "find_checkpoint",
+    "collect_rollout_steps",
     "gate_train_readiness",
     "ingest_rollout_traces",
     "build_lineage_report",

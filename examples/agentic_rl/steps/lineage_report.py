@@ -44,6 +44,8 @@ def build_lineage_report(
     rollout_table: pd.DataFrame,
     gate_verdict: Dict[str, Any],
     checkpoint_dir: Optional[str] = None,
+    lineage_tier: str = "file (rewards + sandbox ids; advantages/tokens "
+    "need the prime-rl Monitor hook)",
 ) -> Annotated[HTMLString, "agentic_rl_report"]:
     """Render the run's lineage: gate, rollouts, sandbox join, weights.
 
@@ -58,6 +60,7 @@ def build_lineage_report(
         gate_verdict: The gate step's verdict dict.
         checkpoint_dir: The HF-format weights directory the trainer
             emitted (``<output_dir>/weights/step_N``), if any.
+        lineage_tier: The lineage tier label for the summary table.
 
     Returns:
         The rendered HTML report.
@@ -76,8 +79,7 @@ def build_lineage_report(
             rollout_table["infra_error"].notna().sum()
         ),
         "checkpoint": checkpoint_dir or "none recorded",
-        "lineage tier": "file (rewards + sandbox ids; advantages/tokens "
-        "need the prime-rl Monitor hook)",
+        "lineage tier": lineage_tier,
     }
 
     sample_walk = "<p>No completed rollout with a reward to walk.</p>"

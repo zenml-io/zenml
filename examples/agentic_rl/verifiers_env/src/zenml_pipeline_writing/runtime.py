@@ -44,6 +44,8 @@ from typing import Any, ClassVar, Dict, List, Optional
 
 from verifiers.v1.runtimes.base import ProgramResult, Runtime
 
+from zenml_pipeline_writing import step_tracking
+
 # Bounded sandbox creation: prime-rl runs many env workers per process,
 # and unbounded concurrent session creation trips the sandbox backend's
 # rate limits.
@@ -101,10 +103,20 @@ class ZenMLSandboxRuntime(Runtime):
         super().__init__(name=name or f"zenml-{uuid.uuid4().hex[:8]}")
         self.config = config
         self._session: Optional[Any] = None
+        self._step_run_id: Optional[uuid.UUID] = None
         self._workdir: str = getattr(config, "workdir", "/workspace")
         from verifiers.v1.runtimes.docker import DockerRuntimeInfo
 
         self.info = DockerRuntimeInfo(**config.model_dump())
+
+    @property
+    def step_run_id(self) -> Optional[uuid.UUID]:
+        """The id of the step run tracking this rollout, if any.
+
+        Returns:
+            The step run id, or None when tracking is inactive.
+        """
+        return self._step_run_id
 
     async def start(self) -> None:
         """Open a SandboxSession on the active stack's Sandbox component.
@@ -140,6 +152,14 @@ class ZenMLSandboxRuntime(Runtime):
             session.exec(
                 ["mkdir", "-p", self._workdir], cwd="/", env={}
             ).collect()
+            self._step_run_id = step_tracking.start_rollout_step(
+                name=self.name
+            )
+            if self._step_run_id:
+                step_tracking.log_rollout_metadata(
+                    step_run_id=self._step_run_id,
+                    metadata={"sandbox_session_id": session.id},
+                )
             return session
 
         self._session = await asyncio.to_thread(_start)
@@ -240,6 +260,8 @@ class ZenMLSandboxRuntime(Runtime):
         session = self._session
         self._session = None
         _live_sessions.pop(session.id, None)
+        step_run_id = self._step_run_id
+        self._step_run_id = None
 
         def _stop() -> None:
             try:
@@ -251,6 +273,10 @@ class ZenMLSandboxRuntime(Runtime):
                     session.close()
                 except Exception:
                     pass
+            if step_run_id:
+                step_tracking.finish_rollout_step(
+                    step_run_id=step_run_id, success=True
+                )
 
         await asyncio.to_thread(_stop)
 
@@ -261,7 +287,13 @@ class ZenMLSandboxRuntime(Runtime):
         session = self._session
         self._session = None
         _live_sessions.pop(session.id, None)
+        step_run_id = self._step_run_id
+        self._step_run_id = None
         try:
             session.destroy()
         except Exception:
             pass
+        if step_run_id:
+            step_tracking.finish_rollout_step(
+                step_run_id=step_run_id, success=False
+            )

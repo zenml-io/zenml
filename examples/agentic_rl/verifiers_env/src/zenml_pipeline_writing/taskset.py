@@ -24,6 +24,7 @@ Failure forensics contract: a crashed scorer is recorded as
 metric — never silently conflated with a genuine 0.0 reward.
 """
 
+import asyncio
 import json
 import re
 import shlex
@@ -32,6 +33,7 @@ from typing import Any, Dict, List
 
 import verifiers.v1 as vf
 
+from zenml_pipeline_writing import step_tracking
 from zenml_pipeline_writing.runtime import (  # noqa: F401 - re-export
     ZenMLSandboxRuntime,
 )
@@ -80,6 +82,36 @@ class PipelineWritingTask(vf.Task[PipelineWritingData]):
     async def sandbox_scored(
         self, trace: vf.Trace, runtime: vf.Runtime
     ) -> float:
+        """Score the completion and record the reward on the rollout's step run.
+
+        Args:
+            trace: The finished rollout trace (the last reply is the
+                completion).
+            runtime: The runtime the rollout ran in — with the ZenML
+                runtime selected this is a ZenML sandbox session.
+
+        Returns:
+            The verifier's 0-1 reward.
+        """
+        reward = await self._run_scorer(trace=trace, runtime=runtime)
+        if (
+            isinstance(runtime, ZenMLSandboxRuntime)
+            and runtime.step_run_id is not None
+        ):
+            metadata: Dict[str, Any] = {
+                "task": self.data.name,
+                "reward": reward,
+            }
+            if infra_error := trace.info.get("infra_error"):
+                metadata["infra_error"] = infra_error
+            await asyncio.to_thread(
+                step_tracking.log_rollout_metadata,
+                step_run_id=runtime.step_run_id,
+                metadata=metadata,
+            )
+        return reward
+
+    async def _run_scorer(self, trace: vf.Trace, runtime: vf.Runtime) -> float:
         """Score the completion with the spike's verifier, in-sandbox.
 
         Args:
