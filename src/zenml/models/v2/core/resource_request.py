@@ -16,9 +16,7 @@
 from datetime import datetime
 from typing import (
     Any,
-    ClassVar,
     Optional,
-    Union,
 )
 from uuid import UUID
 
@@ -32,10 +30,6 @@ from zenml.enums import (
     StackComponentType,
 )
 from zenml.models.v2.base.base import BaseZenModel
-from zenml.models.v2.base.filter import (
-    EnumFilterOption,
-    UUIDFilterOption,
-)
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
     UserScopedRequest,
@@ -623,39 +617,43 @@ class ResourceRequestResponse(
 class ResourceRequestFilter(UserScopedFilter):
     """Resource request filter model."""
 
-    FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
-        *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
-        "pipeline_run_id",
-    ]
-
-    reclaim_tolerance: Union[ResourceRequestReclaimTolerance, str, None] = (
-        Field(
-            default=None,
-            description="The reclaim behavior tolerated by the request.",
-        )
+    user: UUID | str | None = Field(
+        default=None,
+        description="Name/ID of the user that created the entity.",
+        union_mode="left_to_right",
     )
-    component_id: UUIDFilterOption = Field(
+    reclaim_tolerance: ResourceRequestReclaimTolerance | str | None = Field(
+        default=None,
+        description="The reclaim behavior tolerated by the request.",
+        union_mode="left_to_right",
+    )
+    component_id: UUID | str | None = Field(
         default=None,
         description="The component requesting resources.",
+        union_mode="left_to_right",
     )
-    step_run_id: UUIDFilterOption = Field(
+    step_run_id: UUID | str | None = Field(
         default=None,
         description="The step run requesting resources.",
+        union_mode="left_to_right",
     )
-    preemption_initiated_by_id: UUIDFilterOption = Field(
+    preemption_initiated_by_id: UUID | str | None = Field(
         default=None,
         description="The request that initiated preemption.",
+        union_mode="left_to_right",
     )
-    status: EnumFilterOption[ResourceRequestStatus] = Field(
+    status: ResourceRequestStatus | str | None = Field(
         default=None,
         description="The status of the resource request.",
         union_mode="left_to_right",
     )
-    pipeline_run_id: UUIDFilterOption = Field(
+    pipeline_run_id: UUID | str | None = Field(
         default=None,
         description="The pipeline run requesting resources.",
+        union_mode="left_to_right",
     )
-    pool_id: UUIDFilterOption = Field(
+    pool_id: UUID | str | None = Field(
         default=None,
         description="The resource pool linked to the request.",
+        union_mode="left_to_right",
     )
