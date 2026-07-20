@@ -41,6 +41,11 @@ class KubernetesStepOperatorSettings(BaseSettings):
         default=None,
         description="Pod configuration for step execution containers.",
     )
+    pod_count: PositiveInt = Field(
+        default=1,
+        description="Number of pods the step runs on. Values above 1 are "
+        "only allowed for command steps.",
+    )
     service_account_name: Optional[str] = Field(
         default=None,
         description="Kubernetes service account for step pods. Uses default account if not specified.",
