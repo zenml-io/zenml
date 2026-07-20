@@ -133,17 +133,16 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         Returns:
             Matching ZenML request responses.
         """
+        logger.debug(
+            f"Listing resource requests with filter model: {filter_model}"
+        )
         list_kwargs: dict[str, Any] = {}
         if filter_model.id is not None:
             list_kwargs["request_id"] = UUID(str(filter_model.id))
         if filter_model.component_id is not None:
             list_kwargs["subject_id"] = UUID(str(filter_model.component_id))
         elif filter_model.user is not None:
-            if isinstance(filter_model.user, list):
-                user_name_or_id = filter_model.user[0]
-            else:
-                user_name_or_id = filter_model.user
-            owner = self.store.get_user(user_name_or_id, hydrate=False)
+            owner = self.store.get_user(filter_model.user, hydrate=False)
             if owner.external_user_id is not None:
                 list_kwargs["subject_id"] = owner.external_user_id
         if filter_model.status is not None:
