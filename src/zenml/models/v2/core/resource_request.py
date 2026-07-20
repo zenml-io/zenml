@@ -18,18 +18,12 @@ from typing import (
     Any,
     ClassVar,
     Optional,
-    Type,
-    TypeVar,
     Union,
 )
 from uuid import UUID
 
 from pydantic import ConfigDict, Field, PositiveInt, model_validator
 
-from zenml.models.v2.base.filter import (
-    EnumFilterOption,
-    UUIDFilterOption,
-)
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import (
     ResourceRequestReclaimTolerance,
@@ -38,6 +32,10 @@ from zenml.enums import (
     StackComponentType,
 )
 from zenml.models.v2.base.base import BaseZenModel
+from zenml.models.v2.base.filter import (
+    EnumFilterOption,
+    UUIDFilterOption,
+)
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
     UserScopedRequest,
@@ -610,10 +608,6 @@ class ResourceRequestFilter(UserScopedFilter):
     FILTER_EXCLUDE_FIELDS: ClassVar[list[str]] = [
         *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "pipeline_run_id",
-    ]
-    API_SINGLE_INPUT_PARAMS: ClassVar[List[str]] = [
-        *UserScopedFilter.API_SINGLE_INPUT_PARAMS,
-        "preemptible",
     ]
 
     reclaim_tolerance: Union[ResourceRequestReclaimTolerance, str, None] = (

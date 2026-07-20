@@ -19,7 +19,7 @@ from uuid import uuid4
 
 import pytest
 
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import ExecutionStatus, StackComponentType, StepRuntime
 from zenml.orchestrators.step_launcher import (
     StepLauncher,
 )

@@ -671,7 +671,9 @@ class StepLauncher:
                     status=status, step_run_info=step_run_info
                 )
             finally:
-                self._cleanup_remote_step(step_run_info.step_run)
+                self._cleanup_remote_step(
+                    step_run_info.step_run, allocated_resource_request
+                )
 
         return None
 
@@ -710,11 +712,17 @@ class StepLauncher:
 
         return None
 
-    def _cleanup_remote_step(self, step_run: StepRunResponse) -> None:
+    def _cleanup_remote_step(
+        self,
+        step_run: StepRunResponse,
+        allocated_resource_request: Optional[ResourceRequestResponse],
+    ) -> None:
         """Clean up infrastructure after a remote step has finished.
 
         Args:
             step_run: The finished step run.
+            allocated_resource_request: The allocated resource request for the
+                step, if any.
         """
         try:
             if self._step.config.step_operator:
@@ -723,9 +731,9 @@ class StepLauncher:
                     if isinstance(self._step.config.step_operator, str)
                     else None
                 )
-                step_operator = _get_step_operator(
-                    stack=self._stack,
-                    step_operator_name=step_operator_name,
+                step_operator = self._stack.get_step_operator(
+                    name=step_operator_name,
+                    allocated_resource_request=allocated_resource_request,
                 )
                 step_operator.cleanup_step_submission(step_run)
             else:
