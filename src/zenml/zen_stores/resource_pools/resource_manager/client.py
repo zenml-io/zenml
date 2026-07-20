@@ -45,7 +45,15 @@ class CloudConnection(Protocol):
     def get(
         self, endpoint: str, params: Optional[dict[str, Any]]
     ) -> requests.Response:
-        """Send a GET request to the Cloud API."""
+        """Send a GET request to the Cloud API.
+
+        Args:
+            endpoint: Cloud API endpoint path.
+            params: Query parameters for the request.
+
+        Returns:
+            Response returned by the Cloud API.
+        """
 
 
 class ResourceManagerAuthorization(BaseModel):

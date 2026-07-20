@@ -61,7 +61,15 @@ PROJECT_ID_METADATA_KEY = "project_id"
 def _normalize_timestamps(
     created: Optional[datetime], updated: Optional[datetime]
 ) -> tuple[datetime, datetime]:
-    """Normalize optional RM timestamps for ZenML response bodies."""
+    """Normalize optional RM timestamps for ZenML response bodies.
+
+    Args:
+        created: Optional Resource Manager creation timestamp.
+        updated: Optional Resource Manager update timestamp.
+
+    Returns:
+        Normalized creation and update timestamps.
+    """
     now = utc_now()
     created_at = created or now
     updated_at = updated or created_at
@@ -69,13 +77,30 @@ def _normalize_timestamps(
 
 
 def _metadata_string(metadata: dict[str, Any], key: str) -> Optional[str]:
-    """Read a string metadata value when present."""
+    """Read a string metadata value when present.
+
+    Args:
+        metadata: Metadata values to read from.
+        key: Metadata key to read.
+
+    Returns:
+        Metadata value converted to a string, or `None` if it is absent.
+    """
     value = metadata.get(key)
     return None if value is None else str(value)
 
 
 def _metadata_uuid(metadata: dict[str, Any], key: str) -> Optional[UUID]:
-    """Read a UUID metadata value when present."""
+    """Read a UUID metadata value when present.
+
+    Args:
+        metadata: Metadata values to read from.
+        key: Metadata key to read.
+
+    Returns:
+        Metadata value converted to a UUID, or `None` if it is absent or
+        invalid.
+    """
     value = metadata.get(key)
     if value is None:
         return None
@@ -164,7 +189,14 @@ class RMSubject(BaseModel):
         return self.child.leaf
 
     def find(self, subject_id: UUID) -> Optional["RMSubject"]:
-        """Find a subject by ID in this chain."""
+        """Find a subject by ID in this chain.
+
+        Args:
+            subject_id: Subject ID to find.
+
+        Returns:
+            Matching subject, or `None` if no subject in the chain matches.
+        """
         if self.subject_id == subject_id:
             return self
         if self.child is None:
@@ -173,7 +205,14 @@ class RMSubject(BaseModel):
 
     @staticmethod
     def _optional_values(**values: Any) -> dict[str, Any]:
-        """Build Resource Manager payload data without empty optional values."""
+        """Build Resource Manager payload data without empty optional values.
+
+        Args:
+            values: Optional values to include in the payload.
+
+        Returns:
+            Payload data without `None` or empty-string values.
+        """
         payload: dict[str, Any] = {}
         for key, value in values.items():
             if value is None:
@@ -185,7 +224,14 @@ class RMSubject(BaseModel):
 
     @classmethod
     def _name_attributes(cls, name: Optional[str] = None) -> dict[str, Any]:
-        """Build common name attributes for hierarchy subjects."""
+        """Build common name attributes for hierarchy subjects.
+
+        Args:
+            name: Optional subject name.
+
+        Returns:
+            Subject attributes containing the name when present.
+        """
         return cls._optional_values(name=name)
 
     @classmethod
@@ -196,7 +242,16 @@ class RMSubject(BaseModel):
         organization_name: Optional[str] = None,
         child: Optional["RMSubject"] = None,
     ) -> "RMSubject":
-        """Build an organization-rooted subject chain."""
+        """Build an organization-rooted subject chain.
+
+        Args:
+            organization_id: ZenML Pro organization ID.
+            organization_name: Optional ZenML Pro organization name.
+            child: Optional child subject node.
+
+        Returns:
+            Organization-rooted Resource Manager subject chain.
+        """
         return cls(
             subject_id=organization_id,
             subject_type=ORGANIZATION_SUBJECT_TYPE,
@@ -212,7 +267,16 @@ class RMSubject(BaseModel):
         workspace_name: Optional[str] = None,
         child: Optional["RMSubject"] = None,
     ) -> "RMSubject":
-        """Build a workspace subject chain node."""
+        """Build a workspace subject chain node.
+
+        Args:
+            workspace_id: ZenML Pro workspace ID.
+            workspace_name: Optional ZenML Pro workspace name.
+            child: Optional child subject node.
+
+        Returns:
+            Workspace Resource Manager subject chain node.
+        """
         return cls(
             subject_id=workspace_id,
             subject_type=WORKSPACE_SUBJECT_TYPE,
@@ -230,7 +294,18 @@ class RMSubject(BaseModel):
         organization_name: Optional[str] = None,
         workspace_name: Optional[str] = None,
     ) -> "RMSubject":
-        """Build an inline subject for a ZenML stack component."""
+        """Build an inline subject for a ZenML stack component.
+
+        Args:
+            component: ZenML stack component response.
+            organization_id: ZenML Pro organization ID.
+            workspace_id: ZenML Pro workspace ID.
+            organization_name: Optional ZenML Pro organization name.
+            workspace_name: Optional ZenML Pro workspace name.
+
+        Returns:
+            Resource Manager subject chain for the stack component.
+        """
         return cls._organization(
             organization_id=organization_id,
             organization_name=organization_name,
@@ -265,7 +340,20 @@ class RMSubject(BaseModel):
         effective_resource_type: Optional[str] = None,
         effective_resource_id: Optional[str] = None,
     ) -> "RMSubject":
-        """Build an inline subject for a workspace service connector."""
+        """Build an inline subject for a workspace service connector.
+
+        Args:
+            connector: ZenML service connector response.
+            organization_id: ZenML Pro organization ID.
+            workspace_id: ZenML Pro workspace ID.
+            organization_name: Optional ZenML Pro organization name.
+            workspace_name: Optional ZenML Pro workspace name.
+            effective_resource_type: Optional service connector resource type.
+            effective_resource_id: Optional service connector resource ID.
+
+        Returns:
+            Resource Manager subject chain for the service connector.
+        """
         return cls._organization(
             organization_id=organization_id,
             organization_name=organization_name,
@@ -295,7 +383,19 @@ class RMSubject(BaseModel):
         organization_id: UUID,
         organization_name: Optional[str] = None,
     ) -> "RMSubject":
-        """Build an inline subject for a ZenML account identity."""
+        """Build an inline subject for a ZenML account identity.
+
+        Args:
+            user: ZenML user response.
+            organization_id: ZenML Pro organization ID.
+            organization_name: Optional ZenML Pro organization name.
+
+        Returns:
+            Resource Manager subject for the account identity.
+
+        Raises:
+            ValueError: If the ZenML user has no external account ID.
+        """
         if user.external_user_id is None:
             raise ValueError(
                 f"User '{user.id}' has no external account id configured."
@@ -334,7 +434,21 @@ class RMSubject(BaseModel):
         project_name: Optional[str] = None,
         pipeline_name: Optional[str] = None,
     ) -> "RMSubject":
-        """Build an organization -> workspace -> project -> pipeline subject."""
+        """Build an organization -> workspace -> project -> pipeline subject.
+
+        Args:
+            organization_id: ZenML Pro organization ID.
+            workspace_id: ZenML Pro workspace ID.
+            project_id: ZenML project ID.
+            pipeline_id: ZenML pipeline ID.
+            organization_name: Optional ZenML Pro organization name.
+            workspace_name: Optional ZenML Pro workspace name.
+            project_name: Optional ZenML project name.
+            pipeline_name: Optional ZenML pipeline name.
+
+        Returns:
+            Resource Manager subject chain for the pipeline.
+        """
         return cls._organization(
             organization_id=organization_id,
             organization_name=organization_name,
@@ -381,7 +495,25 @@ class RMSubject(BaseModel):
         pipeline_name: Optional[str] = None,
         step_name: Optional[str] = None,
     ) -> "RMSubject":
-        """Build a scoped pipeline-run -> step-run subject chain."""
+        """Build a scoped pipeline-run -> step-run subject chain.
+
+        Args:
+            organization_id: ZenML Pro organization ID.
+            workspace_id: ZenML Pro workspace ID.
+            project_id: ZenML project ID.
+            pipeline_run_id: ZenML pipeline run ID.
+            step_run_id: ZenML step run ID.
+            organization_name: Optional ZenML Pro organization name.
+            workspace_name: Optional ZenML Pro workspace name.
+            project_name: Optional ZenML project name.
+            pipeline_run_name: Optional ZenML pipeline run name.
+            pipeline_id: Optional ZenML pipeline ID.
+            pipeline_name: Optional ZenML pipeline name.
+            step_name: Optional ZenML step name.
+
+        Returns:
+            Resource Manager subject chain for the step run.
+        """
         return cls._organization(
             organization_id=organization_id,
             organization_name=organization_name,
@@ -451,7 +583,14 @@ class RMRequestDemand(BaseModel):
 
     @classmethod
     def from_model(cls, demand: ResourceRequestDemand) -> "RMRequestDemand":
-        """Build a demand payload from a ZenML resource demand."""
+        """Build a demand payload from a ZenML resource demand.
+
+        Args:
+            demand: ZenML resource demand model.
+
+        Returns:
+            Resource Manager demand payload.
+        """
         resource = (
             demand.resource_id
             if demand.resource_id is not None
@@ -468,7 +607,11 @@ class RMRequestDemand(BaseModel):
         )
 
     def to_model(self) -> ResourceRequestDemand:
-        """Convert this demand into a ZenML resource demand."""
+        """Convert this demand into a ZenML resource demand.
+
+        Returns:
+            ZenML resource demand model.
+        """
         return ResourceRequestDemand(
             resource_id=self.resource_id,
             resource=self.resource,
@@ -504,7 +647,21 @@ class RMResourceRequestCreate(BaseModel):
         preemption_group: Optional[RMSubjectSelectorNode] = None,
         user_id: Optional[UUID] = None,
     ) -> "RMResourceRequestCreate":
-        """Build a runtime request create payload from a ZenML request."""
+        """Build a runtime request create payload from a ZenML request.
+
+        Args:
+            resource_request: ZenML resource request model.
+            subjects: Resource Manager subject chains attached to the request.
+            preemption_group: Optional Resource Manager preemption group
+                selector.
+            user_id: Optional ZenML Pro user ID.
+
+        Returns:
+            Resource Manager request create payload.
+
+        Raises:
+            ValueError: If component IDs are set without a step run ID.
+        """
         if (
             resource_request.component_ids
             and resource_request.step_run_id is None
@@ -584,7 +741,11 @@ class RMResourceRequestResponse(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
     def to_model(self) -> ResourceRequestResponse:
-        """Convert this runtime request response into a ZenML response."""
+        """Convert this runtime request response into a ZenML response.
+
+        Returns:
+            ZenML resource request response model.
+        """
         created, updated = _normalize_timestamps(self.created, self.updated)
         component_settings: dict[str, Any] = {}
         service_connector_settings: (
@@ -691,7 +852,11 @@ class RMQueueEntryResponse(BaseModel):
     created: Optional[datetime] = None
 
     def to_model(self) -> ResourcePoolQueueItem:
-        """Convert this queue entry into a ZenML queue item."""
+        """Convert this queue entry into a ZenML queue item.
+
+        Returns:
+            ZenML resource pool queue item.
+        """
         return ResourcePoolQueueItem(
             id=self.id,
             request_id=self.request_id,
@@ -714,7 +879,11 @@ class RMTargetSettingsResponse(BaseModel):
     def to_service_connector_settings(
         self,
     ) -> ResourceRequestServiceConnectorSettings:
-        """Convert service connector target settings into a ZenML model."""
+        """Convert service connector target settings into a ZenML model.
+
+        Returns:
+            ZenML service connector settings model.
+        """
         connector_id = self.settings.get("connector_id")
         return ResourceRequestServiceConnectorSettings(
             connector_id=UUID(str(connector_id)) if connector_id else None,
@@ -755,7 +924,15 @@ class RMAllocationResponse(BaseModel):
         *,
         request_subjects: list[RMSubject] | None = None,
     ) -> tuple[Optional[UUID], Optional[UUID]]:
-        """Resolve matched subjects into component and account IDs."""
+        """Resolve matched subjects into component and account IDs.
+
+        Args:
+            request_subjects: Request subject chains used to resolve matched
+                Resource Manager subject IDs.
+
+        Returns:
+            Component and account IDs resolved from matched subjects.
+        """
         for matched_subject_id in self.matched_subject_ids:
             for subject in request_subjects or []:
                 matched_subject = subject.find(matched_subject_id)
@@ -774,7 +951,15 @@ class RMAllocationResponse(BaseModel):
         *,
         request_subjects: list[RMSubject] | None = None,
     ) -> ResourcePoolAllocation:
-        """Convert this allocation into a ZenML allocation."""
+        """Convert this allocation into a ZenML allocation.
+
+        Args:
+            request_subjects: Request subject chains used to resolve component
+                and account IDs.
+
+        Returns:
+            ZenML resource pool allocation model.
+        """
         component_id, account_id = self._resolve_subject_ids(
             request_subjects=request_subjects
         )
