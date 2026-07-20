@@ -472,7 +472,17 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
         responses: Sequence[BaseModel],
         models: list[UserScopedResponseT],
     ) -> list[UserScopedResponseT]:
-        """Populate ZenML user fields from Resource Manager metadata in bulk."""
+        """Populate ZenML user fields from Resource Manager metadata in bulk.
+
+        Args:
+            responses: Resource Manager responses that contain provenance
+                metadata.
+            models: ZenML response models converted from the Resource Manager
+                responses.
+
+        Returns:
+            ZenML response models with user fields populated where possible.
+        """
         external_user_ids_by_index: dict[int, UUID] = {}
         external_user_ids: set[UUID] = set()
         for index, response in enumerate(responses):
@@ -500,7 +510,14 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
     def _users_by_external_id(
         self, external_user_ids: set[UUID]
     ) -> dict[UUID, UserResponse]:
-        """Fetch ZenML users keyed by external ZenML Pro user ID."""
+        """Fetch ZenML users keyed by external ZenML Pro user ID.
+
+        Args:
+            external_user_ids: External ZenML Pro user IDs to resolve.
+
+        Returns:
+            ZenML users keyed by their external ZenML Pro user ID.
+        """
         external_user_id_filter = "oneof:" + json.dumps(
             sorted(str(user_id) for user_id in external_user_ids)
         )
@@ -521,7 +538,14 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
     def _external_user_id_from_metadata(
         metadata: dict[str, Any],
     ) -> Optional[UUID]:
-        """Extract an external ZenML Pro user ID from RM metadata."""
+        """Extract an external ZenML Pro user ID from RM metadata.
+
+        Args:
+            metadata: Resource Manager metadata values.
+
+        Returns:
+            External ZenML Pro user ID if present and valid.
+        """
         value = metadata.get(USER_ID_METADATA_KEY)
         if value is None:
             return None
@@ -531,7 +555,14 @@ class ResourceManagerResourcePoolsStore(ResourcePoolsSQLStoreInterface):
             return None
 
     def _page(self, items: list[PageItemT]) -> Page[PageItemT]:
-        """Build a ZenML page for a full Resource Manager result set."""
+        """Build a ZenML page for a full Resource Manager result set.
+
+        Args:
+            items: Items to include in the page.
+
+        Returns:
+            ZenML page containing the full Resource Manager result set.
+        """
         return Page(
             index=1,
             max_size=max(len(items), 1),

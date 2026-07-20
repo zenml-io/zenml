@@ -75,7 +75,17 @@ def _call_with_optional_allocated_resource_request(
     allocated_resource_request: Optional["ResourceRequestResponse"],
     **kwargs: Any,
 ) -> Any:
-    """Call a method with the allocation keyword when it is supported."""
+    """Call a method with the allocation keyword when it is supported.
+
+    Args:
+        method: Method to call.
+        allocated_resource_request: Allocated resource request to pass when
+            supported by the method signature.
+        kwargs: Keyword arguments forwarded to the method.
+
+    Returns:
+        The return value from the method call.
+    """
     parameters = inspect.signature(method).parameters
     if "allocated_resource_request" in parameters or any(
         parameter.kind == inspect.Parameter.VAR_KEYWORD
@@ -332,7 +342,11 @@ class StepLauncher:
         return step_run
 
     def _runs_with_dynamic_orchestrator(self) -> bool:
-        """Whether this launcher will submit a dynamic isolated step."""
+        """Whether this launcher will submit a dynamic isolated step.
+
+        Returns:
+            Whether this launcher will submit a dynamic isolated step.
+        """
         if not self._snapshot.is_dynamic or self._step.config.step_operator:
             return False
 

@@ -1659,7 +1659,15 @@ def apply_resource_request_allocations_to_pod_settings(
 
 
 def _cpu_allocation_to_millicores(quantity: int, unit: Optional[str]) -> int:
-    """Convert a CPU allocation to Kubernetes millicores."""
+    """Convert a CPU allocation to Kubernetes millicores.
+
+    Args:
+        quantity: CPU allocation quantity.
+        unit: CPU allocation unit.
+
+    Returns:
+        CPU allocation expressed in Kubernetes millicores.
+    """
     if unit is None:
         if quantity > 50:
             return quantity
@@ -1679,14 +1687,29 @@ def _cpu_allocation_to_millicores(quantity: int, unit: Optional[str]) -> int:
 
 
 def _format_cpu_millicores(millicores: int) -> str:
-    """Format Kubernetes CPU quantity from millicores."""
+    """Format Kubernetes CPU quantity from millicores.
+
+    Args:
+        millicores: CPU quantity in millicores.
+
+    Returns:
+        Kubernetes CPU quantity string.
+    """
     if millicores % 1000 == 0:
         return str(millicores // 1000)
     return f"{millicores}m"
 
 
 def _memory_allocation_to_bytes(quantity: int, unit: Optional[str]) -> int:
-    """Convert a memory allocation to bytes."""
+    """Convert a memory allocation to bytes.
+
+    Args:
+        quantity: Memory allocation quantity.
+        unit: Memory allocation unit.
+
+    Returns:
+        Memory allocation expressed in bytes.
+    """
     if unit is None:
         logger.warning("Interpreting memory allocation without a unit as MiB.")
         return quantity * ByteUnit.MIB.byte_value
