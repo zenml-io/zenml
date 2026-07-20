@@ -119,6 +119,44 @@ def test_collect_exception_information_includes_source_and_message():
     assert info.message == "failure"
 
 
+def test_collect_exception_information_includes_cause_and_exception_line():
+    """Test that the traceback includes chained causes and the exception line."""
+    try:
+        try:
+            raise TypeError("root cause")
+        except TypeError as e:
+            raise ValueError("wrapper") from e
+    except ValueError as exception:
+        info = collect_exception_information(exception)
+
+    assert "TypeError: root cause" in info.traceback
+    assert (
+        "The above exception was the direct cause of the following exception:"
+        in info.traceback
+    )
+    assert "ValueError: wrapper" in info.traceback
+
+
+def _failing_user_func() -> None:
+    raise ValueError("failure in user code")
+
+
+def test_collect_exception_information_trims_to_user_code():
+    """Test that the traceback starts at the user code frame."""
+    try:
+        _failing_user_func()
+    except ValueError as exception:
+        info = collect_exception_information(exception, _failing_user_func)
+
+    first_line = info.traceback.splitlines()[0]
+    assert "_failing_user_func" in first_line
+    assert "test_collect_exception_information_trims_to_user_code" not in (
+        info.traceback
+    )
+    assert "ValueError: failure in user code" in info.traceback
+    assert info.user_code_line == 1
+
+
 def test_reconstruct_exception_recreates_exception_type_and_message():
     """Test reconstruction of an exception from serialized exception info."""
     try:
