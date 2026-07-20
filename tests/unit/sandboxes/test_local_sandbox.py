@@ -444,11 +444,50 @@ class TestOptionalMethods:
         with pytest.raises(NotImplementedError):
             _make_local_sandbox().attach("local-xyz")
 
-    def test_upload_file_default_raises(self) -> None:
+
+class TestFileTransfer:
+    def test_file_roundtrip(self, tmp_path) -> None:
         session = _make_local_sandbox().create_session()
         try:
-            with pytest.raises(NotImplementedError):
-                session.upload_file("/local", "/remote")
+            source = tmp_path / "a.txt"
+            source.write_text("hello")
+            session.upload_file(str(source), "sub/a.txt")
+            target = tmp_path / "b.txt"
+            session.download_file("sub/a.txt", str(target))
+            assert target.read_text() == "hello"
+        finally:
+            session.close()
+
+    def test_absolute_path_inside_workdir_is_allowed(self, tmp_path) -> None:
+        session = _make_local_sandbox().create_session()
+        try:
+            source = tmp_path / "a.txt"
+            source.write_text("hello")
+            destination = os.path.join(session._workdir, "a.txt")
+            session.upload_file(str(source), destination)
+            target = tmp_path / "b.txt"
+            session.download_file(destination, str(target))
+            assert target.read_text() == "hello"
+        finally:
+            session.close()
+
+    def test_path_outside_workdir_raises(self, tmp_path) -> None:
+        session = _make_local_sandbox().create_session()
+        try:
+            source = tmp_path / "a.txt"
+            source.write_text("hello")
+            with pytest.raises(ValueError):
+                session.upload_file(str(source), str(tmp_path / "b.txt"))
+            with pytest.raises(ValueError):
+                session.download_file("../escape.txt", str(tmp_path / "c"))
+        finally:
+            session.close()
+
+    def test_download_missing_file_raises(self, tmp_path) -> None:
+        session = _make_local_sandbox().create_session()
+        try:
+            with pytest.raises(FileNotFoundError):
+                session.download_file("missing.txt", str(tmp_path / "x"))
         finally:
             session.close()
 
