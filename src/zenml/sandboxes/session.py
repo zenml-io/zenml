@@ -186,6 +186,12 @@ class SandboxSession(ABC):
     def upload_file(self, local_path: str, remote_path: str) -> None:
         """Upload a file to the sandbox session.
 
+        Path contract (all flavors): a relative ``remote_path`` resolves
+        against the session's working directory — the same directory
+        `exec()` uses as its default ``cwd``. Absolute paths address the
+        sandbox filesystem on container-backed flavors; the local flavor
+        only accepts absolute paths inside its session workdir.
+
         Args:
             local_path: Source path on the caller's filesystem.
             remote_path: Destination path in the sandbox.
@@ -209,6 +215,12 @@ class SandboxSession(ABC):
 
     def download_file(self, remote_path: str, local_path: str) -> None:
         """Download a file from the sandbox to the local filesystem.
+
+        Path contract (all flavors): a relative ``remote_path`` resolves
+        against the session's working directory — the same directory
+        `exec()` uses as its default ``cwd``. Absolute paths address the
+        sandbox filesystem on container-backed flavors; the local flavor
+        only accepts absolute paths inside its session workdir.
 
         Args:
             remote_path: Source path in the sandbox.

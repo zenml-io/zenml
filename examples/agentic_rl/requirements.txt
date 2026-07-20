@@ -1,0 +1,13 @@
+# Pipeline venv of the agentic RL example (Env A in the README).
+# Python >= 3.12 (harbor's wheel floor). Recorded pins as of 2026-07-15;
+# both ecosystems move fast — treat any bump as tracked work.
+#
+# zenml comes from the repo checkout while this example lives in-repo:
+#   uv pip install -e "../..[local]"
+harbor>=0.18,<0.19
+click>=8.0
+pandas>=2.0
+
+# NOT installed here on purpose:
+# - prime-rl: git-only, owns its own uv environment (Env C). See README.
+# - verifiers: vendored inside prime-rl; only needed in Env C.

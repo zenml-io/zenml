@@ -14,6 +14,7 @@
 """Tests for the Sandbox environment bridge (skipped without Harbor)."""
 
 import asyncio
+import contextvars
 import threading
 from types import SimpleNamespace
 
@@ -80,6 +81,15 @@ def _bridge(
     env._persistent_env = {"PERSISTENT": "1"}
     env.session_id = "hello__test123"
     env.task_env_config = TaskEnvironmentConfig(**env_config)
+    # Instance state harbor's BaseEnvironment.__init__ sets and its exec
+    # helpers (_merge_env) read; the fixture bypasses __init__, so it
+    # must provide them itself.
+    env._exec_env_overlays = contextvars.ContextVar(
+        "exec_env_overlays", default=()
+    )
+    env._output_callbacks = contextvars.ContextVar(
+        "output_callbacks", default=()
+    )
     return env
 
 
@@ -137,22 +147,48 @@ def test_settings_override_none_without_image() -> None:
     assert env._settings_override(sandbox) is None
 
 
-def test_settings_override_rejects_non_modal_flavor() -> None:
-    """A pinned docker_image on a non-Modal flavor is refused."""
+def test_settings_override_rejects_flavor_without_image_knob() -> None:
+    """A pinned docker_image on a flavor without an image knob is refused."""
     env = _bridge(_FakeSession(), docker_image="python:3.11-slim")
-    sandbox = SimpleNamespace(flavor="kubernetes")
-    with pytest.raises(NotImplementedError, match="Modal"):
+    sandbox = SimpleNamespace(
+        flavor="local", image_settings=lambda image: None
+    )
+    with pytest.raises(NotImplementedError, match="image"):
         env._settings_override(sandbox)
 
 
-def test_start_refuses_network_isolation(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """allow_internet=false is refused rather than silently ignored."""
-    env = _bridge(_FakeSession(), allow_internet=False)
-    _patch_active_sandbox(monkeypatch, SimpleNamespace(flavor="modal"))
-    with pytest.raises(NotImplementedError, match="allow_internet"):
-        asyncio.run(env.start(force_build=False))
+def test_settings_override_uses_flavor_image_settings() -> None:
+    """A pinned docker_image is translated via the flavor's capability."""
+    env = _bridge(_FakeSession(), docker_image="python:3.11-slim")
+    marker = SimpleNamespace(image="python:3.11-slim")
+    sandbox = SimpleNamespace(
+        flavor="kubernetes", image_settings=lambda image: marker
+    )
+    assert env._settings_override(sandbox) is marker
+
+
+def test_network_isolation_rejected_by_harbor_validation() -> None:
+    """Isolation-requiring policies are rejected at construction.
+
+    The bridge declares no network isolation capabilities, so harbor's
+    own capability validation refuses no-network/allowlist policies —
+    the bridge no longer needs (or has) its own check.
+    """
+    from harbor.models.task.config import NetworkMode, NetworkPolicy
+
+    env = _bridge(_FakeSession())
+    with pytest.raises(ValueError, match="no-network"):
+        env.validate_network_policy_support(
+            NetworkPolicy(network_mode=NetworkMode.NO_NETWORK)
+        )
+    with pytest.raises(ValueError, match="allowlist"):
+        env.validate_network_policy_support(
+            NetworkPolicy(network_mode=NetworkMode.ALLOWLIST)
+        )
+    # The default public policy passes.
+    env.validate_network_policy_support(
+        NetworkPolicy(network_mode=NetworkMode.PUBLIC)
+    )
 
 
 def test_start_requires_sandbox_component(

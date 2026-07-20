@@ -245,6 +245,48 @@ Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/i
 
 For more information and a full list of configurable attributes of the Kubernetes steop operator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubernetes.html#zenml.integrations.kubernetes) .
 
+#### Multi-node command steps (distributed training)
+
+Command steps — steps that run an opaque command owning its own
+distributed launch (`torchrun`, prime-rl's entrypoints, Ray) — can run
+across multiple pods by setting `node_count`:
+
+```python
+from zenml import CommandStep
+
+train = CommandStep(
+    command=[
+        "bash", "-lc",
+        "torchrun --nnodes=$ZENML_NODE_COUNT "
+        "--node-rank=$JOB_COMPLETION_INDEX "
+        "--master-addr=$ZENML_MASTER_ADDR "
+        "--master-port=$ZENML_MASTER_PORT train.py",
+    ],
+    name="train",
+    step_operator="k8s",
+    settings={"step_operator": KubernetesStepOperatorSettings(node_count=4)},
+)
+```
+
+The step becomes an indexed Kubernetes Job (`completions = parallelism
+= node_count`) plus a headless service for stable pod-to-pod DNS, with
+`ZENML_NODE_COUNT`, `ZENML_MASTER_ADDR` (the rank-0 pod's DNS name),
+and `ZENML_MASTER_PORT` injected; Kubernetes itself injects each pod's
+rank as `JOB_COMPLETION_INDEX`. **Only the rank-0 pod runs ZenML's
+step machinery** (status, logs, the success publish — one bookkeeper);
+every other rank executes the command directly. All ranks must exit 0
+for the step to succeed. The service is owned by the Job, so
+cancellation, TTL cleanup, or deletion reap everything — teardown never
+depends on step code running.
+
+Regular (non-command) steps are refused at `node_count > 1`: they would
+duplicate their artifacts, outputs, and logs on every node.
+
+To run long-lived servers (an inference endpoint, a rendezvous store)
+next to a step, use a long-running service (`KubernetesPodService`)
+rather than extra nodes: named services have URLs known before
+provisioning, so a command can reference them.
+
 #### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use this step operator to run steps on a GPU, you will need to follow [the instructions on this page](https://docs.zenml.io/user-guides/tutorial/distributed-training/) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.

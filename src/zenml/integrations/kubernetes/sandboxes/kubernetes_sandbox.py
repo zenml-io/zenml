@@ -565,6 +565,17 @@ class KubernetesSandbox(BaseSandbox):
         """
         return KubernetesSandboxSettings
 
+    def image_settings(self, image: str) -> Optional[BaseSandboxSettings]:
+        """Build a settings override that pins the pod image.
+
+        Args:
+            image: The container image reference to pin.
+
+        Returns:
+            Kubernetes sandbox settings carrying the image.
+        """
+        return KubernetesSandboxSettings(image=image)
+
     def build_kube_client(self) -> k8s_client.ApiClient:
         """Build a new Kubernetes API client.
 

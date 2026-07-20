@@ -49,7 +49,7 @@ class HarborIntegration(Integration):
     """Definition of Harbor integration for ZenML."""
 
     NAME = HARBOR
-    REQUIREMENTS = ["harbor>=0.8,<0.9"]
+    REQUIREMENTS = ["harbor>=0.18,<0.19"]
 
     @classmethod
     def check_installation(cls) -> bool:

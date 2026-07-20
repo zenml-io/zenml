@@ -14,6 +14,7 @@
 """Kubernetes step operator implementation."""
 
 import random
+import shlex
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Type, cast
 
 from kubernetes import client as k8s_client
@@ -47,6 +48,166 @@ logger = get_logger(__name__)
 
 KUBERNETES_STEP_OPERATOR_DOCKER_IMAGE_KEY = "kubernetes_step_operator"
 STEP_JOB_NAME_METADATA_KEY = "job_name"
+
+# Rendezvous port injected into multi-node command steps. Launchers that
+# need a different port own their own flags (torchrun --master-port).
+MULTI_NODE_RENDEZVOUS_PORT = 29500
+
+
+def validate_multi_node_step(
+    node_count: int, is_command_step: bool, step_name: str
+) -> None:
+    """Gate multi-node execution on command steps.
+
+    A multi-node job runs the same entrypoint on every node. A regular
+    step would duplicate its artifacts, outputs and logs across nodes,
+    so only command steps — which own their distributed launch
+    (torchrun, prime-rl entrypoints, Ray) — may scale out.
+
+    Args:
+        node_count: The requested node count.
+        is_command_step: Whether the step is a command step.
+        step_name: The step name, for the error message.
+
+    Raises:
+        RuntimeError: If a regular step requests more than one node.
+    """
+    if node_count > 1 and not is_command_step:
+        raise RuntimeError(
+            f"The step `{step_name}` requests node_count={node_count} "
+            "but is a regular step. Running a regular step on multiple "
+            "nodes would duplicate its artifacts, outputs and logs "
+            "across every node. Use a CommandStep that owns its "
+            "distributed launch instead, e.g. "
+            '`CommandStep(command=["bash", "-lc", "torchrun '
+            "--nnodes=$ZENML_NODE_COUNT --node-rank=$JOB_COMPLETION_INDEX "
+            "--master-addr=$ZENML_MASTER_ADDR "
+            '--master-port=$ZENML_MASTER_PORT train.py"])`. '
+            "Keep node_count=1 for regular steps."
+        )
+
+
+def multi_node_environment(
+    job_name: str, namespace: str, node_count: int
+) -> Dict[str, str]:
+    """Rendezvous environment for the pods of a multi-node job.
+
+    The per-pod rank is NOT included here: Kubernetes injects
+    ``JOB_COMPLETION_INDEX`` into every pod of an indexed job.
+
+    Args:
+        job_name: The job name (also the headless service name).
+        namespace: The Kubernetes namespace.
+        node_count: The number of pods.
+
+    Returns:
+        Environment variables shared by all pods of the job.
+    """
+    # Indexed-job pods get the hostname `<job-name>-<index>`; with the
+    # pod spec's subdomain pointing at the headless service, index 0
+    # resolves at this stable DNS name.
+    return {
+        "ZENML_NODE_COUNT": str(node_count),
+        "ZENML_MASTER_ADDR": f"{job_name}-0.{job_name}.{namespace}.svc",
+        "ZENML_MASTER_PORT": str(MULTI_NODE_RENDEZVOUS_PORT),
+    }
+
+
+def build_rank_dispatch_command(
+    zenml_entrypoint_command: List[str], raw_command: List[str]
+) -> List[str]:
+    """Shell dispatch: rank 0 runs ZenML's entrypoint, other ranks the command.
+
+    Every pod of an indexed job runs the same template, but only ONE pod
+    may run the ZenML step entrypoint: it executes ``StepRunner.run``
+    for the step run id, and N concurrent runners would race on status
+    updates, the step logs record, and the success publish — the losers
+    exit non-zero and fail the job even when the workload succeeded.
+    Rank 0 therefore runs the full entrypoint (which executes the
+    command step's command as its step function); every other rank runs
+    the raw command directly — correct SPMD semantics, since the
+    command owns its distributed launch and reads its rank from
+    ``JOB_COMPLETION_INDEX``.
+
+    Args:
+        zenml_entrypoint_command: ZenML's step entrypoint command.
+        raw_command: The command step's configured command.
+
+    Returns:
+        A single ``sh -c`` command implementing the dispatch.
+    """
+    zenml_part = shlex.join(zenml_entrypoint_command)
+    raw_part = shlex.join(raw_command)
+    script = (
+        'if [ "${JOB_COMPLETION_INDEX:-0}" = "0" ]; then '
+        f"exec {zenml_part}; "
+        f"else exec {raw_part}; fi"
+    )
+    return ["/bin/sh", "-c", script]
+
+
+def apply_indexed_completion(
+    job_manifest: k8s_client.V1Job, node_count: int
+) -> None:
+    """Turn a single-pod job manifest into an indexed multi-pod job.
+
+    Args:
+        job_manifest: The job manifest to modify in place.
+        node_count: The number of pods to run in parallel.
+    """
+    job_manifest.spec.parallelism = node_count
+    job_manifest.spec.completions = node_count
+    job_manifest.spec.completion_mode = "Indexed"
+    # Stable per-pod DNS: hostname is set by Kubernetes for indexed
+    # jobs; the subdomain ties it to the headless service (same name
+    # as the job).
+    job_manifest.spec.template.spec.subdomain = job_manifest.metadata.name
+
+
+def build_headless_service_manifest(
+    job: k8s_client.V1Job,
+) -> k8s_client.V1Service:
+    """Headless discovery service for the pods of a multi-node job.
+
+    The service is owned by the job, so Kubernetes garbage collection
+    removes it with the job (TTL, cancellation, deletion) — teardown
+    must not depend on step code running.
+
+    Args:
+        job: The created job (its uid anchors the owner reference).
+
+    Returns:
+        The service manifest.
+    """
+    job_name = job.metadata.name
+    return k8s_client.V1Service(
+        metadata=k8s_client.V1ObjectMeta(
+            name=job_name,
+            labels=job.metadata.labels,
+            owner_references=[
+                k8s_client.V1OwnerReference(
+                    api_version="batch/v1",
+                    kind="Job",
+                    name=job_name,
+                    uid=job.metadata.uid,
+                    controller=False,
+                    block_owner_deletion=False,
+                )
+            ],
+        ),
+        spec=k8s_client.V1ServiceSpec(
+            cluster_ip="None",
+            # Kubernetes labels every pod of a job with job-name.
+            selector={"job-name": job_name},
+            ports=[
+                k8s_client.V1ServicePort(
+                    name="rendezvous", port=MULTI_NODE_RENDEZVOUS_PORT
+                )
+            ],
+            # Pods must be resolvable during startup, before readiness.
+            publish_not_ready_addresses=True,
+        ),
+    )
 
 
 class KubernetesStepOperator(BaseStepOperator):
@@ -208,6 +369,13 @@ class KubernetesStepOperator(BaseStepOperator):
         settings = cast(
             KubernetesStepOperatorSettings, self.get_settings(info)
         )
+        # Runs at submit time because dynamic pipelines execute from a
+        # server-side snapshot where no compile-time hook is available.
+        validate_multi_node_step(
+            node_count=settings.node_count,
+            is_command_step=info.config.command is not None,
+            step_name=info.pipeline_step_name,
+        )
         image_name = info.get_image(
             key=KUBERNETES_STEP_OPERATOR_DOCKER_IMAGE_KEY
         )
@@ -262,6 +430,38 @@ class KubernetesStepOperator(BaseStepOperator):
         # sure it doesn't exceed the label length limit
         job_name = kube_utils.sanitize_label(job_name)
 
+        namespace = self.config.kubernetes_namespace
+        if settings.node_count > 1:
+            environment = {
+                **environment,
+                **multi_node_environment(
+                    job_name=job_name,
+                    namespace=namespace,
+                    node_count=settings.node_count,
+                ),
+            }
+
+        if settings.node_count > 1:
+            # The gate above guarantees this is a command step. Rank 0
+            # runs ZenML's entrypoint (the ONE bookkeeper); other ranks
+            # exec the raw command.
+            assert info.config.command is not None
+            dispatch = build_rank_dispatch_command(
+                zenml_entrypoint_command=entrypoint_command,
+                raw_command=info.config.command,
+            )
+            pod_manifest = build_pod_manifest(
+                pod_name=None,
+                image_name=image_name,
+                command=dispatch,
+                args=[],
+                env=environment,
+                privileged=settings.privileged,
+                pod_settings=pod_settings,
+                service_account_name=settings.service_account_name,
+                labels=step_labels,
+            )
+
         job_manifest = build_job_manifest(
             job_name=job_name,
             pod_template=pod_template_manifest_from_pod(pod_manifest),
@@ -273,14 +473,35 @@ class KubernetesStepOperator(BaseStepOperator):
             labels=step_labels,
             annotations=step_annotations,
         )
+        if settings.node_count > 1:
+            apply_indexed_completion(job_manifest, settings.node_count)
 
         kube_utils.create_job(
             batch_api=self._k8s_batch_api,
-            namespace=self.config.kubernetes_namespace,
+            namespace=namespace,
             job_manifest=job_manifest,
             api_request_timeout=settings.api_request_timeout,
             max_retries=settings.max_api_retries,
         )
+
+        if settings.node_count > 1:
+            # The headless service gives the job's pods stable DNS
+            # (rendezvous). Owned by the job so Kubernetes garbage
+            # collection reaps it with the job — a crashed or killed
+            # client cannot leak the (often GPU-backed) pods.
+            created_job = kube_utils.retry_on_api_exception(
+                self._k8s_batch_api.read_namespaced_job,
+                api_request_timeout=settings.api_request_timeout,
+                max_retries=settings.max_api_retries,
+            )(name=job_name, namespace=namespace)
+            kube_utils.retry_on_api_exception(
+                self._k8s_core_api.create_namespaced_service,
+                api_request_timeout=settings.api_request_timeout,
+                max_retries=settings.max_api_retries,
+            )(
+                namespace=namespace,
+                body=build_headless_service_manifest(created_job),
+            )
 
     def get_status(self, step_run: "StepRunResponse") -> ExecutionStatus:
         """Gets the status of a submitted step.

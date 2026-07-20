@@ -1,0 +1,307 @@
+#  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Generate the committed Harbor taskset from the RL spike's tasks.jsonl.
+
+The task dirs are committed (not generated at pipeline runtime) on
+purpose: Harbor's ``trial_identity`` hashes the task path, so per-run
+generation would give every run fresh identities and defeat shard
+caching and before/after joins. Re-run this script only when
+``tasks.jsonl`` changes, and commit the result.
+
+The verifier is the spike's ``score_pipeline.py`` byte-identical, which
+is what makes rewards comparable across channels. It is baked into the
+scorer image (see ``docker/Dockerfile``) rather than copied into all 64
+task dirs; this script also refreshes ``docker/score_pipeline.py`` from
+the source of truth.
+
+Usage (from the repo root or the example dir):
+
+    python examples/agentic_rl/scripts/gen_taskset.py
+"""
+
+import json
+import shutil
+import stat
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+EXAMPLE_DIR = Path(__file__).resolve().parent.parent
+REPO_ROOT = EXAMPLE_DIR.parent.parent
+# The task list ships inside the verifiers taskset package, so training
+# and eval are provably built from the same file.
+TASKS_JSONL = (
+    EXAMPLE_DIR / "verifiers_env/src/zenml_pipeline_writing/tasks.jsonl"
+)
+# The scorer's source of truth is the RL spike tree; on checkouts
+# without it, the committed docker/score_pipeline.py copy is canonical.
+SCORER_SRC = REPO_ROOT / "examples/rl_spike/sandbox_scripts/score_pipeline.py"
+TASKS_DIR = EXAMPLE_DIR / "tasks"
+DOCKER_DIR = EXAMPLE_DIR / "docker"
+
+# The image every task pins. The image digest is part of the task's
+# identity — which is the point: "this reward came from this exact
+# scorer environment" must be a recorded fact, not tribal memory.
+SCORER_IMAGE = "zenml-rl-scorer:0.1"
+
+TASK_TOML = """schema_version = "1.2"
+artifacts = []
+
+[metadata]
+difficulty = {difficulty}
+source = "zenml rl_spike tasks.jsonl"
+description = {description}
+
+[verifier]
+timeout_sec = 900.0
+
+[verifier.env]
+
+[agent]
+timeout_sec = 600.0
+
+[environment]
+build_timeout_sec = 600.0
+os = "linux"
+docker_image = "{image}"
+mcp_servers = []
+
+[environment.env]
+
+[solution.env]
+"""
+
+INSTRUCTION_TEMPLATE = """{prompt}
+
+Save the complete, runnable Python program as `/app/pipeline.py`.
+
+Requirements for the program:
+- Use ZenML's `@step` and `@pipeline(dynamic=True)` decorators.
+- Include exactly one pipeline invocation under
+  `if __name__ == "__main__":` and never call `.run()`.
+- The file must be self-contained: imports, steps, pipeline, invocation.
+"""
+
+TEST_SH = """#!/bin/bash
+# Verifier shim: run the RL spike's scorer (baked into the task image at
+# /opt/zenml-scorer/score_pipeline.py, byte-identical to
+# examples/rl_spike/sandbox_scripts/score_pipeline.py) against the
+# agent's /app/pipeline.py, then adapt its rich reward JSON to Harbor's
+# contract.
+#
+# Failure forensics contract: if the SCORER ITSELF crashes, this script
+# exits non-zero WITHOUT writing reward.txt, so Harbor records an
+# errored trial. A crashed scorer must never be indistinguishable from
+# a genuine reward of 0.0.
+set -u
+mkdir -p /logs/verifier
+SPEC="$(cd "$(dirname "$0")" && pwd)/spec.json"
+
+# No submission is the AGENT'S failure, not the scorer's: a genuine
+# reward of 0.0, never an errored trial. (The scorer itself cannot
+# score a file that does not exist.)
+if [ ! -f /app/pipeline.py ]; then
+    echo "0.0" > /logs/verifier/reward.txt
+    echo "verifier: no /app/pipeline.py submitted — reward 0.0"
+    exit 0
+fi
+
+# Harbor gives verifier/reward.json precedence over reward.txt and
+# requires it to be a flat numeric map, so the scorer's rich JSON goes
+# to details.json (still downloaded with the verifier dir — that is the
+# forensics channel) and only the bare float lands in reward.txt.
+python /opt/zenml-scorer/score_pipeline.py \\
+    /app/pipeline.py "$SPEC" /logs/verifier/details.json
+scorer_exit=$?
+
+if [ "$scorer_exit" -ne 0 ] || [ ! -f /logs/verifier/details.json ]; then
+    echo "verifier: scorer crashed (exit $scorer_exit) — recording an" \\
+         "errored trial, not a 0.0 reward" >&2
+    exit 1
+fi
+
+reward=$(python -c "import json; print(json.load(open('/logs/verifier/details.json'))['reward'])")
+if [ $? -ne 0 ]; then
+    echo "verifier: details.json unreadable — errored trial" >&2
+    exit 1
+fi
+
+echo "$reward" > /logs/verifier/reward.txt
+echo "verifier: reward = $reward (full breakdown in details.json)"
+"""
+
+SOLUTION_TEMPLATE = """#!/bin/bash
+# Mechanical oracle for this task (spec has only min_steps +
+# expected_output): the first step produces the expected value, identity
+# steps extend the chain to min_steps. Used by the hermetic tier-0 demo,
+# which must run green without any model API key.
+set -e
+mkdir -p /app
+cat > /app/pipeline.py <<'PYEOF'
+{pipeline_source}
+PYEOF
+echo "oracle: wrote /app/pipeline.py"
+"""
+
+ORACLE_PIPELINE = '''"""Oracle solution generated by gen_taskset.py."""
+
+from zenml import pipeline, step
+
+
+@step
+def produce() -> object:
+    """Produce the expected value.
+
+    Returns:
+        The task's expected output value.
+    """
+    return {value!r}
+
+
+@step
+def relay(value: object) -> object:
+    """Pass a value through unchanged.
+
+    Args:
+        value: The value to relay.
+
+    Returns:
+        The unchanged value.
+    """
+    return value
+
+
+@pipeline(dynamic=True)
+def oracle_pipeline() -> None:
+    """Chain of {min_steps} steps ending in the expected value."""
+    value = produce()
+    for _ in range({relay_count}):
+        value = relay(value)
+
+
+if __name__ == "__main__":
+    oracle_pipeline()
+'''
+
+
+def _toml_string(value: str) -> str:
+    """Encode a string as a TOML literal.
+
+    Args:
+        value: The string to encode.
+
+    Returns:
+        A quoted TOML string.
+    """
+    return json.dumps(value)
+
+
+def _oracle_source(spec: Dict[str, Any]) -> Optional[str]:
+    """Synthesize an oracle pipeline for mechanically solvable specs.
+
+    Args:
+        spec: The task's declarative spec.
+
+    Returns:
+        Python source of a correct pipeline, or None when the spec has
+        clauses (step names, forbidden literals, APIs) an oracle cannot
+        satisfy mechanically.
+    """
+    if set(spec.keys()) - {"min_steps", "expected_output"}:
+        return None
+    expected = spec.get("expected_output", {})
+    if "value" not in expected:
+        return None
+    min_steps = int(spec.get("min_steps", 1))
+    return ORACLE_PIPELINE.format(
+        value=expected["value"],
+        min_steps=min_steps,
+        relay_count=max(0, min_steps - 1),
+    )
+
+
+def _write_task(task: Dict[str, Any]) -> bool:
+    """Write one Harbor task directory.
+
+    Args:
+        task: A tasks.jsonl record (id, difficulty, prompt, spec).
+
+    Returns:
+        Whether an oracle solution was generated for the task.
+    """
+    task_dir = TASKS_DIR / task["id"]
+    tests_dir = task_dir / "tests"
+    environment_dir = task_dir / "environment"
+    tests_dir.mkdir(parents=True, exist_ok=True)
+    environment_dir.mkdir(parents=True, exist_ok=True)
+
+    (task_dir / "task.toml").write_text(
+        TASK_TOML.format(
+            difficulty=task["difficulty"],
+            description=_toml_string(task["prompt"]),
+            image=SCORER_IMAGE,
+        )
+    )
+    (task_dir / "instruction.md").write_text(
+        INSTRUCTION_TEMPLATE.format(prompt=task["prompt"])
+    )
+    (environment_dir / ".gitkeep").write_text("")
+
+    test_sh = tests_dir / "test.sh"
+    test_sh.write_text(TEST_SH)
+    test_sh.chmod(test_sh.stat().st_mode | stat.S_IEXEC)
+    (tests_dir / "spec.json").write_text(
+        json.dumps(task["spec"], indent=2) + "\n"
+    )
+
+    oracle = _oracle_source(task["spec"])
+    if oracle is not None:
+        solution_dir = task_dir / "solution"
+        solution_dir.mkdir(exist_ok=True)
+        solve_sh = solution_dir / "solve.sh"
+        solve_sh.write_text(SOLUTION_TEMPLATE.format(pipeline_source=oracle))
+        solve_sh.chmod(solve_sh.stat().st_mode | stat.S_IEXEC)
+    return oracle is not None
+
+
+def main() -> None:
+    """Generate all task dirs and refresh the scorer copy."""
+    tasks: List[Dict[str, Any]] = [
+        json.loads(line)
+        for line in TASKS_JSONL.read_text().splitlines()
+        if line.strip()
+    ]
+    if TASKS_DIR.exists():
+        shutil.rmtree(TASKS_DIR)
+
+    solvable = 0
+    for task in tasks:
+        solvable += _write_task(task)
+
+    DOCKER_DIR.mkdir(exist_ok=True)
+    if SCORER_SRC.exists():
+        shutil.copyfile(SCORER_SRC, DOCKER_DIR / "score_pipeline.py")
+        scorer_note = f"; refreshed the scorer copy from {SCORER_SRC}"
+    else:
+        scorer_note = (
+            "; RL spike tree not present, committed scorer copy is canonical"
+        )
+
+    print(
+        f"Wrote {len(tasks)} task dirs to {TASKS_DIR} "
+        f"({solvable} with mechanical oracle solutions){scorer_note}."
+    )
+
+
+if __name__ == "__main__":
+    main()

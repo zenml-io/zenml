@@ -124,6 +124,24 @@ class BaseSandbox(StackComponent, ABC):
             f"{type(self).__name__} does not support restoring from a snapshot."
         )
 
+    def image_settings(self, image: str) -> Optional[BaseSandboxSettings]:
+        """Build a settings override that pins a container image.
+
+        Callers that need a session running a specific image (e.g. the
+        Harbor bridge translating a task-level ``docker_image``) use this
+        instead of constructing flavor-specific settings themselves, so
+        they stay agnostic of the active flavor.
+
+        Args:
+            image: The container image reference to pin.
+
+        Returns:
+            A flavor-specific settings override carrying the image, or
+            None if this flavor has no image knob (e.g. the local
+            flavor, which runs host subprocesses).
+        """
+        return None
+
     def resolve_settings(
         self, override: Optional[BaseSandboxSettings] = None
     ) -> BaseSandboxSettings:

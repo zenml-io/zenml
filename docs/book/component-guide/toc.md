@@ -55,6 +55,7 @@
   * [Develop a Custom Log Store](log-stores/custom.md)
 * [Sandboxes](sandboxes/README.md)
   * [Local](sandboxes/local.md)
+  * [Docker](sandboxes/docker.md)
   * [Kubernetes](sandboxes/kubernetes.md)
   * [Modal](sandboxes/modal.md)
 * [Step Operators](step-operators/README.md)

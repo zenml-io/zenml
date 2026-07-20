@@ -1,0 +1,58 @@
+# Split-shape variant of rl.toml: no local inference server. The
+# trainer pod runs orchestrator + trainer on 1 GPU and talks to an
+# external prime-rl inference server. __TRAINER_HOST__ is substituted
+# with the trainer pod IP at launch (NCCL rendezvous runs on rank 0,
+# which is the trainer).
+
+max_steps = 1
+seq_len = 4096
+
+[weight_broadcast]
+type = "nccl"
+port = 29501
+
+[model]
+name = "Qwen/Qwen3-0.6B"
+
+[orchestrator]
+batch_size = 32
+group_size = 8
+
+[orchestrator.model.client]
+base_url = ["http://zenml-svc-prime-infer.zenml-svc-prime-infer.michael.svc:8000/v1"]
+
+[orchestrator.train.sampling]
+max_completion_tokens = 1024
+
+[[orchestrator.train.env]]
+
+[orchestrator.train.env.taskset]
+id = "zenml-pipeline-writing"
+
+[orchestrator.train.env.harness.runtime]
+type = "docker"
+image = "339712793861.dkr.ecr.eu-central-1.amazonaws.com/zenml-rl-scorer:0.1"
+workdir = "/app"
+
+[orchestrator.train.env.harness.env]
+ZENML_VERIFIERS_RUNTIME = "1"
+
+# The ZenML sandbox runtime is non-local, so verifiers wants a tunnel to
+# expose the interception server to the sandbox. Pod-to-pod networking
+# makes a public tunnel unnecessary: bind a fixed port and advertise the
+# trainer pod IP directly.
+[orchestrator.train.env.interception]
+type = "static"
+
+[[orchestrator.train.env.interception.servers]]
+type = "server"
+
+[orchestrator.train.env.interception.servers.tunnel]
+type = "custom"
+url = "http://__TRAINER_HOST__:8100"
+port = 8100
+
+[trainer.optim]
+lr = 5e-6
+
+[ckpt]

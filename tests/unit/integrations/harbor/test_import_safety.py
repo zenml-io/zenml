@@ -47,10 +47,10 @@ def test_requirements_are_gated_on_python_version() -> None:
     assert HarborIntegration.get_requirements(python_version="3.10") == []
     assert HarborIntegration.get_requirements(python_version="3.11") == []
     assert HarborIntegration.get_requirements(python_version="3.12") == [
-        "harbor>=0.8,<0.9"
+        "harbor>=0.18,<0.19"
     ]
     assert HarborIntegration.get_requirements(python_version="3.13") == [
-        "harbor>=0.8,<0.9"
+        "harbor>=0.18,<0.19"
     ]
     # Single-component version strings fall back to minor 0.
     assert HarborIntegration.get_requirements(python_version="3") == []
@@ -58,7 +58,7 @@ def test_requirements_are_gated_on_python_version() -> None:
 
 def test_requirements_fall_back_to_running_interpreter() -> None:
     """Without an explicit version, the running interpreter decides."""
-    expected = ["harbor>=0.8,<0.9"] if sys.version_info[:2] >= (3, 12) else []
+    expected = ["harbor>=0.18,<0.19"] if sys.version_info[:2] >= (3, 12) else []
     assert HarborIntegration.get_requirements() == expected
 
 

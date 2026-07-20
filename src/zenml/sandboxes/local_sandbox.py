@@ -297,6 +297,67 @@ class LocalSandboxSession(SandboxSession):
             process=process, session=self, started_at=started_at
         )
 
+    def _resolve_remote_path(self, remote_path: str) -> str:
+        """Resolve a remote path against the session workdir.
+
+        The local flavor has no filesystem namespace — "remote" paths are
+        host paths. Relative paths resolve against the session workdir
+        (the same contract `_exec` applies to `cwd`); absolute paths are
+        only accepted when they stay inside the workdir, because e.g. a
+        Harbor-style `/app/...` path would otherwise silently read from
+        or write to the host root.
+
+        Args:
+            remote_path: The remote path to resolve.
+
+        Returns:
+            The absolute host path inside the session workdir.
+
+        Raises:
+            ValueError: If the path escapes the session workdir.
+        """
+        if os.path.isabs(remote_path):
+            resolved = os.path.realpath(remote_path)
+        else:
+            resolved = os.path.realpath(
+                os.path.join(self._workdir, remote_path)
+            )
+        workdir = os.path.realpath(self._workdir)
+        if resolved != workdir and not resolved.startswith(workdir + os.sep):
+            raise ValueError(
+                f"Local sandbox file transfer refused for '{remote_path}': "
+                "the local flavor has no filesystem namespace, so only "
+                "paths inside the session working directory are allowed "
+                f"(got '{resolved}', workdir '{workdir}'). Use a "
+                "container-backed sandbox flavor for tasks that need "
+                "absolute container paths."
+            )
+        return resolved
+
+    def _upload_file(self, local_path: str, remote_path: str) -> None:
+        """Copy a file into the session working directory.
+
+        Args:
+            local_path: Source path on the caller's filesystem.
+            remote_path: Destination path, resolved against the session
+                workdir.
+        """
+        destination = self._resolve_remote_path(remote_path)
+        os.makedirs(os.path.dirname(destination) or ".", exist_ok=True)
+        shutil.copyfile(local_path, destination)
+
+    def _download_file(self, remote_path: str, local_path: str) -> None:
+        """Copy a file out of the session working directory.
+
+        Args:
+            remote_path: Source path, resolved against the session
+                workdir.
+            local_path: Destination path on the caller's filesystem.
+        """
+        source = self._resolve_remote_path(remote_path)
+        os.makedirs(os.path.dirname(local_path) or ".", exist_ok=True)
+        shutil.copyfile(source, local_path)
+
     def _close(self) -> None:
         """Terminate running processes and clean up the working directory."""
         for process in self._processes:
