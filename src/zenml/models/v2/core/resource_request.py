@@ -111,19 +111,37 @@ class ResourcePoolAllocation(BaseZenModel):
 
     id: UUID = Field(title="The unique allocation ID.")
     request_id: UUID = Field(title="The allocated resource request ID.")
-    demand_index: int = Field(
+    demand_index: Optional[int] = Field(
+        default=None,
         ge=0,
-        title="The zero-based request demand index this grant satisfies.",
+        title=(
+            "The zero-based request demand index this grant satisfies, or "
+            "None for grant-default allocations."
+        ),
     )
     pool_id: UUID = Field(title="The resource pool ID.")
     pool_name: Optional[str] = Field(
         default=None,
         title="The resource pool name.",
     )
+    capacity_entry_id: Optional[UUID] = Field(
+        default=None,
+        title="The selected resource pool capacity entry ID.",
+    )
+    capacity_entry_name: Optional[str] = Field(
+        default=None,
+        title="The selected resource pool capacity entry name.",
+        max_length=STR_FIELD_MAX_LENGTH,
+    )
     resource_id: UUID = Field(title="The allocated resource descriptor ID.")
     resource: Optional[str] = Field(
         default=None,
         title="The allocated resource descriptor name.",
+    )
+    resource_kind: str = Field(
+        title="The allocated resource descriptor kind.",
+        min_length=1,
+        max_length=STR_FIELD_MAX_LENGTH,
     )
     class_name: str = Field(
         alias="class",
