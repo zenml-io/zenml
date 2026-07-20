@@ -46,6 +46,7 @@ from zenml.models.v2.core.step_run import (
 from zenml.orchestrators.publish_utils import (
     publish_failed_step_run,
     publish_step_run_metadata,
+    publish_step_run_status_update,
     publish_successful_step_run,
     step_exception_info,
 )
@@ -158,6 +159,12 @@ class StepRunner:
             )
 
         with logs_context:
+            if step_run.status == ExecutionStatus.PROVISIONING:
+                step_run = publish_step_run_status_update(
+                    step_run_id=step_run_info.step_run_id,
+                    status=ExecutionStatus.RUNNING,
+                )
+
             step_instance = self._load_step()
             output_materializers = self._load_output_materializers()
             resolved_signature = get_resolved_signature(
