@@ -636,7 +636,9 @@ class StepLauncher:
                         status=status, step_run_info=step_run_info
                     )
                 finally:
-                    self._cleanup_remote_step(step_run_info.step_run)
+                    self._cleanup_remote_step(
+                        step_run_info.step_run, allocated_resource_request
+                    )
 
         return None
 

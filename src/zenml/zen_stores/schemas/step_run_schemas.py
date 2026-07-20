@@ -312,7 +312,6 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                         jl_arg(ModelVersionSchema.model), innerjoin=True
                     ),
                     single_loader(jl_arg(StepRunSchema.user)),
-                    single_loader(jl_arg(StepRunSchema.resource_request)),
                     selectinload(jl_arg(StepRunSchema.input_artifacts))
                     .joinedload(
                         jl_arg(StepRunInputArtifactSchema.artifact_version),
