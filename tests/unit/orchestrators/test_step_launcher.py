@@ -14,6 +14,7 @@
 """Tests for step launcher helpers."""
 
 from contextlib import ExitStack as does_not_raise
+from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
@@ -23,6 +24,42 @@ from zenml.orchestrators.step_launcher import (
     StepLauncher,
 )
 from zenml.stack import Stack
+
+
+def _dynamic_launcher(step_operator=None) -> StepLauncher:
+    """Create a minimal launcher for dynamic runtime checks."""
+    launcher = object.__new__(StepLauncher)
+    launcher._snapshot = SimpleNamespace(
+        is_dynamic=True,
+        pipeline_configuration=SimpleNamespace(docker_settings=None),
+    )
+    launcher._step = SimpleNamespace(
+        config=SimpleNamespace(step_operator=step_operator)
+    )
+    launcher._stack = SimpleNamespace(orchestrator=object())
+    return launcher
+
+
+def test_dynamic_orchestrator_detection_requires_isolated_runtime(
+    monkeypatch,
+) -> None:
+    """Tests that only dynamic isolated orchestrator steps are detected."""
+    monkeypatch.setattr(
+        "zenml.execution.pipeline.dynamic.compilation.get_step_runtime",
+        lambda **_: StepRuntime.ISOLATED,
+    )
+
+    assert _dynamic_launcher()._runs_with_dynamic_orchestrator()
+    assert not _dynamic_launcher(
+        step_operator="operator"
+    )._runs_with_dynamic_orchestrator()
+
+    monkeypatch.setattr(
+        "zenml.execution.pipeline.dynamic.compilation.get_step_runtime",
+        lambda **_: StepRuntime.INLINE,
+    )
+
+    assert not _dynamic_launcher()._runs_with_dynamic_orchestrator()
 
 
 def test_step_operator_validation(local_stack, sample_step_operator):
