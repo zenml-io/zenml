@@ -379,6 +379,7 @@ from zenml.service_connectors.service_connector_registry import (
 )
 from zenml.stack.flavor_registry import FlavorRegistry
 from zenml.stack_deployments.utils import get_stack_deployment_class
+from zenml.steps.heartbeat import StepHeartbeatWorker
 from zenml.utils import source_utils, tag_utils, uuid_utils, yaml_utils
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.networking_utils import (
@@ -11400,17 +11401,6 @@ class SqlZenStore(BaseZenStore):
                 "heartbeat or set reclaim tolerance to `none`."
             )
 
-    @staticmethod
-    def _resource_request_lease_expires_at() -> datetime:
-        """Compute the next resource request lease expiration timestamp.
-
-        Returns:
-            UTC timestamp for the renewed resource request lease.
-        """
-        from zenml.steps.heartbeat import StepHeartbeatWorker
-
-        return StepHeartbeatWorker.resource_request_lease_expires_at()
-
     def _renew_step_resource_request_from_heartbeat(
         self,
         session: Session,
@@ -11438,7 +11428,7 @@ class SqlZenStore(BaseZenStore):
                 step_run.resource_request_id,
                 ResourceRequestRenewalRequest(
                     lease_expires_at=(
-                        self._resource_request_lease_expires_at()
+                        StepHeartbeatWorker.resource_request_lease_expires_at()
                     ),
                     runtime_state=ResourceRequestRuntimeState.RUNNING,
                 ),
@@ -11956,9 +11946,7 @@ class SqlZenStore(BaseZenStore):
                         resource_runtime == StepRuntime.ISOLATED
                         and heartbeat_enabled
                     ):
-                        lease_expires_at = (
-                            self._resource_request_lease_expires_at()
-                        )
+                        lease_expires_at = StepHeartbeatWorker.resource_request_lease_expires_at()
 
                     request = self.resource_pools.create_resource_request(
                         session,

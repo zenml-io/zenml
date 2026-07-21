@@ -98,8 +98,8 @@ class PoolResourceDemand(BaseSettings):
     """Resource pool demand used by ResourceSettings.
 
     Attributes:
-        name: Resource descriptor name.
         quantity: Requested quantity.
+        name: Optional resource descriptor name.
         kind: Optional resource kind (for example ``gpu``).
         unit: Optional unit for the requested quantity.
         class_name: Optional exact capacity class name.
@@ -109,8 +109,8 @@ class PoolResourceDemand(BaseSettings):
             attributes.
     """
 
-    name: str = Field(min_length=1)
     quantity: PositiveInt
+    name: Optional[str] = Field(default=None, min_length=1)
     kind: Optional[str] = Field(default=None, min_length=1)
     unit: Optional[str] = Field(default=None, min_length=1)
     class_name: Optional[str] = Field(

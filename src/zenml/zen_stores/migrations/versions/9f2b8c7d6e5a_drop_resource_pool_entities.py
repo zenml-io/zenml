@@ -7,7 +7,6 @@ Create Date: 2026-06-20 00:00:00.000000
 """
 
 import sqlalchemy as sa
-import sqlmodel
 from alembic import op
 
 # revision identifiers, used by Alembic.
@@ -31,7 +30,7 @@ def upgrade() -> None:
         batch_op.add_column(
             sa.Column(
                 "resource_request_id",
-                sqlmodel.sql.sqltypes.GUID(),
+                sa.Uuid(),
                 nullable=True,
             )
         )
