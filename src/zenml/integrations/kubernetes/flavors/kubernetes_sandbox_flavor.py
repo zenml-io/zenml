@@ -24,20 +24,16 @@ from zenml.models import ServiceConnectorRequirements
 from zenml.sandboxes.base import (
     BaseSandboxConfig,
     BaseSandboxFlavor,
-    BaseSandboxSettings,
+    ContainerizedSandboxSettings,
 )
 
 if TYPE_CHECKING:
     from zenml.integrations.kubernetes.sandboxes import KubernetesSandbox
 
 
-class KubernetesSandboxSettings(BaseSandboxSettings):
+class KubernetesSandboxSettings(ContainerizedSandboxSettings):
     """Settings for the Kubernetes sandbox."""
 
-    image: str = Field(
-        default="python:3.11-slim",
-        description="Container image used for sandbox session pods.",
-    )
     pod_settings: Optional[KubernetesPodSettings] = Field(
         default=None,
         description="Pod configuration overrides for sandbox session pods.",

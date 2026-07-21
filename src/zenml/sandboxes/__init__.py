@@ -18,6 +18,15 @@ from zenml.sandboxes.base import (
     BaseSandboxConfig,
     BaseSandboxFlavor,
     BaseSandboxSettings,
+    ContainerizedSandboxSettings,
+)
+from zenml.sandboxes.docker_sandbox import (
+    DOCKER_SANDBOX_FLAVOR,
+    DockerSandbox,
+    DockerSandboxConfig,
+    DockerSandboxFlavor,
+    DockerSandboxPullPolicy,
+    DockerSandboxSettings,
 )
 from zenml.sandboxes.local_sandbox import (
     LOCAL_SANDBOX_FLAVOR,
@@ -38,11 +47,18 @@ from zenml.sandboxes.session import (
 from zenml.sandboxes.snapshot import SandboxSnapshot
 
 __all__ = [
+    "DOCKER_SANDBOX_FLAVOR",
     "LOCAL_SANDBOX_FLAVOR",
     "BaseSandbox",
     "BaseSandboxConfig",
     "BaseSandboxFlavor",
     "BaseSandboxSettings",
+    "ContainerizedSandboxSettings",
+    "DockerSandbox",
+    "DockerSandboxConfig",
+    "DockerSandboxFlavor",
+    "DockerSandboxPullPolicy",
+    "DockerSandboxSettings",
     "SandboxSnapshot",
     "LocalSandbox",
     "LocalSandboxConfig",

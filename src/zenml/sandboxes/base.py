@@ -38,6 +38,15 @@ class BaseSandboxSettings(BaseSettings):
     )
 
 
+class ContainerizedSandboxSettings(BaseSandboxSettings):
+    """Containerized sandbox settings."""
+
+    image: str = Field(
+        default="python:3.11-slim",
+        description="Container image to run sandbox sessions in.",
+    )
+
+
 class BaseSandboxConfig(StackComponentConfig):
     """Sandbox configuration."""
 
