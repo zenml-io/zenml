@@ -2591,3 +2591,4 @@ from zenml.cli.user_management import *  # noqa
 from zenml.cli.project import *  # noqa
 from zenml.cli.tag import *  # noqa
 from zenml.cli.trigger import *  # noqa
+from zenml.cli.webhook_integration import *  # noqa
