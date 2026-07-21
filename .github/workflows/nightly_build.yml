@@ -34,7 +34,7 @@ jobs:
           name: nightly-python-package-distributions
           path: dist
       - name: Publish package distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # release/v1
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # v1.14.0
   wait-for-package-release:
     if: github.repository == 'zenml-io/zenml'
     runs-on: ubuntu-latest

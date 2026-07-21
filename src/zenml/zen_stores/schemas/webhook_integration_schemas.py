@@ -14,7 +14,7 @@
 """SQL schemas for webhook integrations."""
 
 from datetime import datetime
-from typing import Any, Sequence, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Sequence
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint
