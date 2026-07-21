@@ -53,7 +53,8 @@ class StepHeartbeatWorker:
             UTC timestamp for a renewed resource request lease.
         """
         return utc_now() + timedelta(
-            seconds=cls.STEP_HEARTBEAT_INTERVAL_SECONDS * 3
+            seconds=cls.MAX_HEARTBEAT_INTERVAL_SECONDS
+            + cls.STEP_HEARTBEAT_INTERVAL_SECONDS
         )
 
     def __init__(self, step_id: UUID):

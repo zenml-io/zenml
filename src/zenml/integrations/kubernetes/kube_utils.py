@@ -56,6 +56,7 @@ from typing import (
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 from kubernetes.client.rest import ApiException
+from pydantic import ValidationError
 from urllib3.exceptions import ReadTimeoutError
 
 from zenml.config.resource_settings import ByteUnit
@@ -1565,16 +1566,44 @@ def apply_resource_request_component_settings(
 
     Returns:
         The updated and validated stack component settings.
+
+    Raises:
+        ValueError: If the allocated resource request is invalid.
     """
     if not allocated_resource_request:
         return settings
 
-    settings_dict = settings.model_dump(exclude_unset=True)
-    settings_dict.update(
+    component_settings = (
         allocated_resource_request.get_resources().component_settings
     )
 
-    return settings_class.model_validate(settings_dict)
+    settings_dict = settings.model_dump(exclude_unset=True)
+    settings_dict.update(component_settings)
+
+    try:
+        return settings_class.model_validate(settings_dict)
+    except (ValidationError, TypeError) as e:
+        resource_pool_name = (
+            allocated_resource_request.get_body().pool_name or "<unknown>"
+        )
+        component_settings_json = json.dumps(
+            component_settings,
+            default=str,
+            indent=2,
+            sort_keys=True,
+        )
+        raise ValueError(
+            "Failed to apply the Resource Pool component setting overrides "
+            "from the allocated resource request "
+            f"{allocated_resource_request.id} "
+            f"to `{settings_class.__name__}` stack component settings. "
+            "The overrides were merged with the existing stack component "
+            "settings, but the merged configuration is invalid. "
+            "Component settings provided by the resource request:\n"
+            f"{component_settings_json}\n"
+            "Please check the target settings that you configured for the "
+            f"`{resource_pool_name}` resource pool and its policies."
+        ) from e
 
 
 def apply_resource_request_allocations_to_pod_settings(
@@ -1626,21 +1655,54 @@ def apply_resource_request_allocations_to_pod_settings(
     }
     requests = resources.setdefault("requests", {})
     limits = resources.setdefault("limits", {})
+    resource_request_resources: Dict[str, Dict[str, str]] = {
+        "requests": {},
+        "limits": {},
+    }
+    resource_request_requests = resource_request_resources["requests"]
+    resource_request_limits = resource_request_resources["limits"]
 
     if cpu_millicores:
-        cpu = _format_cpu_millicores(cpu_millicores)
+        if cpu_millicores % 1000 == 0:
+            cpu = str(cpu_millicores // 1000)
+        else:
+            cpu = f"{cpu_millicores}m"
         requests["cpu"] = cpu
         limits["cpu"] = cpu
+        resource_request_requests["cpu"] = cpu
+        resource_request_limits["cpu"] = cpu
 
     if memory_bytes:
         memory = f"{math.ceil(memory_bytes / ByteUnit.MIB.byte_value)}Mi"
         requests["memory"] = memory
         limits["memory"] = memory
+        resource_request_requests["memory"] = memory
+        resource_request_limits["memory"] = memory
 
     if gpu_count:
         gpu = str(gpu_count)
         requests["nvidia.com/gpu"] = gpu
         limits["nvidia.com/gpu"] = gpu
+        resource_request_requests["nvidia.com/gpu"] = gpu
+        resource_request_limits["nvidia.com/gpu"] = gpu
+
+    logger.debug(
+        "Configured Kubernetes pod resources from allocated resource request "
+        "`%s`: %s. Final Kubernetes pod resources: %s",
+        allocated_resource_request.id,
+        json.dumps(
+            resource_request_resources,
+            default=str,
+            indent=2,
+            sort_keys=True,
+        ),
+        json.dumps(
+            resources,
+            default=str,
+            indent=2,
+            sort_keys=True,
+        ),
+    )
 
     return pod_settings.model_copy(update={"resources": resources})
 
@@ -1671,20 +1733,6 @@ def _cpu_allocation_to_millicores(quantity: int, unit: Optional[str]) -> int:
         unit,
     )
     return quantity * 1000
-
-
-def _format_cpu_millicores(millicores: int) -> str:
-    """Format Kubernetes CPU quantity from millicores.
-
-    Args:
-        millicores: CPU quantity in millicores.
-
-    Returns:
-        Kubernetes CPU quantity string.
-    """
-    if millicores % 1000 == 0:
-        return str(millicores // 1000)
-    return f"{millicores}m"
 
 
 def _memory_allocation_to_bytes(quantity: int, unit: Optional[str]) -> int:
