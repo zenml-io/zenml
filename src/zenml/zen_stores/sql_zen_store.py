@@ -8491,8 +8491,10 @@ class SqlZenStore(BaseZenStore):
             session: The active database session.
 
         Raises:
-            IllegalOperationError: If the association crosses projects or the
-                integration type is incompatible with the trigger flavor.
+            KeyError: If the integration does not belong to the trigger
+                project.
+            IllegalOperationError: If the integration type is incompatible
+                with the trigger flavor.
         """
         integration = self._get_schema_by_id(
             resource_id=webhook_integration_id,
@@ -8500,9 +8502,8 @@ class SqlZenStore(BaseZenStore):
             session=session,
         )
         if integration.project_id != project_id:
-            raise IllegalOperationError(
-                "Webhook triggers and integrations must be in the same "
-                "project."
+            raise KeyError(
+                f"Webhook integration {webhook_integration_id} not found."
             )
 
         expected_type = WEBHOOK_TRIGGER_FLAVOR_TO_TYPE[flavor]
@@ -8765,15 +8766,18 @@ class SqlZenStore(BaseZenStore):
             if not snapshot:
                 raise KeyError(f"Snapshot {snapshot_id} doesn't exist.")
 
-            if not snapshot.is_runnable:
-                raise IllegalOperationError(
-                    f"Can not attach trigger {trigger_id} to non-runnable snapshot {snapshot_id}"
-                )
-
             trigger = session.get(TriggerSchema, trigger_id)
 
             if not trigger:
                 raise KeyError(f"Trigger {trigger_id} doesn't exist.")
+
+            if trigger.project_id != snapshot.project_id:
+                raise KeyError(f"Snapshot {snapshot_id} doesn't exist.")
+
+            if not snapshot.is_runnable:
+                raise IllegalOperationError(
+                    f"Can not attach trigger {trigger_id} to non-runnable snapshot {snapshot_id}"
+                )
 
             if trigger.is_archived:
                 raise IllegalOperationError(

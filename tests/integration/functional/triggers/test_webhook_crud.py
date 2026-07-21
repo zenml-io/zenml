@@ -10,6 +10,7 @@ from zenml.enums import (
 )
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
+    ProjectRequest,
     TriggerFilter,
     WebhookIntegrationRequest,
     WebhookTriggerRequest,
@@ -73,6 +74,38 @@ def test_webhook_trigger_store_lifecycle(clean_client):
 
     assert retrieved.model_dump() == trigger.model_dump()
     assert trigger.id in {item.id for item in listed.items}
+
+    other_project = store.create_project(
+        ProjectRequest(name=sample_name("webhook-trigger-other-project"))
+    )
+    cross_project_integration = store.create_webhook_integration(
+        WebhookIntegrationRequest(
+            project=other_project.id,
+            name=sample_name("cross-project-webhook-integration"),
+            webhook_type=WebhookType.CUSTOM,
+        )
+    ).webhook
+
+    with pytest.raises(KeyError, match="not found"):
+        store.create_trigger(
+            WebhookTriggerRequest(
+                project=project_id,
+                name=sample_name("cross-project-webhook-trigger"),
+                flavor=TriggerFlavor.CUSTOM_WEBHOOK,
+                webhook_integration_id=cross_project_integration.id,
+            )
+        )
+
+    with pytest.raises(KeyError, match="not found"):
+        store.update_trigger(
+            trigger_id=trigger.id,
+            trigger_update=WebhookTriggerUpdate(
+                name=trigger.name,
+                active=trigger.active,
+                concurrency=trigger.concurrency,
+                webhook_integration_id=cross_project_integration.id,
+            ),
+        )
 
     with pytest.raises(IllegalOperationError, match="custom webhook"):
         store.update_trigger(

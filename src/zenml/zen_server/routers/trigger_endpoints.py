@@ -308,9 +308,7 @@ def attach_trigger_to_snapshot(
     snapshot = zen_store().get_snapshot(snapshot_id=snapshot_id, hydrate=True)
 
     if trigger.project_id != snapshot.project_id:
-        raise IllegalOperationError(
-            "Trigger and snapshot must be in the same project"
-        )
+        raise KeyError(f"Snapshot {snapshot_id} not found.")
 
     if not snapshot.name:
         raise IllegalOperationError(
