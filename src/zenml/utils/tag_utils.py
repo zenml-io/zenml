@@ -253,6 +253,13 @@ def add_tags(
     resource_id = None
     resource_type = None
 
+    # `infer_artifact=False` is the documented default of the public overload
+    # and means "don't infer" — same as omitting it. The dispatch below tests
+    # `infer_artifact is None`, so normalize False to None to avoid falling
+    # through to the "unsupported call" error.
+    if infer_artifact is False:
+        infer_artifact = None
+
     if isinstance(tags, (str, Tag)):
         tags = [tags]
 
@@ -646,6 +653,13 @@ def remove_tags(
     client = Client()
     resource_id = None
     resource_type = None
+
+    # `infer_artifact=False` is the documented default of the public overload
+    # and means "don't infer" — same as omitting it. The dispatch below tests
+    # `infer_artifact is None`, so normalize False to None to avoid falling
+    # through to the "unsupported call" error.
+    if infer_artifact is False:
+        infer_artifact = None
 
     if isinstance(tags, str):
         tags = [tags]
