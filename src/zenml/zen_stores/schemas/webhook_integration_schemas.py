@@ -14,7 +14,7 @@
 """SQL schemas for webhook integrations."""
 
 from datetime import datetime
-from typing import Any, Sequence
+from typing import Any, Sequence, TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import TEXT, Column, UniqueConstraint
@@ -42,6 +42,9 @@ from zenml.zen_stores.schemas.schema_utils import (
 from zenml.zen_stores.schemas.secret_schemas import SecretSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import jl_arg
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.trigger_schemas import TriggerSchema
 
 
 class WebhookIntegrationSchema(NamedSchema, table=True):
@@ -80,6 +83,9 @@ class WebhookIntegrationSchema(NamedSchema, table=True):
         nullable=True,
     )
     user: UserSchema | None = Relationship()
+    triggers: list["TriggerSchema"] = Relationship(
+        back_populates="webhook_integration"
+    )
     secret_id: UUID = build_foreign_key_field(
         source=__tablename__,
         target=SecretSchema.__tablename__,

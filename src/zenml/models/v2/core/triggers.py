@@ -35,10 +35,12 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import (
     PLATFORM_EVENT_REGISTRY,
+    WEBHOOK_TRIGGER_FLAVOR_TO_TYPE,
     SourceType,
     TriggerFlavor,
     TriggerRunConcurrency,
     TriggerType,
+    WebhookType,
 )
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import (
@@ -47,6 +49,7 @@ from zenml.models.v2.base.filter import (
     DatetimeFilterOption,
     EnumFilterOption,
     StringFilterOption,
+    UUIDFilterOption,
 )
 from zenml.models.v2.base.scoped import (
     ProjectScopedFilter,
@@ -409,6 +412,10 @@ class UnScopedTriggerFilter(BaseFilter):
     concurrency: EnumFilterOption[TriggerRunConcurrency] = Field(
         default=None, description="The trigger concurrency."
     )
+    webhook_integration_id: UUIDFilterOption = Field(
+        default=None,
+        description="The webhook integration associated with the trigger.",
+    )
 
     def apply_filter(
         self,
@@ -455,6 +462,7 @@ class TriggerFilter(UnScopedTriggerFilter, ProjectScopedFilter):
         "type",
         "flavor",
         "next_occurrence",
+        "webhook_integration_id",
     ]
     API_SINGLE_INPUT_PARAMS: ClassVar[list[str]] = [
         *UnScopedTriggerFilter.API_SINGLE_INPUT_PARAMS,
@@ -1078,6 +1086,112 @@ class PlatformEventTriggerResponse(
         return self.get_body().target_events
 
 
+# ----------- WEBHOOK CLASSES ------------------- #
+
+
+class WebhookTrigger(BaseModel):
+    """Base class for webhook-specific parameters."""
+
+    webhook_integration_id: UUID | None = None
+
+
+class WebhookTriggerRequest(TriggerRequest, WebhookTrigger):
+    """Class representing a webhook trigger request."""
+
+    type: Literal[TriggerType.WEBHOOK] = TriggerType.WEBHOOK
+    flavor: Literal[
+        TriggerFlavor.GITHUB_WEBHOOK,
+        TriggerFlavor.CUSTOM_WEBHOOK,
+    ]
+
+    @model_validator(mode="after")
+    def deactivate_detached_trigger(self) -> "WebhookTriggerRequest":
+        """Ensure a detached webhook trigger is inactive.
+
+        Returns:
+            The validated webhook trigger request.
+        """
+        if self.webhook_integration_id is None:
+            self.active = False
+        return self
+
+    def get_config(self) -> str:
+        """Return the serialized webhook trigger configuration.
+
+        Returns:
+            An empty JSON object. The integration association is stored in a
+            dedicated database column.
+        """
+        return "{}"
+
+    def get_extra_fields(self) -> dict[str, Any]:
+        """Return flat webhook trigger fields.
+
+        Returns:
+            The webhook integration association.
+        """
+        return {"webhook_integration_id": self.webhook_integration_id}
+
+
+class WebhookTriggerUpdate(TriggerUpdate, WebhookTrigger):
+    """Class representing a webhook trigger update."""
+
+    type: Literal[TriggerType.WEBHOOK] = TriggerType.WEBHOOK
+
+    def get_config(self) -> str:
+        """Return the serialized webhook trigger configuration.
+
+        Returns:
+            An empty JSON object. The integration association is stored in a
+            dedicated database column.
+        """
+        return "{}"
+
+    def get_extra_fields(self) -> dict[str, Any]:
+        """Return explicitly updated flat webhook trigger fields.
+
+        Returns:
+            The webhook integration association when it was explicitly set.
+        """
+        if "webhook_integration_id" not in self.model_fields_set:
+            return {}
+        return {"webhook_integration_id": self.webhook_integration_id}
+
+
+class WebhookTriggerResponseBody(WebhookTrigger, TriggerResponseBody):
+    """Class representing a webhook trigger response body."""
+
+    def get_extra_fields(self) -> list[str]:
+        """Return flat fields required for the response.
+
+        Returns:
+            The webhook integration association field.
+        """
+        return ["webhook_integration_id"]
+
+
+class WebhookTriggerResponse(TriggerResponse[WebhookTriggerResponseBody,]):
+    """Class representing a webhook trigger response."""
+
+    @property
+    def webhook_integration_id(self) -> UUID | None:
+        """Return the associated webhook integration ID.
+
+        Returns:
+            The associated webhook integration ID, if any.
+        """
+        return self.get_body().webhook_integration_id
+
+    @property
+    def webhook_type(self) -> WebhookType:
+        """Return the compatible webhook integration type.
+
+        Returns:
+            The compatible webhook integration type.
+        """
+        return WEBHOOK_TRIGGER_FLAVOR_TO_TYPE[self.flavor]
+
+
 class TriggerExecutionInfo(BaseModel):
     """Class representing a trigger execution information."""
 
@@ -1086,13 +1200,17 @@ class TriggerExecutionInfo(BaseModel):
 
 
 TRIGGER_UPDATE_TYPE_UNION: TypeAlias = Annotated[
-    ScheduleTriggerUpdate | PlatformEventTriggerUpdate,
+    ScheduleTriggerUpdate | PlatformEventTriggerUpdate | WebhookTriggerUpdate,
     Field(discriminator="type"),
 ]
 TRIGGER_CREATE_TYPE_UNION: TypeAlias = Annotated[
-    ScheduleTriggerRequest | PlatformEventTriggerRequest,
+    ScheduleTriggerRequest
+    | PlatformEventTriggerRequest
+    | WebhookTriggerRequest,
     Field(discriminator="type"),
 ]
 TRIGGER_RETURN_TYPE_UNION: TypeAlias = (
-    ScheduleTriggerResponse | PlatformEventTriggerResponse
+    ScheduleTriggerResponse
+    | PlatformEventTriggerResponse
+    | WebhookTriggerResponse
 )

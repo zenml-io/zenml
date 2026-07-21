@@ -159,6 +159,7 @@ from zenml.constants import (
     is_true_string_value,
 )
 from zenml.enums import (
+    WEBHOOK_TRIGGER_FLAVOR_TO_TYPE,
     ArtifactSaveType,
     AuthScheme,
     DatabaseBackupStrategy,
@@ -180,6 +181,8 @@ from zenml.enums import (
     StepRunInputArtifactType,
     StoreType,
     TaggableResourceTypes,
+    TriggerFlavor,
+    TriggerType,
     VisualizationResourceTypes,
     WebhookType,
 )
@@ -384,6 +387,8 @@ from zenml.models import (
     WebhookIntegrationRotateSecretRequest,
     WebhookIntegrationSecretResponse,
     WebhookIntegrationUpdate,
+    WebhookTriggerRequest,
+    WebhookTriggerUpdate,
 )
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
@@ -8314,7 +8319,7 @@ class SqlZenStore(BaseZenStore):
             )
 
     def delete_webhook_integration(self, integration_id: UUID) -> None:
-        """Delete a webhook integration and its internal secret.
+        """Delete a webhook integration and deactivate its triggers.
 
         Args:
             integration_id: The webhook integration ID.
@@ -8326,6 +8331,17 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
             secret_id = schema.secret_id
+            session.exec(
+                update(TriggerSchema)
+                .where(
+                    col(TriggerSchema.webhook_integration_id) == integration_id
+                )
+                .values(
+                    active=False,
+                    webhook_integration_id=None,
+                    updated=utc_now(),
+                )
+            )
             session.delete(schema)
             session.commit()
             self._delete_secret_schema(secret_id=secret_id, session=session)
@@ -8458,6 +8474,44 @@ class SqlZenStore(BaseZenStore):
 
     # -------------------- Triggers ---------------------
 
+    def _validate_webhook_trigger_integration(
+        self,
+        *,
+        webhook_integration_id: UUID,
+        project_id: UUID,
+        flavor: TriggerFlavor,
+        session: Session,
+    ) -> None:
+        """Validate a webhook trigger integration association.
+
+        Args:
+            webhook_integration_id: The integration to associate.
+            project_id: The trigger project.
+            flavor: The webhook trigger flavor.
+            session: The active database session.
+
+        Raises:
+            IllegalOperationError: If the association crosses projects or the
+                integration type is incompatible with the trigger flavor.
+        """
+        integration = self._get_schema_by_id(
+            resource_id=webhook_integration_id,
+            schema_class=WebhookIntegrationSchema,
+            session=session,
+        )
+        if integration.project_id != project_id:
+            raise IllegalOperationError(
+                "Webhook triggers and integrations must be in the same "
+                "project."
+            )
+
+        expected_type = WEBHOOK_TRIGGER_FLAVOR_TO_TYPE[flavor]
+        if WebhookType(integration.webhook_type) != expected_type:
+            raise IllegalOperationError(
+                f"The {flavor.value} trigger flavor requires a "
+                f"{expected_type.value} webhook integration."
+            )
+
     @track_decorator(AnalyticsEvent.CREATED_TRIGGER)
     def create_trigger(
         self, trigger: TriggerRequest
@@ -8472,6 +8526,16 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=trigger, session=session)
+            if (
+                isinstance(trigger, WebhookTriggerRequest)
+                and trigger.webhook_integration_id is not None
+            ):
+                self._validate_webhook_trigger_integration(
+                    webhook_integration_id=trigger.webhook_integration_id,
+                    project_id=trigger.project,
+                    flavor=trigger.flavor,
+                    session=session,
+                )
             self._verify_name_uniqueness(
                 resource=trigger,
                 schema=TriggerSchema,
@@ -8589,8 +8653,29 @@ class SqlZenStore(BaseZenStore):
 
             if existing_trigger.is_archived:
                 raise IllegalOperationError(
-                    "Archived schedules can not be updated."
+                    "Archived triggers can not be updated."
                 )
+
+            if existing_trigger.type != trigger_update.type.value:
+                raise IllegalOperationError(
+                    "A trigger can not be updated with a different trigger "
+                    "type."
+                )
+
+            detach_webhook_integration = False
+            if isinstance(trigger_update, WebhookTriggerUpdate):
+                if "webhook_integration_id" in trigger_update.model_fields_set:
+                    if trigger_update.webhook_integration_id is None:
+                        detach_webhook_integration = True
+                    else:
+                        self._validate_webhook_trigger_integration(
+                            webhook_integration_id=(
+                                trigger_update.webhook_integration_id
+                            ),
+                            project_id=existing_trigger.project_id,
+                            flavor=TriggerFlavor(existing_trigger.flavor),
+                            session=session,
+                        )
 
             self._verify_name_uniqueness(
                 resource=trigger_update,
@@ -8598,8 +8683,13 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            # Update the schedule
+            # Update the trigger.
             existing_trigger = existing_trigger.update(trigger_update)
+            if detach_webhook_integration or (
+                existing_trigger.type == TriggerType.WEBHOOK.value
+                and existing_trigger.webhook_integration_id is None
+            ):
+                existing_trigger.active = False
             session.add(existing_trigger)
             session.commit()
             return existing_trigger.to_model(
@@ -8636,6 +8726,7 @@ class SqlZenStore(BaseZenStore):
                 # Soft deletion - set is_archived
                 trigger.is_archived = True
                 trigger.active = False
+                trigger.webhook_integration_id = None
                 # Renames to name_(hash) to enable re-using the name.
                 trigger.name = f"{trigger.name}_({str(uuid.uuid4())[:8]})"
                 session.add(trigger)

@@ -315,6 +315,7 @@ from zenml.models import (
     WebhookIntegrationRotateSecretRequest,
     WebhookIntegrationSecretResponse,
     WebhookIntegrationUpdate,
+    WebhookTriggerUpdate,
 )
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
@@ -2796,7 +2797,7 @@ class RestZenStore(BaseZenStore):
             f"{TRIGGERS}/{trigger_id}",
             body=trigger_update,
             params=None,
-            exclude_unset=False,
+            exclude_unset=isinstance(trigger_update, WebhookTriggerUpdate),
         )
         try:
             response_model = TYPE_TO_RESPONSE_MAPPING[body["body"]["type"]]

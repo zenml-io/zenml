@@ -56,10 +56,13 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import (
     jl_arg,
 )
+from zenml.zen_stores.schemas.webhook_integration_schemas import (
+    WebhookIntegrationSchema,
+)
 
 
 class TriggerSchema(NamedSchema, table=True):
-    """SQL Model for schedules."""
+    """SQL model for triggers."""
 
     __tablename__ = "trigger"
     __table_args__ = (
@@ -81,6 +84,10 @@ class TriggerSchema(NamedSchema, table=True):
         build_index(
             table_name=__tablename__,
             column_names=["flavor", "source_entity"],
+        ),
+        build_index(
+            table_name=__tablename__,
+            column_names=["type", "webhook_integration_id"],
         ),
     )
 
@@ -148,6 +155,18 @@ class TriggerSchema(NamedSchema, table=True):
     )
 
     user: UserSchema | None = Relationship(back_populates="triggers")
+
+    webhook_integration_id: UUID | None = build_foreign_key_field(
+        source=__tablename__,
+        target=WebhookIntegrationSchema.__tablename__,
+        source_column="webhook_integration_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    webhook_integration: WebhookIntegrationSchema | None = Relationship(
+        back_populates="triggers"
+    )
 
     # ------------------ FLAT DATA FIELDS FOR FAST FILTERING ----------------------
 
