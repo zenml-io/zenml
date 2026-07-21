@@ -19,6 +19,7 @@ from zenml.logger import get_logger
 from zenml.integrations.constants import VLLM
 
 VLLM_MODEL_DEPLOYER = "vllm"
+VLLM_KUBERNETES_MODEL_DEPLOYER_FLAVOR = "vllm-kubernetes"
 
 logger = get_logger(__name__)
 
@@ -28,12 +29,27 @@ class VLLMIntegration(Integration):
 
     NAME = VLLM
 
-    REQUIREMENTS = ["vllm>=0.6.0,<0.7.0", "openai>=1.0.0"]
+    REQUIREMENTS = [
+        "vllm>=0.6.0,<0.7.0",
+        "openai>=1.0.0",
+        "kubernetes>=21.7,<26",
+    ]
 
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
         from zenml.integrations.vllm import services
+
+        try:
+            from zenml.integrations.vllm.services import (  # noqa: F401
+                vllm_kubernetes_deployment,
+            )
+        except ImportError:
+            logger.debug(
+                "Could not import the vLLM Kubernetes deployment service. "
+                "The `vllm-kubernetes` model deployer flavor will not be "
+                "usable until the `kubernetes` package is installed."
+            )
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
@@ -42,8 +58,11 @@ class VLLMIntegration(Integration):
         Returns:
             List of stack component flavors for this integration.
         """
-        from zenml.integrations.vllm.flavors import VLLMModelDeployerFlavor
+        from zenml.integrations.vllm.flavors import (
+            KubernetesVLLMModelDeployerFlavor,
+            VLLMModelDeployerFlavor,
+        )
 
-        return [VLLMModelDeployerFlavor]
+        return [VLLMModelDeployerFlavor, KubernetesVLLMModelDeployerFlavor]
 
 

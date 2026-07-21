@@ -17,3 +17,15 @@ from zenml.integrations.vllm.model_deployers.vllm_model_deployer import (  # noq
 )
 
 __all__ = ["VLLMModelDeployer"]
+
+# The Kubernetes vLLM model deployer depends on the `kubernetes` package.
+# Guard the import so that the local vLLM model deployer keeps working in
+# environments where `kubernetes` is not installed.
+try:
+    from zenml.integrations.vllm.model_deployers.vllm_kubernetes_model_deployer import (  # noqa
+        KubernetesVLLMModelDeployer,
+    )
+
+    __all__.append("KubernetesVLLMModelDeployer")
+except ImportError:
+    pass

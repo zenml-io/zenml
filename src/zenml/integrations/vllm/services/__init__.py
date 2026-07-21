@@ -15,5 +15,27 @@
 
 from zenml.integrations.vllm.services.vllm_deployment import (  # noqa
     VLLMDeploymentService,
+    VLLMEngineArgs,
     VLLMServiceConfig,
 )
+
+__all__ = [
+    "VLLMDeploymentService",
+    "VLLMEngineArgs",
+    "VLLMServiceConfig",
+]
+
+# The Kubernetes vLLM deployment service depends on the `kubernetes`
+# package. Guard the import so that the local vLLM deployment service keeps
+# working in environments where `kubernetes` is not installed.
+try:
+    from zenml.integrations.vllm.services.vllm_kubernetes_deployment import (  # noqa
+        VLLMKubernetesDeploymentService,
+        VLLMKubernetesServiceConfig,
+    )
+
+    __all__.extend(
+        ["VLLMKubernetesDeploymentService", "VLLMKubernetesServiceConfig"]
+    )
+except ImportError:
+    pass

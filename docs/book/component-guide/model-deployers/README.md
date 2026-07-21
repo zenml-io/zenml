@@ -63,6 +63,7 @@ integrations:
 | [Hugging Face](huggingface.md) | `huggingface` | `huggingface` | Deploys ML model on Hugging Face Inference Endpoints |
 | [Databricks](databricks.md) | `databricks` | `databricks` | Deploying models to Databricks Inference Endpoints with Databricks |
 | [vLLM](vllm.md)                | `vllm`  | `vllm`      | Deploys LLM using vLLM locally |
+| [vLLM](vllm.md)                | `vllm-kubernetes` | `vllm`      | Deploys LLM using vLLM on Kubernetes |
 | [Custom Implementation](custom.md) | _custom_  |               | Extend the Artifact Store abstraction and provide your own implementation    |
 
 {% hint style="info" %}
