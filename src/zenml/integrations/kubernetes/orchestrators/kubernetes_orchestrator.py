@@ -37,6 +37,7 @@ import socket
 from contextlib import contextmanager
 from typing import (
     TYPE_CHECKING,
+    Any,
     Dict,
     Generator,
     List,
@@ -54,6 +55,7 @@ from kubernetes.client import ApiException
 from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import (
+    DYNAMIC_PIPELINE_RUN_FAILED_EXIT_CODE,
     METADATA_ORCHESTRATOR_RUN_ID,
     ORCHESTRATOR_DOCKER_IMAGE_KEY,
 )
@@ -546,6 +548,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         settings: KubernetesOrchestratorSettings,
         pod_settings: Optional[KubernetesPodSettings] = None,
         backoff_limit: Optional[int] = None,
+        pod_failure_policy: Optional[Dict[str, Any]] = None,
     ) -> k8s_client.V1Job:
         """Prepares the job manifest for a Kubernetes job.
 
@@ -560,6 +563,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             settings: Component settings for the orchestrator.
             pod_settings: Optional settings for the pod.
             backoff_limit: The backoff limit for the job.
+            pod_failure_policy: Default pod failure policy for the job. The
+                `pod_failure_policy` setting takes precedence over this value.
 
         Returns:
             The job manifest.
@@ -592,34 +597,39 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             termination_grace_period_seconds=settings.pod_stop_grace_period,
         )
 
-        pod_failure_policy = settings.pod_failure_policy or {
-            # These rules are applied sequentially. This means any failure in
-            # the main container will count towards the max retries. Any other
-            # disruption will not count towards the max retries.
-            "rules": [
-                # If the main container fails, we count it towards the max
+        pod_failure_policy = (
+            settings.pod_failure_policy
+            or pod_failure_policy
+            or {
+                # These rules are applied sequentially. This means any failure
+                # in the main container will count towards the max retries.
+                # Any other disruption will not count towards the max
                 # retries.
-                {
-                    "action": "Count",
-                    "onExitCodes": {
-                        "containerName": "main",
-                        "operator": "NotIn",
-                        "values": [0],
+                "rules": [
+                    # If the main container fails, we count it towards the
+                    # max retries.
+                    {
+                        "action": "Count",
+                        "onExitCodes": {
+                            "containerName": "main",
+                            "operator": "NotIn",
+                            "values": [0],
+                        },
                     },
-                },
-                # If the pod is interrupted at any other time, we don't count
-                # it as a retry
-                {
-                    "action": "Ignore",
-                    "onPodConditions": [
-                        {
-                            "type": "DisruptionTarget",
-                            "status": "True",
-                        }
-                    ],
-                },
-            ]
-        }
+                    # If the pod is interrupted at any other time, we don't
+                    # count it as a retry
+                    {
+                        "action": "Ignore",
+                        "onPodConditions": [
+                            {
+                                "type": "DisruptionTarget",
+                                "status": "True",
+                            }
+                        ],
+                    },
+                ]
+            }
+        )
 
         return build_job_manifest(
             job_name=name,
@@ -786,6 +796,44 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             settings, pipeline_name=snapshot.pipeline_configuration.name
         )
 
+        pod_failure_policy = {
+            # Rule order matters: a disrupted pod can also exit with code
+            # 137/143, so the DisruptionTarget rule must be evaluated before
+            # the exit-code rules below.
+            "rules": [
+                # If the pod is disrupted, we don't count it as a retry.
+                {
+                    "action": "Ignore",
+                    "onPodConditions": [
+                        {
+                            "type": "DisruptionTarget",
+                            "status": "True",
+                        }
+                    ],
+                },
+                # If the pod exits with the dedicated exit code, the run
+                # already reached a terminal status and retrying is useless.
+                {
+                    "action": "FailJob",
+                    "onExitCodes": {
+                        "containerName": "main",
+                        "operator": "In",
+                        "values": [DYNAMIC_PIPELINE_RUN_FAILED_EXIT_CODE],
+                    },
+                },
+                # Any other failure of the main container counts towards the
+                # max retries.
+                {
+                    "action": "Count",
+                    "onExitCodes": {
+                        "containerName": "main",
+                        "operator": "NotIn",
+                        "values": [0],
+                    },
+                },
+            ]
+        }
+
         try:
             with self._create_auth_secret_if_necessary(
                 snapshot, environment, orchestrator_pod_settings
@@ -801,6 +849,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     settings=settings,
                     pod_settings=orchestrator_pod_settings,
                     backoff_limit=settings.orchestrator_job_backoff_limit,
+                    pod_failure_policy=pod_failure_policy,
                 )
 
                 if snapshot.schedule:
