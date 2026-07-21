@@ -13,12 +13,41 @@
 #  permissions and limitations under the License.
 """Tests for step-run resource request helpers."""
 
+from datetime import datetime, timedelta, timezone
+from unittest.mock import MagicMock
+from uuid import uuid4
+
 import pytest
 
 from zenml.config.resource_settings import ResourceSettings
-from zenml.enums import ResourceRequestReclaimTolerance, StepRuntime
+from zenml.enums import (
+    ExecutionStatus,
+    ResourceRequestReclaimTolerance,
+    ResourceRequestRuntimeState,
+    ResourceRequestStatus,
+    StepRuntime,
+)
 from zenml.exceptions import IllegalOperationError
 from zenml.zen_stores.sql_zen_store import SqlZenStore
+
+
+def _sql_store_with_resource_pools() -> SqlZenStore:
+    store = object.__new__(SqlZenStore)
+    resource_pools = MagicMock()
+    renewed_request = MagicMock()
+    renewed_request.status = ResourceRequestStatus.ALLOCATED
+    resource_pools.renew_resource_request.return_value = renewed_request
+    store._resource_pools = resource_pools
+    return store
+
+
+def _heartbeat_step_run() -> MagicMock:
+    return MagicMock(
+        status=ExecutionStatus.RUNNING.value,
+        resource_request_id=uuid4(),
+        heartbeat_threshold=30,
+        name="step",
+    )
 
 
 def test_omitted_inline_reclaim_tolerance_is_none() -> None:
@@ -92,4 +121,55 @@ def test_isolated_non_reclaimable_steps_do_not_require_heartbeat() -> None:
         runtime=StepRuntime.ISOLATED,
         heartbeat_enabled=False,
         step_name="step",
+    )
+
+
+def test_heartbeat_renewal_uses_expected_heartbeat_interval(
+    monkeypatch,
+) -> None:
+    """Heartbeat renewal leases use the timeout reported by the caller."""
+    fixed_now = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    monkeypatch.setattr(
+        "zenml.zen_stores.sql_zen_store.utc_now", lambda: fixed_now
+    )
+    store = _sql_store_with_resource_pools()
+    step_run = _heartbeat_step_run()
+
+    status = store._renew_step_resource_request_from_heartbeat(
+        session=MagicMock(),
+        step_run=step_run,
+        heartbeat_liveness_timeout_seconds=42,
+    )
+
+    assert status == ExecutionStatus.RUNNING
+    renewal_request = store.resource_pools.renew_resource_request.call_args[0][
+        1
+    ]
+    assert renewal_request.lease_expires_at == fixed_now + timedelta(
+        seconds=42
+    )
+    assert renewal_request.runtime_state == ResourceRequestRuntimeState.RUNNING
+
+
+def test_heartbeat_renewal_without_expected_interval_uses_step_threshold(
+    monkeypatch,
+) -> None:
+    """Legacy heartbeat calls renew leases from the stored step threshold."""
+    fixed_now = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    monkeypatch.setattr(
+        "zenml.zen_stores.sql_zen_store.utc_now", lambda: fixed_now
+    )
+    store = _sql_store_with_resource_pools()
+    step_run = _heartbeat_step_run()
+
+    store._renew_step_resource_request_from_heartbeat(
+        session=MagicMock(),
+        step_run=step_run,
+    )
+
+    renewal_request = store.resource_pools.renew_resource_request.call_args[0][
+        1
+    ]
+    assert renewal_request.lease_expires_at == fixed_now + timedelta(
+        minutes=step_run.heartbeat_threshold
     )

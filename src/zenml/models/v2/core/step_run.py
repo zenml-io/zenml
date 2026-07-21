@@ -929,6 +929,19 @@ class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
 # ------------------ Heartbeat Model ---------------
 
 
+class StepHeartbeatRequest(BaseModel):
+    """Light-weight model for Step Heartbeat requests."""
+
+    heartbeat_liveness_timeout_seconds: Optional[int] = Field(
+        default=None,
+        gt=0,
+        title=(
+            "Seconds the server should wait before considering the "
+            "heartbeat client dead."
+        ),
+    )
+
+
 class StepHeartbeatResponse(BaseModel, use_enum_values=True):
     """Light-weight model for Step Heartbeat responses."""
 

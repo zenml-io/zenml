@@ -30,8 +30,16 @@ class FakeServerHeartbeat:
         self.heartbeat_enabled = True
         self._call_count = 0
         self.step_id = step_id
+        self.heartbeat_liveness_timeout_seconds = None
 
-    def update_step_heartbeat(self, step_run_id) -> StepHeartbeatResponse:
+    def update_step_heartbeat(
+        self,
+        step_run_id,
+        heartbeat_liveness_timeout_seconds=None,
+    ) -> StepHeartbeatResponse:
+        self.heartbeat_liveness_timeout_seconds = (
+            heartbeat_liveness_timeout_seconds
+        )
         if self.step_id == step_run_id:
             self._call_count += 1
 
@@ -85,6 +93,10 @@ def test_heartbeat_worker_with_remote_stopping(monkeypatch):
         time.sleep(0.1)
 
         assert fake_server._call_count >= 1
+        assert (
+            fake_server.heartbeat_liveness_timeout_seconds
+            == StepHeartbeatWorker.heartbeat_liveness_timeout_seconds()
+        )
 
         fake_server.execution_status = ExecutionStatus.STOPPED
 

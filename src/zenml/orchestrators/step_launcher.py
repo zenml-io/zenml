@@ -58,7 +58,6 @@ from zenml.orchestrators.signal_handler import SignalHandler
 from zenml.orchestrators.step_runner import StepRunner
 from zenml.stack import Stack
 from zenml.steps import StepHeartBeatTerminationException
-from zenml.steps.heartbeat import StepHeartbeatWorker
 from zenml.utils import env_utils, exception_utils, string_utils
 from zenml.utils.logging_utils import (
     LoggingContext,
@@ -879,14 +878,18 @@ class StepLauncher:
             seconds=resource_settings.initialization_lease_seconds
         )
         wait_started_at = utc_now()
+        allocation_wait_deadline = wait_started_at + allocation_wait_timeout
+        max_poll_delay_seconds = 20.0
+        poller_lease_buffer = timedelta(seconds=2 * max_poll_delay_seconds)
 
         for delay in exponential_backoff_delays(
             initial_delay=1.0,
-            max_delay=20.0,
+            max_delay=max_poll_delay_seconds,
             factor=2.0,
             jitter="equal",
         ):
-            if utc_now() - wait_started_at >= allocation_wait_timeout:
+            now = utc_now()
+            if now >= allocation_wait_deadline:
                 raise RuntimeError(
                     f"Timed out after {resource_settings.allocation_wait_timeout_seconds} "
                     f"seconds waiting for resource request `{resource_request_id}` "
@@ -897,13 +900,16 @@ class StepLauncher:
 
             if resource_request is None:
                 try:
+                    # This lease tracks allocation-poller liveness before the
+                    # step heartbeat worker exists.
+                    lease_duration = min(
+                        timedelta(seconds=delay) + poller_lease_buffer,
+                        allocation_wait_deadline - now,
+                    )
                     resource_request = zen_store.renew_resource_request(
                         resource_request_id,
                         ResourceRequestRenewalRequest(
-                            lease_expires_at=(
-                                StepHeartbeatWorker.resource_request_lease_expires_at()
-                                + timedelta(seconds=delay)
-                            ),
+                            lease_expires_at=now + lease_duration,
                             runtime_state=ResourceRequestRuntimeState.PENDING,
                         ),
                     )

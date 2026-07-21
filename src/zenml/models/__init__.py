@@ -358,6 +358,7 @@ from zenml.models.v2.core.stack import (
     StackUpdate,
 )
 from zenml.models.v2.core.step_run import (
+    StepHeartbeatRequest,
     StepHeartbeatResponse,
     StepRunFilter,
     StepRunRequest,
@@ -1011,6 +1012,7 @@ __all__ = [
     "StepRunIdentifier",
     "ArtifactVersionIdentifier",
     "ModelVersionIdentifier",
+    "StepHeartbeatRequest",
     "StepHeartbeatResponse",
     "ScheduleTriggerRequest",
     "ScheduleTriggerResponse",
