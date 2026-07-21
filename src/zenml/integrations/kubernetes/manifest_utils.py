@@ -26,6 +26,7 @@ from zenml.constants import ENV_ZENML_ENABLE_REPO_INIT_WARNINGS
 from zenml.integrations.airflow.orchestrators.dag_generator import (
     ENV_ZENML_LOCAL_STORES_PATH,
 )
+from zenml.integrations.kubernetes.constants import MULTI_POD_MAIN_PORT
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.logger import get_logger
 from zenml.utils import string_utils
@@ -428,6 +429,7 @@ def build_job_manifest(
     active_deadline_seconds: Optional[int] = None,
     pod_failure_policy: Optional[Dict[str, Any]] = None,
     owner_references: Optional[List[k8s_client.V1OwnerReference]] = None,
+    pod_count: int = 1,
 ) -> k8s_client.V1Job:
     """Build a Kubernetes job manifest.
 
@@ -441,6 +443,8 @@ def build_job_manifest(
         active_deadline_seconds: The active deadline seconds for the job.
         pod_failure_policy: The pod failure policy for the job.
         owner_references: The owner references for the job.
+        pod_count: The number of pods to run in parallel. Values above 1
+            turn the job into an indexed multi-pod job.
 
     Returns:
         The Kubernetes job manifest.
@@ -448,11 +452,17 @@ def build_job_manifest(
     job_spec = k8s_client.V1JobSpec(
         template=pod_template,
         backoff_limit=backoff_limit,
-        parallelism=1,
+        parallelism=pod_count,
         ttl_seconds_after_finished=ttl_seconds_after_finished,
         active_deadline_seconds=active_deadline_seconds,
         pod_failure_policy=pod_failure_policy,
     )
+    if pod_count > 1:
+        job_spec.completions = pod_count
+        job_spec.completion_mode = "Indexed"
+        # The subdomain ties the pod hostnames to the headless service of
+        # the same name for stable per-pod DNS.
+        pod_template.spec.subdomain = job_name
 
     job_metadata = k8s_client.V1ObjectMeta(
         name=job_name,
@@ -462,6 +472,49 @@ def build_job_manifest(
     )
 
     return k8s_client.V1Job(spec=job_spec, metadata=job_metadata)
+
+
+def build_headless_service_manifest(
+    job: k8s_client.V1Job,
+) -> k8s_client.V1Service:
+    """Headless discovery service for the pods of a multi-pod job.
+
+    The service is owned by the job, so Kubernetes garbage collection
+    removes it with the job on TTL expiry, cancellation or deletion.
+
+    Args:
+        job: The created job.
+
+    Returns:
+        The service manifest.
+    """
+    job_name = job.metadata.name
+    return k8s_client.V1Service(
+        metadata=k8s_client.V1ObjectMeta(
+            name=job_name,
+            labels=job.metadata.labels,
+            owner_references=[
+                k8s_client.V1OwnerReference(
+                    api_version="batch/v1",
+                    kind="Job",
+                    name=job_name,
+                    uid=job.metadata.uid,
+                    controller=False,
+                    block_owner_deletion=False,
+                )
+            ],
+        ),
+        spec=k8s_client.V1ServiceSpec(
+            cluster_ip="None",
+            # Kubernetes labels every pod of a job with job-name.
+            selector={"job-name": job_name},
+            ports=[
+                k8s_client.V1ServicePort(name="main", port=MULTI_POD_MAIN_PORT)
+            ],
+            # Pods must be resolvable during startup, before readiness.
+            publish_not_ready_addresses=True,
+        ),
+    )
 
 
 def job_template_manifest_from_job(
