@@ -13,9 +13,18 @@
 #  permissions and limitations under the License.
 """vLLM integration flavors."""
 
+from zenml.integrations.vllm.flavors.vllm_kubernetes_model_deployer_flavor import (  # noqa
+    KubernetesVLLMModelDeployerConfig,
+    KubernetesVLLMModelDeployerFlavor,
+)
 from zenml.integrations.vllm.flavors.vllm_model_deployer_flavor import (  # noqa
     VLLMModelDeployerConfig,
     VLLMModelDeployerFlavor,
 )
 
-__all__ = ["VLLMModelDeployerConfig", "VLLMModelDeployerFlavor"]
+__all__ = [
+    "KubernetesVLLMModelDeployerConfig",
+    "KubernetesVLLMModelDeployerFlavor",
+    "VLLMModelDeployerConfig",
+    "VLLMModelDeployerFlavor",
+]

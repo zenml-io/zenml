@@ -17,6 +17,8 @@ import argparse
 import os
 from typing import Any, List, Optional, Union
 
+from pydantic import BaseModel
+
 from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
 from zenml.logger import get_logger
 from zenml.models.v2.misc.service import ServiceType
@@ -71,13 +73,10 @@ class VLLMDeploymentEndpoint(LocalDaemonServiceEndpoint):
         return os.path.join(uri, self.config.prediction_url_path)
 
 
-class VLLMServiceConfig(LocalDaemonServiceConfig):
-    """vLLM service configurations."""
+class VLLMEngineArgs(BaseModel):
+    """vLLM engine arguments shared across deployment targets."""
 
     model: str
-    port: int
-    host: Optional[str] = None
-    blocking: bool = True
     # If unspecified, model name or path will be used.
     tokenizer: Optional[str] = None
     served_model_name: Optional[Union[str, List[str]]] = None
@@ -90,6 +89,14 @@ class VLLMServiceConfig(LocalDaemonServiceConfig):
     # The specific model version to use. It can be a branch name, a tag name, or a commit id.
     # If unspecified, will use the default version.
     revision: Optional[str] = None
+
+
+class VLLMServiceConfig(VLLMEngineArgs, LocalDaemonServiceConfig):
+    """vLLM service configurations."""
+
+    port: int
+    host: Optional[str] = None
+    blocking: bool = True
 
 
 class VLLMDeploymentService(LocalDaemonService, BaseDeploymentService):

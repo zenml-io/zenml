@@ -225,7 +225,8 @@ def add_pod_settings(
 
     for container in pod_spec.containers:
         assert isinstance(container, k8s_client.V1Container)
-        container._resources = settings.resources
+        if settings.resources:
+            container._resources = settings.resources
         if settings.volume_mounts:
             if container.volume_mounts:
                 container.volume_mounts.extend(settings.volume_mounts)
