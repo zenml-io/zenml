@@ -73,7 +73,7 @@ class ByteUnit(Enum):
 
 
 MEMORY_REGEX = r"^[0-9]+(" + "|".join(unit.value for unit in ByteUnit) + r")$"
-BASIC_RESOURCE_KINDS = frozenset({"cpu", "gpu", "memory", "step_run"})
+BASIC_RESOURCE_KINDS = frozenset({"cpu", "gpu", "memory"})
 DEFAULT_ALLOCATION_WAIT_TIMEOUT_SECONDS = 3600
 DEFAULT_INITIALIZATION_LEASE_SECONDS = 3600
 

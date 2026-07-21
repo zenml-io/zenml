@@ -254,10 +254,19 @@ def test_basic_resource_demands_include_pool_resource_kinds() -> None:
     rs = ResourceSettings(
         resources=[
             PoolResourceDemand(name="gpu-slot", quantity=1, kind="gpu"),
-            PoolResourceDemand(name="step-slot", quantity=1, kind="step_run"),
         ]
     )
     assert rs.has_basic_resource_demands is True
+
+
+def test_step_run_pool_resource_kind_is_not_basic_demand() -> None:
+    """step_run is no longer a stock infrastructure resource kind."""
+    rs = ResourceSettings(
+        resources=[
+            PoolResourceDemand(name="step-slot", quantity=1, kind="step_run"),
+        ]
+    )
+    assert rs.has_basic_resource_demands is False
 
 
 def test_custom_pool_resources_are_not_basic_demands() -> None:

@@ -296,7 +296,6 @@ from zenml.models import (
     ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectUpdate,
-    ResourceRequestDemand,
     ResourceRequestFilter,
     ResourceRequestRequest,
     ResourceRequestResponse,
@@ -11941,12 +11940,6 @@ class SqlZenStore(BaseZenStore):
                     else step_schema.heartbeat_threshold is not None
                 )
                 demands = resource_settings.merged_resource_demands()
-                if resource_runtime == StepRuntime.ISOLATED and not any(
-                    demand.kind == "step_run" for demand in demands
-                ):
-                    demands.append(
-                        ResourceRequestDemand(kind="step_run", quantity=1)
-                    )
 
                 if demands:
                     lease_expires_at = None
