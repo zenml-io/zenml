@@ -104,20 +104,6 @@ def verify_permissions_for_source_entity(
         raise ValueError(f"Unexpected source type: {format(source_type)}")
 
 
-def verify_permissions_for_webhook_integration(
-    webhook_integration_id: UUID,
-) -> None:
-    """Verify read permission for a webhook trigger integration.
-
-    Args:
-        webhook_integration_id: The webhook integration ID.
-    """
-    verify_permission_for_model(
-        model=zen_store().get_webhook_integration(webhook_integration_id),
-        action=Action.READ,
-    )
-
-
 @router.post(
     TRIGGERS,
     responses={401: error_response, 409: error_response, 422: error_response},
@@ -144,8 +130,11 @@ def create_trigger(
         isinstance(trigger, WebhookTriggerRequest)
         and trigger.webhook_integration_id is not None
     ):
-        verify_permissions_for_webhook_integration(
-            trigger.webhook_integration_id
+        verify_permission_for_model(
+            model=zen_store().get_webhook_integration(
+                trigger.webhook_integration_id
+            ),
+            action=Action.READ,
         )
 
     check_entitlement(feature=SCHEDULE_FEATURE)
@@ -242,8 +231,11 @@ def update_trigger(
         isinstance(trigger_update, WebhookTriggerUpdate)
         and trigger_update.webhook_integration_id is not None
     ):
-        verify_permissions_for_webhook_integration(
-            trigger_update.webhook_integration_id
+        verify_permission_for_model(
+            model=zen_store().get_webhook_integration(
+                trigger_update.webhook_integration_id
+            ),
+            action=Action.READ,
         )
 
     check_entitlement(feature=SCHEDULE_FEATURE)
