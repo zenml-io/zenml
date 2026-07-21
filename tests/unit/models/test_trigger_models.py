@@ -22,6 +22,7 @@ from zenml.models import (
     TriggerExecutionInfo,
     TriggerResponseResources,
     TriggerSnapshotDispatchState,
+    WebhookTriggerUpdate,
 )
 
 
@@ -36,6 +37,13 @@ def test_trigger_execution_info_defaults_pipeline_lineage() -> None:
     assert info.upstream_run_id == upstream_run_id
     assert info.upstream_pipeline_ids == []
     assert "upstream_pipeline_ids" in info.model_dump()
+
+
+def test_webhook_trigger_update_uses_full_association_state() -> None:
+    """Webhook trigger updates should always replace the association."""
+    update = WebhookTriggerUpdate(name="webhook-trigger")
+
+    assert update.get_extra_fields() == {"webhook_integration_id": None}
 
 
 def test_schedule_trigger_valid_and_inheritance():

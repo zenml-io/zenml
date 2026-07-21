@@ -62,7 +62,6 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.enums import (
-    WEBHOOK_TRIGGER_FLAVOR_TO_TYPE,
     WEBHOOK_TYPE_TO_TRIGGER_FLAVOR,
     ColorVariants,
     CuratedVisualizationSize,
@@ -4816,30 +4815,24 @@ class Client(metaclass=ClientMetaClass):
             trigger_name_id_or_prefix=trigger_name_id_or_prefix,
             allow_name_prefix_match=False,
         )
-        update_values: dict[str, Any] = {}
+        webhook_integration_id = trigger.webhook_integration_id
         if webhook_integration is not None:
             integration = self.get_webhook(webhook_integration)
-            expected_type = WEBHOOK_TRIGGER_FLAVOR_TO_TYPE[trigger.flavor]
-            if integration.webhook_type != expected_type:
-                raise IllegalOperationError(
-                    f"The {trigger.flavor.value} trigger flavor requires a "
-                    f"{expected_type.value} webhook integration."
-                )
-            update_values["webhook_integration_id"] = integration.id
+            webhook_integration_id = integration.id
         elif detach_webhook_integration:
-            update_values["webhook_integration_id"] = None
+            webhook_integration_id = None
 
         response = self.zen_store.update_trigger(
             trigger_id=trigger.id,
             trigger_update=WebhookTriggerUpdate(
-                name=name or trigger.name,
+                name=name if name is not None else trigger.name,
                 active=active if active is not None else trigger.active,
                 concurrency=(
                     concurrency
                     if concurrency is not None
                     else trigger.concurrency
                 ),
-                **update_values,
+                webhook_integration_id=webhook_integration_id,
             ),
         )
         assert isinstance(response, WebhookTriggerResponse)

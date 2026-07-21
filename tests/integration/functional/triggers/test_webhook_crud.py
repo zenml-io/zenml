@@ -74,6 +74,17 @@ def test_webhook_trigger_store_lifecycle(clean_client):
     assert retrieved.model_dump() == trigger.model_dump()
     assert trigger.id in {item.id for item in listed.items}
 
+    with pytest.raises(IllegalOperationError, match="custom webhook"):
+        store.update_trigger(
+            trigger_id=trigger.id,
+            trigger_update=WebhookTriggerUpdate(
+                name=trigger.name,
+                active=trigger.active,
+                concurrency=trigger.concurrency,
+                webhook_integration_id=github_integration.id,
+            ),
+        )
+
     detached = store.update_trigger(
         trigger_id=trigger.id,
         trigger_update=WebhookTriggerUpdate(
@@ -149,6 +160,15 @@ def test_webhook_trigger_client_lifecycle(clean_client):
     )
 
     assert trigger.id in {item.id for item in listed.items}
+
+    updated = clean_client.update_webhook_trigger(
+        trigger.id,
+        concurrency=TriggerRunConcurrency.SKIP,
+    )
+
+    assert updated.webhook_integration_id == integration.id
+    assert updated.active is True
+    assert updated.concurrency == TriggerRunConcurrency.SKIP
 
     detached = clean_client.update_webhook_trigger(
         trigger.id,

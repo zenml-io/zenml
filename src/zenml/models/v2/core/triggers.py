@@ -1148,13 +1148,11 @@ class WebhookTriggerUpdate(TriggerUpdate, WebhookTrigger):
         return "{}"
 
     def get_extra_fields(self) -> dict[str, Any]:
-        """Return explicitly updated flat webhook trigger fields.
+        """Return flat webhook trigger fields.
 
         Returns:
-            The webhook integration association when it was explicitly set.
+            The webhook integration association.
         """
-        if "webhook_integration_id" not in self.model_fields_set:
-            return {}
         return {"webhook_integration_id": self.webhook_integration_id}
 
 
