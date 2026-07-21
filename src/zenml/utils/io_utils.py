@@ -16,7 +16,7 @@
 import fnmatch
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterable
+from typing import IO, TYPE_CHECKING, Any, AnyStr, Callable, Generic, Iterable
 
 import click
 
@@ -36,6 +36,48 @@ from zenml.io.fileio import (
 
 if TYPE_CHECKING:
     from zenml.io.filesystem import PathType
+
+
+class CallbackWriter(Generic[AnyStr]):
+    """Write proxy that invokes a callback with everything written through it."""
+
+    _fp: IO[AnyStr]
+    _callback: Callable[[AnyStr], Any]
+
+    def __init__(
+        self, fp: IO[AnyStr], callback: Callable[[AnyStr], Any]
+    ) -> None:
+        """Initializes the proxy.
+
+        Args:
+            fp: The underlying write handle.
+            callback: Callback invoked with every chunk passed to `write`.
+        """
+        self._fp = fp
+        self._callback = callback
+
+    def write(self, data: AnyStr) -> int:
+        """Invokes the callback with `data` and writes it.
+
+        Args:
+            data: The data to write.
+
+        Returns:
+            The number of characters or bytes written.
+        """
+        self._callback(data)
+        return self._fp.write(data)
+
+    def __getattr__(self, name: str) -> Any:
+        """Delegates attribute access to the wrapped handle.
+
+        Args:
+            name: The attribute name.
+
+        Returns:
+            The attribute of the wrapped handle.
+        """
+        return getattr(self._fp, name)
 
 
 def is_root(path: str) -> bool:

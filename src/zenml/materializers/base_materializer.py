@@ -122,6 +122,10 @@ class BaseMaterializer(metaclass=BaseMaterializerMeta):
 
     _DOCS_BUILDING_MODE: ClassVar[bool] = False
 
+    # Content hash recorded for the artifact version, set by the loading
+    # machinery before `load` so materializers can validate the stored data.
+    expected_content_hash: Optional[str] = None
+
     def __init__(
         self, uri: str, artifact_store: Optional[BaseArtifactStore] = None
     ):
