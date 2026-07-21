@@ -278,6 +278,7 @@ from zenml.models import (
     StackRequest,
     StackResponse,
     StackUpdate,
+    StepHeartbeatRequest,
     StepHeartbeatResponse,
     StepRunFilter,
     StepRunRequest,
@@ -3784,18 +3785,32 @@ class RestZenStore(BaseZenStore):
         )
 
     def update_step_heartbeat(
-        self, step_run_id: UUID
+        self,
+        step_run_id: UUID,
+        heartbeat_liveness_timeout_seconds: Optional[int] = None,
     ) -> StepHeartbeatResponse:
         """Updates a step run heartbeat.
 
         Args:
             step_run_id: The ID of the step to update.
+            heartbeat_liveness_timeout_seconds: Optional number of seconds the
+                server should wait for another heartbeat before considering the
+                heartbeat client dead.
 
         Returns:
             The step heartbeat response.
         """
+        request = None
+        if heartbeat_liveness_timeout_seconds is not None:
+            request = StepHeartbeatRequest(
+                heartbeat_liveness_timeout_seconds=(
+                    heartbeat_liveness_timeout_seconds
+                )
+            )
+
         response_body = self.put(
             path=f"{STEPS}/{str(step_run_id)}{HEARTBEAT}",
+            body=request,
             timeout=5,
         )
 

@@ -18,12 +18,12 @@ import contextvars
 import logging
 import threading
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 from uuid import UUID
 
 from zenml.enums import ExecutionStatus
-from zenml.utils.time_utils import to_utc_timezone, utc_now
+from zenml.utils.time_utils import to_utc_timezone
 
 if TYPE_CHECKING:
     pass
@@ -46,14 +46,15 @@ class StepHeartbeatWorker:
     MAX_CONSECUTIVE_FAILURES = 3
 
     @classmethod
-    def resource_request_lease_expires_at(cls) -> datetime:
-        """Compute the next resource-request lease expiration timestamp.
+    def heartbeat_liveness_timeout_seconds(cls) -> int:
+        """Get the liveness timeout reported with heartbeat requests.
 
         Returns:
-            UTC timestamp for a renewed resource request lease.
+            Seconds the server should wait for the next heartbeat before
+            considering the heartbeat client dead.
         """
-        return utc_now() + timedelta(
-            seconds=cls.MAX_HEARTBEAT_INTERVAL_SECONDS
+        return (
+            cls.MAX_HEARTBEAT_INTERVAL_SECONDS
             + cls.STEP_HEARTBEAT_INTERVAL_SECONDS
         )
 
@@ -223,7 +224,12 @@ class StepHeartbeatWorker:
 
         store = GlobalConfiguration().zen_store
 
-        response = store.update_step_heartbeat(step_run_id=self.step_id)
+        response = store.update_step_heartbeat(
+            step_run_id=self.step_id,
+            heartbeat_liveness_timeout_seconds=(
+                self.heartbeat_liveness_timeout_seconds()
+            ),
+        )
 
         if not response.heartbeat_enabled:
             logger.debug("Heartbeat set to disabled - stopping worker")
