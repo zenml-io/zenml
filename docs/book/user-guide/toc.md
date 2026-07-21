@@ -54,6 +54,10 @@
   * [Typed services](agents-guide/05-typed-services.md)
   * [Human in the loop](agents-guide/06-hitl.md)
   * [Production notes](agents-guide/production-notes.md)
+* [Agent evals guide](agent-evals-guide/README.md)
+  * [Run an eval campaign](agent-evals-guide/run-a-campaign.md)
+  * [Benchmark operations](agent-evals-guide/benchmark-ops.md)
+  * [From evals to training](agent-evals-guide/evals-to-training.md)
 
 ## Tutorials <a href="#tutorial" id="tutorial"></a>
 

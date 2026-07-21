@@ -121,6 +121,12 @@ install_integrations() {
         ignore_integrations="$ignore_integrations tensorflow deepchecks"
     fi
 
+    # harbor is unresolvable next to the huggingface integration in one
+    # environment: harbor 0.8 needs datasets>=4.4.1, huggingface pins
+    # datasets<4.0.0. Its unit tests are importorskip-gated and run in
+    # environments with Harbor installed; revisit when either pin moves.
+    ignore_integrations="$ignore_integrations harbor"
+
     # TODO: Revisit once pytorch Windows support stabilizes.
     # torch DLL loading on Windows CI is unreliable (OSError / FileNotFoundError
     # at import time). Tracked in: https://github.com/zenml-io/zenml/issues/4471

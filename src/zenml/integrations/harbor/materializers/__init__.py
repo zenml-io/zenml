@@ -11,5 +11,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-harbor>=0.8.0
-zenml[local]
+"""Initialization of the Harbor materializers."""
+
+from zenml.integrations.harbor.materializers.harbor_shard_result_materializer import (
+    HarborShardResultMaterializer,
+)
+
+__all__ = ["HarborShardResultMaterializer"]

@@ -107,6 +107,34 @@ jobs:
       python-version: ${{ matrix.python-version }}
       os: ${{ matrix.os }}
     secrets: inherit
+  harbor-unit-test:
+    # harbor cannot co-resolve with the huggingface integration in one
+    # environment (harbor 0.8 needs datasets>=4.4.1, huggingface pins
+    # datasets<4), so the omnibus CI environment excludes it. This
+    # dedicated environment keeps the Harbor-gated unit tests — incl.
+    # the Harbor API canary that catches upstream drift — running in CI.
+    needs: linting
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+      UV_HTTP_TIMEOUT: 600
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+        with:
+          # harbor requires Python >= 3.12.
+          python-version: '3.12'
+      - name: Install ZenML and Harbor
+        run: |
+          pip install uv
+          bash scripts/install-zenml-dev.sh -s -i no
+          uv pip install --system "harbor>=0.8,<0.9"
+      - name: Run Harbor unit tests
+        run: pytest tests/unit/integrations/harbor -v
   ubuntu-latest-integration-test:
     needs: [linting]
     if: github.event.pull_request.draft == false

@@ -11,14 +11,25 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Harbor BaseEnvironment backed by ZenML's Sandbox stack component."""
+"""Harbor BaseEnvironment backed by ZenML's Sandbox stack component.
+
+Known limitations, preserved deliberately rather than papered over:
+Harbor resource requests (``cpus``/``memory_mb``/``gpus``) are not
+translated to sandbox settings; tasks requiring network isolation
+(``allow_internet=false``) are refused; ``exec(user=...)`` is ignored;
+task-level ``docker_image`` overrides are Modal-only.
+"""
 
 import asyncio
+import concurrent.futures
 import shlex
 import tarfile
 import tempfile
 import uuid
+from contextlib import contextmanager
+from contextvars import ContextVar
 from pathlib import Path
+from typing import Iterator, NamedTuple, Optional
 
 from harbor.environments.base import BaseEnvironment, ExecResult
 
@@ -29,29 +40,143 @@ from zenml.sandboxes import BaseSandbox, BaseSandboxSettings, SandboxSession
 logger = get_logger(__name__)
 
 
+class SandboxProvenance(NamedTuple):
+    """Sandbox facts only the bridge knows at trial runtime."""
+
+    flavor: str
+    docker_image: str | None
+
+
+# Sandbox facts recorded per environment session, keyed by Harbor's
+# session_id (== the trial name for the main trial environment; separate
+# verifier environments get a derived id). The bridge is the only party
+# that knows which flavor/image actually backed a trial — reconstructing
+# the image from the run's stack config gives wrong answers for tasks
+# that pin a ``docker_image`` override. A ContextVar (not a module
+# global) carries the registry: dynamic mapped shard steps run
+# concurrently as threads in one process, and a process-global registry
+# would let one shard observe or reset another shard's sessions.
+_session_provenance: ContextVar[Optional[dict[str, SandboxProvenance]]] = (
+    ContextVar("zenml_harbor_session_provenance", default=None)
+)
+
+
+@contextmanager
+def session_provenance_scope() -> Iterator[dict[str, SandboxProvenance]]:
+    """Open a registry for the sandbox provenance of one Harbor job.
+
+    The shard runner wraps ``job.run()`` in this scope and joins the
+    yielded registry to trial results by session id afterwards. The
+    scope rides the ambient context: asyncio tasks inherit it, so every
+    environment Harbor starts inside the wrapped ``asyncio.run`` records
+    here, while concurrently running shard steps (separate threads,
+    separate contexts) each see only their own sessions. Environments
+    started outside any scope (e.g. the bridge used directly via
+    ``harbor run``) record nothing.
+
+    Yields:
+        The registry for this scope, keyed by session id.
+    """
+    registry: dict[str, SandboxProvenance] = {}
+    token = _session_provenance.set(registry)
+    try:
+        yield registry
+    finally:
+        _session_provenance.reset(token)
+
+
+def _reap_abandoned_session(
+    future: "concurrent.futures.Future[SandboxSession]",
+) -> None:
+    """Destroy a sandbox session whose awaiting trial was cancelled.
+
+    Runs as a done-callback on the abandoned ``create_session`` future —
+    i.e. in the worker thread that created the session, after the
+    awaiting coroutine is long gone. It must be the *concurrent* future:
+    asyncio's ``run_in_executor`` wrapper reports itself cancelled even
+    while the worker thread keeps running, which would hide the session.
+
+    Args:
+        future: The executor future of the abandoned creation call.
+    """
+    if future.cancelled() or future.exception() is not None:
+        return
+    session = future.result()
+    logger.warning(
+        "Destroying sandbox session %s that finished starting after its "
+        "Harbor trial was cancelled.",
+        session.id,
+    )
+    try:
+        session.destroy()
+    except Exception:
+        logger.exception(
+            "Failed to destroy abandoned sandbox session %s; it may "
+            "persist until the provider reclaims it.",
+            session.id,
+        )
+
+
 class ZenMLSandboxEnvironment(BaseEnvironment):
     """A Harbor environment that delegates to the active stack's Sandbox."""
 
     _session: SandboxSession | None = None
+    _start_failure: BaseException | None = None
 
     @property
     def _live_session(self) -> SandboxSession:
         """The open SandboxSession.
 
+        Returns:
+            The open sandbox session.
+
         Raises:
             RuntimeError: If the environment has not been started yet
-                (or has been stopped).
+                (or has been stopped). If ``start()`` itself failed, the
+                message carries that root cause — Harbor's cleanup still
+                calls ``exec()``/log download on the never-started
+                environment, and those follow-up errors would otherwise
+                bury the real failure.
         """
         if self._session is None:
+            if self._start_failure is not None:
+                raise RuntimeError(
+                    "ZenMLSandboxEnvironment has no open session because "
+                    f"start() failed ({self._describe_start_failure()}) — "
+                    "any further errors from this environment (e.g. "
+                    "Harbor's post-failure log download) are fallout of "
+                    "that failure."
+                ) from self._start_failure
             raise RuntimeError(
                 "ZenMLSandboxEnvironment used before start() (or after "
                 "stop()). Call await env.start(...) first."
             )
         return self._session
 
+    def _describe_start_failure(self) -> str:
+        """One-line root cause of the recorded start failure.
+
+        Returns:
+            A human-readable description of the failure.
+        """
+        failure = self._start_failure
+        if isinstance(failure, asyncio.CancelledError):
+            # str(CancelledError()) is empty, and cancellation here
+            # almost always means Harbor's environment build/start
+            # timeout expired.
+            return (
+                "start() was cancelled, most likely by Harbor's "
+                "environment build/start timeout"
+            )
+        return f"{type(failure).__name__}: {failure}"
+
     @staticmethod
     def type() -> str:
-        """The environment identifier surfaced to Harbor."""
+        """The environment identifier surfaced to Harbor.
+
+        Returns:
+            The environment type identifier.
+        """
         return "zenml-sandbox"
 
     def _validate_definition(self) -> None:
@@ -101,10 +226,45 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
                 an image needs building based on its own settings.
 
         Raises:
+            asyncio.CancelledError: Re-raised (after failure bookkeeping)
+                when Harbor cancels startup, e.g. on its environment
+                build/start timeout.
+            Exception: Re-raised from the start implementation — e.g.
+                RuntimeError if no Sandbox component is registered on the
+                active stack, or NotImplementedError if the task requires
+                network isolation (allow_internet=false).
+        """
+        self._start_failure = None
+        try:
+            await self._start()
+        except (asyncio.CancelledError, Exception) as e:
+            # Remembered so that _live_session can point Harbor's
+            # post-failure cleanup calls at the root cause.
+            # CancelledError is included explicitly: Harbor enforces its
+            # environment-build timeout by cancelling this coroutine,
+            # and that mode must not stay anonymous.
+            self._start_failure = e
+            # Retried trials reuse the session id; drop any facts an
+            # earlier attempt recorded, or a retry that never opened a
+            # sandbox would inherit (and misattribute) them.
+            registry = _session_provenance.get()
+            if registry is not None:
+                registry.pop(self.session_id, None)
+            raise
+
+    async def _start(self) -> None:
+        """Start implementation, separated for failure bookkeeping.
+
+        Raises:
             RuntimeError: If no Sandbox component is registered on the
                 active stack.
             NotImplementedError: If the task requires network isolation
                 (allow_internet=false), which the bridge can't enforce.
+            asyncio.CancelledError: Re-raised when the trial is cancelled
+                mid-creation, after arranging for the abandoned session
+                to be reaped.
+            Exception: Re-raised from preparing the Harbor log dirs after
+                the session was torn down again.
         """
         sandbox = Client().active_stack.sandbox
         if sandbox is None:
@@ -137,9 +297,38 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
                 ", ".join(ignored),
             )
         settings = self._settings_override(sandbox)
-        self._session = await asyncio.to_thread(
-            sandbox.create_session, settings=settings
+        # A dedicated single-use executor (instead of asyncio.to_thread)
+        # so the *concurrent* future stays accessible: on cancellation
+        # the worker thread keeps running, and only the concurrent
+        # future can hand over the session it eventually creates.
+        executor = concurrent.futures.ThreadPoolExecutor(
+            max_workers=1, thread_name_prefix="zenml-harbor-sandbox-start"
         )
+        try:
+            session_future = executor.submit(
+                sandbox.create_session, settings=settings
+            )
+            try:
+                session: SandboxSession = await asyncio.wrap_future(
+                    session_future
+                )
+            except asyncio.CancelledError:
+                # Harbor's build/start timeout cancels this coroutine,
+                # but the provider call keeps running in its worker
+                # thread; any session it eventually returns has no
+                # owner. Reap it when it materializes instead of leaking
+                # a paid sandbox until the provider reclaims it.
+                session_future.add_done_callback(_reap_abandoned_session)
+                raise
+        finally:
+            executor.shutdown(wait=False)
+        self._session = session
+        registry = _session_provenance.get()
+        if registry is not None:
+            registry[self.session_id] = SandboxProvenance(
+                flavor=sandbox.flavor,
+                docker_image=cfg.docker_image,
+            )
         logger.info(
             "ZenML Sandbox session %s started for Harbor trial %s",
             self._session.id,
@@ -148,7 +337,7 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
         try:
             await self._ensure_harbor_log_dirs()
         except Exception:
-            # Tear down so a half-started env doesn't leak a paid Modal
+            # Tear down so a half-started env doesn't leak a paid remote
             # sandbox up to its TTL.
             await self.stop(delete=True)
             raise
@@ -208,6 +397,8 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
                 "runs as the container default user.",
                 user,
             )
+        # _merge_env is a documented hook Harbor's base class provides
+        # for combining per-call env vars with the persistent env.
         merged_env = self._merge_env(env)
         session = self._live_session
         argv = (
@@ -219,6 +410,15 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
         def _run() -> ExecResult:
             process = session.exec(argv, cwd=cwd, env=merged_env)
             out = process.collect()
+            if out.stdout_truncated or out.stderr_truncated:
+                logger.warning(
+                    "Sandbox command output exceeded the collection cap "
+                    "and was truncated (stdout_truncated=%s, "
+                    "stderr_truncated=%s): %.200s",
+                    out.stdout_truncated,
+                    out.stderr_truncated,
+                    command,
+                )
             return ExecResult(
                 stdout=out.stdout,
                 stderr=out.stderr,
@@ -230,7 +430,12 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
     async def upload_file(
         self, source_path: Path | str, target_path: str
     ) -> None:
-        """Stream a local file into the SandboxSession."""
+        """Stream a local file into the SandboxSession.
+
+        Args:
+            source_path: Local file to upload.
+            target_path: Destination path inside the sandbox.
+        """
         await asyncio.to_thread(
             self._live_session.upload_file, str(source_path), target_path
         )
@@ -238,7 +443,12 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
     async def download_file(
         self, source_path: str, target_path: Path | str
     ) -> None:
-        """Stream a remote file out of the SandboxSession."""
+        """Stream a remote file out of the SandboxSession.
+
+        Args:
+            source_path: File inside the sandbox to download.
+            target_path: Local destination path.
+        """
         await asyncio.to_thread(
             self._live_session.download_file, source_path, str(target_path)
         )
@@ -283,7 +493,12 @@ class ZenMLSandboxEnvironment(BaseEnvironment):
     async def download_dir(
         self, source_dir: str, target_dir: Path | str
     ) -> None:
-        """Download a directory tree via tar + ``download_file``."""
+        """Download a directory tree via tar + ``download_file``.
+
+        Args:
+            source_dir: Directory inside the sandbox to download.
+            target_dir: Local destination directory.
+        """
         await self.download_dir_with_exclusions(
             source_dir=source_dir, target_dir=target_dir, exclude=[]
         )
