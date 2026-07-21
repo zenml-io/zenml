@@ -44,6 +44,26 @@ def test_basic_resource_demands_force_isolated_runtime() -> None:
     step_config = _step_config(
         ResourceSettings(
             resources=[
+                PoolResourceDemand(name="gpu-slot", quantity=1, kind="gpu")
+            ]
+        )
+    )
+
+    assert (
+        get_step_runtime(
+            step_config=step_config,
+            pipeline_docker_settings=step_config.docker_settings,
+            orchestrator=SimpleNamespace(can_run_isolated_steps=True),
+        )
+        is StepRuntime.ISOLATED
+    )
+
+
+def test_step_run_resource_demands_do_not_force_isolated_runtime() -> None:
+    """step_run is no longer treated as a basic infrastructure resource."""
+    step_config = _step_config(
+        ResourceSettings(
+            resources=[
                 PoolResourceDemand(
                     name="step-slot", quantity=1, kind="step_run"
                 )
@@ -57,7 +77,7 @@ def test_basic_resource_demands_force_isolated_runtime() -> None:
             pipeline_docker_settings=step_config.docker_settings,
             orchestrator=SimpleNamespace(can_run_isolated_steps=True),
         )
-        is StepRuntime.ISOLATED
+        is StepRuntime.INLINE
     )
 
 
