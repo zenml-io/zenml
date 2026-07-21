@@ -167,6 +167,13 @@ from zenml.models import (
     UserRequest,
     UserResponse,
     UserUpdate,
+    WebhookIntegrationCreateResponse,
+    WebhookIntegrationFilter,
+    WebhookIntegrationRequest,
+    WebhookIntegrationResponse,
+    WebhookIntegrationRotateSecretRequest,
+    WebhookIntegrationSecretResponse,
+    WebhookIntegrationUpdate,
 )
 from zenml.zen_stores.resource_pools.store_interface import (
     ResourcePoolsStoreInterface,
@@ -1822,6 +1829,91 @@ class ZenStoreInterface(ResourcePoolsStoreInterface, ABC):
 
         Returns:
             None
+        """
+
+    # -------------------- Webhook integrations ---------------------
+
+    @abstractmethod
+    def create_webhook_integration(
+        self, integration: WebhookIntegrationRequest
+    ) -> WebhookIntegrationCreateResponse:
+        """Create a webhook integration.
+
+        Args:
+            integration: The webhook integration creation request.
+
+        Returns:
+            The created integration and any generated signing secret.
+        """
+
+    @abstractmethod
+    def get_webhook_integration(
+        self, integration_id: UUID, hydrate: bool = True
+    ) -> WebhookIntegrationResponse:
+        """Get a webhook integration.
+
+        Args:
+            integration_id: The webhook integration ID.
+            hydrate: Whether to include intake statistics.
+
+        Returns:
+            The webhook integration.
+        """
+
+    @abstractmethod
+    def list_webhook_integrations(
+        self,
+        filter_model: WebhookIntegrationFilter,
+        hydrate: bool = False,
+    ) -> Page[WebhookIntegrationResponse]:
+        """List webhook integrations.
+
+        Args:
+            filter_model: The webhook integration filters.
+            hydrate: Whether to include intake statistics.
+
+        Returns:
+            A page of webhook integrations.
+        """
+
+    @abstractmethod
+    def update_webhook_integration(
+        self,
+        integration_id: UUID,
+        update: WebhookIntegrationUpdate,
+    ) -> WebhookIntegrationResponse:
+        """Update a webhook integration.
+
+        Args:
+            integration_id: The webhook integration ID.
+            update: The webhook integration update.
+
+        Returns:
+            The updated webhook integration.
+        """
+
+    @abstractmethod
+    def delete_webhook_integration(self, integration_id: UUID) -> None:
+        """Delete a webhook integration and its signing secret.
+
+        Args:
+            integration_id: The webhook integration ID.
+        """
+
+    @abstractmethod
+    def rotate_webhook_integration_secret(
+        self,
+        integration_id: UUID,
+        request: WebhookIntegrationRotateSecretRequest,
+    ) -> WebhookIntegrationSecretResponse:
+        """Rotate a webhook integration signing secret.
+
+        Args:
+            integration_id: The webhook integration ID.
+            request: The secret rotation request.
+
+        Returns:
+            The newly active signing secret.
         """
 
     # -------------------- Triggers ---------------------

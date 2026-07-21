@@ -692,6 +692,13 @@ class TriggerRunConcurrency(StrEnum):
     SUBMIT = "submit"
 
 
+class WebhookType(StrEnum):
+    """Supported webhook integration provider types."""
+
+    GITHUB = "github"
+    CUSTOM = "custom"
+
+
 class ContainerEngineType(StrEnum):
     """Container engine types."""
 
