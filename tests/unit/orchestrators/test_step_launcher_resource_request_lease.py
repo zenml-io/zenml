@@ -32,7 +32,17 @@ from zenml.orchestrators.step_launcher import StepLauncher
 
 
 def _launcher() -> StepLauncher:
-    return object.__new__(StepLauncher)
+    launcher = object.__new__(StepLauncher)
+    launcher._snapshot = MagicMock(
+        id=uuid4(),
+        is_dynamic=False,
+        pipeline_configuration=MagicMock(docker_settings=None),
+    )
+    launcher._step = MagicMock(config=MagicMock(step_operator=None))
+    launcher._stack = MagicMock(orchestrator=MagicMock())
+    launcher._invocation_id = "step"
+    launcher._wait = False
+    return launcher
 
 
 def _resource_request(
@@ -163,7 +173,7 @@ def test_wait_extends_initialization_lease_when_step_run_has_request(
 
 
 @patch(
-    "zenml.orchestrators.step_launcher.StepHeartbeatWorker.resource_request_lease_expires_at",
+    "zenml.orchestrators.step_launcher.utc_now",
     return_value=datetime(2026, 1, 1, tzinfo=timezone.utc),
 )
 @patch(
@@ -171,9 +181,9 @@ def test_wait_extends_initialization_lease_when_step_run_has_request(
     return_value=iter([3.0, 0.0]),
 )
 def test_wait_renew_lease_includes_backoff_delay(
-    _delays_mock, _lease_expires_at_mock, monkeypatch
+    _delays_mock, _utc_now_mock, monkeypatch
 ):
-    """Resource request lease renewal includes the next polling delay."""
+    """Resource request lease renewal covers the next polling delay."""
     launcher = _launcher()
     request_id = uuid4()
     pending = _resource_request(
@@ -208,7 +218,61 @@ def test_wait_renew_lease_includes_backoff_delay(
     first_renewal = zen_store.renew_resource_request.call_args_list[0][0][1]
     assert first_renewal.lease_expires_at == datetime(
         2026, 1, 1, tzinfo=timezone.utc
-    ) + timedelta(seconds=3.0)
+    ) + timedelta(seconds=43.0)
+
+
+@patch(
+    "zenml.orchestrators.step_launcher.utc_now",
+    return_value=datetime(2026, 1, 1, tzinfo=timezone.utc),
+)
+@patch(
+    "zenml.orchestrators.step_launcher.exponential_backoff_delays",
+    return_value=iter([3.0, 0.0]),
+)
+def test_wait_renew_lease_is_capped_by_allocation_timeout(
+    _delays_mock, _utc_now_mock, monkeypatch
+):
+    """Pending resource request leases do not exceed the wait timeout."""
+    launcher = _launcher()
+    request_id = uuid4()
+    pending = _resource_request(
+        status=ResourceRequestStatus.PENDING,
+        lease_expires_at=datetime.now(tz=timezone.utc),
+    )
+    allocated = _resource_request(
+        status=ResourceRequestStatus.ALLOCATED,
+        lease_expires_at=datetime.now(tz=timezone.utc),
+    )
+    zen_store = MagicMock(
+        renew_resource_request=MagicMock(
+            side_effect=[pending, allocated, allocated]
+        )
+    )
+    monkeypatch.setattr(
+        "zenml.orchestrators.step_launcher.Client",
+        lambda: MagicMock(zen_store=zen_store),
+    )
+    monkeypatch.setattr(
+        "zenml.orchestrators.step_launcher.time.sleep", MagicMock()
+    )
+    monkeypatch.setattr(
+        "zenml.orchestrators.step_launcher.publish_utils.publish_step_run_status_update",
+        MagicMock(),
+    )
+
+    launcher._wait_until_resources_acquired(
+        _step_run_info(
+            resource_request_id=request_id,
+            resource_settings=ResourceSettings(
+                allocation_wait_timeout_seconds=10
+            ),
+        )
+    )
+
+    first_renewal = zen_store.renew_resource_request.call_args_list[0][0][1]
+    assert first_renewal.lease_expires_at == datetime(
+        2026, 1, 1, tzinfo=timezone.utc
+    ) + timedelta(seconds=10)
 
 
 @patch(
