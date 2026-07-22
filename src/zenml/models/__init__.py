@@ -381,9 +381,9 @@ from zenml.models.v2.core.step_run import (
     StepRunUpdate,
 )
 from zenml.models.v2.core.stream_event import (
-    StreamEvent,
     StreamBatchRequest,
     StreamBatchResponse,
+    StreamEvent,
 )
 from zenml.models.v2.core.tag import (
     TagFilter,
@@ -451,6 +451,10 @@ from zenml.models.v2.misc.info_models import (
     ServiceConnectorResourcesInfo,
 )
 from zenml.models.v2.misc.loaded_visualization import LoadedVisualization
+from zenml.models.v2.misc.metrics import (
+    MetricSample,
+    MetricsResponse,
+)
 from zenml.models.v2.misc.param_groups import (
     ArtifactVersionIdentifier,
     ModelVersionIdentifier,
@@ -763,6 +767,8 @@ __all__ = [
     "LogsRequest",
     "LogsUpdate",
     "LogsResponse",
+    "MetricSample",
+    "MetricsResponse",
     "LogsResponseBody",
     "LogsResponseMetadata",
     "LogsResponseResources",

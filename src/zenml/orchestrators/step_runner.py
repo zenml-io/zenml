@@ -78,6 +78,10 @@ from zenml.utils.logging_utils import (
     is_step_logging_enabled,
     setup_logging_context,
 )
+from zenml.utils.metric_sampling_utils import (
+    is_step_metrics_enabled,
+    setup_metric_context,
+)
 from zenml.utils.typing_utils import get_args, get_origin, is_union
 
 if TYPE_CHECKING:
@@ -157,7 +161,21 @@ class StepRunner:
                 source="step", step_run=step_run, pipeline_run=pipeline_run
             )
 
-        with logs_context:
+        # The metric store is optional and has no default fallback, so a
+        # stack without one yields an inert context (no sampler thread).
+        # The per-step/pipeline ``enable_step_metrics`` toggle (and the
+        # ``ZENML_DISABLE_STEP_METRICS_SAMPLING`` env-var kill switch)
+        # let users opt individual steps out even when one is configured.
+        metrics_context: ContextManager[Any] = nullcontext()
+        if self._stack.metric_store is not None and is_step_metrics_enabled(
+            step_configuration=step_run.config,
+            pipeline_configuration=pipeline_run.config,
+        ):
+            metrics_context = setup_metric_context(
+                step_run=step_run, pipeline_run=pipeline_run
+            )
+
+        with logs_context, metrics_context:
             step_instance = self._load_step()
             output_materializers = self._load_output_materializers()
             resolved_signature = get_resolved_signature(
