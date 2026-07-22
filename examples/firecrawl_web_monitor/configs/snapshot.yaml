@@ -1,0 +1,34 @@
+parameters:
+  payload:
+    success: true
+    type: monitor.page
+    id: 019df960-5f2a-75fb-a98b-bd2d32ca67d4
+    webhookId: f1e2d3c4-0000-0000-0000-000000000000
+    data:
+    - monitorId: 019df960-06e7-7383-9d89-82c0113dc31a
+      checkId: 019df960-5f2a-75fb-a98b-bd2d32ca67d4
+      url: https://example.com/pricing
+      status: changed
+      previousScrapeId: 019df94f-82c3-7e41-81f0-00c72b2d9c52
+      currentScrapeId: 019df960-73ee-7ac2-97a9-fb0e442c21f1
+      error: null
+      isMeaningful: true
+      judgment:
+        meaningful: true
+        confidence: high
+        reason: The Starter plan price increased from $19 to $24 per month.
+        meaningfulChanges:
+        - type: changed
+          before: "Starter \u2014 $19/mo"
+          after: "Starter \u2014 $24/mo"
+          reason: A competitor price change may require a positioning review.
+      diff:
+        text: "--- previous\n+++ current\n@@ -1,3 +1,3 @@\n # Pricing\n-Starter \u2014\
+          \ $19/mo\n+Starter \u2014 $24/mo\n"
+    metadata:
+      environment: demo
+  goal: Identify product, pricing, positioning, or release changes that require
+    a response from our product or go-to-market teams.
+  notify_slack: false
+  llm_secret_name: null
+enable_cache: false

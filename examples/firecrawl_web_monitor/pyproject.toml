@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "zenml-firecrawl-web-monitor"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "openai>=1.0.0,<3.0.0",
+    "requests>=2.27.11,<3.0.0",
+    "zenml>=0.93",
+]
+# Nothing is installed into site-packages: this project exists only to
+# declare dependencies (also exported into Docker images via the pipeline's
+# DockerSettings). All code runs from this directory, and installing
+# modules with generic names like `constants` or `models` would shadow
+# other projects and confuse supply-chain scanners.
+[tool.setuptools]
+py-modules = []
+packages = []
