@@ -55,10 +55,13 @@ env:
   ZENML_DEBUG: 1
   ZENML_LOGGING_VERBOSITY: debug
   ZENML_ANALYTICS_OPT_IN: false
+permissions: {}
 jobs:
   linting:
     name: linting
     runs-on: ${{ inputs.os }}
+    permissions:
+      contents: read
     env:
       PYTHONIOENCODING: utf-8
       UV_HTTP_TIMEOUT: 600
@@ -96,6 +99,7 @@ jobs:
           repository: ${{ github.repository }}
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0  # Fetch all history for all branches and tags
+          persist-credentials: false
       - name: Restore uv cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         with:
