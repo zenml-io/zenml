@@ -247,6 +247,7 @@ class TriggerSchema(NamedSchema, table=True):
                         jl_arg(PipelineSnapshotSchema.source_snapshot)
                     ),
                     selectinload(jl_arg(TriggerSchema.snapshot_links)),
+                    selectinload(jl_arg(TriggerSchema.webhook_integration)),
                 ]
             )
 
@@ -385,6 +386,9 @@ class TriggerSchema(NamedSchema, table=True):
                 executable_snapshots=executable_snapshots,
                 latest_run=latest_run.to_model()
                 if latest_run is not None
+                else None,
+                webhook_integration=self.webhook_integration.to_model()
+                if self.webhook_integration is not None
                 else None,
                 snapshot_dispatch_states=snapshot_dispatch_states,
             )

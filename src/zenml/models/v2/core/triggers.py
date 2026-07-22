@@ -247,6 +247,7 @@ if TYPE_CHECKING:
         PipelineRunResponse,
         PipelineSnapshotResponse,
         UserResponse,
+        WebhookIntegrationResponse,
     )
     from zenml.models.v2.base.filter import AnySchema
 
@@ -360,6 +361,7 @@ class TriggerResponseResources(ProjectScopedResponseResources):
     executable_snapshots: list["PipelineSnapshotResponse"] = []
     user: Optional["UserResponse"] = None
     latest_run: Optional["PipelineRunResponse"] = None
+    webhook_integration: Optional["WebhookIntegrationResponse"] = None
     snapshot_dispatch_states: dict[UUID, TriggerSnapshotDispatchState] = Field(
         default_factory=dict
     )
@@ -1138,6 +1140,30 @@ class WebhookTriggerUpdate(TriggerUpdate, WebhookTrigger):
 
     type: Literal[TriggerType.WEBHOOK] = TriggerType.WEBHOOK
 
+    @model_validator(mode="after")
+    def validate_complete_update(self) -> "WebhookTriggerUpdate":
+        """Ensure webhook trigger updates preserve PUT semantics.
+
+        Returns:
+            The validated webhook trigger update.
+
+        Raises:
+            ValueError: If any mutable trigger field was omitted.
+        """
+        required_fields = {
+            "name",
+            "active",
+            "concurrency",
+            "webhook_integration_id",
+        }
+        missing_fields = required_fields - self.model_fields_set
+        if missing_fields:
+            raise ValueError(
+                "Webhook trigger updates must include all mutable fields. "
+                f"Missing: {', '.join(sorted(missing_fields))}."
+            )
+        return self
+
     def get_config(self) -> str:
         """Return the serialized webhook trigger configuration.
 
@@ -1179,6 +1205,15 @@ class WebhookTriggerResponse(TriggerResponse[WebhookTriggerResponseBody,]):
             The associated webhook integration ID, if any.
         """
         return self.get_body().webhook_integration_id
+
+    @property
+    def webhook_integration(self) -> Optional["WebhookIntegrationResponse"]:
+        """Return the associated webhook integration.
+
+        Returns:
+            The associated webhook integration, if any.
+        """
+        return self.get_resources().webhook_integration
 
     @property
     def webhook_type(self) -> WebhookType:

@@ -47,6 +47,7 @@ def test_webhook_trigger_cli_lifecycle(clean_client):
     assert result.exit_code == 0, result.output
     trigger = clean_client.get_webhook_trigger(trigger_name)
     assert trigger.webhook_integration_id == integration.id
+    assert trigger.webhook_integration == integration
 
     list_output_buffer = io.StringIO()
     with patch.object(zenml_cli, "_original_stdout", list_output_buffer):
@@ -61,9 +62,18 @@ def test_webhook_trigger_cli_lifecycle(clean_client):
 
     result = runner.invoke(
         update_command,
+        [trigger_name, "--name", updated_name],
+    )
+
+    assert result.exit_code == 0, result.output
+    renamed = clean_client.get_webhook_trigger(updated_name)
+    assert renamed.webhook_integration_id == integration.id
+    assert renamed.webhook_integration == integration
+    assert renamed.active is True
+
+    result = runner.invoke(
+        update_command,
         [
-            trigger_name,
-            "--name",
             updated_name,
             "--detach-webhook-integration",
         ],
@@ -72,6 +82,7 @@ def test_webhook_trigger_cli_lifecycle(clean_client):
     assert result.exit_code == 0, result.output
     detached = clean_client.get_webhook_trigger(updated_name)
     assert detached.webhook_integration_id is None
+    assert detached.webhook_integration is None
     assert detached.active is False
 
     result = runner.invoke(

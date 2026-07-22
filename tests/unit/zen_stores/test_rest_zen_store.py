@@ -18,6 +18,7 @@ from uuid import uuid4
 import pytest
 from pytest_mock import MockerFixture
 
+from zenml.enums import TriggerRunConcurrency
 from zenml.models import WebhookTriggerUpdate
 from zenml.zen_stores.rest_zen_store import (
     ARTIFACT_VERSIONS,
@@ -104,7 +105,12 @@ def test_webhook_trigger_updates_use_full_serialization(
     """Tests that webhook trigger PUT requests include the complete model."""
     store = mocker.Mock()
     trigger_id = uuid4()
-    trigger_update = WebhookTriggerUpdate(name="webhook-trigger")
+    trigger_update = WebhookTriggerUpdate(
+        name="webhook-trigger",
+        active=True,
+        concurrency=TriggerRunConcurrency.SKIP,
+        webhook_integration_id=None,
+    )
     store.put.return_value = {}
 
     with pytest.raises(ValueError, match="Bad response"):

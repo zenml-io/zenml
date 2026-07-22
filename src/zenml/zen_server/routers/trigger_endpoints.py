@@ -294,6 +294,7 @@ def attach_trigger_to_snapshot(
 
     Raises:
         IllegalOperationError: If the trigger is already attached to the snapshot.
+        KeyError: If the trigger and snapshot belong to different projects.
     """
     trigger = zen_store().get_trigger(trigger_id=trigger_id, hydrate=True)
 

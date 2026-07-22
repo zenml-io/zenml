@@ -62,6 +62,7 @@ def test_webhook_trigger_store_lifecycle(clean_client):
     assert isinstance(trigger, WebhookTriggerResponse)
     assert trigger.active is True
     assert trigger.webhook_integration_id == custom_integration.id
+    assert trigger.webhook_integration == custom_integration
     assert trigger.webhook_type == WebhookType.CUSTOM
 
     retrieved = store.get_trigger(trigger.id)
@@ -74,6 +75,23 @@ def test_webhook_trigger_store_lifecycle(clean_client):
 
     assert retrieved.model_dump() == trigger.model_dump()
     assert trigger.id in {item.id for item in listed.items}
+
+    updated_name = sample_name("webhook-trigger-updated")
+    trigger = store.update_trigger(
+        trigger_id=trigger.id,
+        trigger_update=WebhookTriggerUpdate(
+            name=updated_name,
+            active=trigger.active,
+            concurrency=trigger.concurrency,
+            webhook_integration_id=trigger.webhook_integration_id,
+        ),
+    )
+
+    assert trigger.name == updated_name
+    assert trigger.webhook_integration_id == custom_integration.id
+    assert trigger.webhook_integration == custom_integration
+    assert trigger.active is True
+    assert trigger.concurrency == TriggerRunConcurrency.SUBMIT
 
     other_project = store.create_project(
         ProjectRequest(name=sample_name("webhook-trigger-other-project"))
@@ -129,17 +147,21 @@ def test_webhook_trigger_store_lifecycle(clean_client):
     )
 
     assert detached.webhook_integration_id is None
+    assert detached.webhook_integration is None
     assert detached.active is False
 
     reattached = store.update_trigger(
         trigger_id=trigger.id,
         trigger_update=WebhookTriggerUpdate(
             name=trigger.name,
+            active=detached.active,
+            concurrency=detached.concurrency,
             webhook_integration_id=custom_integration.id,
         ),
     )
 
     assert reattached.webhook_integration_id == custom_integration.id
+    assert reattached.webhook_integration == custom_integration
     assert reattached.active is False
 
     reactivated = store.update_trigger(
@@ -147,6 +169,7 @@ def test_webhook_trigger_store_lifecycle(clean_client):
         trigger_update=WebhookTriggerUpdate(
             name=trigger.name,
             active=True,
+            concurrency=reattached.concurrency,
             webhook_integration_id=custom_integration.id,
         ),
     )
@@ -157,6 +180,7 @@ def test_webhook_trigger_store_lifecycle(clean_client):
     retained = store.get_trigger(trigger.id)
 
     assert retained.webhook_integration_id is None
+    assert retained.webhook_integration is None
     assert retained.active is False
     assert retained.is_archived is False
 
@@ -184,6 +208,7 @@ def test_webhook_trigger_client_lifecycle(clean_client):
     )
 
     assert trigger.webhook_integration_id == integration.id
+    assert trigger.webhook_integration == integration
     assert trigger.webhook_type == WebhookType.GITHUB
     assert clean_client.get_webhook_trigger(trigger.name).id == trigger.id
 
@@ -193,6 +218,18 @@ def test_webhook_trigger_client_lifecycle(clean_client):
     )
 
     assert trigger.id in {item.id for item in listed.items}
+
+    updated_name = sample_name("webhook-trigger-client-updated")
+    updated = clean_client.update_webhook_trigger(
+        trigger.id,
+        name=updated_name,
+    )
+
+    assert updated.name == updated_name
+    assert updated.webhook_integration_id == integration.id
+    assert updated.webhook_integration == integration
+    assert updated.active is True
+    assert updated.concurrency == TriggerRunConcurrency.SUBMIT
 
     updated = clean_client.update_webhook_trigger(
         trigger.id,
@@ -209,6 +246,7 @@ def test_webhook_trigger_client_lifecycle(clean_client):
     )
 
     assert detached.webhook_integration_id is None
+    assert detached.webhook_integration is None
     assert detached.active is False
 
     reattached = clean_client.update_webhook_trigger(
@@ -231,6 +269,7 @@ def test_webhook_trigger_client_lifecycle(clean_client):
     retained = clean_client.get_webhook_trigger(trigger.id)
 
     assert retained.webhook_integration_id is None
+    assert retained.webhook_integration is None
     assert retained.active is False
 
     clean_client.delete_trigger(trigger.id)
