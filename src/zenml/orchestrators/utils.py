@@ -35,6 +35,7 @@ from zenml.constants import (
 from zenml.enums import APITokenType, AuthScheme, StackComponentType, StoreType
 from zenml.logger import get_logger
 from zenml.stack import StackComponent
+from zenml.utils.string_utils import append_random_suffix
 
 logger = get_logger(__name__)
 
@@ -64,24 +65,23 @@ def get_orchestrator_run_name(
     Returns:
         The orchestrator run name.
     """
+    if max_length and max_length < 8:
+        raise ValueError(
+            "Maximum length for orchestrator run name must be 8 or above."
+        )
+
     suffix_length = 32
-    pipeline_name = f"{pipeline_name}_"
-
     if max_length:
-        if max_length < 8:
-            raise ValueError(
-                "Maximum length for orchestrator run name must be 8 or above."
-            )
+        # The -1 accounts for the "_" separator added by the utility function
+        suffix_length = min(32, max(8, max_length - len(pipeline_name) - 1))
 
-        # Make sure we always have a certain suffix to guarantee no overlap
-        # with other runs
-        suffix_length = min(32, max(8, max_length - len(pipeline_name)))
-        pipeline_name = pipeline_name[: (max_length - suffix_length)]
-
-    suffix = "".join(random.choices("0123456789abcdef", k=suffix_length))
-
-    return f"{pipeline_name}{suffix}"
-
+    return append_random_suffix(
+        original_string=pipeline_name,
+        suffix_length=suffix_length,
+        max_length=max_length,
+        separator="",
+        charset="0123456789abcdef"
+    )
 
 def is_setting_enabled(
     is_enabled_on_step: Optional[bool],
