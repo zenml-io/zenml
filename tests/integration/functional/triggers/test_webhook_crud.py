@@ -227,6 +227,12 @@ def test_webhook_trigger_client_lifecycle(clean_client):
 
     assert reactivated.active is True
 
+    clean_client.delete_webhook(integration.id)
+    retained = clean_client.get_webhook_trigger(trigger.id)
+
+    assert retained.webhook_integration_id is None
+    assert retained.active is False
+
     clean_client.delete_trigger(trigger.id)
 
     with pytest.raises(KeyError):
@@ -235,3 +241,70 @@ def test_webhook_trigger_client_lifecycle(clean_client):
     archived = clean_client.get_webhook_trigger(trigger.id, is_archived=True)
     assert archived.is_archived is True
     assert archived.webhook_integration_id is None
+
+    clean_client.delete_trigger(trigger.id, soft=False)
+
+    with pytest.raises(KeyError):
+        clean_client.get_webhook_trigger(trigger.id, is_archived=True)
+
+
+def test_webhook_trigger_client_association_transitions(clean_client):
+    """Public client validates webhook trigger association transitions."""
+    if isinstance(clean_client.zen_store, SqlZenStore):
+        pytest.skip("Webhooks require a REST store.")
+
+    primary = clean_client.create_webhook(
+        name=sample_name("webhook-trigger-primary-integration"),
+        webhook_type=WebhookType.CUSTOM,
+    ).webhook
+    replacement = clean_client.create_webhook(
+        name=sample_name("webhook-trigger-replacement-integration"),
+        webhook_type=WebhookType.CUSTOM,
+    ).webhook
+    incompatible = clean_client.create_webhook(
+        name=sample_name("webhook-trigger-incompatible-integration"),
+        webhook_type=WebhookType.GITHUB,
+    ).webhook
+    trigger = clean_client.create_webhook_trigger(
+        name=sample_name("detached-webhook-trigger"),
+        webhook_type=WebhookType.CUSTOM,
+        active=True,
+    )
+
+    assert trigger.webhook_integration_id is None
+    assert trigger.active is False
+
+    with pytest.raises(IllegalOperationError):
+        clean_client.update_webhook_trigger(
+            trigger.id,
+            webhook_integration=primary.id,
+            detach_webhook_integration=True,
+        )
+
+    with pytest.raises(IllegalOperationError, match="custom webhook"):
+        clean_client.update_webhook_trigger(
+            trigger.id,
+            webhook_integration=incompatible.id,
+        )
+
+    attached = clean_client.update_webhook_trigger(
+        trigger.id,
+        webhook_integration=primary.id,
+        active=True,
+    )
+
+    assert attached.webhook_integration_id == primary.id
+    assert attached.active is True
+
+    replaced = clean_client.update_webhook_trigger(
+        trigger.id,
+        webhook_integration=replacement.id,
+    )
+
+    assert replaced.webhook_integration_id == replacement.id
+    assert replaced.active is True
+
+    clean_client.delete_trigger(trigger.id, soft=False)
+    clean_client.delete_webhook(primary.id)
+    clean_client.delete_webhook(replacement.id)
+    clean_client.delete_webhook(incompatible.id)

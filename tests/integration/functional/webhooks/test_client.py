@@ -36,6 +36,7 @@ def test_client_webhook_lifecycle(clean_client):
     )
 
     assert result.secret is not None
+    initial_secret = result.secret.get_secret_value()
     integration = result.webhook
     assert integration.name == name
     assert integration.webhook_type == WebhookType.CUSTOM
@@ -75,6 +76,12 @@ def test_client_webhook_lifecycle(clean_client):
     inactive_integrations = clean_client.list_webhooks(active=False)
 
     assert integration.id in {item.id for item in inactive_integrations.items}
+
+    generated_rotation = clean_client.rotate_webhook_secret(
+        name_id_or_prefix=updated_name,
+    )
+
+    assert generated_rotation.secret.get_secret_value() != initial_secret
 
     rotated = clean_client.rotate_webhook_secret(
         name_id_or_prefix=updated_name,
