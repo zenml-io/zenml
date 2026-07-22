@@ -5,7 +5,7 @@ icon: box
 
 # Stage 2 — Your agents need a sandbox
 
-Running agents for real means giving them somewhere safe to act. Stage 1 made a crash survivable: when a turn finished, its output went to durable storage, so a retry picked up the saved work instead of paying for the same model call twice. The agent was deliberately plain — a PydanticAI agent with one tool, `exec`, that ran shell commands directly in the host process.
+This is the first stage of the operate-at-scale annex, and it builds on the recording from Part 1. Stage 1 turned every model and tool call into a durable, replayable recording — with crash recovery as a free side effect. The agent there was deliberately plain — a PydanticAI agent with one tool, `exec`, that ran shell commands directly in the host process. Everything this stage adds still records the same way, so a sandboxed run stays as replayable as any other.
 
 That host process is what this stage fixes. Running commands on your own machine is fine for a first demo. It turns into a liability the moment the agent does something you did not foresee, and an agent doing something you did not foresee is the normal case, not the rare one.
 

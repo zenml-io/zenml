@@ -1,17 +1,19 @@
 ---
-description: Run agents durably, replay a real run with one thing changed, and improve them across a cohort with Kitaru.
+description: Replay real agent runs against your real code with one thing changed, diff the results, and keep the wins — with Kitaru.
 icon: robot
 ---
 
 # Agents guide
 
-This guide teaches production AI agents with [Kitaru](https://docs.zenml.io/kitaru), ZenML's sibling project for running, replaying, and improving agents. By the end you'll be able to do three things:
+This guide teaches production AI agents with [Kitaru](https://docs.zenml.io/kitaru), ZenML's sibling project for recording, replaying, and improving agents.
 
-1. **Run** an agent durably, so a crash never re-pays for finished work.
-2. **Replay** a real run with one thing changed — a different model, a different prompt — and diff the result against a faithful baseline.
-3. **Improve** the agent by rolling the winning change across a cohort of recent runs and keeping the version that wins on cost, latency, and quality.
+**Replay is the part other tooling can't do.** An eval re-scores outputs after the fact. Kitaru re-executes the actual run from a durable checkpoint with one input swapped — a different model, a different prompt — so you find out what *would have happened* if you'd shipped the change, against your real code rather than a rescored transcript. What arrives as a failing run leaves as a regression check on the next change.
 
-Replay is the part other tooling can't do. An eval re-scores outputs after the fact. Kitaru re-executes the actual run from a durable checkpoint with one input swapped, so you find out what *would have happened* if you'd shipped the change.
+By the end you'll be able to do three things:
+
+1. **Replay** a real run with one thing changed and diff the result against a faithful baseline.
+2. **Improve** the agent by rolling the winning change across a filtered set of recent runs and keeping the version that holds up on cost, latency, and the decisions that matter — with the diff matrix as your regression evidence.
+3. **Run** an agent durably — the beat that mints the recording. Every model and tool call becomes a durable checkpoint, which doubles as crash recovery and as the raw material replay reads back.
 
 {% hint style="info" %}
 A Kitaru **flow** is a dynamic ZenML pipeline. A **checkpoint** is like a step. Agents and pipelines run on the same stacks, the same server, the same dashboard.
@@ -19,17 +21,17 @@ A Kitaru **flow** is a dynamic ZenML pipeline. A **checkpoint** is like a step. 
 
 ## The learning path
 
-The guide is in three parts. Parts 1 and 2 are the spine — they're enough to run and improve a single agent. Part 3 is for teams who go on to operate many agents on shared rails.
+The guide is in three parts. Parts 1 and 2 are the spine — they get you to replay, which is the whole point. Part 3 is a platform annex: the operating-at-scale machinery teams reach for once they run many agents on shared rails.
 
-### Part 1 — Run
+### Part 1 — Record
 
-Wrap a PydanticAI agent in a Kitaru flow so every model call and tool call becomes a durable checkpoint. A retry resumes from where the crash hit instead of paying for the whole run twice. This is the enabler the rest of the guide builds on.
+Wrap a PydanticAI agent in a Kitaru flow so every model call and tool call becomes a durable checkpoint. That recording is what Part 2 replays; the same checkpoints double as crash recovery, so a retry resumes from where the crash hit instead of paying for the whole run twice. This is how the recording gets made.
 
-* [Run a durable agent](01-durable-agent.md)
+* [Record a durable agent](01-durable-agent.md)
 
 ### Part 2 — Replay and improve
 
-The differentiator. Take a recorded run, reproduce it faithfully as a control, then replay it again with exactly one thing changed and diff the two. Because the baseline reproduced, the difference is your change, not replay noise. Then scale that decision across a cohort and measure cost, latency, and quality. Replay and diff are exposed over a CLI and an MCP server, so a coding agent can drive the loop and hill-climb on its own.
+The differentiator. Take a recorded run, reproduce it faithfully as a control, then replay it again with exactly one thing changed and diff the two. Because the baseline reproduced, the difference is your change, not replay noise. Then scale that decision across a filtered set of runs and read cost, latency, and whether the decisions held across the batch. Replay and diff are exposed over a CLI and an MCP server, so a coding agent can drive the loop and hill-climb on its own.
 
 * [Replay and improve](replay-and-improve.md)
 

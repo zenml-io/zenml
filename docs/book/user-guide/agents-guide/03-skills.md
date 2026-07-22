@@ -9,6 +9,8 @@ Operate at scale: let an operator change what an agent does by editing a markdow
 
 Stage 2 put the agent's shell commands inside a container. But what the agent does with that shell, the steps it follows, is still frozen in its system prompt. That is fine while the only person who changes the procedure is the engineer who wrote it. It stops being fine the moment the person who wants to change the steps is not the person who owns the code.
 
+This is a platform-annex stage, not a change to the durability core: a run driven by an edited skill file records and replays exactly like any other, so you can still fork it later to see what a procedure change would have done.
+
 {% hint style="info" %}
 This walkthrough uses `stage_3_skills.py` from the runnable Agent Harness Platform example. If you have not cloned the repo yet, start with [Get the code](README.md#get-the-code) on the overview page.
 {% endhint %}
