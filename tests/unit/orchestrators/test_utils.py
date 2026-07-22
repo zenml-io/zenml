@@ -16,14 +16,61 @@ from unittest import mock
 from uuid import uuid4
 
 import pytest
+import yaml
 
 from zenml.enums import StackComponentType
 from zenml.orchestrators.utils import (
+    dump_compose_yaml,
     get_orchestrator_run_name,
     get_step_entrypoint_command,
     is_setting_enabled,
     register_artifact_store_filesystem,
 )
+
+
+def _compose_interpolate(yaml_text: str) -> str:
+    """Mimic Docker Compose's literal-``$`` handling: ``$$`` collapses to ``$``.
+
+    Compose interpolates ``$VAR``/``${VAR}`` against the environment and treats
+    ``$$`` as an escaped literal ``$``. This models only the escape collapse,
+    which is enough to prove that a serialized value round-trips verbatim.
+    """
+    return yaml_text.replace("$$", "$")
+
+
+def test_dump_compose_yaml_escapes_dollar_signs():
+    """Every ``$`` is escaped so Compose does not interpolate our values."""
+    compose = {
+        "services": {
+            "step": {
+                "environment": {
+                    "DB_PASSWORD": "pa$$word",
+                    "API_KEY": "abc$UNSET",
+                    "HARDFAIL": "x${MISSING:?boom}y",
+                },
+                "volumes": ["/srv/$DATA:/data"],
+            }
+        }
+    }
+
+    dumped = dump_compose_yaml(compose)
+
+    # No lone "$" survives: each original "$" became "$$".
+    assert "$" in dumped
+    assert "$" not in dumped.replace("$$", "")
+
+    # After Compose collapses "$$" -> "$", the parsed values are byte-identical
+    # to the originals: no interpolation, no truncation, no mangling.
+    recovered = yaml.safe_load(_compose_interpolate(dumped))
+    service = recovered["services"]["step"]
+    assert service["environment"] == compose["services"]["step"]["environment"]
+    assert service["volumes"] == compose["services"]["step"]["volumes"]
+
+
+def test_dump_compose_yaml_no_dollar_is_unchanged_content():
+    """A definition without ``$`` round-trips to identical parsed content."""
+    compose = {"services": {"s": {"image": "img:latest", "environment": {}}}}
+    assert yaml.safe_load(dump_compose_yaml(compose)) == compose
 
 
 class _FakeEntrypointConfig:
