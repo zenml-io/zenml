@@ -1,0 +1,1015 @@
+#  Copyright (c) ZenML GmbH 2026. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Unit tests for the Agent Sandbox flavor.
+
+These tests mock the ``k8s_agent_sandbox`` SDK entry points and the
+service-connector hook. They cover the wiring (settings resolution,
+template / namespace plumbing, connection-config construction) without
+needing a live cluster. End-to-end coverage against a real GKE / kind
+cluster lands in a follow-up integration test.
+"""
+
+from __future__ import annotations
+
+import sys
+import types
+from typing import Any, Iterator, Optional
+from unittest.mock import MagicMock, call, patch
+from uuid import uuid4
+
+import pytest
+
+# --- Stub the SDK before the integration module is imported -----------
+
+_sdk = types.ModuleType("k8s_agent_sandbox")
+_sdk.SandboxClient = MagicMock()
+
+
+class _Models(types.ModuleType):
+    SandboxDirectConnectionConfig = MagicMock()
+    SandboxGatewayConnectionConfig = MagicMock()
+    SandboxInClusterConnectionConfig = MagicMock()
+    SandboxLocalTunnelConnectionConfig = MagicMock()
+
+
+_models = _Models("k8s_agent_sandbox.models")
+_sdk.models = _models  # type: ignore[attr-defined]
+
+_sandbox_mod = types.ModuleType("k8s_agent_sandbox.sandbox")
+_sandbox_mod.Sandbox = MagicMock()
+
+sys.modules.setdefault("k8s_agent_sandbox", _sdk)
+sys.modules.setdefault("k8s_agent_sandbox.models", _models)
+sys.modules.setdefault("k8s_agent_sandbox.sandbox", _sandbox_mod)
+
+# --- Imports that depend on the SDK shim ------------------------------
+
+from zenml.integrations.k8s_agent_sandbox.flavors import (  # noqa: E402
+    ConnectionMode,
+    K8sAgentSandboxConfig,
+    K8sAgentSandboxFlavor,
+    K8sAgentSandboxSettings,
+)
+from zenml.integrations.k8s_agent_sandbox.sandboxes.k8s_agent_sandbox import (  # noqa: E402
+    K8sAgentSandbox,
+    K8sAgentSandboxProcess,
+    K8sAgentSandboxSession,
+)
+
+
+@pytest.fixture(autouse=True)
+def _ambient_kube_loaders() -> Iterator[None]:
+    """Stubs the ambient kubeconfig loaders for every test.
+
+    Without a connector, ``_kube_default_config`` loads the in-cluster
+    or local kubeconfig — neither exists (reliably) on CI machines, so
+    the loaders are replaced with no-op mocks. Tests that exercise the
+    loading logic itself apply their own, more specific patches.
+    """
+    with (
+        patch("kubernetes.config.load_incluster_config"),
+        patch("kubernetes.config.load_kube_config"),
+    ):
+        yield
+
+
+def _make_sandbox(
+    template_name: Optional[str] = "python-sandbox",
+    **config_overrides: Any,
+) -> K8sAgentSandbox:
+    cfg = K8sAgentSandboxConfig(
+        template_name=template_name,
+        **config_overrides,
+    )
+    return K8sAgentSandbox(
+        name="test-sandbox",
+        id=uuid4(),
+        config=cfg,
+        flavor="k8s_agent_sandbox",
+        type="sandbox",
+        user=uuid4(),
+        created="2026-01-01T00:00:00",
+        updated="2026-01-01T00:00:00",
+    )
+
+
+class TestFlavorMetadata:
+    def test_service_connector_requirements_match_k8s_cluster(self) -> None:
+        from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
+
+        req = K8sAgentSandboxFlavor().service_connector_requirements
+        assert req is not None
+        assert req.resource_type == KUBERNETES_CLUSTER_RESOURCE_TYPE
+
+
+class TestRequirementsAreInherited:
+    def test_kubernetes_pin_inherited_from_kubernetes_integration(
+        self,
+    ) -> None:
+        from zenml.integrations.k8s_agent_sandbox import (
+            K8sAgentSandboxIntegration,
+        )
+        from zenml.integrations.kubernetes import KubernetesIntegration
+
+        # Confirm we pick up the same kubernetes-client pin as the
+        # sibling integration — drift would mean the pod-spec helpers
+        # we reuse target a different SDK version.
+        k_pins = [
+            r for r in KubernetesIntegration.REQUIREMENTS if "kubernetes" in r
+        ]
+        for pin in k_pins:
+            assert pin in K8sAgentSandboxIntegration.REQUIREMENTS
+
+
+_CONNECTION_CONFIG_CLASSES = (
+    "SandboxDirectConnectionConfig",
+    "SandboxGatewayConnectionConfig",
+    "SandboxInClusterConnectionConfig",
+    "SandboxLocalTunnelConnectionConfig",
+)
+
+
+class TestConnectionConfigBuild:
+    @pytest.fixture(autouse=True)
+    def _reset_connection_config_mocks(self) -> None:
+        for cls_name in _CONNECTION_CONFIG_CLASSES:
+            getattr(_models, cls_name).reset_mock()
+
+    @pytest.mark.parametrize(
+        "mode,expected_cls",
+        [
+            (ConnectionMode.GATEWAY, "SandboxGatewayConnectionConfig"),
+            (ConnectionMode.IN_CLUSTER, "SandboxInClusterConnectionConfig"),
+            (
+                ConnectionMode.LOCAL_TUNNEL,
+                "SandboxLocalTunnelConnectionConfig",
+            ),
+        ],
+    )
+    def test_mode_routes_to_expected_config(
+        self, mode: ConnectionMode, expected_cls: str
+    ) -> None:
+        sb = _make_sandbox(connection_mode=mode)
+        sb._build_connection_config()
+        getattr(_models, expected_cls).assert_called_once()
+        for other_cls in _CONNECTION_CONFIG_CLASSES:
+            if other_cls != expected_cls:
+                getattr(_models, other_cls).assert_not_called()
+
+    def test_direct_mode_requires_api_url(self) -> None:
+        sb = _make_sandbox(connection_mode=ConnectionMode.DIRECT)
+        with pytest.raises(ValueError, match="api_url"):
+            sb._build_connection_config()
+
+    def test_direct_mode_with_api_url_succeeds(self) -> None:
+        sb = _make_sandbox(
+            connection_mode=ConnectionMode.DIRECT,
+            api_url="http://sb.example.com",
+        )
+        sb._build_connection_config()
+        _models.SandboxDirectConnectionConfig.assert_called_with(
+            api_url="http://sb.example.com"
+        )
+
+
+def _wire_client(sb: K8sAgentSandbox) -> MagicMock:
+    """Wires a mock ``SandboxClient`` via the ``_build_client`` hook.
+
+    Returns the underlying fake client so tests can assert on its calls.
+    """
+    fake_client = MagicMock()
+    fake_sandbox = MagicMock(name="sb1")
+    fake_sandbox.name = "sb1"
+    fake_client.create_sandbox.return_value = fake_sandbox
+    sb._build_client = MagicMock(return_value=fake_client)  # type: ignore[method-assign]
+    return fake_client
+
+
+class TestCreateSession:
+    def test_passes_template_and_namespace_to_sdk(self) -> None:
+        sb = _make_sandbox(namespace="prod")
+        fake_client = _wire_client(sb)
+
+        session = sb.create_session()
+        assert isinstance(session, K8sAgentSandboxSession)
+        fake_client.create_sandbox.assert_called_once_with(
+            template="python-sandbox",
+            namespace="prod",
+            sandbox_ready_timeout=180,
+        )
+
+    def test_destroy_on_exit_threaded_to_session(self) -> None:
+        # The base contract lets callers request teardown when the
+        # session context manager exits; the flag must reach the session.
+        sb = _make_sandbox(namespace="prod")
+        _wire_client(sb)
+
+        session = sb.create_session(destroy_on_exit=True)
+        assert session._destroy_on_exit is True
+
+    def test_destroy_on_exit_defaults_to_false(self) -> None:
+        sb = _make_sandbox(namespace="prod")
+        _wire_client(sb)
+
+        session = sb.create_session()
+        assert session._destroy_on_exit is False
+
+    def test_per_call_namespace_overrides_default(self) -> None:
+        sb = _make_sandbox(namespace="prod")
+        fake_client = _wire_client(sb)
+
+        sb.create_session(
+            settings=K8sAgentSandboxSettings(
+                template_name="python-sandbox",
+                namespace="experiments",
+            )
+        )
+        kwargs = fake_client.create_sandbox.call_args.kwargs
+        assert kwargs["namespace"] == "experiments"
+
+    def test_synthesizes_inline_template_when_template_name_unset(
+        self,
+    ) -> None:
+        sb = _make_sandbox(
+            template_name=None,
+            namespace="lab",
+            image="runtime:1.0",
+        )
+        fake_client = _wire_client(sb)
+
+        with patch("kubernetes.client.CustomObjectsApi") as fake_api_cls:
+            fake_api = MagicMock()
+            fake_api_cls.return_value = fake_api
+            session = sb.create_session()
+
+        fake_api.create_namespaced_custom_object.assert_called_once()
+        call_kwargs = fake_api.create_namespaced_custom_object.call_args.kwargs
+        assert call_kwargs["group"] == "extensions.agents.x-k8s.io"
+        assert call_kwargs["version"] == "v1beta1"
+        assert call_kwargs["plural"] == "sandboxtemplates"
+        assert call_kwargs["namespace"] == "lab"
+        body = call_kwargs["body"]
+        assert body["kind"] == "SandboxTemplate"
+        # Full 32-char UUID hex (no collision risk at fanout scale).
+        assert body["metadata"]["name"].startswith("zenml-sb-tpl-")
+        assert len(body["metadata"]["name"]) == len("zenml-sb-tpl-") + 32
+        # Upstream-matching container shape.
+        container = body["spec"]["podTemplate"]["spec"]["containers"][0]
+        assert container["name"] == "python-runtime"
+        assert container["image"] == "runtime:1.0"
+        assert container["ports"][0]["containerPort"] == 8888
+        assert container["readinessProbe"]["httpGet"]["port"] == 8888
+        assert container["livenessProbe"]["httpGet"]["port"] == 8888
+        # SDK got the synthesized name.
+        sdk_kwargs = fake_client.create_sandbox.call_args.kwargs
+        assert sdk_kwargs["template"] == body["metadata"]["name"]
+        # Session tracks the inline template for cleanup.
+        assert session._inline_template_name == body["metadata"]["name"]
+        assert session._inline_template_namespace == "lab"
+
+    def test_inline_template_requires_image(self) -> None:
+        # Reproducibility-first: no image anywhere → refuse.
+        sb = _make_sandbox(template_name=None, namespace="lab")
+        _wire_client(sb)
+        with (
+            patch("kubernetes.client.CustomObjectsApi"),
+            pytest.raises(ValueError, match="requires an image"),
+        ):
+            sb.create_session()
+
+    def test_orphan_template_cleaned_up_on_create_sandbox_failure(
+        self,
+    ) -> None:
+        sb = _make_sandbox(
+            template_name=None,
+            namespace="lab",
+            image="runtime:1.0",
+        )
+        fake_client = _wire_client(sb)
+        fake_client.create_sandbox.side_effect = RuntimeError("denied")
+
+        with patch("kubernetes.client.CustomObjectsApi") as fake_api_cls:
+            fake_api = MagicMock()
+            fake_api_cls.return_value = fake_api
+            with pytest.raises(RuntimeError, match="denied"):
+                sb.create_session()
+        # CR created AND deleted in the failure cleanup path.
+        fake_api.create_namespaced_custom_object.assert_called_once()
+        fake_api.delete_namespaced_custom_object.assert_called_once()
+
+    def test_create_failure_raises_with_chained_api_exception(self) -> None:
+        from kubernetes.client.rest import ApiException
+
+        sb = _make_sandbox(
+            template_name=None,
+            namespace="lab",
+            image="runtime:1.0",
+        )
+        _wire_client(sb)
+
+        api_exc = ApiException(status=404, reason="Not Found")
+        with patch("kubernetes.client.CustomObjectsApi") as fake_api_cls:
+            fake_api = MagicMock()
+            fake_api.create_namespaced_custom_object.side_effect = api_exc
+            fake_api_cls.return_value = fake_api
+            with pytest.raises(
+                RuntimeError, match="Failed to create inline SandboxTemplate"
+            ) as exc_info:
+                sb.create_session()
+        assert exc_info.value.__cause__ is api_exc
+
+
+class TestInlineTemplateBody:
+    def test_default_resources_include_ephemeral_storage(self) -> None:
+        # The upstream-matching default ephemeral-storage request is
+        # set so the pod can be scheduled.
+        sb = _make_sandbox(template_name=None)
+        body = sb._build_inline_template_body(
+            K8sAgentSandboxSettings(image="r:1"), "ns", "zenml-sb-tpl-test"
+        )
+        container = body["spec"]["podTemplate"]["spec"]["containers"][0]
+        assert container["resources"]["requests"]["ephemeral-storage"] == (
+            "512Mi"
+        )
+
+    def test_container_name_matches_upstream(self) -> None:
+        sb = _make_sandbox(template_name=None)
+        body = sb._build_inline_template_body(
+            K8sAgentSandboxSettings(image="r:1"), "ns", "zenml-sb-tpl-test"
+        )
+        container = body["spec"]["podTemplate"]["spec"]["containers"][0]
+        # Operator examples use `python-runtime` — keep parity.
+        assert container["name"] == "python-runtime"
+
+    def test_includes_liveness_probe(self) -> None:
+        sb = _make_sandbox(template_name=None)
+        body = sb._build_inline_template_body(
+            K8sAgentSandboxSettings(image="r:1"), "ns", "zenml-sb-tpl-test"
+        )
+        container = body["spec"]["podTemplate"]["spec"]["containers"][0]
+        assert container["livenessProbe"]["httpGet"]["port"] == 8888
+
+    def test_refuses_without_any_image(self) -> None:
+        # No image on config and no image in settings.
+        sb = _make_sandbox(template_name=None)
+        with pytest.raises(ValueError, match="requires an image"):
+            sb._build_inline_template_body(
+                K8sAgentSandboxSettings(), "ns", "zenml-sb-tpl-test"
+            )
+
+    def test_image_override_via_settings(self) -> None:
+        sb = _make_sandbox(image="default:1")
+        body = sb._build_inline_template_body(
+            K8sAgentSandboxSettings(image="my-org/custom:1"),
+            "ns",
+            "zenml-sb-tpl-test",
+        )
+        container = body["spec"]["podTemplate"]["spec"]["containers"][0]
+        assert container["image"] == "my-org/custom:1"
+
+    def test_sandbox_environment_lands_in_template_env(self) -> None:
+        sb = _make_sandbox()
+        body = sb._build_inline_template_body(
+            K8sAgentSandboxSettings(
+                image="r:1",
+                sandbox_environment={"OPENAI_API_KEY": "sk-test"},
+            ),
+            "ns",
+            "zenml-sb-tpl-test",
+        )
+        container = body["spec"]["podTemplate"]["spec"]["containers"][0]
+        assert {"name": "OPENAI_API_KEY", "value": "sk-test"} in container[
+            "env"
+        ]
+
+    def test_pod_settings_applied_via_manifest_utils(self) -> None:
+        # `add_pod_settings` should plumb node_selectors / tolerations
+        # / affinity through. We verify by setting node_selectors and
+        # checking it lands in the serialized dict.
+        from zenml.integrations.kubernetes.pod_settings import (
+            KubernetesPodSettings,
+        )
+
+        sb = _make_sandbox()
+        body = sb._build_inline_template_body(
+            K8sAgentSandboxSettings(
+                image="r:1",
+                pod_settings=KubernetesPodSettings(
+                    node_selectors={"node-pool": "sandbox"}
+                ),
+            ),
+            "ns",
+            "zenml-sb-tpl-test",
+        )
+        pod_spec = body["spec"]["podTemplate"]["spec"]
+        assert pod_spec["nodeSelector"] == {"node-pool": "sandbox"}
+
+    def test_partial_pod_settings_keep_default_resources(self) -> None:
+        # `add_pod_settings` overwrites container resources with
+        # `pod_settings.resources` (default {}); pod_settings carrying
+        # only node_selectors must not wipe the ephemeral-storage
+        # default.
+        from zenml.integrations.kubernetes.pod_settings import (
+            KubernetesPodSettings,
+        )
+
+        sb = _make_sandbox()
+        body = sb._build_inline_template_body(
+            K8sAgentSandboxSettings(
+                image="r:1",
+                pod_settings=KubernetesPodSettings(
+                    node_selectors={"node-pool": "sandbox"}
+                ),
+            ),
+            "ns",
+            "zenml-sb-tpl-test",
+        )
+        container = body["spec"]["podTemplate"]["spec"]["containers"][0]
+        assert container["resources"]["requests"]["ephemeral-storage"] == (
+            "512Mi"
+        )
+
+    def test_pod_settings_resources_win_over_defaults(self) -> None:
+        from zenml.integrations.kubernetes.pod_settings import (
+            KubernetesPodSettings,
+        )
+
+        sb = _make_sandbox()
+        body = sb._build_inline_template_body(
+            K8sAgentSandboxSettings(
+                image="r:1",
+                pod_settings=KubernetesPodSettings(
+                    resources={"requests": {"cpu": "500m"}}
+                ),
+            ),
+            "ns",
+            "zenml-sb-tpl-test",
+        )
+        container = body["spec"]["podTemplate"]["spec"]["containers"][0]
+        assert container["resources"] == {"requests": {"cpu": "500m"}}
+
+
+class TestSessionLifecycle:
+    def _session_with_inline(
+        self,
+    ) -> Any:
+        sb = _make_sandbox()
+        fake_underlying = MagicMock()
+        fake_underlying.name = "sb1"
+        return (
+            K8sAgentSandboxSession(
+                fake_underlying,
+                parent=sb,
+                inline_template_name="zenml-sb-tpl-deadbeef",
+                inline_template_namespace="lab",
+            ),
+            fake_underlying,
+        )
+
+    def test_close_does_not_terminate_sandbox(self) -> None:
+        # Per the base contract, close() releases the local handle but
+        # leaves the sandbox running. destroy() is the termination path.
+        session, fake_underlying = self._session_with_inline()
+        with patch("kubernetes.client.CustomObjectsApi"):
+            session.close()
+        fake_underlying.terminate.assert_not_called()
+
+    def test_close_deletes_inline_template(self) -> None:
+        session, _ = self._session_with_inline()
+        with patch("kubernetes.client.CustomObjectsApi") as fake_api_cls:
+            fake_api = MagicMock()
+            fake_api_cls.return_value = fake_api
+            session.close()
+        fake_api.delete_namespaced_custom_object.assert_called_once_with(
+            group="extensions.agents.x-k8s.io",
+            version="v1beta1",
+            namespace="lab",
+            plural="sandboxtemplates",
+            name="zenml-sb-tpl-deadbeef",
+        )
+
+    def test_destroy_terminates_and_deletes_template(self) -> None:
+        session, fake_underlying = self._session_with_inline()
+        with patch("kubernetes.client.CustomObjectsApi") as fake_api_cls:
+            fake_api = MagicMock()
+            fake_api_cls.return_value = fake_api
+            session.destroy()
+        fake_underlying.terminate.assert_called_once()
+        # _destroy() deletes the template (tracker cleared); the base
+        # template's follow-up close() must not delete it again.
+        fake_api.delete_namespaced_custom_object.assert_called_once()
+        # The base destroy() template closes the handle after _destroy().
+        assert session.closed
+
+    def test_destroy_tolerates_terminate_failure(self) -> None:
+        session, fake_underlying = self._session_with_inline()
+        fake_underlying.terminate.side_effect = RuntimeError("network gone")
+        with patch("kubernetes.client.CustomObjectsApi"):
+            session.destroy()  # should not raise
+
+    def test_double_cleanup_is_idempotent(self) -> None:
+        # close() then destroy() (or vice versa) should not double-delete
+        # the inline template CR.
+        session, _ = self._session_with_inline()
+        with patch("kubernetes.client.CustomObjectsApi") as fake_api_cls:
+            fake_api = MagicMock()
+            fake_api_cls.return_value = fake_api
+            session.close()
+            session.destroy()
+        assert fake_api.delete_namespaced_custom_object.call_count == 1
+
+    def test_close_tolerates_delete_failure(self) -> None:
+        session, _ = self._session_with_inline()
+        with patch("kubernetes.client.CustomObjectsApi") as fake_api_cls:
+            fake_api = MagicMock()
+            fake_api.delete_namespaced_custom_object.side_effect = (
+                RuntimeError("403 forbidden")
+            )
+            fake_api_cls.return_value = fake_api
+            session.close()  # should not raise
+
+    def test_transient_delete_failure_retried_on_destroy(self) -> None:
+        # A failed delete keeps the tracker set so a later destroy()
+        # retries instead of orphaning the inline template CR.
+        session, _ = self._session_with_inline()
+        with patch("kubernetes.client.CustomObjectsApi") as fake_api_cls:
+            fake_api = MagicMock()
+            fake_api.delete_namespaced_custom_object.side_effect = [
+                RuntimeError("transient network error"),
+                None,
+            ]
+            fake_api_cls.return_value = fake_api
+            session.close()  # delete fails, tracker kept
+            assert session._inline_template_name == "zenml-sb-tpl-deadbeef"
+            session.destroy()  # retry succeeds
+        assert fake_api.delete_namespaced_custom_object.call_count == 2
+        assert session._inline_template_name is None
+
+    def test_delete_404_clears_tracker(self) -> None:
+        # 404 means the CR is already gone — no point retrying.
+        from kubernetes.client.rest import ApiException
+
+        session, _ = self._session_with_inline()
+        with patch("kubernetes.client.CustomObjectsApi") as fake_api_cls:
+            fake_api = MagicMock()
+            fake_api.delete_namespaced_custom_object.side_effect = (
+                ApiException(status=404, reason="Not Found")
+            )
+            fake_api_cls.return_value = fake_api
+            session.close()
+            session.destroy()
+        assert fake_api.delete_namespaced_custom_object.call_count == 1
+        assert session._inline_template_name is None
+
+    def test_close_deletes_inline_template_inside_connector_scope(
+        self,
+    ) -> None:
+        # Connector-only setups have no ambient kubeconfig: the delete
+        # must run while the connector's configuration is the
+        # process-global kubernetes default, and the previous default
+        # must be restored afterwards.
+        from kubernetes import client as k8s_client
+
+        sb = _make_sandbox()
+        fake_api_client = MagicMock(name="connector-api-client")
+        sb._get_kube_api_client = MagicMock(  # type: ignore[method-assign]
+            return_value=fake_api_client
+        )
+
+        fake_underlying = MagicMock()
+        fake_underlying.name = "sb1"
+        session = K8sAgentSandboxSession(
+            fake_underlying,
+            parent=sb,
+            inline_template_name="zenml-sb-tpl-deadbeef",
+            inline_template_namespace="lab",
+        )
+
+        previous_default = k8s_client.Configuration._default
+        set_default_calls_at_delete_time: list = []
+
+        with (
+            patch.object(
+                k8s_client.Configuration, "set_default"
+            ) as fake_set_default,
+            patch("kubernetes.client.CustomObjectsApi") as fake_api_cls,
+        ):
+            fake_api = MagicMock()
+
+            def record_scope(**kwargs: Any) -> None:
+                set_default_calls_at_delete_time.extend(
+                    fake_set_default.call_args_list
+                )
+
+            fake_api.delete_namespaced_custom_object.side_effect = record_scope
+            fake_api_cls.return_value = fake_api
+            session.close()
+
+        fake_api.delete_namespaced_custom_object.assert_called_once()
+        # The connector configuration became the default BEFORE the
+        # delete call was issued.
+        assert set_default_calls_at_delete_time == [
+            call(fake_api_client.configuration)
+        ]
+        # The process-global default was restored after close().
+        assert k8s_client.Configuration._default is previous_default
+
+    def test_destroy_terminates_without_reentering_connector_scope(
+        self,
+    ) -> None:
+        # terminate() routes through the SDK's already-built clients
+        # (which snapshotted the connector config at session creation),
+        # so destroy() must NOT re-open the global-default scope for it.
+        # Re-entering would serialize every session's teardown on the
+        # process-wide lock.
+        from kubernetes import client as k8s_client
+
+        sb = _make_sandbox()
+        fake_api_client = MagicMock(name="connector-api-client")
+        sb._get_kube_api_client = MagicMock(  # type: ignore[method-assign]
+            return_value=fake_api_client
+        )
+
+        fake_underlying = MagicMock()
+        fake_underlying.name = "sb1"
+        # No inline template, so destroy() == terminate() only.
+        session = K8sAgentSandboxSession(fake_underlying, parent=sb)
+
+        with patch.object(
+            k8s_client.Configuration, "set_default"
+        ) as fake_set_default:
+            session.destroy()
+
+        fake_underlying.terminate.assert_called_once()
+        fake_set_default.assert_not_called()
+
+    def test_close_skips_delete_when_no_inline_template(self) -> None:
+        sb = _make_sandbox()
+        fake_underlying = MagicMock()
+        fake_underlying.name = "sb1"
+        session = K8sAgentSandboxSession(fake_underlying, parent=sb)
+        with patch("kubernetes.client.CustomObjectsApi") as fake_api_cls:
+            session.close()
+        fake_api_cls.assert_not_called()
+
+
+class TestKubeDefaultConfigNoConnector:
+    """Without a connector, the ambient cluster config must be loaded.
+
+    Leaving ``Configuration._default`` untouched would make the
+    kubernetes SDK (and the agent-sandbox SDK on top of it) talk to the
+    library default — localhost — instead of the user's cluster.
+    """
+
+    @staticmethod
+    def _no_connector_sandbox() -> K8sAgentSandbox:
+        sb = _make_sandbox()
+        sb._get_kube_api_client = MagicMock(  # type: ignore[method-assign]
+            return_value=None
+        )
+        return sb
+
+    def test_incluster_config_tried_first(self) -> None:
+        sb = self._no_connector_sandbox()
+        with (
+            patch("kubernetes.config.load_incluster_config") as fake_incluster,
+            patch("kubernetes.config.load_kube_config") as fake_kubeconfig,
+        ):
+            with sb._kube_default_config():
+                pass
+        fake_incluster.assert_called_once()
+        fake_kubeconfig.assert_not_called()
+
+    def test_falls_back_to_kube_config_and_restores_default(self) -> None:
+        from kubernetes import client as k8s_client
+        from kubernetes.config import ConfigException
+
+        sb = self._no_connector_sandbox()
+        previous_default = k8s_client.Configuration._default
+        with (
+            patch(
+                "kubernetes.config.load_incluster_config",
+                side_effect=ConfigException("not in cluster"),
+            ),
+            patch("kubernetes.config.load_kube_config") as fake_kubeconfig,
+        ):
+            with sb._kube_default_config():
+                pass
+        fake_kubeconfig.assert_called_once()
+        # The loaders mutate the process-global default in place; the
+        # context must put back whatever was there before.
+        assert k8s_client.Configuration._default is previous_default
+
+    def test_both_loads_failing_raises_runtime_error(self) -> None:
+        from kubernetes.config import ConfigException
+
+        sb = self._no_connector_sandbox()
+        with (
+            patch(
+                "kubernetes.config.load_incluster_config",
+                side_effect=ConfigException("not in cluster"),
+            ),
+            patch(
+                "kubernetes.config.load_kube_config",
+                side_effect=ConfigException("no kubeconfig"),
+            ),
+        ):
+            with pytest.raises(
+                RuntimeError, match="service connector.*kubeconfig"
+            ):
+                with sb._kube_default_config():
+                    pass
+
+
+class TestConnectorConfigSurvivesSdkLoaders:
+    """The connector config must outlive the SDK's K8sHelper.__init__.
+
+    K8sHelper calls ``load_incluster_config()``/``load_kube_config()``
+    and *then* builds its API clients, so without intervention it
+    overwrites the connector default with the ambient kubeconfig and
+    silently talks to the local cluster. ``_kube_default_config`` must
+    suppress those loaders for the scope so the connector config sticks.
+    """
+
+    @staticmethod
+    def _connector_sandbox() -> "tuple[K8sAgentSandbox, MagicMock]":
+        sb = _make_sandbox()
+        fake_api_client = MagicMock(name="connector-api-client")
+        sb._get_kube_api_client = MagicMock(  # type: ignore[method-assign]
+            return_value=fake_api_client
+        )
+        return sb, fake_api_client
+
+    def test_sdk_loaders_cannot_clobber_connector_default(self) -> None:
+        from kubernetes import client as k8s_client
+        from kubernetes import config as k8s_config
+
+        sb, fake_api_client = self._connector_sandbox()
+        before_incluster = k8s_config.load_incluster_config
+        before_kube = k8s_config.load_kube_config
+
+        # set_default deep-copies its argument, so identity checks on the
+        # stored default are meaningless; assert on the call instead.
+        with patch.object(
+            k8s_client.Configuration, "set_default"
+        ) as fake_set_default:
+            with sb._kube_default_config():
+                # The connector config is installed as the process
+                # default...
+                fake_set_default.assert_called_once_with(
+                    fake_api_client.configuration
+                )
+                # ...and the loaders the SDK would call are neutralized,
+                # so a K8sHelper built inside this scope cannot reload
+                # ambient config and overwrite that default.
+                assert k8s_config.load_incluster_config is not before_incluster
+                assert k8s_config.load_kube_config is not before_kube
+                k8s_config.load_incluster_config()
+                k8s_config.load_kube_config()
+                # The suppressed loaders did not trigger a re-set.
+                fake_set_default.assert_called_once_with(
+                    fake_api_client.configuration
+                )
+
+        # The real loaders are restored on exit.
+        assert k8s_config.load_incluster_config is before_incluster
+        assert k8s_config.load_kube_config is before_kube
+
+    def test_no_connector_leaves_sdk_loaders_intact(self) -> None:
+        # Without a connector the SDK must be free to load ambient
+        # config itself, so the loaders must not be suppressed.
+        from kubernetes import config as k8s_config
+
+        sb = _make_sandbox()
+        sb._get_kube_api_client = MagicMock(  # type: ignore[method-assign]
+            return_value=None
+        )
+        before_kube = k8s_config.load_kube_config
+        with sb._kube_default_config():
+            assert k8s_config.load_kube_config is before_kube
+
+
+class TestCreateSessionReleasesLockBeforeReadyWait:
+    """Fan-out regression: the slow readiness wait must run unlocked.
+
+    The connector default is process-global, so client construction is
+    serialized — but ``create_sandbox`` (claim + up-to-180s pod-ready
+    watch) reuses the already-built client and must not hold the lock,
+    or N mapped steps would serialize to N x ready-wait.
+    """
+
+    def test_create_sandbox_runs_with_global_lock_released(self) -> None:
+        from zenml.integrations.k8s_agent_sandbox.sandboxes import (
+            k8s_agent_sandbox as mod,
+        )
+
+        sb = _make_sandbox(namespace="prod")
+        fake_client = _wire_client(sb)
+
+        lock_free_during_create: list = []
+
+        def record_lock(**_: Any) -> MagicMock:
+            acquired = mod._kube_default_config_lock.acquire(blocking=False)
+            lock_free_during_create.append(acquired)
+            if acquired:
+                mod._kube_default_config_lock.release()
+            return MagicMock(name="sandbox")
+
+        fake_client.create_sandbox.side_effect = record_lock
+        sb.create_session()
+
+        # The lock was acquirable while create_sandbox ran, i.e. it was
+        # released after client construction rather than held across the
+        # readiness wait.
+        assert lock_free_during_create == [True]
+
+
+class TestProcessSurface:
+    @staticmethod
+    def _passthrough_session() -> MagicMock:
+        """Session stub whose _wrap_stream returns its input iterator unchanged."""
+        fake_session = MagicMock()
+        fake_session._wrap_stream.side_effect = lambda lines, **_: lines
+        return fake_session
+
+    def test_stdout_yields_line_by_line(self) -> None:
+        # Honor the SandboxProcess line-iterator contract: each line is
+        # one yield, trailing newline preserved.
+        result = MagicMock(stdout="hello\nworld\n", stderr="", exit_code=0)
+        proc = K8sAgentSandboxProcess(
+            result, session=self._passthrough_session(), started_at=0.0
+        )
+        assert list(proc.stdout()) == ["hello\n", "world\n"]
+
+    def test_stdout_handles_trailing_partial_line(self) -> None:
+        result = MagicMock(
+            stdout="line1\nline2-no-newline", stderr="", exit_code=0
+        )
+        proc = K8sAgentSandboxProcess(
+            result, session=self._passthrough_session(), started_at=0.0
+        )
+        assert list(proc.stdout()) == ["line1\n", "line2-no-newline"]
+
+    def test_stderr_empty_yields_no_chunks(self) -> None:
+        result = MagicMock(stdout="ok\n", stderr="", exit_code=0)
+        proc = K8sAgentSandboxProcess(
+            result, session=self._passthrough_session(), started_at=0.0
+        )
+        assert list(proc.stderr()) == []
+
+    def test_wait_returns_captured_exit_code(self) -> None:
+        result = MagicMock(stdout="", stderr="oops", exit_code=3)
+        proc = K8sAgentSandboxProcess(
+            result, session=self._passthrough_session(), started_at=0.0
+        )
+        assert proc.wait() == 3
+        assert proc.exit_code == 3
+
+    def test_kill_is_noop(self) -> None:
+        proc = K8sAgentSandboxProcess(
+            MagicMock(exit_code=0),
+            session=self._passthrough_session(),
+            started_at=0.0,
+        )
+        proc.kill()  # no exception
+
+    def test_session_log_wrapping_routes_through_wrap_stream(self) -> None:
+        import logging
+
+        sentinel: Iterator[str] = iter(["wrapped"])
+        fake_session = MagicMock()
+        fake_session._wrap_stream.return_value = sentinel
+        result = MagicMock(stdout="raw\n", stderr="", exit_code=0)
+        proc = K8sAgentSandboxProcess(
+            result, session=fake_session, started_at=0.0
+        )
+        out = list(proc.stdout())
+        assert out == ["wrapped"]
+        assert (
+            fake_session._wrap_stream.call_args.kwargs["log_level"]
+            == logging.INFO
+        )
+
+
+class TestExec:
+    def _live_session(self, run_result: Any) -> K8sAgentSandboxSession:
+        sb = _make_sandbox()
+        fake_underlying = MagicMock()
+        fake_underlying.name = "live-session"
+        fake_underlying.commands.run.return_value = run_result
+        return K8sAgentSandboxSession(fake_underlying, parent=sb)
+
+    def test_string_command_passed_through(self) -> None:
+        result = MagicMock(stdout="", stderr="", exit_code=0)
+        session = self._live_session(result)
+        session.exec("echo hi")
+        # The SDK accepts a single shell-string command.
+        session._sandbox.commands.run.assert_called_once_with("echo hi")
+
+    def test_list_command_joined_with_shlex(self) -> None:
+        result = MagicMock(stdout="", stderr="", exit_code=0)
+        session = self._live_session(result)
+        session.exec(["python", "-c", "print('hi')"])
+        called_with = session._sandbox.commands.run.call_args.args[0]
+        # shlex.join quotes the snippet that contains parens.
+        assert "python -c " in called_with
+        assert "print" in called_with
+
+    def test_cwd_prefixed_as_cd(self) -> None:
+        result = MagicMock(stdout="", stderr="", exit_code=0)
+        session = self._live_session(result)
+        session.exec("ls", cwd="/tmp")
+        called_with = session._sandbox.commands.run.call_args.args[0]
+        # Braces group the command so a failing `cd` short-circuits it;
+        # a newline (not `; }`) terminates the group so raw commands
+        # ending in `#comment`, `;` or `&` stay valid shell.
+        assert called_with == "cd /tmp && { ls\n}"
+
+    @pytest.mark.parametrize(
+        "raw_cmd",
+        ["ls #comment", "ls;", "ls &"],
+        ids=["trailing-comment", "trailing-semicolon", "trailing-ampersand"],
+    )
+    def test_cwd_grouping_survives_tricky_command_endings(
+        self, raw_cmd: str
+    ) -> None:
+        # A `; }` terminator would be swallowed by a trailing comment
+        # or clash with a trailing `;` / `&`; the newline terminator
+        # handles all of them.
+        result = MagicMock(stdout="", stderr="", exit_code=0)
+        session = self._live_session(result)
+        session.exec(raw_cmd, cwd="/tmp")
+        called_with = session._sandbox.commands.run.call_args.args[0]
+        assert called_with == f"cd /tmp && {{ {raw_cmd}\n}}"
+
+    @pytest.mark.parametrize(
+        "raw_cmd",
+        ["ls #comment", "ls;", "ls &", "ls"],
+        ids=[
+            "trailing-comment",
+            "trailing-semicolon",
+            "trailing-ampersand",
+            "plain",
+        ],
+    )
+    def test_cwd_grouping_is_valid_bash(self, raw_cmd: str) -> None:
+        import shutil
+        import subprocess
+
+        bash = shutil.which("bash")
+        if bash is None:
+            pytest.skip("bash not available")
+        result = MagicMock(stdout="", stderr="", exit_code=0)
+        session = self._live_session(result)
+        session.exec(raw_cmd, cwd="/tmp")
+        called_with = session._sandbox.commands.run.call_args.args[0]
+        check = subprocess.run(
+            [bash, "-n"], input=called_with, capture_output=True, text=True
+        )
+        assert check.returncode == 0, check.stderr
+
+    def test_env_prefixed_as_inline_exports(self) -> None:
+        result = MagicMock(stdout="", stderr="", exit_code=0)
+        session = self._live_session(result)
+        session.exec("env", env={"FOO": "bar baz"})
+        called_with = session._sandbox.commands.run.call_args.args[0]
+        # `export` applies to the whole command chain; shlex.quote
+        # wraps "bar baz" in single quotes.
+        assert called_with == "export FOO='bar baz'; env"
+
+    def test_cwd_and_env_compose_with_grouping(self) -> None:
+        # Exports live inside the braces: if `cd` fails, neither the
+        # exports nor the command run (in the wrong directory).
+        result = MagicMock(stdout="", stderr="", exit_code=0)
+        session = self._live_session(result)
+        session.exec("env", cwd="/tmp", env={"FOO": "bar baz"})
+        called_with = session._sandbox.commands.run.call_args.args[0]
+        assert called_with == "cd /tmp && { export FOO='bar baz'; env\n}"
+
+    def test_malicious_env_key_rejected(self) -> None:
+        # Keys are interpolated unquoted into `export <key>=...` — a
+        # non-identifier key would be shell injection.
+        result = MagicMock(stdout="", stderr="", exit_code=0)
+        session = self._live_session(result)
+        with pytest.raises(ValueError, match="environment variable name"):
+            session.exec("env", env={"FOO; rm -rf /": "x"})
+        session._sandbox.commands.run.assert_not_called()
+
+    def test_exec_failure_wraps_in_sandbox_exec_error(self) -> None:
+        from zenml.sandboxes import SandboxExecError
+
+        session = self._live_session(MagicMock())
+        session._sandbox.commands.run.side_effect = RuntimeError("boom")
+        with pytest.raises(SandboxExecError, match="RuntimeError"):
+            session.exec("/missing")

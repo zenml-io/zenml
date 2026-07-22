@@ -429,6 +429,8 @@ module = [
     "truss.*",
     "truss_train.*",
     "jsonref",
+    "k8s_agent_sandbox",
+    "k8s_agent_sandbox.*",
 ]
 ignore_missing_imports = true
 
