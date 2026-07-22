@@ -45,6 +45,12 @@ from zenml.models import (
     ScheduleFilter,
 )
 from zenml.pipelines.pipeline_definition import Pipeline
+from zenml.status_sources import (
+    CLI_RESUME,
+    CLI_RESUME_ROLLBACK,
+    CLI_RETRY,
+    CLI_RETRY_ROLLBACK,
+)
 from zenml.utils import run_utils, source_utils, uuid_utils
 from zenml.utils.dashboard_utils import get_deployment_url
 from zenml.utils.json_utils import parse_value_for_schema
@@ -1289,6 +1295,7 @@ def resume_pipeline_run(run_name_or_id: str) -> None:
             run_update=PipelineRunUpdate(
                 status=ExecutionStatus.RESUMING,
                 status_reason="Manual resume requested by user.",
+                status_source=CLI_RESUME,
             ),
         )
         try:
@@ -1304,6 +1311,7 @@ def resume_pipeline_run(run_name_or_id: str) -> None:
                 run_update=PipelineRunUpdate(
                     status=ExecutionStatus.PAUSED,
                     status_reason="Manual resume failed.",
+                    status_source=CLI_RESUME_ROLLBACK,
                 ),
             )
             raise
@@ -1349,6 +1357,7 @@ def retry_pipeline_run(run_name_or_id: str) -> None:
             run_update=PipelineRunUpdate(
                 status=ExecutionStatus.RESUMING,
                 status_reason="Manual retry requested by user.",
+                status_source=CLI_RETRY,
             ),
         )
 
@@ -1366,6 +1375,7 @@ def retry_pipeline_run(run_name_or_id: str) -> None:
                     run_update=PipelineRunUpdate(
                         status=ExecutionStatus.FAILED,
                         status_reason="Retry submission failed.",
+                        status_source=CLI_RETRY_ROLLBACK,
                     ),
                 )
             except Exception as rollback_error:

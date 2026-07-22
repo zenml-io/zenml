@@ -1731,12 +1731,12 @@ def test_static_controller_finalize_raises_after_failed_child_publish(
     monkeypatch.setattr(
         modal_entrypoint_module.publish_utils,
         "publish_failed_step_run",
-        lambda step_id: published.append(("step", step_id)),
+        lambda step_id, status_source: published.append(("step", step_id)),
     )
     monkeypatch.setattr(
         modal_entrypoint_module.publish_utils,
         "publish_failed_pipeline_run",
-        lambda run_id: published.append(("pipeline", run_id)),
+        lambda run_id, status_source: published.append(("pipeline", run_id)),
     )
 
     with pytest.raises(RuntimeError, match="train"):
@@ -1785,19 +1785,23 @@ def test_static_controller_finalize_ignores_cancelled_children(
     monkeypatch.setattr(
         modal_entrypoint_module.publish_utils,
         "publish_failed_step_run",
-        lambda step_id: published.append(("failed-step", step_id)),
+        lambda step_id, status_source: published.append(
+            ("failed-step", step_id)
+        ),
     )
     monkeypatch.setattr(
         modal_entrypoint_module.publish_utils,
         "publish_cancelled_step_run",
-        lambda step_id: pytest.fail(
+        lambda step_id, status_source: pytest.fail(
             "DAG cancelled nodes must not publish ZenML cancelled step status."
         ),
     )
     monkeypatch.setattr(
         modal_entrypoint_module.publish_utils,
         "publish_failed_pipeline_run",
-        lambda run_id: published.append(("failed-pipeline", run_id)),
+        lambda run_id, status_source: published.append(
+            ("failed-pipeline", run_id)
+        ),
     )
 
     with pytest.raises(RuntimeError, match="train"):
@@ -1841,21 +1845,23 @@ def test_static_controller_finalize_ignores_cancelled_only_run(
     monkeypatch.setattr(
         modal_entrypoint_module.publish_utils,
         "publish_failed_step_run",
-        lambda step_id: pytest.fail(
+        lambda step_id, status_source: pytest.fail(
             "Cancelled DAG nodes must not publish failed step status."
         ),
     )
     monkeypatch.setattr(
         modal_entrypoint_module.publish_utils,
         "publish_cancelled_step_run",
-        lambda step_id: pytest.fail(
+        lambda step_id, status_source: pytest.fail(
             "DAG cancelled nodes must not publish ZenML cancelled step status."
         ),
     )
     monkeypatch.setattr(
         modal_entrypoint_module.publish_utils,
         "publish_successful_pipeline_run",
-        lambda run_id: published.append(("successful-pipeline", run_id)),
+        lambda run_id, status_source: published.append(
+            ("successful-pipeline", run_id)
+        ),
     )
 
     modal_entrypoint_module.ModalOrchestratorEntrypointConfiguration._finalize_pipeline_run(
@@ -1891,14 +1897,16 @@ def test_static_controller_finalize_logs_skipped_without_failing_steps(
     monkeypatch.setattr(
         modal_entrypoint_module.publish_utils,
         "publish_failed_step_run",
-        lambda step_id: pytest.fail(
+        lambda step_id, status_source: pytest.fail(
             "Skipped DAG nodes must not publish failed step status."
         ),
     )
     monkeypatch.setattr(
         modal_entrypoint_module.publish_utils,
         "publish_successful_pipeline_run",
-        lambda run_id: published.append(("successful-pipeline", run_id)),
+        lambda run_id, status_source: published.append(
+            ("successful-pipeline", run_id)
+        ),
     )
 
     modal_entrypoint_module.ModalOrchestratorEntrypointConfiguration._finalize_pipeline_run(
@@ -1943,7 +1951,9 @@ def test_static_controller_finalize_stopping_run_does_not_raise(
     monkeypatch.setattr(
         modal_entrypoint_module.publish_utils,
         "publish_pipeline_run_status_update",
-        lambda run_id, status: published.append((run_id, status)),
+        lambda run_id, status, status_source: published.append(
+            (run_id, status)
+        ),
     )
 
     modal_entrypoint_module.ModalOrchestratorEntrypointConfiguration._finalize_pipeline_run(
@@ -1980,12 +1990,14 @@ def test_static_controller_finalize_respects_late_stop_request(
     monkeypatch.setattr(
         modal_entrypoint_module.publish_utils,
         "publish_pipeline_run_status_update",
-        lambda run_id, status: published.append(("status", run_id, status)),
+        lambda run_id, status, status_source: published.append(
+            ("status", run_id, status)
+        ),
     )
     monkeypatch.setattr(
         modal_entrypoint_module.publish_utils,
         "publish_failed_pipeline_run",
-        lambda run_id: published.append(("failed", run_id)),
+        lambda run_id, status_source: published.append(("failed", run_id)),
     )
 
     modal_entrypoint_module.ModalOrchestratorEntrypointConfiguration._finalize_pipeline_run(

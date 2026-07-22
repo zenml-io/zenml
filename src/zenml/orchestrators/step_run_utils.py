@@ -41,6 +41,11 @@ from zenml.models import (
 )
 from zenml.orchestrators import cache_utils, input_utils, utils
 from zenml.stack import Stack
+from zenml.status_sources import (
+    CLIENT_STEP_SKIPPED,
+    STEP_RUN_FACTORY_CACHE_HIT,
+    STEP_RUN_FACTORY_CREATED,
+)
 from zenml.utils import pagination_utils
 from zenml.utils.time_utils import utc_now
 
@@ -186,6 +191,7 @@ class StepRunRequestFactory:
             name=invocation_id,
             pipeline_run_id=self.pipeline_run.id,
             status=ExecutionStatus.RUNNING,
+            status_source=STEP_RUN_FACTORY_CREATED,
             start_time=utc_now(),
             project=Client().active_project.id,
             dynamic_config=dynamic_config,
@@ -276,6 +282,7 @@ class StepRunRequestFactory:
                 }
 
                 request.status = ExecutionStatus.CACHED
+                request.status_source = STEP_RUN_FACTORY_CACHE_HIT
                 request.end_time = request.start_time
 
                 # Cached step runs themselves are not valid candidates for
@@ -335,6 +342,7 @@ class StepRunRequestFactory:
             )
 
         request.status = ExecutionStatus.SKIPPED
+        request.status_source = CLIENT_STEP_SKIPPED
         request.original_step_run_id = original_step_run.id
         request.end_time = request.start_time
 

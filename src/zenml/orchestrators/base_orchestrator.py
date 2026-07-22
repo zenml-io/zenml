@@ -53,6 +53,10 @@ from zenml.orchestrators.publish_utils import (
 )
 from zenml.orchestrators.utils import get_config_environment_vars
 from zenml.stack import Flavor, Stack, StackComponent, StackComponentConfig
+from zenml.status_sources import (
+    ORCHESTRATOR_PROVISIONING,
+    USER_STOP_REQUESTED,
+)
 from zenml.steps.step_context import RunContext, get_or_create_run_context
 from zenml.utils.env_utils import temporary_environment
 from zenml.utils.pydantic_utils import before_validator_handler
@@ -408,6 +412,7 @@ class BaseOrchestrator(StackComponent, ABC):
                     publish_pipeline_run_status_update(
                         pipeline_run_id=placeholder_run.id,
                         status=ExecutionStatus.PROVISIONING,
+                        status_source=ORCHESTRATOR_PROVISIONING,
                     )
 
                 if submission_result:
@@ -885,6 +890,7 @@ class BaseOrchestrator(StackComponent, ABC):
         publish_pipeline_run_status_update(
             pipeline_run_id=run.id,
             status=ExecutionStatus.STOPPING,
+            status_source=USER_STOP_REQUESTED,
             status_reason="Manual stop requested.",
         )
 

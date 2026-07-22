@@ -21,6 +21,7 @@ from zenml.logger import get_logger
 from zenml.models import PipelineRunResponse, PipelineRunUpdate, StepRunUpdate
 from zenml.orchestrators.base_orchestrator import BaseOrchestrator
 from zenml.stack.stack_component import StackComponent
+from zenml.status_sources import REFRESH_ORCHESTRATOR_STATUS
 
 if TYPE_CHECKING:
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -150,7 +151,10 @@ def refresh_run_status(
                     try:
                         zen_store.update_run_step(
                             step_run_id=current_steps[step_name].id,
-                            step_run_update=StepRunUpdate(status=step_status),
+                            step_run_update=StepRunUpdate(
+                                status=step_status,
+                                status_source=REFRESH_ORCHESTRATOR_STATUS,
+                            ),
                         )
                     except Exception as e:
                         logger.warning(
@@ -161,7 +165,10 @@ def refresh_run_status(
     if pipeline_status is not None and pipeline_status != run.status:
         return zen_store.update_run(
             run_id=run.id,
-            run_update=PipelineRunUpdate(status=pipeline_status),
+            run_update=PipelineRunUpdate(
+                status=pipeline_status,
+                status_source=REFRESH_ORCHESTRATOR_STATUS,
+            ),
         )
 
     return run

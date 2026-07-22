@@ -23,6 +23,7 @@ from zenml.orchestrators.step_launcher import (
     _get_step_operator,
 )
 from zenml.stack import Stack
+from zenml.status_sources import STEP_LAUNCHER_REMOTE_STEP_FINISHED
 
 
 def test_step_operator_validation(local_stack, sample_step_operator):
@@ -87,6 +88,7 @@ def test_dynamic_command_step_success_publishes_status(mocker):
     publish_success.assert_called_once_with(
         step_run_id=step_run_info.step_run_id,
         output_artifact_ids={},
+        status_source=STEP_LAUNCHER_REMOTE_STEP_FINISHED,
     )
     publish_failed.assert_not_called()
 

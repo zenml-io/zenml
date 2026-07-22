@@ -51,6 +51,14 @@ from zenml.orchestrators.step_run_utils import (
 )
 from zenml.orchestrators.utils import get_config_environment_vars
 from zenml.pipelines.run_utils import create_placeholder_run
+from zenml.status_sources import (
+    MODAL_ORCHESTRATOR_RUN_COMPLETED,
+    MODAL_ORCHESTRATOR_RUN_FAILED,
+    MODAL_ORCHESTRATOR_RUN_STOPPED,
+    MODAL_ORCHESTRATOR_RUN_STOPPED_AFTER_DRAIN,
+    MODAL_ORCHESTRATOR_SANDBOX_FAILED,
+    MODAL_ORCHESTRATOR_STEPS_UNFINISHED,
+)
 from zenml.utils import env_utils
 from zenml.utils.time_utils import utc_now
 
@@ -393,6 +401,7 @@ class _StaticModalPipelineController:
             return NodeStatus.FAILED
 
         request.status = ExecutionStatus.FAILED
+        request.status_source = MODAL_ORCHESTRATOR_SANDBOX_FAILED
         request.end_time = utc_now()
         try:
             self.client.zen_store.create_run_step(request)
@@ -566,6 +575,7 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
                 publish_utils.publish_pipeline_run_status_update(
                     pipeline_run_id,
                     ExecutionStatus.STOPPED,
+                    status_source=MODAL_ORCHESTRATOR_RUN_STOPPED,
                 )
                 return
             if run.status == ExecutionStatus.STOPPED:
@@ -580,7 +590,8 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
             if not failed_step_names:
                 if run.status in active_statuses:
                     publish_utils.publish_successful_pipeline_run(
-                        pipeline_run_id
+                        pipeline_run_id,
+                        status_source=MODAL_ORCHESTRATOR_RUN_COMPLETED,
                     )
                 return
 
@@ -594,19 +605,26 @@ class ModalOrchestratorEntrypointConfiguration(BaseEntrypointConfiguration):
             )
             for step_run in step_runs.values():
                 if not step_run.status.is_finished:
-                    publish_utils.publish_failed_step_run(step_run.id)
+                    publish_utils.publish_failed_step_run(
+                        step_run.id,
+                        status_source=MODAL_ORCHESTRATOR_STEPS_UNFINISHED,
+                    )
 
             refreshed_run = client.get_pipeline_run(pipeline_run_id)
             if refreshed_run.status == ExecutionStatus.STOPPING:
                 publish_utils.publish_pipeline_run_status_update(
                     pipeline_run_id,
                     ExecutionStatus.STOPPED,
+                    status_source=MODAL_ORCHESTRATOR_RUN_STOPPED_AFTER_DRAIN,
                 )
                 return
             if refreshed_run.status == ExecutionStatus.STOPPED:
                 return
             if refreshed_run.status in active_statuses:
-                publish_utils.publish_failed_pipeline_run(pipeline_run_id)
+                publish_utils.publish_failed_pipeline_run(
+                    pipeline_run_id,
+                    status_source=MODAL_ORCHESTRATOR_RUN_FAILED,
+                )
             raise RuntimeError(
                 "Modal steps did not complete successfully: "
                 + ", ".join(failed_step_names)

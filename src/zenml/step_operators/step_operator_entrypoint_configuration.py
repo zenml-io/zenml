@@ -27,6 +27,7 @@ from zenml.enums import ExecutionStatus
 from zenml.models import StepRunUpdate
 from zenml.orchestrators import input_utils, output_utils
 from zenml.orchestrators.step_runner import StepRunner
+from zenml.status_sources import STEP_OPERATOR_STARTED
 
 if TYPE_CHECKING:
     from zenml.models import PipelineSnapshotResponse, StepRunResponse
@@ -92,7 +93,8 @@ class StepOperatorEntrypointConfiguration(StepEntrypointConfiguration):
                 self._step_run = Client().zen_store.update_run_step(
                     step_run_id=step_run_id,
                     step_run_update=StepRunUpdate(
-                        status=ExecutionStatus.RUNNING
+                        status=ExecutionStatus.RUNNING,
+                        status_source=STEP_OPERATOR_STARTED,
                     ),
                 )
             else:

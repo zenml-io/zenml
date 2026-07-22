@@ -115,6 +115,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         description="The latest execution heartbeat.",
     )
     status: str = Field(nullable=False)
+    status_source: Optional[str] = Field(nullable=True)
 
     docstring: Optional[str] = Field(sa_column=Column(TEXT, nullable=True))
     cache_key: Optional[str] = Field(nullable=True)
@@ -472,6 +473,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             project_id=self.project_id,
             type=step.config.step_type,
             status=ExecutionStatus(self.status),
+            status_source=self.status_source,
             version=self.version,
             is_retriable=self.is_retriable,
             start_time=self.start_time,
@@ -573,6 +575,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ).items():
             if key == "status":
                 self.status = value.value
+            if key == "status_source":
+                self.status_source = value
             if key == "end_time":
                 self.end_time = value
             if key == "exception_info":
