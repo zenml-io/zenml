@@ -11,7 +11,7 @@ This guide teaches production AI agents with [Kitaru](https://docs.zenml.io/kita
 2. **Replay** a real run with one thing changed — a different model, a different prompt — and diff the result against a faithful baseline.
 3. **Improve** the agent by rolling the winning change across a cohort of recent runs and keeping the version that wins on cost, latency, and quality.
 
-Replay is the part other tooling can't do. An eval re-scores outputs after the fact. Kitaru re-executes the actual run from a durable checkpoint with one input swapped, so you find out what *would have happened* if you'd shipped the change.
+Replay is the part other tooling can't do. Braintrust, LangSmith, and Langfuse only ever ingest the run data your agent emits — the closest any of them can get to testing a change is scoring it against a dataset you assembled by hand. Kitaru is the runtime your agent ran on, underneath your harness, so it can rebuild a real production run — every step, every tool call — into an environment you can re-run a change against, and see exactly what regressed. During a replay, the model calls re-run for real, while tool calls can answer from the recorded run or be mocked — so a critical side effect like the refund itself doesn't fire twice. You can figure out what *would have happened* in a safe, side-effect free way.
 
 {% hint style="info" %}
 A Kitaru **flow** is a dynamic ZenML pipeline. A **checkpoint** is like a step. Agents and pipelines run on the same stacks, the same server, the same dashboard.
