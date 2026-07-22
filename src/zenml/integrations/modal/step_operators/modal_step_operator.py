@@ -277,3 +277,45 @@ class ModalStepOperator(BaseStepOperator):
         sandbox_id = str(step_run.run_metadata[STEP_SANDBOX_ID_METADATA_KEY])
         modal_client = self._get_modal_client()
         sandbox_utils.terminate_sandbox(sandbox_id, modal_client=modal_client)
+
+    def cleanup_step_submission(self, step_run: "StepRunResponse") -> None:
+        """Stop the Modal app after a sandbox run completes.
+
+        When ``stop_app_after_run`` is enabled in the step settings, this
+        calls ``modal app stop`` on the per-step app, moving its entry from
+        'deployed' to 'stopped' in the Modal dashboard. Stopped apps remain
+        visible in the 'recently stopped' section with their full log history
+        intact, so debugging is unaffected. Failures are logged as warnings
+        and never re-raised so that cleanup cannot mask the step result.
+
+        Args:
+            step_run: The finished step run.
+        """
+        settings = cast(ModalStepOperatorSettings, self.get_settings(step_run))
+        if not settings.stop_app_after_run:
+            return
+
+        app_name = f"zenml-{step_run.id}-{step_run.name}"[:64]
+        modal_environment = sandbox_utils.normalize_optional_config_value(
+            settings.modal_environment
+        )
+        try:
+            sandbox_utils.stop_modal_app(
+                app_name,
+                modal_environment=modal_environment,
+                token_id=self.config.token_id,
+                token_secret=self.config.token_secret,
+            )
+            logger.debug(
+                "Stopped Modal app '%s' for step run '%s'.",
+                app_name,
+                step_run.id,
+            )
+        except Exception:
+            logger.warning(
+                "Failed to stop Modal app '%s' for step run '%s'. "
+                "The app may still appear in the Modal dashboard.",
+                app_name,
+                step_run.id,
+                exc_info=True,
+            )

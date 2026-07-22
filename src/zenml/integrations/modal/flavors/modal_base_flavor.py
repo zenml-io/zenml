@@ -68,6 +68,15 @@ class ModalSettingsMixin(BaseSettings):
         f"Examples: 3600 (1 hour), 7200 (2 hours), {DEFAULT_TIMEOUT_SECONDS} (24 hours maximum). "
         "Execution will be terminated if it exceeds this timeout",
     )
+    stop_app_after_run: bool = Field(
+        False,
+        description="Stop the Modal app after the sandbox reaches a terminal "
+        "state. When True, ZenML calls `modal app stop` on the app created "
+        "for this run, removing it from the Modal dashboard's deployed-apps "
+        "list. Stopped apps are still visible in the 'recently stopped' "
+        "section and their logs remain accessible. Defaults to False to "
+        "preserve the previous behavior.",
+    )
 
 
 class ModalCredentialsMixin(BaseSettings):
