@@ -13,6 +13,11 @@
 #  permissions and limitations under the License.
 """GCP integration flavors."""
 
+from zenml.integrations.gcp.flavors.cloudrun_sandbox_flavor import (
+    CloudRunSandboxConfig,
+    CloudRunSandboxFlavor,
+    CloudRunSandboxSettings,
+)
 from zenml.integrations.gcp.flavors.gcp_artifact_store_flavor import (
     GCPArtifactStoreConfig,
     GCPArtifactStoreFlavor,
@@ -39,6 +44,9 @@ from zenml.integrations.gcp.flavors.vertex_step_operator_flavor import (
 )
 
 __all__ = [
+    "CloudRunSandboxFlavor",
+    "CloudRunSandboxConfig",
+    "CloudRunSandboxSettings",
     "GCPArtifactStoreFlavor",
     "GCPArtifactStoreConfig",
     "GCPDeployerFlavor",

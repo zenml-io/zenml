@@ -34,6 +34,7 @@ GCP_VERTEX_EXPERIMENT_TRACKER_FLAVOR = "vertex"
 GCP_VERTEX_ORCHESTRATOR_FLAVOR = "vertex"
 GCP_VERTEX_STEP_OPERATOR_FLAVOR = "vertex"
 GCP_DEPLOYER_FLAVOR = "gcp"
+GCP_CLOUDRUN_SANDBOX_FLAVOR = "cloudrun"
 
 # Service connector constants
 GCP_CONNECTOR_TYPE = "gcp"
@@ -80,6 +81,7 @@ class GcpIntegration(Integration):
             List of stack component flavors for this integration.
         """
         from zenml.integrations.gcp.flavors import (
+            CloudRunSandboxFlavor,
             GCPArtifactStoreFlavor,
             GCPDeployerFlavor,
             GCPImageBuilderFlavor,
@@ -89,6 +91,7 @@ class GcpIntegration(Integration):
         )
 
         return [
+            CloudRunSandboxFlavor,
             GCPArtifactStoreFlavor,
             GCPDeployerFlavor,
             GCPImageBuilderFlavor,
