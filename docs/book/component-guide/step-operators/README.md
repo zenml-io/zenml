@@ -28,6 +28,7 @@ Step operators to execute steps on one of the big cloud providers are provided b
 | [Modal](modal.md)                  | `modal`      | `modal`      | ✅                 | Uses Modal to execute steps                                              |
 | [SageMaker](sagemaker.md)          | `sagemaker`  | `aws`        | ✅                 | Uses SageMaker to execute steps                                          |
 | [Run:AI](runai.md)                 | `runai`      | `runai`      | ✅                 | Uses Run:AI to execute steps                                             |
+| [Slurm](slurm.md)                  | `slurm`      | `slurm`      | ❌                 | Runs selected steps as Slurm jobs on an HPC cluster                      |
 | [SSH](ssh.md)                      | `ssh`        | `ssh`        | ❌                 | Runs steps on a remote host via SSH + Docker                             |
 | [Spark](spark-kubernetes.md)       | `spark`      | `spark`      | ❌                 | Uses Spark on Kubernetes to execute steps in a distributed manner        |
 | [Vertex](vertex.md)                | `vertex`     | `gcp`        | ✅                 | Uses Vertex AI to execute steps                                          |
