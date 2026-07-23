@@ -18,7 +18,11 @@ from uuid import UUID
 
 import click
 
-from zenml import PlatformEventTriggerResponse, ScheduleTriggerResponse
+from zenml import (
+    PlatformEventTriggerResponse,
+    ScheduleTriggerResponse,
+    WebhookTriggerResponse,
+)
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.client import Client
@@ -29,6 +33,7 @@ from zenml.enums import (
     SourceType,
     TriggerRunConcurrency,
     TriggerType,
+    WebhookType,
 )
 from zenml.logger import get_logger
 from zenml.models import TriggerFilter
@@ -53,6 +58,11 @@ def schedule() -> None:
 @trigger.group()
 def platform_event() -> None:
     """Commands for platform events triggers."""
+
+
+@trigger.group()
+def webhook() -> None:
+    """Commands for webhook triggers."""
 
 
 # SCHEDULE commands
@@ -283,7 +293,11 @@ def get_trigger_by_type(
     hydrate: bool,
     allow_name_prefix_match: bool,
     is_archived: bool = False,
-) -> ScheduleTriggerResponse | PlatformEventTriggerResponse:
+) -> (
+    ScheduleTriggerResponse
+    | PlatformEventTriggerResponse
+    | WebhookTriggerResponse
+):
     """Getter helper. Resolves trigger type getter by id.
 
     Args:
@@ -308,6 +322,13 @@ def get_trigger_by_type(
         )
     elif trigger_type == TriggerType.PLATFORM_EVENT:
         return Client().get_platform_event_trigger(
+            trigger_name_id_or_prefix=trigger_name_id_or_prefix,
+            hydrate=hydrate,
+            is_archived=is_archived,
+            allow_name_prefix_match=allow_name_prefix_match,
+        )
+    elif trigger_type == TriggerType.WEBHOOK:
+        return Client().get_webhook_trigger(
             trigger_name_id_or_prefix=trigger_name_id_or_prefix,
             hydrate=hydrate,
             is_archived=is_archived,
@@ -756,9 +777,180 @@ def list_platform_events(
     )
 
 
+# WEBHOOK COMMANDS
+
+
+@webhook.command("create", help="Create a new webhook trigger.")
+@click.argument("name", type=str)
+@click.option(
+    "--webhook-type",
+    type=click.Choice(WebhookType.values()),
+    required=True,
+    help="The compatible webhook provider type.",
+)
+@click.option(
+    "--webhook-integration",
+    type=str,
+    help="Optional webhook integration name or ID.",
+)
+@click.option(
+    "--concurrency",
+    type=click.Choice(TriggerRunConcurrency.values()),
+    default=TriggerRunConcurrency.SKIP.value,
+    help="Option to control the concurrency of the trigger.",
+)
+@click.option("--active", type=bool, default=True)
+def create_webhook_trigger(
+    name: str,
+    webhook_type: str,
+    webhook_integration: str | None,
+    concurrency: str,
+    active: bool,
+) -> None:
+    """Create a webhook trigger.
+
+    Args:
+        name: The trigger name.
+        webhook_type: The compatible webhook provider type.
+        webhook_integration: Optional integration name or ID.
+        concurrency: The trigger run concurrency behavior.
+        active: Whether the trigger should be active.
+    """
+    try:
+        created = Client().create_webhook_trigger(
+            name=name,
+            webhook_type=WebhookType(webhook_type),
+            webhook_integration=webhook_integration,
+            concurrency=TriggerRunConcurrency(concurrency),
+            active=active,
+        )
+    except Exception as e:
+        cli_utils.exception(e)
+    else:
+        cli_utils.declare(f"Created webhook trigger '{created.id}'.")
+
+
+@webhook.command("update", help="Update a webhook trigger.")
+@click.argument("trigger_name_or_id", type=str)
+@click.option("--name", type=str)
+@click.option("--active", type=bool)
+@click.option(
+    "--concurrency",
+    type=click.Choice(TriggerRunConcurrency.values()),
+    help="Option to control the concurrency of the trigger.",
+)
+@click.option(
+    "--webhook-integration",
+    type=str,
+    help="Replacement webhook integration name or ID.",
+)
+@click.option(
+    "--detach-webhook-integration",
+    is_flag=True,
+    help="Detach the webhook integration and deactivate the trigger.",
+)
+def update_webhook_trigger(
+    trigger_name_or_id: str,
+    name: str | None,
+    active: bool | None,
+    concurrency: str | None,
+    webhook_integration: str | None,
+    detach_webhook_integration: bool,
+) -> None:
+    """Update a webhook trigger.
+
+    Args:
+        trigger_name_or_id: The trigger name or ID.
+        name: The new trigger name.
+        active: The new active state.
+        concurrency: The new concurrency behavior.
+        webhook_integration: A replacement integration name or ID.
+        detach_webhook_integration: Whether to detach the integration.
+    """
+    if (
+        not any(
+            value is not None
+            for value in [name, active, concurrency, webhook_integration]
+        )
+        and not detach_webhook_integration
+    ):
+        cli_utils.declare("No webhook trigger update requested.")
+        return
+
+    try:
+        Client().update_webhook_trigger(
+            trigger_name_id_or_prefix=trigger_name_or_id,
+            name=name,
+            active=active,
+            concurrency=(
+                TriggerRunConcurrency(concurrency) if concurrency else None
+            ),
+            webhook_integration=webhook_integration,
+            detach_webhook_integration=detach_webhook_integration,
+        )
+    except Exception as e:
+        cli_utils.exception(e)
+    else:
+        cli_utils.declare(f"Updated webhook trigger '{trigger_name_or_id}'.")
+
+
+@webhook.command("list", help="List available webhook triggers.")
+@click.option(
+    "--webhook-type",
+    type=click.Choice(WebhookType.values()),
+    help="Filter by compatible webhook provider type.",
+)
+@click.option(
+    "--webhook-integration-id",
+    type=UUID,
+    help="Filter by webhook integration ID.",
+)
+@cli_utils.list_options(
+    TriggerFilter,
+    default_columns=[
+        "id",
+        "name",
+        "active",
+        "webhook_integration_id",
+        "concurrency",
+    ],
+)
+def list_webhook_triggers(
+    columns: str,
+    output_format: cli_utils.OutputFormat,
+    webhook_type: str | None,
+    webhook_integration_id: UUID | None,
+    **kwargs: Any,
+) -> None:
+    """List webhook triggers that fulfill the filter requirements.
+
+    Args:
+        columns: Columns to display in output.
+        output_format: Format for output.
+        webhook_type: Filter by compatible webhook provider type.
+        webhook_integration_id: Filter by webhook integration ID.
+        **kwargs: Additional trigger filters.
+    """
+    with console.status("Listing triggers...\n"):
+        triggers = Client().list_webhook_triggers(
+            webhook_type=(
+                WebhookType(webhook_type) if webhook_type is not None else None
+            ),
+            webhook_integration_id=webhook_integration_id,
+            **kwargs,
+        )
+    cli_utils.print_page(
+        triggers,
+        columns,
+        output_format,
+        empty_message="No triggers found for the given filters.",
+    )
+
+
 for group, tr_type in [
     (schedule, TriggerType.SCHEDULE),
     (platform_event, TriggerType.PLATFORM_EVENT),
+    (webhook, TriggerType.WEBHOOK),
 ]:
     group.add_command(make_delete_command(tr_type))
     group.add_command(make_attach_command(tr_type))
