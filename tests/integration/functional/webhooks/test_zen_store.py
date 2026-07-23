@@ -196,12 +196,13 @@ def test_sql_store_webhook_intake_uses_one_config_read_and_stats_update(
 
     event.listen(store.engine, "before_cursor_execute", capture_statement)
     try:
-        webhook_type, active, _ = store.get_webhook_intake_config(
+        webhook_type, active, _, project_id = store.get_webhook_intake_config(
             result.webhook.id
         )
 
         assert webhook_type == WebhookType.CUSTOM
         assert active is True
+        assert project_id == clean_client.active_project.id
         assert len(statements) == 1
         assert statements[0].lstrip().upper().startswith("SELECT")
 

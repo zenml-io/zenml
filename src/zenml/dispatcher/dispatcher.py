@@ -20,6 +20,7 @@ from zenml.dispatcher.handler import EventHandler
 from zenml.logger import get_logger
 from zenml.models import PipelineRunResponse
 from zenml.utils.singleton import SingletonMetaClass
+from zenml.webhooks import WebhookEvent
 
 logger = get_logger(__name__)
 
@@ -88,6 +89,32 @@ class EventDispatcher(metaclass=SingletonMetaClass):
             except Exception as exc:
                 logger.exception(
                     "%s failed to handle update",
+                    event_handler.__class__.__name__,
+                    exc_info=exc,
+                )
+
+    def handle_webhook_event(self, event: WebhookEvent) -> None:
+        """Fan out an accepted webhook event to registered handlers.
+
+        Args:
+            event: The trusted webhook event.
+        """
+        with self._handlers_lock:
+            handlers = list(self._event_handlers)
+
+        for event_handler in handlers:
+            try:
+                logger.debug(
+                    "Event handler %s processing webhook event %s from "
+                    "integration %s",
+                    event_handler.__class__.__name__,
+                    event.event_type,
+                    event.webhook_integration_id,
+                )
+                event_handler.handle_webhook_event(event)
+            except Exception as exc:
+                logger.exception(
+                    "%s failed to handle webhook event",
                     event_handler.__class__.__name__,
                     exc_info=exc,
                 )

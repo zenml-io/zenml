@@ -102,6 +102,7 @@ class _Store:
         self.secret_requests = 0
         self.records = []
         self.secret_id = uuid4()
+        self.project_id = uuid4()
 
     def get_webhook_intake_config(self, integration_id):
         if self.integration is None:
@@ -110,6 +111,7 @@ class _Store:
             self.integration.webhook_type,
             self.integration.active,
             self.secret_id,
+            self.project_id,
         )
 
     def get_webhook_secret(self, secret_id):
@@ -141,11 +143,28 @@ class _Adapter:
         self.parse_calls += 1
         if self.payload_error:
             raise self.payload_error
+        return SimpleNamespace(
+            webhook_type=WebhookType.CUSTOM,
+            event_type="pipeline.ready",
+            delivery_id="delivery-id",
+            payload={"event": "ready"},
+        )
+
+
+class _Dispatcher:
+    def __init__(self) -> None:
+        self.events = []
+
+    def handle_webhook_event(self, event):
+        self.events.append(event)
 
 
 def _install_dependencies(monkeypatch, store: _Store, adapter: _Adapter):
+    dispatcher = _Dispatcher()
     monkeypatch.setattr(endpoints, "zen_store", lambda: store)
     monkeypatch.setattr(endpoints, "get_webhook_adapter", lambda _: adapter)
+    monkeypatch.setattr(endpoints, "EventDispatcher", lambda: dispatcher)
+    return dispatcher
 
 
 def _receive(integration_id):
@@ -229,7 +248,7 @@ def test_receive_webhook_event_decision_table(
         )
     )
     adapter = _Adapter(auth_error=auth_error, payload_error=payload_error)
-    _install_dependencies(monkeypatch, store, adapter)
+    dispatcher = _install_dependencies(monkeypatch, store, adapter)
 
     if expected_status == status.HTTP_202_ACCEPTED:
         assert _receive(integration_id).status_code == expected_status
@@ -257,3 +276,15 @@ def test_receive_webhook_event_decision_table(
         assert recorded_id == integration_id
         assert getattr(update, expected_outcome) is True
         assert update.error_summary == expected_error
+
+    if expected_status == status.HTTP_202_ACCEPTED:
+        assert len(dispatcher.events) == 1
+        event = dispatcher.events[0]
+        assert event.project_id == store.project_id
+        assert event.webhook_integration_id == integration_id
+        assert event.webhook_type == WebhookType.CUSTOM
+        assert event.event_type == "pipeline.ready"
+        assert event.delivery_id == "delivery-id"
+        assert event.payload == {"event": "ready"}
+    else:
+        assert dispatcher.events == []

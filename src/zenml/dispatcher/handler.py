@@ -16,6 +16,7 @@
 from abc import ABC, abstractmethod
 
 from zenml.models import PipelineRunResponse
+from zenml.webhooks import WebhookEvent
 
 
 class EventHandler(ABC):
@@ -30,6 +31,16 @@ class EventHandler(ABC):
 
         Args:
             run: The pipeline run whose status has changed.
+        """
+
+    def handle_webhook_event(self, event: WebhookEvent) -> None:
+        """Handle an accepted webhook event.
+
+        Event handlers that do not process webhook events can keep the default
+        no-op implementation.
+
+        Args:
+            event: The trusted webhook event.
         """
 
     @classmethod

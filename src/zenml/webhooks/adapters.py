@@ -19,8 +19,9 @@ import json
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from typing import Any
+from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from zenml.enums import WebhookType
 from zenml.exceptions import CredentialsNotValid
@@ -46,13 +47,22 @@ class GitHubWebhookEventType(StrEnum):
     WORKFLOW_RUN = "workflow_run"
 
 
-class WebhookEvent(BaseModel):
-    """Authenticated provider event produced by an intake adapter."""
+class ParsedWebhookEvent(BaseModel):
+    """Provider event parsed by a webhook adapter."""
 
     webhook_type: WebhookType
     event_type: str
     delivery_id: str | None = None
     payload: dict[str, Any]
+
+
+class WebhookEvent(ParsedWebhookEvent):
+    """Trusted webhook event handed to registered event handlers."""
+
+    model_config = ConfigDict(frozen=True)
+
+    project_id: UUID
+    webhook_integration_id: UUID
 
 
 class BaseWebhookAdapter(ABC):
@@ -76,7 +86,7 @@ class BaseWebhookAdapter(ABC):
 
     def validate(
         self, body: bytes, headers: Mapping[str, str], secret: str
-    ) -> WebhookEvent:
+    ) -> ParsedWebhookEvent:
         """Authenticate and structurally validate a provider event.
 
         Args:
@@ -94,7 +104,9 @@ class BaseWebhookAdapter(ABC):
         self.authenticate(body=body, headers=headers, secret=secret)
         return self.parse(body=body, headers=headers)
 
-    def parse(self, body: bytes, headers: Mapping[str, str]) -> WebhookEvent:
+    def parse(
+        self, body: bytes, headers: Mapping[str, str]
+    ) -> ParsedWebhookEvent:
         """Structurally validate and parse a provider event.
 
         Args:
@@ -118,7 +130,7 @@ class BaseWebhookAdapter(ABC):
                 "Request body must contain a top-level JSON object."
             )
         event_type = self.get_event_type(payload=payload, headers=headers)
-        return WebhookEvent(
+        return ParsedWebhookEvent(
             webhook_type=self.webhook_type,
             event_type=event_type,
             delivery_id=self.get_delivery_id(payload=payload, headers=headers),

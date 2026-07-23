@@ -32,6 +32,7 @@ from zenml.constants import (
     VERSION_1,
     WEBHOOKS,
 )
+from zenml.dispatcher import EventDispatcher
 from zenml.enums import WebhookType
 from zenml.models import (
     Page,
@@ -46,6 +47,7 @@ from zenml.models import (
 )
 from zenml.webhooks import (
     WebhookAuthenticationError,
+    WebhookEvent,
     WebhookPayloadError,
     get_webhook_adapter,
 )
@@ -280,9 +282,12 @@ def _receive_webhook_event(
             request fails authentication or payload validation.
     """
     try:
-        stored_type, active, secret_id = zen_store().get_webhook_intake_config(
-            integration_id
-        )
+        (
+            stored_type,
+            active,
+            secret_id,
+            project_id,
+        ) = zen_store().get_webhook_intake_config(integration_id)
     except KeyError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND) from error
 
@@ -314,7 +319,7 @@ def _receive_webhook_event(
         )
 
     try:
-        adapter.parse(body=body, headers=headers)
+        parsed_event = adapter.parse(body=body, headers=headers)
     except WebhookPayloadError as error:
         zen_store().record_webhook_event(
             integration_id,
@@ -329,5 +334,15 @@ def _receive_webhook_event(
 
     zen_store().record_webhook_event(
         integration_id, WebhookEventStatsUpdate(accepted=True)
+    )
+    EventDispatcher().handle_webhook_event(
+        WebhookEvent(
+            project_id=project_id,
+            webhook_integration_id=integration_id,
+            webhook_type=parsed_event.webhook_type,
+            event_type=parsed_event.event_type,
+            delivery_id=parsed_event.delivery_id,
+            payload=parsed_event.payload,
+        )
     )
     return Response(status_code=status.HTTP_202_ACCEPTED)
