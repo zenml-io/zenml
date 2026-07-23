@@ -30,11 +30,9 @@ Environment variables and secrets can be configured at different levels with inc
 ## ZenML repository directory name
 
 By default, `zenml init` creates a `.zen` directory that marks the root of a
-ZenML repository. ZenML uses that marker later when it resolves local code, for
-example custom stack component flavors that live in your repository.
+ZenML repository. ZenML uses that marker later when it resolves local code, for example custom stack component flavors that live in your repository.
 
-If your workspace cannot use `.zen` as the marker directory name, set
-`ZENML_REPOSITORY_DIRECTORY_NAME` before initializing or discovering the
+If your workspace cannot use `.zen` as the marker directory name, set `ZENML_REPOSITORY_DIRECTORY_NAME` before initializing or discovering the
 repository:
 
 ```bash
@@ -42,8 +40,7 @@ export ZENML_REPOSITORY_DIRECTORY_NAME=.my-zenml
 zenml init
 ```
 
-After that, ZenML looks for `.my-zenml` instead of `.zen`. Keep this setting
-consistent for everyone and every process that works with the repository; if one
+After that, ZenML looks for `.my-zenml` instead of `.zen`. Keep this setting consistent for everyone and every process that works with the repository; if one
 shell uses `.zen` and another uses `.my-zenml`, they will not agree on where the
 ZenML repository root is.
 
@@ -70,8 +67,7 @@ def my_step():
 
 Configure environment variables and secrets that will be available for all pipelines executed on stacks containing this component.
 
-{% tabs %}
-{% tab title="CLI" %}
+{% tabs %} {% tab title="CLI" %}
 ```bash
 # Configure environment variables
 zenml orchestrator update <ORCHESTRATOR_NAME> --env <KEY>=<VALUE>
@@ -101,15 +97,13 @@ Client().update_stack_component(
     remove_secrets=["<SECRET_NAME_OR_ID>"]
 )
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 ## Setting environment variables on stacks
 
 Configure environment variables and secrets for all pipelines executed on this stack.
 
-{% tabs %}
-{% tab title="CLI" %}
+{% tabs %} {% tab title="CLI" %}
 ```bash
 # Configure environment variables
 zenml stack update <STACK_NAME> --env <KEY>=<VALUE>
@@ -138,8 +132,7 @@ Client().update_stack(
     remove_secrets=["<SECRET_NAME_OR_ID>"]
 )
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 ## Configuring environment variables on pipelines
 

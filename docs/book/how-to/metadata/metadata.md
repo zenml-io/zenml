@@ -203,8 +203,7 @@ log_metadata(
 
 The `log_metadata` function does not support logging the same metadata for multiple entities simultaneously. To achieve this, you can use the `bulk_log_metadata` function:
 
-~~~python
-from zenml.models import (
+~~~python from zenml.models import (
     ArtifactVersionIdentifier,
     ModelVersionIdentifier,
     PipelineRunIdentifier,
@@ -265,8 +264,7 @@ def get_train_test_datasets():
 ```
 
 Keep in mind that when using the `infer_artifacts` option, the `bulk_log_metadata` function logs metadata to all output artifacts of the step.
-When logging metadata, you may need the option to use `infer` options in combination with identifier references. For instance, you may want
-to log metadata to a step's outputs but also to its inputs. The `bulk_log_metadata` function enables you to use both options in one go:
+When logging metadata, you may need the option to use `infer` options in combination with identifier references. For instance, you may want to log metadata to a step's outputs but also to its inputs. The `bulk_log_metadata` function enables you to use both options in one go:
 
 ```python
 from zenml import bulk_log_metadata, get_step_context, step
@@ -309,10 +307,8 @@ To improve performance, prefer using the entity's ID directly instead of its nam
 
 If the `log_metadata` or `bulk_log_metadata` functions are too restrictive for your use case, you can use the ZenML Client directly to create run metadata for resources:
 
-~~~python
-from zenml.client import Client
-from zenml.enums import MetadataResourceTypes
-from zenml.models import RunMetadataResource
+~~~python from zenml.client import Client
+from zenml.enums import MetadataResourceTypes from zenml.models import RunMetadataResource
 
 client = Client()
 
@@ -401,8 +397,7 @@ The Experiment Comparison tool offers two complementary views for analyzing your
 
 ![Parallel Coordinates](../../../book/.gitbook/assets/coordinates-view.png)
 
-The tool lets you compare up to 20 pipeline runs simultaneously and supports any
-numerical metadata (`float` or `int`) that you've logged in your pipelines.
+The tool lets you compare up to 20 pipeline runs simultaneously and supports any numerical metadata (`float` or `int`) that you've logged in your pipelines.
 
 ## Fetching Metadata
 

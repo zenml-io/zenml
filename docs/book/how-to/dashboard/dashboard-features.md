@@ -112,10 +112,8 @@ When building a stack, the dashboard helps you browse available components by ca
 
 The dashboard streamlines the process of registering individual components like orchestrators, artifact stores, and container registries. Instead of writing configuration code, you can use form-based interfaces to set up each component.
 
-The UI helps connect components to appropriate service connectors and validates
-settings before saving. This visual approach to component management reduces
-configuration errors and simplifies the setup process, especially for team
-members who may not be familiar with the underlying infrastructure details.
+The UI helps connect components to appropriate service connectors and validates settings before saving. This visual approach to component management reduces
+configuration errors and simplifies the setup process, especially for team members who may not be familiar with the underlying infrastructure details.
 
 ![Component registration](../../.gitbook/assets/dashboard-v2-component-registration.png)
 

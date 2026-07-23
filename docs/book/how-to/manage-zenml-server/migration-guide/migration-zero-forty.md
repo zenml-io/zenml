@@ -12,8 +12,7 @@ Newer versions of ZenML still work with pipelines and steps defined using the ol
 
 ## Overview
 
-{% tabs %}
-{% tab title="Old Syntax" %}
+{% tabs %} {% tab title="Old Syntax" %}
 ```python
 from typing import Optional
 
@@ -87,13 +86,11 @@ my_pipeline()
 last_run = my_pipeline.last_run
 int_output = last_run.steps["my_step"].outputs["int_output"].load()
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 ## Defining steps
 
-{% tabs %}
-{% tab title="Old Syntax" %}
+{% tabs %} {% tab title="Old Syntax" %}
 ```python
 from typing import Optional
 from zenml.steps import step, BaseParameters
@@ -133,15 +130,13 @@ def my_step(param_1: int, param_2: Optional[float] = None) -> None:
 def my_pipeline():
     my_step(param_1=17)
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 Check out [this page](https://docs.zenml.io/concepts/steps_and_pipelines#parameters-and-artifacts) for more information on how to parameterize your steps.
 
 ## Calling a step outside of a pipeline
 
-{% tabs %}
-{% tab title="Old Syntax" %}
+{% tabs %} {% tab title="Old Syntax" %}
 ```python
 from zenml.steps import step
 
@@ -163,13 +158,11 @@ def my_step() -> None:
 
 my_step()  # New: Call the step directly `step(...)`
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 ## Defining pipelines
 
-{% tabs %}
-{% tab title="Old Syntax" %}
+{% tabs %} {% tab title="Old Syntax" %}
 ```python
 from zenml.pipelines import pipeline
 
@@ -191,13 +184,11 @@ def my_step() -> None:
 def my_pipeline():
     my_step()  # New: The pipeline function calls the step directly
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 ## Configuring pipelines
 
-{% tabs %}
-{% tab title="Old Syntax" %}
+{% tabs %} {% tab title="Old Syntax" %}
 ```python
 from zenml.pipelines import pipeline
 from zenml.steps import step
@@ -231,13 +222,11 @@ def my_pipeline():
 # New: Call the `with_options(...)` method on the pipeline
 my_pipeline = my_pipeline.with_options(enable_cache=False)
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 ## Running pipelines
 
-{% tabs %}
-{% tab title="Old Syntax" %}
+{% tabs %} {% tab title="Old Syntax" %}
 ```python
 from zenml.pipelines import pipeline
 from zenml.steps import step
@@ -270,13 +259,11 @@ def my_pipeline():
 
 my_pipeline()  # New: Call the pipeline
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 ## Scheduling pipelines
 
-{% tabs %}
-{% tab title="Old Syntax" %}
+{% tabs %} {% tab title="Old Syntax" %}
 ```python
 from zenml.pipelines import pipeline, Schedule
 from zenml.steps import step
@@ -314,15 +301,13 @@ schedule = Schedule(...)
 my_pipeline = my_pipeline.with_options(schedule=schedule)
 my_pipeline()
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 Check out [this page](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines) for more information on how to schedule your pipelines.
 
 ## Fetching pipelines after execution
 
-{% tabs %}
-{% tab title="Old Syntax" %}
+{% tabs %} {% tab title="Old Syntax" %}
 ```python
 pipeline: PipelineView = zenml.post_execution.get_pipeline("first_pipeline")
 
@@ -351,15 +336,13 @@ model_trainer_step: StepRunResponseModel = last_run.steps["model_trainer"]
 model: ArtifactResponseModel = model_trainer_step.output
 loaded_model = model.load()
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 Check out [this page](https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-steps) for more information on how to programmatically fetch information about previous pipeline runs.
 
 ## Controlling the step execution order
 
-{% tabs %}
-{% tab title="Old Syntax" %}
+{% tabs %} {% tab title="Old Syntax" %}
 ```python
 from zenml.pipelines import pipeline
 
@@ -383,15 +366,13 @@ def my_pipeline():
     step_2()
     step_3(after=["step_1", "step_2"])  # New: Pass the `after` argument when calling a step
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 Check out [this page](https://docs.zenml.io/concepts/steps_and_pipelines/advanced_features#step-execution-order) for more information on how to control the step execution order.
 
 ## Defining steps with multiple outputs
 
-{% tabs %}
-{% tab title="Old Syntax" %}
+{% tabs %} {% tab title="Old Syntax" %}
 ```python
 # Old: Use the `Output` class
 from zenml.steps import step, Output
@@ -422,15 +403,13 @@ def my_step() -> Tuple[
 ]:
     ...
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 Check out [this page](https://docs.zenml.io/concepts/steps_and_pipelines#type-annotations) for more information on how to annotate your step outputs.
 
 ## Accessing run information inside steps
 
-{% tabs %}
-{% tab title="Old Syntax" %}
+{% tabs %} {% tab title="Old Syntax" %}
 ```python
 from zenml.steps import StepContext, step
 from zenml.environment import Environment
@@ -455,8 +434,7 @@ def my_step() -> Any:  # New: StepContext is no longer an argument of the step
     step_name = context.step_name  # New: StepContext now has ALL run/step info
     ...
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 Check out [this page](https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-steps) for more information on how to fetch run information inside your steps using `get_step_context()`.
 

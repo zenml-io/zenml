@@ -19,8 +19,7 @@ ZenML doesn't implement its own scheduler but acts as a wrapper around the sched
 2. Registers the schedule with the orchestrator's scheduling system
 3. Records the schedule in the ZenML metadata store
 
-The orchestrator then takes over responsibility for executing the pipeline\
-according to the schedule.
+The orchestrator then takes over responsibility for executing the pipeline\ according to the schedule.
 
 {% hint style="info" %}
 For our full reference documentation on schedules, see the [Schedule a Pipeline](https://docs.zenml.io/concepts/steps_and_pipelines/scheduling) page.
@@ -80,8 +79,7 @@ scheduled_pipeline = daily_data_pipeline.with_options(schedule=schedule)
 scheduled_pipeline()
 ```
 
-Running the pipeline will create the schedule in the ZenML metadata store. as\
-well as the scheduled run in the orchestrator.
+Running the pipeline will create the schedule in the ZenML metadata store. as\ well as the scheduled run in the orchestrator.
 
 {% hint style="info" %}
 **Best Practice: Use Descriptive Schedule Names**

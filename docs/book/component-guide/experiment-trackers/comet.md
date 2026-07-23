@@ -38,8 +38,7 @@ You need to configure the following credentials for authentication to the Comet 
 * `project_name`: The name of the project where you're sending the new experiment. If the project is not specified, the experiment is put in the default project associated with your API key.
 * `workspace`: Optional. The name of the workspace where your project is located. If not specified, the default workspace associated with your API key will be used.
 
-{% tabs %}
-{% tab title="ZenML Secret (Recommended)" %}
+{% tabs %} {% tab title="ZenML Secret (Recommended)" %}
 This method requires you to [configure a ZenML secret](https://docs.zenml.io/getting-started/deploying-zenml/secret-management) to store the Comet tracking service credentials securely.
 
 You can create the secret using the `zenml secret create` command:
@@ -68,8 +67,7 @@ zenml stack register custom_stack -e comet_experiment_tracker ... --set
 
 {% hint style="info" %}
 Read more about [ZenML Secrets](https://docs.zenml.io/getting-started/deploying-zenml/secret-management) in the ZenML documentation.
-{% endhint %}
-{% endtab %}
+{% endhint %} {% endtab %}
 
 {% tab title="Basic Authentication" %}
 This option configures the credentials for the Comet platform directly as stack component attributes.
@@ -86,8 +84,7 @@ zenml experiment-tracker register comet_experiment_tracker --flavor=comet \
 # Register and set a stack with the new experiment tracker
 zenml stack register custom_stack -e comet_experiment_tracker ... --set
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 <figure><img src="../../.gitbook/assets/comet_stack.png" alt=""><figcaption><p>A stack with the Comet experiment tracker</p></figcaption></figure>
 

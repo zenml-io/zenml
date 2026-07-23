@@ -172,11 +172,9 @@ Stack 'a_new_local_stack' with id '...' is owned by user default and is 'private
 
 ![GIF of our VS code extension, showing some of the uses of the sidebar](../../.gitbook/assets/zenml-extension-shortened.gif)
 
-If you are using [our VS Code
-extension](https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode),
+If you are using [our VS Code extension](https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode),
 you can easily view and switch your stacks by opening the sidebar (click on the
-ZenML icon). You can then click on the stack you want to switch to as well as
-view the stack components it's made up of.
+ZenML icon). You can then click on the stack you want to switch to as well as view the stack components it's made up of.
 
 ### Run a pipeline on the new local stack
 

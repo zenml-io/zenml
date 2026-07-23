@@ -40,8 +40,7 @@ For air-gapped environments:
 
 To upgrade the Control Plane in a self-hosted deployment:
 
-1. **Update Helm Values:**  
-   Change the Control Plane version in your `values.yaml` file to reference the new image tag.
+1. **Update Helm Values:** Change the Control Plane version in your `values.yaml` file to reference the new image tag.
 
 2. **Apply the Upgrade:**  
    
@@ -63,8 +62,7 @@ To upgrade the Control Plane in a self-hosted deployment:
      --values current-values.yaml
    ```
 
-3. **Monitor the Upgrade:**  
-   Watch the logs and pod statuses to verify a healthy rollout:
+3. **Monitor the Upgrade:** Watch the logs and pod statuses to verify a healthy rollout:
    ```bash
    kubectl -n <your-control-plane-namespace> get pods
    kubectl -n <your-control-plane-namespace> logs <control-plane-pod>
@@ -81,13 +79,11 @@ To upgrade the Control Plane in a self-hosted deployment:
 
 If the upgrade fails or causes issues:
 
-1. **Helm rollback:**
-   ```bash
+1. **Helm rollback:** ```bash
    helm rollback zenml-pro <previous-revision> --namespace <your-control-plane-namespace>
    ```
 
-2. **Verify rollback:**
-   ```bash
+2. **Verify rollback:** ```bash
    kubectl -n <your-control-plane-namespace> get pods
    ```
 

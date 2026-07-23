@@ -262,8 +262,7 @@ The ZenML Pro admin user should only be used for the initial onboarding and emer
 
 Creating and managing local user accounts is currently only supported through the ZenML Pro OpenAPI interface or programmatically accessing the ZenML Pro API. There is no support for this in the ZenML Pro UI yet.
 
-{% tabs %}
-{% tab title="OpenAPI Interface" %}
+{% tabs %} {% tab title="OpenAPI Interface" %}
 To access the ZenML Pro OpenAPI interface, append the `/api/v1` path to the ZenML Pro server URL in your browser. For example: https://zenml-pro.my.domain/api/v1. Then use the OpenAPI UI to authenticate with the admin username and password.
 
 ![ZenML Pro OpenAPI Interface - Authentication](.gitbook/assets/pro-openapi-interface-01.png)
@@ -290,8 +289,7 @@ The response will contain an `access_token` field. Use this token to create a ne
 curl -X POST "https://zenml-pro.my.domain/api/v1/users?username=superuser&password=password&is_superuser=true" \
   -H "Authorization: Bearer <access-token>"
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 
 ### Step 5: Deploy and Enroll Workspaces

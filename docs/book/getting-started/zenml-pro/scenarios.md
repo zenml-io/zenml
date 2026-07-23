@@ -22,8 +22,7 @@ ZenML Pro offers three flexible deployment options to match your organization's 
 | **Best For** | Teams wanting minimal infrastructure overhead and fastest time-to-value | Organizations with security/compliance requirements but wanting simplified user management | Organizations requiring complete data isolation and on-premises control |
 
 {% hint style="info" %}
-In all of these cases the client SDK that you pip install into your development environment is the same one found here: https://pypi.org/project/zenml/
-{% endhint %}
+In all of these cases the client SDK that you pip install into your development environment is the same one found here: https://pypi.org/project/zenml/ {% endhint %}
 
 ## Which Scenario is Right for You?
 

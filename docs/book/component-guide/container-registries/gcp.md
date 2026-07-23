@@ -70,8 +70,7 @@ You also need to set up [authentication](gcp.md#authentication-methods) required
 
 Integrating and using a GCP Container Registry in your pipelines is not possible without employing some form of authentication. If you're looking for a quick way to get started locally, you can use the _Local Authentication_ method. However, the recommended way to authenticate to the GCP cloud platform is through [a GCP Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector). This is particularly useful if you are configuring ZenML stacks that combine the GCP Container Registry with other remote stack components also running in GCP.
 
-{% tabs %}
-{% tab title="Local Authentication" %}
+{% tabs %} {% tab title="Local Authentication" %}
 This method uses the Docker client authentication available _in the environment where the ZenML code is running_. On your local machine, this is the quickest way to configure a GCP Container Registry. You don't need to supply credentials explicitly when you register the GCP Container Registry, as it leverages the local credentials and configuration that the GCP CLI and Docker client store on your local machine. However, you will need to install and set up the GCP CLI on your machine as a prerequisite, as covered in [the GCP CLI documentation](https://cloud.google.com/sdk/docs/install-sdk), before you register the GCP Container Registry.
 
 With the GCP CLI installed and set up with credentials, we'll need to configure Docker, so it can pull and push images:
@@ -89,8 +88,7 @@ With the GCP CLI installed and set up with credentials, we'll need to configure 
 
 {% hint style="warning" %}
 Stacks using the GCP Container Registry set up with local authentication are not portable across environments. To make ZenML pipelines fully portable, it is recommended to use [a GCP Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector) to link your GCP Container Registry to the remote GCR registry.
-{% endhint %}
-{% endtab %}
+{% endhint %} {% endtab %}
 
 {% tab title="GCP Service Connector (recommended)" %}
 To set up the GCP Container Registry to authenticate to GCP and access a Google Artifact Registry, it is recommended to leverage the many features provided by [the GCP Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector) such as auto-configuration, local login, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
@@ -199,8 +197,7 @@ https://docs.docker.com/engine/reference/commandline/login/#credentials-store
 
 The 'gcp-zenml-core' Docker Service Connector was used to successfully configure the local Docker/OCI container registry client/SDK.
 ```
-{% endcode %}
-{% endhint %}
+{% endcode %} {% endhint %}
 
 {% code title="Example Command Output" %}
 ```
@@ -220,8 +217,7 @@ As a final step, you can use the GCP Container Registry in a ZenML Stack:
 # Register and set a stack with the new container registry
 zenml stack register <STACK_NAME> -c <CONTAINER_REGISTRY_NAME> ... --set
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 For more information and a full list of configurable attributes of the GCP container registry, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-container_registries.html#zenml.container_registries.gcp_container_registry) .
 

@@ -9,8 +9,7 @@ ZenML secrets are groupings of **key-value pairs** which are securely stored in 
 
 ## How to create a secret
 
-{% tabs %}
-{% tab title="CLI" %}
+{% tabs %} {% tab title="CLI" %}
 To create a secret with a name `<SECRET_NAME>` and a key-value pair, you can run the following CLI command:
 
 ```shell
@@ -111,8 +110,7 @@ By default, secrets are public (`private=False`). Set `private=True` to create a
 {% endhint %}
 
 Other Client methods used for secrets management include `get_secret` to fetch a secret by name or id, `update_secret` to update an existing secret, `list_secrets` to query the secrets store using a variety of filtering and sorting criteria, and `delete_secret` to delete a secret. The full Client API reference is available [here](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html).
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 ## Size limits
 
@@ -133,8 +131,7 @@ The `private` property takes precedence over RBAC. A private secret is **only** 
 
 By default, secrets are created as public (`private=False`). To create a private secret:
 
-{% tabs %}
-{% tab title="CLI" %}
+{% tabs %} {% tab title="CLI" %}
 ```shell
 # Use the --private or -p flag
 zenml secret create <SECRET_NAME> --private \
@@ -158,8 +155,7 @@ client.create_secret(
     private=True,  # Makes this secret private
 )
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 {% hint style="warning" %}
 Currently, setting the private status is only available via the CLI and Python SDK. The dashboard UI does not yet support creating or modifying private secrets.
@@ -174,8 +170,7 @@ Since private and public secrets exist in separate namespaces, you can have both
 
 To explicitly fetch a secret of a specific visibility:
 
-{% tabs %}
-{% tab title="CLI" %}
+{% tabs %} {% tab title="CLI" %}
 ```shell
 # Explicitly fetch a private secret
 zenml secret get my_secret --private=true
@@ -197,15 +192,13 @@ private_secret = client.get_secret("my_secret", private=True)
 # Explicitly fetch a public secret
 public_secret = client.get_secret("my_secret", private=False)
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 ### Updating secret visibility
 
 You can change a secret's visibility after creation:
 
-{% tabs %}
-{% tab title="CLI" %}
+{% tabs %} {% tab title="CLI" %}
 ```shell
 # Make a public secret private
 zenml secret update my_secret --private=true
@@ -222,8 +215,7 @@ from zenml.client import Client
 client = Client()
 client.update_secret("my_secret", update_private=True)  # Make private
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 ## Accessing registered secrets
 
@@ -233,8 +225,7 @@ Some of the components in your stack require you to configure them with sensitiv
 
 For example:
 
-{% tabs %}
-{% tab title="CLI" %}
+{% tabs %} {% tab title="CLI" %}
 ```shell
 # Register a secret called `mlflow_secret` with key-value pairs for the
 # username and password to authenticate with the MLflow tracking server
@@ -252,8 +243,7 @@ zenml experiment-tracker register mlflow \
     --tracking_password={{mlflow_secret.password}} \
     ...
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 When using secret references in your stack, ZenML will validate that all secrets and keys referenced in your stack components exist before running a pipeline. This helps us fail early so your pipeline doesn't fail after running for some time due to some missing secret.
 

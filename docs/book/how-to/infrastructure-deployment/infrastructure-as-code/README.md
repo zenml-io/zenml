@@ -5,8 +5,7 @@ icon: network-wired
 
 # Infrastructure as code with Terraform
 
-[Infrastructure as Code (IaC)](https://aws.amazon.com/what-is/iac) is\
-the practice of managing and provisioning infrastructure through code\
+[Infrastructure as Code (IaC)](https://aws.amazon.com/what-is/iac) is\ the practice of managing and provisioning infrastructure through code\
 instead of through manual processes.
 
 In this section, we will show you how to integrate ZenML with popular\
@@ -14,17 +13,14 @@ IaC tools such as [Terraform](https://developer.hashicorp.com/terraform).
 
 ![Screenshot of ZenML stack on Terraform Registry](../../../.gitbook/assets/terraform_providers_screenshot.png)
 
-Terraform is a powerful tool for managing infrastructure as code, and is by far the
-most popular IaC tool. Many companies already have existing Terraform setups,
+Terraform is a powerful tool for managing infrastructure as code, and is by far the most popular IaC tool. Many companies already have existing Terraform setups,
 and it is often desirable to integrate ZenML with this setup.
 
 We already got a glimpse on how to [deploy a cloud stack with Terraform](../stack-deployment/deploy-a-cloud-stack-with-terraform.md)
-using existing Terraform modules that are maintained by the ZenML team. While this
-is a great solution for quickly getting started, it might not always be suitable for
+using existing Terraform modules that are maintained by the ZenML team. While this is a great solution for quickly getting started, it might not always be suitable for
 your use case.
 
-This guide is for advanced users who want to manage their own custom Terraform code but
-want to use ZenML to manage their stacks. For this, the
+This guide is for advanced users who want to manage their own custom Terraform code but want to use ZenML to manage their stacks. For this, the
 [ZenML provider](https://registry.terraform.io/providers/zenml-io/zenml/latest) is a better choice.
 
 ## Understanding the Two-Phase Approach
@@ -90,8 +86,7 @@ This will create a service account and generate an API key that you can use to a
 The API key is shown only once during creation. Make sure to save it securely, as you cannot retrieve it later. If you lose it, you'll need to create a new key.
 {% endhint %}
 
-You can learn more about how to generate a `ZENML_API_KEY` via service accounts
-[here](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account).
+You can learn more about how to generate a `ZENML_API_KEY` via service accounts [here](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account).
 
 
 If you're using a ZenML Pro server, you will need to create a Personal Access Token or an organization-level service account and an API key for it. You can find more about Personal Access Tokens [here](https://docs.zenml.io/pro/access-management/personal-access-tokens) and organization-level service accounts and API keys [here](https://docs.zenml.io/pro/access-management/service-accounts).
@@ -453,7 +448,6 @@ Remember to:
 - Regular backup of your Terraform state files
 - Version control your Terraform configurations (excluding sensitive files)
 
-To learn more about the ZenML terraform provider, visit the
-[ZenML provider](https://registry.terraform.io/providers/zenml-io/zenml/latest).
+To learn more about the ZenML terraform provider, visit the [ZenML provider](https://registry.terraform.io/providers/zenml-io/zenml/latest).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -102,8 +102,7 @@ def train_model():
     ...
 ```
 
-If you want to make sure a step can only run with a specific experiment tracker/step operator, you can also specify the
-component names like this:
+If you want to make sure a step can only run with a specific experiment tracker/step operator, you can also specify the component names like this:
 
 ```python
 from zenml import step
@@ -143,8 +142,7 @@ Settings in ZenML are categorized into three main types:
 
 * **General settings** that can be used on all ZenML pipelines:
   * `DockerSettings` for container configuration
-  * `ResourceSettings` for CPU, memory, and GPU allocation (on ZenML Pro, the same
-    fields drive [resource pools](https://docs.zenml.io/pro/core-concepts/resource-pools)
+  * `ResourceSettings` for CPU, memory, and GPU allocation (on ZenML Pro, the same fields drive [resource pools](https://docs.zenml.io/pro/core-concepts/resource-pools)
     for workspace quotas, queuing, and preemption)
   * `DeploymentSettings` for pipeline deployment configuration - can only be set at the pipeline level
 
@@ -197,10 +195,8 @@ simple_ml_pipeline.configuration.settings["resources"]
 
 Resource settings allow you to specify the CPU, memory, and GPU requirements for your steps.
 
-On **ZenML Pro**, those declarations are also what the **resource pool** feature
-uses: for eligible dynamic pipelines, the server builds resource
-requests from your merged `ResourceSettings` (including `pool_resources` and
-`preemptible`), matches them against workspace pools and policies on your stack’s
+On **ZenML Pro**, those declarations are also what the **resource pool** feature uses: for eligible dynamic pipelines, the server builds resource
+requests from your merged `ResourceSettings` (including `pool_resources` and `preemptible`), matches them against workspace pools and policies on your stack’s
 orchestrator or step operator, and may queue or preempt work accordingly. For more information on how this feature works, see [ZenML Pro Resource Pools](https://docs.zenml.io/pro/core-concepts/resource-pools).
 
 ```python
@@ -315,14 +311,12 @@ For more detailed information on deployment options, see the [pipeline deploymen
 
 Stack components have two types of configuration:
 
-1. **Registration-time configuration**: Static settings defined when registering a component
-   ```bash
+1. **Registration-time configuration**: Static settings defined when registering a component ```bash
    # Example: Setting a fixed tracking URL for MLflow
    zenml experiment-tracker register mlflow_tracker --flavor=mlflow --tracking_url=http://localhost:5000
    ```
 
-2. **Runtime settings**: Dynamic settings that can change between pipeline runs
-   ```python
+2. **Runtime settings**: Dynamic settings that can change between pipeline runs ```python
    # Example: Setting experiment name that changes for each run
    @step(settings={"experiment_tracker.mlflow": {"experiment_name": "custom_experiment"}})
    def my_step():
@@ -646,7 +640,6 @@ steps:
 </details>
 
 {% hint style="info" %}
-When you want to configure your pipeline with a certain stack in mind, you can do so as well: `...write_run_configuration_template(stack=<Insert_stack_here>)`
-{% endhint %}
+When you want to configure your pipeline with a certain stack in mind, you can do so as well: `...write_run_configuration_template(stack=<Insert_stack_here>)` {% endhint %}
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

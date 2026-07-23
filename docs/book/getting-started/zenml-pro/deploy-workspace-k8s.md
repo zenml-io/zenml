@@ -278,19 +278,14 @@ zenml login <WORKSPACE_NAME>
 
 ### (Optional) Opt-in Workspace Server Features
 
-Several ZenML Pro capabilities are not turned on by the default Helm
-installation. They need extra infrastructure, environment variables, or
-additional microservices beyond the main workspace server. Many are
-paid add-ons on top of the base plan—see the
-[pricing page](https://www.zenml.io/pricing)—and must be licensed and enabled
-for your organization before they work end-to-end.
+Several ZenML Pro capabilities are not turned on by the default Helm installation. They need extra infrastructure, environment variables, or
+additional microservices beyond the main workspace server. Many are paid add-ons on top of the base plan—see the
+[pricing page](https://www.zenml.io/pricing)—and must be licensed and enabled for your organization before they work end-to-end.
 
 **What it enables** points to ZenML Pro documentation for the capability.
 **What it deploys** summarizes the extra components at a high level. In the
-ZenML Helm chart, each optional background process is modeled as an
-additional microservice (its own Kubernetes Deployment) next to the API
-server. You declare those microservices in `values.yaml` under the
-`workerDeployments` map; each key under that map configures one microservice.
+ZenML Helm chart, each optional background process is modeled as an additional microservice (its own Kubernetes Deployment) next to the API
+server. You declare those microservices in `values.yaml` under the `workerDeployments` map; each key under that map configures one microservice.
 The per-feature guides show the exact YAML.
 
 | Guide | What it enables | What it deploys | Minimum workspace server version |
@@ -299,17 +294,12 @@ The per-feature guides show the exact YAML.
 | [Enable Event Triggers and Schedules](deploy-workspace-event-triggers-and-schedules.md) | [Schedule triggers](triggers.md#schedule-triggers), [platform event triggers](triggers.md#platform-event-triggers) | **Scheduler** and **executor** microservices, **Redis** (broker URL via **`secretEnvironment`**); **`server.secretEnvironment`** **`ZENML_REDIS_BROKER_URL`** for platform events; requires [snapshot support](deploy-workspace-snapshots.md) to run attached snapshots | 0.94.3 |
 | [Enable Resource Pools](deploy-workspace-resource-pools.md) | [Resource pools](resource-pools.md) | **Resource pool reconciler** microservice | 0.94.3 |
 
-Deploy [snapshot support](deploy-workspace-snapshots.md) before you rely on
-[event triggers and schedules](deploy-workspace-event-triggers-and-schedules.md)
-end-to-end: triggers run against pipeline snapshots, which need the workload
-manager to execute on the cluster.
+Deploy [snapshot support](deploy-workspace-snapshots.md) before you rely on [event triggers and schedules](deploy-workspace-event-triggers-and-schedules.md)
+end-to-end: triggers run against pipeline snapshots, which need the workload manager to execute on the cluster.
 
-**Platform event triggers** also require **`ZENML_REDIS_BROKER_URL`** on the
-main workspace server, set through **`server.secretEnvironment`** (or
-**`server.environmentSecretKeyRefs`**) rather than plain `server.environment`,
-because broker URLs may contain credentials. Schedule-only triggers do not
-need Redis on the server. See
-[Enable Event Triggers and Schedules](deploy-workspace-event-triggers-and-schedules.md).
+**Platform event triggers** also require **`ZENML_REDIS_BROKER_URL`** on the main workspace server, set through **`server.secretEnvironment`** (or
+**`server.environmentSecretKeyRefs`**) rather than plain `server.environment`, because broker URLs may contain credentials. Schedule-only triggers do not
+need Redis on the server. See [Enable Event Triggers and Schedules](deploy-workspace-event-triggers-and-schedules.md).
 
 ## Day 2 Operations
 

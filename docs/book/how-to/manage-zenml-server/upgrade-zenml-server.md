@@ -11,8 +11,7 @@ The way to upgrade your ZenML server depends a lot on how you deployed it. Howev
 
 In general, upgrade your ZenML server as soon as you can once a new version is released. New versions come with a lot of improvements and fixes from which you can benefit.
 
-{% tabs %}
-{% tab title="Docker" %}
+{% tabs %} {% tab title="Docker" %}
 To upgrade to a new version with docker, you have to delete the existing container and then run the new version of the `zenml-server` image.
 
 {% hint style="danger" %}
@@ -39,8 +38,7 @@ Optionally also perform a backup before the upgrade.
 
     ```bash
     docker run -it -d -p 8080:8080 --name <CONTAINER_NAME> zenmldocker/zenml-server:<VERSION>
-    ```
-{% endtab %}
+    ``` {% endtab %}
 
 {% tab title="Kubernetes with Helm" %}
 To upgrade your ZenML server Helm release to a new version, follow the steps below.
@@ -70,11 +68,9 @@ If you need to modify your ZenML server configuration during the upgrade, follow
     ```
 
 {% hint style="info" %}
-It is not recommended to change the container image tag in the Helm chart to custom values, since every Helm chart\
-version is tested to work only with the default image tag. However, if you know what you're doing you can change\
+It is not recommended to change the container image tag in the Helm chart to custom values, since every Helm chart\ version is tested to work only with the default image tag. However, if you know what you're doing you can change\
 the `zenml.image.tag` value in your `custom-values.yaml` file to the desired ZenML version (e.g. `0.32.0`).
-{% endhint %}
-{% endtab %}
+{% endhint %} {% endtab %}
 {% endtabs %}
 
 ## Important Considerations After Upgrading

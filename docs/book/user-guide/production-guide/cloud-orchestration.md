@@ -16,10 +16,8 @@ These, along with [remote storage](remote-storage.md), complete a basic cloud st
 {% hint style="info" %}
 Would you like to skip ahead and deploy a full ZenML cloud stack already?
 
-Check out the
-[in-browser stack deployment wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack),
-the [stack registration wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack),
-or [the ZenML Terraform modules](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform)
+Check out the [in-browser stack deployment wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack),
+the [stack registration wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack), or [the ZenML Terraform modules](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform)
 for a shortcut on how to deploy & register a cloud stack.
 {% endhint %}
 
@@ -45,8 +43,7 @@ To summarize, here is the broad sequence of events that happen when you run a pi
 
 While there are detailed docs on [how to set up a Skypilot orchestrator](https://docs.zenml.io/stacks/orchestrators/skypilot-vm) and a [container registry](https://docs.zenml.io/stacks/container-registries) on each public cloud, we have put the most relevant details here for convenience:
 
-{% tabs %}
-{% tab title="AWS" %}
+{% tabs %} {% tab title="AWS" %}
 In order to launch a pipeline on AWS with the SkyPilot orchestrator, the first thing that you need to do is to install the AWS and Skypilot integrations:
 
 ```shell
@@ -146,8 +143,7 @@ zenml container-registry connect cloud_container_registry --connector cloud_conn
 With the components registered, everything is set up for the next steps.
 
 For more information, you can always check the [dedicated Kubernetes orchestrator guide](https://docs.zenml.io/stacks/orchestrators/kubernetes).
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 {% hint style="info" %}
 Having trouble with setting up infrastructure? Try reading the [stack deployment](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment) section of the docs to gain more insight. If that still doesn't work, join the [ZenML community](https://zenml.io/slack) and ask!
@@ -157,13 +153,11 @@ Having trouble with setting up infrastructure? Try reading the [stack deployment
 
 Now that we have our orchestrator and container registry registered, we can [register a new stack](understand-stacks.md#registering-a-stack), just like we did in the previous chapter:
 
-{% tabs %}
-{% tab title="CLI" %}
+{% tabs %} {% tab title="CLI" %}
 ```shell
 zenml stack register minimal_cloud_stack -o cloud_orchestrator -a cloud_artifact_store -c cloud_container_registry
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 Now, using the [code from the previous chapter](understand-stacks.md#run-a-pipeline-on-the-new-local-stack), we can run a training pipeline. First, set the minimal cloud stack active:
 

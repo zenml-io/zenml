@@ -4,16 +4,13 @@ description: Run custom code on pipeline and step lifecycle events and record ho
 
 # Hooks
 
-Hooks let you run custom code at lifecycle points of a run or a step, and record
-those invocations as queryable `HookInvocation` records. The same machinery powers
-the built-in lifecycle hooks ZenML fires for you and the public API you can call
-from your own code. Common uses include sending notifications on success or
+Hooks let you run custom code at lifecycle points of a run or a step, and record those invocations as queryable `HookInvocation` records. The same machinery powers
+the built-in lifecycle hooks ZenML fires for you and the public API you can call from your own code. Common uses include sending notifications on success or
 failure, logging run details, and triggering external workflows.
 
 ## Lifecycle hooks
 
-Lifecycle hooks fire automatically and each fire creates one `HookInvocation`
-row.
+Lifecycle hooks fire automatically and each fire creates one `HookInvocation` row.
 
 | Hook | Step scope | Pipeline scope (dynamic) |
 |---|---|---|
@@ -28,8 +25,7 @@ Step-level hooks fire for both static and dynamic pipelines, uniformly.
 
 ### Static pipelines propagate, dynamic pipelines fire
 
-The same `@pipeline(on_*=...)` kwarg has two different runtime meanings depending
-on whether the pipeline is dynamic.
+The same `@pipeline(on_*=...)` kwarg has two different runtime meanings depending on whether the pipeline is dynamic.
 
 | `@pipeline(on_*=X)` | Static pipeline | Dynamic pipeline |
 |---|---|---|
@@ -40,16 +36,13 @@ on whether the pipeline is dynamic.
 | `on_pause` | Ignored | Fires once at the pipeline level |
 | `on_resume` | Ignored | Fires once at the pipeline level |
 
-For a static pipeline, a pipeline-level hook is a default that every step inherits
-where it has not set its own. No pipeline-level hooks are run. For a dynamic
-pipeline, the hook fires once at the run level and produces `RUN_*` entries. It fires
-on every run, including each invocation of a deployed pipeline. Dynamic pipeline
+For a static pipeline, a pipeline-level hook is a default that every step inherits where it has not set its own. No pipeline-level hooks are run. For a dynamic
+pipeline, the hook fires once at the run level and produces `RUN_*` entries. It fires on every run, including each invocation of a deployed pipeline. Dynamic pipeline
 users who want per-step defaults wire each `@step` directly.
 
 ## Registering hooks
 
-Pass a callable or a source string to the decorator, `.configure(...)`, or
-`.with_options(...)`.
+Pass a callable or a source string to the decorator, `.configure(...)`, or `.with_options(...)`.
 
 ```python
 from zenml import step, pipeline
@@ -84,16 +77,13 @@ def on_end(): ...
 def on_end(exception: Optional[BaseException] = None): ...
 ```
 
-`exception` is set only when the attempt or run failed. Details about the
-current step or run are available through the step or run context (see
+`exception` is set only when the attempt or run failed. Details about the current step or run are available through the step or run context (see
 below).
 
 ### Accessing step/run information in hooks
 
-Step-scope hooks read the current step run and pipeline run through the step
-context. Run-scope hooks on a dynamic pipeline fire outside any step and read
-the run from the run context instead, via
-`DynamicPipelineRunContext.get().run`.
+Step-scope hooks read the current step run and pipeline run through the step context. Run-scope hooks on a dynamic pipeline fire outside any step and read
+the run from the run context instead, via `DynamicPipelineRunContext.get().run`.
 
 ```python
 from zenml import get_step_context, step
@@ -135,53 +125,41 @@ def my_step():
 
 * **Retries.** A retried step fires one `on_start` / `on_end` pair per attempt.
   `on_success` and `on_failure` fire exactly once, at the terminal outcome.
-* **Cache hits.** A cached step fires no step-level hooks. Pipeline-level hooks on
-  a dynamic run still fire even when every step was cached.
-* **Hook failures are swallowed.** When a lifecycle hook raises, the run or step is
-  not aborted. The exception is captured into the `HookInvocation` record with
+* **Cache hits.** A cached step fires no step-level hooks. Pipeline-level hooks on a dynamic run still fire even when every step was cached.
+* **Hook failures are swallowed.** When a lifecycle hook raises, the run or step is not aborted. The exception is captured into the `HookInvocation` record with
   `status=FAILED` and execution proceeds.
-* **Async hooks.** Hook functions can be defined with `async def`. When the hook
-  fires, ZenML runs the coroutine to completion and blocks until it finishes.
-* **Return values are discarded.** Set `ZENML_TRACK_LIFECYCLE_HOOK_OUTPUTS=true`
-  in the execution environment to instead materialize lifecycle hook return
+* **Async hooks.** Hook functions can be defined with `async def`. When the hook fires, ZenML runs the coroutine to completion and blocks until it finishes.
+* **Return values are discarded.** Set `ZENML_TRACK_LIFECYCLE_HOOK_OUTPUTS=true` in the execution environment to instead materialize lifecycle hook return
   values as output artifacts of the invocation, following the same rules as
   `store_return=True` on `run_hook` (see below).
 
 ## Init and cleanup hooks
 
-`on_init` and `on_cleanup` are pipeline setup and teardown hooks. They initialize
-and tear down shared run state rather than reacting to a single run or step
+`on_init` and `on_cleanup` are pipeline setup and teardown hooks. They initialize and tear down shared run state rather than reacting to a single run or step
 outcome, so they follow different rules from the lifecycle hooks above. They are
-**not** recorded as `HookInvocation` records. When `on_init` fails, the run still
-records `RUN_START`, `RUN_END`, and `RUN_FAILURE`, but never a row for `on_init`
+**not** recorded as `HookInvocation` records. When `on_init` fails, the run still records `RUN_START`, `RUN_END`, and `RUN_FAILURE`, but never a row for `on_init`
 itself. Find the root cause on `pipeline_run.exception_info`.
 
-ZenML runs `on_init` **once per execution environment**, before any step body runs
-in that environment, and `on_cleanup` once when that environment is torn down.
+ZenML runs `on_init` **once per execution environment**, before any step body runs in that environment, and `on_cleanup` once when that environment is torn down.
 Where that lands depends on how the pipeline runs.
 
 ### Deployments
 
-`on_init` runs once per deployment replica when the replica starts, and
-`on_cleanup` once when it shuts down. Individual invocations of the deployed
-pipeline reuse the initialized state and do not re-run either hook. Lifecycle
-hooks like `on_start` and `on_end` still fire on every invocation.
+`on_init` runs once per deployment replica when the replica starts, and `on_cleanup` once when it shuts down. Individual invocations of the deployed
+pipeline reuse the initialized state and do not re-run either hook. Lifecycle hooks like `on_start` and `on_end` still fire on every invocation.
 
 ### Regular runs
 
 For a run that is not a deployment, `on_init` runs once per execution environment:
 
-* **Dynamic pipeline:** once in the orchestrator environment, where the pipeline
-  function executes.
-* **Any step that runs outside the orchestration environment (static or
-  dynamic):** once ahead of that step body, the first time its environment is
+* **Dynamic pipeline:** once in the orchestrator environment, where the pipeline function executes.
+* **Any step that runs outside the orchestration environment (static or dynamic):** once ahead of that step body, the first time its environment is
   used. A step that shares the orchestration environment skips the hook, because
   the run context is already initialized there.
 
 ## Recording custom invocations
 
-Beyond the built-in lifecycle hooks, you can record arbitrary invocations from
-inside a step or a dynamic pipeline function. This is useful for instrumenting
+Beyond the built-in lifecycle hooks, you can record arbitrary invocations from inside a step or a dynamic pipeline function. This is useful for instrumenting
 third-party callbacks such as the tool and model calls of an agent framework.
 
 ### `run_hook`
@@ -201,8 +179,7 @@ def agent_step():
     result = run_hook(call_tool, "search")
 ```
 
-Pass `store_return=True` to materialize the return value as an output artifact. A
-single unannotated return becomes one artifact named `output`. An annotated tuple
+Pass `store_return=True` to materialize the return value as an output artifact. A single unannotated return becomes one artifact named `output`. An annotated tuple
 return unpacks into one artifact per element.
 
 ```python

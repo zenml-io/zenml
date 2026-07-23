@@ -111,8 +111,7 @@ The `SkillSource` seam lives in `agent_harness_platform/profile.py`, with these 
 
 {% hint style="info" %}
 Related: the [`zenml-io/kitaru-skills`](https://github.com/zenml-io/kitaru-skills)
-package provides reusable Markdown skills for coding agents, including Kitaru
-quickstart, scoping, authoring, and adapter migration skills. See
+package provides reusable Markdown skills for coding agents, including Kitaru quickstart, scoping, authoring, and adapter migration skills. See
 [Agent Skills](https://docs.zenml.io/kitaru/agent-native/claude-code-skill) for install details.
 {% endhint %}
 

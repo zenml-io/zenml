@@ -28,8 +28,7 @@ export ZENML_STORE_API_KEY=<API_KEY>
 ```
 
 {% hint style="info" %}
-You don't need to run `zenml login` after setting these two environment
-variables and can start interacting with your server right away.
+You don't need to run `zenml login` after setting these two environment variables and can start interacting with your server right away.
 {% endhint %}
 
 {% hint style="info" %}

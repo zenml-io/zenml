@@ -47,8 +47,7 @@ Start by [creating a service account and an API key](https://docs.zenml.io/how-t
 
 Then, there are two methods to authenticate with the API using the API key - one is simpler but less secure, the other is secure and recommended but more complex:
 
-{% tabs %}
-{% tab title="Direct API key authentication" %}
+{% tabs %} {% tab title="Direct API key authentication" %}
 
 {% hint style="warning" %}
 This approach, albeit simple, is not recommended because the long-lived API key is exposed with every API request, which makes it easier to be compromised. Use it only in low-risk circumstances.
@@ -149,8 +148,7 @@ This will return a response like this (the short-lived API token is the `access_
        print(response.json())
        ```
 
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 {% hint style="info" %}
 **Important notes**

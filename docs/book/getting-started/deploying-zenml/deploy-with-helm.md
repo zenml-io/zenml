@@ -317,8 +317,7 @@ Unless explicitly disabled or configured otherwise, the ZenML server will use th
 
 > **Important:** If you are updating the configuration of your ZenML Server deployment to use a different secrets store back-end or location, you should follow [the documented secrets migration strategy](secret-management.md#secrets-migration-strategy) to minimize downtime and to ensure that existing secrets are also properly migrated.
 
-{% tabs %}
-{% tab title="AWS" %}
+{% tabs %} {% tab title="AWS" %}
 **Using the SQL database as a secrets store backend (default)**
 
 The SQL database is used as the default location where the ZenML secrets store keeps the secret values. You only need to configure these options if you want to change the default behavior.
@@ -641,8 +640,7 @@ You have the option of using [a custom implementation of the secrets store API](
         secretName: my-existing-secret
         secretKey: key_name_not_value6
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 #### Backup secrets store
 
@@ -702,8 +700,7 @@ Several database backup strategies are supported, depending on where and how the
 > **NOTE:** You should also set the `podSecurityContext.fsGroup` option if you are using a persistent volume to store the dump file.
 
 {% hint style="warning" %}
-When running in production where database sizes are large, you should use the `mydumper` backup strategy or write
-your own custom backup engine. The other backup strategies are not recommended because they are inefficient and will take a long time and consume a lot of resources to handle large databases.
+When running in production where database sizes are large, you should use the `mydumper` backup strategy or write your own custom backup engine. The other backup strategies are not recommended because they are inefficient and will take a long time and consume a lot of resources to handle large databases.
 {% endhint %}
 
 The following additional rules are applied concerning the creation and lifetime of the backup:

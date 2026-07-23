@@ -59,8 +59,7 @@ The Kaniko image builder will create a Kubernetes pod that is running the build.
 
 ZenML is not yet able to handle setting all of the credentials of the various combinations of container registries and artifact stores on the Kaniko build pod, which is you're required to set this up yourself for now. The following section outlines how to handle it in the most straightforward (and probably also most common) scenario, when the Kubernetes cluster you're using for the Kaniko build is hosted on the same cloud provider as your container registry (and potentially the artifact store). For all other cases, check out the [official Kaniko repository](https://github.com/GoogleContainerTools/kaniko) for more information.
 
-{% tabs %}
-{% tab title="AWS" %}
+{% tabs %} {% tab title="AWS" %}
 * Add permissions to push to ECR by attaching the `EC2InstanceProfileForImageBuilderECRContainerBuilds` policy to your [EKS node IAM role](https://docs.aws.amazon.com/eks/latest/userguide/create-node-role.html).
 * Configure the image builder to set some required environment variables on the Kaniko build pod:
 
@@ -129,8 +128,7 @@ zenml image-builder update <NAME> \
 ```
 
 Check out [the Kaniko docs](https://github.com/GoogleContainerTools/kaniko#pushing-to-azure-container-registry) for more information.
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 #### Passing additional parameters to the Kaniko build
 

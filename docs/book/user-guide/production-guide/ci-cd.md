@@ -6,38 +6,31 @@ description: >-
 
 # Set up CI/CD
 
-Until now, we have been executing ZenML pipelines locally. While this is a good mode of operating pipelines, in
-production it is often desirable to mediate runs through a central workflow engine baked into your CI.
+Until now, we have been executing ZenML pipelines locally. While this is a good mode of operating pipelines, in production it is often desirable to mediate runs through a central workflow engine baked into your CI.
 
-This allows data scientists to experiment with data processing and model training locally and then have code changes
-automatically tested and validated through the standard pull request/merge request peer review process. Changes that
+This allows data scientists to experiment with data processing and model training locally and then have code changes automatically tested and validated through the standard pull request/merge request peer review process. Changes that
 pass the CI and code review are then deployed automatically to production. Here is how this could look like:
 
 ![Pipeline being run on staging/production stack through ci/cd](../../.gitbook/assets/ci-cd-overall.png)
 
 ## Breaking it down
 
-To illustrate this, let's walk through how this process could be set up with
-a GitHub Repository. Basically we'll be using Github Actions in order to set up
+To illustrate this, let's walk through how this process could be set up with a GitHub Repository. Basically we'll be using Github Actions in order to set up
 a proper CI/CD workflow.
 
 {% hint style="info" %}
-To see this in action, check out the [ZenML Gitflow Repository](https://github.com/zenml-io/zenml-gitflow/). This
-repository showcases how ZenML can be used for machine learning with a GitHub workflow that automates CI/CD with
-continuous model training and continuous model deployment to production. The repository is also meant to be used as a
-template: you can fork it and easily adapt it to your own MLOps stack, infrastructure, code and data.{% endhint %}
+To see this in action, check out the [ZenML Gitflow Repository](https://github.com/zenml-io/zenml-gitflow/). This repository showcases how ZenML can be used for machine learning with a GitHub workflow that automates CI/CD with
+continuous model training and continuous model deployment to production. The repository is also meant to be used as a template: you can fork it and easily adapt it to your own MLOps stack, infrastructure, code and data.{% endhint %}
 
 ### Configure an API Key in ZenML
 
-In order to facilitate machine-to-machine connection you need to create an API key within ZenML. Learn more about those
-[here](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account).
+In order to facilitate machine-to-machine connection you need to create an API key within ZenML. Learn more about those [here](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account).
 
 ```bash
 zenml service-account create github_action_api_key
 ```
 
-This will return the API Key to you like this. This will not be shown to you again, so make sure to copy it here for
-use in the next section.
+This will return the API Key to you like this. This will not be shown to you again, so make sure to copy it here for use in the next section.
 
 ```bash
 Created service account 'github_action_api_key'.
@@ -51,34 +44,28 @@ To configure a ZenML client to use this API key, run:
 
 ### Set up your secrets in Github
 
-For our Github Actions we will need to set up some
-secrets [for our repository](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions#creating-secrets-for-a-repository).
+For our Github Actions we will need to set up some secrets [for our repository](https://docs.github.com/en/actions/security-guides/using-secrets-in-github-actions#creating-secrets-for-a-repository).
 Specifically, you should use github secrets to store the `ZENML_API_KEY` that you created above.
 
 ![create_gh_secret.png](../../.gitbook/assets/create_gh_secret.png)
 
-The other values that are loaded from secrets into the
-environment [here](https://github.com/zenml-io/zenml-gitflow/blob/main/.github/workflows/pipeline_run.yaml#L14-L23)
+The other values that are loaded from secrets into the environment [here](https://github.com/zenml-io/zenml-gitflow/blob/main/.github/workflows/pipeline_run.yaml#L14-L23)
 can also be set explicitly or as variables.
 
 ### (Optional) Set up different stacks for Staging and Production
 
 You might not necessarily want to use the same stack with the same resources for your staging and production use.
 
-This step is optional, all you'll need for certain is a stack that runs remotely (remote orchestration and artifact
-storage). The rest is up to you. You might for example want to parametrize your pipeline to use different data sources
+This step is optional, all you'll need for certain is a stack that runs remotely (remote orchestration and artifact storage). The rest is up to you. You might for example want to parametrize your pipeline to use different data sources
 for the respective environments. You can also use different [configuration files](https://docs.zenml.io/concepts/steps_and_pipelines/yaml_configuration)
-for the different environments to configure the [Model](https://docs.zenml.io/how-to/model-management-metrics/model-control-plane), the 
-[DockerSettings](https://docs.zenml.io/how-to/customize-docker-builds/docker-settings-on-a-pipeline), the 
+for the different environments to configure the [Model](https://docs.zenml.io/how-to/model-management-metrics/model-control-plane), the [DockerSettings](https://docs.zenml.io/how-to/customize-docker-builds/docker-settings-on-a-pipeline), the 
 [ResourceSettings like accelerators](../tutorial/distributed-training.md) differently for the different environments.
 
 ### Trigger a pipeline on a Pull Request (Merge Request)
 
-One way to ensure only fully working code makes it into production, you should use a staging environment to test all
-the changes made to your code base and verify they work as intended. To do so automatically you should set up a
+One way to ensure only fully working code makes it into production, you should use a staging environment to test all the changes made to your code base and verify they work as intended. To do so automatically you should set up a
 github action workflow that runs your pipeline for you when you make changes to it.
-[Here](https://github.com/zenml-io/zenml-gitflow/blob/main/.github/workflows/pipeline_run.yaml) is an example that you
-can use.
+[Here](https://github.com/zenml-io/zenml-gitflow/blob/main/.github/workflows/pipeline_run.yaml) is an example that you can use.
 
 To only run the Github Action on a PR, you can configure the yaml like this
 
@@ -102,8 +89,7 @@ jobs:
       ZENML_GITHUB_URL_PR: ${{ github.event.pull_request._links.html.href }}
 ```
 
-After configuring these values so they apply to your specific situation the rest of the template should work as is for
-you. Specifically you will need to install all requirements, connect to your ZenML Server, set an active stack
+After configuring these values so they apply to your specific situation the rest of the template should work as is for you. Specifically you will need to install all requirements, connect to your ZenML Server, set an active stack
 and run a pipeline within your github action.
 
 ```yaml

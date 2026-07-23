@@ -97,8 +97,7 @@ This architecture strikes a balance between convenience and control, making it a
 
 ![ZenML Pro self-hosted deployment](../.gitbook/assets/cloud_architecture_scenario_2.avif)
 
-In the case of self-hosting ZenML Pro, all services, data, and secrets are deployed on the customer\
-cloud. This is meant for customers who require completely air-gapped deployments, for the tightest security standards. [Reach out to us](mailto:cloud@zenml.io) if you want to set this up.
+In the case of self-hosting ZenML Pro, all services, data, and secrets are deployed on the customer\ cloud. This is meant for customers who require completely air-gapped deployments, for the tightest security standards. [Reach out to us](mailto:cloud@zenml.io) if you want to set this up.
 
 <details>
 

@@ -48,10 +48,8 @@ Unspecified artifact outputs default to a naming pattern of `{pipeline_name}::{s
 
 Artifacts named `iris_dataset` can then be found swiftly using various ZenML interfaces:
 
-{% tabs %}
-{% tab title="OSS (CLI)" %}
-To list artifacts: `zenml artifact list`
-{% endtab %}
+{% tabs %} {% tab title="OSS (CLI)" %}
+To list artifacts: `zenml artifact list` {% endtab %}
 
 {% tab title="Cloud (Dashboard)" %}
 The [ZenML Pro](https://zenml.io/pro) dashboard offers advanced visualization features for artifact exploration.
@@ -60,8 +58,7 @@ The [ZenML Pro](https://zenml.io/pro) dashboard offers advanced visualization fe
 
 {% hint style="info" %}
 To prevent visual clutter, make sure to assign names to your most important artifacts that you would like to explore visually.
-{% endhint %}
-{% endtab %}
+{% endhint %} {% endtab %}
 {% endtabs %}
 
 ### Versioning artifacts manually
@@ -97,16 +94,13 @@ Since custom versions cannot be duplicated, the above step can only be run once 
 
 After execution, `iris_dataset` and its version `raw_2023` can be seen using:
 
-{% tabs %}
-{% tab title="OSS (CLI)" %}
-To list versions: `zenml artifact version list`
-{% endtab %}
+{% tabs %} {% tab title="OSS (CLI)" %}
+To list versions: `zenml artifact version list` {% endtab %}
 
 {% tab title="Cloud (Dashboard)" %}
 The Cloud dashboard visualizes version history for your review.
 
-<figure><img src="../../.gitbook/assets/dcp_artifacts_versions_list.png" alt=""><figcaption><p>ZenML Data Versions List.</p></figcaption></figure>
-{% endtab %}
+<figure><img src="../../.gitbook/assets/dcp_artifacts_versions_list.png" alt=""><figcaption><p>ZenML Data Versions List.</p></figcaption></figure> {% endtab %}
 {% endtabs %}
 
 ### Add metadata and tags 
@@ -198,8 +192,7 @@ This feature is currently in Alpha Preview. We encourage you to share feedback a
 Assigning a type to an artifact allows ZenML to highlight them differently in the dashboard and also lets you filter your artifacts better.
 
 {% hint style="info" %}
-If you don't specify a type for your artifact, ZenML will use the default artifact type provided by the materializer that is used to
-save the artifact.
+If you don't specify a type for your artifact, ZenML will use the default artifact type provided by the materializer that is used to save the artifact.
 {% endhint %}
 
 
@@ -338,8 +331,7 @@ from zenml import load_artifact
 load_artifact("iris_predictions")
 ```
 
-{% hint style="info" %}
-`load_artifact` is simply short-hand for the following Client call:
+{% hint style="info" %} `load_artifact` is simply short-hand for the following Client call:
 
 ```python
 from zenml.client import Client
@@ -408,8 +400,7 @@ As an example, one can associate the results of a model training alongside a mod
 
 For some artifacts, ZenML automatically logs metadata. As an example, for `pandas.Series` and `pandas.DataFrame` objects, ZenML logs the shape and size of the objects:
 
-{% tabs %}
-{% tab title="Python" %}
+{% tabs %} {% tab title="Python" %}
 ```python
 from zenml.client import Client
 
@@ -425,14 +416,12 @@ artifact.run_metadata["shape"].value  # Shape e.g. (500,20)
 {% tab title="OSS (Dashboard)" %}
 The information regarding the metadata of an artifact can be found within the DAG visualizer interface on the OSS dashboard:
 
-<figure><img src="../../.gitbook/assets/dashboard_artifact_metadata.png" alt=""><figcaption><p>ZenML Artifact Control Plane.</p></figcaption></figure>
-{% endtab %}
+<figure><img src="../../.gitbook/assets/dashboard_artifact_metadata.png" alt=""><figcaption><p>ZenML Artifact Control Plane.</p></figcaption></figure> {% endtab %}
 
 {% tab title="Cloud (Dashboard)" %}
 The [ZenML Pro](https://zenml.io/pro) dashboard offers advanced visualization features for artifact exploration, including a dedicated artifacts tab with metadata visualization:
 
-<figure><img src="../../.gitbook/assets/dcp_metadata.png" alt=""><figcaption><p>ZenML Artifact Control Plane.</p></figcaption></figure>
-{% endtab %}
+<figure><img src="../../.gitbook/assets/dcp_metadata.png" alt=""><figcaption><p>ZenML Artifact Control Plane.</p></figcaption></figure> {% endtab %}
 {% endtabs %}
 
 A user can also add metadata to an artifact directly within a step using the `log_metadata` method:

@@ -50,8 +50,7 @@ If you are using a private container registry, you will need to configure some f
 
 If your target private container registry comes from a cloud provider like AWS, GCP or Azure, you should use the [container registry flavor](./#container-registry-flavors) targeted at that cloud provider. For example, if you're using AWS, you should use the [AWS Container Registry](aws.md) flavor. These cloud provider flavors also use specialized cloud provider Service Connectors to authenticate to the container registry.
 
-{% tabs %}
-{% tab title="Local Authentication" %}
+{% tabs %} {% tab title="Local Authentication" %}
 This method uses the Docker client authentication available _in the environment where the ZenML code is running_. On your local machine, this is the quickest way to configure a Default Container Registry. You don't need to supply credentials explicitly when you register the Default Container Registry, as it leverages the local credentials and configuration that the Docker client stores on your local machine.
 
 To log in to the container registry so Docker can pull and push images, you'll need to run the `docker login` command and supply your credentials, e.g.:
@@ -62,8 +61,7 @@ docker login --username <USERNAME> --password-stdin <REGISTRY_URI>
 
 {% hint style="warning" %}
 Stacks using the Default Container Registry set up with local authentication are not portable across environments. To make ZenML pipelines fully portable, it is recommended to use [a Docker Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/docker-service-connector) to link your Default Container Registry to the remote private container registry.
-{% endhint %}
-{% endtab %}
+{% endhint %} {% endtab %}
 
 {% tab title="Docker Service Connector (recommended)" %}
 To set up the Default Container Registry to authenticate to and access a private container registry, it is recommended to leverage the features provided by [the Docker Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/docker-service-connector) such as local login and reusing the same credentials across multiple stack components.
@@ -163,10 +161,8 @@ https://docs.docker.com/engine/reference/commandline/login/#credentials-store
 
 The 'dockerhub' Docker Service Connector was used to successfully configure the local Docker/OCI container registry client/SDK.
 ```
-{% endcode %}
-{% endhint %}
-{% endtab %}
-{% endtabs %}
+{% endcode %} {% endhint %}
+{% endtab %} {% endtabs %}
 
 For more information and a full list of configurable attributes of the Default container registry, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-aws.html#zenml.integrations.aws) .
 

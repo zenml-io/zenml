@@ -64,14 +64,12 @@ You also need to set up [authentication](gcp.md#authentication-methods) required
 
 Integrating and using a GCP Image Builder in your pipelines is not possible without employing some form of authentication. If you're looking for a quick way to get started locally, you can use the _Local Authentication_ method. However, the recommended way to authenticate to the GCP cloud platform is through [a GCP Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector). This is particularly useful if you are configuring ZenML stacks that combine the GCP Image Builder with other remote stack components also running in GCP.
 
-{% tabs %}
-{% tab title="Implicit Authentication" %}
+{% tabs %} {% tab title="Implicit Authentication" %}
 This method uses the implicit GCP authentication available _in the environment where the ZenML code is running_. On your local machine, this is the quickest way to configure a GCP Image Builder. You don't need to supply credentials explicitly when you register the GCP Image Builder, as it leverages the local credentials and configuration that the Google Cloud CLI stores on your local machine. However, you will need to install and set up the Google Cloud CLI on your machine as a prerequisite, as covered in [the Google Cloud documentation](https://cloud.google.com/sdk/docs/install-sdk) , before you register the GCP Image Builder.
 
 {% hint style="warning" %}
 Stacks using the GCP Image Builder set up with local authentication are not portable across environments. To make ZenML pipelines fully portable, it is recommended to use [a GCP Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector) to authenticate your GCP Image Builder to the GCP cloud platform.
-{% endhint %}
-{% endtab %}
+{% endhint %} {% endtab %}
 
 {% tab title="GCP Service Connector (recommended)" %}
 To set up the GCP Image Builder to authenticate to GCP and access the GCP Cloud Build services, it is recommended to leverage the many features provided by [the GCP Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector) such as auto-configuration, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
@@ -188,8 +186,7 @@ zenml image-builder register <IMAGE_BUILDER_NAME> \
 # Register and set a stack with the new image builder
 zenml stack register <STACK_NAME> -i <IMAGE_BUILDER_NAME> ... --set
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 ### Caveats
 

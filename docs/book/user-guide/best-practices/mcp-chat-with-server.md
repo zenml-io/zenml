@@ -16,8 +16,7 @@ The Model Context Protocol (MCP) is an open protocol that standardizes how appli
 MCP follows a client-server architecture where:
 
 * **MCP Clients**: Programs like Claude Desktop or IDEs (Cursor, Windsurf, etc.) that want to access data through MCP
-* **MCP Servers**: Lightweight programs that expose specific capabilities\
-  through the standardized protocol. Our implementation is of an MCP server that connects to your ZenML server.
+* **MCP Servers**: Lightweight programs that expose specific capabilities\ through the standardized protocol. Our implementation is of an MCP server that connects to your ZenML server.
 
 ## Why use MCP with ZenML?
 

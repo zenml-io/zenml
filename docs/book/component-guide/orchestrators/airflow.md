@@ -50,8 +50,7 @@ zenml orchestrator register <ORCHESTRATOR_NAME> \
 zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
 
-{% tabs %}
-{% tab title="Local" %}
+{% tabs %} {% tab title="Local" %}
 Due to dependency conflicts, we need to install the Python packages to start a local Airflow server in a separate Python environment.
 
 ```bash
@@ -119,8 +118,7 @@ When using the Airflow orchestrator with a remote deployment, you'll additionall
 * A [remote container registry](https://docs.zenml.io/stacks/container-registries/) as part of your stack.
 
 In the remote case, the Airflow orchestrator works differently than other ZenML orchestrators. Executing a python file which runs a pipeline by calling `pipeline.run()` will not actually run the pipeline, but instead will create a `.zip` file containing an Airflow representation of your ZenML pipeline. In one additional step, you need to make sure this zip file ends up in the [DAGs directory](https://airflow.apache.org/docs/apache-airflow/stable/concepts/overview.html#architecture-overview) of your Airflow deployment.
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Airflow. Check out [this page](https://docs.zenml.io/how-to/customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.

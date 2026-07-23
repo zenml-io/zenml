@@ -5,8 +5,7 @@ icon: tag
 
 # Tags
 
-Organizing and categorizing your machine learning artifacts and models can\
-streamline your workflow and enhance discoverability. ZenML enables the use of\
+Organizing and categorizing your machine learning artifacts and models can\ streamline your workflow and enhance discoverability. ZenML enables the use of\
 tags as a flexible tool to classify and filter your ML assets.
 
 ![Tags are visible in the ZenML Dashboard](../../.gitbook/assets/tags-in-dashboard.png)
@@ -31,8 +30,7 @@ zenml artifact update my_artifact -t my_tag
 
 ### Assigning tags to artifact versions
 
-In order to tag an artifact through the Python SDK, you can use either use\
-the `ArtifactConfig` object:
+In order to tag an artifact through the Python SDK, you can use either use\ the `ArtifactConfig` object:
 
 ```python
 from typing import Annotated

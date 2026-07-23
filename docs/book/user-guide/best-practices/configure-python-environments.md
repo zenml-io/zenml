@@ -56,10 +56,8 @@ ZenML allows you to install dependencies required by integrations through the `z
 
 ### Use a tool like `pip-compile` for reproducibility
 
-Consider using a tool like `pip-compile` (available through [the `pip-tools`
-package](https://pip-tools.readthedocs.io/)) to compile your dependencies into a
-static `requirements.txt` file that can be used across environments. (If you are
-using [`uv`](https://github.com/astral-sh/uv), you might want to use `uv pip compile` as an alternative.)
+Consider using a tool like `pip-compile` (available through [the `pip-tools` package](https://pip-tools.readthedocs.io/)) to compile your dependencies into a
+static `requirements.txt` file that can be used across environments. (If you are using [`uv`](https://github.com/astral-sh/uv), you might want to use `uv pip compile` as an alternative.)
 
 For a practical example and explanation of using `pip-compile` to address exactly this need, see [our 'gitflow' repository and workflow](https://github.com/zenml-io/zenml-gitflow#-software-requirements-management) to learn more.
 
@@ -69,10 +67,8 @@ Running [`pip check`](https://pip.pypa.io/en/stable/cli/pip\_check/) will verify
 
 ### Well-known dependency resolution issues
 
-Some of ZenML's integrations come with strict dependency and package version
-requirements. We try to keep these dependency requirements ranges as wide as
-possible for the integrations developed by ZenML, but it is not always possible
-to make this work completely smoothly. Here is one of the known issues:
+Some of ZenML's integrations come with strict dependency and package version requirements. We try to keep these dependency requirements ranges as wide as
+possible for the integrations developed by ZenML, but it is not always possible to make this work completely smoothly. Here is one of the known issues:
 
 * `click`: ZenML currently requires `click~=8.0.3` for its CLI. This is on account of another dependency of ZenML. Using versions of `click` in your own project that are greater than 8.0.3 may cause unanticipated behaviors.
 
@@ -84,8 +80,7 @@ It is possible to skip ZenML's integration installation process and install depe
 Note that the `zenml integration install ...` command runs a `pip install ...` under the hood as part of its implementation, taking the dependencies listed in the integration object and installing them. For example, `zenml integration install gcp` will run `pip install "kfp==1.8.16" "gcsfs" "google-cloud-secret-manager" ...` and so on, since they are [specified in the integration definition](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/gcp/__init__.py#L46).
 {% endhint %}
 
-To do this, you will need to install the dependencies for the integration you
-want to use manually. You can find the dependencies for the integrations by
+To do this, you will need to install the dependencies for the integration you want to use manually. You can find the dependencies for the integrations by
 running the following:
 
 ```bash

@@ -33,8 +33,7 @@ Once you have created a Personal Access Token, you can use it to authenticate to
 
 The PAT can be used to authenticate to the ZenML Pro management REST API programmatically. There are two methods to do this - one is simpler but less secure, the other is secure and recommended but more complex:
 
-{% tabs %}
-{% tab title="Direct PAT authentication" %}
+{% tabs %} {% tab title="Direct PAT authentication" %}
 {% hint style="warning" %}
 This approach, albeit simple, is not recommended because the long-lived PAT is exposed with every API request, which makes it easier to be compromised. Use it only in low-risk circumstances.
 {% endhint %}
@@ -61,8 +60,7 @@ To authenticate to the REST API, simply pass the PAT directly in the `Authorizat
       headers={"Authorization": f"Bearer YOUR_PAT"}
     )
     print(response.json())
-    ```
-{% endtab %}
+    ``` {% endtab %}
 
 {% tab title="Token exchange authentication" %}
 Reduce the risk of PAT exposure by periodically exchanging the PAT for a short-lived API token:
@@ -129,8 +127,7 @@ This will return a response like this (the short-lived API token is the `access_
        )
 
        print(response.json())
-       ```
-{% endtab %}
+       ``` {% endtab %}
 {% endtabs %}
 
 See the [API documentation](https://docs.zenml.io/api-reference/pro-api/getting-started) for detailed information on programmatic access patterns.
@@ -161,8 +158,7 @@ zenml login <your-workspace-name> --api-key
 
 Similar to the ZenML Pro API programmatic access, the PAT can be used to authenticate to the ZenML Pro workspace REST API programmatically. This is no different from [using the OSS API key to authenticate to the OSS workspace REST API programmatically](https://docs.zenml.io/api-reference/oss-api/getting-started#using-a-service-account-and-an-api-key). There are two methods to do this - one is simpler but less secure, the other is secure and recommended but more complex:
 
-{% tabs %}
-{% tab title="Direct PAT authentication" %}
+{% tabs %} {% tab title="Direct PAT authentication" %}
 {% hint style="warning" %}
 This approach, albeit simple, is not recommended because the long-lived PAT is exposed with every API request, which makes it easier to be compromised. Use it only in low-risk circumstances.
 {% endhint %}
@@ -190,8 +186,7 @@ Use the PAT directly to authenticate your API requests by including it in the `A
     )
 
     print(response.json())
-    ```
-{% endtab %}
+    ``` {% endtab %}
 
 {% tab title="Token exchange authentication" %}
 Reduce the risk of PAT exposure by periodically exchanging the PAT for a short-lived workspace API token.
@@ -258,8 +253,7 @@ This will return a response like this (the short-lived workspace API token is th
        )
 
        print(response.json())
-       ```
-{% endtab %}
+       ``` {% endtab %}
 {% endtabs %}
 
 ## Personal Access Token Operations

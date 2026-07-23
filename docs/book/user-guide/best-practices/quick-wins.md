@@ -5,8 +5,7 @@ icon: bolt
 
 # Quick Wins
 
-Below is a menu of 5-minute quick wins you can sprinkle into an existing ZenML
-project with almost no code changes. Each entry explains why it matters, the
+Below is a menu of 5-minute quick wins you can sprinkle into an existing ZenML project with almost no code changes. Each entry explains why it matters, the
 micro-setup (under 5 minutes) and any tips or gotchas to anticipate.
 
 {% hint style="info" %}
@@ -160,10 +159,8 @@ def train_model(data):
 
 ## 4 Instant **alerter notifications** for successes/failures
 
-**Why** -- get immediate notifications when pipelines succeed or fail, enabling
-faster response times and improved collaboration. Alerter notifications ensure
-your team is always aware of critical model training status, data drift alerts,
-and deployment changes without constantly checking dashboards.
+**Why** -- get immediate notifications when pipelines succeed or fail, enabling faster response times and improved collaboration. Alerter notifications ensure
+your team is always aware of critical model training status, data drift alerts, and deployment changes without constantly checking dashboards.
 
 {% hint style="info" %}
 ZenML supports multiple alerter flavors including Slack and Discord. The example below uses Slack, but the pattern is similar for other alerters.

@@ -62,8 +62,7 @@ Each connector type supports authentication methods specific to that service.
 
 ### Creating and Managing Connectors
 
-Service connectors can be created with different authentication methods
-depending on your cloud provider and security requirements.
+Service connectors can be created with different authentication methods depending on your cloud provider and security requirements.
 
 ![Authentication with Service Connectors](../../.gitbook/assets/authentication_with_connectors.png)
 

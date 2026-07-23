@@ -65,16 +65,12 @@ def train_model(dataset_path: str, *, epochs: int = 10) -> None:
     ...
 ```
 
-Keyword-only arguments, like `epochs` in the example above, are supported and
-are treated as normal step inputs. This is useful when you want a call site to be
-explicit about important values. Variadic signatures such as `*args` and
-`**kwargs` are not valid step inputs because ZenML needs to know the step
+Keyword-only arguments, like `epochs` in the example above, are supported and are treated as normal step inputs. This is useful when you want a call site to be
+explicit about important values. Variadic signatures such as `*args` and `**kwargs` are not valid step inputs because ZenML needs to know the step
 interface before the pipeline runs.
 
-For production code, define the underlying Python functions for your steps and
-pipelines at module level. They are easier to import, package, test, and review
-that way. If you need a factory-style pattern, you can wrap those top-level
-functions with `@step` or `@pipeline(dynamic=True)` inside another function, but
+For production code, define the underlying Python functions for your steps and pipelines at module level. They are easier to import, package, test, and review
+that way. If you need a factory-style pattern, you can wrap those top-level functions with `@step` or `@pipeline(dynamic=True)` inside another function, but
 the decorated function itself should still be importable from a module.
 
 You can also add semantic metadata to a step with `step_type`:
@@ -88,10 +84,8 @@ def summarize_prompt(prompt: str) -> str:
     ...
 ```
 
-The current step types are `StepType.TOOL_CALL`, `StepType.LLM_CALL`, and
-`StepType.MEMORY_CALL`. Think of this as a label on the step run: it does not
-change how your Python function executes, but it gives the dashboard, DAG
-metadata, and downstream consumers a clearer story about what kind of work the
+The current step types are `StepType.TOOL_CALL`, `StepType.LLM_CALL`, and `StepType.MEMORY_CALL`. Think of this as a label on the step run: it does not
+change how your Python function executes, but it gives the dashboard, DAG metadata, and downstream consumers a clearer story about what kind of work the
 step represents.
 
 ### Asynchronous Pipeline Execution

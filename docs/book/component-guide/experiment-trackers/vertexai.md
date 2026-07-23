@@ -70,8 +70,7 @@ Integrating and using a Vertex AI Experiment Tracker in your pipelines is not po
 > - `storage.objects.list`
 > - `storage.buckets.get`
 
-{% tabs %}
-{% tab title="Implicit Authentication" %}
+{% tabs %} {% tab title="Implicit Authentication" %}
 This configuration method assumes that you have authenticated locally to GCP using the [`gcloud` CLI](https://cloud.google.com/sdk/gcloud) (e.g., by running gcloud auth login).
 
 > **Note**: This method is quick for local setups but is unsuitable for team collaborations or production environments due to its lack of portability.
@@ -143,8 +142,7 @@ zenml experiment-tracker register <EXPERIMENT_TRACKER_NAME> \
 # Register and set a stack with the new experiment tracker
 zenml experiment-tracker connect <EXPERIMENT_TRACKER_NAME> --connector <CONNECTOR_NAME>
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 ## How do you use it?
 

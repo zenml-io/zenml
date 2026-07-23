@@ -321,8 +321,7 @@ This is part of a broader configuration rehaul which is discussed next.
 Alongside the architectural shift, Pipeline configuration has been completely rethought. This video gives an overview of how configuration has changed with ZenML in the post ZenML 0.20.0 world.
 
 {% embed url="https://www.youtube.com/embed/hI-UNV7uoNI" %}
-Configuring pipelines, steps, and stack components in ZenML
-{% endembed %}
+Configuring pipelines, steps, and stack components in ZenML {% endembed %}
 
 **What changed?**
 

@@ -69,19 +69,16 @@ model:
 
 You will see that this configuration lines up with the model created after executing these pipelines:
 
-{% tabs %}
-{% tab title="CLI" %}
+{% tabs %} {% tab title="CLI" %}
 ```shell
 # List all versions of the breast_cancer_classifier
 zenml model version list breast_cancer_classifier
 ```
 {% endtab %}
 
-{% tab title="Dashboard" %}
-[ZenML Pro](https://www.zenml.io/pro) ships with a Model Control Plane dashboard where you can visualize all the versions:
+{% tab title="Dashboard" %} [ZenML Pro](https://www.zenml.io/pro) ships with a Model Control Plane dashboard where you can visualize all the versions:
 
-<figure><img src="../../.gitbook/assets/mcp_model_versions_list.png" alt=""><figcaption><p>All model versions listed</p></figcaption></figure>
-{% endtab %}
+<figure><img src="../../.gitbook/assets/mcp_model_versions_list.png" alt=""><figcaption><p>All model versions listed</p></figcaption></figure> {% endtab %}
 {% endtabs %}
 
 ### Passing parameters
@@ -157,8 +154,7 @@ steps:
 </details>
 
 {% hint style="info" %}
-Read more about settings in ZenML [here](https://docs.zenml.io/concepts/steps_and_pipelines/configuration) and
-[here](https://docs.zenml.io/user-guides/tutorial/distributed-training)
+Read more about settings in ZenML [here](https://docs.zenml.io/concepts/steps_and_pipelines/configuration) and [here](https://docs.zenml.io/user-guides/tutorial/distributed-training)
 {% endhint %}
 
 Now let's run the pipeline again:

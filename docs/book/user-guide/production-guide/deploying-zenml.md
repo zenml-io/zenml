@@ -53,18 +53,15 @@ Having trouble connecting with a browser? There are other ways to connect. Read 
 This command will start a series of steps to validate the device from where you are connecting that will happen in your browser. After that, you're now locally connected to a remote ZenML. Nothing of your experience changes, except that all metadata that you produce will be tracked centrally in one place from now on.
 
 {% hint style="info" %}
-You can always go back to the local zenml experience by using `zenml logout`
-{% endhint %}
+You can always go back to the local zenml experience by using `zenml logout` {% endhint %}
 
 ## Further resources
 
 To learn more about deploying ZenML, check out the following resources:
 
-- [Deploying ZenML](https://docs.zenml.io/getting-started/deploying-zenml): an overview of
-  the different options for deploying ZenML and the system architecture of a
+- [Deploying ZenML](https://docs.zenml.io/getting-started/deploying-zenml): an overview of the different options for deploying ZenML and the system architecture of a
   deployed ZenML instance.
-- [Full how-to guides](https://docs.zenml.io/getting-started/deploying-zenml): guides on how to
-  deploy ZenML on Docker or Hugging Face Spaces or Kubernetes or some other cloud
+- [Full how-to guides](https://docs.zenml.io/getting-started/deploying-zenml): guides on how to deploy ZenML on Docker or Hugging Face Spaces or Kubernetes or some other cloud
   provider.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

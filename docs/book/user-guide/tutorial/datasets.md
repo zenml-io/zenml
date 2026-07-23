@@ -180,8 +180,7 @@ def etl_pipeline(mode: str = "develop"):
 
 ## Best Practices for Designing Flexible and Maintainable Pipelines
 
-When working with custom Dataset classes in ZenML pipelines, it's crucial to design your pipelines\
-to accommodate various data sources and processing requirements.
+When working with custom Dataset classes in ZenML pipelines, it's crucial to design your pipelines\ to accommodate various data sources and processing requirements.
 
 Here are some best practices to ensure your pipelines remain flexible and maintainable:
 

@@ -4,39 +4,28 @@ description: Evaluate the generation component of your RAG pipeline.
 
 # Generation evaluation
 
-Now that we have a sense of how to evaluate the retrieval component of our RAG
-pipeline, let's move on to the generation component. The generation component is
-responsible for generating the answer to the question based on the retrieved
-context. At this point, our evaluation starts to move into more subjective
-territory. It's harder to come up with metrics that can accurately capture the
-quality of the generated answers. However, there are some things we can do.
+Now that we have a sense of how to evaluate the retrieval component of our RAG pipeline, let's move on to the generation component. The generation component is
+responsible for generating the answer to the question based on the retrieved context. At this point, our evaluation starts to move into more subjective
+territory. It's harder to come up with metrics that can accurately capture the quality of the generated answers. However, there are some things we can do.
 
-As with the [retrieval evaluation](retrieval.md), we can start with a simple
-approach and then move on to more sophisticated methods.
+As with the [retrieval evaluation](retrieval.md), we can start with a simple approach and then move on to more sophisticated methods.
 
 ## Handcrafted evaluation tests
 
-As in the retrieval evaluation, we can start by putting together a set of
-examples where we know that our generated output should or shouldn't include
-certain terms. For example, if we're generating answers to questions about
-which orchestrators ZenML supports, we can check that the generated answers
-include terms like "Airflow" and "Kubeflow" (since we do support them) and
-exclude terms like "Flyte" or "Prefect" (since we don't (yet!) support them).
-These handcrafted tests should be driven by mistakes that you've already seen in
-the RAG output. The negative example of "Flyte" and "Prefect" showing up in the
+As in the retrieval evaluation, we can start by putting together a set of examples where we know that our generated output should or shouldn't include
+certain terms. For example, if we're generating answers to questions about which orchestrators ZenML supports, we can check that the generated answers
+include terms like "Airflow" and "Kubeflow" (since we do support them) and exclude terms like "Flyte" or "Prefect" (since we don't (yet!) support them).
+These handcrafted tests should be driven by mistakes that you've already seen in the RAG output. The negative example of "Flyte" and "Prefect" showing up in the
 list of supported orchestrators, for example, shows up sometimes when you use
 GPT 3.5 as the LLM.
 
 ![](../../../.gitbook/assets/generation-eval-manual.png)
 
-As another example, when you make a query asking 'what is the default
-orchestrator in ZenML?' you would expect that the answer would include the word
+As another example, when you make a query asking 'what is the default orchestrator in ZenML?' you would expect that the answer would include the word
 'local', so we can make a test case to confirm that.
 
-You can view our starter set of these tests
-[here](https://github.com/zenml-io/zenml-projects/blob/main/llm-complete-guide/steps/eval_e2e.py#L28-L55).
-It's better to start with something small and simple and then expand as is
-needed. There's no need for complicated harnesses or frameworks at this stage.
+You can view our starter set of these tests [here](https://github.com/zenml-io/zenml-projects/blob/main/llm-complete-guide/steps/eval_e2e.py#L28-L55).
+It's better to start with something small and simple and then expand as is needed. There's no need for complicated harnesses or frameworks at this stage.
 
 **`bad_answers` table:**
 
@@ -87,14 +76,11 @@ def test_content_for_bad_words(
     return TestResult(success=True, question=question, response=response)
 ```
 
-Here we're testing that a particular word doesn't show up in the generated
-response. If we find the word, then we return a failure, otherwise we return a
-success. This is a simple example, but you can imagine more complex tests that
-check for the presence of multiple words, or the presence of a word in a
+Here we're testing that a particular word doesn't show up in the generated response. If we find the word, then we return a failure, otherwise we return a
+success. This is a simple example, but you can imagine more complex tests that check for the presence of multiple words, or the presence of a word in a
 particular context.
 
-We pass these custom tests into a test runner that keeps track of how many are
-failing and also logs those to the console when they do:
+We pass these custom tests into a test runner that keeps track of how many are failing and also logs those to the console when they do:
 
 ```python
 def run_tests(test_data: list, test_function: Callable) -> float:
@@ -114,8 +100,7 @@ def run_tests(test_data: list, test_function: Callable) -> float:
     return round(failure_rate, 2)
 ```
 
-Our end-to-end evaluation of the generation component is then a combination of
-these tests:
+Our end-to-end evaluation of the generation component is then a combination of these tests:
 
 ```python
 @step
@@ -153,37 +138,28 @@ def e2e_evaluation() -> (
 ```
 
 Running the tests using different LLMs will give different results. Here our
-Ollama Mixtral did worse than GPT 3.5, for example, but there were still some
-failures with GPT 3.5. This is a good way to get a sense of how well your
+Ollama Mixtral did worse than GPT 3.5, for example, but there were still some failures with GPT 3.5. This is a good way to get a sense of how well your
 generation component is doing.
 
-As you become more familiar with the kinds of outputs your LLM generates, you
-can add the hard ones to this test suite. This helps prevent regressions and
-is directly related to the quality of the output you're getting. This way you
-can optimize for your specific use case.
+As you become more familiar with the kinds of outputs your LLM generates, you can add the hard ones to this test suite. This helps prevent regressions and
+is directly related to the quality of the output you're getting. This way you can optimize for your specific use case.
 
 ## Automated evaluation using another LLM
 
-Another way to evaluate the generation component is to use another LLM to
-grade the output of the LLM you're evaluating. This is a more sophisticated
-approach and requires a bit more setup. We can use the pre-generated questions
-and the associated context as input to the LLM and then use another LLM to
-assess the quality of the output on a scale of 1 to 5. This is a more
-quantitative approach and since it's automated it can run across a larger set of
+Another way to evaluate the generation component is to use another LLM to grade the output of the LLM you're evaluating. This is a more sophisticated
+approach and requires a bit more setup. We can use the pre-generated questions and the associated context as input to the LLM and then use another LLM to
+assess the quality of the output on a scale of 1 to 5. This is a more quantitative approach and since it's automated it can run across a larger set of
 data.
 
 ![](../../../.gitbook/assets/generation-eval-automated.png)
 
 {% hint style="warning" %}
 LLMs don't always do well on this kind of evaluation where numbers are involved.
-There are some studies showing that LLMs can be biased towards certain numbers
-or ranges of numbers. This is something to keep in mind when using this
-approach. Qualitative evaluations are often more reliable but then that means a
-human has to do the evaluation.
+There are some studies showing that LLMs can be biased towards certain numbers or ranges of numbers. This is something to keep in mind when using this
+approach. Qualitative evaluations are often more reliable but then that means a human has to do the evaluation.
 {% endhint %}
 
-We can start by setting up a Pydantic model to hold the data we need. We set
-constraints to ensure that the data we're getting back are only integers between
+We can start by setting up a Pydantic model to hold the data we need. We set constraints to ensure that the data we're getting back are only integers between
 1 and 5, inclusive:
 
 ```python
@@ -198,14 +174,11 @@ We can use this in a test function that:
 
 - takes a question and a context as inputs
 - generates an answer using the LLM we're evaluating
-- makes a call to an (optionally different) LLM we're using to judge the quality
-  of the answer getting back a score for each of the four categories in JSON
+- makes a call to an (optionally different) LLM we're using to judge the quality of the answer getting back a score for each of the four categories in JSON
   format
-- parses the JSON and returns the result of the evaluation as our Pydantic
-  model instance
+- parses the JSON and returns the result of the evaluation as our Pydantic model instance
 
-Pydantic handles the validation of the JSON input for us, so we can be sure that
-we're getting the data we expect and in a form that we can use.
+Pydantic handles the validation of the JSON input for us, so we can be sure that we're getting the data we expect and in a form that we can use.
 
 ```python
 def llm_judged_test_e2e(
@@ -264,8 +237,7 @@ def llm_judged_test_e2e(
         raise e
 ```
 
-Currently we're not handling retries of the output from the LLM in the case
-where the JSON isn't output correctly, but potentially that's something we might
+Currently we're not handling retries of the output from the LLM in the case where the JSON isn't output correctly, but potentially that's something we might
 want to do.
 
 We can then run this test across a set of questions and contexts:
@@ -319,10 +291,8 @@ def run_llm_judged_tests(
     )
 ```
 
-You'll want to use your most capable and reliable LLM to do the judging. In our
-case, we used the new GPT-4 Turbo. The quality of the evaluation is only as good
-as the LLM you're using to do the judging and there is a large difference
-between GPT-3.5 and GPT-4 Turbo in terms of the quality of the output, not least
+You'll want to use your most capable and reliable LLM to do the judging. In our case, we used the new GPT-4 Turbo. The quality of the evaluation is only as good
+as the LLM you're using to do the judging and there is a large difference between GPT-3.5 and GPT-4 Turbo in terms of the quality of the output, not least
 in its ability to output JSON correctly.
 
 Here was the output following an evaluation for 50 randomly sampled datapoints:
@@ -337,52 +307,40 @@ Step e2e_evaluation_llm_judged has finished in 8m51s.
 Pipeline run has finished in 8m52s.
 ```
 
-This took around 9 minutes to run using GPT-4 Turbo as the evaluator and the
-default GPT-3.5 as the LLM being evaluated.
+This took around 9 minutes to run using GPT-4 Turbo as the evaluator and the default GPT-3.5 as the LLM being evaluated.
 
 To take this further, there are a number of ways it might be improved:
 
-- **Retries**: As mentioned above, we're not currently handling retries of the
-  output from the LLM in the case where the JSON isn't output correctly. This
+- **Retries**: As mentioned above, we're not currently handling retries of the output from the LLM in the case where the JSON isn't output correctly. This
   could be improved by adding a retry mechanism that waits for a certain amount
   of time before trying again. (We could potentially use the
   [`instructor`](https://github.com/jxnl/instructor) library to handle this
   specifically.)
-- **Use OpenAI's 'JSON mode'**: OpenAI has a [JSON
-  mode](https://platform.openai.com/docs/guides/text-generation/json-mode) that
+- **Use OpenAI's 'JSON mode'**: OpenAI has a [JSON mode](https://platform.openai.com/docs/guides/text-generation/json-mode) that
   can be used to ensure that the output is always in JSON format. This could be
   used to ensure that the output is always in the correct format.
-- **More sophisticated evaluation**: The evaluation we're doing here is quite
-    simple. We're just asking for a score in four categories. There are more
+- **More sophisticated evaluation**: The evaluation we're doing here is quite simple. We're just asking for a score in four categories. There are more
     sophisticated ways to evaluate the quality of the output, such as using
     multiple evaluators and taking the average score, or using a more complex
     scoring system that takes into account the context of the question and the
     context of the answer.
-- **Batch processing**: We're running the evaluation one question at a time
-  here. It would be more efficient to run the evaluation in batches to speed up
+- **Batch processing**: We're running the evaluation one question at a time here. It would be more efficient to run the evaluation in batches to speed up
   the process.
-- **More data**: We're only using 50 samples here. This could be increased to
-  get a more accurate picture of the quality of the output.
-- **More LLMs**: We're only using GPT-4 Turbo here. It would be interesting to
-  see how other LLMs perform as evaluators.
-- **Handcrafted questions based on context**: We're using the generated
-  questions here. It would be interesting to see how the LLM performs when given
+- **More data**: We're only using 50 samples here. This could be increased to get a more accurate picture of the quality of the output.
+- **More LLMs**: We're only using GPT-4 Turbo here. It would be interesting to see how other LLMs perform as evaluators.
+- **Handcrafted questions based on context**: We're using the generated questions here. It would be interesting to see how the LLM performs when given
   handcrafted questions that are based on the context of the question.
-- **Human in the loop**: The LLM actually provides qualitative feedback on the
-  output as well as the JSON scores. This data could be passed into an
+- **Human in the loop**: The LLM actually provides qualitative feedback on the output as well as the JSON scores. This data could be passed into an
   annotation tool to get human feedback on the quality of the output. This would
     be a more reliable way to evaluate the quality of the output and would offer
     some insight into the kinds of mistakes the LLM is making.
 
-Most notably, the scores we're currently getting are pretty high, so it would
-make sense to pass in harder questions and be more specific in the judging
-criteria. This will give us more room to improve as it is sure that the system
-is not perfect.
+Most notably, the scores we're currently getting are pretty high, so it would make sense to pass in harder questions and be more specific in the judging
+criteria. This will give us more room to improve as it is sure that the system is not perfect.
 
 While this evaluation approach serves as a solid foundation, it's worth noting that there are other frameworks available that can further enhance the evaluation process. Frameworks such as [`ragas`](https://github.com/explodinggradients/ragas), [`trulens`](https://www.trulens.org/), [DeepEval](https://docs.confident-ai.com/), and [UpTrain](https://github.com/uptrain-ai/uptrain) can be integrated with ZenML depending on your specific use-case and understanding of the underlying concepts. These frameworks, although potentially complex to set up and use, can provide more sophisticated evaluation capabilities as your project evolves and grows in complexity.
 
-We now have a working evaluation of both the retrieval and generation evaluation
-components of our RAG pipeline. We can use this to track how our pipeline
+We now have a working evaluation of both the retrieval and generation evaluation components of our RAG pipeline. We can use this to track how our pipeline
 improves as we make changes to the retrieval and generation components.
 
 ## Code Example

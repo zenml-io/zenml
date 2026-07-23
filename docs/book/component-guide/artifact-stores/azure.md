@@ -59,8 +59,7 @@ For more information on how to retrieve information about your Azure Storage Acc
 
 For information on how to configure an Azure service principal, please consult the [Azure documentation](https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal).
 
-{% tabs %}
-{% tab title="Implicit Authentication" %}
+{% tabs %} {% tab title="Implicit Authentication" %}
 This method uses the implicit Azure authentication available _in the environment where the ZenML code is running_. On your local machine, this is the quickest way to configure an Azure Artifact Store. You don't need to supply credentials explicitly when you register the Azure Artifact Store, instead, you have to set one of the following sets of environment variables:
 
 * to use [an Azure storage account key](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-keys-manage) , set `AZURE_STORAGE_ACCOUNT_NAME` to your account name and one of `AZURE_STORAGE_ACCOUNT_KEY` or `AZURE_STORAGE_SAS_TOKEN` to the Azure key value.
@@ -77,8 +76,7 @@ The implicit authentication method also needs to be coordinated with other stack
 * [Model Deployers](https://docs.zenml.io/stacks/model-deployers/) need to access the Artifact Store to load served models
 
 To enable these use cases, it is recommended to use [an Azure Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/azure-service-connector) to link your Azure Artifact Store to the remote Azure Blob storage container.
-{% endhint %}
-{% endtab %}
+{% endhint %} {% endtab %}
 
 {% tab title="Azure Service Connector (recommended)" %}
 To set up the Azure Artifact Store to authenticate to Azure and access an Azure Blob storage container, it is recommended to leverage the many features provided by [the Azure Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/azure-service-connector) such as auto-configuration, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
@@ -211,8 +209,7 @@ zenml artifact-store register az_store -f azure \
 # Register and set a stack with the new artifact store
 zenml stack register custom_stack -a az_store ... --set
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 For more, up-to-date information on the Azure Artifact Store implementation and its configuration, you can have a look at [the SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-azure.html#zenml.integrations.azure) .
 

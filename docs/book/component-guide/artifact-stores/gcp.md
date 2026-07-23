@@ -49,8 +49,7 @@ Depending on your use case, however, you may also need to provide additional con
 
 Integrating and using a GCS Artifact Store in your pipelines is not possible without employing some form of authentication. If you're looking for a quick way to get started locally, you can use the _Implicit Authentication_ method. However, the recommended way to authenticate to the GCP cloud platform is through [a GCP Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector). This is particularly useful if you are configuring ZenML stacks that combine the GCS Artifact Store with other remote stack components also running in GCP.
 
-{% tabs %}
-{% tab title="Implicit Authentication" %}
+{% tabs %} {% tab title="Implicit Authentication" %}
 This method uses the implicit GCP authentication available _in the environment where the ZenML code is running_. On your local machine, this is the quickest way to configure a GCS Artifact Store. You don't need to supply credentials explicitly when you register the GCS Artifact Store, as it leverages the local credentials and configuration that the Google Cloud CLI stores on your local machine. However, you will need to install and set up the Google Cloud CLI on your machine as a prerequisite, as covered in [the Google Cloud documentation](https://cloud.google.com/sdk/docs/install-sdk) , before you register the GCS Artifact Store.
 
 {% hint style="warning" %}
@@ -63,8 +62,7 @@ The implicit authentication method also needs to be coordinated with other stack
 * [Model Deployers](https://docs.zenml.io/stacks/model-deployers/) need to access the Artifact Store to load served models
 
 To enable these use cases, it is recommended to use [a GCP Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector) to link your GCS Artifact Store to the remote GCS bucket.
-{% endhint %}
-{% endtab %}
+{% endhint %} {% endtab %}
 
 {% tab title="GCP Service Connector (recommended)" %}
 To set up the GCS Artifact Store to authenticate to GCP and access a GCS bucket, it is recommended to leverage the many features provided by [the GCP Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector) such as auto-configuration, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
@@ -196,8 +194,7 @@ zenml artifact-store register gcs_store -f gcp \
 zenml stack register custom_stack -a gs_store ... --set
 
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 For more, up-to-date information on the GCS Artifact Store implementation and its configuration, you can have a look at [the SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-gcp.html#zenml.integrations.gcp) .
 

@@ -35,8 +35,7 @@ To use the SageMaker step operator, we need:
 
 There are two ways you can authenticate your orchestrator to AWS to be able to run steps on SageMaker:
 
-{% tabs %}
-{% tab title="Authentication via Service Connector" %}
+{% tabs %} {% tab title="Authentication via Service Connector" %}
 The recommended way to authenticate your SageMaker step operator is by registering or using an existing [AWS Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/aws-service-connector) and connecting it to your SageMaker step operator. The credentials configured for the connector must have the permissions described in the [Required IAM Permissions](#required-iam-permissions) section below. The SageMaker step operator uses these `aws-generic` resource type, so make sure to configure the connector accordingly:
 
 ```shell
@@ -68,8 +67,7 @@ zenml step-operator register <NAME> \
 zenml stack register <STACK_NAME> -s <STEP_OPERATOR_NAME> ... --set
 python run.py  # Authenticates with `default` profile in `~/.aws/config`
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 Once you added the step operator to your active stack, you can use it to execute individual steps of your pipeline by specifying it in the `@step` decorator as follows:
 

@@ -17,56 +17,43 @@ layout:
 
 # Enable Resource Pools for the Workspace Server
 
-[Resource pools](resource-pools.md) let you model shared capacity (GPUs, custom
-keys, and related limits) for dynamic pipelines. Keeping pool state
+[Resource pools](resource-pools.md) let you model shared capacity (GPUs, custom keys, and related limits) for dynamic pipelines. Keeping pool state
 consistent uses a background **reconciler** process in ZenML Pro.
 
-On **Kubernetes** self-hosted deployments, you enable that process by adding
-a microservice (the resource pool reconciler) that runs
+On **Kubernetes** self-hosted deployments, you enable that process by adding a microservice (the resource pool reconciler) that runs
 `plugins start-resource-pool-reconciler` (same image as the workspace server).
 
 {% hint style="warning" %}
-**Commercial add-on:** Resource pools are not included in the base ZenML Pro
-plan. Your organization must purchase and enable them explicitly. See the
-[pricing page](https://www.zenml.io/pricing) for plans and contact ZenML if
-you need entitlements enabled for your license.
+**Commercial add-on:** Resource pools are not included in the base ZenML Pro plan. Your organization must purchase and enable them explicitly. See the
+[pricing page](https://www.zenml.io/pricing) for plans and contact ZenML if you need entitlements enabled for your license.
 {% endhint %}
 
 {% hint style="warning" %}
 Deploy this microservice only for workspace servers installed with the ZenML
-Helm chart on Kubernetes. Other platforms (for example AWS ECS) are not covered
-here.
+Helm chart on Kubernetes. Other platforms (for example AWS ECS) are not covered here.
 {% endhint %}
 
 ## Prerequisites
 
-- Resource pools apply to
-  [dynamic pipelines](https://docs.zenml.io/how-to/steps-pipelines/dynamic_pipelines).
+- Resource pools apply to [dynamic pipelines](https://docs.zenml.io/how-to/steps-pipelines/dynamic_pipelines).
   Ensure your teams understand that contract before enabling the reconciler.
-- Enough cluster resources for one extra microservice (see the example
-  `resources` below).
+- Enough cluster resources for one extra microservice (see the example `resources` below).
 
 ## What to configure in Helm
 
-The ZenML Helm chart deploys optional background processes as additional
-microservices, each declared under the `workerDeployments` key in your
+The ZenML Helm chart deploys optional background processes as additional microservices, each declared under the `workerDeployments` key in your
 workspace `values.yaml`. Each map entry becomes its own Kubernetes
 Deployment.
 
-Add the **resource pool reconciler** under `workerDeployments` next to your
-existing `server:` configuration. That microservice uses the same container
-image as the ZenML Pro server by default and overrides the entrypoint to run
-the reconciler.
+Add the **resource pool reconciler** under `workerDeployments` next to your existing `server:` configuration. That microservice uses the same container
+image as the ZenML Pro server by default and overrides the entrypoint to run the reconciler.
 
-Set SQLAlchemy pool sizes appropriate for a dedicated pod. The example below
-is a reasonable starting point; adjust `resources` and probes for your
+Set SQLAlchemy pool sizes appropriate for a dedicated pod. The example below is a reasonable starting point; adjust `resources` and probes for your
 environment.
 
 {% hint style="warning" %}
-The **resource pool reconciler** microservice must always run as a **single
-replica** with a **`Recreate`** rollout strategy. Do not scale it horizontally
-or switch to `RollingUpdate`; multiple reconciler pods or overlapping
-rollouts can corrupt or confuse pool reconciliation.
+The **resource pool reconciler** microservice must always run as a **single replica** with a **`Recreate`** rollout strategy. Do not scale it horizontally
+or switch to `RollingUpdate`; multiple reconciler pods or overlapping rollouts can corrupt or confuse pool reconciliation.
 {% endhint %}
 
 ```yaml
@@ -115,8 +102,7 @@ workerDeployments:
 
 ## Apply the change
 
-After updating your values file, upgrade the release (adjust release name and
-namespace as you use them):
+After updating your values file, upgrade the release (adjust release name and namespace as you use them):
 
 ```bash
 helm upgrade zenml oci://public.ecr.aws/zenml/zenml \

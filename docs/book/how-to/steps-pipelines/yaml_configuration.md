@@ -44,15 +44,13 @@ steps:
 ZenML follows a specific hierarchy when resolving configuration:
 
 1. **Runtime Python code** - Highest precedence
-2. **Step-level YAML configuration**
-   ```yaml
+2. **Step-level YAML configuration** ```yaml
    steps:
      train_model:
        parameters:
          learning_rate: 0.001  # Overrides pipeline-level setting
    ```
-3. **Pipeline-level YAML configuration**
-   ```yaml
+3. **Pipeline-level YAML configuration** ```yaml
    parameters:
      learning_rate: 0.01  # Lower precedence than step-level
    ```

@@ -5,14 +5,12 @@ icon: message-exclamation
 
 # Alerters
 
-**Alerters** allow you to send messages to chat services (like Slack, Discord, Mattermost, etc.) from within your
-pipelines. This is useful to immediately get notified when failures happen, for general monitoring/reporting, and also
+**Alerters** allow you to send messages to chat services (like Slack, Discord, Mattermost, etc.) from within your pipelines. This is useful to immediately get notified when failures happen, for general monitoring/reporting, and also
 for building human-in-the-loop ML.
 
 ## Alerter Flavors
 
-Currently, the [SlackAlerter](slack.md) and [DiscordAlerter](discord.md) are the available alerter integrations. However, it is straightforward to
-extend ZenML and [build an alerter for other chat services](custom.md).
+Currently, the [SlackAlerter](slack.md) and [DiscordAlerter](discord.md) are the available alerter integrations. However, it is straightforward to extend ZenML and [build an alerter for other chat services](custom.md).
 
 | Alerter                            | Flavor    | Integration | Notes                                                              |
 |------------------------------------|-----------|-------------|--------------------------------------------------------------------|
@@ -49,8 +47,7 @@ zenml stack register ... -al <ALERTER_NAME>
 Stacks can have multiple alerters attached. ZenML treats the first attached alerter as the default one, and singular accessors such as `Client().active_stack.alerter` resolve to that default alerter.
 {% endhint %}
 
-Afterward, you can import the alerter standard steps provided by the respective integration and directly use them in
-your pipelines.
+Afterward, you can import the alerter standard steps provided by the respective integration and directly use them in your pipelines.
 
 ## Using the Ask Step for Human-in-the-Loop Workflows
 

@@ -76,8 +76,7 @@ For ZenML, the Databricks OAuth M2M values map to the MLflow experiment tracker 
 
 To get these values, create or select a service principal in your Databricks workspace, generate an OAuth secret for it, and copy the displayed client ID and secret value. Make sure the service principal has access to the workspace and to the MLflow experiment path you want to use.
 
-{% tabs %}
-{% tab title="Basic Authentication" %}
+{% tabs %} {% tab title="Basic Authentication" %}
 This option configures the credentials for the MLflow tracking service directly as stack component attributes.
 
 {% hint style="warning" %}
@@ -163,8 +162,7 @@ To resolve this, enclose the secret references in **double quotes**:
 
 {% hint style="info" %}
 Read more about [ZenML Secrets](https://docs.zenml.io/how-to/project-setup-and-management/interact-with-secrets) in the ZenML documentation.
-{% endhint %}
-{% endtab %}
+{% endhint %} {% endtab %}
 {% endtabs %}
 
 For more, up-to-date information on the MLflow Experiment Tracker implementation and its configuration, you can have a look at [the SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-mlflow.html#zenml.integrations.mlflow) .

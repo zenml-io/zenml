@@ -342,8 +342,7 @@ We provide a complete example synchronization script that demonstrates how to:
 - Use the ZenML Pro API correctly for all operations
 
 {% file src="scripts/sync_sso_users.py" %}
-Download the example SSO user synchronization script
-{% endfile %}
+Download the example SSO user synchronization script {% endfile %}
 
 **Script highlights:**
 

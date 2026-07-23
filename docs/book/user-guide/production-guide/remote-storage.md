@@ -15,10 +15,8 @@ When using a stack with remote storage, nothing changes except the fact that the
 {% hint style="info" %}
 Would you like to skip ahead and deploy a full ZenML cloud stack already?
 
-Check out the
-[in-browser stack deployment wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack),
-the [stack registration wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack),
-or [the ZenML Terraform modules](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform)
+Check out the [in-browser stack deployment wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack),
+the [stack registration wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack), or [the ZenML Terraform modules](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform)
 for a shortcut on how to deploy & register a cloud stack.
 {% endhint %}
 
@@ -26,8 +24,7 @@ for a shortcut on how to deploy & register a cloud stack.
 
 Out of the box, ZenML ships with [many different supported artifact store flavors](https://docs.zenml.io/stacks/artifact-stores). For convenience, here are some brief instructions on how to quickly get up and running on the major cloud providers:
 
-{% tabs %}
-{% tab title="AWS" %}
+{% tabs %} {% tab title="AWS" %}
 You will need to install and set up the AWS CLI on your machine as a prerequisite, as covered in [the AWS CLI documentation](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), before you register the S3 Artifact Store.
 
 The Amazon Web Services S3 Artifact Store flavor is provided by the [S3 ZenML integration](https://docs.zenml.io/stacks/artifact-stores/s3), you need to install it on your local machine to be able to register an S3 Artifact Store and add it to your stack:
@@ -106,8 +103,7 @@ For more information, read the [dedicated Azure artifact store flavor guide](htt
 You can create a remote artifact store in pretty much any environment, including other cloud providers using a cloud-agnostic artifact storage such as [Minio](https://docs.zenml.io/stacks/artifact-stores).
 
 It is also relatively simple to create a [custom stack component flavor](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component) for your use case.
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 {% hint style="info" %}
 Having trouble with setting up infrastructure? Join the [ZenML community](https://zenml.io/slack) and ask for help!
@@ -117,19 +113,14 @@ Having trouble with setting up infrastructure? Join the [ZenML community](https:
 
 While you can go ahead and [run your pipeline on your stack](remote-storage.md#running-a-pipeline-on-a-cloud-stack) if your local client is configured to access it, it is best practice to use a [service connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management) for this purpose. Service connectors are quite a complicated concept (We have a whole [docs section](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management) on them) - but we're going to be starting with a very basic approach.
 
-First, let's understand what a service connector does. In simple words, a
-service connector contains credentials that grant stack components access to
-cloud infrastructure. These credentials are stored in the form of a
-[secret](https://docs.zenml.io/how-to/project-setup-and-management/interact-with-secrets),
-and are available to the ZenML server to use. Using these credentials, the
-service connector brokers a short-lived token and grants temporary permissions
-to the stack component to access that infrastructure. This diagram represents
-this process:
+First, let's understand what a service connector does. In simple words, a service connector contains credentials that grant stack components access to
+cloud infrastructure. These credentials are stored in the form of a [secret](https://docs.zenml.io/how-to/project-setup-and-management/interact-with-secrets),
+and are available to the ZenML server to use. Using these credentials, the service connector brokers a short-lived token and grants temporary permissions
+to the stack component to access that infrastructure. This diagram represents this process:
 
 <figure><img src="../../.gitbook/assets/ConnectorsDiagram.png" alt=""><figcaption><p>Service Connectors abstract away complexity and implement security best practices</p></figcaption></figure>
 
-{% tabs %}
-{% tab title="AWS" %}
+{% tabs %} {% tab title="AWS" %}
 There are [many ways to create an AWS service connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/aws-service-connector#authentication-methods), but for the sake of this guide, we recommend creating one by [using the IAM method](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/aws-service-connector#aws-iam-role).
 
 ```shell
@@ -151,8 +142,7 @@ There are [many ways to create an Azure service connector](https://docs.zenml.io
 ```shell
 zenml service-connector register cloud_connector --type azure --auth-method service-principal --tenant_id=<TENANT_ID> --client_id=<CLIENT_ID> --client_secret=<CLIENT_SECRET>
 ```
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 Once we have our service connector, we can now attach it to stack components. In this case, we are going to connect it to our remote artifact store:
 
@@ -166,8 +156,7 @@ Now, every time you (or anyone else with access) uses the `cloud_artifact_store`
 
 Now that we have our remote artifact store registered, we can [register a new stack](understand-stacks.md#registering-a-stack) with it, just like we did in the previous chapter:
 
-{% tabs %}
-{% tab title="CLI" %}
+{% tabs %} {% tab title="CLI" %}
 ```shell
 zenml stack register local_with_remote_storage -o default -a cloud_artifact_store
 ```
@@ -175,8 +164,7 @@ zenml stack register local_with_remote_storage -o default -a cloud_artifact_stor
 
 {% tab title="Dashboard" %}
 Register a new stack using the stack creation form in the ZenML dashboard.
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 Now, using the [code from the previous chapter](understand-stacks.md#run-a-pipeline-on-the-new-local-stack), we run a training pipeline:
 
@@ -196,19 +184,16 @@ When you run that pipeline, ZenML will automatically store the artifacts in the 
 
 You can list your artifact versions as follows:
 
-{% tabs %}
-{% tab title="CLI" %}
+{% tabs %} {% tab title="CLI" %}
 ```shell
 # This will give you the artifacts from the last 15 minutes
 zenml artifact version list --created="gte:$(date -v-15M '+%Y-%m-%d %H:%M:%S')"
 ```
 {% endtab %}
 
-{% tab title="Cloud Dashboard" %}
-[ZenML Pro](https://zenml.io/pro) features an [Artifact Control Plane](../starter-guide/manage-artifacts.md) to visualize artifact versions:
+{% tab title="Cloud Dashboard" %} [ZenML Pro](https://zenml.io/pro) features an [Artifact Control Plane](../starter-guide/manage-artifacts.md) to visualize artifact versions:
 
-<figure><img src="../../.gitbook/assets/dcp_artifacts_versions_list.png" alt=""><figcaption><p>See artifact versions in the cloud.</p></figcaption></figure>
-{% endtab %}
+<figure><img src="../../.gitbook/assets/dcp_artifacts_versions_list.png" alt=""><figcaption><p>See artifact versions in the cloud.</p></figcaption></figure> {% endtab %}
 {% endtabs %}
 
 You will notice above that some artifacts are stored locally, while others are stored in a remote storage location.

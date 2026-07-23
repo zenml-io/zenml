@@ -78,8 +78,7 @@ if __name__ == "__main__":
 
 Crash on purpose, then re-run for real and watch the finished work come back for free.
 
-{% stepper %}
-{% step %}
+{% stepper %} {% step %}
 **Crash between the two turns.**
 
 ```bash
@@ -97,8 +96,7 @@ uv run python investigate.py
 ```
 
 Turn 1's calls are served straight from durable storage (no model call, basically instant). Turn 2 runs fresh. The flow returns the combined result.
-{% endstep %}
-{% endstepper %}
+{% endstep %} {% endstepper %}
 
 What you should see across the two runs:
 

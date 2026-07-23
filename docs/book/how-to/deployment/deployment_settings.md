@@ -5,50 +5,37 @@ description: Customize the pipeline deployment ASGI application with DeploymentS
 
 ## Deployment servers and ASGI apps
 
-ZenML pipeline deployments run an ASGI application under a production-grade
-`uvicorn` server. This makes your pipelines callable over HTTP for online
-workloads like real-time ML inference, LLM agents/workflows, and even full
-web apps co-located with pipelines.
+ZenML pipeline deployments run an ASGI application under a production-grade `uvicorn` server. This makes your pipelines callable over HTTP for online
+workloads like real-time ML inference, LLM agents/workflows, and even full web apps co-located with pipelines.
 
 At runtime, three core components work together:
 
-- the ASGI application: the HTTP surface that exposes endpoints (health, invoke,
-  metrics, docs) and any custom routes or middleware you configure. This is powered by an ASGI framework like FastAPI, Starlette, Django, Flask, etc.
+- the ASGI application: the HTTP surface that exposes endpoints (health, invoke, metrics, docs) and any custom routes or middleware you configure. This is powered by an ASGI framework like FastAPI, Starlette, Django, Flask, etc.
 - the ASGI application factory (aka the Deployment App Runner): this component is responsible for constructing the ASGI application piece by piece based on the instructions provided by users via runtime configuration.
-- the Deployment Service: the component responsible for the business logic that
-  backs the pipeline deployment and its invocation lifecycle.
+- the Deployment Service: the component responsible for the business logic that backs the pipeline deployment and its invocation lifecycle.
 
 Both the Deployment App Runner and the Deployment Service are customizable at runtime, through the `DeploymentSettings` configuration mechanism. They can also be extended via inheritance to support different ASGI frameworks or to tweak existing functionality.
 
 The `DeploymentSettings` class lets you shape both server behavior and the
-ASGI app composition without changing framework code. Typical reasons to
-customize include:
+ASGI app composition without changing framework code. Typical reasons to customize include:
 
-- Tight security posture: CORS controls, strict headers, authentication,
-  API surface minimization.
-- Observability: request/response logging, tracing, metrics, correlation
-  identifiers.
-- Enterprise integration: policy gateways, SSO/OIDC/OAuth, audit logging,
-  routing and network architecture constraints.
-- Product UX: single-page application (SPA) static files served alongside
-  deployment APIs or custom docs paths.
-- Performance/SRE: thread pool sizing, uvicorn worker settings, log levels,
-  max request sizes and platform-specific fine-tuning.
+- Tight security posture: CORS controls, strict headers, authentication, API surface minimization.
+- Observability: request/response logging, tracing, metrics, correlation identifiers.
+- Enterprise integration: policy gateways, SSO/OIDC/OAuth, audit logging, routing and network architecture constraints.
+- Product UX: single-page application (SPA) static files served alongside deployment APIs or custom docs paths.
+- Performance/SRE: thread pool sizing, uvicorn worker settings, log levels, max request sizes and platform-specific fine-tuning.
 
-All `DeploymentSettings` are pipeline-level settings. They apply to the
-deployment that serves the pipeline as a whole. They are not available at
+All `DeploymentSettings` are pipeline-level settings. They apply to the deployment that serves the pipeline as a whole. They are not available at
 step-level.
 
 ## Configuration overview
 
-You can configure `DeploymentSettings` in Python or via YAML, the same way as
-other settings classes. The settings can be attached to a pipeline decorator
+You can configure `DeploymentSettings` in Python or via YAML, the same way as other settings classes. The settings can be attached to a pipeline decorator
 or via `with_options`. These settings are only valid at pipeline level.
 
 ### Python configuration
 
-Use the `DeploymentSettings` class to configure the deployment settings for your
-pipeline in-code
+Use the `DeploymentSettings` class to configure the deployment settings for your pipeline in-code
 
 ```python
 from zenml import pipeline
@@ -124,8 +111,7 @@ Check out [this page](https://docs.zenml.io/concepts/steps_and_pipelines/configu
 
 ## Basic customization options
 
-`DeploymentSettings` expose the following basic customization options. The sections below provide
-short examples and guidance.
+`DeploymentSettings` expose the following basic customization options. The sections below provide short examples and guidance.
 
 - application metadata and paths
 - built-in endpoints and middleware toggles
@@ -209,8 +195,7 @@ With the above settings, the ASGI application will only expose the following end
 ### Static files (single-page applications)
 
 Deployed pipelines can serve full single-page applications (React/Vue/Svelte)
-from the same origin as your inference API. This eliminates CORS/auth/routing
-friction and lets you ship user-facing UI components alongside
+from the same origin as your inference API. This eliminates CORS/auth/routing friction and lets you ship user-facing UI components alongside
 your endpoints, such as:
 
 * operator dashboards
@@ -222,11 +207,9 @@ your endpoints, such as:
 * observability dashboards
 * customer-facing playgrounds
 
-Co-locating UI and API streamlines delivery (one image, one URL, one CI/CD),
-improves latency, and keeps telemetry and auth consistent.
+Co-locating UI and API streamlines delivery (one image, one URL, one CI/CD), improves latency, and keeps telemetry and auth consistent.
 
-To enable this, point `dashboard_files_path` to a directory containing an
-`index.html` and any static assets. The path must be relative to the
+To enable this, point `dashboard_files_path` to a directory containing an `index.html` and any static assets. The path must be relative to the
 [source root](../steps-pipelines/sources.md#source-root):
 
 ```python
@@ -281,8 +264,7 @@ settings = DeploymentSettings(
 
 ### Secure headers
 
-Harden responses with strict headers. Each field supports either a boolean or
-string. Using `True` selects a safe default, `False` disables the header, and
+Harden responses with strict headers. Each field supports either a boolean or string. Using `True` selects a safe default, `False` disables the header, and
 custom strings allow fully custom policies:
 
 ```python
@@ -308,8 +290,7 @@ settings = DeploymentSettings(
 )
 ```
 
-Set any field to `False` to omit that header. Set to a string for a custom
-value. The defaults are strong, production-safe policies.
+Set any field to `False` to omit that header. Set to a string for a custom value. The defaults are strong, production-safe policies.
 
 
 ### Startup and shutdown hooks
@@ -423,8 +404,7 @@ When the built-in ASGI application, endpoints and middleware are not enough, you
 
 ### Custom endpoints
 
-In production, custom endpoints are often required alongside the main
-pipeline invoke route. Common use-cases include:
+In production, custom endpoints are often required alongside the main pipeline invoke route. Common use-cases include:
 
 - Online inference controls
   - model (re)load, warm-up, and cache priming
@@ -678,10 +658,8 @@ deploy_settings = DeploymentSettings(
 )
 ```
 
-And here is a minimal ZenML inference pipeline that uses the globally loaded
-model. The prediction step reads the model from the global variable set
-by the FastAPI router above. You can invoke this pipeline via the built-in
-`/invoke` endpoint once a model has been loaded through `/model/load`.
+And here is a minimal ZenML inference pipeline that uses the globally loaded model. The prediction step reads the model from the global variable set
+by the FastAPI router above. You can invoke this pipeline via the built-in `/invoke` endpoint once a model has been loaded through `/model/load`.
 
 ```python
 from typing import List
@@ -950,8 +928,7 @@ Definitions can be provided as Python objects or as loadable source path strings
 
 The extensions are summoned to take part in the ASGI application building process near the end of the initialization - after the ASGI app has been built according to the deployment configuration settings.
 
-The example below installs API key authentication at the FastAPI application
-level, attaches the dependency to selected routes, registers an auth error
+The example below installs API key authentication at the FastAPI application level, attaches the dependency to selected routes, registers an auth error
 handler, and augments the OpenAPI schema with the security scheme.
 
 ```python
@@ -1066,20 +1043,16 @@ settings = DeploymentSettings(
 
 ## Implementation customizations for advanced use cases
 
-For cases where you need deeper control over how the ASGI app is created or
-how the deployment logic is implemented, you can swap/extend the core
+For cases where you need deeper control over how the ASGI app is created or how the deployment logic is implemented, you can swap/extend the core
 components using the following `DeploymentSettings` fields:
 
-- `deployment_app_runner_flavor` and `deployment_app_runner_kwargs` let you
-  choose or extend the app runner that constructs and runs the ASGI app. This
+- `deployment_app_runner_flavor` and `deployment_app_runner_kwargs` let you choose or extend the app runner that constructs and runs the ASGI app. This
   needs to be set to a subclass of `BaseDeploymentAppRunnerFlavor`, which is
   basically a descriptor of an app runner implementation that itself is a
   subclass of `BaseDeploymentAppRunner`.
-- `deployment_service_class` and `deployment_service_kwargs` let you provide
-  your own deployment service to customize the pipeline deployment logic. This
+- `deployment_service_class` and `deployment_service_kwargs` let you provide your own deployment service to customize the pipeline deployment logic. This
   needs to be set to a subclass of `BasePipelineDeploymentService`.
 
-Both accept loadable sources or objects. We cover how to implement custom
-runner flavors and services in a dedicated guide.
+Both accept loadable sources or objects. We cover how to implement custom runner flavors and services in a dedicated guide.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

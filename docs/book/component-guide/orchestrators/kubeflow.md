@@ -23,8 +23,7 @@ You should use the Kubeflow orchestrator if:
 
 To run ZenML pipelines on Kubeflow, you'll need to set up a Kubernetes cluster and deploy Kubeflow Pipelines on it. This can be done in a variety of ways, depending on whether you want to use a cloud provider or your own infrastructure:
 
-{% tabs %}
-{% tab title="AWS" %}
+{% tabs %} {% tab title="AWS" %}
 * Have an existing AWS [EKS cluster](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html) set up.
 * Make sure you have the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) set up.
 *   Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and configure it to talk to your EKS cluster using the following command:
@@ -68,16 +67,14 @@ kubectl get configmap -n kubeflow
 kubectl edit configmap CONFIGMAP_NAME -n kubeflow
 # This opens up an editor that can be used to make the change.
 ```
-{% endhint %}
-{% endtab %}
+{% endhint %} {% endtab %}
 
 {% tab title="Other Kubernetes" %}
 * Have an existing Kubernetes cluster set up.
 * Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and configure it to talk to your Kubernetes cluster.
 * [Install](https://www.kubeflow.org/docs/components/pipelines/operator-guides/installation/#deploying-kubeflow-pipelines) Kubeflow Pipelines onto your cluster.
 * ( optional) [set up a Kubernetes Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/kubernetes-service-connector) to grant ZenML Stack Components easy and secure access to the remote Kubernetes cluster. This is especially useful if your Kubernetes cluster is remotely accessible, as this enables other ZenML users to use it to run pipelines without needing to configure and set up `kubectl` on their local machines.
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 {% hint style="info" %}
 If one or more of the deployments are not in the `Running` state, try increasing the number of nodes in your cluster.

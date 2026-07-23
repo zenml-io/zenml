@@ -10,8 +10,7 @@ In this document, we will go over some common issues that you might face when de
 
 Analyzing logs is a great way to debug issues. Depending on whether you have a Kubernetes (using Helm or `zenml deploy`) or a Docker deployment, you can view the logs in different ways.
 
-{% tabs %}
-{% tab title="Kubernetes" %}
+{% tabs %} {% tab title="Kubernetes" %}
 If you are using Kubernetes, you can view the logs of the ZenML server using the following method:
 
 * Check all pods that are running your ZenML deployment.
@@ -34,8 +33,7 @@ kubectl -n <KUBERNETES_NAMESPACE> logs -l app.kubernetes.io/name=zenml -c <CONTA
 
 {% hint style="info" %}
 You can also use the `--tail` flag to limit the number of lines to show or the `--follow` flag to follow the logs in real-time.
-{% endhint %}
-{% endtab %}
+{% endhint %} {% endtab %}
 
 {% tab title="Docker" %}
 If you are using Docker, you can view the logs of the ZenML server using the following method:
@@ -56,8 +54,7 @@ If you are using Docker, you can view the logs of the ZenML server using the fol
   docker compose -p zenml logs -f
   ```
 
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 ## Fixing database connection problems
 

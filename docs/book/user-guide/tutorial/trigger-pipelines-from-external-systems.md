@@ -227,8 +227,7 @@ if snapshots:
 
 #### Using the REST API:
 
-For this you'll need a URL for a ZenML server. For those with a ZenML Pro
-account, you can find the URL in the dashboard in the following location:
+For this you'll need a URL for a ZenML server. For those with a ZenML Pro account, you can find the URL in the dashboard in the following location:
 
 ![Where to find the ZenML server URL](../.gitbook/assets/zenml-pro-server-url.png)
 
@@ -321,8 +320,7 @@ print(f"Store this token securely: {token.token}")
 - **Secure**: Can be granted minimal permissions needed for the task
 - **Traceable**: Clear audit trail of which system performed actions
 
-Use this token in your API calls, and store it securely in your external system
-(e.g., as a GitHub Secret, AWS Secret, or environment variable). Read more
+Use this token in your API calls, and store it securely in your external system (e.g., as a GitHub Secret, AWS Secret, or environment variable). Read more
 about [service accounts and tokens](https://docs.zenml.io/api-reference/oss-api/getting-started#using-a-service-account-and-an-api-key).
 
 ## Method 2: Pipeline Deployments (Open Source)
@@ -533,8 +531,7 @@ For comprehensive documentation on deployment configuration, lifecycle managemen
 ## Method 3: Building a Custom Trigger API (Open Source)
 
 If you need full control over the triggering mechanism beyond what Pipeline
-Deployments offer — for example, custom routing logic, integration with a
-specific framework, or embedding pipeline triggers within an existing
+Deployments offer — for example, custom routing logic, integration with a specific framework, or embedding pipeline triggers within an existing
 application — you can create your own API wrapper around pipeline execution.
 
 The custom trigger API solution consists of the following components:
@@ -953,8 +950,7 @@ When deploying this API in production:
 
 ### Tag Snapshots
 
-You should tag your snapshots to make them easier to find and manage. It is
-currently only possible using the Python SDK:
+You should tag your snapshots to make them easier to find and manage. It is currently only possible using the Python SDK:
 
 ```python
 from zenml import add_tags

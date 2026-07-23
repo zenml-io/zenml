@@ -5,8 +5,7 @@ icon: cloud
 
 # Register a cloud stack
 
-In ZenML, the [stack](https://docs.zenml.io/user-guides/production-guide/understand-stacks) is a fundamental concept that represents the configuration of your\
-infrastructure. In a normal workflow, creating a stack requires you to first deploy the necessary pieces of infrastructure and then define them as stack components in ZenML with proper authentication.
+In ZenML, the [stack](https://docs.zenml.io/user-guides/production-guide/understand-stacks) is a fundamental concept that represents the configuration of your\ infrastructure. In a normal workflow, creating a stack requires you to first deploy the necessary pieces of infrastructure and then define them as stack components in ZenML with proper authentication.
 
 Especially in a remote setting, this process can be challenging and time-consuming, and it may create multi-faceted problems. This is why we implemented a feature called the stack wizard, which allows you to **browse through your existing infrastructure and use it to register a ZenML cloud stack**.
 
@@ -20,10 +19,8 @@ Alternatively, if you prefer to have more control over where and how resources a
 
 The stack wizard is available to you through both our CLI and our dashboard.
 
-{% tabs %}
-{% tab title="Dashboard" %}
-If you are using the dashboard, the stack wizard is available through\
-the stacks page.
+{% tabs %} {% tab title="Dashboard" %}
+If you are using the dashboard, the stack wizard is available through\ the stacks page.
 
 ![The new stacks page](../../../.gitbook/assets/stack-wizard-new-stack.png)
 
@@ -43,8 +40,7 @@ Choose one of the possible authentication methods based on your provider and fil
 
 <summary>AWS: Authentication methods</summary>
 
-If you select `aws` as your cloud provider, and you haven't selected a connector\
-or declined auto-configuration, you will be prompted to select an authentication method for your cloud connector.
+If you select `aws` as your cloud provider, and you haven't selected a connector\ or declined auto-configuration, you will be prompted to select an authentication method for your cloud connector.
 
 {% code title="Available authentication methods for AWS" %}
 ```
@@ -99,8 +95,7 @@ or declined auto-configuration, you will be prompted to select an authentication
 
 <summary>GCP: Authentication methods</summary>
 
-If you select `gcp` as your cloud provider, and you haven't selected a connector\
-or declined auto-configuration, you will be prompted to select an authentication\
+If you select `gcp` as your cloud provider, and you haven't selected a connector\ or declined auto-configuration, you will be prompted to select an authentication\
 method for your cloud connector.
 
 {% code title="Available authentication methods for GCP" %}
@@ -152,8 +147,7 @@ method for your cloud connector.
 
 <summary>Azure: Authentication methods</summary>
 
-If you select `azure` as your cloud provider, and you haven't selected a\
-connector or declined auto-configuration, you will be prompted to select an\
+If you select `azure` as your cloud provider, and you haven't selected a\ connector or declined auto-configuration, you will be prompted to select an\
 authentication method for your cloud connector.
 
 {% code title="Available authentication methods for Azure" %}
@@ -189,18 +183,14 @@ zenml stack register <STACK_NAME> -p {aws|gcp|azure}
 To register the cloud stack, the first thing that the wizard needs is a [service connector](https://docs.zenml.io/stacks/service-connectors/auth-management). You can either use an existing connector by providing its ID or name`-sc <SERVICE_CONNECTOR_ID_OR_NAME>` (CLI-Only), or the wizard will create one for you.
 
 {% hint style="info" %}
-Similar to the service connector, if you use the CLI, you can also use existing\
-stack components. However, this is only possible if these components are already\
-configured with the same service connector that you provided through the\
-parameter described above.
+Similar to the service connector, if you use the CLI, you can also use existing\ stack components. However, this is only possible if these components are already\
+configured with the same service connector that you provided through the\ parameter described above.
 {% endhint %}
 
 **Define Service Connector**
 
-As the very first step, the configuration wizard will check if the selected\
-cloud provider credentials can be acquired automatically from the local environment.\
-If the credentials are found, you will be offered to use them or proceed to\
-manual configuration.
+As the very first step, the configuration wizard will check if the selected\ cloud provider credentials can be acquired automatically from the local environment.\
+If the credentials are found, you will be offered to use them or proceed to\ manual configuration.
 
 {% code title="Example prompt for AWS auto-configuration" %}
 ```
@@ -217,8 +207,7 @@ If you decline auto-configuration next you might be offered the list of already 
 
 <summary>AWS: Authentication methods</summary>
 
-If you select `aws` as your cloud provider, and you haven't selected a connector\
-or declined auto-configuration, you will be prompted to select an authentication\
+If you select `aws` as your cloud provider, and you haven't selected a connector\ or declined auto-configuration, you will be prompted to select an authentication\
 method for your cloud connector.
 
 {% code title="Available authentication methods for AWS" %}
@@ -274,8 +263,7 @@ method for your cloud connector.
 
 <summary>GCP: Authentication methods</summary>
 
-If you select `gcp` as your cloud provider, and you haven't selected a connector\
-or declined auto-configuration, you will be prompted to select an authentication\
+If you select `gcp` as your cloud provider, and you haven't selected a connector\ or declined auto-configuration, you will be prompted to select an authentication\
 method for your cloud connector.
 
 {% code title="Available authentication methods for GCP" %}
@@ -327,8 +315,7 @@ method for your cloud connector.
 
 <summary>Azure: Authentication methods</summary>
 
-If you select `azure` as your cloud provider, and you haven't selected a\
-connector or declined auto-configuration, you will be prompted to select an\
+If you select `azure` as your cloud provider, and you haven't selected a\ connector or declined auto-configuration, you will be prompted to select an\
 authentication method for your cloud connector.
 
 {% code title="Available authentication methods for Azure" %}
@@ -363,8 +350,7 @@ All three are crucial for a basic cloud stack. Extra components can be added lat
 
 For each component, you will be asked:
 
-* if you would like to reuse one of the existing components connected via a defined\
-  service connector (if any)
+* if you would like to reuse one of the existing components connected via a defined\ service connector (if any)
 
 {% code title="Example Command Output for available orchestrator" %}
 ```
@@ -397,8 +383,7 @@ For each component, you will be asked:
 {% endcode %}
 
 Based on your selection, ZenML will create the stack component and ultimately register the stack for you.
-{% endtab %}
-{% endtabs %}
+{% endtab %} {% endtabs %}
 
 There you have it! Through the wizard, you just registered a cloud stack, and you can start running your pipelines on a remote setting.
 

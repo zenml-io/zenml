@@ -27,8 +27,7 @@ If you want to delete a specific pipeline run, you can use a script like this:
 zenml pipeline runs delete <PIPELINE_RUN_NAME_OR_ID>
 ```
 
-If you want to delete all pipeline runs in the last 24 hours, for example, you\
-could run a script like this:
+If you want to delete all pipeline runs in the last 24 hours, for example, you\ could run a script like this:
 
 ```
 #!/usr/bin/env python3
@@ -78,8 +77,7 @@ This allows you to start fresh with a new pipeline, removing all previous runs a
 
 Pipelines can be given unique names each time they are run to uniquely identify them. This helps differentiate between multiple iterations of the same pipeline during development.
 
-By default ZenML generates names automatically based on the current date and\
-time, but you can pass in a `run_name` when defining the pipeline:
+By default ZenML generates names automatically based on the current date and\ time, but you can pass in a `run_name` when defining the pipeline:
 
 ```python
 training_pipeline = training_pipeline.with_options(
@@ -106,8 +104,7 @@ See the full documentation on [how to delete models](https://docs.zenml.io/how-t
 
 ### Pruning artifacts
 
-If you want to delete artifacts that are no longer referenced by any pipeline\
-runs, you can use the following CLI command:
+If you want to delete artifacts that are no longer referenced by any pipeline\ runs, you can use the following CLI command:
 
 ```bash
 zenml artifact prune
@@ -119,8 +116,7 @@ For more information, see the [documentation for this artifact pruning feature](
 
 ## Cleaning your environment
 
-As a more drastic measure, the `zenml clean` command can be used to start from\
-scratch on your local machine. This will:
+As a more drastic measure, the `zenml clean` command can be used to start from\ scratch on your local machine. This will:
 
 * delete all pipelines, pipeline runs and associated metadata
 * delete all artifacts
