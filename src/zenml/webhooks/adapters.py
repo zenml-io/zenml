@@ -45,6 +45,8 @@ class GitHubWebhookEventType(StrEnum):
 
     PULL_REQUEST = "pull_request"
     WORKFLOW_RUN = "workflow_run"
+    PUSH = "push"
+    RELEASE = "release"
 
 
 class ParsedWebhookEvent(BaseModel):
@@ -81,7 +83,7 @@ class BaseWebhookAdapter(ABC):
 
         Raises:
             WebhookPayloadError: If required provider metadata is malformed.
-        """
+        """  # noqa: DOC502
         return True
 
     def validate(

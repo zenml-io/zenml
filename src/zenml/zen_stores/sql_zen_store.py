@@ -8666,6 +8666,12 @@ class SqlZenStore(BaseZenStore):
 
             detach_webhook_integration = False
             if isinstance(trigger_update, WebhookTriggerUpdate):
+                try:
+                    trigger_update.validate_events_for_flavor(
+                        TriggerFlavor(existing_trigger.flavor)
+                    )
+                except ValueError as error:
+                    raise IllegalOperationError(str(error)) from error
                 if "webhook_integration_id" in trigger_update.model_fields_set:
                     if trigger_update.webhook_integration_id is None:
                         detach_webhook_integration = True

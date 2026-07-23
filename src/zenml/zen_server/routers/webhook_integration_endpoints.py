@@ -237,6 +237,9 @@ async def receive_webhook_event(
 
     Returns:
         An empty accepted response.
+
+    Raises:
+        HTTPException: If required provider metadata is malformed.
     """
     adapter = get_webhook_adapter(webhook_type)
     try:

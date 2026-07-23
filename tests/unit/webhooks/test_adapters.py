@@ -98,7 +98,7 @@ def test_github_pre_validation_rejects_missing_or_empty_event_header(
 
 @pytest.mark.parametrize(
     "event_type",
-    ["push", "pull request", "pull-request", "PULL_REQUEST"],
+    ["pull request", "pull-request", "PULL_REQUEST"],
 )
 def test_github_pre_validation_ignores_unsupported_event_type(
     event_type: str,
@@ -112,11 +112,17 @@ def test_github_pre_validation_ignores_unsupported_event_type(
     assert should_process is False
 
 
-def test_github_pre_validation_processes_supported_event_type() -> None:
+@pytest.mark.parametrize(
+    "event_type",
+    ["pull_request", "workflow_run", "push", "release"],
+)
+def test_github_pre_validation_processes_supported_event_type(
+    event_type: str,
+) -> None:
     adapter = GitHubWebhookAdapter()
 
     should_process = adapter.pre_validate(
-        headers={"x-github-event": "pull_request"}
+        headers={"x-github-event": event_type}
     )
 
     assert should_process is True

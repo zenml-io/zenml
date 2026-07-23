@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Base classes for Trigger implementations."""
 
+import json
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from typing import (
@@ -30,7 +31,13 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import (
@@ -60,6 +67,7 @@ from zenml.models.v2.base.scoped import (
     ProjectScopedResponseResources,
 )
 from zenml.utils.enum_utils import StrEnum
+from zenml.utils.pydantic_utils import YAMLSerializationMixin
 from zenml.utils.time_utils import utc_now
 
 # ----------- DISPATCH STATE MODELS ------------------ #
@@ -1091,10 +1099,305 @@ class PlatformEventTriggerResponse(
 # ----------- WEBHOOK CLASSES ------------------- #
 
 
+class GitHubWebhookEvent(StrEnum):
+    """Semantic GitHub events supported by webhook triggers."""
+
+    MERGED_PULL_REQUEST = "merged_pull_request"
+    WORKFLOW_RUN_COMPLETED = "workflow_run_completed"
+    PUSH = "push"
+    RELEASE_PUBLISHED = "release_published"
+
+
+def _validate_github_filter_value(
+    value: StringFilterOption,
+    *,
+    field_name: str,
+    allow_startswith: bool,
+) -> StringFilterOption:
+    """Validate a GitHub semantic event filter value.
+
+    Args:
+        value: The configured filter value.
+        field_name: The event field being validated.
+        allow_startswith: Whether prefix matching is supported.
+
+    Returns:
+        The validated filter value.
+
+    Raises:
+        ValueError: If the value or operator is invalid.
+    """
+    if value is None:
+        return None
+
+    values = value if isinstance(value, list) else [value]
+    allowed_operators = {"oneof"}
+    if allow_startswith:
+        allowed_operators.add("startswith")
+
+    for item in values:
+        if not item:
+            raise ValueError(f"GitHub event filter '{field_name}' is empty.")
+
+        if ":" not in item:
+            continue
+
+        operator, operand = item.split(":", 1)
+        if operator not in allowed_operators:
+            raise ValueError(
+                f"GitHub event filter '{field_name}' does not support the "
+                f"'{operator}' operator."
+            )
+        if not operand:
+            raise ValueError(
+                f"GitHub event filter '{field_name}' has an empty operand."
+            )
+        if operator == "oneof":
+            try:
+                choices = json.loads(operand)
+            except json.JSONDecodeError as error:
+                raise ValueError(
+                    f"GitHub event filter '{field_name}' requires a "
+                    "JSON-formatted list for 'oneof'."
+                ) from error
+            if (
+                not isinstance(choices, list)
+                or not choices
+                or not all(
+                    isinstance(choice, str) and choice for choice in choices
+                )
+            ):
+                raise ValueError(
+                    f"GitHub event filter '{field_name}' requires a non-empty "
+                    "JSON list of strings for 'oneof'."
+                )
+
+    return value
+
+
+class MergedPullRequest(BaseModel):
+    """Filters for a merged GitHub pull request."""
+
+    type: Literal[GitHubWebhookEvent.MERGED_PULL_REQUEST] = (
+        GitHubWebhookEvent.MERGED_PULL_REQUEST
+    )
+    repo: StringFilterOption = None
+    target_branch: StringFilterOption = None
+    source_branch: StringFilterOption = None
+    author: StringFilterOption = None
+
+    @field_validator("repo", "author")
+    @classmethod
+    def validate_exact_filters(
+        cls, value: StringFilterOption, info: ValidationInfo
+    ) -> StringFilterOption:
+        """Validate exact-match event fields.
+
+        Args:
+            value: The configured filter value.
+            info: Pydantic validation metadata.
+
+        Returns:
+            The validated filter value.
+        """
+        return _validate_github_filter_value(
+            value,
+            field_name=info.field_name or "unknown",
+            allow_startswith=False,
+        )
+
+    @field_validator("target_branch", "source_branch")
+    @classmethod
+    def validate_branch_filters(
+        cls, value: StringFilterOption, info: ValidationInfo
+    ) -> StringFilterOption:
+        """Validate branch event fields.
+
+        Args:
+            value: The configured filter value.
+            info: Pydantic validation metadata.
+
+        Returns:
+            The validated filter value.
+        """
+        return _validate_github_filter_value(
+            value,
+            field_name=info.field_name or "unknown",
+            allow_startswith=True,
+        )
+
+
+class WorkflowRunCompleted(BaseModel):
+    """Filters for a completed GitHub workflow run."""
+
+    type: Literal[GitHubWebhookEvent.WORKFLOW_RUN_COMPLETED] = (
+        GitHubWebhookEvent.WORKFLOW_RUN_COMPLETED
+    )
+    workflow: StringFilterOption = None
+    conclusion: StringFilterOption = None
+    actor: StringFilterOption = None
+
+    @field_validator("workflow", "conclusion", "actor")
+    @classmethod
+    def validate_exact_filters(
+        cls, value: StringFilterOption, info: ValidationInfo
+    ) -> StringFilterOption:
+        """Validate exact-match event fields.
+
+        Args:
+            value: The configured filter value.
+            info: Pydantic validation metadata.
+
+        Returns:
+            The validated filter value.
+        """
+        return _validate_github_filter_value(
+            value,
+            field_name=info.field_name or "unknown",
+            allow_startswith=False,
+        )
+
+
+class PushEvent(BaseModel):
+    """Filters for a GitHub push."""
+
+    type: Literal[GitHubWebhookEvent.PUSH] = GitHubWebhookEvent.PUSH
+    repo: StringFilterOption = None
+    branch: StringFilterOption = None
+    actor: StringFilterOption = None
+
+    @field_validator("repo", "actor")
+    @classmethod
+    def validate_exact_filters(
+        cls, value: StringFilterOption, info: ValidationInfo
+    ) -> StringFilterOption:
+        """Validate exact-match event fields.
+
+        Args:
+            value: The configured filter value.
+            info: Pydantic validation metadata.
+
+        Returns:
+            The validated filter value.
+        """
+        return _validate_github_filter_value(
+            value,
+            field_name=info.field_name or "unknown",
+            allow_startswith=False,
+        )
+
+    @field_validator("branch")
+    @classmethod
+    def validate_branch_filter(
+        cls, value: StringFilterOption, info: ValidationInfo
+    ) -> StringFilterOption:
+        """Validate the branch event field.
+
+        Args:
+            value: The configured filter value.
+            info: Pydantic validation metadata.
+
+        Returns:
+            The validated filter value.
+        """
+        return _validate_github_filter_value(
+            value,
+            field_name=info.field_name or "unknown",
+            allow_startswith=True,
+        )
+
+
+class ReleasePublished(BaseModel):
+    """Filters for a published GitHub release."""
+
+    type: Literal[GitHubWebhookEvent.RELEASE_PUBLISHED] = (
+        GitHubWebhookEvent.RELEASE_PUBLISHED
+    )
+    repo: StringFilterOption = None
+    tag: StringFilterOption = None
+    target_branch: StringFilterOption = None
+    actor: StringFilterOption = None
+
+    @field_validator("repo", "actor")
+    @classmethod
+    def validate_exact_filters(
+        cls, value: StringFilterOption, info: ValidationInfo
+    ) -> StringFilterOption:
+        """Validate exact-match event fields.
+
+        Args:
+            value: The configured filter value.
+            info: Pydantic validation metadata.
+
+        Returns:
+            The validated filter value.
+        """
+        return _validate_github_filter_value(
+            value,
+            field_name=info.field_name or "unknown",
+            allow_startswith=False,
+        )
+
+    @field_validator("tag", "target_branch")
+    @classmethod
+    def validate_ref_filters(
+        cls, value: StringFilterOption, info: ValidationInfo
+    ) -> StringFilterOption:
+        """Validate tag and target branch event fields.
+
+        Args:
+            value: The configured filter value.
+            info: Pydantic validation metadata.
+
+        Returns:
+            The validated filter value.
+        """
+        return _validate_github_filter_value(
+            value,
+            field_name=info.field_name or "unknown",
+            allow_startswith=True,
+        )
+
+
+GitHubWebhookEventConfiguration: TypeAlias = Annotated[
+    MergedPullRequest | WorkflowRunCompleted | PushEvent | ReleasePublished,
+    Field(discriminator="type"),
+]
+GitHubWebhookEvents: TypeAlias = Annotated[
+    list[GitHubWebhookEventConfiguration],
+    Field(min_length=1),
+]
+
+
+class GitHubWebhookConfiguration(YAMLSerializationMixin):
+    """File-backed configuration for a GitHub webhook trigger."""
+
+    events: GitHubWebhookEvents
+
+
 class WebhookTrigger(BaseModel):
     """Base class for webhook-specific parameters."""
 
     webhook_integration_id: UUID | None = None
+    events: GitHubWebhookEvents | None = None
+
+    def validate_events_for_flavor(self, flavor: TriggerFlavor) -> None:
+        """Validate provider-specific event configuration.
+
+        Args:
+            flavor: The webhook trigger flavor.
+
+        Raises:
+            ValueError: If the event configuration is incompatible.
+        """
+        if flavor == TriggerFlavor.GITHUB_WEBHOOK and self.events is None:
+            raise ValueError(
+                "GitHub webhook triggers require event configurations."
+            )
+        if flavor == TriggerFlavor.CUSTOM_WEBHOOK and self.events is not None:
+            raise ValueError(
+                "Custom webhook triggers do not support event configurations."
+            )
 
 
 class WebhookTriggerRequest(TriggerRequest, WebhookTrigger):
@@ -1108,11 +1411,12 @@ class WebhookTriggerRequest(TriggerRequest, WebhookTrigger):
 
     @model_validator(mode="after")
     def deactivate_detached_trigger(self) -> "WebhookTriggerRequest":
-        """Ensure a detached webhook trigger is inactive.
+        """Validate configuration and deactivate detached triggers.
 
         Returns:
             The validated webhook trigger request.
         """
+        self.validate_events_for_flavor(self.flavor)
         if self.webhook_integration_id is None:
             self.active = False
         return self
@@ -1121,10 +1425,9 @@ class WebhookTriggerRequest(TriggerRequest, WebhookTrigger):
         """Return the serialized webhook trigger configuration.
 
         Returns:
-            An empty JSON object. The integration association is stored in a
-            dedicated database column.
+            The provider-specific event configuration.
         """
-        return "{}"
+        return self.model_dump_json(include={"events"}, exclude_none=True)
 
     def get_extra_fields(self) -> dict[str, Any]:
         """Return flat webhook trigger fields.
@@ -1168,10 +1471,9 @@ class WebhookTriggerUpdate(TriggerUpdate, WebhookTrigger):
         """Return the serialized webhook trigger configuration.
 
         Returns:
-            An empty JSON object. The integration association is stored in a
-            dedicated database column.
+            The provider-specific event configuration.
         """
-        return "{}"
+        return self.model_dump_json(include={"events"}, exclude_none=True)
 
     def get_extra_fields(self) -> dict[str, Any]:
         """Return flat webhook trigger fields.
@@ -1184,6 +1486,16 @@ class WebhookTriggerUpdate(TriggerUpdate, WebhookTrigger):
 
 class WebhookTriggerResponseBody(WebhookTrigger, TriggerResponseBody):
     """Class representing a webhook trigger response body."""
+
+    @model_validator(mode="after")
+    def validate_event_configuration(self) -> "WebhookTriggerResponseBody":
+        """Validate the persisted provider-specific event configuration.
+
+        Returns:
+            The validated response body.
+        """
+        self.validate_events_for_flavor(self.flavor)
+        return self
 
     def get_extra_fields(self) -> list[str]:
         """Return flat fields required for the response.
@@ -1223,6 +1535,15 @@ class WebhookTriggerResponse(TriggerResponse[WebhookTriggerResponseBody,]):
             The compatible webhook integration type.
         """
         return WEBHOOK_TRIGGER_FLAVOR_TO_TYPE[self.flavor]
+
+    @property
+    def events(self) -> list[GitHubWebhookEventConfiguration] | None:
+        """Return the provider-specific event configurations.
+
+        Returns:
+            The semantic event configurations, if present.
+        """
+        return self.get_body().events
 
 
 class TriggerExecutionInfo(BaseModel):
