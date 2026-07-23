@@ -236,6 +236,18 @@ async def receive_webhook_event(
     Returns:
         An empty accepted response.
     """
+    adapter = get_webhook_adapter(webhook_type)
+    try:
+        should_process = adapter.pre_validate(headers=request.headers)
+    except WebhookPayloadError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(error),
+        ) from error
+
+    if not should_process:
+        return Response(status_code=status.HTTP_202_ACCEPTED)
+
     body = await request.body()
     return await run_in_threadpool(
         _receive_webhook_event,

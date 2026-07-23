@@ -75,6 +75,59 @@ def test_get_webhook_adapter_returns_registered_adapter(
 
 
 @pytest.mark.parametrize(
+    "headers",
+    [
+        {},
+        {"x-github-event": ""},
+    ],
+)
+def test_github_pre_validation_rejects_missing_or_empty_event_header(
+    headers: Mapping[str, str],
+) -> None:
+    adapter = GitHubWebhookAdapter()
+
+    with pytest.raises(
+        WebhookPayloadError,
+        match="Missing or empty x-github-event header",
+    ):
+        adapter.pre_validate(headers=headers)
+
+
+@pytest.mark.parametrize(
+    "event_type",
+    ["push", "pull request", "pull-request", "PULL_REQUEST"],
+)
+def test_github_pre_validation_ignores_unsupported_event_type(
+    event_type: str,
+) -> None:
+    adapter = GitHubWebhookAdapter()
+
+    should_process = adapter.pre_validate(
+        headers={"x-github-event": event_type}
+    )
+
+    assert should_process is False
+
+
+def test_github_pre_validation_processes_supported_event_type() -> None:
+    adapter = GitHubWebhookAdapter()
+
+    should_process = adapter.pre_validate(
+        headers={"x-github-event": "pull_request"}
+    )
+
+    assert should_process is True
+
+
+def test_custom_pre_validation_always_processes() -> None:
+    adapter = CustomWebhookAdapter()
+
+    should_process = adapter.pre_validate(headers={})
+
+    assert should_process is True
+
+
+@pytest.mark.parametrize(
     "adapter, headers, expected_event_type, expected_delivery_id",
     [
         (

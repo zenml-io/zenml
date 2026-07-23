@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+import asyncio
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -20,6 +21,7 @@ from fastapi import HTTPException, status
 from zenml.constants import API, VERSION_1, WEBHOOKS
 from zenml.enums import WebhookType
 from zenml.webhooks import WebhookAuthenticationError, WebhookPayloadError
+from zenml.webhooks.adapters import GitHubWebhookAdapter
 from zenml.zen_server.routers import webhook_integration_endpoints as endpoints
 
 
@@ -29,6 +31,69 @@ def test_webhook_routers_use_public_webhook_prefix() -> None:
 
     assert endpoints.management_router.prefix == expected_prefix
     assert endpoints.intake_router.prefix == expected_prefix
+
+
+class _Request:
+    def __init__(self, headers):
+        self.headers = headers
+        self.body_calls = 0
+
+    async def body(self):
+        self.body_calls += 1
+        return b'{"event":"ready"}'
+
+
+@pytest.mark.parametrize(
+    "event_type, expected_status, expected_body_calls",
+    [
+        (None, status.HTTP_400_BAD_REQUEST, 0),
+        ("push", status.HTTP_202_ACCEPTED, 0),
+        ("pull_request", status.HTTP_202_ACCEPTED, 1),
+    ],
+)
+def test_github_pre_validation_happens_before_body_and_store_io(
+    monkeypatch,
+    event_type: str | None,
+    expected_status: int,
+    expected_body_calls: int,
+) -> None:
+    adapter = GitHubWebhookAdapter()
+    request = _Request(
+        headers={"x-github-event": event_type}
+        if event_type is not None
+        else {}
+    )
+    receive_calls = []
+
+    async def _run_in_threadpool(function, **kwargs):
+        receive_calls.append((function, kwargs))
+        return endpoints.Response(status_code=status.HTTP_202_ACCEPTED)
+
+    monkeypatch.setattr(endpoints, "get_webhook_adapter", lambda _: adapter)
+    monkeypatch.setattr(endpoints, "run_in_threadpool", _run_in_threadpool)
+
+    if expected_status == status.HTTP_400_BAD_REQUEST:
+        with pytest.raises(HTTPException) as error:
+            asyncio.run(
+                endpoints.receive_webhook_event(
+                    webhook_type=WebhookType.GITHUB,
+                    webhook_id=uuid4(),
+                    request=request,
+                )
+            )
+        assert error.value.status_code == expected_status
+    else:
+        response = asyncio.run(
+            endpoints.receive_webhook_event(
+                webhook_type=WebhookType.GITHUB,
+                webhook_id=uuid4(),
+                request=request,
+            )
+        )
+        assert response.status_code == expected_status
+
+    assert request.body_calls == expected_body_calls
+    assert len(receive_calls) == expected_body_calls
 
 
 class _Store:
