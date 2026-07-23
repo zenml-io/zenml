@@ -22,6 +22,7 @@ from zenml.models import (
     TriggerExecutionInfo,
     TriggerResponseResources,
     TriggerSnapshotDispatchState,
+    WebhookTriggerUpdate,
 )
 
 
@@ -36,6 +37,33 @@ def test_trigger_execution_info_defaults_pipeline_lineage() -> None:
     assert info.upstream_run_id == upstream_run_id
     assert info.upstream_pipeline_ids == []
     assert "upstream_pipeline_ids" in info.model_dump()
+
+
+def test_webhook_trigger_update_requires_complete_payload() -> None:
+    """Webhook trigger updates preserve PUT semantics."""
+    with pytest.raises(
+        ValidationError, match="must include all mutable fields"
+    ):
+        WebhookTriggerUpdate(name="webhook-trigger")
+
+    detached = WebhookTriggerUpdate(
+        name="webhook-trigger",
+        active=False,
+        concurrency=TriggerRunConcurrency.SKIP,
+        webhook_integration_id=None,
+    )
+    integration_id = uuid4()
+    attached = WebhookTriggerUpdate(
+        name="webhook-trigger",
+        active=True,
+        concurrency=TriggerRunConcurrency.SUBMIT,
+        webhook_integration_id=integration_id,
+    )
+
+    assert detached.get_extra_fields() == {"webhook_integration_id": None}
+    assert attached.get_extra_fields() == {
+        "webhook_integration_id": integration_id
+    }
 
 
 def test_schedule_trigger_valid_and_inheritance():

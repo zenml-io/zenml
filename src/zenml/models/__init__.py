@@ -423,6 +423,11 @@ from zenml.models.v2.core.triggers import (
     TriggerResponseResources,
     TriggerSnapshotDispatchState,
     TriggerUpdate,
+    WebhookTrigger,
+    WebhookTriggerRequest,
+    WebhookTriggerResponse,
+    WebhookTriggerResponseBody,
+    WebhookTriggerUpdate,
 )
 from zenml.models.v2.core.user import (
     UserFilter,
@@ -657,6 +662,11 @@ PlatformEventTriggerRequest.model_rebuild()
 PlatformEventTriggerUpdate.model_rebuild()
 PlatformEventTriggerResponse.model_rebuild()
 PlatformEventTriggerResponseBody.model_rebuild()
+WebhookTrigger.model_rebuild()
+WebhookTriggerRequest.model_rebuild()
+WebhookTriggerUpdate.model_rebuild()
+WebhookTriggerResponse.model_rebuild()
+WebhookTriggerResponseBody.model_rebuild()
 WebhookIntegrationResponseBody.model_rebuild()
 WebhookIntegrationStats.model_rebuild()
 WebhookIntegrationResponseMetadata.model_rebuild()
@@ -1041,6 +1051,11 @@ __all__ = [
     "PlatformEventTriggerResponse",
     "PlatformEventTriggerResponseBody",
     "PlatformEventTrigger",
+    "WebhookTrigger",
+    "WebhookTriggerRequest",
+    "WebhookTriggerUpdate",
+    "WebhookTriggerResponse",
+    "WebhookTriggerResponseBody",
     "TRIGGER_UPDATE_TYPE_UNION",
     "TRIGGER_CREATE_TYPE_UNION",
     "TRIGGER_RETURN_TYPE_UNION",

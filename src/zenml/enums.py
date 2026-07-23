@@ -683,6 +683,7 @@ class TriggerType(StrEnum):
 
     SCHEDULE = "schedule"
     PLATFORM_EVENT = "platform_event"
+    WEBHOOK = "webhook"
 
 
 class TriggerFlavor(StrEnum):
@@ -690,6 +691,8 @@ class TriggerFlavor(StrEnum):
 
     NATIVE_SCHEDULE = "native schedule"
     PLATFORM_EVENT = "platform event"
+    GITHUB_WEBHOOK = "github webhook"
+    CUSTOM_WEBHOOK = "custom webhook"
 
 
 class TriggerRunConcurrency(StrEnum):
@@ -704,6 +707,16 @@ class WebhookType(StrEnum):
 
     GITHUB = "github"
     CUSTOM = "custom"
+
+
+WEBHOOK_TRIGGER_FLAVOR_TO_TYPE: dict[TriggerFlavor, WebhookType] = {
+    TriggerFlavor.GITHUB_WEBHOOK: WebhookType.GITHUB,
+    TriggerFlavor.CUSTOM_WEBHOOK: WebhookType.CUSTOM,
+}
+WEBHOOK_TYPE_TO_TRIGGER_FLAVOR: dict[WebhookType, TriggerFlavor] = {
+    webhook_type: flavor
+    for flavor, webhook_type in WEBHOOK_TRIGGER_FLAVOR_TO_TYPE.items()
+}
 
 
 class ContainerEngineType(StrEnum):
